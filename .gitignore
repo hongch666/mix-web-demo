@@ -1,0 +1,148 @@
+### nestjs
+
+# compiled output
+nestjs/dist
+nestjs/node_modules
+nestjs/build
+
+# Logs
+nestjs/logs
+nestjs/*.log
+nestjs/npm-debug.log*
+nestjs/pnpm-debug.log*
+nestjs/yarn-debug.log*
+nestjs/yarn-error.log*
+nestjs/lerna-debug.log*
+
+# OS
+nestjs/.DS_Store
+
+# Tests
+nestjs/coverage
+nestjs/.nyc_output
+
+# IDEs and editors
+nestjs/.idea
+nestjs/.project
+nestjs/.classpath
+nestjs/.c9/
+nestjs/*.launch
+nestjs/.settings/
+nestjs/*.sublime-workspace
+
+# IDE - VSCode
+nestjs/.vscode/*
+!nestjs/.vscode/settings.json
+!nestjs/.vscode/tasks.json
+!nestjs/.vscode/launch.json
+!nestjs/.vscode/extensions.json
+
+# dotenv environment variable files
+nestjs/.env
+nestjs/.env.development.local
+nestjs/.env.test.local
+nestjs/.env.production.local
+nestjs/.env.local
+
+# temp directory
+nestjs/.temp
+nestjs/.tmp
+
+# Runtime data
+nestjs/pids
+nestjs/*.pid
+nestjs/*.seed
+nestjs/*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+nestjs/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+### gin
+
+# Go binaries
+gin/bin/
+gin/*.exe
+gin/*.exe~
+gin/*.dll
+gin/*.so
+gin/*.dylib
+
+# Vendor directory
+gin/vendor/
+
+# Compiled object files and binaries
+gin/*.a
+gin/*.o
+gin/*.out
+
+# Logs
+gin/logs/
+gin/*.log
+
+# Test binaries
+gin/*.test
+
+# Coverage and profiling
+gin/coverage.out
+gin/profile.out
+
+# IDE/editor settings
+gin/.idea/
+gin/.vscode/
+gin/*.swp
+
+# Environment files
+gin/.env
+gin/.env.*
+
+# Temporary files
+gin/tmp/
+gin/temp/
+gin/.DS_Store
+
+# Git merge/diff tools
+gin/*.orig
+
+### spring
+
+# 忽略项目中的 Maven 构建输出目录
+spring/target/
+
+# 忽略项目中的 IntelliJ IDEA 配置文件
+spring/.idea/
+spring/.mvn/
+spring/*.iml
+
+# 忽略编译后的 class 文件
+spring/*.class
+
+# 忽略测试类
+spring/*Test.java
+
+# 忽略 test 目录
+spring/src/test/
+
+# VSCode
+spring/.vscode/
+
+### gateway
+
+# 忽略项目中的 Maven 构建输出目录
+gateway/target/
+
+# 忽略项目中的 IntelliJ IDEA 配置文件
+gateway/.idea/
+spring/.mvn/
+gateway/*.iml
+
+# 忽略编译后的 class 文件
+gateway/*.class
+
+# 忽略测试类
+gateway/*Test.java
+
+# 忽略 test 目录
+gateway/src/test/
+
+# VSCode
+gateway/.vscode/
