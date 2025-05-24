@@ -1,0 +1,11 @@
+server:
+  ip: 127.0.0.1
+  port: 8082
+
+nacos:
+  ipAddr: 127.0.0.1 # 172.22.87.240
+  port: 8848
+  namespace: "public"
+  serviceName: gin
+  groupName: DEFAULT_GROUP
+  clusterName: DEFAULT

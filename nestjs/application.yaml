@@ -1,0 +1,8 @@
+server:
+  ip: 127.0.0.1
+  port: 8083
+  serviceName: nestjs
+nacos:
+  server-addr: 127.0.0.1 # 172.22.87.240:8848
+  namespace: public
+  clusterName: DEFAULT

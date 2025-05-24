@@ -1,0 +1,9 @@
+spring:
+  config:
+    import:
+      - "nacos:application.yml" # 将 DataId 明确设为 application.yml
+      - "optional:nacos:application-dev.yml?group=DEV_GROUP"
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址

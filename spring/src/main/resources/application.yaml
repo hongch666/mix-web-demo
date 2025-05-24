@@ -1,0 +1,10 @@
+server:
+  port: 8081
+  tomcat:
+    threads:
+      max: 25
+    accept-count: 25
+    max-connections: 100
+spring:
+  application:
+    name: spring
