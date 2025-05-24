@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit,Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { NacosNamingClient } from 'nacos';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
@@ -31,31 +31,35 @@ export class NacosService implements OnModuleInit {
     this.client = new NacosNamingClient({
       logger: silentLogger,
       // Nacos 服务地址
-      serverList: this.configService.get<string>('nacos.server-addr') || '172.22.87.240:8848', 
+      serverList:
+        this.configService.get<string>('nacos.server-addr') || '127.0.0.1:8848',
       // 命名空间 ID
-      namespace: this.configService.get<string>('nacos.namespace') || 'public', 
+      namespace: this.configService.get<string>('nacos.namespace') || 'public',
     });
 
     await this.client.ready();
 
     // 注册当前服务
     await this.client.registerInstance(
-      this.configService.get<string>('server.serviceName') || 'nestjs', 
+      this.configService.get<string>('server.serviceName') || 'nestjs',
       {
         ip: this.configService.get<string>('server.ip') || '127.0.0.1',
         port: this.configService.get<string>('server.port') || 3000,
         weight: 1,
         ephemeral: true,
-        clusterName: this.configService.get<string>('nacos.clusterName') || 'DEFAULT',
-        serviceName: this.configService.get<string>('server.serviceName') || 'nestjs',
+        clusterName:
+          this.configService.get<string>('nacos.clusterName') || 'DEFAULT',
+        serviceName:
+          this.configService.get<string>('server.serviceName') || 'nestjs',
         enabled: true,
         healthy: true,
         metadata: {
-            version: '1.0.0',
+          version: '1.0.0',
         },
-    } as any);
+      } as any,
+    );
 
-    Logger.log("注册到 nacos 成功");
+    Logger.log('注册到 nacos 成功');
   }
 
   async getServiceInstances(serviceName: string) {
@@ -81,7 +85,9 @@ export class NacosService implements OnModuleInit {
     }
 
     // 拼接 URL
-    const queryString = opts.queryParams ? `?${qs.stringify(opts.queryParams)}` : '';
+    const queryString = opts.queryParams
+      ? `?${qs.stringify(opts.queryParams)}`
+      : '';
     const url = `http://${instance.ip}:${instance.port}${path}${queryString}`;
 
     // 请求配置
