@@ -6,7 +6,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { error } from '../utils/response'; // 你之前写的 error() 方法
+import { error } from '../utils/response'; // 之前写的 error() 方法
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -35,8 +35,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // 打印错误日志
     console.error(`[${request.method}] ${request.url} - ${message}`);
 
-    response.status(status).json(
-      error(message),
-    );
+    response.status(status).json(error(message));
   }
 }
