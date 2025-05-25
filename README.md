@@ -1,13 +1,13 @@
 ## 描述
 
-这是一个微服务的Demo框架，集成了对Spring/Gin/Nest.js微服务注册与发现（Nacos），并使用SpringCloud的gateway网关进行服务路由，可在此基础上进行项目扩展
+这是一个微服务的 Demo 框架，集成了对 Spring/Gin/Nest.js 微服务注册与发现（Nacos），并使用 SpringCloud 的 gateway 网关进行服务路由，可在此基础上进行项目扩展
 
 ## 环境要求
 
 - Java 17 及以上版本
 - Maven 3.6+ 版本
-- Node 18及以上版本
-- Go 1.20及以上版本
+- Node 18 及以上版本
+- Go 1.20 及以上版本
 
 ## 项目设置
 
@@ -18,6 +18,10 @@ $ npm install # 安装npm包
 # Gin部分
 $ cd gin # 进入文件夹
 $ go mod tidy # 安装依赖
+# Spring部分
+$ cd spring # 进入文件夹
+$ cd gateway # 进入网关
+$ mvn clean install # 下载依赖
 ```
 
 ## 编译和运行项目
@@ -50,15 +54,15 @@ mvn test
 
 ## 配置文件说明
 
-### Spring部分
+### Spring 部分
 
-1. `spring/src/main/resource`目录下有yaml配置文件，可以在其中配置nacos地址、微服务名等信息
-2. gateway部分的yaml配置文件可以配置路由
+1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
+2. gateway 部分的 yaml 配置文件可以配置路由
 
-### Gin部分
+### Gin 部分
 
-1. `gin`目录下有yaml配置文件，可以在其中配置nacos地址、微服务名等信息
+1. `gin`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
 
-### Nestjs部分
+### Nestjs 部分
 
-1. `nestjs`目录下有yaml配置文件，可以在其中配置nacos地址、微服务名等信息
+1. `nestjs`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
