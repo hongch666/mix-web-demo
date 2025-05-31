@@ -20,9 +20,24 @@ type NacosConfig struct {
 	ClusterName string `mapstructure:"clusterName"`
 }
 
+type MysqlConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Dbname   string `mapstructure:"dbname"`
+	Charset  string `mapstructure:"charset"`
+	Loc      string `mapstructure:"loc"`
+}
+
+type DatabaseConfig struct {
+	Mysql MysqlConfig `mapstructure:"mysql"`
+}
+
 type AppConfig struct {
-	Server ServerConfig `mapstructure:"server"`
-	Nacos  NacosConfig  `mapstructure:"nacos"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Nacos    NacosConfig    `mapstructure:"nacos"`
+	Database DatabaseConfig `mapstructure:"database"`
 }
 
 var Config AppConfig
