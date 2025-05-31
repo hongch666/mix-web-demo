@@ -1,12 +1,12 @@
 ## 描述
 
-这是一个微服务的 Demo 框架，集成了对 Spring/Gin/Nest.js 微服务注册与发现（Nacos），并使用 SpringCloud 的 gateway 网关进行服务路由，可在此基础上进行项目扩展
+这是一个微服务的 Demo 框架，集成了对 Spring/Gin/Nest.js 微服务注册与发现（Nacos），并使用 SpringCloud 的 gateway 网关进行服务路由，同时 Spring 部分使用 MyBatis-Plus 进行数据库操作，Gin 部分使用 Gorm 进行数据库操作，NestJS 使用 TypeORM 进行数据库操作，可在此基础上进行项目扩展
 
 ## 环境要求
 
 - Java 17 及以上版本
 - Maven 3.6+ 版本
-- Node 18 及以上版本
+- Node 20 及以上版本
 - Go 1.20 及以上版本
 
 ## 项目设置
