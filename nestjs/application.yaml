@@ -6,3 +6,14 @@ nacos:
   server-addr: 127.0.0.1 # 172.22.87.240:8848
   namespace: public
   clusterName: DEFAULT
+database:
+  type: mysql
+  host: localhost
+  port: 3306
+  username: root
+  password: csc20040312
+  database: demo
+  synchronize: true
+  logging: true
+  entities:
+    - dist/**/*.entity.js
