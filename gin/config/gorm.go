@@ -43,13 +43,13 @@ func InitGorm() {
 		Logger: newLogger,
 	})
 	if err != nil {
-		log.Fatalf("数据库连接失败: %v", err)
+		log.Fatalf("[GIN-debug] 数据库连接失败: %v", err)
 	}
 
 	// 设置连接池
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("获取数据库实例失败: %v", err)
+		log.Fatalf("[GIN-debug] 获取数据库实例失败: %v", err)
 	}
 	sqlDB.SetMaxIdleConns(10)           // 设置空闲连接池中连接的最大数量
 	sqlDB.SetMaxOpenConns(100)          // 设置打开数据库连接的最大数量
