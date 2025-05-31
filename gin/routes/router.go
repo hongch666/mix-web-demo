@@ -10,11 +10,7 @@ import (
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
-	// r.POST("/login", controller.LoginController)
-	// r.GET("/testRedis", controller.GetRedisData)
-
 	testGroup := r.Group("/api_gin")
-	// protected.Use(jwtMiddleware())
 	{
 		//测试路由
 		testGroup.GET("/gin", controller.TestController)
@@ -22,6 +18,11 @@ func SetupRouter() *gin.Engine {
 		testGroup.GET("/spring", controller.JavaController)
 		//nestjs测试路由
 		testGroup.GET("/nestjs", controller.NestjsController)
+	}
+	userGroup := r.Group("/users")
+	{
+		//查询路由
+		userGroup.GET("/", controller.GetUsersController)
 	}
 	return r
 }
