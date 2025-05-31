@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import yamlConfig from './config/yaml-config.service';
 import { NacosModule } from './nacos/nacos.module';
 import { ClientController } from './client/client.controller';
@@ -9,7 +9,7 @@ import { User } from 'users/entity/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
+    /* TypeOrmModule.forRoot({
       type: 'mysql', // 数据库类型
       host: 'localhost',
       port: 3306,
@@ -18,6 +18,24 @@ import { User } from 'users/entity/user.entity';
       database: 'demo',
       entities: [User],
       synchronize: true,
+    }), */
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const db = configService.get('database');
+        return {
+          type: db.type,
+          host: db.host,
+          port: db.port,
+          username: db.username,
+          password: db.password,
+          database: db.database,
+          synchronize: db.synchronize,
+          logging: db.logging,
+          entities: db.entities,
+        };
+      },
     }),
     ConfigModule.forRoot({
       isGlobal: true,
