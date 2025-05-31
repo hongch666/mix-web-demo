@@ -14,13 +14,13 @@ var DB *gorm.DB
 
 func InitGorm() {
 	// 数据库连接配置
-	username := "root"
-	password := "csc20040312"
-	host := "127.0.0.1"
-	port := "3306"
-	dbname := "demo"
-	charset := "utf8mb4"
-	loc := "Local"
+	username := Config.Database.Mysql.Username
+	password := Config.Database.Mysql.Password
+	host := Config.Database.Mysql.Host
+	port := Config.Database.Mysql.Port
+	dbname := Config.Database.Mysql.Dbname
+	charset := Config.Database.Mysql.Charset
+	loc := Config.Database.Mysql.Loc
 
 	// 拼接 DSN（Data Source Name）
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=%s",

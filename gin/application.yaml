@@ -9,3 +9,13 @@ nacos:
   serviceName: gin
   groupName: DEFAULT_GROUP
   clusterName: DEFAULT
+
+database:
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    username: root
+    password: csc20040312
+    dbname: demo
+    charset: utf8mb4
+    loc: Local
