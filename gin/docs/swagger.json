@@ -1,0 +1,85 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "这是demo项目的Gin部分的Swagger文档集成",
+        "title": "示例项目 API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8082",
+    "basePath": "/",
+    "paths": {
+        "/api_gin/gin": {
+            "get": {
+                "description": "输出欢迎信息",
+                "tags": [
+                    "测试"
+                ],
+                "summary": "Gin自己的测试",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api_gin/nestjs": {
+            "get": {
+                "description": "输出欢迎信息",
+                "tags": [
+                    "测试"
+                ],
+                "summary": "调用NestJS的测试",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api_gin/spring": {
+            "get": {
+                "description": "输出欢迎信息",
+                "tags": [
+                    "测试"
+                ],
+                "summary": "调用Spring的测试",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "description": "获取用户列表",
+                "tags": [
+                    "用户"
+                ],
+                "summary": "获取用户信息",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

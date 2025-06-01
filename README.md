@@ -66,3 +66,22 @@ mvn test
 ### Nestjs 部分
 
 1. `nestjs`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
+
+## Swagger 说明
+
+### Gin 部分
+
+1. 使用`go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
+
+2. 在 controller 层上的路由函数使用如下注释添加 swagger 信息
+
+```go
+// @Summary 获取用户列表
+// @Description 获取所有用户信息
+// @Tags 用户
+// @Produce json
+// @Success 200 {array} map[string]string
+// @Router /users [get]
+```
+
+3. 每次添加新的 swagger 信息时需要在终端输入`swag init`

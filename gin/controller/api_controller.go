@@ -7,10 +7,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary Gin自己的测试
+// @Description 输出欢迎信息
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gin/gin [get]
 func TestController(c *gin.Context) {
 	utils.RespondSuccess(c, "Hello,I am Gin!")
 }
 
+// @Summary 调用Spring的测试
+// @Description 输出欢迎信息
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gin/spring [get]
 func JavaController(c *gin.Context) {
 
 	data, err := service.SpringService(c)
@@ -21,6 +31,11 @@ func JavaController(c *gin.Context) {
 	utils.RespondSuccess(c, data)
 }
 
+// @Summary 调用NestJS的测试
+// @Description 输出欢迎信息
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gin/nestjs [get]
 func NestjsController(c *gin.Context) {
 
 	data, err := service.NestjsService(c)
