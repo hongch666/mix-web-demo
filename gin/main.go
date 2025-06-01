@@ -1,5 +1,5 @@
 // @title       Gin部分的Swagger文档集成
-// @version     1.0
+// @version     1.0.0
 // @description 这是demo项目的Gin部分的Swagger文档集成
 // @host        localhost:8082
 // @BasePath    /
