@@ -96,7 +96,7 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:8082",
 	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "示例项目 API",
+	Title:            "Gin部分的Swagger文档集成",
 	Description:      "这是demo项目的Gin部分的Swagger文档集成",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

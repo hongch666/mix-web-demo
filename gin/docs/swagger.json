@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "description": "这是demo项目的Gin部分的Swagger文档集成",
-        "title": "示例项目 API",
+        "title": "Gin部分的Swagger文档集成",
         "contact": {},
         "version": "1.0"
     },
