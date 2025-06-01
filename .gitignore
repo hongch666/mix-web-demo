@@ -78,7 +78,7 @@ gin/*.out
 # Logs
 gin/logs/
 gin/*.log
-gin/nacos/log
+gin/nacos/log/*.log
 
 # Test binaries
 gin/*.test
