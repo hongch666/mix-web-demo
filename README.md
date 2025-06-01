@@ -69,6 +69,14 @@ mvn test
 
 ## Swagger 说明
 
+### Spring 部分
+
+1. 在 config 包下的`SwaggerConfig.java`中修改对应 Swagger 信息
+
+2. 使用`@Operation(summary = "spring自己的测试", description = "输出欢迎信息")`设置对应接口
+
+3. 在`http://[ip和端口]/swagger-ui/index.html`访问 Swagger 接口
+
 ### Gin 部分
 
 1. 使用`go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
@@ -84,4 +92,14 @@ mvn test
 // @Router /users [get]
 ```
 
-3. 每次添加新的 swagger 信息时需要在终端输入`swag init`
+3. 在`http://[ip和端口]/swagger/index.html`访问 Swagger 接口
+
+4. 每次添加新的 swagger 信息时需要在终端输入`swag init`
+
+### NestJS
+
+1. 在`main.ts`中修改对应 Swagger 信息
+
+2. 使用`@ApiOperation({ summary: '获取用户信息', description: '获取用户信息列表' })`设置对应接口
+
+3. 在`http://[ip和端口]/api-docs`访问 Swagger 接口
