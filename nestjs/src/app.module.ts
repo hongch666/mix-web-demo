@@ -4,8 +4,8 @@ import yamlConfig from './config/yaml-config.service';
 import { NacosModule } from './nacos/nacos.module';
 import { ClientController } from './client/client.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserModule } from 'users/user.module';
-import { User } from 'users/entity/user.entity';
+import { UserModule } from 'src/users/user.module';
+import { User } from 'src/users/entity/user.entity';
 
 @Module({
   imports: [

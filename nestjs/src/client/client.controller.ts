@@ -4,7 +4,7 @@ import { success, error } from '../utils/response';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('api_nestjs')
-@ApiTags('用户模块')
+@ApiTags('测试模块')
 export class ClientController {
   constructor(private readonly nacosService: NacosService) {}
 
