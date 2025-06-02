@@ -14,14 +14,14 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-    @Bean
-    public OpenAPI customOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Spring部分的Swagger文档集成")
-                        .version("1.0.0")
-                        .description("这是demo项目的Spring部分的Swagger文档集成"))
-                .servers(List.of(
-                        new Server().url("http://localhost:8081").description("baseURL")));
-    }
+        @Bean
+        OpenAPI customOpenAPI() {
+                return new OpenAPI()
+                                .info(new Info()
+                                                .title("Spring部分的Swagger文档集成")
+                                                .version("1.0.0")
+                                                .description("这是demo项目的Spring部分的Swagger文档集成"))
+                                .servers(List.of(
+                                                new Server().url("http://localhost:8081").description("baseURL")));
+        }
 }

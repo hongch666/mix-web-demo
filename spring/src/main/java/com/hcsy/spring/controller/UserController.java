@@ -10,6 +10,7 @@ import cn.hutool.core.bean.BeanUtil;
 import feign.Param;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "新增用户", description = "通过请求体创建用户信息")
-    public Result addUser(@RequestBody UserCreateDTO userDto) {
+    public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
         User user = BeanUtil.copyProperties(userDto, User.class);
         userService.save(user);
         return Result.success();
@@ -51,7 +52,7 @@ public class UserController {
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
-    public Result updateUser(@RequestBody UserUpdateDTO userDto) {
+    public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         User user = BeanUtil.copyProperties(userDto, User.class);
         userService.updateById(user);
         return Result.success();
