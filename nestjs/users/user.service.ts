@@ -1,8 +1,9 @@
 // src/user/user.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entity/user.entity';
+import { UserUpdateDTO } from './dto';
 
 @Injectable()
 export class UserService {
@@ -11,12 +12,36 @@ export class UserService {
     private userRepo: Repository<User>,
   ) {}
 
-  findAll(): Promise<User[]> {
+  async findAll(): Promise<User[]> {
     return this.userRepo.find();
   }
 
-  create(userData: Partial<User>): Promise<User> {
+  async create(userData: Partial<User>) {
     const user = this.userRepo.create(userData);
-    return this.userRepo.save(user);
+    this.userRepo.save(user);
+    return null;
+  }
+
+  async remove(id: number) {
+    const result = await this.userRepo.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`删除失败，未找到 ID 为 ${id} 的用户`);
+    }
+    return null;
+  }
+
+  async findOne(id: number): Promise<User> {
+    const user = await this.userRepo.findOneBy({ id });
+    if (!user) {
+      throw new NotFoundException(`未找到 ID 为 ${id} 的用户`);
+    }
+    return user;
+  }
+
+  async update(dto: UserUpdateDTO) {
+    const user = await this.findOne(dto.id);
+    const updated = Object.assign(user, dto);
+    this.userRepo.save(updated);
+    return null;
   }
 }

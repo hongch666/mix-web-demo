@@ -11,26 +11,28 @@ export class ClientController {
   @Get('nestjs')
   @ApiOperation({ summary: 'NestJS自己的测试', description: '输出欢迎信息' })
   async getNestjs(): Promise<any> {
-    return success('Hello,I am Nest.js!');
+    return 'Hello,I am Nest.js!';
   }
 
   @Get('spring')
   @ApiOperation({ summary: '调用Spring的测试', description: '输出欢迎信息' })
   async getSpring(): Promise<any> {
-    return this.nacosService.call({
+    const res = await this.nacosService.call({
       serviceName: 'spring',
       method: 'GET',
       path: '/api_spring/spring',
     });
+    return res.data;
   }
 
   @Get('gin')
   @ApiOperation({ summary: '调用Gin的测试', description: '输出欢迎信息' })
   async getGin(): Promise<any> {
-    return this.nacosService.call({
+    const res = await this.nacosService.call({
       serviceName: 'gin',
       method: 'GET',
       path: '/api_gin/gin',
     });
+    return res.data;
   }
 }
