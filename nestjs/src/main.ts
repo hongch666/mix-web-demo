@@ -3,6 +3,8 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './filters/all-exception.filter';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
+import { ResponseInterceptor } from './utils/response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,6 +19,10 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
   // 注册全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
+  //全局启用校验管道
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  // 全局注册拦截器
+  app.useGlobalInterceptors(new ResponseInterceptor());
 
   // 读取yaml文件中的端口
   const configService = app.get(ConfigService);
