@@ -1,10 +1,35 @@
 basePath: /
+definitions:
+  dto.UserCreateDTO:
+    properties:
+      age:
+        type: integer
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.UserUpdateDTO:
+    properties:
+      age:
+        type: integer
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      password:
+        type: string
+    type: object
 host: localhost:8082
 info:
   contact: {}
   description: 这是demo项目的Gin部分的Swagger文档集成
   title: Gin部分的Swagger文档集成
-  version: "1.0"
+  version: 1.0.0
 paths:
   /api_gin/gin:
     get:
@@ -52,6 +77,93 @@ paths:
             additionalProperties: true
             type: object
       summary: 获取用户信息
+      tags:
+      - 用户
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新用户
+      parameters:
+      - description: 用户信息
+        in: body
+        name: userCreateDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserCreateDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 新增用户
+      tags:
+      - 用户
+    put:
+      consumes:
+      - application/json
+      description: 修改一个用户
+      parameters:
+      - description: 用户信息
+        in: body
+        name: userUpdateDTO
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserUpdateDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 修改用户
+      tags:
+      - 用户
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除用户
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 删除用户
+      tags:
+      - 用户
+    get:
+      consumes:
+      - application/json
+      description: 根据ID查询用户
+      parameters:
+      - description: 用户ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 根据ID查询用户
       tags:
       - 用户
 swagger: "2.0"

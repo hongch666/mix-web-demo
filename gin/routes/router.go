@@ -23,6 +23,14 @@ func SetupRouter() *gin.Engine {
 	{
 		//查询路由
 		userGroup.GET("/", controller.GetUsersController)
+		//新增路由
+		userGroup.POST("/", controller.AddUserController)
+		//删除路由
+		userGroup.DELETE("/:id", controller.DeleteUserController)
+		//根据id查询路由
+		userGroup.GET("/:id", controller.GetUserByIdController)
+		//修改路由
+		userGroup.PUT("/", controller.UpdateUserController)
 	}
 	return r
 }
