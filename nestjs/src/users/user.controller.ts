@@ -15,7 +15,7 @@ import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { UserCreateDTO, UserUpdateDTO } from './dto';
 
 @Controller('users')
-@ApiTags('测试模块')
+@ApiTags('用户模块')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
