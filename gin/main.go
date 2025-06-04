@@ -4,6 +4,8 @@
 // @host        localhost:8082
 // @BasePath    /
 
+// TODO: 增加对ES的使用
+
 package main
 
 import (
