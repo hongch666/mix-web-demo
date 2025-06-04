@@ -6,6 +6,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
+// TODO: 增加对MongoDB的调用
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Swagger 配置
