@@ -32,7 +32,14 @@ import { MongooseModule } from '@nestjs/mongoose';
       isGlobal: true,
       load: [yamlConfig],
     }),
-    MongooseModule.forRoot('mongodb://localhost:27017/demo'),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('mongodb.url'),
+        dbName: configService.get<string>('mongodb.dbName'),
+      }),
+      inject: [ConfigService],
+    }),
     ArticleLogModule,
     NacosModule,
     UserModule,

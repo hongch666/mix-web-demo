@@ -17,3 +17,6 @@ database:
   logging: false
   entities:
     - dist/**/*.entity.js
+mongodb:
+  url: mongodb://localhost:27017
+  dbName: demo
