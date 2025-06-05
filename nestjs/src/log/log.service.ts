@@ -15,15 +15,27 @@ export class ArticleLogService {
     return this.logModel.create(dto);
   }
 
-  async findAll(): Promise<ArticleLog[]> {
-    return this.logModel.find().sort({ createdAt: -1 }).exec();
+  async findAll() {
+    const [total, list] = await Promise.all([
+      this.logModel.countDocuments().exec(),
+      this.logModel.find().sort({ createdAt: -1 }).exec(),
+    ]);
+    return { total, list };
   }
 
   async findAllByArticle(articleId: string) {
-    return this.logModel.find({ articleId }).sort({ createdAt: -1 }).exec();
+    const [total, list] = await Promise.all([
+      this.logModel.countDocuments({ articleId }).exec(),
+      this.logModel.find({ articleId }).sort({ createdAt: -1 }).exec(),
+    ]);
+    return { total, list };
   }
 
   async findAllByUser(userId: string) {
-    return this.logModel.find({ userId }).sort({ createdAt: -1 }).exec();
+    const [total, list] = await Promise.all([
+      this.logModel.countDocuments({ userId }).exec(),
+      this.logModel.find({ userId }).sort({ createdAt: -1 }).exec(),
+    ]);
+    return { total, list };
   }
 }
