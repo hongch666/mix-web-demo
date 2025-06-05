@@ -7,6 +7,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
 // TODO: 增加对MongoDB的调用
+// TODO: 增加日志查询模块（MongoDB），取消用户模块
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
