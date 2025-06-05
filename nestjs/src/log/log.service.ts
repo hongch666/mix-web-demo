@@ -15,6 +15,10 @@ export class ArticleLogService {
     return this.logModel.create(dto);
   }
 
+  async findAll(): Promise<ArticleLog[]> {
+    return this.logModel.find().sort({ createdAt: -1 }).exec();
+  }
+
   async findAllByArticle(articleId: string) {
     return this.logModel.find({ articleId }).sort({ createdAt: -1 }).exec();
   }
