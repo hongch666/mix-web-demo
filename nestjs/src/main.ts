@@ -6,8 +6,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 增加对MongoDB的调用
-// TODO: 增加日志查询模块（MongoDB），取消用户模块
+// TODO: 使用配置文件配置MongoDB
+// TODO: 增加分页查询的处理和对应的类
+// TODO: 取消用户模块
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 // TODO: 增加对Redis的调用
 // TODO: 使用Redis存储用户状态（在线/离线）
+// TODO: 增加分页查询的处理和对应的类
 
 @EnableFeignClients()
 @SpringBootApplication
