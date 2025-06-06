@@ -8,5 +8,4 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
-    // 可扩展自定义方法实现
 }
