@@ -34,5 +34,10 @@ func SetupRouter() *gin.Engine {
 		//修改路由
 		userGroup.PUT("/", controller.UpdateUserController)
 	}
+	searchGroup := r.Group("/search")
+	{
+		//搜索文章
+		searchGroup.GET("/", controller.SearchArticlesController)
+	}
 	return r
 }

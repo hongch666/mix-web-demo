@@ -103,6 +103,52 @@ paths:
       summary: 调用同步ES的测试
       tags:
       - 测试
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: 根据关键词、用户ID、发布时间范围等条件搜索文章（支持分页）
+      parameters:
+      - description: 搜索关键词（标题/内容/标签）
+        in: query
+        name: keyword
+        type: string
+      - description: 用户ID
+        in: query
+        name: userId
+        type: integer
+      - description: 发布时间开始（RFC3339格式）
+        in: query
+        name: startDate
+        type: string
+      - description: 发布时间结束（RFC3339格式）
+        in: query
+        name: endDate
+        type: string
+      - description: 页码（默认1）
+        in: query
+        name: page
+        type: integer
+      - description: 每页数量（默认10）
+        in: query
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 包含 total 和 list 的文章列表
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 搜索文章
+      tags:
+      - 文章
   /users:
     get:
       description: 获取用户列表
