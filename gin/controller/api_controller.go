@@ -2,6 +2,7 @@ package controller
 
 import (
 	"gin_proj/service"
+	"gin_proj/syncer"
 	"gin_proj/utils"
 
 	"github.com/gin-gonic/gin"
@@ -43,4 +44,18 @@ func NestjsController(c *gin.Context) {
 		utils.RespondError(c, 500, err.Error())
 	}
 	utils.RespondSuccess(c, data)
+}
+
+// @Summary 调用同步ES的测试
+// @Description 查看是否同步成功
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gin/syncer [post]
+func SyncES(c *gin.Context) {
+
+	err := syncer.SyncArticlesToES()
+	if err != nil {
+		utils.RespondError(c, 500, err.Error())
+	}
+	utils.RespondSuccess(c, nil)
 }

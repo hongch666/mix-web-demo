@@ -18,6 +18,8 @@ func SetupRouter() *gin.Engine {
 		testGroup.GET("/spring", controller.JavaController)
 		//nestjs测试路由
 		testGroup.GET("/nestjs", controller.NestjsController)
+		//测试ES同步MySQL
+		testGroup.POST("/syncer", controller.SyncES)
 	}
 	userGroup := r.Group("/users")
 	{
