@@ -30,8 +30,14 @@ type MysqlConfig struct {
 	Loc      string `mapstructure:"loc"`
 }
 
+type ESConfig struct {
+	Url   string `mapstructure:"url"`
+	Sniff bool   `mapstructure:"sniff"`
+}
+
 type DatabaseConfig struct {
 	Mysql MysqlConfig `mapstructure:"mysql"`
+	ES    ESConfig    `mapstructure:"es"`
 }
 
 type AppConfig struct {

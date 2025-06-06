@@ -13,8 +13,8 @@ var (
 func InitES() {
 	var err error
 	ESClient, err = elastic.NewClient(
-		elastic.SetURL("http://127.0.0.1:9200"),
-		elastic.SetSniff(false),
+		elastic.SetURL(Config.Database.ES.Url),
+		elastic.SetSniff(Config.Database.ES.Sniff),
 	)
 
 	if err != nil {
