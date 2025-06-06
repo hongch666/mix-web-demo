@@ -4,9 +4,8 @@
 // @host        localhost:8082
 // @BasePath    /
 
-// TODO: 使用ES进行搜索文章优化
-// TODO: 增加文章模块，取消用户模块
-// TODO: 增加分页查询的处理和对应的类
+// TODO: 取消用户模块
+// TODO: 修改同步的获取MySQL的文章表的方式，改成使用Spring部分的获取所有文章接口
 
 package main
 
