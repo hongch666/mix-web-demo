@@ -3,26 +3,50 @@ definitions:
   dto.UserCreateDTO:
     properties:
       age:
+        maximum: 150
+        minimum: 0
         type: integer
       email:
         type: string
       name:
+        maxLength: 20
+        minLength: 3
         type: string
       password:
+        maxLength: 20
+        minLength: 3
         type: string
+    required:
+    - age
+    - email
+    - name
+    - password
     type: object
   dto.UserUpdateDTO:
     properties:
       age:
+        maximum: 150
+        minimum: 0
         type: integer
       email:
         type: string
       id:
+        minimum: 0
         type: integer
       name:
+        maxLength: 20
+        minLength: 3
         type: string
       password:
+        maxLength: 20
+        minLength: 3
         type: string
+    required:
+    - age
+    - email
+    - id
+    - name
+    - password
     type: object
 host: localhost:8082
 info:
@@ -65,6 +89,18 @@ paths:
             additionalProperties: true
             type: object
       summary: 调用Spring的测试
+      tags:
+      - 测试
+  /api_gin/syncer:
+    post:
+      description: 查看是否同步成功
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 调用同步ES的测试
       tags:
       - 测试
   /users:

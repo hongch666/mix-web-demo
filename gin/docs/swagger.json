@@ -63,6 +63,24 @@
                 }
             }
         },
+        "/api_gin/syncer": {
+            "post": {
+                "description": "查看是否同步成功",
+                "tags": [
+                    "测试"
+                ],
+                "summary": "调用同步ES的测试",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
                 "description": "获取用户列表",
@@ -215,38 +233,64 @@
     "definitions": {
         "dto.UserCreateDTO": {
             "type": "object",
+            "required": [
+                "age",
+                "email",
+                "name",
+                "password"
+            ],
             "properties": {
                 "age": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 150,
+                    "minimum": 0
                 },
                 "email": {
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 3
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 3
                 }
             }
         },
         "dto.UserUpdateDTO": {
             "type": "object",
+            "required": [
+                "age",
+                "email",
+                "id",
+                "name",
+                "password"
+            ],
             "properties": {
                 "age": {
-                    "type": "integer"
+                    "type": "integer",
+                    "maximum": 150,
+                    "minimum": 0
                 },
                 "email": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 3
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 3
                 }
             }
         }
