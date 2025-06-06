@@ -19,3 +19,6 @@ database:
     dbname: demo
     charset: utf8mb4
     loc: Local
+  es:
+    url: http://127.0.0.1:9200
+    sniff: false
