@@ -10,6 +10,8 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 // TODO: 日志创建部分不使用feign客户端调用，而是将日志内容生产到RabbitMQ中
 // TODO: 增加发布文章功能（修改发布状态），注意要同时同步到ES中,并且发送消息到RabbitMQ中
 // TODO: 使用定时任务，每天0点检查是否有文章未发布，自动发布（调用上述逻辑）
+// TODO: 网关修改对应路由规则，开放部分接口
+// TODO: 网关使用拦截器进行JWT登录校验
 
 @EnableFeignClients()
 @SpringBootApplication
