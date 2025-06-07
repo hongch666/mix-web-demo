@@ -26,6 +26,14 @@ public class ArticleController {
 
     private final ArticleService articleService;
 
+    @PostMapping
+    @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
+    public Result createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
+        Article article = BeanUtil.copyProperties(dto, Article.class);
+        articleService.saveArticle(article);
+        return Result.success();
+    }
+
     @GetMapping
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     public Result getPublishedArticles(
@@ -51,14 +59,14 @@ public class ArticleController {
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
     public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         Article article = BeanUtil.copyProperties(dto, Article.class);
-        articleService.updateById(article);
+        articleService.updateArticle(article);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
     public Result deleteArticle(@PathVariable Long id) {
-        articleService.removeById(id);
+        articleService.deleteArticle(id);
         return Result.success();
     }
 }

@@ -4,8 +4,8 @@ import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-// TODO: 文章查询使用ES的搜索功能
 // TODO: 文章增删改后调用Gin部分的同步代码（要有事务注解）
 // TODO: 文章增删改查后使用NestJS部分的创建日志功能增加日志
 // TODO: 日志创建部分不使用feign客户端调用，而是将日志内容生产到RabbitMQ中
@@ -14,6 +14,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @EnableFeignClients()
 @SpringBootApplication
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 @MapperScan(basePackages = "com.hcsy.spring.mapper")
 public class Application {
 
