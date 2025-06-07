@@ -1,5 +1,6 @@
 package com.hcsy.spring.controller;
 
+import com.hcsy.spring.mq.RabbitMQService;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.client.NestjsClient;
 import com.hcsy.spring.po.Result;
@@ -19,10 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class testController {
     private final GinClient ginClient;
     private final NestjsClient nestjsClient;
+    private final RabbitMQService rabbitMQService;
+    
 
     @GetMapping("/spring")
     @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
     public Result getHello() {
+        rabbitMQService.sendMessage("test-queue", "hihi");
         return Result.success("Hello,I am Spring!");
     }
 
