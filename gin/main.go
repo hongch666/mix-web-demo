@@ -4,8 +4,6 @@
 // @host        localhost:8082
 // @BasePath    /
 
-// TODO: 取消用户模块
-
 package main
 
 import (

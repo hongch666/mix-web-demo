@@ -4,7 +4,6 @@ import yamlConfig from './config/yaml-config.service';
 import { NacosModule } from './nacos/nacos.module';
 import { ClientController } from './client/client.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserModule } from 'users/user.module';
 import { ArticleLogModule } from './log/log.module';
 import { MongooseModule } from '@nestjs/mongoose';
 
@@ -42,7 +41,6 @@ import { MongooseModule } from '@nestjs/mongoose';
     }),
     ArticleLogModule,
     NacosModule,
-    UserModule,
   ],
   controllers: [ClientController],
   providers: [],
