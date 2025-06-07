@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"errors"
-
 	"gin_proj/config"
 	"gin_proj/po"
 
@@ -15,7 +14,6 @@ func SyncArticlesToES() error {
 	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
 		return err
 	}
-
 	bulkRequest := config.ESClient.Bulk()
 
 	for _, article := range articles {
@@ -30,9 +28,9 @@ func SyncArticlesToES() error {
 		return errors.New("没有可同步的数据")
 	}
 
-	_, err := bulkRequest.Do(context.Background())
-	if err != nil {
-		return err
+	_, err1 := bulkRequest.Do(context.Background())
+	if err1 != nil {
+		return err1
 	}
 
 	return nil

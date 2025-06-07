@@ -5,7 +5,6 @@
 // @BasePath    /
 
 // TODO: 取消用户模块
-// TODO: 修改同步的获取MySQL的文章表的方式，改成使用Spring部分的获取所有文章接口
 
 package main
 
