@@ -10,6 +10,15 @@ import (
 )
 
 func SyncArticlesToES() error {
+	ctx := context.Background()
+	// Step 1: 删除 articles 索引中的所有旧文档
+	_, err := config.ESClient.DeleteByQuery("articles").
+		Query(elastic.NewMatchAllQuery()).
+		Do(ctx)
+	if err != nil {
+		return err
+	}
+
 	var articles []po.Article
 	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
 		return err
