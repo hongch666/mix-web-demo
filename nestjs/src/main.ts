@@ -6,7 +6,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 取消用户模块
 // TODO: 消费RabbitMQ的消息，通过消息内容创建日志（定时任务检查队列）
 
 async function bootstrap() {

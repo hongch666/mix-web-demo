@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-// TODO: 调用Gin部分的同步代码AOP事务注解
 // TODO: 文章增删改查后使用NestJS部分的创建日志功能增加日志
 // TODO: 日志创建部分不使用feign客户端调用，而是将日志内容生产到RabbitMQ中
 // TODO: 增加发布文章功能（修改发布状态），注意要同时同步到ES中,并且发送消息到RabbitMQ中
