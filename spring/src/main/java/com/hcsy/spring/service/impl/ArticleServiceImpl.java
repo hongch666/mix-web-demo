@@ -9,12 +9,17 @@ import com.hcsy.spring.mapper.ArticleMapper;
 import com.hcsy.spring.po.Article;
 import com.hcsy.spring.service.ArticleService;
 
+import lombok.RequiredArgsConstructor;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
+    private final ArticleMapper articleMapper;
+
     // 可扩展自定义实现
     @Override
     public List<Article> listPublishedArticles() {
@@ -30,6 +35,24 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         queryWrapper.orderByAsc(Article::getCreatedAt); // 按创建时间倒序
 
         return this.page(page, queryWrapper);
+    }
+
+    @Override
+    public boolean saveArticle(Article article) {
+        articleMapper.insert(article);
+        return true;
+    }
+
+    @Override
+    public boolean updateArticle(Article article) {
+        articleMapper.updateById(article);
+        return true;
+    }
+
+    @Override
+    public boolean deleteArticle(Long id) {
+        articleMapper.deleteById(id);
+        return true;
     }
 
 }

@@ -12,4 +12,10 @@ public interface ArticleService extends IService<Article> {
 
     IPage<Article> listPublishedArticles(Page<Article> page);
 
+    boolean saveArticle(Article article);
+
+    boolean updateArticle(Article article);
+
+    boolean deleteArticle(Long id);
+
 }
