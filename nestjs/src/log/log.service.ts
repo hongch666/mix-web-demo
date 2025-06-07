@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ArticleLog, ArticleLogDocument } from './schema/log.schema';
-import { CreateArticleLogDto } from './dto';
+import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
+const dayjs = require('dayjs');
 
 @Injectable()
 export class ArticleLogService {
@@ -15,27 +16,46 @@ export class ArticleLogService {
     return this.logModel.create(dto);
   }
 
-  async findAll() {
-    const [total, list] = await Promise.all([
-      this.logModel.countDocuments().exec(),
-      this.logModel.find().sort({ createdAt: -1 }).exec(),
-    ]);
-    return { total, list };
-  }
+  async findByFilter(query: QueryArticleLogDto) {
+    const {
+      userId,
+      articleId,
+      action,
+      startTime,
+      endTime,
+      page = '1',
+      limit = '10',
+    } = query;
 
-  async findAllByArticle(articleId: string) {
-    const [total, list] = await Promise.all([
-      this.logModel.countDocuments({ articleId }).exec(),
-      this.logModel.find({ articleId }).sort({ createdAt: -1 }).exec(),
-    ]);
-    return { total, list };
-  }
+    const filters: Record<string, any> = {};
+    if (userId) filters.userId = Number(userId);
+    if (articleId) filters.articleId = Number(articleId);
+    if (action) filters.action = action;
 
-  async findAllByUser(userId: string) {
+    if (startTime || endTime) {
+      filters.createdAt = {};
+      if (startTime)
+        filters.createdAt.$gte = dayjs(
+          startTime,
+          'YYYY-MM-DD HH:mm:ss',
+        ).toDate();
+      if (endTime)
+        filters.createdAt.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
     const [total, list] = await Promise.all([
-      this.logModel.countDocuments({ userId }).exec(),
-      this.logModel.find({ userId }).sort({ createdAt: -1 }).exec(),
+      this.logModel.countDocuments(filters),
+      this.logModel
+        .find(filters)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(take)
+        .exec(),
     ]);
+
     return { total, list };
   }
 }

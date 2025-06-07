@@ -6,8 +6,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 查询部分增加分页参数
-// TODO: 查询合并，使用用户id，文章id，日志时间进行条件查询
 // TODO: 取消用户模块
 // TODO: 消费RabbitMQ的消息，通过消息内容创建日志（定时任务检查队列）
 
