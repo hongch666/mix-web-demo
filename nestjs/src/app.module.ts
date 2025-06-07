@@ -6,6 +6,7 @@ import { ClientController } from './client/client.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ArticleLogModule } from './log/log.module';
 import { MongooseModule } from '@nestjs/mongoose';
+import { RabbitMQModule } from './mq/mq.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     }),
     ArticleLogModule,
     NacosModule,
+    RabbitMQModule,
   ],
   controllers: [ClientController],
   providers: [],

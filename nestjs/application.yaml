@@ -20,3 +20,9 @@ database:
 mongodb:
   url: mongodb://localhost:27017
   dbName: demo
+rabbitmq:
+  host: localhost
+  port: 5672
+  username: hcsy
+  password: 123456
+  vhost: test
