@@ -1,6 +1,9 @@
 package com.hcsy.spring.controller;
 
 import com.hcsy.spring.dto.UserCreateDTO;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hcsy.spring.dto.UserQueryDTO;
 import com.hcsy.spring.dto.UserUpdateDTO;
 import com.hcsy.spring.po.Result;
 import com.hcsy.spring.po.User;
@@ -14,6 +17,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,10 +30,15 @@ public class UserController {
     private final UserService userService;
     private final RedisUtil redisUtil;
 
-    @GetMapping
-    @Operation(summary = "获取用户信息", description = "获取用户信息列表")
-    public Result listUsers() {
-        return Result.success(userService.list());
+    @GetMapping()
+    @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询")
+    public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
+        Page<User> userPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
+        IPage<User> resultPage = userService.listUsersWithFilter(userPage, queryDTO.getUsername());
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", resultPage.getTotal());
+        data.put("list", resultPage.getRecords());
+        return Result.success(data);
     }
 
     @PostMapping
