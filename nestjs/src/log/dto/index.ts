@@ -2,6 +2,7 @@ import {
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsNumberString,
   IsOptional,
   IsString,
 } from 'class-validator';
@@ -37,4 +38,44 @@ export class CreateArticleLogDto {
   @IsOptional()
   @IsString()
   msg?: string;
+}
+
+export class QueryArticleLogDto {
+  @ApiPropertyOptional({ description: '用户ID' })
+  @IsOptional()
+  @IsNumberString()
+  userId?: string;
+
+  @ApiPropertyOptional({ description: '文章ID' })
+  @IsOptional()
+  @IsNumberString()
+  articleId?: string;
+
+  @ApiPropertyOptional({
+    description: '操作类型',
+    enum: ['add', 'search', 'edit', 'delete'],
+  })
+  @IsOptional()
+  @IsEnum(['add', 'search', 'edit', 'delete'])
+  action?: string;
+
+  @ApiPropertyOptional({ description: '开始时间（格式：yyyy-MM-dd HH:mm:ss）' })
+  @IsOptional()
+  @IsString()
+  startTime?: string;
+
+  @ApiPropertyOptional({ description: '结束时间（格式：yyyy-MM-dd HH:mm:ss）' })
+  @IsOptional()
+  @IsString()
+  endTime?: string;
+
+  @ApiPropertyOptional({ description: '页码', example: '1' })
+  @IsOptional()
+  @IsNumberString()
+  page?: string;
+
+  @ApiPropertyOptional({ description: '每页条数', example: '10' })
+  @IsOptional()
+  @IsNumberString()
+  limit?: string;
 }

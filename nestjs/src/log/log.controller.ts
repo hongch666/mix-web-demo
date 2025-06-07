@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ArticleLogService } from './log.service';
-import { CreateArticleLogDto } from './dto';
+import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @Controller('logs')
@@ -17,28 +17,10 @@ export class ArticleLogController {
 
   @Get()
   @ApiOperation({
-    summary: '查询所有日志',
-    description: '获取全部日志记录',
+    summary: '查询日志',
+    description: '可根据用户ID、文章ID、操作类型查询，支持分页',
   })
-  findAll() {
-    return this.logService.findAll();
-  }
-
-  @Get('article/:articleId')
-  @ApiOperation({
-    summary: '根据文章id查询日志',
-    description: '根据文章id查询日志',
-  })
-  findByArticle(@Param('articleId') articleId: string) {
-    return this.logService.findAllByArticle(articleId);
-  }
-
-  @Get('user/:userId')
-  @ApiOperation({
-    summary: '根据用户id查询日志',
-    description: '根据用户id查询日志',
-  })
-  findByUser(@Param('userId') userId: string) {
-    return this.logService.findAllByUser(userId);
+  findByFilter(@Query() query: QueryArticleLogDto) {
+    return this.logService.findByFilter(query);
   }
 }
