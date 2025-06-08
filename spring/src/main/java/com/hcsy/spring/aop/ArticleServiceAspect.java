@@ -30,7 +30,8 @@ public class ArticleServiceAspect {
 
     @Pointcut("execution(* com.hcsy.spring.service.ArticleService.saveArticle(..)) ||" +
             "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..))")
+            "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..))")
     public void userServiceTargetMethods() {
     }
 
@@ -75,6 +76,18 @@ public class ArticleServiceAspect {
                         break;
                     }
                     case "deleteArticle": {
+                        Long id = (Long) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", id);
+                        msg.put("content", content);
+                        msg.put("user_id", 1);
+                        msg.put("article_id", id);
+                        msg.put("action", "edit");
+                        msg.put("msg", "删除了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "publishArticle": {
                         Long id = (Long) paramValues[0];
                         Map<String, Object> content = new HashMap<>();
                         content.put("id", id);

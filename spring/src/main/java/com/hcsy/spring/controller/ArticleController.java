@@ -84,4 +84,12 @@ public class ArticleController {
         articleService.deleteArticle(id);
         return Result.success();
     }
+
+    @PutMapping("/publish/{id}")
+    @Operation(summary = "发布文章", description = "将文章状态修改为发布")
+    public Result publishArticle(@PathVariable Long id) {
+        articleService.publishArticle(id);
+        return Result.success();
+    }
+
 }

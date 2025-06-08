@@ -71,4 +71,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return true;
     }
 
+    @Override
+    public void publishArticle(Long id) {
+        Article article = new Article();
+        article.setId(id);
+        article.setStatus(1); // 发布状态
+
+        boolean updated = updateById(article);
+        if (!updated) {
+            throw new RuntimeException("发布失败：文章不存在或更新失败");
+        }
+    }
+
 }
