@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     // 可扩展自定义实现
     @Override
+    @Transactional
     public List<Article> listPublishedArticles() {
         return lambdaQuery()
                 .eq(Article::getStatus, 1)
@@ -29,6 +31,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @Transactional
     public IPage<Article> listPublishedArticles(Page<Article> page) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getStatus, 1); // 只查已发布
@@ -38,6 +41,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @Transactional
     public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getUserId, id);
@@ -47,18 +51,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @Transactional
     public boolean saveArticle(Article article) {
         articleMapper.insert(article);
         return true;
     }
 
     @Override
+    @Transactional
     public boolean updateArticle(Article article) {
         articleMapper.updateById(article);
         return true;
     }
 
     @Override
+    @Transactional
     public boolean deleteArticle(Long id) {
         articleMapper.deleteById(id);
         return true;
