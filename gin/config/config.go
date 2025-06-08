@@ -40,10 +40,19 @@ type DatabaseConfig struct {
 	ES    ESConfig    `mapstructure:"es"`
 }
 
+type MQConfig struct {
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Vhost    string `mapstructure:"vhost"`
+}
+
 type AppConfig struct {
 	Server   ServerConfig   `mapstructure:"server"`
 	Nacos    NacosConfig    `mapstructure:"nacos"`
 	Database DatabaseConfig `mapstructure:"database"`
+	MQ       MQConfig       `mapstructure:"mq"`
 }
 
 var Config AppConfig
