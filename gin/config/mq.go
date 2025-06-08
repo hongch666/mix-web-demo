@@ -20,11 +20,11 @@ var RabbitMQ *RabbitMQClient
 // 初始化 RabbitMQ 连接（配置写死）
 func InitRabbitMQ() {
 	// 写死的连接信息
-	username := "hcsy"
-	password := "123456"
-	host := "127.0.0.1"
-	port := "5672"
-	vhost := "test"
+	username := Config.MQ.Username
+	password := Config.MQ.Password
+	host := Config.MQ.Host
+	port := Config.MQ.Port
+	vhost := Config.MQ.Vhost
 
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", username, password, host, port, vhost)
 
@@ -43,7 +43,7 @@ func InitRabbitMQ() {
 		Channel: channel,
 	}
 
-	log.Println("✅ RabbitMQ 初始化成功")
+	log.Println("RabbitMQ 初始化成功")
 }
 
 // 发送消息到指定队列
