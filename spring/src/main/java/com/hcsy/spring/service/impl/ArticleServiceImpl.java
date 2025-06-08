@@ -83,4 +83,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
     }
 
+    @Override
+    public List<Article> listUnpublishedArticles() {
+        return articleMapper.selectList(
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
+    }
+
 }
