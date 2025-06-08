@@ -20,4 +20,6 @@ public interface ArticleService extends IService<Article> {
 
     IPage<Article> listArticlesById(Page<Article> page, Integer id);
 
+    void publishArticle(Long id);
+
 }
