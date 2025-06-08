@@ -6,8 +6,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 增加删除日志功能
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Swagger 配置
