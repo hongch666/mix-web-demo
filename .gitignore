@@ -147,3 +147,5 @@ gateway/src/test/
 
 # VSCode
 gateway/.vscode/
+gin/nacos/log/nacos-sdk.log
+gin/nacos/log/nacos-sdk.log

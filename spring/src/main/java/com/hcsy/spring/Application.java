@@ -6,10 +6,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-// TODO: 文章增删改查后使用NestJS部分的创建日志功能增加日志
-// TODO: 日志创建部分不使用feign客户端调用，而是将日志内容生产到RabbitMQ中
+// TODO: 删除用户时增加删除用户状态
+// TODO: 增加根据用户id查询商品
 // TODO: 增加发布文章功能（修改发布状态），注意要同时同步到ES中,并且发送消息到RabbitMQ中
 // TODO: 使用定时任务，每天0点检查是否有文章未发布，自动发布（调用上述逻辑）
+// TODO: 实现登录登出逻辑，并且修改对应登录状态
+// TODO: ThreadLocal存储用户id，并且服务间调用在请求体中传递用户id，实现后增删改文章时判断一下用户是否正确
 // TODO: 网关修改对应路由规则，开放部分接口
 // TODO: 网关使用拦截器进行JWT登录校验
 
