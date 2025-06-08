@@ -14,7 +14,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "gin_proj/docs" // ❗非常重要：别忘了这行
+	_ "gin_proj/docs"
 )
 
 func main() {
