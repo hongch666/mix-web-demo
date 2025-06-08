@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 消费RabbitMQ的消息，通过消息内容创建日志（定时任务检查队列）
+// TODO: 增加删除日志功能
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
