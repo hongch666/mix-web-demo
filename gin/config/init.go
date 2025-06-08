@@ -14,4 +14,6 @@ func Init() {
 	InitGorm()
 	// 初始化ES
 	InitES()
+	// 初始化RabbitMQ
+	InitRabbitMQ()
 }
