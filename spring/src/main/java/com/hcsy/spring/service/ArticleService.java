@@ -18,4 +18,6 @@ public interface ArticleService extends IService<Article> {
 
     boolean deleteArticle(Long id);
 
+    IPage<Article> listArticlesById(Page<Article> page, Integer id);
+
 }

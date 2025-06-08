@@ -48,6 +48,21 @@ public class ArticleController {
         return Result.success(data);
     }
 
+    @GetMapping("user/{id}")
+    @Operation(summary = "获取用户所有文章", description = "返回用户所有文章")
+    public Result getPublishedArticles(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @PathVariable Integer id) {
+        Page<Article> articlePage = new Page<>(page, size);
+        IPage<Article> resultPage = articleService.listArticlesById(articlePage, id);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", resultPage.getTotal());
+        data.put("list", resultPage.getRecords());
+        return Result.success(data);
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
     public Result getArticleById(@PathVariable Long id) {

@@ -38,6 +38,15 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
+        LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(Article::getUserId, id);
+        queryWrapper.orderByAsc(Article::getCreatedAt); // 按创建时间倒序
+
+        return this.page(page, queryWrapper);
+    }
+
+    @Override
     public boolean saveArticle(Article article) {
         articleMapper.insert(article);
         return true;
