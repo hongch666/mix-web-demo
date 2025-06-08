@@ -22,4 +22,6 @@ public interface ArticleService extends IService<Article> {
 
     void publishArticle(Long id);
 
+    List<Article> listUnpublishedArticles();
+
 }
