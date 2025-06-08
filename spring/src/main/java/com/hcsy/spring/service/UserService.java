@@ -11,4 +11,6 @@ public interface UserService extends IService<User> {
 
     void saveUserAndStatus(User user);
 
+    void deleteUserAndStatusById(Long id);
+
 }

@@ -32,9 +32,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.page(page, queryWrapper);
     }
 
+    @Transactional
     public void saveUserAndStatus(User user) {
         userMapper.insert(user);
         redisUtil.set("user:status:" + user.getId(), "0");
+    }
+
+    @Transactional
+    public void deleteUserAndStatusById(Long id) {
+        userMapper.deleteById(id);
+        redisUtil.delete("user:status:" + id);
     }
 
 }

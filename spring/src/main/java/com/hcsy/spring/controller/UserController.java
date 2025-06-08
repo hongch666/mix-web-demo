@@ -52,7 +52,7 @@ public class UserController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
     public Result deleteUser(@Param Long id) {
-        userService.removeById(id);
+        userService.deleteUserAndStatusById(id);
         return Result.success();
     }
 
