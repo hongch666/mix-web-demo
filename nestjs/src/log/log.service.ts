@@ -16,6 +16,10 @@ export class ArticleLogService {
     return this.logModel.create(dto);
   }
 
+  async removeById(id: string) {
+    return this.logModel.findByIdAndDelete(id).exec();
+  }
+
   async findByFilter(query: QueryArticleLogDto) {
     const {
       userId,

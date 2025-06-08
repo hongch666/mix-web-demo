@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ArticleLogService } from './log.service';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -22,5 +30,12 @@ export class ArticleLogController {
   })
   findByFilter(@Query() query: QueryArticleLogDto) {
     return this.logService.findByFilter(query);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: '删除日志', description: '通过日志 ID 删除日志' })
+  async remove(@Param('id') id: string) {
+    this.logService.removeById(id);
+    return null;
   }
 }
