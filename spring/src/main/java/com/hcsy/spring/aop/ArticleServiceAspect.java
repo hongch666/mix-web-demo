@@ -10,6 +10,8 @@ import java.util.Map;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,11 +44,7 @@ public class ArticleServiceAspect {
                 // 1. 执行业务方法（写数据库）
                 Object result = joinPoint.proceed();
 
-                // 2. 同步 ES
-                log.info("同步文章表到ES");
-                ginClient.syncES();
-
-                // 3. 构建 MQ 消息
+                // 2. 构建 MQ 消息
                 MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
                 String methodName = methodSignature.getName();
                 Object[] paramValues = joinPoint.getArgs();
@@ -104,9 +102,18 @@ public class ArticleServiceAspect {
                         throw new RuntimeException("AOP识别失败");
                 }
 
-                // 4. 发消息
+                // 3. 发消息
                 rabbitMQService.sendMessage("log-queue", json);
                 log.info("发送到MQ：" + json);
+
+                // 4. 注册事务提交后的回调，同步 ES
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        log.info("事务提交后开始同步ES...");
+                        ginClient.syncES();
+                    }
+                });
 
                 return result;
 
