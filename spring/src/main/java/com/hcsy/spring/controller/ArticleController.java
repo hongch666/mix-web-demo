@@ -34,7 +34,7 @@ public class ArticleController {
         return Result.success();
     }
 
-    @GetMapping
+    @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     public Result getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,

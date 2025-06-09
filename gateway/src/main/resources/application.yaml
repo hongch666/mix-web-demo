@@ -8,15 +8,27 @@ spring:
       server-addr: 127.0.0.1:8848 # 172.22.87.240:8848
     gateway:
       routes:
-        - id: spring # 路由规则id，自定义，唯一
-          uri: lb://spring # 路由的目标服务，lb代表负载均衡，会从注册中心拉取服务列表
-          predicates: # 路由断言，判断当前请求是否符合当前规则，符合则路由到目标服务
-            - Path=/api_spring/** # 这里是以请求路径作为判断规则
+        # 1. 先排除特殊路径
+        - id: exclude-list
+          uri: no://op
+          predicates:
+            - Path=/articles/list
+            - Path=/api_gin/syncer
+          filters:
+            - SetStatus=204
+
+        # 2. 正常路由
+        - id: spring
+          uri: lb://spring
+          predicates:
+            - Path=/api_spring/**,/users/**,/articles/**
+
         - id: gin
           uri: lb://gin
           predicates:
-            - Path=/api_gin/**
+            - Path=/api_gin/**,/search
+
         - id: nestjs
           uri: lb://nestjs
           predicates:
-            - Path=/api_nestjs/**
+            - Path=/api_nestjs/**,/logs/**
