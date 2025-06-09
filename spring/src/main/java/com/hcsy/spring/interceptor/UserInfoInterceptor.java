@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import org.springframework.lang.Nullable;
 import com.hcsy.spring.utils.UserContext;
 
 @Component
@@ -31,7 +32,7 @@ public class UserInfoInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
-            Exception ex) {
+            @Nullable Exception ex) {
         UserContext.clear(); // 防止线程复用造成用户信息泄露
     }
 }
