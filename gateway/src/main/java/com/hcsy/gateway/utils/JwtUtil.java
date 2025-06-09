@@ -1,11 +1,11 @@
-package com.hcsy.spring.utils;
+package com.hcsy.gateway.utils;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.config.JwtProperties;
+import com.hcsy.gateway.config.JwtProperties;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
