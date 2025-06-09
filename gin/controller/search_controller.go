@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"gin_proj/dto"
 	"gin_proj/service"
 	"gin_proj/utils"
@@ -29,7 +28,7 @@ func SearchArticlesController(c *gin.Context) {
 		utils.RespondError(c, 500, err.Error())
 		return
 	}
-	ctx := context.Background()
+	ctx := c.Request.Context() // 获取 gin 的上下文，它带着中间件注入的值
 	data, err := service.SearchArticles(ctx, searchDTO)
 	if err != nil {
 		utils.RespondError(c, 500, err.Error())

@@ -4,6 +4,7 @@ import com.hcsy.spring.mq.RabbitMQService;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.client.NestjsClient;
 import com.hcsy.spring.po.Result;
+import com.hcsy.spring.utils.UserContext;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,12 +22,11 @@ public class testController {
     private final GinClient ginClient;
     private final NestjsClient nestjsClient;
     private final RabbitMQService rabbitMQService;
-    
 
     @GetMapping("/spring")
     @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
     public Result getHello() {
-        rabbitMQService.sendMessage("test-queue", "hihi");
+        System.out.println(UserContext.getUserId());
         return Result.success("Hello,I am Spring!");
     }
 

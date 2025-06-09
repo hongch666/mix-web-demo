@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"gin_proj/config"
+	"gin_proj/ctxkey"
 	"gin_proj/dto"
 	"gin_proj/mapper"
 	"gin_proj/po"
+	"log"
 )
 
 func SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) (po.SearchResult, error) {
@@ -14,10 +16,13 @@ func SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) (po.Sea
 	if err != nil {
 		return po.SearchResult{}, err
 	}
+	// 读取用户id
+	log.Println(ctx.Value(ctxkey.UsernameKey))
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	// 发送消息
 	msg := map[string]interface{}{
 		"action":  "search",
-		"user_id": 1, // TODO:从ctx中提取真实用户ID
+		"user_id": userID,
 		"content": searchDTO,
 		"msg":     "发起了文章搜索",
 	}

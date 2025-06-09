@@ -2,6 +2,7 @@ package routes
 
 import (
 	"gin_proj/controller"
+	"gin_proj/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -9,6 +10,8 @@ import (
 // SetupRouter 初始化路由
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
+	//注册中间件
+	r.Use(middleware.InjectUserContext())
 
 	testGroup := r.Group("/api_gin")
 	{
