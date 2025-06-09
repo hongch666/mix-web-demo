@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.mq.RabbitMQService;
 import com.hcsy.spring.po.Article;
+import com.hcsy.spring.utils.UserContext;
 
 @Slf4j
 @Aspect
@@ -56,7 +57,7 @@ public class ArticleServiceAspect {
                     case "saveArticle": {
                         Article article = (Article) paramValues[0];
                         msg.put("content", article);
-                        msg.put("user_id", 1); // TODO: 改为 ThreadLocal
+                        msg.put("user_id", UserContext.getUserId());
                         msg.put("article_id", article.getId());
                         msg.put("action", "add");
                         msg.put("msg", "创建了1篇文章");

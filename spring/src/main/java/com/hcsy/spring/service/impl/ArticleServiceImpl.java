@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.mapper.ArticleMapper;
 import com.hcsy.spring.po.Article;
 import com.hcsy.spring.service.ArticleService;
+import com.hcsy.spring.utils.UserContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
     private final ArticleMapper articleMapper;
 
-    // 可扩展自定义实现
     @Override
     @Transactional
     public List<Article> listPublishedArticles() {
@@ -60,6 +60,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     @Transactional
     public boolean updateArticle(Article article) {
+        // 校验用户
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法更新文章");
+        }
+
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(article.getId());
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (!currentUserId.equals(dbArticle.getUserId())) {
+            throw new RuntimeException("无权修改他人文章");
+        }
+        // 执行修改
         articleMapper.updateById(article);
         return true;
     }
@@ -67,12 +82,42 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Override
     @Transactional
     public boolean deleteArticle(Long id) {
+        // 校验用户
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法更新文章");
+        }
+
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(id);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (!currentUserId.equals(dbArticle.getUserId())) {
+            throw new RuntimeException("无权删除他人文章");
+        }
+        // 执行删除
         articleMapper.deleteById(id);
         return true;
     }
 
     @Override
     public void publishArticle(Long id) {
+        // 校验用户
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法更新文章");
+        }
+
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(id);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (!currentUserId.equals(dbArticle.getUserId())) {
+            throw new RuntimeException("无权发布他人文章");
+        }
+        // 执行发布
         Article article = new Article();
         article.setId(id);
         article.setStatus(1); // 发布状态
