@@ -2,7 +2,11 @@ package com.hcsy.spring.utils;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+
 import org.springframework.stereotype.Component;
+
+import com.hcsy.spring.config.JwtProperties;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -12,10 +16,24 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-    // 建议使用 >=32字节的密钥，否则会抛异常
-    private static final String SECRET_KEY = "hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy";
-    private static final Key KEY = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
-    private static final long EXPIRATION_TIME = 86400000L; // 1天（毫秒）
+    private static JwtProperties jwtProperties = new JwtProperties();
+    private static Key key;
+
+    public JwtUtil(JwtProperties jwtProperties) {
+        JwtUtil.jwtProperties = jwtProperties;
+    }
+
+    @PostConstruct
+    public void initKey() {
+        JwtUtil.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+    }
+    /*
+     * // 建议使用 >=32字节的密钥，否则会抛异常
+     * private static final String SECRET_KEY = "hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy";
+     * private static final Key KEY =
+     * Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+     * private static final long EXPIRATION_TIME = 86400000L; // 1天（毫秒）
+     */
 
     public static String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
@@ -25,14 +43,14 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(KEY, SignatureAlgorithm.HS256)
+                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
+                .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String extractUsername(String token) {
         Claims claims = Jwts.parserBuilder()
-                .setSigningKey(KEY)
+                .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -42,7 +60,7 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(KEY)
+                    .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token);
             return true;
