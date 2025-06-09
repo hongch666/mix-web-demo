@@ -13,13 +13,11 @@ import com.hcsy.spring.utils.JwtUtil;
 import com.hcsy.spring.utils.RedisUtil;
 
 import cn.hutool.core.bean.BeanUtil;
-import feign.Param;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
