@@ -79,4 +79,12 @@ public class UserController {
         return Result.success();
     }
 
+    @GetMapping("/status/{id}")
+    @Operation(summary = "查询用户状态", description = "根据用户ID查询用户状态（存储在Redis中）")
+    public Result getUserStatus(@PathVariable Long id) {
+        String key = "user:status:" + id;
+        String status = redisUtil.get(key);
+        return Result.success(status);
+    }
+
 }
