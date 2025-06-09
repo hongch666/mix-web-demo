@@ -13,4 +13,6 @@ public interface UserService extends IService<User> {
 
     void deleteUserAndStatusById(Long id);
 
+    User findByUsername(String username);
+
 }

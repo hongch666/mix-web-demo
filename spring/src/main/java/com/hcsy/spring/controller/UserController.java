@@ -1,5 +1,6 @@
 package com.hcsy.spring.controller;
 
+import com.hcsy.spring.dto.LoginDTO;
 import com.hcsy.spring.dto.UserCreateDTO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -8,6 +9,7 @@ import com.hcsy.spring.dto.UserUpdateDTO;
 import com.hcsy.spring.po.Result;
 import com.hcsy.spring.po.User;
 import com.hcsy.spring.service.UserService;
+import com.hcsy.spring.utils.JwtUtil;
 import com.hcsy.spring.utils.RedisUtil;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -17,10 +19,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/users")
@@ -85,6 +90,19 @@ public class UserController {
         String key = "user:status:" + id;
         String status = redisUtil.get(key);
         return Result.success(status);
+    }
+
+    @PostMapping("/login")
+    public Result login(@RequestBody LoginDTO loginDTO) {
+        User user = userService.findByUsername(loginDTO.getName());
+        ;
+        if (user == null || !user.getPassword().equals(loginDTO.getPassword())) {
+            return Result.error("用户名或密码错误");
+        }
+        String key = "user:status:" + user.getId();
+        redisUtil.set(key, "1"); // 设置为永久保存
+        String token = JwtUtil.generateToken(user.getName());
+        return Result.success(token);
     }
 
 }

@@ -44,4 +44,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         redisUtil.delete("user:status:" + id);
     }
 
+    @Transactional
+    public User findByUsername(String username) {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        if (username != null && !username.isEmpty()) {
+            queryWrapper.eq(User::getName, username); // 用户名模糊匹配
+        }
+        return userMapper.selectOne(queryWrapper);
+    }
+
 }
