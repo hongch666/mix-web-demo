@@ -95,7 +95,6 @@ public class UserController {
     @PostMapping("/login")
     public Result login(@RequestBody LoginDTO loginDTO) {
         User user = userService.findByUsername(loginDTO.getName());
-        ;
         if (user == null || !user.getPassword().equals(loginDTO.getPassword())) {
             return Result.error("用户名或密码错误");
         }
@@ -103,6 +102,13 @@ public class UserController {
         redisUtil.set(key, "1"); // 设置为永久保存
         String token = JwtUtil.generateToken(user.getName());
         return Result.success(token);
+    }
+
+    @PostMapping("/logout/{id}")
+    public Result logout(@PathVariable Long id) {
+        String key = "user:status:" + id;
+        redisUtil.set(key, "0"); // 设置为永久保存
+        return Result.success();
     }
 
 }
