@@ -15,6 +15,8 @@
 - Redis
 - ElasticSearch
 - MongoDB
+- RabbitMQ
+- ThreadLocal/Context
 
 ## 环境要求
 
