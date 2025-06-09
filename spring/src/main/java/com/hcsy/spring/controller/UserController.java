@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class UserController {
     private final UserService userService;
     private final RedisUtil redisUtil;
+    private final JwtUtil jwtUtil;
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询")
@@ -100,7 +101,7 @@ public class UserController {
         }
         String key = "user:status:" + user.getId();
         redisUtil.set(key, "1"); // 设置为永久保存
-        String token = JwtUtil.generateToken(user.getName());
+        String token = jwtUtil.generateToken(user.getId(), user.getName());
         return Result.success(token);
     }
 
