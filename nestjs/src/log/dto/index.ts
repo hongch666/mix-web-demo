@@ -77,5 +77,5 @@ export class QueryArticleLogDto {
   @ApiPropertyOptional({ description: '每页条数', example: '10' })
   @IsOptional()
   @IsNumberString()
-  limit?: string;
+  size?: string;
 }

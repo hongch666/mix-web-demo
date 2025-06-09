@@ -23,7 +23,7 @@ export class ArticleLogController {
     return null;
   }
 
-  @Get()
+  @Get('list')
   @ApiOperation({
     summary: '查询日志',
     description: '可根据用户ID、文章ID、操作类型查询，支持分页',

@@ -28,7 +28,7 @@ export class ArticleLogService {
       startTime,
       endTime,
       page = '1',
-      limit = '10',
+      size = '10',
     } = query;
 
     const filters: Record<string, any> = {};
@@ -47,8 +47,8 @@ export class ArticleLogService {
         filters.createdAt.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const take = parseInt(limit);
+    const skip = (parseInt(page) - 1) * parseInt(size);
+    const take = parseInt(size);
 
     const [total, list] = await Promise.all([
       this.logModel.countDocuments(filters),
