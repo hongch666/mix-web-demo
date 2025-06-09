@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"gin_proj/config"
 	"gin_proj/routes"
+	"gin_proj/task"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -20,6 +21,8 @@ import (
 func main() {
 	// 初始化设置
 	config.Init()
+	// 开启定时任务
+	task.InitTasks()
 	// 初始化路由
 	r := routes.SetupRouter()
 	// Swagger 路由
