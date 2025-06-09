@@ -51,14 +51,14 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
-    public Result deleteUser(@Param Long id) {
+    public Result deleteUser(@PathVariable Long id) {
         userService.deleteUserAndStatusById(id);
         return Result.success();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户")
-    public Result getUserById(@Param Long id) {
+    public Result getUserById(@PathVariable Long id) {
         User user = userService.getById(id);
         return Result.success(user);
     }
