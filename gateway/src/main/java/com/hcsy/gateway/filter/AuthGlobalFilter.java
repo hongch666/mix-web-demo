@@ -82,6 +82,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         }
 
         // 支持 Bearer Token 和直接Token两种形式
+        @SuppressWarnings("null")
         String authHeader = headers.get(0);
         if (authHeader.startsWith("Bearer ")) {
             return authHeader.substring(7);
