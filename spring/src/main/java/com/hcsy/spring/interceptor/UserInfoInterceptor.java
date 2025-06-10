@@ -11,6 +11,7 @@ import com.hcsy.spring.utils.UserContext;
 @Component
 public class UserInfoInterceptor implements HandlerInterceptor {
 
+    @SuppressWarnings("null")
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String userIdStr = request.getHeader("X-User-Id");
@@ -30,6 +31,7 @@ public class UserInfoInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    @SuppressWarnings("null")
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
             @Nullable Exception ex) {

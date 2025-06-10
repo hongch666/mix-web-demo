@@ -13,6 +13,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Autowired
     private UserInfoInterceptor userInfoInterceptor;
 
+    @SuppressWarnings("null")
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(userInfoInterceptor)
