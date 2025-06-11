@@ -79,6 +79,7 @@ gin/*.out
 gin/logs/
 gin/*.log
 gin/nacos/log/*.log
+gin/nacos/log/**
 
 # Test binaries
 gin/*.test
@@ -147,5 +148,7 @@ gateway/src/test/
 
 # VSCode
 gateway/.vscode/
-gin/nacos/log/nacos-sdk.log
-gin/nacos/log/nacos-sdk.log
+
+## FastAPI
+fastapi/**/__pycache__/
+fastapi/**/*.pyc
