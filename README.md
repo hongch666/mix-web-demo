@@ -1,6 +1,6 @@
 ## 描述
 
-这是一个微服务的 Demo 框架，集成了对 Spring/Gin/Nest.js 微服务注册与发现（Nacos），并使用 SpringCloud 的 gateway 网关进行服务路由和登录校验，可在此基础上进行项目扩展。
+这是一个微服务的 Demo 框架，集成了对 Spring/Gin/Nest.js/FastAPI 微服务注册与发现（Nacos），并使用 SpringCloud 的 gateway 网关进行服务路由和登录校验，可在此基础上进行项目扩展。
 
 ## 项目技术栈
 
@@ -10,6 +10,7 @@
 - Gorm
 - NestJS
 - TypeORM
+- FastAPI
 - Mongoose
 - MySQL
 - Redis
@@ -24,6 +25,7 @@
 - Maven 3.6+ 版本
 - Node 20 及以上版本
 - Go 1.20 及以上版本
+- Python 3.8 及以上
 
 ## 项目设置
 
@@ -38,6 +40,8 @@ $ go mod tidy # 安装依赖
 $ cd spring # 进入文件夹
 $ cd gateway # 进入网关
 $ mvn clean install # 下载依赖
+# FastAPI部分
+$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests
 ```
 
 ## 编译和运行项目
@@ -83,6 +87,10 @@ mvn test
 
 1. `nestjs`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
 
+### FastAPI 部分
+
+1. 配置（如 nacos、服务端口等）可通过 `application.yaml` 进行统一管理，代码中通过 `load_config` 方法读取。
+
 ## Swagger 说明
 
 ### Spring 部分
@@ -119,3 +127,28 @@ mvn test
 2. 使用`@ApiOperation({ summary: '获取用户信息', description: '获取用户信息列表' })`设置对应接口
 
 3. 在`http://[ip和端口]/api-docs`访问 Swagger 接口
+
+### FastAPI 部分
+
+1. 在 `main.py` 中通过 `FastAPI` 的参数自定义全局 Swagger 信息，例如：
+
+   ```python
+   app = FastAPI(
+       title="FastAPI部分的Swagger文档集成",
+       description="这是demo项目的FastAPI部分的Swagger文档集成",
+       version="1.0.0"
+   )
+   ```
+
+2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
+
+   ```python
+   @router.get("/hello", description="这是一个自定义的接口描述")
+   def hello():
+       """
+       这是接口的详细说明
+       """
+       return {"msg": "hello"}
+   ```
+
+3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
