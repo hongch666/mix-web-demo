@@ -3,15 +3,23 @@ import time
 import nacos
 import socket
 
+from config.config import load_config
+
 # Nacos 配置
-SERVER_ADDRESSES = "127.0.0.1:8848"
-NAMESPACE = "public"
-SERVICE_NAME = "fastapi"
-GROUP_NAME = "DEFAULT_GROUP"
+nacos_config = load_config("nacos")
+
+SERVER_ADDRESSES = nacos_config["server_addresses"]
+NAMESPACE = nacos_config["namespace"]
+SERVICE_NAME = nacos_config["service_name"]
+GROUP_NAME = nacos_config["group_name"]
+
+server_config = load_config("server")
+IP = server_config["ip"]
+PORT = server_config["port"]
 
 client = nacos.NacosClient(SERVER_ADDRESSES, namespace=NAMESPACE)
 
-def register_instance(ip="127.0.0.1", port=8084):
+def register_instance(ip=IP, port=PORT):
     if not ip:
         ip = socket.gethostbyname(socket.gethostname())
     client.add_naming_instance(SERVICE_NAME, ip, port, group_name=GROUP_NAME)
