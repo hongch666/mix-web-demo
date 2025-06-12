@@ -7,6 +7,7 @@
 package main
 
 // TODO: 重新构建索引，增加根据文章浏览量来排序
+// TODO: 修改获取文章数据同步ES的方式
 
 import (
 	"fmt"

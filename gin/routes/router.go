@@ -21,6 +21,8 @@ func SetupRouter() *gin.Engine {
 		testGroup.GET("/spring", controller.JavaController)
 		//nestjs测试路由
 		testGroup.GET("/nestjs", controller.NestjsController)
+		//fastapi测试路由
+		testGroup.GET("/fastapi", controller.FastapiController)
 		//测试ES同步MySQL
 		testGroup.POST("/syncer", controller.SyncES)
 	}

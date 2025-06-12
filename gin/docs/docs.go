@@ -15,6 +15,24 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api_gin/fastapi": {
+            "get": {
+                "description": "输出欢迎信息",
+                "tags": [
+                    "测试"
+                ],
+                "summary": "调用FastAPI的测试",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api_gin/gin": {
             "get": {
                 "description": "输出欢迎信息",

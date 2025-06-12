@@ -46,6 +46,19 @@ func NestjsController(c *gin.Context) {
 	utils.RespondSuccess(c, data)
 }
 
+// @Summary 调用FastAPI的测试
+// @Description 输出欢迎信息
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gin/fastapi [get]
+func FastapiController(c *gin.Context) {
+	data, err := service.FastapiService(c)
+	if err != nil {
+		utils.RespondError(c, 500, err.Error())
+	}
+	utils.RespondSuccess(c, data)
+}
+
 // @Summary 调用同步ES的测试
 // @Description 查看是否同步成功
 // @Tags 测试
