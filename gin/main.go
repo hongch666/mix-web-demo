@@ -6,6 +6,8 @@
 
 package main
 
+// TODO: 重新构建索引，增加根据文章浏览量来排序
+
 import (
 	"fmt"
 	"gin_proj/config"
