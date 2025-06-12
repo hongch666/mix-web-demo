@@ -6,6 +6,18 @@ info:
   title: Gin部分的Swagger文档集成
   version: 1.0.0
 paths:
+  /api_gin/fastapi:
+    get:
+      description: 输出欢迎信息
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: 调用FastAPI的测试
+      tags:
+      - 测试
   /api_gin/gin:
     get:
       description: 输出欢迎信息

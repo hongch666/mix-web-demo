@@ -41,3 +41,15 @@ func NestjsService(c *gin.Context) (interface{}, error) {
 	}
 	return result.Data, nil
 }
+
+func FastapiService(c *gin.Context) (interface{}, error) {
+	opts := client.RequestOptions{
+		Method: http.MethodGet,
+	}
+	sd := client.NewServiceDiscovery(config.NamingClient)
+	result, err := sd.CallService(c, "fastapi", "/api_fastapi/fastapi", opts)
+	if err != nil {
+		return nil, err
+	}
+	return result.Data, nil
+}

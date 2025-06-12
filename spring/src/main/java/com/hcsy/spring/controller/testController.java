@@ -1,5 +1,6 @@
 package com.hcsy.spring.controller;
 
+import com.hcsy.spring.client.FastAPIClient;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.client.NestjsClient;
 import com.hcsy.spring.po.Result;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class testController {
     private final GinClient ginClient;
     private final NestjsClient nestjsClient;
+    private final FastAPIClient fastAPIClient;
 
     @GetMapping("/spring")
     @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
@@ -38,5 +40,11 @@ public class testController {
     @Operation(summary = "调用NestJS的测试", description = "输出欢迎信息")
     public Result gerNestjs() {
         return nestjsClient.testNestjs();
+    }
+
+    @GetMapping("/fastapi")
+    @Operation(summary = "调用FastAPI的测试", description = "输出欢迎信息")
+    public Result gerFastAPI() {
+        return fastAPIClient.testFastAPI();
     }
 }

@@ -34,4 +34,15 @@ export class ClientController {
     });
     return res.data;
   }
+
+  @Get('fastapi')
+  @ApiOperation({ summary: '调用FastAPI的测试', description: '输出欢迎信息' })
+  async getFastAPI(): Promise<any> {
+    const res = await this.nacosService.call({
+      serviceName: 'fastapi',
+      method: 'GET',
+      path: '/api_fastapi/fastapi',
+    });
+    return res.data;
+  }
 }
