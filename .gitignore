@@ -57,6 +57,10 @@ nestjs/*.pid.lock
 # Diagnostic reports (https://nodejs.org/api/report.html)
 nestjs/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# 忽略所有 .class 文件
+*.class
+
+
 ### gin
 
 # Go binaries
@@ -126,6 +130,8 @@ spring/src/test/
 
 # VSCode
 spring/.vscode/
+
+spring/bin/
 
 ### gateway
 
