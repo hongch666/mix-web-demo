@@ -17,7 +17,7 @@ def get_top10_articles(db: Session = Depends(get_db)):
     articles = get_top10_articles_service(db)
     return success(ListResponse(total=len(articles), list=articles))
 
-@router.get("/wordcloud")
+@router.post("/wordcloud")
 def get_wordcloud():
     generate_wordcloud(get_keywords_dic())
     return success()
