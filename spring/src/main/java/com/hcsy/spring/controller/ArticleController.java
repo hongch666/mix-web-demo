@@ -93,4 +93,11 @@ public class ArticleController {
         return Result.success();
     }
 
+    @PutMapping("/view/{id}")
+    @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
+    public Result addViewArticle(@PathVariable Long id) {
+        articleService.addViewArticle(id);
+        return Result.success();
+    }
+
 }

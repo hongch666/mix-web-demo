@@ -34,7 +34,8 @@ public class ArticleServiceAspect {
     @Pointcut("execution(* com.hcsy.spring.service.ArticleService.saveArticle(..)) ||" +
             "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..))")
+            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.addViewArticle(..))")
     public void userServiceTargetMethods() {
     }
 
@@ -53,11 +54,18 @@ public class ArticleServiceAspect {
                 Map<String, Object> msg = new HashMap<>();
                 String json = "";
 
+                // 3. 获取当前用户 ID
+                Long userId = UserContext.getUserId();
+                if (userId == null) {
+                    log.error("未登录，无法记录操作日志");
+                    throw new RuntimeException("未登录，无法记录操作日志");
+                }
+
                 switch (methodName) {
                     case "saveArticle": {
                         Article article = (Article) paramValues[0];
                         msg.put("content", article);
-                        msg.put("user_id", UserContext.getUserId());
+                        msg.put("user_id", userId);
                         msg.put("article_id", article.getId());
                         msg.put("action", "add");
                         msg.put("msg", "创建了1篇文章");
@@ -67,7 +75,7 @@ public class ArticleServiceAspect {
                     case "updateArticle": {
                         Article article = (Article) paramValues[0];
                         msg.put("content", article);
-                        msg.put("user_id", 1);
+                        msg.put("user_id", userId);
                         msg.put("article_id", article.getId());
                         msg.put("action", "edit");
                         msg.put("msg", "编辑了1篇文章");
@@ -79,7 +87,7 @@ public class ArticleServiceAspect {
                         Map<String, Object> content = new HashMap<>();
                         content.put("id", id);
                         msg.put("content", content);
-                        msg.put("user_id", 1);
+                        msg.put("user_id", userId);
                         msg.put("article_id", id);
                         msg.put("action", "edit");
                         msg.put("msg", "删除了1篇文章");
@@ -91,10 +99,22 @@ public class ArticleServiceAspect {
                         Map<String, Object> content = new HashMap<>();
                         content.put("id", id);
                         msg.put("content", content);
-                        msg.put("user_id", 1);
+                        msg.put("user_id", userId);
                         msg.put("article_id", id);
                         msg.put("action", "edit");
-                        msg.put("msg", "删除了1篇文章");
+                        msg.put("msg", "发布了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "addViewArticle": {
+                        Long id = (Long) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", id);
+                        msg.put("content", content);
+                        msg.put("user_id", userId);
+                        msg.put("article_id", id);
+                        msg.put("action", "edit");
+                        msg.put("msg", "浏览了1篇文章");
                         json = objectMapper.writeValueAsString(msg);
                         break;
                     }

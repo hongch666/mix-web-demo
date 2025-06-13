@@ -7,8 +7,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-// TODO: 增加文章浏览量的增加接口
-
 @EnableFeignClients()
 @SpringBootApplication
 @EnableScheduling
