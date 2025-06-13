@@ -6,8 +6,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 日志搜索类型增加1个搜索关键字的列，Spring部分要同步修改
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Swagger 配置

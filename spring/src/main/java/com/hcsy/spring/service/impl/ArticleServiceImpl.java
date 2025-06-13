@@ -129,6 +129,21 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    public void addViewArticle(Long id) {
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(id);
+        // 增加阅读量
+        Article article = new Article();
+        article.setId(id);
+        article.setViews(dbArticle.getViews() + 1); // 发布状态
+
+        boolean updated = updateById(article);
+        if (!updated) {
+            throw new RuntimeException("更新失败：文章不存在或更新失败");
+        }
+    }
+
+    @Override
     public List<Article> listUnpublishedArticles() {
         return articleMapper.selectList(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
