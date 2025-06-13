@@ -1,4 +1,9 @@
 from pymongo import MongoClient
 
-client = MongoClient("mongodb://localhost:27017/")
-db = client["demo"]
+from config.config import load_config
+
+URL = load_config("database")["mongodb"]["url"]
+DATABASE = load_config("database")["mongodb"]["database"]
+
+client = MongoClient(URL)
+db = client[DATABASE]

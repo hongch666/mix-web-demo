@@ -6,3 +6,9 @@ nacos:
   namespace: "public"
   service_name: "fastapi"
   group_name: "DEFAULT_GROUP"
+database:
+  mysql:
+    url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+  mongodb:
+    url: "mongodb://localhost:27017"
+    database: "demo"
