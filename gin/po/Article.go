@@ -9,6 +9,7 @@ type Article struct {
 	UserID    uint      `json:"userId"`
 	Tags      string    `json:"tags"`
 	Status    int       `json:"status"` // 1 表示已发布
+	Views     int       `json:"views"`  // 浏览量
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

@@ -9,6 +9,7 @@ type ArticleES struct {
 	UserID    uint      `json:"userId"`
 	Tags      string    `json:"tags"`
 	Status    int       `json:"status"`
+	Views     int       `json:"views"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

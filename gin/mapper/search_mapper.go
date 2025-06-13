@@ -64,6 +64,7 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 	searchResult, err := esClient.Search().
 		Index("articles").
 		Query(boolQuery).
+		Sort("views", false).
 		Sort("createdAt", false). // 按发布时间倒序
 		From(from).Size(size).
 		Do(ctx)
