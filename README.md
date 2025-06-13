@@ -11,6 +11,8 @@
 - NestJS
 - TypeORM
 - FastAPI
+- SQLAlchemy
+- WordCloud
 - Mongoose
 - MySQL
 - Redis
@@ -41,7 +43,7 @@ $ cd spring # 进入文件夹
 $ cd gateway # 进入网关
 $ mvn clean install # 下载依赖
 # FastAPI部分
-$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests
+$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud
 ```
 
 ## 编译和运行项目
@@ -152,3 +154,7 @@ mvn test
    ```
 
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
+
+## 其他说明
+
+1. 生成的词云图本地存储在`fastapi/pic/`下。
