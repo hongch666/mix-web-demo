@@ -141,7 +141,7 @@ gateway/target/
 
 # 忽略项目中的 IntelliJ IDEA 配置文件
 gateway/.idea/
-spring/.mvn/
+gateway/.mvn/
 gateway/*.iml
 
 # 忽略编译后的 class 文件
