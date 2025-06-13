@@ -6,8 +6,6 @@
 
 package main
 
-// TODO: 修改获取文章数据同步ES的方式
-
 import (
 	"fmt"
 	"gin_proj/config"
