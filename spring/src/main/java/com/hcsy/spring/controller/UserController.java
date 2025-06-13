@@ -92,6 +92,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌")
     public Result login(@RequestBody LoginDTO loginDTO) {
         User user = userService.findByUsername(loginDTO.getName());
         if (user == null || !user.getPassword().equals(loginDTO.getPassword())) {
@@ -104,6 +105,7 @@ public class UserController {
     }
 
     @PostMapping("/logout/{id}")
+    @Operation(summary = "用户登出", description = "根据用户ID登出，清除Redis中的用户状态")
     public Result logout(@PathVariable Long id) {
         String key = "user:status:" + id;
         redisUtil.set(key, "0"); // 设置为永久保存
