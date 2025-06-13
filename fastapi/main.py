@@ -5,7 +5,7 @@ import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
 
-# TODO: 对日志中的搜索部分进行数据分析，根据搜索关键字进行词云图的生成（保存到本地）
+# TODO: 将词云图保存到阿里云，并返回阿里云的图片地址
 # TODO: 使用上述数据进行机器学习分析，预测后续的文章应当使用的主题
 
 server_config = load_config("server")
