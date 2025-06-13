@@ -158,3 +158,5 @@ gateway/.vscode/
 ## FastAPI
 fastapi/**/__pycache__/
 fastapi/**/*.pyc
+
+.vscode/
