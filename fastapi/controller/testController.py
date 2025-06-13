@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from client import call_remote_service
+from client.client import call_remote_service
 from utils.response import success
 
 router = APIRouter(
