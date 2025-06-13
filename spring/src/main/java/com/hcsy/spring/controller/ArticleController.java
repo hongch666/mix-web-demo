@@ -30,6 +30,7 @@ public class ArticleController {
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     public Result createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         Article article = BeanUtil.copyProperties(dto, Article.class);
+        article.setViews(0);
         articleService.saveArticle(article);
         return Result.success();
     }

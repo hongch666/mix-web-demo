@@ -7,7 +7,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-// TODO: 增加数据库文章表的文章浏览量（默认为0）
 // TODO: 增加文章浏览量的增加接口
 
 @EnableFeignClients()

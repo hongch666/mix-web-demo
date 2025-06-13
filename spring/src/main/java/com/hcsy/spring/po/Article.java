@@ -16,6 +16,7 @@ public class Article {
     private Long userId;
     private String tags; // 标签用逗号分隔
     private Integer status; // 0=草稿，1=已发布
+    private Integer views; // 浏览量
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
