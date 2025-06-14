@@ -5,6 +5,7 @@ from controller.uploadController import router as upload_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
+from handler.exception_handlers import global_exception_handler
 
 server_config = load_config("server")
 IP = server_config["ip"]
@@ -14,6 +15,8 @@ app = FastAPI(
     title="FastAPI部分的Swagger文档集成",
     description="这是demo项目的FastAPI部分的Swagger文档集成",
     version="1.0.0")
+
+app.add_exception_handler(Exception, global_exception_handler)
 
 app.include_router(test_router)
 app.include_router(analyze_router)
