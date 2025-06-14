@@ -7,6 +7,7 @@ from po.article import Article
 from config.mongodb import db as mongo_db
 from config.logger import logger
 from wordcloud import WordCloud
+from config.oss import OSSClient
 
 def get_top10_articles_service(db: Session = Depends(get_db)):
     articles = db.query(Article).order_by(Article.views.desc()).limit(10).all()
@@ -40,3 +41,12 @@ def generate_wordcloud(keywords_dic):
     wc.generate_from_frequencies(keywords_dic)
     wc.to_file("fastapi/pic/search_keywords_wordcloud.png")
     logger.info("词云图生成成功，保存为 search_keywords_wordcloud.png")
+
+def upload_wordcloud_to_oss():
+    ossClient = OSSClient()
+    oss_url = ossClient.upload_file(
+        local_file="fastapi/pic/search_keywords_wordcloud.png",
+        oss_file="search_keywords_wordcloud.png"
+    )
+    logger.info(f"词云图上传成功，OSS地址: {oss_url}")
+    return oss_url

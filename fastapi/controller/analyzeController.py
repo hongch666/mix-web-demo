@@ -4,7 +4,7 @@ from po.listResponse import ListResponse
 from service.analyzeService import get_top10_articles_service
 from po.article import Article
 from config.mysql import SessionLocal,get_db
-from service.analyzeService import generate_wordcloud,get_keywords_dic
+from service.analyzeService import generate_wordcloud,get_keywords_dic,upload_wordcloud_to_oss
 from utils.response import success
 
 router = APIRouter(
@@ -20,4 +20,4 @@ def get_top10_articles(db: Session = Depends(get_db)):
 @router.post("/wordcloud")
 def get_wordcloud():
     generate_wordcloud(get_keywords_dic())
-    return success()
+    return success(upload_wordcloud_to_oss())
