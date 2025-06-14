@@ -163,3 +163,4 @@ fastapi/pic/
 fastapi/application-secret.yaml
 
 .vscode/
+bfg-1.14.0.jar
