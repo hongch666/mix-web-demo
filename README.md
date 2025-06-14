@@ -12,7 +12,6 @@
 - TypeORM
 - FastAPI
 - SQLAlchemy
-- WordCloud
 - Mongoose
 - MySQL
 - Redis
