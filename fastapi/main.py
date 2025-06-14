@@ -1,11 +1,11 @@
 from fastapi import FastAPI
 from controller.testController import router as test_router
 from controller.analyzeController import router as analyze_router
+from controller.uploadController import router as upload_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
 
-# TODO：提供上传文件的私有API（网关中隐藏），可以进行服务间的调用
 # TODO: 使用上述数据进行机器学习分析，预测后续的文章的浏览量，预测top10的文章，预测未来的搜索关键词或主题
 
 server_config = load_config("server")
@@ -19,6 +19,7 @@ app = FastAPI(
 
 app.include_router(test_router)
 app.include_router(analyze_router)
+app.include_router(upload_router)
 
 @app.on_event("startup")
 def startup_event():
