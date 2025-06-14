@@ -45,6 +45,47 @@ $ mvn clean install # 下载依赖
 $ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2
 ```
 
+## 数据库初始化
+
+1. MySQL 表创建
+
+- 在配置文件中指定对应的数据库
+- 创建用户表
+
+```sql
+CREATE TABLE user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
+    name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
+    password VARCHAR(255) NOT NULL COMMENT '密码',
+    email VARCHAR(255) UNIQUE COMMENT '邮箱',
+    age INT COMMENT '年龄'
+) COMMENT='用户表'
+```
+
+- 创建文章表
+
+```sql
+CREATE TABLE articles (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
+    title VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
+    content TEXT NOT NULL COMMENT '文章内容',
+    user_id BIGINT NOT NULL COMMENT '用户id',
+    tags VARCHAR(255) NOT NULL COMMENT '文章标签',
+    status INT NOT NULL COMMENT '文章状态',
+    views INT NOT NULL COMMENT '文章浏览量',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT='文章表'
+```
+
+2. MongoDB 表创建
+
+- 指定数据库即可
+
+3. ElasticSearch 索引创建
+
+- 无需创建
+
 ## 编译和运行项目
 
 ```bash
