@@ -5,7 +5,6 @@ import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
 
-# TODO: 将阿里云OSS的配置写在配置文件中
 # TODO：提供上传文件的私有API（网关中隐藏），可以进行服务间的调用
 # TODO: 使用上述数据进行机器学习分析，预测后续的文章的浏览量，预测top10的文章，预测未来的搜索关键词或主题
 
