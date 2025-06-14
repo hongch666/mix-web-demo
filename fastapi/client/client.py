@@ -3,7 +3,7 @@ import logging
 
 from config.nacos import get_service_instance
 
-def call_remote_service(
+async def call_remote_service(
     service_name: str,
     path: str,
     method: str = "GET",

@@ -1,11 +1,8 @@
-from fastapi import APIRouter,Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter
 from dto.uploadDTO import UploadDTO
-from po.listResponse import ListResponse
-from po.article import Article
-from config.mysql import SessionLocal,get_db
 from service.analyzeService import upload_file
 from utils.response import success
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter(
     prefix="/upload",
@@ -13,8 +10,10 @@ router = APIRouter(
 )
 
 @router.post("")
-def get_wordcloud(data:UploadDTO):
-    return success(upload_file(
+async def get_wordcloud(data: UploadDTO):
+    oss_url = await run_in_threadpool(
+        upload_file, 
         data.local_file, 
         data.oss_file
-        ))
+    )
+    return success(oss_url)

@@ -10,15 +10,15 @@ router = APIRouter(
 
 # 测试
 @router.get("/fastapi")
-def testFastapi():
+async def testFastapi():
     return success("Hello, I am FastAPI!")
 
 # 测试Spring服务
 @router.get("/spring")
-def testSpring():
+async def testSpring():
     """ headers = {"Authorization": "Bearer xxx"}
     body = {"foo": "bar", "list": [1, 2, 3]} """
-    result = call_remote_service(
+    result = await call_remote_service(
         service_name="spring",
         path="/api_spring/spring",
         method="GET",
@@ -28,8 +28,8 @@ def testSpring():
 
 # 测试Gin服务
 @router.get("/gin")
-def testGin():
-    result = call_remote_service(
+async def testGin():
+    result = await call_remote_service(
         service_name="gin",
         path="/api_gin/gin",
         method="GET",
@@ -39,8 +39,8 @@ def testGin():
 
 # 测试NestJS服务
 @router.get("/nestjs")
-def testNestJS():
-    result = call_remote_service(
+async def testNestJS():
+    result = await call_remote_service(
         service_name="nestjs",
         path="/api_nestjs/nestjs",
         method="GET",
