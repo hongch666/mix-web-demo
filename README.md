@@ -43,7 +43,7 @@ $ cd spring # 进入文件夹
 $ cd gateway # 进入网关
 $ mvn clean install # 下载依赖
 # FastAPI部分
-$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud
+$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2
 ```
 
 ## 编译和运行项目
