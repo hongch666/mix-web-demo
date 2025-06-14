@@ -18,8 +18,8 @@ export class ArticleLogController {
 
   @Post()
   @ApiOperation({ summary: '新增日志', description: '通过请求体创建日志' })
-  create(@Body() dto: CreateArticleLogDto) {
-    this.logService.create(dto);
+  async create(@Body() dto: CreateArticleLogDto) {
+    await this.logService.create(dto);
     return null;
   }
 
@@ -28,14 +28,14 @@ export class ArticleLogController {
     summary: '查询日志',
     description: '可根据用户ID、文章ID、操作类型查询，支持分页',
   })
-  findByFilter(@Query() query: QueryArticleLogDto) {
-    return this.logService.findByFilter(query);
+  async findByFilter(@Query() query: QueryArticleLogDto) {
+    return await this.logService.findByFilter(query);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除日志', description: '通过日志 ID 删除日志' })
   async remove(@Param('id') id: string) {
-    this.logService.removeById(id);
+    await this.logService.removeById(id);
     return null;
   }
 }
