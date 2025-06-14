@@ -1,0 +1,31 @@
+server:
+  ip: 127.0.0.1
+  port: 8082
+
+nacos:
+  ipAddr: 127.0.0.1 # 172.22.87.240
+  port: 8848
+  namespace: "public"
+  serviceName: gin
+  groupName: DEFAULT_GROUP
+  clusterName: DEFAULT
+
+database:
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    username: root
+    password: csc20040312
+    dbname: demo
+    charset: utf8mb4
+    loc: Local
+  es:
+    url: http://127.0.0.1:9200
+    sniff: false
+
+mq:
+  username: hcsy
+  password: 123456
+  host: 127.0.0.1
+  port: 5672
+  vhost: test

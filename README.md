@@ -158,3 +158,11 @@ mvn test
 ## 其他说明
 
 1. 生成的词云图本地存储在`fastapi/pic/`下。
+
+2. FastAPI 模块的阿里云 OSS 的密钥应写在`application-secret.yaml`中，格式如下：
+
+```yaml
+oss:
+  access_key_id: your_access_key_id
+  access_key_secret: your_access_key_secret
+```

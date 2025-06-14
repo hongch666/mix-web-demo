@@ -1,0 +1,17 @@
+server:
+  ip: 127.0.0.1
+  port: 8084
+nacos:
+  server_addresses: "127.0.0.1:8848"
+  namespace: "public"
+  service_name: "fastapi"
+  group_name: "DEFAULT_GROUP"
+database:
+  mysql:
+    url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+  mongodb:
+    url: "mongodb://localhost:27017"
+    database: "demo"
+oss:
+  bucket_name: mix-web-demo
+  endpoint: oss-cn-guangzhou.aliyuncs.com

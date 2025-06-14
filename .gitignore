@@ -160,5 +160,6 @@ gateway/.vscode/
 fastapi/**/__pycache__/
 fastapi/**/*.pyc
 fastapi/pic/
+fastapi/application-secret.yaml
 
 .vscode/

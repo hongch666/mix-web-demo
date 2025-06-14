@@ -1,0 +1,30 @@
+server:
+  port: 8081
+  tomcat:
+    threads:
+      max: 25
+    accept-count: 25
+    max-connections: 100
+spring:
+  application:
+    name: spring
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+      timeout: 3000
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: hcsy
+    password: 123456
+    virtual-host: test
+jwt:
+  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+  expiration: 86400000 # 毫秒数（1 天）
