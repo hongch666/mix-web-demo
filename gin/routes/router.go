@@ -12,6 +12,7 @@ func SetupRouter() *gin.Engine {
 	r := gin.Default()
 	//注册中间件
 	r.Use(middleware.InjectUserContext())
+	r.Use(middleware.RecoveryMiddleware())
 
 	testGroup := r.Group("/api_gin")
 	{

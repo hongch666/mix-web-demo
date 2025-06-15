@@ -24,11 +24,7 @@ func TestController(c *gin.Context) {
 // @Router /api_gin/spring [get]
 func JavaController(c *gin.Context) {
 
-	data, err := service.SpringService(c)
-	if err != nil {
-		utils.RespondError(c, 500, err.Error())
-		return
-	}
+	data := service.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -39,10 +35,7 @@ func JavaController(c *gin.Context) {
 // @Router /api_gin/nestjs [get]
 func NestjsController(c *gin.Context) {
 
-	data, err := service.NestjsService(c)
-	if err != nil {
-		utils.RespondError(c, 500, err.Error())
-	}
+	data := service.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -52,10 +45,7 @@ func NestjsController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/fastapi [get]
 func FastapiController(c *gin.Context) {
-	data, err := service.FastapiService(c)
-	if err != nil {
-		utils.RespondError(c, 500, err.Error())
-	}
+	data := service.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -66,9 +56,6 @@ func FastapiController(c *gin.Context) {
 // @Router /api_gin/syncer [post]
 func SyncES(c *gin.Context) {
 
-	err := syncer.SyncArticlesToES()
-	if err != nil {
-		utils.RespondError(c, 500, err.Error())
-	}
+	syncer.SyncArticlesToES()
 	utils.RespondSuccess(c, nil)
 }

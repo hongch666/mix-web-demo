@@ -25,14 +25,9 @@ import (
 func SearchArticlesController(c *gin.Context) {
 	var searchDTO dto.ArticleSearchDTO
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
-		utils.RespondError(c, 500, err.Error())
-		return
+		panic("参数绑定错误：" + err.Error())
 	}
 	ctx := c.Request.Context() // 获取 gin 的上下文，它带着中间件注入的值
-	data, err := service.SearchArticles(ctx, searchDTO)
-	if err != nil {
-		utils.RespondError(c, 500, err.Error())
-		return
-	}
+	data := service.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
 }

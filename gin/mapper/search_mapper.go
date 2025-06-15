@@ -11,7 +11,7 @@ import (
 	"github.com/olivere/elastic"
 )
 
-func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int, error) {
+func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
 	boolQuery := elastic.NewBoolQuery()
 
 	// 关键词多字段搜索
@@ -70,7 +70,7 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 		Do(ctx)
 
 	if err != nil {
-		return nil, 0, err
+		panic(err.Error())
 	}
 
 	// 解析结果
@@ -79,8 +79,11 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 		var article po.ArticleES
 		if err := json.Unmarshal(hit.Source, &article); err == nil {
 			articles = append(articles, article)
+		} else {
+			// 处理解析错误
+			panic(err.Error())
 		}
 	}
 
-	return articles, int(searchResult.Hits.TotalHits.Value), nil
+	return articles, int(searchResult.Hits.TotalHits.Value)
 }

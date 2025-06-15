@@ -15,11 +15,8 @@ func InitTasks() {
 	// 每 10 分钟同步一次 ES
 	_, err := TaskScheduler.AddFunc("*/10 * * * *", func() {
 		log.Println("[定时任务] 开始同步文章到 Elasticsearch")
-		if err := syncer.SyncArticlesToES(); err != nil {
-			log.Println("[定时任务] 同步失败：", err)
-		} else {
-			log.Println("[定时任务] 同步成功")
-		}
+		syncer.SyncArticlesToES()
+		log.Println("[定时任务] 同步成功")
 	})
 
 	if err != nil {

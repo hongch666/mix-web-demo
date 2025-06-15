@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"errors"
 	"gin_proj/config"
 	"gin_proj/po"
 	"log"
@@ -10,12 +9,12 @@ import (
 	"github.com/olivere/elastic"
 )
 
-func SyncArticlesToES() error {
+func SyncArticlesToES() {
 	ctx := context.Background()
 	// 判断索引是否存在
 	exists, err := config.ESClient.IndexExists("articles").Do(ctx)
 	if err != nil {
-		return err
+		panic(err.Error())
 	}
 	if !exists {
 		// 创建索引，指定mapping（根据po.Article结构体字段）
@@ -36,7 +35,7 @@ func SyncArticlesToES() error {
 		}`
 		_, err := config.ESClient.CreateIndex("articles").BodyString(mapping).Do(ctx)
 		if err != nil {
-			return err
+			panic(err.Error())
 		}
 	}
 	// Step 1: 删除 articles 索引中的所有旧文档
@@ -44,12 +43,12 @@ func SyncArticlesToES() error {
 		Query(elastic.NewMatchAllQuery()).
 		Do(ctx)
 	if err1 != nil {
-		return err1
+		panic(err1.Error())
 	}
 
 	var articles []po.Article
 	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
-		return err
+		panic(err.Error())
 	}
 	log.Println(articles)
 	bulkRequest := config.ESClient.Bulk()
@@ -63,13 +62,11 @@ func SyncArticlesToES() error {
 	}
 
 	if bulkRequest.NumberOfActions() == 0 {
-		return errors.New("没有可同步的数据")
+		panic("没有可同步的数据")
 	}
 
 	_, err2 := bulkRequest.Do(context.Background())
 	if err2 != nil {
-		return err2
+		panic(err2.Error())
 	}
-
-	return nil
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SpringService(c *gin.Context) (interface{}, error) {
+func SpringService(c *gin.Context) interface{} {
 	opts := client.RequestOptions{
 		Method: http.MethodGet,
 		/* PathParams: map[string]string{"orderId": "789"},
@@ -25,31 +25,31 @@ func SpringService(c *gin.Context) (interface{}, error) {
 	sd := client.NewServiceDiscovery(config.NamingClient)
 	result, err := sd.CallService(c, "spring", "/api_spring/spring", opts)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
-	return result.Data, nil
+	return result.Data
 }
 
-func NestjsService(c *gin.Context) (interface{}, error) {
+func NestjsService(c *gin.Context) interface{} {
 	opts := client.RequestOptions{
 		Method: http.MethodGet,
 	}
 	sd := client.NewServiceDiscovery(config.NamingClient)
 	result, err := sd.CallService(c, "nestjs", "/api_nestjs/nestjs", opts)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
-	return result.Data, nil
+	return result.Data
 }
 
-func FastapiService(c *gin.Context) (interface{}, error) {
+func FastapiService(c *gin.Context) interface{} {
 	opts := client.RequestOptions{
 		Method: http.MethodGet,
 	}
 	sd := client.NewServiceDiscovery(config.NamingClient)
 	result, err := sd.CallService(c, "fastapi", "/api_fastapi/fastapi", opts)
 	if err != nil {
-		return nil, err
+		panic(err.Error())
 	}
-	return result.Data, nil
+	return result.Data
 }
