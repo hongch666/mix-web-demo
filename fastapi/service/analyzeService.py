@@ -8,6 +8,7 @@ from config.mongodb import db as mongo_db
 from config.logger import logger
 from wordcloud import WordCloud
 from config.oss import OSSClient
+from config.config import load_config
 
 def get_top10_articles_service(db: Session = Depends(get_db)):
     articles = db.query(Article).order_by(Article.views.desc()).limit(10).all()
@@ -32,11 +33,16 @@ def get_keywords_dic():
     return keywords_dic
 
 def generate_wordcloud(keywords_dic):
+    wc_config = load_config("wordcloud")
+    FONT_PATH = wc_config["font_path"]
+    WIDTH = wc_config["width"]
+    HEIGHT = wc_config["height"]
+    BACKGROUND_COLOR = wc_config["background_color"]
     wc = WordCloud(
-        font_path="/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 
-        width=800,
-        height=400,
-        background_color="white"
+        font_path=FONT_PATH, 
+        width=WIDTH,
+        height=HEIGHT,
+        background_color=BACKGROUND_COLOR
     )
     wc.generate_from_frequencies(keywords_dic)
     wc.to_file("fastapi/pic/search_keywords_wordcloud.png")
