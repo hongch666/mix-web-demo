@@ -80,11 +80,11 @@ CREATE TABLE articles (
 
 2. MongoDB 表创建
 
-- 指定数据库即可
+- 数据库为`demo`，集合为`articlelogs`
 
 3. ElasticSearch 索引创建
 
-- 无需创建
+- 无需创建，系统同步数据时会自动创建
 
 ## 编译和运行项目
 
@@ -199,7 +199,9 @@ mvn test
 
 1. 生成的词云图本地存储在`fastapi/pic/`下。
 
-2. FastAPI 模块的阿里云 OSS 的密钥应写在`application-secret.yaml`中，格式如下：
+2. 词云图的字体应进行配置对应字体的路径。
+
+3. FastAPI 模块的阿里云 OSS 的密钥应写在`application-secret.yaml`中，格式如下：
 
 ```yaml
 oss:
