@@ -4,7 +4,6 @@ import com.hcsy.spring.client.FastAPIClient;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.client.NestjsClient;
 import com.hcsy.spring.po.Result;
-import com.hcsy.spring.utils.UserContext;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
