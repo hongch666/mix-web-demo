@@ -4,6 +4,7 @@ import (
 	"gin_proj/service"
 	"gin_proj/syncer"
 	"gin_proj/utils"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +15,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/gin [get]
 func TestController(c *gin.Context) {
+	log.Println("/api_gin/gin: " + "测试Gin服务")
 	utils.RespondSuccess(c, "Hello,I am Gin!")
 }
 
@@ -22,8 +24,8 @@ func TestController(c *gin.Context) {
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/spring [get]
-func JavaController(c *gin.Context) {
-
+func SpringController(c *gin.Context) {
+	log.Println("/api_gin/spring: " + "测试Spring服务")
 	data := service.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -34,7 +36,7 @@ func JavaController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/nestjs [get]
 func NestjsController(c *gin.Context) {
-
+	log.Println("/api_gin/nestjs: " + "测试NestJS服务")
 	data := service.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -45,6 +47,7 @@ func NestjsController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/fastapi [get]
 func FastapiController(c *gin.Context) {
+	log.Println("/api_gin/fastapi: " + "测试FastAPI服务")
 	data := service.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -55,7 +58,7 @@ func FastapiController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/syncer [post]
 func SyncES(c *gin.Context) {
-
+	log.Println("/api_gin/syncer: " + "同步ES服务")
 	syncer.SyncArticlesToES()
 	utils.RespondSuccess(c, nil)
 }

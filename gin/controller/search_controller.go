@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"encoding/json"
 	"gin_proj/dto"
 	"gin_proj/service"
 	"gin_proj/utils"
+	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +29,11 @@ func SearchArticlesController(c *gin.Context) {
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
 		panic("参数绑定错误：" + err.Error())
 	}
+	dtoString, err := json.Marshal(searchDTO)
+	if err != nil {
+		panic("参数序列化错误：" + err.Error())
+	}
+	log.Println("/search: " + "搜索文章\nsearchDTO: " + string(dtoString))
 	ctx := c.Request.Context() // 获取 gin 的上下文，它带着中间件注入的值
 	data := service.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)

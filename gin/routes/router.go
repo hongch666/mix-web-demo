@@ -19,7 +19,7 @@ func SetupRouter() *gin.Engine {
 		//测试路由
 		testGroup.GET("/gin", controller.TestController)
 		//spring测试路由
-		testGroup.GET("/spring", controller.JavaController)
+		testGroup.GET("/spring", controller.SpringController)
 		//nestjs测试路由
 		testGroup.GET("/nestjs", controller.NestjsController)
 		//fastapi测试路由
