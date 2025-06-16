@@ -9,6 +9,7 @@ import com.hcsy.spring.utils.UserContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api_spring")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "测试模块", description = "测试相关接口")
 public class testController {
     private final GinClient ginClient;
@@ -26,25 +28,28 @@ public class testController {
     @GetMapping("/spring")
     @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
     public Result getHello() {
-        System.out.println(UserContext.getUserId());
+        log.info("GET /api_spring/sprng: " + "测试Spring服务");
         return Result.success("Hello,I am Spring!");
     }
 
     @GetMapping("/gin")
     @Operation(summary = "调用Gin的测试", description = "输出欢迎信息")
     public Result gerGin() {
+        log.info("GET /api_spring/gin: " + "测试Gin服务");
         return ginClient.testGin();
     }
 
     @GetMapping("/nestjs")
     @Operation(summary = "调用NestJS的测试", description = "输出欢迎信息")
     public Result gerNestjs() {
+        log.info("GET /api_spring/nestjs: " + "测试NestJS服务");
         return nestjsClient.testNestjs();
     }
 
     @GetMapping("/fastapi")
     @Operation(summary = "调用FastAPI的测试", description = "输出欢迎信息")
     public Result gerFastAPI() {
+        log.info("GET /api_spring/fastapi: " + "测试FastAPI服务");
         return fastAPIClient.testFastAPI();
     }
 }
