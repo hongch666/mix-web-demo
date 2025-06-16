@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from client.client import call_remote_service
 from utils.response import success
+from utils.logger import logger
 
 router = APIRouter(
     prefix="/api_fastapi",
@@ -11,11 +12,13 @@ router = APIRouter(
 # 测试
 @router.get("/fastapi")
 async def testFastapi():
+    logger.info("/api_fastapi/fastapi: 测试FastAPI服务")
     return success("Hello, I am FastAPI!")
 
 # 测试Spring服务
 @router.get("/spring")
 async def testSpring():
+    logger.info("/api_fastapi/spring: 测试Spring服务")
     """ headers = {"Authorization": "Bearer xxx"}
     body = {"foo": "bar", "list": [1, 2, 3]} """
     result = await call_remote_service(
@@ -29,6 +32,7 @@ async def testSpring():
 # 测试Gin服务
 @router.get("/gin")
 async def testGin():
+    logger.info("/api_fastapi/gin: 测试Gin服务")
     result = await call_remote_service(
         service_name="gin",
         path="/api_gin/gin",
@@ -40,6 +44,7 @@ async def testGin():
 # 测试NestJS服务
 @router.get("/nestjs")
 async def testNestJS():
+    logger.info("/api_fastapi/nestjs: 测试NestJS服务")
     result = await call_remote_service(
         service_name="nestjs",
         path="/api_nestjs/nestjs",

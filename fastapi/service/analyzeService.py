@@ -1,11 +1,10 @@
-import logging
 from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from config.mysql import get_db
 from po.article import Article
 from config.mongodb import db as mongo_db
-from config.logger import logger
+from utils.logger import logger
 from wordcloud import WordCloud
 from config.oss import OSSClient
 from config.config import load_config
