@@ -33,7 +33,7 @@ func SearchArticlesController(c *gin.Context) {
 	if err != nil {
 		panic("参数序列化错误：" + err.Error())
 	}
-	log.Println("/search: " + "搜索文章\nsearchDTO: " + string(dtoString))
+	log.Println("GET /search: " + "搜索文章\nsearchDTO: " + string(dtoString))
 	ctx := c.Request.Context() // 获取 gin 的上下文，它带着中间件注入的值
 	data := service.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
