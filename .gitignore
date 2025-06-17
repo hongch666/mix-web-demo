@@ -4,6 +4,7 @@
 nestjs/dist
 nestjs/node_modules
 nestjs/build
+nestjs/files
 
 # Logs
 nestjs/logs
