@@ -13,6 +13,7 @@ PORT = server_config["port"]
 
 # TODO: 使用contextvars将请求头中的用户id存储到上下文中
 # TODO: 跨服务发送请求时请求体携带用户id
+# TODO: 整理模块分布
 
 app = FastAPI(
     title="FastAPI部分的Swagger文档集成",

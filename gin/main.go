@@ -19,6 +19,7 @@ import (
 )
 
 // TODO: 跨服务发送请求时请求体携带用户id
+// TODO: 整理模块分布
 
 func main() {
 	// 初始化设置
