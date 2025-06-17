@@ -35,7 +35,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public IPage<Article> listPublishedArticles(Page<Article> page) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getStatus, 1); // 只查已发布
-        queryWrapper.orderByAsc(Article::getCreatedAt); // 按创建时间倒序
+        queryWrapper.orderByAsc(Article::getCreateAt); // 按创建时间倒序
 
         return this.page(page, queryWrapper);
     }
@@ -45,7 +45,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getUserId, id);
-        queryWrapper.orderByAsc(Article::getCreatedAt); // 按创建时间倒序
+        queryWrapper.orderByAsc(Article::getCreateAt); // 按创建时间倒序
 
         return this.page(page, queryWrapper);
     }
