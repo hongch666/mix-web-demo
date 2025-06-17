@@ -33,6 +33,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "dayjs": "^1.11.13",
+    "docx-templates": "^4.14.1",
     "js-yaml": "^4.1.0",
     "mongoose": "^8.15.1",
     "mysql2": "^3.14.1",

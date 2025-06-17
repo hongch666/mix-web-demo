@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ArticleLogModule } from './log/log.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule } from './mq/mq.module';
+import { ArticleModule } from './article/article.module';
 
 @Module({
   imports: [
@@ -24,7 +25,7 @@ import { RabbitMQModule } from './mq/mq.module';
           database: db.database,
           synchronize: db.synchronize,
           logging: db.logging,
-          entities: db.entities,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
         };
       },
     }),
@@ -43,6 +44,7 @@ import { RabbitMQModule } from './mq/mq.module';
     ArticleLogModule,
     NacosModule,
     RabbitMQModule,
+    ArticleModule,
   ],
   controllers: [ClientController],
   providers: [],

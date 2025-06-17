@@ -16,7 +16,7 @@ database:
   synchronize: true
   logging: false
   entities:
-    - dist/**/*.entity.js
+    - src/**/*.entity.js
 mongodb:
   url: mongodb://localhost:27017
   dbName: demo
