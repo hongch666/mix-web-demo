@@ -7,6 +7,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+// TODO: 跨服务发送请求时请求体携带用户id
+
 @EnableFeignClients()
 @SpringBootApplication
 @EnableScheduling

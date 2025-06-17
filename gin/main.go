@@ -18,6 +18,8 @@ import (
 	_ "gin_proj/docs"
 )
 
+// TODO: 跨服务发送请求时请求体携带用户id
+
 func main() {
 	// 初始化设置
 	config.Init()
