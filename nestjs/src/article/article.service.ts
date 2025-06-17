@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Articles } from './entities/article.entity';
 import { WordService } from 'src/word/word.service';
+import { NacosService } from 'src/nacos/nacos.service';
 
 @Injectable()
 export class ArticleService {
@@ -13,6 +14,7 @@ export class ArticleService {
     @InjectRepository(Articles)
     private readonly articleRepository: Repository<Articles>,
     private readonly wordService: WordService,
+    private readonly nacosService: NacosService,
   ) {}
 
   // 查询文章
@@ -41,6 +43,25 @@ export class ArticleService {
     }
     // 保存文件到指定路径
     fs.writeFileSync(savePath, buffer);
-    return savePath;
+    const url = await this.uploadWordToOSS(
+      path.join('nestjs', savePath),
+      `articles/article-${id}.docx`,
+    );
+    // 返回保存路径
+    return url;
+  }
+
+  // 上传Word文件到OSS
+  async uploadWordToOSS(filePath: string, ossPath: string) {
+    const res = await this.nacosService.call({
+      serviceName: 'fastapi',
+      method: 'POST',
+      path: '/upload',
+      body: {
+        local_file: filePath,
+        oss_file: ossPath,
+      },
+    });
+    return res.data;
   }
 }

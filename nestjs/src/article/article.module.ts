@@ -4,9 +4,10 @@ import { ArticleController } from './article.controller';
 import { ArticleService } from './article.service';
 import { Articles } from './entities/article.entity';
 import { WordModule } from 'src/word/word.module';
+import { NacosModule } from 'src/nacos/nacos.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Articles]), WordModule],
+  imports: [TypeOrmModule.forFeature([Articles]), WordModule, NacosModule],
   controllers: [ArticleController],
   providers: [ArticleService],
   exports: [ArticleService],

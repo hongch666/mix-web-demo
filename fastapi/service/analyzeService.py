@@ -47,11 +47,11 @@ def generate_wordcloud(keywords_dic):
     wc.to_file("fastapi/pic/search_keywords_wordcloud.png")
     logger.info("词云图生成成功，保存为 search_keywords_wordcloud.png")
 
-def upload_file(file_path: str, file_name: str):
+def upload_file(file_path: str, oss_path: str):
     ossClient = OSSClient()
     oss_url = ossClient.upload_file(
         local_file=file_path,
-        oss_file=file_name
+        oss_file=oss_path
     )
     logger.info(f"文件上传成功，OSS地址: {oss_url}")
     return oss_url
@@ -59,6 +59,6 @@ def upload_file(file_path: str, file_name: str):
 def upload_wordcloud_to_oss():
     oss_url = upload_file(
         file_path="fastapi/pic/search_keywords_wordcloud.png",
-        file_name="search_keywords_wordcloud.png"
+        oss_path="src/search_keywords_wordcloud.png"
     )
     return oss_url
