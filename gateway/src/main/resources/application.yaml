@@ -12,7 +12,7 @@ spring:
         - id: exclude-list
           uri: no://op
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/logs
+            - Path=/articles/list,/api_gin/syncer,/logs,/upload
           filters:
             - SetStatus=204
 
@@ -30,7 +30,7 @@ spring:
         - id: nestjs
           uri: lb://nestjs
           predicates:
-            - Path=/api_nestjs/**,/logs/**
+            - Path=/api_nestjs/**,/logs/**,/article/download/**
 
         - id: fastapi
           uri: lb://fastapi
