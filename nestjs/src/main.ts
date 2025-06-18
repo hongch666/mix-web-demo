@@ -6,8 +6,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 日志显示调用的用户id和姓名
 // TODO: 跨服务发送远程请求时请求体携带用户id
+// TODO: 日志显示调用的用户id和姓名
 // TODO: 整理模块分布
 
 async function bootstrap() {
