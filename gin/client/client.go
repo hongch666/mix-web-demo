@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gin_proj/ctxkey"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -68,7 +69,7 @@ type Result struct {
 	Data interface{} `json:"data"`
 }
 
-// 增强版服务调用方法
+// 增强版服务调用方法，始终添加默认请求体字段
 func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
 	var result Result
 	// 1. 获取服务实例（带负载均衡）
@@ -92,24 +93,32 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 		baseURL += "?" + opts.QueryParams.Encode()
 	}
 
-	// 5. 创建请求体Reader
+	// 5. 创建请求体Reader（不再合并 userID/username 到 body）
 	var body io.Reader
-	if opts.BodyData != nil {
-		switch data := opts.BodyData.(type) {
-		case string:
-			body = strings.NewReader(data)
-		case []byte:
-			body = bytes.NewReader(data)
-		case url.Values: // 表单数据
-			body = strings.NewReader(data.Encode())
-		default: // 自动序列化JSON
-			jsonData, err := json.Marshal(data)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
-				return Result{}, err
-			}
-			body = bytes.NewReader(jsonData)
+	switch data := opts.BodyData.(type) {
+	case nil:
+		// 没有传递请求体
+		body = nil
+	case map[string]interface{}:
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			return Result{}, err
 		}
+		body = bytes.NewReader(jsonData)
+	case string:
+		body = strings.NewReader(data)
+	case []byte:
+		body = bytes.NewReader(data)
+	case url.Values:
+		body = strings.NewReader(data.Encode())
+	default:
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			return Result{}, err
+		}
+		body = bytes.NewReader(jsonData)
 	}
 
 	// 6. 创建HTTP请求对象
@@ -118,12 +127,18 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	// 7. 设置请求头
+	// 7. 设置请求头（自动加上用户信息）
 	if opts.Headers != nil {
 		for k, v := range opts.Headers {
 			req.Header.Set(k, v)
 		}
 	}
+	// 自动加上用户信息到请求头
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
+	req.Header.Set("X-Username", username)
 
 	// 自动设置Content-Type
 	if body != nil && req.Header.Get("Content-Type") == "" {
@@ -143,24 +158,24 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	}
 	defer resp.Body.Close()
 
-	// 9. 读取响应体（参考网页[1][5][6]）
+	// 9. 读取响应体
 	body1, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return Result{}, err
 	}
 
-	// 10. 检查HTTP状态码（参考网页[2][5]）
+	// 10. 检查HTTP状态码
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		errorMsg := fmt.Sprintf("异常状态码: %d, 响应内容: %s", resp.StatusCode, string(body1))
 		return Result{}, errors.New(errorMsg)
 	}
 
-	// 11. JSON解析（参考网页[3][7][8]）
+	// 11. JSON解析
 	if err := json.Unmarshal(body1, &result); err != nil {
 		return Result{}, err
 	}
 
-	// 12. 返回解析结果（参考网页[5][7]）
+	// 12. 返回解析结果
 	return result, nil
 }
 
