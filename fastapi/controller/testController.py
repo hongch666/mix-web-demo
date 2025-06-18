@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from client.client import call_remote_service
 from utils.response import success
 from utils.logger import logger
+from middleware.ContextMiddleware import get_current_user_id, get_current_username
 
 router = APIRouter(
     prefix="/api_fastapi",
@@ -12,7 +13,9 @@ router = APIRouter(
 # 测试
 @router.get("/fastapi")
 async def testFastapi():
-    logger.info("GET /api_fastapi/fastapi: 测试FastAPI服务")
+    user_id = get_current_user_id() or ""
+    username = get_current_username() or ""
+    logger.info("用户"+user_id+":"+username+" GET /api_fastapi/fastapi: 测试FastAPI服务")
     return success("Hello, I am FastAPI!")
 
 # 测试Spring服务

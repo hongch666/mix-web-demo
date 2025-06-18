@@ -5,13 +5,13 @@ from controller.uploadController import router as upload_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
+from middleware.ContextMiddleware import ContextMiddleware
 from handler.exception_handlers import global_exception_handler
 
 server_config = load_config("server")
 IP = server_config["ip"]
 PORT = server_config["port"]
 
-# TODO: 使用contextvars将请求头中的用户id存储到上下文中
 # TODO: 日志显示调用的用户id和姓名
 # TODO: 跨服务发送请求时请求体携带用户id
 # TODO: 整理模块分布
@@ -20,6 +20,8 @@ app = FastAPI(
     title="FastAPI部分的Swagger文档集成",
     description="这是demo项目的FastAPI部分的Swagger文档集成",
     version="1.0.0")
+
+app.add_middleware(ContextMiddleware)
 
 app.add_exception_handler(Exception, global_exception_handler)
 
