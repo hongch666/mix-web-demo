@@ -3,6 +3,7 @@ import { NacosNamingClient } from 'nacos';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
 import qs from 'qs';
+import { ClsService } from 'nestjs-cls';
 
 interface CallOptions {
   serviceName: string;
@@ -18,7 +19,10 @@ interface CallOptions {
 export class NacosService implements OnModuleInit {
   private client: NacosNamingClient;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly cls: ClsService,
+  ) {}
 
   async onModuleInit() {
     // 取消终端与nacos相关的日志,如果需要日志可以将下面的logger设置为console
@@ -90,12 +94,26 @@ export class NacosService implements OnModuleInit {
       : '';
     const url = `http://${instance.ip}:${instance.port}${path}${queryString}`;
 
+    // 默认请求头
+    const userId = this.cls.get('userId') || ' ';
+    const userName = this.cls.get('username') || ' ';
+    const defaultHeaders = {
+      'X-User-Id': userId,
+      'X-Username': userName,
+    };
+
+    // 合并默认请求头和自定义请求头
+    const headers = {
+      ...defaultHeaders,
+      ...(opts.headers || {}),
+    };
+
     // 请求配置
     const response = await axios.request({
       url,
       method: opts.method,
       data: opts.body,
-      headers: opts.headers || {},
+      headers,
       timeout: 10000,
     });
 

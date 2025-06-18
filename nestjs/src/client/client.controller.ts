@@ -8,7 +8,7 @@ import { ClsService } from 'nestjs-cls';
 export class ClientController {
   constructor(
     private readonly nacosService: NacosService,
-    private readonly cls: ClsService, // 假设你有一个ClsService来处理上下文
+    private readonly cls: ClsService,
   ) {}
 
   @Get('nestjs')
