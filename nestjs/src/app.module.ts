@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import yamlConfig from './config/yaml-config.service';
 import { NacosModule } from './nacos/nacos.module';
@@ -8,6 +8,8 @@ import { ArticleLogModule } from './log/log.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule } from './mq/mq.module';
 import { ArticleModule } from './article/article.module';
+import { ClsModule } from 'nestjs-cls';
+import { ClsMiddleware } from './middleware/cls.middleware';
 
 @Module({
   imports: [
@@ -41,6 +43,10 @@ import { ArticleModule } from './article/article.module';
       }),
       inject: [ConfigService],
     }),
+    ClsModule.forRoot({
+      global: true,
+      middleware: { mount: true },
+    }),
     ArticleLogModule,
     NacosModule,
     RabbitMQModule,
@@ -49,4 +55,10 @@ import { ArticleModule } from './article/article.module';
   controllers: [ClientController],
   providers: [],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(ClsMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

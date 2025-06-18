@@ -1,16 +1,28 @@
 import { Controller, Get, Logger } from '@nestjs/common';
 import { NacosService } from '../nacos/nacos.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ClsService } from 'nestjs-cls';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
 export class ClientController {
-  constructor(private readonly nacosService: NacosService) {}
+  constructor(
+    private readonly nacosService: NacosService,
+    private readonly cls: ClsService, // 假设你有一个ClsService来处理上下文
+  ) {}
 
   @Get('nestjs')
   @ApiOperation({ summary: 'NestJS自己的测试', description: '输出欢迎信息' })
   async getNestjs(): Promise<any> {
-    Logger.log('GET /api_nestjs/nestjs: 测试NestJS服务');
+    const userId = this.cls.get('userId');
+    const username = this.cls.get('username');
+    Logger.log(
+      '用户' +
+        userId +
+        ':' +
+        username +
+        ' GET /api_nestjs/nestjs: 测试NestJS服务',
+    );
     return 'Hello,I am Nest.js!';
   }
 

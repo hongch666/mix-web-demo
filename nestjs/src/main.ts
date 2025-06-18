@@ -6,7 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './utils/response.interceptor';
 
-// TODO: 使用nestjs-cls封装的AsyncLocalStorage将请求的请求体中的用户id存储到上下文中
+// TODO: 日志显示调用的用户id
 // TODO: 跨服务发送远程请求时请求体携带用户id
 // TODO: 整理模块分布
 
