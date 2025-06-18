@@ -37,6 +37,7 @@ $ npm install # 安装npm包
 # Gin部分
 $ cd gin # 进入文件夹
 $ go mod tidy # 安装依赖
+$ go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
 # Spring部分
 $ cd spring # 进入文件夹
 $ cd gateway # 进入网关
@@ -95,7 +96,8 @@ $ npm run start:dev # watch mode
 $ npm run start:prod # production mode
 # Gin部分
 $ go build -o bin/gin main.go # 构建项目
-$ go run main.go # 运行项目
+$ go run main.go # 运行项目(无修改自启插件)
+$ fresh # 运行项目(有修改自启插件)
 # Spring部分
 mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
