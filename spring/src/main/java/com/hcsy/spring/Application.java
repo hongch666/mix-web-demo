@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+// TODO: 日志显示调用的用户id和姓名
 // TODO: 跨服务发送请求时请求体携带用户id
 // TODO: 整理模块分布
 

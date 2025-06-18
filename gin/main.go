@@ -18,6 +18,7 @@ import (
 	_ "gin_proj/docs"
 )
 
+// TODO: 日志显示调用的用户id和姓名
 // TODO: 跨服务发送请求时请求体携带用户id
 // TODO: 整理模块分布
 
