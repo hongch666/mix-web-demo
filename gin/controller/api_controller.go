@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"fmt"
+	"gin_proj/ctxkey"
 	"gin_proj/service"
 	"gin_proj/syncer"
 	"gin_proj/utils"
@@ -15,7 +17,11 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/gin [get]
 func TestController(c *gin.Context) {
-	log.Println("GET /api_gin/gin: " + "测试Gin服务")
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	log.Println(msg + "GET /api_gin/gin: " + "测试Gin服务")
 	utils.RespondSuccess(c, "Hello,I am Gin!")
 }
 
@@ -25,7 +31,11 @@ func TestController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/spring [get]
 func SpringController(c *gin.Context) {
-	log.Println("GET /api_gin/spring: " + "测试Spring服务")
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	log.Println(msg + "GET /api_gin/spring: " + "测试Spring服务")
 	data := service.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -36,7 +46,11 @@ func SpringController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/nestjs [get]
 func NestjsController(c *gin.Context) {
-	log.Println("GET /api_gin/nestjs: " + "测试NestJS服务")
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	log.Println(msg + "GET /api_gin/nestjs: " + "测试NestJS服务")
 	data := service.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -47,7 +61,11 @@ func NestjsController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/fastapi [get]
 func FastapiController(c *gin.Context) {
-	log.Println("GET /api_gin/fastapi: " + "测试FastAPI服务")
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	log.Println(msg + "GET /api_gin/fastapi: " + "测试FastAPI服务")
 	data := service.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -58,7 +76,11 @@ func FastapiController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/syncer [post]
 func SyncES(c *gin.Context) {
-	log.Println("POST /api_gin/syncer: " + "同步ES服务")
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	log.Println(msg + "POST /api_gin/syncer: " + "同步ES服务")
 	syncer.SyncArticlesToES()
 	utils.RespondSuccess(c, nil)
 }

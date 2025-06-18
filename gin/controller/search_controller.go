@@ -2,6 +2,8 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
+	"gin_proj/ctxkey"
 	"gin_proj/dto"
 	"gin_proj/service"
 	"gin_proj/utils"
@@ -33,8 +35,11 @@ func SearchArticlesController(c *gin.Context) {
 	if err != nil {
 		panic("参数序列化错误：" + err.Error())
 	}
-	log.Println("GET /search: " + "搜索文章\nsearchDTO: " + string(dtoString))
-	ctx := c.Request.Context() // 获取 gin 的上下文，它带着中间件注入的值
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	log.Println(msg + "GET /search: " + "搜索文章\nsearchDTO: " + string(dtoString))
 	data := service.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
 }
