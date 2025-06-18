@@ -2,6 +2,7 @@ import requests
 import logging
 
 from config.nacos import get_service_instance
+from middleware.ContextMiddleware import get_current_user_id, get_current_username
 
 async def call_remote_service(
     service_name: str,
@@ -17,6 +18,16 @@ async def call_remote_service(
     """
     通过 Nacos 服务发现并调用远程服务
     """
+    # 默认请求头
+    user_id = get_current_user_id() or ""
+    username = get_current_username() or ""
+    default_headers = {
+        "X-User-Id": user_id,
+        "X-Username": username,
+    }
+    # 合并默认和自定义请求头
+    merged_headers = {**default_headers, **(headers or {})}
+
     for attempt in range(retries):
         try:
             instance = get_service_instance(service_name)
@@ -25,7 +36,7 @@ async def call_remote_service(
             response = requests.request(
                 method=method,
                 url=url,
-                headers=headers,
+                headers=merged_headers,
                 params=params,
                 data=data,
                 json=json,
