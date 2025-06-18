@@ -12,7 +12,6 @@ server_config = load_config("server")
 IP = server_config["ip"]
 PORT = server_config["port"]
 
-# TODO: 日志显示调用的用户id和姓名
 # TODO: 整理模块分布
 
 app = FastAPI(

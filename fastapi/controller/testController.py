@@ -21,7 +21,9 @@ async def testFastapi():
 # 测试Spring服务
 @router.get("/spring")
 async def testSpring():
-    logger.info("GET /api_fastapi/spring: 测试Spring服务")
+    user_id = get_current_user_id() or ""
+    username = get_current_username() or ""
+    logger.info("用户"+user_id+":"+username+" GET /api_fastapi/spring: 测试Spring服务")
     """ headers = {"Authorization": "Bearer xxx"}
     body = {"foo": "bar", "list": [1, 2, 3]} """
     result = await call_remote_service(
@@ -35,7 +37,9 @@ async def testSpring():
 # 测试Gin服务
 @router.get("/gin")
 async def testGin():
-    logger.info("GET /api_fastapi/gin: 测试Gin服务")
+    user_id = get_current_user_id() or ""
+    username = get_current_username() or ""
+    logger.info("用户"+user_id+":"+username+" GET /api_fastapi/gin: 测试Gin服务")
     result = await call_remote_service(
         service_name="gin",
         path="/api_gin/gin",
@@ -47,7 +51,9 @@ async def testGin():
 # 测试NestJS服务
 @router.get("/nestjs")
 async def testNestJS():
-    logger.info("GET /api_fastapi/nestjs: 测试NestJS服务")
+    user_id = get_current_user_id() or ""
+    username = get_current_username() or ""
+    logger.info("用户"+user_id+":"+username+" GET /api_fastapi/nestjs: 测试NestJS服务")
     result = await call_remote_service(
         service_name="nestjs",
         path="/api_nestjs/nestjs",

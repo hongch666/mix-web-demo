@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from dto.uploadDTO import UploadDTO
+from middleware.ContextMiddleware import get_current_user_id, get_current_username
 from service.analyzeService import upload_file
 from utils.response import success
 from utils.logger import logger
@@ -12,7 +13,9 @@ router = APIRouter(
 
 @router.post("")
 async def get_wordcloud(data: UploadDTO):
-    logger.info("POST /upload: 上传文件\nUploadDTO: " + data.json())
+    user_id = get_current_user_id() or ""
+    username = get_current_username() or ""
+    logger.info("用户"+user_id+":"+username+" POST /upload: 上传文件\nUploadDTO: " + data.json())
     oss_url = await run_in_threadpool(
         upload_file, 
         data.local_file, 
