@@ -3,7 +3,6 @@ package com.hcsy.spring.interceptor;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.utils.UserContext;
-import com.hcsy.spring.utils.UserContext;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
