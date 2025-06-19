@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 
 from config.mysql import get_db
-from po.article import Article
+from entity.po.article import Article
 from config.mongodb import db as mongo_db
-from utils.logger import logger
+from common.utils.logger import logger
 from wordcloud import WordCloud
 from config.oss import OSSClient
 from config.config import load_config
@@ -44,7 +44,7 @@ def generate_wordcloud(keywords_dic):
         background_color=BACKGROUND_COLOR
     )
     wc.generate_from_frequencies(keywords_dic)
-    wc.to_file("fastapi/pic/search_keywords_wordcloud.png")
+    wc.to_file("fastapi/static/pic/search_keywords_wordcloud.png")
     logger.info("词云图生成成功，保存为 search_keywords_wordcloud.png")
 
 def upload_file(file_path: str, oss_path: str):
@@ -58,7 +58,7 @@ def upload_file(file_path: str, oss_path: str):
 
 def upload_wordcloud_to_oss():
     oss_url = upload_file(
-        file_path="fastapi/pic/search_keywords_wordcloud.png",
-        oss_path="src/search_keywords_wordcloud.png"
+        file_path="fastapi/static/pic/search_keywords_wordcloud.png",
+        oss_path="pic/search_keywords_wordcloud.png"
     )
     return oss_url

@@ -11,6 +11,6 @@ class Article(Base):
     user_id = Column(Integer)
     tags = Column(String(255))
     status = Column(String(255))
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    create_at = Column(DateTime)
+    update_at = Column(DateTime)
     views = Column(Integer)

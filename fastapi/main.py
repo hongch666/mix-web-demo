@@ -5,14 +5,12 @@ from controller.uploadController import router as upload_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
-from middleware.ContextMiddleware import ContextMiddleware
-from handler.exception_handlers import global_exception_handler
+from common.middleware.ContextMiddleware import ContextMiddleware
+from common.handler.exception_handlers import global_exception_handler
 
 server_config = load_config("server")
 IP = server_config["ip"]
 PORT = server_config["port"]
-
-# TODO: 整理模块分布
 
 app = FastAPI(
     title="FastAPI部分的Swagger文档集成",

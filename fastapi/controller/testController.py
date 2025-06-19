@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
-from client.client import call_remote_service
-from utils.response import success
-from utils.logger import logger
-from middleware.ContextMiddleware import get_current_user_id, get_current_username
+from common.client.client import call_remote_service
+from common.utils.response import success
+from common.utils.logger import logger
+from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
 
 router = APIRouter(
     prefix="/api_fastapi",

@@ -1,5 +1,5 @@
 import oss2
-from utils.logger import logger
+from common.utils.logger import logger
 from config.config import load_config,load_secret_config
 
 # 配置你的阿里云OSS信息
