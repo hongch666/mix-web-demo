@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import yamlConfig from './config/yaml-config.service';
 import { NacosModule } from './nacos/nacos.module';
-import { ClientController } from './client/client.controller';
+import { TestController } from './test/test.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ArticleLogModule } from './log/log.module';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -52,7 +52,7 @@ import { ClsMiddleware } from './middleware/cls.middleware';
     RabbitMQModule,
     ArticleModule,
   ],
-  controllers: [ClientController],
+  controllers: [TestController],
   providers: [],
 })
 export class AppModule {

@@ -5,7 +5,7 @@ import { ClsService } from 'nestjs-cls';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
-export class ClientController {
+export class TestController {
   constructor(
     private readonly nacosService: NacosService,
     private readonly cls: ClsService,
