@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gin_proj/ctxkey"
+	"gin_proj/common/ctxkey"
 	"io"
 	"io/ioutil"
 	"strings"

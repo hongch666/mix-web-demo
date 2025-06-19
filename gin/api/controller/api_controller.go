@@ -2,10 +2,10 @@ package controller
 
 import (
 	"fmt"
-	"gin_proj/ctxkey"
-	"gin_proj/service"
-	"gin_proj/syncer"
-	"gin_proj/utils"
+	"gin_proj/api/service"
+	"gin_proj/common/ctxkey"
+	"gin_proj/common/syncer"
+	"gin_proj/common/utils"
 	"log"
 
 	"github.com/gin-gonic/gin"

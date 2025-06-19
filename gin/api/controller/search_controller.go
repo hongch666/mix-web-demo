@@ -3,10 +3,10 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"gin_proj/ctxkey"
-	"gin_proj/dto"
-	"gin_proj/service"
-	"gin_proj/utils"
+	"gin_proj/api/service"
+	"gin_proj/common/ctxkey"
+	"gin_proj/common/utils"
+	"gin_proj/entity/dto"
 	"log"
 
 	"github.com/gin-gonic/gin"

@@ -3,7 +3,7 @@ package syncer
 import (
 	"context"
 	"gin_proj/config"
-	"gin_proj/po"
+	"gin_proj/entity/po"
 	"log"
 
 	"github.com/olivere/elastic"

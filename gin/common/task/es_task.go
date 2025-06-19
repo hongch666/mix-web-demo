@@ -1,7 +1,7 @@
 package task
 
 import (
-	"gin_proj/syncer"
+	"gin_proj/common/syncer"
 	"log"
 
 	"github.com/robfig/cron/v3"

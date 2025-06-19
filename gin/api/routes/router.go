@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"gin_proj/controller"
-	"gin_proj/middleware"
+	"gin_proj/api/controller"
+	"gin_proj/common/middleware"
 
 	"github.com/gin-gonic/gin"
 )

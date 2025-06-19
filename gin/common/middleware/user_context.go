@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"gin_proj/ctxkey"
+	"gin_proj/common/ctxkey"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

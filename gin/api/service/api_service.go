@@ -1,7 +1,7 @@
 package service
 
 import (
-	"gin_proj/client"
+	"gin_proj/common/client"
 	"gin_proj/config"
 	"net/http"
 

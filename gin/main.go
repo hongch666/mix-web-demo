@@ -8,17 +8,15 @@ package main
 
 import (
 	"fmt"
+	"gin_proj/api/routes"
+	"gin_proj/common/task"
 	"gin_proj/config"
-	"gin_proj/routes"
-	"gin_proj/task"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
 	_ "gin_proj/docs"
 )
-
-// TODO: 整理模块分布
 
 func main() {
 	// 初始化设置

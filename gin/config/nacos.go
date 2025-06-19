@@ -25,9 +25,7 @@ func InitNacos() {
 		NamespaceId:         Config.Nacos.Namespace, // public空间
 		TimeoutMs:           5000,
 		NotLoadCacheAtStart: true,
-		LogDir:              "nacos/log",
-		CacheDir:            "nacos/cache",
-		LogLevel:            "debug",
+		LogLevel:            "error",
 	}
 
 	// 创建 NamingClient
