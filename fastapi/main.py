@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from controller.testController import router as test_router
-from controller.analyzeController import router as analyze_router
-from controller.uploadController import router as upload_router
+from api.controller.testController import router as test_router
+from api.controller.analyzeController import router as analyze_router
+from api.controller.uploadController import router as upload_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config

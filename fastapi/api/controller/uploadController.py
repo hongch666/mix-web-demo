@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from entity.dto.uploadDTO import UploadDTO
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
-from service.analyzeService import upload_file
+from api.service.analyzeService import upload_file
 from common.utils.response import success
 from common.utils.logger import logger
 from starlette.concurrency import run_in_threadpool

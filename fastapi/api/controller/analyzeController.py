@@ -2,9 +2,9 @@ from fastapi import APIRouter,Depends
 from sqlalchemy.orm import Session
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
 from entity.po.listResponse import ListResponse
-from service.analyzeService import get_top10_articles_service
+from api.service.analyzeService import get_top10_articles_service
 from config.mysql import get_db
-from service.analyzeService import generate_wordcloud,get_keywords_dic,upload_wordcloud_to_oss
+from api.service.analyzeService import generate_wordcloud,get_keywords_dic,upload_wordcloud_to_oss
 from common.utils.response import success
 from common.utils.logger import logger
 from starlette.concurrency import run_in_threadpool
