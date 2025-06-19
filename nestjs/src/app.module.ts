@@ -10,6 +10,7 @@ import { RabbitMQModule } from './mq/mq.module';
 import { ArticleModule } from './article/article.module';
 import { ClsModule } from 'nestjs-cls';
 import { ClsMiddleware } from './middleware/cls.middleware';
+import { TestModule } from './test/test.module';
 
 @Module({
   imports: [
@@ -51,8 +52,9 @@ import { ClsMiddleware } from './middleware/cls.middleware';
     NacosModule,
     RabbitMQModule,
     ArticleModule,
+    TestModule,
   ],
-  controllers: [TestController],
+  controllers: [],
   providers: [],
 })
 export class AppModule {
