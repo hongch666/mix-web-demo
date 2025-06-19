@@ -5,8 +5,8 @@ import { createReport } from 'docx-templates';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Articles } from './entities/article.entity';
-import { WordService } from 'src/word/word.service';
-import { NacosService } from 'src/nacos/nacos.service';
+import { WordService } from 'src/common/word/word.service';
+import { NacosService } from 'src/common/nacos/nacos.service';
 
 @Injectable()
 export class ArticleService {
@@ -33,7 +33,7 @@ export class ArticleService {
       content: article.content,
       tags: article.tags,
     };
-    const templatePath = 'files/template.docx'; // 模板文件路径
+    const templatePath = path.join(process.cwd(), 'files/template.docx'); // 模板文件路径
     const savePath = `files/article-${id}.docx`; // 保存路径
     // 调用 WordService 生成并保存 Word 文档
     const buffer = await this.wordService.exportToWord(data, templatePath);

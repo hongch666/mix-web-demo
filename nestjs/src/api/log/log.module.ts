@@ -4,7 +4,7 @@ import { ArticleLog, ArticleLogSchema } from './schema/log.schema';
 import { ArticleLogService } from './log.service';
 import { ArticleLogController } from './log.controller';
 import { LogConsumerService } from './log.consume.service';
-import { RabbitMQModule } from 'src/mq/mq.module';
+import { RabbitMQModule } from 'src/common/mq/mq.module';
 
 @Module({
   imports: [

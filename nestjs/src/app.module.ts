@@ -1,16 +1,12 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import yamlConfig from './config/yaml-config.service';
-import { NacosModule } from './nacos/nacos.module';
-import { TestController } from './test/test.controller';
+import yamlConfig from './common/config/yaml-config.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ArticleLogModule } from './log/log.module';
 import { MongooseModule } from '@nestjs/mongoose';
-import { RabbitMQModule } from './mq/mq.module';
-import { ArticleModule } from './article/article.module';
 import { ClsModule } from 'nestjs-cls';
-import { ClsMiddleware } from './middleware/cls.middleware';
-import { TestModule } from './test/test.module';
+import { ClsMiddleware } from './common/middleware/cls.middleware';
+import { ApiModule } from './api/api.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -48,11 +44,8 @@ import { TestModule } from './test/test.module';
       global: true,
       middleware: { mount: true },
     }),
-    ArticleLogModule,
-    NacosModule,
-    RabbitMQModule,
-    ArticleModule,
-    TestModule,
+    CommonModule,
+    ApiModule,
   ],
   controllers: [],
   providers: [],
