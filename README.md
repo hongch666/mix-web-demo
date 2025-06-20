@@ -18,7 +18,6 @@
 - ElasticSearch
 - MongoDB
 - RabbitMQ
-- ThreadLocal/Context
 
 ## 环境要求
 
@@ -120,20 +119,20 @@ mvn test
 
 ### Spring 部分
 
-1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
+1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
 2. gateway 部分的 yaml 配置文件可以配置路由
 
 ### Gin 部分
 
-1. `gin`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
+1. `gin`目录下有 yaml 配置文件，可以在其中配置对应信息
 
 ### Nestjs 部分
 
-1. `nestjs`目录下有 yaml 配置文件，可以在其中配置 nacos 地址、微服务名等信息
+1. `nestjs`目录下有 yaml 配置文件，可以在其中配置对应信息
 
 ### FastAPI 部分
 
-1. 配置（如 nacos、服务端口等）可通过 `application.yaml` 进行统一管理，代码中通过 `load_config` 方法读取。
+1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，不要泄露）
 
 ## Swagger 说明
 
