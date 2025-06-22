@@ -28,8 +28,8 @@ func SyncArticlesToES() {
 			"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
 			"status": { "type": "integer" },
 			"views": { "type": "integer" },
-			"created_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
-			"updated_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" }
+			"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
+			"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" }
 			}
 		}
 		}`
