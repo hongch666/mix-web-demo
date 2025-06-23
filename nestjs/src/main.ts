@@ -6,8 +6,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
-// TODO: 查询文章日志时同时查询用户和文章信息返回
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Swagger 配置
