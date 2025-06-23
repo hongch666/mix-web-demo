@@ -6,8 +6,6 @@
 
 package main
 
-// TODO: ES表增加文章作者名字段，搜索文章同时返回作者名
-
 import (
 	"fmt"
 	"gin_proj/api/routes"
