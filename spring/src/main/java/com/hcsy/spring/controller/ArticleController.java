@@ -37,6 +37,7 @@ public class ArticleController {
         log.info("用户" + userId + ":" + userName + " POST /articles: " + "创建文章\nArticleCreateDTO: {}", dto);
         Article article = BeanUtil.copyProperties(dto, Article.class);
         article.setViews(0);
+        article.setUserId(userId);
         articleService.saveArticle(article);
         return Result.success();
     }
