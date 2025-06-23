@@ -6,7 +6,7 @@
 
 package main
 
-// TODO: 搜索文章同时查询用户id返回
+// TODO: ES表增加文章作者名字段，搜索文章同时返回作者名
 
 import (
 	"fmt"

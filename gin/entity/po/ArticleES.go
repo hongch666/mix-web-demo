@@ -1,15 +1,14 @@
 package po
 
-import "time"
-
 type ArticleES struct {
-	ID        uint      `json:"id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	UserID    uint      `json:"userId"`
-	Tags      string    `json:"tags"`
-	Status    int       `json:"status"`
-	Views     int       `json:"views"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	Content  string `json:"content"`
+	UserID   int    `json:"userId"`
+	Username string `json:"username"`
+	Tags     string `json:"tags"`
+	Status   int    `json:"status"`
+	Views    int    `json:"views"`
+	CreateAt string `json:"create_at"`
+	UpdateAt string `json:"update_at"`
 }

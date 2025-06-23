@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 	"log"
@@ -21,15 +22,16 @@ func SyncArticlesToES() {
 		mapping := `{
 		"mappings": {
 			"properties": {
-			"id": { "type": "integer" },
-			"title": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-			"content": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-			"userId": { "type": "integer" },
-			"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-			"status": { "type": "integer" },
-			"views": { "type": "integer" },
-			"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
-			"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" }
+				"id": { "type": "integer" },
+				"title": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
+				"content": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
+				"userId": { "type": "integer" },
+				"username": { "type": "keyword" },
+				"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
+				"status": { "type": "integer" },
+				"views": { "type": "integer" },
+				"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
+				"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" }
 			}
 		}
 		}`
@@ -50,14 +52,41 @@ func SyncArticlesToES() {
 	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
 		panic(err.Error())
 	}
-	log.Println(articles)
-	bulkRequest := config.ESClient.Bulk()
 
+	// 批量获取 user_id
+	userIDs := make([]int, 0, len(articles))
+	for _, a := range articles {
+		userIDs = append(userIDs, int(a.UserID))
+	}
+
+	// 查询所有相关用户
+	var users []po.User
+	if err := config.DB.Where("id IN (?)", userIDs).Find(&users).Error; err != nil {
+		panic(err.Error())
+	}
+	userMap := make(map[int]string)
+	for _, u := range users {
+		userMap[u.ID] = u.Name
+	}
+
+	bulkRequest := config.ESClient.Bulk()
 	for _, article := range articles {
+		articleES := po.ArticleES{
+			ID:       int(article.ID),
+			Title:    article.Title,
+			Content:  article.Content,
+			UserID:   int(article.UserID),
+			Username: userMap[int(article.UserID)],
+			Tags:     article.Tags,
+			Status:   article.Status,
+			Views:    article.Views,
+			CreateAt: article.CreateAt.Format("2006-01-02 15:04:05"),
+			UpdateAt: article.UpdateAt.Format("2006-01-02 15:04:05"),
+		}
 		req := elastic.NewBulkIndexRequest().
 			Index("articles").
-			Id(string(rune(article.ID))).
-			Doc(article)
+			Id(fmt.Sprintf("%d", article.ID)).
+			Doc(articleES)
 		bulkRequest = bulkRequest.Add(req)
 	}
 
@@ -65,8 +94,14 @@ func SyncArticlesToES() {
 		panic("没有可同步的数据")
 	}
 
-	_, err2 := bulkRequest.Do(context.Background())
+	resp, err2 := bulkRequest.Do(context.Background())
 	if err2 != nil {
 		panic(err2.Error())
+	}
+	if resp.Errors {
+		for _, item := range resp.Failed() {
+			log.Printf("ES同步失败: %+v\n", item.Error)
+		}
+		panic("ES同步有失败项")
 	}
 }

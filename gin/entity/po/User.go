@@ -7,3 +7,7 @@ type User struct {
 	Age      int    `gorm:"column:age"`
 	Email    string `gorm:"column:email"`
 }
+
+func (User) TableName() string {
+	return "user"
+}
