@@ -5,6 +5,8 @@ import { ArticleLogService } from './log.service';
 import { ArticleLogController } from './log.controller';
 import { LogConsumerService } from './log.consume.service';
 import { RabbitMQModule } from 'src/common/mq/mq.module';
+import { UserModule } from '../user/user.module';
+import { ArticleModule } from '../article/article.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { RabbitMQModule } from 'src/common/mq/mq.module';
       { name: ArticleLog.name, schema: ArticleLogSchema },
     ]),
     RabbitMQModule,
+    UserModule,
+    ArticleModule,
   ],
   providers: [ArticleLogService, LogConsumerService],
   controllers: [ArticleLogController],

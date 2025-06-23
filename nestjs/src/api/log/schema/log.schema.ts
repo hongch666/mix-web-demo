@@ -24,6 +24,13 @@ export class ArticleLog {
   // 操作说明（可选）
   @Prop()
   msg?: string;
+  // 声明 create_at 字段，类型为 Date
+  @Prop()
+  createdAt?: Date;
+
+  // 声明 update_at 字段，类型为 Date
+  @Prop()
+  updatedAt?: Date;
 }
 
 export const ArticleLogSchema = SchemaFactory.createForClass(ArticleLog);

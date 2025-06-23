@@ -3,6 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ArticleLog, ArticleLogDocument } from './schema/log.schema';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
+import { UserService } from '../user/user.service';
+import { ArticleService } from '../article/article.service';
 const dayjs = require('dayjs');
 
 @Injectable()
@@ -10,6 +12,8 @@ export class ArticleLogService {
   constructor(
     @InjectModel(ArticleLog.name)
     private readonly logModel: Model<ArticleLogDocument>,
+    private readonly userService: UserService,
+    private readonly articleService: ArticleService,
   ) {}
 
   async create(dto: CreateArticleLogDto) {
@@ -59,7 +63,23 @@ export class ArticleLogService {
         .limit(take)
         .exec(),
     ]);
-
-    return { total, list };
+    // 只返回指定字段
+    const resultList = await Promise.all(
+      list.map(async (log) => ({
+        _id: log._id,
+        userId: log.userId,
+        username: (await this.userService.getUserById(log.userId))?.name || '',
+        articleId: log.articleId,
+        articleTitle:
+          (await this.articleService.getArticleById(log.articleId))?.title ||
+          '',
+        action: log.action,
+        content: log.content,
+        msg: log.msg,
+        createdAt: log.createdAt,
+        updatedAt: log.updatedAt,
+      })),
+    );
+    return { total, list: resultList };
   }
 }
