@@ -6,6 +6,8 @@ import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
+// TODO: 统一使用配置文件配置文件路径（最外面的文件夹）
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Swagger 配置

@@ -8,6 +8,7 @@ from config.config import load_config
 from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
 
+# TODO: 统一使用配置文件配置文件路径（最外面的文件夹）
 # TODO: 接入COZE平台
 
 server_config = load_config("server")
