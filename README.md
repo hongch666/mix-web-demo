@@ -45,6 +45,13 @@ $ mvn clean install # 下载依赖
 $ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2
 ```
 
+## 运行脚本配置
+
+1. 使用`run.sh`运行脚本运行
+2. Linux 端使用
+3. 需安装`tmux`
+4. 更换脚本中运行程序对应的路径
+
 ## 数据库初始化
 
 1. MySQL 表创建
