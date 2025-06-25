@@ -42,7 +42,7 @@ $ cd spring # 进入文件夹
 $ cd gateway # 进入网关
 $ mvn clean install # 下载依赖
 # FastAPI部分
-$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2
+$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2 jieba
 ```
 
 ## 运行脚本配置
@@ -50,7 +50,8 @@ $ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysq
 1. 使用`run.sh`运行脚本运行
 2. Linux 端使用
 3. 需安装`tmux`
-4. 更换脚本中运行程序对应的路径
+4. 更换脚本中运行程序对应的路径（如有需要）
+5. 使用`stop.sh`停止所有微服务
 
 ## 数据库初始化
 
@@ -128,18 +129,23 @@ mvn test
 
 1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
 2. gateway 部分的 yaml 配置文件可以配置路由
+3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
 
 ### Gin 部分
 
 1. `gin`目录下有 yaml 配置文件，可以在其中配置对应信息
+2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
 
 ### Nestjs 部分
 
 1. `nestjs`目录下有 yaml 配置文件，可以在其中配置对应信息
+2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
 
 ### FastAPI 部分
 
-1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，不要泄露）
+1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
+2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，不要泄露
+3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
 
 ## Swagger 说明
 
@@ -205,9 +211,9 @@ mvn test
 
 ## 其他说明
 
-1. 生成的词云图本地存储在`fastapi/pic/`下。
+1. 词云图的字体应进行配置对应字体的路径。
 
-2. 词云图的字体应进行配置对应字体的路径。
+2. 下载文件的模板需要自行提供，路径在 NestJS 部分 yaml 配置文件中配置，使用`${字段名}`进行模板书写
 
 3. FastAPI 模块的阿里云 OSS 的密钥应写在`application-secret.yaml`中，格式如下：
 
