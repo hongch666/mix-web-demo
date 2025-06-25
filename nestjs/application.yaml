@@ -26,3 +26,5 @@ rabbitmq:
   username: hcsy
   password: 123456
   vhost: test
+files:
+  word: ../static/word

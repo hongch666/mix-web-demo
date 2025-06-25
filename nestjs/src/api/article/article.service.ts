@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { createReport } from 'docx-templates';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Articles } from './entities/article.entity';
 import { WordService } from 'src/common/word/word.service';
 import { NacosService } from 'src/common/nacos/nacos.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ArticleService {
@@ -15,6 +15,7 @@ export class ArticleService {
     private readonly articleRepository: Repository<Articles>,
     private readonly wordService: WordService,
     private readonly nacosService: NacosService,
+    private readonly configService: ConfigService,
   ) {}
 
   // 查询文章
@@ -33,8 +34,12 @@ export class ArticleService {
       content: article.content,
       tags: article.tags,
     };
-    const templatePath = path.join(process.cwd(), 'files/template.docx'); // 模板文件路径
-    const savePath = `files/article-${id}.docx`; // 保存路径
+    const filePath = this.configService.get<string>('files.word'); // 获取配置中的模板路径
+    if (!filePath) {
+      throw new Error('Word template file path is not configured');
+    }
+    const templatePath = path.join(process.cwd(), filePath, 'template.docx'); // 模板文件路径
+    const savePath = path.join(process.cwd(), filePath, `article-${id}.docx`); // 保存路径
     // 调用 WordService 生成并保存 Word 文档
     const buffer = await this.wordService.exportToWord(data, templatePath);
     // 确保保存目录存在
@@ -44,7 +49,7 @@ export class ArticleService {
     // 保存文件到指定路径
     fs.writeFileSync(savePath, buffer);
     const url = await this.uploadWordToOSS(
-      path.join('nestjs', savePath),
+      savePath,
       `articles/article-${id}.docx`,
     );
     // 返回保存路径
