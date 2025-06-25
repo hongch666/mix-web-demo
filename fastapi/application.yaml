@@ -20,3 +20,5 @@ wordcloud:
   width: 800
   height: 400
   background_color: "white"
+files:
+  pic_path: "../static/pic"

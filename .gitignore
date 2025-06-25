@@ -161,8 +161,11 @@ gateway/.vscode/
 fastapi/**/__pycache__/
 fastapi/**/*.pyc
 fastapi/pic/
+fastapi/static/
 fastapi/application-secret.yaml
 
 .vscode/
 bfg-1.14.0.jar
 
+
+static/

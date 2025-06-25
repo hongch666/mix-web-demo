@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from fastapi import Depends
+import os
 
 from config.mysql import get_db
 from entity.po.article import Article
@@ -44,7 +45,8 @@ def generate_wordcloud(keywords_dic):
         background_color=BACKGROUND_COLOR
     )
     wc.generate_from_frequencies(keywords_dic)
-    wc.to_file("fastapi/static/pic/search_keywords_wordcloud.png")
+    FILE_PATH = load_config("files")["pic_path"]
+    wc.to_file(os.path.normpath(os.path.join(os.getcwd(),FILE_PATH, "search_keywords_wordcloud.png")))
     logger.info("词云图生成成功，保存为 search_keywords_wordcloud.png")
 
 def upload_file(file_path: str, oss_path: str):
@@ -54,11 +56,13 @@ def upload_file(file_path: str, oss_path: str):
         oss_file=oss_path
     )
     logger.info(f"文件上传成功，OSS地址: {oss_url}")
+    logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
     return oss_url
 
 def upload_wordcloud_to_oss():
+    FILE_PATH = load_config("files")["pic_path"]
     oss_url = upload_file(
-        file_path="fastapi/static/pic/search_keywords_wordcloud.png",
+        file_path=os.path.normpath(os.path.join(os.getcwd(),FILE_PATH, "search_keywords_wordcloud.png")),
         oss_path="pic/search_keywords_wordcloud.png"
     )
     return oss_url
