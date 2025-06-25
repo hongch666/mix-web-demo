@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from api.controller.testController import router as test_router
 from api.controller.analyzeController import router as analyze_router
 from api.controller.uploadController import router as upload_router
+from api.controller.generateController import router as generate_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
@@ -28,6 +29,7 @@ app.add_exception_handler(Exception, global_exception_handler)
 app.include_router(test_router)
 app.include_router(analyze_router)
 app.include_router(upload_router)
+app.include_router(generate_router)
 
 @app.on_event("startup")
 def startup_event():
