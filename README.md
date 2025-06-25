@@ -1,61 +1,98 @@
+# 多语言技术栈微服务系统
+
 ## 描述
 
-这是一个微服务的 Demo 框架，集成了对 Spring/Gin/Nest.js/FastAPI 微服务注册与发现（Nacos），并使用 SpringCloud 的 gateway 网关进行服务路由和登录校验，可在此基础上进行项目扩展。
+这是一个基于多种技术栈构建的微服务架构系统，包含以下组件：
 
-## 项目技术栈
+- FastAPI（Python）
+- Gin（Go）
+- Spring Boot（Java）
+- NestJS（TypeScript）
+- 网关组件
 
-- Spring
-- MyBatisPlus
-- Gin
-- Gorm
-- NestJS
-- TypeORM
-- FastAPI
-- SQLAlchemy
-- Mongoose
-- MySQL
-- Redis
-- ElasticSearch
-- MongoDB
-- RabbitMQ
+所有服务通过统一网关进行访问，实现了服务治理、认证授权等功能。
+
+## 技术栈
+
+- FastAPI：用于构建 Python 后端服务
+- Gin：Go 语言 Web 框架
+- Spring Boot：Java 后端框架
+- NestJS：TypeScript Node.js 框架
+- Spring Cloud Gateway：API 网关
+- JWT：身份验证
+- Nacos：服务发现与配置中心
+- MySQL：关系型数据库
+- MongoDB：非关系型数据库
+- Elasticsearch：搜索引擎
+- Redis：缓存服务
+- RabbitMQ：消息队列
 
 ## 环境要求
 
-- Java 17 及以上版本
-- Maven 3.6+ 版本
-- Node 20 及以上版本
-- Go 1.20 及以上版本
-- Python 3.8 及以上
+- Python 3.8+
+- Go 1.20+
+- Java 17+
+- Node.js 20+
+- MySQL 8.0+
+- MongoDB 5.0+
+- Redis 6.0+
+- RabbitMQ 3.8+
 
 ## 项目设置
 
+### FastAPI 部分
+
 ```bash
-# Nest.js部分
-$ cd nestjs # 进入文件夹
-$ npm install # 安装npm包
-# Gin部分
-$ cd gin # 进入文件夹
-$ go mod tidy # 安装依赖
-$ go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
-# Spring部分
-$ cd spring # 进入文件夹
-$ cd gateway # 进入网关
-$ mvn clean install # 下载依赖
-# FastAPI部分
-$ pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2 jieba
+pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2 jieba
+```
+
+### Gin 部分
+
+```bash
+cd gin # 进入文件夹
+go mod tidy # 安装依赖
+go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
+```
+
+### Spring 部分
+
+使用 Maven 构建：
+
+```bash
+cd spring # 进入文件夹
+cd gateway # 进入网关
+mvn clean install # 下载依赖
+```
+
+### NestJS 部分
+
+```bash
+cd nestjs # 进入文件夹
+npm install # 安装npm包
 ```
 
 ## 运行脚本配置
 
-1. 使用`run.sh`运行脚本运行
-2. Linux 端使用
-3. 需安装`tmux`
-4. 更换脚本中运行程序对应的路径（如有需要）
-5. 使用`stop.sh`停止所有微服务
+使用提供的运行脚本启动各个服务：
+
+```bash
+# 启动所有服务
+./run.sh
+
+# 停止所有服务
+./stop.sh
+```
 
 ## 数据库初始化
 
-1. MySQL 表创建
+1. 确保已安装并启动以下数据库服务：
+
+- MySQL
+- MongoDB
+- Redis
+- Elasticsearch
+
+2. MySQL 表创建
 
 - 在配置文件中指定对应的数据库
 - 创建用户表
@@ -86,41 +123,39 @@ CREATE TABLE articles (
 ) COMMENT='文章表'
 ```
 
-2. MongoDB 表创建
+3. MongoDB 表创建
 
 - 数据库为`demo`，集合为`articlelogs`
 
-3. ElasticSearch 索引创建
+4. ElasticSearch 索引创建
 
 - 无需创建，系统同步数据时会自动创建
 
 ## 编译和运行项目
 
+每个服务都可以独立运行：
+
 ```bash
-# Nest.js部分
-$ npm run start # development
-$ npm run start:dev # watch mode
-$ npm run start:prod # production mode
-# Gin部分
-$ go build -o bin/gin main.go # 构建项目
-$ go run main.go # 运行项目(无修改自启插件)
-$ fresh # 运行项目(有修改自启插件)
-# Spring部分
+# 运行FastAPI服务
+cd fastapi
+python main.py
+
+# 运行Gin服务
+cd gin
+go build -o bin/gin main.go # 构建项目
+go run main.go # 运行项目(无修改自启插件)
+fresh # 运行项目(有修改自启插件)
+
+# 运行Spring服务
+cd spring
 mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
-```
 
-## 运行测试
-
-```bash
-# Nest.js部分
-$ npm run test # unit tests
-$ npm run test:e2e # e2e tests
-$ npm run test:cov # test coverage
-# Gin部分
-go test ./...
-# Spring部分
-mvn test
+# 运行NestJS服务
+cd nestjs
+npm run start # development
+npm run start:dev # watch mode
+npm run start:prod # production mode
 ```
 
 ## 配置文件说明
