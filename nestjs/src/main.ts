@@ -6,7 +6,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
-// TODO: 统一使用配置文件配置文件路径（最外面的文件夹）
 // TODO: 终端日志保存到专门的日志文件中
 
 async function bootstrap() {

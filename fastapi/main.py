@@ -8,7 +8,6 @@ from config.config import load_config
 from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
 
-# TODO: 统一使用配置文件配置文件路径（最外面的文件夹）
 # TODO: 根据文章生成tags（NLP提取关键词）
 # TODO: 接入COZE平台
 # TODO: 终端日志保存到专门的日志文件中
