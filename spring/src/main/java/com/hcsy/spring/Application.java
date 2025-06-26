@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+// TODO: 用户增加权限字段，普通用户只能管理自己的用户数据，管理员可以管理其他用户的数据
 // TODO: 终端日志保存到专门的日志文件中
 
 @EnableFeignClients()

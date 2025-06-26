@@ -18,6 +18,7 @@ import (
 	_ "gin_proj/docs"
 )
 
+// TODO: 用户表修改，要修改实体类
 // TODO: 终端日志保存到专门的日志文件中
 
 func main() {
