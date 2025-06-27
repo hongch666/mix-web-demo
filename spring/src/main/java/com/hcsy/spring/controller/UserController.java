@@ -1,5 +1,6 @@
 package com.hcsy.spring.controller;
 
+import com.hcsy.spring.annotation.RequirePermission;
 import com.hcsy.spring.dto.LoginDTO;
 import com.hcsy.spring.dto.UserCreateDTO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -51,6 +52,7 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "新增用户", description = "通过请求体创建用户信息")
+    @RequirePermission(roles = { "admin" })
     public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -62,6 +64,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
+    @RequirePermission(roles = { "admin" })
     public Result deleteUser(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -82,6 +85,7 @@ public class UserController {
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
+    @RequirePermission(roles = { "admin" }, allowSelf = true)
     public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -93,6 +97,7 @@ public class UserController {
 
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
+    @RequirePermission(roles = { "admin" }, allowSelf = true)
     public Result updateUserStatus(@PathVariable Long id, @RequestParam String status) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();

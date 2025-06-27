@@ -13,6 +13,6 @@ public class UserQueryDTO {
     @Schema(description = "每页条数", example = "10")
     private int size = 10;
 
-    @Schema(description = "用户名（模糊匹配）", example = "张三")
+    @Schema(description = "用户名（模糊匹配）")
     private String username;
 }
