@@ -8,16 +8,16 @@ from config.nacos import start_nacos
 from config.config import load_config
 from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
+from typing import Dict, Any
 
 # TODO: 终端日志保存到专门的日志文件中
 # TODO: 接入COZE平台
-# TODO: 显示指定变量和函数的类型
 
-server_config = load_config("server")
-IP = server_config["ip"]
-PORT = server_config["port"]
+server_config: Dict[str, Any] = load_config("server")
+IP: str = server_config["ip"]
+PORT: int = server_config["port"]
 
-app = FastAPI(
+app: FastAPI = FastAPI(
     title="FastAPI部分的Swagger文档集成",
     description="这是demo项目的FastAPI部分的Swagger文档集成",
     version="1.0.0")
@@ -32,7 +32,7 @@ app.include_router(upload_router)
 app.include_router(generate_router)
 
 @app.on_event("startup")
-def startup_event():
+def startup_event() -> None:
     start_nacos(port=PORT)
 
 if __name__ == "__main__":
