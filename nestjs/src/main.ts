@@ -1,25 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
 // TODO: 用户表修改，要修改实体类
 // TODO: 终端日志保存到专门的日志文件中
-// TODO: 显示指定变量和函数的类型
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+async function bootstrap(): Promise<void> {
+  const app: INestApplication<any> = await NestFactory.create(AppModule);
   // Swagger 配置
-  const config = new DocumentBuilder()
+  const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
     .setTitle('NestJS部分的Swagger文档集成')
     .setDescription('这是demo项目的NestJS部分的Swagger文档集成')
     .setVersion('1.0')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
   // 注册全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
@@ -29,8 +28,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   // 读取yaml文件中的端口
-  const configService = app.get(ConfigService);
-  const port = configService.get<number>('server.port') || 3000;
+  const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
+  const port: number = configService.get<number>('server.port') || 3000;
   await app.listen(port);
 }
 bootstrap();
