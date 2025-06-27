@@ -16,4 +16,7 @@ export class User {
 
   @Column({ nullable: true })
   email: string;
+
+  @Column()
+  role: string;
 }

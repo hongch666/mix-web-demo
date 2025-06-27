@@ -6,7 +6,6 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
-// TODO: 用户表修改，要修改实体类
 // TODO: 终端日志保存到专门的日志文件中
 
 async function bootstrap(): Promise<void> {
