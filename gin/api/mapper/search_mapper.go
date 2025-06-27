@@ -32,7 +32,7 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 
 	// 发布时间范围过滤（可选）
 	if searchDTO.StartDate != nil || searchDTO.EndDate != nil {
-		rangeQuery := elastic.NewRangeQuery("createdAt")
+		rangeQuery := elastic.NewRangeQuery("create_at")
 		loc, _ := time.LoadLocation("Asia/Shanghai")
 		layout := "2006-01-02 15:04:05"
 		if searchDTO.StartDate != nil {
@@ -65,7 +65,7 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 		Index("articles").
 		Query(boolQuery).
 		Sort("views", false).
-		Sort("createdAt", false). // 按发布时间倒序
+		Sort("create_at", false). // 按发布时间倒序
 		From(from).Size(size).
 		Do(ctx)
 
