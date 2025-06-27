@@ -11,6 +11,7 @@ from common.handler.exception_handlers import global_exception_handler
 
 # TODO: 终端日志保存到专门的日志文件中
 # TODO: 接入COZE平台
+# TODO: 显示指定变量和函数的类型
 
 server_config = load_config("server")
 IP = server_config["ip"]
