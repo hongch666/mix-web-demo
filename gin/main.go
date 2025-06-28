@@ -18,8 +18,6 @@ import (
 	_ "gin_proj/docs"
 )
 
-// TODO: 终端日志保存到专门的日志文件中
-
 func main() {
 	// 初始化设置
 	config.Init()

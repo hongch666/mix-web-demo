@@ -6,8 +6,6 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
-// TODO: 终端日志保存到专门的日志文件中
-
 async function bootstrap(): Promise<void> {
   const app: INestApplication<any> = await NestFactory.create(AppModule);
   // Swagger 配置
