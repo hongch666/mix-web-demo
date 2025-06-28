@@ -3,6 +3,7 @@ package com.hcsy.spring.controller;
 import com.hcsy.spring.client.FastAPIClient;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.client.NestjsClient;
+import com.hcsy.spring.utils.SimpleLogger;
 import com.hcsy.spring.po.Result;
 import com.hcsy.spring.utils.UserContext;
 
@@ -24,13 +25,16 @@ public class testController {
     private final GinClient ginClient;
     private final NestjsClient nestjsClient;
     private final FastAPIClient fastAPIClient;
+    private final SimpleLogger logger;
 
     @GetMapping("/spring")
     @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
     public Result getHello() {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /api_spring/sprng: " + "测试Spring服务");
+        // log.info("用户" + userId + ":" + userName + " GET /api_spring/sprng: " +
+        // "测试Spring服务");
+        logger.info("用户" + userId + ":" + userName + " GET /api_spring/spring: " + "测试Spring服务");
         return Result.success("Hello,I am Spring!");
     }
 
@@ -39,7 +43,7 @@ public class testController {
     public Result gerGin() {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /api_spring/gin: " + "测试Gin服务");
+        logger.info("用户" + userId + ":" + userName + " GET /api_spring/gin: " + "测试Gin服务");
         return ginClient.testGin();
     }
 
@@ -48,7 +52,7 @@ public class testController {
     public Result gerNestjs() {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /api_spring/nestjs: " + "测试NestJS服务");
+        logger.info("用户" + userId + ":" + userName + " GET /api_spring/nestjs: " + "测试NestJS服务");
         return nestjsClient.testNestjs();
     }
 
@@ -57,7 +61,7 @@ public class testController {
     public Result gerFastAPI() {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /api_spring/fastapi: " + "测试FastAPI服务");
+        logger.info("用户" + userId + ":" + userName + " GET /api_spring/fastapi: " + "测试FastAPI服务");
         return fastAPIClient.testFastAPI();
     }
 }

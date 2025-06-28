@@ -25,6 +25,9 @@ spring:
     username: hcsy
     password: 123456
     virtual-host: test
+logging:
+  file:
+    path: "../logs/spring"
 jwt:
   secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
   expiration: 86400000 # 毫秒数（1 天）

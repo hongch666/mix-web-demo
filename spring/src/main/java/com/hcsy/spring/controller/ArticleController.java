@@ -7,6 +7,7 @@ import com.hcsy.spring.dto.ArticleUpdateDTO;
 import com.hcsy.spring.po.Article;
 import com.hcsy.spring.po.Result;
 import com.hcsy.spring.service.ArticleService;
+import com.hcsy.spring.utils.SimpleLogger;
 import com.hcsy.spring.utils.UserContext;
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,13 +29,14 @@ import org.springframework.web.bind.annotation.*;
 public class ArticleController {
 
     private final ArticleService articleService;
+    private final SimpleLogger logger;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     public Result createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " POST /articles: " + "创建文章\nArticleCreateDTO: {}", dto);
+        logger.info("用户" + userId + ":" + userName + " POST /articles: " + "创建文章\nArticleCreateDTO: {}", dto);
         Article article = BeanUtil.copyProperties(dto, Article.class);
         article.setViews(0);
         article.setUserId(userId);
@@ -49,7 +51,7 @@ public class ArticleController {
             @RequestParam(defaultValue = "10") int size) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: {}, size: {}", page,
+        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: {}, size: {}", page,
                 size);
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
@@ -68,7 +70,7 @@ public class ArticleController {
             @PathVariable Integer id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /articles/user/{id}: "
+        logger.info("用户" + userId + ":" + userName + " GET /articles/user/{id}: "
                 + "获取用户所有文章\npage: {}, size: {}, userId: {}", page, size, id);
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listArticlesById(articlePage, id);
@@ -84,7 +86,7 @@ public class ArticleController {
     public Result getArticleById(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " GET /articles/{id}: " + "获取文章详情\nID: {}", id);
+        logger.info("用户" + userId + ":" + userName + " GET /articles/{id}: " + "获取文章详情\nID: {}", id);
         Article article = articleService.getById(id);
         return Result.success(article);
     }
@@ -94,7 +96,7 @@ public class ArticleController {
     public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " PUT /articles: " + "更新文章\nArticleUpdateDTO: {}", dto);
+        logger.info("用户" + userId + ":" + userName + " PUT /articles: " + "更新文章\nArticleUpdateDTO: {}", dto);
         Article article = BeanUtil.copyProperties(dto, Article.class);
         articleService.updateArticle(article);
         return Result.success();
@@ -105,7 +107,7 @@ public class ArticleController {
     public Result deleteArticle(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " DELETE /articles/{id}: " + "删除文章\nID: {}", id);
+        logger.info("用户" + userId + ":" + userName + " DELETE /articles/{id}: " + "删除文章\nID: {}", id);
         articleService.deleteArticle(id);
         return Result.success();
     }
@@ -115,7 +117,7 @@ public class ArticleController {
     public Result publishArticle(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " PUT /articles/publish/{id}: " + "发布文章\nID: {}", id);
+        logger.info("用户" + userId + ":" + userName + " PUT /articles/publish/{id}: " + "发布文章\nID: {}", id);
         articleService.publishArticle(id);
         return Result.success();
     }
@@ -125,7 +127,7 @@ public class ArticleController {
     public Result addViewArticle(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        log.info("用户" + userId + ":" + userName + " PUT /articles/view/{id}: " + "增加文章阅读量\nID: {}", id);
+        logger.info("用户" + userId + ":" + userName + " PUT /articles/view/{id}: " + "增加文章阅读量\nID: {}", id);
         articleService.addViewArticle(id);
         return Result.success();
     }
