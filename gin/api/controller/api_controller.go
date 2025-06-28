@@ -6,7 +6,6 @@ import (
 	"gin_proj/common/ctxkey"
 	"gin_proj/common/syncer"
 	"gin_proj/common/utils"
-	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +20,7 @@ func TestController(c *gin.Context) {
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	log.Println(msg + "GET /api_gin/gin: " + "测试Gin服务")
+	utils.FileLogger.Info(msg + "GET /api_gin/gin: " + "测试Gin服务")
 	utils.RespondSuccess(c, "Hello,I am Gin!")
 }
 
@@ -35,7 +34,7 @@ func SpringController(c *gin.Context) {
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	log.Println(msg + "GET /api_gin/spring: " + "测试Spring服务")
+	utils.FileLogger.Info(msg + "GET /api_gin/spring: " + "测试Spring服务")
 	data := service.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -50,7 +49,7 @@ func NestjsController(c *gin.Context) {
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	log.Println(msg + "GET /api_gin/nestjs: " + "测试NestJS服务")
+	utils.FileLogger.Info(msg + "GET /api_gin/nestjs: " + "测试NestJS服务")
 	data := service.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -65,7 +64,7 @@ func FastapiController(c *gin.Context) {
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	log.Println(msg + "GET /api_gin/fastapi: " + "测试FastAPI服务")
+	utils.FileLogger.Info(msg + "GET /api_gin/fastapi: " + "测试FastAPI服务")
 	data := service.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -80,7 +79,7 @@ func SyncES(c *gin.Context) {
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	log.Println(msg + "POST /api_gin/syncer: " + "同步ES服务")
+	utils.FileLogger.Info(msg + "POST /api_gin/syncer: " + "同步ES服务")
 	syncer.SyncArticlesToES()
 	utils.RespondSuccess(c, nil)
 }

@@ -53,6 +53,11 @@ type AppConfig struct {
 	Nacos    NacosConfig    `mapstructure:"nacos"`
 	Database DatabaseConfig `mapstructure:"database"`
 	MQ       MQConfig       `mapstructure:"mq"`
+	Logs     LogsConfig     `mapstructure:"logs"`
+}
+
+type LogsConfig struct {
+	Path string `mapstructure:"path"`
 }
 
 var Config AppConfig

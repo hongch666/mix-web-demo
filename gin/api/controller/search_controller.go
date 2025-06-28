@@ -7,7 +7,6 @@ import (
 	"gin_proj/common/ctxkey"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
-	"log"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +38,7 @@ func SearchArticlesController(c *gin.Context) {
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	log.Println(msg + "GET /search: " + "搜索文章\nsearchDTO: " + string(dtoString))
+	utils.FileLogger.Info(msg + "GET /search: " + "搜索文章\nsearchDTO: " + string(dtoString))
 	data := service.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
 }
