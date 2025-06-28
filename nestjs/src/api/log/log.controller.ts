@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Logger,
   Param,
   Post,
   Query,
@@ -12,6 +11,7 @@ import { ArticleLogService } from './log.service';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
+import { fileLogger } from 'src/common/utils/writeLog';
 
 @Controller('logs')
 @ApiTags('日志模块')
@@ -26,7 +26,7 @@ export class ArticleLogController {
   async create(@Body() dto: CreateArticleLogDto) {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +
@@ -47,7 +47,7 @@ export class ArticleLogController {
   async findByFilter(@Query() query: QueryArticleLogDto) {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +
@@ -64,7 +64,7 @@ export class ArticleLogController {
   async remove(@Param('id') id: string) {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +

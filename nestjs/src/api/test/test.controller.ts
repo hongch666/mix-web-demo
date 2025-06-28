@@ -1,7 +1,8 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { NacosService } from 'src/common/nacos/nacos.service';
+import { fileLogger } from 'src/common/utils/writeLog';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
@@ -16,7 +17,7 @@ export class TestController {
   async getNestjs(): Promise<any> {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +
@@ -31,7 +32,7 @@ export class TestController {
   async getSpring(): Promise<any> {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +
@@ -51,7 +52,7 @@ export class TestController {
   async getGin(): Promise<any> {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' + userId + ':' + username + ' GET /api_nestjs/gin: 测试Gin服务',
     );
     const res = await this.nacosService.call({
@@ -67,7 +68,7 @@ export class TestController {
   async getFastAPI(): Promise<any> {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +

@@ -28,3 +28,5 @@ rabbitmq:
   vhost: test
 files:
   word: ../static/word
+logs:
+  path: '../logs/nestjs'

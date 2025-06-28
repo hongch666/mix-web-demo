@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
+import { fileLogger } from 'src/common/utils/writeLog';
 
 @Controller('article')
 @ApiTags('文章模块')
@@ -16,7 +17,7 @@ export class ArticleController {
   async downloadWord(@Param('id') id: number) {
     const userId = this.cls.get('userId');
     const username = this.cls.get('username');
-    Logger.log(
+    fileLogger.info(
       '用户' +
         userId +
         ':' +
