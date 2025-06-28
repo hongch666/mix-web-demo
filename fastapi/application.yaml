@@ -22,3 +22,5 @@ wordcloud:
   background_color: "white"
 files:
   pic_path: "../static/pic"
+logs:
+  path: "../logs/fastapi"

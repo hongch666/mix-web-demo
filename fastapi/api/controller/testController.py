@@ -4,8 +4,8 @@ from typing import Any, Dict
 
 from common.client.client import call_remote_service
 from common.utils.response import success
-from common.utils.logger import logger
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
+from common.utils.writeLog import fileLogger
 
 router: APIRouter = APIRouter(
     prefix="/api_fastapi",
@@ -17,7 +17,7 @@ router: APIRouter = APIRouter(
 async def testFastapi() -> JSONResponse:
     user_id: str = get_current_user_id() or ""
     username: str = get_current_username() or ""
-    logger.info("用户" + user_id + ":" + username + " GET /api_fastapi/fastapi: 测试FastAPI服务")
+    fileLogger.info("用户" + user_id + ":" + username + " GET /api_fastapi/fastapi: 测试FastAPI服务")
     return success("Hello, I am FastAPI!")
 
 # 测试Spring服务
@@ -25,7 +25,7 @@ async def testFastapi() -> JSONResponse:
 async def testSpring() -> JSONResponse:
     user_id: str = get_current_user_id() or ""
     username: str = get_current_username() or ""
-    logger.info("用户" + user_id + ":" + username + " GET /api_fastapi/spring: 测试Spring服务")
+    fileLogger.info("用户" + user_id + ":" + username + " GET /api_fastapi/spring: 测试Spring服务")
     result: Dict[str, Any] = await call_remote_service(
         service_name="spring",
         path="/api_spring/spring",
@@ -39,7 +39,7 @@ async def testSpring() -> JSONResponse:
 async def testGin() -> JSONResponse:
     user_id: str = get_current_user_id() or ""
     username: str = get_current_username() or ""
-    logger.info("用户" + user_id + ":" + username + " GET /api_fastapi/gin: 测试Gin服务")
+    fileLogger.info("用户" + user_id + ":" + username + " GET /api_fastapi/gin: 测试Gin服务")
     result: Dict[str, Any] = await call_remote_service(
         service_name="gin",
         path="/api_gin/gin",
@@ -53,7 +53,7 @@ async def testGin() -> JSONResponse:
 async def testNestJS() -> JSONResponse:
     user_id: str = get_current_user_id() or ""
     username: str = get_current_username() or ""
-    logger.info("用户" + user_id + ":" + username + " GET /api_fastapi/nestjs: 测试NestJS服务")
+    fileLogger.info("用户" + user_id + ":" + username + " GET /api_fastapi/nestjs: 测试NestJS服务")
     result: Dict[str, Any] = await call_remote_service(
         service_name="nestjs",
         path="/api_nestjs/nestjs",

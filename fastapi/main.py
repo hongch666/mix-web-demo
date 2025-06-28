@@ -10,7 +10,6 @@ from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
 from typing import Dict, Any
 
-# TODO: 终端日志保存到专门的日志文件中
 # TODO: 接入COZE平台
 
 server_config: Dict[str, Any] = load_config("server")
