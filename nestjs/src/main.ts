@@ -6,6 +6,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
+// TODO: 更换所有日志输出为文件日志输出
+
 async function bootstrap(): Promise<void> {
   const app: INestApplication<any> = await NestFactory.create(AppModule);
   // Swagger 配置
