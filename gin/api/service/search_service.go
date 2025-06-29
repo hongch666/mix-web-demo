@@ -8,13 +8,11 @@ import (
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
-	"log"
 )
 
 func SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) po.SearchResult {
 	data, total := mapper.SearchArticle(ctx, searchDTO)
 	// 读取用户id
-	log.Println(ctx.Value(ctxkey.UsernameKey))
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	// 发送消息
 	msg := map[string]interface{}{

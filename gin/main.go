@@ -18,8 +18,6 @@ import (
 	_ "gin_proj/docs"
 )
 
-// TODO: 更换所有日志输出为文件日志输出
-
 func main() {
 	// 初始化设置
 	config.Init()

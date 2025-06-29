@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"strings"
 
-	// "log"
 	"net/http"
 	"net/url"
 	"sync"

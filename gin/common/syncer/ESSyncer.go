@@ -3,9 +3,9 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
-	"log"
 
 	"github.com/olivere/elastic"
 )
@@ -100,7 +100,7 @@ func SyncArticlesToES() {
 	}
 	if resp.Errors {
 		for _, item := range resp.Failed() {
-			log.Printf("ES同步失败: %+v\n", item.Error)
+			utils.FileLogger.Error(fmt.Sprintf("ES同步失败: %+v", item.Error))
 		}
 		panic("ES同步有失败项")
 	}
