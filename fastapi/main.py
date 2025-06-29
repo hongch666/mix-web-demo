@@ -11,8 +11,6 @@ from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
 from typing import Dict, Any
 
-# TODO: 更换所有日志输出为文件日志输出
-
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 PORT: int = server_config["port"]

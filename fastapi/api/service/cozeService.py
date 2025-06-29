@@ -1,7 +1,7 @@
 import asyncio
 from typing import List, Dict, Any, AsyncGenerator, Optional
 from cozepy import Coze, TokenAuth, Message, ChatStatus
-from common.utils.writeLog import logger
+from common.utils.writeLog import fileLogger as logger
 from config.config import load_config, load_secret_config
 
 class CozeService:

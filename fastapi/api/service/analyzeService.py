@@ -6,7 +6,7 @@ from typing import Dict, List, Any
 from config.mysql import get_db
 from entity.po.article import Article
 from config.mongodb import db as mongo_db
-from common.utils.logger import logger
+from common.utils.writeLog import fileLogger as logger
 from wordcloud import WordCloud
 from config.oss import OSSClient
 from config.config import load_config
