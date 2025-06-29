@@ -2,7 +2,9 @@ import datetime
 import time
 import uuid
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import JSONResponse
 
+from common.utils.response import success
 from entity.dto.chatDTO import ChatRequest, ChatResponse, ChatResponseData
 from api.service.cozeService import coze_service
 from common.utils.writeLog import fileLogger
@@ -13,14 +15,14 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest
-) -> ChatResponse:
+) -> JSONResponse:
     """发送聊天消息"""
     try:
         user_id: str = get_current_user_id() or ""
         username: str = get_current_username() or ""
-        fileLogger.info("用户" + user_id + ":" + username + " POST /generate/tags: 生成tags\nChatRequest: " + request.json())
+        fileLogger.info("用户" + user_id + ":" + username + " POST /chat/send: 普通聊天\nChatRequest: " + request.json())
         # 使用实际用户ID替代请求中的user_id
-        actual_user_id: str = user_id or request.user_id
+        actual_user_id: str = user_id or "1"
         # 普通响应
         response_message: str = await coze_service.simple_chat(
             message=request.message,
@@ -47,12 +49,7 @@ async def send_message(
             user_id=actual_user_id,
             timestamp=int(time.time())
         )
-        
-        return ChatResponse(
-            code=1,
-            data=response_data,
-            msg="success"
-        )
+        return success(response_data)
             
     except Exception as e:
         fileLogger.error(f"聊天接口异常: {str(e)}")

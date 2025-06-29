@@ -5,7 +5,7 @@ spring:
     name: gateway
   cloud:
     nacos:
-      server-addr: 127.0.0.1:8848 # 172.22.87.240:8848
+      server-addr: 127.0.0.1:8848
     gateway:
       routes:
         # 1. 先排除特殊路径
@@ -35,7 +35,7 @@ spring:
         - id: fastapi
           uri: lb://fastapi
           predicates:
-            - Path=/api_fastapi/**,/analyze/**,/generate/**
+            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**
 jwt:
   secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
   expiration: 2592000000 # 毫秒数（30 天）
