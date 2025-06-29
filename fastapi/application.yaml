@@ -24,3 +24,7 @@ files:
   pic_path: "../static/pic"
 logs:
   path: "../logs/fastapi"
+coze:
+  bot_id: "7521289882573324298"
+  base_url: "https://api.coze.cn"
+  timeout: 30
