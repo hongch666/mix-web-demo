@@ -179,7 +179,7 @@ npm run start:prod # production mode
 ### FastAPI 部分
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
-2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，不要泄露
+2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台的 api_key，不要泄露
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
 
 ## Swagger 说明
@@ -256,4 +256,11 @@ npm run start:prod # production mode
 oss:
   access_key_id: your_access_key_id
   access_key_secret: your_access_key_secret
+```
+
+4. FastAPI 模块的 COZE 的 api_key 应写在`application-secret.yaml`中，格式如下：
+
+```yaml
+coze:
+  api_key: your_api_key
 ```
