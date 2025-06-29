@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { RabbitMQService } from 'src/common/mq/mq.service';
 import { ArticleLogService } from './log.service';
+import { fileLogger } from 'src/common/utils/writeLog';
 
 @Injectable()
 export class LogConsumerService implements OnModuleInit {
@@ -12,14 +13,14 @@ export class LogConsumerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    this.logger.log('启动RabbitMQ消息监听');
+    fileLogger.info('启动RabbitMQ消息监听');
     await this.rabbitMQService.consume('log-queue', async (msg) => {
-      this.logger.log(`接收到消息: ${JSON.stringify(msg)}`);
+      fileLogger.info(`接收到消息: ${JSON.stringify(msg)}`);
 
       // 这里写异步处理逻辑
       await this.handleMessage(msg);
 
-      this.logger.log('消息处理完成');
+      fileLogger.info('消息处理完成');
     });
   }
 
@@ -32,6 +33,6 @@ export class LogConsumerService implements OnModuleInit {
       content: msg.content,
     };
     await this.articleLogService.create(dto);
-    Logger.log('日志写入成功');
+    fileLogger.info('日志写入成功');
   }
 }

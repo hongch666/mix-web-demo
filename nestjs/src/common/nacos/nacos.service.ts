@@ -1,9 +1,10 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { NacosNamingClient } from 'nacos';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
 import qs from 'qs';
 import { ClsService } from 'nestjs-cls';
+import { fileLogger } from '../utils/writeLog';
 
 interface CallOptions {
   serviceName: string;
@@ -63,7 +64,7 @@ export class NacosService implements OnModuleInit {
       } as any,
     );
 
-    Logger.log('注册到 nacos 成功');
+    fileLogger.info('注册到 nacos 成功');
   }
 
   async getServiceInstances(serviceName: string) {
