@@ -6,22 +6,25 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
+import com.hcsy.spring.utils.SimpleLogger;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RabbitMQService {
 
     private final RabbitTemplate rabbitTemplate;
+    private final SimpleLogger logger;
 
     // 发送消息
     public void sendMessage(String queueName, Object message) {
         rabbitTemplate.convertAndSend(queueName, message);
-        log.info("消息发送成功：{} -> {}", queueName, message);
+        logger.info("消息发送成功：{} -> {}", queueName, message);
     }
 
     // 接收消息
     @RabbitListener(queues = "test.queue")
     public void receiveMessage(String message) {
-        log.info("收到消息：{}", message);
+        logger.info("收到消息：{}", message);
     }
 }

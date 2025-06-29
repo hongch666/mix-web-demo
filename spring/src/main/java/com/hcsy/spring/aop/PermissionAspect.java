@@ -3,6 +3,7 @@ package com.hcsy.spring.aop;
 import com.hcsy.spring.annotation.RequirePermission;
 import com.hcsy.spring.po.User;
 import com.hcsy.spring.service.UserService;
+import com.hcsy.spring.utils.SimpleLogger;
 import com.hcsy.spring.utils.UserContext;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,12 +27,13 @@ public class PermissionAspect {
 
     @Autowired
     private UserService userService;
+    private final SimpleLogger logger;
 
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission) throws Throwable {
         Long currentUserId = UserContext.getUserId();
         if (currentUserId == null) {
-            log.warn("用户未登录，无法执行权限检查");
+            logger.warning("用户未登录，无法执行权限检查");
             throw new RuntimeException("用户未登录");
         }
 
@@ -53,9 +55,9 @@ public class PermissionAspect {
 
         // 如果允许操作自己的数据，检查是否是操作自己
         if (requirePermission.allowSelf()) {
-            log.info("允许操作自己的数据，检查目标用户ID");
+            logger.info("允许操作自己的数据，检查目标用户ID");
             Long targetUserId = getTargetUserId(joinPoint, requirePermission.targetUserIdParam());
-            log.info("当前用户ID: {}, 目标用户ID: {}", currentUserId, targetUserId);
+            logger.info("当前用户ID: {}, 目标用户ID: {}", currentUserId, targetUserId);
             if (targetUserId != null && targetUserId.equals(currentUserId)) {
                 return joinPoint.proceed();
             }
@@ -83,7 +85,7 @@ public class PermissionAspect {
                     // 目前路径一定是/users/status/{id}
                     if (parts[i].equals("status") && i + 1 < parts.length) {
                         try {
-                            log.info(pathVariable + " 中的参数: " + parts[i + 1]);
+                            logger.info(pathVariable + " 中的参数: " + parts[i + 1]);
                             return Long.parseLong(parts[i + 1]);
                         } catch (NumberFormatException e) {
                             // 继续查找
@@ -103,7 +105,7 @@ public class PermissionAspect {
                 }
             }
         } catch (Exception e) {
-            log.warn("获取目标用户ID失败", e);
+            logger.warning("获取目标用户ID失败", e);
             throw new RuntimeException("获取目标用户ID失败");
         }
         return null;

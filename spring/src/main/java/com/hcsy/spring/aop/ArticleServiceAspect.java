@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.client.GinClient;
 import com.hcsy.spring.mq.RabbitMQService;
 import com.hcsy.spring.po.Article;
+import com.hcsy.spring.utils.SimpleLogger;
 import com.hcsy.spring.utils.UserContext;
 
 @Slf4j
@@ -30,6 +31,7 @@ public class ArticleServiceAspect {
     private final RabbitMQService rabbitMQService;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
+    private final SimpleLogger logger;
 
     @Pointcut("execution(* com.hcsy.spring.service.ArticleService.saveArticle(..)) ||" +
             "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
@@ -57,7 +59,7 @@ public class ArticleServiceAspect {
                 // 3. 获取当前用户 ID
                 Long userId = UserContext.getUserId();
                 if (userId == null) {
-                    log.error("未登录，无法记录操作日志");
+                    logger.error("未登录，无法记录操作日志");
                     throw new RuntimeException("未登录，无法记录操作日志");
                 }
 
@@ -119,19 +121,19 @@ public class ArticleServiceAspect {
                         break;
                     }
                     default:
-                        log.error("未知方法类型：" + methodName);
+                        logger.error("未知方法类型：" + methodName);
                         throw new RuntimeException("AOP识别失败");
                 }
 
                 // 3. 发消息
                 rabbitMQService.sendMessage("log-queue", json);
-                log.info("发送到MQ：" + json);
+                logger.info("发送到MQ：" + json);
 
                 // 4. 注册事务提交后的回调，同步 ES
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        log.info("事务提交后开始同步ES...");
+                        logger.info("事务提交后开始同步ES...");
                         ginClient.syncES();
                     }
                 });
@@ -139,7 +141,7 @@ public class ArticleServiceAspect {
                 return result;
 
             } catch (Throwable e) {
-                log.error("事务执行失败，已回滚", e);
+                logger.error("事务执行失败，已回滚", e);
                 status.setRollbackOnly(); // 显式回滚
                 throw new RuntimeException(e);
             }
