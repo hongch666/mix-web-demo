@@ -7,6 +7,7 @@ from api.controller.chatController import router as chat_router
 import uvicorn
 from config.nacos import start_nacos
 from config.config import load_config
+from common.utils.logger import logger
 from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
 from typing import Dict, Any
@@ -36,6 +37,10 @@ app.include_router(chat_router)
 @app.on_event("startup")
 def startup_event() -> None:
     start_nacos(port=PORT)
+    logger.info(f"FastAPI应用已启动")
+    logger.info(f"服务地址:http://{IP}:{PORT}")
+    logger.info(f"Swagger文档地址: http://{IP}:{PORT}/docs")
+    logger.info(f"ReDoc文档地址: http://{IP}:{PORT}/redoc")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host=IP, port=PORT, reload=True)
