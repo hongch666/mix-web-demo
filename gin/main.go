@@ -19,6 +19,8 @@ import (
 	_ "gin_proj/docs"
 )
 
+// TODO: 增加定时同步ES表的时间间隔为30分钟
+
 func main() {
 	// 初始化设置
 	config.Init()

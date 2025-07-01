@@ -12,7 +12,7 @@ from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
 from typing import Dict, Any
 
-# TODO: COZE完成读取数据库的内容上传COZE知识库，并设置定时任务定时上传知识库
+# TODO: COZE完成读取数据库的内容上传COZE知识库，并设置定时任务定时上传知识库，每小时1次
 # TODO: COZE完成流式获取消息的优化
 
 server_config: Dict[str, Any] = load_config("server")

@@ -9,8 +9,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
-
 import lombok.extern.slf4j.Slf4j;
+
+// TODO: 减小定时发布文章的间隔，改为每小时同步1次
 
 @EnableFeignClients()
 @SpringBootApplication
