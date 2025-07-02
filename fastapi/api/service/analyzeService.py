@@ -118,6 +118,4 @@ def upload_excel_to_oss() -> str:
         file_path=os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.xlsx")),
         oss_path="excel/articles.xlsx"
     )
-    logger.info(f"Excel文件上传成功，OSS地址: {oss_url}")
-    logger.info(f"本地文件路径: {file_path}, OSS路径: excel/articles.xlsx")
     return oss_url
