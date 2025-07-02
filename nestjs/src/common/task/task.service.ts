@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { ArticleLog, ArticleLogDocument } from 'src/api/log/schema/log.schema';
+import { fileLogger } from '../utils/writeLog';
 
 @Injectable()
 export class TaskService {
@@ -13,8 +14,8 @@ export class TaskService {
 
   @Cron('0 0 * * * *')
   async handleCronWithCustomExpression() {
-    Logger.log('开始清除任务');
+    fileLogger.info('开始清除任务');
     const result = await this.logModel.deleteMany({}).exec();
-    Logger.log(`清除任务完成，删除了 ${result.deletedCount} 条日志`);
+    fileLogger.info(`清除任务完成，删除了 ${result.deletedCount} 条日志`);
   }
 }
