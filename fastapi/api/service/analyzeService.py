@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 import os
 import pandas as pd
-import openpyxl
 from typing import Dict, List, Any
 
 from config.mysql import get_db
@@ -112,8 +111,6 @@ def export_articles_to_excel(db: Session = Depends(get_db)) -> str:
 
 def upload_excel_to_oss() -> str:
     FILE_PATH: str = load_config("files")["excel_path"]
-    file_path: str = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png"))
-    ossClient = OSSClient()
     oss_url: str = upload_file(
         file_path=os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.xlsx")),
         oss_path="excel/articles.xlsx"

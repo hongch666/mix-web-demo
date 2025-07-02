@@ -43,7 +43,7 @@
 ### FastAPI 部分
 
 ```bash
-pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2 jieba
+pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2 jieba cozepy pandas
 ```
 
 ### Gin 部分
