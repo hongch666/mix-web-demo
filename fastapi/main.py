@@ -10,9 +10,9 @@ from config.config import load_config
 from common.utils.logger import logger
 from common.middleware.ContextMiddleware import ContextMiddleware
 from common.handler.exception_handlers import global_exception_handler
+from common.task.uploadTask import start_scheduler
 from typing import Dict, Any
 
-# TODO: COZE完成读取数据库的内容上传COZE知识库，并设置定时任务定时上传知识库，每小时1次
 # TODO: COZE完成流式获取消息的优化
 
 server_config: Dict[str, Any] = load_config("server")
@@ -23,6 +23,8 @@ app: FastAPI = FastAPI(
     title="FastAPI部分的Swagger文档集成",
     description="这是demo项目的FastAPI部分的Swagger文档集成",
     version="1.0.0")
+
+start_scheduler()
 
 app.add_middleware(ContextMiddleware)
 

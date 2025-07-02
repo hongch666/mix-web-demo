@@ -22,6 +22,7 @@ wordcloud:
   background_color: "white"
 files:
   pic_path: "../static/pic"
+  excel_path: "../static/excel"
 logs:
   path: "../logs/fastapi"
 coze:

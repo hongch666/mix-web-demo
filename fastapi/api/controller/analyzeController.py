@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
 from entity.po.listResponse import ListResponse
-from api.service.analyzeService import get_top10_articles_service
+from api.service.analyzeService import get_top10_articles_service, upload_excel_to_oss
 from config.mysql import get_db
-from api.service.analyzeService import generate_wordcloud, get_keywords_dic, upload_wordcloud_to_oss
+from api.service.analyzeService import generate_wordcloud, get_keywords_dic, upload_wordcloud_to_oss, export_articles_to_excel
 from common.utils.response import success
 from common.utils.writeLog import fileLogger
 from starlette.concurrency import run_in_threadpool
@@ -31,4 +31,13 @@ async def get_wordcloud() -> Any:
     keywords_dic: Dict[str, int] = await run_in_threadpool(get_keywords_dic)
     await run_in_threadpool(generate_wordcloud, keywords_dic)
     oss_url: str = await run_in_threadpool(upload_wordcloud_to_oss)
+    return success(oss_url)
+
+@router.post("/excel")
+async def get_excel(db: Session = Depends(get_db)) -> Any:
+    user_id: str = get_current_user_id() or ""
+    username: str = get_current_username() or ""
+    fileLogger.info("用户" + user_id + ":" + username + " POST /analyze/excel: 获取文章数据Excel")
+    await run_in_threadpool(export_articles_to_excel, db)
+    oss_url: str = await run_in_threadpool(upload_excel_to_oss)
     return success(oss_url)
