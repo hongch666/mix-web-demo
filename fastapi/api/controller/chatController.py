@@ -1,5 +1,6 @@
 import datetime
 import time
+import json
 import uuid
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -69,7 +70,6 @@ async def stream_message(
         chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
         
         async def event_generator():
-            import json
             message_acc = ""
             try:
                 async for chunk in coze_service.stream_chat(
@@ -78,17 +78,13 @@ async def stream_message(
                 ):
                     print("hi")
                     message_acc += chunk
-                    data = {
-                        "code": 1,
-                        "data": {
+                    data = success({
                             "message": message_acc,
                             "conversation_id": conversation_id,
                             "chat_id": chat_id,
                             "user_id": actual_user_id,
                             "timestamp": int(time.time())
-                        },
-                        "msg": "success"
-                    }
+                        })
                     yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
             except Exception as e:
                 fileLogger.error(f"流式聊天接口异常: {str(e)}")
