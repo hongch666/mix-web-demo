@@ -17,7 +17,7 @@ def export_articles_job() -> None:
 def start_scheduler() -> BaseScheduler:
     scheduler: BackgroundScheduler = BackgroundScheduler()
     # 每小时执行一次导出文章表的任务
-    scheduler.add_job(export_articles_job, 'interval', minutes=10)
+    scheduler.add_job(export_articles_job, 'interval', hours=1)
     scheduler.start()
     logger.info("定时任务调度器已启动")
     return scheduler
