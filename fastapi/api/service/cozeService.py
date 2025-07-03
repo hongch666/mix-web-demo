@@ -106,37 +106,38 @@ class CozeService:
             return f"聊天服务异常: {str(e)}"
     
     async def stream_chat(self, message: str, user_id: str = "default") -> AsyncGenerator[str, None]:
-        """流式聊天接口 - 修复参数问题"""
+        """流式聊天接口 - 兼容异步调用"""
         try:
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
-            chat_stream = self.coze_client.chat.stream(
-                bot_id=self.bot_id,
-                user_id=user_id,
-                additional_messages=[
-                    Message.build_user_question_text(content=message)
-                ]
-            )
+
+            def sync_stream():
+                return self.coze_client.chat.stream(
+                    bot_id=self.bot_id,
+                    user_id=user_id,
+                    additional_messages=[
+                        Message.build_user_question_text(content=message)
+                    ]
+                )
+
+            loop = asyncio.get_event_loop()
+            chat_stream = await loop.run_in_executor(None, sync_stream)
+
             for event in chat_stream:
-                try:
-                    if hasattr(event, 'event'):
-                        if event.event == "conversation.message.delta":
-                            if hasattr(event, 'data') and hasattr(event.data, 'content'):
-                                delta_content: Optional[str] = event.data.content
-                                if delta_content:
-                                    yield delta_content
-                        elif event.event == "conversation.chat.completed":
-                            break
-                    elif hasattr(event, 'data'):
-                        if hasattr(event.data, 'content'):
-                            content: Optional[str] = event.data.content
-                            if content:
-                                yield content
-                    else:
-                        if hasattr(event, 'content'):
-                            yield event.content
-                except Exception as event_error:
-                    logger.warning(f"处理流式事件异常: {str(event_error)}")
-                    continue
+                logger.info(f"收到流事件: {event}")
+                # 只处理 message.delta 或 message.completed 事件
+                content = None
+                if hasattr(event, 'event'):
+                    if event.event == "conversation.message.delta" or event.event == "conversation.message.completed":
+                        # cozepy 结构：event.message.content
+                        if hasattr(event, 'message') and hasattr(event.message, 'content'):
+                            content = event.message.content
+                # 兼容其它结构
+                if not content and hasattr(event, 'data') and hasattr(event.data, 'content'):
+                    content = event.data.content
+                if not content and hasattr(event, 'content'):
+                    content = event.content
+                if content is not None:
+                    yield content
         except Exception as e:
             logger.error(f"流式聊天异常: {str(e)}")
             if "4015" in str(e):

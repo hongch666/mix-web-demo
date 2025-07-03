@@ -2,7 +2,7 @@ import datetime
 import time
 import uuid
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from common.utils.response import success
 from entity.dto.chatDTO import ChatRequest, ChatResponse, ChatResponseData
@@ -54,3 +54,52 @@ async def send_message(
     except Exception as e:
         fileLogger.error(f"聊天接口异常: {str(e)}")
         raise HTTPException(status_code=500, detail=f"聊天服务异常: {str(e)}")
+
+@router.post("/stream", response_model=ChatResponse)
+async def stream_message(
+    request: ChatRequest
+) -> StreamingResponse:
+    """流式发送聊天消息"""
+    try:
+        user_id: str = get_current_user_id() or ""
+        username: str = get_current_username() or ""
+        fileLogger.info("用户" + user_id + ":" + username + " POST /chat/stream: 流式聊天\nChatRequest: " + request.json())
+        actual_user_id: str = user_id or "1"
+        conversation_id: str = request.conversation_id or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
+        
+        async def event_generator():
+            import json
+            message_acc = ""
+            try:
+                async for chunk in coze_service.stream_chat(
+                    message=request.message,
+                    user_id=actual_user_id
+                ):
+                    print("hi")
+                    message_acc += chunk
+                    data = {
+                        "code": 1,
+                        "data": {
+                            "message": message_acc,
+                            "conversation_id": conversation_id,
+                            "chat_id": chat_id,
+                            "user_id": actual_user_id,
+                            "timestamp": int(time.time())
+                        },
+                        "msg": "success"
+                    }
+                    yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+            except Exception as e:
+                fileLogger.error(f"流式聊天接口异常: {str(e)}")
+                data = {
+                    "code": 0,
+                    "data": None,
+                    "msg": f"流式聊天服务异常: {str(e)}"
+                }
+                yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+        
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+    except Exception as e:
+        fileLogger.error(f"流式聊天接口异常: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"流式聊天服务异常: {str(e)}")

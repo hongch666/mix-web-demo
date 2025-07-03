@@ -13,8 +13,6 @@ from common.handler.exception_handlers import global_exception_handler
 from common.task.uploadTask import start_scheduler
 from typing import Dict, Any
 
-# TODO: COZE完成流式获取消息的优化
-
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 PORT: int = server_config["port"]
