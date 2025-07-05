@@ -38,7 +38,6 @@ public class ArticleServiceAspect {
             "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.deleteArticles(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.addViewArticle(..))")
     public void userServiceTargetMethods() {
     }
@@ -60,10 +59,6 @@ public class ArticleServiceAspect {
 
                 // 3. 获取当前用户 ID
                 Long userId = UserContext.getUserId();
-                if (userId == null) {
-                    logger.error("未登录，无法记录操作日志");
-                    throw new RuntimeException("未登录，无法记录操作日志");
-                }
 
                 switch (methodName) {
                     case "saveArticle": {

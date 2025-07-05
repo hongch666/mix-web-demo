@@ -122,20 +122,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public void publishArticle(Long id) {
-        // 校验用户
-        Long currentUserId = UserContext.getUserId();
-        if (currentUserId == null) {
-            throw new RuntimeException("未登录，无法更新文章");
-        }
-
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
         }
-        if (!currentUserId.equals(dbArticle.getUserId())) {
-            throw new RuntimeException("无权发布他人文章");
-        }
+
         // 执行发布
         Article article = new Article();
         article.setId(id);

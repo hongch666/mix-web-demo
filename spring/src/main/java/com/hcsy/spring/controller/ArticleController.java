@@ -145,6 +145,13 @@ public class ArticleController {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " PUT /articles/view/{id}: " + "增加文章阅读量\nID: %s", id);
+        Article dbArticle = articleService.getById(id);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (userId != dbArticle.getUserId()) {
+            throw new RuntimeException("无权发布他人文章");
+        }
         articleService.addViewArticle(id);
         return Result.success();
     }

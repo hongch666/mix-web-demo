@@ -20,7 +20,7 @@ public class ArticleAutoPublishTask {
     private final SimpleLogger logger;
 
     // 每小时执行一次
-    @Scheduled(cron = "0 0 * * * ?")
+    @Scheduled(cron = "*/5 * * * * ?")
     public void autoPublishUnpublishedArticles() {
         logger.info("定时任务启动：检查未发布文章");
 
@@ -33,12 +33,12 @@ public class ArticleAutoPublishTask {
         for (Article article : articles) {
             try {
                 articleService.publishArticle(article.getId());
-                logger.info("自动发布文章成功：id={}", article.getId());
+                logger.info("自动发布文章成功：id=%d", article.getId());
             } catch (Exception e) {
                 logger.error("自动发布文章失败：id=" + article.getId(), e);
             }
         }
 
-        logger.info("定时任务结束：共处理 {} 篇未发布文章", articles.size());
+        logger.info("定时任务结束：共处理 %d 篇未发布文章", articles.size());
     }
 }
