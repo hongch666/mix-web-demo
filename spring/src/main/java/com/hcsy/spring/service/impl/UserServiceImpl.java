@@ -45,6 +45,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Transactional
+    public void deleteUsersAndStatusByIds(java.util.List<Long> ids) {
+        if (ids == null || ids.isEmpty())
+            return;
+        userMapper.deleteBatchIds(ids);
+        for (Long id : ids) {
+            redisUtil.delete("user:status:" + id);
+        }
+    }
+
+    @Transactional
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         if (username != null && !username.isEmpty()) {

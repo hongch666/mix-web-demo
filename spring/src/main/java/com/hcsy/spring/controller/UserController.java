@@ -75,6 +75,22 @@ public class UserController {
         return Result.success();
     }
 
+    @DeleteMapping("/batch/{ids}")
+    @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
+    @RequirePermission(roles = { "admin" })
+    public Result deleteUsers(@PathVariable String ids) {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        java.util.List<Long> idList = java.util.Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+        logger.info("用户" + userId + ":" + userName + " DELETE /users/batch/{ids}: " + "批量删除用户，IDS: %s", idList);
+        userService.deleteUsersAndStatusByIds(idList);
+        return Result.success();
+    }
+
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户")
     public Result getUserById(@PathVariable Long id) {
