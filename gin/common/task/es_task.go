@@ -13,7 +13,7 @@ var TaskScheduler *cron.Cron
 func InitTasks() {
 	TaskScheduler = cron.New()
 
-	// 每 10 分钟同步一次 ES
+	// 每 30 分钟同步一次 ES
 	_, err := TaskScheduler.AddFunc("*/30 * * * *", func() {
 		utils.FileLogger.Info("[定时任务] 开始同步文章到 Elasticsearch")
 		syncer.SyncArticlesToES()
