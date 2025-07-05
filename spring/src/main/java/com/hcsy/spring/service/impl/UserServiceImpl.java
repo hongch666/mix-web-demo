@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 
 import com.hcsy.spring.mapper.UserMapper;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Transactional
-    public void deleteUsersAndStatusByIds(java.util.List<Long> ids) {
+    public void deleteUsersAndStatusByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty())
             return;
         userMapper.deleteBatchIds(ids);

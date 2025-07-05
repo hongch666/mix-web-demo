@@ -60,6 +60,7 @@ public class UserController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " POST /users: " + "新增用户\nUserCreateDTO: %s", userDto);
         User user = BeanUtil.copyProperties(userDto, User.class);
+        user.setRole("user");
         userService.saveUserAndStatus(user);
         return Result.success();
     }
