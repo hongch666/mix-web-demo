@@ -14,7 +14,7 @@ export class ArticleLog {
   articleId: number;
 
   // 操作类型
-  @Prop({ enum: ['add', 'search', 'edit', 'delete'], required: true })
+  @Prop({ required: true })
   action: string;
 
   // 操作内容（任意 JSON 对象）

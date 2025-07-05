@@ -20,7 +20,7 @@ public class ArticleAutoPublishTask {
     private final SimpleLogger logger;
 
     // 每小时执行一次
-    @Scheduled(cron = "*/5 * * * * ?")
+    @Scheduled(cron = "0 0 * * * ?")
     public void autoPublishUnpublishedArticles() {
         logger.info("定时任务启动：检查未发布文章");
 
