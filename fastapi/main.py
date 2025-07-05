@@ -13,8 +13,6 @@ from common.handler.exception_handlers import global_exception_handler
 from common.task.uploadTask import start_scheduler
 from typing import Dict, Any
 
-# TODO: 优化本地知识库的数据完整性
-
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 PORT: int = server_config["port"]

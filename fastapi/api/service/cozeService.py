@@ -6,7 +6,10 @@ from sqlalchemy.orm import Session
 from common.utils.writeLog import fileLogger as logger
 from config.config import load_config, load_secret_config
 from config.mysql import get_db
+from config.mongodb import db as mongo_db
 from entity.po.article import Article
+from entity.po.user import User
+
 
 class CozeService:
     api_key: str
@@ -22,28 +25,24 @@ class CozeService:
         base_url: str = load_config("coze")["base_url"]
         timeout: int = load_config("coze")["timeout"]
 
-        self.api_key = api_key
-        self.bot_id = bot_id
-        self.base_url = base_url
-        self.timeout = timeout
-        
+        self.api_key: str = api_key
+        self.bot_id: str = bot_id
+        self.base_url: str = base_url
+        self.timeout: int = timeout
+
         self.coze_client: Coze = Coze(
             auth=TokenAuth(token=self.api_key),
             base_url=self.base_url
         )
-        
+
         logger.info("Coze 服务初始化完成")
     
-    async def simple_chat(self, message: str, user_id: str = "default", db:Session = None) -> str:
-        """简单聊天接口 - 修复 API 调用"""
+    async def simple_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
+        """简单聊天接口"""
         try:
-            # 1. 检索相关知识
-            knowledge = self.search_knowledge_from_db(db)
-            # 2. 拼接知识到 prompt
-            prompt = f"已知文章表信息：{knowledge}\n用户提问：{message}"
+            prompt: str = self.get_prompt(message, db)
             logger.info(f"用户 {user_id} 发送消息: {prompt}")
-            # 3. 发送给大模型
-            chat = self.coze_client.chat.create(
+            chat: Any = self.coze_client.chat.create(
                 bot_id=self.bot_id,
                 user_id=user_id,
                 additional_messages=[
@@ -55,25 +54,25 @@ class CozeService:
             attempt: int = 0
             while attempt < max_attempts:
                 try:
-                    chat_poll = self.coze_client.chat.retrieve(
+                    chat_poll: Any = self.coze_client.chat.retrieve(
                         chat_id=chat.id,
                         conversation_id=chat.conversation_id
                     )
                     logger.info(f"聊天状态: {chat_poll.status}")
                     if chat_poll.status == ChatStatus.COMPLETED:
                         try:
-                            messages = self.coze_client.chat.message.list(
+                            messages: Any = self.coze_client.chat.message.list(
                                 chat_id=chat.id,
                                 conversation_id=chat.conversation_id
                             )
                         except AttributeError:
                             try:
-                                messages = self.coze_client.conversations.messages.list(
+                                messages: Any = self.coze_client.conversations.messages.list(
                                     conversation_id=chat.conversation_id
                                 )
                             except AttributeError:
                                 try:
-                                    messages = self.coze_client.messages.list(
+                                    messages: Any = self.coze_client.messages.list(
                                         chat_id=chat.id,
                                         conversation_id=chat.conversation_id
                                     )
@@ -111,21 +110,17 @@ class CozeService:
         except Exception as e:
             logger.error(f"Coze 聊天异常: {str(e)}")
             if "4015" in str(e) or "not been published" in str(e):
-                return "❌ 机器人未发布到 API 频道。请在 Coze 平台将机器人发布到 'Agent As API' 频道。"
+                return "机器人未发布到 API 频道。请在 Coze 平台将机器人发布到 'Agent As API' 频道。"
             return f"聊天服务异常: {str(e)}"
     
-    async def stream_chat(self, message: str, user_id: str = "default",db:Session = None) -> AsyncGenerator[str, None]:
+    async def stream_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
         """流式聊天接口 - 兼容异步调用"""
         try:
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
 
-            # 1. 检索相关知识
-            knowledge = self.search_knowledge_from_db(db)
-            # 2. 拼接知识到 prompt
-            prompt = f"已知文章表信息：{knowledge}\n用户提问：{message}"
+            prompt: str = self.get_prompt(message, db)
             logger.info(f"用户 {user_id} 发送消息: {prompt}")
-            # 3. 发送给大模型
-            def sync_stream():
+            def sync_stream() -> Any:
                 return self.coze_client.chat.stream(
                     bot_id=self.bot_id,
                     user_id=user_id,
@@ -134,19 +129,16 @@ class CozeService:
                     ]
                 )
 
-            loop = asyncio.get_event_loop()
-            chat_stream = await loop.run_in_executor(None, sync_stream)
+            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            chat_stream: Any = await loop.run_in_executor(None, sync_stream)
 
             for event in chat_stream:
                 logger.info(f"收到流事件: {event}")
-                # 只处理 message.delta 或 message.completed 事件
-                content = None
+                content: Optional[str] = None
                 if hasattr(event, 'event'):
                     if event.event == "conversation.message.delta" or event.event == "conversation.message.completed":
-                        # cozepy 结构：event.message.content
                         if hasattr(event, 'message') and hasattr(event.message, 'content'):
                             content = event.message.content
-                # 兼容其它结构
                 if not content and hasattr(event, 'data') and hasattr(event.data, 'content'):
                     content = event.data.content
                 if not content and hasattr(event, 'content'):
@@ -156,12 +148,47 @@ class CozeService:
         except Exception as e:
             logger.error(f"流式聊天异常: {str(e)}")
             if "4015" in str(e):
-                yield "❌ 机器人未发布到 API 频道"
+                yield "机器人未发布到 API 频道"
             else:
                 yield f"流式聊天服务异常: {str(e)}"
+
+    def search_article_from_db(self, db: Session = Depends(get_db)) -> str:
+        articles: List[Article] = db.query(Article).all()
+        if not articles:
+            return "没有找到相关的知识库内容"
+        content_list: List[str] = []
+        for article in articles:
+            content_list.append(f"标题: {article.title}, 内容: {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}")
+        return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
+    
+    def search_user_from_db(self, db: Session = Depends(get_db)) -> str:
+        users: List[User] = db.query(User).all()
+        if not users:
+            return "没有找到相关的用户信息"
+        user_list: List[str] = []
+        for user in users:
+            user_list.append(f"ID: {user.id}, 名称: {user.name}, 年龄: {user.age}, 邮箱: {user.email}, 角色: {user.role}")
+        return "\n".join(user_list) if user_list else "没有找到相关的用户信息"
+    
+    def search_logs_from_db(self) -> str:
+        logs = mongo_db["articlelogs"]
+        cursor: Any = logs.find()
+        log_list: List[str] = []
+        for log in cursor:
+            log_str: str = ", ".join([f"{k}: {v}" for k, v in log.items()])
+            log_list.append(log_str)
+        return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
+    
+    def get_prompt(self, message: str, db: Session = Depends(get_db)) -> str:
+        article: str = self.search_article_from_db(db)
+        user: str = self.search_user_from_db(db)
+        logs: str = self.search_logs_from_db()
+        knowledge: str = f"文章信息：{article}\n用户信息：{user}\n日志信息：{logs}"
+        prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
+        return prompt
     
     async def get_chat_history(self, conversation_id: str) -> List[Dict[str, Any]]:
-        """获取聊天历史 - 修复 API 调用"""
+        """获取聊天历史"""
         try:
             try:
                 messages = self.coze_client.chat.message.list(
@@ -236,22 +263,13 @@ class CozeService:
             return structure_info
         except Exception as e:
             return {"error": str(e)}
-        
-    def search_knowledge_from_db(self, db: Session = Depends(get_db)) -> str:
-        articles = db.query(Article).limit(10).all()
-        # 转换为字符串
-        if not articles:
-            return "没有找到相关的知识库内容"
-        content_list: List[str] = []
-        for article in articles:
-            content_list.append(f"标题: {article.title}, 内容: {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}")
-        return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
+
 
 try:
     coze_service: Optional[CozeService] = CozeService()
-    logger.info("🚀 Coze 服务全局实例创建成功")
+    logger.info("Coze 服务全局实例创建成功")
     api_structure: Dict[str, Any] = coze_service.check_api_structure()
     logger.info(f"Coze API 结构: {api_structure}")
 except Exception as e:
-    logger.error(f"❌ Coze 服务初始化失败: {str(e)}")
+    logger.error(f"Coze 服务初始化失败: {str(e)}")
     coze_service: Optional[CozeService] = None
