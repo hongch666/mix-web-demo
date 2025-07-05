@@ -18,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -109,6 +111,21 @@ public class ArticleController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " DELETE /articles/{id}: " + "删除文章\nID: %s", id);
         articleService.deleteArticle(id);
+        return Result.success();
+    }
+
+    @DeleteMapping("/batch/{ids}")
+    @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
+    public Result deleteArticles(@PathVariable String ids) {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+        logger.info("用户" + userId + ":" + userName + " DELETE /articles/batch/{ids}: " + "批量删除文章，IDS: %s", idList);
+        articleService.deleteArticles(idList);
         return Result.success();
     }
 

@@ -101,6 +101,25 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return true;
     }
 
+    @Transactional
+    public boolean deleteArticles(List<Long> ids) {
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法删除文章");
+        }
+        for (Long id : ids) {
+            Article dbArticle = articleMapper.selectById(id);
+            if (dbArticle == null) {
+                throw new RuntimeException("文章不存在，ID:" + id);
+            }
+            if (!currentUserId.equals(dbArticle.getUserId())) {
+                throw new RuntimeException("无权删除他人文章，ID:" + id);
+            }
+        }
+        articleMapper.deleteBatchIds(ids);
+        return true;
+    }
+
     @Override
     public void publishArticle(Long id) {
         // 校验用户

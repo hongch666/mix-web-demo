@@ -6,6 +6,7 @@ import org.aspectj.lang.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -36,6 +37,7 @@ public class ArticleServiceAspect {
     @Pointcut("execution(* com.hcsy.spring.service.ArticleService.saveArticle(..)) ||" +
             "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.deleteArticles(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.addViewArticle(..))")
     public void userServiceTargetMethods() {
@@ -91,8 +93,21 @@ public class ArticleServiceAspect {
                         msg.put("content", content);
                         msg.put("user_id", userId);
                         msg.put("article_id", id);
-                        msg.put("action", "edit");
+                        msg.put("action", "delete");
                         msg.put("msg", "删除了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "deleteArticles": {
+                        @SuppressWarnings("unchecked")
+                        List<Long> ids = (List<Long>) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("ids", ids);
+                        msg.put("content", content);
+                        msg.put("user_id", userId);
+                        msg.put("article_ids", ids);
+                        msg.put("action", "delete");
+                        msg.put("msg", "批量删除了" + ids.size() + "篇文章");
                         json = objectMapper.writeValueAsString(msg);
                         break;
                     }
@@ -103,7 +118,7 @@ public class ArticleServiceAspect {
                         msg.put("content", content);
                         msg.put("user_id", userId);
                         msg.put("article_id", id);
-                        msg.put("action", "edit");
+                        msg.put("action", "publish");
                         msg.put("msg", "发布了1篇文章");
                         json = objectMapper.writeValueAsString(msg);
                         break;
@@ -115,7 +130,7 @@ public class ArticleServiceAspect {
                         msg.put("content", content);
                         msg.put("user_id", userId);
                         msg.put("article_id", id);
-                        msg.put("action", "edit");
+                        msg.put("action", "view");
                         msg.put("msg", "浏览了1篇文章");
                         json = objectMapper.writeValueAsString(msg);
                         break;
@@ -135,6 +150,7 @@ public class ArticleServiceAspect {
                     public void afterCommit() {
                         logger.info("事务提交后开始同步ES...");
                         ginClient.syncES();
+                        logger.info("事务提交后同步ES完成");
                     }
                 });
 

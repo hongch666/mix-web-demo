@@ -11,9 +11,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import lombok.extern.slf4j.Slf4j;
 
-// TODO: 增加用户的批量删除
-// TODO: 增加文章的批量删除
-
 @EnableFeignClients()
 @SpringBootApplication
 @EnableScheduling
