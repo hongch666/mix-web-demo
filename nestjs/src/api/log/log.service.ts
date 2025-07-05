@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, DeleteResult } from 'mongoose';
 import { ArticleLog, ArticleLogDocument } from './schema/log.schema';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
 import { UserService } from '../user/user.service';
@@ -22,6 +22,10 @@ export class ArticleLogService {
 
   async removeById(id: string) {
     return this.logModel.findByIdAndDelete(id).exec();
+  }
+
+  async removeByIds(ids: string[]): Promise<DeleteResult> {
+    return this.logModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 
   async findByFilter(query: QueryArticleLogDto) {

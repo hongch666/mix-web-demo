@@ -76,4 +76,29 @@ export class ArticleLogController {
     await this.logService.removeById(id);
     return null;
   }
+
+  @Delete('batch/:ids')
+  @ApiOperation({
+    summary: '批量删除日志',
+    description: '通过日志ID路径参数批量删除，多个ID用英文逗号分隔',
+  })
+  async removeByIds(@Param('ids') ids: string) {
+    const userId = this.cls.get('userId');
+    const username = this.cls.get('username');
+    const idArr = ids
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    fileLogger.info(
+      '用户' +
+        userId +
+        ':' +
+        username +
+        ' DELETE /logs/batch/:ids: ' +
+        '批量删除日志\nIDS: ' +
+        JSON.stringify(idArr),
+    );
+    await this.logService.removeByIds(idArr);
+    return null;
+  }
 }
