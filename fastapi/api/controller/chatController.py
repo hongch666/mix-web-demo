@@ -2,10 +2,12 @@ import datetime
 import time
 import json
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
+from sqlalchemy.orm import Session
 
 from common.utils.response import success
+from config.mysql import get_db
 from entity.dto.chatDTO import ChatRequest, ChatResponse, ChatResponseData
 from api.service.cozeService import coze_service
 from common.utils.writeLog import fileLogger
@@ -15,7 +17,8 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
-    request: ChatRequest
+    request: ChatRequest,
+    db:Session = Depends(get_db)
 ) -> JSONResponse:
     """发送聊天消息"""
     try:
@@ -27,7 +30,8 @@ async def send_message(
         # 普通响应
         response_message: str = await coze_service.simple_chat(
             message=request.message,
-            user_id=actual_user_id
+            user_id=actual_user_id,
+            db=db
         )
         
         # 生成会话ID（如果没有提供）
@@ -58,7 +62,8 @@ async def send_message(
 
 @router.post("/stream", response_model=ChatResponse)
 async def stream_message(
-    request: ChatRequest
+    request: ChatRequest,
+    db: Session = Depends(get_db)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
     try:
@@ -74,7 +79,8 @@ async def stream_message(
             try:
                 async for chunk in coze_service.stream_chat(
                     message=request.message,
-                    user_id=actual_user_id
+                    user_id=actual_user_id,
+                    db=db
                 ):
                     print("hi")
                     message_acc += chunk

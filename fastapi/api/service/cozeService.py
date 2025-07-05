@@ -1,8 +1,12 @@
 import asyncio
 from typing import List, Dict, Any, AsyncGenerator, Optional
 from cozepy import Coze, TokenAuth, Message, ChatStatus
+from fastapi import Depends
+from sqlalchemy.orm import Session
 from common.utils.writeLog import fileLogger as logger
 from config.config import load_config, load_secret_config
+from config.mysql import get_db
+from entity.po.article import Article
 
 class CozeService:
     api_key: str
@@ -30,15 +34,20 @@ class CozeService:
         
         logger.info("Coze 服务初始化完成")
     
-    async def simple_chat(self, message: str, user_id: str = "default") -> str:
+    async def simple_chat(self, message: str, user_id: str = "default", db:Session = None) -> str:
         """简单聊天接口 - 修复 API 调用"""
         try:
-            logger.info(f"用户 {user_id} 发送消息: {message}")
+            # 1. 检索相关知识
+            knowledge = self.search_knowledge_from_db(db)
+            # 2. 拼接知识到 prompt
+            prompt = f"已知文章表信息：{knowledge}\n用户提问：{message}"
+            logger.info(f"用户 {user_id} 发送消息: {prompt}")
+            # 3. 发送给大模型
             chat = self.coze_client.chat.create(
                 bot_id=self.bot_id,
                 user_id=user_id,
                 additional_messages=[
-                    Message.build_user_question_text(content=message)
+                    Message.build_user_question_text(content=prompt)
                 ]
             )
             logger.info(f"创建聊天会话: {chat.id}")
@@ -105,17 +114,23 @@ class CozeService:
                 return "❌ 机器人未发布到 API 频道。请在 Coze 平台将机器人发布到 'Agent As API' 频道。"
             return f"聊天服务异常: {str(e)}"
     
-    async def stream_chat(self, message: str, user_id: str = "default") -> AsyncGenerator[str, None]:
+    async def stream_chat(self, message: str, user_id: str = "default",db:Session = None) -> AsyncGenerator[str, None]:
         """流式聊天接口 - 兼容异步调用"""
         try:
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
 
+            # 1. 检索相关知识
+            knowledge = self.search_knowledge_from_db(db)
+            # 2. 拼接知识到 prompt
+            prompt = f"已知文章表信息：{knowledge}\n用户提问：{message}"
+            logger.info(f"用户 {user_id} 发送消息: {prompt}")
+            # 3. 发送给大模型
             def sync_stream():
                 return self.coze_client.chat.stream(
                     bot_id=self.bot_id,
                     user_id=user_id,
                     additional_messages=[
-                        Message.build_user_question_text(content=message)
+                        Message.build_user_question_text(content=prompt)
                     ]
                 )
 
@@ -221,6 +236,16 @@ class CozeService:
             return structure_info
         except Exception as e:
             return {"error": str(e)}
+        
+    def search_knowledge_from_db(self, db: Session = Depends(get_db)) -> str:
+        articles = db.query(Article).limit(10).all()
+        # 转换为字符串
+        if not articles:
+            return "没有找到相关的知识库内容"
+        content_list: List[str] = []
+        for article in articles:
+            content_list.append(f"标题: {article.title}, 内容: {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}")
+        return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
 
 try:
     coze_service: Optional[CozeService] = CozeService()
