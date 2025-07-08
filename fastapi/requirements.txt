@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pyyaml
+nacos-sdk-python
+requests
+sqlalchemy
+pymysql
+pymongo
+wordcloud
+oss2
+jieba
+cozepy
+pandas

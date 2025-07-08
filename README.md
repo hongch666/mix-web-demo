@@ -43,8 +43,13 @@
 ### FastAPI 部分
 
 ```bash
-pip install fastapi uvicorn pyyaml nacos-sdk-python requests sqlalchemy pymysql pymongo wordcloud oss2 jieba cozepy pandas
+cd fastapi
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
+
+> 如需退出虚拟环境，执行 `deactivate`
 
 ### Gin 部分
 
