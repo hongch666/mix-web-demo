@@ -91,7 +91,7 @@ func SyncArticlesToES() {
 	}
 
 	if bulkRequest.NumberOfActions() == 0 {
-		panic("没有可同步的数据")
+		panic("没有已发布的文章可同步")
 	}
 
 	resp, err2 := bulkRequest.Do(context.Background())
