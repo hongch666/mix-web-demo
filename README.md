@@ -32,6 +32,7 @@
 - Python 3.8+
 - Go 1.20+
 - Java 17+
+- Maven 3.6+
 - Node.js 20+
 - MySQL 8.0+
 - MongoDB 5.0+
@@ -80,6 +81,8 @@ npm install # 安装npm包
 
 使用提供的运行脚本启动各个服务：
 
+### Linux/macOS
+
 ```bash
 # 启动所有服务
 ./run.sh
@@ -87,6 +90,27 @@ npm install # 安装npm包
 # 停止所有服务
 ./stop.sh
 ```
+
+### Windows
+
+可使用 PowerShell 脚本实现多服务并行启动。示例：
+
+```powershell
+# 启动所有服务（每个服务一个新窗口）
+Start-Process powershell -ArgumentList "cd spring; mvn spring-boot:run"
+Start-Process powershell -ArgumentList "cd gin; fresh"
+Start-Process powershell -ArgumentList "cd nestjs; npm run start:debug"
+Start-Process powershell -ArgumentList "cd fastapi; venv\Scripts\activate; python -u main.py"
+Start-Process powershell -ArgumentList "cd gateway; mvn spring-boot:run"
+```
+
+将上述内容保存为 `run.ps1`，右键用 PowerShell 运行，或在 PowerShell 里执行：
+
+```powershell
+./run.ps1
+```
+
+如需关闭服务，请手动关闭对应窗口。
 
 ## 数据库初始化
 
