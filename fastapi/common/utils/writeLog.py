@@ -14,6 +14,8 @@ def write_log(message: str, level: str = "INFO") -> None:
         level: 日志级别 (INFO, WARNING, ERROR, DEBUG)
     """
     LOG_PATH: str = load_config("logs")["path"]
+    if not os.path.exists(LOG_PATH):
+        os.makedirs(LOG_PATH, exist_ok=True)
     log_file: str = os.path.join(LOG_PATH, f"app_{datetime.now().strftime('%Y-%m-%d')}.log")
     timestamp: str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     log_entry: str = f"{timestamp} - {level} - {message}\n"
