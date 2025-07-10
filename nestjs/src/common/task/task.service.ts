@@ -12,7 +12,7 @@ export class TaskService {
     private readonly logModel: Model<ArticleLogDocument>,
   ) {}
 
-  @Cron('0 0 */3 * * *')
+  @Cron('0 0 1 * *')
   async handleCronWithCustomExpression() {
     fileLogger.info('开始清除任务');
     const result = await this.logModel.deleteMany({}).exec();
