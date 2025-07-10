@@ -46,7 +46,8 @@
 ```bash
 cd fastapi
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate # Linux
+venv\Scripts\activate # Windows
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
@@ -132,7 +133,8 @@ CREATE TABLE user (
     name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
     password VARCHAR(255) NOT NULL COMMENT '密码',
     email VARCHAR(255) UNIQUE COMMENT '邮箱',
-    age INT COMMENT '年龄'
+    age INT COMMENT '年龄',
+    role VARCHAR(255) NOT NULL COMMENT '用户权限'
 ) COMMENT='用户表'
 ```
 
@@ -147,8 +149,8 @@ CREATE TABLE articles (
     tags VARCHAR(255) NOT NULL COMMENT '文章标签',
     status INT NOT NULL COMMENT '文章状态',
     views INT NOT NULL COMMENT '文章浏览量',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+    create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) COMMENT='文章表'
 ```
 
@@ -167,7 +169,9 @@ CREATE TABLE articles (
 ```bash
 # 运行FastAPI服务
 cd fastapi
-python main.py
+source venv/bin/activate # Linux
+venv\Scripts\activate # Windows
+python3 -u main.py
 
 # 运行Gin服务
 cd gin
