@@ -6,6 +6,8 @@ import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/utils/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
+// TODO: 增加日期指定时区
+
 async function bootstrap(): Promise<void> {
   const app: INestApplication<any> = await NestFactory.create(AppModule);
   // Swagger 配置
