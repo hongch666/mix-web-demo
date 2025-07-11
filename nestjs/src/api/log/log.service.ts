@@ -5,7 +5,16 @@ import { ArticleLog, ArticleLogDocument } from './schema/log.schema';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
 import { UserService } from '../user/user.service';
 import { ArticleService } from '../article/article.service';
-const dayjs = require('dayjs');
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+import isLeapYear from 'dayjs/plugin/isLeapYear';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.extend(isLeapYear);
+
+const TIMEZONE = 'Asia/Shanghai';
 
 @Injectable()
 export class ArticleLogService {
@@ -17,6 +26,7 @@ export class ArticleLogService {
   ) {}
 
   async create(dto: CreateArticleLogDto) {
+    // 指定 createdAt 为东八区时间
     return this.logModel.create(dto);
   }
 
@@ -80,8 +90,12 @@ export class ArticleLogService {
         action: log.action,
         content: log.content,
         msg: log.msg,
-        createdAt: log.createdAt,
-        updatedAt: log.updatedAt,
+        createdAt: log.createdAt
+          ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+          : undefined,
+        updatedAt: log.updatedAt
+          ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+          : undefined,
       })),
     );
     return { total, list: resultList };
