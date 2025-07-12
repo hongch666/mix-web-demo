@@ -177,3 +177,6 @@ logs/
 *.iml
 *.iws
 *.ipr
+
+### 配置文件
+**/*.yaml
