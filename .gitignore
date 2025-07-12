@@ -171,3 +171,9 @@ bfg-1.14.0.jar
 
 static/
 logs/
+
+### Root IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
