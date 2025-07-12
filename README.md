@@ -406,6 +406,58 @@ coze:
   api_key: your_api_key
 ```
 
+### Gateway 部分
+
+1. `gateway/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
+2. gateway 部分的 yaml 配置文件可以配置路由
+3. 内容如下
+
+- `application.yaml`
+
+```yaml
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      server-addr: 127.0.0.1:8848
+    gateway:
+      routes:
+        # 1. 先排除特殊路径
+        - id: exclude-list
+          uri: no://op
+          predicates:
+            - Path=/articles/list,/api_gin/syncer,/logs,/upload,/analyze/excel
+          filters:
+            - SetStatus=204
+
+        # 2. 正常路由
+        - id: spring
+          uri: lb://spring
+          predicates:
+            - Path=/api_spring/**,/users/**,/articles/**
+
+        - id: gin
+          uri: lb://gin
+          predicates:
+            - Path=/api_gin/**,/search
+
+        - id: nestjs
+          uri: lb://nestjs
+          predicates:
+            - Path=/api_nestjs/**,/logs/**,/article/download/**
+
+        - id: fastapi
+          uri: lb://fastapi
+          predicates:
+            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**
+jwt:
+  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+  expiration: 2592000000 # 毫秒数（30 天）
+```
+
 ## Swagger 说明
 
 ### Spring 部分
