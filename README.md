@@ -198,22 +198,213 @@ npm run start:prod # production mode
 1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
 2. gateway 部分的 yaml 配置文件可以配置路由
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+4. 内容如下
+
+- `application.yaml`
+
+```yaml
+server:
+  port: 8081
+  tomcat:
+    threads:
+      max: 25
+    accept-count: 25
+    max-connections: 100
+spring:
+  application:
+    name: spring
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+      timeout: 3000
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: hcsy
+    password: 123456
+    virtual-host: test
+logging:
+  file:
+    path: "../logs/spring"
+jwt:
+  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+  expiration: 86400000 # 毫秒数（1 天）
+```
+
+- `bootstrap.yml`
+
+```yml
+spring:
+  config:
+    import:
+      - "nacos:application.yml" # 将 DataId 明确设为 application.yml
+      - "optional:nacos:application-dev.yml?group=DEV_GROUP"
+  datasource:
+    url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: csc20040312
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    nacos:
+      config:
+        server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
+  global-config:
+    db-config:
+      id-type: auto # 主键策略
+      logic-delete-field: deleted # 逻辑删除字段
+```
 
 ### Gin 部分
 
 1. `gin`目录下有 yaml 配置文件，可以在其中配置对应信息
 2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+3. 内容如下
+
+- `application.yaml`
+
+```yaml
+server:
+  ip: 127.0.0.1
+  port: 8082
+
+nacos:
+  ipAddr: 127.0.0.1 # 172.22.87.240
+  port: 8848
+  namespace: "public"
+  serviceName: gin
+  groupName: DEFAULT_GROUP
+  clusterName: DEFAULT
+
+database:
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    username: root
+    password: csc20040312
+    dbname: demo
+    charset: utf8mb4
+    loc: Local
+  es:
+    url: http://127.0.0.1:9200
+    sniff: false
+
+mq:
+  username: hcsy
+  password: 123456
+  host: 127.0.0.1
+  port: 5672
+  vhost: test
+
+logs:
+  path: "../logs/gin"
+```
 
 ### Nestjs 部分
 
 1. `nestjs`目录下有 yaml 配置文件，可以在其中配置对应信息
 2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+3. 内容如下
+
+- `application.yaml`
+
+```yaml
+server:
+  ip: 127.0.0.1
+  port: 8083
+  serviceName: nestjs
+nacos:
+  server-addr: 127.0.0.1 # 172.22.87.240:8848
+  namespace: public
+  clusterName: DEFAULT
+database:
+  type: mysql
+  host: localhost
+  port: 3306
+  username: root
+  password: csc20040312
+  database: demo
+  synchronize: true
+  logging: false
+  entities:
+    - src/**/*.entity.js
+mongodb:
+  url: mongodb://localhost:27017
+  dbName: demo
+rabbitmq:
+  host: localhost
+  port: 5672
+  username: hcsy
+  password: 123456
+  vhost: test
+files:
+  word: ../static/word
+logs:
+  path: "../logs/nestjs"
+```
 
 ### FastAPI 部分
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
 2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台的 api_key，不要泄露
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+4. 内容如下
+
+- `application.yaml`
+
+```yaml
+server:
+  ip: 127.0.0.1
+  port: 8084
+nacos:
+  server_addresses: "127.0.0.1:8848"
+  namespace: "public"
+  service_name: "fastapi"
+  group_name: "DEFAULT_GROUP"
+database:
+  mysql:
+    url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+  mongodb:
+    url: "mongodb://localhost:27017"
+    database: "demo"
+oss:
+  bucket_name: mix-web-demo
+  endpoint: oss-cn-guangzhou.aliyuncs.com
+wordcloud:
+  font_path: "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+  width: 800
+  height: 400
+  background_color: "white"
+files:
+  pic_path: "../static/pic"
+  excel_path: "../static/excel"
+logs:
+  path: "../logs/fastapi"
+coze:
+  bot_id: "7521289882573324298"
+  base_url: "https://api.coze.cn"
+  timeout: 30
+```
+
+- `application-secret.yaml`
+
+```yaml
+oss:
+  access_key_id: your_access_key_id
+  access_key_secret: your_access_key_secret
+coze:
+  api_key: your_api_key
+```
 
 ## Swagger 说明
 
