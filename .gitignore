@@ -87,6 +87,9 @@ gin/nacos/log/*.log
 gin/nacos/log/**
 gin/nacos/
 
+# Swagger
+gin/docs/
+
 # Test binaries
 gin/*.test
 
