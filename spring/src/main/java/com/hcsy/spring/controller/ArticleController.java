@@ -32,6 +32,7 @@ public class ArticleController {
 
     private final ArticleService articleService;
     private final SimpleLogger logger;
+    private final com.hcsy.spring.service.UserService userService;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
@@ -90,7 +91,24 @@ public class ArticleController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " GET /articles/{id}: " + "获取文章详情\nID: %s", id);
         Article article = articleService.getById(id);
-        return Result.success(article);
+        if (article == null) {
+            return Result.error("文章不存在");
+        }
+        // 查询作者用户名
+        com.hcsy.spring.po.User user = userService.getById(article.getUserId());
+        String username = user != null ? user.getName() : null;
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", article.getId());
+        data.put("title", article.getTitle());
+        data.put("content", article.getContent());
+        data.put("userId", article.getUserId());
+        data.put("tags", article.getTags());
+        data.put("status", article.getStatus());
+        data.put("createAt", article.getCreateAt());
+        data.put("updateAt", article.getUpdateAt());
+        data.put("views", article.getViews());
+        data.put("username", username);
+        return Result.success(data);
     }
 
     @PutMapping
