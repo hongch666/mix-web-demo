@@ -69,6 +69,8 @@ go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
 cd spring # 进入文件夹
 cd gateway # 进入网关
 mvn clean install # 下载依赖
+./mvnw clean install # Linux/macOS(无全局maven)
+mvnw.cmd clean install # Windows(无全局maven)
 ```
 
 ### NestJS 部分
@@ -94,26 +96,17 @@ npm install # 安装npm包
 
 ### Windows
 
-可使用 PowerShell 脚本实现多服务并行启动。示例：
-
 ```powershell
-# 启动所有服务（每个服务一个新窗口）
-Start-Process powershell -ArgumentList "cd spring; mvn spring-boot:run"
-Start-Process powershell -ArgumentList "cd gin; fresh"
-Start-Process powershell -ArgumentList "cd nestjs; npm run start:debug"
-Start-Process powershell -ArgumentList "cd fastapi; venv\Scripts\activate; python -u main.py"
-Start-Process powershell -ArgumentList "cd gateway; mvn spring-boot:run"
-```
-
-将上述内容保存为 `run.ps1`，右键用 PowerShell 运行，或在 PowerShell 里执行：
-
-```powershell
-./run.ps1
+.\run.ps1
 ```
 
 如需关闭服务，请手动关闭对应窗口。
 
-## 数据库初始化
+### 注意
+
+如果未全局安装 maven，需修改 Spring 和 Gateway 部分的启动脚本的指令。
+
+## 基础服务组件初始化
 
 1. 确保已安装并启动以下数据库服务：
 
@@ -121,6 +114,8 @@ Start-Process powershell -ArgumentList "cd gateway; mvn spring-boot:run"
 - MongoDB
 - Redis
 - Elasticsearch
+- RabbitMQ
+- Nacos
 
 2. MySQL 表创建
 
@@ -183,6 +178,8 @@ fresh # 运行项目(有修改自启插件)
 cd spring
 mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
+./mvnw spring-boot:run # Linux/macOS 启动项目(无全局maven)
+mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
 
 # 运行NestJS服务
 cd nestjs
