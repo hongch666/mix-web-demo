@@ -6,6 +6,7 @@ from typing import Dict, List, Any
 
 from config.mysql import get_db
 from entity.po.article import Article
+from entity.po.user import User
 from config.mongodb import db as mongo_db
 from common.utils.writeLog import fileLogger as logger
 from wordcloud import WordCloud
@@ -14,13 +15,19 @@ from config.config import load_config
 
 def get_top10_articles_service(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     articles = db.query(Article).limit(10).all()
-    # 转换为字典
+    # 获取所有作者id
+    user_ids = [article.user_id for article in articles]
+    # 批量查user表
+    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    user_id_to_name = {user.id: user.name for user in users}
+    # 转换为字典并加上username
     return [
         {
             "id": article.id,
             "title": article.title,
             "content": article.content,
             "user_id": article.user_id,
+            "username": user_id_to_name.get(article.user_id),
             "tags": article.tags,
             "status": article.status,
             "create_at": article.create_at.isoformat() if article.create_at else None,
