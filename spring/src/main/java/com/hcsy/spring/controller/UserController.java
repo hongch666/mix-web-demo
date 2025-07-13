@@ -149,7 +149,11 @@ public class UserController {
         String key = "user:status:" + user.getId();
         redisUtil.set(key, "1");
         String token = jwtUtil.generateToken(user.getId(), user.getName());
-        return Result.success(token);
+        Map<String, Object> data = new HashMap<>();
+        data.put("token", token);
+        data.put("userId", user.getId());
+        data.put("username", user.getName());
+        return Result.success(data);
     }
 
     @PostMapping("/logout/{id}")
