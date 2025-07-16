@@ -184,3 +184,6 @@ logs/
 ### 配置文件
 **/*.yaml
 **/*.yml
+
+ssh.sh
+ssh.bat
