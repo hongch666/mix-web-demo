@@ -33,16 +33,15 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 	// 发布时间范围过滤（可选）
 	if searchDTO.StartDate != nil || searchDTO.EndDate != nil {
 		rangeQuery := elastic.NewRangeQuery("create_at")
-		loc, _ := time.LoadLocation("Asia/Shanghai")
 		layout := "2006-01-02 15:04:05"
 		if searchDTO.StartDate != nil {
-			if startTime, err := time.ParseInLocation(layout, *searchDTO.StartDate, loc); err == nil {
-				rangeQuery.Gte(startTime)
+			if startTime, err := time.ParseInLocation(layout, *searchDTO.StartDate, time.Local); err == nil {
+				rangeQuery.Gte(startTime.Format(layout))
 			}
 		}
 		if searchDTO.EndDate != nil {
-			if endTime, err := time.ParseInLocation(layout, *searchDTO.EndDate, loc); err == nil {
-				rangeQuery.Lte(endTime)
+			if endTime, err := time.ParseInLocation(layout, *searchDTO.EndDate, time.Local); err == nil {
+				rangeQuery.Lte(endTime.Format(layout))
 			}
 		}
 		boolQuery.Filter(rangeQuery)
