@@ -30,6 +30,11 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 		boolQuery.Filter(elastic.NewTermQuery("userId", *searchDTO.UserID))
 	}
 
+	// 用户名过滤（可选）
+	if searchDTO.Username != "" {
+		boolQuery.Filter(elastic.NewWildcardQuery("username", "*"+searchDTO.Username+"*"))
+	}
+
 	// 发布时间范围过滤（可选）
 	if searchDTO.StartDate != nil || searchDTO.EndDate != nil {
 		rangeQuery := elastic.NewRangeQuery("create_at")
