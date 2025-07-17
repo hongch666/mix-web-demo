@@ -42,6 +42,8 @@ export class ArticleLogService {
     const {
       userId,
       articleId,
+      username,
+      articleTitle,
       action,
       startTime,
       endTime,
@@ -53,6 +55,31 @@ export class ArticleLogService {
     if (userId) filters.userId = Number(userId);
     if (articleId) filters.articleId = Number(articleId);
     if (action) filters.action = action;
+
+    // 根据用户名搜索，先查找匹配的用户ID
+    if (username) {
+      const users = await this.userService.getUsersByName(username);
+      const userIds = users.map((user) => user.id);
+      if (userIds.length > 0) {
+        filters.userId = { $in: userIds };
+      } else {
+        // 如果没有找到匹配的用户，返回空结果
+        return { total: 0, list: [] };
+      }
+    }
+
+    // 根据文章标题搜索，先查找匹配的文章ID
+    if (articleTitle) {
+      const articles =
+        await this.articleService.getArticlesByTitle(articleTitle);
+      const articleIds = articles.map((article) => article.id);
+      if (articleIds.length > 0) {
+        filters.articleId = { $in: articleIds };
+      } else {
+        // 如果没有找到匹配的文章，返回空结果
+        return { total: 0, list: [] };
+      }
+    }
 
     if (startTime || endTime) {
       filters.createdAt = {};

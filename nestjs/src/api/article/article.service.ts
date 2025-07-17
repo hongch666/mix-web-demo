@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Articles } from './entities/article.entity';
 import { WordService } from 'src/common/word/word.service';
 import { NacosService } from 'src/common/nacos/nacos.service';
@@ -21,6 +21,13 @@ export class ArticleService {
   // 查询文章
   async getArticleById(id: number): Promise<Articles | null> {
     return this.articleRepository.findOne({ where: { id } });
+  }
+
+  // 根据标题模糊搜索文章
+  async getArticlesByTitle(title: string): Promise<Articles[]> {
+    return this.articleRepository.find({
+      where: { title: Like(`%${title}%`) },
+    });
   }
 
   // 生成word并保存到指定位置

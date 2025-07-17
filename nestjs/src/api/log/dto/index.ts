@@ -51,6 +51,16 @@ export class QueryArticleLogDto {
   @IsNumberString()
   articleId?: string;
 
+  @ApiPropertyOptional({ description: '用户名（模糊搜索）' })
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @ApiPropertyOptional({ description: '文章标题（模糊搜索）' })
+  @IsOptional()
+  @IsString()
+  articleTitle?: string;
+
   @ApiPropertyOptional({
     description: '操作类型',
     enum: ['add', 'search', 'edit', 'delete'],
