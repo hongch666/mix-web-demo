@@ -17,8 +17,12 @@ public class ArticleCreateDTO {
     @NotBlank(message = "文章内容不能为空")
     private String content;
 
-    @NotNull(message = "用户ID不能为空")
-    private Long userId;
+    // @NotNull(message = "用户ID不能为空")
+    // private Long userId;
+
+    @NotBlank(message = "用户名不能为空")
+    @Size(min = 1, max = 50, message = "用户名长度应在1~50之间")
+    private String username;
 
     @Size(max = 200, message = "标签字符串长度不能超过200个字符")
     private String tags; // 多个标签用英文逗号分隔

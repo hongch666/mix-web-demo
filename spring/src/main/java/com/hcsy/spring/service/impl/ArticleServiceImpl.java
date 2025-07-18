@@ -7,7 +7,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.mapper.ArticleMapper;
 import com.hcsy.spring.po.Article;
+import com.hcsy.spring.po.User;
 import com.hcsy.spring.service.ArticleService;
+import com.hcsy.spring.service.UserService;
 import com.hcsy.spring.utils.UserContext;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
     private final ArticleMapper articleMapper;
+    private final UserService userService;
 
     @Override
     @Transactional
@@ -68,10 +71,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(article.getId());
+        User user = userService.getById(currentUserId);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
         }
-        if (!currentUserId.equals(dbArticle.getUserId())) {
+        if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
             throw new RuntimeException("无权修改他人文章");
         }
         // 执行修改
@@ -90,10 +94,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
+        User user = userService.getById(currentUserId);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
         }
-        if (!currentUserId.equals(dbArticle.getUserId())) {
+        if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
             throw new RuntimeException("无权删除他人文章");
         }
         // 执行删除
@@ -109,10 +114,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
         for (Long id : ids) {
             Article dbArticle = articleMapper.selectById(id);
+            User user = userService.getById(currentUserId);
             if (dbArticle == null) {
                 throw new RuntimeException("文章不存在，ID:" + id);
             }
-            if (!currentUserId.equals(dbArticle.getUserId())) {
+            if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
                 throw new RuntimeException("无权删除他人文章，ID:" + id);
             }
         }

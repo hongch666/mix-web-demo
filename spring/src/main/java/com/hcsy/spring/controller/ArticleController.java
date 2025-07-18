@@ -6,7 +6,9 @@ import com.hcsy.spring.dto.ArticleCreateDTO;
 import com.hcsy.spring.dto.ArticleUpdateDTO;
 import com.hcsy.spring.po.Article;
 import com.hcsy.spring.po.Result;
+import com.hcsy.spring.po.User;
 import com.hcsy.spring.service.ArticleService;
+import com.hcsy.spring.service.UserService;
 import com.hcsy.spring.utils.SimpleLogger;
 import com.hcsy.spring.utils.UserContext;
 import cn.hutool.core.bean.BeanUtil;
@@ -32,7 +34,7 @@ public class ArticleController {
 
     private final ArticleService articleService;
     private final SimpleLogger logger;
-    private final com.hcsy.spring.service.UserService userService;
+    private final UserService userService;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
@@ -41,8 +43,13 @@ public class ArticleController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " POST /articles: " + "创建文章\nArticleCreateDTO: %s", dto);
         Article article = BeanUtil.copyProperties(dto, Article.class);
+        // 获取用户id
+        User user = userService.findByUsername(dto.getUsername());
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+        article.setUserId(user.getId());
         article.setViews(0);
-        article.setUserId(userId);
         articleService.saveArticle(article);
         return Result.success();
     }
@@ -117,7 +124,27 @@ public class ArticleController {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " PUT /articles: " + "更新文章\nArticleUpdateDTO: %s", dto);
+
+        // 获取用户id
+        User userFromUsername = userService.findByUsername(dto.getUsername());
+        if (userFromUsername == null) {
+            return Result.error("用户不存在");
+        }
+
         Article article = BeanUtil.copyProperties(dto, Article.class);
+        article.setUserId(userFromUsername.getId());
+        Article dbArticle = articleService.getById(dto.getId());
+        User user = userService.getById(userId);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        System.out.println("!!-------------------------------!!");
+        System.out.println(user.getRole());
+        System.out.println("!!-------------------------------!!");
+        if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
+            System.out.println("hihihi");
+            throw new RuntimeException("无权修改他人文章");
+        }
         articleService.updateArticle(article);
         return Result.success();
     }
@@ -128,6 +155,14 @@ public class ArticleController {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " DELETE /articles/{id}: " + "删除文章\nID: %s", id);
+        Article dbArticle = articleService.getById(id);
+        User user = userService.getById(userId);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
+            throw new RuntimeException("无权删除他人文章");
+        }
         articleService.deleteArticle(id);
         return Result.success();
     }
@@ -143,8 +178,21 @@ public class ArticleController {
                 .map(Long::valueOf)
                 .toList();
         logger.info("用户" + userId + ":" + userName + " DELETE /articles/batch/{ids}: " + "批量删除文章，IDS: %s", idList);
+
+        User user = userService.getById(userId);
+        for (Long id : idList) {
+            Article dbArticle = articleService.getById(id);
+            if (dbArticle == null) {
+                throw new RuntimeException("文章不存在");
+            }
+            if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
+                throw new RuntimeException("无权删除他人文章");
+            }
+        }
+
         articleService.deleteArticles(idList);
         return Result.success();
+
     }
 
     @PutMapping("/publish/{id}")
@@ -164,10 +212,11 @@ public class ArticleController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " PUT /articles/view/{id}: " + "增加文章阅读量\nID: %s", id);
         Article dbArticle = articleService.getById(id);
+        User user = userService.getById(userId);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
         }
-        if (userId != dbArticle.getUserId()) {
+        if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
             throw new RuntimeException("无权发布他人文章");
         }
         articleService.addViewArticle(id);
