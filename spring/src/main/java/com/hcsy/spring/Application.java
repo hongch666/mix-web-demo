@@ -11,8 +11,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import lombok.extern.slf4j.Slf4j;
 
-// TODO: 增加用户的头像字段（阿里云链接）
-
 @EnableFeignClients()
 @SpringBootApplication
 @EnableScheduling

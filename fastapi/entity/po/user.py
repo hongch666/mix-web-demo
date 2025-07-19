@@ -11,3 +11,4 @@ class User(Base):
     age: int = Column(Integer)
     email: str = Column(String(255))
     role: str = Column(String(255))
+    image: str = Column(String(255), nullable=True)

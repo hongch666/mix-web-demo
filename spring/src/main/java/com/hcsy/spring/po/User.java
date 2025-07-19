@@ -14,4 +14,5 @@ public class User {
     private Integer age;
     private String email;
     private String role;
+    private String img;
 }

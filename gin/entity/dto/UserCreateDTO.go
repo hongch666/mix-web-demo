@@ -5,4 +5,5 @@ type UserCreateDTO struct {
 	Name     string `json:"name" binding:"required,min=3,max=20"`
 	Age      int    `json:"age" binding:"required,min=0,max=150"`
 	Email    string `json:"email" binding:"required,email"`
+	Image    string `json:"image" binding:"required,url"`
 }

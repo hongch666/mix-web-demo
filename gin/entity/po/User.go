@@ -7,6 +7,7 @@ type User struct {
 	Age      int    `gorm:"column:age" json:"age"`
 	Email    string `gorm:"column:email" json:"email"`
 	Role     string `gorm:"column:role" json:"role"`
+	Image    string `gorm:"column:image" json:"image"`
 }
 
 func (User) TableName() string {
