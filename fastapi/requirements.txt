@@ -11,3 +11,4 @@ oss2
 jieba
 cozepy
 pandas
+python-multipart
