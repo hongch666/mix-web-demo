@@ -21,5 +21,5 @@ export class User {
   role: string;
 
   @Column({ nullable: true })
-  image: string;
+  img: string;
 }
