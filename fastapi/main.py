@@ -13,7 +13,6 @@ from common.handler.exception_handlers import global_exception_handler
 from common.task.uploadTask import start_scheduler
 from typing import Dict, Any
 
-# TODO: 修改COZE聊天读取文章和日志的数量限制（使用最新数据）
 # TODO: 暴露上传到阿里云的上传接口
 
 server_config: Dict[str, Any] = load_config("server")

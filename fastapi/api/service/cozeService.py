@@ -153,12 +153,19 @@ class CozeService:
                 yield f"流式聊天服务异常: {str(e)}"
 
     def search_article_from_db(self, db: Session = Depends(get_db)) -> str:
-        articles: List[Article] = db.query(Article).all()
+        articles: List[Article] = (
+            db.query(Article)
+            .order_by(Article.create_at.desc())
+            .limit(100)
+            .all()
+        )
         if not articles:
             return "没有找到相关的知识库内容"
         content_list: List[str] = []
         for article in articles:
-            content_list.append(f"标题: {article.title}, 内容: {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}")
+            content_list.append(
+                f"标题: {article.title}, 内容: {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
+            )
         return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
     
     def search_user_from_db(self, db: Session = Depends(get_db)) -> str:
@@ -172,7 +179,7 @@ class CozeService:
     
     def search_logs_from_db(self) -> str:
         logs = mongo_db["articlelogs"]
-        cursor: Any = logs.find()
+        cursor: Any = logs.find().sort("createdAt", -1).limit(100)
         log_list: List[str] = []
         for log in cursor:
             log_str: str = ", ".join([f"{k}: {v}" for k, v in log.items()])
