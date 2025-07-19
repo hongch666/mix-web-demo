@@ -8,6 +8,15 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+export enum ArticleAction {
+  ADD = 'add',
+  SEARCH = 'search',
+  EDIT = 'edit',
+  DELETE = 'delete',
+  PUBLISH = 'publish',
+  VIEW = 'view',
+}
+
 export class CreateArticleLogDto {
   @ApiProperty({ description: '用户ID', example: '1' })
   @IsNumber()
@@ -21,11 +30,11 @@ export class CreateArticleLogDto {
 
   @ApiProperty({
     description: '操作类型',
-    enum: ['add', 'search', 'edit', 'delete', 'publish', 'view'],
-    example: 'edit',
+    enum: ArticleAction,
+    example: ArticleAction.EDIT,
   })
-  @IsEnum(['add', 'search', 'edit', 'delete', 'publish', 'view'])
-  action: string;
+  @IsEnum(ArticleAction)
+  action: ArticleAction;
 
   @ApiProperty({
     description: '任意结构的操作内容（JSON）',
@@ -63,11 +72,16 @@ export class QueryArticleLogDto {
 
   @ApiPropertyOptional({
     description: '操作类型',
-    enum: ['add', 'search', 'edit', 'delete'],
+    enum: [
+      ArticleAction.ADD,
+      ArticleAction.SEARCH,
+      ArticleAction.EDIT,
+      ArticleAction.DELETE,
+    ],
   })
   @IsOptional()
-  @IsEnum(['add', 'search', 'edit', 'delete'])
-  action?: string;
+  @IsEnum(ArticleAction)
+  action?: ArticleAction;
 
   @ApiPropertyOptional({ description: '开始时间（格式：yyyy-MM-dd HH:mm:ss）' })
   @IsOptional()
