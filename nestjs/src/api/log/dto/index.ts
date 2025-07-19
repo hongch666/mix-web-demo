@@ -21,10 +21,10 @@ export class CreateArticleLogDto {
 
   @ApiProperty({
     description: '操作类型',
-    enum: ['add', 'search', 'edit', 'delete'],
+    enum: ['add', 'search', 'edit', 'delete', 'publish', 'view'],
     example: 'edit',
   })
-  @IsEnum(['add', 'search', 'edit', 'delete'])
+  @IsEnum(['add', 'search', 'edit', 'delete', 'publish', 'view'])
   action: string;
 
   @ApiProperty({
