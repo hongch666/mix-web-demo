@@ -38,6 +38,7 @@ public class ArticleServiceAspect {
             "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.deleteArticles(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..)) || " +
             "execution(* com.hcsy.spring.service.ArticleService.addViewArticle(..))")
     public void userServiceTargetMethods() {
     }
