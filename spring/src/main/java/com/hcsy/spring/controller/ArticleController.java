@@ -212,12 +212,8 @@ public class ArticleController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " PUT /articles/view/{id}: " + "增加文章阅读量\nID: %s", id);
         Article dbArticle = articleService.getById(id);
-        User user = userService.getById(userId);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
-        }
-        if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
-            throw new RuntimeException("无权发布他人文章");
         }
         articleService.addViewArticle(id);
         return Result.success();
