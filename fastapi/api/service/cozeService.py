@@ -9,6 +9,7 @@ from config.mysql import get_db
 from config.mongodb import db as mongo_db
 from entity.po.article import Article
 from entity.po.user import User
+from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
 
 
 class CozeService:
@@ -17,6 +18,8 @@ class CozeService:
     base_url: str
     timeout: int
     coze_client: Coze
+    user_id: str
+    username: str
 
     def __init__(self) -> None:
         """初始化 Coze 服务"""
@@ -29,6 +32,8 @@ class CozeService:
         self.bot_id: str = bot_id
         self.base_url: str = base_url
         self.timeout: int = timeout
+        self.user_id: str = get_current_user_id() or ""
+        self.username: str = get_current_username() or ""
 
         self.coze_client: Coze = Coze(
             auth=TokenAuth(token=self.api_key),
@@ -187,10 +192,11 @@ class CozeService:
         return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
     
     def get_prompt(self, message: str, db: Session = Depends(get_db)) -> str:
+        userInfo: str = f"用户ID: {self.user_id}, 用户名: {self.username}"
         article: str = self.search_article_from_db(db)
         user: str = self.search_user_from_db(db)
         logs: str = self.search_logs_from_db()
-        knowledge: str = f"文章信息：{article}\n用户信息：{user}\n日志信息：{logs}"
+        knowledge: str = f"当前用户信息：{userInfo}\n文章信息：{article}\n用户信息：{user}\n日志信息：{logs}"
         prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
         return prompt
     
