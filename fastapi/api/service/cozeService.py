@@ -196,7 +196,7 @@ class CozeService:
         article: str = self.search_article_from_db(db)
         user: str = self.search_user_from_db(db)
         logs: str = self.search_logs_from_db()
-        knowledge: str = f"当前用户信息：{userInfo}\n文章信息：{article}\n用户信息：{user}\n日志信息：{logs}"
+        knowledge: str = f"当前用户信息(提问的用户，一般会称“我”)：{userInfo}\n文章信息：{article}\n用户信息：{user}\n日志信息：{logs}"
         prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
         return prompt
     
