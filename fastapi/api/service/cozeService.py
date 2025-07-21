@@ -18,8 +18,6 @@ class CozeService:
     base_url: str
     timeout: int
     coze_client: Coze
-    user_id: str
-    username: str
 
     def __init__(self) -> None:
         """初始化 Coze 服务"""
@@ -32,8 +30,6 @@ class CozeService:
         self.bot_id: str = bot_id
         self.base_url: str = base_url
         self.timeout: int = timeout
-        self.user_id: str = get_current_user_id() or ""
-        self.username: str = get_current_username() or ""
 
         self.coze_client: Coze = Coze(
             auth=TokenAuth(token=self.api_key),
@@ -192,7 +188,9 @@ class CozeService:
         return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
     
     def get_prompt(self, message: str, db: Session = Depends(get_db)) -> str:
-        userInfo: str = f"用户ID: {self.user_id}, 用户名: {self.username}"
+        user_id: str = get_current_user_id() or ""
+        username: str = get_current_username() or ""
+        userInfo: str = f"用户ID: {user_id}, 用户名: {username}"
         article: str = self.search_article_from_db(db)
         user: str = self.search_user_from_db(db)
         logs: str = self.search_logs_from_db()
