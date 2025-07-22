@@ -14,6 +14,7 @@ import com.hcsy.spring.utils.UserContext;
 
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -149,10 +150,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public void addViewArticle(Long id) {
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (dbArticle.getStatus() != 1) {
+            throw new RuntimeException("文章未发布，无法增加阅读量");
+        }
+        // 获取当前的文章的修改日期
+        LocalDateTime updateAt = dbArticle.getUpdateAt();
         // 增加阅读量
         Article article = new Article();
         article.setId(id);
         article.setViews(dbArticle.getViews() + 1); // 发布状态
+        article.setUpdateAt(updateAt); // 保持原有的更新时间
 
         boolean updated = updateById(article);
         if (!updated) {
