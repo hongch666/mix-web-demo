@@ -56,6 +56,9 @@ def get_keywords_dic() -> Dict[str, int]:
     return keywords_dic
 
 def generate_wordcloud(keywords_dic: Dict[str, int]) -> None:
+    if len(keywords_dic) == 0:
+        logger.warning("关键词字典为空，无法生成词云图")
+        raise ValueError("关键词字典为空，无法生成词云图")
     wc_config = load_config("wordcloud")
     FONT_PATH: str = wc_config["font_path"]
     WIDTH: int = wc_config["width"]
