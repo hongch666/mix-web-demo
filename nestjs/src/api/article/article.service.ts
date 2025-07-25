@@ -9,6 +9,7 @@ import { NacosService } from 'src/common/nacos/nacos.service';
 import { ConfigService } from '@nestjs/config';
 const marked = require('marked');
 import { User } from '../user/entities/user.entity';
+import { fileLogger } from 'src/common/utils/writeLog';
 const dayjs = require('dayjs');
 
 @Injectable()
@@ -72,7 +73,14 @@ export class ArticleService {
       savePath,
       `articles/article-${id}.docx`,
     );
-    // 返回保存路径
+    // 上传后删除本地Word文件
+    try {
+      fs.unlinkSync(savePath);
+    } catch (e) {
+      fileLogger.error(
+        '删除文章Word文件失败' + (e.message ? e.message : '未知错误'),
+      );
+    }
     return url;
   }
 
@@ -105,6 +113,14 @@ export class ArticleService {
     // 上传到OSS
     const ossPath = `articles/article-${id}.md`;
     const url = await this.uploadFileToOSS(savePath, ossPath);
+    // 上传后删除本地Markdown文件
+    try {
+      fs.unlinkSync(savePath);
+    } catch (e) {
+      fileLogger.error(
+        '删除文章Markdown文件失败' + (e.message ? e.message : '未知错误'),
+      );
+    }
     return url;
   }
 
