@@ -47,11 +47,17 @@ export class ArticleService {
     }
     // 将markdown内容转为html
     const htmlContent = marked.parse(article.content || '');
+    const user = await this.userRepository.findOne({
+      where: { id: article.user_id },
+    });
     const data = {
       title: article.title,
       // 传递htmlContent给word模板
       content: htmlContent,
       tags: article.tags,
+      username: user?.name || '未知',
+      create_at: dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss'),
+      update_at: dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss'),
     };
     const filePath = this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
