@@ -24,7 +24,7 @@ public class Application {
     }
 
     @Bean
-    public ApplicationRunner applicationRunner(Environment env) {
+    ApplicationRunner applicationRunner(Environment env) {
         return args -> {
             log.info("Spring Boot应用已启动");
             log.info("服务地址: http://localhost:8081");
