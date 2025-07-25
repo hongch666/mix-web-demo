@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createReport } from 'docx-templates';
+import { htmlToText } from 'html-to-text';
 
 @Injectable()
 export class WordService {
@@ -20,14 +21,21 @@ export class WordService {
       : path.resolve(__dirname, '../../', templatePath);
     const template = fs.readFileSync(absTemplatePath);
 
-    // 使用 docx-templates 渲染数据到模板
+    // docx-templates 默认不支持html渲染，需要在模板中用rawXml插入html片段
+    // 这里将content(html)转为docx可用的rawXml（简单处理：转纯文本，复杂需求需用docxtemplater-html-module等插件）
+    // 如需保留格式，建议后续引入docxtemplater-html-module
+    const processedData = {
+      ...data,
+      // 这里简单转为纯文本，保留html标签需用插件
+      content: htmlToText(data.content || '', { wordwrap: false }),
+    };
+
     const buffer = await createReport({
       template,
-      data,
+      data: processedData,
       cmdDelimiter: ['${', '}'],
     });
 
-    // 返回 Buffer，可用于文件下载
     return Buffer.from(buffer);
   }
 }
