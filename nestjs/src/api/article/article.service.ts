@@ -43,7 +43,7 @@ export class ArticleService {
     }
     // 动态导入 marked，兼容 ESM
     if (!marked) {
-      marked = require('marked');
+      marked = (await import('marked')) as typeof import('marked');
     }
     // 将markdown内容转为html
     const htmlContent = marked.parse(article.content || '');
