@@ -7,7 +7,7 @@ import { Articles } from './entities/article.entity';
 import { WordService } from 'src/common/word/word.service';
 import { NacosService } from 'src/common/nacos/nacos.service';
 import { ConfigService } from '@nestjs/config';
-import { marked } from 'marked';
+let marked: typeof import('marked');
 import { User } from '../user/entities/user.entity';
 const dayjs = require('dayjs');
 
@@ -40,6 +40,10 @@ export class ArticleService {
     const article = await this.getArticleById(id);
     if (!article) {
       throw new Error(`Article with id ${id} not found`);
+    }
+    // 动态导入 marked，兼容 ESM
+    if (!marked) {
+      marked = require('marked');
     }
     // 将markdown内容转为html
     const htmlContent = marked.parse(article.content || '');
