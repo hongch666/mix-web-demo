@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
