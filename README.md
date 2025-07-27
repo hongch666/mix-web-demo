@@ -149,7 +149,31 @@ CREATE TABLE articles (
 ) COMMENT='文章表'
 ```
 
-3. MongoDB 表创建
+- 创建分类表
+
+```sql
+CREATE TABLE category (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    name VARCHAR(255) NOT NULL COMMENT '分类名称',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT='分类表';
+```
+
+- 创建子分类表
+
+```sql
+CREATE TABLE sub_category (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    name VARCHAR(255) NOT NULL COMMENT '子分类名称',
+    category_id BIGINT NOT NULL COMMENT '所属分类ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE
+) COMMENT='子分类表';
+```
+
+1. MongoDB 表创建
 
 - 数据库为`demo`，集合为`articlelogs`
 
