@@ -434,7 +434,7 @@ spring:
         - id: spring
           uri: lb://spring
           predicates:
-            - Path=/api_spring/**,/users/**,/articles/**
+            - Path=/api_spring/**,/users/**,/articles/**,/category/**
 
         - id: gin
           uri: lb://gin
