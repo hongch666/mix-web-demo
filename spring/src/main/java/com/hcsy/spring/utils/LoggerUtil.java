@@ -63,8 +63,9 @@ public class LoggerUtil {
             String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
             String logEntry = String.format("%s - %s - %s%n", timestamp, level, message);
 
-            // 写入文件
-            try (FileWriter writer = new FileWriter(logFile, true)) {
+            // 写入文件，指定UTF-8编码
+            try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
+                    new java.io.FileOutputStream(logFile, true), java.nio.charset.StandardCharsets.UTF_8)) {
                 writer.write(logEntry);
                 writer.flush();
             }
