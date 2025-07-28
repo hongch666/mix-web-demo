@@ -18,7 +18,7 @@ async def testFastapi() -> JSONResponse:
     user_id: str = get_current_user_id() or ""
     username: str = get_current_username() or ""
     fileLogger.info("用户" + user_id + ":" + username + " GET /api_fastapi/fastapi: 测试FastAPI服务")
-    return success("Hello, I am FastAPI!")
+    return success("Hello, I am FastAPI!") # type: ignore
 
 # 测试Spring服务
 @router.get("/spring")
@@ -32,7 +32,7 @@ async def testSpring() -> JSONResponse:
         method="GET",
         retries=2
     )
-    return success(result["data"])
+    return success(result["data"]) # type: ignore
 
 # 测试Gin服务
 @router.get("/gin")
@@ -46,7 +46,7 @@ async def testGin() -> JSONResponse:
         method="GET",
         retries=2
     )
-    return success(result["data"])
+    return success(result["data"]) # type: ignore
 
 # 测试NestJS服务
 @router.get("/nestjs")
@@ -60,4 +60,4 @@ async def testNestJS() -> JSONResponse:
         method="GET",
         retries=2
     )
-    return success(result["data"])
+    return success(result["data"]) # type: ignore
