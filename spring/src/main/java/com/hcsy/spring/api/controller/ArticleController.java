@@ -5,8 +5,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.Result;
+import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.api.mapper.CategoryMapper;
+import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -23,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
+import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +42,8 @@ public class ArticleController {
     private final ArticleService articleService;
     private final SimpleLogger logger;
     private final UserService userService;
+    private final CategoryMapper categoryMapper;
+    private final SubCategoryMapper subCategoryMapper;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
@@ -86,9 +94,30 @@ public class ArticleController {
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listArticlesById(articlePage, id);
 
+        List<Article> records = resultPage.getRecords();
+        List<ArticleWithCategoryVO> voList = new ArrayList<>();
+        for (Article article : records) {
+            if (article.getSubCategoryId() == null) {
+                return Result.error("子分类ID不能为空");
+            }
+
+            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+
+            // 查询作者用户名
+            User user = userService.getById(userId);
+            vo.setUsername(user != null ? user.getName() : "");
+            // 查询子分类信息
+            SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
+            vo.setSubCategoryName(subCategory.getName());
+            // 查询主分类信息
+            Category category = categoryMapper.selectById(subCategory.getCategoryId());
+            vo.setCategoryName(category.getName());
+
+            voList.add(vo);
+        }
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        data.put("list", voList);
         return Result.success(data);
     }
 
@@ -102,21 +131,13 @@ public class ArticleController {
         if (article == null) {
             return Result.error("文章不存在");
         }
+        ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
         // 查询作者用户名
         User user = userService.getById(article.getUserId());
         String username = user != null ? user.getName() : null;
-        Map<String, Object> data = new HashMap<>();
-        data.put("id", article.getId());
-        data.put("title", article.getTitle());
-        data.put("content", article.getContent());
-        data.put("userId", article.getUserId());
-        data.put("tags", article.getTags());
-        data.put("status", article.getStatus());
-        data.put("createAt", article.getCreateAt());
-        data.put("updateAt", article.getUpdateAt());
-        data.put("views", article.getViews());
-        data.put("username", username);
-        return Result.success(data);
+        vo.setUsername(username);
+
+        return Result.success(vo);
     }
 
     @PutMapping
@@ -139,11 +160,7 @@ public class ArticleController {
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
         }
-        System.out.println("!!-------------------------------!!");
-        System.out.println(user.getRole());
-        System.out.println("!!-------------------------------!!");
         if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
-            System.out.println("hihihi");
             throw new RuntimeException("无权修改他人文章");
         }
         articleService.updateArticle(article);

@@ -37,6 +37,10 @@ export class Articles {
   @Column({ type: 'int', default: 0 })
   views: number;
 
+  @ApiProperty({ description: '子分类ID', example: 1 })
+  @Column({ type: 'int', name: 'sub_category_id' })
+  sub_category_id: number;
+
   @ApiProperty({ description: '创建时间', example: '2024-06-17T12:00:00.000Z' })
   @CreateDateColumn({ name: 'create_at' })
   create_at: Date;

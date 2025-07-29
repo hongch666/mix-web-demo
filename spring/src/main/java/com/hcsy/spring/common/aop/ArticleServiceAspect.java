@@ -34,12 +34,12 @@ public class ArticleServiceAspect {
     private final TransactionTemplate transactionTemplate;
     private final SimpleLogger logger;
 
-    @Pointcut("execution(* com.hcsy.spring.service.ArticleService.saveArticle(..)) ||" +
-            "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.deleteArticles(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..)) || " +
-            "execution(* com.hcsy.spring.service.ArticleService.addViewArticle(..))")
+    @Pointcut("execution(* com.hcsy.spring.api.service.ArticleService.saveArticle(..)) ||" +
+            "execution(* com.hcsy.spring.api.service.ArticleService.updateArticle(..)) || " +
+            "execution(* com.hcsy.spring.api.service.ArticleService.deleteArticle(..)) || " +
+            "execution(* com.hcsy.spring.api.service.ArticleService.deleteArticles(..)) || " +
+            "execution(* com.hcsy.spring.api.service.ArticleService.publishArticle(..)) || " +
+            "execution(* com.hcsy.spring.api.service.ArticleService.addViewArticle(..))")
     public void userServiceTargetMethods() {
     }
 

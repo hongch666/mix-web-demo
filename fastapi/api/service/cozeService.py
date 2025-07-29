@@ -9,6 +9,8 @@ from config.mysql import get_db
 from config.mongodb import db as mongo_db
 from entity.po.article import Article
 from entity.po.user import User
+from entity.po.category import Category
+from entity.po.subCategory import SubCategory
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
 
 
@@ -178,6 +180,24 @@ class CozeService:
             user_list.append(f"ID: {user.id}, 名称: {user.name}, 年龄: {user.age}, 邮箱: {user.email}, 角色: {user.role}")
         return "\n".join(user_list) if user_list else "没有找到相关的用户信息"
     
+    def search_category_from_db(self, db: Session = Depends(get_db)) -> str:
+        categories: List[Dict[str, Any]] = db.query(Category).distinct().all()
+        if not categories:
+            return "没有找到相关的分类信息"
+        category_list: List[str] = []
+        for category in categories:
+            category_list.append(f"分类ID: {category.id}, 名称: {category.name}")
+        return "\n".join(category_list) if category_list else "没有找到相关的分类信息"
+    
+    def search_sub_category_from_db(self, db: Session = Depends(get_db)) -> str:
+        sub_categories: List[SubCategory] = db.query(SubCategory).all()
+        if not sub_categories:
+            return "没有找到相关的子分类信息"
+        sub_category_list: List[str] = []
+        for sub_category in sub_categories:
+            sub_category_list.append(f"子分类ID: {sub_category.id}, 名称: {sub_category.name}, 所属分类ID: {sub_category.category_id}")
+        return "\n".join(sub_category_list) if sub_category_list else "没有找到相关的子分类信息"
+    
     def search_logs_from_db(self) -> str:
         logs = mongo_db["articlelogs"]
         cursor: Any = logs.find().sort("createdAt", -1).limit(100)
@@ -193,8 +213,11 @@ class CozeService:
         userInfo: str = f"用户ID: {user_id}, 用户名: {username}"
         article: str = self.search_article_from_db(db)
         user: str = self.search_user_from_db(db)
+        category: str = self.search_category_from_db(db)
+        sub_category: str = self.search_sub_category_from_db(db)
         logs: str = self.search_logs_from_db()
-        knowledge: str = f"当前用户信息(提问的用户，一般会称“我”)：{userInfo}\n文章信息：{article}\n用户信息：{user}\n日志信息：{logs}"
+        knowledge: str = (f"当前用户信息(提问的用户，一般会称“我”)：{userInfo}\n文章信息：{article}\n用户信息：{user}\n分类信息：{category}\n日志信息：{logs}"
+        f"\n子分类信息：{sub_category}")
         prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
         return prompt
     

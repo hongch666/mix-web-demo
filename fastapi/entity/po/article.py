@@ -15,3 +15,4 @@ class Article(Base):
     create_at: "datetime.datetime" = Column(DateTime)
     update_at: "datetime.datetime" = Column(DateTime)
     views: int = Column(Integer)
+    sub_category_id: int = Column(Integer)  # 子分类ID

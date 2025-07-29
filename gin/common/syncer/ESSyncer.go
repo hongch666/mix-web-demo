@@ -27,6 +27,8 @@ func SyncArticlesToES() {
 				"content": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
 				"userId": { "type": "integer" },
 				"username": { "type": "keyword" },
+				"category_name": { "type": "keyword" },
+				"sub_category_name": { "type": "keyword" },
 				"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
 				"status": { "type": "integer" },
 				"views": { "type": "integer" },
@@ -40,7 +42,7 @@ func SyncArticlesToES() {
 			panic(err.Error())
 		}
 	}
-	// Step 1: 删除 articles 索引中的所有旧文档
+	// 删除 articles 索引中的所有旧文档
 	_, err1 := config.ESClient.DeleteByQuery("articles").
 		Query(elastic.NewMatchAllQuery()).
 		Do(ctx)
@@ -69,19 +71,45 @@ func SyncArticlesToES() {
 		userMap[u.ID] = u.Name
 	}
 
+	// 批量获取子分类id
+	subCategoryIDs := make([]int, 0, len(articles))
+	for _, a := range articles {
+		subCategoryIDs = append(subCategoryIDs, a.SubCategoryID)
+	}
+
+	// 查询所有分类和子分类
+	var subCategories []po.SubCategory
+	if err := config.DB.Where("id IN (?)", subCategoryIDs).Find(&subCategories).Error; err != nil {
+		panic(err.Error())
+	}
+	subCategoryMap := make(map[int]string)
+	categoryMap := make(map[int]string)
+	for _, sc := range subCategories {
+		subCategoryMap[sc.ID] = sc.Name
+		category_id := sc.CategoryID
+		var category po.Category
+		if err := config.DB.Where("id = ?", category_id).First(&category).Error; err != nil {
+			panic(err.Error())
+		}
+		categoryMap[sc.ID] = category.Name
+	}
+
+	// 批量构建ES文档
 	bulkRequest := config.ESClient.Bulk()
 	for _, article := range articles {
 		articleES := po.ArticleES{
-			ID:       int(article.ID),
-			Title:    article.Title,
-			Content:  article.Content,
-			UserID:   int(article.UserID),
-			Username: userMap[int(article.UserID)],
-			Tags:     article.Tags,
-			Status:   article.Status,
-			Views:    article.Views,
-			CreateAt: article.CreateAt.Format("2006-01-02 15:04:05"),
-			UpdateAt: article.UpdateAt.Format("2006-01-02 15:04:05"),
+			ID:              int(article.ID),
+			Title:           article.Title,
+			Content:         article.Content,
+			UserID:          int(article.UserID),
+			Username:        userMap[int(article.UserID)],
+			Tags:            article.Tags,
+			Status:          article.Status,
+			Views:           article.Views,
+			CategoryName:    categoryMap[article.SubCategoryID],
+			SubCategoryName: subCategoryMap[article.SubCategoryID],
+			CreateAt:        article.CreateAt.Format("2006-01-02 15:04:05"),
+			UpdateAt:        article.UpdateAt.Format("2006-01-02 15:04:05"),
 		}
 		req := elastic.NewBulkIndexRequest().
 			Index("articles").

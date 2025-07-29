@@ -31,4 +31,8 @@ public class ArticleCreateDTO {
     @Min(value = 0, message = "状态值无效")
     @Max(value = 1, message = "状态值无效")
     private Integer status;
+
+    @NotNull(message = "子分类ID不能为空")
+    @Min(value = 1, message = "子分类ID必须大于0")
+    private Integer subCategoryId;
 }
