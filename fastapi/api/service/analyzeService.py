@@ -4,21 +4,21 @@ import os
 import pandas as pd
 from typing import Dict, List, Any
 
+from api.mapper.articleMapper import get_all_articles_mapper,get_top10_articles_mapper
+from api.mapper.userMapper import get_users_by_ids_mapper
+from api.mapper.articlelogMapper import get_search_keywords_articlelog_mapper
 from config.mysql import get_db
-from entity.po.article import Article
-from entity.po.user import User
-from config.mongodb import db as mongo_db
 from common.utils.writeLog import fileLogger as logger
 from wordcloud import WordCloud
 from config.oss import OSSClient
 from config.config import load_config
 
 def get_top10_articles_service(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    articles = db.query(Article).limit(10).all()
+    articles = get_top10_articles_mapper(db)
     # 获取所有作者id
     user_ids = [article.user_id for article in articles]
     # 批量查user表
-    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    users = get_users_by_ids_mapper(user_ids, db)
     user_id_to_name = {user.id: user.name for user in users}
     # 转换为字典并加上username
     return [
@@ -38,15 +38,7 @@ def get_top10_articles_service(db: Session = Depends(get_db)) -> List[Dict[str, 
     ]
 
 def get_keywords_dic() -> Dict[str, int]:
-    logs = mongo_db["articlelogs"]
-    cursor = logs.find({"action": "search"})
-    all_keywords: List[str] = []
-    for log in cursor:
-        content: Dict[str, Any] = log.get('content', {})
-        if 'Keyword' in content:
-            if content['Keyword'] == "":
-                continue
-            all_keywords.append(content['Keyword'])
+    all_keywords: List[str] = get_search_keywords_articlelog_mapper()
     keywords_dic: Dict[str, int] = {}
     for keyword in all_keywords:
         if keyword in keywords_dic:
@@ -96,7 +88,7 @@ def upload_wordcloud_to_oss() -> str:
 def export_articles_to_excel(db: Session = Depends(get_db)) -> str:
     FILE_PATH: str = load_config("files")["excel_path"]
     file_path = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.xlsx"))
-    articles = db.query(Article).all()
+    articles = get_all_articles_mapper(db)
     data = []
     for article in articles:
         data.append({

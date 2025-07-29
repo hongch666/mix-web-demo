@@ -3,50 +3,35 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 from cozepy import Coze, TokenAuth, Message, ChatStatus
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from api.mapper.articlelogMapper import get_all_articlelogs_limit_mapper
+from api.mapper.subCategoryMapper import get_all_subcategories_mapper
 from common.utils.writeLog import fileLogger as logger
 from config.config import load_config, load_secret_config
 from config.mysql import get_db
-from config.mongodb import db as mongo_db
 from entity.po.article import Article
 from entity.po.user import User
-from entity.po.category import Category
 from entity.po.subCategory import SubCategory
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
+from api.mapper.articleMapper import get_article_limit_mapper
+from api.mapper.userMapper import get_all_users_mapper
+from api.mapper.categoryMapper import get_all_categories_mapper
 
 
-class CozeService:
-    api_key: str
-    bot_id: str
-    base_url: str
-    timeout: int
-    coze_client: Coze
-
-    def __init__(self) -> None:
-        """初始化 Coze 服务"""
-        api_key: str = load_secret_config("coze")["api_key"]
-        bot_id: str = load_config("coze")["bot_id"]
-        base_url: str = load_config("coze")["base_url"]
-        timeout: int = load_config("coze")["timeout"]
-
-        self.api_key: str = api_key
-        self.bot_id: str = bot_id
-        self.base_url: str = base_url
-        self.timeout: int = timeout
-
-        self.coze_client: Coze = Coze(
-            auth=TokenAuth(token=self.api_key),
-            base_url=self.base_url
-        )
-
-        logger.info("Coze 服务初始化完成")
+# 全局coze配置
+_api_key: str = load_secret_config("coze")["api_key"]
+_bot_id: str = load_config("coze")["bot_id"]
+_base_url: str = load_config("coze")["base_url"]
+_timeout: int = load_config("coze")["timeout"]
+coze_client: Coze = Coze(auth=TokenAuth(token=_api_key), base_url=_base_url)
+logger.info("Coze 服务初始化完成")
     
-    async def simple_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
+async def simple_chat(message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
         """简单聊天接口"""
         try:
-            prompt: str = self.get_prompt(message, db)
+            prompt: str = get_prompt(message, db)
             logger.info(f"用户 {user_id} 发送消息: {prompt}")
-            chat: Any = self.coze_client.chat.create(
-                bot_id=self.bot_id,
+            chat: Any = coze_client.chat.create(
+                bot_id=_bot_id,
                 user_id=user_id,
                 additional_messages=[
                     Message.build_user_question_text(content=prompt)
@@ -57,25 +42,25 @@ class CozeService:
             attempt: int = 0
             while attempt < max_attempts:
                 try:
-                    chat_poll: Any = self.coze_client.chat.retrieve(
+                    chat_poll: Any = coze_client.chat.retrieve(
                         chat_id=chat.id,
                         conversation_id=chat.conversation_id
                     )
                     logger.info(f"聊天状态: {chat_poll.status}")
                     if chat_poll.status == ChatStatus.COMPLETED:
                         try:
-                            messages: Any = self.coze_client.chat.message.list(
+                            messages: Any = coze_client.chat.message.list(
                                 chat_id=chat.id,
                                 conversation_id=chat.conversation_id
                             )
                         except AttributeError:
                             try:
-                                messages: Any = self.coze_client.conversations.messages.list(
+                                messages: Any = coze_client.conversations.messages.list(
                                     conversation_id=chat.conversation_id
                                 )
                             except AttributeError:
                                 try:
-                                    messages: Any = self.coze_client.messages.list(
+                                    messages: Any = coze_client.messages.list(
                                         chat_id=chat.id,
                                         conversation_id=chat.conversation_id
                                     )
@@ -116,16 +101,16 @@ class CozeService:
                 return "机器人未发布到 API 频道。请在 Coze 平台将机器人发布到 'Agent As API' 频道。"
             return f"聊天服务异常: {str(e)}"
     
-    async def stream_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
+async def stream_chat(message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
         """流式聊天接口 - 兼容异步调用"""
         try:
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
 
-            prompt: str = self.get_prompt(message, db)
+            prompt: str = get_prompt(message, db)
             logger.info(f"用户 {user_id} 发送消息: {prompt}")
             def sync_stream() -> Any:
-                return self.coze_client.chat.stream(
-                    bot_id=self.bot_id,
+                return coze_client.chat.stream(
+                    bot_id=_bot_id,
                     user_id=user_id,
                     additional_messages=[
                         Message.build_user_question_text(content=prompt)
@@ -155,13 +140,8 @@ class CozeService:
             else:
                 yield f"流式聊天服务异常: {str(e)}"
 
-    def search_article_from_db(self, db: Session = Depends(get_db)) -> str:
-        articles: List[Article] = (
-            db.query(Article)
-            .order_by(Article.create_at.desc())
-            .limit(100)
-            .all()
-        )
+def search_article_from_db(db: Session = Depends(get_db)) -> str:
+        articles: List[Article] = get_article_limit_mapper(db)
         if not articles:
             return "没有找到相关的知识库内容"
         content_list: List[str] = []
@@ -171,8 +151,8 @@ class CozeService:
             )
         return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
     
-    def search_user_from_db(self, db: Session = Depends(get_db)) -> str:
-        users: List[User] = db.query(User).all()
+def search_user_from_db(db: Session = Depends(get_db)) -> str:
+        users: List[User] = get_all_users_mapper(db)
         if not users:
             return "没有找到相关的用户信息"
         user_list: List[str] = []
@@ -180,8 +160,8 @@ class CozeService:
             user_list.append(f"ID: {user.id}, 名称: {user.name}, 年龄: {user.age}, 邮箱: {user.email}, 角色: {user.role}")
         return "\n".join(user_list) if user_list else "没有找到相关的用户信息"
     
-    def search_category_from_db(self, db: Session = Depends(get_db)) -> str:
-        categories: List[Dict[str, Any]] = db.query(Category).distinct().all()
+def search_category_from_db(db: Session = Depends(get_db)) -> str:
+        categories: List[Dict[str, Any]] = get_all_categories_mapper(db)
         if not categories:
             return "没有找到相关的分类信息"
         category_list: List[str] = []
@@ -189,8 +169,8 @@ class CozeService:
             category_list.append(f"分类ID: {category.id}, 名称: {category.name}")
         return "\n".join(category_list) if category_list else "没有找到相关的分类信息"
     
-    def search_sub_category_from_db(self, db: Session = Depends(get_db)) -> str:
-        sub_categories: List[SubCategory] = db.query(SubCategory).all()
+def search_sub_category_from_db(db: Session = Depends(get_db)) -> str:
+        sub_categories: List[SubCategory] = get_all_subcategories_mapper(db)
         if not sub_categories:
             return "没有找到相关的子分类信息"
         sub_category_list: List[str] = []
@@ -198,112 +178,24 @@ class CozeService:
             sub_category_list.append(f"子分类ID: {sub_category.id}, 名称: {sub_category.name}, 所属分类ID: {sub_category.category_id}")
         return "\n".join(sub_category_list) if sub_category_list else "没有找到相关的子分类信息"
     
-    def search_logs_from_db(self) -> str:
-        logs = mongo_db["articlelogs"]
-        cursor: Any = logs.find().sort("createdAt", -1).limit(100)
+def search_logs_from_db() -> str:
+        cursor: Any = get_all_articlelogs_limit_mapper()
         log_list: List[str] = []
         for log in cursor:
             log_str: str = ", ".join([f"{k}: {v}" for k, v in log.items()])
             log_list.append(log_str)
         return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
     
-    def get_prompt(self, message: str, db: Session = Depends(get_db)) -> str:
+def get_prompt(message: str, db: Session = Depends(get_db)) -> str:
         user_id: str = get_current_user_id() or ""
         username: str = get_current_username() or ""
         userInfo: str = f"用户ID: {user_id}, 用户名: {username}"
-        article: str = self.search_article_from_db(db)
-        user: str = self.search_user_from_db(db)
-        category: str = self.search_category_from_db(db)
-        sub_category: str = self.search_sub_category_from_db(db)
-        logs: str = self.search_logs_from_db()
+        article: str = search_article_from_db(db)
+        user: str = search_user_from_db(db)
+        category: str = search_category_from_db(db)
+        sub_category: str = search_sub_category_from_db(db)
+        logs: str = search_logs_from_db()
         knowledge: str = (f"当前用户信息(提问的用户，一般会称“我”)：{userInfo}\n文章信息：{article}\n用户信息：{user}\n分类信息：{category}\n日志信息：{logs}"
         f"\n子分类信息：{sub_category}")
         prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
         return prompt
-    
-    async def get_chat_history(self, conversation_id: str) -> List[Dict[str, Any]]:
-        """获取聊天历史"""
-        try:
-            try:
-                messages = self.coze_client.chat.message.list(
-                    conversation_id=conversation_id
-                )
-            except AttributeError:
-                try:
-                    messages = self.coze_client.conversations.messages.list(
-                        conversation_id=conversation_id
-                    )
-                except AttributeError:
-                    try:
-                        messages = self.coze_client.messages.list(
-                            conversation_id=conversation_id
-                        )
-                    except AttributeError:
-                        logger.error("无法找到正确的消息历史 API")
-                        return []
-            history: List[Dict[str, Any]] = []
-            message_list = messages.data if hasattr(messages, 'data') else messages
-            for msg in message_list:
-                history.append({
-                    "id": getattr(msg, 'id', ''),
-                    "role": getattr(msg, 'role', ''),
-                    "content": getattr(msg, 'content', ''),
-                    "type": getattr(msg, 'type', ''),
-                    "created_at": getattr(msg, 'created_at', 0)
-                })
-            return history
-        except Exception as e:
-            logger.error(f"获取聊天历史异常: {str(e)}")
-            return []
-    
-    async def health_check(self) -> bool:
-        """健康检查"""
-        try:
-            workspaces = self.coze_client.workspaces.list()
-            return len(workspaces.data) >= 0
-        except Exception as e:
-            logger.error(f"Coze 健康检查失败: {str(e)}")
-            return False
-    
-    def get_bot_info(self) -> Dict[str, Any]:
-        """获取机器人信息"""
-        try:
-            bot = self.coze_client.bots.retrieve(bot_id=self.bot_id)
-            return {
-                "bot_id": bot.bot_id,
-                "name": getattr(bot, 'name', 'Unknown'),
-                "description": getattr(bot, 'description', 'No description'),
-                "status": "active"
-            }
-        except Exception as e:
-            logger.error(f"获取机器人信息失败: {str(e)}")
-            return {"error": str(e)}
-    
-    def check_api_structure(self) -> Dict[str, Any]:
-        """检查 API 结构 - 调试用"""
-        try:
-            structure_info: Dict[str, Any] = {
-                "chat_client_methods": [],
-                "available_apis": []
-            }
-            if hasattr(self.coze_client, 'chat'):
-                chat_methods: List[str] = [method for method in dir(self.coze_client.chat) if not method.startswith('_')]
-                structure_info["chat_client_methods"] = chat_methods
-                if hasattr(self.coze_client.chat, 'message'):
-                    message_methods: List[str] = [method for method in dir(self.coze_client.chat.message) if not method.startswith('_')]
-                    structure_info["chat_message_methods"] = message_methods
-            client_attrs: List[str] = [attr for attr in dir(self.coze_client) if not attr.startswith('_')]
-            structure_info["available_apis"] = client_attrs
-            return structure_info
-        except Exception as e:
-            return {"error": str(e)}
-
-
-try:
-    coze_service: Optional[CozeService] = CozeService()
-    logger.info("Coze 服务全局实例创建成功")
-    api_structure: Dict[str, Any] = coze_service.check_api_structure()
-    logger.info(f"Coze API 结构: {api_structure}")
-except Exception as e:
-    logger.error(f"Coze 服务初始化失败: {str(e)}")
-    coze_service: Optional[CozeService] = None

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from common.utils.response import success
 from config.mysql import get_db
 from entity.dto.chatDTO import ChatRequest, ChatResponse, ChatResponseData
-from api.service.cozeService import coze_service
+from api.service.cozeService import simple_chat, stream_chat
 from common.utils.writeLog import fileLogger
 from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
 
@@ -28,7 +28,7 @@ async def send_message(
         # 使用实际用户ID替代请求中的user_id
         actual_user_id: str = user_id or "1"
         # 普通响应
-        response_message: str = await coze_service.simple_chat(
+        response_message: str = await simple_chat(
             message=request.message,
             user_id=actual_user_id,
             db=db
@@ -77,7 +77,7 @@ async def stream_message(
         async def event_generator():
             message_acc = ""
             try:
-                async for chunk in coze_service.stream_chat(
+                async for chunk in stream_chat(
                     message=request.message,
                     user_id=actual_user_id,
                     db=db
