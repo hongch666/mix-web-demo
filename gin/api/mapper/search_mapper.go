@@ -35,6 +35,16 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 		boolQuery.Filter(elastic.NewWildcardQuery("username", "*"+searchDTO.Username+"*"))
 	}
 
+	// 分类名称完全匹配过滤（可选）
+	if searchDTO.CategoryName != "" {
+		boolQuery.Filter(elastic.NewTermQuery("category_name", searchDTO.CategoryName))
+	}
+
+	// 子分类名称完全匹配过滤（可选）
+	if searchDTO.SubCategoryName != "" {
+		boolQuery.Filter(elastic.NewTermQuery("sub_category_name", searchDTO.SubCategoryName))
+	}
+
 	// 发布时间范围过滤（可选）
 	if searchDTO.StartDate != nil || searchDTO.EndDate != nil {
 		rangeQuery := elastic.NewRangeQuery("create_at")
