@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"gin_proj/api/mapper"
 	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
@@ -50,10 +51,8 @@ func SyncArticlesToES() {
 		panic(err1.Error())
 	}
 
-	var articles []po.Article
-	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
-		panic(err.Error())
-	}
+	// 获取文章数据
+	articles := mapper.SearchArticles()
 
 	// 批量获取 user_id
 	userIDs := make([]int, 0, len(articles))
@@ -62,10 +61,7 @@ func SyncArticlesToES() {
 	}
 
 	// 查询所有相关用户
-	var users []po.User
-	if err := config.DB.Where("id IN (?)", userIDs).Find(&users).Error; err != nil {
-		panic(err.Error())
-	}
+	users := mapper.SearchUserByIds(userIDs)
 	userMap := make(map[int]string)
 	for _, u := range users {
 		userMap[u.ID] = u.Name
@@ -78,19 +74,14 @@ func SyncArticlesToES() {
 	}
 
 	// 查询所有分类和子分类
-	var subCategories []po.SubCategory
-	if err := config.DB.Where("id IN (?)", subCategoryIDs).Find(&subCategories).Error; err != nil {
-		panic(err.Error())
-	}
+	subCategories := mapper.SearchSubCategoriesByIds(subCategoryIDs)
+
 	subCategoryMap := make(map[int]string)
 	categoryMap := make(map[int]string)
 	for _, sc := range subCategories {
 		subCategoryMap[sc.ID] = sc.Name
 		category_id := sc.CategoryID
-		var category po.Category
-		if err := config.DB.Where("id = ?", category_id).First(&category).Error; err != nil {
-			panic(err.Error())
-		}
+		category := mapper.SearchCategoryById(category_id)
 		categoryMap[sc.ID] = category.Name
 	}
 
