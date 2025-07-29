@@ -1,0 +1,162 @@
+package com.hcsy.spring.common.aop;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.List;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcsy.spring.common.client.GinClient;
+import com.hcsy.spring.common.mq.RabbitMQService;
+import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.entity.po.Article;
+
+@Slf4j
+@Aspect
+@Component
+@RequiredArgsConstructor
+public class ArticleServiceAspect {
+
+    private final GinClient ginClient;
+    private final RabbitMQService rabbitMQService;
+    private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
+    private final SimpleLogger logger;
+
+    @Pointcut("execution(* com.hcsy.spring.service.ArticleService.saveArticle(..)) ||" +
+            "execution(* com.hcsy.spring.service.ArticleService.updateArticle(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.deleteArticle(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.deleteArticles(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.publishArticle(..)) || " +
+            "execution(* com.hcsy.spring.service.ArticleService.addViewArticle(..))")
+    public void userServiceTargetMethods() {
+    }
+
+    @Around("userServiceTargetMethods()")
+    public Object afterUserServiceMethod(ProceedingJoinPoint joinPoint) throws Throwable {
+        return transactionTemplate.execute(status -> {
+            try {
+                // 1. 执行业务方法（写数据库）
+                Object result = joinPoint.proceed();
+
+                // 2. 构建 MQ 消息
+                MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+                String methodName = methodSignature.getName();
+                Object[] paramValues = joinPoint.getArgs();
+
+                Map<String, Object> msg = new HashMap<>();
+                String json = "";
+
+                // 3. 获取当前用户 ID
+                Long userId = UserContext.getUserId();
+
+                switch (methodName) {
+                    case "saveArticle": {
+                        Article article = (Article) paramValues[0];
+                        msg.put("content", article);
+                        msg.put("user_id", userId);
+                        msg.put("article_id", article.getId());
+                        msg.put("action", "add");
+                        msg.put("msg", "创建了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "updateArticle": {
+                        Article article = (Article) paramValues[0];
+                        msg.put("content", article);
+                        msg.put("user_id", userId);
+                        msg.put("article_id", article.getId());
+                        msg.put("action", "edit");
+                        msg.put("msg", "编辑了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "deleteArticle": {
+                        Long id = (Long) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", id);
+                        msg.put("content", content);
+                        msg.put("user_id", userId);
+                        msg.put("article_id", id);
+                        msg.put("action", "delete");
+                        msg.put("msg", "删除了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "deleteArticles": {
+                        @SuppressWarnings("unchecked")
+                        List<Long> ids = (List<Long>) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("ids", ids);
+                        msg.put("content", content);
+                        msg.put("user_id", userId);
+                        msg.put("article_ids", ids);
+                        msg.put("action", "delete");
+                        msg.put("msg", "批量删除了" + ids.size() + "篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "publishArticle": {
+                        Long id = (Long) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", id);
+                        msg.put("content", content);
+                        msg.put("user_id", userId);
+                        msg.put("article_id", id);
+                        msg.put("action", "publish");
+                        msg.put("msg", "发布了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    case "addViewArticle": {
+                        Long id = (Long) paramValues[0];
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", id);
+                        msg.put("content", content);
+                        msg.put("user_id", userId);
+                        msg.put("article_id", id);
+                        msg.put("action", "view");
+                        msg.put("msg", "浏览了1篇文章");
+                        json = objectMapper.writeValueAsString(msg);
+                        break;
+                    }
+                    default:
+                        logger.error("未知方法类型：" + methodName);
+                        throw new RuntimeException("AOP识别失败");
+                }
+
+                // 3. 发消息
+                rabbitMQService.sendMessage("log-queue", json);
+                logger.info("发送到MQ：" + json);
+
+                // 4. 注册事务提交后的回调，同步 ES
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        logger.info("事务提交后开始同步ES...");
+                        ginClient.syncES();
+                        logger.info("事务提交后同步ES完成");
+                    }
+                });
+
+                return result;
+
+            } catch (Throwable e) {
+                logger.error("事务执行失败，已回滚", e);
+                status.setRollbackOnly(); // 显式回滚
+                throw new RuntimeException(e);
+            }
+        });
+    }
+}

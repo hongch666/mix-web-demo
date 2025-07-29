@@ -1,0 +1,68 @@
+package com.hcsy.spring.api.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import lombok.RequiredArgsConstructor;
+
+import com.hcsy.spring.api.mapper.UserMapper;
+import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.entity.po.User;
+
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+    private final UserMapper userMapper;
+    private final RedisUtil redisUtil;
+
+    @Override
+    public IPage<User> listUsersWithFilter(Page<User> page, String username) {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        if (username != null && !username.isEmpty()) {
+            queryWrapper.like(User::getName, username); // 用户名模糊匹配
+        }
+        return this.page(page, queryWrapper);
+    }
+
+    @Transactional
+    public void saveUserAndStatus(User user) {
+        userMapper.insert(user);
+        redisUtil.set("user:status:" + user.getId(), "0");
+    }
+
+    @Transactional
+    public void deleteUserAndStatusById(Long id) {
+        userMapper.deleteById(id);
+        redisUtil.delete("user:status:" + id);
+    }
+
+    @Transactional
+    public void deleteUsersAndStatusByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty())
+            return;
+        userMapper.deleteBatchIds(ids);
+        for (Long id : ids) {
+            redisUtil.delete("user:status:" + id);
+        }
+    }
+
+    @Transactional
+    public User findByUsername(String username) {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        if (username != null && !username.isEmpty()) {
+            queryWrapper.eq(User::getName, username); // 用户名模糊匹配
+        }
+        return userMapper.selectOne(queryWrapper);
+    }
+
+}

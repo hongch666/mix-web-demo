@@ -15,7 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootApplication
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
-@MapperScan(basePackages = "com.hcsy.spring.mapper")
+@MapperScan(basePackages = "com.hcsy.spring.api.mapper")
 @Slf4j
 public class Application {
 
