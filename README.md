@@ -141,6 +141,7 @@ CREATE TABLE articles (
     title VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
     content TEXT NOT NULL COMMENT '文章内容',
     user_id BIGINT NOT NULL COMMENT '用户id',
+    sub_category_id BIGINT NOT NULL COMMENT '子分类id'
     tags VARCHAR(255) NOT NULL COMMENT '文章标签',
     status INT NOT NULL COMMENT '文章状态',
     views INT NOT NULL COMMENT '文章浏览量',
