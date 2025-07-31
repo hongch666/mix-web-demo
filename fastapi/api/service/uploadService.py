@@ -3,8 +3,8 @@ import shutil
 import uuid
 from typing import Any, Dict
 from starlette.concurrency import run_in_threadpool
-from api.service.analyzeService import upload_file
-from common.utils.writeLog import fileLogger
+from api.service import upload_file
+from common.utils import fileLogger
 
 async def handle_image_upload(file) -> Dict[str, Any]:
     """处理图片上传的核心逻辑，保存本地临时文件并上传到OSS"""

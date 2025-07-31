@@ -4,14 +4,10 @@ import os
 import pandas as pd
 from typing import Dict, List, Any
 
-from api.mapper.articleMapper import get_all_articles_mapper,get_top10_articles_mapper
-from api.mapper.userMapper import get_users_by_ids_mapper
-from api.mapper.articlelogMapper import get_search_keywords_articlelog_mapper
-from config.mysql import get_db
-from common.utils.writeLog import fileLogger as logger
+from api.mapper import get_all_articles_mapper,get_top10_articles_mapper,get_users_by_ids_mapper,get_search_keywords_articlelog_mapper
+from config import get_db,OSSClient,load_config
+from common.utils import fileLogger as logger
 from wordcloud import WordCloud
-from config.oss import OSSClient
-from config.config import load_config
 
 def get_top10_articles_service(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     articles = get_top10_articles_mapper(db)

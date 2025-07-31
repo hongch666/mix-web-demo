@@ -1,8 +1,8 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from config.mysql import get_db
+from config import get_db
 from sqlalchemy.orm import Session
-from common.utils.writeLog import fileLogger as logger
-from api.service.analyzeService import export_articles_to_excel, upload_excel_to_oss
+from common.utils import fileLogger as logger
+from api.service import export_articles_to_excel, upload_excel_to_oss
 from apscheduler.schedulers.base import BaseScheduler
 
 def export_articles_job() -> None:

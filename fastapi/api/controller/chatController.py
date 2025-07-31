@@ -6,12 +6,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
-from common.utils.response import success
-from config.mysql import get_db
-from entity.dto.chatDTO import ChatRequest, ChatResponse, ChatResponseData
-from api.service.cozeService import simple_chat, stream_chat
-from common.utils.writeLog import fileLogger
-from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
+from common.utils import success,fileLogger
+from config import get_db
+from entity.dto import ChatRequest, ChatResponse, ChatResponseData
+from api.service import simple_chat, stream_chat
+from common.middleware import get_current_user_id, get_current_username
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 

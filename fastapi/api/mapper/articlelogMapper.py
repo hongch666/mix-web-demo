@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-from config.mongodb import db as mongo_db
+from config import db as mongo_db
 
 def get_search_keywords_articlelog_mapper() -> List[str]:
     logs = mongo_db["articlelogs"]

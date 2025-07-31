@@ -2,8 +2,8 @@ import os
 from datetime import datetime
 from typing import Any
 
-from config.config import load_config
-from common.utils.logger import logger
+from config import load_config
+from common.utils import logger
 
 def write_log(message: str, level: str = "INFO") -> None:
     """

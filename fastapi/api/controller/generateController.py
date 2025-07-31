@@ -1,11 +1,10 @@
 from fastapi import APIRouter
-from api.service.generateService import extract_tags
-from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
-from common.utils.response import success
-from common.utils.writeLog import fileLogger
+from api.service import extract_tags
+from common.middleware import get_current_user_id, get_current_username
+from common.utils import success, fileLogger
 from starlette.concurrency import run_in_threadpool
 
-from entity.dto.generateDTO import GenerateDTO
+from entity.dto import GenerateDTO
 from typing import Any
 
 router: APIRouter = APIRouter(

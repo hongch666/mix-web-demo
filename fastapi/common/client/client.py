@@ -2,8 +2,8 @@ import requests
 import logging
 from typing import Optional, Dict, Any
 
-from config.nacos import get_service_instance
-from common.middleware.ContextMiddleware import get_current_user_id, get_current_username
+from config import get_service_instance
+from common.middleware import get_current_user_id, get_current_username
 
 async def call_remote_service(
     service_name: str,

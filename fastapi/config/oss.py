@@ -1,6 +1,6 @@
 import oss2
-from common.utils.writeLog import fileLogger as logger
-from config.config import load_config, load_secret_config
+from common.utils import fileLogger as logger
+from config import load_config, load_secret_config
 
 # 配置你的阿里云OSS信息
 access_key_id: str = load_secret_config("oss")["access_key_id"]

@@ -1,8 +1,8 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from config.mysql import get_db
-from entity.po.article import Article
+from config import get_db
+from entity.po import Article
 
 def get_top10_articles_mapper(db: Session) -> list[Article]:
     return db.query(Article).limit(10).all()

@@ -4,7 +4,7 @@ import nacos
 import socket
 from typing import Any, Dict
 
-from config.config import load_config
+from config import load_config
 
 # Nacos 配置
 nacos_config: Dict[str, Any] = load_config("nacos")
