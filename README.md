@@ -176,7 +176,7 @@ CREATE TABLE sub_category (
 
 1. MongoDB 表创建
 
-- 数据库为`demo`，集合为`articlelogs`
+- 数据库为 `demo`，集合为 `articlelogs`
 
 4. ElasticSearch 索引创建
 
@@ -219,13 +219,14 @@ npm run start:prod # production mode
 
 1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
 2. gateway 部分的 yaml 配置文件可以配置路由
-3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
 - `application.yaml`
 
 ```yaml
 server:
+  address: 0.0.0.0
   port: 8081
   tomcat:
     threads:
@@ -290,7 +291,7 @@ mybatis-plus:
 ### Gin 部分
 
 1. `gin`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 3. 内容如下
 
 - `application.yaml`
@@ -335,7 +336,7 @@ logs:
 ### Nestjs 部分
 
 1. `nestjs`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 3. 内容如下
 
 - `application.yaml`
@@ -379,7 +380,7 @@ logs:
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
 2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台的 api_key，不要泄露
-3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的`static`
+3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
 - `application.yaml`
@@ -484,16 +485,13 @@ jwt:
 
 ### Spring 部分
 
-1. 在 config 包下的`SwaggerConfig.java`中修改对应 Swagger 信息
-
-2. 使用`@Operation(summary = "spring自己的测试", description = "输出欢迎信息")`设置对应接口
-
-3. 在`http://[ip和端口]/swagger-ui/index.html`访问 Swagger 接口
+1. 在 config 包下的 `SwaggerConfig.java`中修改对应 Swagger 信息
+2. 使用 `@Operation(summary = "spring自己的测试", description = "输出欢迎信息")`设置对应接口
+3. 在 `http://[ip和端口]/swagger-ui/index.html`访问 Swagger 接口
 
 ### Gin 部分
 
-1. 使用`go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
-
+1. 使用 `go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
 2. 在 controller 层上的路由函数使用如下注释添加 swagger 信息
 
 ```go
@@ -505,17 +503,14 @@ jwt:
 // @Router /users [get]
 ```
 
-3. 在`http://[ip和端口]/swagger/index.html`访问 Swagger 接口
-
-4. 每次添加新的 swagger 信息时需要在终端输入`swag init`
+3. 在 `http://[ip和端口]/swagger/index.html`访问 Swagger 接口
+4. 每次添加新的 swagger 信息时需要在终端输入 `swag init`
 
 ### NestJS
 
-1. 在`main.ts`中修改对应 Swagger 信息
-
-2. 使用`@ApiOperation({ summary: '获取用户信息', description: '获取用户信息列表' })`设置对应接口
-
-3. 在`http://[ip和端口]/api-docs`访问 Swagger 接口
+1. 在 `main.ts`中修改对应 Swagger 信息
+2. 使用 `@ApiOperation({ summary: '获取用户信息', description: '获取用户信息列表' })`设置对应接口
+3. 在 `http://[ip和端口]/api-docs`访问 Swagger 接口
 
 ### FastAPI 部分
 
@@ -528,7 +523,6 @@ jwt:
        version="1.0.0"
    )
    ```
-
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
    ```python
@@ -539,16 +533,13 @@ jwt:
        """
        return {"msg": "hello"}
    ```
-
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
 ## 其他说明
 
 1. 词云图的字体应进行配置对应字体的路径。
-
-2. 下载文件的模板需要自行提供，路径在 NestJS 部分 yaml 配置文件中配置，使用`${字段名}`进行模板书写
-
-3. FastAPI 模块的阿里云 OSS 的密钥应写在`application-secret.yaml`中，格式如下：
+2. 下载文件的模板需要自行提供，路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写
+3. FastAPI 模块的阿里云 OSS 的密钥应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
 oss:
@@ -556,7 +547,7 @@ oss:
   access_key_secret: your_access_key_secret
 ```
 
-4. FastAPI 模块的 COZE 的 api_key 应写在`application-secret.yaml`中，格式如下：
+4. FastAPI 模块的 COZE 的 api_key 应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
 coze:
