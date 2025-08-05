@@ -1,13 +1,11 @@
-import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from sqlalchemy.ext.declarative import declarative_base
+from sqlmodel import SQLModel, Field
+from typing import Optional
+from datetime import datetime
 
-Base = declarative_base()
-
-class SubCategory(Base):
+class SubCategory(SQLModel, table=True):
     __tablename__ = "sub_category"
-    id: int = Column(Integer, primary_key=True, index=True)
-    name: str = Column(String(255))
-    category_id: int = Column(Integer)  # 所属分类ID
-    create_time: "datetime.datetime" = Column(DateTime)
-    update_time: "datetime.datetime" = Column(DateTime)
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    name: str
+    category_id: Optional[int] = None  # 所属分类ID
+    create_time: Optional[datetime] = None
+    update_time: Optional[datetime] = None

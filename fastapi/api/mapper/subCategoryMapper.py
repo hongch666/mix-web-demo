@@ -1,6 +1,7 @@
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 
 from entity.po import SubCategory
 
 def get_all_subcategories_mapper(db: Session) -> list[SubCategory]:
-    return db.query(SubCategory).all()
+    statement = select(SubCategory)
+    return db.exec(statement).all()

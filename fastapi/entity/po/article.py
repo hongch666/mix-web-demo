@@ -1,18 +1,16 @@
-import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime
-from sqlalchemy.ext.declarative import declarative_base
+from sqlmodel import SQLModel, Field
+from typing import Optional
+from datetime import datetime
 
-Base = declarative_base()
-
-class Article(Base):
+class Article(SQLModel, table=True):
     __tablename__ = "articles"
-    id: int = Column(Integer, primary_key=True, index=True)
-    title: str = Column(String(255))
-    content: str = Column(Text)
-    user_id: int = Column(Integer)
-    tags: str = Column(String(255))
-    status: str = Column(String(255))
-    create_at: "datetime.datetime" = Column(DateTime)
-    update_at: "datetime.datetime" = Column(DateTime)
-    views: int = Column(Integer)
-    sub_category_id: int = Column(Integer)  # 子分类ID
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    title: str
+    content: str
+    user_id: Optional[int] = None
+    tags: Optional[str] = None
+    status: Optional[str] = None
+    create_at: Optional[datetime] = None
+    update_at: Optional[datetime] = None
+    views: Optional[int] = 0
+    sub_category_id: Optional[int] = None  # 子分类ID

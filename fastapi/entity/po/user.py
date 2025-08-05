@@ -1,14 +1,12 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlmodel import SQLModel, Field
+from typing import Optional
 
-Base = declarative_base()
-
-class User(Base):
+class User(SQLModel, table=True):
     __tablename__ = "user"
-    id: int = Column(Integer, primary_key=True, index=True)
-    password: str = Column(String(255))
-    name: str = Column(String(255))
-    age: int = Column(Integer)
-    email: str = Column(String(255))
-    role: str = Column(String(255))
-    img: str = Column(String(255), nullable=True)
+    id: Optional[int] = Field(default=None, primary_key=True, index=True)
+    password: str
+    name: str
+    age: Optional[int] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+    img: Optional[str] = None

@@ -81,7 +81,6 @@ async def stream_message(
                     user_id=actual_user_id,
                     db=db
                 ):
-                    print("hi")
                     message_acc += chunk
                     data = success({
                             "message": message_acc,
