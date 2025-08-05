@@ -113,8 +113,9 @@ async def stream_chat(message: str, user_id: str = "default", db: Optional[Sessi
             loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
             chat_stream: Any = await loop.run_in_executor(None, sync_stream)
 
+            yielded_contents = set()  # 用于去重
             for event in chat_stream:
-                logger.info(f"收到流事件: {event}")
+                logger.debug(f"收到流事件: {event}")
                 content: Optional[str] = None
                 if hasattr(event, 'event'):
                     if event.event == "conversation.message.delta" or event.event == "conversation.message.completed":
@@ -124,8 +125,23 @@ async def stream_chat(message: str, user_id: str = "default", db: Optional[Sessi
                     content = event.data.content
                 if not content and hasattr(event, 'content'):
                     content = event.content
-                if content is not None:
-                    yield content
+                if content is not None and content.strip():
+                    # 过滤掉包含系统配置的内容
+                    if not any(keyword in content for keyword in [
+                        '"msg_type":', '"knowledge_recall"', '"bot_id":', 
+                        '"connector_id":', '"agent_schema":', '"bot_basic_info":',
+                        '"generate_answer_finish"', '"finish_reason"'
+                    ]):
+                        # 去重处理，避免重复输出相同内容
+                        if content not in yielded_contents:
+                            yielded_contents.add(content)
+                            logger.info(f"输出有效回复内容，长度: {len(content)} 字符")
+                            yield content
+                        
+                # 检查是否为结束事件
+                if hasattr(event, 'event') and event.event == "conversation.message.completed":
+                    yield "[STREAM_END]"
+                    break
         except Exception as e:
             logger.error(f"流式聊天异常: {str(e)}")
             if "4015" in str(e):
