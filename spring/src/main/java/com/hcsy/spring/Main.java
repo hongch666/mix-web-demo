@@ -17,10 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @MapperScan(basePackages = "com.hcsy.spring.api.mapper")
 @Slf4j
-public class main {
+public class Main {
 
     public static void main(String[] args) {
-        SpringApplication.run(main.class, args);
+        SpringApplication.run(Main.class, args);
     }
 
     @Bean
