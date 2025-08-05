@@ -131,6 +131,17 @@ async def stream_chat(message: str, user_id: str = "default", db: Optional[Sessi
                     if previous_length > 10 and current_length >= previous_length * 1.8:
                         logger.debug(f"检测到内容长度翻倍增长: {previous_length} -> {current_length}，跳过此内容")
                         continue
+                    
+                    # 检测是否包含重复的句子（简单检测）
+                    if len(content) > 50:  # 只对较长的内容进行重复检测
+                        sentences = content.split('。')
+                        if len(sentences) >= 2:
+                            # 检查是否有相同的句子重复出现
+                            for i, sentence in enumerate(sentences):
+                                if sentence.strip() and sentences.count(sentence) > 1:
+                                    logger.debug(f"检测到重复句子，跳过此内容: {sentence[:30]}...")
+                                    continue
+                    
                     previous_length = current_length
                     yield content
         except Exception as e:
