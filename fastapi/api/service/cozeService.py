@@ -128,7 +128,7 @@ async def stream_chat(message: str, user_id: str = "default", db: Optional[Sessi
                 if content is not None:
                     current_length = len(content)
                     # 检测内容长度是否翻倍增长（视为异常增长）
-                    if previous_length > 0 and current_length >= previous_length * 1.8:
+                    if previous_length > 10 and current_length >= previous_length * 1.8:
                         logger.debug(f"检测到内容长度翻倍增长: {previous_length} -> {current_length}，跳过此内容")
                         continue
                     previous_length = current_length
