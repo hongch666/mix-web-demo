@@ -1,6 +1,5 @@
 from sqlmodel import Session, select
 
-from config import get_db
 from entity.po import Article
 
 def get_top10_articles_mapper(db: Session) -> list[Article]:

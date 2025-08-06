@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlmodel import Session
 from common.middleware import get_current_user_id, get_current_username
 from entity.po import ListResponse
 from api.service import get_top10_articles_service, upload_excel_to_oss,generate_wordcloud, get_keywords_dic, upload_wordcloud_to_oss, export_articles_to_excel

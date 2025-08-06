@@ -4,7 +4,7 @@ import json
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy.orm import Session
+from sqlmodel import Session
 
 from common.utils import success,fileLogger
 from config import get_db

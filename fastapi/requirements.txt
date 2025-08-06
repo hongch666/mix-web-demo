@@ -3,7 +3,7 @@ uvicorn
 pyyaml
 nacos-sdk-python
 requests
-sqlalchemy
+sqlmodel
 pymysql
 pymongo
 wordcloud

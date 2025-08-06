@@ -1,6 +1,5 @@
 from sqlmodel import Session, select
 
-from config import get_db
 from entity.po import User
 
 def get_users_by_ids_mapper(user_ids: list[int], db: Session) -> list[User]:

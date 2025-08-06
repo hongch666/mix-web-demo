@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Dict, Any, AsyncGenerator, Optional
 from cozepy import Coze, TokenAuth, Message, ChatStatus
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlmodel import Session
 from api.mapper import get_all_articlelogs_limit_mapper,get_all_subcategories_mapper,get_article_limit_mapper,get_all_users_mapper,get_all_categories_mapper
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config,get_db

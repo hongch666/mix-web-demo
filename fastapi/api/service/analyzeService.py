@@ -1,8 +1,9 @@
-from sqlalchemy.orm import Session
 from fastapi import Depends
 import os
 import pandas as pd
 from typing import Dict, List, Any
+
+from sqlmodel import Session
 
 from api.mapper import get_all_articles_mapper,get_top10_articles_mapper,get_users_by_ids_mapper,get_search_keywords_articlelog_mapper
 from config import get_db,OSSClient,load_config

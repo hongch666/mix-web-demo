@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
+from sqlmodel import Session
 from config import get_db
-from sqlalchemy.orm import Session
 from common.utils import fileLogger as logger
 from api.service import export_articles_to_excel, upload_excel_to_oss
 from apscheduler.schedulers.base import BaseScheduler
