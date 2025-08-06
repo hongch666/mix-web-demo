@@ -128,7 +128,7 @@ async def stream_chat(message: str, user_id: str = "default", db: Optional[Sessi
                 if content is not None:
                     current_length = len(content)
                     # 检测内容长度是否超过固定阈值（超过200字符视为异常增长）
-                    if current_length > 10:
+                    if current_length > 20:
                         logger.info(f"检测到内容长度过长: {current_length} 字符，跳过此内容")
                         continue
                     previous_length = current_length
@@ -147,7 +147,7 @@ def search_article_from_db(db: Session = Depends(get_db)) -> str:
         content_list: List[str] = []
         for article in articles:
             content_list.append(
-                f"标题: {article.title}, 内容: {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
+                f"标题: {article.title}, 内容(Markdown格式，自行转换): {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
             )
         return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
     
