@@ -129,7 +129,8 @@ CREATE TABLE user (
     password VARCHAR(255) NOT NULL COMMENT '密码',
     email VARCHAR(255) UNIQUE COMMENT '邮箱',
     age INT COMMENT '年龄',
-    role VARCHAR(255) NOT NULL COMMENT '用户权限'
+    role VARCHAR(255) NOT NULL COMMENT '用户权限',
+    img VARCHAR(255) COMMENT '用户头像'
 ) COMMENT='用户表'
 ```
 
@@ -141,7 +142,7 @@ CREATE TABLE articles (
     title VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
     content TEXT NOT NULL COMMENT '文章内容',
     user_id BIGINT NOT NULL COMMENT '用户id',
-    sub_category_id BIGINT NOT NULL COMMENT '子分类id'
+    sub_category_id BIGINT NOT NULL COMMENT '子分类id',
     tags VARCHAR(255) NOT NULL COMMENT '文章标签',
     status INT NOT NULL COMMENT '文章状态',
     views INT NOT NULL COMMENT '文章浏览量',
@@ -523,6 +524,7 @@ jwt:
        version="1.0.0"
    )
    ```
+
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
    ```python
@@ -533,6 +535,7 @@ jwt:
        """
        return {"msg": "hello"}
    ```
+
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
 ## 其他说明
