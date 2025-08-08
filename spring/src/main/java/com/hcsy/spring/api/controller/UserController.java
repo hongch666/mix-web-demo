@@ -167,4 +167,14 @@ public class UserController {
         return Result.success();
     }
 
+    @PostMapping("/register")
+    @Operation(summary = "用户注册", description = "注册新用户")
+    public Result registerUser(@Valid @RequestBody UserCreateDTO userDto) {
+        logger.info("POST /users/register: " + "用户注册\nUserCreateDTO: %s", userDto);
+        User user = BeanUtil.copyProperties(userDto, User.class);
+        user.setRole("user");
+        userService.saveUserAndStatus(user);
+        return Result.success();
+    }
+
 }

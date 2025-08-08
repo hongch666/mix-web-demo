@@ -28,7 +28,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     // 需要排除的路径（建议通过配置中心管理）
     private static final List<String> EXCLUDE_PATHS = List.of(
             "/users/login",
-            "/auth/register",
+            "/users/register",
+            "/upload/**",
             "/public/**",
             "/actuator/**",
             "/v3/api-docs/**",
