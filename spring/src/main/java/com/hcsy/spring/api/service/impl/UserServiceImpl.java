@@ -31,7 +31,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (username != null && !username.isEmpty()) {
             queryWrapper.like(User::getName, username); // 用户名模糊匹配
         }
-        return this.page(page, queryWrapper);
+        IPage<User> userPage = this.page(page, queryWrapper);
+
+        // 为每个用户查redis登录状态，并设置到User对象
+        List<User> userList = userPage.getRecords();
+        for (User user : userList) {
+            String status = (String) redisUtil.get("user:status:" + user.getId());
+            // 建议在User类加一个transient Integer loginStatus字段
+            user.setLoginStatus("1".equals(status) ? 1 : 0);
+        }
+        // 按loginStatus降序排序
+        userList.sort((u1, u2) -> Integer.compare(u2.getLoginStatus(), u1.getLoginStatus()));
+
+        // 重新设置排序后的列表
+        userPage.setRecords(userList);
+        return userPage;
     }
 
     @Transactional
