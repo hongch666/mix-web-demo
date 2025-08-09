@@ -453,7 +453,7 @@ spring:
         - id: exclude-list
           uri: no://op
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/logs,/analyze/excel
+            - Path=/articles/list,/api_gin/syncer,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids}
           filters:
             - SetStatus=204
 

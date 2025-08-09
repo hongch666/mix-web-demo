@@ -139,7 +139,6 @@ public class CategoryController {
                 "total", resultPage.getTotal()));
     }
 
-    // TODO: 需要在网关排除
     @Operation(summary = "根据ID查询分类（含子分类信息）")
     @GetMapping("/{id}")
     public Result getCategoryById(@PathVariable Long id) {
@@ -153,7 +152,6 @@ public class CategoryController {
         return Result.success(vo);
     }
 
-    // TODO: 需要在网关排除
     @Operation(summary = "根据ID数组查询分类数据")
     @GetMapping("/batch/{ids}")
     public Result getCategoriesByIds(@PathVariable String ids) {

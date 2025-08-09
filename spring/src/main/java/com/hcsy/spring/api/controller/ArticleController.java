@@ -73,7 +73,8 @@ public class ArticleController {
             @RequestParam(required = false) Integer size) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s", page, size);
+        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s", page,
+                size);
 
         List<Article> articles;
         long total;
