@@ -129,16 +129,11 @@ func SearchArticles(c *gin.Context) []po.Article {
 		panic(err.Error())
 	}
 	articles = data.List
-	// 原数据库查询逻辑：
-	// if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
-	//     panic(err.Error())
-	// }
+
 	return articles
 }
 
 func SearchUserByIds(c *gin.Context, userIDs []int) []po.User {
-	// 调用Spring部分接口获取用户数据
-
 	// 将[]int转换为逗号分隔的字符串
 	idStrings := make([]string, len(userIDs))
 	for i, id := range userIDs {
@@ -178,8 +173,6 @@ func SearchUserByIds(c *gin.Context, userIDs []int) []po.User {
 }
 
 func SearchSubCategoriesByIds(c *gin.Context, subCategoryIDs []int) []po.SubCategory {
-	// 调用Spring部分接口获取子分类数据
-
 	// 将[]int转换为逗号分隔的字符串
 	idStrings := make([]string, len(subCategoryIDs))
 	for i, id := range subCategoryIDs {
@@ -218,8 +211,6 @@ func SearchSubCategoriesByIds(c *gin.Context, subCategoryIDs []int) []po.SubCate
 }
 
 func SearchCategoriesByIds(c *gin.Context, categoryIDs []int) []po.Category {
-	// 调用Spring部分接口获取分类数据
-
 	// 将[]int转换为逗号分隔的字符串
 	idStrings := make([]string, len(categoryIDs))
 	for i, id := range categoryIDs {

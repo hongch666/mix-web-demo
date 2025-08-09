@@ -104,7 +104,6 @@ public class UserController {
         return Result.success(user);
     }
 
-    // TODO: 需要在网关排除
     @GetMapping("/batch/{ids}")
     @Operation(summary = "查询用户列表", description = "根据id数组查询用户，多个id用英文逗号分隔")
     public Result getUsersByIds(@PathVariable String ids) {

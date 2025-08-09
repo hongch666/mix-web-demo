@@ -10,8 +10,6 @@ func Init() {
 	InitConfig()
 	// 初始化Nacos
 	InitNacos()
-	// 初始化Gorm
-	InitGorm()
 	// 初始化ES
 	InitES()
 	// 初始化RabbitMQ
