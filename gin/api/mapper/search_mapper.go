@@ -101,35 +101,3 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 
 	return articles, int(searchResult.Hits.TotalHits.Value)
 }
-
-func SearchArticles() []po.Article {
-	var articles []po.Article
-	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
-		panic(err.Error())
-	}
-	return articles
-}
-
-func SearchUserByIds(userIDs []int) []po.User {
-	var users []po.User
-	if err := config.DB.Where("id IN (?)", userIDs).Find(&users).Error; err != nil {
-		panic(err.Error())
-	}
-	return users
-}
-
-func SearchSubCategoriesByIds(subCategoryIDs []int) []po.SubCategory {
-	var subCategories []po.SubCategory
-	if err := config.DB.Where("id IN (?)", subCategoryIDs).Find(&subCategories).Error; err != nil {
-		panic(err.Error())
-	}
-	return subCategories
-}
-
-func SearchCategoryById(category_id int) po.Category {
-	var category po.Category
-	if err := config.DB.Where("id = ?", category_id).First(&category).Error; err != nil {
-		panic(err.Error())
-	}
-	return category
-}
