@@ -92,16 +92,17 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 		baseURL += "?" + opts.QueryParams.Encode()
 	}
 
-	// 5. 创建请求体Reader（不再合并 userID/username 到 body）
+	// 5. 创建请求体Reader
 	var body io.Reader
 	switch data := opts.BodyData.(type) {
 	case nil:
-		// 没有传递请求体
 		body = nil
 	case map[string]interface{}:
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			if c != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			}
 			return Result{}, err
 		}
 		body = bytes.NewReader(jsonData)
@@ -114,7 +115,9 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	default:
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			if c != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			}
 			return Result{}, err
 		}
 		body = bytes.NewReader(jsonData)
@@ -133,9 +136,13 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 		}
 	}
 	// 自动加上用户信息到请求头
-	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	var userID int64 = 0
+	var username string = "system"
+	if c != nil {
+		ctx := c.Request.Context()
+		userID, _ = ctx.Value(ctxkey.UserIDKey).(int64)
+		username, _ = ctx.Value(ctxkey.UsernameKey).(string)
+	}
 	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
 	req.Header.Set("X-Username", username)
 

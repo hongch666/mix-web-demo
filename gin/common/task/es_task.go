@@ -16,7 +16,7 @@ func InitTasks() {
 	// 每天同步一次 ES
 	_, err := TaskScheduler.AddFunc("0 0 * * *", func() {
 		utils.FileLogger.Info("[定时任务] 开始同步文章到 Elasticsearch")
-		syncer.SyncArticlesToES()
+		syncer.SyncArticlesToES(nil)
 		utils.FileLogger.Info("[定时任务] 同步成功")
 	})
 

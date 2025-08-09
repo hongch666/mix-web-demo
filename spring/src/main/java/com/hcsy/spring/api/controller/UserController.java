@@ -22,7 +22,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
@@ -100,6 +102,25 @@ public class UserController {
         logger.info("用户" + userId + ":" + userName + " GET /users/{id}: " + "查询用户，ID: %s", id);
         User user = userService.getById(id);
         return Result.success(user);
+    }
+
+    // TODO: 需要在网关排除
+    @GetMapping("/batch/{ids}")
+    @Operation(summary = "查询用户列表", description = "根据id数组查询用户，多个id用英文逗号分隔")
+    public Result getUsersByIds(@PathVariable String ids) {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+        logger.info("用户" + userId + ":" + userName + " GET /users/{ids}: " + "查询用户列表，IDS: %s", idList);
+        List<User> users = userService.listByIds(idList);
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", users.size());
+        data.put("list", users);
+        return Result.success(data);
     }
 
     @PutMapping

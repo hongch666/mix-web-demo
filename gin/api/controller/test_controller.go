@@ -80,6 +80,6 @@ func SyncES(c *gin.Context) {
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "POST /api_gin/syncer: " + "同步ES服务")
-	syncer.SyncArticlesToES()
+	syncer.SyncArticlesToES(c)
 	utils.RespondSuccess(c, nil)
 }

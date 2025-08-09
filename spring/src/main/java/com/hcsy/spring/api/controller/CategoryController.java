@@ -139,6 +139,7 @@ public class CategoryController {
                 "total", resultPage.getTotal()));
     }
 
+    // TODO: 需要在网关排除
     @Operation(summary = "根据ID查询分类（含子分类信息）")
     @GetMapping("/{id}")
     public Result getCategoryById(@PathVariable Long id) {
@@ -150,5 +151,46 @@ public class CategoryController {
             return Result.error("分类不存在");
         }
         return Result.success(vo);
+    }
+
+    // TODO: 需要在网关排除
+    @Operation(summary = "根据ID数组查询分类数据")
+    @GetMapping("/batch/{ids}")
+    public Result getCategoriesByIds(@PathVariable String ids) {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        logger.info("用户" + userId + ":" + userName + " GET /category/batch/%s: " + "根据ID数组查询分类数据\nIDs: %s", ids, ids);
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+
+        List<Object> categories = categoryService.getCategoriesById(idList);
+        if (categories.isEmpty()) {
+            return Result.error("未找到相关分类");
+        }
+        return Result.success(Map.of(
+                "total", categories.size(),
+                "list", categories));
+    }
+
+    @Operation(summary = "根据子分类ID数组查询子分类数据")
+    @GetMapping("/sub/batch/{ids}")
+    public Result getSubCategoriesByCategoryIds(@PathVariable String ids) {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        logger.info("用户" + userId + ":" + userName + " GET /category/sub/batch/%s: "
+                + "根据子分类ID数组查询子分类数据\nSubCategoryIDs: %s", ids, ids);
+        List<Long> subCategoryIdList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+
+        List<Object> subCategories = categoryService.getSubCategoriesByIds(subCategoryIdList);
+        return Result.success(Map.of(
+                "total", subCategories.size(),
+                "list", subCategories));
     }
 }

@@ -9,6 +9,7 @@ import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CategoryService {
     Long addCategory(CategoryCreateDTO dto);
@@ -26,6 +27,16 @@ public interface CategoryService {
     void deleteSubCategory(Long id);
 
     CategoryVO getCategoryById(Long id);
+
+    List<CategoryVO> listByIds(List<Long> ids);
+
+    List<Object> getCategoriesById(List<Long> ids);
+
+    List<Object> getSubCategoriesByIds(List<Long> subCategoryIds);
+
+    List<Object> getSubCategoriesByCategoryIds(List<Long> categoryIds);
+
+    Map<String, Object> getCategoriesAndSubCategoriesById(List<Long> ids);
 
     IPage<CategoryVO> pageCategory(Page<?> page);
 }

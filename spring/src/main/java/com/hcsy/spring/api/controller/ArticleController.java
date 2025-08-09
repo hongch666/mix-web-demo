@@ -27,7 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Arrays;
 import java.util.List;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+
+import com.hcsy.spring.entity.vo.ArticleVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 
 import org.springframework.web.bind.annotation.*;
@@ -75,9 +78,18 @@ public class ArticleController {
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
 
+        // 格式化时间并转为VO
+        DateTimeFormatter formatter = DateTimeFormatter
+                .ofPattern("yyyy-MM-dd HH:mm:ss");
+        List<ArticleVO> voList = resultPage.getRecords().stream().map(article -> {
+            ArticleVO vo = BeanUtil.copyProperties(article, ArticleVO.class);
+            vo.setCreateAt(article.getCreateAt() != null ? article.getCreateAt().format(formatter) : null);
+            vo.setUpdateAt(article.getUpdateAt() != null ? article.getUpdateAt().format(formatter) : null);
+            return vo;
+        }).toList();
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        data.put("list", voList);
         return Result.success(data);
     }
 

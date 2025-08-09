@@ -8,10 +8,11 @@ import (
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
+	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 )
 
-func SyncArticlesToES() {
+func SyncArticlesToES(c *gin.Context) {
 	ctx := context.Background()
 	// 判断索引是否存在
 	exists, err := config.ESClient.IndexExists("articles").Do(ctx)
@@ -52,7 +53,7 @@ func SyncArticlesToES() {
 	}
 
 	// 获取文章数据
-	articles := mapper.SearchArticles()
+	articles := mapper.SearchArticles(c)
 
 	// 批量获取 user_id
 	userIDs := make([]int, 0, len(articles))
@@ -61,7 +62,7 @@ func SyncArticlesToES() {
 	}
 
 	// 查询所有相关用户
-	users := mapper.SearchUserByIds(userIDs)
+	users := mapper.SearchUserByIds(c, userIDs)
 	userMap := make(map[int]string)
 	for _, u := range users {
 		userMap[u.ID] = u.Name
@@ -73,16 +74,34 @@ func SyncArticlesToES() {
 		subCategoryIDs = append(subCategoryIDs, a.SubCategoryID)
 	}
 
-	// 查询所有分类和子分类
-	subCategories := mapper.SearchSubCategoriesByIds(subCategoryIDs)
-
+	// 查询所有子分类
+	subCategories := mapper.SearchSubCategoriesByIds(c, subCategoryIDs)
 	subCategoryMap := make(map[int]string)
-	categoryMap := make(map[int]string)
+	categoryIDSet := make(map[int]struct{})
 	for _, sc := range subCategories {
 		subCategoryMap[sc.ID] = sc.Name
-		category_id := sc.CategoryID
-		category := mapper.SearchCategoryById(category_id)
-		categoryMap[sc.ID] = category.Name
+		if _, exists := categoryIDSet[sc.CategoryID]; !exists {
+			categoryIDSet[sc.CategoryID] = struct{}{}
+		}
+	}
+
+	// 批量获取所有相关的父分类
+	categoryIDs := make([]int, 0, len(categoryIDSet))
+	for id := range categoryIDSet {
+		categoryIDs = append(categoryIDs, id)
+	}
+	categories := mapper.SearchCategoriesByIds(c, categoryIDs)
+	categoryNameMap := make(map[int]string)
+	for _, cat := range categories {
+		categoryNameMap[cat.ID] = cat.Name
+	}
+
+	// 创建一个从子分类ID到父分类名称的映射
+	subCategoryToCategoryNameMap := make(map[int]string)
+	for _, sc := range subCategories {
+		if name, ok := categoryNameMap[sc.CategoryID]; ok {
+			subCategoryToCategoryNameMap[sc.ID] = name
+		}
 	}
 
 	// 批量构建ES文档
@@ -97,10 +116,10 @@ func SyncArticlesToES() {
 			Tags:            article.Tags,
 			Status:          article.Status,
 			Views:           article.Views,
-			CategoryName:    categoryMap[article.SubCategoryID],
+			CategoryName:    subCategoryToCategoryNameMap[article.SubCategoryID], // 使用映射获取分类名称
 			SubCategoryName: subCategoryMap[article.SubCategoryID],
-			CreateAt:        article.CreateAt.Format("2006-01-02 15:04:05"),
-			UpdateAt:        article.UpdateAt.Format("2006-01-02 15:04:05"),
+			CreateAt:        article.CreateAt, // 现在是string类型，直接赋值
+			UpdateAt:        article.UpdateAt, // 现在是string类型，直接赋值
 		}
 		req := elastic.NewBulkIndexRequest().
 			Index("articles").
