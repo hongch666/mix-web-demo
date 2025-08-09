@@ -69,26 +69,35 @@ public class ArticleController {
     @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     public Result getPublishedArticles(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s", page,
-                size);
-        Page<Article> articlePage = new Page<>(page, size);
-        IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
+        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s", page, size);
+
+        List<Article> articles;
+        long total;
+        if (page == null || size == null) {
+            // 不分页，查全部
+            articles = articleService.listPublishedArticles();
+            total = articles.size();
+        } else {
+            Page<Article> articlePage = new Page<>(page, size);
+            IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
+            articles = resultPage.getRecords();
+            total = resultPage.getTotal();
+        }
 
         // 格式化时间并转为VO
-        DateTimeFormatter formatter = DateTimeFormatter
-                .ofPattern("yyyy-MM-dd HH:mm:ss");
-        List<ArticleVO> voList = resultPage.getRecords().stream().map(article -> {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        List<ArticleVO> voList = articles.stream().map(article -> {
             ArticleVO vo = BeanUtil.copyProperties(article, ArticleVO.class);
             vo.setCreateAt(article.getCreateAt() != null ? article.getCreateAt().format(formatter) : null);
             vo.setUpdateAt(article.getUpdateAt() != null ? article.getUpdateAt().format(formatter) : null);
             return vo;
         }).toList();
         Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
+        data.put("total", total);
         data.put("list", voList);
         return Result.success(data);
     }
