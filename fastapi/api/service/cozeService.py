@@ -3,9 +3,9 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 from cozepy import Coze, TokenAuth, Message, ChatStatus
 from fastapi import Depends
 from sqlmodel import Session
-from api.mapper import get_all_articlelogs_limit_mapper,get_all_subcategories_mapper,get_article_limit_mapper,get_all_users_mapper,get_all_categories_mapper
+from api.mapper import get_all_articlelogs_limit_mapper,get_all_subcategories_mapper,get_all_articles_mapper,get_all_users_mapper,get_all_categories_mapper
 from common.utils import fileLogger as logger
-from config import load_config, load_secret_config,get_db
+from config import load_config, load_secret_config
 from entity.po import Article,User,SubCategory
 from common.middleware import get_current_user_id, get_current_username
 
@@ -18,10 +18,10 @@ _timeout: int = load_config("coze")["timeout"]
 coze_client: Coze = Coze(auth=TokenAuth(token=_api_key), base_url=_base_url)
 logger.info("Coze 服务初始化完成")
     
-async def simple_chat(message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
+async def simple_chat(message: str, user_id: str = "default") -> str:
         """简单聊天接口"""
         try:
-            prompt: str = get_prompt(message, db)
+            prompt: str = await get_prompt(message)
             logger.info(f"用户 {user_id} 发送消息: {prompt}")
             chat: Any = coze_client.chat.create(
                 bot_id=_bot_id,
@@ -94,12 +94,12 @@ async def simple_chat(message: str, user_id: str = "default", db: Optional[Sessi
                 return "机器人未发布到 API 频道。请在 Coze 平台将机器人发布到 'Agent As API' 频道。"
             return f"聊天服务异常: {str(e)}"
     
-async def stream_chat(message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
+async def stream_chat(message: str, user_id: str = "default") -> AsyncGenerator[str, None]:
         """流式聊天接口 - 兼容异步调用"""
         try:
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
 
-            prompt: str = get_prompt(message, db)
+            prompt: str = await get_prompt(message)
             logger.info(f"用户 {user_id} 发送消息: {prompt}")
             def sync_stream() -> Any:
                 return coze_client.chat.stream(
@@ -140,61 +140,61 @@ async def stream_chat(message: str, user_id: str = "default", db: Optional[Sessi
             else:
                 yield f"流式聊天服务异常: {str(e)}"
 
-def search_article_from_db(db: Session = Depends(get_db)) -> str:
-        articles: List[Article] = get_article_limit_mapper(db)
+async def search_article_from_db() -> str:
+        articles: List[Article] = await get_all_articles_mapper()
         if not articles:
             return "没有找到相关的知识库内容"
         content_list: List[str] = []
         for article in articles:
             content_list.append(
-                f"标题: {article.title}, 内容(Markdown格式，自行转换): {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
+                f"标题: {article['title']}, 内容(Markdown格式，自行转换): {article['content'][:100]}, 用户ID: {article['userId']}, 标签: {article['tags']}, 状态: {article['status']}, 创建时间: {article['createAt']}, 更新时间: {article['updateAt']}, 浏览量: {article['views']}"
             )
         return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
     
-def search_user_from_db(db: Session = Depends(get_db)) -> str:
-        users: List[User] = get_all_users_mapper(db)
+async def search_user_from_db() -> str:
+        users: List[User] = await get_all_users_mapper()
         if not users:
             return "没有找到相关的用户信息"
         user_list: List[str] = []
         for user in users:
-            user_list.append(f"ID: {user.id}, 名称: {user.name}, 年龄: {user.age}, 邮箱: {user.email}, 角色: {user.role}")
+            user_list.append(f"ID: {user['id']}, 名称: {user['name']}, 年龄: {user['age']}, 邮箱: {user['email']}, 角色: {user['role']}")
         return "\n".join(user_list) if user_list else "没有找到相关的用户信息"
     
-def search_category_from_db(db: Session = Depends(get_db)) -> str:
-        categories: List[Dict[str, Any]] = get_all_categories_mapper(db)
+async def search_category_from_db() -> str:
+        categories: List[Dict[str, Any]] = await get_all_categories_mapper()
         if not categories:
             return "没有找到相关的分类信息"
         category_list: List[str] = []
         for category in categories:
-            category_list.append(f"分类ID: {category.id}, 名称: {category.name}")
+            category_list.append(f"分类ID: {category['id']}, 名称: {category['name']}")
         return "\n".join(category_list) if category_list else "没有找到相关的分类信息"
     
-def search_sub_category_from_db(db: Session = Depends(get_db)) -> str:
-        sub_categories: List[SubCategory] = get_all_subcategories_mapper(db)
+async def search_sub_category_from_db() -> str:
+        sub_categories: List[SubCategory] = await get_all_subcategories_mapper()
         if not sub_categories:
             return "没有找到相关的子分类信息"
         sub_category_list: List[str] = []
         for sub_category in sub_categories:
-            sub_category_list.append(f"子分类ID: {sub_category.id}, 名称: {sub_category.name}, 所属分类ID: {sub_category.category_id}")
+            sub_category_list.append(f"子分类ID: {sub_category['id']}, 名称: {sub_category['name']}, 所属分类ID: {sub_category['categoryId']}")
         return "\n".join(sub_category_list) if sub_category_list else "没有找到相关的子分类信息"
-    
-def search_logs_from_db() -> str:
-        cursor: Any = get_all_articlelogs_limit_mapper()
+
+async def search_logs_from_db() -> str:
+        logs: Any = await get_all_articlelogs_limit_mapper()
         log_list: List[str] = []
-        for log in cursor:
+        for log in logs:
             log_str: str = ", ".join([f"{k}: {v}" for k, v in log.items()])
             log_list.append(log_str)
         return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
     
-def get_prompt(message: str, db: Session = Depends(get_db)) -> str:
+async def get_prompt(message: str) -> str:
         user_id: str = get_current_user_id() or ""
         username: str = get_current_username() or ""
         userInfo: str = f"用户ID: {user_id}, 用户名: {username}"
-        article: str = search_article_from_db(db)
-        user: str = search_user_from_db(db)
-        category: str = search_category_from_db(db)
-        sub_category: str = search_sub_category_from_db(db)
-        logs: str = search_logs_from_db()
+        article: str = await search_article_from_db()
+        user: str = await search_user_from_db()
+        category: str = await search_category_from_db()
+        sub_category: str = await search_sub_category_from_db()
+        logs: str = await search_logs_from_db()
         knowledge: str = (f"当前用户信息(提问的用户，一般会称“我”)：{userInfo}\n文章信息：{article}\n用户信息：{user}\n分类信息：{category}\n日志信息：{logs}"
         f"\n子分类信息：{sub_category}")
         prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"

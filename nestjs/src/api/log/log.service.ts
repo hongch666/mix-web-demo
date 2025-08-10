@@ -47,8 +47,8 @@ export class ArticleLogService {
       action,
       startTime,
       endTime,
-      page = '1',
-      size = '10',
+      page,
+      size,
     } = query;
 
     const filters: Record<string, any> = {};
@@ -92,18 +92,26 @@ export class ArticleLogService {
         filters.createdAt.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(size);
-    const take = parseInt(size);
+    let list: any[] = [];
+    let total = 0;
+    if (page === undefined || size === undefined) {
+      // 不分页，查全部
+      list = await this.logModel.find(filters).sort({ createdAt: -1 }).exec();
+      total = list.length;
+    } else {
+      const skip = (parseInt(page) - 1) * parseInt(size);
+      const take = parseInt(size);
+      [total, list] = await Promise.all([
+        this.logModel.countDocuments(filters),
+        this.logModel
+          .find(filters)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(take)
+          .exec(),
+      ]);
+    }
 
-    const [total, list] = await Promise.all([
-      this.logModel.countDocuments(filters),
-      this.logModel
-        .find(filters)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(take)
-        .exec(),
-    ]);
     // 只返回指定字段
     const resultList = await Promise.all(
       list.map(async (log) => ({

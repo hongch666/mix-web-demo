@@ -26,6 +26,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisUtil redisUtil;
 
     @Override
+    public List<User> listUsersWithFilter(String username) {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        if (username != null && !username.isEmpty()) {
+            queryWrapper.like(User::getName, username);
+        }
+        List<User> userList = userMapper.selectList(queryWrapper);
+        // 为每个用户查redis登录状态，并设置到User对象
+        for (User user : userList) {
+            String status = (String) redisUtil.get("user:status:" + user.getId());
+            user.setLoginStatus("1".equals(status) ? 1 : 0);
+        }
+        return userList;
+    }
+
+    @Override
     public IPage<User> listUsersWithFilter(Page<User> page, String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         if (username != null && !username.isEmpty()) {

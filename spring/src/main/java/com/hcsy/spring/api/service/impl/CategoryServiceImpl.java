@@ -223,4 +223,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         voPage.setRecords(voList);
         return voPage;
     }
+
+    @Override
+    public List<SubCategory> listSubCategories() {
+        return subCategoryMapper.selectList(null);
+    }
 }

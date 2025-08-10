@@ -6,36 +6,37 @@ from typing import Dict, List, Any
 from sqlmodel import Session
 
 from api.mapper import get_all_articles_mapper,get_top10_articles_mapper,get_users_by_ids_mapper,get_search_keywords_articlelog_mapper
-from config import get_db,OSSClient,load_config
+from config import OSSClient,load_config
 from common.utils import fileLogger as logger
 from wordcloud import WordCloud
 
-def get_top10_articles_service(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    articles = get_top10_articles_mapper(db)
+async def get_top10_articles_service() -> List[Dict[str, Any]]:
+    articles = await get_top10_articles_mapper()
     # 获取所有作者id
-    user_ids = [article.user_id for article in articles]
+    user_ids = [article["userId"] for article in articles]
     # 批量查user表
-    users = get_users_by_ids_mapper(user_ids, db)
-    user_id_to_name = {user.id: user.name for user in users}
+    users = await get_users_by_ids_mapper(user_ids)
+    print(users)
+    user_id_to_name = {user["id"]: user["name"] for user in users}
     # 转换为字典并加上username
     return [
         {
-            "id": article.id,
-            "title": article.title,
-            "content": article.content,
-            "user_id": article.user_id,
-            "username": user_id_to_name.get(article.user_id),
-            "tags": article.tags,
-            "status": article.status,
-            "create_at": article.create_at.isoformat() if article.create_at else None,
-            "update_at": article.update_at.isoformat() if article.update_at else None,
-            "views": article.views,
+            "id": article["id"],
+            "title": article["title"],
+            "content": article["content"],
+            "user_id": article["userId"],
+            "username": user_id_to_name.get(article["userId"]),
+            "tags": article["tags"],
+            "status": article["status"],
+            "create_at": article["createAt"],
+            "update_at": article["updateAt"],
+            "views": article["views"],
         }
         for article in articles
     ]
 
-def get_keywords_dic() -> Dict[str, int]:
-    all_keywords: List[str] = get_search_keywords_articlelog_mapper()
+async def get_keywords_dic() -> Dict[str, int]:
+    all_keywords: List[str] = await get_search_keywords_articlelog_mapper()
     keywords_dic: Dict[str, int] = {}
     for keyword in all_keywords:
         if keyword in keywords_dic:
@@ -82,10 +83,10 @@ def upload_wordcloud_to_oss() -> str:
     )
     return oss_url
 
-def export_articles_to_excel(db: Session = Depends(get_db)) -> str:
+async def export_articles_to_excel() -> str:
     FILE_PATH: str = load_config("files")["excel_path"]
     file_path = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.xlsx"))
-    articles = get_all_articles_mapper(db)
+    articles = await get_all_articles_mapper()
     data = []
     for article in articles:
         data.append({

@@ -10,6 +10,9 @@ import java.util.List;
 public interface UserService extends IService<User> {
     IPage<User> listUsersWithFilter(Page<User> page, String username);
 
+    // 无分页，查全部，支持用户名模糊过滤
+    List<User> listUsersWithFilter(String username);
+
     void saveUserAndStatus(User user);
 
     void deleteUserAndStatusById(Long id);

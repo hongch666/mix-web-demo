@@ -1,14 +1,11 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from sqlmodel import Session
-from config import get_db
 from common.utils import fileLogger as logger
 from api.service import export_articles_to_excel, upload_excel_to_oss
 from apscheduler.schedulers.base import BaseScheduler
 
 def export_articles_job() -> None:
-    db: Session = next(get_db())
     try:
-        export_articles_to_excel(db)
+        export_articles_to_excel()
         file_path: str = upload_excel_to_oss()
         logger.info(f"定时任务：文章表已自动备份到 {file_path}")
     except Exception as e:

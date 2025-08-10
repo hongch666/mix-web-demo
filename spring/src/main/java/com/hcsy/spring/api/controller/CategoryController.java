@@ -12,7 +12,9 @@ import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
+import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.Result;
+import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -187,6 +189,33 @@ public class CategoryController {
                 .toList();
 
         List<Object> subCategories = categoryService.getSubCategoriesByIds(subCategoryIdList);
+        return Result.success(Map.of(
+                "total", subCategories.size(),
+                "list", subCategories));
+    }
+
+    // TODO: 网关排除
+    @Operation(summary = "查询所有父分类")
+    @GetMapping("/all")
+    public Result getAllCategories() {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        logger.info("用户" + userId + ":" + userName + " GET /category/all: 查询所有父分类");
+        List<Category> categories = categoryService.list();
+        return Result.success(Map.of(
+                "total", categories.size(),
+                "list", categories));
+    }
+
+    // TODO: 网关排除
+    @Operation(summary = "查询所有子分类")
+    @GetMapping("/sub/all")
+    public Result getAllSubCategories() {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        logger.info("用户" + userId + ":" + userName + " GET /category/sub/all: 查询所有子分类");
+        // 直接用IService<SubCategory>的list()
+        List<SubCategory> subCategories = categoryService.listSubCategories();
         return Result.success(Map.of(
                 "total", subCategories.size(),
                 "list", subCategories));

@@ -46,11 +46,18 @@ public class UserController {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " GET /users: " + "获取用户信息\nUserQueryDTO: %s", queryDTO);
-        Page<User> userPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
-        IPage<User> resultPage = userService.listUsersWithFilter(userPage, queryDTO.getUsername());
         Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        if (queryDTO.getPage() == null || queryDTO.getSize() == null) {
+            // 不分页，查全部
+            List<User> users = userService.listUsersWithFilter(queryDTO.getUsername());
+            data.put("total", users.size());
+            data.put("list", users);
+        } else {
+            Page<User> userPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
+            IPage<User> resultPage = userService.listUsersWithFilter(userPage, queryDTO.getUsername());
+            data.put("total", resultPage.getTotal());
+            data.put("list", resultPage.getRecords());
+        }
         return Result.success(data);
     }
 
