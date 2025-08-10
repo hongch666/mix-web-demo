@@ -67,24 +67,27 @@ public class ArticleController {
     }
 
     @GetMapping("/list")
-    @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
+    @Operation(summary = "获取文章列表", description = "返回所有已发布的文章，可根据标题模糊查询")
     public Result getPublishedArticles(
             @RequestParam(required = false) Integer page,
-            @RequestParam(required = false) Integer size) {
+            @RequestParam(required = false) Integer size,
+            @RequestParam(required = false) String title) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s", page,
-                size);
+        logger.info(
+                "用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s, title: %s",
+                page,
+                size, title);
 
         List<Article> articles;
         long total;
         if (page == null || size == null) {
             // 不分页，查全部
-            articles = articleService.listPublishedArticles();
+            articles = articleService.listPublishedArticlesByTitle(title);
             total = articles.size();
         } else {
             Page<Article> articlePage = new Page<>(page, size);
-            IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
+            IPage<Article> resultPage = articleService.listPublishedArticlesByTitle(articlePage, title);
             articles = resultPage.getRecords();
             total = resultPage.getTotal();
         }

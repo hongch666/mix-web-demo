@@ -1,24 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { User } from './entities/user.entity';
+import { NacosService } from 'src/common/nacos/nacos.service';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-  ) {}
+  constructor(private readonly nacosService: NacosService) {}
 
   // 查询用户
-  async getUserById(id: number): Promise<User | null> {
-    return this.userRepository.findOne({ where: { id } });
+  async getUserById(id: number): Promise<any> {
+    // 使用Spring进行远程调用
+    const res = await this.nacosService.call({
+      serviceName: 'spring',
+      method: 'GET',
+      path: `/users/:id`,
+      pathParams: { id: id.toString() },
+    });
+
+    return res.data;
   }
 
   // 根据用户名模糊搜索用户
-  async getUsersByName(name: string): Promise<User[]> {
-    return this.userRepository.find({
-      where: { name: Like(`%${name}%`) },
+  async getUsersByName(name: string): Promise<any> {
+    // 使用Spring进行远程调用
+    const res = await this.nacosService.call({
+      serviceName: 'spring',
+      method: 'GET',
+      path: `/users`,
+      queryParams: { username: name },
     });
+    const users = res.data.list;
+
+    return users;
   }
 }

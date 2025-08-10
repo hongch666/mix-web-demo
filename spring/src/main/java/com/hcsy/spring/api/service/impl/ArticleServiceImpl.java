@@ -27,6 +27,26 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final UserService userService;
 
     @Override
+    public List<Article> listPublishedArticlesByTitle(String title) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, 1);
+        if (title != null && !title.isEmpty()) {
+            wrapper.like(Article::getTitle, title);
+        }
+        return articleMapper.selectList(wrapper);
+    }
+
+    @Override
+    public IPage<Article> listPublishedArticlesByTitle(Page<Article> page, String title) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, 1);
+        if (title != null && !title.isEmpty()) {
+            wrapper.like(Article::getTitle, title);
+        }
+        return articleMapper.selectPage(page, wrapper);
+    }
+
+    @Override
     @Transactional
     public List<Article> listPublishedArticles() {
         return lambdaQuery()

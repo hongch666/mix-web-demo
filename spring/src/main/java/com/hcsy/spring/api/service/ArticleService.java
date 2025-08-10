@@ -8,9 +8,14 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.po.Article;
 
 public interface ArticleService extends IService<Article> {
+
     List<Article> listPublishedArticles();
 
     IPage<Article> listPublishedArticles(Page<Article> page);
+
+    List<Article> listPublishedArticlesByTitle(String title);
+
+    IPage<Article> listPublishedArticlesByTitle(Page<Article> page, String title);
 
     boolean saveArticle(Article article);
 

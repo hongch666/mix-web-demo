@@ -1,39 +1,50 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { Articles } from './entities/article.entity';
 import { WordService } from 'src/common/word/word.service';
 import { NacosService } from 'src/common/nacos/nacos.service';
 import { ConfigService } from '@nestjs/config';
 const marked = require('marked');
-import { User } from '../user/entities/user.entity';
 import { fileLogger } from 'src/common/utils/writeLog';
+import { UserService } from '../user/user.service';
 const dayjs = require('dayjs');
 
 @Injectable()
 export class ArticleService {
   constructor(
-    @InjectRepository(Articles)
-    private readonly articleRepository: Repository<Articles>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userService: UserService,
     private readonly wordService: WordService,
     private readonly nacosService: NacosService,
     private readonly configService: ConfigService,
   ) {}
 
   // 查询文章
-  async getArticleById(id: number): Promise<Articles | null> {
-    return this.articleRepository.findOne({ where: { id } });
+  async getArticleById(id: number): Promise<any> {
+    // 调用Spring接口获取文章数据
+    const res = await this.nacosService.call({
+      serviceName: 'spring',
+      method: 'GET',
+      path: `/articles/:id`,
+      pathParams: { id: id.toString() },
+    });
+    const article = res.data;
+    return article;
   }
 
   // 根据标题模糊搜索文章
-  async getArticlesByTitle(title: string): Promise<Articles[]> {
-    return this.articleRepository.find({
-      where: { title: Like(`%${title}%`) },
+  async getArticlesByTitle(title: string): Promise<any[]> {
+    // 调用Spring接口获取文章数据
+    const res = await this.nacosService.call({
+      serviceName: 'spring',
+      method: 'GET',
+      path: '/articles/list',
+      queryParams: {
+        title,
+      },
     });
+    const articles = res.data.list;
+
+    return articles;
   }
 
   // 生成word并保存到指定位置
@@ -43,9 +54,7 @@ export class ArticleService {
       throw new Error(`Article with id ${id} not found`);
     }
     const htmlContent = marked.parse(article.content || '');
-    const user = await this.userRepository.findOne({
-      where: { id: article.user_id },
-    });
+    const user = await this.userService.getUserById(article.user_id);
     const data = {
       title: article.title,
       // 传递htmlContent给word模板
@@ -93,9 +102,7 @@ export class ArticleService {
     // 拼接markdown内容
     let markdown = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const user = await this.userRepository.findOne({
-      where: { id: article.user_id },
-    });
+    const user = await this.userService.getUserById(article.user_id);
     markdown += `\n**作者：** ${user?.name || '未知'}\n`;
     markdown += `\n---\n`;
     markdown += article.content || '';
