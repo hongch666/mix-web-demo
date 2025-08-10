@@ -194,7 +194,6 @@ public class CategoryController {
                 "list", subCategories));
     }
 
-    // TODO: 网关排除
     @Operation(summary = "查询所有父分类")
     @GetMapping("/all")
     public Result getAllCategories() {
@@ -207,7 +206,6 @@ public class CategoryController {
                 "list", categories));
     }
 
-    // TODO: 网关排除
     @Operation(summary = "查询所有子分类")
     @GetMapping("/sub/all")
     public Result getAllSubCategories() {
