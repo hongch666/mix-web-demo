@@ -38,6 +38,7 @@
 - MongoDB 5.0+
 - Redis 6.0+
 - RabbitMQ 3.8+
+- Hadoop+Hive(可选)
 
 ## 项目设置
 
@@ -175,11 +176,15 @@ CREATE TABLE sub_category (
 ) COMMENT='子分类表';
 ```
 
-1. MongoDB 表创建
+3. MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
 
 4. ElasticSearch 索引创建
+
+- 无需创建，系统同步数据时会自动创建
+
+5. Hadoop+Hive 创建
 
 - 无需创建，系统同步数据时会自动创建
 
@@ -453,7 +458,7 @@ spring:
         - id: exclude-list
           uri: no://op
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/logs,/analyze/excel
+            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
           filters:
             - SetStatus=204
 
