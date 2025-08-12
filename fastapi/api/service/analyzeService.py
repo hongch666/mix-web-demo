@@ -12,28 +12,45 @@ from wordcloud import WordCloud
 
 async def get_top10_articles_service() -> List[Dict[str, Any]]:
     articles = await get_top10_articles_mapper()
-    # 获取所有作者id
-    user_ids = [article["userId"] for article in articles]
-    # 批量查user表
-    users = await get_users_by_ids_mapper(user_ids)
-    print(users)
-    user_id_to_name = {user["id"]: user["name"] for user in users}
-    # 转换为字典并加上username
-    return [
-        {
-            "id": article["id"],
-            "title": article["title"],
-            "content": article["content"],
-            "user_id": article["userId"],
-            "username": user_id_to_name.get(article["userId"]),
-            "tags": article["tags"],
-            "status": article["status"],
-            "create_at": article["createAt"],
-            "update_at": article["updateAt"],
-            "views": article["views"],
-        }
-        for article in articles
-    ]
+    # 检查返回类型，如果是字典列表则直接处理，如果是Article对象则按原逻辑处理
+    if articles and isinstance(articles[0], dict):
+        # 新的字典格式，直接获取user_ids并补充username
+        user_ids = [article["user_id"] for article in articles if article.get("user_id")]
+        users = get_users_by_ids_mapper(user_ids)
+        user_id_to_name = {user.id: user.name for user in users}
+        
+        # 为每个字典添加username字段
+        for article in articles:
+            article["username"] = user_id_to_name.get(article.get("user_id"))
+            # 确保时间格式正确
+            if article.get("create_at") and hasattr(article["create_at"], 'isoformat'):
+                article["create_at"] = article["create_at"].isoformat()
+            if article.get("update_at") and hasattr(article["update_at"], 'isoformat'):
+                article["update_at"] = article["update_at"].isoformat()
+        
+        return articles
+    else:
+        # 原有的Article对象格式
+        user_ids = [article.user_id for article in articles]
+        users = get_users_by_ids_mapper(user_ids)
+        user_id_to_name = {user.id: user.name for user in users}
+        
+        return [
+            {
+                "id": article.id,
+                "title": article.title,
+                "content": article.content,
+                "user_id": article.user_id,
+                "username": user_id_to_name.get(article.user_id),
+                "tags": article.tags,
+                "status": article.status,
+                "create_at": article.create_at.isoformat() if article.create_at else None,
+                "update_at": article.update_at.isoformat() if article.update_at else None,
+                "views": article.views,
+                "sub_category_id": getattr(article, 'sub_category_id', None),
+            }
+            for article in articles
+        ]
 
 async def get_keywords_dic() -> Dict[str, int]:
     all_keywords: List[str] = await get_search_keywords_articlelog_mapper()

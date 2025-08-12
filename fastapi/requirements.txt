@@ -12,3 +12,7 @@ jieba
 cozepy
 pandas
 python-multipart
+pyhive
+pyspark
+thrift
+thrift_sasl

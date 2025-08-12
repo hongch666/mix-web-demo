@@ -16,6 +16,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcsy.spring.common.client.FastAPIClient;
 import com.hcsy.spring.common.client.GinClient;
 import com.hcsy.spring.common.mq.RabbitMQService;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -29,6 +30,7 @@ import com.hcsy.spring.entity.po.Article;
 public class ArticleServiceAspect {
 
     private final GinClient ginClient;
+    private final FastAPIClient fastAPIClient;
     private final RabbitMQService rabbitMQService;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
@@ -144,9 +146,10 @@ public class ArticleServiceAspect {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        logger.info("事务提交后开始同步ES...");
+                        logger.info("事务提交后开始同步ES和Hive...");
                         ginClient.syncES();
-                        logger.info("事务提交后同步ES完成");
+                        fastAPIClient.syncHive();
+                        logger.info("事务提交后同步ES和Hive完成");
                     }
                 });
 

@@ -2,6 +2,7 @@ package com.hcsy.spring.common.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import com.hcsy.spring.entity.po.Result;
 
@@ -9,4 +10,7 @@ import com.hcsy.spring.entity.po.Result;
 public interface FastAPIClient {
     @GetMapping("/api_fastapi/fastapi")
     Result testFastAPI();
+
+    @PostMapping("/api_fastapi/task")
+    Result syncHive();
 }
