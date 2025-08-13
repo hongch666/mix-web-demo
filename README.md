@@ -406,6 +406,12 @@ database:
   mongodb:
     url: "mongodb://localhost:27017"
     database: "demo"
+  hive:
+    host: "127.0.0.1"
+    port: 10000
+    database: "default"
+    table: "articles"
+    container: "hive-server"
 oss:
   bucket_name: mix-web-demo
   endpoint: oss-cn-guangzhou.aliyuncs.com
