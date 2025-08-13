@@ -28,6 +28,8 @@ async def get_top10_articles_mapper():
             cursor.execute(f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10")
             top10 = cursor.fetchall()
         hive_conn.close()
+        if len(top10) == 0:
+            raise ValueError("Hive查询结果为空")
         return [dict(zip(columns, r)) for r in top10]
     except Exception as hive_e:
         from common.utils import fileLogger
