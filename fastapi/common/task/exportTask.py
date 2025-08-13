@@ -47,11 +47,11 @@ def export_articles_to_csv_and_hive():
 
         # 3. 尝试LOAD DATA到hive
         try:
-            hive_host = '127.0.0.1'
-            hive_port = 10000
-            hive_db = 'default'
-            hive_table = 'articles'
-            hive_container = 'hive-server'
+            hive_host = load_config("database")["hive"]["host"]
+            hive_port = load_config("database")["hive"]["port"]
+            hive_db = load_config("database")["hive"]["database"]
+            hive_table = load_config("database")["hive"]["table"]
+            hive_container = load_config("database")["hive"]["container"]
             # 复制csv到hive容器
             container_path = f"/tmp/{os.path.basename(csv_file)}"
             copy_cmd = f"docker cp {csv_file} {hive_container}:{container_path}"

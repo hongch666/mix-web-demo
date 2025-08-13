@@ -22,7 +22,10 @@ def get_top10_articles_mapper(db: Session):
     ]
     # 1. 优先hive
     try:
-        hive_conn = hive.Connection(host='127.0.0.1', port=10000, database='default')
+        hive_host = load_config("database")["hive"]["host"]
+        hive_port = load_config("database")["hive"]["port"]
+        hive_db = load_config("database")["hive"]["database"]
+        hive_conn = hive.Connection(host=hive_host, port=hive_port, database=hive_db)
         with hive_conn.cursor() as cursor:
             cursor.execute(f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10")
             top10 = cursor.fetchall()
