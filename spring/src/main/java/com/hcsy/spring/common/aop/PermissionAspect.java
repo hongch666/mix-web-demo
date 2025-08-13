@@ -67,7 +67,6 @@ public class PermissionAspect {
     }
 
     private Long getTargetUserId(ProceedingJoinPoint joinPoint, String paramName) {
-        System.out.println("我是测试！！！！！！！！");
         try {
             // 从路径参数获取
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder

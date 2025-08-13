@@ -22,11 +22,12 @@ func RecoveryMiddleware() gin.HandlerFunc {
 				}
 
 				// 根据错误信息返回不同响应
-				if errMsg == "not found" {
+				switch errMsg {
+				case "not found":
 					utils.RespondError(c, 404, "资源未找到")
-				} else if errMsg == "unauthorized" {
+				case "unauthorized":
 					utils.RespondError(c, 401, "未授权")
-				} else {
+				default:
 					utils.RespondError(c, 500, "出现错误："+errMsg)
 				}
 				c.Abort()
