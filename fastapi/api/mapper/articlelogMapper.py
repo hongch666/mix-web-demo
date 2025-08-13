@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 from common.client import call_remote_service
-from config import db as mongo_db
 
 async def get_search_keywords_articlelog_mapper() -> List[str]:
     # 使用NestJS部分获取日志数据

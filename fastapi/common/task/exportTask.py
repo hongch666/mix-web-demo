@@ -11,17 +11,8 @@ from config import load_config
 
 async def export_articles_to_csv_and_hive():
     try:
-        # 1. 导出到本地csv
+        # 1. 获取文章数据
         articles = await get_all_articles_mapper()
-        print(f"获取到 {len(articles)} 篇文章")
-        if articles:
-            print(f"第一篇文章数据示例: {articles[0]}")
-            # 检查时间字段
-            first_article = articles[0]
-            print(f"create_at字段: {first_article.get('create_at')} (类型: {type(first_article.get('create_at'))})")
-            print(f"createAt字段: {first_article.get('createAt')} (类型: {type(first_article.get('createAt'))})")
-            print(f"update_at字段: {first_article.get('update_at')} (类型: {type(first_article.get('update_at'))})")
-            print(f"updateAt字段: {first_article.get('updateAt')} (类型: {type(first_article.get('updateAt'))})")
         if not articles:
             logger.warning("没有文章数据可导出")
             return

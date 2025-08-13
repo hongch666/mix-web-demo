@@ -5,6 +5,7 @@ import socket
 from typing import Any, Dict
 
 from config import load_config
+from common.utils import fileLogger as logger
 
 # Nacos 配置
 nacos_config: Dict[str, Any] = load_config("nacos")
@@ -41,6 +42,6 @@ def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
             try:
                 client.send_heartbeat(SERVICE_NAME, ip, port, group_name=GROUP_NAME)
             except Exception as e:
-                print("Nacos heartbeat error:", e)
+                logger.error("Nacos heartbeat error: %s", e)
             time.sleep(10)
     threading.Thread(target=keep_heartbeat, daemon=True).start()

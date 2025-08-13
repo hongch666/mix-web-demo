@@ -1,5 +1,3 @@
-from sqlmodel import Session, select
-
 from common.client import call_remote_service
 from pyhive import hive
 from pyspark.sql import SparkSession
@@ -9,9 +7,8 @@ import os
 from config import load_config
 import traceback
 from entity.po import Article
-from common.utils import fileLogger
 
-async def get_top10_articles_mapper(db: Session):
+async def get_top10_articles_mapper():
     """
     优先用hive查top10，否则用pyspark分析csv，返回所有字段
     """
