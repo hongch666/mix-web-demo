@@ -26,6 +26,7 @@
 - Elasticsearch：搜索引擎
 - Redis：缓存服务
 - RabbitMQ：消息队列
+- Hadoop+Hive：大数据存储与分析
 
 ## 环境要求
 
