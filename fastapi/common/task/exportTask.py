@@ -4,7 +4,7 @@ import subprocess
 from pyhive import hive
 from apscheduler.schedulers.background import BackgroundScheduler
 from common.utils import fileLogger as logger
-from api.mapper.articleMapper import get_all_articles_mapper
+from api.mapper import get_all_articles_mapper,get_users_by_ids_mapper
 from apscheduler.schedulers.base import BaseScheduler
 
 from config import load_config
@@ -16,6 +16,10 @@ async def export_articles_to_csv_and_hive():
         if not articles:
             logger.warning("没有文章数据可导出")
             return
+        # 获取所有user_id
+        user_ids = [a["userId"] for a in articles if a["userId"] is not None]
+        users = await get_users_by_ids_mapper(user_ids) if user_ids else []
+        user_id_to_name = {user["id"]: user["name"] for user in users}
         # 2. 写入csv
         FILE_PATH: str = load_config("files")["excel_path"]
         csv_file = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.csv"))
@@ -25,7 +29,7 @@ async def export_articles_to_csv_and_hive():
             writer = csv.writer(f)
             # 写表头
             writer.writerow([
-                'id', 'title', 'tags', 'status', 'views', 'create_at', 'update_at', 'content', 'user_id', 'sub_category_id'
+                'id', 'title', 'tags', 'status', 'views', 'create_at', 'update_at', 'content', 'user_id', 'sub_category_id','username'
             ])
             for a in articles:
                 # 获取时间字段，尝试多种可能的字段名
@@ -44,7 +48,8 @@ async def export_articles_to_csv_and_hive():
                     str(update_at),
                     str(getattr(a, 'content', '') if hasattr(a, 'content') else a.get('content', '')).replace('\n', ' ').replace(',', ';'),
                     getattr(a, 'user_id', '') if hasattr(a, 'user_id') else a.get('user_id', '') or a.get('userId', ''),
-                    getattr(a, 'sub_category_id', '') if hasattr(a, 'sub_category_id') else a.get('sub_category_id', '') or a.get('subCategoryId', '')
+                    getattr(a, 'sub_category_id', '') if hasattr(a, 'sub_category_id') else a.get('sub_category_id', '') or a.get('subCategoryId', ''),
+                    user_id_to_name[getattr(a, 'user_id', '') if hasattr(a, 'user_id') else a.get('user_id', '') or a.get('userId', '')]
                 ])
         logger.info(f"文章表已导出到本地csv: {csv_file}")
 
@@ -76,7 +81,8 @@ async def export_articles_to_csv_and_hive():
                 update_at STRING,
                 content STRING,
                 user_id INT,
-                sub_category_id INT
+                sub_category_id INT,
+                username STRING
             )
             ROW FORMAT DELIMITED
             FIELDS TERMINATED BY ','
