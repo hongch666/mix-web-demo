@@ -5,37 +5,53 @@ from typing import Dict, List, Any
 
 from sqlmodel import Session
 
-from api.mapper import get_all_articles_mapper,get_top10_articles_mapper,get_users_by_ids_mapper,get_search_keywords_articlelog_mapper
+from api.mapper import (
+    get_all_articles_mapper,
+    get_top10_articles_hive_mapper,
+    get_top10_articles_spark_mapper,
+    get_top10_articles_db_mapper,
+    get_users_by_ids_mapper,
+    get_search_keywords_articlelog_mapper
+)
 from config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger
 from wordcloud import WordCloud
 
 def get_top10_articles_service(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    articles = get_top10_articles_mapper(db)
-    
-    # 检查返回类型，如果是字典列表则直接处理，如果是Article对象则按原逻辑处理
+    articles = None
+    # 1. 优先 Hive
+    try:
+        articles = get_top10_articles_hive_mapper()
+        if articles and isinstance(articles[0], dict):
+            logger.info("get_top10_articles_service: 使用 Hive 数据源")
+    except Exception as hive_e:
+        logger.warning(f"get_top10_articles_service: Hive 获取失败，降级为 Spark: {hive_e}")
+    # 2. Spark 降级
+    if not articles or len(articles) == 0:
+        try:
+            articles = get_top10_articles_spark_mapper()
+            if articles and isinstance(articles[0], dict):
+                logger.info("get_top10_articles_service: 使用 Spark 数据源")
+        except Exception as spark_e:
+            logger.error(f"get_top10_articles_service: Spark 获取失败，降级为 DB: {spark_e}")
+    # 3. DB 兜底
+    if not articles or len(articles) == 0:
+        articles = get_top10_articles_db_mapper(db)
+        logger.info("get_top10_articles_service: 使用 DB 数据源")
+
+    # 检查返回类型，如果是字典列表（csv/spark/hive），直接返回（已带username字段）
     if articles and isinstance(articles[0], dict):
-        # 新的字典格式，直接获取user_ids并补充username
-        user_ids = [article["user_id"] for article in articles if article.get("user_id")]
-        users = get_users_by_ids_mapper(user_ids, db)
-        user_id_to_name = {user.id: user.name for user in users}
-        
-        # 为每个字典添加username字段
         for article in articles:
-            article["username"] = user_id_to_name.get(article.get("user_id"))
-            # 确保时间格式正确
             if article.get("create_at") and hasattr(article["create_at"], 'isoformat'):
                 article["create_at"] = article["create_at"].isoformat()
             if article.get("update_at") and hasattr(article["update_at"], 'isoformat'):
                 article["update_at"] = article["update_at"].isoformat()
-        
         return articles
     else:
-        # 原有的Article对象格式
+        # 兜底db查询，仍需查user表
         user_ids = [article.user_id for article in articles]
         users = get_users_by_ids_mapper(user_ids, db)
         user_id_to_name = {user.id: user.name for user in users}
-        
         return [
             {
                 "id": article.id,

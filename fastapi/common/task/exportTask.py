@@ -6,7 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session
 from config import get_db
 from common.utils import fileLogger as logger
-from api.mapper.articleMapper import get_all_articles_mapper
+from api.mapper import get_all_articles_mapper, get_users_by_ids_mapper
 from apscheduler.schedulers.base import BaseScheduler
 
 from config import load_config
@@ -19,6 +19,10 @@ def export_articles_to_csv_and_hive():
         if not articles:
             logger.warning("没有文章数据可导出")
             return
+        # 获取所有user_id
+        user_ids = [getattr(a, 'user_id', None) for a in articles if getattr(a, 'user_id', None) is not None]
+        users = get_users_by_ids_mapper(user_ids, db) if user_ids else []
+        user_id_to_name = {user.id: user.name for user in users}
         # 2. 写入csv
         FILE_PATH: str = load_config("files")["excel_path"]
         csv_file = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.csv"))
@@ -28,7 +32,7 @@ def export_articles_to_csv_and_hive():
             writer = csv.writer(f)
             # 写表头
             writer.writerow([
-                'id', 'title', 'tags', 'status', 'views', 'create_at', 'update_at', 'content', 'user_id', 'sub_category_id'
+                'id', 'title', 'tags', 'status', 'views', 'create_at', 'update_at', 'content', 'user_id', 'sub_category_id', 'username'
             ])
             for a in articles:
                 writer.writerow([
@@ -41,7 +45,8 @@ def export_articles_to_csv_and_hive():
                     getattr(a, 'update_at', ''),
                     str(getattr(a, 'content', '')).replace('\n', ' ').replace(',', ';'),
                     getattr(a, 'user_id', ''),
-                    getattr(a, 'sub_category_id', '')
+                    getattr(a, 'sub_category_id', ''),
+                    user_id_to_name.get(getattr(a, 'user_id', None), '')
                 ])
         logger.info(f"文章表已导出到本地csv: {csv_file}")
 
@@ -73,7 +78,8 @@ def export_articles_to_csv_and_hive():
                 update_at STRING,
                 content STRING,
                 user_id INT,
-                sub_category_id INT
+                sub_category_id INT,
+                username STRING
             )
             ROW FORMAT DELIMITED
             FIELDS TERMINATED BY ','
