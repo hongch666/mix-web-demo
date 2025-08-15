@@ -27,6 +27,5 @@ public class UserCreateDTO {
     @Email(message = "邮箱格式不正确")
     private String email;
 
-    @NotBlank(message = "头像不能为空")
     private String img;
 }
