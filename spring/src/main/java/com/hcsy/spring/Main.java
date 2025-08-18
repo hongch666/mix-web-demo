@@ -10,11 +10,13 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.EnableCaching;
 
 @EnableFeignClients()
 @SpringBootApplication
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
+@EnableCaching
 @MapperScan(basePackages = "com.hcsy.spring.api.mapper")
 @Slf4j
 public class Main {
