@@ -29,6 +29,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> EXCLUDE_PATHS = List.of(
             "/users/login",
             "/users/register",
+            "/ws/**", // WebSocket路径排除
+            "/static/**",
             "/upload/**",
             "/public/**",
             "/actuator/**",

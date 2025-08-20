@@ -2,6 +2,7 @@ package controller
 
 import (
 	"gin_proj/api/service"
+	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
 	"net/http"
 
@@ -27,23 +28,17 @@ var upgrader = websocket.Upgrader{
 func SendMessage(ctx *gin.Context) {
 	var req dto.SendMessageRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	response, err := service.SendChatMessage(&req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusInternalServerError, "发送消息失败: "+err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	utils.RespondSuccess(ctx, response)
 }
 
 // GetChatHistory 获取聊天历史记录
@@ -58,23 +53,17 @@ func SendMessage(ctx *gin.Context) {
 func GetChatHistory(ctx *gin.Context) {
 	var req dto.GetChatHistoryRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	response, err := service.GetChatHistory(&req)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusInternalServerError, "获取聊天历史失败: "+err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	utils.RespondSuccess(ctx, response)
 }
 
 // GetQueueStatus 获取队列状态
@@ -86,7 +75,7 @@ func GetChatHistory(ctx *gin.Context) {
 // @Router /user-chat/queue [get]
 func GetQueueStatus(ctx *gin.Context) {
 	response := service.GetQueueStatus()
-	ctx.JSON(http.StatusOK, response)
+	utils.RespondSuccess(ctx, response)
 }
 
 // JoinQueue 手动加入队列
@@ -101,15 +90,12 @@ func GetQueueStatus(ctx *gin.Context) {
 func JoinQueue(ctx *gin.Context) {
 	var req dto.JoinQueueRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	response := service.JoinQueueManually(&req)
-	ctx.JSON(http.StatusOK, response)
+	utils.RespondSuccess(ctx, response)
 }
 
 // LeaveQueue 手动离开队列
@@ -124,15 +110,12 @@ func JoinQueue(ctx *gin.Context) {
 func LeaveQueue(ctx *gin.Context) {
 	var req dto.LeaveQueueRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "参数错误: " + err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
 	response := service.LeaveQueueManually(&req)
-	ctx.JSON(http.StatusOK, response)
+	utils.RespondSuccess(ctx, response)
 }
 
 // WebSocketHandler WebSocket连接处理
@@ -149,19 +132,13 @@ func WebSocketHandler(ctx *gin.Context) {
 	}
 
 	if userID == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"code":    400,
-			"message": "缺少用户ID",
-		})
+		utils.RespondError(ctx, http.StatusBadRequest, "缺少用户ID")
 		return
 	}
 
 	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "WebSocket连接失败: " + err.Error(),
-		})
+		utils.RespondError(ctx, http.StatusInternalServerError, "WebSocket连接失败: "+err.Error())
 		return
 	}
 
