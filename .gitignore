@@ -90,6 +90,9 @@ gin/nacos/
 # Swagger
 gin/docs/
 
+# SQL
+gin/sql/
+
 # Test binaries
 gin/*.test
 

@@ -14,6 +14,9 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.InjectUserContext())
 	r.Use(middleware.RecoveryMiddleware())
 
+	// 静态文件服务（用于测试页面）
+	r.Static("/static", "./static")
+
 	testGroup := r.Group("/api_gin")
 	{
 		//测试路由
@@ -32,5 +35,24 @@ func SetupRouter() *gin.Engine {
 		//搜索文章
 		searchGroup.GET("/", controller.SearchArticlesController)
 	}
+
+	// 聊天相关路由
+	chatGroup := r.Group("/user-chat")
+	{
+		// 发送消息
+		chatGroup.POST("/send", controller.SendMessage)
+		// 获取聊天历史
+		chatGroup.POST("/history", controller.GetChatHistory)
+		// 获取队列状态
+		chatGroup.GET("/queue", controller.GetQueueStatus)
+		// 手动加入队列
+		chatGroup.POST("/join", controller.JoinQueue)
+		// 手动离开队列
+		chatGroup.POST("/leave", controller.LeaveQueue)
+	}
+
+	// WebSocket路由
+	r.GET("/ws/chat", controller.WebSocketHandler)
+
 	return r
 }
