@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"gin_proj/api/service"
+	"gin_proj/common/ctxkey"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
 	"net/http"
@@ -25,20 +27,26 @@ var upgrader = websocket.Upgrader{
 // @Param request body dto.SendMessageRequest true "发送消息请求"
 // @Success 200 {object} dto.SendMessageResponse
 // @Router /user-chat/send [post]
-func SendMessage(ctx *gin.Context) {
+func SendMessage(c *gin.Context) {
 	var req dto.SendMessageRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
+
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	utils.FileLogger.Info(msg + "GET /user-chat/send: " + "发送消息接口\nSendMessageRequest: " + fmt.Sprintf("%+v", req))
 
 	response, err := service.SendChatMessage(&req)
 	if err != nil {
-		utils.RespondError(ctx, http.StatusInternalServerError, "发送消息失败: "+err.Error())
+		utils.RespondError(c, http.StatusInternalServerError, "发送消息失败: "+err.Error())
 		return
 	}
 
-	utils.RespondSuccess(ctx, response)
+	utils.RespondSuccess(c, response)
 }
 
 // GetChatHistory 获取聊天历史记录
@@ -50,20 +58,26 @@ func SendMessage(ctx *gin.Context) {
 // @Param request body dto.GetChatHistoryRequest true "获取聊天历史请求"
 // @Success 200 {object} dto.GetChatHistoryResponse
 // @Router /user-chat/history [post]
-func GetChatHistory(ctx *gin.Context) {
+func GetChatHistory(c *gin.Context) {
 	var req dto.GetChatHistoryRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
+
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	utils.FileLogger.Info(msg + "GET /user-chat/history: " + "获取聊天历史接口\nGetChatHistoryRequest: " + fmt.Sprintf("%+v", req))
 
 	response, err := service.GetChatHistory(&req)
 	if err != nil {
-		utils.RespondError(ctx, http.StatusInternalServerError, "获取聊天历史失败: "+err.Error())
+		utils.RespondError(c, http.StatusInternalServerError, "获取聊天历史失败: "+err.Error())
 		return
 	}
 
-	utils.RespondSuccess(ctx, response)
+	utils.RespondSuccess(c, response)
 }
 
 // GetQueueStatus 获取队列状态
@@ -73,9 +87,15 @@ func GetChatHistory(ctx *gin.Context) {
 // @Produce json
 // @Success 200 {object} dto.QueueStatusResponse
 // @Router /user-chat/queue [get]
-func GetQueueStatus(ctx *gin.Context) {
+func GetQueueStatus(c *gin.Context) {
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	utils.FileLogger.Info(msg + "GET /user-chat/queue: " + "获取队列状态接口")
+
 	response := service.GetQueueStatus()
-	utils.RespondSuccess(ctx, response)
+	utils.RespondSuccess(c, response)
 }
 
 // JoinQueue 手动加入队列
@@ -87,15 +107,21 @@ func GetQueueStatus(ctx *gin.Context) {
 // @Param request body dto.JoinQueueRequest true "加入队列请求"
 // @Success 200 {object} dto.JoinQueueResponse
 // @Router /user-chat/join [post]
-func JoinQueue(ctx *gin.Context) {
+func JoinQueue(c *gin.Context) {
 	var req dto.JoinQueueRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	utils.FileLogger.Info(msg + "GET /user-chat/join: " + "加入队列接口\nJoinQueueRequest: " + fmt.Sprintf("%+v", req))
+
 	response := service.JoinQueueManually(&req)
-	utils.RespondSuccess(ctx, response)
+	utils.RespondSuccess(c, response)
 }
 
 // LeaveQueue 手动离开队列
@@ -107,15 +133,21 @@ func JoinQueue(ctx *gin.Context) {
 // @Param request body dto.LeaveQueueRequest true "离开队列请求"
 // @Success 200 {object} dto.LeaveQueueResponse
 // @Router /user-chat/leave [post]
-func LeaveQueue(ctx *gin.Context) {
+func LeaveQueue(c *gin.Context) {
 	var req dto.LeaveQueueRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(ctx, http.StatusBadRequest, "参数错误: "+err.Error())
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
+	ctx := c.Request.Context()
+	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userID, username)
+	utils.FileLogger.Info(msg + "GET /user-chat/leave: " + "离开队列接口\nLeaveQueueRequest: " + fmt.Sprintf("%+v", req))
+
 	response := service.LeaveQueueManually(&req)
-	utils.RespondSuccess(ctx, response)
+	utils.RespondSuccess(c, response)
 }
 
 // WebSocketHandler WebSocket连接处理
@@ -124,21 +156,27 @@ func LeaveQueue(ctx *gin.Context) {
 // @Tags 聊天
 // @Param userId query string true "用户ID"
 // @Router /ws/chat [get]
-func WebSocketHandler(ctx *gin.Context) {
-	userID := ctx.Query("userId")
+func WebSocketHandler(c *gin.Context) {
+	userID := c.Query("userId")
 	if userID == "" {
 		// 尝试从Header获取（网关传递的用户信息）
-		userID = ctx.GetHeader("X-User-Id")
+		userID = c.GetHeader("X-User-Id")
 	}
 
+	ctx := c.Request.Context()
+	userId, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	msg := fmt.Sprintf("用户%d:%s ", userId, username)
+	utils.FileLogger.Info(msg + "GET /ws/chat: " + "WebSocket连接接口\nUserID: " + fmt.Sprintf("%+v", userID))
+
 	if userID == "" {
-		utils.RespondError(ctx, http.StatusBadRequest, "缺少用户ID")
+		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")
 		return
 	}
 
-	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		utils.RespondError(ctx, http.StatusInternalServerError, "WebSocket连接失败: "+err.Error())
+		utils.RespondError(c, http.StatusInternalServerError, "WebSocket连接失败: "+err.Error())
 		return
 	}
 

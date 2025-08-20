@@ -29,7 +29,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> EXCLUDE_PATHS = List.of(
             "/users/login",
             "/users/register",
-            "/ws/**", // WebSocket路径排除
             "/static/**",
             "/upload/**",
             "/public/**",
@@ -79,18 +78,26 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private String extractToken(ServerHttpRequest request) {
+        // 首先尝试从 Authorization header 获取
         List<String> headers = request.getHeaders().get(HttpHeaders.AUTHORIZATION);
-        if (CollectionUtils.isEmpty(headers)) {
-            return null;
+        if (!CollectionUtils.isEmpty(headers)) {
+            @SuppressWarnings("null")
+            String authHeader = headers.get(0);
+            if (authHeader.startsWith("Bearer ")) {
+                return authHeader.substring(7);
+            }
+            return authHeader;
         }
 
-        // 支持 Bearer Token 和直接Token两种形式
-        @SuppressWarnings("null")
-        String authHeader = headers.get(0);
-        if (authHeader.startsWith("Bearer ")) {
-            return authHeader.substring(7);
+        // 如果 Authorization header 没有，尝试从 query parameter 获取 (WebSocket 场景)
+        if (request.getQueryParams() != null) {
+            String tokenFromQuery = request.getQueryParams().getFirst("token");
+            if (tokenFromQuery != null && !tokenFromQuery.trim().isEmpty()) {
+                return tokenFromQuery;
+            }
         }
-        return authHeader;
+
+        return null;
     }
 
     private boolean isExcludePath(String path) {

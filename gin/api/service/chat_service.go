@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gin_proj/api/mapper"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
@@ -22,6 +23,7 @@ func SendChatMessage(req *dto.SendMessageRequest) (*dto.SendMessageResponse, err
 
 	chatMapper := mapper.NewChatMessageMapper(config.DB)
 	if err := chatMapper.CreateMessage(message); err != nil {
+		utils.FileLogger.Error(fmt.Sprintf("保存消息失败: %v", err))
 		return nil, fmt.Errorf("保存消息失败: %v", err)
 	}
 
@@ -39,10 +41,10 @@ func SendChatMessage(req *dto.SendMessageRequest) (*dto.SendMessageResponse, err
 		messageBytes, _ := json.Marshal(wsMessage)
 		if !SendMessageToQueue(req.ReceiverID, messageBytes) {
 			// 发送失败，用户可能刚离线，但消息已保存
-			fmt.Printf("用户 %s 不在队列中或发送失败，消息已保存到数据库\n", req.ReceiverID)
+			utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在线，消息已保存到数据库", req.ReceiverID))
 		}
 	} else {
-		fmt.Printf("用户 %s 不在队列中，消息已保存到数据库\n", req.ReceiverID)
+		utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在队列中，消息已保存到数据库", req.ReceiverID))
 	}
 
 	// 3. 返回响应
@@ -67,6 +69,7 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) (*dto.GetChatHistoryResponse
 	chatMapper := mapper.NewChatMessageMapper(config.DB)
 	messages, total, err := chatMapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
 	if err != nil {
+		utils.FileLogger.Error(fmt.Sprintf("获取聊天历史失败: %v", err))
 		return nil, fmt.Errorf("获取聊天历史失败: %v", err)
 	}
 
