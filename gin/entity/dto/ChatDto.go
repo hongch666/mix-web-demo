@@ -7,11 +7,7 @@ type SendMessageRequest struct {
 }
 
 type SendMessageResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		MessageID uint `json:"messageId"`
-	} `json:"data"`
+	MessageID uint `json:"messageId"`
 }
 
 type GetChatHistoryRequest struct {
@@ -22,12 +18,8 @@ type GetChatHistoryRequest struct {
 }
 
 type GetChatHistoryResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		Messages []ChatMessageItem `json:"messages"`
-		Total    int64             `json:"total"`
-	} `json:"data"`
+	Messages []ChatMessageItem `json:"messages"`
+	Total    int64             `json:"total"`
 }
 
 type ChatMessageItem struct {
@@ -48,12 +40,8 @@ type WebSocketMessage struct {
 }
 
 type QueueStatusResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		OnlineUsers []string `json:"onlineUsers"`
-		Count       int      `json:"count"`
-	} `json:"data"`
+	OnlineUsers []string `json:"onlineUsers"`
+	Count       int      `json:"count"`
 }
 
 type JoinQueueRequest struct {
@@ -61,12 +49,8 @@ type JoinQueueRequest struct {
 }
 
 type JoinQueueResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		UserID string `json:"userId"`
-		Status string `json:"status"` // joined, already_in_queue
-	} `json:"data"`
+	UserID string `json:"userId"`
+	Status string `json:"status"` // joined, already_in_queue
 }
 
 type LeaveQueueRequest struct {
@@ -74,10 +58,6 @@ type LeaveQueueRequest struct {
 }
 
 type LeaveQueueResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
-		UserID string `json:"userId"`
-		Status string `json:"status"` // left, not_in_queue
-	} `json:"data"`
+	UserID string `json:"userId"`
+	Status string `json:"status"` // left, not_in_queue
 }

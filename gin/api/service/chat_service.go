@@ -47,10 +47,8 @@ func SendChatMessage(req *dto.SendMessageRequest) (*dto.SendMessageResponse, err
 
 	// 3. 返回响应
 	response := &dto.SendMessageResponse{
-		Code:    200,
-		Message: "发送成功",
+		MessageID: message.ID,
 	}
-	response.Data.MessageID = message.ID
 
 	return response, nil
 }
@@ -85,11 +83,9 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) (*dto.GetChatHistoryResponse
 	}
 
 	response := &dto.GetChatHistoryResponse{
-		Code:    200,
-		Message: "获取成功",
+		Messages: messageItems,
+		Total:    total,
 	}
-	response.Data.Messages = messageItems
-	response.Data.Total = total
 
 	return response, nil
 }
@@ -98,29 +94,21 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) (*dto.GetChatHistoryResponse
 func GetQueueStatus() *dto.QueueStatusResponse {
 	users := GetAllUsersInQueue()
 	return &dto.QueueStatusResponse{
-		Code:    200,
-		Message: "获取成功",
-		Data: struct {
-			OnlineUsers []string `json:"onlineUsers"`
-			Count       int      `json:"count"`
-		}{
-			OnlineUsers: users,
-			Count:       len(users),
-		},
+		OnlineUsers: users,
+		Count:       len(users),
 	}
 }
 
 // 手动加入队列（不建立WebSocket连接）
 func JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
 	response := &dto.JoinQueueResponse{
-		Code: 200,
+		UserID: req.UserID,
 	}
-	response.Data.UserID = req.UserID
+	response.Status = "joined"
 
 	// 检查用户是否已经在队列中
 	if IsUserInQueue(req.UserID) {
-		response.Message = "用户已在队列中"
-		response.Data.Status = "already_in_queue"
+		response.Status = "already_in_queue"
 	} else {
 		// 创建一个虚拟的客户端（没有WebSocket连接）
 		client := &Client{
@@ -129,8 +117,7 @@ func JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
 			Send:   make(chan []byte, 256),
 		}
 		JoinQueue(req.UserID, client)
-		response.Message = "成功加入队列"
-		response.Data.Status = "joined"
+		response.Status = "joined"
 	}
 
 	return response
@@ -139,18 +126,14 @@ func JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
 // 手动离开队列
 func LeaveQueueManually(req *dto.LeaveQueueRequest) *dto.LeaveQueueResponse {
 	response := &dto.LeaveQueueResponse{
-		Code: 200,
+		UserID: req.UserID,
 	}
-	response.Data.UserID = req.UserID
-
 	// 检查用户是否在队列中
 	if IsUserInQueue(req.UserID) {
 		LeaveQueue(req.UserID)
-		response.Message = "成功离开队列"
-		response.Data.Status = "left"
+		response.Status = "left"
 	} else {
-		response.Message = "用户不在队列中"
-		response.Data.Status = "not_in_queue"
+		response.Status = "not_in_queue"
 	}
 
 	return response
