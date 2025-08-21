@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"gin_proj/api/mapper"
 	"gin_proj/common/utils"
-	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
 	"time"
 )
 
 // 发送消息（HTTP接口调用）
-func SendChatMessage(req *dto.SendMessageRequest) (*dto.SendMessageResponse, error) {
+func SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
 	// 1. 先保存到数据库
 	message := &po.ChatMessage{
 		SenderID:   req.SenderID,
@@ -21,11 +20,7 @@ func SendChatMessage(req *dto.SendMessageRequest) (*dto.SendMessageResponse, err
 		CreatedAt:  time.Now(),
 	}
 
-	chatMapper := mapper.NewChatMessageMapper(config.DB)
-	if err := chatMapper.CreateMessage(message); err != nil {
-		utils.FileLogger.Error(fmt.Sprintf("保存消息失败: %v", err))
-		return nil, fmt.Errorf("保存消息失败: %v", err)
-	}
+	mapper.CreateChatMessage(message)
 
 	// 2. 检查接收者是否在队列中，如果在就通过WebSocket发送
 	if IsUserInQueue(req.ReceiverID) {
@@ -52,11 +47,11 @@ func SendChatMessage(req *dto.SendMessageRequest) (*dto.SendMessageResponse, err
 		MessageID: message.ID,
 	}
 
-	return response, nil
+	return response
 }
 
 // 获取聊天历史记录
-func GetChatHistory(req *dto.GetChatHistoryRequest) (*dto.GetChatHistoryResponse, error) {
+func GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetChatHistoryResponse {
 	// 设置默认分页参数
 	if req.Page <= 0 {
 		req.Page = 1
@@ -66,12 +61,7 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) (*dto.GetChatHistoryResponse
 	}
 
 	offset := (req.Page - 1) * req.Size
-	chatMapper := mapper.NewChatMessageMapper(config.DB)
-	messages, total, err := chatMapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
-	if err != nil {
-		utils.FileLogger.Error(fmt.Sprintf("获取聊天历史失败: %v", err))
-		return nil, fmt.Errorf("获取聊天历史失败: %v", err)
-	}
+	messages, total := mapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
 
 	// 转换为DTO
 	messageItems := make([]dto.ChatMessageItem, len(messages))
@@ -90,7 +80,7 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) (*dto.GetChatHistoryResponse
 		Total:    total,
 	}
 
-	return response, nil
+	return response
 }
 
 // 获取队列状态

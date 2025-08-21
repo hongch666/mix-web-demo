@@ -12,9 +12,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// WebSocket相关校验，目前使用网关校验，这里直接放行
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // 生产环境需要验证Origin
+		return true
 	},
 }
 
@@ -40,11 +41,7 @@ func SendMessage(c *gin.Context) {
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/send: " + "发送消息接口\nSendMessageRequest: " + fmt.Sprintf("%+v", req))
 
-	response, err := service.SendChatMessage(&req)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "发送消息失败: "+err.Error())
-		return
-	}
+	response := service.SendChatMessage(&req)
 
 	utils.RespondSuccess(c, response)
 }
@@ -71,11 +68,7 @@ func GetChatHistory(c *gin.Context) {
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/history: " + "获取聊天历史接口\nGetChatHistoryRequest: " + fmt.Sprintf("%+v", req))
 
-	response, err := service.GetChatHistory(&req)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "获取聊天历史失败: "+err.Error())
-		return
-	}
+	response := service.GetChatHistory(&req)
 
 	utils.RespondSuccess(c, response)
 }
@@ -167,7 +160,7 @@ func WebSocketHandler(c *gin.Context) {
 	userId, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userId, username)
-	utils.FileLogger.Info(msg + "GET /ws/chat: " + "WebSocket连接接口\nUserID: " + fmt.Sprintf("%+v", userID))
+	utils.FileLogger.Info(msg + "GET /ws/chat: " + "WebSocket连接接口\nUserID: " + userID)
 
 	if userID == "" {
 		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")
