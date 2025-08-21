@@ -492,6 +492,13 @@ spring:
     nacos:
       server-addr: 127.0.0.1:8848
     gateway:
+      # 全局WebSocket支持
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
       routes:
         # 1. 先排除特殊路径
         - id: exclude-list
@@ -508,11 +515,13 @@ spring:
             - Path=/api_spring/**,/users/**,/articles/**,/category/**
 
         - id: gin-ws
-          uri: lb:ws://gin
+          uri: ws://localhost:8082
           predicates:
             - Path=/ws/**
-          filters:
-            - RewritePath=/ws/(?<segment>.*), /ws/${segment}
+          metadata:
+            # WebSocket 相关配置
+            connect-timeout: 60000
+            response-timeout: 60000
 
         - id: gin
           uri: lb://gin
