@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"fmt"
+	"runtime/debug"
+
 	"gin_proj/common/utils"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +13,9 @@ func RecoveryMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
+				// 记录详细的 panic 信息和堆栈，便于排查
+				utils.FileLogger.Error(fmt.Sprintf("panic recovered: %v\n%s", err, string(debug.Stack())))
+
 				// 转为字符串方便判断
 				var errMsg string
 				switch e := err.(type) {

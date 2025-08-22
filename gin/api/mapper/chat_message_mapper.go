@@ -6,8 +6,10 @@ import (
 )
 
 func CreateChatMessage(message *po.ChatMessage) {
-	if err := config.DB.Create(message); err != nil {
-		panic(err)
+	// GORM Create 返回 *gorm.DB，需要检查返回值的 Error 字段
+	result := config.DB.Create(message)
+	if result.Error != nil {
+		panic(result.Error)
 	}
 }
 
