@@ -6,9 +6,10 @@ import (
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
+	"strings"
 	"time"
 
-	"github.com/olivere/elastic"
+	"github.com/olivere/elastic/v7"
 )
 
 func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
@@ -75,13 +76,26 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 
 	// 执行搜索
 	esClient := config.ESClient
-	searchResult, err := esClient.Search().
+	searchService := esClient.Search().
 		Index("articles").
 		Query(boolQuery).
 		Sort("views", false).
 		Sort("create_at", false). // 按发布时间倒序
-		From(from).Size(size).
-		Do(ctx)
+		From(from).Size(size)
+
+	// 如果有关键词，启用高亮
+	if searchDTO.Keyword != "" {
+		hl := elastic.NewHighlight().
+			PreTags("<em>").PostTags("</em>")
+		hl = hl.Fields(
+			elastic.NewHighlighterField("title"),
+			elastic.NewHighlighterField("content"),
+			elastic.NewHighlighterField("tags"),
+		).FragmentSize(150)
+		searchService = searchService.Highlight(hl)
+	}
+
+	searchResult, err := searchService.Do(ctx)
 
 	if err != nil {
 		panic(err.Error())
@@ -92,6 +106,18 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 	for _, hit := range searchResult.Hits.Hits {
 		var article po.ArticleES
 		if err := json.Unmarshal(hit.Source, &article); err == nil {
+			// 如果有高亮，优先使用高亮内容覆盖字段（带 <em> 标签）
+			if hit.Highlight != nil {
+				if hs, ok := hit.Highlight["title"]; ok && len(hs) > 0 {
+					article.Title = strings.Join(hs, " ")
+				}
+				if hs, ok := hit.Highlight["content"]; ok && len(hs) > 0 {
+					article.Content = strings.Join(hs, " ")
+				}
+				if hs, ok := hit.Highlight["tags"]; ok && len(hs) > 0 {
+					article.Tags = strings.Join(hs, " ")
+				}
+			}
 			articles = append(articles, article)
 		} else {
 			// 处理解析错误
