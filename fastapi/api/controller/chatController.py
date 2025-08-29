@@ -8,14 +8,15 @@ from sqlmodel import Session
 
 from common.utils import success,fileLogger
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData
-from api.service import simple_chat, stream_chat
+from api.service import CozeService, get_coze_service
 from common.middleware import get_current_user_id, get_current_username
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
-    request: ChatRequest
+    request: ChatRequest,
+    cozeService: CozeService = Depends(get_coze_service)
 ) -> JSONResponse:
     """发送聊天消息"""
     try:
@@ -25,7 +26,7 @@ async def send_message(
         # 使用实际用户ID替代请求中的user_id
         actual_user_id: str = user_id or "1"
         # 普通响应
-        response_message: str = await simple_chat(
+        response_message: str = await cozeService.simple_chat(
             message=request.message,
             user_id=actual_user_id
         )
@@ -58,7 +59,8 @@ async def send_message(
 
 @router.post("/stream", response_model=ChatResponse)
 async def stream_message(
-    request: ChatRequest
+    request: ChatRequest,
+    cozeService: CozeService = Depends(get_coze_service)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
     try:
@@ -72,7 +74,7 @@ async def stream_message(
         async def event_generator():
             message_acc = ""
             try:
-                async for chunk in stream_chat(
+                async for chunk in cozeService.stream_chat(
                     message=request.message,
                     user_id=actual_user_id
                 ):

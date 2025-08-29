@@ -1,22 +1,22 @@
-from .articleMapper import get_top10_articles_spark_mapper,get_top10_articles_hive_mapper,get_top10_articles_db_mapper,get_all_articles_mapper
+from .articleMapper import get_article_mapper,ArticleMapper
 
-from .articlelogMapper import get_search_keywords_articlelog_mapper,get_all_articlelogs_limit_mapper
+from .articlelogMapper import get_articlelog_mapper,ArticleLogMapper
 
-from .categoryMapper import get_all_categories_mapper
+from .categoryMapper import get_category_mapper,CategoryMapper
 
-from .subCategoryMapper import get_all_subcategories_mapper
+from .subCategoryMapper import get_subcategory_mapper,SubCategoryMapper
 
-from .userMapper import get_users_by_ids_mapper,get_all_users_mapper
+from .userMapper import get_user_mapper,UserMapper
 
 __all__ = [
-    "get_top10_articles_spark_mapper",
-    "get_top10_articles_hive_mapper",
-    "get_top10_articles_db_mapper",
-    "get_all_articles_mapper",
-    "get_search_keywords_articlelog_mapper",
-    "get_all_articlelogs_limit_mapper",
-    "get_all_categories_mapper",
-    "get_all_subcategories_mapper",
-    "get_users_by_ids_mapper",
-    "get_all_users_mapper"
+    "get_article_mapper",
+    "ArticleMapper",
+    "get_articlelog_mapper",
+    "ArticleLogMapper",
+    "get_category_mapper",
+    "CategoryMapper",
+    "get_subcategory_mapper",
+    "SubCategoryMapper",
+    "get_user_mapper",
+    "UserMapper"
 ]

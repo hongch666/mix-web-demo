@@ -4,7 +4,7 @@ import subprocess
 from pyhive import hive
 from apscheduler.schedulers.background import BackgroundScheduler
 from common.utils import fileLogger as logger
-from api.mapper import get_all_articles_mapper,get_users_by_ids_mapper
+from api.mapper import ArticleMapper, UserMapper, get_article_mapper, get_user_mapper
 from apscheduler.schedulers.base import BaseScheduler
 
 from config import load_config
@@ -12,13 +12,15 @@ from config import load_config
 async def export_articles_to_csv_and_hive():
     try:
         # 1. 获取文章数据
-        articles = await get_all_articles_mapper()
+        articleMapper: ArticleMapper = get_article_mapper()
+        userMapper: UserMapper = get_user_mapper()
+        articles = await articleMapper.get_all_articles_mapper()
         if not articles:
             logger.warning("没有文章数据可导出")
             return
         # 获取所有user_id
         user_ids = [a["userId"] for a in articles if a["userId"] is not None]
-        users = await get_users_by_ids_mapper(user_ids) if user_ids else []
+        users = await userMapper.get_users_by_ids_mapper(user_ids) if user_ids else []
         user_id_to_name = {user["id"]: user["name"] for user in users}
         # 2. 写入csv
         FILE_PATH: str = load_config("files")["excel_path"]
