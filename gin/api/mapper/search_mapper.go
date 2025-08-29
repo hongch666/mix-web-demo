@@ -3,16 +3,11 @@ package mapper
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"gin_proj/common/client"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
-	"net/http"
-	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 )
 
@@ -105,145 +100,4 @@ func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.Ar
 	}
 
 	return articles, int(searchResult.Hits.TotalHits.Value)
-}
-
-func SearchArticles(c *gin.Context) []po.Article {
-	// 调用Spring部分接口获取文章数据
-	opts := client.RequestOptions{
-		Method: http.MethodGet,
-	}
-	sd := client.NewServiceDiscovery(config.NamingClient)
-	result, err := sd.CallService(c, "spring", "/articles/list", opts)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// 解析result.Data中的文章列表
-	var articles []po.Article
-	var data struct {
-		Total int          `json:"total"`
-		List  []po.Article `json:"list"`
-	}
-	dataBytes, _ := json.Marshal(result.Data)
-	if err := json.Unmarshal(dataBytes, &data); err != nil {
-		panic(err.Error())
-	}
-	articles = data.List
-
-	return articles
-}
-
-func SearchUserByIds(c *gin.Context, userIDs []int) []po.User {
-	// 将[]int转换为逗号分隔的字符串
-	idStrings := make([]string, len(userIDs))
-	for i, id := range userIDs {
-		idStrings[i] = fmt.Sprintf("%d", id)
-	}
-	idsParam := strings.Join(idStrings, ",")
-
-	opts := client.RequestOptions{
-		Method: http.MethodGet,
-		PathParams: map[string]string{
-			"ids": idsParam,
-		},
-	}
-	sd := client.NewServiceDiscovery(config.NamingClient)
-	result, err := sd.CallService(c, "spring", "/users/batch/:ids", opts)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// 解析result.Data中的用户列表
-	var users []po.User
-	var data struct {
-		Total int       `json:"total"`
-		List  []po.User `json:"list"`
-	}
-	dataBytes, _ := json.Marshal(result.Data)
-	if err := json.Unmarshal(dataBytes, &data); err != nil {
-		// 如果直接解析失败，尝试解析为数组
-		if err := json.Unmarshal(dataBytes, &users); err != nil {
-			panic(fmt.Sprintf("用户数据解析失败: %v, 数据: %s", err, string(dataBytes)))
-		}
-	} else {
-		users = data.List
-	}
-
-	return users
-}
-
-func SearchSubCategoriesByIds(c *gin.Context, subCategoryIDs []int) []po.SubCategory {
-	// 将[]int转换为逗号分隔的字符串
-	idStrings := make([]string, len(subCategoryIDs))
-	for i, id := range subCategoryIDs {
-		idStrings[i] = fmt.Sprintf("%d", id)
-	}
-	idsParam := strings.Join(idStrings, ",")
-
-	opts := client.RequestOptions{
-		Method: http.MethodGet,
-		PathParams: map[string]string{
-			"ids": idsParam,
-		},
-	}
-	sd := client.NewServiceDiscovery(config.NamingClient)
-	result, err := sd.CallService(c, "spring", "/category/sub/batch/:ids", opts)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// 解析result.Data中的子分类列表
-	var subCategories []po.SubCategory
-	var data struct {
-		Total int              `json:"total"`
-		List  []po.SubCategory `json:"list"`
-	}
-	dataBytes, _ := json.Marshal(result.Data)
-	if err := json.Unmarshal(dataBytes, &data); err != nil {
-		// 如果解析为包含total和list的结构失败，尝试直接解析为数组
-		if err := json.Unmarshal(dataBytes, &subCategories); err != nil {
-			panic(err.Error())
-		}
-	} else {
-		subCategories = data.List
-	}
-	return subCategories
-}
-
-func SearchCategoriesByIds(c *gin.Context, categoryIDs []int) []po.Category {
-	// 将[]int转换为逗号分隔的字符串
-	idStrings := make([]string, len(categoryIDs))
-	for i, id := range categoryIDs {
-		idStrings[i] = fmt.Sprintf("%d", id)
-	}
-	idsParam := strings.Join(idStrings, ",")
-
-	opts := client.RequestOptions{
-		Method: http.MethodGet,
-		PathParams: map[string]string{
-			"ids": idsParam,
-		},
-	}
-	sd := client.NewServiceDiscovery(config.NamingClient)
-	result, err := sd.CallService(c, "spring", "/category/batch/:ids", opts)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// 解析result.Data中的分类列表
-	var categories []po.Category
-	var data struct {
-		Total int           `json:"total"`
-		List  []po.Category `json:"list"`
-	}
-	dataBytes, _ := json.Marshal(result.Data)
-	if err := json.Unmarshal(dataBytes, &data); err != nil {
-		// 如果解析为包含total和list的结构失败，尝试直接解析为数组
-		if err := json.Unmarshal(dataBytes, &categories); err != nil {
-			panic(err.Error())
-		}
-	} else {
-		categories = data.List
-	}
-	return categories
 }
