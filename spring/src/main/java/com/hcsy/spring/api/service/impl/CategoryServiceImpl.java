@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.CategoryMapper;
 import com.hcsy.spring.api.mapper.SubCategoryMapper;
+import com.hcsy.spring.api.service.CategoryCacheService;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
+import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
@@ -18,6 +20,9 @@ import com.hcsy.spring.entity.vo.SubCategoryVO;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,12 +34,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "category")
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
     private final CategoryMapper categoryMapper;
     private final SubCategoryMapper subCategoryMapper;
+    private final CategoryCacheService categoryCacheService;
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true)
+    })
     public Long addCategory(CategoryCreateDTO dto) {
         Category category = new Category();
         category.setName(dto.getName());
@@ -44,6 +54,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", key = "#dto.id")
+    })
     public void updateCategory(CategoryUpdateDTO dto) {
         Category category = categoryMapper.selectById(dto.getId());
         if (category != null) {
@@ -54,6 +68,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", allEntries = true)
+    })
     public void deleteCategory(Long id) {
         // 先删子分类
         subCategoryMapper.delete(new QueryWrapper<SubCategory>().eq("category_id", id));
@@ -62,6 +80,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", allEntries = true)
+    })
     public void deleteCategories(List<Long> ids) {
         for (Long id : ids) {
             deleteCategory(id);
@@ -70,6 +92,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", key = "#dto.categoryId")
+    })
     public Long addSubCategory(SubCategoryCreateDTO dto) {
         SubCategory sub = new SubCategory();
         sub.setName(dto.getName());
@@ -80,6 +106,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", key = "#dto.categoryId")
+    })
     public void updateSubCategory(SubCategoryUpdateDTO dto) {
         SubCategory sub = subCategoryMapper.selectById(dto.getId());
         if (sub != null) {
@@ -91,25 +121,17 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", allEntries = true)
+    })
     public void deleteSubCategory(Long id) {
         subCategoryMapper.deleteById(id);
     }
 
     @Override
     public CategoryVO getCategoryById(Long id) {
-        Category category = categoryMapper.selectById(id);
-        if (category == null)
-            return null;
-        CategoryVO vo = new CategoryVO();
-        BeanUtils.copyProperties(category, vo);
-        List<SubCategory> subList = subCategoryMapper.selectList(new QueryWrapper<SubCategory>().eq("category_id", id));
-        List<SubCategoryVO> subVOList = subList.stream().map(sub -> {
-            SubCategoryVO subVO = new SubCategoryVO();
-            BeanUtils.copyProperties(sub, subVO);
-            return subVO;
-        }).collect(Collectors.toList());
-        vo.setSubCategories(subVOList);
-        return vo;
+        return categoryCacheService.getCategoryById(id);
     }
 
     @Override
@@ -212,15 +234,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     public IPage<CategoryVO> pageCategory(Page<?> page) {
-        Page<Category> categoryPage = new Page<>(page.getCurrent(), page.getSize());
-        IPage<Category> resultPage = categoryMapper.selectPage(categoryPage, new QueryWrapper<>());
-        List<CategoryVO> voList = new ArrayList<>();
-        for (Category category : resultPage.getRecords()) {
-            CategoryVO vo = getCategoryById(category.getId());
-            voList.add(vo);
-        }
-        IPage<CategoryVO> voPage = new Page<>(page.getCurrent(), page.getSize(), resultPage.getTotal());
-        voPage.setRecords(voList);
+        // 使用被缓存的 DTO 方法获取分页数据，然后转换为 IPage 返回，保持接口字段不变
+        PageDTO<CategoryVO> dto = categoryCacheService.cachedPageCategory(page);
+        IPage<CategoryVO> voPage = new Page<>(dto.getCurrent(), dto.getSize(), dto.getTotal());
+        voPage.setRecords(dto.getRecords());
         return voPage;
     }
 
