@@ -26,10 +26,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
+@CacheConfig(cacheNames = "user")
 @Slf4j
 @Tag(name = "用户模块", description = "用户相关接口")
 public class UserController {
@@ -40,6 +45,7 @@ public class UserController {
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询")
+    @Cacheable(value = "userPage", key = "#queryDTO.page + '-' + #queryDTO.size + '-' + (#queryDTO.username == null ? '' : #queryDTO.username)")
     public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -55,6 +61,9 @@ public class UserController {
     @PostMapping
     @Operation(summary = "新增用户", description = "通过请求体创建用户信息")
     @RequirePermission(roles = { "admin" })
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true)
+    })
     public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -68,6 +77,10 @@ public class UserController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
     @RequirePermission(roles = { "admin" })
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "userById", key = "#id")
+    })
     public Result deleteUser(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -79,6 +92,10 @@ public class UserController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" })
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "userById", allEntries = true)
+    })
     public Result deleteUsers(@PathVariable String ids) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -94,6 +111,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户")
+    @Cacheable(value = "userById", key = "#id")
     public Result getUserById(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -105,6 +123,10 @@ public class UserController {
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "userById", key = "#userDto.id")
+    })
     public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -117,6 +139,10 @@ public class UserController {
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
     @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true),
+            @CacheEvict(value = "userById", key = "#id")
+    })
     public Result updateUserStatus(@PathVariable Long id, @RequestParam String status) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -158,6 +184,10 @@ public class UserController {
 
     @PostMapping("/logout/{id}")
     @Operation(summary = "用户登出", description = "根据用户ID登出，清除Redis中的用户状态")
+    @Caching(evict = {
+            @CacheEvict(value = "userById", key = "#id"),
+            @CacheEvict(value = "userPage", allEntries = true)
+    })
     public Result logout(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -169,6 +199,9 @@ public class UserController {
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户")
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", allEntries = true)
+    })
     public Result registerUser(@Valid @RequestBody UserCreateDTO userDto) {
         logger.info("POST /users/register: " + "用户注册\nUserCreateDTO: %s", userDto);
         User user = BeanUtil.copyProperties(userDto, User.class);
