@@ -20,6 +20,7 @@ import com.hcsy.spring.entity.vo.CategoryVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 
@@ -27,7 +28,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@org.springframework.cache.annotation.CacheConfig(cacheNames = "category")
+@CacheConfig(cacheNames = "category")
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
     private final CategoryMapper categoryMapper;
     private final SubCategoryMapper subCategoryMapper;
