@@ -12,6 +12,16 @@
 
 所有服务通过统一网关进行访问，实现了服务治理、认证授权等功能。
 
+## 功能说明
+
+1. 文章/博客发布、修改等操作，并且可以进行搜索引擎式搜索，文章的创建和显示都支持 Markdown
+2. 文章操作日志的查看和分析
+3. 文章分类，用户状态的管理操作
+4. 权限校验实现用户端和管理端
+5. 支持 Coze 进行 AI 聊天助手
+6. 系统数据的相关数据分析
+7. 用户实时聊天功能
+
 ## 技术栈
 
 - FastAPI：用于构建 Python 后端服务
@@ -27,6 +37,7 @@
 - Redis：缓存服务
 - RabbitMQ：消息队列
 - Hadoop+Hive：大数据存储与分析
+- WebSocket：用户实时聊天
 
 ## 环境要求
 
@@ -177,7 +188,28 @@ CREATE TABLE sub_category (
 ) COMMENT='子分类表';
 ```
 
-3. MongoDB 表创建
+- 创建用户聊天历史记录表
+
+```sql
+CREATE TABLE `chat_messages` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '消息ID，主键',
+    `sender_id` varchar(50) NOT NULL COMMENT '发送者用户ID',
+    `receiver_id` varchar(50) NOT NULL COMMENT '接收者用户ID',
+    `content` text NOT NULL COMMENT '消息内容',
+    `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_chat_messages_sender_id` (`sender_id`) COMMENT '发送者ID索引',
+    KEY `idx_chat_messages_receiver_id` (`receiver_id`) COMMENT '接收者ID索引',
+    KEY `idx_chat_messages_created_at` (`created_at`) COMMENT '创建时间索引',
+    KEY `idx_chat_messages_sender_receiver` (
+        `sender_id`,
+        `receiver_id`,
+        `created_at`
+    ) COMMENT '发送者接收者组合索引，用于查询聊天历史'
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '聊天消息表';
+```
+
+4. MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
 
@@ -460,6 +492,13 @@ spring:
     nacos:
       server-addr: 127.0.0.1:8848
     gateway:
+      # 全局WebSocket支持
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
       routes:
         # 1. 先排除特殊路径
         - id: exclude-list
@@ -475,10 +514,19 @@ spring:
           predicates:
             - Path=/api_spring/**,/users/**,/articles/**,/category/**
 
+        - id: gin-ws
+          uri: ws://localhost:8082
+          predicates:
+            - Path=/ws/**
+          metadata:
+            # WebSocket 相关配置
+            connect-timeout: 60000
+            response-timeout: 60000
+
         - id: gin
           uri: lb://gin
           predicates:
-            - Path=/api_gin/**,/search
+            - Path=/api_gin/**,/search, /user-chat/**, /static/**
 
         - id: nestjs
           uri: lb://nestjs
@@ -568,3 +616,5 @@ oss:
 coze:
   api_key: your_api_key
 ```
+
+5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
