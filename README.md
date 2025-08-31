@@ -130,7 +130,7 @@ npm install # 安装npm包
 - RabbitMQ
 - Nacos
 
-2. MySQL 表创建
+2. MySQL 表创建(可选，代码会自动创建)
 
 - 在配置文件中指定对应的数据库
 - 创建用户表
