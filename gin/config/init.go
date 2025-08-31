@@ -1,6 +1,8 @@
 package config
 
-import "log"
+import (
+	"log"
+)
 
 func Init() {
 	// 设置log输出格式
