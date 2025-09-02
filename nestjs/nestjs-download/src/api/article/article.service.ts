@@ -31,22 +31,6 @@ export class ArticleService {
     return article;
   }
 
-  // 根据标题模糊搜索文章
-  async getArticlesByTitle(title: string): Promise<any[]> {
-    // 调用Spring接口获取文章数据
-    const res = await this.nacosService.call({
-      serviceName: 'spring',
-      method: 'GET',
-      path: '/articles/list',
-      queryParams: {
-        title,
-      },
-    });
-    const articles = res.data.list;
-
-    return articles;
-  }
-
   // 生成word并保存到指定位置
   async exportToWordAndSave(id: number) {
     const article = await this.getArticleById(id);

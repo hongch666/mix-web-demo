@@ -1,62 +1,122 @@
-### nestjs
+### nestjs-logs
 
 # compiled output
-nestjs/dist
-nestjs/node_modules
-nestjs/build
-nestjs/files
+nestjs/nestjs-logs/dist
+nestjs/nestjs-logs/node_modules
+nestjs/nestjs-logs/build
+nestjs/nestjs-logs/files
 
 # Logs
-nestjs/logs
-nestjs/*.log
-nestjs/npm-debug.log*
-nestjs/pnpm-debug.log*
-nestjs/yarn-debug.log*
-nestjs/yarn-error.log*
-nestjs/lerna-debug.log*
+nestjs/nestjs-logs/logs
+nestjs/nestjs-logs/*.log
+nestjs/nestjs-logs/npm-debug.log*
+nestjs/nestjs-logs/pnpm-debug.log*
+nestjs/nestjs-logs/yarn-debug.log*
+nestjs/nestjs-logs/yarn-error.log*
+nestjs/nestjs-logs/lerna-debug.log*
 
 # OS
-nestjs/.DS_Store
+nestjs/nestjs-logs/.DS_Store
 
 # Tests
-nestjs/coverage
-nestjs/.nyc_output
+nestjs/nestjs-logs/coverage
+nestjs/nestjs-logs/.nyc_output
 
 # IDEs and editors
-nestjs/.idea
-nestjs/.project
-nestjs/.classpath
-nestjs/.c9/
-nestjs/*.launch
-nestjs/.settings/
-nestjs/*.sublime-workspace
+nestjs/nestjs-logs/.idea
+nestjs/nestjs-logs/.project
+nestjs/nestjs-logs/.classpath
+nestjs/nestjs-logs/.c9/
+nestjs/nestjs-logs/*.launch
+nestjs/nestjs-logs/.settings/
+nestjs/nestjs-logs/*.sublime-workspace
 
 # IDE - VSCode
-nestjs/.vscode/*
-!nestjs/.vscode/settings.json
-!nestjs/.vscode/tasks.json
-!nestjs/.vscode/launch.json
-!nestjs/.vscode/extensions.json
+nestjs/nestjs-logs/.vscode/*
+!nestjs/nestjs-logs/.vscode/settings.json
+!nestjs/nestjs-logs/.vscode/tasks.json
+!nestjs/nestjs-logs/.vscode/launch.json
+!nestjs/nestjs-logs/.vscode/extensions.json
 
 # dotenv environment variable files
-nestjs/.env
-nestjs/.env.development.local
-nestjs/.env.test.local
-nestjs/.env.production.local
-nestjs/.env.local
+nestjs/nestjs-logs/.env
+nestjs/nestjs-logs/.env.development.local
+nestjs/nestjs-logs/.env.test.local
+nestjs/nestjs-logs/.env.production.local
+nestjs/nestjs-logs/.env.local
 
 # temp directory
-nestjs/.temp
-nestjs/.tmp
+nestjs/nestjs-logs/.temp
+nestjs/nestjs-logs/.tmp
 
 # Runtime data
-nestjs/pids
-nestjs/*.pid
-nestjs/*.seed
-nestjs/*.pid.lock
+nestjs/nestjs-logs/pids
+nestjs/nestjs-logs/*.pid
+nestjs/nestjs-logs/*.seed
+nestjs/nestjs-logs/*.pid.lock
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
-nestjs/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+nestjs/nestjs-logs/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+### nestjs-download
+
+# compiled output
+nestjs/nestjs-download/dist
+nestjs/nestjs-download/node_modules
+nestjs/nestjs-download/build
+nestjs/nestjs-download/files
+
+# Logs
+nestjs/nestjs-download/logs
+nestjs/nestjs-download/*.log
+nestjs/nestjs-download/npm-debug.log*
+nestjs/nestjs-download/pnpm-debug.log*
+nestjs/nestjs-download/yarn-debug.log*
+nestjs/nestjs-download/yarn-error.log*
+nestjs/nestjs-download/lerna-debug.log*
+
+# OS
+nestjs/nestjs-download/.DS_Store
+
+# Tests
+nestjs/nestjs-download/coverage
+nestjs/nestjs-download/.nyc_output
+
+# IDEs and editors
+nestjs/nestjs-download/.idea
+nestjs/nestjs-download/.project
+nestjs/nestjs-download/.classpath
+nestjs/nestjs-download/.c9/
+nestjs/nestjs-download/*.launch
+nestjs/nestjs-download/.settings/
+nestjs/nestjs-download/*.sublime-workspace
+
+# IDE - VSCode
+nestjs/nestjs-download/.vscode/*
+!nestjs/nestjs-download/.vscode/settings.json
+!nestjs/nestjs-download/.vscode/tasks.json
+!nestjs/nestjs-download/.vscode/launch.json
+!nestjs/nestjs-download/.vscode/extensions.json
+
+# dotenv environment variable files
+nestjs/nestjs-download/.env
+nestjs/nestjs-download/.env.development.local
+nestjs/nestjs-download/.env.test.local
+nestjs/nestjs-download/.env.production.local
+nestjs/nestjs-download/.env.local
+
+# temp directory
+nestjs/nestjs-download/.temp
+nestjs/nestjs-download/.tmp
+
+# Runtime data
+nestjs/nestjs-download/pids
+nestjs/nestjs-download/*.pid
+nestjs/nestjs-download/*.seed
+nestjs/nestjs-download/*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+nestjs/nestjs-download/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # 忽略所有 .class 文件
 *.class
