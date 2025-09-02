@@ -1,11 +1,10 @@
 from fastapi import FastAPI
-from api.controller import test_router, analyze_router, upload_router, generate_router, chat_router
+from api.controller import generate_router, chat_router
 import uvicorn
 from config import start_nacos, load_config
 from common.utils import logger
 from common.middleware import ContextMiddleware
 from common.handler import global_exception_handler
-from common.task import start_scheduler
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 
@@ -31,14 +30,10 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(ContextMiddleware)
     app.add_exception_handler(Exception, global_exception_handler)
-    app.include_router(test_router)
-    app.include_router(analyze_router)
-    app.include_router(upload_router)
     app.include_router(generate_router)
     app.include_router(chat_router)
     return app
 
-start_scheduler()
 app = create_app()
 
 if __name__ == "__main__":

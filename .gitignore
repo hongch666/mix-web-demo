@@ -221,12 +221,19 @@ gateway/src/test/
 gateway/.vscode/
 
 ### FastAPI
-fastapi/**/__pycache__/
-fastapi/**/*.pyc
-fastapi/pic/
-fastapi/static/
-fastapi/application-secret.yaml
-fastapi/venv/
+fastapi/fastapi-data/**/__pycache__/
+fastapi/fastapi-data/**/*.pyc
+fastapi/fastapi-data/pic/
+fastapi/fastapi-data/static/
+fastapi/fastapi-data/application-secret.yaml
+fastapi/fastapi-data/venv/
+
+fastapi/fastapi-ai/**/__pycache__/
+fastapi/fastapi-ai/**/*.pyc
+fastapi/fastapi-ai/pic/
+fastapi/fastapi-ai/static/
+fastapi/fastapi-ai/application-secret.yaml
+fastapi/fastapi-ai/venv/
 
 .vscode/
 bfg-1.14.0.jar

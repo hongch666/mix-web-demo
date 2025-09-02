@@ -4,8 +4,6 @@ import os
 import pandas as pd
 from typing import Dict, List, Any
 
-from sqlmodel import Session
-
 from api.mapper import (
     ArticleMapper,
     ArticleLogMapper,

@@ -4,7 +4,7 @@ import re
 
 class GenerateService:
 
-    def extract_tags(text: str, topK: int = 5) -> str:
+    def extract_tags(self, text: str, topK: int = 5) -> list[str]:
         """
         提取文本中的关键词作为tags
         :param text: 文章内容
