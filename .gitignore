@@ -122,57 +122,109 @@ nestjs/nestjs-download/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 *.class
 
 
-### gin
+### gin-search
 
 # Go binaries
-gin/bin/
-gin/*.exe
-gin/*.exe~
-gin/*.dll
-gin/*.so
-gin/*.dylib
+gin/gin-search/bin/
+gin/gin-search/*.exe
+gin/gin-search/*.exe~
+gin/gin-search/*.dll
+gin/gin-search/*.so
+gin/gin-search/*.dylib
 
 # Vendor directory
-gin/vendor/
+gin/gin-search/vendor/
 
 # Compiled object files and binaries
-gin/*.a
-gin/*.o
-gin/*.out
+gin/gin-search/*.a
+gin/gin-search/*.o
+gin/gin-search/*.out
 
 # Logs
-gin/logs/
-gin/*.log
-gin/nacos/log/*.log
-gin/nacos/log/**
-gin/nacos/
+gin/gin-search/logs/
+gin/gin-search/*.log
+gin/gin-search/nacos/log/*.log
+gin/gin-search/nacos/log/**
+gin/gin-search/nacos/
 
 # Swagger
-gin/docs/
+gin/gin-search/docs/
 
 # Test binaries
-gin/*.test
+gin/gin-search/*.test
 
 # Coverage and profiling
-gin/coverage.out
-gin/profile.out
+gin/gin-search/coverage.out
+gin/gin-search/profile.out
 
 # IDE/editor settings
-gin/.idea/
-gin/.vscode/
-gin/*.swp
+gin/gin-search/.idea/
+gin/gin-search/.vscode/
+gin/gin-search/*.swp
 
 # Environment files
-gin/.env
-gin/.env.*
+gin/gin-search/.env
+gin/gin-search/.env.*
 
 # Temporary files
-gin/tmp/
-gin/temp/
-gin/.DS_Store
+gin/gin-search/tmp/
+gin/gin-search/temp/
+gin/gin-search/.DS_Store
 
 # Git merge/diff tools
-gin/*.orig
+gin/gin-search/*.orig
+
+### gin-chat
+
+# Go binaries
+gin/gin-chat/bin/
+gin/gin-chat/*.exe
+gin/gin-chat/*.exe~
+gin/gin-chat/*.dll
+gin/gin-chat/*.so
+gin/gin-chat/*.dylib
+
+# Vendor directory
+gin/gin-chat/vendor/
+
+# Compiled object files and binaries
+gin/gin-chat/*.a
+gin/gin-chat/*.o
+gin/gin-chat/*.out
+
+# Logs
+gin/gin-chat/logs/
+gin/gin-chat/*.log
+gin/gin-chat/nacos/log/*.log
+gin/gin-chat/nacos/log/**
+gin/gin-chat/nacos/
+
+# Swagger
+gin/gin-chat/docs/
+
+# Test binaries
+gin/gin-chat/*.test
+
+# Coverage and profiling
+gin/gin-chat/coverage.out
+gin/gin-chat/profile.out
+
+# IDE/editor settings
+gin/gin-chat/.idea/
+gin/gin-chat/.vscode/
+gin/gin-chat/*.swp
+
+# Environment files
+gin/gin-chat/.env
+gin/gin-chat/.env.*
+
+# Temporary files
+gin/gin-chat/tmp/
+gin/gin-chat/temp/
+gin/gin-chat/.DS_Store
+
+# Git merge/diff tools
+gin/gin-chat/*.orig
 
 ### spring
 
