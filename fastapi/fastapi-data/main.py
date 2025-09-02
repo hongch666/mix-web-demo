@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.controller import analyze_router, upload_router
+from api.controller import test_router,analyze_router, upload_router
 import uvicorn
 from config import start_nacos, load_config
 from common.utils import logger
@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, global_exception_handler)
     app.include_router(analyze_router)
     app.include_router(upload_router)
+    app.include_router(test_router)
     return app
 
 start_scheduler()
