@@ -2,6 +2,8 @@
 
 ## 描述
 
+**PS：这个是微服务版本，每个技术栈都有拆分微服务！**
+
 这是一个基于多种技术栈构建的微服务架构系统，包含以下组件：
 
 - FastAPI（Python）
@@ -58,6 +60,7 @@
 
 ```bash
 cd fastapi
+cd fastapi-ai # 或 cd fastapi-data
 python3 -m venv venv
 source venv/bin/activate # Linux
 venv\Scripts\activate # Windows
@@ -70,6 +73,7 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ```bash
 cd gin # 进入文件夹
+cd gin-chat # 或 cd gin-search
 go mod tidy # 安装依赖
 go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
 ```
@@ -80,7 +84,7 @@ go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
 
 ```bash
 cd spring # 进入文件夹
-cd gateway # 进入网关
+cd spring-gateway # 或 cd spring-user / cd spring-article / cd spring-category
 mvn clean install # 下载依赖
 ./mvnw clean install # Linux/macOS(无全局maven)
 mvnw.cmd clean install # Windows(无全局maven)
@@ -90,6 +94,7 @@ mvnw.cmd clean install # Windows(无全局maven)
 
 ```bash
 cd nestjs # 进入文件夹
+cd nestjs-logs # 或 cd nestjs-downloads
 npm install # 安装npm包
 ```
 
@@ -110,7 +115,7 @@ npm install # 安装npm包
 ### Windows
 
 ```powershell
-.\run.ps1
+.\run.ps1 # 这里暂不可使用
 ```
 
 如需关闭服务，请手动关闭对应窗口。
@@ -261,10 +266,12 @@ npm run start:prod # production mode
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
-- `application.yaml`
+- article 模块
 
-```yaml
-server:
+  - `application.yaml`
+
+  ```yaml
+  server:
   address: 0.0.0.0
   port: 8081
   tomcat:
@@ -272,60 +279,285 @@ server:
       max: 25
     accept-count: 25
     max-connections: 100
-spring:
-  application:
-    name: spring
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 0
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 1
-      timeout: 3000
-  rabbitmq:
-    host: 127.0.0.1
-    port: 5672
-    username: hcsy
-    password: 123456
-    virtual-host: test
-logging:
-  file:
-    path: "../logs/spring"
-jwt:
-  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
-  expiration: 86400000 # 毫秒数（1 天）
-```
+  spring:
+    application:
+      name: spring-article
+    data:
+      redis:
+        host: localhost
+        port: 6379
+        database: 0
+        lettuce:
+          pool:
+            max-active: 10
+            max-idle: 5
+            min-idle: 1
+        timeout: 3000
+    rabbitmq:
+      host: 127.0.0.1
+      port: 5672
+      username: hcsy
+      password: 123456
+      virtual-host: test
+  logging:
+    file:
+      path: "../../logs/spring"
+  jwt:
+    secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+    expiration: 86400000 # 毫秒数（1 天）
+  ```
 
-- `bootstrap.yml`
+  - `bootstrap.yml`
 
-```yml
-spring:
-  config:
-    import:
-      - "nacos:application.yml" # 将 DataId 明确设为 application.yml
-      - "optional:nacos:application-dev.yml?group=DEV_GROUP"
-  datasource:
-    url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: csc20040312
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  cloud:
-    nacos:
-      config:
-        server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+  ```yaml
+  spring:
+    config:
+      import:
+        - "nacos:application.yml" # 将 DataId 明确设为 application.yml
+        - "optional:nacos:application-dev.yml?group=DEV_GROUP"
+    datasource:
+      url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: csc20040312
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    cloud:
+      nacos:
+        config:
+          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
 
-mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
-  global-config:
-    db-config:
-      id-type: auto # 主键策略
-      logic-delete-field: deleted # 逻辑删除字段
-```
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
+    global-config:
+      db-config:
+        id-type: auto # 主键策略
+        logic-delete-field: deleted # 逻辑删除字段
+  ```
+
+- user 模块
+
+  - `application.yaml`
+
+  ```yaml
+  server:
+    address: 0.0.0.0
+    port: 8083
+    tomcat:
+      threads:
+        max: 25
+      accept-count: 25
+      max-connections: 100
+  spring:
+    application:
+      name: spring-user
+    data:
+      redis:
+        host: localhost
+        port: 6379
+        database: 0
+        lettuce:
+          pool:
+            max-active: 10
+            max-idle: 5
+            min-idle: 1
+        timeout: 3000
+    rabbitmq:
+      host: 127.0.0.1
+      port: 5672
+      username: hcsy
+      password: 123456
+      virtual-host: test
+  logging:
+    file:
+      path: "../../logs/spring"
+  jwt:
+    secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+    expiration: 86400000 # 毫秒数（1 天）
+  ```
+
+  - `bootstrap.yml`
+
+  ```yaml
+  spring:
+    config:
+      import:
+        - "nacos:application.yml" # 将 DataId 明确设为 application.yml
+        - "optional:nacos:application-dev.yml?group=DEV_GROUP"
+    datasource:
+      url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: csc20040312
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    cloud:
+      nacos:
+        config:
+          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
+    global-config:
+      db-config:
+        id-type: auto # 主键策略
+        logic-delete-field: deleted # 逻辑删除字段
+  ```
+
+- category 模块
+
+  - `application.yaml`
+
+  ```yaml
+  server:
+    address: 0.0.0.0
+    port: 8082
+    tomcat:
+      threads:
+        max: 25
+      accept-count: 25
+      max-connections: 100
+  spring:
+    application:
+      name: spring-category
+    data:
+      redis:
+        host: localhost
+        port: 6379
+        database: 0
+        lettuce:
+          pool:
+            max-active: 10
+            max-idle: 5
+            min-idle: 1
+        timeout: 3000
+    rabbitmq:
+      host: 127.0.0.1
+      port: 5672
+      username: hcsy
+      password: 123456
+      virtual-host: test
+  logging:
+    file:
+      path: "../../logs/spring"
+  jwt:
+    secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+    expiration: 86400000 # 毫秒数（1 天）
+  ```
+
+  - `bootstrap.yml`
+
+  ```yaml
+  spring:
+    config:
+      import:
+        - "nacos:application.yml" # 将 DataId 明确设为 application.yml
+        - "optional:nacos:application-dev.yml?group=DEV_GROUP"
+    datasource:
+      url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: csc20040312
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    cloud:
+      nacos:
+        config:
+          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
+    global-config:
+      db-config:
+        id-type: auto # 主键策略
+        logic-delete-field: deleted # 逻辑删除字段
+  ```
+
+- gateway 模块
+
+  - `application.yaml`
+
+  ```yaml
+  server:
+    port: 8080
+  spring:
+    application:
+      name: spring-gateway
+    cloud:
+      nacos:
+        server-addr: 127.0.0.1:8848
+      gateway:
+        # 全局WebSocket支持
+        globalcors:
+          cors-configurations:
+            "[/**]":
+              allowedOrigins: "*"
+              allowedMethods: "*"
+              allowedHeaders: "*"
+        routes:
+          # 1. 先排除特殊路径
+          - id: exclude-list
+            uri: no://op
+            predicates:
+              - Path=/articles/list,/api_gin/syncer,/api_fastapi/task,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
+            filters:
+              - SetStatus=204
+
+          # 2. 正常路由
+          - id: spring-article
+            uri: lb://spring-article
+            predicates:
+              - Path=/api_spring/**,/articles/**
+
+          - id: spring-user
+            uri: lb://spring-user
+            predicates:
+              - Path=/users/**
+
+            - id: spring-article
+            uri: lb://spring-article
+            predicates:
+              - Path=/category/**
+
+          - id: gin-ws
+            uri: ws://localhost:7071
+            predicates:
+              - Path=/ws/**
+            metadata:
+              # WebSocket 相关配置
+              connect-timeout: 60000
+              response-timeout: 60000
+
+          - id: gin-chat
+            uri: lb://gin-chat
+            predicates:
+              - Path=/user-chat/**
+
+          - id: gin-chat
+            uri: lb://gin-search
+            predicates:
+              - Path=/api_gin/**,/search
+
+          - id: nestjs-download
+            uri: lb://nestjs-download
+            predicates:
+              - Path=/article/**
+
+          - id: nestjs-logs
+            uri: lb://nestjs-logs
+            predicates:
+              - Path=/logs/**
+
+          - id: fastapi-ai
+            uri: lb://fastapi-ai
+            predicates:
+              - Path=/generate/**,/chat/**
+
+          - id: fastapi-data
+            uri: lb://fastapi-data
+            predicates:
+              - Path=/api_fastapi/**,/analyze/**,/upload/**
+  jwt:
+    secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+    expiration: 2592000000 # 毫秒数（30 天）
+  ```
 
 ### Gin 部分
 
@@ -333,44 +565,69 @@ mybatis-plus:
 2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 3. 内容如下
 
-- `application.yaml`
+- search 模块
 
-```yaml
-server:
-  ip: 127.0.0.1
-  port: 8082
+  - `application.yaml`
 
-nacos:
-  ipAddr: 127.0.0.1 # 172.22.87.240
-  port: 8848
-  namespace: "public"
-  serviceName: gin
-  groupName: DEFAULT_GROUP
-  clusterName: DEFAULT
+  ```yaml
+  server:
+    ip: 127.0.0.1
+    port: 7070
 
-database:
-  mysql:
+  nacos:
+    ipAddr: 127.0.0.1
+    port: 8848
+    namespace: "public"
+    serviceName: gin-search
+    groupName: DEFAULT_GROUP
+    clusterName: DEFAULT
+
+  database:
+    es:
+      url: http://127.0.0.1:9200
+      sniff: false
+
+  mq:
+    username: hcsy
+    password: 123456
     host: 127.0.0.1
-    port: 3306
-    username: root
-    password: csc20040312
-    dbname: demo
-    charset: utf8mb4
-    loc: Local
-  es:
-    url: http://127.0.0.1:9200
-    sniff: false
+    port: 5672
+    vhost: test
 
-mq:
-  username: hcsy
-  password: 123456
-  host: 127.0.0.1
-  port: 5672
-  vhost: test
+  logs:
+    path: "../../logs/gin"
+  ```
 
-logs:
-  path: "../logs/gin"
-```
+- chat 模块
+
+  - `application.yaml`
+
+  ```yaml
+  server:
+    ip: 127.0.0.1
+    port: 7071
+
+  nacos:
+    ipAddr: 127.0.0.1
+    port: 8848
+    namespace: "public"
+    serviceName: gin-chat
+    groupName: DEFAULT_GROUP
+    clusterName: DEFAULT
+
+  database:
+    mysql:
+      host: 127.0.0.1
+      port: 3306
+      username: root
+      password: csc20040312
+      dbname: demo
+      charset: utf8mb4
+      loc: Local
+
+  logs:
+    path: "../../logs/gin"
+  ```
 
 ### Nestjs 部分
 
@@ -378,42 +635,50 @@ logs:
 2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 3. 内容如下
 
-- `application.yaml`
+- logs 模块
 
-```yaml
-server:
-  ip: 127.0.0.1
-  port: 8083
-  serviceName: nestjs
-nacos:
-  server-addr: 127.0.0.1 # 172.22.87.240:8848
-  namespace: public
-  clusterName: DEFAULT
-database:
-  type: mysql
-  host: localhost
-  port: 3306
-  username: root
-  password: csc20040312
-  database: demo
-  synchronize: true
-  logging: false
-  entities:
-    - src/**/*.entity.js
-mongodb:
-  url: mongodb://localhost:27017
-  dbName: demo
-rabbitmq:
-  host: localhost
-  port: 5672
-  username: hcsy
-  password: 123456
-  vhost: test
-files:
-  word: ../static/word
-logs:
-  path: "../logs/nestjs"
-```
+  - `application.yaml`
+
+  ```yaml
+  server:
+    ip: 127.0.0.1
+    port: 6060
+    serviceName: nestjs-logs
+  nacos:
+    server-addr: 127.0.0.1 # 172.22.87.240:8848
+    namespace: public
+    clusterName: DEFAULT
+  mongodb:
+    url: mongodb://localhost:27017
+    dbName: demo
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: hcsy
+    password: 123456
+    vhost: test
+  logs:
+    path: "../../logs/nestjs"
+  ```
+
+- download 模块
+
+  - `application.yaml`
+
+  ```yaml
+  server:
+    ip: 127.0.0.1
+    port: 6061
+    serviceName: nestjs-download
+  nacos:
+    server-addr: 127.0.0.1 # 172.22.87.240:8848
+    namespace: public
+    clusterName: DEFAULT
+  files:
+    word: ../static/word
+  logs:
+    path: "../../logs/nestjs"
+  ```
 
 ### FastAPI 部分
 
@@ -422,125 +687,84 @@ logs:
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
-- `application.yaml`
+- ai 模块
 
-```yaml
-server:
-  ip: 127.0.0.1
-  port: 8084
-nacos:
-  server_addresses: "127.0.0.1:8848"
-  namespace: "public"
-  service_name: "fastapi"
-  group_name: "DEFAULT_GROUP"
-database:
-  mysql:
-    url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
-  mongodb:
-    url: "mongodb://localhost:27017"
-    database: "demo"
-  hive:
-    host: "127.0.0.1"
-    port: 10000
-    database: "default"
-    table: "articles"
-    container: "hive-server"
-oss:
-  bucket_name: mix-web-demo
-  endpoint: oss-cn-guangzhou.aliyuncs.com
-wordcloud:
-  font_path: "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-  width: 800
-  height: 400
-  background_color: "white"
-files:
-  pic_path: "../static/pic"
-  excel_path: "../static/excel"
-logs:
-  path: "../logs/fastapi"
-coze:
-  bot_id: "7521289882573324298"
-  base_url: "https://api.coze.cn"
-  timeout: 30
-```
+  - `application.yaml`
 
-- `application-secret.yaml`
+  ```yaml
+  server:
+    ip: 127.0.0.1
+    port: 9092
+  nacos:
+    server_addresses: "127.0.0.1:8848"
+    namespace: "public"
+    service_name: "fastapi-ai"
+    group_name: "DEFAULT_GROUP"
+  database:
+    mysql:
+      url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+  oss:
+    bucket_name: mix-web-demo
+    endpoint: oss-cn-guangzhou.aliyuncs.com
+  logs:
+    path: "../../logs/fastapi"
+  coze:
+    bot_id: "7521289882573324298"
+    base_url: "https://api.coze.cn"
+    timeout: 30
+  ```
 
-```yaml
-oss:
-  access_key_id: your_access_key_id
-  access_key_secret: your_access_key_secret
-coze:
-  api_key: your_api_key
-```
+  - `application-secret.yaml`
 
-### Gateway 部分
+  ```yaml
+  coze:
+    api_key: your_api_key
+  ```
 
-1. `gateway/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. gateway 部分的 yaml 配置文件可以配置路由
-3. 内容如下
+- data 模块
 
-- `application.yaml`
+  - `application.yaml`
 
-```yaml
-server:
-  port: 8080
-spring:
-  application:
-    name: gateway
-  cloud:
-    nacos:
-      server-addr: 127.0.0.1:8848
-    gateway:
-      # 全局WebSocket支持
-      globalcors:
-        cors-configurations:
-          "[/**]":
-            allowedOrigins: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-      routes:
-        # 1. 先排除特殊路径
-        - id: exclude-list
-          uri: no://op
-          predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
-          filters:
-            - SetStatus=204
+  ```yaml
+  server:
+    ip: 127.0.0.1
+    port: 9091
+  nacos:
+    server_addresses: "127.0.0.1:8848"
+    namespace: "public"
+    service_name: "fastapi-data"
+    group_name: "DEFAULT_GROUP"
+  database:
+    mysql:
+      url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+    hive:
+      host: "127.0.0.1"
+      port: 10000
+      database: "default"
+      table: "articles"
+      container: "hive-server"
+  oss:
+    bucket_name: mix-web-demo
+    endpoint: oss-cn-guangzhou.aliyuncs.com
+  wordcloud:
+    font_path: "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    width: 800
+    height: 400
+    background_color: "white"
+  files:
+    pic_path: "../../static/pic"
+    excel_path: "../../static/excel"
+  logs:
+    path: "../../logs/fastapi"
+  ```
 
-        # 2. 正常路由
-        - id: spring
-          uri: lb://spring
-          predicates:
-            - Path=/api_spring/**,/users/**,/articles/**,/category/**
+  - `application-secret.yaml`
 
-        - id: gin-ws
-          uri: ws://localhost:8082
-          predicates:
-            - Path=/ws/**
-          metadata:
-            # WebSocket 相关配置
-            connect-timeout: 60000
-            response-timeout: 60000
-
-        - id: gin
-          uri: lb://gin
-          predicates:
-            - Path=/api_gin/**,/search, /user-chat/**, /static/**
-
-        - id: nestjs
-          uri: lb://nestjs
-          predicates:
-            - Path=/api_nestjs/**,/logs/**,/article/**
-
-        - id: fastapi
-          uri: lb://fastapi
-          predicates:
-            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/upload/**
-jwt:
-  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
-  expiration: 2592000000 # 毫秒数（30 天）
-```
+  ```yaml
+  oss:
+    access_key_id: your_access_key_id
+    access_key_secret: your_access_key_secret
+  ```
 
 ## Swagger 说明
 

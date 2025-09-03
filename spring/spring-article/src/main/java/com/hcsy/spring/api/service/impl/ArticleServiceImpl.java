@@ -1,0 +1,205 @@
+package com.hcsy.spring.api.service.impl;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hcsy.spring.api.mapper.ArticleMapper;
+import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.common.client.UserClient;
+import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.po.Result;
+import com.hcsy.spring.entity.po.User;
+
+import cn.hutool.core.bean.BeanUtil;
+import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
+    private final ArticleMapper articleMapper;
+    private final UserClient userClient;
+
+    @Override
+    public List<Article> listPublishedArticlesByTitle(String title) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, 1);
+        if (title != null && !title.isEmpty()) {
+            wrapper.like(Article::getTitle, title);
+        }
+        return articleMapper.selectList(wrapper);
+    }
+
+    @Override
+    public IPage<Article> listPublishedArticlesByTitle(Page<Article> page, String title) {
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Article::getStatus, 1);
+        if (title != null && !title.isEmpty()) {
+            wrapper.like(Article::getTitle, title);
+        }
+        return articleMapper.selectPage(page, wrapper);
+    }
+
+    @Override
+    @Transactional
+    public List<Article> listPublishedArticles() {
+        return lambdaQuery()
+                .eq(Article::getStatus, 1)
+                .list();
+    }
+
+    @Override
+    @Transactional
+    public IPage<Article> listPublishedArticles(Page<Article> page) {
+        LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(Article::getStatus, 1); // 只查已发布
+        queryWrapper.orderByAsc(Article::getCreateAt); // 按创建时间倒序
+
+        return this.page(page, queryWrapper);
+    }
+
+    @Override
+    @Transactional
+    public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
+        LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(Article::getUserId, id);
+        queryWrapper.orderByAsc(Article::getCreateAt); // 按创建时间倒序
+
+        return this.page(page, queryWrapper);
+    }
+
+    @Override
+    @Transactional
+    public boolean saveArticle(Article article) {
+        articleMapper.insert(article);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean updateArticle(Article article) {
+        // 校验用户
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法更新文章");
+        }
+
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(article.getId());
+        Result userResult = userClient.getUserById(currentUserId);
+        User user = BeanUtil.toBean((Map<?, ?>) userResult.getData(), User.class);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
+            throw new RuntimeException("无权修改他人文章");
+        }
+        // 执行修改
+        articleMapper.updateById(article);
+        return true;
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteArticle(Long id) {
+        // 校验用户
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法更新文章");
+        }
+
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(id);
+        Result userResult = userClient.getUserById(currentUserId);
+        User user = BeanUtil.toBean((Map<?, ?>) userResult.getData(), User.class);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
+            throw new RuntimeException("无权删除他人文章");
+        }
+        // 执行删除
+        articleMapper.deleteById(id);
+        return true;
+    }
+
+    @Transactional
+    public boolean deleteArticles(List<Long> ids) {
+        Long currentUserId = UserContext.getUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("未登录，无法删除文章");
+        }
+        for (Long id : ids) {
+            Article dbArticle = articleMapper.selectById(id);
+            Result userResult = userClient.getUserById(currentUserId);
+            User user = BeanUtil.toBean((Map<?, ?>) userResult.getData(), User.class);
+            if (dbArticle == null) {
+                throw new RuntimeException("文章不存在，ID:" + id);
+            }
+            if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
+                throw new RuntimeException("无权删除他人文章，ID:" + id);
+            }
+        }
+        articleMapper.deleteBatchIds(ids);
+        return true;
+    }
+
+    @Override
+    public void publishArticle(Long id) {
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(id);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+
+        // 执行发布
+        Article article = new Article();
+        article.setId(id);
+        article.setStatus(1); // 发布状态
+
+        boolean updated = updateById(article);
+        if (!updated) {
+            throw new RuntimeException("发布失败：文章不存在或更新失败");
+        }
+    }
+
+    @Override
+    public void addViewArticle(Long id) {
+        // 查询文章所属用户ID
+        Article dbArticle = articleMapper.selectById(id);
+        if (dbArticle == null) {
+            throw new RuntimeException("文章不存在");
+        }
+        if (dbArticle.getStatus() != 1) {
+            throw new RuntimeException("文章未发布，无法增加阅读量");
+        }
+        // 获取当前的文章的修改日期
+        LocalDateTime updateAt = dbArticle.getUpdateAt();
+        // 增加阅读量
+        Article article = new Article();
+        article.setId(id);
+        article.setViews(dbArticle.getViews() + 1); // 发布状态
+        article.setUpdateAt(updateAt); // 保持原有的更新时间
+
+        boolean updated = updateById(article);
+        if (!updated) {
+            throw new RuntimeException("更新失败：文章不存在或更新失败");
+        }
+    }
+
+    @Override
+    public List<Article> listUnpublishedArticles() {
+        return articleMapper.selectList(
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
+    }
+
+}

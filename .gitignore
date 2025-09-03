@@ -226,51 +226,99 @@ gin/gin-chat/.DS_Store
 # Git merge/diff tools
 gin/gin-chat/*.orig
 
-### spring
+### spring-article
 
 # 忽略项目中的 Maven 构建输出目录
-spring/target/
+spring/spring-article/target/
 
 # 忽略项目中的 IntelliJ IDEA 配置文件
-spring/.idea/
-spring/.mvn/
-spring/*.iml
+spring/spring-article/.idea/
+spring/spring-article/.mvn/
+spring/spring-article/*.iml
 
 # 忽略编译后的 class 文件
-spring/*.class
+spring/spring-article/*.class
 
 # 忽略测试类
-spring/*Test.java
+spring/spring-article/*Test.java
 
 # 忽略 test 目录
-spring/src/test/
+spring/spring-article/src/test/
 
 # VSCode
-spring/.vscode/
+spring/spring-article/.vscode/
 
-spring/bin/
+spring/spring-article/bin/
+
+### spring-user
+
+# 忽略项目中的 Maven 构建输出目录
+spring/spring-user/target/
+
+# 忽略项目中的 IntelliJ IDEA 配置文件
+spring/spring-user/.idea/
+spring/spring-user/.mvn/
+spring/spring-user/*.iml
+
+# 忽略编译后的 class 文件
+spring/spring-user/*.class
+
+# 忽略测试类
+spring/spring-user/*Test.java
+
+# 忽略 test 目录
+spring/spring-user/src/test/
+
+# VSCode
+spring/spring-user/.vscode/
+
+spring/spring-user/bin/
+
+### spring-category
+
+# 忽略项目中的 Maven 构建输出目录
+spring/spring-category/target/
+
+# 忽略项目中的 IntelliJ IDEA 配置文件
+spring/spring-category/.idea/
+spring/spring-category/.mvn/
+spring/spring-category/*.iml
+
+# 忽略编译后的 class 文件
+spring/spring-category/*.class
+
+# 忽略测试类
+spring/spring-category/*Test.java
+
+# 忽略 test 目录
+spring/spring-category/src/test/
+
+# VSCode
+spring/spring-category/.vscode/
+
+spring/spring-category/bin/
 
 ### gateway
 
 # 忽略项目中的 Maven 构建输出目录
-gateway/target/
+spring/spring-gateway/target/
 
 # 忽略项目中的 IntelliJ IDEA 配置文件
-gateway/.idea/
-gateway/.mvn/
-gateway/*.iml
+spring/spring-gateway/.idea/
+spring/spring-gateway/.mvn/
+spring/spring-gateway/*.iml
 
 # 忽略编译后的 class 文件
-gateway/*.class
+spring/spring-gateway/*.class
 
 # 忽略测试类
-gateway/*Test.java
+spring/spring-gateway/*Test.java
 
 # 忽略 test 目录
-gateway/src/test/
+spring/spring-gateway/src/test/
 
 # VSCode
-gateway/.vscode/
+spring/spring-gateway/.vscode/
 
 ### FastAPI
 fastapi/fastapi-data/**/__pycache__/
