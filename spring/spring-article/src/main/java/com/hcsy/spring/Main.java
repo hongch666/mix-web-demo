@@ -28,7 +28,7 @@ public class Main {
     @Bean
     ApplicationRunner applicationRunner(Environment env) {
         return args -> {
-            String ip = env.getProperty("server.address", "localhost");
+            String ip = "localhost";
             String port = env.getProperty("server.port", "8081");
             log.info("Spring Boot应用已启动");
             log.info("服务地址: http://{}:{}/", ip, port);
