@@ -209,7 +209,21 @@ CREATE TABLE `chat_messages` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '聊天消息表';
 ```
 
-4. MongoDB 表创建
+- 创建文章评论表
+
+```sql
+CREATE TABLE comments (
+    id int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
+    content VARCHAR(255) COMMENT '评论内容',
+    star DOUBLE COMMENT '星级评分，1~10',
+    user_id int NOT NULL COMMENT '用户 ID',
+    article_id int NOT NULL COMMENT '文章 ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'
+) COMMENT '';
+```
+
+3. MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
 
@@ -512,7 +526,7 @@ spring:
         - id: spring
           uri: lb://spring
           predicates:
-            - Path=/api_spring/**,/users/**,/articles/**,/category/**
+            - Path=/api_spring/**,/users/**,/articles/**,/category/**,/comments/**
 
         - id: gin-ws
           uri: ws://localhost:8082
