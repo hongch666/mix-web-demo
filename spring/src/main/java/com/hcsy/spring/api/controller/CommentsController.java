@@ -30,6 +30,7 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.CommentsVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -131,7 +132,15 @@ public class CommentsController {
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " GET /comments/{id}: " + "查询评论，ID: %s", id);
         Comments comments = commentsService.getById(id);
-        return Result.success(comments);
+        // 修改返回结果，包含用户名和文章标题
+        CommentsVO commentsVO = BeanUtil.copyProperties(comments, CommentsVO.class);
+        // 查询用户名
+        User user = userService.getById(comments.getUserId());
+        commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+        // 查询文章标题
+        Article article = articleService.getById(comments.getArticleId());
+        commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+        return Result.success(commentsVO);
     }
 
     @GetMapping()
@@ -144,7 +153,18 @@ public class CommentsController {
         IPage<Comments> resultPage = commentsService.listCommentsWithFilter(commentsPage, queryDTO);
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        // 构建评论视图对象，包含用户名和文章标题
+        List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
+            CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
+            // 查询用户名
+            User user = userService.getById(comment.getUserId());
+            commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            // 查询文章标题
+            Article article = articleService.getById(comment.getArticleId());
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            return commentsVO;
+        }).toList();
+        data.put("list", commentVOs);
         return Result.success(data);
     }
 
@@ -163,7 +183,18 @@ public class CommentsController {
         IPage<Comments> resultPage = commentsService.listCommentsByUserId(commentsPage, id);
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        // 构建评论视图对象，包含用户名和文章标题
+        List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
+            CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
+            // 查询用户名
+            User user = userService.getById(comment.getUserId());
+            commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            // 查询文章标题
+            Article article = articleService.getById(comment.getArticleId());
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            return commentsVO;
+        }).toList();
+        data.put("list", commentVOs);
         return Result.success(data);
     }
 
@@ -182,7 +213,18 @@ public class CommentsController {
         IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id);
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        // 构建评论视图对象，包含用户名和文章标题
+        List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
+            CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
+            // 查询用户名
+            User user = userService.getById(comment.getUserId());
+            commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            // 查询文章标题
+            Article article = articleService.getById(comment.getArticleId());
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            return commentsVO;
+        }).toList();
+        data.put("list", commentVOs);
         return Result.success(data);
     }
 }
