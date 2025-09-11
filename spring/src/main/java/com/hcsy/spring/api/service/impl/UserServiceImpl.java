@@ -79,4 +79,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userMapper.selectOne(queryWrapper);
     }
 
+    public List<User> listAllUserByUsername(String username) {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        if (username != null && !username.isEmpty()) {
+            queryWrapper.like(User::getName, username); // 用户名模糊匹配
+        }
+        return userMapper.selectList(queryWrapper);
+    }
+
 }

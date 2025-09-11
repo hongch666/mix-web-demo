@@ -18,4 +18,6 @@ public interface UserService extends IService<User> {
 
     User findByUsername(String username);
 
+    List<User> listAllUserByUsername(String username);
+
 }

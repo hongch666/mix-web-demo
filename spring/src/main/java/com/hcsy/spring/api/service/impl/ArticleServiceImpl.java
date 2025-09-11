@@ -176,4 +176,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
     }
 
+    @Override
+    public Article findByArticleTitle(String articleTitle) {
+        return articleMapper.selectOne(
+                new LambdaQueryWrapper<Article>().eq(Article::getTitle, articleTitle));
+    }
+
+    @Override
+    public List<Article> listAllArticlesByTitle(String articleTitle) {
+        return articleMapper.selectList(
+                new LambdaQueryWrapper<Article>().like(Article::getTitle, articleTitle));
+    }
+
 }
