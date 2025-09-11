@@ -153,13 +153,13 @@ public class CommentsController {
     @Operation(summary = "根据用户id分页获取评论", description = "根据用户id分页获取评论")
     public Result listCommentsByUserId(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "10", required = false) int pageSize,
-            @RequestParam(defaultValue = "1", required = false) int pageNum) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "1", required = false) int page) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " GET /comments/user/{id}: "
-                + "根据用户id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, pageSize, pageNum);
-        Page<Comments> commentsPage = new Page<>(pageNum, pageSize);
+                + "根据用户id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, size, page);
+        Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByUserId(commentsPage, id);
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
@@ -172,13 +172,13 @@ public class CommentsController {
     @Operation(summary = "根据文章id分页获取评论", description = "根据文章id分页获取评论")
     public Result listCommentsByArticleId(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "10", required = false) int pageSize,
-            @RequestParam(defaultValue = "1", required = false) int pageNum) {
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(defaultValue = "1", required = false) int page) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " GET /comments/article/{id}: "
-                + "根据文章id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, pageSize, pageNum);
-        Page<Comments> commentsPage = new Page<>(pageNum, pageSize);
+                + "根据文章id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, size, page);
+        Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id);
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
