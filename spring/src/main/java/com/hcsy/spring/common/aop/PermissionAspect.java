@@ -1,9 +1,11 @@
 package com.hcsy.spring.common.aop;
 
+import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,11 +14,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.core.DefaultParameterNameDiscoverer;
+import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 @Aspect
@@ -25,9 +30,10 @@ import java.util.Arrays;
 @Slf4j
 public class PermissionAspect {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+    private final CommentsService commentsService;
     private final SimpleLogger logger;
+    private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission) throws Throwable {
@@ -57,7 +63,7 @@ public class PermissionAspect {
         if (requirePermission.allowSelf()) {
             logger.info("允许操作自己的数据，检查目标用户ID");
             Long targetUserId = getTargetUserId(joinPoint, requirePermission.targetUserIdParam());
-            logger.info("当前用户ID: {}, 目标用户ID: {}", currentUserId, targetUserId);
+            logger.info("当前用户ID: %d, 目标用户ID: %d", currentUserId, targetUserId);
             if (targetUserId != null && targetUserId.equals(currentUserId)) {
                 return joinPoint.proceed();
             }
@@ -87,7 +93,56 @@ public class PermissionAspect {
                             logger.info(pathVariable + " 中的参数: " + parts[i + 1]);
                             return Long.parseLong(parts[i + 1]);
                         } catch (NumberFormatException e) {
-                            // 继续查找
+                            continue;
+                        }
+                    }
+                    // 获取请求的方法，如果是DELETE 就进入if执行对应逻辑
+                    else if (parts[i].equals("comments") && request.getMethod().equals("DELETE")) {
+                        try {
+                            String nextPart = parts[i + 1];
+                            if (nextPart.equals("batch")) {
+                                // 批量删除，取第一个ID
+                                String idsPart = parts[i + 2];
+                                String[] ids = idsPart.split(",");
+                                logger.info(pathVariable + " 中的参数: " + ids[0]);
+                                // 通过id数组获取对应评论的用户ID，如果出现不同就返回空，否则返回对应的用户ID
+                                Long commentUserId = null;
+                                for (String idStr : ids) {
+                                    Long commentId = Long.parseLong(idStr);
+                                    Comments comment = commentsService.getById(commentId);
+                                    if (comment == null) {
+                                        logger.warning("评论ID不存在: " + commentId);
+                                        throw new RuntimeException("评论ID不存在: " + commentId);
+                                    }
+                                    if (comment.getUserId() == null) {
+                                        logger.warning("评论ID未关联用户: " + commentId);
+                                        throw new RuntimeException("评论ID未关联用户: " + commentId);
+                                    }
+                                    if (commentUserId != null
+                                            && commentUserId.longValue() != comment.getUserId().longValue()) {
+                                        logger.warning("批量删除的评论属于不同用户，无法确定目标用户ID");
+                                        return null;
+                                    }
+                                    commentUserId = comment.getUserId();
+                                }
+                                return commentUserId;
+                            } else {
+                                // 单个删除
+                                logger.info(pathVariable + " 中的参数: " + nextPart);
+                                Long commentId = Long.parseLong(nextPart);
+                                Comments comment = commentsService.getById(commentId);
+                                if (comment == null) {
+                                    logger.warning("评论ID不存在: " + commentId);
+                                    throw new RuntimeException("评论ID不存在: " + commentId);
+                                }
+                                if (comment.getUserId() == null) {
+                                    logger.warning("评论ID未关联用户: " + commentId);
+                                    throw new RuntimeException("评论ID未关联用户: " + commentId);
+                                }
+                                return comment.getUserId();
+                            }
+                        } catch (Exception e) {
+                            continue;
                         }
                     }
                 }
@@ -97,10 +152,24 @@ public class PermissionAspect {
             Object[] args = joinPoint.getArgs();
             String[] paramNames = getParameterNames(joinPoint);
             for (int i = 0; i < paramNames.length; i++) {
-                paramName = "userDto";
+                // paramName = "userDto";
                 if (paramName.equals(paramNames[i])) {
-                    // 正常只会有1个DTO参数
-                    return ((Integer) args[0].getClass().getMethod("getId").invoke(args[0])).longValue();
+                    // 两种情况，用户DTO直接获取id，其他DTO获取对应的username，再获取对应的用户ID
+                    if (paramName.equals("userDto")) {
+                        // 正常只会有1个DTO参数
+                        return ((Integer) args[0].getClass().getMethod("getId").invoke(args[0])).longValue();
+                    } else {
+                        // 其他DTO，获取username，再查询用户ID
+                        String username = (String) args[0].getClass().getMethod("getUsername").invoke(args[0]);
+                        User user = userService.findByUsername(username);
+                        if (user != null) {
+                            return user.getId();
+                        } else {
+                            logger.warning("通过用户名未找到对应的用户: " + username);
+                            throw new RuntimeException("通过用户名未找到对应的用户: " + username);
+                        }
+                    }
+
                 }
             }
         } catch (Exception e) {
@@ -111,8 +180,25 @@ public class PermissionAspect {
     }
 
     private String[] getParameterNames(ProceedingJoinPoint joinPoint) {
-        // 这里需要使用反射获取参数名，或者使用Spring的ParameterNameDiscoverer
-        // 简化处理，返回默认参数名
-        return new String[] { "id", "userDto" };
+        try {
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            Method method = methodSignature.getMethod();
+
+            // 使用Spring的ParameterNameDiscoverer获取参数名
+            String[] parameterNames = parameterNameDiscoverer.getParameterNames(method);
+
+            if (parameterNames != null) {
+                return parameterNames;
+            }
+
+            // 如果无法获取参数名，返回默认值
+            logger.warning("无法获取方法参数名，使用默认参数名");
+            return new String[] { "id", "userDto" };
+
+        } catch (Exception e) {
+            logger.warning("获取参数名失败", e);
+            // 简化处理，返回默认参数名
+            return new String[] { "id", "userDto" };
+        }
     }
 }

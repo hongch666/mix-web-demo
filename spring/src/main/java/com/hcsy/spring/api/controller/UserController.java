@@ -124,7 +124,7 @@ public class UserController {
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
-    @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @RequirePermission(roles = { "admin" }, allowSelf = true, targetUserIdParam = "userDto")
     @Caching(evict = {
             @CacheEvict(value = "userPage", allEntries = true),
             @CacheEvict(value = "userById", key = "#userDto.id")

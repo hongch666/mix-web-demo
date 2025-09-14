@@ -21,6 +21,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
@@ -77,6 +78,7 @@ public class CommentsController {
     // 修改评论
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, targetUserIdParam = "commentUpdateDTO")
     public Result updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -102,6 +104,7 @@ public class CommentsController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除评论", description = "根据id删除评论")
+    @RequirePermission(roles = { "admin" }, allowSelf = true)
     public Result deleteComment(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
@@ -112,6 +115,7 @@ public class CommentsController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
+    @RequirePermission(roles = { "admin" }, allowSelf = true)
     public Result deleteComments(@PathVariable String ids) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
