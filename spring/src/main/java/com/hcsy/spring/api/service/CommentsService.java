@@ -11,5 +11,5 @@ public interface CommentsService extends IService<Comments> {
 
     IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId);
 
-    IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId);
+    IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay);
 }

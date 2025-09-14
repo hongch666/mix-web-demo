@@ -207,14 +207,19 @@ public class CommentsController {
     @Operation(summary = "根据文章id分页获取评论", description = "根据文章id分页获取评论")
     public Result listCommentsByArticleId(
             @PathVariable Long id,
+            @RequestParam(defaultValue = "create_time", required = false) String sortWay,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(defaultValue = "1", required = false) int page) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
         logger.info("用户" + userId + ":" + userName + " GET /comments/article/{id}: "
                 + "根据文章id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, size, page);
+        // 获取并校验排序方式参数
+        if (!sortWay.equals("create_time") && !sortWay.equals("star")) {
+            return Result.error("不支持的排序方式: " + sortWay);
+        }
         Page<Comments> commentsPage = new Page<>(page, size);
-        IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id);
+        IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id, sortWay);
         Map<String, Object> data = new HashMap<>();
         data.put("total", resultPage.getTotal());
         // 构建评论视图对象，包含用户名和文章标题

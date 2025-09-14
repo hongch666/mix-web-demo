@@ -66,9 +66,14 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return commentsPage;
     }
 
-    public IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId) {
+    public IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay) {
         LambdaQueryWrapper<Comments> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Comments::getArticleId, articleId);
+        if (sortWay.equals("star")) {
+            queryWrapper.orderByDesc(Comments::getStar);
+        } else {
+            queryWrapper.orderByDesc(Comments::getCreateTime);
+        }
         IPage<Comments> commentsPage = this.page(page, queryWrapper);
         return commentsPage;
     }
