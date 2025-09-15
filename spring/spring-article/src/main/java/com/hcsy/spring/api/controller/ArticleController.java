@@ -33,6 +33,8 @@ import com.hcsy.spring.entity.vo.ArticleVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/articles")
@@ -269,6 +271,21 @@ public class ArticleController {
         }
         articleService.addViewArticle(id);
         return Result.success();
+    }
+
+    @GetMapping("/comment-use/{id}")
+    public Result getById(@PathVariable Long id) {
+        return Result.success(articleService.getById(id));
+    }
+
+    @GetMapping("/comment-use/title/{title}")
+    public Result getByTitle(@PathVariable String title) {
+        return Result.success(articleService.findByArticleTitle(title));
+    }
+
+    @GetMapping("/comment-use/all/{title}")
+    public Result getAllByTitle(@PathVariable String title) {
+        return Result.success(articleService.listAllArticlesByTitle(title));
     }
 
 }

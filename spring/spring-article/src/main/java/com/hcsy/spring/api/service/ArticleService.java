@@ -33,4 +33,8 @@ public interface ArticleService extends IService<Article> {
 
     List<Article> listUnpublishedArticles();
 
+    Article findByArticleTitle(String articleTitle);
+
+    List<Article> listAllArticlesByTitle(String articleTitle);
+
 }

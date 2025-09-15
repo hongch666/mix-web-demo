@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
@@ -128,6 +129,16 @@ public class UserController {
         logger.info("用户" + userId + ":" + userName + " GET /users/{id}: " + "查询用户，username: %s", username);
         User user = userService.findByUsername(username);
         return Result.success(user);
+    }
+
+    @GetMapping("/find/all/{username}")
+    @Operation(summary = "查询用户", description = "根据用户名查询用户")
+    public Result getAllUserByUsername(@PathVariable String username) {
+        Long userId = UserContext.getUserId();
+        String userName = UserContext.getUsername();
+        logger.info("用户" + userId + ":" + userName + " GET /users/{id}: " + "查询用户，username: %s", username);
+        List<User> users = userService.listAllUserByUsername(username);
+        return Result.success(users);
     }
 
     @PutMapping

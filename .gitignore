@@ -298,6 +298,30 @@ spring/spring-category/.vscode/
 
 spring/spring-category/bin/
 
+### spring-comments
+
+# 忽略项目中的 Maven 构建输出目录
+spring/spring-comments/target/
+
+# 忽略项目中的 IntelliJ IDEA 配置文件
+spring/spring-comments/.idea/
+spring/spring-comments/.mvn/
+spring/spring-comments/*.iml
+
+# 忽略编译后的 class 文件
+spring/spring-comments/*.class
+
+# 忽略测试类
+spring/spring-comments/*Test.java
+
+# 忽略 test 目录
+spring/spring-comments/src/test/
+
+# VSCode
+spring/spring-comments/.vscode/
+
+spring/spring-comments/bin/
+
 ### gateway
 
 # 忽略项目中的 Maven 构建输出目录
