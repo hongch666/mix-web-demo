@@ -26,7 +26,7 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String catalog = conn.getCatalog(); // MySQL: 数据库名
-            ensureTable(meta, catalog, "user", CREATE_USER_SQL);
+            ensureTable(meta, catalog, "comments", CREATE_COMMENTS_SQL);
         } catch (Exception e) {
             logger.error("检查/创建表失败", e);
         }
@@ -37,20 +37,20 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (ResultSet rs = meta.getTables(catalog, null, tableName, new String[] { "TABLE" })) {
             if (!rs.next()) {
                 jdbc.execute(createSql);
-                logger.info("表 '{}' 不存在，已创建", tableName);
+                logger.info("表 '%s' 不存在，已创建", tableName);
             } else {
-                logger.debug("表 '{}' 已存在", tableName);
+                logger.debug("表 '%s' 已存在", tableName);
             }
         }
     }
 
-    private static final String CREATE_USER_SQL = "CREATE TABLE user (\n" +
-            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',\n" +
-            "    name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',\n" +
-            "    password VARCHAR(255) NOT NULL COMMENT '密码',\n" +
-            "    email VARCHAR(255) UNIQUE COMMENT '邮箱',\n" +
-            "    age INT COMMENT '年龄',\n" +
-            "    role VARCHAR(255) NOT NULL COMMENT '用户权限',\n" +
-            "    img VARCHAR(255) COMMENT '用户头像'\n" +
-            ") COMMENT='用户表'";
+    private static final String CREATE_COMMENTS_SQL = "CREATE TABLE comments (\n" +
+            "    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',\n" +
+            "    content VARCHAR(255) COMMENT '评论内容',\n" +
+            "    star DOUBLE COMMENT '星级评分，1~10',\n" +
+            "    user_id INT NOT NULL COMMENT '用户 ID',\n" +
+            "    article_id INT NOT NULL COMMENT '文章 ID',\n" +
+            "    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',\n" +
+            "    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'\n" +
+            ") COMMENT=''";
 }

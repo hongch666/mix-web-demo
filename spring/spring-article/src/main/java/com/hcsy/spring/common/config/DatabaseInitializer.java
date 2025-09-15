@@ -37,9 +37,9 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (ResultSet rs = meta.getTables(catalog, null, tableName, new String[] { "TABLE" })) {
             if (!rs.next()) {
                 jdbc.execute(createSql);
-                logger.info("表 '{}' 不存在，已创建", tableName);
+                logger.info("表 '%s' 不存在，已创建", tableName);
             } else {
-                logger.debug("表 '{}' 已存在", tableName);
+                logger.debug("表 '%s' 已存在", tableName);
             }
         }
     }

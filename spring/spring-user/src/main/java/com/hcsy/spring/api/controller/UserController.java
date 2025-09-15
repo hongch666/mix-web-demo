@@ -22,6 +22,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +101,7 @@ public class UserController {
     public Result deleteUsers(@PathVariable String ids) {
         Long userId = UserContext.getUserId();
         String userName = UserContext.getUsername();
-        java.util.List<Long> idList = java.util.Arrays.stream(ids.split(","))
+        List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(Long::valueOf)
