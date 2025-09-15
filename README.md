@@ -214,7 +214,21 @@ CREATE TABLE `chat_messages` (
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '聊天消息表';
 ```
 
-4. MongoDB 表创建
+- 创建文章评论表
+
+```sql
+CREATE TABLE comments (
+    id int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
+    content VARCHAR(255) COMMENT '评论内容',
+    star DOUBLE COMMENT '星级评分，1~10',
+    user_id int NOT NULL COMMENT '用户 ID',
+    article_id int NOT NULL COMMENT '文章 ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'
+) COMMENT '';
+```
+
+3. MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
 
@@ -470,6 +484,74 @@ npm run start:prod # production mode
         logic-delete-field: deleted # 逻辑删除字段
   ```
 
+- comments 模块
+
+  - `application.yaml`
+
+  ```yaml
+  server:
+  address: 0.0.0.0
+  port: 8084
+  tomcat:
+    threads:
+      max: 25
+    accept-count: 25
+    max-connections: 100
+  spring:
+    application:
+      name: spring-comments
+    data:
+      redis:
+        host: localhost
+        port: 6379
+        database: 0
+        lettuce:
+          pool:
+            max-active: 10
+            max-idle: 5
+            min-idle: 1
+        timeout: 3000
+    rabbitmq:
+      host: 127.0.0.1
+      port: 5672
+      username: hcsy
+      password: 123456
+      virtual-host: test
+  logging:
+    file:
+      path: "../../logs/spring"
+  jwt:
+    secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
+    expiration: 86400000 # 毫秒数（1 天）
+  ```
+
+  - `bootstrap.yml`
+
+  ```yaml
+  spring:
+    config:
+      import:
+        - "nacos:application.yml" # 将 DataId 明确设为 application.yml
+        - "optional:nacos:application-dev.yml?group=DEV_GROUP"
+    datasource:
+      url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      username: root
+      password: csc20040312
+      driver-class-name: com.mysql.cj.jdbc.Driver
+    cloud:
+      nacos:
+        config:
+          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+
+  mybatis-plus:
+    configuration:
+      log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
+    global-config:
+      db-config:
+        id-type: auto # 主键策略
+        logic-delete-field: deleted # 逻辑删除字段
+  ```
+
 - gateway 模块
 
   - `application.yaml`
@@ -496,7 +578,7 @@ npm run start:prod # production mode
           - id: exclude-list
             uri: no://op
             predicates:
-              - Path=/articles/list,/api_gin/syncer,/api_fastapi/task,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
+              - Path=/articles/list,/articles/comment-use/**,/articles,/api_gin/syncer,/api_fastapi/task,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/find/{username},/users/find/all/{username},/category/all,/category/sub/all
             filters:
               - SetStatus=204
 
@@ -511,10 +593,15 @@ npm run start:prod # production mode
             predicates:
               - Path=/users/**
 
-            - id: spring-article
-            uri: lb://spring-article
+          - id: spring-category
+            uri: lb://spring-category
             predicates:
               - Path=/category/**
+
+          - id: spring-comments
+            uri: lb://spring-comments
+            predicates:
+              - Path=/comments/**
 
           - id: gin-ws
             uri: ws://localhost:7071
