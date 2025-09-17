@@ -23,7 +23,7 @@ import java.util.Map;
 public class RedisCacheConfig {
 
         @Bean
-        public CacheManager cacheManager(RedisConnectionFactory factory) {
+        CacheManager cacheManager(RedisConnectionFactory factory) {
                 // 自定义 ObjectMapper，注册 JavaTimeModule 以支持 LocalDateTime 等日期时间类型
                 ObjectMapper objectMapper = new ObjectMapper();
                 objectMapper.registerModule(new JavaTimeModule());

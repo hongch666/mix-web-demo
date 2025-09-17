@@ -2,7 +2,7 @@ import oss2
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
-# 配置你的阿里云OSS信息
+# 配置阿里云OSS信息
 access_key_id: str = load_secret_config("oss")["access_key_id"]
 access_key_secret: str = load_secret_config("oss")["access_key_secret"]
 bucket_name: str = load_config("oss")["bucket_name"]
