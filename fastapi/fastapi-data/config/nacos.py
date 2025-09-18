@@ -2,6 +2,7 @@ import threading
 import time
 import nacos
 import socket
+import random
 from typing import Any, Dict
 
 from config import load_config
@@ -29,7 +30,6 @@ def register_instance(ip: str = IP, port: int = PORT) -> None:
 def get_service_instance(service_name: str) -> dict:
     instances: dict = client.list_naming_instance(service_name, group_name=GROUP_NAME)
     # 简单负载均衡：随机选一个
-    import random
     hosts: list = instances.get("hosts", [])
     if not hosts:
         raise Exception("No instance found")

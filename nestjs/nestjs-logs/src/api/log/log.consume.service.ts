@@ -1,12 +1,10 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from 'src/common/mq/mq.service';
 import { ArticleLogService } from './log.service';
 import { fileLogger } from 'src/common/utils/writeLog';
 
 @Injectable()
 export class LogConsumerService implements OnModuleInit {
-  private readonly logger = new Logger(LogConsumerService.name);
-
   constructor(
     private readonly rabbitMQService: RabbitMQService,
     private readonly articleLogService: ArticleLogService,
