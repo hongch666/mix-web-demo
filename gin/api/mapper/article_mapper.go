@@ -5,7 +5,9 @@ import (
 	"gin_proj/entity/po"
 )
 
-func SearchArticles() []po.Article {
+type ArticleMapper struct{}
+
+func (m *ArticleMapper) SearchArticles() []po.Article {
 	var articles []po.Article
 	if err := config.DB.Where("status = ?", 1).Find(&articles).Error; err != nil {
 		panic(err.Error())

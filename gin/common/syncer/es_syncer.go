@@ -12,6 +12,11 @@ import (
 )
 
 func SyncArticlesToES() {
+	// 注入mapper
+	articleMapper := mapper.Group.ArticleMapper
+	categorMapper := mapper.Group.CategoryMapper
+	userMapper := mapper.Group.UserMapper
+
 	ctx := context.Background()
 	// 判断索引是否存在
 	exists, err := config.ESClient.IndexExists("articles").Do(ctx)
@@ -52,7 +57,7 @@ func SyncArticlesToES() {
 	}
 
 	// 获取文章数据
-	articles := mapper.SearchArticles()
+	articles := articleMapper.SearchArticles()
 
 	// 批量获取 user_id
 	userIDs := make([]int, 0, len(articles))
@@ -61,7 +66,7 @@ func SyncArticlesToES() {
 	}
 
 	// 查询所有相关用户
-	users := mapper.SearchUserByIds(userIDs)
+	users := userMapper.SearchUserByIds(userIDs)
 	userMap := make(map[int]string)
 	for _, u := range users {
 		userMap[u.ID] = u.Name
@@ -74,14 +79,14 @@ func SyncArticlesToES() {
 	}
 
 	// 查询所有分类和子分类
-	subCategories := mapper.SearchSubCategoriesByIds(subCategoryIDs)
+	subCategories := categorMapper.SearchSubCategoriesByIds(subCategoryIDs)
 
 	subCategoryMap := make(map[int]string)
 	categoryMap := make(map[int]string)
 	for _, sc := range subCategories {
 		subCategoryMap[sc.ID] = sc.Name
 		category_id := sc.CategoryID
-		category := mapper.SearchCategoryById(category_id)
+		category := categorMapper.SearchCategoryById(category_id)
 		categoryMap[sc.ID] = category.Name
 	}
 

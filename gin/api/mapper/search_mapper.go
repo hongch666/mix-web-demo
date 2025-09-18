@@ -12,7 +12,9 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
+type SearchMapper struct{}
+
+func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
 	boolQuery := elastic.NewBoolQuery()
 
 	// 关键词多字段搜索

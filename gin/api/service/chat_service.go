@@ -10,8 +10,14 @@ import (
 	"time"
 )
 
+type ChatService struct{}
+
 // 发送消息（HTTP接口调用）
-func SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
+func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
+	// 注入mapper
+	chatMessageMapper := mapper.Group.ChatMessageMapper
+	chatHub := &ChatHub{}
+
 	// 1. 先保存到数据库
 	message := &po.ChatMessage{
 		SenderID:   req.SenderID,
@@ -20,10 +26,10 @@ func SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
 		CreatedAt:  time.Now(),
 	}
 
-	mapper.CreateChatMessage(message)
+	chatMessageMapper.CreateChatMessage(message)
 
 	// 2. 检查接收者是否在队列中，如果在就通过WebSocket发送
-	if IsUserInQueue(req.ReceiverID) {
+	if chatHub.IsUserInQueue(req.ReceiverID) {
 		wsMessage := &dto.WebSocketMessage{
 			Type:       "message",
 			SenderID:   req.SenderID,
@@ -34,7 +40,7 @@ func SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
 		}
 
 		messageBytes, _ := json.Marshal(wsMessage)
-		if !SendMessageToQueue(req.ReceiverID, messageBytes) {
+		if !chatHub.SendMessageToQueue(req.ReceiverID, messageBytes) {
 			// 发送失败，用户可能刚离线，但消息已保存
 			utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在线，消息已保存到数据库", req.ReceiverID))
 		}
@@ -51,7 +57,10 @@ func SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
 }
 
 // 获取聊天历史记录
-func GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetChatHistoryResponse {
+func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetChatHistoryResponse {
+	// 注入mapper
+	chatMessageMapper := mapper.Group.ChatMessageMapper
+
 	// 设置默认分页参数
 	if req.Page <= 0 {
 		req.Page = 1
@@ -61,7 +70,7 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetChatHistoryResponse 
 	}
 
 	offset := (req.Page - 1) * req.Size
-	messages, total := mapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
+	messages, total := chatMessageMapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
 
 	// 转换为DTO
 	messageItems := make([]dto.ChatMessageItem, len(messages))
@@ -84,8 +93,9 @@ func GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetChatHistoryResponse 
 }
 
 // 获取队列状态
-func GetQueueStatus() *dto.QueueStatusResponse {
-	users := GetAllUsersInQueue()
+func (s *ChatService) GetQueueStatus() *dto.QueueStatusResponse {
+	chatHub := &ChatHub{}
+	users := chatHub.GetAllUsersInQueue()
 	return &dto.QueueStatusResponse{
 		OnlineUsers: users,
 		Count:       len(users),
@@ -93,14 +103,15 @@ func GetQueueStatus() *dto.QueueStatusResponse {
 }
 
 // 手动加入队列（不建立WebSocket连接）
-func JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
+func (s *ChatService) JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
 	response := &dto.JoinQueueResponse{
 		UserID: req.UserID,
 	}
 	response.Status = "joined"
 
 	// 检查用户是否已经在队列中
-	if IsUserInQueue(req.UserID) {
+	chatHub := &ChatHub{}
+	if chatHub.IsUserInQueue(req.UserID) {
 		response.Status = "already_in_queue"
 	} else {
 		// 创建一个虚拟的客户端（没有WebSocket连接）
@@ -109,7 +120,7 @@ func JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
 			Conn:   nil, // 没有WebSocket连接
 			Send:   make(chan []byte, 256),
 		}
-		JoinQueue(req.UserID, client)
+		chatHub.JoinQueue(req.UserID, client)
 		response.Status = "joined"
 	}
 
@@ -117,13 +128,14 @@ func JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueueResponse {
 }
 
 // 手动离开队列
-func LeaveQueueManually(req *dto.LeaveQueueRequest) *dto.LeaveQueueResponse {
+func (s *ChatService) LeaveQueueManually(req *dto.LeaveQueueRequest) *dto.LeaveQueueResponse {
 	response := &dto.LeaveQueueResponse{
 		UserID: req.UserID,
 	}
 	// 检查用户是否在队列中
-	if IsUserInQueue(req.UserID) {
-		LeaveQueue(req.UserID)
+	chatHub := &ChatHub{}
+	if chatHub.IsUserInQueue(req.UserID) {
+		chatHub.LeaveQueue(req.UserID)
 		response.Status = "left"
 	} else {
 		response.Status = "not_in_queue"

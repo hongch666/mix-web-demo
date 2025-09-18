@@ -8,7 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SpringService(c *gin.Context) interface{} {
+type TestService struct{}
+
+func (s *TestService) SpringService(c *gin.Context) interface{} {
 	opts := client.RequestOptions{
 		Method: http.MethodGet,
 		/* PathParams: map[string]string{"orderId": "789"},
@@ -30,7 +32,7 @@ func SpringService(c *gin.Context) interface{} {
 	return result.Data
 }
 
-func NestjsService(c *gin.Context) interface{} {
+func (s *TestService) NestjsService(c *gin.Context) interface{} {
 	opts := client.RequestOptions{
 		Method: http.MethodGet,
 	}
@@ -42,7 +44,7 @@ func NestjsService(c *gin.Context) interface{} {
 	return result.Data
 }
 
-func FastapiService(c *gin.Context) interface{} {
+func (s *TestService) FastapiService(c *gin.Context) interface{} {
 	opts := client.RequestOptions{
 		Method: http.MethodGet,
 	}

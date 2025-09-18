@@ -19,6 +19,8 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type ChatController struct{}
+
 // SendMessage 发送消息接口
 // @Summary 发送聊天消息
 // @Description 发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户
@@ -28,7 +30,9 @@ var upgrader = websocket.Upgrader{
 // @Param request body dto.SendMessageRequest true "发送消息请求"
 // @Success 200 {object} dto.SendMessageResponse
 // @Router /user-chat/send [post]
-func SendMessage(c *gin.Context) {
+func (con *ChatController) SendMessage(c *gin.Context) {
+	// service注入
+	chatService := service.Group.ChatService
 	var req dto.SendMessageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
@@ -41,7 +45,7 @@ func SendMessage(c *gin.Context) {
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/send: " + "发送消息接口\nSendMessageRequest: " + fmt.Sprintf("%+v", req))
 
-	response := service.SendChatMessage(&req)
+	response := chatService.SendChatMessage(&req)
 
 	utils.RespondSuccess(c, response)
 }
@@ -55,7 +59,9 @@ func SendMessage(c *gin.Context) {
 // @Param request body dto.GetChatHistoryRequest true "获取聊天历史请求"
 // @Success 200 {object} dto.GetChatHistoryResponse
 // @Router /user-chat/history [post]
-func GetChatHistory(c *gin.Context) {
+func (con *ChatController) GetChatHistory(c *gin.Context) {
+	// service注入
+	chatService := service.Group.ChatService
 	var req dto.GetChatHistoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
@@ -68,7 +74,7 @@ func GetChatHistory(c *gin.Context) {
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/history: " + "获取聊天历史接口\nGetChatHistoryRequest: " + fmt.Sprintf("%+v", req))
 
-	response := service.GetChatHistory(&req)
+	response := chatService.GetChatHistory(&req)
 
 	utils.RespondSuccess(c, response)
 }
@@ -80,14 +86,16 @@ func GetChatHistory(c *gin.Context) {
 // @Produce json
 // @Success 200 {object} dto.QueueStatusResponse
 // @Router /user-chat/queue [get]
-func GetQueueStatus(c *gin.Context) {
+func (con *ChatController) GetQueueStatus(c *gin.Context) {
+	// service注入
+	chatService := service.Group.ChatService
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/queue: " + "获取队列状态接口")
 
-	response := service.GetQueueStatus()
+	response := chatService.GetQueueStatus()
 	utils.RespondSuccess(c, response)
 }
 
@@ -100,7 +108,9 @@ func GetQueueStatus(c *gin.Context) {
 // @Param request body dto.JoinQueueRequest true "加入队列请求"
 // @Success 200 {object} dto.JoinQueueResponse
 // @Router /user-chat/join [post]
-func JoinQueue(c *gin.Context) {
+func (con *ChatController) JoinQueue(c *gin.Context) {
+	// service注入
+	chatService := service.Group.ChatService
 	var req dto.JoinQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
@@ -113,7 +123,7 @@ func JoinQueue(c *gin.Context) {
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/join: " + "加入队列接口\nJoinQueueRequest: " + fmt.Sprintf("%+v", req))
 
-	response := service.JoinQueueManually(&req)
+	response := chatService.JoinQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
 
@@ -126,7 +136,9 @@ func JoinQueue(c *gin.Context) {
 // @Param request body dto.LeaveQueueRequest true "离开队列请求"
 // @Success 200 {object} dto.LeaveQueueResponse
 // @Router /user-chat/leave [post]
-func LeaveQueue(c *gin.Context) {
+func (con *ChatController) LeaveQueue(c *gin.Context) {
+	// service注入
+	chatService := service.Group.ChatService
 	var req dto.LeaveQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
@@ -139,7 +151,7 @@ func LeaveQueue(c *gin.Context) {
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /user-chat/leave: " + "离开队列接口\nLeaveQueueRequest: " + fmt.Sprintf("%+v", req))
 
-	response := service.LeaveQueueManually(&req)
+	response := chatService.LeaveQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
 
@@ -149,7 +161,9 @@ func LeaveQueue(c *gin.Context) {
 // @Tags 聊天
 // @Param userId query string true "用户ID"
 // @Router /ws/chat [get]
-func WebSocketHandler(c *gin.Context) {
+func (con *ChatController) WebSocketHandler(c *gin.Context) {
+	// service注入
+	chatHub := service.Group.ChatHub
 	userID := c.Query("userId")
 	if userID == "" {
 		// 尝试从Header获取（网关传递的用户信息）
@@ -174,7 +188,7 @@ func WebSocketHandler(c *gin.Context) {
 	}
 
 	// 检查用户是否已经在队列中
-	if existingClient, exists := service.GetUserFromQueue(userID); exists {
+	if existingClient, exists := chatHub.GetUserFromQueue(userID); exists {
 		// 用户已在队列中，更新其WebSocket连接
 		existingClient.Conn = conn
 		existingClient.Send = make(chan []byte, 256)
@@ -185,11 +199,11 @@ func WebSocketHandler(c *gin.Context) {
 			Conn:   conn,
 			Send:   make(chan []byte, 256),
 		}
-		service.JoinQueue(userID, client)
+		chatHub.JoinQueue(userID, client)
 	}
 
 	// 获取更新后的客户端
-	client, _ := service.GetUserFromQueue(userID)
+	client, _ := chatHub.GetUserFromQueue(userID)
 
 	// 启动读写协程
 	go client.WritePump()

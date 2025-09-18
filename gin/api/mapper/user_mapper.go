@@ -5,7 +5,9 @@ import (
 	"gin_proj/entity/po"
 )
 
-func SearchUserByIds(userIDs []int) []po.User {
+type UserMapper struct{}
+
+func (m *UserMapper) SearchUserByIds(userIDs []int) []po.User {
 	var users []po.User
 	if err := config.DB.Where("id IN (?)", userIDs).Find(&users).Error; err != nil {
 		panic(err.Error())

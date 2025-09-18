@@ -5,7 +5,9 @@ import (
 	"gin_proj/entity/po"
 )
 
-func SearchSubCategoriesByIds(subCategoryIDs []int) []po.SubCategory {
+type CategoryMapper struct{}
+
+func (m *CategoryMapper) SearchSubCategoriesByIds(subCategoryIDs []int) []po.SubCategory {
 	var subCategories []po.SubCategory
 	if err := config.DB.Where("id IN (?)", subCategoryIDs).Find(&subCategories).Error; err != nil {
 		panic(err.Error())
@@ -13,7 +15,7 @@ func SearchSubCategoriesByIds(subCategoryIDs []int) []po.SubCategory {
 	return subCategories
 }
 
-func SearchCategoryById(category_id int) po.Category {
+func (m *CategoryMapper) SearchCategoryById(category_id int) po.Category {
 	var category po.Category
 	if err := config.DB.Where("id = ?", category_id).First(&category).Error; err != nil {
 		panic(err.Error())

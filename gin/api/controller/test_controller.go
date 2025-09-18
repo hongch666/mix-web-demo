@@ -10,12 +10,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type TestController struct{}
+
 // @Summary Gin自己的测试
 // @Description 输出欢迎信息
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/gin [get]
-func TestController(c *gin.Context) {
+func (con *TestController) TestController(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
@@ -29,13 +31,15 @@ func TestController(c *gin.Context) {
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/spring [get]
-func SpringController(c *gin.Context) {
+func (con *TestController) SpringController(c *gin.Context) {
+	// service注入
+	testService := service.Group.TestService
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /api_gin/spring: " + "测试Spring服务")
-	data := service.SpringService(c)
+	data := testService.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -44,13 +48,15 @@ func SpringController(c *gin.Context) {
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/nestjs [get]
-func NestjsController(c *gin.Context) {
+func (con *TestController) NestjsController(c *gin.Context) {
+	// service注入
+	testService := service.Group.TestService
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /api_gin/nestjs: " + "测试NestJS服务")
-	data := service.NestjsService(c)
+	data := testService.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -59,13 +65,15 @@ func NestjsController(c *gin.Context) {
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/fastapi [get]
-func FastapiController(c *gin.Context) {
+func (con *TestController) FastapiController(c *gin.Context) {
+	// service注入
+	testService := service.Group.TestService
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
 	msg := fmt.Sprintf("用户%d:%s ", userID, username)
 	utils.FileLogger.Info(msg + "GET /api_gin/fastapi: " + "测试FastAPI服务")
-	data := service.FastapiService(c)
+	data := testService.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -74,7 +82,7 @@ func FastapiController(c *gin.Context) {
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/syncer [post]
-func SyncES(c *gin.Context) {
+func (con *TestController) SyncES(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)

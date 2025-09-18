@@ -5,7 +5,9 @@ import (
 	"gin_proj/entity/po"
 )
 
-func CreateChatMessage(message *po.ChatMessage) {
+type ChatMessageMapper struct{}
+
+func (m *ChatMessageMapper) CreateChatMessage(message *po.ChatMessage) {
 	// GORM Create 返回 *gorm.DB，需要检查返回值的 Error 字段
 	result := config.DB.Create(message)
 	if result.Error != nil {
@@ -13,7 +15,7 @@ func CreateChatMessage(message *po.ChatMessage) {
 	}
 }
 
-func GetChatHistory(userID, otherID string, offset, limit int) ([]*po.ChatMessage, int64) {
+func (m *ChatMessageMapper) GetChatHistory(userID, otherID string, offset, limit int) ([]*po.ChatMessage, int64) {
 	var messages []*po.ChatMessage
 	var total int64
 
