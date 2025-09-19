@@ -1,4 +1,4 @@
-package controller
+package search
 
 import (
 	"encoding/json"

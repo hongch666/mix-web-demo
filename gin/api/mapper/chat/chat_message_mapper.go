@@ -1,4 +1,4 @@
-package mapper
+package chat
 
 import (
 	"gin_proj/config"

@@ -1,8 +1,9 @@
-package controller
+package chat
 
 import (
 	"fmt"
 	"gin_proj/api/service"
+	"gin_proj/api/service/chat"
 	"gin_proj/common/ctxkey"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
@@ -194,7 +195,7 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 		existingClient.Send = make(chan []byte, 256)
 	} else {
 		// 创建新的客户端并加入队列
-		client := &service.Client{
+		client := &chat.Client{
 			UserID: userID,
 			Conn:   conn,
 			Send:   make(chan []byte, 256),

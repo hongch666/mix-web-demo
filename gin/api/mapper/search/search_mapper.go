@@ -1,4 +1,4 @@
-package mapper
+package search
 
 import (
 	"context"

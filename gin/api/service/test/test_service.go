@@ -1,4 +1,4 @@
-package service
+package test
 
 import (
 	"gin_proj/common/client"

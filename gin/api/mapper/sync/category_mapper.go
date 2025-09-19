@@ -1,4 +1,4 @@
-package mapper
+package sync
 
 import (
 	"gin_proj/config"
