@@ -14,7 +14,7 @@ import (
 func SyncArticlesToES() {
 	// 注入mapper
 	articleMapper := mapper.Group.ArticleMapper
-	categorMapper := mapper.Group.CategoryMapper
+	categoryMapper := mapper.Group.CategoryMapper
 	userMapper := mapper.Group.UserMapper
 
 	ctx := context.Background()
@@ -79,14 +79,14 @@ func SyncArticlesToES() {
 	}
 
 	// 查询所有分类和子分类
-	subCategories := categorMapper.SearchSubCategoriesByIds(subCategoryIDs)
+	subCategories := categoryMapper.SearchSubCategoriesByIds(subCategoryIDs)
 
 	subCategoryMap := make(map[int]string)
 	categoryMap := make(map[int]string)
 	for _, sc := range subCategories {
 		subCategoryMap[sc.ID] = sc.Name
 		category_id := sc.CategoryID
-		category := categorMapper.SearchCategoryById(category_id)
+		category := categoryMapper.SearchCategoryById(category_id)
 		categoryMap[sc.ID] = category.Name
 	}
 
