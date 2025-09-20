@@ -7,16 +7,16 @@
 package main
 
 import (
+	"chat/api/routes"
+	"chat/common/migrate"
+	"chat/config"
 	"fmt"
-	"gin_proj/api/routes"
-	"gin_proj/common/migrate"
-	"gin_proj/config"
 	"log"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "gin_proj/docs"
+	_ "chat/docs"
 )
 
 func main() {

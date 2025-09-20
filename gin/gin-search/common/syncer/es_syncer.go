@@ -3,16 +3,21 @@ package syncer
 import (
 	"context"
 	"fmt"
-	"gin_proj/api/mapper"
-	"gin_proj/common/utils"
-	"gin_proj/config"
-	"gin_proj/entity/po"
+	"search/api/mapper"
+	"search/common/utils"
+	"search/config"
+	"search/entity/po"
 
 	"github.com/gin-gonic/gin"
 	"github.com/olivere/elastic"
 )
 
 func SyncArticlesToES(c *gin.Context) {
+	// 注入mapper
+	articleMapper := mapper.Group.ArticleMapper
+	categoryMapper := mapper.Group.CategoryMapper
+	userMapper := mapper.Group.UserMapper
+
 	ctx := context.Background()
 	// 判断索引是否存在
 	exists, err := config.ESClient.IndexExists("articles").Do(ctx)
@@ -53,7 +58,7 @@ func SyncArticlesToES(c *gin.Context) {
 	}
 
 	// 获取文章数据
-	articles := mapper.SearchArticles(c)
+	articles := articleMapper.SearchArticles(c)
 
 	// 批量获取 user_id
 	userIDs := make([]int, 0, len(articles))
@@ -62,7 +67,7 @@ func SyncArticlesToES(c *gin.Context) {
 	}
 
 	// 查询所有相关用户
-	users := mapper.SearchUserByIds(c, userIDs)
+	users := userMapper.SearchUserByIds(c, userIDs)
 	userMap := make(map[int]string)
 	for _, u := range users {
 		userMap[u.ID] = u.Name
@@ -75,7 +80,7 @@ func SyncArticlesToES(c *gin.Context) {
 	}
 
 	// 查询所有子分类
-	subCategories := mapper.SearchSubCategoriesByIds(c, subCategoryIDs)
+	subCategories := categoryMapper.SearchSubCategoriesByIds(c, subCategoryIDs)
 	subCategoryMap := make(map[int]string)
 	categoryIDSet := make(map[int]struct{})
 	for _, sc := range subCategories {
@@ -90,7 +95,7 @@ func SyncArticlesToES(c *gin.Context) {
 	for id := range categoryIDSet {
 		categoryIDs = append(categoryIDs, id)
 	}
-	categories := mapper.SearchCategoriesByIds(c, categoryIDs)
+	categories := categoryMapper.SearchCategoriesByIds(c, categoryIDs)
 	categoryNameMap := make(map[int]string)
 	for _, cat := range categories {
 		categoryNameMap[cat.ID] = cat.Name

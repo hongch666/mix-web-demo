@@ -1,18 +1,20 @@
-package mapper
+package sync
 
 import (
 	"encoding/json"
 	"fmt"
-	"gin_proj/common/client"
-	"gin_proj/config"
-	"gin_proj/entity/po"
 	"net/http"
+	"search/common/client"
+	"search/config"
+	"search/entity/po"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SearchSubCategoriesByIds(c *gin.Context, subCategoryIDs []int) []po.SubCategory {
+type CategoryMapper struct{}
+
+func (m *CategoryMapper) SearchSubCategoriesByIds(c *gin.Context, subCategoryIDs []int) []po.SubCategory {
 	// 将[]int转换为逗号分隔的字符串
 	idStrings := make([]string, len(subCategoryIDs))
 	for i, id := range subCategoryIDs {
@@ -50,7 +52,7 @@ func SearchSubCategoriesByIds(c *gin.Context, subCategoryIDs []int) []po.SubCate
 	return subCategories
 }
 
-func SearchCategoriesByIds(c *gin.Context, categoryIDs []int) []po.Category {
+func (m *CategoryMapper) SearchCategoriesByIds(c *gin.Context, categoryIDs []int) []po.Category {
 	// 将[]int转换为逗号分隔的字符串
 	idStrings := make([]string, len(categoryIDs))
 	for i, id := range categoryIDs {

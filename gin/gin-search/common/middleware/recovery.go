@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"gin_proj/common/utils"
+	"search/common/utils"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,8 +1,8 @@
-package service
+package chat
 
 import (
+	"chat/entity/dto"
 	"encoding/json"
-	"gin_proj/entity/dto"
 	"log"
 	"sync"
 
@@ -29,8 +29,10 @@ type ChatQueue struct {
 	mu      sync.RWMutex
 }
 
+type ChatHub struct{}
+
 // 加入队列
-func JoinQueue(userID string, client *Client) {
+func (s *ChatHub) JoinQueue(userID string, client *Client) {
 	chatQueue.mu.Lock()
 	chatQueue.clients[userID] = client
 	chatQueue.mu.Unlock()
@@ -38,7 +40,7 @@ func JoinQueue(userID string, client *Client) {
 }
 
 // 离开队列
-func LeaveQueue(userID string) {
+func (s *ChatHub) LeaveQueue(userID string) {
 	chatQueue.mu.Lock()
 	if client, ok := chatQueue.clients[userID]; ok {
 		close(client.Send)
@@ -49,7 +51,7 @@ func LeaveQueue(userID string) {
 }
 
 // 检查用户是否在队列中
-func IsUserInQueue(userID string) bool {
+func (s *ChatHub) IsUserInQueue(userID string) bool {
 	chatQueue.mu.RLock()
 	_, exists := chatQueue.clients[userID]
 	chatQueue.mu.RUnlock()
@@ -57,7 +59,7 @@ func IsUserInQueue(userID string) bool {
 }
 
 // 获取队列中的用户
-func GetUserFromQueue(userID string) (*Client, bool) {
+func (s *ChatHub) GetUserFromQueue(userID string) (*Client, bool) {
 	chatQueue.mu.RLock()
 	client, exists := chatQueue.clients[userID]
 	chatQueue.mu.RUnlock()
@@ -65,8 +67,8 @@ func GetUserFromQueue(userID string) (*Client, bool) {
 }
 
 // 向队列中的用户发送消息
-func SendMessageToQueue(userID string, message []byte) bool {
-	if client, exists := GetUserFromQueue(userID); exists {
+func (s *ChatHub) SendMessageToQueue(userID string, message []byte) bool {
+	if client, exists := s.GetUserFromQueue(userID); exists {
 		// 如果客户端没有WebSocket连接（手动加入队列的用户），直接返回false
 		if client.Conn == nil {
 			log.Printf("用户 %s 在队列中但没有WebSocket连接，无法发送实时消息", userID)
@@ -78,7 +80,7 @@ func SendMessageToQueue(userID string, message []byte) bool {
 			return true
 		default:
 			// 发送失败，移除用户
-			LeaveQueue(userID)
+			s.LeaveQueue(userID)
 			return false
 		}
 	}
@@ -86,7 +88,7 @@ func SendMessageToQueue(userID string, message []byte) bool {
 }
 
 // 获取队列中所有用户
-func GetAllUsersInQueue() []string {
+func (s *ChatHub) GetAllUsersInQueue() []string {
 	chatQueue.mu.RLock()
 	defer chatQueue.mu.RUnlock()
 
@@ -99,7 +101,8 @@ func GetAllUsersInQueue() []string {
 
 func (c *Client) ReadPump() {
 	defer func() {
-		LeaveQueue(c.UserID)
+		chatHub := &ChatHub{}
+		chatHub.LeaveQueue(c.UserID)
 		c.Conn.Close()
 	}()
 

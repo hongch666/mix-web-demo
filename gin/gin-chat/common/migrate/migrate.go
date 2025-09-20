@@ -3,9 +3,9 @@ package migrate
 import (
 	"fmt"
 
-	"gin_proj/common/utils"
-	"gin_proj/config"
-	"gin_proj/entity/po"
+	"chat/common/utils"
+	"chat/config"
+	"chat/entity/po"
 )
 
 // InitMigrate 检查并按需创建表（仅在表不存在时执行 CREATE TABLE DDL）

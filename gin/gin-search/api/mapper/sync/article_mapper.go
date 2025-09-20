@@ -1,16 +1,18 @@
-package mapper
+package sync
 
 import (
 	"encoding/json"
-	"gin_proj/common/client"
-	"gin_proj/config"
-	"gin_proj/entity/po"
 	"net/http"
+	"search/common/client"
+	"search/config"
+	"search/entity/po"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SearchArticles(c *gin.Context) []po.Article {
+type ArticleMapper struct{}
+
+func (m *ArticleMapper) SearchArticles(c *gin.Context) []po.Article {
 	// 调用Spring部分接口获取文章数据
 	opts := client.RequestOptions{
 		Method: http.MethodGet,

@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"chat/config"
 	"fmt"
-	"gin_proj/config"
 	"log"
 	"os"
 	"path/filepath"

@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"chat/common/ctxkey"
 	"context"
-	"gin_proj/common/ctxkey"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

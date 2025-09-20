@@ -1,18 +1,20 @@
-package mapper
+package search
 
 import (
 	"context"
 	"encoding/json"
-	"gin_proj/config"
-	"gin_proj/entity/dto"
-	"gin_proj/entity/po"
+	"search/config"
+	"search/entity/dto"
+	"search/entity/po"
 	"strings"
 	"time"
 
 	"github.com/olivere/elastic/v7"
 )
 
-func SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
+type SearchMapper struct{}
+
+func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
 	boolQuery := elastic.NewBoolQuery()
 
 	// 关键词多字段搜索

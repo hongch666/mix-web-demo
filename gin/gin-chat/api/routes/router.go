@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"gin_proj/api/controller"
-	"gin_proj/common/middleware"
+	"chat/api/controller"
+	"chat/common/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,21 +14,22 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.InjectUserContext())
 	r.Use(middleware.RecoveryMiddleware())
 
+	chatController := controller.Group.ChatController
 	// 聊天相关路由
 	chatGroup := r.Group("/user-chat")
 	{
 		// 发送消息
-		chatGroup.POST("/send", controller.SendMessage)
+		chatGroup.POST("/send", chatController.SendMessage)
 		// 获取聊天历史
-		chatGroup.POST("/history", controller.GetChatHistory)
+		chatGroup.POST("/history", chatController.GetChatHistory)
 		// 获取队列状态
-		chatGroup.GET("/queue", controller.GetQueueStatus)
+		chatGroup.GET("/queue", chatController.GetQueueStatus)
 		// 手动加入队列
-		chatGroup.POST("/join", controller.JoinQueue)
+		chatGroup.POST("/join", chatController.JoinQueue)
 		// 手动离开队列
-		chatGroup.POST("/leave", controller.LeaveQueue)
+		chatGroup.POST("/leave", chatController.LeaveQueue)
 	}
 	// WebSocket路由
-	r.GET("/ws/chat", controller.WebSocketHandler)
+	r.GET("/ws/chat", chatController.WebSocketHandler)
 	return r
 }

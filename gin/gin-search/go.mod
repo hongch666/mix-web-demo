@@ -1,4 +1,4 @@
-module gin_proj
+module search
 
 go 1.23.5
 

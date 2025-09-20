@@ -2,8 +2,8 @@ package task
 
 import (
 	"fmt"
-	"gin_proj/common/syncer"
-	"gin_proj/common/utils"
+	"search/common/syncer"
+	"search/common/utils"
 
 	"github.com/robfig/cron/v3"
 )

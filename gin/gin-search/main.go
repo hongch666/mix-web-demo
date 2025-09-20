@@ -8,15 +8,15 @@ package main
 
 import (
 	"fmt"
-	"gin_proj/api/routes"
-	"gin_proj/common/task"
-	"gin_proj/config"
 	"log"
+	"search/api/routes"
+	"search/common/task"
+	"search/config"
 
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	_ "gin_proj/docs"
+	_ "search/docs"
 )
 
 func main() {

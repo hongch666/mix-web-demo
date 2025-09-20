@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"gin_proj/api/controller"
-	"gin_proj/common/middleware"
+	"search/api/controller"
+	"search/common/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,15 +14,19 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.InjectUserContext())
 	r.Use(middleware.RecoveryMiddleware())
 
+	// controller 注入
+	searchController := controller.Group.SearchController
+	testController := controller.Group.TestController
+
 	testGroup := r.Group("/api_gin")
 	{
 		//测试ES同步MySQL
-		testGroup.POST("/syncer", controller.SyncES)
+		testGroup.POST("/syncer", testController.SyncES)
 	}
 	searchGroup := r.Group("/search")
 	{
 		//搜索文章
-		searchGroup.GET("/", controller.SearchArticlesController)
+		searchGroup.GET("/", searchController.SearchArticlesController)
 	}
 	return r
 }

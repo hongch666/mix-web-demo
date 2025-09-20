@@ -1,20 +1,22 @@
-package controller
+package test
 
 import (
 	"fmt"
-	"gin_proj/common/ctxkey"
-	"gin_proj/common/syncer"
-	"gin_proj/common/utils"
+	"search/common/ctxkey"
+	"search/common/syncer"
+	"search/common/utils"
 
 	"github.com/gin-gonic/gin"
 )
+
+type TestController struct{}
 
 // @Summary 调用同步ES的测试
 // @Description 查看是否同步成功
 // @Tags 测试
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/syncer [post]
-func SyncES(c *gin.Context) {
+func (con *TestController) SyncES(c *gin.Context) {
 	ctx := c.Request.Context()
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	username, _ := ctx.Value(ctxkey.UsernameKey).(string)

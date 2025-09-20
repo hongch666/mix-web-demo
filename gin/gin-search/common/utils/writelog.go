@@ -2,10 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"gin_proj/config"
 	"log"
 	"os"
 	"path/filepath"
+	"search/config"
 	"time"
 )
 

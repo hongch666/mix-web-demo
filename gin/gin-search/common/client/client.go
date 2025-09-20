@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gin_proj/common/ctxkey"
 	"io"
 	"io/ioutil"
+	"search/common/ctxkey"
 	"strings"
 
 	"net/http"

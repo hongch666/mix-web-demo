@@ -1,18 +1,20 @@
-package mapper
+package sync
 
 import (
 	"encoding/json"
 	"fmt"
-	"gin_proj/common/client"
-	"gin_proj/config"
-	"gin_proj/entity/po"
 	"net/http"
+	"search/common/client"
+	"search/config"
+	"search/entity/po"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-func SearchUserByIds(c *gin.Context, userIDs []int) []po.User {
+type UserMapper struct{}
+
+func (m *UserMapper) SearchUserByIds(c *gin.Context, userIDs []int) []po.User {
 	// 将[]int转换为逗号分隔的字符串
 	idStrings := make([]string, len(userIDs))
 	for i, id := range userIDs {
