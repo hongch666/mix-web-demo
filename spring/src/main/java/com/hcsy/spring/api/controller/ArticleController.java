@@ -13,7 +13,7 @@ import com.hcsy.spring.api.mapper.CategoryMapper;
 import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.utils.UserContext;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -40,17 +40,14 @@ import org.springframework.web.bind.annotation.*;
 public class ArticleController {
 
     private final ArticleService articleService;
-    private final SimpleLogger logger;
     private final UserService userService;
     private final CategoryMapper categoryMapper;
     private final SubCategoryMapper subCategoryMapper;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
+    @ApiLog("创建文章")
     public Result createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " POST /articles: " + "创建文章\nArticleCreateDTO: %s", dto);
         Article article = BeanUtil.copyProperties(dto, Article.class);
         // 获取用户id
         User user = userService.findByUsername(dto.getUsername());
@@ -65,13 +62,10 @@ public class ArticleController {
 
     @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
+    @ApiLog("获取已发布文章列表")
     public Result getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /articles/list: " + "获取已发布文章列表\npage: %s, size: %s", page,
-                size);
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
 
@@ -83,14 +77,11 @@ public class ArticleController {
 
     @GetMapping("user/{id}")
     @Operation(summary = "获取用户所有文章", description = "返回用户所有文章")
+    @ApiLog("获取用户所有文章")
     public Result getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @PathVariable Integer id) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /articles/user/{id}: "
-                + "获取用户所有文章\npage: %s, size: %s, userId: %s", page, size, id);
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listArticlesById(articlePage, id);
 
@@ -104,6 +95,7 @@ public class ArticleController {
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
 
             // 查询作者用户名
+            Long userId = UserContext.getUserId();
             User user = userService.getById(userId);
             vo.setUsername(user != null ? user.getName() : "");
             // 查询子分类信息
@@ -123,10 +115,8 @@ public class ArticleController {
 
     @GetMapping("/{id}")
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
+    @ApiLog("获取文章详情")
     public Result getArticleById(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /articles/{id}: " + "获取文章详情\nID: %s", id);
         Article article = articleService.getById(id);
         if (article == null) {
             return Result.error("文章不存在");
@@ -142,11 +132,8 @@ public class ArticleController {
 
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
+    @ApiLog("更新文章")
     public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " PUT /articles: " + "更新文章\nArticleUpdateDTO: %s", dto);
-
         // 获取用户id
         User userFromUsername = userService.findByUsername(dto.getUsername());
         if (userFromUsername == null) {
@@ -156,6 +143,7 @@ public class ArticleController {
         Article article = BeanUtil.copyProperties(dto, Article.class);
         article.setUserId(userFromUsername.getId());
         Article dbArticle = articleService.getById(dto.getId());
+        Long userId = UserContext.getUserId();
         User user = userService.getById(userId);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
@@ -169,10 +157,9 @@ public class ArticleController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
+    @ApiLog("删除文章")
     public Result deleteArticle(@PathVariable Long id) {
         Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " DELETE /articles/{id}: " + "删除文章\nID: %s", id);
         Article dbArticle = articleService.getById(id);
         User user = userService.getById(userId);
         if (dbArticle == null) {
@@ -187,15 +174,14 @@ public class ArticleController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
+    @ApiLog("批量删除文章")
     public Result deleteArticles(@PathVariable String ids) {
         Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(Long::valueOf)
                 .toList();
-        logger.info("用户" + userId + ":" + userName + " DELETE /articles/batch/{ids}: " + "批量删除文章，IDS: %s", idList);
 
         User user = userService.getById(userId);
         for (Long id : idList) {
@@ -215,20 +201,16 @@ public class ArticleController {
 
     @PutMapping("/publish/{id}")
     @Operation(summary = "发布文章", description = "将文章状态修改为发布")
+    @ApiLog("发布文章")
     public Result publishArticle(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " PUT /articles/publish/{id}: " + "发布文章\nID: %s", id);
         articleService.publishArticle(id);
         return Result.success();
     }
 
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
+    @ApiLog("增加文章阅读量")
     public Result addViewArticle(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " PUT /articles/view/{id}: " + "增加文章阅读量\nID: %s", id);
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");

@@ -21,9 +21,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
-import com.hcsy.spring.common.utils.SimpleLogger;
-import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
@@ -47,16 +46,12 @@ public class CommentsController {
     private final CommentsService commentsService;
     private final ArticleService articleService;
     private final UserService userService;
-    private final SimpleLogger logger;
 
     // 新增评论
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
+    @ApiLog("新增评论")
     public Result createComment(@Valid @RequestBody CommentCreateDTO commentCreateDTO) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " POST /comments: " + "新增评论\nCommentCreateDTO: %s",
-                commentCreateDTO);
         Comments comment = BeanUtil.toBean(commentCreateDTO, Comments.class);
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentCreateDTO.getArticleTitle());
@@ -79,11 +74,8 @@ public class CommentsController {
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
     @RequirePermission(roles = { "admin" }, allowSelf = true, targetUserIdParam = "commentUpdateDTO")
+    @ApiLog("修改评论")
     public Result updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " PUT /comments: " + "修改评论\nCommentUpdateDTO: %s",
-                commentUpdateDTO);
         Comments comment = BeanUtil.toBean(commentUpdateDTO, Comments.class);
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentUpdateDTO.getArticleTitle());
@@ -105,10 +97,8 @@ public class CommentsController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除评论", description = "根据id删除评论")
     @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @ApiLog("删除评论")
     public Result deleteComment(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " DELETE /comments/{id}: " + "删除评论，ID: %s", id);
         commentsService.removeById(id);
         return Result.success();
     }
@@ -116,25 +106,21 @@ public class CommentsController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @ApiLog("批量删除评论")
     public Result deleteComments(@PathVariable String ids) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(Long::valueOf)
                 .toList();
-        logger.info("用户" + userId + ":" + userName + " DELETE /comments/batch/{ids}: " + "批量删除评论，IDS: %s", idList);
         commentsService.removeByIds(idList);
         return Result.success();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "根据id查询评论", description = "根据id查询评论")
+    @ApiLog("根据id查询评论")
     public Result getCommentsById(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /comments/{id}: " + "查询评论，ID: %s", id);
         Comments comments = commentsService.getById(id);
         // 修改返回结果，包含用户名和文章标题
         CommentsVO commentsVO = BeanUtil.copyProperties(comments, CommentsVO.class);
@@ -149,10 +135,8 @@ public class CommentsController {
 
     @GetMapping()
     @Operation(summary = "获取评论信息", description = "分页获取评论信息列表，并支持用户名和文章标题模糊查询")
+    @ApiLog("获取评论信息")
     public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /comments: " + "获取评论信息\nCommentsQueryDTO: %s", queryDTO);
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listCommentsWithFilter(commentsPage, queryDTO);
         Map<String, Object> data = new HashMap<>();
@@ -175,14 +159,11 @@ public class CommentsController {
     // 根据用户id分页获取评论
     @GetMapping("/user/{id}")
     @Operation(summary = "根据用户id分页获取评论", description = "根据用户id分页获取评论")
+    @ApiLog("根据用户id分页获取评论")
     public Result listCommentsByUserId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(defaultValue = "1", required = false) int page) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /comments/user/{id}: "
-                + "根据用户id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, size, page);
         Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByUserId(commentsPage, id);
         Map<String, Object> data = new HashMap<>();
@@ -205,15 +186,12 @@ public class CommentsController {
     // 根据文章id分页获取评论
     @GetMapping("/article/{id}")
     @Operation(summary = "根据文章id分页获取评论", description = "根据文章id分页获取评论")
+    @ApiLog("根据文章id分页获取评论")
     public Result listCommentsByArticleId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "create_time", required = false) String sortWay,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(defaultValue = "1", required = false) int page) {
-        Long userId = UserContext.getUserId();
-        String userName = UserContext.getUsername();
-        logger.info("用户" + userId + ":" + userName + " GET /comments/article/{id}: "
-                + "根据文章id分页获取评论\nID: %s, PageSize: %d, PageNum: %d", id, size, page);
         // 获取并校验排序方式参数
         if (!sortWay.equals("create_time") && !sortWay.equals("star")) {
             return Result.error("不支持的排序方式: " + sortWay);
