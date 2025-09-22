@@ -2,9 +2,7 @@ package search
 
 import (
 	"encoding/json"
-	"fmt"
 	"gin_proj/api/service"
-	"gin_proj/common/ctxkey"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
 
@@ -41,10 +39,7 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 		panic("参数序列化错误：" + err.Error())
 	}
 	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	utils.FileLogger.Info(msg + "GET /search: " + "搜索文章\nsearchDTO: " + string(dtoString))
+	utils.ApiLog(ctx, "GET", "/search", "搜索文章", "searchDTO", string(dtoString))
 	data := searchService.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
 }
