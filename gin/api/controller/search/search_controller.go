@@ -1,7 +1,6 @@
 package search
 
 import (
-	"encoding/json"
 	"gin_proj/api/service"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
@@ -34,12 +33,7 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
 		panic("参数绑定错误：" + err.Error())
 	}
-	dtoString, err := json.Marshal(searchDTO)
-	if err != nil {
-		panic("参数序列化错误：" + err.Error())
-	}
 	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/search", "搜索文章", "searchDTO", string(dtoString))
 	data := searchService.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
 }

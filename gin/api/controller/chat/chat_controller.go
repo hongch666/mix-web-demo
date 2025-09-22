@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"fmt"
 	"gin_proj/api/service"
 	"gin_proj/api/service/chat"
 	"gin_proj/common/utils"
@@ -39,9 +38,6 @@ func (con *ChatController) SendMessage(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "POST", "/user-chat/send", "发送消息接口", "SendMessageRequest", fmt.Sprintf("%+v", req))
-
 	response := chatService.SendChatMessage(&req)
 
 	utils.RespondSuccess(c, response)
@@ -65,9 +61,6 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "POST", "/user-chat/history", "获取聊天历史接口", "GetChatHistoryRequest", fmt.Sprintf("%+v", req))
-
 	response := chatService.GetChatHistory(&req)
 
 	utils.RespondSuccess(c, response)
@@ -83,8 +76,6 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 func (con *ChatController) GetQueueStatus(c *gin.Context) {
 	// service注入
 	chatService := service.Group.ChatService
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/user-chat/queue", "获取队列状态接口")
 
 	response := chatService.GetQueueStatus()
 	utils.RespondSuccess(c, response)
@@ -108,9 +99,6 @@ func (con *ChatController) JoinQueue(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "POST", "/user-chat/join", "加入队列接口", "JoinQueueRequest", fmt.Sprintf("%+v", req))
-
 	response := chatService.JoinQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
@@ -133,9 +121,6 @@ func (con *ChatController) LeaveQueue(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "POST", "/user-chat/leave", "离开队列接口", "LeaveQueueRequest", fmt.Sprintf("%+v", req))
-
 	response := chatService.LeaveQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
@@ -154,9 +139,6 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 		// 尝试从Header获取（网关传递的用户信息）
 		userID = c.GetHeader("X-User-Id")
 	}
-
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/ws/chat", "WebSocket连接接口", "UserID", userID)
 
 	if userID == "" {
 		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")

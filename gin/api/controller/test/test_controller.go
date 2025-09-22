@@ -16,8 +16,6 @@ type TestController struct{}
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/gin [get]
 func (con *TestController) TestController(c *gin.Context) {
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/api_gin/gin", "测试Gin服务")
 	utils.RespondSuccess(c, "Hello,I am Gin!")
 }
 
@@ -29,8 +27,6 @@ func (con *TestController) TestController(c *gin.Context) {
 func (con *TestController) SpringController(c *gin.Context) {
 	// service注入
 	testService := service.Group.TestService
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/api_gin/spring", "测试Spring服务")
 	data := testService.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -43,8 +39,6 @@ func (con *TestController) SpringController(c *gin.Context) {
 func (con *TestController) NestjsController(c *gin.Context) {
 	// service注入
 	testService := service.Group.TestService
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/api_gin/nestjs", "测试NestJS服务")
 	data := testService.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -57,8 +51,6 @@ func (con *TestController) NestjsController(c *gin.Context) {
 func (con *TestController) FastapiController(c *gin.Context) {
 	// service注入
 	testService := service.Group.TestService
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "GET", "/api_gin/fastapi", "测试FastAPI服务")
 	data := testService.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
@@ -69,8 +61,6 @@ func (con *TestController) FastapiController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/syncer [post]
 func (con *TestController) SyncES(c *gin.Context) {
-	ctx := c.Request.Context()
-	utils.ApiLog(ctx, "POST", "/api_gin/syncer", "测试同步ES")
 	syncer.SyncArticlesToES()
 	utils.RespondSuccess(c, nil)
 }
