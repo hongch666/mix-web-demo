@@ -1,13 +1,7 @@
-"""
-API 日志装饰器模块
-提供自动记录 API 请求日志的装饰器功能
-"""
-
 import functools
 import inspect
 import json
-from typing import Any, Callable, Dict, List, Optional, Union
-from fastapi import Request
+from typing import Any, Callable, List, Optional, Union
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
 
