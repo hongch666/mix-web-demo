@@ -4,16 +4,17 @@ import json
 import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlmodel import Session
 
 from common.utils import success,fileLogger
+from common.decorators import log
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData
 from api.service import CozeService, get_coze_service
-from common.middleware import get_current_user_id, get_current_username
+from common.middleware import get_current_user_id
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 
 @router.post("/send", response_model=ChatResponse)
+@log("普通聊天")
 async def send_message(
     request: ChatRequest,
     cozeService: CozeService = Depends(get_coze_service)
@@ -21,8 +22,6 @@ async def send_message(
     """发送聊天消息"""
     try:
         user_id: str = get_current_user_id() or ""
-        username: str = get_current_username() or ""
-        fileLogger.info("用户" + user_id + ":" + username + " POST /chat/send: 普通聊天\nChatRequest: " + request.json())
         # 使用实际用户ID替代请求中的user_id
         actual_user_id: str = user_id or "1"
         # 普通响应
@@ -58,6 +57,7 @@ async def send_message(
         raise HTTPException(status_code=500, detail=f"聊天服务异常: {str(e)}")
 
 @router.post("/stream", response_model=ChatResponse)
+@log("流式聊天")
 async def stream_message(
     request: ChatRequest,
     cozeService: CozeService = Depends(get_coze_service)
@@ -65,8 +65,6 @@ async def stream_message(
     """流式发送聊天消息"""
     try:
         user_id: str = get_current_user_id() or ""
-        username: str = get_current_username() or ""
-        fileLogger.info("用户" + user_id + ":" + username + " POST /chat/stream: 流式聊天\nChatRequest: " + request.json())
         actual_user_id: str = user_id or "1"
         conversation_id: str = request.conversation_id or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
         chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
