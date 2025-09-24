@@ -12,6 +12,7 @@ import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { fileLogger } from 'src/common/utils/writeLog';
+import { ApiLog } from 'src/common/decorators/api-log.decorator';
 
 @Controller('logs')
 @ApiTags('日志模块')
@@ -23,18 +24,8 @@ export class ArticleLogController {
 
   @Post()
   @ApiOperation({ summary: '新增日志', description: '通过请求体创建日志' })
+  @ApiLog('新增日志')
   async create(@Body() dto: CreateArticleLogDto) {
-    const userId = this.cls.get('userId');
-    const username = this.cls.get('username');
-    fileLogger.info(
-      '用户' +
-        userId +
-        ':' +
-        username +
-        ' POST /logs: ' +
-        '新增日志\nCreateArticleLogDto: ' +
-        JSON.stringify(dto),
-    );
     await this.logService.create(dto);
     return null;
   }
@@ -44,35 +35,15 @@ export class ArticleLogController {
     summary: '查询日志',
     description: '可根据用户ID、文章ID、操作类型查询，支持分页',
   })
+  @ApiLog('查询日志')
   async findByFilter(@Query() query: QueryArticleLogDto) {
-    const userId = this.cls.get('userId');
-    const username = this.cls.get('username');
-    fileLogger.info(
-      '用户' +
-        userId +
-        ':' +
-        username +
-        ' GET /logs/list: ' +
-        '查询日志\nQueryArticleLogDto: ' +
-        JSON.stringify(query),
-    );
     return await this.logService.findByFilter(query);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除日志', description: '通过日志 ID 删除日志' })
+  @ApiLog('删除日志')
   async remove(@Param('id') id: string) {
-    const userId = this.cls.get('userId');
-    const username = this.cls.get('username');
-    fileLogger.info(
-      '用户' +
-        userId +
-        ':' +
-        username +
-        ' DELETE /logs/:id: ' +
-        '删除日志\nID: ' +
-        id,
-    );
     await this.logService.removeById(id);
     return null;
   }
@@ -82,22 +53,12 @@ export class ArticleLogController {
     summary: '批量删除日志',
     description: '通过日志ID路径参数批量删除，多个ID用英文逗号分隔',
   })
+  @ApiLog('批量删除日志')
   async removeByIds(@Param('ids') ids: string) {
-    const userId = this.cls.get('userId');
-    const username = this.cls.get('username');
     const idArr = ids
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean);
-    fileLogger.info(
-      '用户' +
-        userId +
-        ':' +
-        username +
-        ' DELETE /logs/batch/:ids: ' +
-        '批量删除日志\nIDS: ' +
-        JSON.stringify(idArr),
-    );
     await this.logService.removeByIds(idArr);
     return null;
   }

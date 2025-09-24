@@ -6,6 +6,8 @@ import { ClsMiddleware } from './common/middleware/cls.middleware';
 import { ApiModule } from './api/api.module';
 import { CommonModule } from './common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
 
 @Module({
   imports: [
@@ -22,7 +24,12 @@ import { ScheduleModule } from '@nestjs/schedule';
     ApiModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ApiLogInterceptor,
+    },
+  ],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {

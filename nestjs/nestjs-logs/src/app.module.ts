@@ -7,6 +7,8 @@ import { CommonModule } from './common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import yamlConfig from './common/config/yaml-config.service';
 import { ClsMiddleware } from './common/middleware/cls.middleware';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
 
 @Module({
   imports: [
@@ -31,7 +33,12 @@ import { ClsMiddleware } from './common/middleware/cls.middleware';
     ApiModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ApiLogInterceptor,
+    },
+  ],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
