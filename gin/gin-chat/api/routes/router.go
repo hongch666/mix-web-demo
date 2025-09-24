@@ -19,17 +19,17 @@ func SetupRouter() *gin.Engine {
 	chatGroup := r.Group("/user-chat")
 	{
 		// 发送消息
-		chatGroup.POST("/send", chatController.SendMessage)
+		chatGroup.POST("/send", middleware.ApiLogMiddleware("发送消息"), chatController.SendMessage)
 		// 获取聊天历史
-		chatGroup.POST("/history", chatController.GetChatHistory)
+		chatGroup.POST("/history", middleware.ApiLogMiddleware("获取聊天历史"), chatController.GetChatHistory)
 		// 获取队列状态
-		chatGroup.GET("/queue", chatController.GetQueueStatus)
+		chatGroup.GET("/queue", middleware.ApiLogMiddleware("获取队列状态"), chatController.GetQueueStatus)
 		// 手动加入队列
-		chatGroup.POST("/join", chatController.JoinQueue)
+		chatGroup.POST("/join", middleware.ApiLogMiddleware("加入队列"), chatController.JoinQueue)
 		// 手动离开队列
-		chatGroup.POST("/leave", chatController.LeaveQueue)
+		chatGroup.POST("/leave", middleware.ApiLogMiddleware("离开队列"), chatController.LeaveQueue)
 	}
 	// WebSocket路由
-	r.GET("/ws/chat", chatController.WebSocketHandler)
+	r.GET("/ws/chat", middleware.ApiLogMiddleware("WebSocket连接"), chatController.WebSocketHandler)
 	return r
 }

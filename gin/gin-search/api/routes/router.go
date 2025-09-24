@@ -21,12 +21,12 @@ func SetupRouter() *gin.Engine {
 	testGroup := r.Group("/api_gin")
 	{
 		//测试ES同步MySQL
-		testGroup.POST("/syncer", testController.SyncES)
+		testGroup.POST("/syncer", middleware.ApiLogMiddleware("测试同步ES"), testController.SyncES)
 	}
 	searchGroup := r.Group("/search")
 	{
 		//搜索文章
-		searchGroup.GET("/", searchController.SearchArticlesController)
+		searchGroup.GET("/", middleware.ApiLogMiddleware("搜索文章"), searchController.SearchArticlesController)
 	}
 	return r
 }

@@ -3,10 +3,8 @@ package chat
 import (
 	"chat/api/service"
 	"chat/api/service/chat"
-	"chat/common/ctxkey"
 	"chat/common/utils"
 	"chat/entity/dto"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -40,12 +38,6 @@ func (con *ChatController) SendMessage(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	utils.FileLogger.Info(msg + "GET /user-chat/send: " + "发送消息接口\nSendMessageRequest: " + fmt.Sprintf("%+v", req))
-
 	response := chatService.SendChatMessage(&req)
 
 	utils.RespondSuccess(c, response)
@@ -69,12 +61,6 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	utils.FileLogger.Info(msg + "GET /user-chat/history: " + "获取聊天历史接口\nGetChatHistoryRequest: " + fmt.Sprintf("%+v", req))
-
 	response := chatService.GetChatHistory(&req)
 
 	utils.RespondSuccess(c, response)
@@ -90,12 +76,6 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 func (con *ChatController) GetQueueStatus(c *gin.Context) {
 	// service注入
 	chatService := service.Group.ChatService
-	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	utils.FileLogger.Info(msg + "GET /user-chat/queue: " + "获取队列状态接口")
-
 	response := chatService.GetQueueStatus()
 	utils.RespondSuccess(c, response)
 }
@@ -117,12 +97,6 @@ func (con *ChatController) JoinQueue(c *gin.Context) {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
-
-	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	utils.FileLogger.Info(msg + "GET /user-chat/join: " + "加入队列接口\nJoinQueueRequest: " + fmt.Sprintf("%+v", req))
 
 	response := chatService.JoinQueueManually(&req)
 	utils.RespondSuccess(c, response)
@@ -146,12 +120,6 @@ func (con *ChatController) LeaveQueue(c *gin.Context) {
 		return
 	}
 
-	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userID, username)
-	utils.FileLogger.Info(msg + "GET /user-chat/leave: " + "离开队列接口\nLeaveQueueRequest: " + fmt.Sprintf("%+v", req))
-
 	response := chatService.LeaveQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
@@ -170,12 +138,6 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 		// 尝试从Header获取（网关传递的用户信息）
 		userID = c.GetHeader("X-User-Id")
 	}
-
-	ctx := c.Request.Context()
-	userId, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
-	msg := fmt.Sprintf("用户%d:%s ", userId, username)
-	utils.FileLogger.Info(msg + "GET /ws/chat: " + "WebSocket连接接口\nUserID: " + userID)
 
 	if userID == "" {
 		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")
