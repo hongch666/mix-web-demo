@@ -6,7 +6,6 @@ import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -26,11 +25,10 @@ import java.util.*;
  */
 @Aspect
 @Component("apiMsgLogAspect")
-@Slf4j
 @RequiredArgsConstructor
 public class ApiLogAspect {
 
-    private final SimpleLogger simpleLogger;
+    private final SimpleLogger logger;
     private final ObjectMapper objectMapper;
 
     /**
@@ -65,18 +63,18 @@ public class ApiLogAspect {
             // 根据日志级别记录日志
             switch (apiLog.level()) {
                 case WARN:
-                    simpleLogger.warning(baseMessage);
+                    logger.warning(baseMessage);
                     break;
                 case ERROR:
-                    simpleLogger.error(baseMessage);
+                    logger.error(baseMessage);
                     break;
                 default:
-                    simpleLogger.info(baseMessage);
+                    logger.info(baseMessage);
                     break;
             }
 
         } catch (Exception e) {
-            log.error("API日志记录失败", e);
+            logger.error("API日志记录失败", e);
         }
     }
 
@@ -191,7 +189,7 @@ public class ApiLogAspect {
             return String.join("\n", paramInfoList);
 
         } catch (Exception e) {
-            log.error("提取参数信息失败", e);
+            logger.error("提取参数信息失败", e);
             return "参数解析失败";
         }
     }
@@ -263,7 +261,7 @@ public class ApiLogAspect {
             }
 
         } catch (JsonProcessingException e) {
-            log.error("格式化参数值失败", e);
+            logger.error("格式化参数值失败", e);
             return arg.getClass().getSimpleName();
         }
     }
@@ -300,7 +298,7 @@ public class ApiLogAspect {
 
             return filteredMap;
         } catch (Exception e) {
-            log.error("对象转Map失败", e);
+            logger.error("对象转Map失败", e);
             return Collections.emptyMap();
         }
     }

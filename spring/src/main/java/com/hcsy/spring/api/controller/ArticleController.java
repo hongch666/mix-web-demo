@@ -21,7 +21,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +34,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/articles")
 @RequiredArgsConstructor
-@Slf4j
 @Tag(name = "文章模块", description = "文章相关接口")
 public class ArticleController {
 

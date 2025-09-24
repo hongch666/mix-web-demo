@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { error } from '../utils/response'; // 之前写的 error() 方法
+import { fileLogger } from '../utils/writeLog';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -33,7 +34,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // 打印错误日志
-    console.error(`[${request.method}] ${request.url} - ${message}`);
+    fileLogger.error(
+      `[${request.method}] ${request.url} - ${message} - ${exception.stack}`,
+    );
 
     response.status(status).json(error(message));
   }

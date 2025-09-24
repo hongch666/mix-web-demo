@@ -10,7 +10,6 @@ import com.hcsy.spring.entity.po.User;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -27,7 +26,6 @@ import java.util.Arrays;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class PermissionAspect {
 
     private final UserService userService;

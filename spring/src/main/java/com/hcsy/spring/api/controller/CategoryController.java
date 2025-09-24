@@ -2,7 +2,6 @@ package com.hcsy.spring.api.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
@@ -25,7 +24,6 @@ import java.util.Arrays;
 @RestController
 @RequestMapping("/category")
 @RequiredArgsConstructor
-@Slf4j
 @Tag(name = "分类模块", description = "分类相关接口")
 public class CategoryController {
 

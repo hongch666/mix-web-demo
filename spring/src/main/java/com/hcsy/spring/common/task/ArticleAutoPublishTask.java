@@ -5,13 +5,11 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.po.Article;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ArticleAutoPublishTask {

@@ -1,7 +1,6 @@
 package com.hcsy.spring.common.aop;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.annotation.*;
 
 import java.util.HashMap;
@@ -23,7 +22,6 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Article;
 
-@Slf4j
 @Aspect
 @Component
 @RequiredArgsConstructor

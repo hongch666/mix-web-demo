@@ -1,14 +1,12 @@
 package com.hcsy.spring.common.mq;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.common.utils.SimpleLogger;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RabbitMQService {

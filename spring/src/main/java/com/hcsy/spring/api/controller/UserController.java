@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,7 +36,6 @@ import org.springframework.cache.annotation.Caching;
 @RequestMapping("/users")
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = "user")
-@Slf4j
 @Tag(name = "用户模块", description = "用户相关接口")
 public class UserController {
     private final UserService userService;

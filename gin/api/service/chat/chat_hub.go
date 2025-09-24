@@ -2,8 +2,9 @@ package chat
 
 import (
 	"encoding/json"
+	"fmt"
+	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
-	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -36,7 +37,7 @@ func (s *ChatHub) JoinQueue(userID string, client *Client) {
 	chatQueue.mu.Lock()
 	chatQueue.clients[userID] = client
 	chatQueue.mu.Unlock()
-	log.Printf("用户 %s 已加入聊天队列", userID)
+	utils.FileLogger.Info(fmt.Sprintf("用户 %s 已加入聊天队列", userID))
 }
 
 // 离开队列
@@ -47,7 +48,7 @@ func (s *ChatHub) LeaveQueue(userID string) {
 		delete(chatQueue.clients, userID)
 	}
 	chatQueue.mu.Unlock()
-	log.Printf("用户 %s 已离开聊天队列", userID)
+	utils.FileLogger.Info(fmt.Sprintf("用户 %s 已离开聊天队列", userID))
 }
 
 // 检查用户是否在队列中
@@ -71,7 +72,7 @@ func (s *ChatHub) SendMessageToQueue(userID string, message []byte) bool {
 	if client, exists := s.GetUserFromQueue(userID); exists {
 		// 如果客户端没有WebSocket连接（手动加入队列的用户），直接返回false
 		if client.Conn == nil {
-			log.Printf("用户 %s 在队列中但没有WebSocket连接，无法发送实时消息", userID)
+			utils.FileLogger.Warning(fmt.Sprintf("用户 %s 在队列中但没有WebSocket连接，无法发送实时消息", userID))
 			return false
 		}
 
@@ -111,7 +112,7 @@ func (c *Client) ReadPump() {
 		_, messageBytes, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("websocket error: %v", err)
+				utils.FileLogger.Error(fmt.Sprintf("websocket error: %v", err))
 			}
 			break
 		}
@@ -119,7 +120,7 @@ func (c *Client) ReadPump() {
 		// 解析消息
 		var wsMessage dto.WebSocketMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
-			log.Printf("解析消息失败: %v", err)
+			utils.FileLogger.Error(fmt.Sprintf("解析消息失败: %v", err))
 			continue
 		}
 
