@@ -7,8 +7,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from common.utils import success,fileLogger
 from common.decorators import log
-from entity.dto import ChatRequest, ChatResponse, ChatResponseData
-from api.service import CozeService, get_coze_service
+from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
+from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service
 from common.middleware import get_current_user_id
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
@@ -17,18 +17,27 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 @log("普通聊天")
 async def send_message(
     request: ChatRequest,
-    cozeService: CozeService = Depends(get_coze_service)
+    cozeService: CozeService = Depends(get_coze_service),
+    geminiService: GeminiService = Depends(get_gemini_service)
 ) -> JSONResponse:
     """发送聊天消息"""
     try:
         user_id: str = get_current_user_id() or ""
         # 使用实际用户ID替代请求中的user_id
         actual_user_id: str = user_id or "1"
-        # 普通响应
-        response_message: str = await cozeService.simple_chat(
-            message=request.message,
-            user_id=actual_user_id
-        )
+        # 根据请求的服务类型选择对应的AI服务
+        if request.service == AIServiceType.GEMINI:
+            fileLogger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await geminiService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id
+            )
+        else:  # 默认使用Coze服务
+            fileLogger.info(f"使用Coze服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await cozeService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id
+            )
         
         # 生成会话ID（如果没有提供）
         conversation_id: str = request.conversation_id or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
@@ -60,7 +69,8 @@ async def send_message(
 @log("流式聊天")
 async def stream_message(
     request: ChatRequest,
-    cozeService: CozeService = Depends(get_coze_service)
+    cozeService: CozeService = Depends(get_coze_service),
+    geminiService: GeminiService = Depends(get_gemini_service)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
     try:
@@ -72,17 +82,29 @@ async def stream_message(
         async def event_generator():
             message_acc = ""
             try:
-                async for chunk in cozeService.stream_chat(
-                    message=request.message,
-                    user_id=actual_user_id
-                ):
+                # 根据请求的服务类型选择对应的AI服务
+                if request.service == AIServiceType.GEMINI:
+                    fileLogger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator = await geminiService.stream_chat(
+                        message=request.message,
+                        user_id=actual_user_id
+                    )
+                else:  # 默认使用Coze服务
+                    fileLogger.info(f"使用Coze流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator = await cozeService.stream_chat(
+                        message=request.message,
+                        user_id=actual_user_id
+                    )
+                
+                async for chunk in stream_generator:
                     message_acc += chunk
                     data = success({
                             "message": message_acc,
                             "conversation_id": conversation_id,
                             "chat_id": chat_id,
                             "user_id": actual_user_id,
-                            "timestamp": int(time.time())
+                            "timestamp": int(time.time()),
+                            "service": request.service.value
                         })
                     yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
             except Exception as e:

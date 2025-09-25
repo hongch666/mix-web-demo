@@ -41,6 +41,11 @@
 - Hadoop+Hive：大数据存储与分析
 - WebSocket：用户实时聊天
 
+## 第三方服务
+
+- [CozeAI](https://www.coze.cn/home)
+- [Gemini API](https://aistudio.google.com/)
+
 ## 环境要求
 
 - Python 3.8+
@@ -799,12 +804,17 @@ npm run start:prod # production mode
     bot_id: "7521289882573324298"
     base_url: "https://api.coze.cn"
     timeout: 30
+  gemini:
+    model_name: "gemini-1.5-flash" # 可选: gemini-1.5-pro, gemini-1.5-flash 等
+    timeout: 30 # 请求超时时间（秒）
   ```
 
   - `application-secret.yaml`
 
   ```yaml
   coze:
+    api_key: your_api_key
+  gemini:
     api_key: your_api_key
   ```
 
@@ -921,10 +931,12 @@ oss:
   access_key_secret: your_access_key_secret
 ```
 
-4. FastAPI 模块的 COZE 的 api_key 应写在 `application-secret.yaml`中，格式如下：
+4. FastAPI 模块的 COZE 服务和 Gemini 服务 的 api_key 应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
 coze:
+  api_key: your_api_key
+gemini:
   api_key: your_api_key
 ```
 

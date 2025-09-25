@@ -1,11 +1,18 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+from enum import Enum
+
+class AIServiceType(str, Enum):
+    """AI服务类型枚举"""
+    COZE = "coze"
+    GEMINI = "gemini"
 
 class ChatRequest(BaseModel):
     """聊天请求模型"""
     message: str = Field(..., description="用户消息", min_length=1, max_length=4000)
     user_id: Optional[str] = Field(default="default", description="用户ID")
     conversation_id: Optional[str] = Field(default=None, description="会话ID")
+    service: AIServiceType = Field(default=AIServiceType.COZE, description="AI服务类型：coze或gemini")
     # stream: Optional[bool] = Field(default=False, description="是否流式响应")
 
 class ChatResponseData(BaseModel):
