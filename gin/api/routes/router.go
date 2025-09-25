@@ -5,6 +5,9 @@ import (
 	"gin_proj/common/middleware"
 
 	"github.com/gin-gonic/gin"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // SetupRouter 初始化路由
@@ -14,8 +17,8 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.InjectUserContext())
 	r.Use(middleware.RecoveryMiddleware())
 
-	// 静态文件服务（用于测试页面）
-	r.Static("/static", "./static")
+	// Swagger 路由
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// controller 注入
 	searchController := controller.Group.SearchController
