@@ -1,0 +1,184 @@
+import asyncio
+from functools import lru_cache
+from typing import List, Dict, Any, AsyncGenerator, Optional
+import google.generativeai as genai
+from fastapi import Depends
+from sqlmodel import Session
+from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper
+from common.utils import fileLogger as logger
+from config import load_config, load_secret_config,get_db
+from entity.po import Article,User,SubCategory
+from common.middleware import get_current_user_id, get_current_username
+
+
+class GeminiService:
+    def __init__(self,articleMapper: ArticleMapper,userMapper: UserMapper,articleLogMapper: ArticleLogMapper,subCategoryMapper: SubCategoryMapper,categoryMapper: CategoryMapper):
+        self.articleMapper = articleMapper
+        self.userMapper = userMapper
+        self.articleLogMapper = articleLogMapper
+        self.subCategoryMapper = subCategoryMapper
+        self.categoryMapper = categoryMapper
+        # 把 Gemini 客户端的配置和初始化放到实例内，避免模块导入时执行网络初始化
+        try:
+            gemini_cfg = load_config("gemini") or {}
+            gemini_secret = load_secret_config("gemini") or {}
+            self._api_key: str = gemini_secret.get("api_key")
+            self._model_name: str = gemini_cfg.get("model_name", "gemini-1.5-flash")
+            self._timeout: int = gemini_cfg.get("timeout", 30)
+            
+            if self._api_key:
+                genai.configure(api_key=self._api_key)
+                self.gemini_model = genai.GenerativeModel(self._model_name)
+                logger.info("Gemini 服务初始化完成 (实例化)")
+            else:
+                self.gemini_model = None
+                logger.warning("Gemini 配置不完整，客户端未初始化")
+        except Exception as e:
+            self.gemini_model = None
+            logger.error(f"初始化 Gemini 客户端失败: {e}")
+
+    async def simple_chat(self,message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
+        """简单聊天接口"""
+        try:
+            prompt: str = self.get_prompt(message, db)
+            logger.info(f"用户 {user_id} 发送消息: {prompt}")
+            
+            if not getattr(self, 'gemini_model', None):
+                return "聊天服务未配置或初始化失败"
+            
+            # 使用 run_in_executor 在线程池中运行同步的 Gemini API 调用
+            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                self.gemini_model.generate_content,
+                prompt
+            )
+            
+            if response and hasattr(response, 'text'):
+                result: str = response.text
+                logger.info(f"Gemini 回复长度: {len(result)} 字符")
+                return result
+            else:
+                logger.warning("Gemini 没有返回有效内容")
+                return "抱歉，没有收到回复"
+                
+        except Exception as e:
+            logger.error(f"Gemini 聊天异常: {str(e)}")
+            if "API_KEY_INVALID" in str(e) or "invalid API key" in str(e):
+                return "API密钥无效。请检查Gemini API密钥配置。"
+            elif "QUOTA_EXCEEDED" in str(e):
+                return "API配额已超限。请稍后重试或检查配额设置。"
+            elif "RATE_LIMIT_EXCEEDED" in str(e):
+                return "API调用频率超限。请稍后重试。"
+            return f"聊天服务异常: {str(e)}"
+        
+    async def stream_chat(self,message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
+        """流式聊天接口 - 兼容异步调用"""
+        try:
+            prompt: str = self.get_prompt(message, db)
+            logger.info(f"用户 {user_id} 开始流式聊天: {prompt}")
+            
+            if not getattr(self, 'gemini_model', None):
+                yield "聊天服务未配置或初始化失败"
+                return
+            
+            def sync_stream() -> Any:
+                return self.gemini_model.generate_content(prompt, stream=True)
+
+            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            response_stream = await loop.run_in_executor(None, sync_stream)
+            
+            for chunk in response_stream:
+                try:
+                    if chunk and hasattr(chunk, 'text'):
+                        content: str = chunk.text
+                        if content:
+                            logger.info(f"收到流式内容块，长度: {len(content)} 字符")
+                            yield content
+                    else:
+                        logger.warning("收到空的流式内容块")
+                except Exception as chunk_error:
+                    logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                    continue
+                    
+        except Exception as e:
+            logger.error(f"流式聊天异常: {str(e)}")
+            if "API_KEY_INVALID" in str(e) or "invalid API key" in str(e):
+                yield "API密钥无效。请检查Gemini API密钥配置。"
+            elif "QUOTA_EXCEEDED" in str(e):
+                yield "API配额已超限。请稍后重试或检查配额设置。"
+            elif "RATE_LIMIT_EXCEEDED" in str(e):
+                yield "API调用频率超限。请稍后重试。"
+            else:
+                yield f"流式聊天服务异常: {str(e)}"
+
+    def search_article_from_db(self, db: Session = Depends(get_db)) -> str:
+        """从数据库搜索文章信息"""
+        articles: List[Article] = self.articleMapper.get_article_limit_mapper(db)
+        if not articles:
+            return "没有找到相关的知识库内容"
+        content_list: List[str] = []
+        for article in articles:
+            content_list.append(
+                f"标题: {article.title}, 内容(Markdown格式，自行转换): {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
+            )
+        return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
+        
+    def search_user_from_db(self,db: Session = Depends(get_db)) -> str:
+        """从数据库搜索用户信息"""
+        users: List[User] = self.userMapper.get_all_users_mapper(db)
+        if not users:
+            return "没有找到相关的用户信息"
+        user_list: List[str] = []
+        for user in users:
+            user_list.append(f"ID: {user.id}, 名称: {user.name}, 年龄: {user.age}, 邮箱: {user.email}, 角色: {user.role}")
+        return "\n".join(user_list) if user_list else "没有找到相关的用户信息"
+        
+    def search_category_from_db(self,db: Session = Depends(get_db)) -> str:
+        """从数据库搜索分类信息"""
+        categories: List[Dict[str, Any]] = self.categoryMapper.get_all_categories_mapper(db)
+        if not categories:
+            return "没有找到相关的分类信息"
+        category_list: List[str] = []
+        for category in categories:
+            category_list.append(f"分类ID: {category.id}, 名称: {category.name}")
+        return "\n".join(category_list) if category_list else "没有找到相关的分类信息"
+        
+    def search_sub_category_from_db(self,db: Session = Depends(get_db)) -> str:
+        """从数据库搜索子分类信息"""
+        sub_categories: List[SubCategory] = self.subCategoryMapper.get_all_subcategories_mapper(db)
+        if not sub_categories:
+            return "没有找到相关的子分类信息"
+        sub_category_list: List[str] = []
+        for sub_category in sub_categories:
+            sub_category_list.append(f"子分类ID: {sub_category.id}, 名称: {sub_category.name}, 所属分类ID: {sub_category.category_id}")
+        return "\n".join(sub_category_list) if sub_category_list else "没有找到相关的子分类信息"
+        
+    def search_logs_from_db(self) -> str:
+        """从数据库搜索日志信息"""
+        cursor: Any = self.articleLogMapper.get_all_articlelogs_limit_mapper()
+        log_list: List[str] = []
+        for log in cursor:
+            log_str: str = ", ".join([f"{k}: {v}" for k, v in log.items()])
+            log_list.append(log_str)
+        return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
+        
+    def get_prompt(self,message: str, db: Session = Depends(get_db)) -> str:
+        """构建包含知识库信息的完整提示词"""
+        user_id: str = get_current_user_id() or ""
+        username: str = get_current_username() or ""
+        userInfo: str = f"用户ID: {user_id}, 用户名: {username}"
+        article: str = self.search_article_from_db(db)
+        user: str = self.search_user_from_db(db)
+        category: str = self.search_category_from_db(db)
+        sub_category: str = self.search_sub_category_from_db(db)
+        logs: str = self.search_logs_from_db()
+        knowledge: str = (f"当前用户信息(提问的用户，一般会称'我')：{userInfo}\n文章信息：{article}\n用户信息：{user}\n分类信息：{category}\n日志信息：{logs}"
+        f"\n子分类信息：{sub_category}")
+        prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
+        return prompt
+
+@lru_cache()
+def get_gemini_service(articleMapper: ArticleMapper = Depends(get_article_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), subCategoryMapper: SubCategoryMapper = Depends(get_subcategory_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper)) -> GeminiService:
+    """获取Gemini服务单例实例"""
+    return GeminiService(articleMapper, userMapper, articleLogMapper, subCategoryMapper, categoryMapper)

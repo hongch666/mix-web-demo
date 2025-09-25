@@ -1,6 +1,6 @@
 fastapi==0.116.1
 uvicorn==0.35.0
-pydantic==2.10.12
+pydantic==2.11.9
 pyyaml==6.0.2
 nacos-sdk-python==2.0.8
 requests==2.32.4
@@ -17,3 +17,4 @@ pyhive==0.7.0
 pyspark==4.0.0
 thrift==0.22.0
 thrift_sasl==0.4.3
+google-generativeai==0.8.5

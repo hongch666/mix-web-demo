@@ -1,11 +1,12 @@
-from .chatDTO import ChatRequest, ChatResponse, ChatResponseData
+from .chatDTO import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
 from .generateDTO import GenerateDTO
 from .uploadDTO import UploadDTO
 
 __all__ = [
     "ChatRequest",
-    "ChatResponse",
+    "ChatResponse", 
     "ChatResponseData",
+    "AIServiceType",
     "GenerateDTO",
     "UploadDTO"
 ]
