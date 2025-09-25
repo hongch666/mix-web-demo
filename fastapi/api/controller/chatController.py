@@ -129,32 +129,3 @@ async def stream_message(
     except Exception as e:
         fileLogger.error(f"流式聊天接口异常: {str(e)}")
         raise HTTPException(status_code=500, detail=f"流式聊天服务异常: {str(e)}")
-
-@router.get("/services/health")
-async def services_health_check(
-    cozeService: CozeService = Depends(get_coze_service),
-    geminiService: GeminiService = Depends(get_gemini_service)
-):
-    """AI服务健康检查接口"""
-    try:
-        coze_available = hasattr(cozeService, 'coze_client') and cozeService.coze_client is not None
-        gemini_available = hasattr(geminiService, 'gemini_model') and geminiService.gemini_model is not None
-        
-        return success({
-            "services": {
-                "coze": {
-                    "available": coze_available,
-                    "status": "healthy" if coze_available else "unavailable"
-                },
-                "gemini": {
-                    "available": gemini_available,
-                    "status": "healthy" if gemini_available else "unavailable"
-                }
-            },
-            "total_available": sum([coze_available, gemini_available]),
-            "supported_services": [service.value for service in AIServiceType]
-        })
-        
-    except Exception as e:
-        fileLogger.error(f"服务健康检查异常: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"健康检查异常: {str(e)}")
