@@ -335,7 +335,7 @@ spring:
   cloud:
     nacos:
       config:
-        server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+        server-addr: 127.0.0.1:8848 # Nacos 服务端地址
 
 mybatis-plus:
   configuration:
@@ -360,7 +360,7 @@ server:
   port: 8082
 
 nacos:
-  ipAddr: 127.0.0.1 # 172.22.87.240
+  ipAddr: 127.0.0.1
   port: 8848
   namespace: "public"
   serviceName: gin
@@ -405,7 +405,7 @@ server:
   port: 8083
   serviceName: nestjs
 nacos:
-  server-addr: 127.0.0.1 # 172.22.87.240:8848
+  server-addr: 127.0.0.1
   namespace: public
   clusterName: DEFAULT
 database:
@@ -437,7 +437,7 @@ logs:
 ### FastAPI 部分
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
-2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台的 api_key，不要泄露
+2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台和 Gemini 平台的 api_key，不要泄露
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
