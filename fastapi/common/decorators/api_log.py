@@ -1,6 +1,6 @@
-import functools
 import inspect
 import json
+from functools import wraps
 from typing import Any, Callable, List, Optional, Union
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
@@ -40,7 +40,7 @@ def api_log(config: Union[str, ApiLogConfig]):
     """
     
     def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
+        @wraps(func)
         async def async_wrapper(*args, **kwargs):
             # 处理配置
             if isinstance(config, str):
@@ -70,8 +70,8 @@ def api_log(config: Union[str, ApiLogConfig]):
             
             # 执行原函数
             return await func(*args, **kwargs)
-        
-        @functools.wraps(func)
+
+        @wraps(func)
         def sync_wrapper(*args, **kwargs):
             # 处理配置
             if isinstance(config, str):
