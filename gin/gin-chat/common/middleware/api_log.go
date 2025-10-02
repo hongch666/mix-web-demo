@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,8 @@ import (
 // description: 自定义描述信息，例如 "搜索文章"
 func ApiLogMiddleware(description string) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 记录开始时间，用于计算处理耗时
+		start := time.Now()
 		// 获取用户信息
 		userID, _ := c.Request.Context().Value(ctxkey.UserIDKey).(int64)
 		username, _ := c.Request.Context().Value(ctxkey.UsernameKey).(string)
@@ -56,12 +59,17 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 			}
 		}
 
-		// 记录日志
+		// 记录日志（请求开始）
 		logMessage := formatLogMessage(method, path, description, userID, username, logInfo)
 		utils.LogInfo(logMessage)
 
 		// 继续处理请求
 		c.Next()
+
+		// 请求处理完成，记录耗时（毫秒）
+		durationMs := time.Since(start).Milliseconds()
+		timeMessage := fmt.Sprintf("%s %s 使用了%dms", method, path, durationMs)
+		utils.LogInfo(timeMessage)
 	}
 }
 

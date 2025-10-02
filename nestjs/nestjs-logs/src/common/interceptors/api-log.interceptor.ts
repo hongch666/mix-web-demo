@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { finalize } from 'rxjs/operators';
 import { fileLogger } from '../utils/writeLog';
 import { API_LOG_KEY, ApiLogOptions } from '../decorators/api-log.decorator';
 
@@ -54,9 +54,18 @@ export class ApiLogInterceptor implements NestInterceptor {
       logMethod(logMessage);
     }
 
+    // 开始计时
+    const start = Date.now();
+
     return next.handle().pipe(
-      tap(() => {
-        // 可以在这里记录响应日志
+      finalize(() => {
+        // 计算耗时并记录，保证在响应完成或错误时都会执行
+        const durationMs = Date.now() - start;
+        const timeMessage = `${method} ${url} 使用了${durationMs}ms`;
+        const timeLogMethod = fileLogger[logConfig.logLevel || 'info'];
+        if (timeLogMethod) {
+          timeLogMethod(timeMessage);
+        }
       }),
     );
   }

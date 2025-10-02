@@ -1,6 +1,7 @@
-import functools
 import inspect
 import json
+import time
+from functools import wraps
 from typing import Any, Callable, List, Optional, Union
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
@@ -40,7 +41,7 @@ def api_log(config: Union[str, ApiLogConfig]):
     """
     
     def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
+        @wraps(func)
         async def async_wrapper(*args, **kwargs):
             # 处理配置
             if isinstance(config, str):
@@ -67,11 +68,17 @@ def api_log(config: Union[str, ApiLogConfig]):
             # 记录日志
             logger_method = getattr(fileLogger, log_config.log_level, fileLogger.info)
             logger_method(log_message)
-            
-            # 执行原函数
-            return await func(*args, **kwargs)
-        
-        @functools.wraps(func)
+
+            # 执行原函数并记录耗时
+            start = time.time()
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                duration_ms = int((time.time() - start) * 1000)
+                time_message = f"{method} {path} 使用了{duration_ms}ms"
+                logger_method(time_message)
+
+        @wraps(func)
         def sync_wrapper(*args, **kwargs):
             # 处理配置
             if isinstance(config, str):
@@ -98,9 +105,15 @@ def api_log(config: Union[str, ApiLogConfig]):
             # 记录日志
             logger_method = getattr(fileLogger, log_config.log_level, fileLogger.info)
             logger_method(log_message)
-            
-            # 执行原函数
-            return func(*args, **kwargs)
+
+            # 执行原函数并记录耗时
+            start = time.time()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                duration_ms = int((time.time() - start) * 1000)
+                time_message = f"{method} {path} 使用了{duration_ms}ms"
+                logger_method(time_message)
         
         # 根据函数是否为协程选择包装器
         if inspect.iscoroutinefunction(func):

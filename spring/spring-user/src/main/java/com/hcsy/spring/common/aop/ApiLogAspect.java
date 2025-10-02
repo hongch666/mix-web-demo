@@ -6,10 +6,10 @@ import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
@@ -26,25 +26,26 @@ import java.util.*;
  */
 @Aspect
 @Component("apiMsgLogAspect")
-@Slf4j
 @RequiredArgsConstructor
 public class ApiLogAspect {
 
-    private final SimpleLogger simpleLogger;
+    private final SimpleLogger logger;
     private final ObjectMapper objectMapper;
 
     /**
-     * 在执行带有 @ApiLog 注解的方法前记录日志
+     * 环绕切面：在执行带有 @ApiLog 注解的方法前记录日志，并在执行后输出耗时
      */
-    @Before("@annotation(apiLog)")
-    public void logBefore(JoinPoint joinPoint, ApiLog apiLog) {
+    @Around("@annotation(apiLog)")
+    public Object logAround(ProceedingJoinPoint pjp, ApiLog apiLog) throws Throwable {
+        long start = System.currentTimeMillis();
+        Object result = null;
         try {
             // 获取用户信息
             Long userId = UserContext.getUserId();
             String username = UserContext.getUsername();
 
             // 获取请求信息
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+            MethodSignature signature = (MethodSignature) pjp.getSignature();
             Method method = signature.getMethod();
 
             String httpMethod = getHttpMethod(method);
@@ -56,27 +57,50 @@ public class ApiLogAspect {
 
             // 添加参数信息
             if (apiLog.includeParams()) {
-                String paramsInfo = extractParamsInfo(joinPoint, apiLog.excludeFields());
+                String paramsInfo = extractParamsInfo(pjp, apiLog.excludeFields());
                 if (paramsInfo != null && !paramsInfo.isEmpty()) {
                     baseMessage += "\n" + paramsInfo;
                 }
             }
 
-            // 根据日志级别记录日志
+            // 根据日志级别记录日志（方法开始时）
             switch (apiLog.level()) {
                 case WARN:
-                    simpleLogger.warning(baseMessage);
+                    logger.warning(baseMessage);
                     break;
                 case ERROR:
-                    simpleLogger.error(baseMessage);
+                    logger.error(baseMessage);
                     break;
                 default:
-                    simpleLogger.info(baseMessage);
+                    logger.info(baseMessage);
                     break;
             }
 
-        } catch (Exception e) {
-            log.error("API日志记录失败", e);
+            // 执行原方法
+            result = pjp.proceed();
+
+            return result;
+
+        } catch (Throwable t) {
+            // 若方法抛出异常，仍然向上抛出，但先记录错误日志
+            logger.error("API方法执行异常", t);
+            throw t;
+        } finally {
+            // 计算并记录耗时（无论正常或异常都会执行）
+            long end = System.currentTimeMillis();
+            long durationMs = end - start;
+
+            try {
+                MethodSignature signature = (MethodSignature) pjp.getSignature();
+                Method method = signature.getMethod();
+                String httpMethod = getHttpMethod(method);
+                String requestPath = getRequestPath(method);
+
+                String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, durationMs);
+                logger.info(timeMessage);
+            } catch (Exception e) {
+                logger.error("记录执行时间失败", e);
+            }
         }
     }
 
@@ -191,7 +215,7 @@ public class ApiLogAspect {
             return String.join("\n", paramInfoList);
 
         } catch (Exception e) {
-            log.error("提取参数信息失败", e);
+            logger.error("提取参数信息失败", e);
             return "参数解析失败";
         }
     }
@@ -263,7 +287,7 @@ public class ApiLogAspect {
             }
 
         } catch (JsonProcessingException e) {
-            log.error("格式化参数值失败", e);
+            logger.error("格式化参数值失败", e);
             return arg.getClass().getSimpleName();
         }
     }
@@ -300,7 +324,7 @@ public class ApiLogAspect {
 
             return filteredMap;
         } catch (Exception e) {
-            log.error("对象转Map失败", e);
+            logger.error("对象转Map失败", e);
             return Collections.emptyMap();
         }
     }
