@@ -5,6 +5,8 @@ import (
 	"chat/common/middleware"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // SetupRouter 初始化路由
@@ -14,6 +16,10 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.InjectUserContext())
 	r.Use(middleware.RecoveryMiddleware())
 
+	// Swagger 路由
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// controller 注入
 	chatController := controller.Group.ChatController
 	// 聊天相关路由
 	chatGroup := r.Group("/user-chat")

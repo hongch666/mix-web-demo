@@ -2,7 +2,7 @@ package config
 
 import "log"
 
-func Init() {
+func init() {
 	// 设置log输出格式
 	log.SetFlags(0)
 	log.SetPrefix("[GIN-debug] ")
