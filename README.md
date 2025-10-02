@@ -342,7 +342,7 @@ npm run start:prod # production mode
     cloud:
       nacos:
         config:
-          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+          server-addr: 127.0.0.1:8848 # Nacos 服务端地址
 
   mybatis-plus:
     configuration:
@@ -410,7 +410,7 @@ npm run start:prod # production mode
     cloud:
       nacos:
         config:
-          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+          server-addr: 127.0.0.1:8848 # Nacos 服务端地址
 
   mybatis-plus:
     configuration:
@@ -478,7 +478,7 @@ npm run start:prod # production mode
     cloud:
       nacos:
         config:
-          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+          server-addr: 127.0.0.1:8848 # Nacos 服务端地址
 
   mybatis-plus:
     configuration:
@@ -546,7 +546,7 @@ npm run start:prod # production mode
     cloud:
       nacos:
         config:
-          server-addr: 127.0.0.1:8848 # 172.22.87.240:8848      # Nacos 服务端地址
+          server-addr: 127.0.0.1:8848 # Nacos 服务端地址
 
   mybatis-plus:
     configuration:
@@ -737,7 +737,7 @@ npm run start:prod # production mode
     port: 6060
     serviceName: nestjs-logs
   nacos:
-    server-addr: 127.0.0.1 # 172.22.87.240:8848
+    server-addr: 127.0.0.1
     namespace: public
     clusterName: DEFAULT
   mongodb:
@@ -763,7 +763,7 @@ npm run start:prod # production mode
     port: 6061
     serviceName: nestjs-download
   nacos:
-    server-addr: 127.0.0.1 # 172.22.87.240:8848
+    server-addr: 127.0.0.1
     namespace: public
     clusterName: DEFAULT
   files:
@@ -775,7 +775,7 @@ npm run start:prod # production mode
 ### FastAPI 部分
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
-2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台的 api_key，不要泄露
+2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台和 Gemini 平台的 api_key，不要泄露
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
@@ -805,7 +805,7 @@ npm run start:prod # production mode
     base_url: "https://api.coze.cn"
     timeout: 30
   gemini:
-    model_name: "gemini-1.5-flash" # 可选: gemini-1.5-pro, gemini-1.5-flash 等
+    model_name: "gemini-2.0-flash"
     timeout: 30 # 请求超时时间（秒）
   ```
 
