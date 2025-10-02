@@ -482,7 +482,7 @@ coze:
   base_url: "https://api.coze.cn"
   timeout: 30
 gemini:
-  model_name: "gemini-1.5-flash" # 可选: gemini-1.5-pro, gemini-1.5-flash 等
+  model_name: "gemini-2.0-flash" # 可选: gemini-1.5-pro, gemini-1.5-flash 等
   timeout: 30 # 请求超时时间（秒）
 ```
 
