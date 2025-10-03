@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from typing import Any, Dict
 
@@ -15,13 +15,13 @@ router: APIRouter = APIRouter(
 # 测试
 @router.get("/fastapi")
 @log("测试FastAPI服务")
-async def testFastapi() -> JSONResponse:
+async def testFastapi(request: Request) -> JSONResponse:
     return success("Hello, I am FastAPI!")
 
 # 测试Spring服务
 @router.get("/spring")
 @log("测试Spring服务")
-async def testSpring() -> JSONResponse:
+async def testSpring(request: Request) -> JSONResponse:
     result: Dict[str, Any] = await call_remote_service(
         service_name="spring",
         path="/api_spring/spring",
@@ -33,7 +33,7 @@ async def testSpring() -> JSONResponse:
 # 测试Gin服务
 @router.get("/gin")
 @log("测试Gin服务")
-async def testGin() -> JSONResponse:
+async def testGin(request: Request) -> JSONResponse:
     result: Dict[str, Any] = await call_remote_service(
         service_name="gin",
         path="/api_gin/gin",
@@ -45,7 +45,7 @@ async def testGin() -> JSONResponse:
 # 测试NestJS服务
 @router.get("/nestjs")
 @log("测试NestJS服务")
-async def testNestJS() -> JSONResponse:
+async def testNestJS(request: Request) -> JSONResponse:
     result: Dict[str, Any] = await call_remote_service(
         service_name="nestjs",
         path="/api_nestjs/nestjs",
@@ -57,7 +57,7 @@ async def testNestJS() -> JSONResponse:
 # 调用定时任务（导出文章表到csv并同步hive）
 @router.post("/task")
 @log("手动触发文章表导出任务")
-async def test_export_articles_task() -> JSONResponse:
+async def test_export_articles_task(request: Request) -> JSONResponse:
     try:
         export_articles_to_csv_and_hive()
         return success()

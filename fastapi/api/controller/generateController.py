@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from api.service import GenerateService, get_generate_service
 from common.utils import success
 from common.decorators import log
@@ -14,7 +14,7 @@ router: APIRouter = APIRouter(
 
 @router.post("/tags")
 @log("生成tags")
-async def generate_tags(data: GenerateDTO, generateService: GenerateService = Depends(get_generate_service)) -> Any:
+async def generate_tags(request: Request, data: GenerateDTO, generateService: GenerateService = Depends(get_generate_service)) -> Any:
     tags: list[str] = await run_in_threadpool(
         generateService.extract_tags,
         data.text,

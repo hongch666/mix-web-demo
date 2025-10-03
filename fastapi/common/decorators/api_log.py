@@ -3,6 +3,7 @@ import json
 import time
 from functools import wraps
 from typing import Any, Callable, List, Optional, Union
+from fastapi import Request
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
 
@@ -53,8 +54,16 @@ def api_log(config: Union[str, ApiLogConfig]):
             user_id = get_current_user_id() or ""
             username = get_current_username() or ""
             
-            # 获取请求信息
-            method, path = _extract_request_info(func, args, kwargs)
+            # 从参数中获取 Request 对象
+            request = _get_request_from_args(args, kwargs)
+            
+            if request:
+                method = request.method
+                path = request.url.path
+            else:
+                # 如果没有 Request 对象，使用默认值
+                method = "UNKNOWN"
+                path = f"/{func.__name__}"
             
             # 构建基础日志消息
             log_message = f"用户{user_id}:{username} {method} {path}: {log_config.message}"
@@ -90,8 +99,16 @@ def api_log(config: Union[str, ApiLogConfig]):
             user_id = get_current_user_id() or ""
             username = get_current_username() or ""
             
-            # 获取请求信息
-            method, path = _extract_request_info(func, args, kwargs)
+            # 从参数中获取 Request 对象
+            request = _get_request_from_args(args, kwargs)
+            
+            if request:
+                method = request.method
+                path = request.url.path
+            else:
+                # 如果没有 Request 对象，使用默认值
+                method = "UNKNOWN"
+                path = f"/{func.__name__}"
             
             # 构建基础日志消息
             log_message = f"用户{user_id}:{username} {method} {path}: {log_config.message}"
@@ -124,63 +141,28 @@ def api_log(config: Union[str, ApiLogConfig]):
     return decorator
 
 
-def _extract_request_info(func: Callable, args: tuple, kwargs: dict) -> tuple[str, str]:
+def _get_request_from_args(args: tuple, kwargs: dict) -> Optional[Request]:
     """
-    提取请求方法和路径信息
+    从函数参数中提取 Request 对象
     
+    Args:
+        args: 位置参数
+        kwargs: 关键字参数
+        
     Returns:
-        tuple: (method, path)
+        Request 对象或 None
     """
-    # 尝试从函数名推断请求方法
-    func_name = func.__name__
+    # 从位置参数中查找
+    for arg in args:
+        if isinstance(arg, Request):
+            return arg
     
-    if func_name.startswith('get_') or func_name.endswith('_list'):
-        method = "GET"
-    elif func_name.startswith('create_') or func_name.startswith('add_'):
-        method = "POST"
-    elif func_name.startswith('update_') or func_name.startswith('edit_'):
-        method = "PUT"
-    elif func_name.startswith('delete_') or func_name.startswith('remove_'):
-        method = "DELETE"
-    else:
-        # 尝试从路由装饰器获取方法信息
-        method = _get_method_from_router(func)
+    # 从关键字参数中查找
+    for value in kwargs.values():
+        if isinstance(value, Request):
+            return value
     
-    # 尝试获取路径信息
-    path = _get_path_from_router(func)
-    
-    return method, path
-
-
-def _get_method_from_router(func: Callable) -> str:
-    """从路由装饰器获取 HTTP 方法"""
-    # 检查函数的路由装饰器信息
-    if hasattr(func, '__route_methods__'):
-        methods = getattr(func, '__route_methods__')
-        if methods:
-            return list(methods)[0].upper()
-    
-    # 默认返回 POST
-    return "POST"
-
-
-def _get_path_from_router(func: Callable) -> str:
-    """从路由装饰器获取路径信息"""
-    # 检查函数的路由装饰器信息
-    if hasattr(func, '__route_path__'):
-        return getattr(func, '__route_path__')
-    
-    # 根据函数名推断路径
-    func_name = func.__name__
-    
-    # 常见的路径映射
-    path_mappings = {
-        'get_top10_articles': '/analyze/top10',
-        'get_wordcloud': '/analyze/wordcloud',
-        'get_excel': '/analyze/excel',
-    }
-    
-    return path_mappings.get(func_name, f"/{func_name}")
+    return None
 
 
 def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fields: List[str]) -> str:

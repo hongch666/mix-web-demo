@@ -2,7 +2,7 @@ import datetime
 import time
 import json
 import uuid
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
 
@@ -18,6 +18,7 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 @router.post("/send", response_model=ChatResponse)
 @log("普通聊天")
 async def send_message(
+    httpRequest: Request,
     request: ChatRequest,
     db:Session = Depends(get_db),
     cozeService: CozeService = Depends(get_coze_service),
@@ -74,6 +75,7 @@ async def send_message(
 @router.post("/stream", response_model=ChatResponse)
 @log("流式聊天")
 async def stream_message(
+    httpRequest: Request,
     request: ChatRequest,
     db: Session = Depends(get_db),
     cozeService: CozeService = Depends(get_coze_service),
