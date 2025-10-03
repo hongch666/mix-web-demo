@@ -17,7 +17,9 @@ PORT: int = server_config["port"]
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        # 自动建表
         create_tables(['ai_history'])
+        # 启动Nacos服务注册
         start_nacos(ip=IP, port=PORT)
         logger.info(f"FastAPI应用已启动")
         logger.info(f"服务地址:http://{IP}:{PORT}")
