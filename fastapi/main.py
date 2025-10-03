@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from api.controller import test_router, analyze_router, upload_router, generate_router, chat_router, ai_history_router
 import uvicorn
 from config import start_nacos, load_config
+from config.mysql import create_tables
 from common.utils import logger
 from common.middleware import ContextMiddleware
 from common.handler import global_exception_handler
@@ -16,6 +17,7 @@ PORT: int = server_config["port"]
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        create_tables(['ai_history'])
         start_nacos(ip=IP, port=PORT)
         logger.info(f"FastAPI应用已启动")
         logger.info(f"服务地址:http://{IP}:{PORT}")
