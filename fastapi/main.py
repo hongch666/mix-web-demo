@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.controller import test_router, analyze_router, upload_router, generate_router, chat_router
+from api.controller import test_router, analyze_router, upload_router, generate_router, chat_router, ai_history_router
 import uvicorn
 from config import start_nacos, load_config
 from common.utils import logger
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     app.include_router(upload_router)
     app.include_router(generate_router)
     app.include_router(chat_router)
+    app.include_router(ai_history_router)
     return app
 
 start_scheduler()

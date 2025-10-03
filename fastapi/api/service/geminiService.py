@@ -4,7 +4,7 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 import google.generativeai as genai
 from fastapi import Depends
 from sqlmodel import Session
-from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper
+from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper,AiHistoryMapper,get_ai_history_mapper
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config,get_db
 from entity.po import Article,User,SubCategory
@@ -12,12 +12,13 @@ from common.middleware import get_current_user_id, get_current_username
 
 
 class GeminiService:
-    def __init__(self,articleMapper: ArticleMapper,userMapper: UserMapper,articleLogMapper: ArticleLogMapper,subCategoryMapper: SubCategoryMapper,categoryMapper: CategoryMapper):
+    def __init__(self,articleMapper: ArticleMapper,userMapper: UserMapper,articleLogMapper: ArticleLogMapper,subCategoryMapper: SubCategoryMapper,categoryMapper: CategoryMapper,aiHistoryMapper: AiHistoryMapper):
         self.articleMapper = articleMapper
         self.userMapper = userMapper
         self.articleLogMapper = articleLogMapper
         self.subCategoryMapper = subCategoryMapper
         self.categoryMapper = categoryMapper
+        self.aiHistoryMapper = aiHistoryMapper
         # 把 Gemini 客户端的配置和初始化放到实例内，避免模块导入时执行网络初始化
         try:
             gemini_cfg = load_config("gemini") or {}
@@ -162,6 +163,15 @@ class GeminiService:
             log_str: str = ", ".join([f"{k}: {v}" for k, v in log.items()])
             log_list.append(log_str)
         return "\n".join(log_list) if log_list else "没有找到相关的日志信息"
+    
+    def search_ai_history_from_db(self, db: Session = Depends(get_db), user_id: int = 0) -> str:
+            histories = self.aiHistoryMapper.get_all_ai_history_by_userid(db, user_id=user_id, limit=3) # 限制返回最近3条记录
+            if not histories:
+                return "没有找到相关的AI历史记录"
+            history_list: List[str] = []
+            for history in histories:
+                history_list.append(f"用户ID: {history.user_id}, 提问: {history.ask}, 回复: {history.reply}")
+            return "\n".join(history_list) if history_list else "没有找到相关的AI历史记录"
         
     def get_prompt(self,message: str, db: Session = Depends(get_db)) -> str:
         """构建包含知识库信息的完整提示词"""
@@ -173,12 +183,13 @@ class GeminiService:
         category: str = self.search_category_from_db(db)
         sub_category: str = self.search_sub_category_from_db(db)
         logs: str = self.search_logs_from_db()
+        ai_history: str = self.search_ai_history_from_db(db, user_id=int(user_id) if user_id.isdigit() else 0)
         knowledge: str = (f"当前用户信息(提问的用户，一般会称'我')：{userInfo}\n文章信息：{article}\n用户信息：{user}\n分类信息：{category}\n日志信息：{logs}"
-        f"\n子分类信息：{sub_category}")
+        f"\n子分类信息：{sub_category}\nAI历史记录：{ai_history}")
         prompt: str = f"已知信息如下：{knowledge}\n用户提问：{message}"
         return prompt
 
 @lru_cache()
-def get_gemini_service(articleMapper: ArticleMapper = Depends(get_article_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), subCategoryMapper: SubCategoryMapper = Depends(get_subcategory_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper)) -> GeminiService:
+def get_gemini_service(articleMapper: ArticleMapper = Depends(get_article_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), subCategoryMapper: SubCategoryMapper = Depends(get_subcategory_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), aiHistoryMapper: AiHistoryMapper = Depends(get_ai_history_mapper)) -> GeminiService:
     """获取Gemini服务单例实例"""
-    return GeminiService(articleMapper, userMapper, articleLogMapper, subCategoryMapper, categoryMapper)
+    return GeminiService(articleMapper, userMapper, articleLogMapper, subCategoryMapper, categoryMapper, aiHistoryMapper)

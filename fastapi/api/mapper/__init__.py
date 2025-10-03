@@ -8,6 +8,8 @@ from .subCategoryMapper import get_subcategory_mapper,SubCategoryMapper
 
 from .userMapper import get_user_mapper,UserMapper
 
+from .aiHistoryMapper import get_ai_history_mapper,AiHistoryMapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -18,5 +20,7 @@ __all__ = [
     "get_subcategory_mapper",
     "SubCategoryMapper",
     "get_user_mapper",
-    "UserMapper"
+    "UserMapper",
+    "get_ai_history_mapper",
+    "AiHistoryMapper"
 ]
