@@ -228,7 +228,22 @@ CREATE TABLE comments (
 ) COMMENT '';
 ```
 
-3. MongoDB 表创建
+- 创建 AI 聊天历史记录
+
+```sql
+CREATE TABLE `ai_history` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `ask` TEXT NOT NULL,
+    `reply` TEXT NOT NULL,
+    `ai_type` VARCHAR(30),
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+);
+```
+
+4. MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
 
