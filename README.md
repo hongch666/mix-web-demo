@@ -1,8 +1,8 @@
-# 多语言技术栈微服务系统
+# 多语言技术栈系统
 
 ## 描述
 
-这是一个基于多种技术栈构建的微服务架构系统，包含以下组件：
+这是一个基于多种技术栈构建的文章博客管理系统，包含以下组件：
 
 - FastAPI（Python）
 - Gin（Go）
@@ -18,7 +18,7 @@
 2. 文章操作日志的查看和分析
 3. 文章分类，用户状态的管理操作
 4. 权限校验实现用户端和管理端
-5. 支持 Coze 进行 AI 聊天助手
+5. 支持 Coze/Gemini 进行多模型选择的 AI 聊天助手
 6. 系统数据的相关数据分析
 7. 用户实时聊天功能
 
@@ -98,6 +98,51 @@ cd nestjs # 进入文件夹
 npm install # 安装npm包
 ```
 
+## 编译和运行项目
+
+> 每个服务都可以独立运行：
+
+### Spring 服务（包括 gateway 网关）
+
+```bash
+# 运行Spring服务
+cd spring
+mvn clean install # 构建项目
+mvn spring-boot:run # 启动项目
+./mvnw spring-boot:run # Linux/macOS 启动项目(无全局maven)
+mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
+```
+
+### Gin 服务
+
+```bash
+# 运行Gin服务
+cd gin
+go build -o bin/gin main.go # 构建项目
+go run main.go # 运行项目(无修改自启插件)
+fresh # 运行项目(有修改自启插件)
+```
+
+### NestJS 服务
+
+```bash
+# 运行NestJS服务
+cd nestjs
+npm run start # development
+npm run start:dev # watch mode
+npm run start:prod # production mode
+```
+
+### FastAPI 服务
+
+```bash
+# 运行FastAPI服务
+cd fastapi
+source venv/bin/activate # Linux
+venv\Scripts\activate # Windows
+python3 -u main.py
+```
+
 ## 运行脚本配置
 
 使用提供的运行脚本启动各个服务：
@@ -126,7 +171,7 @@ npm install # 安装npm包
 
 ## 基础服务组件初始化
 
-1. 确保已安装并启动以下数据库服务：
+### 确保已安装并启动以下数据库服务：
 
 - MySQL
 - MongoDB
@@ -135,7 +180,7 @@ npm install # 安装npm包
 - RabbitMQ
 - Nacos
 
-2. MySQL 表创建(可选，代码会自动创建)
+### MySQL 表创建(可选，代码会自动创建)
 
 - 在配置文件中指定对应的数据库
 - 创建用户表
@@ -243,48 +288,17 @@ CREATE TABLE `ai_history` (
 );
 ```
 
-4. MongoDB 表创建
+### MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
 
-4. ElasticSearch 索引创建
+### ElasticSearch 索引创建
 
 - 无需创建，系统同步数据时会自动创建
 
-5. Hadoop+Hive 创建
+### Hadoop+Hive 创建
 
 - 无需创建，系统同步数据时会自动创建
-
-## 编译和运行项目
-
-每个服务都可以独立运行：
-
-```bash
-# 运行FastAPI服务
-cd fastapi
-source venv/bin/activate # Linux
-venv\Scripts\activate # Windows
-python3 -u main.py
-
-# 运行Gin服务
-cd gin
-go build -o bin/gin main.go # 构建项目
-go run main.go # 运行项目(无修改自启插件)
-fresh # 运行项目(有修改自启插件)
-
-# 运行Spring服务
-cd spring
-mvn clean install # 构建项目
-mvn spring-boot:run # 启动项目
-./mvnw spring-boot:run # Linux/macOS 启动项目(无全局maven)
-mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
-
-# 运行NestJS服务
-cd nestjs
-npm run start # development
-npm run start:dev # watch mode
-npm run start:prod # production mode
-```
 
 ## 配置文件说明
 
@@ -582,6 +596,8 @@ jwt:
 ```
 
 ## Swagger 说明
+
+> 启动时会显示对应的 swagger 地址
 
 ### Spring 部分
 
