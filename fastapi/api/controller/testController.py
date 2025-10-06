@@ -55,7 +55,7 @@ async def testNestJS(request: Request) -> JSONResponse:
     return success(result["data"])
 
 # 调用定时任务（导出文章表到csv并同步hive）
-@router.post("/task")
+@router.post("/task/hive")
 @log("手动触发文章表导出任务")
 async def test_export_articles_task(request: Request) -> JSONResponse:
     try:

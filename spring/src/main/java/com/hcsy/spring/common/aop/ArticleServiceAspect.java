@@ -15,9 +15,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hcsy.spring.common.client.FastAPIClient;
-import com.hcsy.spring.common.client.GinClient;
 import com.hcsy.spring.common.mq.RabbitMQService;
+import com.hcsy.spring.common.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Article;
@@ -27,12 +26,11 @@ import com.hcsy.spring.entity.po.Article;
 @RequiredArgsConstructor
 public class ArticleServiceAspect {
 
-    private final GinClient ginClient;
-    private final FastAPIClient fastAPIClient;
     private final RabbitMQService rabbitMQService;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final SimpleLogger logger;
+    private final AsyncSyncService asyncSyncService;
 
     @Pointcut("execution(* com.hcsy.spring.api.service.ArticleService.saveArticle(..)) ||" +
             "execution(* com.hcsy.spring.api.service.ArticleService.updateArticle(..)) || " +
@@ -140,14 +138,17 @@ public class ArticleServiceAspect {
                 rabbitMQService.sendMessage("log-queue", json);
                 logger.info("发送到MQ：" + json);
 
-                // 4. 注册事务提交后的回调，同步 ES
+                // 3.5 在主线程中保存用户信息，用于异步任务日志记录
+                final Long currentUserId = userId;
+                final String currentUsername = UserContext.getUsername();
+
+                // 4. 注册事务提交后的回调，异步同步 ES、Hive 和 Vector
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        logger.info("事务提交后开始同步ES和Hive...");
-                        ginClient.syncES();
-                        fastAPIClient.syncHive();
-                        logger.info("事务提交后同步ES和Hive完成");
+                        logger.info("事务提交后触发异步同步任务...");
+                        // 异步执行，不阻塞主流程
+                        asyncSyncService.syncAllAsync(currentUserId, currentUsername);
                     }
                 });
 

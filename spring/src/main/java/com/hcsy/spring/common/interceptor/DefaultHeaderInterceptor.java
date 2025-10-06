@@ -14,7 +14,13 @@ public class DefaultHeaderInterceptor implements RequestInterceptor {
         // 添加默认请求头
         Long userId = UserContext.getUserId();
         String username = UserContext.getUsername();
-        template.header("X-User-Id", userId.toString());
-        template.header("X-Username", username);
+
+        // 处理异步任务中 userId 为 null 的情况
+        if (userId != null) {
+            template.header("X-User-Id", userId.toString());
+        }
+        if (username != null) {
+            template.header("X-Username", username);
+        }
     }
 }
