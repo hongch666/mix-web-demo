@@ -1,9 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
 import lombok.RequiredArgsConstructor;
@@ -26,26 +24,51 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisUtil redisUtil;
 
     @Override
-    public IPage<User> listUsersWithFilter(Page<User> page, String username) {
-        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+    public java.util.Map<String, Object> listUsersWithFilter(long page, long size, String username) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+
+        // 1. 先获取所有符合条件的用户ID（轻量查询）
+        LambdaQueryWrapper<User> idQueryWrapper = Wrappers.lambdaQuery();
+        idQueryWrapper.select(User::getId);
         if (username != null && !username.isEmpty()) {
-            queryWrapper.like(User::getName, username); // 用户名模糊匹配
+            idQueryWrapper.like(User::getName, username);
         }
-        IPage<User> userPage = this.page(page, queryWrapper);
+        List<User> userIds = this.list(idQueryWrapper);
 
-        // 为每个用户查redis登录状态，并设置到User对象
-        List<User> userList = userPage.getRecords();
-        for (User user : userList) {
+        if (userIds.isEmpty()) {
+            result.put("total", 0L);
+            result.put("list", java.util.Collections.emptyList());
+            return result;
+        }
+
+        // 2. 批量从Redis获取所有用户的登录状态，构建 userId -> loginStatus 映射
+        java.util.Map<Long, Integer> loginStatusMap = new java.util.HashMap<>();
+        for (User user : userIds) {
             String status = (String) redisUtil.get("user:status:" + user.getId());
-            // 建议在User类加一个transient Integer loginStatus字段
-            user.setLoginStatus("1".equals(status) ? 1 : 0);
+            int loginStatus = "1".equals(status) ? 1 : 0;
+            loginStatusMap.put(user.getId(), loginStatus);
         }
-        // 按loginStatus降序排序
-        userList.sort((u1, u2) -> Integer.compare(u2.getLoginStatus(), u1.getLoginStatus()));
 
-        // 重新设置排序后的列表
-        userPage.setRecords(userList);
-        return userPage;
+        // 3. 使用自定义 Mapper 方法，在 SQL 层面完成排序和分页
+        long offset = (page - 1) * size;
+        List<User> users = userMapper.selectUsersWithLoginStatus(
+                username,
+                loginStatusMap,
+                offset,
+                size);
+
+        // 4. 设置每个用户的登录状态（从 Redis 映射中获取）
+        for (User user : users) {
+            user.setLoginStatus(loginStatusMap.getOrDefault(user.getId(), 0));
+        }
+
+        // 5. 获取总数
+        long total = userMapper.countUsersByUsername(username);
+
+        // 6. 返回结果
+        result.put("total", total);
+        result.put("list", users);
+        return result;
     }
 
     @Transactional

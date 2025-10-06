@@ -6,8 +6,6 @@ import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
@@ -48,11 +46,10 @@ public class UserController {
     @Cacheable(value = "userPage", key = "#queryDTO.page + '-' + #queryDTO.size + '-' + (#queryDTO.username == null ? '' : #queryDTO.username)")
     @ApiLog("获取用户信息")
     public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
-        Page<User> userPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
-        IPage<User> resultPage = userService.listUsersWithFilter(userPage, queryDTO.getUsername());
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
+        Map<String, Object> data = userService.listUsersWithFilter(
+                queryDTO.getPage(),
+                queryDTO.getSize(),
+                queryDTO.getUsername());
         return Result.success(data);
     }
 
