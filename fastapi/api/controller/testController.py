@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 from common.decorators import log
 from common.client import call_remote_service
-from common.task import export_articles_to_csv_and_hive
+from common.task import export_articles_to_csv_and_hive, sync_article_vectors_to_postgres
 from common.utils import success,fail,fileLogger
 
 router: APIRouter = APIRouter(
@@ -63,4 +63,15 @@ async def test_export_articles_task(request: Request) -> JSONResponse:
         return success()
     except Exception as e:
         fileLogger.error(f"手动触发文章表导出任务失败: {e}")
+        return fail(f"任务执行失败: {e}")
+    
+# 调用定时任务（导出文章表到csv并同步hive）
+@router.post("/task/vector")
+@log("手动触发向量数据库同步任务")
+async def test_export_articles_task(request: Request) -> JSONResponse:
+    try:
+        sync_article_vectors_to_postgres()
+        return success()
+    except Exception as e:
+        fileLogger.error(f"手动触发向量数据库同步任务失败: {e}")
         return fail(f"任务执行失败: {e}")

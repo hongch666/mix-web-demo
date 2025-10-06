@@ -5,10 +5,14 @@ import google.generativeai as genai
 from fastapi import Depends
 from sqlmodel import Session
 from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper,AiHistoryMapper,get_ai_history_mapper
+from api.mapper.vectorMapper import VectorMapper, get_vector_mapper
+from api.service.embeddingService import EmbeddingService, get_embedding_service
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config,get_db
+from config.postgres import get_pg_db
 from entity.po import Article,User,SubCategory
 from common.middleware import get_current_user_id, get_current_username
+from datetime import datetime
 
 
 class GeminiService:
@@ -19,6 +23,16 @@ class GeminiService:
         self.subCategoryMapper = subCategoryMapper
         self.categoryMapper = categoryMapper
         self.aiHistoryMapper = aiHistoryMapper
+        try:
+            self.vectorMapper: Optional[VectorMapper] = get_vector_mapper()
+        except Exception as e:
+            self.vectorMapper = None
+            logger.warning(f"VectorMapper 初始化失败，向量检索不可用: {e}")
+        try:
+            self.embeddingService: Optional[EmbeddingService] = get_embedding_service()
+        except Exception as e:
+            self.embeddingService = None
+            logger.warning(f"EmbeddingService 初始化失败，向量检索不可用: {e}")
         # 把 Gemini 客户端的配置和初始化放到实例内，避免模块导入时执行网络初始化
         try:
             gemini_cfg = load_config("gemini") or {}
@@ -113,13 +127,73 @@ class GeminiService:
             else:
                 yield f"流式聊天服务异常: {str(e)}"
 
-    def search_article_from_db(self, db: Session = Depends(get_db)) -> str:
-        """从数据库搜索文章信息"""
-        articles: List[Article] = self.articleMapper.get_article_limit_mapper(db)
+    def search_article_from_db(self, message: str = "", db: Session = Depends(get_db)) -> str:
+        """从数据库搜索文章信息，支持向量RAG检索"""
+        articles: List[Article] = self.articleMapper.get_all_articles_mapper(db)
         if not articles:
             return "没有找到相关的知识库内容"
+
+        message_text: str = (message or "").strip()
+        article_map: Dict[int, Article] = {article.id: article for article in articles if article.id is not None}
+        sorted_articles: List[Article] = sorted(
+            articles,
+            key=lambda item: item.create_at if item.create_at else datetime.min,
+            reverse=True
+        )[:100]
+
+        total_articles: int = len(articles)
+        selected_articles: List[Article] = []
+
+        if total_articles < 5:
+            logger.info("文章总数少于5，使用所有文章")
+            selected_articles = sorted_articles
+        else:
+            logger.info("文章总数大于等于5，进行RAG检索")
+            rag_candidates: List[Article] = []
+            if message_text and getattr(self, "embeddingService", None):
+                query_vector: Optional[List[float]] = self.embeddingService.encode_text(message_text)
+                if query_vector and any(value != 0.0 for value in query_vector):
+                    pg_generator = None
+                    try:
+                        pg_generator = get_pg_db()
+                        pg_db = next(pg_generator)
+                        if getattr(self, "vectorMapper", None) and pg_db is not None:
+                            rag_results: List[Dict[str, Any]] = self.vectorMapper.search_similar_articles(pg_db, query_vector, limit=5)
+                            seen_ids: set[int] = set()
+                            for item in rag_results:
+                                article_id = item.get("article_id")
+                                if article_id in article_map and article_id not in seen_ids:
+                                    rag_candidates.append(article_map[article_id])
+                                    seen_ids.add(article_id)
+                        else:
+                            logger.warning("向量检索依赖未就绪，降级为默认文章列表")
+                    except StopIteration:
+                        logger.warning("PostgreSQL 连接不可用，降级为默认文章列表")
+                    except Exception as rag_error:
+                        logger.warning(f"向量检索失败，降级为默认文章列表: {rag_error}")
+                    finally:
+                        if pg_generator is not None:
+                            try:
+                                pg_generator.close()
+                            except Exception:
+                                pass
+                else:
+                    logger.info("缺少有效的向量编码结果，降级使用默认文章列表")
+
+            if rag_candidates:
+                selected_articles = rag_candidates[:5]
+            else:
+                selected_articles = sorted_articles[:5]
+
+            if len(selected_articles) < 5:
+                for article in sorted_articles:
+                    if article not in selected_articles:
+                        selected_articles.append(article)
+                    if len(selected_articles) >= 5:
+                        break
+
         content_list: List[str] = []
-        for article in articles:
+        for article in selected_articles:
             content_list.append(
                 f"标题: {article.title}, 内容(Markdown格式，自行转换): {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
             )
@@ -178,7 +252,7 @@ class GeminiService:
         user_id: str = get_current_user_id() or ""
         username: str = get_current_username() or ""
         userInfo: str = f"用户ID: {user_id}, 用户名: {username}"
-        article: str = self.search_article_from_db(db)
+        article: str = self.search_article_from_db(message, db)
         user: str = self.search_user_from_db(db)
         category: str = self.search_category_from_db(db)
         sub_category: str = self.search_sub_category_from_db(db)

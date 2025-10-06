@@ -166,23 +166,210 @@ def export_articles_to_csv_and_hive(
             pass
 
 
+def sync_article_vectors_to_postgres(
+    article_mapper: Optional[Any] = None,
+    vector_mapper: Optional[Any] = None,
+    embedding_service: Optional[Any] = None,
+    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    pg_db_factory: Optional[Callable[[], Session]] = None,
+) -> None:
+    """
+    定时同步 MySQL 文章到 PostgreSQL 向量库
+    
+    Args:
+        article_mapper: ArticleMapper 实例
+        vector_mapper: VectorMapper 实例
+        embedding_service: EmbeddingService 实例
+        mysql_db_factory: MySQL 数据库会话工厂
+        pg_db_factory: PostgreSQL 数据库会话工厂
+    """
+    # 延迟导入，避免循环依赖
+    if article_mapper is None:
+        from api.mapper.articleMapper import get_article_mapper
+        article_mapper = get_article_mapper()
+    
+    if vector_mapper is None:
+        try:
+            from api.mapper.vectorMapper import get_vector_mapper
+            vector_mapper = get_vector_mapper()
+        except ImportError:
+            logger.error("VectorMapper 未找到，跳过向量同步")
+            return
+    
+    if embedding_service is None:
+        try:
+            from api.service.embeddingService import get_embedding_service
+            embedding_service = get_embedding_service()
+        except ImportError:
+            logger.error("EmbeddingService 未找到，跳过向量同步")
+            return
+    
+    if mysql_db_factory is None:
+        from config import get_db as _get_db
+        mysql_db_factory = lambda: next(_get_db())
+    
+    if pg_db_factory is None:
+        try:
+            from config.postgres import get_pg_db as _get_pg_db
+            pg_db_factory = lambda: next(_get_pg_db())
+        except ImportError:
+            logger.error("PostgreSQL 配置未找到，跳过向量同步")
+            return
+    
+    mysql_db: Optional[Session] = None
+    pg_db: Optional[Session] = None
+    
+    try:
+        mysql_db = mysql_db_factory()
+        pg_db = pg_db_factory()
+        
+        logger.info("开始同步文章向量到 PostgreSQL...")
+        
+        # 1. 获取最近更新的文章
+        if hasattr(article_mapper, 'get_all_articles'):
+            articles = article_mapper.get_all_articles(mysql_db)
+        elif hasattr(article_mapper, 'get_all_articles_mapper'):
+            articles = article_mapper.get_all_articles_mapper(mysql_db)
+        else:
+            logger.error("ArticleMapper 未提供获取文章的方法")
+            return
+        
+        if not articles:
+            logger.info("没有文章需要同步")
+            return
+        
+        # 2. 获取已存在文章的内容哈希（用于快速对比）
+        existing_hash = vector_mapper.get_existing_articles_hash(pg_db)
+        logger.info(f"已获取 {len(existing_hash)} 篇已存在文章的哈希值")
+        
+        # 3. 筛选需要同步的文章（内容有变化或新文章）
+        articles_to_sync = []
+        skipped_count = 0
+        
+        for article in articles:
+            article_id = getattr(article, 'id', 0)
+            title = getattr(article, 'title', '')
+            content_preview = getattr(article, 'content', '')[:500]
+            
+            # 构建当前文章的内容标识
+            current_content_key = f"{title}|{content_preview}"
+            
+            # 如果文章不存在或内容有变化，才需要同步
+            if article_id not in existing_hash or existing_hash[article_id] != current_content_key:
+                articles_to_sync.append(article)
+            else:
+                skipped_count += 1
+        
+        logger.info(f"需要同步 {len(articles_to_sync)} 篇文章，跳过 {skipped_count} 篇未变化的文章")
+        
+        if not articles_to_sync:
+            logger.info("所有文章都已是最新，无需同步")
+            return
+        
+        # 4. 批量处理需要同步的文章
+        sync_count = 0
+        error_count = 0
+        batch_size = 50  # 每批处理 50 篇文章
+        
+        for i in range(0, len(articles_to_sync), batch_size):
+            batch = articles_to_sync[i:i + batch_size]
+            
+            # 构建文本列表
+            texts = [
+                f"{getattr(a, 'title', '')} {getattr(a, 'content', '')[:500]}"
+                for a in batch
+            ]
+            
+            try:
+                # 批量向量化（只计算需要更新的文章）
+                embeddings = embedding_service.encode_batch(texts)
+                
+                # 批量更新到 PostgreSQL
+                for article, embedding in zip(batch, embeddings):
+                    try:
+                        vector_mapper.upsert_article_vector(
+                            pg_db,
+                            article_id=getattr(article, 'id', 0),
+                            title=getattr(article, 'title', ''),
+                            content_preview=getattr(article, 'content', '')[:500],
+                            embedding=embedding
+                        )
+                        sync_count += 1
+                    except Exception as e:
+                        error_count += 1
+                        logger.error(f"同步文章 {getattr(article, 'id', 'unknown')} 失败: {e}")
+                
+                logger.info(f"已同步批次 {i // batch_size + 1}，共 {len(batch)} 篇文章")
+                
+            except Exception as e:
+                error_count += len(batch)
+                logger.error(f"批量向量化失败: {e}")
+        
+        logger.info(
+            f"向量同步完成！成功: {sync_count} 篇，失败: {error_count} 篇，跳过: {skipped_count} 篇"
+        )
+        
+    except Exception as e:
+        logger.error(f"同步文章向量任务失败: {e}")
+    finally:
+        # 关闭数据库会话
+        try:
+            if mysql_db is not None and hasattr(mysql_db, "close"):
+                mysql_db.close()
+        except Exception:
+            pass
+        
+        try:
+            if pg_db is not None and hasattr(pg_db, "close"):
+                pg_db.close()
+        except Exception:
+            pass
+
+
 def start_scheduler(
     article_mapper: Optional[Any] = None,
     user_mapper: Optional[Any] = None,
+    vector_mapper: Optional[Any] = None,
+    embedding_service: Optional[Any] = None,
     db_factory: Optional[Callable[[], Session]] = None,
+    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    pg_db_factory: Optional[Callable[[], Session]] = None,
 ) -> BaseScheduler:
     """
     启动调度器，可把依赖注入进来（用于测试或容器式管理）。
     例如：
-      start_scheduler(article_mapper=get_article_mapper(), db_factory=lambda: next(get_db()))
+      start_scheduler(
+          article_mapper=get_article_mapper(), 
+          db_factory=lambda: next(get_db()),
+          pg_db_factory=lambda: next(get_pg_db())
+      )
     """
     scheduler: BackgroundScheduler = BackgroundScheduler()
 
-    # 通过 partial 把依赖注入到任务函数
-    job_func = partial(export_articles_to_csv_and_hive, article_mapper=article_mapper, user_mapper=user_mapper, db_factory=db_factory)
-
+    # 任务1：导出文章到 CSV 和 Hive
+    export_job_func = partial(
+        export_articles_to_csv_and_hive, 
+        article_mapper=article_mapper, 
+        user_mapper=user_mapper, 
+        db_factory=db_factory or mysql_db_factory
+    )
     # 每1小时执行一次
-    scheduler.add_job(job_func, 'interval', hours=1)
+    scheduler.add_job(export_job_func, 'interval', hours=1, id='export_articles')
+    
+    # 任务2：同步文章向量到 PostgreSQL
+    sync_vector_job_func = partial(
+        sync_article_vectors_to_postgres,
+        article_mapper=article_mapper,
+        vector_mapper=vector_mapper,
+        embedding_service=embedding_service,
+        mysql_db_factory=mysql_db_factory or db_factory,
+        pg_db_factory=pg_db_factory
+    )
+    # 每10分钟执行一次向量同步（可根据需要调整频率）
+    scheduler.add_job(sync_vector_job_func, 'interval', minutes=10, id='sync_vectors')
+    
     scheduler.start()
-    logger.info("定时任务调度器已启动")
+    logger.info("定时任务调度器已启动：")
+    logger.info("  - 文章导出任务：每 1 小时执行一次")
+    logger.info("  - 向量同步任务：每 10 分钟执行一次")
     return scheduler
