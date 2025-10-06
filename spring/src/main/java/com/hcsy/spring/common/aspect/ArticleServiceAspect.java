@@ -1,4 +1,4 @@
-package com.hcsy.spring.common.aop;
+package com.hcsy.spring.common.aspect;
 
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.annotation.*;
@@ -138,11 +138,11 @@ public class ArticleServiceAspect {
                 rabbitMQService.sendMessage("log-queue", json);
                 logger.info("发送到MQ：" + json);
 
-                // 3.5 在主线程中保存用户信息，用于异步任务日志记录
+                // 4. 在主线程中保存用户信息，用于异步任务日志记录
                 final Long currentUserId = userId;
                 final String currentUsername = UserContext.getUsername();
 
-                // 4. 注册事务提交后的回调，异步同步 ES、Hive 和 Vector
+                // 5. 注册事务提交后的回调，异步同步 ES、Hive 和 Vector
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {

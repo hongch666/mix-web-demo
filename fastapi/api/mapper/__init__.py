@@ -10,6 +10,8 @@ from .userMapper import get_user_mapper,UserMapper
 
 from .aiHistoryMapper import get_ai_history_mapper,AiHistoryMapper
 
+from .vectorMapper import get_vector_mapper, VectorMapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -22,5 +24,7 @@ __all__ = [
     "get_user_mapper",
     "UserMapper",
     "get_ai_history_mapper",
-    "AiHistoryMapper"
+    "AiHistoryMapper",
+    "get_vector_mapper",
+    "VectorMapper"
 ]

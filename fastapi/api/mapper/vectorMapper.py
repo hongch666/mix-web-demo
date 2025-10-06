@@ -4,6 +4,7 @@ from sqlalchemy import text
 from functools import lru_cache
 from common.utils import fileLogger as logger
 
+# TODO： 将SQL Alchemy换成SQL Model
 class VectorMapper:
     
     def search_similar_articles(

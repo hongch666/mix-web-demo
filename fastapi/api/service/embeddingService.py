@@ -7,6 +7,7 @@ class EmbeddingService:
     def __init__(self):
         try:
             # 使用轻量级多语言模型
+            # TODO: 下面的参数写到配置文件中
             self.model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
             self.dimension = 384
             logger.info("Embedding 模型加载成功")

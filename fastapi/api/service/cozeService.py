@@ -4,9 +4,8 @@ from typing import List, Dict, Any, AsyncGenerator, Optional
 from cozepy import Coze, TokenAuth, Message, ChatStatus
 from fastapi import Depends
 from sqlmodel import Session
-from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper,AiHistoryMapper,get_ai_history_mapper
-from api.mapper.vectorMapper import VectorMapper, get_vector_mapper
-from api.service.embeddingService import EmbeddingService, get_embedding_service
+from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper,AiHistoryMapper,get_ai_history_mapper,VectorMapper, get_vector_mapper
+from api.service import EmbeddingService, get_embedding_service
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config,get_db
 from config.postgres import get_pg_db
@@ -178,6 +177,7 @@ class CozeService:
                 else:
                     yield f"流式聊天服务异常: {str(e)}"
 
+    # TODO: 抽离所有构建prompt的方法
     def search_article_from_db(self, message: str = "", db: Session = Depends(get_db)) -> str:
             articles: List[Article] = self.articleMapper.get_all_articles_mapper(db)
             if not articles:
@@ -243,6 +243,7 @@ class CozeService:
                             break
 
             content_list: List[str] = []
+            # TODO：所有方式得到的文章都拼接完整内容
             # 如果这些文章是通过 RAG 检索得到的(即在 rag_candidates 中)，则拼接完整内容；否则保留摘要
             rag_ids = {a.id for a in rag_candidates} if 'rag_candidates' in locals() and rag_candidates else set()
             for article in selected_articles:

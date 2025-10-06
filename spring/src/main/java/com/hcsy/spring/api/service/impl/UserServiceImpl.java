@@ -11,7 +11,10 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.entity.po.User;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,8 +27,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisUtil redisUtil;
 
     @Override
-    public java.util.Map<String, Object> listUsersWithFilter(long page, long size, String username) {
-        java.util.Map<String, Object> result = new java.util.HashMap<>();
+    public Map<String, Object> listUsersWithFilter(long page, long size, String username) {
+        Map<String, Object> result = new HashMap<>();
 
         // 1. 先获取所有符合条件的用户ID（轻量查询）
         LambdaQueryWrapper<User> idQueryWrapper = Wrappers.lambdaQuery();
@@ -37,12 +40,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         if (userIds.isEmpty()) {
             result.put("total", 0L);
-            result.put("list", java.util.Collections.emptyList());
+            result.put("list", Collections.emptyList());
             return result;
         }
 
         // 2. 批量从Redis获取所有用户的登录状态，构建 userId -> loginStatus 映射
-        java.util.Map<Long, Integer> loginStatusMap = new java.util.HashMap<>();
+        Map<Long, Integer> loginStatusMap = new HashMap<>();
         for (User user : userIds) {
             String status = (String) redisUtil.get("user:status:" + user.getId());
             int loginStatus = "1".equals(status) ? 1 : 0;

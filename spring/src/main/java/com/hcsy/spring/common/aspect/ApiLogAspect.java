@@ -1,4 +1,4 @@
-package com.hcsy.spring.common.aop;
+package com.hcsy.spring.common.aspect;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

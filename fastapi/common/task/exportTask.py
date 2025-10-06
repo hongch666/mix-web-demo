@@ -166,7 +166,7 @@ def export_articles_to_csv_and_hive(
             pass
 
 
-def sync_article_vectors_to_postgres(
+def export_article_vectors_to_postgres(
     article_mapper: Optional[Any] = None,
     vector_mapper: Optional[Any] = None,
     embedding_service: Optional[Any] = None,
@@ -358,15 +358,15 @@ def start_scheduler(
     
     # 任务2：同步文章向量到 PostgreSQL
     sync_vector_job_func = partial(
-        sync_article_vectors_to_postgres,
+        export_article_vectors_to_postgres,
         article_mapper=article_mapper,
         vector_mapper=vector_mapper,
         embedding_service=embedding_service,
         mysql_db_factory=mysql_db_factory or db_factory,
         pg_db_factory=pg_db_factory
     )
-    # 每10分钟执行一次向量同步（可根据需要调整频率）
-    scheduler.add_job(sync_vector_job_func, 'interval', minutes=10, id='sync_vectors')
+    # 每2小时执行一次向量同步（可根据需要调整频率）
+    scheduler.add_job(sync_vector_job_func, 'interval', hours=2, id='sync_vectors')
     
     scheduler.start()
     logger.info("定时任务调度器已启动：")
