@@ -243,9 +243,17 @@ class CozeService:
                             break
 
             content_list: List[str] = []
+            # 如果这些文章是通过 RAG 检索得到的(即在 rag_candidates 中)，则拼接完整内容；否则保留摘要
+            rag_ids = {a.id for a in rag_candidates} if 'rag_candidates' in locals() and rag_candidates else set()
             for article in selected_articles:
+                if article.id in rag_ids:
+                    article_content = article.content or ""
+                else:
+                    # 非 RAG 命中时使用摘要，防止 prompt 过大
+                    article_content = (article.content or "")[:200]
+
                 content_list.append(
-                    f"标题: {article.title}, 内容(Markdown格式，自行转换): {article.content[:100]}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
+                    f"标题: {article.title}, 内容(Markdown格式，自行转换): {article_content}, 用户ID: {article.user_id}, 标签: {article.tags}, 状态: {article.status}, 创建时间: {article.create_at.isoformat() if article.create_at else '未知'}, 更新时间: {article.update_at.isoformat() if article.update_at else '未知'}, 浏览量: {article.views}"
                 )
             return "\n".join(content_list) if content_list else "没有找到相关的知识库内容"
         
