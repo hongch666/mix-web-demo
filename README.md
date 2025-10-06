@@ -18,7 +18,7 @@
 2. 文章操作日志的查看和分析
 3. 文章分类，用户状态的管理操作
 4. 权限校验实现用户端和管理端
-5. 支持 Coze/Gemini 进行多模型选择的 AI 聊天助手
+5. 基于 RAG 技术，支持 Coze/Gemini 进行多模型选择的 AI 聊天助手
 6. 系统数据的相关数据分析
 7. 用户实时聊天功能
 
@@ -32,6 +32,7 @@
 - JWT：身份验证
 - Nacos：服务发现与配置中心
 - MySQL：关系型数据库
+- PostgreSQL：RAG 向量数据库
 - MongoDB：非关系型数据库
 - Elasticsearch：搜索引擎
 - Redis：缓存服务
@@ -52,6 +53,7 @@
 - Maven 3.6+
 - Node.js 20+
 - MySQL 8.0+
+- PostgreSQL(需要安装向量插件) 15.4+
 - MongoDB 5.0+
 - Redis 6.0+
 - RabbitMQ 3.8+
@@ -174,6 +176,8 @@ python3 -u main.py
 ### 确保已安装并启动以下数据库服务：
 
 - MySQL
+- PostgreSQL
+  - 需要安装 `pgvector`插件
 - MongoDB
 - Redis
 - Elasticsearch
@@ -288,6 +292,40 @@ CREATE TABLE `ai_history` (
 );
 ```
 
+### PostgreSQL 表创建(需要手动创建)
+
+```pgsql
+-- 1. 启用 pgvector 扩展
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 2. 创建向量表（只存储向量和必要字段）
+CREATE TABLE IF NOT EXISTS article_vector (
+    article_id INTEGER PRIMARY KEY, -- 关联 MySQL article.id
+    title VARCHAR(255), -- 标题（用于展示）
+    content_preview TEXT, -- 内容预览（前500字）
+    embedding vector (384), -- 向量（384维，MiniLM 模型）
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. 创建向量索引（加速相似度搜索）
+CREATE INDEX IF NOT EXISTS idx_article_vector_embedding ON article_vector USING ivfflat (embedding vector_cosine_ops)
+WITH (lists = 100);
+
+-- 4. 创建更新时间触发器
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_article_vector_updated_at
+BEFORE UPDATE ON article_vector
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+```
+
 ### MongoDB 表创建
 
 - 数据库为 `demo`，集合为 `articlelogs`
@@ -367,6 +405,7 @@ spring:
         server-addr: 127.0.0.1:8848 # Nacos 服务端地址
 
 mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml # 指定 Mapper XML 文件位置
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
   global-config:
@@ -484,6 +523,12 @@ nacos:
 database:
   mysql:
     url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "demo"
+    user: "postgres"
+    password: "123456"
   mongodb:
     url: "mongodb://localhost:27017"
     database: "demo"
