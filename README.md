@@ -529,6 +529,10 @@ database:
     database: "demo"
     user: "postgres"
     password: "123456"
+    pool_pre_ping: True
+    pool_size: 10
+    max_overflow: 20
+    echo: False
   mongodb:
     url: "mongodb://localhost:27017"
     database: "demo"
@@ -556,8 +560,12 @@ coze:
   base_url: "https://api.coze.cn"
   timeout: 30
 gemini:
-  model_name: "gemini-2.0-flash" # 可选: gemini-1.5-pro, gemini-1.5-flash 等
+  model_name: "gemini-2.0-flash" # 可选: gemini-2.0-pro, gemini-2.0-flash 等
   timeout: 30 # 请求超时时间（秒）
+embedding:
+  model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" # 使用轻量级多语言模型
+  dimension: 384
+  top_k: 5
 ```
 
 - `application-secret.yaml`
@@ -602,7 +610,7 @@ spring:
         - id: exclude-list
           uri: no://op
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
+            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
           filters:
             - SetStatus=204
 
