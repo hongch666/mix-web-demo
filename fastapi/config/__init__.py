@@ -4,6 +4,8 @@ from .mongodb import client,db
 
 from .mysql import get_db
 
+from .postgres import get_pg_db
+
 from .nacos import client,register_instance,get_service_instance,start_nacos
 
 from .oss import OSSClient
@@ -14,6 +16,7 @@ __all__ = [
     "client",
     "db",
     "get_db",
+    "get_pg_db",
     "start_nacos",
     "register_instance",
     "get_service_instance",

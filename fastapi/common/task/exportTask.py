@@ -371,5 +371,5 @@ def start_scheduler(
     scheduler.start()
     logger.info("定时任务调度器已启动：")
     logger.info("  - 文章导出任务：每 1 小时执行一次")
-    logger.info("  - 向量同步任务：每 10 分钟执行一次")
+    logger.info("  - 向量同步任务：每 2 小时执行一次")
     return scheduler

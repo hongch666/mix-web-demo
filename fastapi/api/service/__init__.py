@@ -1,16 +1,18 @@
 from .analyzeService import AnalyzeService, get_analyze_service
 
-from .cozeService import CozeService, get_coze_service
-
 from .generateService import GenerateService,get_generate_service
 
 from .uploadService import UploadService,get_upload_service
 
-from .geminiService import GeminiService, get_gemini_service
-
 from .aiHistoryService import AiHistoryService, get_ai_history_service
 
 from .embeddingService import EmbeddingService, get_embedding_service
+
+from .promptService import PromptService, get_prompt_service
+
+from .cozeService import CozeService, get_coze_service
+
+from .geminiService import GeminiService, get_gemini_service
 
 __all__ = [
     "get_analyze_service",
@@ -26,5 +28,7 @@ __all__ = [
     "AiHistoryService",
     "get_ai_history_service",
     "EmbeddingService",
-    "get_embedding_service"
+    "get_embedding_service",
+    "PromptService",
+    "get_prompt_service"
 ]

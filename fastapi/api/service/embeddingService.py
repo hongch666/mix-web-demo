@@ -2,14 +2,14 @@ from functools import lru_cache
 from typing import List
 from sentence_transformers import SentenceTransformer
 from common.utils import fileLogger as logger
+from config import load_config
 
 class EmbeddingService:
     def __init__(self):
         try:
-            # 使用轻量级多语言模型
-            # TODO: 下面的参数写到配置文件中
-            self.model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
-            self.dimension = 384
+            embedding_config = load_config("embedding") or {}
+            self.model = SentenceTransformer(embedding_config.get("model", 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2'))
+            self.dimension = embedding_config.get("dimension", 384)
             logger.info("Embedding 模型加载成功")
         except Exception as e:
             logger.error(f"加载 Embedding 模型失败: {e}")

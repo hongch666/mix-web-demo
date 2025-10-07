@@ -24,3 +24,9 @@ def create_ai_history(request: Request, data: CreateHistoryDTO, db: Session = De
 def get_all_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
     histories = ai_history_service.get_all_ai_history(user_id, db)
     return success(data=histories);
+
+@router.delete("/{user_id}")
+@log("删除用户所有AI历史记录")
+def delete_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+    ai_history_service.delete_ai_history_by_userid(user_id, db)
+    return success();

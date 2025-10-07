@@ -1,19 +1,22 @@
 from typing import List, Dict, Any
-from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlmodel import Session, text
 from functools import lru_cache
 from common.utils import fileLogger as logger
-
-# TODO： 将SQL Alchemy换成SQL Model
+from config import load_config
 class VectorMapper:
     
+    def __init__(self):
+        self.topK = load_config("embedding").get("top_k", 5) if load_config("embedding") else 5
+
     def search_similar_articles(
         self, 
         pg_db: Session, 
         query_embedding: List[float], 
-        limit: int = 5
+        limit: int | None
     ) -> List[Dict[str, Any]]:
         """向量相似度搜索"""
+        if limit is None:
+            limit = self.topK  # 运行时再使用实例属性
         try:
             # 将向量转为字符串格式 '[0.1, 0.2, ...]'
             query_vector_str = str(query_embedding)

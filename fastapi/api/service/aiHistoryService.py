@@ -59,6 +59,9 @@ class AiHistoryService:
                 except Exception:
                     pass
         return data
+    
+    def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
+        self.ai_history_mapper.delete_ai_history_by_userid(db, user_id)
 
     
 @lru_cache
