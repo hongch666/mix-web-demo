@@ -692,7 +692,6 @@ jwt:
        version="1.0.0"
    )
    ```
-
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
    ```python
@@ -703,7 +702,6 @@ jwt:
        """
        return {"msg": "hello"}
    ```
-
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
 ## 其他说明
@@ -728,3 +726,4 @@ gemini:
 ```
 
 5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
+6. 如果没有使用Hadoop+Hive作为大数据分析工具，系统默认使用pyspark分析同步时产生的csv文章数据。
