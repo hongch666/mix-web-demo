@@ -44,6 +44,7 @@
 
 - [CozeAI](https://www.coze.cn/home)
 - [Gemini API](https://aistudio.google.com/)
+- [阿里云 OSS](https://oss.console.aliyun.com/overview)
 
 ## 环境要求
 
@@ -59,27 +60,95 @@
 - RabbitMQ 3.8+
 - Hadoop+Hive(可选)
 
-## 项目设置
+## 环境配置脚本
 
-### FastAPI 部分
+为了简化项目初始化过程，我们提供了自动化配置脚本 `setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
 
-```bash
-cd fastapi
-python3 -m venv venv
-source venv/bin/activate # Linux
-venv\Scripts\activate # Windows
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
-
-> 如需退出虚拟环境，执行 `deactivate`
-
-### Gin 部分
+### Linux/macOS 使用方式
 
 ```bash
-cd gin # 进入文件夹
-go mod tidy # 安装依赖
-go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
+# 1. 确保脚本有执行权限
+chmod +x setup.sh
+
+# 2. 运行配置脚本
+./setup.sh
+
+# 3. 根据提示选择要配置的模块
+# 选项:
+# 1) Spring      - 配置 Spring Boot 服务
+# 2) Gin         - 配置 Gin 服务
+# 3) NestJS      - 配置 NestJS 服务
+# 4) FastAPI     - 配置 FastAPI 服务
+# 5) 全部        - 配置所有模块
 ```
+
+### 脚本功能特性
+
+1. **环境检查**
+
+   - 自动检测 Python、Go、Java、Node.js 等必要工具的安装状态和版本
+   - 如果缺少必要工具会给出明确提示
+
+2. **系统依赖管理**（仅 FastAPI 模块需要）
+
+   - 自动检测并安装 PostgreSQL 开发库（`libpq-dev`）
+   - 自动安装编译工具（`build-essential`、`python3-dev`）
+   - 支持多种 Linux 发行版（Ubuntu/Debian、CentOS/RHEL、Fedora、Arch）
+
+3. **模块化安装**
+
+   - 支持选择性安装特定模块或全部安装
+   - 每个模块独立配置，互不影响
+
+4. **智能判断**
+
+   - Spring: 自动检测是否有全局 Maven，如果没有则使用 mvnw
+   - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
+   - FastAPI: 自动创建虚拟环境并使用清华镜像源加速安装
+
+5. **目录自动创建**
+
+   - 自动创建 logs 目录（spring、gin、nestjs、fastapi）
+   - 自动创建 static 目录（pic、excel、word）
+
+### 脚本执行流程
+
+```bash
+./setup.sh
+```
+
+执行后将按以下流程进行：
+
+1. **检测操作系统** - 识别当前 Linux 发行版
+2. **检查环境** - 验证必要工具（Python、Go、Java、Node.js、npm）
+3. **创建目录** - 自动创建日志和静态文件目录
+4. **选择模块** - 交互式选择要配置的模块
+5. **安装依赖** - 根据选择自动安装各模块依赖
+6. **完成提示** - 显示后续配置步骤
+
+### 注意事项
+
+- **首次运行**: 建议首次配置时选择"全部"选项，确保所有依赖都正确安装
+- **系统权限**: 安装系统依赖时可能需要 sudo 权限
+- **网络要求**:
+  - Go 模块需要访问 GitHub 和 Go 代理
+  - Python 使用清华镜像源，国内访问速度较快
+  - npm 使用默认源，建议配置国内镜像（如淘宝镜像）
+- **虚拟环境**: FastAPI 会自动创建虚拟环境（venv），无需手动创建
+
+### 配置完成后
+
+脚本执行完成后，还需要：
+
+1. **配置各服务的 yaml 文件**（见下方"配置文件说明"章节）
+2. **启动基础服务**（MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos）
+3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
+
+## 环境设置
+
+> **提示**: 推荐使用上面的 `setup.sh` 配置脚本自动完成以下所有安装步骤。
+>
+> 如果需要手动配置，可以按照下面的步骤逐个模块进行。
 
 ### Spring 部分
 
@@ -93,12 +162,32 @@ mvn clean install # 下载依赖
 mvnw.cmd clean install # Windows(无全局maven)
 ```
 
+### Gin 部分
+
+```bash
+cd gin # 进入文件夹
+go mod tidy # 安装依赖
+go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
+```
+
 ### NestJS 部分
 
 ```bash
 cd nestjs # 进入文件夹
 npm install # 安装npm包
 ```
+
+### FastAPI 部分
+
+```bash
+cd fastapi
+python3 -m venv venv
+source venv/bin/activate # Linux
+venv\Scripts\activate # Windows
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+> 如需退出虚拟环境，执行 `deactivate`
 
 ## 编译和运行项目
 
@@ -692,6 +781,7 @@ jwt:
        version="1.0.0"
    )
    ```
+
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
    ```python
@@ -702,6 +792,7 @@ jwt:
        """
        return {"msg": "hello"}
    ```
+
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
 ## 其他说明
@@ -726,4 +817,4 @@ gemini:
 ```
 
 5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
-6. 如果没有使用Hadoop+Hive作为大数据分析工具，系统默认使用pyspark分析同步时产生的csv文章数据。
+6. 如果没有使用 Hadoop+Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
