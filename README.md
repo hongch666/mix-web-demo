@@ -18,7 +18,7 @@
 2. 文章操作日志的查看和分析
 3. 文章分类，用户状态的管理操作
 4. 权限校验实现用户端和管理端
-5. 基于 RAG 技术，支持 Coze/Gemini 进行多模型选择的 AI 聊天助手
+5. 基于 RAG 技术，支持 **Coze/Gemini/通义千问** 进行多模型选择的 AI 聊天助手
 6. 系统数据的相关数据分析
 7. 用户实时聊天功能
 
@@ -44,6 +44,7 @@
 
 - [CozeAI](https://www.coze.cn/home)
 - [Gemini API](https://aistudio.google.com/)
+- [阿里云百炼平台](https://bailian.console.aliyun.com/)
 - [阿里云 OSS](https://oss.console.aliyun.com/overview)
 
 ## 环境要求
@@ -594,7 +595,7 @@ logs:
 ### FastAPI 部分
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
-2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台和 Gemini 平台的 api_key，不要泄露
+2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台、 Gemini 平台和阿里云百炼平台的 api_key，不要泄露
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
@@ -651,6 +652,10 @@ coze:
 gemini:
   model_name: "gemini-2.0-flash" # 可选: gemini-2.0-pro, gemini-2.0-flash 等
   timeout: 30 # 请求超时时间（秒）
+tongyi:
+  model_name: "qwen-flash" # 可选: qwen-plus, qwen-turbo, qwen-max 等
+  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+  timeout: 30 # 请求超时时间（秒）
 embedding:
   model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" # 使用轻量级多语言模型
   dimension: 384
@@ -666,6 +671,8 @@ oss:
 coze:
   api_key: your_api_key
 gemini:
+  api_key: your_api_key
+tongyi:
   api_key: your_api_key
 ```
 
@@ -807,12 +814,17 @@ oss:
   access_key_secret: your_access_key_secret
 ```
 
-4. FastAPI 模块的 COZE 服务和 Gemini 服务 的 api_key 应写在 `application-secret.yaml`中，格式如下：
+4. FastAPI 模块的 COZE 服务、 Gemini 服务和通义千问服务的 api_key 应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
+oss:
+  access_key_id: your_access_key_id
+  access_key_secret: your_access_key_secret
 coze:
   api_key: your_api_key
 gemini:
+  api_key: your_api_key
+tongyi:
   api_key: your_api_key
 ```
 
