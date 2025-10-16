@@ -1,14 +1,14 @@
-from fastapi import FastAPI
-from api.controller import test_router, analyze_router, upload_router, generate_router, chat_router, ai_history_router
 import uvicorn
-from config import start_nacos, load_config
-from config.mysql import create_tables
+from fastapi import FastAPI
+from typing import Dict, Any
+from contextlib import asynccontextmanager
+from api.controller import *
+from config import start_nacos, load_config, create_tables
 from common.utils import logger
 from common.middleware import ContextMiddleware
 from common.handler import global_exception_handler
 from common.task import start_scheduler
-from typing import Dict, Any
-from contextlib import asynccontextmanager
+
 
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
