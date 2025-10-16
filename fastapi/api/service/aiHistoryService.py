@@ -1,10 +1,10 @@
 from functools import lru_cache
 from typing import Any
+import hashlib
+import time
 from fastapi import Depends
 from api.mapper import AiHistoryMapper, get_ai_history_mapper
 from entity.po import AiHistory
-import hashlib
-import time
 
 class AiHistoryService:
     def __init__(self, ai_history_mapper: AiHistoryMapper):

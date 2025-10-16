@@ -1,10 +1,8 @@
 from functools import lru_cache
 from sqlmodel import Session, select
-
 from pyhive import hive
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
-
 import os
 from config import load_config
 from entity.po import Article

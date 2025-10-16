@@ -2,13 +2,13 @@ from functools import lru_cache
 from typing import List, Dict, Any, Optional
 from fastapi import Depends
 from sqlmodel import Session
-from api.mapper import ArticleMapper,get_article_mapper,UserMapper,get_user_mapper,ArticleLogMapper,get_articlelog_mapper,SubCategoryMapper,get_subcategory_mapper,CategoryMapper,get_category_mapper,AiHistoryMapper,get_ai_history_mapper,VectorMapper, get_vector_mapper
+from datetime import datetime
+from api.mapper import *
 from api.service import EmbeddingService, get_embedding_service
 from common.utils import fileLogger as logger
+from common.middleware import get_current_user_id, get_current_username
 from config import get_db, get_pg_db, load_config
 from entity.po import Article,User,SubCategory
-from common.middleware import get_current_user_id, get_current_username
-from datetime import datetime
 
 class PromptService:
     def __init__(self,articleMapper: ArticleMapper,userMapper: UserMapper,articleLogMapper: ArticleLogMapper,subCategoryMapper: SubCategoryMapper,categoryMapper: CategoryMapper,aiHistoryMapper: AiHistoryMapper):

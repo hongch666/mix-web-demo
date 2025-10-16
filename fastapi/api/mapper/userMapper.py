@@ -1,6 +1,5 @@
 from functools import lru_cache
 from sqlmodel import Session, select
-
 from entity.po import User
 
 class UserMapper:

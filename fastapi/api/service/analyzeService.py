@@ -3,13 +3,11 @@ from fastapi import Depends
 import os
 import pandas as pd
 from typing import Dict, List, Any
-
 from sqlmodel import Session
-
+from wordcloud import WordCloud
 from api.mapper import ArticleMapper, get_article_mapper, UserMapper, get_user_mapper, ArticleLogMapper, get_articlelog_mapper
 from config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger
-from wordcloud import WordCloud
 
 class AnalyzeService:
     def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper):

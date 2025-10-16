@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from typing import Any, Dict
-
 from common.decorators import log
 from common.client import call_remote_service
 from common.task import export_articles_to_csv_and_hive, export_article_vectors_to_postgres

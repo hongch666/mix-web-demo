@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, File, Request, UploadFile
+from starlette.concurrency import run_in_threadpool
+from typing import Any
 from api.service import AnalyzeService, get_analyze_service,UploadService, get_upload_service
 from entity.dto import UploadDTO
 from common.middleware import get_current_user_id, get_current_username
 from common.decorators import log
 from common.utils import success
-from starlette.concurrency import run_in_threadpool
-from typing import Any
 
 router: APIRouter = APIRouter(
     prefix="/upload",

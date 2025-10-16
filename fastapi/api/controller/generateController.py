@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, Request
+from typing import Any
+from starlette.concurrency import run_in_threadpool
 from api.service import GenerateService, get_generate_service
 from common.utils import success
 from common.decorators import log
-from starlette.concurrency import run_in_threadpool
-
 from entity.dto import GenerateDTO
-from typing import Any
 
 router: APIRouter = APIRouter(
     prefix="/generate",

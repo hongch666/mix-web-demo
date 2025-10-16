@@ -4,7 +4,6 @@ from sqlmodel import Session
 from api.service import AiHistoryService, get_ai_history_service
 from common.utils import success
 from common.decorators import log
-
 from entity.dto import CreateHistoryDTO
 from typing import Any
 

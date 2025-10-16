@@ -5,13 +5,12 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
-
 from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
 from common.utils import success, fileLogger
 from common.decorators import log
+from common.middleware import get_current_user_id
 from config import get_db
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
-from common.middleware import get_current_user_id
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 
