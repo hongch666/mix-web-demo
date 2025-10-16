@@ -21,3 +21,4 @@ google-generativeai==0.8.5
 pgvector==0.4.1
 psycopg2-binary>=2.9.7
 sentence-transformers==5.1.1
+openai>=1.0.0

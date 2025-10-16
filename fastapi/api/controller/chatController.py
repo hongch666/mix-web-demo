@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
 
-from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service
+from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
 from common.utils import success, fileLogger
 from common.decorators import log
 from config import get_db
@@ -22,7 +22,8 @@ async def send_message(
     request: ChatRequest,
     db:Session = Depends(get_db),
     cozeService: CozeService = Depends(get_coze_service),
-    geminiService: GeminiService = Depends(get_gemini_service)
+    geminiService: GeminiService = Depends(get_gemini_service),
+    tongyiService: TongyiService = Depends(get_tongyi_service)
 ) -> JSONResponse:
     """发送聊天消息"""
     try:
@@ -34,6 +35,13 @@ async def send_message(
         if request.service == AIServiceType.GEMINI:
             fileLogger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
             response_message: str = await geminiService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db
+            )
+        elif request.service == AIServiceType.TONGYI:
+            fileLogger.info(f"使用通义千问服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await tongyiService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
                 db=db
@@ -79,7 +87,8 @@ async def stream_message(
     request: ChatRequest,
     db: Session = Depends(get_db),
     cozeService: CozeService = Depends(get_coze_service),
-    geminiService: GeminiService = Depends(get_gemini_service)
+    geminiService: GeminiService = Depends(get_gemini_service),
+    tongyiService: TongyiService = Depends(get_tongyi_service)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
     try:
@@ -95,6 +104,13 @@ async def stream_message(
                 if request.service == AIServiceType.GEMINI:
                     fileLogger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
                     stream_generator = geminiService.stream_chat(
+                        message=request.message,
+                        user_id=actual_user_id,
+                        db=db
+                    )
+                elif request.service == AIServiceType.TONGYI:
+                    fileLogger.info(f"使用通义千问流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator = tongyiService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db

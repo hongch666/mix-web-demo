@@ -14,6 +14,8 @@ from .cozeService import CozeService, get_coze_service
 
 from .geminiService import GeminiService, get_gemini_service
 
+from .tongyiService import TongyiService, get_tongyi_service
+
 __all__ = [
     "get_analyze_service",
     "AnalyzeService",
@@ -25,6 +27,8 @@ __all__ = [
     "get_upload_service",
     "GeminiService",
     "get_gemini_service",
+    "TongyiService",
+    "get_tongyi_service",
     "AiHistoryService",
     "get_ai_history_service",
     "EmbeddingService",
