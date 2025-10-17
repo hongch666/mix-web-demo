@@ -262,52 +262,59 @@ def export_article_vectors_to_postgres(
         
         logger.info(f"需要同步 {len(articles_to_sync)} 篇文章，跳过 {skipped_count} 篇未变化的文章")
         
-        if not articles_to_sync:
-            logger.info("所有文章都已是最新，无需同步")
-            return
-        
         # 4. 批量处理需要同步的文章
         sync_count = 0
         error_count = 0
-        batch_size = 50  # 每批处理 50 篇文章
         
-        for i in range(0, len(articles_to_sync), batch_size):
-            batch = articles_to_sync[i:i + batch_size]
+        if articles_to_sync:
+            batch_size = 50  # 每批处理 50 篇文章
             
-            # 构建文本列表
-            texts = [
-                f"{getattr(a, 'title', '')} {getattr(a, 'content', '')[:500]}"
-                for a in batch
-            ]
+            for i in range(0, len(articles_to_sync), batch_size):
+                batch = articles_to_sync[i:i + batch_size]
+                
+                # 构建文本列表
+                texts = [
+                    f"{getattr(a, 'title', '')} {getattr(a, 'content', '')[:500]}"
+                    for a in batch
+                ]
+                
+                try:
+                    # 批量向量化（只计算需要更新的文章）
+                    embeddings = embedding_service.encode_batch(texts)
+                    
+                    # 批量更新到 PostgreSQL
+                    for article, embedding in zip(batch, embeddings):
+                        try:
+                            vector_mapper.upsert_article_vector(
+                                pg_db,
+                                article_id=getattr(article, 'id', 0),
+                                title=getattr(article, 'title', ''),
+                                content_preview=getattr(article, 'content', '')[:500],
+                                embedding=embedding
+                            )
+                            sync_count += 1
+                        except Exception as e:
+                            error_count += 1
+                            logger.error(f"同步文章 {getattr(article, 'id', 'unknown')} 失败: {e}")
+                    
+                    logger.info(f"已同步批次 {i // batch_size + 1}，共 {len(batch)} 篇文章")
+                    
+                except Exception as e:
+                    error_count += len(batch)
+                    logger.error(f"批量向量化失败: {e}")
             
-            try:
-                # 批量向量化（只计算需要更新的文章）
-                embeddings = embedding_service.encode_batch(texts)
-                
-                # 批量更新到 PostgreSQL
-                for article, embedding in zip(batch, embeddings):
-                    try:
-                        vector_mapper.upsert_article_vector(
-                            pg_db,
-                            article_id=getattr(article, 'id', 0),
-                            title=getattr(article, 'title', ''),
-                            content_preview=getattr(article, 'content', '')[:500],
-                            embedding=embedding
-                        )
-                        sync_count += 1
-                    except Exception as e:
-                        error_count += 1
-                        logger.error(f"同步文章 {getattr(article, 'id', 'unknown')} 失败: {e}")
-                
-                logger.info(f"已同步批次 {i // batch_size + 1}，共 {len(batch)} 篇文章")
-                
-            except Exception as e:
-                error_count += len(batch)
-                logger.error(f"批量向量化失败: {e}")
+            logger.info(
+                f"向量同步完成！成功: {sync_count} 篇，失败: {error_count} 篇，跳过: {skipped_count} 篇"
+            )
+        else:
+            logger.info("所有文章都已是最新，无需同步新增/更新")
         
-        logger.info(
-            f"向量同步完成！成功: {sync_count} 篇，失败: {error_count} 篇，跳过: {skipped_count} 篇"
-        )
+        # 5. 同步已删除的文章（无论是否有新增/更新，都要检查删除）
+        try:
+            deleted_count = vector_mapper.sync_deleted_articles(mysql_db, pg_db)
+            logger.info(f"同步删除完成！删除了 {deleted_count} 篇文章")
+        except Exception as e:
+            logger.error(f"同步删除文章失败: {e}")
         
     except Exception as e:
         logger.error(f"同步文章向量任务失败: {e}")

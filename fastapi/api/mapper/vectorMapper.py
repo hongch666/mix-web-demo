@@ -167,6 +167,33 @@ class VectorMapper:
         except Exception as e:
             logger.error(f"获取待同步文章失败: {e}")
             return []
+    
+    def sync_deleted_articles(self, mysql_db: Session, pg_db: Session) -> int:
+        """同步已删除的文章（从向量表中删除在 MySQL 中不存在的文章）"""
+        try:
+            # 获取 PG 中的所有 article_id
+            pg_query = text("SELECT article_id FROM article_vector")
+            pg_article_ids = {row.article_id for row in pg_db.execute(pg_query).fetchall()}
+            
+            # 获取 MySQL 中的所有 article_id
+            mysql_query = text("SELECT id FROM articles")
+            mysql_article_ids = {row.id for row in mysql_db.execute(mysql_query).fetchall()}
+            
+            # 找出需要删除的文章（在 PG 但不在 MySQL）
+            deleted_ids = pg_article_ids - mysql_article_ids
+            
+            delete_count = 0
+            for article_id in deleted_ids:
+                self.delete_article_vector(pg_db, article_id)
+                delete_count += 1
+            
+            if delete_count > 0:
+                logger.info(f"同步删除了 {delete_count} 篇文章")
+            
+            return delete_count
+        except Exception as e:
+            logger.error(f"同步删除文章失败: {e}")
+            return 0
 
 @lru_cache()
 def get_vector_mapper() -> VectorMapper:

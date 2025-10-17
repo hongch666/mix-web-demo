@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from typing import Dict, Any
 from contextlib import asynccontextmanager
 from api.controller import *
+from api.service import get_embedding_service
 from config import start_nacos, load_config, create_tables
 from common.utils import logger
 from common.middleware import ContextMiddleware
@@ -19,8 +20,22 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         # 自动建表
         create_tables(['ai_history'])
+        
+        # 预加载嵌入模型（避免首次请求时下载）
+        try:
+            embedding_service = get_embedding_service()
+            # 调用一次 encode_text 以触发模型加载
+            embedding_service.encode_text("预加载模型")
+            logger.info("嵌入模型已预加载")
+        except Exception as e:
+            logger.warning(f"嵌入模型预加载失败: {e}")
+        
         # 启动Nacos服务注册
         start_nacos(ip=IP, port=PORT)
+        
+        # 启动定时任务调度器
+        start_scheduler()
+        
         logger.info(f"FastAPI应用已启动")
         logger.info(f"服务地址:http://{IP}:{PORT}")
         logger.info(f"Swagger文档地址: http://{IP}:{PORT}/docs")
@@ -43,7 +58,6 @@ def create_app() -> FastAPI:
     app.include_router(ai_history_router)
     return app
 
-start_scheduler()
 app = create_app()
 
 if __name__ == "__main__":
