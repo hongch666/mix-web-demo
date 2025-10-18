@@ -5,12 +5,13 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
-from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
+from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service, AiHistoryService, get_ai_history_service
 from common.utils import success, fileLogger
 from common.decorators import log
 from common.middleware import get_current_user_id
 from config import get_db
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
+from entity.po import AiHistory
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 
@@ -22,7 +23,8 @@ async def send_message(
     db:Session = Depends(get_db),
     cozeService: CozeService = Depends(get_coze_service),
     geminiService: GeminiService = Depends(get_gemini_service),
-    tongyiService: TongyiService = Depends(get_tongyi_service)
+    tongyiService: TongyiService = Depends(get_tongyi_service),
+    aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> JSONResponse:
     """发送聊天消息"""
     try:
@@ -65,6 +67,19 @@ async def send_message(
                 msg=response_message
             )
         
+        # 保存AI历史记录
+        try:
+            history = AiHistory(
+                user_id=int(actual_user_id),
+                ask=request.message,
+                reply=response_message,
+                ai_type=request.service.value
+            )
+            aiHistoryService.create_ai_history(history, db)
+            fileLogger.info(f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
+        except Exception as history_error:
+            fileLogger.error(f"保存AI历史记录失败: {str(history_error)}")
+        
         # 成功响应 - 按照success格式
         response_data: ChatResponseData = ChatResponseData(
             message=response_message,
@@ -87,7 +102,8 @@ async def stream_message(
     db: Session = Depends(get_db),
     cozeService: CozeService = Depends(get_coze_service),
     geminiService: GeminiService = Depends(get_gemini_service),
-    tongyiService: TongyiService = Depends(get_tongyi_service)
+    tongyiService: TongyiService = Depends(get_tongyi_service),
+    aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
     try:
@@ -133,6 +149,21 @@ async def stream_message(
                             "service": request.service.value
                         })
                     yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                
+                # 流式聊天完成后保存AI历史记录
+                if message_acc:
+                    try:
+                        history = AiHistory(
+                            user_id=int(actual_user_id),
+                            ask=request.message,
+                            reply=message_acc,
+                            ai_type=request.service.value
+                        )
+                        aiHistoryService.create_ai_history(history, db)
+                        fileLogger.info(f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
+                    except Exception as history_error:
+                        fileLogger.error(f"保存流式AI历史记录失败: {str(history_error)}")
+                        
             except Exception as e:
                 fileLogger.error(f"流式聊天接口异常: {str(e)}")
                 data = {
