@@ -10,7 +10,6 @@ from common.middleware import ContextMiddleware
 from common.handler import global_exception_handler
 from common.task import start_scheduler
 
-
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 PORT: int = server_config["port"]
