@@ -130,7 +130,6 @@ class CozeService:
                 loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
                 chat_stream: Any = await loop.run_in_executor(None, sync_stream)
 
-                previous_length = 0
                 for event in chat_stream:
                     logger.info(f"收到流事件: {event}")
                     content: Optional[str] = None
@@ -144,11 +143,10 @@ class CozeService:
                         content = event.content
                     if content is not None:
                         current_length = len(content)
-                        # 检测内容长度是否超过固定阈值（超过200字符视为异常增长）
-                        if current_length > 20:
+                        # 检测内容长度是否超过固定阈值（超过10字符视为异常增长）
+                        if current_length > 10:
                             logger.info(f"检测到内容长度过长: {current_length} 字符，跳过此内容")
                             continue
-                        previous_length = current_length
                         yield content
             except Exception as e:
                 logger.error(f"流式聊天异常: {str(e)}")
