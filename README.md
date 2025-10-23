@@ -610,6 +610,12 @@ nacos:
   namespace: "public"
   service_name: "fastapi"
   group_name: "DEFAULT_GROUP"
+rabbitmq:
+  host: "127.0.0.1"
+  port: 5672
+  username: "hcsy"
+  password: "123456"
+  vhost: "test"
 database:
   mysql:
     url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
@@ -733,7 +739,7 @@ spring:
         - id: nestjs
           uri: lb://nestjs
           predicates:
-            - Path=/api_nestjs/**,/logs/**,/article/**
+            - Path=/api_nestjs/**,/logs/**,/article/**,/api-logs/**
 
         - id: fastapi
           uri: lb://fastapi

@@ -10,12 +10,14 @@ import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { fileLogger } from '../utils/writeLog';
 import { API_LOG_KEY, ApiLogOptions } from '../decorators/api-log.decorator';
+import { RabbitMQService } from '../mq/mq.service';
 
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     private readonly cls: ClsService,
+    private readonly rabbitMQService: RabbitMQService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -34,8 +36,8 @@ export class ApiLogInterceptor implements NestInterceptor {
     const url = request.route?.path || request.url;
 
     // 获取用户信息
-    const userId = this.cls.get('userId');
-    const username = this.cls.get('username');
+    const userId = this.cls.get('userId') || 0;
+    const username = this.cls.get('username') || 'unknown';
 
     // 构建基础日志消息
     let logMessage = `用户${userId}:${username} ${method} ${url}: ${logConfig.message}`;
@@ -59,15 +61,81 @@ export class ApiLogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       finalize(() => {
-        // 计算耗时并记录，保证在响应完成或错误时都会执行
-        const durationMs = Date.now() - start;
-        const timeMessage = `${method} ${url} 使用了${durationMs}ms`;
+        // 计算耗时
+        const responseTime = Date.now() - start;
+        const timeMessage = `${method} ${url} 使用了${responseTime}ms`;
         const timeLogMethod = fileLogger[logConfig.logLevel || 'info'];
         if (timeLogMethod) {
           timeLogMethod(timeMessage);
         }
+
+        // ✨ 向消息队列发送 API 日志
+        this.sendApiLogToQueue(
+          request,
+          userId,
+          username,
+          logConfig.message,
+          method,
+          url,
+          responseTime,
+          logConfig.excludeFields,
+        ).catch((error) => {
+          fileLogger.error(`发送 API 日志到队列失败: ${error.message}`);
+        });
       }),
     );
+  }
+
+  /**
+   * 向消息队列发送 API 日志
+   */
+  private async sendApiLogToQueue(
+    request: any,
+    userId: number,
+    username: string,
+    description: string,
+    method: string,
+    path: string,
+    responseTime: number,
+    excludeFields: string[] = [],
+  ): Promise<void> {
+    try {
+      // 提取查询参数
+      const queryParams = method === 'GET' ? request.query : null;
+
+      // 提取路径参数
+      const pathParams =
+        request.params && Object.keys(request.params).length > 0
+          ? request.params
+          : null;
+
+      // 提取请求体
+      let requestBody = null;
+      if (method !== 'GET' && request.body) {
+        requestBody = this.filterFields(request.body, excludeFields);
+      }
+
+      // 构建消息对象
+      const apiLogMessage = {
+        user_id: userId,
+        username: username,
+        api_description: description,
+        api_path: path,
+        api_method: method,
+        query_params: queryParams,
+        path_params: pathParams,
+        request_body: requestBody,
+        response_time: responseTime,
+      };
+
+      // 发送到消息队列
+      await this.rabbitMQService.sendToQueue('api-log-queue', apiLogMessage);
+
+      fileLogger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
+    } catch (error) {
+      fileLogger.error(`向消息队列发送 API 日志出错: ${error.message}`);
+      // 不要抛出异常，避免影响业务逻辑
+    }
   }
 
   private extractParams(

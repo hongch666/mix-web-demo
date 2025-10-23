@@ -6,5 +6,6 @@ import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [RabbitMQModule, NacosModule, WordModule, TaskModule],
+  exports: [RabbitMQModule], // ✨ 导出 RabbitMQModule，使其在全局范围可用
 })
 export class CommonModule {}

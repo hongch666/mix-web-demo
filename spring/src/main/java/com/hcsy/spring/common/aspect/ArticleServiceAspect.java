@@ -62,7 +62,12 @@ public class ArticleServiceAspect {
                 switch (methodName) {
                     case "saveArticle": {
                         Article article = (Article) paramValues[0];
-                        msg.put("content", article);
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", article.getId());
+                        content.put("title", article.getTitle());
+                        content.put("tags", article.getTags());
+                        
+                        msg.put("content", content);
                         msg.put("user_id", userId);
                         msg.put("article_id", article.getId());
                         msg.put("action", "add");
@@ -72,7 +77,12 @@ public class ArticleServiceAspect {
                     }
                     case "updateArticle": {
                         Article article = (Article) paramValues[0];
-                        msg.put("content", article);
+                        Map<String, Object> content = new HashMap<>();
+                        content.put("id", article.getId());
+                        content.put("title", article.getTitle());
+                        content.put("tags", article.getTags());
+                        
+                        msg.put("content", content);
                         msg.put("user_id", userId);
                         msg.put("article_id", article.getId());
                         msg.put("action", "edit");

@@ -3,6 +3,7 @@ package com.hcsy.spring.common.aspect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.mq.RabbitMQService;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -31,6 +34,7 @@ public class ApiLogAspect {
 
     private final SimpleLogger logger;
     private final ObjectMapper objectMapper;
+    private final RabbitMQService rabbitMQService;
 
     /**
      * 环绕切面：在执行带有 @ApiLog 注解的方法前记录日志，并在执行后输出耗时
@@ -88,7 +92,7 @@ public class ApiLogAspect {
         } finally {
             // 计算并记录耗时（无论正常或异常都会执行）
             long end = System.currentTimeMillis();
-            long durationMs = end - start;
+            long responseTime = end - start;
 
             try {
                 MethodSignature signature = (MethodSignature) pjp.getSignature();
@@ -96,8 +100,17 @@ public class ApiLogAspect {
                 String httpMethod = getHttpMethod(method);
                 String requestPath = getRequestPath(method);
 
-                String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, durationMs);
+                String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, responseTime);
                 logger.info(timeMessage);
+
+                // ✨ 向消息队列发送 API 日志
+                sendApiLogToQueue(
+                        pjp,
+                        httpMethod,
+                        requestPath,
+                        apiLog.value(),
+                        responseTime,
+                        apiLog.excludeFields());
             } catch (Exception e) {
                 logger.error("记录执行时间失败", e);
             }
@@ -327,5 +340,141 @@ public class ApiLogAspect {
             logger.error("对象转Map失败", e);
             return Collections.emptyMap();
         }
+    }
+
+    /**
+     * 向消息队列发送 API 日志
+     * ✨ 在接口完成后自动发送到 RabbitMQ
+     */
+    private void sendApiLogToQueue(
+            ProceedingJoinPoint pjp,
+            String httpMethod,
+            String requestPath,
+            String description,
+            long responseTime,
+            String[] excludeFields) {
+        try {
+            // 获取用户信息
+            Long userId = UserContext.getUserId();
+            if (userId == null) {
+                userId = 0L;
+            }
+            String username = UserContext.getUsername();
+            if (username == null) {
+                username = "unknown";
+            }
+
+            // 获取 HTTP 请求对象
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
+                    .getRequestAttributes();
+
+            Object queryParams = null;
+            Object pathParams = null;
+            Object requestBody = null;
+
+            if (attributes != null) {
+                // 提取查询参数（仅 GET 请求）
+                if ("GET".equals(httpMethod)) {
+                    java.util.Map<String, String[]> parameterMap = attributes.getRequest().getParameterMap();
+                    if (!parameterMap.isEmpty()) {
+                        queryParams = new HashMap<>(parameterMap);
+                    }
+                }
+
+                // 提取路径参数 - 从 pjp 的参数中获取
+                Map<String, Object> extractedPathParams = extractPathParams(pjp);
+                if (!extractedPathParams.isEmpty()) {
+                    pathParams = extractedPathParams;
+                }
+            }
+
+            // 提取请求体（非 GET 请求）
+            if (!"GET".equals(httpMethod)) {
+                Set<String> excludeSet = new HashSet<>(Arrays.asList(excludeFields));
+                requestBody = extractRequestBody(pjp, excludeSet);
+            }
+
+            // 构建消息对象（snake_case 格式匹配队列契约）
+            Map<String, Object> apiLogMessage = new LinkedHashMap<>();
+            apiLogMessage.put("user_id", userId);
+            apiLogMessage.put("username", username);
+            apiLogMessage.put("api_description", description);
+            apiLogMessage.put("api_path", requestPath);
+            apiLogMessage.put("api_method", httpMethod);
+            apiLogMessage.put("query_params", queryParams);
+            apiLogMessage.put("path_params", pathParams);
+            apiLogMessage.put("request_body", requestBody);
+            apiLogMessage.put("response_time", responseTime);
+
+            // 发送到消息队列
+            rabbitMQService.sendMessage("api-log-queue", apiLogMessage);
+
+            logger.info(String.format(
+                    "API 日志已发送到队列: %s",
+                    objectMapper.writeValueAsString(apiLogMessage)));
+
+        } catch (Exception e) {
+            logger.error("向消息队列发送 API 日志出错: " + e.getMessage(), e);
+            // 不要抛出异常，避免影响业务逻辑
+        }
+    }
+
+    /**
+     * 提取路径参数
+     */
+    private Map<String, Object> extractPathParams(ProceedingJoinPoint pjp) {
+        Map<String, Object> pathParams = new HashMap<>();
+        try {
+            MethodSignature signature = (MethodSignature) pjp.getSignature();
+            Method method = signature.getMethod();
+            Parameter[] parameters = method.getParameters();
+            Object[] args = pjp.getArgs();
+
+            for (int i = 0; i < parameters.length && i < args.length; i++) {
+                Parameter parameter = parameters[i];
+                if (parameter.isAnnotationPresent(PathVariable.class)) {
+                    PathVariable pathVariable = parameter.getAnnotation(PathVariable.class);
+                    String name = pathVariable.value().isEmpty() ? pathVariable.name() : pathVariable.value();
+                    String paramName = name.isEmpty() ? parameter.getName() : name;
+                    pathParams.put(paramName, args[i]);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("提取路径参数失败", e);
+        }
+        return pathParams;
+    }
+
+    /**
+     * 提取请求体
+     */
+    private Object extractRequestBody(ProceedingJoinPoint pjp, Set<String> excludeFields) {
+        try {
+            MethodSignature signature = (MethodSignature) pjp.getSignature();
+            Method method = signature.getMethod();
+            Parameter[] parameters = method.getParameters();
+            Object[] args = pjp.getArgs();
+
+            for (int i = 0; i < parameters.length && i < args.length; i++) {
+                Parameter parameter = parameters[i];
+                Object arg = args[i];
+
+                if (arg == null) {
+                    continue;
+                }
+
+                // 查找 @RequestBody 注解的参数
+                if (parameter.isAnnotationPresent(RequestBody.class)) {
+                    if (!excludeFields.isEmpty() && !isPrimitiveOrWrapper(arg.getClass())) {
+                        // 过滤敏感字段
+                        return objectToMap(arg, excludeFields);
+                    }
+                    return arg;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("提取请求体失败", e);
+        }
+        return null;
     }
 }

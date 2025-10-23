@@ -40,6 +40,7 @@ public class UserController {
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
+    private final com.hcsy.spring.common.mq.RabbitMQService rabbitMQService;
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询")
@@ -147,7 +148,9 @@ public class UserController {
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌")
     public Result login(@RequestBody LoginDTO loginDTO) {
+        long startTime = System.currentTimeMillis();
         logger.info("POST /users/login: " + "用户登录\nLoginDTO: %s", loginDTO);
+
         User user = userService.findByUsername(loginDTO.getName());
         if (user == null || !user.getPassword().equals(loginDTO.getPassword())) {
             return Result.error("用户名或密码错误");
@@ -159,6 +162,12 @@ public class UserController {
         data.put("token", token);
         data.put("userId", user.getId());
         data.put("username", user.getName());
+
+        // 发送 API 日志到 RabbitMQ
+        long responseTime = System.currentTimeMillis() - startTime;
+        sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/login", "用户登录",
+                null, null, loginDTO, responseTime);
+
         return Result.success(data);
     }
 
@@ -181,11 +190,56 @@ public class UserController {
             @CacheEvict(value = "userPage", allEntries = true)
     })
     public Result registerUser(@Valid @RequestBody UserCreateDTO userDto) {
+        long startTime = System.currentTimeMillis();
         logger.info("POST /users/register: " + "用户注册\nUserCreateDTO: %s", userDto);
+
         User user = BeanUtil.copyProperties(userDto, User.class);
         user.setRole("user");
         userService.saveUserAndStatus(user);
+
+        // 发送 API 日志到 RabbitMQ（使用注册成功后的用户信息）
+        long responseTime = System.currentTimeMillis() - startTime;
+        sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/register", "用户注册",
+                null, null, userDto, responseTime);
+
         return Result.success();
+    }
+
+    /**
+     * 发送 API 日志到 RabbitMQ
+     * 
+     * @param userId       用户ID
+     * @param username     用户名
+     * @param method       HTTP方法
+     * @param path         API路径
+     * @param description  API描述
+     * @param queryParams  查询参数
+     * @param pathParams   路径参数
+     * @param requestBody  请求体
+     * @param responseTime 响应时间（毫秒）
+     */
+    private void sendApiLogToQueue(Long userId, String username, String method, String path,
+            String description, Map<String, String> queryParams,
+            Map<String, String> pathParams, Object requestBody, long responseTime) {
+        try {
+            // 构建 API 日志消息（统一格式：snake_case）
+            Map<String, Object> apiLogMessage = new HashMap<>();
+            apiLogMessage.put("user_id", userId);
+            apiLogMessage.put("username", username);
+            apiLogMessage.put("api_description", description);
+            apiLogMessage.put("api_path", path);
+            apiLogMessage.put("api_method", method);
+            apiLogMessage.put("query_params", queryParams);
+            apiLogMessage.put("path_params", pathParams);
+            apiLogMessage.put("request_body", requestBody);
+            apiLogMessage.put("response_time", responseTime);
+
+            // 发送到 RabbitMQ
+            rabbitMQService.sendMessage("api-log-queue", apiLogMessage);
+            logger.info("API 日志已发送到队列");
+        } catch (Exception e) {
+            logger.error("发送 API 日志到队列失败: " + e.getMessage());
+        }
     }
 
 }

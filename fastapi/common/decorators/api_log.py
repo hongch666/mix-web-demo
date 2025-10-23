@@ -7,6 +7,13 @@ from fastapi import Request
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
 
+try:
+    from config.rabbitmq import send_to_queue
+    RABBITMQ_AVAILABLE = True
+except ImportError:
+    RABBITMQ_AVAILABLE = False
+    fileLogger.warning("RabbitMQ 客户端不可用，API 日志将不会发送到队列")
+
 
 class ApiLogConfig:
     """API 日志配置类"""
@@ -86,6 +93,12 @@ def api_log(config: Union[str, ApiLogConfig]):
                 duration_ms = int((time.time() - start) * 1000)
                 time_message = f"{method} {path} 使用了{duration_ms}ms"
                 logger_method(time_message)
+                
+                # 🚀 发送 API 日志到 RabbitMQ
+                _send_api_log_to_queue(
+                    user_id, username, method, path, log_config.message,
+                    request, duration_ms, log_config
+                )
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -131,6 +144,12 @@ def api_log(config: Union[str, ApiLogConfig]):
                 duration_ms = int((time.time() - start) * 1000)
                 time_message = f"{method} {path} 使用了{duration_ms}ms"
                 logger_method(time_message)
+                
+                # 🚀 发送 API 日志到 RabbitMQ
+                _send_api_log_to_queue(
+                    user_id, username, method, path, log_config.message,
+                    request, duration_ms, log_config
+                )
         
         # 根据函数是否为协程选择包装器
         if inspect.iscoroutinefunction(func):
@@ -240,6 +259,85 @@ def _serialize_param(param: Any) -> str:
             return str(param)
     except Exception:
         return str(type(param).__name__)
+
+
+def _send_api_log_to_queue(
+    user_id: Any,
+    username: str,
+    method: str,
+    path: str,
+    description: str,
+    request: Optional[Request],
+    response_time_ms: int,
+    log_config: ApiLogConfig,
+):
+    """
+    发送 API 日志到 RabbitMQ
+    
+    Args:
+        user_id: 用户ID
+        username: 用户名
+        method: HTTP方法
+        path: 请求路径
+        description: API描述
+        request: Request对象
+        response_time_ms: 响应时间（毫秒）
+        log_config: 日志配置
+    """
+    if not RABBITMQ_AVAILABLE:
+        return
+    
+    try:
+        # 提取查询参数
+        query_params = None
+        if request and request.query_params:
+            query_params = dict(request.query_params)
+        
+        # 提取路径参数
+        path_params = None
+        if request and hasattr(request, "path_params") and request.path_params:
+            path_params = dict(request.path_params)
+        
+        # 提取请求体（如果需要且可用）
+        request_body = None
+        if log_config.include_params and request:
+            # 注意：在 FastAPI 中，请求体通常在路由函数参数中，
+            # 这里我们无法直接获取。如果需要，可以从 args/kwargs 中提取
+            pass
+        
+        # 确保 user_id 是数字类型，如果为空则使用默认值
+        final_user_id = user_id if user_id else 0
+        if isinstance(final_user_id, str):
+            try:
+                final_user_id = int(final_user_id)
+            except (ValueError, TypeError):
+                final_user_id = 0
+        
+        # 确保 username 不为空
+        final_username = username if username else "匿名用户"
+        
+        # 构建 API 日志消息（统一格式：snake_case）
+        api_log_message = {
+            "user_id": final_user_id,
+            "username": final_username,
+            "api_description": description,
+            "api_path": path,
+            "api_method": method,
+            "query_params": query_params,
+            "path_params": path_params,
+            "request_body": request_body,
+            "response_time": response_time_ms,
+        }
+        
+        # 发送到 RabbitMQ
+        success = send_to_queue("api-log-queue", api_log_message, persistent=True)
+        if success:
+            fileLogger.info("API 日志已发送到队列")
+        else:
+            fileLogger.error("API 日志发送到队列失败")
+            
+    except Exception as e:
+        fileLogger.error(f"发送 API 日志到队列时出错: {e}")
 
 
 # 简化版装饰器，直接传入消息

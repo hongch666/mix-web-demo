@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gin_proj/common/ctxkey"
 	"gin_proj/common/utils"
+	"gin_proj/config"
 	"io"
 	"net/url"
 	"strings"
@@ -70,6 +71,9 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 		durationMs := time.Since(start).Milliseconds()
 		timeMessage := fmt.Sprintf("%s %s 使用了%dms", method, path, durationMs)
 		utils.LogInfo(timeMessage)
+
+		// 🚀 发送 API 日志到 RabbitMQ
+		sendApiLogToQueue(userID, username, method, path, description, pathParams, queryParams, logInfo["请求体"], durationMs)
 	}
 }
 
@@ -199,4 +203,41 @@ func formatLogMessage(method, path, description string, userID int64, username s
 	}
 
 	return message
+}
+
+// sendApiLogToQueue 发送 API 日志到 RabbitMQ
+func sendApiLogToQueue(userID int64, username, method, path, description string,
+	pathParams map[string]string, queryParams map[string]interface{}, requestBody interface{}, responseTimeMs int64) {
+
+	// 构建 API 日志消息（统一格式：snake_case）
+	apiLogMessage := map[string]interface{}{
+		"user_id":         userID,
+		"username":        username,
+		"api_description": description,
+		"api_path":        path,
+		"api_method":      method,
+		"query_params":    queryParams,
+		"path_params":     pathParams,
+		"request_body":    requestBody,
+		"response_time":   responseTimeMs,
+	}
+
+	// 序列化为 JSON
+	messageJSON, err := json.Marshal(apiLogMessage)
+	if err != nil {
+		utils.LogError(fmt.Sprintf("序列化 API 日志消息失败: %v", err))
+		return
+	}
+
+	// 发送到 RabbitMQ
+	if config.RabbitMQ != nil {
+		err = config.RabbitMQ.Send("api-log-queue", string(messageJSON))
+		if err != nil {
+			utils.LogError(fmt.Sprintf("发送 API 日志到队列失败: %v", err))
+		} else {
+			utils.LogInfo("API 日志已发送到队列")
+		}
+	} else {
+		utils.LogError("RabbitMQ 未初始化，无法发送 API 日志")
+	}
 }
