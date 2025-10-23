@@ -1,8 +1,3 @@
-"""
-RabbitMQ 配置和客户端模块
-提供 RabbitMQ 连接、发送消息等功能
-"""
-
 import json
 import pika
 from typing import Any, Optional

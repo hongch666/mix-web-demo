@@ -16,6 +16,8 @@ from .geminiService import GeminiService, get_gemini_service
 
 from .tongyiService import TongyiService, get_tongyi_service
 
+from .apilogService import ApiLogService, get_apilog_service
+
 __all__ = [
     "get_analyze_service",
     "AnalyzeService",
@@ -34,5 +36,7 @@ __all__ = [
     "EmbeddingService",
     "get_embedding_service",
     "PromptService",
-    "get_prompt_service"
+    "get_prompt_service",
+    "ApiLogService",
+    "get_apilog_service",
 ]

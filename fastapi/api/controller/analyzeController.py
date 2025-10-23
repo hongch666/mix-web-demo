@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict, List
-from api.service import AnalyzeService, get_analyze_service
+from api.service import AnalyzeService, get_analyze_service, get_apilog_service, ApiLogService
 from entity.po import ListResponse
 from config import get_db
 from common.utils import success
@@ -33,3 +33,23 @@ async def get_excel(request: Request, db: Session = Depends(get_db), analyzeServ
     await run_in_threadpool(analyzeService.export_articles_to_excel, db)
     oss_url: str = await run_in_threadpool(analyzeService.upload_excel_to_oss)
     return success(oss_url)
+
+@router.get("/api/average-speed")
+@log("获取所有接口的平均响应速度")
+async def get_api_average_speed(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
+    """
+    获取所有接口的平均响应速度
+    按照接口路径和方法分组统计
+    """
+    result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_api_average_response_time_service)
+    return success(result)
+
+@router.get("/api/top10-called")
+@log("获取调用次数最多的前10个接口")
+async def get_top10_called_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
+    """
+    获取调用次数最多的前10个接口
+    按照接口路径和方法分组统计
+    """
+    result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_top10_most_called_apis_service)
+    return success(result)

@@ -12,6 +12,8 @@ from .aiHistoryMapper import get_ai_history_mapper,AiHistoryMapper
 
 from .vectorMapper import get_vector_mapper, VectorMapper
 
+from .apilogMapper import get_apilog_mapper,ApiLogMapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -26,5 +28,7 @@ __all__ = [
     "get_ai_history_mapper",
     "AiHistoryMapper",
     "get_vector_mapper",
-    "VectorMapper"
+    "VectorMapper",
+    "get_apilog_mapper",
+    "ApiLogMapper",
 ]

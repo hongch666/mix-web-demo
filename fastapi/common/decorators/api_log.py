@@ -6,9 +6,9 @@ from typing import Any, Callable, List, Optional, Union
 from fastapi import Request
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
+from config import send_to_queue
 
 try:
-    from config.rabbitmq import send_to_queue
     RABBITMQ_AVAILABLE = True
 except ImportError:
     RABBITMQ_AVAILABLE = False
