@@ -88,17 +88,48 @@ def api_log(config: Union[str, ApiLogConfig]):
             # 执行原函数并记录耗时
             start = time.time()
             try:
-                return await func(*args, **kwargs)
-            finally:
-                duration_ms = int((time.time() - start) * 1000)
-                time_message = f"{method} {path} 使用了{duration_ms}ms"
-                logger_method(time_message)
+                result = await func(*args, **kwargs)
                 
-                # 🚀 发送 API 日志到 RabbitMQ
-                _send_api_log_to_queue(
-                    user_id, username, method, path, log_config.message,
-                    request, duration_ms, log_config
-                )
+                # 如果返回的是 StreamingResponse，需要包装以追踪耗时
+                from fastapi.responses import StreamingResponse
+                if isinstance(result, StreamingResponse):
+                    original_generator = result.body_iterator
+                    
+                    async def tracked_generator():
+                        try:
+                            async for chunk in original_generator:
+                                yield chunk
+                        finally:
+                            # 流完成时记录耗时
+                            duration_ms = int((time.time() - start) * 1000)
+                            time_message = f"{method} {path} 使用了{duration_ms}ms"
+                            logger_method(time_message)
+                            
+                            # 🚀 发送 API 日志到 RabbitMQ
+                            _send_api_log_to_queue(
+                                user_id, username, method, path, log_config.message,
+                                request, duration_ms, log_config, args, kwargs
+                            )
+                    
+                    result.body_iterator = tracked_generator()
+                    return result
+                else:
+                    # 非流式响应，立即记录耗时
+                    duration_ms = int((time.time() - start) * 1000)
+                    time_message = f"{method} {path} 使用了{duration_ms}ms"
+                    logger_method(time_message)
+                    
+                    # 🚀 发送 API 日志到 RabbitMQ
+                    _send_api_log_to_queue(
+                        user_id, username, method, path, log_config.message,
+                        request, duration_ms, log_config, args, kwargs
+                    )
+                    return result
+            except Exception as e:
+                duration_ms = int((time.time() - start) * 1000)
+                time_message = f"{method} {path} 使用了{duration_ms}ms (异常)"
+                logger_method(time_message)
+                raise
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -148,7 +179,7 @@ def api_log(config: Union[str, ApiLogConfig]):
                 # 🚀 发送 API 日志到 RabbitMQ
                 _send_api_log_to_queue(
                     user_id, username, method, path, log_config.message,
-                    request, duration_ms, log_config
+                    request, duration_ms, log_config, args, kwargs
                 )
         
         # 根据函数是否为协程选择包装器
@@ -202,30 +233,49 @@ def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fiel
         sig = inspect.signature(func)
         param_names = list(sig.parameters.keys())
         
-        # 过滤掉依赖注入的参数（如 db, service 等）
         filtered_params = {}
-        dependency_types = ['Session', 'AnalyzeService', 'ArticleService']
         
         # 处理位置参数
         for i, arg in enumerate(args):
             if i < len(param_names):
                 param_name = param_names[i]
-                param_type = str(sig.parameters[param_name].annotation)
                 
-                # 跳过依赖注入参数
-                if not any(dep_type in param_type for dep_type in dependency_types):
-                    if param_name not in exclude_fields:
-                        filtered_params[param_name] = _serialize_param(arg)
+                # 根据参数名称过滤依赖注入（数据库、HTTP 请求等）
+                if param_name in {'db', 'session', 'httpRequest'}:
+                    continue
+                
+                # 跳过 Service 类型的依赖注入（如 cozeService, geminiService）
+                if 'Service' in param_name:
+                    continue
+                
+                if param_name not in exclude_fields:
+                    filtered_params[param_name] = _serialize_param(arg)
         
-        # 处理关键字参数
+        # 处理关键字参数 - 这是FastAPI传入业务参数的主要方式
         for key, value in kwargs.items():
             if key in param_names:
-                param_type = str(sig.parameters[key].annotation)
+                # 根据参数名称过滤依赖注入
+                if key in {'db', 'session', 'httpRequest'}:
+                    continue
                 
-                # 跳过依赖注入参数
-                if not any(dep_type in param_type for dep_type in dependency_types):
-                    if key not in exclude_fields:
-                        filtered_params[key] = _serialize_param(value)
+                # 跳过 Service 类型的依赖注入 - 检查参数名称
+                if 'Service' in key:
+                    continue
+                
+                # 检查参数注解，排除纯 FastAPI Request 对象
+                param_annotation = sig.parameters[key].annotation
+                if param_annotation != inspect.Parameter.empty:
+                    annotation_str = str(param_annotation)
+                    # 排除 fastapi.Request 类型的参数，但保留其他包含 'Request' 的类型（如 ChatRequest）
+                    if 'fastapi' in annotation_str and 'Request' in annotation_str:
+                        continue
+                    # 排除 sqlmodel.Session 等数据库相关
+                    if any(db_type in annotation_str for db_type in ['Session', 'sqlmodel']):
+                        continue
+                
+                # 跳过排除字段
+                if key not in exclude_fields:
+                    filtered_params[key] = _serialize_param(value)
         
         # 格式化输出
         if filtered_params:
@@ -256,9 +306,69 @@ def _serialize_param(param: Any) -> str:
         elif isinstance(param, (list, dict)):
             return json.dumps(param, ensure_ascii=False, default=str)
         else:
-            return str(param)
+            # 检查是否是 Pydantic 模型
+            if hasattr(param, 'model_dump'):
+                # Pydantic v2
+                return json.dumps(param.model_dump(), ensure_ascii=False, default=str)
+            elif hasattr(param, 'dict'):
+                # Pydantic v1
+                return json.dumps(param.dict(), ensure_ascii=False, default=str)
+            else:
+                # 其他对象转字符串
+                return str(param)
     except Exception:
         return str(type(param).__name__)
+
+
+def _extract_request_body_for_queue(kwargs: dict, exclude_fields: List[str]) -> Optional[dict]:
+    """
+    从函数参数中提取请求体信息用于发送到队列
+    
+    Args:
+        kwargs: 函数关键字参数
+        exclude_fields: 排除的字段
+        
+    Returns:
+        dict: 请求体信息，如果没有则返回 None
+    """
+    try:
+        request_body_dict = {}
+        
+        # 需要排除的参数名称（依赖注入）
+        exclude_param_names = {'db', 'session', 'httpRequest'}
+        
+        for key, value in kwargs.items():
+            # 跳过依赖注入参数
+            if key in exclude_param_names:
+                continue
+            
+            # 跳过 Service 类型参数
+            if 'Service' in key:
+                continue
+            
+            # 跳过用户排除的字段
+            if key in exclude_fields:
+                continue
+            
+            # 直接提取 Pydantic 模型的内容，不转为字符串
+            if hasattr(value, 'model_dump'):
+                # Pydantic v2
+                request_body_dict.update(value.model_dump())
+            elif hasattr(value, 'dict'):
+                # Pydantic v1
+                request_body_dict.update(value.dict())
+            elif isinstance(value, dict):
+                # 如果已经是字典，直接更新
+                request_body_dict.update(value)
+            else:
+                # 其他类型保持原值
+                request_body_dict[key] = value
+        
+        return request_body_dict if request_body_dict else None
+        
+    except Exception as e:
+        fileLogger.warning(f"提取请求体信息时出错: {str(e)}")
+        return None
 
 
 def _send_api_log_to_queue(
@@ -270,6 +380,8 @@ def _send_api_log_to_queue(
     request: Optional[Request],
     response_time_ms: int,
     log_config: ApiLogConfig,
+    args: tuple = (),
+    kwargs: dict = None,
 ):
     """
     发送 API 日志到 RabbitMQ
@@ -283,9 +395,14 @@ def _send_api_log_to_queue(
         request: Request对象
         response_time_ms: 响应时间（毫秒）
         log_config: 日志配置
+        args: 函数位置参数
+        kwargs: 函数关键字参数
     """
     if not RABBITMQ_AVAILABLE:
         return
+    
+    if kwargs is None:
+        kwargs = {}
     
     try:
         # 提取查询参数
@@ -298,12 +415,10 @@ def _send_api_log_to_queue(
         if request and hasattr(request, "path_params") and request.path_params:
             path_params = dict(request.path_params)
         
-        # 提取请求体（如果需要且可用）
+        # 提取请求体 - 从参数中提取业务参数
         request_body = None
-        if log_config.include_params and request:
-            # 注意：在 FastAPI 中，请求体通常在路由函数参数中，
-            # 这里我们无法直接获取。如果需要，可以从 args/kwargs 中提取
-            pass
+        if log_config.include_params:
+            request_body = _extract_request_body_for_queue(kwargs, log_config.exclude_fields)
         
         # 确保 user_id 是数字类型，如果为空则使用默认值
         final_user_id = user_id if user_id else 0
