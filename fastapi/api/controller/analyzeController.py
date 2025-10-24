@@ -53,3 +53,13 @@ async def get_called_count_apis(request: Request, apilogService: ApiLogService =
     """
     result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_called_count_apis_service)
     return success(result)
+
+@router.get("/statistics")
+@log("获取文章统计信息")
+async def get_article_statistics(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
+    """
+    获取文章统计信息
+    返回：总阅读量、文章总数、活跃作者数（所有有文章的用户）、平均阅读次数
+    """
+    result: Dict[str, Any] = await run_in_threadpool(analyzeService.get_article_statistics_service, db)
+    return success(result)

@@ -53,6 +53,34 @@ class ArticleMapper:
     def get_article_limit_mapper(self, db: Session) -> list[Article]:
         statement = select(Article).order_by(Article.create_at.desc()).limit(100)
         return db.exec(statement).all()
+
+    def get_total_views_mapper(self, db: Session) -> int:
+        """获取所有文章的总阅读量"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        return sum(article.views for article in articles)
+
+    def get_total_articles_mapper(self, db: Session) -> int:
+        """获取文章总数"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        return len(articles)
+
+    def get_active_authors_mapper(self, db: Session) -> int:
+        """获取活跃作者数（所有有文章的用户）"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        active_author_ids = set(article.user_id for article in articles)
+        return len(active_author_ids)
+
+    def get_average_views_mapper(self, db: Session) -> float:
+        """获取平均阅读次数"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        if not articles:
+            return 0
+        total_views = sum(article.views for article in articles)
+        return round(total_views / len(articles), 2)
     
 @lru_cache()
 def get_article_mapper() -> ArticleMapper:

@@ -148,6 +148,28 @@ class AnalyzeService:
             oss_path="excel/articles.xlsx"
         )
         return oss_url
+
+    def get_article_statistics_service(self, db: Session = Depends(get_db)) -> Dict[str, Any]:
+        """
+        获取文章统计信息服务
+        合并 mapper 层的4个独立方法，返回完整的统计数据
+        """
+        # 分别调用 mapper 层的4个方法
+        total_views = self.articleMapper.get_total_views_mapper(db)
+        total_articles = self.articleMapper.get_total_articles_mapper(db)
+        active_authors = self.articleMapper.get_active_authors_mapper(db)
+        average_views = self.articleMapper.get_average_views_mapper(db)
+        
+        # 组合结果
+        statistics = {
+            "total_views": total_views,
+            "total_articles": total_articles,
+            "active_authors": active_authors,
+            "average_views": average_views
+        }
+        
+        logger.info(f"获取文章统计信息: {statistics}")
+        return statistics
     
 @lru_cache()
 def get_analyze_service(articleMapper: ArticleMapper = Depends(get_article_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), userMapper: UserMapper = Depends(get_user_mapper)) -> AnalyzeService:
