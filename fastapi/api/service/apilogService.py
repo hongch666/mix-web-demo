@@ -18,14 +18,14 @@ class ApiLogService:
         """
         return self.mapper.get_api_average_response_time_mapper()
 
-    def get_top10_most_called_apis_service(self) -> List[Dict[str, Any]]:
+    def get_called_count_apis_service(self) -> List[Dict[str, Any]]:
         """
-        获取调用次数最多的前10个接口
-        
+        获取接口调用次数
+
         Returns:
-            List[Dict]: 前10个最常调用的接口
+            List[Dict]: 接口调用次数
         """
-        return self.mapper.get_top10_most_called_apis_mapper()
+        return self.mapper.get_called_count_apis_mapper()
 
     def get_api_call_statistics_service(self) -> Dict[str, Any]:
         """

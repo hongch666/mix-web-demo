@@ -44,12 +44,12 @@ async def get_api_average_speed(request: Request, apilogService: ApiLogService =
     result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_api_average_response_time_service)
     return success(result)
 
-@router.get("/api/top10-called")
-@log("获取调用次数最多的前10个接口")
-async def get_top10_called_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
+@router.get("/api/called-count")
+@log("获取接口调用次数")
+async def get_called_count_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
     """
-    获取调用次数最多的前10个接口
+    获取接口调用次数
     按照接口路径和方法分组统计
     """
-    result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_top10_most_called_apis_service)
+    result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_called_count_apis_service)
     return success(result)

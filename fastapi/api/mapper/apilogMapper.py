@@ -49,9 +49,9 @@ class ApiLogMapper:
         cursor = self.logs.aggregate(pipeline)
         return list(cursor)
 
-    def get_top10_most_called_apis_mapper(self) -> List[Dict[str, Any]]:
+    def get_called_count_apis_mapper(self) -> List[Dict[str, Any]]:
         """
-        获取调用次数最多的前10个接口
+        获取接口调用次数
         按照 api_path 和 api_method 分组
         
         Returns:
@@ -83,9 +83,6 @@ class ApiLogMapper:
             },
             {
                 "$sort": {"call_count": -1}
-            },
-            {
-                "$limit": 10
             }
         ]
         
