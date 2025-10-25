@@ -36,7 +36,7 @@ func SetupRouter() *gin.Engine {
 		//fastapi测试路由
 		testGroup.GET("/fastapi", middleware.ApiLogMiddleware("测试FastAPI服务"), testController.FastapiController)
 		//测试ES同步MySQL
-		testGroup.POST("/syncer", middleware.ApiLogMiddleware("测试同步ES"), testController.SyncES)
+		testGroup.POST("/syncer", middleware.ApiLogMiddleware("手动触发同步ES任务"), testController.SyncES)
 	}
 	searchGroup := r.Group("/search")
 	{
