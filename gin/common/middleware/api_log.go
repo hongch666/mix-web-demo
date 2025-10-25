@@ -209,6 +209,11 @@ func formatLogMessage(method, path, description string, userID int64, username s
 func sendApiLogToQueue(userID int64, username, method, path, description string,
 	pathParams map[string]string, queryParams map[string]interface{}, requestBody interface{}, responseTimeMs int64) {
 
+	// ✓ username 为空时使用默认值
+	if username == "" {
+		username = "anonymous"
+	}
+
 	// 构建 API 日志消息（统一格式：snake_case）
 	apiLogMessage := map[string]interface{}{
 		"user_id":         userID,

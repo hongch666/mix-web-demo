@@ -1,8 +1,9 @@
 package com.hcsy.spring.common.utils;
 
 public class UserContext {
-    private static final ThreadLocal<Long> userIdHolder = new ThreadLocal<>();
-    private static final ThreadLocal<String> usernameHolder = new ThreadLocal<>();
+    // 使用 InheritableThreadLocal 支持父子线程传递
+    private static final InheritableThreadLocal<Long> userIdHolder = new InheritableThreadLocal<>();
+    private static final InheritableThreadLocal<String> usernameHolder = new InheritableThreadLocal<>();
 
     public static void setUserId(Long userId) {
         userIdHolder.set(userId);

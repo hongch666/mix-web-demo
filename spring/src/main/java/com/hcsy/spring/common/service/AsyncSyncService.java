@@ -3,6 +3,7 @@ package com.hcsy.spring.common.service;
 import com.hcsy.spring.common.client.FastAPIClient;
 import com.hcsy.spring.common.client.GinClient;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,10 @@ public class AsyncSyncService {
             logger.info("[异步任务] 所有同步任务执行完毕");
         } catch (Exception e) {
             logger.error("[异步任务] 同步过程发生未知异常: " + e.getMessage(), e);
+        } finally {
+            // ✓ 清理 ThreadLocal，避免线程池复用时污染
+            UserContext.clear();
+            logger.debug("[异步任务] UserContext 已清理");
         }
     }
 }
