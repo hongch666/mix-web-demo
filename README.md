@@ -638,6 +638,13 @@ database:
     database: "default"
     table: "articles"
     container: "hive-server"
+  redis:
+    host: "127.0.0.1"
+    port: 6379
+    db: 6
+    password: ""
+    decode_responses: True
+    max_connections: 10
 oss:
   bucket_name: mix-web-demo
   endpoint: oss-cn-guangzhou.aliyuncs.com
