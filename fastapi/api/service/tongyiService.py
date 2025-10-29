@@ -9,7 +9,6 @@ from api.service import PromptService, get_prompt_service
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
-
 class TongyiService:
     def __init__(self, promptService: PromptService):
         self.promptService = promptService
