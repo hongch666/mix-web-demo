@@ -6,17 +6,15 @@ import time
 from config import load_config
 from entity.po import Article
 from common.utils import fileLogger as logger
-from common.cache import get_hive_connection_pool, ArticleCache
-
+from common.cache import get_hive_connection_pool
 
 class ArticleMapper:
 
     def __init__(self):
         self._hive_pool = get_hive_connection_pool()
-        self._article_cache = ArticleCache()
 
     def get_top10_articles_hive_mapper(self):
-        """获取前10篇文章 - Hive 查表 + 二级缓存（L1本地 + L2 Redis）"""
+        """获取前10篇文章 - Hive 查表（无缓存,由 service 层负责缓存）"""
         
         columns = [
             "id", "title", "tags", "status", "views", "create_at", "update_at", 
@@ -31,15 +29,8 @@ class ArticleMapper:
             hive_conn = self._hive_pool.get_connection()
             pool_time = time.time() - pool_start
             
-            # ✓ 尝试从二级缓存获取（L1本地 → L2 Redis）
-            cached_result = self._article_cache.get(hive_conn)
-            if cached_result:
-                total_time = time.time() - start
-                logger.info(f"get_top10_articles_hive_mapper: [缓存命中] 耗时 {total_time:.3f}s")
-                return cached_result
-            
-            # 缓存未命中，查询 Hive
-            logger.info("get_top10_articles_hive_mapper: 缓存未命中，从 Hive 查询")
+            # 查询 Hive
+            logger.info("get_top10_articles_hive_mapper: 从 Hive 查询")
             query_start = time.time()
             with hive_conn.cursor() as cursor:
                 cursor.execute(f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10")
@@ -50,11 +41,8 @@ class ArticleMapper:
             # ✓ 转换为字典
             result = [dict(zip(columns, r)) for r in top10]
             
-            # ✓ 更新二级缓存（L1 + L2）
-            self._article_cache.set(result, hive_conn)
-            
             total_time = time.time() - start
-            logger.info(f"get_top10_articles_hive_mapper: 获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 缓存已更新, 总耗时 {total_time:.3f}s")
+            logger.info(f"get_top10_articles_hive_mapper: 获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s")
             
             return result
             
@@ -65,6 +53,14 @@ class ArticleMapper:
             # ✓ 归还连接到池
             if hive_conn:
                 self._hive_pool.return_connection(hive_conn)
+    
+    def get_hive_connection(self):
+        """获取 Hive 连接（用于缓存版本检查）"""
+        return self._hive_pool.get_connection()
+    
+    def return_hive_connection(self, conn):
+        """归还 Hive 连接"""
+        self._hive_pool.return_connection(conn)
 
     def get_top10_articles_spark_mapper(self):
         FILE_PATH: str = load_config("files")["excel_path"]

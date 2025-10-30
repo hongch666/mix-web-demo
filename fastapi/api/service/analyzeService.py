@@ -2,70 +2,125 @@ from functools import lru_cache
 from fastapi import Depends
 import os
 import pandas as pd
+import time
 from typing import Dict, List, Any
 from sqlmodel import Session
 from wordcloud import WordCloud
 from api.mapper import ArticleMapper, get_article_mapper, UserMapper, get_user_mapper, ArticleLogMapper, get_articlelog_mapper
 from config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger
+from common.cache import ArticleCache
 
 class AnalyzeService:
     def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
         self.userMapper = userMapper
+        # 初始化缓存
+        self._article_cache = ArticleCache()
 
     def get_top10_articles_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+        """
+        获取 Top10 文章服务
+        
+        流程:
+        1. 先尝试从缓存获取（L1本地 + L2 Redis）
+        2. 缓存未命中时，按优先级查询: Hive → Spark → DB
+        3. 查询成功后更新缓存
+        """
         articles = None
-        # 1. 优先 Hive
+        hive_conn = None
+        data_source = None
+        start = time.time()
+        
         try:
-            articles = self.articleMapper.get_top10_articles_hive_mapper()
-            if articles and isinstance(articles[0], dict):
-                logger.info("get_top10_articles_service: 使用 Hive 数据源")
-        except Exception as hive_e:
-            logger.warning(f"get_top10_articles_service: Hive 获取失败，降级为 Spark: {hive_e}")
-        # 2. Spark 降级
-        if not articles or len(articles) == 0:
+            # ========== 步骤1: 尝试从缓存获取 ==========
             try:
-                articles = self.articleMapper.get_top10_articles_spark_mapper()
+                hive_conn = self.articleMapper.get_hive_connection()
+                cached_result = self._article_cache.get(hive_conn)
+                if cached_result:
+                    total_time = time.time() - start
+                    logger.info(f"get_top10_articles_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    return cached_result
+            except Exception as cache_e:
+                logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            
+            # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
+            logger.info("get_top10_articles_service: [✗ 缓存未命中] 开始查询数据源")
+            
+            # 1️⃣ 优先 Hive
+            try:
+                raise Exception("模拟 Hive 查询失败")
+                articles = self.articleMapper.get_top10_articles_hive_mapper()
                 if articles and isinstance(articles[0], dict):
-                    logger.info("get_top10_articles_service: 使用 Spark 数据源")
-            except Exception as spark_e:
-                logger.error(f"get_top10_articles_service: Spark 获取失败，降级为 DB: {spark_e}")
-        # 3. DB 兜底
-        if not articles or len(articles) == 0:
-            articles = self.articleMapper.get_top10_articles_db_mapper(db)
-            logger.info("get_top10_articles_service: 使用 DB 数据源")
-
-        # 检查返回类型，如果是字典列表（csv/spark/hive），直接返回（已带username字段）
-        if articles and isinstance(articles[0], dict):
-            for article in articles:
-                if article.get("create_at") and hasattr(article["create_at"], 'isoformat'):
-                    article["create_at"] = article["create_at"].isoformat()
-                if article.get("update_at") and hasattr(article["update_at"], 'isoformat'):
-                    article["update_at"] = article["update_at"].isoformat()
-            return articles
-        else:
-            # 兜底db查询，仍需查user表
-            user_ids = [article.user_id for article in articles]
-            users = self.userMapper.get_users_by_ids_mapper(user_ids, db)
-            user_id_to_name = {user.id: user.name for user in users}
-            return [
-                {
-                    "id": article.id,
-                    "title": article.title,
-                    "content": article.content,
-                    "user_id": article.user_id,
-                    "username": user_id_to_name.get(article.user_id),
-                    "tags": article.tags,
-                    "status": article.status,
-                    "create_at": article.create_at.isoformat() if article.create_at else None,
-                    "update_at": article.update_at.isoformat() if article.update_at else None,
-                    "views": article.views,
-                    "sub_category_id": getattr(article, 'sub_category_id', None),
-                }
-                for article in articles
-            ]
+                    data_source = "Hive"
+                    logger.info("get_top10_articles_service: 使用 Hive 数据源")
+            except Exception as hive_e:
+                logger.warning(f"get_top10_articles_service: Hive 查询失败，降级为 Spark: {hive_e}")
+            
+            # 2️⃣ Spark 降级
+            if not articles or len(articles) == 0:
+                try:
+                    articles = self.articleMapper.get_top10_articles_spark_mapper()
+                    if articles and isinstance(articles[0], dict):
+                        data_source = "Spark"
+                        logger.info("get_top10_articles_service: 使用 Spark 数据源")
+                except Exception as spark_e:
+                    logger.error(f"get_top10_articles_service: Spark 查询失败，降级为 DB: {spark_e}")
+            
+            # 3️⃣ DB 兜底
+            if not articles or len(articles) == 0:
+                articles = self.articleMapper.get_top10_articles_db_mapper(db)
+                data_source = "DB"
+                logger.info("get_top10_articles_service: 使用 DB 数据源")
+            
+            # ========== 步骤3: 处理查询结果并更新缓存 ==========
+            # 检查返回类型，如果是字典列表（Hive/Spark），直接处理
+            if articles and isinstance(articles[0], dict):
+                for article in articles:
+                    if article.get("create_at") and hasattr(article["create_at"], 'isoformat'):
+                        article["create_at"] = article["create_at"].isoformat()
+                    if article.get("update_at") and hasattr(article["update_at"], 'isoformat'):
+                        article["update_at"] = article["update_at"].isoformat()
+                
+                result = articles
+            else:
+                # DB 返回的是对象，需要转换为字典并关联 username
+                user_ids = [article.user_id for article in articles]
+                users = self.userMapper.get_users_by_ids_mapper(user_ids, db)
+                user_id_to_name = {user.id: user.name for user in users}
+                result = [
+                    {
+                        "id": article.id,
+                        "title": article.title,
+                        "content": article.content,
+                        "user_id": article.user_id,
+                        "username": user_id_to_name.get(article.user_id),
+                        "tags": article.tags,
+                        "status": article.status,
+                        "create_at": article.create_at.isoformat() if article.create_at else None,
+                        "update_at": article.update_at.isoformat() if article.update_at else None,
+                        "views": article.views,
+                        "sub_category_id": getattr(article, 'sub_category_id', None),
+                    }
+                    for article in articles
+                ]
+            
+            # 更新缓存
+            if hive_conn and result:
+                try:
+                    self._article_cache.set(result, hive_conn)
+                    total_time = time.time() - start
+                    logger.info(f"get_top10_articles_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s")
+                except Exception as cache_e:
+                    logger.warning(f"更新缓存失败: {cache_e}")
+            
+            return result
+            
+        finally:
+            # 归还 Hive 连接
+            if hive_conn:
+                self.articleMapper.return_hive_connection(hive_conn)
 
     def get_keywords_dic(self) -> Dict[str, int]:
         all_keywords: List[str] = self.articleLogMapper.get_search_keywords_articlelog_mapper()
