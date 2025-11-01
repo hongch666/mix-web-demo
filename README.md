@@ -663,7 +663,7 @@ coze:
   base_url: "https://api.coze.cn"
   timeout: 30
 gemini:
-  model_name: "gemini-2.0-flash" # 可选: gemini-2.0-pro, gemini-2.0-flash 等
+  model_name: "gemini-2.5-flash" # 可选: gemini-2.5-pro 等
   timeout: 30 # 请求超时时间（秒）
 tongyi:
   model_name: "qwen-flash" # 可选: qwen-plus, qwen-turbo, qwen-max 等
@@ -843,3 +843,4 @@ tongyi:
 
 5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
 6. 如果没有使用 Hadoop+Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
+7. Gemini 服务需要运行的终端使用代理，请自行配置。
