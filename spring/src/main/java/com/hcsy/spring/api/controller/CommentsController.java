@@ -1,5 +1,6 @@
 package com.hcsy.spring.api.controller;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.AICommentsVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -127,6 +129,7 @@ public class CommentsController {
         // 查询用户名
         User user = userService.getById(comments.getUserId());
         commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+        commentsVO.setPic(user != null ? user.getImg() : null);
         // 查询文章标题
         Article article = articleService.getById(comments.getArticleId());
         commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
@@ -147,6 +150,7 @@ public class CommentsController {
             // 查询用户名
             User user = userService.getById(comment.getUserId());
             commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
             commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
@@ -174,6 +178,7 @@ public class CommentsController {
             // 查询用户名
             User user = userService.getById(comment.getUserId());
             commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
             commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
@@ -206,12 +211,32 @@ public class CommentsController {
             // 查询用户名
             User user = userService.getById(comment.getUserId());
             commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
             commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
             return commentsVO;
         }).toList();
         data.put("list", commentVOs);
+        return Result.success(data);
+    }
+
+    // 根据文章id获取AI评论
+    @GetMapping("/article/ai/{id}")
+    @Operation(summary = "根据文章id获取AI评论", description = "根据文章id获取AI评论")
+    @ApiLog("根据文章id获取AI评论")
+    public Result listAICommentsByArticleId(@PathVariable Long id) {
+        List<Comments> aiComments = commentsService.listAICommentsByArticleId(id);
+        // 构建AI评论视图对象，包含评论内容、星级评分和AI类型
+        List<AICommentsVO> data = new ArrayList<>();
+        for (Comments comment : aiComments) {
+            AICommentsVO aiCommentsVO = BeanUtil.copyProperties(comment, AICommentsVO.class);
+            Long userId = comment.getUserId();
+            String aiType = userService.getById(userId).getName();
+            aiCommentsVO.setAiType(aiType);
+            aiCommentsVO.setPic(userService.getById(userId).getImg());
+            data.add(aiCommentsVO);
+        }
         return Result.success(data);
     }
 }

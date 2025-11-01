@@ -33,6 +33,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 1. 先获取所有符合条件的用户ID（轻量查询）
         LambdaQueryWrapper<User> idQueryWrapper = Wrappers.lambdaQuery();
         idQueryWrapper.select(User::getId);
+        // 排除 role 为 ai 的用户
+        idQueryWrapper.ne(User::getRole, "ai");
         if (username != null && !username.isEmpty()) {
             idQueryWrapper.like(User::getName, username);
         }

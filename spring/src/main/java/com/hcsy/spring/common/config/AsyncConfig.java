@@ -1,4 +1,4 @@
-package com.hcsy.spring.config;
+package com.hcsy.spring.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

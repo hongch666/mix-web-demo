@@ -8,6 +8,7 @@ public class CommentsVO {
     private String content;
     private Double star;
     private String username;
+    private String pic;
     private String articleTitle;
     private String createTime;
     private String updateTime;

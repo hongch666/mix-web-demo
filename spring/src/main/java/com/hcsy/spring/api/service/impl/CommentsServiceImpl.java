@@ -1,5 +1,6 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -67,14 +68,34 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     }
 
     public IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay) {
-        LambdaQueryWrapper<Comments> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Comments::getArticleId, articleId);
-        if (sortWay.equals("star")) {
-            queryWrapper.orderByDesc(Comments::getStar);
-        } else {
-            queryWrapper.orderByDesc(Comments::getCreateTime);
+        // ✨ 使用SQL级别JOIN过滤，确保分页基于已过滤的数据
+        // 这样避免了分页不准确的问题（当前面页数中有AI评论时）
+        return this.baseMapper.selectCommentsByArticleIdWithoutAI(page, articleId, sortWay);
+    }
+
+    public List<Comments> listAICommentsByArticleId(Long articleId) {
+        // 查询所有 AI 用户的 ID 列表
+        LambdaQueryWrapper<User> userQueryWrapper = Wrappers.lambdaQuery();
+        userQueryWrapper.eq(User::getRole, "ai")
+                .select(User::getId); // 只查询ID字段以提高性能
+        List<User> aiUsers = userService.list(userQueryWrapper);
+
+        // 提取 AI 用户 ID
+        List<Long> aiUserIds = aiUsers.stream()
+                .map(User::getId)
+                .toList();
+
+        // 如果没有 AI 用户，直接返回空列表
+        if (aiUserIds.isEmpty()) {
+            return new ArrayList<>();
         }
-        IPage<Comments> commentsPage = this.page(page, queryWrapper);
-        return commentsPage;
+
+        // 查询当前文章对应的 AI 用户评论列表
+        LambdaQueryWrapper<Comments> commentsQueryWrapper = Wrappers.lambdaQuery();
+        commentsQueryWrapper.eq(Comments::getArticleId, articleId)
+                .in(Comments::getUserId, aiUserIds)
+                .orderByDesc(Comments::getCreateTime);
+
+        return this.list(commentsQueryWrapper);
     }
 }

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hcsy.spring.api.mapper.CommentsMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.hcsy.spring.entity.po.Comments">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="article_id" property="articleId" />
+        <result column="content" property="content" />
+        <result column="star" property="star" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+
+    <!-- 获取文章评论（已过滤AI用户）- SQL级别JOIN确保分页准确 -->
+    <select id="selectCommentsByArticleIdWithoutAI" resultMap="BaseResultMap">
+        SELECT c.id, c.user_id, c.article_id, c.content, c.star, c.create_time
+        FROM comments c
+        INNER JOIN user u ON c.user_id = u.id
+        WHERE c.article_id = #{articleId}
+            AND u.role != 'ai'
+        <choose>
+            <when test="sortWay == 'star'">
+                ORDER BY c.star DESC
+            </when>
+            <otherwise>
+                ORDER BY c.create_time DESC
+            </otherwise>
+        </choose>
+    </select>
+
+</mapper>

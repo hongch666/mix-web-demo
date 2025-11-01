@@ -13,7 +13,7 @@
         <result column="login_status" property="loginStatus" />
     </resultMap>
 
-    <!-- 根据用户名模糊查询用户，并按登录状态排序后分页 -->
+    <!-- 根据用户名模糊查询用户，并按登录状态排序后分页，排除 AI 用户 -->
     <select id="selectUsersWithLoginStatus" resultMap="BaseResultMap">
         SELECT u.*,
         CASE
@@ -24,6 +24,8 @@
         END as login_status
         FROM user u
         <where>
+            <!-- 新增: 排除 role 为 ai 的用户 -->
+            AND u.role != 'ai'
             <if test="username != null and username != ''">
                 AND u.name LIKE CONCAT('%', #{username}, '%')
             </if>
@@ -32,10 +34,12 @@
         LIMIT #{pageSize} OFFSET #{offset}
     </select>
 
-    <!-- 统计符合条件的用户总数 -->
+    <!-- 统计符合条件的用户总数，排除 AI 用户 -->
     <select id="countUsersByUsername" resultType="long">
         SELECT COUNT(*) FROM user u
         <where>
+            <!-- 新增: 排除 role 为 ai 的用户 -->
+            AND u.role != 'ai'
             <if test="username != null and username != ''">
                 AND u.name LIKE CONCAT('%', #{username}, '%')
             </if>
