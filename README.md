@@ -751,7 +751,7 @@ spring:
         - id: fastapi
           uri: lb://fastapi
           predicates:
-            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/upload/**,/ai_history/**
+            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/upload/**,/ai_history/**,/ai_comment/**
 jwt:
   secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
   expiration: 2592000000 # 毫秒数（30 天）
