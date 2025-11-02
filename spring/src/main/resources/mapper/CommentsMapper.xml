@@ -29,4 +29,35 @@
         </choose>
     </select>
 
+    <!-- 获取评论列表（普通用户在前，AI用户在后）- SQL级别JOIN并使用CASE排序 -->
+    <select id="selectCommentsWithFilter" resultMap="BaseResultMap">
+        SELECT c.id, c.user_id, c.article_id, c.content, c.star, c.create_time, c.update_time
+        FROM comments c
+        INNER JOIN user u ON c.user_id = u.id
+        <where>
+            <if test="content != null and content != ''">
+                AND c.content LIKE CONCAT('%', #{content}, '%')
+            </if>
+            <if test="articleIds != null">
+                <if test="articleIds.size() > 0">
+                    AND c.article_id IN
+                    <foreach collection="articleIds" item="id" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                </if>
+            </if>
+            <if test="userIds != null">
+                <if test="userIds.size() > 0">
+                    AND c.user_id IN
+                    <foreach collection="userIds" item="id" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                </if>
+            </if>
+        </where>
+        ORDER BY 
+            CASE WHEN u.role = 'ai' THEN 1 ELSE 0 END,
+            c.create_time DESC
+    </select>
+
 </mapper>

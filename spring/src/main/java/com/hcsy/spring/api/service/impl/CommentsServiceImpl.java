@@ -28,36 +28,35 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     private final UserService userService;
 
     public IPage<Comments> listCommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
-        LambdaQueryWrapper<Comments> queryWrapper = Wrappers.lambdaQuery();
-        if (queryDTO.getContent() != null && !queryDTO.getContent().isEmpty()) {
-            queryWrapper.like(Comments::getContent, queryDTO.getContent()); // 内容模糊匹配
-        }
+        // 准备查询条件
+        String content = (queryDTO.getContent() != null && !queryDTO.getContent().isEmpty())
+                ? queryDTO.getContent()
+                : null;
+
+        List<Long> articleIds = null;
         // 获取模糊匹配的文章列表，通过id数组构建查询
         if (queryDTO.getArticleTitle() != null && !queryDTO.getArticleTitle().isEmpty()) {
-            // 模糊查询文章标题，获取对应文章id列表
             List<Article> articles = articleService.listAllArticlesByTitle(queryDTO.getArticleTitle());
-            List<Long> articleIds = articles.stream().map(Article::getId).toList();
-            if (!articleIds.isEmpty()) {
-                queryWrapper.in(Comments::getArticleId, articleIds);
-            } else {
+            articleIds = articles.stream().map(Article::getId).toList();
+            if (articleIds.isEmpty()) {
                 // 如果没有匹配的文章，直接返回空结果
                 return new Page<>(page.getCurrent(), page.getSize(), 0);
             }
         }
+
+        List<Long> userIds = null;
         // 获取模糊匹配的用户列表，通过id数组构建查询
         if (queryDTO.getUsername() != null && !queryDTO.getUsername().isEmpty()) {
-            // 模糊查询用户名，获取对应用户id列表
             List<User> users = userService.listAllUserByUsername(queryDTO.getUsername());
-            List<Long> userIds = users.stream().map(User::getId).toList();
-            if (!userIds.isEmpty()) {
-                queryWrapper.in(Comments::getUserId, userIds);
-            } else {
+            userIds = users.stream().map(User::getId).toList();
+            if (userIds.isEmpty()) {
                 // 如果没有匹配的用户，直接返回空结果
                 return new Page<>(page.getCurrent(), page.getSize(), 0);
             }
         }
-        IPage<Comments> commentsPage = this.page(page, queryWrapper);
-        return commentsPage;
+
+        // ✨ 使用SQL级别JOIN查询，普通用户评论在前，AI用户评论在后
+        return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
     public IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId) {
