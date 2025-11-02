@@ -418,7 +418,7 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 ### MongoDB 表创建
 
-- 数据库为 `demo`，集合为 `articlelogs`
+- 数据库为 `demo`，集合为 `articlelogs`和 `apilogs`，系统会自动创建
 
 ### ElasticSearch 索引创建
 
@@ -433,7 +433,7 @@ FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ### Spring 部分
 
 1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. gateway 部分的 yaml 配置文件可以配置路由
+2. 需要 `application.yaml`和 `bootstrap.yaml`两个配置文件
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
@@ -476,7 +476,7 @@ jwt:
   expiration: 86400000 # 毫秒数（1 天）
 ```
 
-- `bootstrap.yml`
+- `bootstrap.yaml`
 
 ```yml
 spring:
@@ -805,7 +805,11 @@ jwt:
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
    ```python
-   @router.get("/hello", description="这是一个自定义的接口描述")
+   @router.get(
+       "/fastapi",
+       summary="这是接口简介",
+       description="这是接口描述"
+   )
    def hello():
        """
        这是接口的详细说明

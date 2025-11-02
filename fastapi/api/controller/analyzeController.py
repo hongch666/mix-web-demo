@@ -13,13 +13,21 @@ router: APIRouter = APIRouter(
     tags=["分析接口"],
 )
 
-@router.get("/top10")
+@router.get(
+    "/top10",
+    summary="获取前10篇文章",
+    description="获取阅读量前10的文章"
+)
 @log("获取前10篇文章")
 async def get_top10_articles(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
     articles: List[Dict[str, Any]] = await run_in_threadpool(analyzeService.get_top10_articles_service, db)
     return success(ListResponse(total=len(articles), list=articles))
 
-@router.post("/wordcloud")
+@router.post(
+    "/wordcloud",
+    summary="生成词云图",
+    description="根据文章生成词云图"
+)
 @log("生成词云图")
 async def get_wordcloud(request: Request,analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
     keywords_dic: Dict[str, int] = await run_in_threadpool(analyzeService.get_keywords_dic)
@@ -27,14 +35,22 @@ async def get_wordcloud(request: Request,analyzeService: AnalyzeService = Depend
     oss_url: str = await run_in_threadpool(analyzeService.upload_wordcloud_to_oss)
     return success(oss_url)
 
-@router.post("/excel")
+@router.post(
+    "/excel",
+    summary="获取文章数据Excel",
+    description="导出文章数据到Excel并上传到OSS"
+)
 @log("获取文章数据Excel")
 async def get_excel(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
     await run_in_threadpool(analyzeService.export_articles_to_excel, db)
     oss_url: str = await run_in_threadpool(analyzeService.upload_excel_to_oss)
     return success(oss_url)
 
-@router.get("/api/average-speed")
+@router.get(
+    "/api/average-speed",
+    summary="获取所有接口的平均响应速度",
+    description="获取所有接口的平均响应速度"
+)
 @log("获取所有接口的平均响应速度")
 async def get_api_average_speed(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
     """
@@ -44,7 +60,11 @@ async def get_api_average_speed(request: Request, apilogService: ApiLogService =
     result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_api_average_response_time_service)
     return success(result)
 
-@router.get("/api/called-count")
+@router.get(
+    "/api/called-count",
+    summary="获取接口调用次数",
+    description="获取接口调用次数"
+)
 @log("获取接口调用次数")
 async def get_called_count_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
     """
@@ -54,7 +74,11 @@ async def get_called_count_apis(request: Request, apilogService: ApiLogService =
     result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_called_count_apis_service)
     return success(result)
 
-@router.get("/statistics")
+@router.get(
+    "/statistics",
+    summary="获取文章统计信息",
+    description="获取文章统计信息"
+)
 @log("获取文章统计信息")
 async def get_article_statistics(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
     """

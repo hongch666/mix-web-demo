@@ -12,7 +12,11 @@ router: APIRouter = APIRouter(
     tags=["上传文件接口"],
 )
 
-@router.post("")
+@router.post(
+    "",
+    summary="上传文件",
+    description="上传文件到OSS"
+)
 @log("上传文件")
 async def get_wordcloud(request: Request,data: UploadDTO, analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
     oss_url: str = await run_in_threadpool(
@@ -22,7 +26,11 @@ async def get_wordcloud(request: Request,data: UploadDTO, analyzeService: Analyz
     )
     return success(oss_url)
 
-@router.post("/image")
+@router.post(
+    "/image",
+    summary="上传图片",
+    description="上传图片到OSS"
+)
 @log("上传图片")
 async def upload_image_to_oss(request: Request, file: UploadFile = File(...),uploadService: UploadService = Depends(get_upload_service)) -> Any:
     user_id: str = get_current_user_id() or ""

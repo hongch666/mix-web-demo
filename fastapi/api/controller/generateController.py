@@ -11,7 +11,11 @@ router: APIRouter = APIRouter(
     tags=["生成相关接口"],
 )
 
-@router.post("/tags")
+@router.post(
+    "/tags",
+    summary="生成tags",
+    description="根据输入文本生成tags数组"
+)
 @log("生成tags")
 async def generate_tags(request: Request, data: GenerateDTO, generateService: GenerateService = Depends(get_generate_service)) -> Any:
     tags: list[str] = await run_in_threadpool(

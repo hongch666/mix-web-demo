@@ -15,7 +15,12 @@ from entity.po import AiHistory
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
 
-@router.post("/send", response_model=ChatResponse)
+@router.post(
+    "/send",
+    response_model=ChatResponse,
+    summary="普通聊天",
+    description="发送聊天消息并返回响应"
+)
 @log("普通聊天")
 async def send_message(
     httpRequest: Request,
@@ -94,7 +99,12 @@ async def send_message(
         fileLogger.error(f"聊天接口异常: {str(e)}")
         raise HTTPException(status_code=500, detail=f"聊天服务异常: {str(e)}")
 
-@router.post("/stream", response_model=ChatResponse)
+@router.post(
+    "/stream",
+    response_model=ChatResponse,
+    summary="流式聊天",
+    description="流式发送聊天消息并返回响应"
+)
 @log("流式聊天")
 async def stream_message(
     httpRequest: Request,
