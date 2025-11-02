@@ -30,6 +30,90 @@ class CozeService:
             self.coze_client = None
             logger.error(f"初始化 Coze 客户端失败: {e}")
 
+    async def basic_chat(self, message: str) -> str:
+        """最基础的对话接口 - 不使用知识库和向量数据库"""
+        try:
+            logger.info(f"基础对话: {message}")
+            
+            if not getattr(self, 'coze_client', None):
+                return "聊天服务未配置或初始化失败"
+            
+            chat: Any = self.coze_client.chat.create(
+                bot_id=self._bot_id,
+                user_id="basic_user",
+                additional_messages=[
+                    Message.build_user_question_text(content=message)
+                ]
+            )
+            logger.info(f"创建基础聊天会话: {chat.id}")
+            
+            max_attempts: int = 60
+            attempt: int = 0
+            while attempt < max_attempts:
+                try:
+                    chat_poll: Any = self.coze_client.chat.retrieve(
+                        chat_id=chat.id,
+                        conversation_id=chat.conversation_id
+                    )
+                    logger.info(f"聊天状态: {chat_poll.status}")
+                    
+                    if chat_poll.status == ChatStatus.COMPLETED:
+                        try:
+                            messages: Any = self.coze_client.chat.message.list(
+                                chat_id=chat.id,
+                                conversation_id=chat.conversation_id
+                            )
+                        except AttributeError:
+                            try:
+                                messages: Any = self.coze_client.conversations.messages.list(
+                                    conversation_id=chat.conversation_id
+                                )
+                            except AttributeError:
+                                try:
+                                    messages: Any = self.coze_client.messages.list(
+                                        chat_id=chat.id,
+                                        conversation_id=chat.conversation_id
+                                    )
+                                except AttributeError:
+                                    logger.error("无法找到正确的消息列表 API")
+                                    return "API 调用方式不匹配，请检查 cozepy 库版本"
+                        
+                        if hasattr(messages, 'data'):
+                            for msg in messages.data:
+                                if msg.role == "assistant" and msg.type == "answer":
+                                    response: str = msg.content
+                                    logger.info(f"Coze 基础回复长度: {len(response)} 字符")
+                                    return response
+                        else:
+                            for msg in messages:
+                                if hasattr(msg, 'role') and msg.role == "assistant":
+                                    response: str = getattr(msg, 'content', '')
+                                    if response:
+                                        logger.info(f"Coze 基础回复长度: {len(response)} 字符")
+                                        return response
+                        return "抱歉，没有收到回复"
+                        
+                    elif chat_poll.status == ChatStatus.FAILED:
+                        logger.error("Coze 聊天失败")
+                        return "聊天处理失败，请稍后重试"
+                    elif chat_poll.status == ChatStatus.REQUIRES_ACTION:
+                        logger.warning("聊天需要用户操作")
+                        return "聊天需要额外操作，请检查机器人配置"
+                    
+                    await asyncio.sleep(1)
+                    attempt += 1
+                except Exception as poll_error:
+                    logger.error(f"轮询聊天状态异常: {str(poll_error)}")
+                    await asyncio.sleep(2)
+                    attempt += 1
+            
+            logger.warning(f"聊天超时，已等待 {max_attempts} 秒")
+            return "聊天响应超时，请稍后重试"
+            
+        except Exception as e:
+            logger.error(f"Coze 基础对话异常: {str(e)}")
+            return f"对话服务异常: {str(e)}"
+
     async def simple_chat(self,message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
             """简单聊天接口"""
             try:

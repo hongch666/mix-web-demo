@@ -35,6 +35,57 @@ class TongyiService:
             self.tongyi_client = None
             logger.error(f"初始化通义千问客户端失败: {e}")
 
+    async def basic_chat(self, message: str) -> str:
+        """最基础的对话接口 - 不使用知识库和向量数据库"""
+        try:
+            logger.info(f"基础对话: {message}")
+            
+            if not getattr(self, 'tongyi_client', None):
+                return "聊天服务未配置或初始化失败"
+            
+            # 使用 run_in_executor 在线程池中运行同步的通义千问 API 调用
+            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            
+            def sync_chat():
+                return self.tongyi_client.chat.completions.create(
+                    model=self._model_name,
+                    messages=[
+                        {"role": "user", "content": message}
+                    ]
+                )
+            
+            completion = await loop.run_in_executor(None, sync_chat)
+            
+            # 解析响应内容
+            raw = completion.model_dump_json()
+            if isinstance(raw, str):
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    data = {}
+            else:
+                data = raw
+
+            content = None
+            try:
+                content = data.get("choices", [])[0].get("message", {}).get("content")
+            except Exception:
+                try:
+                    content = data["choices"][0]["message"]["content"]
+                except Exception:
+                    content = None
+            
+            if content:
+                logger.info(f"通义千问基础回复长度: {len(content)} 字符")
+                return content
+            else:
+                logger.warning("通义千问没有返回有效内容")
+                return "抱歉，没有收到回复"
+                
+        except Exception as e:
+            logger.error(f"通义千问基础对话异常: {str(e)}")
+            return f"对话服务异常: {str(e)}"
+
     async def simple_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
         """简单聊天接口"""
         try:

@@ -4,6 +4,7 @@ from .category import Category
 from .subCategory import SubCategory
 from .listResponse import ListResponse
 from .aiHistory import AiHistory
+from .comments import Comments
 
 __all__ = [
     "Article",
@@ -12,4 +13,5 @@ __all__ = [
     "SubCategory",
     "ListResponse",
     "AiHistory",
+    "Comments",
 ]

@@ -31,6 +31,34 @@ class GeminiService:
             self.gemini_model = None
             logger.error(f"初始化 Gemini 客户端失败: {e}")
 
+    async def basic_chat(self, message: str) -> str:
+        """最基础的对话接口 - 不使用知识库和向量数据库"""
+        try:
+            logger.info(f"基础对话: {message}")
+            
+            if not getattr(self, 'gemini_model', None):
+                return "聊天服务未配置或初始化失败"
+            
+            # 使用 run_in_executor 在线程池中运行同步的 Gemini API 调用
+            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(
+                None,
+                self.gemini_model.generate_content,
+                message
+            )
+            
+            if response and hasattr(response, 'text'):
+                result: str = response.text
+                logger.info(f"Gemini 基础回复长度: {len(result)} 字符")
+                return result
+            else:
+                logger.warning("Gemini 没有返回有效内容")
+                return "抱歉，没有收到回复"
+                
+        except Exception as e:
+            logger.error(f"Gemini 基础对话异常: {str(e)}")
+            return f"对话服务异常: {str(e)}"
+
     async def simple_chat(self,message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
         """简单聊天接口"""
         try:

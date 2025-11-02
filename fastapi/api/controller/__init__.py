@@ -4,6 +4,7 @@ from .generateController import router as generate_router
 from .testController import router as test_router
 from .uploadController import router as upload_router
 from .aiHistoryController import router as ai_history_router
+from .aiCommentController import router as ai_comment_router
 
 __all__ = [
     "analyze_router",
@@ -12,4 +13,5 @@ __all__ = [
     "test_router",
     "upload_router",
     "ai_history_router",
+    "ai_comment_router",
 ]

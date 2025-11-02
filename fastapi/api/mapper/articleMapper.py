@@ -92,6 +92,10 @@ class ArticleMapper:
     def get_article_limit_mapper(self, db: Session) -> list[Article]:
         statement = select(Article).order_by(Article.create_at.desc()).limit(100)
         return db.exec(statement).all()
+    
+    def get_article_by_id_mapper(self, article_id: int, db: Session) -> Article | None:
+        statement = select(Article).where(Article.id == article_id)
+        return db.exec(statement).first()
 
     def get_total_views_mapper(self, db: Session) -> int:
         """获取所有文章的总阅读量"""

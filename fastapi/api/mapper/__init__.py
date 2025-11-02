@@ -14,6 +14,8 @@ from .vectorMapper import get_vector_mapper, VectorMapper
 
 from .apilogMapper import get_apilog_mapper,ApiLogMapper
 
+from .commentsMapper import CommentsMapper,get_comments_mapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -31,4 +33,6 @@ __all__ = [
     "VectorMapper",
     "get_apilog_mapper",
     "ApiLogMapper",
+    "CommentsMapper",
+    "get_comments_mapper",
 ]
