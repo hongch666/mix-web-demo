@@ -4,7 +4,13 @@ from config import load_config
 from entity.po import Article, User, Category, SubCategory, AiHistory
 from common.utils import fileLogger
 
-DATABASE_URL: str = load_config("database")["mysql"]["url"]
+HOST: str = load_config("database")["mysql"]["host"]
+PORT: int = load_config("database")["mysql"]["port"]
+DATABASE: str = load_config("database")["mysql"]["database"]
+USER: str = load_config("database")["mysql"]["user"]
+PASSWORD: str = load_config("database")["mysql"]["password"]
+
+DATABASE_URL: str = f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 engine = create_engine(DATABASE_URL, echo=True)
 
 def get_db() -> Generator[Session, None, None]:

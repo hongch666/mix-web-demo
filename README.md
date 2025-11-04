@@ -618,7 +618,11 @@ rabbitmq:
   vhost: "test"
 database:
   mysql:
-    url: "mysql+pymysql://root:csc20040312@localhost/demo?charset=utf8mb4"
+    host: "localhost"
+    port: 3306
+    database: "demo"
+    user: "root"
+    password: "csc20040312"
   postgres:
     host: "localhost"
     port: 5432
