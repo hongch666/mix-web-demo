@@ -3,15 +3,14 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 import os
 import time
-from config import load_config
+from config import load_config, get_hive_connection_pool, HiveConnectionPool
 from entity.po import Article
 from common.utils import fileLogger as logger
-from common.cache import get_hive_connection_pool
 
 class ArticleMapper:
 
     def __init__(self):
-        self._hive_pool = get_hive_connection_pool()
+        self._hive_pool: HiveConnectionPool = get_hive_connection_pool()
 
     def get_top10_articles_hive_mapper(self):
         """获取前10篇文章 - Hive 查表（无缓存,由 service 层负责缓存）"""

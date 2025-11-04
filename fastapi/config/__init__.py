@@ -12,6 +12,8 @@ from .oss import OSSClient
 
 from .rabbitmq import RabbitMQClient, get_rabbitmq_client,send_to_queue, _rabbitmq_client
 
+from .hive import HiveConnectionPool, get_hive_connection_pool
+
 __all__ = [
     "load_config",
     "load_secret_config",
@@ -28,4 +30,6 @@ __all__ = [
     "get_rabbitmq_client",
     "send_to_queue",
     "_rabbitmq_client",
+    'HiveConnectionPool',
+    'get_hive_connection_pool',
 ]       
