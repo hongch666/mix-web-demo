@@ -823,6 +823,13 @@ jwt:
 
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
+## 项目文件命名说明
+
+1. Spring 项目采用大驼峰命名方式，如 `UserCreateDTO.java`
+2. Gin 项目采用蛇形命名方式，如 `user_create_dto.go`
+3. NestJS 项目采用点号命名和下划线命名混合使用的方式，如 `user-create.service.ts`
+4. FastAPI 项目采用小驼峰命名方式，如 `userCreateDTO.py`
+
 ## 其他说明
 
 1. 词云图的字体应进行配置对应字体的路径。
