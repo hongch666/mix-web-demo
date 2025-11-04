@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TestModule } from './test/test.module';
 import { ArticleModule } from './article/article.module';
 import { ArticleLogModule } from './log/log.module';
-import { ApiLogModule } from './api-log/api.log.module';
+import { ApiLogModule } from './api-log/api-log.module';
 
 @Module({
   imports: [

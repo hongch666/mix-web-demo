@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, DeleteResult } from 'mongoose';
-import { ApiLog, ApiLogDocument } from './schema/api.log.schema';
+import { ApiLog, ApiLogDocument } from './schema/api-log.schema';
 import { CreateApiLogDto, QueryApiLogDto } from './dto';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
