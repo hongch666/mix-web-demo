@@ -344,7 +344,7 @@ public class ApiLogAspect {
 
     /**
      * 向消息队列发送 API 日志
-     * ✨ 在接口完成后自动发送到 RabbitMQ
+     * 在接口完成后自动发送到 RabbitMQ
      */
     private void sendApiLogToQueue(
             ProceedingJoinPoint pjp,

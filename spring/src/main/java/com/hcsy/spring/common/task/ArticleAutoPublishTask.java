@@ -17,7 +17,7 @@ public class ArticleAutoPublishTask {
     private final ArticleService articleService;
     private final SimpleLogger logger;
 
-    // 每3小时执行一次
+    // 每天执行一次
     @Scheduled(cron = "0 0 0 * * ?")
     public void autoPublishUnpublishedArticles() {
         logger.info("定时任务启动：检查未发布文章");

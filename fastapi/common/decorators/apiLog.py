@@ -108,7 +108,7 @@ def api_log(config: Union[str, ApiLogConfig]):
                 if isinstance(result, StreamingResponse):
                     original_generator = result.body_iterator
                     
-                    # ⚠️ 重要：提前提取请求体信息，避免在生成器执行时丢失上下文
+                    # 提前提取请求体信息，避免在生成器执行时丢失上下文
                     captured_func = func
                     captured_kwargs = kwargs.copy()
                     captured_log_config = log_config
@@ -123,7 +123,7 @@ def api_log(config: Union[str, ApiLogConfig]):
                             time_message = f"{method} {path} 使用了{duration_ms}ms"
                             logger_method(time_message)
                             
-                            # 🚀 发送 API 日志到 RabbitMQ（使用捕获的上下文）
+                            # 发送 API 日志到 RabbitMQ（使用捕获的上下文）
                             _send_api_log_to_queue(
                                 user_id, username, method, path, captured_log_config.message,
                                 request, duration_ms, captured_log_config, captured_func, captured_kwargs
@@ -137,7 +137,7 @@ def api_log(config: Union[str, ApiLogConfig]):
                     time_message = f"{method} {path} 使用了{duration_ms}ms"
                     logger_method(time_message)
                     
-                    # 🚀 发送 API 日志到 RabbitMQ
+                    # 发送 API 日志到 RabbitMQ
                     _send_api_log_to_queue(
                         user_id, username, method, path, log_config.message,
                         request, duration_ms, log_config, func, kwargs
@@ -207,7 +207,7 @@ def api_log(config: Union[str, ApiLogConfig]):
                 time_message = f"{method} {path} 使用了{duration_ms}ms"
                 logger_method(time_message)
                 
-                # 🚀 发送 API 日志到 RabbitMQ
+                # 发送 API 日志到 RabbitMQ
                 _send_api_log_to_queue(
                     user_id, username, method, path, log_config.message,
                     request, duration_ms, log_config, func, kwargs
@@ -389,8 +389,7 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
             if 'Service' in key or 'Service' in type(value).__name__:
                 continue
             
-            # ⚠️ 重要：通过类型检查跳过 Request 对象（不是通过参数名）
-            # 因为参数名 'request' 可能是 Pydantic 模型（如 ChatRequest）
+            # 通过类型检查跳过 Request 对象（不是通过参数名）
             if isinstance(value, Request):
                 continue
             

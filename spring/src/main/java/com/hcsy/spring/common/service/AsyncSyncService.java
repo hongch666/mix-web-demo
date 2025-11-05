@@ -61,7 +61,7 @@ public class AsyncSyncService {
         } catch (Exception e) {
             logger.error("[异步任务] 同步过程发生未知异常: " + e.getMessage(), e);
         } finally {
-            // ✓ 清理 ThreadLocal，避免线程池复用时污染
+            // 清理 ThreadLocal，避免线程池复用时污染
             UserContext.clear();
             logger.debug("[异步任务] UserContext 已清理");
         }

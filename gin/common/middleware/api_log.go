@@ -72,7 +72,7 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 		timeMessage := fmt.Sprintf("%s %s 使用了%dms", method, path, durationMs)
 		utils.LogInfo(timeMessage)
 
-		// 🚀 发送 API 日志到 RabbitMQ
+		// 发送 API 日志到 RabbitMQ
 		sendApiLogToQueue(userID, username, method, path, description, pathParams, queryParams, logInfo["请求体"], durationMs)
 	}
 }

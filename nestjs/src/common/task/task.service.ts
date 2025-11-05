@@ -15,6 +15,11 @@ export class TaskService {
     private readonly apiLogModel: Model<ApiLogDocument>,
   ) {}
 
+  /**
+   * 每月1日凌晨0点执行，清除文章操作日志
+   * Cron 表达式: 秒 分 时 日 月 星期
+   * '0 0 1 * *' = 每月1日凌晨0点
+   */
   @Cron('0 0 1 * *')
   async handleCronWithCustomExpression() {
     fileLogger.info('开始清除任务');

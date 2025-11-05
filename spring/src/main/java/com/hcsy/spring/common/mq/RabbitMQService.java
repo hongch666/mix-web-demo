@@ -17,7 +17,7 @@ public class RabbitMQService {
 
     /**
      * 发送消息到队列
-     * ✨ 使用 JSON 序列化，确保与 NestJS 消费者兼容
+     * 使用 JSON 序列化，确保与 NestJS 消费者兼容
      */
     public void sendMessage(String queueName, Object message) {
         try {
