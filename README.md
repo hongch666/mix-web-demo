@@ -750,7 +750,7 @@ spring:
         - id: nestjs
           uri: lb://nestjs
           predicates:
-            - Path=/api_nestjs/**,/logs/**,/article/**,/api-logs/**
+            - Path=/api_nestjs/**,/logs/**,/download/**,/api-logs/**
 
         - id: fastapi
           uri: lb://fastapi
