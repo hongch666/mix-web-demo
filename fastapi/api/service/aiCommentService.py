@@ -22,7 +22,8 @@ class AiCommentService:
         # 1. 判断是否需要生成AI评论
         ai_comments_count = self.comments_mapper.get_ai_comments_num_by_article_id_mapper(article_id, db)
         if ai_comments_count > 0:
-            raise Exception("该文章已存在AI评论，无需重复生成")
+            logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
+            self.comments_mapper.delete_ai_comments_by_article_id_mapper(article_id, db)
         # 2. 调用大模型生成AI评论
         # 2.1 获取文章标题,tags和内容
         article = self.article_mapper.get_article_by_id_mapper(article_id, db)

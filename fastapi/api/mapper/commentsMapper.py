@@ -28,6 +28,21 @@ class CommentsMapper:
         db.refresh(comment)
         return comment
 
+    def delete_ai_comments_by_article_id_mapper(self, article_id: int, db: Session) -> None:
+        # 查询所有 role 为 "ai" 的用户ID
+        ai_user_statement = select(User.id).where(User.role == "ai")
+        ai_user_ids = db.exec(ai_user_statement).all()
+        comments_statement = select(Comments).where(
+            Comments.article_id == article_id,
+            Comments.user_id.in_(ai_user_ids)
+        )
+        comments_to_delete = db.exec(comments_statement).all()
+        
+        for comment in comments_to_delete:
+            db.delete(comment)
+        
+        db.commit()
+
 @lru_cache()
 def get_comments_mapper() -> CommentsMapper:
     return CommentsMapper()
