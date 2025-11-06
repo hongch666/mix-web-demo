@@ -3,6 +3,7 @@ package com.hcsy.gateway.filter;
 import com.hcsy.gateway.utils.JwtUtil;
 import com.hcsy.gateway.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
@@ -64,7 +66,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             // 4. 从 Token 中提取用户 ID
             Long userId = jwtUtil.extractUserId(token);
 
-            // 5. ✨ 核心检验：Token 是否在 Redis 列表中（检查是否被管理员踢下线）
+            // 5. 核心检验：Token 是否在 Redis 列表中（检查是否被管理员踢下线）
             String tokenListKey = "user:tokens:" + userId;
             if (!redisUtil.existsInList(tokenListKey, token)) {
                 return unauthorizedResponse(exchange, "Token has been revoked or user logged out");
@@ -130,9 +132,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private void logAccess(Long userId, String path) {
-        // 异步记录访问日志（实际项目可接入ELK等日志系统）
-        Mono.fromRunnable(() -> System.out.printf("[AUDIT] User %d accessed %s at %d%n",
-                userId, path, System.currentTimeMillis())).subscribeOn(Schedulers.boundedElastic()).subscribe();
+        // 异步记录访问日志
+        Mono.fromRunnable(() -> log.info("[AUDIT] User {} accessed {} at {}", userId, path, System.currentTimeMillis()))
+                .subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
 
     @Override

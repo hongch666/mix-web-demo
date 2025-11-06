@@ -69,7 +69,7 @@ public class UserController {
     @Operation(summary = "新增用户", description = "通过请求体创建用户信息")
     @RequirePermission(roles = { "admin" })
     @Caching(evict = {
-            @CacheEvict(value = "userPage", allEntries = true)
+            @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("新增用户")
     public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
@@ -83,8 +83,7 @@ public class UserController {
     @Operation(summary = "删除用户", description = "根据id删除用户")
     @RequirePermission(roles = { "admin" })
     @Caching(evict = {
-            @CacheEvict(value = "userPage", allEntries = true),
-            @CacheEvict(value = "userById", key = "#id")
+            @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("删除用户")
     public Result deleteUser(@PathVariable Long id) {
@@ -96,8 +95,7 @@ public class UserController {
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" })
     @Caching(evict = {
-            @CacheEvict(value = "userPage", allEntries = true),
-            @CacheEvict(value = "userById", allEntries = true)
+            @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("批量删除用户")
     public Result deleteUsers(@PathVariable String ids) {
@@ -134,8 +132,7 @@ public class UserController {
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = { "admin" }, allowSelf = true, targetUserIdParam = "userDto")
     @Caching(evict = {
-            @CacheEvict(value = "userPage", allEntries = true),
-            @CacheEvict(value = "userById", key = "#userDto.id")
+            @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("修改用户")
     public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
@@ -148,8 +145,7 @@ public class UserController {
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
     @RequirePermission(roles = { "admin" }, allowSelf = true)
     @Caching(evict = {
-            @CacheEvict(value = "userPage", allEntries = true),
-            @CacheEvict(value = "userById", key = "#id")
+            @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("修改用户状态")
     public Result updateUserStatus(@PathVariable Long id, @RequestParam String status) {
@@ -193,10 +189,6 @@ public class UserController {
 
     @PostMapping("/logout/{id}")
     @Operation(summary = "用户登出", description = "用户登出，将 Token 从 Redis 移除")
-    @Caching(evict = {
-            @CacheEvict(value = "userById", key = "#id"),
-            @CacheEvict(value = "userPage", allEntries = true)
-    })
     @ApiLog("用户登出")
     public Result logout(@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
         try {
@@ -238,7 +230,7 @@ public class UserController {
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户")
     @Caching(evict = {
-            @CacheEvict(value = "userPage", allEntries = true)
+            @CacheEvict(value = "userPage", key = "'all-users'")
     })
     public Result registerUser(@Valid @RequestBody UserCreateDTO userDto) {
         long startTime = System.currentTimeMillis();
