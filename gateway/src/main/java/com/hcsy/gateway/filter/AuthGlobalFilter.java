@@ -1,6 +1,7 @@
 package com.hcsy.gateway.filter;
 
 import com.hcsy.gateway.utils.JwtUtil;
+import com.hcsy.gateway.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -23,6 +24,7 @@ import java.util.List;
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
+    private final RedisUtil redisUtil;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
     // 需要排除的路径（建议通过配置中心管理）
@@ -54,20 +56,36 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         }
 
         try {
+            // 3. 基础验证：Token签名和过期时间
             if (!jwtUtil.validateToken(token)) {
-                return unauthorizedResponse(exchange, "Invalid token");
+                return unauthorizedResponse(exchange, "Invalid or expired token");
             }
 
-            // 3. 传递用户信息到下游服务
+            // 4. 从 Token 中提取用户 ID
             Long userId = jwtUtil.extractUserId(token);
+
+            // 5. ✨ 核心检验：Token 是否在 Redis 列表中（检查是否被管理员踢下线）
+            String tokenListKey = "user:tokens:" + userId;
+            if (!redisUtil.existsInList(tokenListKey, token)) {
+                return unauthorizedResponse(exchange, "Token has been revoked or user logged out");
+            }
+
+            // 6. 检查用户状态
+            String userStatus = redisUtil.get("user:status:" + userId);
+            if ("0".equals(userStatus)) {
+                return unauthorizedResponse(exchange, "User is offline");
+            }
+
+            // 7. 传递用户信息和 Token 到下游服务
             String username = jwtUtil.extractUsername(token);
 
             ServerHttpRequest mutatedRequest = request.mutate()
                     .header("X-User-Id", userId.toString())
                     .header("X-Username", username)
+                    .header("Authorization", "Bearer " + token)
                     .build();
 
-            // 4. 记录审计日志（异步）
+            // 8. 记录审计日志（异步）
             logAccess(userId, path);
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());

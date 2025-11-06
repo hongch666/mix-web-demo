@@ -1,4 +1,4 @@
-package com.hcsy.spring.common.utils;
+package com.hcsy.gateway.utils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -95,5 +95,12 @@ public class RedisUtil {
      */
     public Set<String> getKeys(String pattern) {
         return redisTemplate.keys(pattern);
+    }
+
+    /**
+     * 检查 key 是否存在
+     */
+    public boolean exists(String key) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
 }

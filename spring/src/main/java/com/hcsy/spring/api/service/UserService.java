@@ -9,6 +9,8 @@ import java.util.Map;
 public interface UserService extends IService<User> {
     Map<String, Object> listUsersWithFilter(long page, long size, String username);
 
+    Map<String, Object> getAllUsers(String username);
+
     void saveUserAndStatus(User user);
 
     void deleteUserAndStatusById(Long id);

@@ -8,14 +8,17 @@ import lombok.RequiredArgsConstructor;
 
 import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.UserVO;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import cn.hutool.core.bean.BeanUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
+    private final TokenService tokenService;
 
     @Override
     public Map<String, Object> listUsersWithFilter(long page, long size, String username) {
@@ -62,9 +66,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 offset,
                 size);
 
-        // 4. 设置每个用户的登录状态（从 Redis 映射中获取）
+        // 4. 转换为 UserVO，设置登录状态和在线设备数
+        List<UserVO> userVOs = new java.util.ArrayList<>();
         for (User user : users) {
-            user.setLoginStatus(loginStatusMap.getOrDefault(user.getId(), 0));
+            UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
+            vo.setLoginStatus(loginStatusMap.getOrDefault(user.getId(), 0));
+            vo.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()));
+            userVOs.add(vo);
         }
 
         // 5. 获取总数
@@ -72,14 +80,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         // 6. 返回结果
         result.put("total", total);
-        result.put("list", users);
+        result.put("list", userVOs);
         return result;
-    }
-
-    @Transactional
-    public void saveUserAndStatus(User user) {
-        userMapper.insert(user);
-        redisUtil.set("user:status:" + user.getId(), "0");
     }
 
     @Transactional
@@ -115,4 +117,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userMapper.selectList(queryWrapper);
     }
 
+    @Override
+    public Map<String, Object> getAllUsers(String username) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 查询所有符合条件的用户
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.ne(User::getRole, "ai"); // 排除 role 为 ai 的用户
+        if (username != null && !username.isEmpty()) {
+            queryWrapper.like(User::getName, username);
+        }
+        List<User> users = this.list(queryWrapper);
+
+        if (users.isEmpty()) {
+            result.put("total", 0L);
+            result.put("list", Collections.emptyList());
+            return result;
+        }
+
+        // 转换为 UserVO（不包含登录状态和设备数）
+        List<UserVO> voList = users.stream().map(user -> {
+            UserVO vo = new UserVO();
+            BeanUtil.copyProperties(user, vo);
+            return vo;
+        }).toList();
+
+        result.put("total", (long) users.size());
+        result.put("list", voList);
+        return result;
+    }
+
+    @Override
+    public void saveUserAndStatus(User user) {
+        this.save(user);
+        redisUtil.set("user:status:" + user.getId(), "0");
+    }
 }

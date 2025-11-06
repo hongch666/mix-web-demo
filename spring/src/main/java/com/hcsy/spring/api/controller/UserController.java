@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.controller;
 
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.JwtUtil;
@@ -12,6 +13,7 @@ import com.hcsy.spring.entity.dto.UserQueryDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,20 +39,29 @@ import org.springframework.cache.annotation.Caching;
 @Tag(name = "用户模块", description = "用户相关接口")
 public class UserController {
     private final UserService userService;
+    private final TokenService tokenService;
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
     private final com.hcsy.spring.common.mq.RabbitMQService rabbitMQService;
 
     @GetMapping()
-    @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询")
-    @Cacheable(value = "userPage", key = "#queryDTO.page + '-' + #queryDTO.size + '-' + (#queryDTO.username == null ? '' : #queryDTO.username)")
+    @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
     @ApiLog("获取用户信息")
     public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
         Map<String, Object> data = userService.listUsersWithFilter(
                 queryDTO.getPage(),
                 queryDTO.getSize(),
                 queryDTO.getUsername());
+        return Result.success(data);
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "获取所有用户", description = "获取所有用户列表（不分页），结果会被缓存")
+    @Cacheable(value = "userPage", key = "'all-users'")
+    @ApiLog("获取所有用户")
+    public Result getAllUsers() {
+        Map<String, Object> data = userService.getAllUsers(null);
         return Result.success(data);
     }
 
@@ -100,12 +111,23 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "查询用户", description = "根据id查询用户")
-    @Cacheable(value = "userById", key = "#id")
+    @Operation(summary = "查询用户", description = "根据id查询用户，返回用户信息及其登录状态和设备数")
     @ApiLog("查询用户")
     public Result getUserById(@PathVariable Long id) {
         User user = userService.getById(id);
-        return Result.success(user);
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+
+        // 转换为 UserVO
+        UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+
+        // 从 Redis 查询登录状态和在线设备数
+        String status = redisUtil.get("user:status:" + id);
+        userVO.setLoginStatus("1".equals(status) ? 1 : 0);
+        userVO.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(id));
+
+        return Result.success(userVO);
     }
 
     @PutMapping
@@ -136,17 +158,9 @@ public class UserController {
         return Result.success();
     }
 
-    @GetMapping("/status/{id}")
-    @Operation(summary = "查询用户状态", description = "根据用户ID查询用户状态（存储在Redis中）")
-    @ApiLog("查询用户状态")
-    public Result getUserStatus(@PathVariable Long id) {
-        String key = "user:status:" + id;
-        String status = redisUtil.get(key);
-        return Result.success(status);
-    }
-
     @PostMapping("/login")
-    @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌")
+    @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
+    @ApiLog("用户登录")
     public Result login(@RequestBody LoginDTO loginDTO) {
         long startTime = System.currentTimeMillis();
         logger.info("POST /users/login: " + "用户登录\nLoginDTO: %s", loginDTO);
@@ -155,13 +169,19 @@ public class UserController {
         if (user == null || !user.getPassword().equals(loginDTO.getPassword())) {
             return Result.error("用户名或密码错误");
         }
-        String key = "user:status:" + user.getId();
-        redisUtil.set(key, "1");
+
+        // 1. 生成 JWT Token
         String token = jwtUtil.generateToken(user.getId(), user.getName());
+
+        // 2. 保存 Token 到 Redis（包括标记用户在线）
+        tokenService.saveToken(user.getId(), token);
+
         Map<String, Object> data = new HashMap<>();
         data.put("token", token);
         data.put("userId", user.getId());
         data.put("username", user.getName());
+        // 新增：返回当前登录设备数
+        data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
 
         // 发送 API 日志到 RabbitMQ
         long responseTime = System.currentTimeMillis() - startTime;
@@ -172,16 +192,47 @@ public class UserController {
     }
 
     @PostMapping("/logout/{id}")
-    @Operation(summary = "用户登出", description = "根据用户ID登出，清除Redis中的用户状态")
+    @Operation(summary = "用户登出", description = "用户登出，将 Token 从 Redis 移除")
     @Caching(evict = {
             @CacheEvict(value = "userById", key = "#id"),
             @CacheEvict(value = "userPage", allEntries = true)
     })
     @ApiLog("用户登出")
-    public Result logout(@PathVariable Long id) {
-        String key = "user:status:" + id;
-        redisUtil.set(key, "0");
-        return Result.success();
+    public Result logout(@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
+        try {
+            // 从请求头中提取 Token（通常格式为 "Bearer token"）
+            String token = authHeader.replace("Bearer ", "");
+            // 从 Redis 移除 Token
+            tokenService.removeToken(id, token);
+            return Result.success();
+        } catch (Exception e) {
+            logger.error("登出失败: " + e.getMessage());
+            return Result.error("登出失败");
+        }
+    }
+
+    /**
+     * 管理员手动下线用户
+     */
+    @PostMapping("/force-logout/{userId}")
+    @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
+    @RequirePermission(roles = { "admin" })
+    @ApiLog("手动下线用户")
+    public Result forceLogoutUser(@PathVariable Long userId) {
+        try {
+            // 验证用户是否存在
+            User user = userService.getById(userId);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+
+            // 执行下线操作
+            tokenService.forceLogoutUser(userId);
+            return Result.success();
+        } catch (Exception e) {
+            logger.error("手动下线用户失败: " + e.getMessage());
+            return Result.error("手动下线用户失败");
+        }
     }
 
     @PostMapping("/register")
