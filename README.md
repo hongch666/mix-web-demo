@@ -723,7 +723,7 @@ spring:
         - id: exclude-list
           uri: no://op
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/logs,/analyze/excel,/category/sub/batch/{id},/category/batch/{ids},/users/batch/{ids},/category/all,/category/sub/all
+            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/logs,/analyze/excel,/users/batch/{ids}
           filters:
             - SetStatus=204
 
