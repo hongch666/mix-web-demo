@@ -152,4 +152,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         this.save(user);
         redisUtil.set("user:status:" + user.getId(), "0");
     }
+
+    @Override
+    public User findByEmail(String email) {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(User::getEmail, email);
+        return this.getOne(queryWrapper);
+    }
 }

@@ -1,5 +1,6 @@
-package com.hcsy.spring.common.service;
+package com.hcsy.spring.api.service.impl;
 
+import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.client.FastAPIClient;
 import com.hcsy.spring.common.client.GinClient;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -7,14 +8,16 @@ import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 异步同步服务
+ * 异步同步服务实现
  * 用于在后台异步执行 ES、Hive、Vector 同步操作
  */
 @Service
 @RequiredArgsConstructor
-public class AsyncSyncService {
+@Transactional
+public class AsyncSyncServiceImpl implements AsyncSyncService {
 
     private final GinClient ginClient;
     private final FastAPIClient fastAPIClient;
@@ -27,6 +30,7 @@ public class AsyncSyncService {
      * @param userId   触发同步的用户ID（用于日志记录）
      * @param username 触发同步的用户名（用于日志记录）
      */
+    @Override
     @Async("asyncExecutor")
     public void syncAllAsync(Long userId, String username) {
         try {

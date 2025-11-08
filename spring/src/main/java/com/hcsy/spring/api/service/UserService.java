@@ -19,6 +19,8 @@ public interface UserService extends IService<User> {
 
     User findByUsername(String username);
 
+    User findByEmail(String email);
+
     List<User> listAllUserByUsername(String username);
 
 }

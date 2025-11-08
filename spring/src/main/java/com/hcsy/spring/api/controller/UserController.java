@@ -2,6 +2,7 @@ package com.hcsy.spring.api.controller;
 
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.JwtUtil;
@@ -10,6 +11,7 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
+import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
@@ -44,6 +46,7 @@ public class UserController {
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
     private final com.hcsy.spring.common.mq.RabbitMQService rabbitMQService;
+    private final EmailVerificationService emailVerificationService;
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
@@ -228,24 +231,75 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    @Operation(summary = "用户注册", description = "注册新用户")
+    @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
-    public Result registerUser(@Valid @RequestBody UserCreateDTO userDto) {
+    public Result registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
         long startTime = System.currentTimeMillis();
-        logger.info("POST /users/register: " + "用户注册\nUserCreateDTO: %s", userDto);
+        logger.info("POST /users/register: 用户注册\nUserRegisterDTO: %s", registerDto);
 
-        User user = BeanUtil.copyProperties(userDto, User.class);
+        // 1. 检查邮箱是否已被注册
+        User existingUser = userService.findByEmail(registerDto.getEmail());
+        if (existingUser != null) {
+            return Result.error("邮箱已被注册");
+        }
+
+        // 2. 验证邮箱验证码
+        if (!emailVerificationService.verifyCode(registerDto.getEmail(), registerDto.getVerificationCode())) {
+            return Result.error("邮箱验证码无效或已过期");
+        }
+
+        // 3. 创建用户
+        User user = BeanUtil.copyProperties(registerDto, User.class);
         user.setRole("user");
         userService.saveUserAndStatus(user);
 
-        // 发送 API 日志到 RabbitMQ（使用注册成功后的用户信息）
+        // 4. 标记邮箱已验证
+        emailVerificationService.markEmailAsVerified(registerDto.getEmail());
+
+        // 5. 发送 API 日志到 RabbitMQ
         long responseTime = System.currentTimeMillis() - startTime;
         sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/register", "用户注册",
-                null, null, userDto, responseTime);
+                null, null, registerDto, responseTime);
 
-        return Result.success();
+        return Result.success("注册成功");
+    }
+
+    @PostMapping("/email/send")
+    @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码")
+    @ApiLog("发送邮箱验证码")
+    public Result sendVerificationCode(@RequestParam String email) {
+        long startTime = System.currentTimeMillis();
+        logger.info("POST /users/email/send: 发送邮箱验证码\nemail: %s", email);
+
+        try {
+            // 1. 验证邮箱格式
+            if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                return Result.error("邮箱格式不正确");
+            }
+
+            // 2. 检查邮箱是否已被注册
+            User existingUser = userService.findByEmail(email);
+            if (existingUser != null) {
+                return Result.error("邮箱已被注册");
+            }
+
+            // 3. 发送验证码
+            if (emailVerificationService.sendVerificationCode(email)) {
+                return Result.success("验证码已发送，请查收邮件");
+            } else {
+                return Result.error("发送验证码失败，请稍后重试");
+            }
+        } catch (Exception e) {
+            logger.error("发送验证码异常: " + e.getMessage());
+            return Result.error("发送验证码异常");
+        } finally {
+            // 无论成功还是失败，都发送 API 日志到 RabbitMQ
+            long responseTime = System.currentTimeMillis() - startTime;
+            sendApiLogToQueue(null, null, "POST", "/users/email/send", "发送邮箱验证码",
+                    null, null, email, responseTime);
+        }
     }
 
     /**

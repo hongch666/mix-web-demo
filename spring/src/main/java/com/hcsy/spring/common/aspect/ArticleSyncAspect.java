@@ -17,7 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ArticleSync;
 import com.hcsy.spring.common.mq.RabbitMQService;
-import com.hcsy.spring.common.service.AsyncSyncService;
+import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Article;

@@ -468,6 +468,17 @@ spring:
     username: hcsy
     password: 123456
     virtual-host: test
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 3070872194@qq.com
+    password: skuwsqoctrrwdfgd
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
 logging:
   file:
     path: "../logs/spring"
