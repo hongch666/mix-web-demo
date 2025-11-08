@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/olivere/elastic/v7"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type SearchMapper struct{}
@@ -128,4 +129,89 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	}
 
 	return articles, int(searchResult.Hits.TotalHits.Value)
+}
+
+// GetSearchHistory 获取用户搜索历史记录（去重后最近10条）
+func (m *SearchMapper) GetSearchHistory(ctx context.Context, userID int64) ([]string, error) {
+	// 获取 MongoDB 集合
+	collection := config.GetMongoDatabase().Collection("articlelogs")
+
+	// 使用聚合管道实现去重后取前10条
+	pipeline := []bson.M{
+		// 1. 匹配条件：userId 和 action
+		{
+			"$match": bson.M{
+				"userId": userID,
+				"action": "search",
+			},
+		},
+		// 2. 按创建时间倒序排序
+		{
+			"$sort": bson.M{
+				"createdAt": -1,
+			},
+		},
+		// 3. 添加 keyword 字段（从 content.Keyword 提取）
+		{
+			"$addFields": bson.M{
+				"keyword": "$content.Keyword",
+			},
+		},
+		// 4. 过滤掉空关键词
+		{
+			"$match": bson.M{
+				"keyword": bson.M{
+					"$exists": true,
+					"$nin":    []interface{}{nil, ""},
+				},
+			},
+		},
+		// 5. 按关键词分组，保留最新的记录
+		{
+			"$group": bson.M{
+				"_id":       "$keyword",
+				"createdAt": bson.M{"$first": "$createdAt"},
+			},
+		},
+		// 6. 再次按创建时间倒序排序
+		{
+			"$sort": bson.M{
+				"createdAt": -1,
+			},
+		},
+		// 7. 限制返回10条
+		{
+			"$limit": 10,
+		},
+		// 8. 只返回关键词字段
+		{
+			"$project": bson.M{
+				"_id":       0,
+				"keyword":   "$_id",
+				"createdAt": 1,
+			},
+		},
+	}
+
+	// 执行聚合查询
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// 解析结果
+	var keywords []string
+	for cursor.Next(ctx) {
+		var result struct {
+			Keyword   string    `bson:"keyword"`
+			CreatedAt time.Time `bson:"createdAt"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			continue
+		}
+		keywords = append(keywords, result.Keyword)
+	}
+
+	return keywords, nil
 }

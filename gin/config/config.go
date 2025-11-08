@@ -35,9 +35,15 @@ type ESConfig struct {
 	Sniff bool   `mapstructure:"sniff"`
 }
 
+type MongoDBConfig struct {
+	Url      string `mapstructure:"url"`
+	Database string `mapstructure:"database"`
+}
+
 type DatabaseConfig struct {
-	Mysql MysqlConfig `mapstructure:"mysql"`
-	ES    ESConfig    `mapstructure:"es"`
+	Mysql   MysqlConfig   `mapstructure:"mysql"`
+	ES      ESConfig      `mapstructure:"es"`
+	MongoDB MongoDBConfig `mapstructure:"mongodb"`
 }
 
 type MQConfig struct {

@@ -42,6 +42,8 @@ func SetupRouter() *gin.Engine {
 	{
 		//搜索文章
 		searchGroup.GET("/", middleware.ApiLogMiddleware("搜索文章"), searchController.SearchArticlesController)
+		//获取搜索历史
+		searchGroup.GET("/history/:userId", middleware.ApiLogMiddleware("获取搜索历史"), searchController.GetSearchHistoryController)
 	}
 
 	// 聊天相关路由

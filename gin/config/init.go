@@ -18,4 +18,6 @@ func init() {
 	InitES()
 	// 初始化RabbitMQ
 	InitRabbitMQ()
+	// 初始化MongoDB
+	InitMongoDB()
 }

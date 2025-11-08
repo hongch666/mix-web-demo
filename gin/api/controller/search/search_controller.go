@@ -4,6 +4,7 @@ import (
 	"gin_proj/api/service"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,4 +37,38 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 	ctx := c.Request.Context()
 	data := searchService.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
+}
+
+// @Summary 获取用户搜索历史
+// @Description 获取指定用户最近10条搜索关键词列表
+// @Tags 文章
+// @Accept json
+// @Produce json
+// @Param userId path int true "用户ID"
+// @Success 200 {object} map[string]interface{} "包含关键词列表的数据"
+// @Failure 400 {object} map[string]interface{} "参数错误"
+// @Failure 500 {object} map[string]interface{} "服务器内部错误"
+// @Router /search/history/{userId} [get]
+func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
+	// service 注入
+	searchService := service.Group.SearchService
+
+	// 获取路径参数 userId
+	userIDParam := c.Param("userId")
+	userID, err := strconv.ParseInt(userIDParam, 10, 64)
+	if err != nil {
+		utils.RespondError(c, 400, "用户ID格式错误")
+		return
+	}
+
+	ctx := c.Request.Context()
+	keywords, err := searchService.GetSearchHistory(ctx, userID)
+	if err != nil {
+		utils.RespondError(c, 500, "获取搜索历史失败: "+err.Error())
+		return
+	}
+
+	utils.RespondSuccess(c, map[string]interface{}{
+		"keywords": keywords,
+	})
 }

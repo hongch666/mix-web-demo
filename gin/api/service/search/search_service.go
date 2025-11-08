@@ -44,3 +44,14 @@ func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.Articl
 	}
 
 }
+
+// GetSearchHistory 获取用户搜索历史关键词（最近10条）
+func (s *SearchService) GetSearchHistory(ctx context.Context, userID int64) ([]string, error) {
+	// mapper注入
+	searchMapper := mapper.Group.SearchMapper
+	keywords, err := searchMapper.GetSearchHistory(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return keywords, nil
+}
