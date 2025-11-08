@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.ArticleMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.annotation.ArticleSync;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
@@ -56,6 +57,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     @Transactional
+    @ArticleSync(action = "add", description = "创建了1篇文章")
     public boolean saveArticle(Article article) {
         articleMapper.insert(article);
         return true;
@@ -63,6 +65,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     @Transactional
+    @ArticleSync(action = "edit", description = "编辑了1篇文章")
     public boolean updateArticle(Article article) {
         // 校验用户
         Long currentUserId = UserContext.getUserId();
@@ -86,6 +89,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     @Transactional
+    @ArticleSync(action = "delete", description = "删除了1篇文章")
     public boolean deleteArticle(Long id) {
         // 校验用户
         Long currentUserId = UserContext.getUserId();
@@ -108,6 +112,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Transactional
+    @ArticleSync(action = "delete", description = "批量删除了")
     public boolean deleteArticles(List<Long> ids) {
         Long currentUserId = UserContext.getUserId();
         if (currentUserId == null) {
@@ -128,6 +133,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @ArticleSync(action = "publish", description = "发布了1篇文章")
     public void publishArticle(Long id) {
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
@@ -147,6 +153,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @ArticleSync(action = "view", description = "浏览了1篇文章")
     public void addViewArticle(Long id) {
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
