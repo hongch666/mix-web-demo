@@ -7,12 +7,12 @@ import (
 	"gin_proj/common/ctxkey"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
-	"gin_proj/entity/po"
+	"gin_proj/entity/vo"
 )
 
 type SearchService struct{}
 
-func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) po.SearchResult {
+func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) vo.SearchVO {
 	// mapper注入
 	searchMapper := mapper.Group.SearchMapper
 	data, total := searchMapper.SearchArticle(ctx, searchDTO)
@@ -38,7 +38,7 @@ func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.Articl
 			panic(err.Error())
 		}
 	}
-	return po.SearchResult{
+	return vo.SearchVO{
 		Total: total,
 		List:  data,
 	}

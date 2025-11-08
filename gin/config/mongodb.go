@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -34,7 +35,7 @@ func InitMongoDB() {
 	}
 
 	MongoClient = client
-	fmt.Printf("✅ MongoDB 连接成功: %s\n", mongoURI)
+	log.Println(fmt.Printf("MongoDB 连接成功: %s\n", mongoURI))
 }
 
 // GetMongoDatabase 获取 MongoDB 数据库实例

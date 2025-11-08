@@ -537,6 +537,9 @@ database:
   es:
     url: http://127.0.0.1:9200
     sniff: false
+  mongodb:
+    url: "mongodb://localhost:27017"
+    database: "demo"
 
 mq:
   username: hcsy
@@ -745,7 +748,7 @@ spring:
         - id: gin
           uri: lb://gin
           predicates:
-            - Path=/api_gin/**,/search, /user-chat/**, /static/**
+            - Path=/api_gin/**,/search/**, /user-chat/**, /static/**
 
         - id: nestjs
           uri: lb://nestjs
