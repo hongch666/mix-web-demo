@@ -15,9 +15,6 @@ var MongoClient *mongo.Client
 func InitMongoDB() {
 	// 从配置文件读取 MongoDB 连接信息
 	mongoURI := Config.Database.MongoDB.Url
-	if mongoURI == "" {
-		mongoURI = "mongodb://127.0.0.1:27017" // 默认值
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -41,8 +38,5 @@ func InitMongoDB() {
 // GetMongoDatabase 获取 MongoDB 数据库实例
 func GetMongoDatabase() *mongo.Database {
 	dbName := Config.Database.MongoDB.Database
-	if dbName == "" {
-		dbName = "demo" // 默认数据库名
-	}
 	return MongoClient.Database(dbName)
 }

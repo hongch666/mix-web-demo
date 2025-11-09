@@ -27,9 +27,9 @@ public class RabbitMQService {
             // 发送 JSON 字符串到队列
             rabbitTemplate.convertAndSend(queueName, jsonMessage);
 
-            logger.info(String.format("消息发送成功：%s -> %s", queueName, jsonMessage));
+            logger.info("消息发送成功：%s -> %s", queueName, jsonMessage);
         } catch (Exception e) {
-            logger.error(String.format("消息发送失败：%s", e.getMessage()), e);
+            logger.error("消息发送失败：%s", e.getMessage(), e);
             throw new RuntimeException("Failed to send message to queue: " + queueName, e);
         }
     }
@@ -37,6 +37,6 @@ public class RabbitMQService {
     // 接收消息
     @RabbitListener(queues = "test.queue")
     public void receiveMessage(String message) {
-        logger.info("收到消息：{}", message);
+        logger.info("收到消息：%s", message);
     }
 }

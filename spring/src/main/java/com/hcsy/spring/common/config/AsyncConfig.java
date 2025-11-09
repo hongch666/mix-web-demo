@@ -17,7 +17,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class AsyncConfig {
 
     @Bean(name = "asyncExecutor")
-    public Executor asyncExecutor() {
+    Executor asyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         // 核心线程数
         executor.setCorePoolSize(5);
@@ -41,7 +41,7 @@ public class AsyncConfig {
      * 邮件发送异步执行器
      */
     @Bean(name = "taskExecutor")
-    public Executor taskExecutor() {
+    Executor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         // 核心线程数
         executor.setCorePoolSize(3);
