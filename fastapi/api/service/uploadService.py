@@ -7,6 +7,7 @@ from fastapi import Depends
 from starlette.concurrency import run_in_threadpool
 from api.service import AnalyzeService,get_analyze_service
 from common.utils import fileLogger
+from config import load_config
 
 class UploadService:
     def __init__(self, analyze_service: AnalyzeService):
@@ -20,7 +21,7 @@ class UploadService:
         unique_filename = f"{uuid.uuid4().hex}{file_extension}"
 
         # 保存到本地临时目录
-        save_dir = "tmp/upload"
+        save_dir =  load_config("files")["upload_path"]
         os.makedirs(save_dir, exist_ok=True)
         local_path = os.path.join(save_dir, unique_filename)
 

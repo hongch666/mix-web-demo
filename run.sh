@@ -12,7 +12,7 @@ tmux send-keys -t $SESSION:1 \
 # window 2: gin
 tmux new-window -t $SESSION:2 -n gin -c "$WORKDIR"
 tmux send-keys -t $SESSION:2 \
-"cd gin && fresh" C-m
+"cd gin && fresh -c ~/.freshrc" C-m
 
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"

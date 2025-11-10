@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"os"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -12,6 +13,14 @@ import (
 var NamingClient naming_client.INamingClient
 
 func InitNacos() {
+	// 创建缓存和日志目录（如果不存在）
+	if err := os.MkdirAll(Config.Nacos.CacheDir, 0755); err != nil {
+		log.Fatalf("创建缓存目录失败: %v", err)
+	}
+	if err := os.MkdirAll(Config.Nacos.LogDir, 0755); err != nil {
+		log.Fatalf("创建日志目录失败: %v", err)
+	}
+
 	// 配置 Nacos 服务地址
 	serverConfigs := []constant.ServerConfig{
 		{
@@ -26,6 +35,8 @@ func InitNacos() {
 		TimeoutMs:           5000,
 		NotLoadCacheAtStart: true,
 		LogLevel:            "error",
+		CacheDir:            Config.Nacos.CacheDir, // 从配置文件读取
+		LogDir:              Config.Nacos.LogDir,   // 从配置文件读取
 	}
 
 	// 创建 NamingClient

@@ -18,6 +18,8 @@ type NacosConfig struct {
 	ServiceName string `mapstructure:"serviceName"`
 	GroupName   string `mapstructure:"groupName"`
 	ClusterName string `mapstructure:"clusterName"`
+	CacheDir    string `mapstructure:"cacheDir"`
+	LogDir      string `mapstructure:"logDir"`
 }
 
 type MysqlConfig struct {

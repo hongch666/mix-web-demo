@@ -168,7 +168,7 @@ mvnw.cmd clean install # Windows(无全局maven)
 ```bash
 cd gin # 进入文件夹
 go mod tidy # 安装依赖
-go install github.com/gravityblast/fresh@latest # 修改自启动工具(推荐)
+go install github.com/gravityblast/fresh@latest # 修改热启动工具(推荐)
 ```
 
 ### NestJS 部分
@@ -212,7 +212,7 @@ mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
 cd gin
 go build -o bin/gin main.go # 构建项目
 go run main.go # 运行项目(无修改自启插件)
-fresh # 运行项目(有修改自启插件)
+fresh -c ~/.freshrc # 运行项目(有修改自启插件)
 ```
 
 ### NestJS 服务
@@ -674,6 +674,7 @@ wordcloud:
 files:
   pic_path: "../static/pic"
   excel_path: "../static/excel"
+  upload_path: "../static/upload"
 logs:
   path: "../logs/fastapi"
 coze:
@@ -848,6 +849,17 @@ jwt:
 
 1. 词云图的字体应进行配置对应字体的路径。
 2. 下载文件的模板需要自行提供，路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写
+
+- 内容示例
+
+```word
+${title}
+
+${tags}
+
+${content}
+```
+
 3. FastAPI 模块的阿里云 OSS 的密钥应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
@@ -873,3 +885,21 @@ tongyi:
 5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
 6. 如果没有使用 Hadoop+Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
 7. Gemini 服务需要运行的终端使用代理，请自行配置。
+8. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
+
+```bash
+# Fresh 热启动工具配置文件
+# 将编译文件输出到系统临时目录，不污染项目目录
+
+root=.
+# 输出到系统临时目录 (/tmp) 而不是项目目录
+tmp_path=/tmp/fresh-runner
+build_name=runner-build
+build_path=/tmp/fresh-runner
+build_delay=1000
+ignore_folder=assets,tmp,vendor,frontend/node_modules,logs,docs
+ignore_file=.DS_Store,.gitignore
+watch_path=.
+watch_ext=.go
+verbose=false
+```

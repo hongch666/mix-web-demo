@@ -19,7 +19,7 @@ tmux send-keys -t "$NEST_PANE" "cd nestjs && echo 'Starting NestJS...' && npm ru
 # 垂直分屏（左下：Gin）
 tmux split-window -v -t "$SPRING_PANE" -c "$WORKDIR"
 GIN_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$GIN_PANE" "cd gin && echo 'Starting Gin...' && fresh" C-m
+tmux send-keys -t "$GIN_PANE" "cd gin && echo 'Starting Gin...' && fresh -c ~/.freshrc" C-m
 
 # 垂直分屏（右下：FastAPI）
 tmux split-window -v -t "$NEST_PANE" -c "$WORKDIR"
