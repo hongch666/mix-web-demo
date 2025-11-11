@@ -18,7 +18,7 @@
 2. 文章操作日志的查看和分析
 3. 文章分类，用户状态的管理操作
 4. 权限校验实现用户端和管理端
-5. 基于 RAG 技术，支持 **Coze/Gemini/通义千问** 进行多模型选择的 AI 聊天助手
+5. 基于 RAG 技术，支持 **豆包/Gemini/通义千问** 进行多模型选择的 AI 聊天助手
 6. 系统数据的相关数据分析
 7. 用户实时聊天功能
 
@@ -42,7 +42,7 @@
 
 ## 第三方服务
 
-- [CozeAI](https://www.coze.cn/home)
+- [火山引擎](https://www.volcengine.com/)
 - [Gemini API](https://aistudio.google.com/)
 - [阿里云百炼平台](https://bailian.console.aliyun.com/)
 - [阿里云 OSS](https://oss.console.aliyun.com/overview)
@@ -89,20 +89,24 @@ chmod +x setup.sh
 
    - 自动检测 Python、Go、Java、Node.js 等必要工具的安装状态和版本
    - 如果缺少必要工具会给出明确提示
+
 2. **系统依赖管理**（仅 FastAPI 模块需要）
 
    - 自动检测并安装 PostgreSQL 开发库（`libpq-dev`）
    - 自动安装编译工具（`build-essential`、`python3-dev`）
    - 支持多种 Linux 发行版（Ubuntu/Debian、CentOS/RHEL、Fedora、Arch）
+
 3. **模块化安装**
 
    - 支持选择性安装特定模块或全部安装
    - 每个模块独立配置，互不影响
+
 4. **智能判断**
 
    - Spring: 自动检测是否有全局 Maven，如果没有则使用 mvnw
    - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
    - FastAPI: 自动创建虚拟环境并使用清华镜像源加速安装
+
 5. **目录自动创建**
 
    - 自动创建 logs 目录（spring、gin、nestjs、fastapi）
@@ -675,17 +679,17 @@ files:
   upload_path: "../static/upload"
 logs:
   path: "../logs/fastapi"
-coze:
-  bot_id: "7521289882573324298"
-  base_url: "https://api.coze.cn"
-  timeout: 30
 gemini:
-  model_name: "gemini-2.5-flash" # 可选: gemini-2.5-pro 等
+  model_name: "gemini-2.0-flash" # 可选: gemini-2.0-pro 等
   timeout: 30 # 请求超时时间（秒）
 tongyi:
   model_name: "qwen-flash" # 可选: qwen-plus, qwen-turbo, qwen-max 等
   base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   timeout: 30 # 请求超时时间（秒）
+doubao:
+  model: "doubao-1-5-lite-32k-250115" # 豆包模型名称
+  base_url: "https://ark.cn-beijing.volces.com/api/v3" # 豆包API地址
+  timeout: 60 # 请求超时时间（秒）
 embedding:
   model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" # 使用轻量级多语言模型
   dimension: 384
@@ -698,11 +702,11 @@ embedding:
 oss:
   access_key_id: your_access_key_id
   access_key_secret: your_access_key_secret
-coze:
-  api_key: your_api_key
 gemini:
   api_key: your_api_key
 tongyi:
+  api_key: your_api_key
+doubao:
   api_key: your_api_key
 ```
 
@@ -818,6 +822,7 @@ jwt:
        version="1.0.0"
    )
    ```
+
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
    ```python
@@ -832,6 +837,7 @@ jwt:
        """
        return {"msg": "hello"}
    ```
+
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
 ## 项目文件命名说明
@@ -870,11 +876,11 @@ oss:
 oss:
   access_key_id: your_access_key_id
   access_key_secret: your_access_key_secret
-coze:
-  api_key: your_api_key
 gemini:
   api_key: your_api_key
 tongyi:
+  api_key: your_api_key
+doubao:
   api_key: your_api_key
 ```
 
