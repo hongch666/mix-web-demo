@@ -6,15 +6,15 @@ import time
 from datetime import datetime
 from fastapi import Depends
 from api.mapper import CommentsMapper, get_comments_mapper, ArticleMapper, get_article_mapper
-from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
+from api.service import DoubaoService, get_doubao_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
 from entity.po import Comments
 from common.utils import fileLogger as logger
 
 class AiCommentService:
-    def __init__(self, comments_mapper: CommentsMapper, article_mapper: ArticleMapper, coze_service: CozeService, gemini_service: GeminiService, tongyi_service: TongyiService):
+    def __init__(self, comments_mapper: CommentsMapper, article_mapper: ArticleMapper, doubao_service: DoubaoService, gemini_service: GeminiService, tongyi_service: TongyiService):
         self.comments_mapper = comments_mapper
         self.article_mapper = article_mapper
-        self.coze_service = coze_service
+        self.doubao_service = doubao_service
         self.gemini_service = gemini_service
         self.tongyi_service = tongyi_service
 
@@ -48,16 +48,16 @@ class AiCommentService:
         total_start_time = time.time()
         
         # 为每个模型创建带计时的包装函数
-        async def timed_coze_call():
+        async def timed_doubao_call():
             start = time.time()
             try:
-                result = await self.coze_service.basic_chat(prompt)
+                result = await self.doubao_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                logger.info(f"Coze调用完成，耗时: {elapsed:.2f}秒")
+                logger.info(f"豆包调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"Coze调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                logger.error(f"豆包调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
         async def timed_gemini_call():
@@ -86,7 +86,7 @@ class AiCommentService:
         
         # 使用 asyncio.gather 并发执行三个异步调用
         responses = await asyncio.gather(
-            timed_coze_call(),
+            timed_doubao_call(),
             timed_gemini_call(),
             timed_tongyi_call(),
             return_exceptions=True  # 即使某个调用失败，其他调用仍继续
@@ -96,12 +96,12 @@ class AiCommentService:
         total_elapsed = time.time() - total_start_time
         logger.info(f"3个大模型并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}")
         
-        response_coze, response_gemini, response_tongyi = responses
+        response_doubao, response_gemini, response_tongyi = responses
         
         # 检查是否有异常返回
-        if isinstance(response_coze, Exception):
-            logger.error(f"Coze大模型最终失败: {response_coze}")
-            response_coze = "Coze调用失败"
+        if isinstance(response_doubao, Exception):
+            logger.error(f"豆包大模型最终失败: {response_doubao}")
+            response_doubao = "豆包调用失败"
         if isinstance(response_gemini, Exception):
             logger.error(f"Gemini大模型最终失败: {response_gemini}")
             response_gemini = "Gemini调用失败"
@@ -110,15 +110,15 @@ class AiCommentService:
             response_tongyi = "通义千问调用失败"
         
         # 2.4 解析大模型返回结果
-        content_coze, star_coze = self._parse_ai_comment_response(response_coze)
+        content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
         content_tongyi, star_tongyi = self._parse_ai_comment_response(response_tongyi)
         # 3. 构建AI评论对象
-        coze_ai_comment: Comments = Comments(
+        doubao_ai_comment: Comments = Comments(
             article_id=article_id,
             user_id=1001,
-            content=content_coze,
-            star=star_coze,
+            content=content_doubao,
+            star=star_doubao,
             create_time=datetime.now(),
             update_time=datetime.now()
         )
@@ -139,7 +139,7 @@ class AiCommentService:
             update_time=datetime.now()
         )
         # 4. 保存AI评论到数据库
-        self.comments_mapper.create_comment_mapper(coze_ai_comment, db)
+        self.comments_mapper.create_comment_mapper(doubao_ai_comment, db)
         self.comments_mapper.create_comment_mapper(gemini_ai_comment, db)
         self.comments_mapper.create_comment_mapper(tongyi_ai_comment, db)
         logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
@@ -177,5 +177,5 @@ class AiCommentService:
 
     
 @lru_cache
-def get_ai_comment_service(comments_mapper: CommentsMapper = Depends(get_comments_mapper), article_mapper: ArticleMapper = Depends(get_article_mapper), coze_service: CozeService = Depends(get_coze_service), gemini_service: GeminiService = Depends(get_gemini_service), tongyi_service: TongyiService = Depends(get_tongyi_service)) -> AiCommentService:
-    return AiCommentService(comments_mapper, article_mapper, coze_service, gemini_service, tongyi_service)
+def get_ai_comment_service(comments_mapper: CommentsMapper = Depends(get_comments_mapper), article_mapper: ArticleMapper = Depends(get_article_mapper), doubao_service: DoubaoService = Depends(get_doubao_service), gemini_service: GeminiService = Depends(get_gemini_service), tongyi_service: TongyiService = Depends(get_tongyi_service)) -> AiCommentService:
+    return AiCommentService(comments_mapper, article_mapper, doubao_service, gemini_service, tongyi_service)

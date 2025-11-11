@@ -10,11 +10,11 @@ from .embeddingService import EmbeddingService, get_embedding_service
 
 from .promptService import PromptService, get_prompt_service
 
-from .cozeService import CozeService, get_coze_service
-
 from .geminiService import GeminiService, get_gemini_service
 
 from .tongyiService import TongyiService, get_tongyi_service
+
+from .doubaoService import DoubaoService, get_doubao_service
 
 from .apilogService import ApiLogService, get_apilog_service
 
@@ -23,8 +23,6 @@ from .aiCommentService import AiCommentService, get_ai_comment_service
 __all__ = [
     "get_analyze_service",
     "AnalyzeService",
-    "CozeService",
-    "get_coze_service",
     "GenerateService",
     "get_generate_service",
     "UploadService",
@@ -33,6 +31,8 @@ __all__ = [
     "get_gemini_service",
     "TongyiService",
     "get_tongyi_service",
+    "DoubaoService",
+    "get_doubao_service",
     "AiHistoryService",
     "get_ai_history_service",
     "EmbeddingService",

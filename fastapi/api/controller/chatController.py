@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
-from api.service import CozeService, get_coze_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service, AiHistoryService, get_ai_history_service
+from api.service import GeminiService, get_gemini_service, TongyiService, get_tongyi_service, DoubaoService, get_doubao_service, AiHistoryService, get_ai_history_service
 from common.utils import success, fileLogger
 from common.decorators import log
 from common.middleware import get_current_user_id
@@ -26,9 +26,9 @@ async def send_message(
     httpRequest: Request,
     request: ChatRequest,
     db:Session = Depends(get_db),
-    cozeService: CozeService = Depends(get_coze_service),
     geminiService: GeminiService = Depends(get_gemini_service),
     tongyiService: TongyiService = Depends(get_tongyi_service),
+    doubaoService: DoubaoService = Depends(get_doubao_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> JSONResponse:
     """发送聊天消息"""
@@ -52,9 +52,9 @@ async def send_message(
                 user_id=actual_user_id,
                 db=db
             )
-        else:  # 默认使用Coze服务
-            fileLogger.info(f"使用Coze服务处理用户 {actual_user_id} 的请求")
-            response_message: str = await cozeService.simple_chat(
+        else:  # 默认使用豆包服务
+            fileLogger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await doubaoService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
                 db=db
@@ -110,9 +110,9 @@ async def stream_message(
     httpRequest: Request,
     request: ChatRequest,
     db: Session = Depends(get_db),
-    cozeService: CozeService = Depends(get_coze_service),
     geminiService: GeminiService = Depends(get_gemini_service),
     tongyiService: TongyiService = Depends(get_tongyi_service),
+    doubaoService: DoubaoService = Depends(get_doubao_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
@@ -140,9 +140,9 @@ async def stream_message(
                         user_id=actual_user_id,
                         db=db
                     )
-                else:  # 默认使用Coze服务
-                    fileLogger.info(f"使用Coze流式服务处理用户 {actual_user_id} 的请求")
-                    stream_generator = cozeService.stream_chat(
+                else:  # 默认使用豆包服务
+                    fileLogger.info(f"使用豆包流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator = doubaoService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db
