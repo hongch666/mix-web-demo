@@ -17,7 +17,7 @@ class DoubaoService:
             doubao_cfg = load_config("doubao") or {}
             doubao_secret = load_secret_config("doubao") or {}
             self._api_key: str = doubao_secret.get("api_key")
-            self._model: str = doubao_cfg.get("model")  # 修正：使用 model 而不是 model_name
+            self._model: str = doubao_cfg.get("model")
             self._base_url: str = doubao_cfg.get("base_url")
             self._timeout: int = doubao_cfg.get("timeout", 60)
             
