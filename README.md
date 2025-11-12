@@ -39,6 +39,7 @@
 - RabbitMQ：消息队列
 - Hadoop+Hive：大数据存储与分析
 - WebSocket：用户实时聊天
+- Langchain：大模型调用框架
 
 ## 第三方服务
 
@@ -611,7 +612,7 @@ logs:
 ### FastAPI 部分
 
 1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
-2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及 COZE 平台、 Gemini 平台和阿里云百炼平台的 api_key，不要泄露
+2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及火山引擎平台、 Google AI 平台和阿里云百炼平台的 api_key，不要泄露
 3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
 4. 内容如下
 
@@ -870,7 +871,7 @@ oss:
   access_key_secret: your_access_key_secret
 ```
 
-4. FastAPI 模块的 COZE 服务、 Gemini 服务和通义千问服务的 api_key 应写在 `application-secret.yaml`中，格式如下：
+4. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
 oss:
