@@ -103,7 +103,7 @@ public class ApiLogAspect {
                 String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, responseTime);
                 logger.info(timeMessage);
 
-                // ✨ 向消息队列发送 API 日志
+                // 向消息队列发送 API 日志
                 sendApiLogToQueue(
                         pjp,
                         httpMethod,

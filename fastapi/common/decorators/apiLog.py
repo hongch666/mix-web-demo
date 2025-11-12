@@ -4,6 +4,7 @@ import time
 from functools import wraps
 from typing import Any, Callable, List, Optional, Union
 from fastapi import Request
+from fastapi.responses import StreamingResponse
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger
 from config import send_to_queue
@@ -104,7 +105,6 @@ def api_log(config: Union[str, ApiLogConfig]):
                 result = await func(*args, **kwargs)
                 
                 # 如果返回的是 StreamingResponse，需要包装以追踪耗时
-                from fastapi.responses import StreamingResponse
                 if isinstance(result, StreamingResponse):
                     original_generator = result.body_iterator
                     
