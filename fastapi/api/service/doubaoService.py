@@ -1,7 +1,7 @@
-import asyncio
 from functools import lru_cache
-from typing import Any, AsyncGenerator, Optional
-from openai import OpenAI
+from typing import AsyncGenerator, Optional
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
 from fastapi import Depends
 from sqlmodel import Session
 from api.service import PromptService, get_prompt_service
@@ -22,11 +22,14 @@ class DoubaoService:
             self._timeout: int = doubao_cfg.get("timeout", 60)
             
             if self._api_key and self._base_url:
-                self.doubao_client: OpenAI = OpenAI(
-                    base_url=self._base_url,
-                    api_key=self._api_key,
+                self.doubao_client = ChatOpenAI(
+                    model=self._model,
+                    openai_api_key=self._api_key,
+                    openai_api_base=self._base_url,
+                    temperature=0.7,
+                    timeout=self._timeout,
                 )
-                logger.info("豆包服务初始化完成 (实例化)")
+                logger.info("豆包服务初始化完成 (LangChain)")
             else:
                 self.doubao_client = None
                 logger.warning("豆包配置不完整，客户端未初始化")
@@ -42,18 +45,16 @@ class DoubaoService:
             if not getattr(self, 'doubao_client', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 使用豆包的 OpenAI 兼容接口
-            completion = self.doubao_client.chat.completions.create(
-                model=self._model,
-                messages=[
-                    {"role": "system", "content": "你是人工智能助手"},
-                    {"role": "user", "content": message}
-                ],
-            )
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=message)
+            ]
             
-            response: str = completion.choices[0].message.content
-            logger.info(f"豆包基础回复长度: {len(response)} 字符")
-            return response
+            response = await self.doubao_client.ainvoke(messages)
+            result: str = response.content
+            logger.info(f"豆包基础回复长度: {len(result)} 字符")
+            return result
             
         except Exception as e:
             logger.error(f"豆包基础对话异常: {str(e)}")
@@ -68,18 +69,16 @@ class DoubaoService:
             if not getattr(self, 'doubao_client', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 使用豆包的 OpenAI 兼容接口
-            completion = self.doubao_client.chat.completions.create(
-                model=self._model,
-                messages=[
-                    {"role": "system", "content": "你是人工智能助手"},
-                    {"role": "user", "content": prompt}
-                ],
-            )
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=prompt)
+            ]
             
-            response: str = completion.choices[0].message.content
-            logger.info(f"豆包回复长度: {len(response)} 字符")
-            return response
+            response = await self.doubao_client.ainvoke(messages)
+            result: str = response.content
+            logger.info(f"豆包回复长度: {len(result)} 字符")
+            return result
             
         except Exception as e:
             logger.error(f"豆包聊天异常: {str(e)}")
@@ -97,28 +96,16 @@ class DoubaoService:
                 yield "聊天服务未配置或初始化失败"
                 return
             
-            # 使用豆包的流式接口
-            def sync_stream() -> Any:
-                return self.doubao_client.chat.completions.create(
-                    model=self._model,
-                    messages=[
-                        {"role": "system", "content": "你是人工智能助手"},
-                        {"role": "user", "content": prompt}
-                    ],
-                    stream=True,
-                )
+            # 使用 LangChain 流式调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=prompt)
+            ]
 
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-            stream = await loop.run_in_executor(None, sync_stream)
-
-            for chunk in stream:
-                if not chunk.choices:
-                    continue
-                    
-                content = chunk.choices[0].delta.content
-                if content is not None:
-                    logger.debug(f"收到流式内容: {content}")
-                    yield content
+            async for chunk in self.doubao_client.astream(messages):
+                if chunk.content:
+                    logger.debug(f"收到流式内容: {chunk.content}")
+                    yield chunk.content
                     
         except Exception as e:
             logger.error(f"流式聊天异常: {str(e)}")

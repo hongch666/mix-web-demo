@@ -1,7 +1,7 @@
-import asyncio
 from functools import lru_cache
-from typing import Any, AsyncGenerator, Optional
-import google.generativeai as genai
+from typing import AsyncGenerator, Optional
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, SystemMessage
 from fastapi import Depends
 from sqlmodel import Session
 from api.service import PromptService, get_prompt_service
@@ -10,7 +10,7 @@ from config import load_config, load_secret_config
 
 
 class GeminiService:
-    def __init__(self,promptService: PromptService):
+    def __init__(self, promptService: PromptService):
         self.promptService = promptService
         # 把 Gemini 客户端的配置和初始化放到实例内，避免模块导入时执行网络初始化
         try:
@@ -21,9 +21,13 @@ class GeminiService:
             self._timeout: int = gemini_cfg.get("timeout", 30)
             
             if self._api_key:
-                genai.configure(api_key=self._api_key)
-                self.gemini_model = genai.GenerativeModel(self._model_name)
-                logger.info("Gemini 服务初始化完成 (实例化)")
+                self.gemini_model = ChatGoogleGenerativeAI(
+                    model=self._model_name,
+                    google_api_key=self._api_key,
+                    temperature=0.7,
+                    timeout=self._timeout,
+                )
+                logger.info("Gemini 服务初始化完成 (LangChain)")
             else:
                 self.gemini_model = None
                 logger.warning("Gemini 配置不完整，客户端未初始化")
@@ -39,27 +43,22 @@ class GeminiService:
             if not getattr(self, 'gemini_model', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 使用 run_in_executor 在线程池中运行同步的 Gemini API 调用
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                self.gemini_model.generate_content,
-                message
-            )
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=message)
+            ]
+            response = await self.gemini_model.ainvoke(messages)
             
-            if response and hasattr(response, 'text'):
-                result: str = response.text
-                logger.info(f"Gemini 基础回复长度: {len(result)} 字符")
-                return result
-            else:
-                logger.warning("Gemini 没有返回有效内容")
-                return "抱歉，没有收到回复"
+            result: str = response.content
+            logger.info(f"Gemini 基础回复长度: {len(result)} 字符")
+            return result
                 
         except Exception as e:
             logger.error(f"Gemini 基础对话异常: {str(e)}")
             return f"对话服务异常: {str(e)}"
 
-    async def simple_chat(self,message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
+    async def simple_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> str:
         """简单聊天接口"""
         try:
             prompt: str = self.promptService.get_prompt(message, db)
@@ -68,21 +67,16 @@ class GeminiService:
             if not getattr(self, 'gemini_model', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 使用 run_in_executor 在线程池中运行同步的 Gemini API 调用
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(
-                None,
-                self.gemini_model.generate_content,
-                prompt
-            )
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=prompt)
+            ]
+            response = await self.gemini_model.ainvoke(messages)
             
-            if response and hasattr(response, 'text'):
-                result: str = response.text
-                logger.info(f"Gemini 回复长度: {len(result)} 字符")
-                return result
-            else:
-                logger.warning("Gemini 没有返回有效内容")
-                return "抱歉，没有收到回复"
+            result: str = response.content
+            logger.info(f"Gemini 回复长度: {len(result)} 字符")
+            return result
                 
         except Exception as e:
             logger.error(f"Gemini 聊天异常: {str(e)}")
@@ -94,7 +88,7 @@ class GeminiService:
                 return "API调用频率超限。请稍后重试。"
             return f"聊天服务异常: {str(e)}"
         
-    async def stream_chat(self,message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
+    async def stream_chat(self, message: str, user_id: str = "default", db: Optional[Session] = None) -> AsyncGenerator[str, None]:
         """流式聊天接口 - 兼容异步调用"""
         try:
             prompt: str = self.promptService.get_prompt(message, db)
@@ -104,21 +98,17 @@ class GeminiService:
                 yield "聊天服务未配置或初始化失败"
                 return
             
-            def sync_stream() -> Any:
-                return self.gemini_model.generate_content(prompt, stream=True)
-
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-            response_stream = await loop.run_in_executor(None, sync_stream)
+            # 使用 LangChain 流式调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=prompt)
+            ]
             
-            for chunk in response_stream:
+            async for chunk in self.gemini_model.astream(messages):
                 try:
-                    if chunk and hasattr(chunk, 'text'):
-                        content: str = chunk.text
-                        if content:
-                            logger.info(f"收到流式内容块，长度: {len(content)} 字符")
-                            yield content
-                    else:
-                        logger.warning("收到空的流式内容块")
+                    if chunk.content:
+                        logger.debug(f"收到流式内容块，长度: {len(chunk.content)} 字符")
+                        yield chunk.content
                 except Exception as chunk_error:
                     logger.error(f"处理流式内容块异常: {str(chunk_error)}")
                     continue

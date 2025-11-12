@@ -1,8 +1,7 @@
-import asyncio
-import json
 from functools import lru_cache
-from typing import Any, AsyncGenerator, Optional
-from openai import OpenAI
+from typing import AsyncGenerator, Optional
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
 from fastapi import Depends
 from sqlmodel import Session
 from api.service import PromptService, get_prompt_service
@@ -22,12 +21,14 @@ class TongyiService:
             self._timeout: int = tongyi_cfg.get("timeout", 30)
             
             if self._api_key:
-                self.tongyi_client = OpenAI(
-                    api_key=self._api_key,
-                    base_url=self._base_url,
-                    timeout=self._timeout
+                self.tongyi_client = ChatOpenAI(
+                    model=self._model_name,
+                    openai_api_key=self._api_key,
+                    openai_api_base=self._base_url,
+                    temperature=0.7,
+                    timeout=self._timeout,
                 )
-                logger.info("通义千问服务初始化完成 (实例化)")
+                logger.info("通义千问服务初始化完成 (LangChain)")
             else:
                 self.tongyi_client = None
                 logger.warning("通义千问配置不完整，客户端未初始化")
@@ -43,44 +44,16 @@ class TongyiService:
             if not getattr(self, 'tongyi_client', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 使用 run_in_executor 在线程池中运行同步的通义千问 API 调用
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=message)
+            ]
+            response = await self.tongyi_client.ainvoke(messages)
             
-            def sync_chat():
-                return self.tongyi_client.chat.completions.create(
-                    model=self._model_name,
-                    messages=[
-                        {"role": "user", "content": message}
-                    ]
-                )
-            
-            completion = await loop.run_in_executor(None, sync_chat)
-            
-            # 解析响应内容
-            raw = completion.model_dump_json()
-            if isinstance(raw, str):
-                try:
-                    data = json.loads(raw)
-                except json.JSONDecodeError:
-                    data = {}
-            else:
-                data = raw
-
-            content = None
-            try:
-                content = data.get("choices", [])[0].get("message", {}).get("content")
-            except Exception:
-                try:
-                    content = data["choices"][0]["message"]["content"]
-                except Exception:
-                    content = None
-            
-            if content:
-                logger.info(f"通义千问基础回复长度: {len(content)} 字符")
-                return content
-            else:
-                logger.warning("通义千问没有返回有效内容")
-                return "抱歉，没有收到回复"
+            content: str = response.content
+            logger.info(f"通义千问基础回复长度: {len(content)} 字符")
+            return content
                 
         except Exception as e:
             logger.error(f"通义千问基础对话异常: {str(e)}")
@@ -95,45 +68,16 @@ class TongyiService:
             if not getattr(self, 'tongyi_client', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 使用 run_in_executor 在线程池中运行同步的通义千问 API 调用
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=prompt)
+            ]
+            response = await self.tongyi_client.ainvoke(messages)
             
-            def sync_chat():
-                return self.tongyi_client.chat.completions.create(
-                    model=self._model_name,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": prompt}
-                    ]
-                )
-            
-            completion = await loop.run_in_executor(None, sync_chat)
-            
-            # 解析响应内容
-            raw = completion.model_dump_json()
-            if isinstance(raw, str):
-                try:
-                    data = json.loads(raw)
-                except json.JSONDecodeError:
-                    data = {}
-            else:
-                data = raw
-
-            content = None
-            try:
-                content = data.get("choices", [])[0].get("message", {}).get("content")
-            except Exception:
-                try:
-                    content = data["choices"][0]["message"]["content"]
-                except Exception:
-                    content = None
-            
-            if content:
-                logger.info(f"通义千问回复长度: {len(content)} 字符")
-                return content
-            else:
-                logger.warning("通义千问没有返回有效内容")
-                return "抱歉，没有收到回复"
+            content: str = response.content
+            logger.info(f"通义千问回复长度: {len(content)} 字符")
+            return content
                 
         except Exception as e:
             logger.error(f"通义千问聊天异常: {str(e)}")
@@ -155,56 +99,20 @@ class TongyiService:
                 yield "聊天服务未配置或初始化失败"
                 return
             
-            def sync_stream() -> Any:
-                return self.tongyi_client.chat.completions.create(
-                    model=self._model_name,
-                    messages=[
-                        {"role": "system", "content": "You are a helpful assistant."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    stream=True,
-                    stream_options={"include_usage": True}
-                )
-
-            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-            completion_stream = await loop.run_in_executor(None, sync_stream)
+            # 使用 LangChain 流式调用
+            messages = [
+                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                HumanMessage(content=prompt)
+            ]
             
             full_text = ""
-            for chunk in completion_stream:
+            async for chunk in self.tongyi_client.astream(messages):
                 try:
-                    raw = chunk.model_dump_json()
-                    if isinstance(raw, str):
-                        try:
-                            data = json.loads(raw)
-                        except json.JSONDecodeError:
-                            data = {}
-                    else:
-                        data = raw or {}
-
-                    # 尝试从多个位置获取内容
-                    content_piece = None
-                    choices = data.get("choices", []) if isinstance(data, dict) else []
-                    if choices:
-                        first = choices[0] if isinstance(choices[0], dict) else {}
-                        # 流式模式: delta.content
-                        delta = first.get("delta", {}) if isinstance(first, dict) else {}
-                        content_piece = delta.get("content")
-                        # 后备方案: message.content
-                        if content_piece is None:
-                            msg = first.get("message", {}) if isinstance(first, dict) else {}
-                            content_piece = msg.get("content")
-
-                    # 输出并累积流式内容片段
-                    if content_piece:
+                    if chunk.content:
+                        content_piece = chunk.content
                         logger.debug(f"收到流式内容块，长度: {len(content_piece)} 字符")
                         full_text += content_piece
                         yield content_piece
-                    else:
-                        # 仅包含使用统计的最终块
-                        if not choices and data.get("usage"):
-                            usage = data["usage"]
-                            logger.info(f"通义千问流式响应完成，使用统计: {json.dumps(usage, ensure_ascii=False)}")
-                            
                 except Exception as chunk_error:
                     logger.error(f"处理流式内容块异常: {str(chunk_error)}")
                     continue
