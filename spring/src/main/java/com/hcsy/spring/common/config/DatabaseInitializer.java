@@ -90,7 +90,7 @@ public class DatabaseInitializer implements ApplicationRunner {
 
     private static final String CREATE_COMMENTS_SQL = "CREATE TABLE comments (\n" +
             "    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',\n" +
-            "    content VARCHAR(255) COMMENT '评论内容',\n" +
+            "    content TEXT COMMENT '评论内容',\n" +
             "    star DOUBLE COMMENT '星级评分，1~10',\n" +
             "    user_id INT NOT NULL COMMENT '用户 ID',\n" +
             "    article_id INT NOT NULL COMMENT '文章 ID',\n" +
