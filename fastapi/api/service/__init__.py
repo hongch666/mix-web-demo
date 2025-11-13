@@ -18,8 +18,6 @@ from .doubaoService import DoubaoService, get_doubao_service
 
 from .apilogService import ApiLogService, get_apilog_service
 
-from .aiCommentService import AiCommentService, get_ai_comment_service
-
 __all__ = [
     "get_analyze_service",
     "AnalyzeService",
@@ -41,6 +39,4 @@ __all__ = [
     "get_prompt_service",
     "ApiLogService",
     "get_apilog_service",
-    "AiCommentService",
-    "get_ai_comment_service",
 ]

@@ -55,7 +55,6 @@ def create_app() -> FastAPI:
     app.include_router(generate_router)
     app.include_router(chat_router)
     app.include_router(ai_history_router)
-    app.include_router(ai_comment_router)
     return app
 
 app = create_app()

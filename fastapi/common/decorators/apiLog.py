@@ -377,6 +377,9 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
         # 需要排除的参数名称（依赖注入 - 注意：不包括 'request'，因为它可能是 Pydantic 模型）
         exclude_param_names = {'db', 'session', 'httpRequest'}
         
+        # 需要排除的参数类型后缀
+        exclude_type_suffixes = ('Service', 'Mapper', 'Repository', 'Dao', 'Manager', 'Client')
+        
         # 获取函数签名，检查参数是否为 Query/Path 参数
         sig = inspect.signature(func)
         
@@ -385,8 +388,8 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
             if key in exclude_param_names:
                 continue
             
-            # 跳过 Service 类型参数 - 检查参数名和参数类型
-            if 'Service' in key or 'Service' in type(value).__name__:
+            # 跳过 Service、Mapper 等类型参数 - 检查参数名和参数类型
+            if any(suffix in key for suffix in exclude_type_suffixes) or any(suffix in type(value).__name__ for suffix in exclude_type_suffixes):
                 continue
             
             # 通过类型检查跳过 Request 对象（不是通过参数名）

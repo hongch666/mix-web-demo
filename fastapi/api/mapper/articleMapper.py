@@ -68,17 +68,20 @@ class ArticleMapper:
         columns = [
             "id", "title", "tags", "status", "views", "create_at", "update_at", "content", "user_id", "sub_category_id", "username"
         ]
-        spark = SparkSession.builder.appName("ArticleTop10").getOrCreate()
-        df = spark.read.option("header", True).csv(csv_file)
-        df = df.withColumn("views", col("views").cast("int"))
-        for c in ["id", "status", "user_id", "sub_category_id"]:
-            df = df.withColumn(c, col(c).cast("int"))
-        for c in ["create_at", "update_at"]:
-            df = df.withColumn(c, col(c).cast("string"))
-        # username 字段直接从 csv 读取
-        top10_rows = df.orderBy(col("views").desc()).limit(10).collect()
-        spark.stop()
-        return [{k: r[k] for k in columns} for r in top10_rows]
+        try:
+            spark = SparkSession.builder.appName("ArticleTop10").getOrCreate()
+            df = spark.read.option("header", True).csv(csv_file)
+            df = df.withColumn("views", col("views").cast("int"))
+            for c in ["id", "status", "user_id", "sub_category_id"]:
+                df = df.withColumn(c, col(c).cast("int"))
+            for c in ["create_at", "update_at"]:
+                df = df.withColumn(c, col(c).cast("string"))
+            # username 字段直接从 csv 读取
+            top10_rows = df.orderBy(col("views").desc()).limit(10).collect()
+            return [{k: r[k] for k in columns if k in r.asDict()} for r in top10_rows]
+        except Exception as e:
+            logger.error(f"Spark 查询失败: {e}")
+            raise e
 
     def get_top10_articles_db_mapper(self, db: Session):
         statement = select(Article).order_by(Article.views.desc()).limit(10)

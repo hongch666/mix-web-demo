@@ -50,7 +50,6 @@ class AnalyzeService:
             
             # 1️⃣ 优先 Hive
             try:
-                raise Exception("模拟 Hive 查询失败")
                 articles = self.articleMapper.get_top10_articles_hive_mapper()
                 if articles and isinstance(articles[0], dict):
                     data_source = "Hive"

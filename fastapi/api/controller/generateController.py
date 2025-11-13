@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, Request
 from typing import Any
 from starlette.concurrency import run_in_threadpool
+from config import get_db
+from sqlmodel import Session
 from api.service import GenerateService, get_generate_service
+from api.mapper import CommentsMapper, get_comments_mapper, ArticleMapper, get_article_mapper
+from api.service import DoubaoService, get_doubao_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
 from common.utils import success
 from common.decorators import log
 from entity.dto import GenerateDTO
@@ -23,3 +27,30 @@ async def generate_tags(request: Request, data: GenerateDTO, generateService: Ge
         data.text,
     )
     return success(tags)
+
+@router.post(
+    "/ai_comment/{article_id}",
+    summary="文章创建AI评论",
+    description="为指定文章创建AI评论"
+)
+@log("文章创建AI评论")
+async def create_article_ai_comment(
+    request: Request, 
+    article_id: int, 
+    db: Session = Depends(get_db),
+    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
+    article_mapper: ArticleMapper = Depends(get_article_mapper),
+    doubao_service: DoubaoService = Depends(get_doubao_service),
+    gemini_service: GeminiService = Depends(get_gemini_service),
+    tongyi_service: TongyiService = Depends(get_tongyi_service)
+) -> Any:
+    # 创建完整的 GenerateService 实例
+    generate_service = GenerateService(
+        comments_mapper=comments_mapper,
+        article_mapper=article_mapper,
+        doubao_service=doubao_service,
+        gemini_service=gemini_service,
+        tongyi_service=tongyi_service
+    )
+    await generate_service.generate_ai_comments(article_id, db)
+    return success(data=None)
