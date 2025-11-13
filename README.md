@@ -359,7 +359,7 @@ CREATE TABLE `chat_messages` (
 ```sql
 CREATE TABLE comments (
     id int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
-    content VARCHAR(255) COMMENT '评论内容',
+    content TEXT COMMENT '评论内容',
     star DOUBLE COMMENT '星级评分，1~10',
     user_id int NOT NULL COMMENT '用户 ID',
     article_id int NOT NULL COMMENT '文章 ID',
