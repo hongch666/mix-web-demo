@@ -692,9 +692,9 @@ doubao:
   base_url: "https://ark.cn-beijing.volces.com/api/v3" # 豆包API地址
   timeout: 60 # 请求超时时间（秒）
 embedding:
-  model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" # 使用轻量级多语言模型
-  dimension: 384
-  top_k: 5
+  embedding_model: "text-embedding-v3" # 通义千问嵌入模型（可选: text-embedding-v2, text-embedding-v1）
+  top_k: 5 # RAG检索返回的文档数量
+  dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
 ```
 
 - `application-secret.yaml`

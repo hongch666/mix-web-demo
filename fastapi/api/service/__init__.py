@@ -6,10 +6,6 @@ from .uploadService import UploadService,get_upload_service
 
 from .aiHistoryService import AiHistoryService, get_ai_history_service
 
-from .embeddingService import EmbeddingService, get_embedding_service
-
-from .promptService import PromptService, get_prompt_service
-
 from .geminiService import GeminiService, get_gemini_service
 
 from .tongyiService import TongyiService, get_tongyi_service
@@ -33,10 +29,6 @@ __all__ = [
     "get_doubao_service",
     "AiHistoryService",
     "get_ai_history_service",
-    "EmbeddingService",
-    "get_embedding_service",
-    "PromptService",
-    "get_prompt_service",
     "ApiLogService",
     "get_apilog_service",
 ]

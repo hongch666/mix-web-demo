@@ -4,6 +4,7 @@ pydantic==2.11.9
 pyyaml==6.0.2
 nacos-sdk-python==2.0.8
 requests==2.32.4
+sqlalchemy>=2.0.0
 sqlmodel==0.0.24
 pymysql==1.1.1
 pymongo==4.13.2
@@ -20,8 +21,10 @@ thrift==0.22.0
 thrift_sasl==0.4.3
 pgvector==0.4.1
 psycopg2-binary>=2.9.7
-sentence-transformers==5.1.1
-langchain>=0.3.0
-langchain-openai>=0.2.0
-langchain-google-genai>=2.0.0
-langchain-community>=0.3.0
+langchain==1.0.5
+langchain-openai==1.0.2
+langchain-google-genai==3.0.2
+langchain-community==0.4.1
+langchain-core==1.0.4
+langchain-text-splitters==1.0.0
+dashscope>=1.20.0
