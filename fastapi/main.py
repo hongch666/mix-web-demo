@@ -18,13 +18,11 @@ def create_app() -> FastAPI:
     async def lifespan(app: FastAPI):
         # 自动建表
         create_tables(['ai_history'])
-        
         # 启动Nacos服务注册
         start_nacos(ip=IP, port=PORT)
-        
         # 启动定时任务调度器
         start_scheduler()
-        
+        # 记录启动日志
         logger.info(f"FastAPI应用已启动")
         logger.info(f"服务地址:http://{IP}:{PORT}")
         logger.info(f"Swagger文档地址: http://{IP}:{PORT}/docs")
