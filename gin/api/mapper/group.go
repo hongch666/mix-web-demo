@@ -9,9 +9,9 @@ import (
 type MapperGroup struct {
 	ArticleMapper     sync.ArticleMapper
 	CategoryMapper    sync.CategoryMapper
-	ChatMessageMapper chat.ChatMessageMapper
 	UserMapper        sync.UserMapper
-	CommentMapper     sync.CommentMapper
+	ChatMessageMapper chat.ChatMessageMapper
+	CommentMapper     search.CommentMapper
 	SearchMapper      search.SearchMapper
 }
 
