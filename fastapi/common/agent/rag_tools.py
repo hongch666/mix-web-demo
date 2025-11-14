@@ -4,7 +4,6 @@ from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
-from sqlmodel import Session
 
 
 class RAGTools:

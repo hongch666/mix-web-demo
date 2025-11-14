@@ -383,38 +383,13 @@ CREATE TABLE `ai_history` (
 );
 ```
 
-### PostgreSQL 表创建(需要手动创建)
+### PostgreSQL 表创建
+
+LangChain 会自动创建，但是需要启用 pgvector 扩展
 
 ```pgsql
--- 1. 启用 pgvector 扩展
+-- 启用 pgvector 扩展
 CREATE EXTENSION IF NOT EXISTS vector;
-
--- 2. 创建向量表（只存储向量和必要字段）
-CREATE TABLE IF NOT EXISTS article_vector (
-    article_id INTEGER PRIMARY KEY, -- 关联 MySQL article.id
-    title VARCHAR(255), -- 标题（用于展示）
-    content_preview TEXT, -- 内容预览（前500字）
-    embedding vector (384), -- 向量（384维，MiniLM 模型）
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- 3. 创建向量索引（加速相似度搜索）
-CREATE INDEX IF NOT EXISTS idx_article_vector_embedding ON article_vector USING ivfflat (embedding vector_cosine_ops)
-WITH (lists = 100);
-
--- 4. 创建更新时间触发器
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
-CREATE TRIGGER update_article_vector_updated_at
-BEFORE UPDATE ON article_vector
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
 
 ### MongoDB 表创建
