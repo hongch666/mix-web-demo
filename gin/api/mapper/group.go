@@ -11,6 +11,7 @@ type MapperGroup struct {
 	CategoryMapper    sync.CategoryMapper
 	ChatMessageMapper chat.ChatMessageMapper
 	UserMapper        sync.UserMapper
+	CommentMapper     sync.CommentMapper
 	SearchMapper      search.SearchMapper
 }
 

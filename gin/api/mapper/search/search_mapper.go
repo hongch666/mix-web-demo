@@ -3,6 +3,8 @@ package search
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
@@ -14,6 +16,15 @@ import (
 )
 
 type SearchMapper struct{}
+
+// 评分权重配置
+const (
+	ESScoreWeight      = 0.40    // ES默认分数占40%
+	AIRatingWeight     = 0.30    // AI评分占30%
+	UserRatingWeight   = 0.20    // 用户评分占20%
+	ViewsWeight        = 0.10    // 阅读量占10%
+	MaxViewsNormalized = 10000.0 // 用于归一化阅读量的基准值
+)
 
 func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
 	boolQuery := elastic.NewBoolQuery()
@@ -77,13 +88,29 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	}
 	from := (page - 1) * size
 
-	// 执行搜索
+	// 执行搜索（使用script_score在ES层面进行评分计算）
 	esClient := config.ESClient
+
+	// 构建综合评分脚本：(0.40 * _score) + (0.30 * ai_score/5) + (0.20 * user_score/5) + (0.10 * min(views/10000, 1))
+	scoreScript := elastic.NewScript(`
+		double score = params.esWeight * _score;
+		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 5.0 : 0);
+		double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 5.0 : 0);
+		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
+		return score + aiBoost + userBoost + viewsBoost;
+	`).
+		Param("esWeight", ESScoreWeight).
+		Param("aiWeight", AIRatingWeight).
+		Param("userWeight", UserRatingWeight).
+		Param("viewsWeight", ViewsWeight).
+		Param("maxViewsNormalized", MaxViewsNormalized)
+
+	// 使用script_score包装bool查询
+	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
+
 	searchService := esClient.Search().
 		Index("articles").
-		Query(boolQuery).
-		Sort("views", false).
-		Sort("create_at", false). // 按发布时间倒序
+		Query(scriptScoreQuery).
 		From(from).Size(size)
 
 	// 如果有关键词，启用高亮
@@ -106,6 +133,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 
 	// 解析结果
 	var articles []po.ArticleES
+
 	for _, hit := range searchResult.Hits.Hits {
 		var article po.ArticleES
 		if err := json.Unmarshal(hit.Source, &article); err == nil {
@@ -122,6 +150,16 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 				}
 			}
 			articles = append(articles, article)
+
+			// 记录评分详情
+			var score float64
+			if hit.Score != nil {
+				score = *hit.Score
+			}
+			utils.FileLogger.Info(fmt.Sprintf(
+				"[搜索评分] 文章ID:%d | 标题:%.30s | AI评分:%.2f | 用户评分:%.2f | 阅读量:%d | 综合分数:%.4f",
+				article.ID, article.Title, article.AIScore, article.UserScore, article.Views, score,
+			))
 		} else {
 			// 处理解析错误
 			panic(err.Error())

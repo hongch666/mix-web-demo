@@ -16,6 +16,7 @@ func SyncArticlesToES() {
 	articleMapper := mapper.Group.ArticleMapper
 	categoryMapper := mapper.Group.CategoryMapper
 	userMapper := mapper.Group.UserMapper
+	commentMapper := mapper.Group.CommentMapper
 
 	ctx := context.Background()
 	// 判断索引是否存在
@@ -39,7 +40,11 @@ func SyncArticlesToES() {
 				"status": { "type": "integer" },
 				"views": { "type": "integer" },
 				"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
-				"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" }
+				"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
+				"ai_score": { "type": "float" },
+				"user_score": { "type": "float" },
+				"ai_comment_count": { "type": "integer" },
+				"user_comment_count": { "type": "integer" }
 			}
 		}
 		}`
@@ -90,22 +95,53 @@ func SyncArticlesToES() {
 		categoryMap[sc.ID] = category.Name
 	}
 
+	// 批量获取所有文章的评分数据
+	articleIDs := make([]int64, 0, len(articles))
+	for _, a := range articles {
+		articleIDs = append(articleIDs, int64(a.ID))
+	}
+
+	// 调用CommentMapper批量获取评分
+	commentScores := commentMapper.GetCommentScoresByArticleIDs(ctx, articleIDs)
+	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的评分信息完成", len(articles)))
+
 	// 批量构建ES文档
 	bulkRequest := config.ESClient.Bulk()
 	for _, article := range articles {
+		scores := commentScores[int64(article.ID)]
+
+		// 提取AI和用户评分
+		aiScore := 0.0
+		aiCount := 0
+		if aiScoreData, ok := scores["ai"]; ok {
+			aiScore = aiScoreData.AverageScore
+			aiCount = aiScoreData.Count
+		}
+
+		userScore := 0.0
+		userCount := 0
+		if userScoreData, ok := scores["user"]; ok {
+			userScore = userScoreData.AverageScore
+			userCount = userScoreData.Count
+		}
+
 		articleES := po.ArticleES{
-			ID:              int(article.ID),
-			Title:           article.Title,
-			Content:         article.Content,
-			UserID:          int(article.UserID),
-			Username:        userMap[int(article.UserID)],
-			Tags:            article.Tags,
-			Status:          article.Status,
-			Views:           article.Views,
-			CategoryName:    categoryMap[article.SubCategoryID],
-			SubCategoryName: subCategoryMap[article.SubCategoryID],
-			CreateAt:        article.CreateAt.Format("2006-01-02 15:04:05"),
-			UpdateAt:        article.UpdateAt.Format("2006-01-02 15:04:05"),
+			ID:               int(article.ID),
+			Title:            article.Title,
+			Content:          article.Content,
+			UserID:           int(article.UserID),
+			Username:         userMap[int(article.UserID)],
+			Tags:             article.Tags,
+			Status:           article.Status,
+			Views:            article.Views,
+			CategoryName:     categoryMap[article.SubCategoryID],
+			SubCategoryName:  subCategoryMap[article.SubCategoryID],
+			CreateAt:         article.CreateAt.Format("2006-01-02 15:04:05"),
+			UpdateAt:         article.UpdateAt.Format("2006-01-02 15:04:05"),
+			AIScore:          aiScore,
+			UserScore:        userScore,
+			AICommentCount:   aiCount,
+			UserCommentCount: userCount,
 		}
 		req := elastic.NewBulkIndexRequest().
 			Index("articles").
