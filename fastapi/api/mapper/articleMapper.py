@@ -1,3 +1,4 @@
+from functools import lru_cache
 from sqlmodel import Session, select
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
@@ -304,12 +305,7 @@ class ArticleMapper:
         
         return result
 
-# 单例模式 - 保持连接池和缓存在整个应用生命周期
-_article_mapper_instance = None
-
+@lru_cache()
 def get_article_mapper() -> ArticleMapper:
     """获取 ArticleMapper 单例实例"""
-    global _article_mapper_instance
-    if _article_mapper_instance is None:
-        _article_mapper_instance = ArticleMapper()
-    return _article_mapper_instance
+    return ArticleMapper()
