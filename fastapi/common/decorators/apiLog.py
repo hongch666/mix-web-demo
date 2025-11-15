@@ -378,7 +378,7 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
         exclude_param_names = {'db', 'session', 'httpRequest'}
         
         # 需要排除的参数类型后缀
-        exclude_type_suffixes = ('Service', 'Mapper', 'Repository', 'Dao', 'Manager', 'Client')
+        exclude_type_suffixes = ('Service', 'Mapper', 'Repository', 'Dao', 'Manager', 'Client', 'Cache')
         
         # 获取函数签名，检查参数是否为 Query/Path 参数
         sig = inspect.signature(func)

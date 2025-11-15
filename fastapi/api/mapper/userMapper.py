@@ -8,10 +8,6 @@ class UserMapper:
         statement = select(User).where(User.id.in_(user_ids))
         return db.exec(statement).all()
 
-    def get_all_users_mapper(self,db: Session) -> list[User]:
-        statement = select(User)
-        return db.exec(statement).all()
-
 @lru_cache()
 def get_user_mapper() -> UserMapper:
     return UserMapper()

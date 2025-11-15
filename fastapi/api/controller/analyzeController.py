@@ -87,3 +87,39 @@ async def get_article_statistics(request: Request, db: Session = Depends(get_db)
     """
     result: Dict[str, Any] = await run_in_threadpool(analyzeService.get_article_statistics_service, db)
     return success(result)
+
+@router.get(
+    "/article-count-by-category",
+    summary="按分类统计文章数量",
+    description="获取所有大分类的文章数量分布，包括没有文章的分类"
+)
+@log("按分类统计文章数量")
+async def get_article_count_by_category(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
+    """
+    按大分类统计文章数量
+    
+    特点:
+    - 返回所有大分类（包括没有文章的分类，返回0）
+    - 按文章数量从多到少排序
+    - 使用Hive查询+缓存优化，支持降级处理（Spark → DB）
+    """
+    result: List[Dict[str, Any]] = await run_in_threadpool(analyzeService.get_category_article_count_service, db)
+    return success(ListResponse(total=len(result), list=result))
+
+@router.get(
+    "/monthly-publish-count",
+    summary="获取月度文章发布统计",
+    description="获取最近24个月的文章发布数量统计（从当前月向前推24个月，缺失月份置为0）"
+)
+@log("获取月度文章发布统计")
+async def get_monthly_publish_count(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
+    """
+    获取月度文章发布统计
+    
+    特性：
+    - 从当前月份向前推24个月
+    - 中间缺失的月份自动补零
+    - 按月份倒序排列（最新在前）
+    """
+    result: List[Dict[str, Any]] = await run_in_threadpool(analyzeService.get_monthly_publish_count_service, db)
+    return success(ListResponse(total=len(result), list=result))

@@ -15,11 +15,6 @@ class ArticleLogMapper:
                 all_keywords.append(content['Keyword'])
         return all_keywords
 
-    def get_all_articlelogs_limit_mapper(self) -> List[Dict[str, Any]]:
-        logs = mongo_db["articlelogs"]
-        cursor: Any = logs.find().sort("createdAt", -1).limit(100)
-        return cursor
-
 @lru_cache()
 def get_articlelog_mapper() -> ArticleLogMapper:
     return ArticleLogMapper()

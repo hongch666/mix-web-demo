@@ -4,20 +4,25 @@ import os
 import pandas as pd
 import time
 from typing import Dict, List, Any
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 from wordcloud import WordCloud
-from api.mapper import ArticleMapper, get_article_mapper, UserMapper, get_user_mapper, ArticleLogMapper, get_articlelog_mapper
+from api.mapper import ArticleMapper, get_article_mapper, UserMapper, get_user_mapper, ArticleLogMapper, get_articlelog_mapper, CategoryMapper, get_category_mapper
 from config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger
-from common.cache import ArticleCache
+from common.cache import ArticleCache, CategoryCache, PublishTimeCache, get_article_cache, get_category_cache, get_publish_time_cache
 
 class AnalyzeService:
-    def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper):
+    def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper, categoryMapper: CategoryMapper, article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache)):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
         self.userMapper = userMapper
-        # 初始化缓存
-        self._article_cache = ArticleCache()
+        self.categoryMapper = categoryMapper
+        # 注入缓存对象
+        self._article_cache = article_cache
+        self._category_cache = category_cache
+        self._publish_time_cache = publish_time_cache
 
     def get_top10_articles_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         """
@@ -48,7 +53,7 @@ class AnalyzeService:
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             logger.info("get_top10_articles_service: [✗ 缓存未命中] 开始查询数据源")
             
-            # 1️⃣ 优先 Hive
+            # 1.优先 Hive
             try:
                 articles = self.articleMapper.get_top10_articles_hive_mapper()
                 if articles and isinstance(articles[0], dict):
@@ -57,7 +62,7 @@ class AnalyzeService:
             except Exception as hive_e:
                 logger.warning(f"get_top10_articles_service: Hive 查询失败，降级为 Spark: {hive_e}")
             
-            # 2️⃣ Spark 降级
+            # 2.Spark 降级
             if not articles or len(articles) == 0:
                 try:
                     articles = self.articleMapper.get_top10_articles_spark_mapper()
@@ -67,7 +72,7 @@ class AnalyzeService:
                 except Exception as spark_e:
                     logger.error(f"get_top10_articles_service: Spark 查询失败，降级为 DB: {spark_e}")
             
-            # 3️⃣ DB 兜底
+            # 3.DB 兜底
             if not articles or len(articles) == 0:
                 articles = self.articleMapper.get_top10_articles_db_mapper(db)
                 data_source = "DB"
@@ -224,7 +229,204 @@ class AnalyzeService:
         
         logger.info(f"获取文章统计信息: {statistics}")
         return statistics
+
+    def get_category_article_count_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+        """
+        获取按大分类统计的文章数量服务
+        
+        流程:
+        1. 从Hive查询文章数据（按子分类分组）
+        2. 从MySQL获取所有大分类信息
+        3. 将文章数据按大分类聚合（没有文章的分类返回0）
+        4. 按文章数量排序
+        5. 使用缓存优化性能
+        
+        返回: 所有大分类及其文章总数（从多到少排序）
+        """
+        category_data = None
+        hive_conn = None
+        data_source = None
+        start = time.time()
+        
+        try:
+            # ========== 步骤1: 尝试从缓存获取 ==========
+            try:
+                hive_conn = self.articleMapper.get_hive_connection()
+                cached_result = self._category_cache.get(hive_conn)
+                if cached_result:
+                    total_time = time.time() - start
+                    logger.info(f"get_category_article_count_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    return cached_result
+            except Exception as cache_e:
+                logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            
+            # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
+            logger.info("get_category_article_count_service: [✗ 缓存未命中] 开始查询数据源")
+            
+            # 1.优先 Hive
+            try:
+                category_data = self.articleMapper.get_category_article_count_hive_mapper()
+                data_source = "Hive"
+                logger.info("get_category_article_count_service: 使用 Hive 数据源")
+            except Exception as hive_e:
+                logger.warning(f"get_category_article_count_service: Hive 查询失败，降级为 Spark: {hive_e}")
+            
+            # 2.Spark 降级
+            if not category_data or len(category_data) == 0:
+                try:
+                    category_data = self.articleMapper.get_category_article_count_spark_mapper()
+                    data_source = "Spark"
+                    logger.info("get_category_article_count_service: 使用 Spark 数据源")
+                except Exception as spark_e:
+                    logger.error(f"get_category_article_count_service: Spark 查询失败，降级为 DB: {spark_e}")
+            
+            # 3.DB 兜底
+            if not category_data or len(category_data) == 0:
+                category_data = self.articleMapper.get_category_article_count_db_mapper(db)
+                data_source = "DB"
+                logger.info("get_category_article_count_service: 使用 DB 数据源")
+            
+            # ========== 步骤3: 获取所有大分类信息 ==========
+            all_categories = self.categoryMapper.get_all_categories_mapper(db)
+            
+            # ========== 步骤4: 获取子分类与大分类的映射关系 ==========
+            subcategories = self.categoryMapper.get_subcategories_with_parent_mapper(db)
+            sub_cat_map = {sc["id"]: sc for sc in subcategories}
+            
+            # ========== 步骤5: 按大分类聚合文章数（包括文章数为0的分类） ==========
+            # 初始化所有大分类，文章数都是0
+            parent_category_count = {}
+            for category in all_categories:
+                parent_category_count[category.id] = {
+                    "category_id": category.id,
+                    "category_name": category.name,
+                    "article_count": 0,
+                }
+            
+            # 遍历文章数据，累加到对应的大分类
+            for item in category_data:
+                sub_cat_id = item["sub_category_id"]
+                sub_cat_info = sub_cat_map.get(sub_cat_id, {})
+                
+                parent_id = sub_cat_info.get("category_id")
+                if parent_id and parent_id in parent_category_count:
+                    parent_category_count[parent_id]["article_count"] += item["count"]
+            
+            # ========== 步骤6: 按文章数量排序（从多到少） ==========
+            result = list(parent_category_count.values())
+            result.sort(key=lambda x: x["article_count"], reverse=True)
+            
+            logger.info(f"get_category_article_count_service: 获取 {len(result)} 个大分类，有文章的分类数: {len([c for c in result if c['article_count'] > 0])}")
+            
+            # ========== 步骤7: 更新缓存 ==========
+            if hive_conn and result:
+                try:
+                    self._category_cache.set(result, hive_conn)
+                    total_time = time.time() - start
+                    logger.info(f"get_category_article_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s")
+                except Exception as cache_e:
+                    logger.warning(f"更新缓存失败: {cache_e}")
+            
+            return result
+        
+        finally:
+            if hive_conn:
+                self.articleMapper.return_hive_connection(hive_conn)
+
+    def get_monthly_publish_count_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+        """
+        获取按月份统计的文章发布数量服务
+        
+        流程:
+        1. 从Hive查询最近24个月的文章发布数据
+        2. 从当前月份向前推24个月，补充缺失的月份为零值
+        3. 按月份排序
+        4. 使用缓存优化性能
+        """
+        publish_data = None
+        hive_conn = None
+        data_source = None
+        start = time.time()
+        
+        try:
+            # ========== 步骤1: 尝试从缓存获取 ==========
+            try:
+                hive_conn = self.articleMapper.get_hive_connection()
+                cached_result = self._publish_time_cache.get(hive_conn)
+                if cached_result:
+                    total_time = time.time() - start
+                    logger.info(f"get_monthly_publish_count_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    return cached_result
+            except Exception as cache_e:
+                logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            
+            # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
+            logger.info("get_monthly_publish_count_service: [✗ 缓存未命中] 开始查询数据源")
+            
+            # 1.优先 Hive
+            try:
+                publish_data = self.articleMapper.get_monthly_publish_count_hive_mapper()
+                data_source = "Hive"
+                logger.info("get_monthly_publish_count_service: 使用 Hive 数据源")
+            except Exception as hive_e:
+                logger.warning(f"get_monthly_publish_count_service: Hive 查询失败，降级为 Spark: {hive_e}")
+            
+            # 2.Spark 降级
+            if not publish_data or len(publish_data) == 0:
+                try:
+                    publish_data = self.articleMapper.get_monthly_publish_count_spark_mapper()
+                    data_source = "Spark"
+                    logger.info("get_monthly_publish_count_service: 使用 Spark 数据源")
+                except Exception as spark_e:
+                    logger.error(f"get_monthly_publish_count_service: Spark 查询失败，降级为 DB: {spark_e}")
+            
+            # 3.DB 兜底
+            if not publish_data or len(publish_data) == 0:
+                publish_data = self.articleMapper.get_monthly_publish_count_db_mapper(db)
+                data_source = "DB"
+                logger.info("get_monthly_publish_count_service: 使用 DB 数据源")
+            
+            # ========== 步骤3: 补充缺失月份，置为0 ==========
+            # 获取当前日期所在的月份
+            now = datetime.now()
+            
+            # 构建最近24个月的月份列表（从当前月向前推）
+            expected_months = []
+            for i in range(23, -1, -1):  # 从23个月前到当前月
+                month_date = now - relativedelta(months=i)
+                expected_months.append(month_date.strftime("%Y-%m"))
+            
+            # 创建数据字典，便于查找
+            data_dict = {item["year_month"]: item["count"] for item in publish_data}
+            
+            # 补充缺失月份
+            result = []
+            for month in expected_months:
+                result.append({
+                    "year_month": month,
+                    "count": data_dict.get(month, 0)
+                })
+            
+            # ========== 步骤4: 按月份从近到远排序 ==========
+            result.sort(key=lambda x: x["year_month"], reverse=True)
+            
+            logger.info(f"get_monthly_publish_count_service: 获取过去24个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}")
+            
+            # ========== 步骤5: 更新缓存 ==========
+            if hive_conn and result:
+                try:
+                    self._publish_time_cache.set(result, hive_conn)
+                    total_time = time.time() - start
+                    logger.info(f"get_monthly_publish_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s")
+                except Exception as cache_e:
+                    logger.warning(f"更新缓存失败: {cache_e}")
+            
+            return result
+        
+        finally:
+            if hive_conn:
+                self.articleMapper.return_hive_connection(hive_conn)
     
 @lru_cache()
-def get_analyze_service(articleMapper: ArticleMapper = Depends(get_article_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), userMapper: UserMapper = Depends(get_user_mapper)) -> AnalyzeService:
-    return AnalyzeService(articleMapper, articleLogMapper, userMapper)
+def get_analyze_service(articleMapper: ArticleMapper = Depends(get_article_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache)) -> AnalyzeService:
+    return AnalyzeService(articleMapper, articleLogMapper, userMapper, categoryMapper, article_cache, category_cache, publish_time_cache)
