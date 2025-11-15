@@ -308,11 +308,11 @@ def start_scheduler(
         article_mapper=article_mapper,
         mysql_db_factory=mysql_db_factory or db_factory
     )
-    # 每2小时执行一次向量同步（可根据需要调整频率）
-    scheduler.add_job(sync_vector_job_func, 'interval', hours=2, id='sync_vectors')
+    # 每1天执行一次
+    scheduler.add_job(sync_vector_job_func, 'interval', hours=24, id='sync_vectors')
     
     scheduler.start()
     logger.info("定时任务调度器已启动：")
     logger.info("  - 文章导出任务：每 1 小时执行一次")
-    logger.info("  - 向量同步任务（LangChain）：每 2 小时执行一次")
+    logger.info("  - 向量同步任务：每 1 天执行一次")
     return scheduler
