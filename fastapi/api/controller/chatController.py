@@ -13,7 +13,7 @@ from config import get_db
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
 from entity.po import AiHistory
 
-router: APIRouter = APIRouter(prefix="/chat", tags=["聊天接口"])
+router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])
 
 @router.post(
     "/send",

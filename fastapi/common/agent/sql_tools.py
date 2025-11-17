@@ -1,7 +1,8 @@
 from typing import List
 from langchain_core.tools import Tool
 from langchain_community.utilities import SQLDatabase
-from sqlalchemy import create_engine, text, inspect
+from sqlmodel import create_engine, Session
+from sqlalchemy import text, inspect
 
 
 class SQLTools:
@@ -101,8 +102,8 @@ class SQLTools:
                 return "安全限制：只允许执行SELECT查询语句"
             
             # 执行查询
-            with self.engine.connect() as conn:
-                result = conn.execute(text(query))
+            with Session(self.engine) as session:
+                result = session.exec(text(query))
                 rows = result.fetchall()
                 columns = result.keys()
                 
