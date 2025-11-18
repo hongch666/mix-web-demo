@@ -64,7 +64,9 @@ build_spring() {
     cat > "$SPRING_DIST/start.sh" << 'EOF'
 #!/bin/bash
 JAVA_OPTS="-Xms512m -Xmx1024m"
-nohup java $JAVA_OPTS -jar spring.jar --spring.config.additional-location=file:./bootstrap.yml,file:./application.yaml > spring.log 2>&1 &
+LOG_DIR="../../logs/spring"
+mkdir -p "$LOG_DIR"
+nohup java $JAVA_OPTS -jar spring.jar --spring.config.location=bootstrap.yaml,application.yaml > "$LOG_DIR/spring.log" 2>&1 &
 echo $! > spring.pid
 echo "Spring 服务已启动，PID: $(cat spring.pid)"
 EOF
