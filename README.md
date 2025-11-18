@@ -191,6 +191,28 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 > 如需退出虚拟环境，执行 `deactivate`
 
+## 生产环境部署
+
+本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
+
+**快速打包和部署：**
+
+```bash
+# 1. 一键打包所有服务
+./build.sh
+
+# 2. 启动所有服务
+./dist-control.sh start
+
+# 3. 查看服务状态
+./dist-control.sh status
+
+# 4. 停止所有服务
+./dist-control.sh stop
+```
+
+打包后的文件统一位于 `dist/` 目录，每个服务都包含配置文件、启动/停止脚本和日志文件。
+
 ## 编译和运行项目
 
 > 每个服务都可以独立运行：

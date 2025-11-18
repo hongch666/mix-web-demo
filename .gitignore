@@ -117,6 +117,8 @@ gin/.DS_Store
 # Git merge/diff tools
 gin/*.orig
 
+gin/gin_service
+
 ### spring
 
 # 忽略项目中的 Maven 构建输出目录
@@ -191,3 +193,8 @@ logs/
 ssh.sh
 ssh.bat
 ssh_remote.bat
+
+### Build and Distribution
+dist/
+*.pid
+*.log
