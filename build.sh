@@ -40,7 +40,10 @@ build_spring() {
     
     # Maven 打包
     if command -v mvn &> /dev/null; then
-        print_info "使用 Maven 打包 Spring..."
+        print_info "使用全局 Maven 打包 Spring..."
+        mvn clean package -DskipTests
+    elif [ -f "./mvnw" ]; then
+        print_info "使用本地 Maven Wrapper 打包 Spring..."
         ./mvnw clean package -DskipTests
     else
         print_error "Maven 未安装，跳过 Spring 打包"
@@ -90,7 +93,10 @@ build_gateway() {
     
     # Maven 打包
     if command -v mvn &> /dev/null; then
-        print_info "使用 Maven 打包 Gateway..."
+        print_info "使用全局 Maven 打包 Gateway..."
+        mvn clean package -DskipTests
+    elif [ -f "./mvnw" ]; then
+        print_info "使用本地 Maven Wrapper 打包 Gateway..."
         ./mvnw clean package -DskipTests
     else
         print_error "Maven 未安装，跳过 Gateway 打包"
