@@ -168,16 +168,28 @@ build_fastapi() {
     # 创建启动脚本
     cat > "$FASTAPI_DIST/start.sh" << 'EOF'
 #!/bin/bash
-# 激活虚拟环境（如果存在）
-if [ -d "venv" ]; then
+LOG_DIR="../../logs/fastapi"
+mkdir -p "$LOG_DIR"
+
+# 获取源目录路径（相对于 dist/fastapi）
+SOURCE_DIR="../../fastapi"
+
+# 检查虚拟环境（优先使用源目录的 venv）
+if [ -d "$SOURCE_DIR/venv" ]; then
+    echo "使用源目录虚拟环境..."
+    source "$SOURCE_DIR/venv/bin/activate"
+elif [ -d "venv" ]; then
+    echo "使用本地虚拟环境..."
     source venv/bin/activate
+else
+    echo "使用全局 Python 环境..."
 fi
 
 # 安装依赖
 pip install -r requirements.txt
 
 # 启动服务
-nohup python main.py > fastapi.log 2>&1 &
+nohup python main.py > "$LOG_DIR/fastapi.log" 2>&1 &
 echo $! > fastapi.pid
 echo "FastAPI 服务已启动，PID: $(cat fastapi.pid)"
 EOF
