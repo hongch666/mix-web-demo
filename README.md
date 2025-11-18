@@ -2,7 +2,7 @@
 
 ## 描述
 
-这是一个基于多种技术栈构建的文章博客管理系统，包含以下组件：
+这是一个基于多语言技术栈构建的文章博客管理系统，包含以下组件：
 
 - FastAPI（Python）
 - Gin（Go）
@@ -39,7 +39,7 @@
 - RabbitMQ：消息队列
 - Hadoop+Hive：大数据存储与分析
 - WebSocket：用户实时聊天
-- Langchain：大模型调用框架
+- Langchain：大模型调用和 RAG 框架
 
 ## 第三方服务
 
