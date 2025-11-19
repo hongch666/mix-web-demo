@@ -587,7 +587,7 @@ database:
   username: root
   password: csc20040312
   database: demo
-  synchronize: true
+  synchronize: false
   logging: false
   entities:
     - src/**/*.entity.js
