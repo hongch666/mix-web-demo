@@ -64,9 +64,10 @@ build_spring() {
     cat > "$SPRING_DIST/start.sh" << 'EOF'
 #!/bin/bash
 JAVA_OPTS="-Xms512m -Xmx1024m"
-LOG_DIR="../../logs/spring"
+LOG_DIR="../logs/spring"
 mkdir -p "$LOG_DIR"
-nohup java $JAVA_OPTS -jar spring.jar --spring.config.location=bootstrap.yaml,application.yaml > "$LOG_DIR/spring.log" 2>&1 &
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+nohup java $JAVA_OPTS -jar spring.jar --spring.config.location=bootstrap.yaml,application.yaml >> "$LOG_FILE" 2>&1 &
 echo $! > spring.pid
 echo "Spring 服务已启动，PID: $(cat spring.pid)"
 EOF
@@ -119,9 +120,10 @@ build_gateway() {
     cat > "$GATEWAY_DIST/start.sh" << 'EOF'
 #!/bin/bash
 JAVA_OPTS="-Xms512m -Xmx1024m"
-LOG_DIR="../../logs/gateway"
+LOG_DIR="../logs/gateway"
 mkdir -p "$LOG_DIR"
-nohup java $JAVA_OPTS -jar gateway.jar --spring.config.location=application.yaml > "$LOG_DIR/gateway.log" 2>&1 &
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+nohup java $JAVA_OPTS -jar gateway.jar --spring.config.location=application.yaml >> "$LOG_FILE" 2>&1 &
 echo $! > gateway.pid
 echo "Gateway 服务已启动，PID: $(cat gateway.pid)"
 EOF
@@ -168,8 +170,9 @@ build_fastapi() {
     # 创建启动脚本
     cat > "$FASTAPI_DIST/start.sh" << 'EOF'
 #!/bin/bash
-LOG_DIR="../../logs/fastapi"
+LOG_DIR="../logs/fastapi"
 mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
 # 获取源目录路径（相对于 dist/fastapi）
 SOURCE_DIR="../../fastapi"
@@ -189,7 +192,7 @@ fi
 pip install -r requirements.txt
 
 # 启动服务
-nohup python main.py > "$LOG_DIR/fastapi.log" 2>&1 &
+nohup python main.py >> "$LOG_FILE" 2>&1 &
 echo $! > fastapi.pid
 echo "FastAPI 服务已启动，PID: $(cat fastapi.pid)"
 EOF
@@ -238,9 +241,10 @@ build_gin() {
     # 创建启动脚本
     cat > "$GIN_DIST/start.sh" << 'EOF'
 #!/bin/bash
-LOG_DIR="../../logs/gin"
+LOG_DIR="../logs/gin"
 mkdir -p "$LOG_DIR"
-nohup ./gin_service > "$LOG_DIR/gin.log" 2>&1 &
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+nohup ./gin_service >> "$LOG_FILE" 2>&1 &
 echo $! > gin.pid
 echo "Gin 服务已启动，PID: $(cat gin.pid)"
 EOF
@@ -293,9 +297,10 @@ build_nestjs() {
     # 创建启动脚本
     cat > "$NESTJS_DIST/start.sh" << 'EOF'
 #!/bin/bash
-LOG_DIR="../../logs/nestjs"
+LOG_DIR="../logs/nestjs"
 mkdir -p "$LOG_DIR"
-nohup node dist/main.js > "$LOG_DIR/nestjs.log" 2>&1 &
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+nohup node dist/main.js >> "$LOG_FILE" 2>&1 &
 echo $! > nestjs.pid
 echo "NestJS 服务已启动，PID: $(cat nestjs.pid)"
 EOF
