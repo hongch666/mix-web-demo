@@ -40,7 +40,7 @@ import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('mongodb.url'),
         dbName: configService.get<string>('mongodb.dbName'),
-        autoCreateIndex: true,
+        autoCreate: true,
       }),
       inject: [ConfigService],
     }),
