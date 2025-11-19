@@ -178,21 +178,25 @@ show_status() {
 # 查看日志
 view_logs() {
     local service=$1
-    local service_dir="$DIST_DIR/$service"
+    local logs_dir="$DIST_DIR/logs/$service"
     
-    if [ ! -d "$service_dir" ]; then
-        print_error "服务目录不存在: $service_dir"
+    if [ ! -d "$logs_dir" ]; then
+        print_error "日志目录不存在: $logs_dir"
         return 1
     fi
     
-    cd "$service_dir"
+    # 获取最新的日志文件 (app_YYYY-MM-DD.log 格式)
+    local latest_log=$(ls -t "$logs_dir"/app_*.log 2>/dev/null | head -1)
     
-    if [ -f "${service}.log" ]; then
-        print_info "显示 $service 服务日志（最后50行）："
-        tail -50 "${service}.log"
-    else
-        print_warn "未找到日志文件: ${service}.log"
+    if [ -z "$latest_log" ]; then
+        print_warn "未找到日志文件"
+        return 1
     fi
+    
+    print_info "显示 $service 服务日志（最后100行）："
+    print_info "日志文件: $latest_log"
+    echo "-------------------------------------------"
+    tail -100 "$latest_log"
 }
 
 # 使用说明
