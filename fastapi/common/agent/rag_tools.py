@@ -25,6 +25,7 @@ class RAGTools:
             
             api_key = tongyi_secret.get("api_key")
             embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
+            self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
             
             if not api_key:
                 raise ValueError("通义千问API密钥未配置")
@@ -128,14 +129,17 @@ class RAGTools:
         
         Args:
             query: 查询文本
-            k: 返回结果数量
+            k: 返回结果数量（默认使用配置中的top_k，如果传入则使用传入值）
             
         Returns:
             相似文章的文本描述
         """
         try:
+            # 如果未明确传入k值，使用配置中的top_k
+            search_k = k if k != 5 else self.top_k
+            
             # 使用向量存储进行相似度搜索
-            docs = self.vector_store.similarity_search_with_score(query, k=k)
+            docs = self.vector_store.similarity_search_with_score(query, k=search_k)
             
             if not docs:
                 return "没有找到相关文章"
@@ -196,7 +200,7 @@ class RAGTools:
                 参数格式: 用户的问题或关键词(字符串)
                 示例: "如何使用Python进行数据分析"
                 使用场景: 用户询问具体的技术问题、寻找相关文章、需要文章内容支持时使用。""",
-                func=lambda query: self.search_similar_articles(query, k=5)
+                func=lambda query: self.search_similar_articles(query, k=self.top_k)
             )
         ]
     
@@ -205,12 +209,13 @@ class RAGTools:
         获取LangChain检索器
         
         Args:
-            k: 返回结果数量
+            k: 返回结果数量（默认使用配置中的top_k）
             
         Returns:
             VectorStoreRetriever对象
         """
-        return self.vector_store.as_retriever(search_kwargs={"k": k})
+        search_k = k if k != 3 else self.top_k
+        return self.vector_store.as_retriever(search_kwargs={"k": search_k})
 
 
 def get_rag_tools() -> RAGTools:
