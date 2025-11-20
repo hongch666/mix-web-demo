@@ -106,7 +106,7 @@ chmod +x setup.sh
 
    - Spring: 自动检测是否有全局 Maven，如果没有则使用 mvnw
    - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
-   - FastAPI: 自动创建虚拟环境并使用清华镜像源加速安装
+   - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
 5. **目录自动创建**
 
@@ -134,9 +134,9 @@ chmod +x setup.sh
 - **系统权限**: 安装系统依赖时可能需要 sudo 权限
 - **网络要求**:
   - Go 模块需要访问 GitHub 和 Go 代理
-  - Python 使用清华镜像源，国内访问速度较快
+  - Python 使用 uv 配置项目环境，使用阿里镜像源，国内访问速度较快
   - npm 使用默认源，建议配置国内镜像（如淘宝镜像）
-- **虚拟环境**: FastAPI 会自动创建虚拟环境（venv），无需手动创建
+- **虚拟环境**: FastAPI 会使用 uv 自动创建虚拟环境（venv），无需手动创建
 
 ### 配置完成后
 
@@ -188,6 +188,12 @@ cd fastapi
 
 # 安装 uv（如果未安装）
 # 参考: https://docs.astral.sh/uv/getting-started/installation/
+
+# 配置 uv 虚拟环境
+uv venv --python /usr/bin/python3.11 # 创建虚拟环境时指定 Python
+
+# 激活虚拟环境
+source .venv/bin/activate
 
 # 同步依赖（使用国内镜像）
 uv sync
@@ -485,8 +491,8 @@ spring:
   mail:
     host: smtp.qq.com
     port: 465
-    username: 3070872194@qq.com
-    password: skuwsqoctrrwdfgd
+    username: xxx@qq.com
+    password: xxx # 这个是QQ邮箱的授权码
     properties:
       mail:
         smtp:
@@ -901,7 +907,8 @@ doubao:
 5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
 6. 如果没有使用 Hadoop+Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
 7. Gemini 服务需要运行的终端使用代理，请自行配置。
-8. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
+8. Spring 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
+9. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
 
 ```bash
 # Fresh 热启动工具配置文件
