@@ -221,6 +221,21 @@ setup_fastapi() {
         log_info "安装 uv 包管理工具..."
         curl -LsSf https://astral.sh/uv/install.sh | sh
         export PATH="$HOME/.cargo/bin:$PATH"
+        
+        # 添加 uv 到 shell 配置文件
+        log_info "配置 PATH 环境变量..."
+        if [ -f "$HOME/.bashrc" ]; then
+            if ! grep -q "\.cargo/bin" "$HOME/.bashrc"; then
+                echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.bashrc"
+                log_info "已添加 uv PATH 到 ~/.bashrc"
+            fi
+        fi
+        if [ -f "$HOME/.zshrc" ]; then
+            if ! grep -q "\.cargo/bin" "$HOME/.zshrc"; then
+                echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.zshrc"
+                log_info "已添加 uv PATH 到 ~/.zshrc"
+            fi
+        fi
     else
         log_info "uv 工具已安装"
     fi
