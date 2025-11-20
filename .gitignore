@@ -171,7 +171,12 @@ fastapi/**/*.pyc
 fastapi/pic/
 fastapi/static/
 fastapi/application-secret.yaml
+fastapi/.venv/
 fastapi/venv/
+fastapi/.env
+fastapi/.env.local
+fastapi/uv.lock
+fastapi/.python-version
 
 .vscode/
 bfg-1.14.0.jar

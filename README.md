@@ -181,15 +181,30 @@ npm install # 安装npm包
 
 ### FastAPI 部分
 
+使用 uv 进行项目管理：
+
 ```bash
 cd fastapi
-python3 -m venv venv
-source venv/bin/activate # Linux
-venv\Scripts\activate # Windows
-pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 安装 uv（如果未安装）
+# 参考: https://docs.astral.sh/uv/getting-started/installation/
+
+# 同步依赖（使用国内镜像）
+uv sync
+
+# 运行项目
+uv run python main.py
 ```
 
-> 如需退出虚拟环境，执行 `deactivate`
+> 项目使用 uv 进行依赖管理，配置文件为 `pyproject.toml`。镜像源配置在 `~/.config/uv/uv.toml`，内容如下
+
+```toml
+[[index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple"
+default = true
+
+```
 
 ## 生产环境部署
 
@@ -253,9 +268,10 @@ npm run start:prod # production mode
 ```bash
 # 运行FastAPI服务
 cd fastapi
-source venv/bin/activate # Linux
-venv\Scripts\activate # Windows
-python3 -u main.py
+uv run python main.py
+
+# 或指定 Python 版本
+uv run --python 3.12 python main.py
 ```
 
 ## 运行脚本配置

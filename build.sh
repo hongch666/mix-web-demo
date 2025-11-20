@@ -164,38 +164,61 @@ build_fastapi() {
         cp application-secret.yaml "$FASTAPI_DIST/"
     fi
     
-    # 复制依赖文件
-    cp requirements.txt "$FASTAPI_DIST/"
+    # 复制 uv 配置文件
+    cp pyproject.toml "$FASTAPI_DIST/"
+    if [ -f uv.lock ]; then
+        cp uv.lock "$FASTAPI_DIST/"
+    fi
     
-    # 创建启动脚本
-    cat > "$FASTAPI_DIST/start.sh" << 'EOF'
+    # 检查是否存在 .venv 虚拟环境
+    if [ -d ".venv" ]; then
+        print_info "检测到开发环境中存在 .venv 虚拟环境，进行打包..."
+        cp -r .venv "$FASTAPI_DIST/"
+        
+        # 创建启动脚本 - 使用打包后的虚拟环境
+        cat > "$FASTAPI_DIST/start.sh" << 'EOF'
 #!/bin/bash
 LOG_DIR="../logs/fastapi"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
-# 获取源目录路径（相对于 dist/fastapi）
-SOURCE_DIR="../../fastapi"
-
-# 检查虚拟环境（优先使用源目录的 venv）
-if [ -d "$SOURCE_DIR/venv" ]; then
-    echo "使用源目录虚拟环境..."
-    source "$SOURCE_DIR/venv/bin/activate"
-elif [ -d "venv" ]; then
-    echo "使用本地虚拟环境..."
-    source venv/bin/activate
-else
-    echo "使用全局 Python 环境..."
-fi
-
-# 安装依赖
-pip install -r requirements.txt
+# 激活虚拟环境
+source .venv/bin/activate
 
 # 启动服务
 nohup python main.py >> "$LOG_FILE" 2>&1 &
 echo $! > fastapi.pid
 echo "FastAPI 服务已启动，PID: $(cat fastapi.pid)"
 EOF
+    else
+        print_info "未检测到 .venv 虚拟环境，使用 uv 方式部署..."
+        
+        # 创建启动脚本 - 使用 uv 同步依赖
+        cat > "$FASTAPI_DIST/start.sh" << 'EOF'
+#!/bin/bash
+LOG_DIR="../logs/fastapi"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 检查 uv 是否已安装
+if ! command -v uv &> /dev/null; then
+    echo "安装 uv 包管理工具..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# 同步依赖（如果存在 uv.lock）
+if [ -f "uv.lock" ]; then
+    echo "使用 uv sync 同步依赖..."
+    uv sync
+fi
+
+# 启动服务
+nohup uv run python main.py >> "$LOG_FILE" 2>&1 &
+echo $! > fastapi.pid
+echo "FastAPI 服务已启动，PID: $(cat fastapi.pid)"
+EOF
+    fi
     
     cat > "$FASTAPI_DIST/stop.sh" << 'EOF'
 #!/bin/bash

@@ -24,7 +24,7 @@ tmux send-keys -t "$GIN_PANE" "cd gin && echo 'Starting Gin...' && fresh -c ~/.f
 # 垂直分屏（右下：FastAPI）
 tmux split-window -v -t "$NEST_PANE" -c "$WORKDIR"
 FASTAPI_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$FASTAPI_PANE" "cd fastapi && source venv/bin/activate && python3 -u main.py" C-m
+tmux send-keys -t "$FASTAPI_PANE" "cd fastapi && uv run python main.py" C-m
 
 # 重新调整为平铺布局
 tmux select-layout -t $SESSION:services tiled

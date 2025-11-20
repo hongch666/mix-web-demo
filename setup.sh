@@ -216,20 +216,28 @@ setup_fastapi() {
     
     cd fastapi
     
-    # 创建虚拟环境
-    if [ ! -d "venv" ]; then
-        log_info "创建 Python 虚拟环境..."
-        python3 -m venv venv
+    # 检查 uv 是否已安装
+    if ! command_exists uv; then
+        log_info "安装 uv 包管理工具..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.cargo/bin:$PATH"
     else
-        log_info "虚拟环境已存在,跳过创建..."
+        log_info "uv 工具已安装"
     fi
     
-    # 激活虚拟环境并安装依赖
-    log_info "安装 Python 依赖..."
-    source venv/bin/activate
-    pip install --upgrade pip
-    pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-    deactivate
+    # 配置国内镜像源
+    log_info "配置 uv 镜像源..."
+    mkdir -p ~/.config/uv
+    cat > ~/.config/uv/uv.toml << 'EOF'
+[[index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple"
+default = true
+EOF
+    
+    # 同步依赖
+    log_info "使用 uv 同步依赖..."
+    uv sync
     
     cd ..
     log_info "FastAPI 部分配置完成!"

@@ -12,7 +12,7 @@ Start-Process powershell -ArgumentList "cd gin; fresh"
 Start-Process powershell -ArgumentList "cd nestjs; npm run start:debug"
 
 # 启动 fastapi
-Start-Process powershell -ArgumentList "cd fastapi; venv\Scripts\activate; python -u main.py"
+Start-Process powershell -ArgumentList "cd fastapi; uv run python main.py"
 
 # 启动 gateway
 Start-Process powershell -ArgumentList "cd gateway; mvn spring-boot:run"

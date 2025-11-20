@@ -22,7 +22,7 @@ tmux send-keys -t $SESSION:3 \
 # window 4: fastapi
 tmux new-window -t $SESSION:4 -n fastapi -c "$WORKDIR"
 tmux send-keys -t $SESSION:4 \
-"cd fastapi && source venv/bin/activate && python3 -u main.py" C-m
+"cd fastapi && uv run python main.py" C-m
 
 # window 5: gateway
 tmux new-window -t $SESSION:5 -n gateway -c "$WORKDIR"
