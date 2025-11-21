@@ -440,6 +440,35 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
         return None
 
 
+def _normalize_path_with_params(path: str, request: Optional[Request]) -> str:
+    """
+    将路径中的实际参数值替换为参数名
+    
+    如: /ai_comment/117 -> /ai_comment/:id
+       /article/1/comments/5 -> /article/:id/comments/:comment_id
+    
+    Args:
+        path: 请求的实际路径
+        request: Request对象
+        
+    Returns:
+        标准化后的路径
+    """
+    if not request or not hasattr(request, "path_params") or not request.path_params:
+        return path
+    
+    normalized_path = path
+    
+    # 将每个路径参数的实际值替换为 :参数名
+    for param_name, param_value in request.path_params.items():
+        # 转换为字符串以防是其他类型
+        param_value_str = str(param_value)
+        # 替换路径中的实际值为 :param_name
+        normalized_path = normalized_path.replace(f"/{param_value_str}", f"/:{param_name}")
+    
+    return normalized_path
+
+
 def _send_api_log_to_queue(
     user_id: Any,
     username: str,
@@ -484,6 +513,9 @@ def _send_api_log_to_queue(
         if request and hasattr(request, "path_params") and request.path_params:
             path_params = dict(request.path_params)
         
+        # 标准化路径：将实际参数值替换为参数名
+        normalized_path = _normalize_path_with_params(path, request)
+        
         # 提取请求体 - 从参数中提取业务参数（需要传入 func 以检查参数注解）
         request_body = None
         if log_config.include_params:
@@ -505,7 +537,7 @@ def _send_api_log_to_queue(
             "user_id": final_user_id,
             "username": final_username,
             "api_description": description,
-            "api_path": path,
+            "api_path": normalized_path,
             "api_method": method,
             "query_params": query_params,
             "path_params": path_params,
