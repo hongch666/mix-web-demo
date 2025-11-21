@@ -11,10 +11,10 @@ from wordcloud import WordCloud
 from api.mapper import ArticleMapper, get_article_mapper, UserMapper, get_user_mapper, ArticleLogMapper, get_articlelog_mapper, CategoryMapper, get_category_mapper
 from config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger
-from common.cache import ArticleCache, CategoryCache, PublishTimeCache, get_article_cache, get_category_cache, get_publish_time_cache
+from common.cache import ArticleCache, CategoryCache, PublishTimeCache, StatisticsCache, get_article_cache, get_category_cache, get_publish_time_cache, get_statistics_cache
 
 class AnalyzeService:
-    def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper, categoryMapper: CategoryMapper, article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache)):
+    def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper, categoryMapper: CategoryMapper, article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), statistics_cache: StatisticsCache = Depends(get_statistics_cache)):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
         self.userMapper = userMapper
@@ -23,6 +23,7 @@ class AnalyzeService:
         self._article_cache = article_cache
         self._category_cache = category_cache
         self._publish_time_cache = publish_time_cache
+        self._statistics_cache = statistics_cache
 
     def get_top10_articles_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         """
@@ -212,23 +213,56 @@ class AnalyzeService:
         """
         获取文章统计信息服务
         合并 mapper 层的4个独立方法，返回完整的统计数据
+        
+        流程:
+        1. 先尝试从缓存获取（L1本地 + L2 Redis）
+        2. 缓存未命中时，查询DB
+        3. 查询成功后更新缓存
         """
-        # 分别调用 mapper 层的4个方法
-        total_views = self.articleMapper.get_total_views_mapper(db)
-        total_articles = self.articleMapper.get_total_articles_mapper(db)
-        active_authors = self.articleMapper.get_active_authors_mapper(db)
-        average_views = self.articleMapper.get_average_views_mapper(db)
+        start = time.time()
         
-        # 组合结果
-        statistics = {
-            "total_views": total_views,
-            "total_articles": total_articles,
-            "active_authors": active_authors,
-            "average_views": average_views
-        }
-        
-        logger.info(f"获取文章统计信息: {statistics}")
-        return statistics
+        try:
+            # ========== 步骤1: 尝试从缓存获取 ==========
+            try:
+                cached_result = self._statistics_cache.get()
+                if cached_result:
+                    total_time = time.time() - start
+                    logger.info(f"get_article_statistics_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    return cached_result
+            except Exception as cache_e:
+                logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            
+            # ========== 步骤2: 缓存未命中，查询DB ==========
+            logger.info("get_article_statistics_service: [✗ 缓存未命中] 开始查询数据源")
+            
+            # 分别调用 mapper 层的4个方法
+            total_views = self.articleMapper.get_total_views_mapper(db)
+            total_articles = self.articleMapper.get_total_articles_mapper(db)
+            active_authors = self.articleMapper.get_active_authors_mapper(db)
+            average_views = self.articleMapper.get_average_views_mapper(db)
+            
+            # 组合结果
+            statistics = {
+                "total_views": total_views,
+                "total_articles": total_articles,
+                "active_authors": active_authors,
+                "average_views": average_views
+            }
+            
+            # ========== 步骤3: 更新缓存 ==========
+            try:
+                self._statistics_cache.set(statistics)
+                total_time = time.time() - start
+                logger.info(f"get_article_statistics_service: DB 数据已更新缓存，总耗时 {total_time:.3f}s")
+            except Exception as cache_e:
+                logger.warning(f"更新缓存失败: {cache_e}")
+            
+            logger.info(f"获取文章统计信息: {statistics}")
+            return statistics
+            
+        except Exception as e:
+            logger.error(f"获取文章统计信息失败: {e}")
+            raise
 
     def get_category_article_count_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         """
@@ -428,5 +462,5 @@ class AnalyzeService:
                 self.articleMapper.return_hive_connection(hive_conn)
     
 @lru_cache()
-def get_analyze_service(articleMapper: ArticleMapper = Depends(get_article_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache)) -> AnalyzeService:
-    return AnalyzeService(articleMapper, articleLogMapper, userMapper, categoryMapper, article_cache, category_cache, publish_time_cache)
+def get_analyze_service(articleMapper: ArticleMapper = Depends(get_article_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), statistics_cache: StatisticsCache = Depends(get_statistics_cache)) -> AnalyzeService:
+    return AnalyzeService(articleMapper, articleLogMapper, userMapper, categoryMapper, article_cache, category_cache, publish_time_cache, statistics_cache)
