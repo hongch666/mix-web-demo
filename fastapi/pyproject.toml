@@ -36,4 +36,5 @@ dependencies = [
     "apscheduler>=3.10.0",
     "elasticsearch>=8.0.0",
     "python-dotenv>=1.0.0",
+    "httpx[socks]>=0.24.0",
 ]
