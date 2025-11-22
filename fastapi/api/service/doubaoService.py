@@ -1,21 +1,20 @@
 from functools import lru_cache
-from typing import AsyncGenerator, Optional, List
+from typing import AsyncGenerator, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_classic.agents import AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
 from fastapi import Depends
 from sqlmodel import Session
 from api.mapper import AiHistoryMapper, get_ai_history_mapper
-from common.agent import get_sql_tools, get_rag_tools
+from common.utils.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
 from common.agent.intent_router import IntentRouter
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
 
-class DoubaoService:
+class DoubaoService(BaseAiService):
     def __init__(self, ai_history_mapper: AiHistoryMapper):
-        self.ai_history_mapper = ai_history_mapper
+        super().__init__(ai_history_mapper, service_name="Doubao")
         
         # 初始化豆包客户端
         try:
@@ -37,71 +36,13 @@ class DoubaoService:
                 
                 # 初始化工具
                 try:
-                    self.sql_tools_instance = get_sql_tools()
-                    self.rag_tools_instance = get_rag_tools()
-                    
-                    # 获取工具列表
-                    sql_tools = self.sql_tools_instance.get_langchain_tools()
-                    rag_tools = self.rag_tools_instance.get_langchain_tools()
-                    self.all_tools = sql_tools + rag_tools
+                    _, _, self.all_tools = initialize_ai_tools()
                     
                     # 初始化意图路由器
                     self.intent_router = IntentRouter(self.llm)
                     
-                    # 创建Agent的Prompt
-                    agent_prompt = PromptTemplate.from_template("""你是一个智能助手，可以帮助用户查询数据库信息和搜索文章内容。
-
-你有以下工具可以使用:
-{tools}
-
-工具名称: {tool_names}
-
-使用以下格式回答问题:
-
-Question: 用户的问题
-Thought: 你需要思考应该做什么
-Action: 选择一个工具，必须是 [{tool_names}] 中的一个
-Action Input: 工具的输入参数
-Observation: 工具执行的结果
-... (这个 Thought/Action/Action Input/Observation 可以重复N次)
-Thought: 我现在知道最终答案了
-Final Answer: 给用户的最终回答
-
-重要提示 - 如何选择和组合工具:
-1. 数据统计/统计查询: 优先使用 get_table_schema 查看表结构，然后用 execute_sql_query 执行SQL查询
-   示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
-   
-2. 文章内容/技术知识查询: 使用 search_articles 搜索相关文章
-   示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
-   
-3. 组合查询 - 需要同时使用多个工具:
-   示例: "一共有多少篇文章，并且推荐一些人工智能相关的文章"
-   处理方式:
-   - 第1步: 用 execute_sql_query 查询文章总数
-   - 第2步: 用 search_articles 搜索"人工智能"相关文章
-   
-   示例: "统计有多少个用户，并查找一些关于Python的教程文章"
-   处理方式:
-   - 第1步: 用 execute_sql_query 查询用户总数
-   - 第2步: 用 search_articles 搜索"Python教程"
-   
-   示例: "按分类统计文章数，并推荐技术文章"
-   处理方式:
-   - 第1步: 用 execute_sql_query 查询各分类文章数
-   - 第2步: 用 search_articles 搜索"技术"相关文章
-
-关键特点:
-- 你可以根据需要多次使用工具，包括同时使用SQL和RAG工具
-- 优先识别用户问题中包含多个子问题或信息需求的情况
-- 对于组合问题，分步骤调用不同的工具，不要试图用一个工具完成所有工作
-- 始终用中文回答用户
-- 如果一个工具返回的结果不足或没有匹配文本，尝试使用其他工具补充信息
-- 如果RAG返回"未找到相关文章"或"没有匹配的内容"，告知用户系统中没有相关内容
-
-开始!
-
-Question: {input}
-Thought: {agent_scratchpad}""")
+                    # 创建ReAct Agent
+                    agent_prompt = get_agent_prompt()
                     
                     # 创建ReAct Agent
                     self.agent = create_react_agent(
@@ -135,20 +76,6 @@ Thought: {agent_scratchpad}""")
             self.intent_router = None
             logger.error(f"初始化豆包客户端失败: {e}")
 
-    def _load_chat_history(self, user_id: int, db: Session) -> List[tuple]:
-        """从数据库加载聊天历史"""
-        try:
-            histories = self.ai_history_mapper.get_all_ai_history_by_userid(
-                db, user_id=user_id, limit=5
-            )
-            chat_history = []
-            for h in histories:
-                chat_history.append((h.ask, h.reply))
-            return chat_history
-        except Exception as e:
-            logger.error(f"加载聊天历史失败: {e}")
-            return []
-    
     async def basic_chat(self, message: str) -> str:
         """最基础的对话接口 - 不使用知识库和向量数据库"""
         try:
@@ -217,12 +144,7 @@ Thought: {agent_scratchpad}""")
                 logger.info("使用Agent处理，可同时调用SQL和RAG工具")
                 
                 # 添加历史上下文到输入
-                context = ""
-                if chat_history:
-                    context = "\n\n历史对话:\n" + "\n".join(
-                        [f"用户: {h}\nAI: {a}" for h, a in chat_history[-3:]]
-                    ) + "\n\n"
-                
+                context = self._build_chat_context(chat_history)
                 full_input = context + f"当前问题: {message}"
                 
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
@@ -316,12 +238,7 @@ Thought: {agent_scratchpad}""")
                 logger.info("使用Agent处理,可同时调用SQL和RAG工具")
                 
                 # 添加历史上下文到输入
-                context = ""
-                if chat_history:
-                    context = "\n\n历史对话:\n" + "\n".join(
-                        [f"用户: {h}\nAI: {a}" for h, a in chat_history[-3:]]
-                    ) + "\n\n"
-                
+                context = self._build_chat_context(chat_history)
                 full_input = context + f"当前问题: {message}"
                 
                 # 第一步: 使用Agent获取信息和思考
@@ -333,17 +250,8 @@ Thought: {agent_scratchpad}""")
                 intermediate_steps = agent_response.get("intermediate_steps", [])
                 
                 # 构建完整的思考过程（不再单独输出工具调用）
-                thinking_text = ""
-                if intermediate_steps:
-                    thinking_text = "Agent 执行过程:\n"
-                    for i, (action, observation) in enumerate(intermediate_steps, 1):
-                        tool_name = action.tool if hasattr(action, 'tool') else str(action)
-                        tool_input = action.tool_input if hasattr(action, 'tool_input') else ""
-                        thinking_text += f"\n步骤 {i}:\n"
-                        thinking_text += f"  工具: {tool_name}\n"
-                        thinking_text += f"  输入: {tool_input}\n"
-                        thinking_text += f"  结果: {observation}\n"
-                else:
+                thinking_text = self._build_thinking_text(intermediate_steps)
+                if not thinking_text:
                     thinking_text = agent_result
                 
                 # 输出 Agent 的完整思考过程
