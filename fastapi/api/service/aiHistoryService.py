@@ -38,6 +38,7 @@ class AiHistoryService:
             user_id=data["user_id"],
             ask=data["ask"],
             reply=data["reply"],
+            thinking=data.get("thinking"),
             ai_type=data["ai_type"]
         )
         

@@ -78,6 +78,7 @@ async def send_message(
                 user_id=int(actual_user_id),
                 ask=request.message,
                 reply=response_message,
+                thinking=None,
                 ai_type=request.service.value
             )
             aiHistoryService.create_ai_history(history, db)
@@ -124,6 +125,7 @@ async def stream_message(
         
         async def event_generator():
             message_acc = ""
+            thinking_acc = ""
             try:
                 # 根据请求的服务类型选择对应的AI服务
                 if request.service == AIServiceType.GEMINI:
@@ -149,15 +151,33 @@ async def stream_message(
                     )
                 
                 async for chunk in stream_generator:
-                    message_acc += chunk
+                    # 解析流式数据块中的消息类型
+                    # 格式: {"type": "thinking|content|error", "content": "..."}
+                    if isinstance(chunk, dict):
+                        chunk_type = chunk.get("type", "content")
+                        chunk_content = chunk.get("content", "")
+                    else:
+                        # 如果是字符串，默认为 content 类型
+                        chunk_type = "content"
+                        chunk_content = str(chunk)
+                    
+                    # 分别累积思考过程和最终内容
+                    if chunk_type == "thinking":
+                        thinking_acc += chunk_content
+                    elif chunk_type == "content":
+                        message_acc += chunk_content
+                    
+                    # 构建响应数据
                     data = success({
-                            "message": message_acc,
-                            "conversation_id": conversation_id,
-                            "chat_id": chat_id,
-                            "user_id": actual_user_id,
-                            "timestamp": int(time.time()),
-                            "service": request.service.value
-                        })
+                        "message": message_acc,
+                        "conversation_id": conversation_id,
+                        "chat_id": chat_id,
+                        "user_id": actual_user_id,
+                        "timestamp": int(time.time()),
+                        "service": request.service.value,
+                        "message_type": chunk_type,
+                        "chunk": chunk_content
+                    })
                     yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
                 
                 # 流式聊天完成后保存AI历史记录
@@ -167,6 +187,7 @@ async def stream_message(
                             user_id=int(actual_user_id),
                             ask=request.message,
                             reply=message_acc,
+                            thinking=thinking_acc if thinking_acc else None,
                             ai_type=request.service.value
                         )
                         aiHistoryService.create_ai_history(history, db)

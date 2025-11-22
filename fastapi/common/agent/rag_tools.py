@@ -4,6 +4,10 @@ from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
+import warnings
+
+# 抑制 PGVector 弃用警告
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 
 class RAGTools:
@@ -26,6 +30,7 @@ class RAGTools:
             api_key = tongyi_secret.get("api_key")
             embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
             self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
+            self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
             
             if not api_key:
                 raise ValueError("通义千问API密钥未配置")
@@ -141,13 +146,16 @@ class RAGTools:
             # 使用向量存储进行相似度搜索
             docs = self.vector_store.similarity_search_with_score(query, k=search_k)
             
-            if not docs:
-                return "没有找到相关文章"
+            # 根据相似度阈值过滤结果
+            filtered_docs = [(doc, score) for doc, score in docs if score >= self.similarity_threshold]
+            
+            if not filtered_docs:
+                return "未找到相关文章。可能没有匹配的内容或相似度不足。请提供更具体的查询词或重新表述问题。"
             
             # 格式化结果
-            result_text = f"找到 {len(docs)} 篇相关文章:\n\n"
+            result_text = f"找到 {len(filtered_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"
             
-            for i, (doc, score) in enumerate(docs, 1):
+            for i, (doc, score) in enumerate(filtered_docs, 1):
                 article_id = doc.metadata.get("article_id", "未知")
                 title = doc.metadata.get("title", "无标题")
                 chunk_index = doc.metadata.get("chunk_index", 0)
@@ -157,7 +165,7 @@ class RAGTools:
                 result_text += f"   内容片段(第{chunk_index+1}块):\n"
                 result_text += f"   {doc.page_content[:200]}...\n\n"
             
-            self.logger.info(f"RAG搜索成功，返回 {len(docs)} 个结果")
+            self.logger.info(f"RAG搜索成功，返回 {len(filtered_docs)} 个结果（过滤前: {len(docs)}）")
             return result_text
             
         except Exception as e:

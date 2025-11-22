@@ -420,6 +420,7 @@ CREATE TABLE `ai_history` (
     `user_id` BIGINT NOT NULL,
     `ask` TEXT NOT NULL,
     `reply` TEXT NOT NULL,
+    `thinking` TEXT,
     `ai_type` VARCHAR(30),
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -714,6 +715,7 @@ embedding:
   embedding_model: "text-embedding-v3" # 通义千问嵌入模型（可选: text-embedding-v2, text-embedding-v1）
   top_k: 5 # RAG检索返回的文档数量
   dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
+  similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
 ```
 
 - `application-secret.yaml`
