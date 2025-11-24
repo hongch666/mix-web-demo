@@ -7,7 +7,7 @@ from fastapi import Depends
 from sqlmodel import Session
 from api.mapper import AiHistoryMapper, get_ai_history_mapper
 from common.utils.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
-from common.agent.intent_router import IntentRouter
+from common.agent.intentRouter import IntentRouter
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 

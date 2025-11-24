@@ -1,8 +1,7 @@
-from typing import List, TYPE_CHECKING
+from typing import List
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools
-from common.agent.intent_router import IntentRouter
 from common.utils.writeLog import fileLogger as logger
 from api.mapper import AiHistoryMapper
 
