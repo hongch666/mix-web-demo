@@ -10,7 +10,7 @@ class AIServiceType(str, Enum):
 
 class ChatRequest(BaseModel):
     """聊天请求模型"""
-    message: str = Field(..., description="用户消息", min_length=1, max_length=4000)
+    message: str = Field(..., description="用户消息", min_length=1)
     user_id: Optional[str] = Field(default="default", description="用户ID")
     conversation_id: Optional[str] = Field(default=None, description="会话ID")
     service: AIServiceType = Field(default=AIServiceType.DOUBAO, description="AI服务类型：gemini、tongyi或doubao")
