@@ -382,14 +382,33 @@ uv run --python 3.12 python main.py
 # 启动所有已构建的服务（后台运行）
 ./services.sh start
 
+# 启动指定的服务
+./services.sh start spring gateway
+./services.sh start fastapi gin
+
 # 查看已构建服务的运行状态
 ./services.sh status
+
+# 查看指定服务的运行状态
+./services.sh status spring gin
 
 # 重启所有已构建的服务
 ./services.sh restart
 
+# 重启指定的服务
+./services.sh restart fastapi
+./services.sh restart spring gateway nestjs
+
 # 停止所有已构建的服务
 ./services.sh stop-dist
+
+# 停止指定的服务
+./services.sh stop-dist spring fastapi
+
+# 查看服务的最新日志（只支持查看单个服务）
+./services.sh logs spring
+./services.sh logs fastapi
+./services.sh logs gin
 ```
 
 #### Windows
@@ -419,10 +438,26 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 ./scripts/build.sh
 
 # 管理分布式部署的服务
-./scripts/dist-control.sh start    # 启动
-./scripts/dist-control.sh stop     # 停止
-./scripts/dist-control.sh status   # 查看状态
-./scripts/dist-control.sh restart  # 重启
+
+# 启动所有服务或指定服务
+./scripts/dist-control.sh start              # 启动所有
+./scripts/dist-control.sh start spring gin   # 启动指定
+
+# 停止所有服务或指定服务
+./scripts/dist-control.sh stop               # 停止所有
+./scripts/dist-control.sh stop fastapi       # 停止指定
+
+# 查看所有服务状态或指定服务状态
+./scripts/dist-control.sh status             # 查看所有
+./scripts/dist-control.sh status spring      # 查看指定
+
+# 重启所有服务或指定服务
+./scripts/dist-control.sh restart            # 重启所有
+./scripts/dist-control.sh restart nestjs     # 重启指定
+
+# 查看单个服务的最新日志
+./scripts/dist-control.sh logs spring
+./scripts/dist-control.sh logs fastapi
 ```
 
 #### Windows
@@ -441,10 +476,22 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
 | `stop.sh`         | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
 | `build.sh`        | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
-| `dist-control.sh` | scripts/   | 管理打包后的分布式服务                     | Linux/macOS |
+| `dist-control.sh` | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
 | `setup.sh`        | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
 | `ssh.sh`          | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
 | `run.ps1`         | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
+
+### 服务名称
+
+dist-control.sh 和 services.sh 支持以下服务名称：
+
+- `spring` - Spring Boot 服务
+- `gateway` - Spring Cloud Gateway 网关服务
+- `fastapi` - FastAPI 服务
+- `gin` - Gin 服务
+- `nestjs` - NestJS 服务
+
+如不指定服务名称，则对所有服务进行操作。
 
 ### 注意事项
 
@@ -452,6 +499,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
 3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
 4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos 等基础服务已运行
+5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
 
 ## 基础服务组件初始化
 
