@@ -199,33 +199,7 @@ setup_gin() {
     log_info "Gin 部分配置完成!"
 }
 
-# 3. GoZero 部分配置
-setup_gozero() {
-    log_info "开始配置 GoZero 部分..."
-    
-    cd "$WORKDIR/gozero"
-    
-    # 安装依赖
-    log_info "安装 Go 依赖..."
-    go mod tidy
-    
-    # 安装 goctl 工具(可选)
-    if ! command_exists goctl; then
-        log_info "安装 goctl 工具..."
-        go install github.com/zeromicro/go-zero/tools/goctl@latest
-    else
-        log_info "goctl 工具已安装,跳过..."
-    fi
-    
-    # 生成 Swagger 文档
-    log_info "生成 GoZero Swagger 文档..."
-    go generate ./...
-    
-    cd "$WORKDIR"
-    log_info "GoZero 部分配置完成!"
-}
-
-# 4. NestJS 部分配置
+# 3. NestJS 部分配置
 setup_nestjs() {
     log_info "开始配置 NestJS 部分..."
     
@@ -239,7 +213,7 @@ setup_nestjs() {
     log_info "NestJS 部分配置完成!"
 }
 
-# 5. FastAPI 部分配置
+# 4. FastAPI 部分配置
 setup_fastapi() {
     log_info "开始配置 FastAPI 部分..."
     
@@ -354,7 +328,6 @@ create_directories() {
     
     mkdir -p logs/spring
     mkdir -p logs/gin
-    mkdir -p logs/gozero
     mkdir -p logs/nestjs
     mkdir -p logs/fastapi
     mkdir -p static/pic
@@ -385,24 +358,21 @@ main() {
     echo ""
     
     # 询问用户要配置哪些模块
-    echo "请选择要配置的模块 (可多选,用空格分隔,例如: 1 2 3 4 5):"
+    echo "请选择要配置的模块 (可多选,用空格分隔,例如: 1 2 3 4):"
     echo "1) Spring"
     echo "2) Gin"
-    echo "3) GoZero"
-    echo "4) NestJS"
-    echo "5) FastAPI"
-    echo "6) 全部"
+    echo "3) NestJS"
+    echo "4) FastAPI"
+    echo "5) 全部"
     read -p "请输入选项: " choices
     
     echo ""
     
     # 处理用户选择
-    if [[ "$choices" == *"6"* ]]; then
+    if [[ "$choices" == *"5"* ]]; then
         setup_spring
         echo ""
         setup_gin
-        echo ""
-        setup_gozero
         echo ""
         setup_nestjs
         echo ""
@@ -417,14 +387,10 @@ main() {
             echo ""
         fi
         if [[ "$choices" == *"3"* ]]; then
-            setup_gozero
-            echo ""
-        fi
-        if [[ "$choices" == *"4"* ]]; then
             setup_nestjs
             echo ""
         fi
-        if [[ "$choices" == *"5"* ]]; then
+        if [[ "$choices" == *"4"* ]]; then
             setup_fastapi
             echo ""
         fi
@@ -438,7 +404,7 @@ main() {
     log_info "接下来请:"
     log_info "1. 配置各服务的 yaml 配置文件"
     log_info "2. 启动必要的基础服务 (MySQL, Redis, MongoDB 等)"
-    log_info "3. 使用 ./run-services.sh multi 启动所有服务"
+    log_info "3. 使用 ./services.sh multi 启动所有服务"
     echo ""
 }
 

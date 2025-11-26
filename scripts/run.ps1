@@ -7,8 +7,8 @@ Start-Process powershell -ArgumentList "cd $workdir/spring; mvn spring-boot:run"
 # 启动 gateway
 Start-Process powershell -ArgumentList "cd $workdir/gateway; mvn spring-boot:run"
 
-# 启动 gozero
-Start-Process powershell -ArgumentList "cd $workdir/gozero; .\gozero_service.exe -f etc/gozero-api.yaml"
+# 启动 gin
+Start-Process powershell -ArgumentList "cd $workdir/gin; go run main.go"
 
 # 启动 nestjs
 Start-Process powershell -ArgumentList "cd $workdir/nestjs; npm run start"

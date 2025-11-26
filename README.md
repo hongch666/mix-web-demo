@@ -94,10 +94,9 @@
 # 选项:
 # 1) Spring      - 配置 Spring Boot 服务
 # 2) Gin         - 配置 Gin 服务
-# 3) GoZero      - 配置 GoZero 服务
-# 4) NestJS      - 配置 NestJS 服务
-# 5) FastAPI     - 配置 FastAPI 服务
-# 6) 全部        - 配置所有模块
+# 3) NestJS      - 配置 NestJS 服务
+# 4) FastAPI     - 配置 FastAPI 服务
+# 5) 全部        - 配置所有模块
 ```
 
 ### 脚本功能特性
@@ -281,14 +280,14 @@ default = true
 
 - **scripts/build.sh**
 
-  - 编译所有服务：Spring、Gateway、Gin、GoZero、NestJS、FastAPI
+  - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
 
 - **scripts/dist-control.sh**
 
   - 管理打包后的分布式服务
-  - 支持的操作：`start`、`stop`、`status`、`restart`
+  - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
 
 **示例用法：**
 
