@@ -20,9 +20,9 @@ func SetupRouter() *gin.Engine {
 	// Swagger 路由
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// controller 注入
-	searchController := controller.Group.SearchController
+	// 从 controller group 中获取控制器
 	testController := controller.Group.TestController
+	searchController := controller.Group.SearchController
 	chatController := controller.Group.ChatController
 
 	testGroup := r.Group("/api_gin")

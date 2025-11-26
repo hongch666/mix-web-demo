@@ -1,15 +1,31 @@
 package controller
 
 import (
-	"gin_proj/api/controller/chat"
-	"gin_proj/api/controller/search"
-	"gin_proj/api/controller/test"
+	chatpkg "gin_proj/api/controller/chat"
+	searchpkg "gin_proj/api/controller/search"
+	testpkg "gin_proj/api/controller/test"
+	"gin_proj/api/service"
 )
 
 type ControllerGroup struct {
-	SearchController search.SearchController
-	TestController   test.TestController
-	ChatController   chat.ChatController
+	SearchController searchpkg.SearchController
+	TestController   testpkg.TestController
+	ChatController   chatpkg.ChatController
 }
 
-var Group = new(ControllerGroup)
+func NewControllerGroup() *ControllerGroup {
+	return &ControllerGroup{
+		TestController: testpkg.TestController{
+			TestService: service.Group.TestService,
+		},
+		SearchController: searchpkg.SearchController{
+			SearchService: service.Group.SearchService,
+		},
+		ChatController: chatpkg.ChatController{
+			ChatService: service.Group.ChatService,
+			ChatHub:     service.Group.ChatHub,
+		},
+	}
+}
+
+var Group = NewControllerGroup()

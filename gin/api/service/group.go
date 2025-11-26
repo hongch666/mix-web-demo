@@ -1,16 +1,30 @@
 package service
 
 import (
-	"gin_proj/api/service/chat"
-	"gin_proj/api/service/search"
-	"gin_proj/api/service/test"
+	"gin_proj/api/mapper"
+	chatpkg "gin_proj/api/service/chat"
+	searchpkg "gin_proj/api/service/search"
+	testpkg "gin_proj/api/service/test"
 )
 
 type ServiceGroup struct {
-	SearchService search.SearchService
-	ChatService   chat.ChatService
-	ChatHub       chat.ChatHub
-	TestService   test.TestService
+	SearchService searchpkg.SearchService
+	ChatService   chatpkg.ChatService
+	ChatHub       chatpkg.ChatHub
+	TestService   testpkg.TestService
 }
 
-var Group = new(ServiceGroup)
+func NewServiceGroup() *ServiceGroup {
+	return &ServiceGroup{
+		SearchService: searchpkg.SearchService{
+			SearchMapper: mapper.Group.SearchMapper,
+		},
+		ChatService: chatpkg.ChatService{
+			ChatMessageMapper: mapper.Group.ChatMessageMapper,
+		},
+		ChatHub:     chatpkg.ChatHub{},
+		TestService: testpkg.TestService{},
+	}
+}
+
+var Group = NewServiceGroup()

@@ -3,19 +3,19 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
-	"gin_proj/api/mapper"
+	"gin_proj/api/mapper/chat"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/po"
 	"time"
 )
 
-type ChatService struct{}
+type ChatService struct {
+	ChatMessageMapper chat.ChatMessageMapper
+}
 
 // 发送消息（HTTP接口调用）
 func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
-	// 注入mapper
-	chatMessageMapper := mapper.Group.ChatMessageMapper
 	chatHub := &ChatHub{}
 
 	// 1. 先保存到数据库
@@ -26,7 +26,7 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 		CreatedAt:  time.Now(),
 	}
 
-	chatMessageMapper.CreateChatMessage(message)
+	s.ChatMessageMapper.CreateChatMessage(message)
 
 	// 2. 检查接收者是否在队列中，如果在就通过WebSocket发送
 	if chatHub.IsUserInQueue(req.ReceiverID) {
@@ -58,9 +58,6 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 
 // 获取聊天历史记录
 func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetChatHistoryResponse {
-	// 注入mapper
-	chatMessageMapper := mapper.Group.ChatMessageMapper
-
 	// 设置默认分页参数
 	if req.Page <= 0 {
 		req.Page = 1
@@ -70,7 +67,7 @@ func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetCha
 	}
 
 	offset := (req.Page - 1) * req.Size
-	messages, total := chatMessageMapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
+	messages, total := s.ChatMessageMapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
 
 	// 转换为DTO
 	messageItems := make([]dto.ChatMessageItem, len(messages))

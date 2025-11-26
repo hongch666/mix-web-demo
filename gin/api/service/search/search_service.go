@@ -3,19 +3,19 @@ package search
 import (
 	"context"
 	"encoding/json"
-	"gin_proj/api/mapper"
+	"gin_proj/api/mapper/search"
 	"gin_proj/common/ctxkey"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/vo"
 )
 
-type SearchService struct{}
+type SearchService struct {
+	SearchMapper search.SearchMapper
+}
 
 func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) vo.SearchVO {
-	// mapper注入
-	searchMapper := mapper.Group.SearchMapper
-	data, total := searchMapper.SearchArticle(ctx, searchDTO)
+	data, total := s.SearchMapper.SearchArticle(ctx, searchDTO)
 	// 读取用户id
 	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
 	// 如果搜索关键字为空，就不发送消息
@@ -47,9 +47,7 @@ func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.Articl
 
 // GetSearchHistory 获取用户搜索历史关键词（最近10条）
 func (s *SearchService) GetSearchHistory(ctx context.Context, userID int64) ([]string, error) {
-	// mapper注入
-	searchMapper := mapper.Group.SearchMapper
-	keywords, err := searchMapper.GetSearchHistory(ctx, userID)
+	keywords, err := s.SearchMapper.GetSearchHistory(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

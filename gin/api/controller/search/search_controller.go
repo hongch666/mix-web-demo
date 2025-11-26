@@ -1,7 +1,7 @@
 package search
 
 import (
-	"gin_proj/api/service"
+	"gin_proj/api/service/search"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
 	"strconv"
@@ -9,7 +9,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type SearchController struct{}
+type SearchController struct {
+	SearchService search.SearchService
+}
 
 // @Summary 搜索文章
 // @Description 根据关键词、用户ID、用户名、发布时间范围等条件搜索文章（支持分页）
@@ -27,15 +29,13 @@ type SearchController struct{}
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /search [get]
 func (con *SearchController) SearchArticlesController(c *gin.Context) {
-	// service 注入
-	searchService := service.Group.SearchService
 	// 绑定参数
 	var searchDTO dto.ArticleSearchDTO
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
 		panic("参数绑定错误：" + err.Error())
 	}
 	ctx := c.Request.Context()
-	data := searchService.SearchArticles(ctx, searchDTO)
+	data := con.SearchService.SearchArticles(ctx, searchDTO)
 	utils.RespondSuccess(c, data)
 }
 
@@ -50,9 +50,6 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 // @Failure 500 {object} map[string]interface{} "服务器内部错误"
 // @Router /search/history/{userId} [get]
 func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
-	// service 注入
-	searchService := service.Group.SearchService
-
 	// 获取路径参数 userId
 	userIDParam := c.Param("userId")
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
@@ -62,7 +59,7 @@ func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	keywords, err := searchService.GetSearchHistory(ctx, userID)
+	keywords, err := con.SearchService.GetSearchHistory(ctx, userID)
 	if err != nil {
 		utils.RespondError(c, 500, "获取搜索历史失败: "+err.Error())
 		return

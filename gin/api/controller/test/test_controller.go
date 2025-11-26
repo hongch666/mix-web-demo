@@ -1,14 +1,16 @@
 package test
 
 import (
-	"gin_proj/api/service"
+	"gin_proj/api/service/test"
 	"gin_proj/common/syncer"
 	"gin_proj/common/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
-type TestController struct{}
+type TestController struct {
+	TestService test.TestService
+}
 
 // @Summary Gin自己的测试
 // @Description 输出欢迎信息
@@ -25,9 +27,7 @@ func (con *TestController) TestController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/spring [get]
 func (con *TestController) SpringController(c *gin.Context) {
-	// service注入
-	testService := service.Group.TestService
-	data := testService.SpringService(c)
+	data := con.TestService.SpringService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -37,9 +37,7 @@ func (con *TestController) SpringController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/nestjs [get]
 func (con *TestController) NestjsController(c *gin.Context) {
-	// service注入
-	testService := service.Group.TestService
-	data := testService.NestjsService(c)
+	data := con.TestService.NestjsService(c)
 	utils.RespondSuccess(c, data)
 }
 
@@ -49,9 +47,7 @@ func (con *TestController) NestjsController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/fastapi [get]
 func (con *TestController) FastapiController(c *gin.Context) {
-	// service注入
-	testService := service.Group.TestService
-	data := testService.FastapiService(c)
+	data := con.TestService.FastapiService(c)
 	utils.RespondSuccess(c, data)
 }
 

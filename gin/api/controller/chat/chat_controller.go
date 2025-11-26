@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"gin_proj/api/service"
 	"gin_proj/api/service/chat"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
@@ -18,7 +17,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type ChatController struct{}
+type ChatController struct {
+	ChatService chat.ChatService
+	ChatHub     chat.ChatHub
+}
 
 // SendMessage 发送消息接口
 // @Summary 发送聊天消息
@@ -30,15 +32,13 @@ type ChatController struct{}
 // @Success 200 {object} dto.SendMessageResponse
 // @Router /user-chat/send [post]
 func (con *ChatController) SendMessage(c *gin.Context) {
-	// service注入
-	chatService := service.Group.ChatService
 	var req dto.SendMessageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
-	response := chatService.SendChatMessage(&req)
+	response := con.ChatService.SendChatMessage(&req)
 
 	utils.RespondSuccess(c, response)
 }
@@ -53,15 +53,13 @@ func (con *ChatController) SendMessage(c *gin.Context) {
 // @Success 200 {object} dto.GetChatHistoryResponse
 // @Router /user-chat/history [post]
 func (con *ChatController) GetChatHistory(c *gin.Context) {
-	// service注入
-	chatService := service.Group.ChatService
 	var req dto.GetChatHistoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
-	response := chatService.GetChatHistory(&req)
+	response := con.ChatService.GetChatHistory(&req)
 
 	utils.RespondSuccess(c, response)
 }
@@ -74,10 +72,7 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 // @Success 200 {object} dto.QueueStatusResponse
 // @Router /user-chat/queue [get]
 func (con *ChatController) GetQueueStatus(c *gin.Context) {
-	// service注入
-	chatService := service.Group.ChatService
-
-	response := chatService.GetQueueStatus()
+	response := con.ChatService.GetQueueStatus()
 	utils.RespondSuccess(c, response)
 }
 
@@ -91,15 +86,13 @@ func (con *ChatController) GetQueueStatus(c *gin.Context) {
 // @Success 200 {object} dto.JoinQueueResponse
 // @Router /user-chat/join [post]
 func (con *ChatController) JoinQueue(c *gin.Context) {
-	// service注入
-	chatService := service.Group.ChatService
 	var req dto.JoinQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
-	response := chatService.JoinQueueManually(&req)
+	response := con.ChatService.JoinQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
 
@@ -113,15 +106,13 @@ func (con *ChatController) JoinQueue(c *gin.Context) {
 // @Success 200 {object} dto.LeaveQueueResponse
 // @Router /user-chat/leave [post]
 func (con *ChatController) LeaveQueue(c *gin.Context) {
-	// service注入
-	chatService := service.Group.ChatService
 	var req dto.LeaveQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
 		return
 	}
 
-	response := chatService.LeaveQueueManually(&req)
+	response := con.ChatService.LeaveQueueManually(&req)
 	utils.RespondSuccess(c, response)
 }
 
@@ -132,8 +123,6 @@ func (con *ChatController) LeaveQueue(c *gin.Context) {
 // @Param userId query string true "用户ID"
 // @Router /ws/chat [get]
 func (con *ChatController) WebSocketHandler(c *gin.Context) {
-	// service注入
-	chatHub := service.Group.ChatHub
 	userID := c.Query("userId")
 	if userID == "" {
 		// 尝试从Header获取（网关传递的用户信息）
@@ -152,7 +141,7 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 	}
 
 	// 检查用户是否已经在队列中
-	if existingClient, exists := chatHub.GetUserFromQueue(userID); exists {
+	if existingClient, exists := con.ChatHub.GetUserFromQueue(userID); exists {
 		// 用户已在队列中，更新其WebSocket连接
 		existingClient.Conn = conn
 		existingClient.Send = make(chan []byte, 256)
@@ -163,11 +152,11 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 			Conn:   conn,
 			Send:   make(chan []byte, 256),
 		}
-		chatHub.JoinQueue(userID, client)
+		con.ChatHub.JoinQueue(userID, client)
 	}
 
 	// 获取更新后的客户端
-	client, _ := chatHub.GetUserFromQueue(userID)
+	client, _ := con.ChatHub.GetUserFromQueue(userID)
 
 	// 启动读写协程
 	go client.WritePump()
