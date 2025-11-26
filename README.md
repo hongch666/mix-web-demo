@@ -1,5 +1,14 @@
 # 多语言技术栈系统
 
+![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
+![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go&logoColor=white)
+![Gin](https://img.shields.io/badge/Gin-Framework-00ADD8?logo=go&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-Framework-E0234E?logo=nestjs&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Framework-009688?logo=fastapi&logoColor=white)
+
 ## 描述
 
 这是一个基于多语言技术栈构建的文章博客管理系统，包含以下组件：
