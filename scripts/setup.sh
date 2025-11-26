@@ -1,7 +1,13 @@
 #!/bin/bash
 
+#!/bin/bash
+
 # 多语言技术栈系统 - 依赖安装配置脚本
 # 适用于 Linux 系统
+
+# 获取脚本所在目录的父目录（项目根目录）
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$WORKDIR"
 
 set -e  # 遇到错误立即退出
 
@@ -135,7 +141,7 @@ check_and_install_system_deps() {
 setup_spring() {
     log_info "开始配置 Spring 部分..."
     
-    cd spring
+    cd "$WORKDIR/spring"
     
     if command_exists mvn; then
         log_info "检测到全局 Maven,使用 mvn 安装依赖..."
@@ -146,7 +152,7 @@ setup_spring() {
         ./mvnw clean install
     fi
     
-    cd ../gateway
+    cd "$WORKDIR/gateway"
     
     if command_exists mvn; then
         log_info "安装 Gateway 依赖..."
@@ -157,7 +163,7 @@ setup_spring() {
         ./mvnw clean install
     fi
     
-    cd ..
+    cd "$WORKDIR"
     log_info "Spring 部分配置完成!"
 }
 
@@ -165,7 +171,7 @@ setup_spring() {
 setup_gin() {
     log_info "开始配置 Gin 部分..."
     
-    cd gin
+    cd "$WORKDIR/gin"
     
     # 安装依赖
     log_info "安装 Go 依赖..."
@@ -189,32 +195,58 @@ setup_gin() {
         swag init
     fi
     
-    cd ..
+    cd "$WORKDIR"
     log_info "Gin 部分配置完成!"
 }
 
-# 3. NestJS 部分配置
+# 3. GoZero 部分配置
+setup_gozero() {
+    log_info "开始配置 GoZero 部分..."
+    
+    cd "$WORKDIR/gozero"
+    
+    # 安装依赖
+    log_info "安装 Go 依赖..."
+    go mod tidy
+    
+    # 安装 goctl 工具(可选)
+    if ! command_exists goctl; then
+        log_info "安装 goctl 工具..."
+        go install github.com/zeromicro/go-zero/tools/goctl@latest
+    else
+        log_info "goctl 工具已安装,跳过..."
+    fi
+    
+    # 生成 Swagger 文档
+    log_info "生成 GoZero Swagger 文档..."
+    go generate ./...
+    
+    cd "$WORKDIR"
+    log_info "GoZero 部分配置完成!"
+}
+
+# 4. NestJS 部分配置
 setup_nestjs() {
     log_info "开始配置 NestJS 部分..."
     
-    cd nestjs
+    cd "$WORKDIR/nestjs"
     
     # 安装 npm 包
     log_info "安装 npm 依赖..."
     npm install
     
-    cd ..
+    cd "$WORKDIR"
     log_info "NestJS 部分配置完成!"
 }
 
-# 4. FastAPI 部分配置
+# 5. FastAPI 部分配置
 setup_fastapi() {
     log_info "开始配置 FastAPI 部分..."
     
     # 检查并安装系统依赖
     check_and_install_system_deps
     
-    cd fastapi
+    cd "$WORKDIR/fastapi"
     
     # 检查 uv 是否已安装
     if ! command_exists uv; then
@@ -254,7 +286,7 @@ EOF
     log_info "使用 uv 同步依赖..."
     uv sync
     
-    cd ..
+    cd "$WORKDIR"
     log_info "FastAPI 部分配置完成!"
 }
 
@@ -322,6 +354,7 @@ create_directories() {
     
     mkdir -p logs/spring
     mkdir -p logs/gin
+    mkdir -p logs/gozero
     mkdir -p logs/nestjs
     mkdir -p logs/fastapi
     mkdir -p static/pic
@@ -352,21 +385,24 @@ main() {
     echo ""
     
     # 询问用户要配置哪些模块
-    echo "请选择要配置的模块 (可多选,用空格分隔,例如: 1 2 3 4):"
+    echo "请选择要配置的模块 (可多选,用空格分隔,例如: 1 2 3 4 5):"
     echo "1) Spring"
     echo "2) Gin"
-    echo "3) NestJS"
-    echo "4) FastAPI"
-    echo "5) 全部"
+    echo "3) GoZero"
+    echo "4) NestJS"
+    echo "5) FastAPI"
+    echo "6) 全部"
     read -p "请输入选项: " choices
     
     echo ""
     
     # 处理用户选择
-    if [[ "$choices" == *"5"* ]]; then
+    if [[ "$choices" == *"6"* ]]; then
         setup_spring
         echo ""
         setup_gin
+        echo ""
+        setup_gozero
         echo ""
         setup_nestjs
         echo ""
@@ -381,10 +417,14 @@ main() {
             echo ""
         fi
         if [[ "$choices" == *"3"* ]]; then
-            setup_nestjs
+            setup_gozero
             echo ""
         fi
         if [[ "$choices" == *"4"* ]]; then
+            setup_nestjs
+            echo ""
+        fi
+        if [[ "$choices" == *"5"* ]]; then
             setup_fastapi
             echo ""
         fi
@@ -398,7 +438,7 @@ main() {
     log_info "接下来请:"
     log_info "1. 配置各服务的 yaml 配置文件"
     log_info "2. 启动必要的基础服务 (MySQL, Redis, MongoDB 等)"
-    log_info "3. 使用 ./run.sh 启动所有服务"
+    log_info "3. 使用 ./run-services.sh multi 启动所有服务"
     echo ""
 }
 

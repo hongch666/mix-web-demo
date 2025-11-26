@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SESSION="multi-services"
-WORKDIR="$(pwd)"
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # 创建会话并设置第一个窗口为 spring（编号 1）
 tmux new-session -d -s $SESSION -n spring -c "$WORKDIR"

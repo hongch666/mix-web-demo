@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SESSION="multi-services"
-WORKDIR="$(pwd)"
+WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # 删除旧会话
 tmux has-session -t $SESSION 2>/dev/null && tmux kill-session -t $SESSION

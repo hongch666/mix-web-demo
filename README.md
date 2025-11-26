@@ -73,24 +73,31 @@
 
 ## 环境配置脚本
 
-为了简化项目初始化过程，我们提供了自动化配置脚本 `setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
+为了简化项目初始化过程，我们提供了自动化配置脚本 `scripts/setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
 
 ### Linux/macOS 使用方式
 
 ```bash
-# 1. 确保脚本有执行权限
-chmod +x setup.sh
+# 1. 使用便捷脚本调用（推荐）
+./services.sh setup
 
-# 2. 运行配置脚本
-./setup.sh
+# 或直接调用
+./scripts/setup.sh
+```
 
-# 3. 根据提示选择要配置的模块
+### 交互式配置
+
+运行脚本后会出现以下交互界面：
+
+```bash
+# 根据提示选择要配置的模块
 # 选项:
 # 1) Spring      - 配置 Spring Boot 服务
 # 2) Gin         - 配置 Gin 服务
-# 3) NestJS      - 配置 NestJS 服务
-# 4) FastAPI     - 配置 FastAPI 服务
-# 5) 全部        - 配置所有模块
+# 3) GoZero      - 配置 GoZero 服务
+# 4) NestJS      - 配置 NestJS 服务
+# 5) FastAPI     - 配置 FastAPI 服务
+# 6) 全部        - 配置所有模块
 ```
 
 ### 脚本功能特性
@@ -125,7 +132,7 @@ chmod +x setup.sh
 ### 脚本执行流程
 
 ```bash
-./setup.sh
+./services.sh setup
 ```
 
 执行后将按以下流程进行：
@@ -225,23 +232,81 @@ default = true
 
 本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
 
-**快速打包和部署：**
+**快速打包和部署（方法一：使用便捷脚本）：**
 
 ```bash
 # 1. 一键打包所有服务
-./build.sh
+./services.sh build
 
 # 2. 启动所有服务
-./dist-control.sh start
+./services.sh start
 
 # 3. 查看服务状态
-./dist-control.sh status
+./services.sh status
 
-# 4. 停止所有服务
-./dist-control.sh stop
+# 4. 重启所有服务（代码更新后）
+./services.sh restart
+
+# 5. 停止所有服务
+./services.sh stop-dist
+```
+
+**快速打包和部署（方法二：直接调用脚本）：**
+
+```bash
+# 1. 一键打包所有服务
+./scripts/build.sh
+
+# 2. 启动所有服务
+./scripts/dist-control.sh start
+
+# 3. 查看服务状态
+./scripts/dist-control.sh status
+
+# 4. 重启所有服务
+./scripts/dist-control.sh restart
+
+# 5. 停止所有服务
+./scripts/dist-control.sh stop
 ```
 
 打包后的文件统一位于 `dist/` 目录，每个服务都包含配置文件、启动/停止脚本和日志文件。
+
+### 脚本说明
+
+- **services.sh**（项目根目录）
+
+  - 便捷启动器，用于快速调用 `scripts/` 下的脚本
+  - 支持开发环境和生产环境命令
+
+- **scripts/build.sh**
+
+  - 编译所有服务：Spring、Gateway、Gin、GoZero、NestJS、FastAPI
+  - 将编译结果打包到 `dist/` 目录
+  - 包含编译错误检查和日志输出
+
+- **scripts/dist-control.sh**
+
+  - 管理打包后的分布式服务
+  - 支持的操作：`start`、`stop`、`status`、`restart`
+
+**示例用法：**
+
+```bash
+# 第一次部署
+./services.sh build
+./services.sh start
+
+# 查看运行状态
+./services.sh status
+
+# 代码更新后重新部署
+./services.sh build
+./services.sh restart
+
+# 停止所有服务
+./services.sh stop-dist
+```
 
 ## 编译和运行项目
 
@@ -291,29 +356,103 @@ uv run --python 3.12 python main.py
 
 ## 运行脚本配置
 
-使用提供的运行脚本启动各个服务：
+所有运行脚本已组织到 `scripts/` 目录中，便于项目管理和维护。
 
-### Linux/macOS
+### 快速启动（推荐）
+
+#### Linux/macOS
 
 ```bash
-# 启动所有服务
-./run.sh
+# 查看帮助信息
+./services.sh help
 
-# 停止所有服务
-./stop.sh
+# ===== 开发环境 =====
+# 使用多窗格 tmux 布局启动所有服务（推荐用于开发调试）
+./services.sh multi
+
+# 使用顺序窗口模式启动所有服务
+./services.sh seq
+
+# 停止所有 tmux 服务
+./services.sh stop
+
+# ===== 生产环境 =====
+# 构建所有服务到 dist/ 目录
+./services.sh build
+
+# 启动所有已构建的服务（后台运行）
+./services.sh start
+
+# 查看已构建服务的运行状态
+./services.sh status
+
+# 重启所有已构建的服务
+./services.sh restart
+
+# 停止所有已构建的服务
+./services.sh stop-dist
 ```
 
-### Windows
+#### Windows
 
 ```powershell
-.\run.ps1
+# 启动所有服务（PowerShell）
+PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 ```
 
-如需关闭服务，请手动关闭对应窗口。
+### 直接调用脚本
 
-### 注意
+如果需要直接调用 `scripts/` 目录下的脚本：
 
-如果未全局安装 maven，需修改 Spring 和 Gateway 部分的启动脚本的指令。
+#### Linux/macOS
+
+```bash
+# 启动服务（多窗格布局）
+./scripts/run_multi.sh
+
+# 启动服务（顺序窗口布局）
+./scripts/run.sh
+
+# 停止所有服务
+./scripts/stop.sh
+
+# 构建所有服务
+./scripts/build.sh
+
+# 管理分布式部署的服务
+./scripts/dist-control.sh start    # 启动
+./scripts/dist-control.sh stop     # 停止
+./scripts/dist-control.sh status   # 查看状态
+./scripts/dist-control.sh restart  # 重启
+```
+
+#### Windows
+
+```powershell
+# 启动所有服务
+.\scripts\run.ps1
+```
+
+### 脚本说明
+
+| 脚本              | 位置       | 功能                                       | 适用系统    |
+| ----------------- | ---------- | ------------------------------------------ | ----------- |
+| `services.sh`     | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
+| `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
+| `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
+| `stop.sh`         | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
+| `build.sh`        | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
+| `dist-control.sh` | scripts/   | 管理打包后的分布式服务                     | Linux/macOS |
+| `setup.sh`        | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
+| `ssh.sh`          | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
+| `run.ps1`         | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
+
+### 注意事项
+
+1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
+2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
+3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
+4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos 等基础服务已运行
 
 ## 基础服务组件初始化
 
