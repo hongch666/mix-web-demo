@@ -12,6 +12,7 @@ from common.task import start_scheduler
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 PORT: int = server_config["port"]
+RELOAD: bool = server_config["reload"]
 
 def create_app() -> FastAPI:
     @asynccontextmanager
@@ -48,4 +49,4 @@ def create_app() -> FastAPI:
 app = create_app()
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host=IP, port=PORT, reload=True)
+    uvicorn.run("main:app", host=IP, port=PORT, reload=RELOAD)

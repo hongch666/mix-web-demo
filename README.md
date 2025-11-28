@@ -837,6 +837,7 @@ logs:
 server:
   ip: 127.0.0.1
   port: 8084
+  reload: True
 nacos:
   server_addresses: "127.0.0.1:8848"
   namespace: "public"
