@@ -167,7 +167,10 @@ async def stream_message(
                     elif chunk_type == "content":
                         message_acc += chunk_content
                     
-                    # 构建响应数据
+                    # 记录chunk长度（用于调试）
+                    fileLogger.debug(f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}")
+                    
+                    # 构建响应数据 - 确保chunk_content完整输出
                     data = success({
                         "message": message_acc,
                         "conversation_id": conversation_id,
@@ -176,9 +179,12 @@ async def stream_message(
                         "timestamp": int(time.time()),
                         "service": request.service.value,
                         "message_type": chunk_type,
-                        "chunk": chunk_content
+                        "chunk": chunk_content  # 保证完整的chunk内容
                     })
-                    yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+                    # 使用 ensure_ascii=False 保证 UTF-8 编码，avoid_json_tricks 保证完整性
+                    json_str = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+                    fileLogger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
+                    yield f"data: {json_str}\n\n"
                 
                 # 流式聊天完成后保存AI历史记录
                 if message_acc:

@@ -133,6 +133,40 @@ class BaseAiService:
                 thinking_text += f"  结果: {observation}\n"
         return thinking_text
     
+    def _build_complete_thinking_text(self, intermediate_steps: list, final_result: str = "") -> str:
+        """构建完整的思考过程文本（包含最终结果）
+        
+        Args:
+            intermediate_steps: Agent的中间步骤列表
+            final_result: Agent的最终结果
+            
+        Returns:
+            str: 完整的思考过程文本
+        """
+        thinking_parts = []
+        
+        # 构建中间步骤
+        if intermediate_steps:
+            thinking_parts.append("Agent 执行过程:\n")
+            for i, (action, observation) in enumerate(intermediate_steps, 1):
+                tool_name = action.tool if hasattr(action, 'tool') else str(action)
+                tool_input = action.tool_input if hasattr(action, 'tool_input') else ""
+                
+                step_text = f"\n步骤 {i}:\n"
+                step_text += f"  工具: {tool_name}\n"
+                step_text += f"  输入: {tool_input}\n"
+                step_text += f"  结果: {observation}\n"
+                
+                thinking_parts.append(step_text)
+        
+        # 添加最终结果
+        if final_result:
+            thinking_parts.append(f"\n\n最终分析结果:\n{final_result}")
+        
+        # 拼接所有部分
+        complete_text = "".join(thinking_parts)
+        return complete_text
+    
     def _build_chat_context(self, chat_history: List[tuple]) -> str:
         """构建聊天历史上下文
         

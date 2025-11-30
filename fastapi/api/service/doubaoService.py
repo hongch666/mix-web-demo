@@ -250,11 +250,18 @@ class DoubaoService(BaseAiService):
                 intermediate_steps = agent_response.get("intermediate_steps", [])
                 
                 # 构建完整的思考过程（不再单独输出工具调用）
-                thinking_text = self._build_thinking_text(intermediate_steps)
-                if not thinking_text:
-                    thinking_text = agent_result
+                thinking_text = self._build_complete_thinking_text(intermediate_steps, agent_result)
                 
-                # 输出 Agent 的完整思考过程
+                logger.info(f"思考过程长度: {len(thinking_text)} 字符")
+                # 记录完整的思考内容用于调试
+                if len(thinking_text) > 5000:
+                    logger.debug(f"思考过程内容（前2000字）: {thinking_text[:2000]}")
+                    logger.debug(f"思考过程内容（中间2000字）: {thinking_text[len(thinking_text)//2-1000:len(thinking_text)//2+1000]}")
+                    logger.debug(f"思考过程内容（末尾2000字）: {thinking_text[-2000:]}")
+                else:
+                    logger.debug(f"完整思考过程: {thinking_text}")
+                
+                # 一次性输出完整的思考过程（不分块，确保完整）
                 yield {"type": "thinking", "content": thinking_text}
                 
                 # 第二步: 基于Agent的结果,流式生成更好的回答

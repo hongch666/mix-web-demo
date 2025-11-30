@@ -159,11 +159,12 @@ class RAGTools:
                 article_id = doc.metadata.get("article_id", "未知")
                 title = doc.metadata.get("title", "无标题")
                 chunk_index = doc.metadata.get("chunk_index", 0)
+                content = doc.page_content
                 
                 result_text += f"{i}. 文章ID: {article_id}, 标题: {title}\n"
                 result_text += f"   相似度分数: {score:.4f}\n"
-                result_text += f"   内容片段(第{chunk_index+1}块):\n"
-                result_text += f"   {doc.page_content[:200]}...\n\n"
+                result_text += f"   内容片段(第{chunk_index+1}块, 共{len(content)}字):\n"
+                result_text += f"   {content}\n\n"
             
             self.logger.info(f"RAG搜索成功，返回 {len(filtered_docs)} 个结果（过滤前: {len(docs)}）")
             return result_text

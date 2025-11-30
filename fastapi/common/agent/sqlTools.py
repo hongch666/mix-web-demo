@@ -110,8 +110,8 @@ class SQLTools:
                 if not rows:
                     return "查询成功，但没有返回结果"
                 
-                # 限制返回行数
-                max_rows = 20
+                # 限制返回行数 - 增加到500行以支持更完整的思考过程
+                max_rows = 500
                 limited_rows = rows[:max_rows]
                 
                 # 格式化结果
