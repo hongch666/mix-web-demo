@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
-from api.service import GeminiService, get_gemini_service, TongyiService, get_tongyi_service, DoubaoService, get_doubao_service, AiHistoryService, get_ai_history_service
+from api.service import GeminiService, get_gemini_service, QwenService, get_qwen_service, DoubaoService, get_doubao_service, AiHistoryService, get_ai_history_service
 from common.utils import success, fileLogger
 from common.decorators import log
 from common.middleware import get_current_user_id
@@ -27,7 +27,7 @@ async def send_message(
     request: ChatRequest,
     db:Session = Depends(get_db),
     geminiService: GeminiService = Depends(get_gemini_service),
-    tongyiService: TongyiService = Depends(get_tongyi_service),
+    qwenService: QwenService = Depends(get_qwen_service),
     doubaoService: DoubaoService = Depends(get_doubao_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> JSONResponse:
@@ -45,9 +45,9 @@ async def send_message(
                 user_id=actual_user_id,
                 db=db
             )
-        elif request.service == AIServiceType.TONGYI:
-            fileLogger.info(f"使用通义千问服务处理用户 {actual_user_id} 的请求")
-            response_message: str = await tongyiService.simple_chat(
+        elif request.service == AIServiceType.QWEN:
+            fileLogger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await qwenService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
                 db=db
@@ -112,7 +112,7 @@ async def stream_message(
     request: ChatRequest,
     db: Session = Depends(get_db),
     geminiService: GeminiService = Depends(get_gemini_service),
-    tongyiService: TongyiService = Depends(get_tongyi_service),
+    qwenService: QwenService = Depends(get_qwen_service),
     doubaoService: DoubaoService = Depends(get_doubao_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> StreamingResponse:
@@ -135,9 +135,9 @@ async def stream_message(
                         user_id=actual_user_id,
                         db=db
                     )
-                elif request.service == AIServiceType.TONGYI:
-                    fileLogger.info(f"使用通义千问流式服务处理用户 {actual_user_id} 的请求")
-                    stream_generator = tongyiService.stream_chat(
+                elif request.service == AIServiceType.QWEN:
+                    fileLogger.info(f"使用Qwen流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator = qwenService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db

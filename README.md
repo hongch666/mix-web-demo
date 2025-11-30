@@ -899,7 +899,7 @@ logs:
 gemini:
   model_name: "gemini-2.0-flash" # 可选: gemini-2.0-pro 等
   timeout: 30 # 请求超时时间（秒）
-tongyi:
+qwen:
   model_name: "qwen-flash" # 可选: qwen-plus, qwen-turbo, qwen-max 等
   base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
   timeout: 30 # 请求超时时间（秒）
@@ -922,7 +922,7 @@ oss:
   access_key_secret: your_access_key_secret
 gemini:
   api_key: your_api_key
-tongyi:
+qwen:
   api_key: your_api_key
 doubao:
   api_key: your_api_key
@@ -1096,7 +1096,7 @@ oss:
   access_key_secret: your_access_key_secret
 gemini:
   api_key: your_api_key
-tongyi:
+qwen:
   api_key: your_api_key
 doubao:
   api_key: your_api_key
@@ -1105,8 +1105,9 @@ doubao:
 5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
 6. 如果没有使用 Hadoop+Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
 7. Gemini 服务需要运行的终端使用代理，请自行配置。
-8. Spring 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
-9. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
+8. AI 服务目前只有三种，对应数据库 `user`表里面 `role`为 `ai`的用户，并且代码目前写死用户 id 为 1001/1002/1003，有需要可进行更改。
+9. Spring 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
+10. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
 
 ```bash
 # Fresh 热启动工具配置文件

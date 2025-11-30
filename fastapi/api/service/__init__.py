@@ -8,7 +8,7 @@ from .aiHistoryService import AiHistoryService, get_ai_history_service
 
 from .geminiService import GeminiService, get_gemini_service
 
-from .tongyiService import TongyiService, get_tongyi_service
+from .qwenService import QwenService, get_qwen_service
 
 from .doubaoService import DoubaoService, get_doubao_service
 
@@ -23,8 +23,8 @@ __all__ = [
     "get_upload_service",
     "GeminiService",
     "get_gemini_service",
-    "TongyiService",
-    "get_tongyi_service",
+    "QwenService",
+    "get_qwen_service",
     "DoubaoService",
     "get_doubao_service",
     "AiHistoryService",

@@ -12,18 +12,18 @@ from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
 
-class TongyiService(BaseAiService):
+class QwenService(BaseAiService):
     def __init__(self, ai_history_mapper: AiHistoryMapper):
-        super().__init__(ai_history_mapper, service_name="Tongyi")
+        super().__init__(ai_history_mapper, service_name="Qwen")
         
         # 初始化通义千问客户端
         try:
-            tongyi_cfg = load_config("tongyi") or {}
-            tongyi_secret = load_secret_config("tongyi") or {}
-            self._api_key: str = tongyi_secret.get("api_key")
-            self._model_name: str = tongyi_cfg.get("model_name", "qwen-flash")
-            self._base_url: str = tongyi_cfg.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-            self._timeout: int = tongyi_cfg.get("timeout", 30)
+            qwen_cfg = load_config("qwen") or {}
+            qwen_secret = load_secret_config("qwen") or {}
+            self._api_key: str = qwen_secret.get("api_key")
+            self._model_name: str = qwen_cfg.get("model_name", "qwen-flash")
+            self._base_url: str = qwen_cfg.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+            self._timeout: int = qwen_cfg.get("timeout", 30)
             
             if self._api_key:
                 self.llm = ChatOpenAI(
@@ -60,7 +60,7 @@ class TongyiService(BaseAiService):
                         return_intermediate_steps=True
                     )
                     
-                    logger.info("通义千问Agent服务初始化完成")
+                    logger.info("Qwen Agent服务初始化完成")
                 except Exception as tool_error:
                     logger.warning(f"工具初始化部分失败: {tool_error}, 降级为基础对话模式")
                     self.agent_executor = None
@@ -69,12 +69,12 @@ class TongyiService(BaseAiService):
                 self.llm = None
                 self.agent_executor = None
                 self.intent_router = None
-                logger.warning("通义千问配置不完整，客户端未初始化")
+                logger.warning("Qwen配置不完整，客户端未初始化")
         except Exception as e:
             self.llm = None
             self.agent_executor = None
             self.intent_router = None
-            logger.error(f"初始化通义千问客户端失败: {e}")
+            logger.error(f"初始化Qwen客户端失败: {e}")
     
     async def basic_chat(self, message: str) -> str:
         """最基础的对话接口 - 不使用知识库和向量数据库"""
@@ -92,11 +92,11 @@ class TongyiService(BaseAiService):
             response = await self.llm.ainvoke(messages)
             
             content: str = response.content
-            logger.info(f"通义千问基础回复长度: {len(content)} 字符")
+            logger.info(f"Qwen基础回复长度: {len(content)} 字符")
             return content
                 
         except Exception as e:
-            logger.error(f"通义千问基础对话异常: {str(e)}")
+            logger.error(f"Qwen基础对话异常: {str(e)}")
             return f"对话服务异常: {str(e)}"
 
     async def simple_chat(self, message: str, user_id: int = 0, db: Optional[Session] = None) -> str:
@@ -150,13 +150,13 @@ class TongyiService(BaseAiService):
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
                 result = agent_response.get("output", "无法获取结果")
             
-            logger.info(f"通义千问回复长度: {len(result)} 字符")
+            logger.info(f"Qwen回复长度: {len(result)} 字符")
             return result
                 
         except Exception as e:
-            logger.error(f"通义千问聊天异常: {str(e)}")
+            logger.error(f"Qwen聊天异常: {str(e)}")
             if "invalid" in str(e).lower() and "key" in str(e).lower():
-                return "API密钥无效。请检查通义千问API密钥配置。"
+                return "API密钥无效。请检查Qwen API密钥配置。"
             elif "quota" in str(e).lower() or "exceeded" in str(e).lower():
                 return "API配额已超限。请稍后重试或检查配额设置。"
             elif "rate" in str(e).lower() and "limit" in str(e).lower():
@@ -296,7 +296,7 @@ class TongyiService(BaseAiService):
         except Exception as e:
             logger.error(f"流式聊天异常: {str(e)}")
             if "invalid" in str(e).lower() and "key" in str(e).lower():
-                yield {"type": "error", "content": "API密钥无效。请检查通义千问API密钥配置。"}
+                yield {"type": "error", "content": "API密钥无效。请检查Qwen API密钥配置。"}
             elif "quota" in str(e).lower() or "exceeded" in str(e).lower():
                 yield {"type": "error", "content": "API配额已超限。请稍后重试或检查配额设置。"}
             elif "rate" in str(e).lower() and "limit" in str(e).lower():
@@ -306,6 +306,6 @@ class TongyiService(BaseAiService):
 
 
 @lru_cache()
-def get_tongyi_service(ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper)) -> TongyiService:
-    """获取通义千问服务单例实例"""
-    return TongyiService(ai_history_mapper)
+def get_qwen_service(ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper)) -> QwenService:
+    """获取Qwen服务单例实例"""
+    return QwenService(ai_history_mapper)

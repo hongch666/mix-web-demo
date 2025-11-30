@@ -5,7 +5,7 @@ from enum import Enum
 class AIServiceType(str, Enum):
     """AI服务类型枚举"""
     GEMINI = "gemini"
-    TONGYI = "tongyi"
+    QWEN = "qwen"
     DOUBAO = "doubao"
 
 class ChatRequest(BaseModel):
@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., description="用户消息", min_length=1)
     user_id: Optional[str] = Field(default="default", description="用户ID")
     conversation_id: Optional[str] = Field(default=None, description="会话ID")
-    service: AIServiceType = Field(default=AIServiceType.DOUBAO, description="AI服务类型：gemini、tongyi或doubao")
+    service: AIServiceType = Field(default=AIServiceType.DOUBAO, description="AI服务类型：gemini、qwen或doubao")
     # stream: Optional[bool] = Field(default=False, description="是否流式响应")
 
 class ChatResponseData(BaseModel):

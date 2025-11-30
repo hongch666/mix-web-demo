@@ -5,7 +5,7 @@ from config import get_db
 from sqlmodel import Session
 from api.service import GenerateService, get_generate_service
 from api.mapper import CommentsMapper, get_comments_mapper, ArticleMapper, get_article_mapper
-from api.service import DoubaoService, get_doubao_service, GeminiService, get_gemini_service, TongyiService, get_tongyi_service
+from api.service import DoubaoService, get_doubao_service, GeminiService, get_gemini_service, QwenService, get_qwen_service
 from common.utils import success
 from common.decorators import log
 from entity.dto import GenerateDTO
@@ -42,7 +42,7 @@ async def create_article_ai_comment(
     article_mapper: ArticleMapper = Depends(get_article_mapper),
     doubao_service: DoubaoService = Depends(get_doubao_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
-    tongyi_service: TongyiService = Depends(get_tongyi_service)
+    qwen_service: QwenService = Depends(get_qwen_service)
 ) -> Any:
     # 创建完整的 GenerateService 实例
     generate_service = GenerateService(
@@ -50,7 +50,7 @@ async def create_article_ai_comment(
         article_mapper=article_mapper,
         doubao_service=doubao_service,
         gemini_service=gemini_service,
-        tongyi_service=tongyi_service
+        qwen_service=qwen_service
     )
     await generate_service.generate_ai_comments(article_id, db)
     return success(data=None)

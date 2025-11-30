@@ -9,12 +9,12 @@ from common.utils import fileLogger as logger
 
 class GenerateService:
 
-    def __init__(self, comments_mapper: Any = None, article_mapper: Any = None, doubao_service: Any = None, gemini_service: Any = None, tongyi_service: Any = None):
+    def __init__(self, comments_mapper: Any = None, article_mapper: Any = None, doubao_service: Any = None, gemini_service: Any = None, qwen_service: Any = None):
         self.comments_mapper = comments_mapper
         self.article_mapper = article_mapper
         self.doubao_service = doubao_service
         self.gemini_service = gemini_service
-        self.tongyi_service = tongyi_service
+        self.qwen_service = qwen_service
 
     def extract_tags(self,text: str, topK: int = 5) -> str:
         """
@@ -86,31 +86,31 @@ class GenerateService:
                 logger.error(f"Gemini调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
-        async def timed_tongyi_call():
+        async def timed_qwen_call():
             start = time.time()
             try:
-                result = await self.tongyi_service.basic_chat(prompt)
+                result = await self.qwen_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                logger.info(f"通义千问调用完成，耗时: {elapsed:.2f}秒")
+                logger.info(f"Qwen调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"通义千问调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                logger.error(f"Qwen调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
         # 使用 asyncio.gather 并发执行三个异步调用
         responses = await asyncio.gather(
             timed_doubao_call(),
             timed_gemini_call(),
-            timed_tongyi_call(),
-            return_exceptions=True  # 即使某个调用失败，其他调用仍继续
+            timed_qwen_call(),
+            return_exceptions=True  # 即使查个调用失败，其他调用仍继续
         )
         
         # 记录整体结束时间
         total_elapsed = time.time() - total_start_time
         logger.info(f"3个大模型并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}")
         
-        response_doubao, response_gemini, response_tongyi = responses
+        response_doubao, response_gemini, response_qwen = responses
         
         # 检查是否有异常返回
         if isinstance(response_doubao, Exception):
@@ -119,14 +119,14 @@ class GenerateService:
         if isinstance(response_gemini, Exception):
             logger.error(f"Gemini大模型最终失败: {response_gemini}")
             response_gemini = "Gemini调用失败"
-        if isinstance(response_tongyi, Exception):
-            logger.error(f"通义千问大模型最终失败: {response_tongyi}")
-            response_tongyi = "通义千问调用失败"
+        if isinstance(response_qwen, Exception):
+            logger.error(f"Qwen大模型最终失败: {response_qwen}")
+            response_qwen = "Qwen调用失败"
         
         # 2.4 解析大模型返回结果
         content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
-        content_tongyi, star_tongyi = self._parse_ai_comment_response(response_tongyi)
+        content_qwen, star_qwen = self._parse_ai_comment_response(response_qwen)
         # 3. 构建AI评论对象
         doubao_ai_comment: Any = Comments(
             article_id=article_id,
@@ -144,18 +144,18 @@ class GenerateService:
             create_time=datetime.now(),
             update_time=datetime.now()
         )
-        tongyi_ai_comment: Any = Comments(
+        qwen_ai_comment: Any = Comments(
             article_id=article_id,
             user_id=1003,
-            content=content_tongyi,
-            star=star_tongyi,
+            content=content_qwen,
+            star=star_qwen,
             create_time=datetime.now(),
             update_time=datetime.now()
         )
         # 4. 保存AI评论到数据库
         self.comments_mapper.create_comment_mapper(doubao_ai_comment, db)
         self.comments_mapper.create_comment_mapper(gemini_ai_comment, db)
-        self.comments_mapper.create_comment_mapper(tongyi_ai_comment, db)
+        self.comments_mapper.create_comment_mapper(qwen_ai_comment, db)
         logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
         
     # 定义工具函数解析大模型返回结果

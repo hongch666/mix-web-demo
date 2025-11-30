@@ -22,24 +22,24 @@ class RAGTools:
         self.logger = logger
         
         try:
-            # 1. 初始化嵌入模型（通义千问）
-            tongyi_cfg = load_config("tongyi") or {}
-            tongyi_secret = load_secret_config("tongyi") or {}
+            # 1. 初始化嵌入模型（Qwen）
+            qwen_cfg = load_config("qwen") or {}
+            qwen_secret = load_secret_config("qwen") or {}
             embedding_cfg = load_config("embedding") or {}
             
-            api_key = tongyi_secret.get("api_key")
+            api_key = qwen_secret.get("api_key")
             embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
             self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
             self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
             
             if not api_key:
-                raise ValueError("通义千问API密钥未配置")
+                raise ValueError("Qwen API密钥未配置")
             
             self.embeddings = DashScopeEmbeddings(
                 model=embedding_model,
                 dashscope_api_key=api_key
             )
-            self.logger.info(f"通义千问嵌入模型初始化成功: {embedding_model}")
+            self.logger.info(f"Qwen嵌入模型初始化成功: {embedding_model}")
             
             # 2. 初始化文本切分器
             self.text_splitter = RecursiveCharacterTextSplitter(
