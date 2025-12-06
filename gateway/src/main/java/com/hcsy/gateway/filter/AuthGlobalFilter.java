@@ -34,6 +34,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/users/login",
             "/users/register",
             "/users/email/send",
+            "/users/email-login",
             "/static/**",
             "/upload/**",
             "/public/**",

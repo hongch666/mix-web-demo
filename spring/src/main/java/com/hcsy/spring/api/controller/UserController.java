@@ -13,6 +13,7 @@ import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
+import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -190,6 +191,50 @@ public class UserController {
         return Result.success(data);
     }
 
+    @PostMapping("/email-login")
+    @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
+    @ApiLog("邮箱验证码登录")
+    public Result emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
+        long startTime = System.currentTimeMillis();
+        logger.info("POST /users/email-login: 邮箱验证码登录\nEmailLoginDTO: %s", emailLoginDTO);
+
+        try {
+            // 1. 验证邮箱验证码
+            if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
+                return Result.error("邮箱验证码无效或已过期");
+            }
+
+            // 2. 查询用户是否存在
+            User user = userService.findByEmail(emailLoginDTO.getEmail());
+            if (user == null) {
+                return Result.error("用户不存在，请先注册");
+            }
+
+            // 3. 生成 JWT Token
+            String token = jwtUtil.generateToken(user.getId(), user.getName());
+
+            // 4. 保存 Token 到 Redis（包括标记用户在线）
+            tokenService.saveToken(user.getId(), token);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("token", token);
+            data.put("userId", user.getId());
+            data.put("username", user.getName());
+            // 返回当前登录设备数
+            data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
+
+            // 5. 发送 API 日志到 RabbitMQ
+            long responseTime = System.currentTimeMillis() - startTime;
+            sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/email-login", "邮箱验证码登录",
+                    null, null, emailLoginDTO, responseTime);
+
+            return Result.success(data);
+        } catch (Exception e) {
+            logger.error("邮箱验证码登录失败: " + e.getMessage());
+            return Result.error("邮箱验证码登录失败");
+        }
+    }
+
     @PostMapping("/logout/{id}")
     @Operation(summary = "用户登出", description = "用户登出，将 Token 从 Redis 移除")
     @ApiLog("用户登出")
@@ -267,11 +312,12 @@ public class UserController {
     }
 
     @PostMapping("/email/send")
-    @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码")
+    @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
     @ApiLog("发送邮箱验证码")
-    public Result sendVerificationCode(@RequestParam String email) {
+    public Result sendVerificationCode(@RequestParam String email,
+            @RequestParam(defaultValue = "register") String type) {
         long startTime = System.currentTimeMillis();
-        logger.info("POST /users/email/send: 发送邮箱验证码\nemail: %s", email);
+        logger.info("POST /users/email/send: 发送邮箱验证码\nemail: %s, type: %s", email, type);
 
         try {
             // 1. 验证邮箱格式
@@ -279,15 +325,26 @@ public class UserController {
                 return Result.error("邮箱格式不正确");
             }
 
-            // 2. 检查邮箱是否已被注册
+            // 2. 根据类型验证邮箱状态
             User existingUser = userService.findByEmail(email);
-            if (existingUser != null) {
-                return Result.error("邮箱已被注册");
+
+            if ("register".equals(type)) {
+                // 注册场景：邮箱不能已被注册
+                if (existingUser != null) {
+                    return Result.error("邮箱已被注册");
+                }
+            } else if ("login".equals(type)) {
+                // 登录场景：邮箱必须已被注册
+                if (existingUser == null) {
+                    return Result.error("邮箱未注册，请先注册");
+                }
+            } else {
+                return Result.error("不支持的类型，请使用 register 或 login");
             }
 
             // 3. 发送验证码
             if (emailVerificationService.sendVerificationCode(email)) {
-                return Result.success("验证码已发送，请查收邮件");
+                return Result.success();
             } else {
                 return Result.error("发送验证码失败，请稍后重试");
             }
@@ -297,8 +354,11 @@ public class UserController {
         } finally {
             // 无论成功还是失败，都发送 API 日志到 RabbitMQ
             long responseTime = System.currentTimeMillis() - startTime;
+            Map<String, String> queryParams = new HashMap<>();
+            queryParams.put("email", email);
+            queryParams.put("type", type);
             sendApiLogToQueue(null, null, "POST", "/users/email/send", "发送邮箱验证码",
-                    null, null, email, responseTime);
+                    queryParams, null, null, responseTime);
         }
     }
 
