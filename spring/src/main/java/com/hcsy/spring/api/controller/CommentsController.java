@@ -137,8 +137,8 @@ public class CommentsController {
     }
 
     @GetMapping()
-    @Operation(summary = "获取评论信息", description = "分页获取评论信息列表，并支持用户名和文章标题模糊查询")
-    @ApiLog("获取评论信息")
+    @Operation(summary = "获取普通评论信息", description = "分页获取普通评论信息列表，并支持用户名和文章标题模糊查询")
+    @ApiLog("获取普通评论信息")
     public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listCommentsWithFilter(commentsPage, queryDTO);
@@ -150,6 +150,30 @@ public class CommentsController {
             // 查询用户名
             User user = userService.getById(comment.getUserId());
             commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setPic(user != null ? user.getImg() : null);
+            // 查询文章标题
+            Article article = articleService.getById(comment.getArticleId());
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            return commentsVO;
+        }).toList();
+        data.put("list", commentVOs);
+        return Result.success(data);
+    }
+
+    @GetMapping("/ai")
+    @Operation(summary = "获取AI评论信息", description = "分页获取AI评论信息列表，并支持AI类型和文章标题模糊查询")
+    @ApiLog("获取AI评论信息")
+    public Result listAIComments(@ModelAttribute CommentsQueryDTO queryDTO) {
+        Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
+        IPage<Comments> resultPage = commentsService.listAICommentsWithFilter(commentsPage, queryDTO);
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", resultPage.getTotal());
+        // 构建AI评论视图对象，包含AI类型和文章标题
+        List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
+            CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
+            // 查询AI类型（用户名）
+            User user = userService.getById(comment.getUserId());
+            commentsVO.setUsername(user != null ? user.getName() : "未知AI");
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());

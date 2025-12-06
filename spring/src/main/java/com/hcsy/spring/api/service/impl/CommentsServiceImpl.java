@@ -55,7 +55,72 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             }
         }
 
-        // ✨ 使用SQL级别JOIN查询，普通用户评论在前，AI用户评论在后
+        // 只查询普通用户（非AI用户）的评论
+        List<Long> normalUserIds = userService.list(
+                Wrappers.lambdaQuery(User.class).ne(User::getRole, "ai")).stream().map(User::getId).toList();
+
+        if (normalUserIds.isEmpty()) {
+            return new Page<>(page.getCurrent(), page.getSize(), 0);
+        }
+
+        // 如果指定了用户，则求交集；否则使用所有普通用户
+        if (userIds != null) {
+            userIds = userIds.stream().filter(normalUserIds::contains).toList();
+            if (userIds.isEmpty()) {
+                return new Page<>(page.getCurrent(), page.getSize(), 0);
+            }
+        } else {
+            userIds = normalUserIds;
+        }
+
+        // 使用SQL级别JOIN查询，只查询普通用户评论
+        return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
+    }
+
+    public IPage<Comments> listAICommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
+        // 准备查询条件
+        String content = (queryDTO.getContent() != null && !queryDTO.getContent().isEmpty())
+                ? queryDTO.getContent()
+                : null;
+
+        List<Long> articleIds = null;
+        // 获取模糊匹配的文章列表，通过id数组构建查询
+        if (queryDTO.getArticleTitle() != null && !queryDTO.getArticleTitle().isEmpty()) {
+            List<Article> articles = articleService.listAllArticlesByTitle(queryDTO.getArticleTitle());
+            articleIds = articles.stream().map(Article::getId).toList();
+            if (articleIds.isEmpty()) {
+                // 如果没有匹配的文章，直接返回空结果
+                return new Page<>(page.getCurrent(), page.getSize(), 0);
+            }
+        }
+
+        // 查询所有 AI 用户 ID
+        List<Long> aiUserIds = userService.list(
+                Wrappers.lambdaQuery(User.class).eq(User::getRole, "ai")).stream().map(User::getId).toList();
+
+        if (aiUserIds.isEmpty()) {
+            return new Page<>(page.getCurrent(), page.getSize(), 0);
+        }
+
+        List<Long> userIds = null;
+        // 获取模糊匹配的用户列表，通过id数组构建查询
+        if (queryDTO.getUsername() != null && !queryDTO.getUsername().isEmpty()) {
+            List<User> users = userService.listAllUserByUsername(queryDTO.getUsername());
+            userIds = users.stream().map(User::getId).toList();
+            if (userIds.isEmpty()) {
+                // 如果没有匹配的用户，直接返回空结果
+                return new Page<>(page.getCurrent(), page.getSize(), 0);
+            }
+            // 求交集：只保留既是 AI 用户且匹配用户名的用户
+            userIds = userIds.stream().filter(aiUserIds::contains).toList();
+            if (userIds.isEmpty()) {
+                return new Page<>(page.getCurrent(), page.getSize(), 0);
+            }
+        } else {
+            userIds = aiUserIds;
+        }
+
+        // 使用SQL级别JOIN查询，只查询 AI 用户评论
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
