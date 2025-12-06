@@ -1,10 +1,12 @@
 package com.hcsy.spring.entity.vo;
 
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
 public class UserVO {
     private Long id;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private String name;
     private Integer age;

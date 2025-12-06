@@ -8,12 +8,14 @@ import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
+import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -48,6 +50,7 @@ public class UserController {
     private final SimpleLogger logger;
     private final com.hcsy.spring.common.mq.RabbitMQService rabbitMQService;
     private final EmailVerificationService emailVerificationService;
+    private final PasswordEncryptor passwordEncryptor;
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
@@ -70,7 +73,7 @@ public class UserController {
     }
 
     @PostMapping
-    @Operation(summary = "新增用户", description = "通过请求体创建用户信息")
+    @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用默认密码 123456")
     @RequirePermission(roles = { "admin" })
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
@@ -79,6 +82,7 @@ public class UserController {
     public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
         User user = BeanUtil.copyProperties(userDto, User.class);
         user.setRole("user");
+        // 密码使用 DTO 中的默认值 "123456"，在 service 层加密
         userService.saveUserAndStatus(user);
         return Result.success();
     }
@@ -140,7 +144,23 @@ public class UserController {
     })
     @ApiLog("修改用户")
     public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
+        // 获取原用户信息
+        User existingUser = userService.getById(userDto.getId());
+        if (existingUser == null) {
+            return Result.error("用户不存在");
+        }
+
         User user = BeanUtil.copyProperties(userDto, User.class);
+
+        // 如果前端没有提供密码（为默认值"123456"），则保留原密码
+        // 只有当前端明确提供了不同的密码时才更新
+        if ("123456".equals(userDto.getPassword())) {
+            user.setPassword(existingUser.getPassword());
+        } else if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+            // 新密码需要加密
+            user.setPassword(passwordEncryptor.encryptPassword(userDto.getPassword()));
+        }
+
         userService.updateById(user);
         return Result.success();
     }
@@ -160,13 +180,12 @@ public class UserController {
 
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
-    @ApiLog("用户登录")
     public Result login(@RequestBody LoginDTO loginDTO) {
         long startTime = System.currentTimeMillis();
         logger.info("POST /users/login: " + "用户登录\nLoginDTO: %s", loginDTO);
 
         User user = userService.findByUsername(loginDTO.getName());
-        if (user == null || !user.getPassword().equals(loginDTO.getPassword())) {
+        if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
             return Result.error("用户名或密码错误");
         }
 
@@ -180,11 +199,12 @@ public class UserController {
         data.put("token", token);
         data.put("userId", user.getId());
         data.put("username", user.getName());
-        // 新增：返回当前登录设备数
+        // 3. 返回当前登录设备数
         data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
 
         // 发送 API 日志到 RabbitMQ
         long responseTime = System.currentTimeMillis() - startTime;
+        logger.info("POST /users/login: 使用了" + responseTime + "ms");
         sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/login", "用户登录",
                 null, null, loginDTO, responseTime);
 
@@ -193,7 +213,6 @@ public class UserController {
 
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
-    @ApiLog("邮箱验证码登录")
     public Result emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
         long startTime = System.currentTimeMillis();
         logger.info("POST /users/email-login: 邮箱验证码登录\nEmailLoginDTO: %s", emailLoginDTO);
@@ -225,6 +244,7 @@ public class UserController {
 
             // 5. 发送 API 日志到 RabbitMQ
             long responseTime = System.currentTimeMillis() - startTime;
+            logger.info("POST /users/email-login: 使用了" + responseTime + "ms");
             sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/email-login", "邮箱验证码登录",
                     null, null, emailLoginDTO, responseTime);
 
@@ -295,9 +315,10 @@ public class UserController {
             return Result.error("邮箱验证码无效或已过期");
         }
 
-        // 3. 创建用户
+        // 3. 创建用户并加密密码
         User user = BeanUtil.copyProperties(registerDto, User.class);
         user.setRole("user");
+        user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
         userService.saveUserAndStatus(user);
 
         // 4. 标记邮箱已验证
@@ -305,6 +326,7 @@ public class UserController {
 
         // 5. 发送 API 日志到 RabbitMQ
         long responseTime = System.currentTimeMillis() - startTime;
+        logger.info("POST /users/register: 使用了" + responseTime + "ms");
         sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/register", "用户注册",
                 null, null, registerDto, responseTime);
 
@@ -338,8 +360,13 @@ public class UserController {
                 if (existingUser == null) {
                     return Result.error("邮箱未注册，请先注册");
                 }
+            } else if ("reset".equals(type)) {
+                // 重置密码场景：邮箱必须已被注册
+                if (existingUser == null) {
+                    return Result.error("邮箱未注册，请先注册");
+                }
             } else {
-                return Result.error("不支持的类型，请使用 register 或 login");
+                return Result.error("不支持的类型，请使用 register、login 或 reset");
             }
 
             // 3. 发送验证码
@@ -357,8 +384,86 @@ public class UserController {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("email", email);
             queryParams.put("type", type);
+            logger.info("POST /users/email/send: 使用了" + responseTime + "ms");
             sendApiLogToQueue(null, null, "POST", "/users/email/send", "发送邮箱验证码",
                     queryParams, null, null, responseTime);
+        }
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "通过邮箱验证码重置密码", description = "用户通过邮箱验证码验证身份后重置密码")
+    @ApiLog("重置密码")
+    public Result resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+        try {
+            // 1. 验证邮箱验证码
+            if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
+                    resetPasswordDTO.getVerificationCode())) {
+                return Result.error("邮箱验证码无效或已过期");
+            }
+
+            // 2. 查询用户是否存在
+            User user = userService.findByEmail(resetPasswordDTO.getEmail());
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+
+            // 3. 加密新密码后更新
+            user.setPassword(passwordEncryptor.encryptPassword(resetPasswordDTO.getNewPassword()));
+            userService.updateById(user);
+
+            return Result.success();
+        } catch (Exception e) {
+            logger.error("重置密码失败: " + e.getMessage());
+            return Result.error("重置密码失败");
+        }
+    }
+
+    @PostMapping("/admin/reset-all-passwords")
+    @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为默认密码 123456")
+    @RequirePermission(roles = { "admin" })
+    @ApiLog("重置所有用户密码")
+    public Result resetAllPasswords() {
+        try {
+            // 获取所有用户
+            List<User> allUsers = userService.list();
+
+            if (allUsers == null || allUsers.isEmpty()) {
+                return Result.error("没有用户可重置");
+            }
+
+            // 重置所有用户密码为加密后的 123456
+            final String defaultPassword = passwordEncryptor.encryptPassword("123456");
+            allUsers.forEach(user -> user.setPassword(defaultPassword));
+            userService.updateBatchById(allUsers);
+
+            return Result.success();
+        } catch (Exception e) {
+            logger.error("重置所有用户密码失败: " + e.getMessage());
+            return Result.error("重置所有用户密码失败");
+        }
+    }
+
+    @PostMapping("/admin/reset-password/{userId}")
+    @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为默认密码 123456")
+    @RequirePermission(roles = { "admin" })
+    @ApiLog("重置指定用户密码")
+    public Result resetUserPassword(@PathVariable Long userId) {
+        try {
+            // 查询用户是否存在
+            User user = userService.getById(userId);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+
+            // 重置密码为加密后的 123456
+            final String defaultPassword = passwordEncryptor.encryptPassword("123456");
+            user.setPassword(defaultPassword);
+            userService.updateById(user);
+
+            return Result.success();
+        } catch (Exception e) {
+            logger.error("重置用户密码失败: " + e.getMessage());
+            return Result.error("重置用户密码失败");
         }
     }
 

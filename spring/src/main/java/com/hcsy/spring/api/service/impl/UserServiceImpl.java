@@ -10,6 +10,7 @@ import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserVO;
 
@@ -29,6 +30,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
     private final TokenService tokenService;
+    private final PasswordEncryptor passwordEncryptor;
 
     @Override
     public Map<String, Object> listUsersWithFilter(long page, long size, String username) {
@@ -149,6 +151,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public void saveUserAndStatus(User user) {
+        // 加密密码后再保存
+        String password = user.getPassword();
+        if (password != null && !password.isEmpty()) {
+            // 检查是否已经被加密过（bcrypt hash 格式为 $2a$, $2b$, $2x$, $2y$ 开头）
+            if (!password.startsWith("$2a$") && !password.startsWith("$2b$") && !password.startsWith("$2x$")
+                    && !password.startsWith("$2y$")) {
+                user.setPassword(passwordEncryptor.encryptPassword(password));
+            }
+        }
         this.save(user);
         redisUtil.set("user:status:" + user.getId(), "0");
     }
