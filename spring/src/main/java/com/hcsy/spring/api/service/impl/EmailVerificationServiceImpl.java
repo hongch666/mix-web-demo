@@ -48,24 +48,17 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
      * @return 是否发送成功
      */
     @Override
-    public boolean sendVerificationCode(String email) {
-        try {
-            // 生成验证码
-            String code = generateVerificationCode();
+    public void sendVerificationCode(String email) {
+        // 生成验证码
+        String code = generateVerificationCode();
 
-            // 保存到 Redis（设置过期时间）
-            String key = VERIFICATION_CODE_PREFIX + email;
-            redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY);
-            logger.info("验证码已保存到 Redis: " + email + ", code: " + code);
+        // 保存到 Redis（设置过期时间）
+        String key = VERIFICATION_CODE_PREFIX + email;
+        redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY);
+        logger.info("验证码已保存到 Redis: " + email + ", code: " + code);
 
-            // 异步发送邮件，避免阻塞主线程
-            sendEmailAsync(email, code);
-
-            return true;
-        } catch (Exception e) {
-            logger.error("生成验证码或保存到 Redis 失败: " + e.getMessage(), e);
-            return false;
-        }
+        // 异步发送邮件，避免阻塞主线程
+        sendEmailAsync(email, code);
     }
 
     /**

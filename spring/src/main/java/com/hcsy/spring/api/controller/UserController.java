@@ -202,7 +202,7 @@ public class UserController {
         // 3. 返回当前登录设备数
         data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
 
-        // 发送 API 日志到 RabbitMQ
+        // 4. 发送 API 日志到 RabbitMQ
         long responseTime = System.currentTimeMillis() - startTime;
         logger.info("POST /users/login: 使用了" + responseTime + "ms");
         sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/login", "用户登录",
@@ -355,13 +355,8 @@ public class UserController {
                 if (existingUser != null) {
                     return Result.error("邮箱已被注册");
                 }
-            } else if ("login".equals(type)) {
-                // 登录场景：邮箱必须已被注册
-                if (existingUser == null) {
-                    return Result.error("邮箱未注册，请先注册");
-                }
-            } else if ("reset".equals(type)) {
-                // 重置密码场景：邮箱必须已被注册
+            } else if ("login".equals(type) || "reset".equals(type)) {
+                // 登录场景/重置密码场景：邮箱必须已被注册
                 if (existingUser == null) {
                     return Result.error("邮箱未注册，请先注册");
                 }
@@ -370,23 +365,21 @@ public class UserController {
             }
 
             // 3. 发送验证码
-            if (emailVerificationService.sendVerificationCode(email)) {
-                return Result.success();
-            } else {
-                return Result.error("发送验证码失败，请稍后重试");
-            }
-        } catch (Exception e) {
-            logger.error("发送验证码异常: " + e.getMessage());
-            return Result.error("发送验证码异常");
-        } finally {
-            // 无论成功还是失败，都发送 API 日志到 RabbitMQ
+            emailVerificationService.sendVerificationCode(email);
+
+            // 4. 发送 API 日志到 RabbitMQ
             long responseTime = System.currentTimeMillis() - startTime;
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("email", email);
             queryParams.put("type", type);
             logger.info("POST /users/email/send: 使用了" + responseTime + "ms");
-            sendApiLogToQueue(null, null, "POST", "/users/email/send", "发送邮箱验证码",
-                    queryParams, null, null, responseTime);
+            sendApiLogToQueue(null, null, "POST", "/users/email/send", "发送邮箱验证码", queryParams, null, null,
+                    responseTime);
+
+            return Result.success("验证码已发送");
+        } catch (Exception e) {
+            logger.error("发送验证码异常: " + e.getMessage());
+            return Result.error("发送验证码异常：" + e.getMessage());
         }
     }
 
