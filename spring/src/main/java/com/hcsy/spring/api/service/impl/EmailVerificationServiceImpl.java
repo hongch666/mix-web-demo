@@ -119,7 +119,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
                 "<h2 style='color: #333; margin: 0;'>邮箱验证码</h2>" +
                 "</div>" +
                 "<div style='padding: 30px 0;'>" +
-                "<p style='color: #666; font-size: 14px; line-height: 1.6;'>尊敬的用户，感谢您的注册！</p>" +
+                "<p style='color: #666; font-size: 14px; line-height: 1.6;'>尊敬的用户，感谢您的使用！</p>" +
                 "<p style='color: #666; font-size: 14px; line-height: 1.6; margin-top: 15px;'>您的邮箱验证码是：</p>" +
                 "<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;'>"
                 +
