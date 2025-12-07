@@ -209,7 +209,7 @@ func formatLogMessage(method, path, description string, userID int64, username s
 func sendApiLogToQueue(userID int64, username, method, path, description string,
 	pathParams map[string]string, queryParams map[string]interface{}, requestBody interface{}, responseTimeMs int64) {
 
-	// ✓ username 为空时使用默认值
+	// username 为空时使用默认值
 	if username == "" {
 		username = "anonymous"
 	}
