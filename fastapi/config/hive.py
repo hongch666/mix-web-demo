@@ -8,7 +8,7 @@ class HiveConnectionPool:
     """Hive 连接池 - 单例模式"""
     _instance = None
     _connections = []
-    _max_connections = 5
+    _max_connections = 10
     _conn_count = 0  # 统计创建的连接数
     
     def __new__(cls):

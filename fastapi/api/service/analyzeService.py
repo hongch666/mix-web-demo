@@ -46,13 +46,13 @@ class AnalyzeService:
                 cached_result = self._article_cache.get(hive_conn)
                 if cached_result:
                     total_time = time.time() - start
-                    logger.info(f"get_top10_articles_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    logger.info(f"get_top10_articles_service: [缓存命中] 耗时 {total_time:.3f}s")
                     return cached_result
             except Exception as cache_e:
                 logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
             
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            logger.info("get_top10_articles_service: [✗ 缓存未命中] 开始查询数据源")
+            logger.info("get_top10_articles_service: [缓存未命中] 开始查询数据源")
             
             # 1.优先 Hive
             try:
@@ -227,13 +227,13 @@ class AnalyzeService:
                 cached_result = self._statistics_cache.get()
                 if cached_result:
                     total_time = time.time() - start
-                    logger.info(f"get_article_statistics_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    logger.info(f"get_article_statistics_service: [缓存命中] 耗时 {total_time:.3f}s")
                     return cached_result
             except Exception as cache_e:
                 logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
             
             # ========== 步骤2: 缓存未命中，查询DB ==========
-            logger.info("get_article_statistics_service: [✗ 缓存未命中] 开始查询数据源")
+            logger.info("get_article_statistics_service: [缓存未命中] 开始查询数据源")
             
             # 分别调用 mapper 层的4个方法
             total_views = self.articleMapper.get_total_views_mapper(db)
@@ -289,13 +289,13 @@ class AnalyzeService:
                 cached_result = self._category_cache.get(hive_conn)
                 if cached_result:
                     total_time = time.time() - start
-                    logger.info(f"get_category_article_count_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    logger.info(f"get_category_article_count_service: [缓存命中] 耗时 {total_time:.3f}s")
                     return cached_result
             except Exception as cache_e:
                 logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
             
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            logger.info("get_category_article_count_service: [✗ 缓存未命中] 开始查询数据源")
+            logger.info("get_category_article_count_service: [缓存未命中] 开始查询数据源")
             
             # 1.优先 Hive
             try:
@@ -389,13 +389,13 @@ class AnalyzeService:
                 cached_result = self._publish_time_cache.get(hive_conn)
                 if cached_result:
                     total_time = time.time() - start
-                    logger.info(f"get_monthly_publish_count_service: [✓ 缓存命中] 耗时 {total_time:.3f}s")
+                    logger.info(f"get_monthly_publish_count_service: [缓存命中] 耗时 {total_time:.3f}s")
                     return cached_result
             except Exception as cache_e:
                 logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
             
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            logger.info("get_monthly_publish_count_service: [✗ 缓存未命中] 开始查询数据源")
+            logger.info("get_monthly_publish_count_service: [缓存未命中] 开始查询数据源")
             
             # 1.优先 Hive
             try:

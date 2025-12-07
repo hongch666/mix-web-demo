@@ -110,12 +110,15 @@ class PublishTimeCache:
             old_version = None
             if self._redis.is_available():
                 old_version = self._redis.get(self.REDIS_VERSION_KEY)
+                # 修复: 统一转换为字符串类型(Redis可能返回bytes)
+                if old_version:
+                    old_version = str(old_version) if not isinstance(old_version, bytes) else old_version.decode('utf-8')
             
             # 本地也有版本号
             if not old_version:
                 old_version = self._cache_version
             
-            if old_version and current_version != old_version:
+            if old_version and str(current_version) != str(old_version):
                 logger.info(f"[缓存-发布] 表版本已变化 (旧: {old_version} → 新: {current_version})")
                 return True
             
