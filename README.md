@@ -192,6 +192,7 @@ go install github.com/gravityblast/fresh@latest # 修改热启动工具(推荐)
 ```bash
 cd nestjs # 进入文件夹
 npm install # 安装npm包
+bun install # 或者使用bun安装
 ```
 
 ### FastAPI 部分
@@ -340,6 +341,8 @@ cd nestjs
 npm run start # development
 npm run start:dev # watch mode
 npm run start:prod # production mode
+npm run start:bun:start # bun运行
+npm run start:bun:dev # bun运行(watch)
 ```
 
 ### FastAPI 服务

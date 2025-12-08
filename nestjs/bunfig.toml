@@ -1,0 +1,39 @@
+# Bun 运行时配置文件
+
+[test]
+# 测试配置
+root = "test"
+preload = ["./test/setup.ts"]
+
+[install]
+# 安装配置
+production = false
+
+[bundle]
+# 打包配置
+entrypoints = ["src/main.ts"]
+outdir = "dist"
+splitting = false
+root = "."
+
+[define]
+# 全局定义
+"process.env.NODE_ENV" = "\"development\""
+
+[jsx]
+# JSX 配置
+automatic = true
+development = false
+factory = "React.createElement"
+fragment = "React.Fragment"
+importSource = "react"
+
+[loader]
+# 加载器配置
+".yaml" = "text"
+".yml" = "text"
+".html" = "text"
+
+[module]
+# 模块配置
+allowImportingTsExtensions = true

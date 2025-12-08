@@ -205,9 +205,15 @@ setup_nestjs() {
     
     cd "$WORKDIR/nestjs"
     
-    # 安装 npm 包
-    log_info "安装 npm 依赖..."
-    npm install
+    # 检查并安装 Bun (可选)
+    log_info "检查 NestJS 运行环境..."
+    if command_exists bun; then
+        log_info "使用 Bun 包管理器安装依赖..."
+        bun install
+    else
+        log_info "使用 npm 安装依赖..."
+        npm install
+    fi
     
     cd "$WORKDIR"
     log_info "NestJS 部分配置完成!"
@@ -310,6 +316,14 @@ check_prerequisites() {
         log_info "npm 版本: $npm_version"
     fi
     
+    # 检查 Bun (可选)
+    if ! command_exists bun; then
+        log_warn "Bun 未安装"
+    else
+        bun_version=$(bun --version)
+        log_info "Bun 版本: $bun_version"
+    fi
+    
     if [ ${#missing_tools[@]} -ne 0 ]; then
         log_error "以下工具未安装:"
         for tool in "${missing_tools[@]}"; do
@@ -320,6 +334,57 @@ check_prerequisites() {
     fi
     
     log_info "环境检查通过!"
+}
+
+# 检查并安装 Bun
+check_and_install_bun() {
+    if command_exists bun; then
+        log_info "Bun 已安装,版本: $(bun --version)"
+        return 0
+    fi
+    
+    log_warn "未检测到 Bun,是否现在安装? [y/N]"
+    read -p "请输入: " install_bun
+    
+    if [[ "$install_bun" =~ ^[Yy]$ ]]; then
+        log_info "开始安装 Bun..."
+        
+        # 使用官方安装脚本
+        curl -fsSL https://bun.sh/install | bash
+        
+        # 添加 Bun 到 PATH
+        export BUN_INSTALL="$HOME/.bun"
+        export PATH="$BUN_INSTALL/bin:$PATH"
+        
+        # 添加到 shell 配置文件
+        if [ -f "$HOME/.bashrc" ]; then
+            if ! grep -q "\.bun/bin" "$HOME/.bashrc"; then
+                echo 'export BUN_INSTALL="$HOME/.bun"' >> "$HOME/.bashrc"
+                echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> "$HOME/.bashrc"
+                log_info "已添加 Bun PATH 到 ~/.bashrc"
+            fi
+        fi
+        
+        if [ -f "$HOME/.zshrc" ]; then
+            if ! grep -q "\.bun/bin" "$HOME/.zshrc"; then
+                echo 'export BUN_INSTALL="$HOME/.bun"' >> "$HOME/.zshrc"
+                echo 'export PATH="$BUN_INSTALL/bin:$PATH"' >> "$HOME/.zshrc"
+                log_info "已添加 Bun PATH 到 ~/.zshrc"
+            fi
+        fi
+        
+        # 验证安装
+        if command_exists bun; then
+            log_info "Bun 安装成功! 版本: $(bun --version)"
+            return 0
+        else
+            log_error "Bun 安装失败,请手动安装或检查网络连接"
+            return 1
+        fi
+    else
+        log_warn "跳过 Bun 安装"
+        return 0
+    fi
 }
 
 # 创建必要的目录
@@ -355,6 +420,10 @@ main() {
     
     # 创建目录
     create_directories
+    echo ""
+    
+    # 检查并安装 Bun (可选)
+    check_and_install_bun
     echo ""
     
     # 询问用户要配置哪些模块

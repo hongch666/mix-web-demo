@@ -14,7 +14,7 @@ tmux send-keys -t "$SPRING_PANE" "cd spring && echo 'Starting Spring Boot...' &&
 # 水平分屏（右上：NestJS）
 tmux split-window -h -t "$SPRING_PANE" -c "$WORKDIR"
 NEST_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$NEST_PANE" "cd nestjs && echo 'Starting NestJS...' && npm run start:debug" C-m
+tmux send-keys -t "$NEST_PANE" "cd nestjs && echo 'Starting NestJS...' && npm run bun:dev" C-m
 
 # 垂直分屏（左下：Gin）
 tmux split-window -v -t "$SPRING_PANE" -c "$WORKDIR"

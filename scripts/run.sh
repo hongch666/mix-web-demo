@@ -17,7 +17,7 @@ tmux send-keys -t $SESSION:2 \
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"
 tmux send-keys -t $SESSION:3 \
-"cd nestjs && npm run start:debug" C-m
+"cd nestjs && npm run bun:dev" C-m
 
 # window 4: fastapi
 tmux new-window -t $SESSION:4 -n fastapi -c "$WORKDIR"

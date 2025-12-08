@@ -11,7 +11,7 @@ Start-Process powershell -ArgumentList "cd $workdir/gateway; mvn spring-boot:run
 Start-Process powershell -ArgumentList "cd $workdir/gin; go run main.go"
 
 # 启动 nestjs
-Start-Process powershell -ArgumentList "cd $workdir/nestjs; npm run start"
+Start-Process powershell -ArgumentList "cd $workdir/nestjs; npm run bun:dev"
 
 # 启动 fastapi
 Start-Process powershell -ArgumentList "cd $workdir/fastapi; uv run python main.py"
