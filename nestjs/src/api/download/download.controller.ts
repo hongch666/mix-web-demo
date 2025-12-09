@@ -1,11 +1,11 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ArticleService } from './article.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
+import { ArticleService } from 'src/modules/article/article.service';
 
 @Controller('download')
-@ApiTags('文章模块')
-export class ArticleController {
+@ApiTags('下载模块')
+export class DownloadController {
   constructor(private readonly articleService: ArticleService) {}
 
   @Get('word/:id')

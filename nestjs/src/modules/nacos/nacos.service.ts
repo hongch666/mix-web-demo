@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
 import qs from 'qs';
 import { ClsService } from 'nestjs-cls';
-import { fileLogger } from '../utils/writeLog';
+import { fileLogger } from '../../common/utils/writeLog';
 
 interface CallOptions {
   serviceName: string;

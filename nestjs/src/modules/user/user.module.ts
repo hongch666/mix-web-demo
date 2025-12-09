@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { WordModule } from 'src/common/word/word.module';
-import { NacosModule } from 'src/common/nacos/nacos.module';
+import { WordModule } from 'src/modules/word/word.module';
+import { NacosModule } from 'src/modules/nacos/nacos.module';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
 

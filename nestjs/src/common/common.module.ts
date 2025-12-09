@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { RabbitMQModule } from './mq/mq.module';
-import { NacosModule } from './nacos/nacos.module';
-import { WordModule } from './word/word.module';
-import { TaskModule } from './task/task.module';
+import { RabbitMQModule } from '../modules/mq/mq.module';
+import { NacosModule } from '../modules/nacos/nacos.module';
+import { WordModule } from '../modules/word/word.module';
+import { TaskModule } from '../modules/task/task.module';
 
 @Module({
   imports: [RabbitMQModule, NacosModule, WordModule, TaskModule],

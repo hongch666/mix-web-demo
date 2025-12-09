@@ -10,7 +10,7 @@ import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { fileLogger } from '../utils/writeLog';
 import { API_LOG_KEY, ApiLogOptions } from '../decorators/api-log.decorator';
-import { RabbitMQService } from '../mq/mq.service';
+import { RabbitMQService } from '../../modules/mq/mq.service';
 
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {

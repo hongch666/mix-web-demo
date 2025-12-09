@@ -10,6 +10,7 @@ import { CommonModule } from './common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
+import { ModulesModule } from './modules/modules.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
     ScheduleModule.forRoot(),
     CommonModule,
     ApiModule,
+    ModulesModule,
   ],
   controllers: [],
   providers: [

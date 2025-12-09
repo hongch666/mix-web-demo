@@ -3,12 +3,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, DeleteResult } from 'mongoose';
 import { ArticleLog, ArticleLogDocument } from './schema/log.schema';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
-import { UserService } from '../user/user.service';
-import { ArticleService } from '../article/article.service';
+import { UserService } from '../../modules/user/user.service';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
+import { ArticleService } from 'src/modules/article/article.service';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

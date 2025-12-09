@@ -2,8 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ClsService } from 'nestjs-cls';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
-import { NacosService } from 'src/common/nacos/nacos.service';
-import { fileLogger } from 'src/common/utils/writeLog';
+import { NacosService } from 'src/modules/nacos/nacos.service';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')

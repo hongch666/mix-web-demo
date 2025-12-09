@@ -4,7 +4,7 @@ import { Cron } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { ArticleLog, ArticleLogDocument } from 'src/api/log/schema/log.schema';
 import { ApiLog, ApiLogDocument } from 'src/api/api-log/schema/api-log.schema';
-import { fileLogger } from '../utils/writeLog';
+import { fileLogger } from '../../common/utils/writeLog';
 
 @Injectable()
 export class TaskService {
