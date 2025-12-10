@@ -33,6 +33,14 @@ show_help() {
     echo "  status [services...]     - Check status of services (or all if not specified)"
     echo "  logs <service>           - View latest logs of a specific service"
     echo ""
+    echo "Docker Commands (Docker 容器管理):"
+    echo "  docker [command]         - Manage Docker containers"
+    echo "    up                     - Create all containers (default)"
+    echo "    status                 - Show container status"
+    echo "    logs <service>         - View container logs"
+    echo "    stop                   - Stop all containers"
+    echo "    delete                 - Delete all containers"
+    echo ""
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
     echo ""
@@ -70,7 +78,6 @@ show_help() {
 
 # 解析命令参数
 COMMAND=${1:-help}
-shift || true
 
 case $COMMAND in
     setup)
@@ -94,55 +101,58 @@ case $COMMAND in
         bash "$SCRIPTS_DIR/build.sh"
         ;;
     start)
-        if [ $# -eq 0 ]; then
+        if [ $# -le 1 ]; then
             echo "Starting all built services..."
             bash "$SCRIPTS_DIR/dist-control.sh" start
         else
-            echo "Starting specified services: $@"
-            bash "$SCRIPTS_DIR/dist-control.sh" start "$@"
+            echo "Starting specified services: ${@:2}"
+            bash "$SCRIPTS_DIR/dist-control.sh" start "${@:2}"
         fi
         ;;
     stop-dist)
-        if [ $# -eq 0 ]; then
+        if [ $# -le 1 ]; then
             echo "Stopping all built services..."
             bash "$SCRIPTS_DIR/dist-control.sh" stop
         else
-            echo "Stopping specified services: $@"
-            bash "$SCRIPTS_DIR/dist-control.sh" stop "$@"
+            echo "Stopping specified services: ${@:2}"
+            bash "$SCRIPTS_DIR/dist-control.sh" stop "${@:2}"
         fi
         ;;
     restart)
-        if [ $# -eq 0 ]; then
+        if [ $# -le 1 ]; then
             echo "Restarting all built services..."
             bash "$SCRIPTS_DIR/dist-control.sh" restart
         else
-            echo "Restarting specified services: $@"
-            bash "$SCRIPTS_DIR/dist-control.sh" restart "$@"
+            echo "Restarting specified services: ${@:2}"
+            bash "$SCRIPTS_DIR/dist-control.sh" restart "${@:2}"
         fi
         ;;
     status)
-        if [ $# -eq 0 ]; then
+        if [ $# -le 1 ]; then
             echo "Checking all services status..."
             bash "$SCRIPTS_DIR/dist-control.sh" status
         else
-            echo "Checking specified services status: $@"
-            bash "$SCRIPTS_DIR/dist-control.sh" status "$@"
+            echo "Checking specified services status: ${@:2}"
+            bash "$SCRIPTS_DIR/dist-control.sh" status "${@:2}"
         fi
         ;;
     logs)
-        if [ $# -eq 0 ]; then
+        if [ $# -le 1 ]; then
             echo "Error: 'logs' command requires a service name"
             echo "Usage: ./services.sh logs <service_name>"
             echo ""
             echo "Example: ./services.sh logs spring"
             exit 1
-        elif [ $# -gt 1 ]; then
+        elif [ $# -gt 2 ]; then
             echo "Error: 'logs' command only accepts one service name"
             exit 1
         else
-            echo "Viewing logs for service: $1"
-            bash "$SCRIPTS_DIR/dist-control.sh" logs "$1"
+            echo "Viewing logs for service: $2"
+            bash "$SCRIPTS_DIR/dist-control.sh" logs "$2"
         fi
+        ;;
+    docker)
+        bash "$SCRIPTS_DIR/docker-services.sh" "${@:2}"
         ;;
     help|--help|-h)
         show_help

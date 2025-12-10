@@ -161,6 +161,99 @@
 2. **启动基础服务**（MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos）
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
+## Docker 容器管理
+
+项目提供了 Docker 容器管理脚本，用于快速创建和管理所有依赖的容器服务。
+
+### Docker 容器脚本用法
+
+```bash
+# 创建所有容器
+./services.sh docker up
+
+# 查看容器状态
+./services.sh docker status
+
+# 查看容器日志
+./services.sh docker logs <service>
+
+# 停止所有容器
+./services.sh docker stop
+
+# 删除所有容器
+./services.sh docker delete
+
+# 显示帮助信息
+./services.sh docker help
+```
+
+### 创建的容器服务
+
+脚本会自动创建以下 Docker 容器：
+
+| 服务              | 端口  | 用户名   | 密码   | 说明                     |
+| ----------------- | ----- | -------- | ------ | ------------------------ |
+| **MySQL**         | 3306  | root     | 123    | 关系型数据库             |
+| **PostgreSQL**    | 5432  | postgres | 123456 | 向量数据库(含 pgvector)  |
+| **Redis**         | 6379  | -        | -      | 缓存服务                 |
+| **MongoDB**       | 27017 | root     | 123456 | 非关系型数据库           |
+| **Elasticsearch** | 9200  | -        | -      | 搜索引擎(7.12.1)         |
+| **Nacos**         | 8848  | -        | -      | 服务发现与配置中心       |
+| **RabbitMQ**      | 5672  | itheima  | 123321 | 消息队列(管理界面 15672) |
+
+### 脚本功能特性
+
+1. **智能检测**
+
+   - 自动检测 Docker 是否安装和运行
+   - 检测端口是否被占用，避免重复创建容器
+   - 自动创建项目专用网络 `hcsy`
+
+2. **前置准备**
+
+   - 自动创建数据持久化目录
+   - 支持 Elasticsearch IK 分词器安装（可选）
+   - 自动生成 Nacos 配置文件
+
+3. **容器管理**
+
+   - 支持查看容器状态
+   - 支持查看容器日志
+   - 支持停止和删除容器
+
+4. **一键部署**
+
+   - 完整的部署流程自动化
+   - 清晰的步骤提示和日志输出
+
+### 快速开始示例
+
+```bash
+# 第一次使用：创建所有容器
+./services.sh docker up
+
+# 查看所有容器是否正常运行
+./services.sh docker status
+
+# 查看 MySQL 容器的日志
+./services.sh docker logs mysql
+
+# 需要时停止容器
+./services.sh docker stop
+
+# 需要时删除容器
+./services.sh docker delete
+```
+
+### 注意事项
+
+- **首次创建**: 首次执行 `docker up` 时会创建 Docker 网络，可能需要一些时间
+- **数据持久化**: 所有容器的数据都会持久化到宿主机目录
+- **Elasticsearch**: 首次创建后会提示是否安装 IK 分词器（可选）
+- **Nacos**: 自动生成 `nacos/custom.env` 配置文件，可根据需要修改
+- **权限问题**: 如果遇到权限错误，可能需要使用 `sudo` 或将用户加入 docker 组
+- 如果有额外创建的组件，按照个人的配置改动配置文件
+
 ## 环境设置
 
 > **提示**: 推荐使用上面的 `setup.sh` 配置脚本自动完成以下所有安装步骤。
