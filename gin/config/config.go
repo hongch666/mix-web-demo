@@ -33,7 +33,8 @@ type MysqlConfig struct {
 }
 
 type ESConfig struct {
-	Url      string `mapstructure:"url"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	Sniff    bool   `mapstructure:"sniff"`

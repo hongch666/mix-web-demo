@@ -862,7 +862,8 @@ database:
     charset: utf8mb4
     loc: Local
   es:
-    url: http://127.0.0.1:9200
+    host: 127.0.0.1
+    port: 9200
     # username:  # 可选：Elasticsearch 用户名
     # password:  # 可选：Elasticsearch 密码
     sniff: false
