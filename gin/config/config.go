@@ -33,12 +33,17 @@ type MysqlConfig struct {
 }
 
 type ESConfig struct {
-	Url   string `mapstructure:"url"`
-	Sniff bool   `mapstructure:"sniff"`
+	Url      string `mapstructure:"url"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Sniff    bool   `mapstructure:"sniff"`
 }
 
 type MongoDBConfig struct {
-	Url      string `mapstructure:"url"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 	Database string `mapstructure:"database"`
 }
 

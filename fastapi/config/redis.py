@@ -21,17 +21,27 @@ class RedisClient:
         try:
             redis_config = load_config("database")["redis"]
             
+            # 构建连接参数
+            pool_params = {
+                "host": redis_config.get("host", "127.0.0.1"),
+                "port": redis_config.get("port", 6379),
+                "db": redis_config.get("db", 0),
+                "decode_responses": redis_config.get("decode_responses", True),
+                "max_connections": redis_config.get("max_connections", 10),
+                "socket_connect_timeout": 5,
+                "socket_timeout": 5,
+            }
+            
+            # 如果有用户名才添加
+            if redis_config.get("username"):
+                pool_params["username"] = redis_config["username"]
+            
+            # 如果有密码才添加
+            if redis_config.get("password"):
+                pool_params["password"] = redis_config["password"]
+            
             # 创建连接池
-            self._pool = redis.ConnectionPool(
-                host=redis_config.get("host", "127.0.0.1"),
-                port=redis_config.get("port", 6379),
-                db=redis_config.get("db", 0),
-                password=redis_config.get("password") or None,
-                decode_responses=redis_config.get("decode_responses", True),
-                max_connections=redis_config.get("max_connections", 10),
-                socket_connect_timeout=5,
-                socket_timeout=5,
-            )
+            self._pool = redis.ConnectionPool(**pool_params)
             
             # 创建 Redis 客户端
             self._client = redis.Redis(connection_pool=self._pool)

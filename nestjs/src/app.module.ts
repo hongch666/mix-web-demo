@@ -38,11 +38,28 @@ import { ModulesModule } from './modules/modules.module';
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('mongodb.url'),
-        dbName: configService.get<string>('mongodb.dbName'),
-        autoCreate: true,
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const mongodb = configService.get('mongodb');
+        const host = mongodb.host;
+        const port = mongodb.port;
+        const username = mongodb.username;
+        const password = mongodb.password;
+        const dbName = mongodb.dbName;
+
+        // 根据是否有用户名和密码构建 URI
+        let uri: string;
+        if (username && password) {
+          uri = `mongodb://${username}:${password}@${host}:${port}`;
+        } else {
+          uri = `mongodb://${host}:${port}`;
+        }
+
+        return {
+          uri,
+          dbName,
+          autoCreate: true,
+        };
+      },
       inject: [ConfigService],
     }),
     ClsModule.forRoot({

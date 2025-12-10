@@ -5,6 +5,7 @@ import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.mq.RabbitMQService;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -48,7 +49,7 @@ public class UserController {
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
-    private final com.hcsy.spring.common.mq.RabbitMQService rabbitMQService;
+    private final RabbitMQService rabbitMQService;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncryptor passwordEncryptor;
 

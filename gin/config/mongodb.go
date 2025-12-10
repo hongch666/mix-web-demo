@@ -13,8 +13,21 @@ import (
 var MongoClient *mongo.Client
 
 func InitMongoDB() {
-	// 从配置文件读取 MongoDB 连接信息
-	mongoURI := Config.Database.MongoDB.Url
+	// 根据 host、port、username、password 构建 URI
+	host := Config.Database.MongoDB.Host
+	port := Config.Database.MongoDB.Port
+	username := Config.Database.MongoDB.Username
+	password := Config.Database.MongoDB.Password
+
+	var mongoURI string
+	// 如果有用户名和密码，构建认证 URI
+	if username != "" && password != "" {
+		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
+		log.Printf("MongoDB 使用认证连接: %s:%s@%s:%s", username, "***", host, port)
+	} else {
+		mongoURI = fmt.Sprintf("mongodb://%s:%s", host, port)
+		log.Printf("MongoDB 连接 (无认证): %s:%s", host, port)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -32,7 +45,7 @@ func InitMongoDB() {
 	}
 
 	MongoClient = client
-	log.Println(fmt.Printf("MongoDB 连接成功: %s\n", mongoURI))
+	log.Println(fmt.Printf("MongoDB 连接成功\n"))
 }
 
 // GetMongoDatabase 获取 MongoDB 数据库实例

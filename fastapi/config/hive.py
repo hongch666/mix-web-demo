@@ -23,14 +23,30 @@ class HiveConnectionPool:
             return self._connections.pop()
         
         # 如果池为空，创建新连接
-        hive_host = load_config("database")["hive"]["host"]
-        hive_port = load_config("database")["hive"]["port"]
-        hive_db = load_config("database")["hive"]["database"]
+        hive_config = load_config("database")["hive"]
+        hive_host = hive_config["host"]
+        hive_port = hive_config["port"]
+        hive_db = hive_config["database"]
+        hive_username = hive_config.get("username")
+        hive_password = hive_config.get("password")
         
         self._conn_count += 1
         logger.info(f"[连接池] 创建新 Hive 连接 (第{self._conn_count}个)")
         conn_start = time.time()
-        conn = hive.Connection(host=hive_host, port=hive_port, database=hive_db)
+        
+        # 根据是否有账号密码来构建连接
+        conn_params = {
+            "host": hive_host,
+            "port": hive_port,
+            "database": hive_db
+        }
+        
+        if hive_username:
+            conn_params["username"] = hive_username
+        if hive_password:
+            conn_params["password"] = hive_password
+        
+        conn = hive.Connection(**conn_params)
         conn_time = time.time() - conn_start
         logger.info(f"[连接池] Hive 连接建立耗时 {conn_time:.3f}s")
         return conn

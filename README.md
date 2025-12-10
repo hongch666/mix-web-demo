@@ -768,6 +768,8 @@ spring:
       host: localhost
       port: 6379
       database: 0
+      # username:  # 可选：Redis 用户名（Redis 6.0+）
+      # password:  # 可选：Redis 密码
       lettuce:
         pool:
           max-active: 10
@@ -861,9 +863,14 @@ database:
     loc: Local
   es:
     url: http://127.0.0.1:9200
+    # username:  # 可选：Elasticsearch 用户名
+    # password:  # 可选：Elasticsearch 密码
     sniff: false
   mongodb:
-    url: "mongodb://localhost:27017"
+    host: localhost
+    port: "27017"
+    # username:  # 可选：MongoDB 用户名
+    # password:  # 可选：MongoDB 密码
     database: "demo"
 
 mq:
@@ -906,7 +913,10 @@ database:
   entities:
     - src/**/*.entity.js
 mongodb:
-  url: mongodb://localhost:27017
+  host: localhost
+  port: 27017
+  # username:  # 可选：MongoDB 用户名
+  # password:  # 可选：MongoDB 密码
   dbName: demo
 rabbitmq:
   host: localhost
@@ -963,17 +973,24 @@ database:
     max_overflow: 20
     echo: False
   mongodb:
-    url: "mongodb://localhost:27017"
+    host: "localhost"
+    port: 27017
+    # username:  # 可选：MongoDB 用户名
+    # password:  # 可选：MongoDB 密码
     database: "demo"
   hive:
     host: "127.0.0.1"
     port: 10000
+    # username: "hive_user" # 可选：Hive 用户名
+    # password: "hive_password" # 可选：Hive 密码
     database: "default"
     table: "articles"
     container: "hive-server"
   redis:
     host: "127.0.0.1"
     port: 6379
+    # username: "default" # 可选：Redis 用户名
+    # password: "your_password" # 可选：Redis 密码
     db: 6
     password: ""
     decode_responses: True
