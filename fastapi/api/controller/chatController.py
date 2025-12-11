@@ -161,14 +161,25 @@ async def stream_message(
                         chunk_type = "content"
                         chunk_content = str(chunk)
                     
+                    # 记录chunk长度（用于调试）
+                    fileLogger.debug(f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}")
+                    
+                    # 如果收到错误消息，直接返回错误并停止流式传输
+                    if chunk_type == "error":
+                        fileLogger.warning(f"流式聊天遇到错误: {chunk_content}")
+                        error_data = {
+                            "code": 0,
+                            "data": None,
+                            "msg": chunk_content
+                        }
+                        yield f"data: {json.dumps(error_data, ensure_ascii=False)}\n\n"
+                        return
+                    
                     # 分别累积思考过程和最终内容
                     if chunk_type == "thinking":
                         thinking_acc += chunk_content
                     elif chunk_type == "content":
                         message_acc += chunk_content
-                    
-                    # 记录chunk长度（用于调试）
-                    fileLogger.debug(f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}")
                     
                     # 构建响应数据 - 确保chunk_content完整输出
                     data = success({

@@ -69,13 +69,13 @@ class UserPermissionManager:
             (是否有权限, 原因说明)
         """
         if not user_id:
-            return False, "请先登录"
+            return False, "权限拒绝：请先登录才能访问数据库查询功能。您当前可以使用文章搜索和闲聊功能。"
         
         role = self.get_user_role(user_id, db)
         if role == self.ROLE_ADMIN:
-            return True, "管理员用户有权访问SQL工具"
+            return True, ""
         else:
-            return False, "普通用户无权访问SQL工具，只能使用文章搜索功能"
+            return False, "权限拒绝：您的账户权限不足，无法访问数据库查询功能。仅管理员账户可以使用此功能。您可以使用文章搜索功能来获取知识内容。"
     
     def can_access_mongodb_logs(self, user_id: int, db: Session) -> tuple[bool, str]:
         """
@@ -89,13 +89,13 @@ class UserPermissionManager:
             (是否有权限, 原因说明)
         """
         if not user_id:
-            return False, "请先登录"
+            return False, "权限拒绝：请先登录才能访问日志查询功能。您当前可以使用文章搜索和闲聊功能。"
         
         role = self.get_user_role(user_id, db)
         if role == self.ROLE_ADMIN:
-            return True, "管理员用户有权查询日志"
+            return True, ""
         else:
-            return False, "普通用户无权查询日志，只能使用文章搜索功能"
+            return False, "权限拒绝：您的账户权限不足，无法查询系统日志。仅管理员账户可以使用此功能。您可以使用文章搜索功能来获取知识内容。"
     
     def validate_database_query_permission(self, user_id: int, db: Session, question: str = "") -> tuple[bool, str]:
         """

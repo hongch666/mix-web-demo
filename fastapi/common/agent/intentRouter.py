@@ -143,7 +143,7 @@ class IntentRouter:
         # 如果没有用户上下文，只允许文章搜索和闲聊
         if not self.user_id or not self.db:
             if intent in ["database_query", "log_analysis"]:
-                return intent, False, "请先登录以使用数据库查询和日志分析功能"
+                return intent, False, "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
             return intent, True, ""
         
         # 检查权限
