@@ -114,14 +114,15 @@ class GeminiService(BaseAiService):
             
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
+            permission_info = ""
             if self.intent_router and db and user_id:
-                intent, has_permission, error_msg = self.intent_router.route_with_permission_check(message, user_id, db)
+                intent, has_permission, permission_msg = self.intent_router.route_with_permission_check(message, user_id, db)
                 logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
                 
-                # 如果没有权限，返回错误信息
+                # 如果没有权限，作为信息传递给AI而不是直接返回
                 if not has_permission:
-                    logger.warning(f"用户 {user_id} 无权限访问: {intent}")
-                    return error_msg
+                    logger.info(f"用户 {user_id} 无权限访问: {intent}")
+                    permission_info = f"[权限提示: {permission_msg}]" if permission_msg else "[权限提示: 您没有权限访问此功能]"
             elif self.intent_router:
                 intent = self.intent_router.route(message)
                 logger.info(f"识别意图: {intent}")
@@ -154,7 +155,8 @@ class GeminiService(BaseAiService):
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
-                full_input = context + f"当前问题: {message}"
+                # 如果有权限限制信息，将其添加到输入中供AI参考
+                full_input = context + f"{permission_info}当前问题: {message}"
                 
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
                 result = agent_response.get("output", "无法获取结果")
@@ -217,15 +219,17 @@ class GeminiService(BaseAiService):
             
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
+            permission_info = ""
             if self.intent_router and db and user_id:
-                intent, has_permission, error_msg = self.intent_router.route_with_permission_check(message, user_id, db)
+                intent, has_permission, permission_msg = self.intent_router.route_with_permission_check(message, user_id, db)
                 logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
                 
-                # 如果没有权限，返回错误信息
+                # 如果没有权限，作为思考信息传递给AI而不是直接返回错误
                 if not has_permission:
-                    logger.warning(f"用户 {user_id} 无权限访问: {intent}")
-                    yield {"type": "error", "content": error_msg}
-                    return
+                    logger.info(f"用户 {user_id} 无权限访问: {intent}")
+                    permission_info = f"[权限提示: {permission_msg}]" if permission_msg else "[权限提示: 您没有权限访问此功能]"
+                    # 将权限信息作为思考过程发送给客户端
+                    yield {"type": "thinking", "content": permission_info}
             elif self.intent_router:
                 intent = self.intent_router.route(message)
                 logger.info(f"识别意图: {intent}")
@@ -263,7 +267,8 @@ class GeminiService(BaseAiService):
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
-                full_input = context + f"当前问题: {message}"
+                # 如果有权限限制信息，将其添加到输入中供AI参考
+                full_input = context + f"{permission_info}当前问题: {message}"
                 
                 # 第一步: 使用Agent获取信息和思考
                 logger.info("Agent开始处理...")
