@@ -5,16 +5,21 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from fastapi import Depends
 from sqlmodel import Session
-from api.mapper import AiHistoryMapper, get_ai_history_mapper
+from api.mapper import AiHistoryMapper, get_ai_history_mapper, UserMapper, get_user_mapper
 from common.utils.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
 from common.agent.intentRouter import IntentRouter
+from common.agent.userPermissionManager import UserPermissionManager
+from common.middleware import get_current_user_id
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
 
 class DoubaoService(BaseAiService):
-    def __init__(self, ai_history_mapper: AiHistoryMapper):
+    def __init__(self, ai_history_mapper: AiHistoryMapper, user_mapper: Optional[UserMapper] = None):
         super().__init__(ai_history_mapper, service_name="Doubao")
+        
+        # 初始化权限管理器
+        self.perm_manager = UserPermissionManager(user_mapper)
         
         # 初始化豆包客户端
         try:
@@ -36,10 +41,10 @@ class DoubaoService(BaseAiService):
                 
                 # 初始化工具
                 try:
-                    _, _, self.all_tools = initialize_ai_tools()
+                    _, _, _, self.all_tools = initialize_ai_tools()
                     
-                    # 初始化意图路由器
-                    self.intent_router = IntentRouter(self.llm)
+                    # 初始化意图路由器（传递 user_mapper）
+                    self.intent_router = IntentRouter(self.llm, user_mapper=user_mapper)
                     
                     # 创建ReAct Agent
                     agent_prompt = get_agent_prompt()
@@ -111,9 +116,17 @@ class DoubaoService(BaseAiService):
             if not self.agent_executor:
                 return await self.basic_chat(message)
             
-            # 1. 意图识别（仅用于判断是否需要工具）
+            # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
-            if self.intent_router:
+            if self.intent_router and db and user_id:
+                intent, has_permission, error_msg = self.intent_router.route_with_permission_check(message, user_id, db)
+                logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
+                
+                # 如果没有权限，返回错误信息
+                if not has_permission:
+                    logger.warning(f"用户 {user_id} 无权限访问: {intent}")
+                    return error_msg
+            elif self.intent_router:
                 intent = self.intent_router.route(message)
                 logger.info(f"识别意图: {intent}")
             
@@ -200,9 +213,18 @@ class DoubaoService(BaseAiService):
                         continue
                 return
             
-            # 1. 意图识别（仅用于判断是否需要工具）
+            # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
-            if self.intent_router:
+            if self.intent_router and db and user_id:
+                intent, has_permission, error_msg = self.intent_router.route_with_permission_check(message, user_id, db)
+                logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
+                
+                # 如果没有权限，返回错误信息
+                if not has_permission:
+                    logger.warning(f"用户 {user_id} 无权限访问: {intent}")
+                    yield {"type": "error", "content": error_msg}
+                    return
+            elif self.intent_router:
                 intent = self.intent_router.route(message)
                 logger.info(f"识别意图: {intent}")
             
@@ -293,5 +315,8 @@ class DoubaoService(BaseAiService):
 
 
 @lru_cache()
-def get_doubao_service(ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper)) -> DoubaoService:
-    return DoubaoService(ai_history_mapper)
+def get_doubao_service(
+    ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
+    user_mapper: UserMapper = Depends(get_user_mapper)
+) -> DoubaoService:
+    return DoubaoService(ai_history_mapper, user_mapper)

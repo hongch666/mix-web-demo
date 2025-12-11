@@ -1,13 +1,14 @@
-from typing import List
+from typing import List, Optional
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools
+from common.agent.mongoDBLogTools import get_mongodb_log_tools
 from common.utils.writeLog import fileLogger as logger
 from api.mapper import AiHistoryMapper
 
 
 # ========== 共享的Agent Prompt模板 ==========
-AGENT_PROMPT_TEMPLATE = """你是一个智能助手，可以帮助用户查询数据库信息和搜索文章内容。
+AGENT_PROMPT_TEMPLATE = """你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
 
 你有以下工具可以使用:
 {tools}
@@ -25,36 +26,48 @@ Observation: 工具执行的结果
 Thought: 我现在知道最终答案了
 Final Answer: 给用户的最终回答
 
-重要提示 - 如何选择和组合工具:
+重要提示 - 如何选择和使用工具:
+
 1. 数据统计/统计查询: 优先使用 get_table_schema 查看表结构，然后用 execute_sql_query 执行SQL查询
-示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
+   示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
 
 2. 文章内容/技术知识查询: 使用 search_articles 搜索相关文章
-示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
+   示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
 
-3. 组合查询 - 需要同时使用多个工具:
-示例: "一共有多少篇文章，并且推荐一些人工智能相关的文章"
-处理方式:
-- 第1步: 用 execute_sql_query 查询文章总数
-- 第2步: 用 search_articles 搜索"人工智能"相关文章
+3. MongoDB 日志和系统分析: 使用以下两个工具
 
-示例: "统计有多少个用户，并查找一些关于Python的教程文章"
-处理方式:
-- 第1步: 用 execute_sql_query 查询用户总数
-- 第2步: 用 search_articles 搜索"Python教程"
+   第一步: 使用 list_mongodb_collections 列出所有可用的 collection
+   - 这会告诉你有哪些数据集合可以查询（如 api_logs, error_logs 等）
+   - 以及每个 collection 中有哪些字段
+   - Action Input: (无需参数)
 
-示例: "按分类统计文章数，并推荐技术文章"
-处理方式:
-- 第1步: 用 execute_sql_query 查询各分类文章数
-- 第2步: 用 search_articles 搜索"技术"相关文章
+   第二步: 使用 query_mongodb 查询特定 collection
+   Action Input 必须是 JSON 格式字符串，包含以下参数:
+   - collection_name: 必需，collection 的名称 (字符串)
+   - filter_dict: 可选，MongoDB 查询条件 (JSON对象)
+   - limit: 可选，返回结果数量限制 (整数，默认10)
+   
+   Action Input 示例:
+   - 查询 api_logs 的前10条: {{"collection_name": "api_logs", "limit": 10}}
+   - 查询特定用户的 api_logs: {{"collection_name": "api_logs", "filter_dict": {{"user_id": 122}}, "limit": 20}}
+   - 查询错误日志: {{"collection_name": "error_logs", "limit": 10}}
+   - 查询文章日志: {{"collection_name": "articlelogs", "limit": 10}}
+
+4. 工作流程建议:
+   - 如果用户问关于"日志"、"记录"、"API请求"、"错误"等：
+     1) 首先调用 list_mongodb_collections 查看有哪些 collection
+     2) 然后根据结果调用 query_mongodb 查询具体数据
+   
+   - 对于简单查询（如"最近的API请求"）：
+     直接使用 query_mongodb，传递 JSON 参数
 
 关键特点:
-- 你可以根据需要多次使用工具，包括同时使用SQL和RAG工具
-- 优先识别用户问题中包含多个子问题或信息需求的情况
-- 对于组合问题，分步骤调用不同的工具，不要试图用一个工具完成所有工作
+- 你可以根据需要多次使用工具
+- 对于组合问题，分步骤调用不同的工具
 - 始终用中文回答用户
-- 如果一个工具返回的结果不足或没有匹配文本，尝试使用其他工具补充信息
-- 如果RAG返回"未找到相关文章"或"没有匹配的内容"，告知用户系统中没有相关内容
+- MongoDB 的 filter_dict 支持完整的 MongoDB 查询语法，如 $gte, $lte, $regex 等
+- 如果查询返回空结果，可以尝试修改查询条件或查询其他 collection
+- Action Input 必须是有效的 JSON 字符串，不能是 Python 字典
 
 开始!
 
@@ -67,21 +80,55 @@ def get_agent_prompt() -> PromptTemplate:
     return PromptTemplate.from_template(AGENT_PROMPT_TEMPLATE)
 
 
-def initialize_ai_tools():
-    """初始化AI工具
+def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = None, include_sql: bool = True, include_logs: bool = True):
+    """初始化AI工具，支持基于权限的工具选择
+    
+    Args:
+        user_id: 用户ID（用于权限检查）
+        db: 数据库会话（用于权限检查）
+        include_sql: 是否包含 SQL 工具
+        include_logs: 是否包含 MongoDB 日志工具
     
     Returns:
-        tuple: (sql_tools, rag_tools, all_tools)
+        tuple: (sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools)
     """
     try:
-        sql_tools_instance = get_sql_tools()
-        rag_tools_instance = get_rag_tools()
+        sql_tools_instance = None
+        rag_tools_instance = None
+        mongodb_log_tools_instance = None
+        all_tools = []
         
-        sql_tools = sql_tools_instance.get_langchain_tools()
-        rag_tools = rag_tools_instance.get_langchain_tools()
-        all_tools = sql_tools + rag_tools
+        # 获取 SQL 工具
+        if include_sql:
+            try:
+                sql_tools_instance = get_sql_tools()
+                sql_tools = sql_tools_instance.get_langchain_tools()
+                all_tools.extend(sql_tools)
+                logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
+            except Exception as e:
+                logger.warning(f"加载 SQL 工具失败: {e}")
         
-        return sql_tools_instance, rag_tools_instance, all_tools
+        # 获取 RAG 工具
+        try:
+            rag_tools_instance = get_rag_tools()
+            rag_tools = rag_tools_instance.get_langchain_tools()
+            all_tools.extend(rag_tools)
+            logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
+        except Exception as e:
+            logger.warning(f"加载 RAG 工具失败: {e}")
+        
+        # 获取 MongoDB 日志工具
+        if include_logs:
+            try:
+                mongodb_log_tools_instance = get_mongodb_log_tools()
+                mongodb_tools = mongodb_log_tools_instance.get_langchain_tools()
+                all_tools.extend(mongodb_tools)
+                logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
+            except Exception as e:
+                logger.warning(f"加载 MongoDB 日志工具失败: {e}")
+        
+        logger.info(f"总共加载了 {len(all_tools)} 个工具")
+        return sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools
     except Exception as e:
         logger.error(f"初始化AI工具失败: {e}")
         raise
