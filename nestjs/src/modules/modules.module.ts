@@ -15,5 +15,13 @@ import { WordModule } from './word/word.module';
     TaskModule,
     WordModule,
   ],
+  exports: [
+    ArticleModule,
+    UserModule,
+    NacosModule,
+    RabbitMQModule,
+    TaskModule,
+    WordModule,
+  ],
 })
 export class ModulesModule {}
