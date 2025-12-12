@@ -183,6 +183,7 @@ bfg-1.14.0.jar
 
 
 static/
+!static/word/template.docx
 logs/
 
 ### Root IDEA
