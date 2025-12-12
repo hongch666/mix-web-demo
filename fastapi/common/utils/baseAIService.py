@@ -1,11 +1,8 @@
 from typing import List, Optional
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
-from common.agent import get_sql_tools, get_rag_tools
-from common.agent.mongoDBLogTools import get_mongodb_log_tools
+from common.agent import get_sql_tools, get_rag_tools, get_mongodb_tools
 from common.utils.writeLog import fileLogger as logger
-from api.mapper import AiHistoryMapper
-
 
 # ========== 共享的Agent Prompt模板 ==========
 AGENT_PROMPT_TEMPLATE = """你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
@@ -120,8 +117,8 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
         # 获取 MongoDB 日志工具
         if include_logs:
             try:
-                mongodb_log_tools_instance = get_mongodb_log_tools()
-                mongodb_tools = mongodb_log_tools_instance.get_langchain_tools()
+                mongodb_tools_instance = get_mongodb_tools()
+                mongodb_tools = mongodb_tools_instance.get_langchain_tools()
                 all_tools.extend(mongodb_tools)
                 logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
             except Exception as e:
@@ -137,7 +134,7 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
 class BaseAiService:
     """AI服务基类"""
     
-    def __init__(self, ai_history_mapper: "AiHistoryMapper", service_name: str = "AI"):
+    def __init__(self, ai_history_mapper, service_name: str = "AI"):
         self.ai_history_mapper = ai_history_mapper
         self.service_name = service_name
         self.llm = None

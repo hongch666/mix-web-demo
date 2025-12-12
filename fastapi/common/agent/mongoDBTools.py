@@ -1,15 +1,15 @@
+import json
+from datetime import datetime
+from bson import ObjectId
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-import json
 from langchain_core.tools import tool
 from pymongo import DESCENDING
-from bson import ObjectId
 from config import load_config
-from config.mongodb import db, client
+from config.mongodb import db
 from common.utils import fileLogger as logger
 
-
-class MongoDBLogTools:
+class MongoDBTools:
     """MongoDB 日志查询工具集"""
     
     def __init__(self):
@@ -279,7 +279,6 @@ class MongoDBLogTools:
     
     def get_langchain_tools(self):
         """获取 LangChain 格式的工具列表"""
-        import json
         
         # 保存对象引用，以便在嵌套函数中使用
         db_tools = self
@@ -392,8 +391,6 @@ class MongoDBLogTools:
     
     def _convert_datetime_to_string(self, obj):
         """递归转换所有 datetime 对象为 ISO 格式字符串"""
-        from datetime import datetime
-        from bson import ObjectId
         
         if isinstance(obj, dict):
             # 处理字典中的所有值
@@ -425,13 +422,12 @@ class MongoDBLogTools:
     
     def _format_results(self, results) -> str:
         """将结果格式化为字符串"""
-        import json
         try:
             return json.dumps(results, ensure_ascii=False, indent=2)
         except:
             return str(results)
 
 
-def get_mongodb_log_tools() -> MongoDBLogTools:
+def get_mongodb_tools() -> MongoDBTools:
     """获取 MongoDB 日志工具实例"""
-    return MongoDBLogTools()
+    return MongoDBTools()

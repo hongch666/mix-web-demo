@@ -2,7 +2,7 @@ from typing import Literal, Optional, Tuple
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from sqlmodel import Session
-from common.agent.userPermissionManager import UserPermissionManager
+from common.agent import UserPermissionManager
 
 class IntentRouter:
     """意图识别路由器，支持权限检查"""

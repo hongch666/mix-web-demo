@@ -6,13 +6,9 @@ from langchain_classic.agents import AgentExecutor, create_react_agent
 from fastapi import Depends
 from sqlmodel import Session
 from api.mapper import AiHistoryMapper, get_ai_history_mapper, UserMapper, get_user_mapper
-from common.utils.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
-from common.agent.intentRouter import IntentRouter
-from common.agent.userPermissionManager import UserPermissionManager
-from common.middleware import get_current_user_id
-from common.utils import fileLogger as logger
+from common.agent import IntentRouter, UserPermissionManager
+from common.utils import fileLogger as logger, BaseAiService, get_agent_prompt, initialize_ai_tools
 from config import load_config, load_secret_config
-
 
 class DoubaoService(BaseAiService):
     def __init__(self, ai_history_mapper: AiHistoryMapper, user_mapper: Optional[UserMapper] = None):

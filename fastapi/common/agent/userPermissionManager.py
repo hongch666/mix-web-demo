@@ -1,7 +1,6 @@
 from typing import Optional
-from sqlmodel import Session, select
+from sqlmodel import Session
 from common.utils import fileLogger as logger
-
 
 class UserPermissionManager:
     """用户权限管理器"""

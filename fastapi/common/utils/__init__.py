@@ -4,8 +4,10 @@ from .response import success, fail
 
 from .writeLog import write_log, log_info, log_error, log_warning, log_debug, SimpleLogger, fileLogger
 
+from .baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
+
 __all__ = [
-    "loggers",
+    "logger",
     "success",
     "fail",
     "write_log",
@@ -17,7 +19,10 @@ __all__ = [
     "fileLogger",
     "BaseAiService",
     "get_agent_prompt",
-    "initialize_ai_tools"
+    "initialize_ai_tools",
+    "BaseAiService",
+    "get_agent_prompt",
+    "initialize_ai_tools",
 ]
 
 def __getattr__(name):
