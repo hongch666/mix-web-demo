@@ -5,7 +5,6 @@ import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
-import com.hcsy.spring.common.mq.RabbitMQService;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -49,7 +48,6 @@ public class UserController {
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
-    private final RabbitMQService rabbitMQService;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncryptor passwordEncryptor;
 
@@ -181,10 +179,8 @@ public class UserController {
 
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
+    @ApiLog("用户登录")
     public Result login(@RequestBody LoginDTO loginDTO) {
-        long startTime = System.currentTimeMillis();
-        logger.info("POST /users/login: " + "用户登录\nLoginDTO: %s", loginDTO);
-
         User user = userService.findByUsername(loginDTO.getName());
         if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
             return Result.error("用户名或密码错误");
@@ -203,21 +199,13 @@ public class UserController {
         // 3. 返回当前登录设备数
         data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
 
-        // 4. 发送 API 日志到 RabbitMQ
-        long responseTime = System.currentTimeMillis() - startTime;
-        logger.info("POST /users/login: 使用了" + responseTime + "ms");
-        sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/login", "用户登录",
-                null, null, loginDTO, responseTime);
-
         return Result.success(data);
     }
 
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
+    @ApiLog("邮箱验证码登录")
     public Result emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
-        long startTime = System.currentTimeMillis();
-        logger.info("POST /users/email-login: 邮箱验证码登录\nEmailLoginDTO: %s", emailLoginDTO);
-
         try {
             // 1. 验证邮箱验证码
             if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
@@ -242,12 +230,6 @@ public class UserController {
             data.put("username", user.getName());
             // 返回当前登录设备数
             data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
-
-            // 5. 发送 API 日志到 RabbitMQ
-            long responseTime = System.currentTimeMillis() - startTime;
-            logger.info("POST /users/email-login: 使用了" + responseTime + "ms");
-            sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/email-login", "邮箱验证码登录",
-                    null, null, emailLoginDTO, responseTime);
 
             return Result.success(data);
         } catch (Exception e) {
@@ -298,13 +280,11 @@ public class UserController {
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
+    @ApiLog("用户注册")
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     public Result registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
-        long startTime = System.currentTimeMillis();
-        logger.info("POST /users/register: 用户注册\nUserRegisterDTO: %s", registerDto);
-
         // 1. 检查邮箱是否已被注册
         User existingUser = userService.findByEmail(registerDto.getEmail());
         if (existingUser != null) {
@@ -325,12 +305,6 @@ public class UserController {
         // 4. 标记邮箱已验证
         emailVerificationService.markEmailAsVerified(registerDto.getEmail());
 
-        // 5. 发送 API 日志到 RabbitMQ
-        long responseTime = System.currentTimeMillis() - startTime;
-        logger.info("POST /users/register: 使用了" + responseTime + "ms");
-        sendApiLogToQueue(user.getId(), user.getName(), "POST", "/users/register", "用户注册",
-                null, null, registerDto, responseTime);
-
         return Result.success("注册成功");
     }
 
@@ -339,9 +313,6 @@ public class UserController {
     @ApiLog("发送邮箱验证码")
     public Result sendVerificationCode(@RequestParam String email,
             @RequestParam(defaultValue = "register") String type) {
-        long startTime = System.currentTimeMillis();
-        logger.info("POST /users/email/send: 发送邮箱验证码\nemail: %s, type: %s", email, type);
-
         try {
             // 1. 验证邮箱格式
             if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
@@ -367,15 +338,6 @@ public class UserController {
 
             // 3. 发送验证码
             emailVerificationService.sendVerificationCode(email);
-
-            // 4. 发送 API 日志到 RabbitMQ
-            long responseTime = System.currentTimeMillis() - startTime;
-            Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("email", email);
-            queryParams.put("type", type);
-            logger.info("POST /users/email/send: 使用了" + responseTime + "ms");
-            sendApiLogToQueue(null, null, "POST", "/users/email/send", "发送邮箱验证码", queryParams, null, null,
-                    responseTime);
 
             return Result.success("验证码已发送");
         } catch (Exception e) {
@@ -460,42 +422,4 @@ public class UserController {
             return Result.error("重置用户密码失败");
         }
     }
-
-    /**
-     * 发送 API 日志到 RabbitMQ
-     * 
-     * @param userId       用户ID
-     * @param username     用户名
-     * @param method       HTTP方法
-     * @param path         API路径
-     * @param description  API描述
-     * @param queryParams  查询参数
-     * @param pathParams   路径参数
-     * @param requestBody  请求体
-     * @param responseTime 响应时间（毫秒）
-     */
-    private void sendApiLogToQueue(Long userId, String username, String method, String path,
-            String description, Map<String, String> queryParams,
-            Map<String, String> pathParams, Object requestBody, long responseTime) {
-        try {
-            // 构建 API 日志消息（统一格式：snake_case）
-            Map<String, Object> apiLogMessage = new HashMap<>();
-            apiLogMessage.put("user_id", userId);
-            apiLogMessage.put("username", username);
-            apiLogMessage.put("api_description", description);
-            apiLogMessage.put("api_path", path);
-            apiLogMessage.put("api_method", method);
-            apiLogMessage.put("query_params", queryParams);
-            apiLogMessage.put("path_params", pathParams);
-            apiLogMessage.put("request_body", requestBody);
-            apiLogMessage.put("response_time", responseTime);
-
-            // 发送到 RabbitMQ
-            rabbitMQService.sendMessage("api-log-queue", apiLogMessage);
-            logger.info("API 日志已发送到队列");
-        } catch (Exception e) {
-            logger.error("发送 API 日志到队列失败: " + e.getMessage());
-        }
-    }
-
 }

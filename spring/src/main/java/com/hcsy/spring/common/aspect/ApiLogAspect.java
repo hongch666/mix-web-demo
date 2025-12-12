@@ -48,6 +48,14 @@ public class ApiLogAspect {
             Long userId = UserContext.getUserId();
             String username = UserContext.getUsername();
 
+            // 增加判空
+            if (userId == null) {
+                userId = 0L;
+            }
+            if (username == null) {
+                username = "unknown";
+            }
+
             // 获取请求信息
             MethodSignature signature = (MethodSignature) pjp.getSignature();
             Method method = signature.getMethod();

@@ -124,7 +124,6 @@ public class TokenServiceImpl implements TokenService {
 
     /**
      * 定时任务：检查并清理所有过期的 Token
-     * 建议每小时执行一次
      */
     @Override
     public void cleanupExpiredTokens() {

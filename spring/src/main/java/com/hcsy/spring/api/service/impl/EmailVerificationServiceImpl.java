@@ -98,7 +98,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     private void handleSendFailure(String email) {
         String key = VERIFICATION_CODE_PREFIX + email;
         redisUtil.delete(key);
-        logger.debug("⚠ 已删除过期的验证码: " + email);
+        logger.debug("已删除过期的验证码: " + email);
     }
 
     /**
