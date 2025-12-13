@@ -322,6 +322,289 @@ default = true
 
 ```
 
+## 微服务 Docker 容器部署
+
+项目提供了完整的 Docker 支持，可以为每个微服务构建镜像并创建容器。
+
+### 微服务 Docker 快速开始
+
+```bash
+# 1. 构建并启动所有微服务容器
+./services.sh docker up
+
+# 2. 查看容器状态
+./services.sh docker status
+
+# 3. 查看特定服务的日志
+./services.sh docker logs spring
+
+# 4. 停止所有微服务容器
+./services.sh docker stop
+```
+
+### 微服务容器说明
+
+| 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
+| ----------- | ---- | -------------------- | ----------------------- | ---------------- |
+| **Gin**     | 8081 | `mix-gin:latest`     | `mix-gin-container`     | Go 1.23 + Alpine |
+| **NestJS**  | 8082 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
+| **Spring**  | 8083 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
+| **Gateway** | 9000 | `mix-gateway:latest` | `mix-gateway-container` | Java 17 + Alpine |
+| **FastAPI** | 8084 | `mix-fastapi:latest` | `mix-fastapi-container` | Python 3.12      |
+
+### 微服务容器特性
+
+1. **多阶段构建优化**
+
+   - Gin/NestJS/Spring 采用多阶段构建，显著减小镜像体积
+   - 生产环境只包含必要的运行时，无构建工具
+
+2. **配置文件支持**
+
+   - 支持挂载 `application.yaml` 和 `application-secret.yaml`
+   - 无需重新构建镜像即可修改配置
+
+3. **数据持久化**
+
+   - 日志目录持久化：`logs/<service>/`
+   - 文件上传目录持久化：`static/`
+
+4. **健康检查**
+   - 容器具有健康检查配置
+   - 支持自动重启（`unless-stopped` 策略）
+
+### 高级用法
+
+```bash
+# 仅构建特定服务的镜像
+./services.sh docker build spring gin
+
+# 仅构建镜像，不启动容器
+./scripts/build_and_run_services.sh --build-only
+
+# 手动启动容器时指定配置文件
+docker run -d --name mix-spring-custom \
+  -p 8083:8083 \
+  -v $(pwd)/spring/application.yaml:/app/application.yaml \
+  -v $(pwd)/spring/application-secret.yaml:/app/application-secret.yaml \
+  mix-spring:latest
+
+# 查看容器日志
+docker logs -f mix-spring-container
+
+# 进入容器交互式终端
+docker exec -it mix-spring-container bash
+
+# 重启容器（应用新配置）
+docker restart mix-spring-container
+```
+
+## Kubernetes 集群部署
+
+### 前置要求
+
+部署到 Kubernetes 集群需要以下工具：
+
+- **kubectl**：Kubernetes 命令行工具（>=1.24）
+- **Minikube** (本地开发) 或其他 K8s 集群
+- **Docker**：用于构建容器镜像
+
+### 工具安装
+
+本项目提供了自动化的 K8s 工具安装脚本：
+
+```bash
+# 安装所有必要工具（kubectl + Docker + Minikube）
+./scripts/install-k8s-tools.sh all
+
+# 仅安装kubectl
+./scripts/install-k8s-tools.sh kubectl
+
+# 仅安装Minikube
+./scripts/install-k8s-tools.sh minikube
+
+# 启动Minikube集群
+./scripts/install-k8s-tools.sh start-cluster
+```
+
+或使用 `services.sh` 便捷脚本：
+
+```bash
+# 查看K8s相关命令
+./services.sh k8s help
+
+# 安装/检查K8s工具
+./services.sh k8s install
+```
+
+### 本地开发环境（Minikube）
+
+```bash
+# 1. 启动Minikube集群（首次使用）
+minikube start --driver=docker
+
+# 2. 构建Docker镜像
+./services.sh docker build
+
+# 3. 加载镜像到Minikube
+eval $(minikube docker-env)
+./services.sh docker build
+
+# 或手动加载：
+minikube image load mix-spring:latest
+minikube image load mix-gateway:latest
+minikube image load mix-fastapi:latest
+minikube image load mix-gin:latest
+minikube image load mix-nestjs:latest
+```
+
+### K8s 部署快速开始
+
+```bash
+# 1. 查看可用命令
+./services.sh k8s help
+
+# 2. 部署所有服务到K8s集群
+./services.sh k8s deploy
+
+# 3. 查看部署状态
+./services.sh k8s status
+
+# 4. 查看pod日志
+./services.sh k8s logs spring
+./services.sh k8s logs gin
+./services.sh k8s logs nestjs
+./services.sh k8s logs fastapi
+./services.sh k8s logs gateway
+
+# 5. 端口转发（本地访问）
+./services.sh k8s port-forward spring 8083
+./services.sh k8s port-forward gateway 9000
+
+# 6. 进入Pod交互式终端
+./services.sh k8s exec spring
+./services.sh k8s exec gateway
+
+# 7. 滚动重启服务（应用新配置）
+./services.sh k8s restart spring
+./services.sh k8s restart gateway
+
+# 8. 删除所有K8s资源
+./services.sh k8s delete
+```
+
+### K8s 资源说明
+
+项目提供的 K8s 资源文件位于 `k8s/` 目录：
+
+| 文件              | 说明               | 资源类型                          |
+| ----------------- | ------------------ | --------------------------------- |
+| `namespace.yaml`  | 命名空间和网络策略 | Namespace, NetworkPolicy          |
+| `configmap.yaml`  | 服务配置管理       | ConfigMap (5 个)                  |
+| `deployment.yaml` | 服务部署和内部服务 | Deployment (5 个), Service (5 个) |
+| `ingress.yaml`    | 外部访问入口       | Ingress                           |
+
+**部署配置：**
+
+- **副本数**: 2 (可根据负载调整)
+- **资源限制**:
+  - Go/Node 服务: 256Mi 内存, 100m CPU
+  - Java 服务: 512Mi 内存, 200m CPU
+  - Python 服务: 256Mi 内存, 100m CPU
+- **健康检查**: 所有 Pod 都包含存活探针(livenessProbe)和就绪探针(readinessProbe)
+
+### 访问服务
+
+**通过 kubectl port-forward：**
+
+```bash
+# 转发网关到本地 9000 端口
+kubectl port-forward -n mix-web-demo svc/gateway 9000:9000
+
+# 然后访问: http://localhost:9000
+```
+
+**通过 Ingress（集群内）：**
+
+```bash
+# 获取 Ingress 地址
+kubectl get ingress -n mix-web-demo
+
+# 然后访问相应的路由
+http://<ingress-ip>/        # Gateway
+http://<ingress-ip>/gin     # Gin服务
+http://<ingress-ip>/nestjs  # NestJS服务
+http://<ingress-ip>/spring  # Spring服务
+http://<ingress-ip>/fastapi # FastAPI服务
+```
+
+### 高级用法
+
+```bash
+# 查看详细的服务信息
+./services.sh k8s describe spring
+
+# 监控部署进度
+./services.sh k8s rollout-status gateway
+
+# 直接调用k8s-deploy.sh获取更多选项
+./scripts/k8s-deploy.sh help
+
+# 手动应用K8s清单文件
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/ingress.yaml
+
+# 查看集群中的所有资源
+kubectl get all -n mix-web-demo
+
+# 查看Pod的详细信息
+kubectl describe pod <pod-name> -n mix-web-demo
+
+# 查看服务的端点
+kubectl get endpoints -n mix-web-demo
+```
+
+### 故障排查
+
+```bash
+# 检查Pod状态
+kubectl get pods -n mix-web-demo
+
+# 查看Pod详细信息
+kubectl describe pod <pod-name> -n mix-web-demo
+
+# 查看Pod日志
+kubectl logs <pod-name> -n mix-web-demo
+
+# 查看事件日志
+kubectl get events -n mix-web-demo --sort-by='.lastTimestamp'
+
+# 进入Pod容器
+kubectl exec -it <pod-name> -n mix-web-demo -- /bin/bash
+
+# 检查资源使用情况
+kubectl top nodes
+kubectl top pods -n mix-web-demo
+
+# 检查ConfigMap是否正确挂载
+kubectl get configmap -n mix-web-demo
+kubectl describe configmap <config-name> -n mix-web-demo
+```
+
+### Docker 和 K8s 对比
+
+| 对比项       | Docker              | Kubernetes            |
+| ------------ | ------------------- | --------------------- |
+| **部署范围** | 单机或 Docker Swarm | 集群（多机）          |
+| **可扩展性** | 有限                | 自动扩展(HPA)         |
+| **资源管理** | 基础                | 高级(requests/limits) |
+| **自动恢复** | 手动                | 自动(ReplicaSet)      |
+| **更新策略** | 重启容器            | 滚动更新              |
+| **配置管理** | 环境变量+文件       | ConfigMap/Secret      |
+| **用途**     | 开发、小型生产      | 大规模生产、云原生    |
+
 ## 生产环境部署
 
 本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
@@ -471,6 +754,25 @@ uv run --python 3.12 python main.py
 
 # 停止所有 tmux 服务
 ./services.sh stop
+
+# ===== Docker 容器环境 =====
+# 构建并启动所有微服务容器
+./services.sh docker up
+
+# 构建并启动特定服务容器
+./services.sh docker up spring gin
+
+# 仅构建镜像
+./services.sh docker build
+
+# 查看容器状态
+./services.sh docker status
+
+# 查看容器日志
+./services.sh docker logs spring
+
+# 停止所有容器
+./services.sh docker stop
 
 # ===== 生产环境 =====
 # 构建所有服务到 dist/ 目录

@@ -35,11 +35,25 @@ show_help() {
     echo ""
     echo "Docker Commands (Docker 容器管理):"
     echo "  docker [command]         - Manage Docker containers"
-    echo "    up                     - Create all containers (default)"
+    echo "    up [services...]       - Build and run containers (or all if not specified)"
+    echo "    build [services...]    - Build images only"
     echo "    status                 - Show container status"
     echo "    logs <service>         - View container logs"
     echo "    stop                   - Stop all containers"
     echo "    delete                 - Delete all containers"
+    echo ""
+    echo "Kubernetes Commands (K8s 集群管理):"
+    echo "  k8s [command] [args]     - Manage Kubernetes deployment"
+    echo "    deploy                 - Deploy all services to K8s"
+    echo "    delete                 - Delete all K8s resources"
+    echo "    status                 - Show deployment/pod/service status"
+    echo "    logs <service>         - View pod logs of a service"
+    echo "    exec <service>         - Execute shell in service pod"
+    echo "    port-forward <service> <port> - Forward local port to service"
+    echo "    restart <service>      - Rolling restart a service"
+    echo "    describe <service>     - Show detailed info about service"
+    echo "    install                - Install/check K8s tools"
+    echo "    help                   - Show K8s help message"
     echo ""
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
@@ -68,6 +82,12 @@ show_help() {
     echo "  ./services.sh logs spring              # View Spring service logs"
     echo "  ./services.sh stop-dist                # Stop all services"
     echo "  ./services.sh stop-dist fastapi nestjs # Stop specific services"
+    echo "  ./services.sh docker up                # Build and run all containers"
+    echo "  ./services.sh docker up spring gin     # Build and run specific containers"
+    echo "  ./services.sh docker build             # Build all images only"
+    echo "  ./services.sh docker status            # Show container status"
+    echo "  ./services.sh docker logs spring       # View Spring container logs"
+    echo "  ./services.sh docker stop              # Stop all containers"
     echo ""
     echo "Notes (备注):"
     echo "  - For Windows PowerShell: PowerShell -ExecutionPolicy Bypass -File ./scripts/run.ps1"
@@ -152,7 +172,63 @@ case $COMMAND in
         fi
         ;;
     docker)
-        bash "$SCRIPTS_DIR/docker-services.sh" "${@:2}"
+        if [ $# -lt 2 ]; then
+            # 默认执行up命令
+            echo "Building and running all Docker containers..."
+            bash "$SCRIPTS_DIR/build_and_run_services.sh"
+        else
+            case $2 in
+                up)
+                    if [ $# -le 2 ]; then
+                        echo "Building and running all Docker containers..."
+                        bash "$SCRIPTS_DIR/build_and_run_services.sh"
+                    else
+                        echo "Building and running specified services: ${@:3}"
+                        bash "$SCRIPTS_DIR/build_and_run_services.sh" "${@:3}"
+                    fi
+                    ;;
+                build)
+                    if [ $# -le 2 ]; then
+                        echo "Building all Docker images..."
+                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --build-only
+                    else
+                        echo "Building specified images: ${@:3}"
+                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --build-only "${@:3}"
+                    fi
+                    ;;
+                status)
+                    echo "Showing Docker container status..."
+                    bash "$SCRIPTS_DIR/build_and_run_services.sh" --status
+                    ;;
+                logs)
+                    if [ $# -le 2 ]; then
+                        echo "Error: 'docker logs' requires a service name"
+                        exit 1
+                    else
+                        docker logs -f "mix-$3-container"
+                    fi
+                    ;;
+                stop)
+                    echo "Stopping all Docker containers..."
+                    bash "$SCRIPTS_DIR/build_and_run_services.sh" --clean
+                    ;;
+                delete)
+                    echo "Deleting all Docker containers..."
+                    bash "$SCRIPTS_DIR/build_and_run_services.sh" --clean
+                    ;;
+                *)
+                    echo "Unknown docker command: $2"
+                    exit 1
+                    ;;
+            esac
+        fi
+        ;;
+    k8s)
+        if [ $# -lt 2 ]; then
+            bash "$SCRIPTS_DIR/k8s-deploy.sh" help
+        else
+            bash "$SCRIPTS_DIR/k8s-deploy.sh" "$@"
+        fi
         ;;
     help|--help|-h)
         show_help

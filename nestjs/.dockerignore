@@ -1,0 +1,33 @@
+# Node依赖
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+
+# 构建文件
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# 环境
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+logs/

@@ -1,0 +1,26 @@
+# Maven构建文件
+target/
+*.jar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Build
+*.class
+*.log
+.gradle/
+
+# Maven
+.m2/
