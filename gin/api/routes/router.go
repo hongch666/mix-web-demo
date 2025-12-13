@@ -65,10 +65,10 @@ func SetupRouter() *gin.Engine {
 		chatGroup.POST("/all-unread-counts", middleware.ApiLogMiddleware("获取所有未读消息数"), chatController.GetAllUnreadCounts)
 	}
 
-	// SSE连接路由（单独分出，不放在/user-chat组内）
+	// SSE连接路由
 	r.GET("/sse/chat", middleware.ApiLogMiddleware("SSE连接"), chatController.SSEHandler)
 
-	// WebSocket路由（单独分出）
+	// WebSocket路由
 	r.GET("/ws/chat", middleware.ApiLogMiddleware("WebSocket连接"), chatController.WebSocketHandler)
 
 	return r
