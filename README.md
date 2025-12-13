@@ -48,6 +48,7 @@
 - RabbitMQ：消息队列
 - Hadoop+Hive：大数据存储与分析
 - WebSocket：用户实时聊天
+- SSE：实时通知未读消息
 - Langchain：大模型调用和 RAG 框架
 
 ## 第三方服务
@@ -1091,10 +1092,19 @@ spring:
             connect-timeout: 60000
             response-timeout: 60000
 
+        - id: gin-sse
+          uri: http://localhost:8082
+          predicates:
+            - Path=/sse/**
+          metadata:
+            # SSE 相关配置（需要持续连接，响应超时设为-1）
+            response-timeout: -1
+            connect-timeout: 60000
+
         - id: gin
           uri: lb://gin
           predicates:
-            - Path=/api_gin/**,/search/**, /user-chat/**, /static/**
+            - Path=/api_gin/**,/search/**,/user-chat/**,/static/**
 
         - id: nestjs
           uri: lb://nestjs

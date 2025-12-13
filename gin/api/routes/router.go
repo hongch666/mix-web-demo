@@ -59,9 +59,16 @@ func SetupRouter() *gin.Engine {
 		chatGroup.POST("/join", middleware.ApiLogMiddleware("加入队列"), chatController.JoinQueue)
 		// 手动离开队列
 		chatGroup.POST("/leave", middleware.ApiLogMiddleware("离开队列"), chatController.LeaveQueue)
+		// 获取两个用户间的未读消息数
+		chatGroup.POST("/unread-count", middleware.ApiLogMiddleware("获取未读消息数"), chatController.GetUnreadCount)
+		// 获取用户的所有未读消息数
+		chatGroup.POST("/all-unread-counts", middleware.ApiLogMiddleware("获取所有未读消息数"), chatController.GetAllUnreadCounts)
 	}
 
-	// WebSocket路由
+	// SSE连接路由（单独分出，不放在/user-chat组内）
+	r.GET("/sse/chat", middleware.ApiLogMiddleware("SSE连接"), chatController.SSEHandler)
+
+	// WebSocket路由（单独分出）
 	r.GET("/ws/chat", middleware.ApiLogMiddleware("WebSocket连接"), chatController.WebSocketHandler)
 
 	return r

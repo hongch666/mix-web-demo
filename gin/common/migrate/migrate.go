@@ -18,7 +18,15 @@ func InitMigrate() {
 	migrator := config.DB.Migrator()
 	// 可用模型检查表是否存在
 	if migrator.HasTable(&po.ChatMessage{}) || migrator.HasTable("chat_messages") {
-		utils.FileLogger.Info("chat_messages 表已存在，跳过创建")
+		utils.FileLogger.Info("chat_messages 表已存在，检查是否需要添加is_read字段")
+		// 检查is_read字段是否存在，不存在则添加
+		if !migrator.HasColumn(&po.ChatMessage{}, "is_read") {
+			if err := migrator.AddColumn(&po.ChatMessage{}, "is_read"); err != nil {
+				utils.FileLogger.Error(fmt.Sprintf("添加 is_read 字段失败: %v", err))
+			} else {
+				utils.FileLogger.Info("is_read 字段已添加")
+			}
+		}
 		return
 	}
 
@@ -28,11 +36,13 @@ func InitMigrate() {
 		sender_id varchar(50) NOT NULL COMMENT '发送者用户ID',
 		receiver_id varchar(50) NOT NULL COMMENT '接收者用户ID',
 		content text NOT NULL COMMENT '消息内容',
+		is_read tinyint NOT NULL DEFAULT 0 COMMENT '是否已读，0为未读，1为已读',
 		created_at datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
 		PRIMARY KEY (id),
 		KEY idx_chat_messages_sender_id (sender_id) COMMENT '发送者ID索引',
 		KEY idx_chat_messages_receiver_id (receiver_id) COMMENT '接收者ID索引',
 		KEY idx_chat_messages_created_at (created_at) COMMENT '创建时间索引',
+		KEY idx_chat_messages_is_read (is_read) COMMENT '已读状态索引',
 		KEY idx_chat_messages_sender_receiver (
 			sender_id,
 			receiver_id,

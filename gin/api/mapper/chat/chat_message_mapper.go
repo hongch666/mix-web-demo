@@ -45,3 +45,66 @@ func (m *ChatMessageMapper) GetChatHistory(userID, otherID string, offset, limit
 
 	return result, total
 }
+
+// GetUnreadCount 获取两个用户间的未读消息数
+func (m *ChatMessageMapper) GetUnreadCount(userID, otherID string) int64 {
+	ctx := context.Background()
+	count, err := gorm.G[po.ChatMessage](config.DB).Where(
+		"receiver_id = ? AND sender_id = ? AND is_read = 0",
+		userID, otherID,
+	).Count(ctx, "*")
+	if err != nil {
+		panic(err)
+	}
+	return count
+}
+
+// GetAllUnreadCounts 获取用户与其他所有人的未读消息数
+func (m *ChatMessageMapper) GetAllUnreadCounts(userID string) map[string]int64 {
+	ctx := context.Background()
+
+	// 获取所有发给当前用户的未读消息，按发送者分组统计
+	var results []struct {
+		SenderID string
+		Count    int64
+	}
+
+	err := config.DB.WithContext(ctx).
+		Model(&po.ChatMessage{}).
+		Select("sender_id, COUNT(*) as count").
+		Where("receiver_id = ? AND is_read = 0", userID).
+		Group("sender_id").
+		Scan(&results).
+		Error
+
+	if err != nil {
+		panic(err)
+	}
+
+	unreadCounts := make(map[string]int64)
+	for _, result := range results {
+		unreadCounts[result.SenderID] = result.Count
+	}
+
+	return unreadCounts
+}
+
+// MarkAsRead 将指定消息标记为已读
+func (m *ChatMessageMapper) MarkAsRead(messageID uint) error {
+	ctx := context.Background()
+	return config.DB.WithContext(ctx).
+		Model(&po.ChatMessage{}).
+		Where("id = ?", messageID).
+		Update("is_read", 1).
+		Error
+}
+
+// MarkChatHistoryAsRead 将两个用户间的所有消息标记为已读
+func (m *ChatMessageMapper) MarkChatHistoryAsRead(userID, otherID string) error {
+	ctx := context.Background()
+	return config.DB.WithContext(ctx).
+		Model(&po.ChatMessage{}).
+		Where("receiver_id = ? AND sender_id = ?", userID, otherID).
+		Update("is_read", 1).
+		Error
+}

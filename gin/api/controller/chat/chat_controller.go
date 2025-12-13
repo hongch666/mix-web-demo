@@ -4,7 +4,9 @@ import (
 	"gin_proj/api/service/chat"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -162,3 +164,122 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 	go client.WritePump()
 	go client.ReadPump()
 }
+
+// GetUnreadCount 获取两个用户间的未读消息数
+// @Summary 获取两个用户间的未读消息数
+// @Description 获取指定用户与另一个用户间的未读消息数
+// @Tags 聊天
+// @Accept json
+// @Produce json
+// @Param request body dto.GetUnreadCountRequest true "获取未读消息数请求"
+// @Success 200 {object} dto.UnreadCountResponse
+// @Router /user-chat/unread-count [post]
+func (con *ChatController) GetUnreadCount(c *gin.Context) {
+	var req dto.GetUnreadCountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	response := con.ChatService.GetUnreadCount(&req)
+	utils.RespondSuccess(c, response)
+}
+
+// GetAllUnreadCounts 获取用户与其他所有人的未读消息数
+// @Summary 获取用户的所有未读消息数
+// @Description 获取指定用户与所有其他用户的未读消息数统计
+// @Tags 聊天
+// @Accept json
+// @Produce json
+// @Param request body dto.GetAllUnreadCountRequest true "获取所有未读消息数请求"
+// @Success 200 {object} dto.AllUnreadCountResponse
+// @Router /user-chat/all-unread-counts [post]
+func (con *ChatController) GetAllUnreadCounts(c *gin.Context) {
+	var req dto.GetAllUnreadCountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		return
+	}
+
+	response := con.ChatService.GetAllUnreadCounts(&req)
+	utils.RespondSuccess(c, response)
+}
+
+// SSEHandler SSE长连接处理
+// @Summary SSE消息通知连接
+// @Description 建立SSE连接，用于接收实时消息通知
+// @Tags 聊天
+// @Param userId query string true "用户ID"
+// @Router /sse/chat [get]
+func (con *ChatController) SSEHandler(c *gin.Context) {
+	userID := c.Query("userId")
+	if userID == "" {
+		// 尝试从Header获取（网关传递的用户信息）
+		userID = c.GetHeader("X-User-Id")
+	}
+
+	if userID == "" {
+		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")
+		return
+	}
+
+	// 设置SSE响应头
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	// 注意：不要在这里设置CORS头，Gateway已经统一处理了
+
+	sseHub := chat.GetSSEHub()
+	sendCh := make(chan interface{}, 256)
+	closeCh := make(chan bool)
+
+	// 注册客户端
+	sseHub.RegisterClient(userID, sendCh, closeCh)
+	defer sseHub.UnregisterClient(userID)
+
+	// 发送初始化连接消息
+	initMessage := &dto.SSEMessageNotification{
+		Type:   "connected",
+		UserID: userID,
+		UnreadCounts: make(map[string]int64),
+	}
+	sseMessage := chat.FormatSSEMessage(initMessage)
+	_, _ = c.Writer.Write([]byte(sseMessage))
+	c.Writer.Flush()
+
+	// 创建心跳定时器
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	// 响应流
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case <-closeCh:
+			return false
+		case <-ticker.C:
+			// 发送心跳消息
+			heartbeat := ": heartbeat\n\n"
+			_, err := w.Write([]byte(heartbeat))
+			if err != nil {
+				utils.FileLogger.Error("SSE心跳写入失败: " + err.Error())
+				return false
+			}
+			return true
+		case notification := <-sendCh:
+			// 发送SSE格式的消息
+			sseMessage := chat.FormatSSEMessage(notification)
+			// 如果格式化后消息为空,跳过此次发送
+			if sseMessage == "" {
+				utils.FileLogger.Warning("跳过空的SSE消息")
+				return true
+			}
+			_, err := w.Write([]byte(sseMessage))
+			if err != nil {
+				utils.FileLogger.Error("SSE写入失败: " + err.Error())
+				return false
+			}
+			return true
+		}
+	})
+}
+

@@ -18,11 +18,12 @@ type ChatService struct {
 func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
 	chatHub := &ChatHub{}
 
-	// 1. 先保存到数据库
+	// 1. 先保存到数据库，根据接收者是否在线设置已读状态
 	message := &po.ChatMessage{
 		SenderID:   req.SenderID,
 		ReceiverID: req.ReceiverID,
 		Content:    req.Content,
+		IsRead:     0, // 初始为未读
 		CreatedAt:  time.Now(),
 	}
 
@@ -40,12 +41,20 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 		}
 
 		messageBytes, _ := json.Marshal(wsMessage)
-		if !chatHub.SendMessageToQueue(req.ReceiverID, messageBytes) {
-			// 发送失败，用户可能刚离线，但消息已保存
-			utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在线，消息已保存到数据库", req.ReceiverID))
+		if chatHub.SendMessageToQueue(req.ReceiverID, messageBytes) {
+			// 发送成功，消息已读
+			s.ChatMessageMapper.MarkAsRead(message.ID)
+			utils.FileLogger.Info(fmt.Sprintf("消息 %d 通过WebSocket发送成功，已标记为已读", message.ID))
+		} else {
+			// 发送失败，用户可能刚离线，消息保持未读
+			utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在线，消息 %d 已保存为未读", req.ReceiverID, message.ID))
+			// 触发SSE通知发送未读消息
+			go s.notifyUnreadMessage(req.ReceiverID, req.SenderID, message)
 		}
 	} else {
-		utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在队列中，消息已保存到数据库", req.ReceiverID))
+		utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在队列中，消息 %d 已保存为未读", req.ReceiverID, message.ID))
+		// 触发SSE通知发送未读消息
+		go s.notifyUnreadMessage(req.ReceiverID, req.SenderID, message)
 	}
 
 	// 3. 返回响应
@@ -54,6 +63,30 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 	}
 
 	return response
+}
+
+// notifyUnreadMessage 通知用户有新的未读消息
+func (s *ChatService) notifyUnreadMessage(userID, _ string, message *po.ChatMessage) {
+	sseHub := GetSSEHub()
+
+	// 获取该用户的所有未读消息数
+	unreadCounts := s.ChatMessageMapper.GetAllUnreadCounts(userID)
+
+	notification := &dto.SSEMessageNotification{
+		Type:         "message",
+		UserID:       userID,
+		UnreadCounts: unreadCounts,
+		Message: &dto.ChatMessageItem{
+			ID:         message.ID,
+			SenderID:   message.SenderID,
+			ReceiverID: message.ReceiverID,
+			Content:    message.Content,
+			IsRead:     message.IsRead,
+			CreatedAt:  message.CreatedAt.Format("2006-01-02 15:04:05"),
+		},
+	}
+
+	sseHub.SendNotificationToUser(userID, notification)
 }
 
 // 获取聊天历史记录
@@ -69,6 +102,11 @@ func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetCha
 	offset := (req.Page - 1) * req.Size
 	messages, total := s.ChatMessageMapper.GetChatHistory(req.UserID, req.OtherID, offset, req.Size)
 
+	// 将发给当前用户的消息标记为已读
+	if err := s.ChatMessageMapper.MarkChatHistoryAsRead(req.UserID, req.OtherID); err != nil {
+		utils.FileLogger.Error(fmt.Sprintf("标记聊天历史为已读失败: %v", err))
+	}
+
 	// 转换为DTO
 	messageItems := make([]dto.ChatMessageItem, len(messages))
 	for i, msg := range messages {
@@ -77,6 +115,7 @@ func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetCha
 			SenderID:   msg.SenderID,
 			ReceiverID: msg.ReceiverID,
 			Content:    msg.Content,
+			IsRead:     1, // 已读
 			CreatedAt:  msg.CreatedAt.Format("2006-01-02 15:04:05"),
 		}
 	}
@@ -139,4 +178,20 @@ func (s *ChatService) LeaveQueueManually(req *dto.LeaveQueueRequest) *dto.LeaveQ
 	}
 
 	return response
+}
+
+// GetUnreadCount 获取两个用户间的未读消息数
+func (s *ChatService) GetUnreadCount(req *dto.GetUnreadCountRequest) *dto.UnreadCountResponse {
+	unreadCount := s.ChatMessageMapper.GetUnreadCount(req.UserID, req.OtherID)
+	return &dto.UnreadCountResponse{
+		UnreadCount: unreadCount,
+	}
+}
+
+// GetAllUnreadCounts 获取用户与其他所有人的未读消息数
+func (s *ChatService) GetAllUnreadCounts(req *dto.GetAllUnreadCountRequest) *dto.AllUnreadCountResponse {
+	unreadCounts := s.ChatMessageMapper.GetAllUnreadCounts(req.UserID)
+	return &dto.AllUnreadCountResponse{
+		Data: unreadCounts,
+	}
 }

@@ -27,6 +27,7 @@ type ChatMessageItem struct {
 	SenderID   string `json:"senderId"`
 	ReceiverID string `json:"receiverId"`
 	Content    string `json:"content"`
+	IsRead     int8   `json:"isRead"`
 	CreatedAt  string `json:"createdAt"`
 }
 
@@ -60,4 +61,31 @@ type LeaveQueueRequest struct {
 type LeaveQueueResponse struct {
 	UserID string `json:"userId"`
 	Status string `json:"status"` // left, not_in_queue
+}
+
+// 获取两个用户间的未读消息数
+type GetUnreadCountRequest struct {
+	UserID  string `json:"userId" binding:"required"`
+	OtherID string `json:"otherId" binding:"required"`
+}
+
+type UnreadCountResponse struct {
+	UnreadCount int64 `json:"unreadCount"`
+}
+
+// 获取用户与其他所有人的未读消息数
+type GetAllUnreadCountRequest struct {
+	UserID string `json:"userId" binding:"required"`
+}
+
+type AllUnreadCountResponse struct {
+	Data map[string]int64 `json:"data"` // key: otherUserId, value: unreadCount
+}
+
+// SSE消息格式
+type SSEMessageNotification struct {
+	Type         string           `json:"type"` // "message"
+	UserID       string           `json:"userId"`
+	UnreadCounts map[string]int64 `json:"unreadCounts"` // key: otherUserId, value: unreadCount
+	Message      *ChatMessageItem `json:"message,omitempty"`
 }
