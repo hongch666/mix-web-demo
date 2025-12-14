@@ -18,9 +18,9 @@ router: APIRouter = APIRouter(
     description="创建一条AI历史记录"
 )
 @log("创建AI历史记录")
-def create_ai_history(request: Request, data: CreateHistoryDTO, db: Session = Depends(get_db),ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+async def create_ai_history(request: Request, data: CreateHistoryDTO, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
     ai_history_service.create_ai_history(data, db)
-    return success();
+    return success()
 
 @router.get(
     "",
@@ -28,9 +28,9 @@ def create_ai_history(request: Request, data: CreateHistoryDTO, db: Session = De
     description="获取指定用户的所有AI历史记录"
 )
 @log("获取所有AI历史记录")
-def get_all_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+async def get_all_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
     histories = ai_history_service.get_all_ai_history(user_id, db)
-    return success(data=histories);
+    return success(data=histories)
 
 @router.delete(
     "/{user_id}",
@@ -38,6 +38,6 @@ def get_all_ai_history(request: Request, user_id: int, db: Session = Depends(get
     description="删除指定用户的所有AI历史记录"
 )
 @log("删除用户所有AI历史记录")
-def delete_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+async def delete_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
     ai_history_service.delete_ai_history_by_userid(user_id, db)
-    return success();
+    return success()
