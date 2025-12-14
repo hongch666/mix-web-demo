@@ -16,7 +16,7 @@
 - FastAPI（Python）
 - Gin（Go）
 - Spring Boot（Java）
-- NestJS（TypeScript）
+- NestJS（Node.js）
 - 网关组件
 
 所有服务通过统一网关进行访问，实现了服务治理、认证授权等功能。
