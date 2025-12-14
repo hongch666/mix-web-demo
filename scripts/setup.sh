@@ -262,9 +262,28 @@ url = "https://mirrors.aliyun.com/pypi/simple"
 default = true
 EOF
     
-    # 同步依赖
-    log_info "使用 uv 同步依赖..."
-    uv sync
+    # 检查是否已有虚拟环境
+    if [ -d ".venv" ]; then
+        log_warn "检测到现有虚拟环境 .venv"
+        echo "是否更新虚拟环境中的依赖? [y/N]"
+        read -p "请输入: " update_venv
+        
+        if [[ "$update_venv" =~ ^[Yy]$ ]]; then
+            log_info "更新 uv.lock 文件..."
+            uv lock --upgrade
+            
+            log_info "同步依赖到虚拟环境..."
+            uv sync
+            log_info "虚拟环境更新完成!"
+        else
+            log_info "跳过虚拟环境更新"
+            log_info "如需更新，可手动运行: cd fastapi && uv lock --upgrade && uv sync"
+        fi
+    else
+        # 同步依赖
+        log_info "使用 uv 同步依赖（创建新虚拟环境）..."
+        uv sync
+    fi
     
     cd "$WORKDIR"
     log_info "FastAPI 部分配置完成!"
