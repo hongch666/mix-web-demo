@@ -370,6 +370,7 @@ default = true
    - 文件上传目录持久化：`static/`
 
 4. **健康检查**
+
    - 容器具有健康检查配置
    - 支持自动重启（`unless-stopped` 策略）
 
@@ -1484,12 +1485,42 @@ jwt:
 
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
-## 项目文件命名说明
+## 项目规范说明
+
+这个为当前项目的代码和文件等相关规范，建议遵守
+
+### 项目架构说明
+
+1. Spring 项目采用通用的三层架构，controller 对应接口，service 对应实际逻辑（使用接口+实现形式），mapper 为对应数据库操作，并且使用依赖注入进行调用
+2. Gin 项目采用上述相同的三层架构，每一层使用 group 组合对应 struct 并初始化，通过 group 单例进行类似依赖注入形式的调用
+3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 controller/service/module 文件，并且使用依赖注入进行调用
+4. FastAPI 项目采用上述的三层架构，并且基于 Depend 函数和获取实例函数进行依赖注入调用
+
+### 项目文件命名说明
 
 1. Spring 项目采用大驼峰命名方式，如 `UserCreateDTO.java`
 2. Gin 项目采用蛇形命名方式，如 `user_create_dto.go`
 3. NestJS 项目采用点号命名和下划线命名混合使用的方式，如 `user-create.service.ts`
 4. FastAPI 项目采用小驼峰命名方式，如 `userCreateDTO.py`
+
+### 返回格式说明
+
+1. 返回统一使用 `application/json`格式返回，格式如下
+
+```json
+{
+  "code": 1,
+  "data": Object,
+  "msg": "success"
+}
+```
+
+- `code`为响应码，1 为成功，0 为失败
+- `data`为实际数据，可以为空，一般是查询返回的结果
+- `msg`为返回信息，成功一般为“success”，失败则为失败原因
+
+2. 一般成功时除查询接口外，其他接口都是无返回 `data`
+3. 失败时 `data `统一为 `null `，错误原因使用 `msg`参数
 
 ## 其他说明
 
