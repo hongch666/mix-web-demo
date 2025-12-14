@@ -23,20 +23,21 @@
 
 ## 功能说明
 
-1. 文章/博客发布、修改等操作，并且可以进行搜索引擎式搜索，文章的创建和显示都支持 Markdown
-2. 文章操作日志的查看和分析
-3. 文章分类，用户状态的管理操作
-4. 权限校验实现用户端和管理端
-5. 基于 RAG 技术和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/通义千问** 进行多模型选择的 AI 聊天助手
-6. 系统数据的相关数据分析
-7. 用户实时聊天功能
+1. 基于 Spring Boot 和 MybatisPlus 实现文章/博客发布、修改等操作，文章的创建和显示都支持 Markdown
+2. 基于 Gin Web 服务和 ElasticSearch 进行搜索引擎式文章搜索
+3. 基于 NestJS 和 Mongoose 框架进行文章操作日志和 API 日志的查看和分析
+4. 基于 Spring Boot 和 Redis 进行文章分类，用户状态的管理操作
+5. 基于 AOP 技术权限校验实现用户端和管理端
+6. 基于 RAG 技术和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/通义千问** 进行多模型选择的 AI 聊天助手
+7. 基于 FastAPI 服务和 Hadoop 技术栈实现系统数据的相关分析
+8. 基于 WebSocket 和 SSE 用户实时聊天功能和消息通知
 
 ## 技术栈
 
-- FastAPI：用于构建 Python 后端服务
-- Gin：Go 语言 Web 框架
+- FastAPI：Python 后端服务
+- Gin：Golang 后端框架
 - Spring Boot：Java 后端框架
-- NestJS：TypeScript Node.js 框架
+- NestJS：Node.js 后端框架
 - Spring Cloud Gateway：API 网关
 - JWT：身份验证
 - Nacos：服务发现与配置中心
@@ -71,6 +72,8 @@
 - Redis 6.0+
 - RabbitMQ 3.8+
 - Hadoop+Hive(可选)
+- uv(可选)
+- Bun(可选)
 
 ## 环境配置脚本
 
