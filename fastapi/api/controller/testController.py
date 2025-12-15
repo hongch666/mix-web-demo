@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict
 from common.decorators import log
 from common.client import call_remote_service
@@ -78,7 +79,7 @@ async def testNestJS(request: Request) -> JSONResponse:
 @log("手动触发文章表导出任务")
 async def test_export_articles_task(request: Request, article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), statistics_cache: StatisticsCache = Depends(get_statistics_cache)) -> JSONResponse:
     try:
-        export_articles_to_csv_and_hive()
+        await run_in_threadpool(export_articles_to_csv_and_hive)
         # 清除所有相关缓存
         article_cache.clear_all()
         category_cache.clear_all()
@@ -90,16 +91,15 @@ async def test_export_articles_task(request: Request, article_cache: ArticleCach
         fileLogger.error(f"手动触发文章表导出任务失败: {e}")
         return fail(f"任务执行失败: {e}")
     
-# 调用定时任务（导出文章表到csv并同步hive）
 @router.post(
     "/task/vector",
     summary="手动触发向量数据库同步任务",
     description="手动触发同步文章数据PostgreSQL向量数据库的定时任务"
 )
 @log("手动触发向量数据库同步任务")
-async def test_export_articles_task(request: Request) -> JSONResponse:
+async def test_export_vector_task(request: Request) -> JSONResponse:
     try:
-        export_article_vectors_to_postgres()
+        await run_in_threadpool(export_article_vectors_to_postgres)
         return success()
     except Exception as e:
         fileLogger.error(f"手动触发向量数据库同步任务失败: {e}")

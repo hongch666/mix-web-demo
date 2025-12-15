@@ -5,6 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
+from starlette.concurrency import run_in_threadpool
 from api.service import GeminiService, get_gemini_service, QwenService, get_qwen_service, DoubaoService, get_doubao_service, AiHistoryService, get_ai_history_service
 from common.utils import success, fileLogger
 from common.decorators import log
@@ -81,7 +82,7 @@ async def send_message(
                 thinking=None,
                 ai_type=request.service.value
             )
-            aiHistoryService.create_ai_history(history, db)
+            await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
             fileLogger.info(f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
         except Exception as history_error:
             fileLogger.error(f"保存AI历史记录失败: {str(history_error)}")
@@ -196,7 +197,7 @@ async def stream_message(
                             thinking=thinking_acc if thinking_acc else None,
                             ai_type=request.service.value
                         )
-                        aiHistoryService.create_ai_history(history, db)
+                        await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
                         fileLogger.info(f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
                     except Exception as history_error:
                         fileLogger.error(f"保存流式AI历史记录失败: {str(history_error)}")

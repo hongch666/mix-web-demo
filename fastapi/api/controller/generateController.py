@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, BackgroundTasks
 from typing import Any
 from starlette.concurrency import run_in_threadpool
 from config import get_db
@@ -36,7 +36,8 @@ async def generate_tags(request: Request, data: GenerateDTO, generateService: Ge
 @log("文章创建AI评论")
 async def create_article_ai_comment(
     request: Request, 
-    article_id: int, 
+    article_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
@@ -52,5 +53,6 @@ async def create_article_ai_comment(
         gemini_service=gemini_service,
         qwen_service=qwen_service
     )
-    await generate_service.generate_ai_comments(article_id, db)
-    return success(data=None)
+    # 添加后台任务
+    background_tasks.add_task(generate_service.generate_ai_comments, article_id, db)
+    return success(data={"message": "AI评论生成任务已提交", "article_id": article_id})
