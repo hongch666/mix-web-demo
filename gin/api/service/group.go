@@ -11,6 +11,7 @@ type ServiceGroup struct {
 	SearchService searchpkg.SearchService
 	ChatService   chatpkg.ChatService
 	ChatHub       chatpkg.ChatHub
+	SSEHub        *chatpkg.SSEHubManager
 	TestService   testpkg.TestService
 }
 
@@ -21,8 +22,9 @@ func NewServiceGroup() *ServiceGroup {
 		},
 		ChatService: chatpkg.ChatService{
 			ChatMessageMapper: mapper.Group.ChatMessageMapper,
+			ChatHub:           &chatpkg.ChatHub{},
+			SSEHub:            chatpkg.GetSSEHub(),
 		},
-		ChatHub:     chatpkg.ChatHub{},
 		TestService: testpkg.TestService{},
 	}
 }

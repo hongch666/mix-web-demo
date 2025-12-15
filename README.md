@@ -1190,6 +1190,13 @@ mq:
 
 logs:
   path: "../logs/gin"
+
+search:
+  es_score_weight: 0.40 # ES默认分数占40%
+  ai_rating_weight: 0.30 # AI评分占30%
+  user_rating_weight: 0.20 # 用户评分占20%
+  views_weight: 0.10 # 阅读量占10%
+  max_views_normalized: 10000.0 # 用于归一化阅读量的基准值
 ```
 
 ### Nestjs 部分

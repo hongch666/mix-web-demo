@@ -68,10 +68,19 @@ type AppConfig struct {
 	Database DatabaseConfig `mapstructure:"database"`
 	MQ       MQConfig       `mapstructure:"mq"`
 	Logs     LogsConfig     `mapstructure:"logs"`
+	Search   SearchConfig   `mapstructure:"search"`
 }
 
 type LogsConfig struct {
 	Path string `mapstructure:"path"`
+}
+
+type SearchConfig struct {
+	ESScoreWeight      float64 `mapstructure:"es_score_weight"`
+	AIRatingWeight     float64 `mapstructure:"ai_rating_weight"`
+	UserRatingWeight   float64 `mapstructure:"user_rating_weight"`
+	ViewsWeight        float64 `mapstructure:"views_weight"`
+	MaxViewsNormalized float64 `mapstructure:"max_views_normalized"`
 }
 
 var Config AppConfig

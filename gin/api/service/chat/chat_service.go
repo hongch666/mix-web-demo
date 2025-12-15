@@ -12,11 +12,13 @@ import (
 
 type ChatService struct {
 	ChatMessageMapper chat.ChatMessageMapper
+	ChatHub           *ChatHub
+	SSEHub            *SSEHubManager
 }
 
 // 发送消息（HTTP接口调用）
 func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMessageResponse {
-	chatHub := &ChatHub{}
+	chatHub := s.ChatHub
 
 	// 1. 先保存到数据库，根据接收者是否在线设置已读状态
 	message := &po.ChatMessage{
@@ -67,7 +69,7 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 
 // notifyUnreadMessage 通知用户有新的未读消息
 func (s *ChatService) notifyUnreadMessage(userID, _ string, message *po.ChatMessage) {
-	sseHub := GetSSEHub()
+	sseHub := s.SSEHub
 
 	// 获取该用户的所有未读消息数
 	unreadCounts := s.ChatMessageMapper.GetAllUnreadCounts(userID)
@@ -130,7 +132,7 @@ func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetCha
 
 // 获取队列状态
 func (s *ChatService) GetQueueStatus() *dto.QueueStatusResponse {
-	chatHub := &ChatHub{}
+	chatHub := s.ChatHub
 	users := chatHub.GetAllUsersInQueue()
 	return &dto.QueueStatusResponse{
 		OnlineUsers: users,
@@ -146,7 +148,7 @@ func (s *ChatService) JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueu
 	response.Status = "joined"
 
 	// 检查用户是否已经在队列中
-	chatHub := &ChatHub{}
+	chatHub := s.ChatHub
 	if chatHub.IsUserInQueue(req.UserID) {
 		response.Status = "already_in_queue"
 	} else {
@@ -169,7 +171,7 @@ func (s *ChatService) LeaveQueueManually(req *dto.LeaveQueueRequest) *dto.LeaveQ
 		UserID: req.UserID,
 	}
 	// 检查用户是否在队列中
-	chatHub := &ChatHub{}
+	chatHub := s.ChatHub
 	if chatHub.IsUserInQueue(req.UserID) {
 		chatHub.LeaveQueue(req.UserID)
 		response.Status = "left"

@@ -17,15 +17,6 @@ import (
 
 type SearchMapper struct{}
 
-// 评分权重配置
-const (
-	ESScoreWeight      = 0.40    // ES默认分数占40%
-	AIRatingWeight     = 0.30    // AI评分占30%
-	UserRatingWeight   = 0.20    // 用户评分占20%
-	ViewsWeight        = 0.10    // 阅读量占10%
-	MaxViewsNormalized = 10000.0 // 用于归一化阅读量的基准值
-)
-
 func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleSearchDTO) ([]po.ArticleES, int) {
 	boolQuery := elastic.NewBoolQuery()
 
@@ -91,6 +82,9 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	// 执行搜索（使用script_score在ES层面进行评分计算）
 	esClient := config.ESClient
 
+	// 获取搜索权重配置
+	searchCfg := config.Config.Search
+
 	// 构建综合评分脚本：(0.40 * _score) + (0.30 * ai_score/5) + (0.20 * user_score/5) + (0.10 * min(views/10000, 1))
 	scoreScript := elastic.NewScript(`
 		double score = params.esWeight * _score;
@@ -99,11 +93,11 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
 		return score + aiBoost + userBoost + viewsBoost;
 	`).
-		Param("esWeight", ESScoreWeight).
-		Param("aiWeight", AIRatingWeight).
-		Param("userWeight", UserRatingWeight).
-		Param("viewsWeight", ViewsWeight).
-		Param("maxViewsNormalized", MaxViewsNormalized)
+		Param("esWeight", searchCfg.ESScoreWeight).
+		Param("aiWeight", searchCfg.AIRatingWeight).
+		Param("userWeight", searchCfg.UserRatingWeight).
+		Param("viewsWeight", searchCfg.ViewsWeight).
+		Param("maxViewsNormalized", searchCfg.MaxViewsNormalized)
 
 	// 使用script_score包装bool查询
 	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
