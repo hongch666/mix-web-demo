@@ -24,6 +24,7 @@ func NewControllerGroup() *ControllerGroup {
 		ChatController: chatpkg.ChatController{
 			ChatService: service.Group.ChatService,
 			ChatHub:     service.Group.ChatHub,
+			SSEHub:      service.Group.SSEHub,
 		},
 	}
 }

@@ -25,6 +25,8 @@ func NewServiceGroup() *ServiceGroup {
 			ChatHub:           &chatpkg.ChatHub{},
 			SSEHub:            chatpkg.GetSSEHub(),
 		},
+		ChatHub:     chatpkg.ChatHub{},
+		SSEHub:      chatpkg.GetSSEHub(),
 		TestService: testpkg.TestService{},
 	}
 }

@@ -22,6 +22,7 @@ var upgrader = websocket.Upgrader{
 type ChatController struct {
 	ChatService chat.ChatService
 	ChatHub     chat.ChatHub
+	SSEHub      *chat.SSEHubManager
 }
 
 // SendMessage 发送消息接口
@@ -229,18 +230,17 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 	c.Header("Connection", "keep-alive")
 	// 注意：不要在这里设置CORS头，Gateway已经统一处理了
 
-	sseHub := chat.GetSSEHub()
 	sendCh := make(chan interface{}, 256)
 	closeCh := make(chan bool)
 
 	// 注册客户端
-	sseHub.RegisterClient(userID, sendCh, closeCh)
-	defer sseHub.UnregisterClient(userID)
+	con.SSEHub.RegisterClient(userID, sendCh, closeCh)
+	defer con.SSEHub.UnregisterClient(userID)
 
 	// 发送初始化连接消息
 	initMessage := &dto.SSEMessageNotification{
-		Type:   "connected",
-		UserID: userID,
+		Type:         "connected",
+		UserID:       userID,
 		UnreadCounts: make(map[string]int64),
 	}
 	sseMessage := chat.FormatSSEMessage(initMessage)
@@ -282,4 +282,3 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 		}
 	})
 }
-
