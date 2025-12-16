@@ -6,14 +6,14 @@ from typing import Any, Callable, List, Optional, Union
 from fastapi import Request
 from fastapi.responses import StreamingResponse
 from common.middleware import get_current_user_id, get_current_username
-from common.utils import fileLogger
+from common.utils import fileLogger as logger
 from config import send_to_queue
 
 try:
     RABBITMQ_AVAILABLE = True
 except ImportError:
     RABBITMQ_AVAILABLE = False
-    fileLogger.warning("RabbitMQ 客户端不可用，API 日志将不会发送到队列")
+    logger.warning("RabbitMQ 客户端不可用，API 日志将不会发送到队列")
 
 
 class ApiLogConfig:
@@ -96,7 +96,7 @@ def api_log(config: Union[str, ApiLogConfig]):
             log_message = "\n".join(log_lines)
             
             # 记录日志
-            logger_method = getattr(fileLogger, log_config.log_level, fileLogger.info)
+            logger_method = getattr(logger, log_config.log_level, logger.info)
             logger_method(log_message)
 
             # 执行原函数并记录耗时
@@ -195,7 +195,7 @@ def api_log(config: Union[str, ApiLogConfig]):
             log_message = "\n".join(log_lines)
             
             # 记录日志
-            logger_method = getattr(fileLogger, log_config.log_level, fileLogger.info)
+            logger_method = getattr(logger, log_config.log_level, logger.info)
             logger_method(log_message)
 
             # 执行原函数并记录耗时
@@ -436,7 +436,7 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
         return request_body_dict if request_body_dict else None
         
     except Exception as e:
-        fileLogger.warning(f"提取请求体信息时出错: {str(e)}")
+        logger.warning(f"提取请求体信息时出错: {str(e)}")
         return None
 
 
@@ -548,12 +548,12 @@ def _send_api_log_to_queue(
         # 发送到 RabbitMQ
         success = send_to_queue("api-log-queue", api_log_message, persistent=True)
         if success:
-            fileLogger.info("API 日志已发送到队列")
+            logger.info("API 日志已发送到队列")
         else:
-            fileLogger.error("API 日志发送到队列失败")
+            logger.error("API 日志发送到队列失败")
             
     except Exception as e:
-        fileLogger.error(f"发送 API 日志到队列时出错: {e}")
+        logger.error(f"发送 API 日志到队列时出错: {e}")
 
 
 # 简化版装饰器，直接传入消息

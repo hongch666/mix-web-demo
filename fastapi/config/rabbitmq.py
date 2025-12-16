@@ -2,7 +2,7 @@ import json
 import pika
 from typing import Any, Optional
 from config.config import load_config
-from common.utils import fileLogger
+from common.utils import fileLogger as logger
 
 
 class RabbitMQClient:
@@ -23,7 +23,7 @@ class RabbitMQClient:
             # 从配置文件获取连接参数
             rabbitmq_config = load_config("rabbitmq")
             if not rabbitmq_config:
-                fileLogger.warning("RabbitMQ 配置不存在，跳过连接")
+                logger.warning("RabbitMQ 配置不存在，跳过连接")
                 return
                 
             host = rabbitmq_config.get("host", "127.0.0.1")
@@ -48,11 +48,11 @@ class RabbitMQClient:
             self.channel = self.connection.channel()
             self._is_connected = True
 
-            fileLogger.info(f"RabbitMQ 连接成功: {host}:{port}")
+            logger.info(f"RabbitMQ 连接成功: {host}:{port}")
 
         except Exception as e:
             self._is_connected = False
-            fileLogger.warning(f"RabbitMQ 连接失败: {e}")
+            logger.warning(f"RabbitMQ 连接失败: {e}")
             # 不抛出异常，允许应用继续运行
 
     def send_message(self, queue_name: str, message: Any, persistent: bool = True) -> bool:
@@ -74,7 +74,7 @@ class RabbitMQClient:
             
             # 如果连接失败，返回 False
             if not self._is_connected or self.channel is None:
-                fileLogger.error("RabbitMQ 未连接，无法发送消息")
+                logger.error("RabbitMQ 未连接，无法发送消息")
                 return False
 
             # 如果连接已关闭，重新连接
@@ -111,11 +111,11 @@ class RabbitMQClient:
                 ),
             )
 
-            fileLogger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
+            logger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
             return True
 
         except Exception as e:
-            fileLogger.error(f"发送消息到队列 [{queue_name}] 失败: {e}")
+            logger.error(f"发送消息到队列 [{queue_name}] 失败: {e}")
             self._is_connected = False
             return False
 
@@ -127,9 +127,9 @@ class RabbitMQClient:
             if self.connection and not self.connection.is_closed:
                 self.connection.close()
             self._is_connected = False
-            fileLogger.info("RabbitMQ 连接已关闭")
+            logger.info("RabbitMQ 连接已关闭")
         except Exception as e:
-            fileLogger.error(f"关闭 RabbitMQ 连接失败: {e}")
+            logger.error(f"关闭 RabbitMQ 连接失败: {e}")
 
     def __del__(self):
         """析构函数，确保连接关闭"""
@@ -152,7 +152,7 @@ def get_rabbitmq_client() -> Optional[RabbitMQClient]:
         try:
             _rabbitmq_client = RabbitMQClient()
         except Exception as e:
-            fileLogger.error(f"初始化 RabbitMQ 客户端失败: {e}")
+            logger.error(f"初始化 RabbitMQ 客户端失败: {e}")
             return None
     return _rabbitmq_client
 
@@ -172,9 +172,9 @@ def send_to_queue(queue_name: str, message: Any, persistent: bool = True) -> boo
     try:
         client = get_rabbitmq_client()
         if client is None:
-            fileLogger.warning("RabbitMQ 客户端未初始化")
+            logger.warning("RabbitMQ 客户端未初始化")
             return False
         return client.send_message(queue_name, message, persistent)
     except Exception as e:
-        fileLogger.error(f"发送消息失败: {e}")
+        logger.error(f"发送消息失败: {e}")
         return False

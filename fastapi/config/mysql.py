@@ -2,7 +2,7 @@ from sqlmodel import create_engine, Session, SQLModel
 from typing import Generator, Optional, List
 from config import load_config
 from entity.po import Article, User, Category, SubCategory, AiHistory
-from common.utils import fileLogger
+from common.utils import fileLogger as logger
 
 HOST: str = load_config("database")["mysql"]["host"]
 PORT: int = load_config("database")["mysql"]["port"]
@@ -41,7 +41,7 @@ def create_tables(tables: Optional[List[str]] = None):
         if tables is None:
             # 创建所有表
             SQLModel.metadata.create_all(engine)
-            fileLogger.info("数据库所有表初始化完成")
+            logger.info("数据库所有表初始化完成")
         else:
             # 只创建指定的表
             # 获取所有模型类的映射
@@ -60,13 +60,13 @@ def create_tables(tables: Optional[List[str]] = None):
                     model = table_models[table_name]
                     tables_to_create.append(model.__table__)
                 else:
-                    fileLogger.warning(f"警告: 表名 '{table_name}' 不存在，跳过")
+                    logger.warning(f"警告: 表名 '{table_name}' 不存在，跳过")
             
             if tables_to_create:
                 # 创建指定的表
                 SQLModel.metadata.create_all(engine, tables=tables_to_create)
-                fileLogger.info(f"数据库表初始化完成: {', '.join(tables)}")
+                logger.info(f"数据库表初始化完成: {', '.join(tables)}")
             else:
-                fileLogger.error("没有找到需要创建的表")
+                logger.error("没有找到需要创建的表")
     except Exception as e:
-        fileLogger.error(f"数据库表创建失败: {e}")
+        logger.error(f"数据库表创建失败: {e}")

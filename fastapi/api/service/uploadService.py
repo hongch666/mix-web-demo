@@ -6,7 +6,7 @@ from typing import Any, Dict
 from fastapi import Depends
 from starlette.concurrency import run_in_threadpool
 from api.service import AnalyzeService,get_analyze_service
-from common.utils import fileLogger
+from common.utils import fileLogger as logger
 from config import load_config
 
 class UploadService:
@@ -36,7 +36,7 @@ class UploadService:
         try:
             os.remove(local_path)
         except Exception as e:
-            fileLogger.warning(f"删除临时文件失败: {e}")
+            logger.warning(f"删除临时文件失败: {e}")
 
         return {
             "original_filename": file['filename'],

@@ -19,8 +19,8 @@ class IntentRouter:
             user_mapper: 用户 Mapper 实例（用于权限检查）
         """
         # 延迟导入避免循环依赖
-        from common.utils import fileLogger
-        self.logger = fileLogger
+        from common.utils import fileLogger as logger
+        self.logger = logger
         
         self.llm = llm
         self.db = db

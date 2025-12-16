@@ -5,7 +5,7 @@ from typing import Any, Dict
 from common.decorators import log
 from common.client import call_remote_service
 from common.task import export_articles_to_csv_and_hive, export_article_vectors_to_postgres
-from common.utils import success,fail,fileLogger
+from common.utils import success,fail,fileLogger as logger
 from common.cache import ArticleCache, CategoryCache, PublishTimeCache, StatisticsCache, get_article_cache, get_category_cache, get_publish_time_cache, get_statistics_cache
 
 router: APIRouter = APIRouter(
@@ -85,10 +85,10 @@ async def test_export_articles_task(request: Request, article_cache: ArticleCach
         category_cache.clear_all()
         publish_time_cache.clear_all()
         statistics_cache.clear_all()
-        fileLogger.info("已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息")
+        logger.info("已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息")
         return success()
     except Exception as e:
-        fileLogger.error(f"手动触发文章表导出任务失败: {e}")
+        logger.error(f"手动触发文章表导出任务失败: {e}")
         return fail(f"任务执行失败: {e}")
     
 @router.post(
@@ -102,5 +102,5 @@ async def test_export_vector_task(request: Request) -> JSONResponse:
         await run_in_threadpool(export_article_vectors_to_postgres)
         return success()
     except Exception as e:
-        fileLogger.error(f"手动触发向量数据库同步任务失败: {e}")
+        logger.error(f"手动触发向量数据库同步任务失败: {e}")
         return fail(f"任务执行失败: {e}")

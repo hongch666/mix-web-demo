@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from api.service import GeminiService, get_gemini_service, QwenService, get_qwen_service, DoubaoService, get_doubao_service, AiHistoryService, get_ai_history_service
-from common.utils import success, fileLogger
+from common.utils import success, fileLogger as logger
 from common.decorators import log
 from common.middleware import get_current_user_id
 from config import get_db
@@ -40,21 +40,21 @@ async def send_message(
         
         # 根据请求的服务类型选择对应的AI服务
         if request.service == AIServiceType.GEMINI:
-            fileLogger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
+            logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
             response_message: str = await geminiService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
                 db=db
             )
         elif request.service == AIServiceType.QWEN:
-            fileLogger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
+            logger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
             response_message: str = await qwenService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
                 db=db
             )
         else:  # 默认使用豆包服务
-            fileLogger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
+            logger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
             response_message: str = await doubaoService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -83,9 +83,9 @@ async def send_message(
                 ai_type=request.service.value
             )
             await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
-            fileLogger.info(f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
+            logger.info(f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
         except Exception as history_error:
-            fileLogger.error(f"保存AI历史记录失败: {str(history_error)}")
+            logger.error(f"保存AI历史记录失败: {str(history_error)}")
         
         # 成功响应 - 按照success格式
         response_data: ChatResponseData = ChatResponseData(
@@ -98,7 +98,7 @@ async def send_message(
         return success(response_data)
             
     except Exception as e:
-        fileLogger.error(f"聊天接口异常: {str(e)}")
+        logger.error(f"聊天接口异常: {str(e)}")
         raise HTTPException(status_code=500, detail=f"聊天服务异常: {str(e)}")
 
 @router.post(
@@ -130,21 +130,21 @@ async def stream_message(
             try:
                 # 根据请求的服务类型选择对应的AI服务
                 if request.service == AIServiceType.GEMINI:
-                    fileLogger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
+                    logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
                     stream_generator = geminiService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db
                     )
                 elif request.service == AIServiceType.QWEN:
-                    fileLogger.info(f"使用Qwen流式服务处理用户 {actual_user_id} 的请求")
+                    logger.info(f"使用Qwen流式服务处理用户 {actual_user_id} 的请求")
                     stream_generator = qwenService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db
                     )
                 else:  # 默认使用豆包服务
-                    fileLogger.info(f"使用豆包流式服务处理用户 {actual_user_id} 的请求")
+                    logger.info(f"使用豆包流式服务处理用户 {actual_user_id} 的请求")
                     stream_generator = doubaoService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
@@ -163,7 +163,7 @@ async def stream_message(
                         chunk_content = str(chunk)
                     
                     # 记录chunk长度（用于调试）
-                    fileLogger.debug(f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}")
+                    logger.debug(f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}")
                     
                     # 分别累积思考过程和最终内容
                     if chunk_type == "thinking":
@@ -184,7 +184,7 @@ async def stream_message(
                     })
                     # 使用 ensure_ascii=False 保证 UTF-8 编码，avoid_json_tricks 保证完整性
                     json_str = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
-                    fileLogger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
+                    logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
                     yield f"data: {json_str}\n\n"
                 
                 # 流式聊天完成后保存AI历史记录
@@ -198,12 +198,12 @@ async def stream_message(
                             ai_type=request.service.value
                         )
                         await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
-                        fileLogger.info(f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
+                        logger.info(f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
                     except Exception as history_error:
-                        fileLogger.error(f"保存流式AI历史记录失败: {str(history_error)}")
+                        logger.error(f"保存流式AI历史记录失败: {str(history_error)}")
                         
             except Exception as e:
-                fileLogger.error(f"流式聊天接口异常: {str(e)}")
+                logger.error(f"流式聊天接口异常: {str(e)}")
                 data = {
                     "code": 0,
                     "data": None,
@@ -213,5 +213,5 @@ async def stream_message(
         
         return StreamingResponse(event_generator(), media_type="text/event-stream")
     except Exception as e:
-        fileLogger.error(f"流式聊天接口异常: {str(e)}")
+        logger.error(f"流式聊天接口异常: {str(e)}")
         raise HTTPException(status_code=500, detail=f"流式聊天服务异常: {str(e)}")
