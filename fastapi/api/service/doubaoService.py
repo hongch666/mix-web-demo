@@ -114,15 +114,15 @@ class DoubaoService(BaseAiService):
             
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
-            permission_info = ""
             if self.intent_router and db and user_id:
                 intent, has_permission, permission_msg = self.intent_router.route_with_permission_check(message, user_id, db)
                 logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
                 
-                # 如果没有权限，作为信息传递给AI而不是直接返回
+                # 如果没有权限，直接返回权限提示信息
                 if not has_permission:
                     logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    permission_info = f"[权限提示: {permission_msg}]" if permission_msg else "[权限提示: 您没有权限访问此功能]"
+                    return permission_msg or "您没有权限访问此功能，请联系管理员开通相关权限。"
+                    
             elif self.intent_router:
                 intent = self.intent_router.route(message)
                 logger.info(f"识别意图: {intent}")
@@ -213,17 +213,24 @@ class DoubaoService(BaseAiService):
             
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
-            permission_info = ""
             if self.intent_router and db and user_id:
                 intent, has_permission, permission_msg = self.intent_router.route_with_permission_check(message, user_id, db)
                 logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
                 
-                # 如果没有权限，作为思考信息传递给AI而不是直接返回错误
+                # 如果没有权限，直接流式输出权限提示信息并返回
                 if not has_permission:
                     logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    permission_info = f"[权限提示: {permission_msg}]" if permission_msg else "[权限提示: 您没有权限访问此功能]"
-                    # 将权限信息作为思考过程发送给客户端
-                    yield {"type": "thinking", "content": permission_info}
+                    permission_message = permission_msg or "您没有权限访问此功能，请联系管理员开通相关权限。"
+                    
+                    # 发送思考过程（说明为什么没有权限）
+                    thinking = f"检测到用户请求需要 {intent} 权限，但当前用户权限不足。"
+                    yield {"type": "thinking", "content": thinking}
+                    
+                    # 流式输出友好的权限提示信息
+                    for char in permission_message:
+                        yield {"type": "content", "content": char}
+                    return
+                    
             elif self.intent_router:
                 intent = self.intent_router.route(message)
                 logger.info(f"识别意图: {intent}")
@@ -261,8 +268,7 @@ class DoubaoService(BaseAiService):
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
-                # 如果有权限限制信息，将其添加到输入中供AI参考
-                full_input = context + f"{permission_info}当前问题: {message}"
+                full_input = context + f"当前问题: {message}"
                 
                 # 第一步: 使用Agent获取信息和思考
                 logger.info("Agent开始处理...")
