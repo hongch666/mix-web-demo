@@ -1,6 +1,6 @@
 from functools import lru_cache
 from typing import AsyncGenerator, Optional
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from fastapi import Depends
@@ -17,21 +17,23 @@ class GeminiService(BaseAiService):
         # 初始化权限管理器
         self.perm_manager = UserPermissionManager(user_mapper)
         
-        # 初始化Gemini客户端
+        # 初始化Gemini客户端（使用第三方代理）
         try:
             gemini_cfg = load_config("gemini") or {}
             gemini_secret = load_secret_config("gemini") or {}
             self._api_key: str = gemini_secret.get("api_key")
-            self._model_name: str = gemini_cfg.get("model_name", "gemini-1.5-flash")
+            self._model_name: str = gemini_cfg.get("model_name", "gemini-2.0-flash")
+            self._base_url: str = gemini_cfg.get("base_url", "https://api.openai-proxy.org/google")
             self._timeout: int = gemini_cfg.get("timeout", 30)
             
             if self._api_key:
-                self.llm = ChatGoogleGenerativeAI(
+                # 使用 ChatOpenAI 调用第三方代理的 Gemini API
+                self.llm = ChatOpenAI(
                     model=self._model_name,
-                    google_api_key=self._api_key,
+                    api_key=self._api_key,
+                    base_url=self._base_url,
                     temperature=0.7,
                     timeout=self._timeout,
-                    max_retries=0,  # 禁用自动重试，遇到错误立即返回
                 )
                 
                 # 初始化工具
