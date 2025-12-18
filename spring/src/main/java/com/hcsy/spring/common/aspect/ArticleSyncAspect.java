@@ -80,8 +80,14 @@ public class ArticleSyncAspect {
                     @Override
                     public void afterCommit() {
                         logger.info("事务提交后触发异步同步任务...");
-                        // 异步执行，不阻塞主流程
-                        asyncSyncService.syncAllAsync(currentUserId, currentUsername);
+                        // 根据操作类型选择不同的同步策略
+                        if ("view".equals(action)) {
+                            // 浏览量更新只同步 Hive，不同步 ES 和 Vector
+                            asyncSyncService.syncHiveOnlyAsync(currentUserId, currentUsername);
+                        } else {
+                            // 其他操作同步 ES、Hive 和 Vector
+                            asyncSyncService.syncAllAsync(currentUserId, currentUsername);
+                        }
                     }
                 });
 

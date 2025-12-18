@@ -14,4 +14,14 @@ public interface AsyncSyncService {
      * @param username 触发同步的用户名（用于日志记录）
      */
     void syncAllAsync(Long userId, String username);
+
+    /**
+     * 异步同步 Hive 只
+     * 此方法会在后台线程池中执行，不阻塞主流程
+     * 仅同步 Hive，不同步 ES 和 Vector（用于浏览量更新等轻量级操作）
+     * 
+     * @param userId   触发同步的用户ID（用于日志记录）
+     * @param username 触发同步的用户名（用于日志记录）
+     */
+    void syncHiveOnlyAsync(Long userId, String username);
 }

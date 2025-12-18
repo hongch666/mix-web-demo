@@ -70,4 +70,37 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
             logger.debug("[异步任务] UserContext 已清理");
         }
     }
+
+    /**
+     * 异步同步 Hive 只
+     * 此方法会在后台线程池中执行，不阻塞主流程
+     * 仅同步 Hive，不同步 ES 和 Vector（用于浏览量更新等轻量级操作）
+     * 
+     * @param userId   触发同步的用户ID（用于日志记录）
+     * @param username 触发同步的用户名（用于日志记录）
+     */
+    @Override
+    @Async("asyncExecutor")
+    public void syncHiveOnlyAsync(Long userId, String username) {
+        try {
+            logger.info("[异步任务] 用户 " + (username != null ? username : "unknown") + "(ID:"
+                    + (userId != null ? userId : "null") + ") 触发 Hive 同步...");
+
+            // 仅同步 Hive
+            try {
+                fastAPIClient.syncHive();
+                logger.info("[异步任务] Hive 同步完成");
+            } catch (Exception e) {
+                logger.error("[异步任务] Hive 同步失败: " + e.getMessage(), e);
+            }
+
+            logger.info("[异步任务] Hive 同步任务执行完毕");
+        } catch (Exception e) {
+            logger.error("[异步任务] Hive 同步过程发生未知异常: " + e.getMessage(), e);
+        } finally {
+            // 清理 ThreadLocal，避免线程池复用时污染
+            UserContext.clear();
+            logger.debug("[异步任务] UserContext 已清理");
+        }
+    }
 }
