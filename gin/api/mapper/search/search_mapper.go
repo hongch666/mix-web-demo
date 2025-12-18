@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gin_proj/api/mapper/sync"
 	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
@@ -127,6 +128,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 
 	// 解析结果
 	var articles []po.ArticleES
+	var articleIDs []int
 
 	for _, hit := range searchResult.Hits.Hits {
 		var article po.ArticleES
@@ -144,6 +146,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 				}
 			}
 			articles = append(articles, article)
+			articleIDs = append(articleIDs, article.ID)
 
 			// 记录评分详情
 			var score float64
@@ -157,6 +160,17 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		} else {
 			// 处理解析错误
 			panic(err.Error())
+		}
+	}
+
+	// 从数据库获取实际阅读量替换ES中的数据（ES数据有延迟）
+	if len(articleIDs) > 0 {
+		articleMapper := &sync.ArticleMapper{}
+		viewsMap := articleMapper.GetArticleViewsByIDs(ctx, articleIDs)
+		for i := range articles {
+			if views, ok := viewsMap[articles[i].ID]; ok {
+				articles[i].Views = views
+			}
 		}
 	}
 

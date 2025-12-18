@@ -18,3 +18,18 @@ func (m *ArticleMapper) SearchArticles() []po.Article {
 	}
 	return articles
 }
+
+// GetArticleViewsByIDs 根据文章ID数组获取对应的阅读量
+func (m *ArticleMapper) GetArticleViewsByIDs(ctx context.Context, ids []int) map[int]int {
+	result := make(map[int]int)
+	articles, err := gorm.G[po.Article](config.DB).Where("id IN ?", ids).Select("id", "views").Find(ctx)
+	if err != nil {
+		return result
+	}
+
+	for _, article := range articles {
+		result[int(article.ID)] = article.Views
+	}
+
+	return result
+}
