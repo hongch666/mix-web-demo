@@ -217,4 +217,19 @@ public class ArticleController {
         return Result.success();
     }
 
+    @GetMapping("/unpublished/list")
+    @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
+    @ApiLog("获取未发布文章列表")
+    public Result getUnpublishedArticles(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<Article> articlePage = new Page<>(page, size);
+        IPage<ArticleWithCategoryVO> resultPage = articleService.listUnpublishedArticlesWithCategory(articlePage);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("total", resultPage.getTotal());
+        data.put("list", resultPage.getRecords());
+        return Result.success(data);
+    }
+
 }

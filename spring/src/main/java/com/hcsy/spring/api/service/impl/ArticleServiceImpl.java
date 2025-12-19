@@ -6,8 +6,14 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.ArticleMapper;
+import com.hcsy.spring.api.mapper.CategoryMapper;
+import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.entity.po.Category;
+import com.hcsy.spring.entity.po.SubCategory;
+import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import cn.hutool.core.bean.BeanUtil;
 import com.hcsy.spring.common.annotation.ArticleSync;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Article;
@@ -26,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
     private final ArticleMapper articleMapper;
     private final UserService userService;
+    private final CategoryMapper categoryMapper;
+    private final SubCategoryMapper subCategoryMapper;
 
     @Override
     @Transactional
@@ -181,6 +189,48 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public List<Article> listUnpublishedArticles() {
         return articleMapper.selectList(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
+    }
+
+    @Override
+    public IPage<Article> listUnpublishedArticles(Page<Article> page) {
+        return articleMapper.selectPage(page,
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
+    }
+
+    @Override
+    public IPage<ArticleWithCategoryVO> listUnpublishedArticlesWithCategory(Page<Article> page) {
+        IPage<Article> resultPage = articleMapper.selectPage(page,
+                new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
+
+        // 转换为VO对象并补充分类信息
+        List<ArticleWithCategoryVO> voList = resultPage.getRecords().stream().map(article -> {
+            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+
+            // 查询作者用户名
+            User user = userService.getById(article.getUserId());
+            vo.setUsername(user != null ? user.getName() : "");
+
+            // 查询子分类和主分类信息
+            if (article.getSubCategoryId() != null) {
+                SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
+                if (subCategory != null) {
+                    vo.setSubCategoryName(subCategory.getName());
+                    // 查询主分类信息
+                    Category category = categoryMapper.selectById(subCategory.getCategoryId());
+                    if (category != null) {
+                        vo.setCategoryId(category.getId());
+                        vo.setCategoryName(category.getName());
+                    }
+                }
+            }
+
+            return vo;
+        }).toList();
+
+        // 创建新的IPage对象，包含转换后的VO列表
+        Page<ArticleWithCategoryVO> voPage = new Page<>(page.getCurrent(), page.getSize(), resultPage.getTotal());
+        voPage.setRecords(voList);
+        return voPage;
     }
 
     @Override
