@@ -75,6 +75,73 @@
 - uv(可选)
 - Bun(可选)
 
+## 环境设置
+
+> **提示**: 推荐使用 `setup.sh` 配置脚本自动完成以下所有安装步骤。
+>
+> 如果需要手动配置，可以按照下面的步骤逐个模块进行。
+
+### Spring 部分
+
+使用 Maven 构建：
+
+```bash
+cd spring # 进入文件夹
+cd gateway # 进入网关
+mvn clean install # 下载依赖
+./mvnw clean install # Linux/macOS(无全局maven)
+mvnw.cmd clean install # Windows(无全局maven)
+```
+
+### Gin 部分
+
+```bash
+cd gin # 进入文件夹
+go mod tidy # 安装依赖
+go install github.com/gravityblast/fresh@latest # 修改热启动工具(推荐)
+```
+
+### NestJS 部分
+
+```bash
+cd nestjs # 进入文件夹
+npm install # 安装npm包
+bun install # 或者使用bun安装
+```
+
+### FastAPI 部分
+
+使用 uv 进行项目管理：
+
+```bash
+cd fastapi
+
+# 安装 uv（如果未安装）
+# 参考: https://docs.astral.sh/uv/getting-started/installation/
+
+# 配置 uv 虚拟环境
+uv venv --python /usr/bin/python3.11 # 创建虚拟环境时指定 Python
+
+# 激活虚拟环境
+source .venv/bin/activate
+
+# 同步依赖（使用国内镜像）
+uv sync
+
+# 运行项目
+uv run python main.py
+```
+
+> 项目使用 uv 进行依赖管理，配置文件为 `pyproject.toml`。镜像源配置在 `~/.config/uv/uv.toml`，内容如下
+
+```toml
+[[index]]
+name = "aliyun"
+url = "https://mirrors.aliyun.com/pypi/simple"
+default = true
+
+```
+
 ## 环境配置脚本
 
 为了简化项目初始化过程，我们提供了自动化配置脚本 `scripts/setup.sh`，可以自动检测环境、安装依赖并配置所有模块。
@@ -165,7 +232,7 @@
 2. **启动基础服务**（MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos）
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
-## Docker 容器管理
+## Docker 容器环境管理
 
 项目提供了 Docker 容器管理脚本，用于快速创建和管理所有依赖的容器服务。
 
@@ -258,74 +325,302 @@
 - **权限问题**: 如果遇到权限错误，可能需要使用 `sudo` 或将用户加入 docker 组
 - 如果有额外创建的组件，按照个人的配置改动配置文件
 
-## 环境设置
+## 编译和运行项目
 
-> **提示**: 推荐使用上面的 `setup.sh` 配置脚本自动完成以下所有安装步骤。
->
-> 如果需要手动配置，可以按照下面的步骤逐个模块进行。
+> 每个服务都可以独立运行：
 
-### Spring 部分
-
-使用 Maven 构建：
+### Spring 服务（包括 gateway 网关）
 
 ```bash
-cd spring # 进入文件夹
-cd gateway # 进入网关
-mvn clean install # 下载依赖
-./mvnw clean install # Linux/macOS(无全局maven)
-mvnw.cmd clean install # Windows(无全局maven)
+# 运行Spring服务
+cd spring
+mvn clean install # 构建项目
+mvn spring-boot:run # 启动项目
+./mvnw spring-boot:run # Linux/macOS 启动项目(无全局maven)
+mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
 ```
 
-### Gin 部分
+### Gin 服务
 
 ```bash
-cd gin # 进入文件夹
-go mod tidy # 安装依赖
-go install github.com/gravityblast/fresh@latest # 修改热启动工具(推荐)
+# 运行Gin服务
+cd gin
+go build -o bin/gin main.go # 构建项目
+go run main.go # 运行项目(无修改自启插件)
+fresh -c ~/.freshrc # 运行项目(有修改自启插件)
 ```
 
-### NestJS 部分
+### NestJS 服务
 
 ```bash
-cd nestjs # 进入文件夹
-npm install # 安装npm包
-bun install # 或者使用bun安装
+# 运行NestJS服务
+cd nestjs
+npm run start # development
+npm run start:dev # watch mode
+npm run start:prod # production mode
+npm run start:bun:start # bun运行
+npm run start:bun:dev # bun运行(watch)
 ```
 
-### FastAPI 部分
-
-使用 uv 进行项目管理：
+### FastAPI 服务
 
 ```bash
+# 运行FastAPI服务
 cd fastapi
-
-# 安装 uv（如果未安装）
-# 参考: https://docs.astral.sh/uv/getting-started/installation/
-
-# 配置 uv 虚拟环境
-uv venv --python /usr/bin/python3.11 # 创建虚拟环境时指定 Python
-
-# 激活虚拟环境
-source .venv/bin/activate
-
-# 同步依赖（使用国内镜像）
-uv sync
-
-# 运行项目
 uv run python main.py
+
+# 或指定 Python 版本
+uv run --python 3.12 python main.py
 ```
 
-> 项目使用 uv 进行依赖管理，配置文件为 `pyproject.toml`。镜像源配置在 `~/.config/uv/uv.toml`，内容如下
+## 运行脚本配置
 
-```toml
-[[index]]
-name = "aliyun"
-url = "https://mirrors.aliyun.com/pypi/simple"
-default = true
+所有运行脚本已组织到 `scripts/` 目录中，便于项目管理和维护。
 
+### 快速启动（推荐）
+
+#### Linux/macOS
+
+```bash
+# 查看帮助信息
+./services.sh help
+
+# ===== 开发环境 =====
+# 使用多窗格 tmux 布局启动所有服务（推荐用于开发调试）
+./services.sh multi
+
+# 使用顺序窗口模式启动所有服务
+./services.sh seq
+
+# 停止所有 tmux 服务
+./services.sh stop
+
+# ===== Docker 容器环境 =====
+# 构建并启动所有微服务容器
+./services.sh docker up
+
+# 构建并启动特定服务容器
+./services.sh docker up spring gin
+
+# 仅构建镜像
+./services.sh docker build
+
+# 查看容器状态
+./services.sh docker status
+
+# 查看容器日志
+./services.sh docker logs spring
+
+# 停止所有容器
+./services.sh docker stop
+
+# ===== 生产环境 =====
+# 构建所有服务到 dist/ 目录
+./services.sh build
+
+# 启动所有已构建的服务（后台运行）
+./services.sh start
+
+# 启动指定的服务
+./services.sh start spring gateway
+./services.sh start fastapi gin
+
+# 查看已构建服务的运行状态
+./services.sh status
+
+# 查看指定服务的运行状态
+./services.sh status spring gin
+
+# 重启所有已构建的服务
+./services.sh restart
+
+# 重启指定的服务
+./services.sh restart fastapi
+./services.sh restart spring gateway nestjs
+
+# 停止所有已构建的服务
+./services.sh stop-dist
+
+# 停止指定的服务
+./services.sh stop-dist spring fastapi
+
+# 查看服务的最新日志（只支持查看单个服务）
+./services.sh logs spring
+./services.sh logs fastapi
+./services.sh logs gin
 ```
 
-## 微服务 Docker 容器部署
+#### Windows
+
+```powershell
+# 启动所有服务（PowerShell）
+PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
+```
+
+### 直接调用脚本
+
+如果需要直接调用 `scripts/` 目录下的脚本：
+
+#### Linux/macOS
+
+```bash
+# 启动服务（多窗格布局）
+./scripts/run_multi.sh
+
+# 启动服务（顺序窗口布局）
+./scripts/run.sh
+
+# 停止所有服务
+./scripts/stop.sh
+
+# 构建所有服务
+./scripts/build.sh
+
+# 管理分布式部署的服务
+
+# 启动所有服务或指定服务
+./scripts/dist-control.sh start              # 启动所有
+./scripts/dist-control.sh start spring gin   # 启动指定
+
+# 停止所有服务或指定服务
+./scripts/dist-control.sh stop               # 停止所有
+./scripts/dist-control.sh stop fastapi       # 停止指定
+
+# 查看所有服务状态或指定服务状态
+./scripts/dist-control.sh status             # 查看所有
+./scripts/dist-control.sh status spring      # 查看指定
+
+# 重启所有服务或指定服务
+./scripts/dist-control.sh restart            # 重启所有
+./scripts/dist-control.sh restart nestjs     # 重启指定
+
+# 查看单个服务的最新日志
+./scripts/dist-control.sh logs spring
+./scripts/dist-control.sh logs fastapi
+```
+
+#### Windows
+
+```powershell
+# 启动所有服务
+.\scripts\run.ps1
+```
+
+### 脚本说明
+
+| 脚本              | 位置       | 功能                                       | 适用系统    |
+| ----------------- | ---------- | ------------------------------------------ | ----------- |
+| `services.sh`     | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
+| `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
+| `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
+| `stop.sh`         | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
+| `build.sh`        | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
+| `dist-control.sh` | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
+| `setup.sh`        | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
+| `ssh.sh`          | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
+| `run.ps1`         | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
+
+### 服务名称
+
+dist-control.sh 和 services.sh 支持以下服务名称：
+
+- `spring` - Spring Boot 服务
+- `gateway` - Spring Cloud Gateway 网关服务
+- `fastapi` - FastAPI 服务
+- `gin` - Gin 服务
+- `nestjs` - NestJS 服务
+
+如不指定服务名称，则对所有服务进行操作。
+
+### 注意事项
+
+1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
+2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
+3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
+4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos 等基础服务已运行
+5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
+
+## 生产环境部署
+
+本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
+
+**快速打包和部署（方法一：使用便捷脚本）：**
+
+```bash
+# 1. 一键打包所有服务
+./services.sh build
+
+# 2. 启动所有服务
+./services.sh start
+
+# 3. 查看服务状态
+./services.sh status
+
+# 4. 重启所有服务（代码更新后）
+./services.sh restart
+
+# 5. 停止所有服务
+./services.sh stop-dist
+```
+
+**快速打包和部署（方法二：直接调用脚本）：**
+
+```bash
+# 1. 一键打包所有服务
+./scripts/build.sh
+
+# 2. 启动所有服务
+./scripts/dist-control.sh start
+
+# 3. 查看服务状态
+./scripts/dist-control.sh status
+
+# 4. 重启所有服务
+./scripts/dist-control.sh restart
+
+# 5. 停止所有服务
+./scripts/dist-control.sh stop
+```
+
+打包后的文件统一位于 `dist/` 目录，每个服务都包含配置文件、启动/停止脚本和日志文件。
+
+### 脚本说明
+
+- **services.sh**（项目根目录）
+
+  - 便捷启动器，用于快速调用 `scripts/` 下的脚本
+  - 支持开发环境和生产环境命令
+
+- **scripts/build.sh**
+
+  - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
+  - 将编译结果打包到 `dist/` 目录
+  - 包含编译错误检查和日志输出
+
+- **scripts/dist-control.sh**
+
+  - 管理打包后的分布式服务
+  - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
+
+**示例用法：**
+
+```bash
+# 第一次部署
+./services.sh build
+./services.sh start
+
+# 查看运行状态
+./services.sh status
+
+# 代码更新后重新部署
+./services.sh build
+./services.sh restart
+
+# 停止所有服务
+./services.sh stop-dist
+```
+
+## Docker 容器部署
 
 项目提供了完整的 Docker 支持，可以为每个微服务构建镜像并创建容器。
 
@@ -609,301 +904,6 @@ kubectl describe configmap <config-name> -n mix-web-demo
 | **配置管理** | 环境变量+文件       | ConfigMap/Secret      |
 | **用途**     | 开发、小型生产      | 大规模生产、云原生    |
 
-## 生产环境部署
-
-本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
-
-**快速打包和部署（方法一：使用便捷脚本）：**
-
-```bash
-# 1. 一键打包所有服务
-./services.sh build
-
-# 2. 启动所有服务
-./services.sh start
-
-# 3. 查看服务状态
-./services.sh status
-
-# 4. 重启所有服务（代码更新后）
-./services.sh restart
-
-# 5. 停止所有服务
-./services.sh stop-dist
-```
-
-**快速打包和部署（方法二：直接调用脚本）：**
-
-```bash
-# 1. 一键打包所有服务
-./scripts/build.sh
-
-# 2. 启动所有服务
-./scripts/dist-control.sh start
-
-# 3. 查看服务状态
-./scripts/dist-control.sh status
-
-# 4. 重启所有服务
-./scripts/dist-control.sh restart
-
-# 5. 停止所有服务
-./scripts/dist-control.sh stop
-```
-
-打包后的文件统一位于 `dist/` 目录，每个服务都包含配置文件、启动/停止脚本和日志文件。
-
-### 脚本说明
-
-- **services.sh**（项目根目录）
-
-  - 便捷启动器，用于快速调用 `scripts/` 下的脚本
-  - 支持开发环境和生产环境命令
-
-- **scripts/build.sh**
-
-  - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
-  - 将编译结果打包到 `dist/` 目录
-  - 包含编译错误检查和日志输出
-
-- **scripts/dist-control.sh**
-
-  - 管理打包后的分布式服务
-  - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
-
-**示例用法：**
-
-```bash
-# 第一次部署
-./services.sh build
-./services.sh start
-
-# 查看运行状态
-./services.sh status
-
-# 代码更新后重新部署
-./services.sh build
-./services.sh restart
-
-# 停止所有服务
-./services.sh stop-dist
-```
-
-## 编译和运行项目
-
-> 每个服务都可以独立运行：
-
-### Spring 服务（包括 gateway 网关）
-
-```bash
-# 运行Spring服务
-cd spring
-mvn clean install # 构建项目
-mvn spring-boot:run # 启动项目
-./mvnw spring-boot:run # Linux/macOS 启动项目(无全局maven)
-mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
-```
-
-### Gin 服务
-
-```bash
-# 运行Gin服务
-cd gin
-go build -o bin/gin main.go # 构建项目
-go run main.go # 运行项目(无修改自启插件)
-fresh -c ~/.freshrc # 运行项目(有修改自启插件)
-```
-
-### NestJS 服务
-
-```bash
-# 运行NestJS服务
-cd nestjs
-npm run start # development
-npm run start:dev # watch mode
-npm run start:prod # production mode
-npm run start:bun:start # bun运行
-npm run start:bun:dev # bun运行(watch)
-```
-
-### FastAPI 服务
-
-```bash
-# 运行FastAPI服务
-cd fastapi
-uv run python main.py
-
-# 或指定 Python 版本
-uv run --python 3.12 python main.py
-```
-
-## 运行脚本配置
-
-所有运行脚本已组织到 `scripts/` 目录中，便于项目管理和维护。
-
-### 快速启动（推荐）
-
-#### Linux/macOS
-
-```bash
-# 查看帮助信息
-./services.sh help
-
-# ===== 开发环境 =====
-# 使用多窗格 tmux 布局启动所有服务（推荐用于开发调试）
-./services.sh multi
-
-# 使用顺序窗口模式启动所有服务
-./services.sh seq
-
-# 停止所有 tmux 服务
-./services.sh stop
-
-# ===== Docker 容器环境 =====
-# 构建并启动所有微服务容器
-./services.sh docker up
-
-# 构建并启动特定服务容器
-./services.sh docker up spring gin
-
-# 仅构建镜像
-./services.sh docker build
-
-# 查看容器状态
-./services.sh docker status
-
-# 查看容器日志
-./services.sh docker logs spring
-
-# 停止所有容器
-./services.sh docker stop
-
-# ===== 生产环境 =====
-# 构建所有服务到 dist/ 目录
-./services.sh build
-
-# 启动所有已构建的服务（后台运行）
-./services.sh start
-
-# 启动指定的服务
-./services.sh start spring gateway
-./services.sh start fastapi gin
-
-# 查看已构建服务的运行状态
-./services.sh status
-
-# 查看指定服务的运行状态
-./services.sh status spring gin
-
-# 重启所有已构建的服务
-./services.sh restart
-
-# 重启指定的服务
-./services.sh restart fastapi
-./services.sh restart spring gateway nestjs
-
-# 停止所有已构建的服务
-./services.sh stop-dist
-
-# 停止指定的服务
-./services.sh stop-dist spring fastapi
-
-# 查看服务的最新日志（只支持查看单个服务）
-./services.sh logs spring
-./services.sh logs fastapi
-./services.sh logs gin
-```
-
-#### Windows
-
-```powershell
-# 启动所有服务（PowerShell）
-PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
-```
-
-### 直接调用脚本
-
-如果需要直接调用 `scripts/` 目录下的脚本：
-
-#### Linux/macOS
-
-```bash
-# 启动服务（多窗格布局）
-./scripts/run_multi.sh
-
-# 启动服务（顺序窗口布局）
-./scripts/run.sh
-
-# 停止所有服务
-./scripts/stop.sh
-
-# 构建所有服务
-./scripts/build.sh
-
-# 管理分布式部署的服务
-
-# 启动所有服务或指定服务
-./scripts/dist-control.sh start              # 启动所有
-./scripts/dist-control.sh start spring gin   # 启动指定
-
-# 停止所有服务或指定服务
-./scripts/dist-control.sh stop               # 停止所有
-./scripts/dist-control.sh stop fastapi       # 停止指定
-
-# 查看所有服务状态或指定服务状态
-./scripts/dist-control.sh status             # 查看所有
-./scripts/dist-control.sh status spring      # 查看指定
-
-# 重启所有服务或指定服务
-./scripts/dist-control.sh restart            # 重启所有
-./scripts/dist-control.sh restart nestjs     # 重启指定
-
-# 查看单个服务的最新日志
-./scripts/dist-control.sh logs spring
-./scripts/dist-control.sh logs fastapi
-```
-
-#### Windows
-
-```powershell
-# 启动所有服务
-.\scripts\run.ps1
-```
-
-### 脚本说明
-
-| 脚本              | 位置       | 功能                                       | 适用系统    |
-| ----------------- | ---------- | ------------------------------------------ | ----------- |
-| `services.sh`     | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
-| `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
-| `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
-| `stop.sh`         | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
-| `build.sh`        | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
-| `dist-control.sh` | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
-| `setup.sh`        | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
-| `ssh.sh`          | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
-| `run.ps1`         | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
-
-### 服务名称
-
-dist-control.sh 和 services.sh 支持以下服务名称：
-
-- `spring` - Spring Boot 服务
-- `gateway` - Spring Cloud Gateway 网关服务
-- `fastapi` - FastAPI 服务
-- `gin` - Gin 服务
-- `nestjs` - NestJS 服务
-
-如不指定服务名称，则对所有服务进行操作。
-
-### 注意事项
-
-1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
-2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
-3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
-4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos 等基础服务已运行
-5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
-
 ## 基础服务组件初始化
 
 ### 确保已安装并启动以下数据库服务：
@@ -980,21 +980,15 @@ CREATE TABLE sub_category (
 
 ```sql
 CREATE TABLE `chat_messages` (
-    `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '消息ID，主键',
-    `sender_id` varchar(50) NOT NULL COMMENT '发送者用户ID',
-    `receiver_id` varchar(50) NOT NULL COMMENT '接收者用户ID',
-    `content` text NOT NULL COMMENT '消息内容',
-    `created_at` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '消息ID，主键',
+    `sender_id` VARCHAR(50) NOT NULL COMMENT '发送者ID',
+    `receiver_id` VARCHAR(50) NOT NULL COMMENT '接收者ID',
+    `content` TEXT NOT NULL COMMENT '消息内容',
+    `is_read` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
+    `created_at` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     PRIMARY KEY (`id`),
-    KEY `idx_chat_messages_sender_id` (`sender_id`) COMMENT '发送者ID索引',
-    KEY `idx_chat_messages_receiver_id` (`receiver_id`) COMMENT '接收者ID索引',
-    KEY `idx_chat_messages_created_at` (`created_at`) COMMENT '创建时间索引',
-    KEY `idx_chat_messages_sender_receiver` (
-        `sender_id`,
-        `receiver_id`,
-        `created_at`
-    ) COMMENT '发送者接收者组合索引，用于查询聊天历史'
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '聊天消息表';
+    KEY `idx_sender_receiver` (`sender_id`, `receiver_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
 ```
 
 - 创建文章评论表
