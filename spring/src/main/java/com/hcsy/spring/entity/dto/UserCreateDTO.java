@@ -27,4 +27,7 @@ public class UserCreateDTO {
     private String email;
 
     private String img;
+
+    @Size(max = 255, message = "个性签名长度不能超过255个字符")
+    private String signature;
 }

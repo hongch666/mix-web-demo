@@ -56,7 +56,8 @@ public class DatabaseInitializer implements ApplicationRunner {
             "    email VARCHAR(255) UNIQUE COMMENT '邮箱',\n" +
             "    age INT COMMENT '年龄',\n" +
             "    role VARCHAR(255) NOT NULL COMMENT '用户权限',\n" +
-            "    img VARCHAR(255) COMMENT '用户头像'\n" +
+            "    img VARCHAR(255) COMMENT '用户头像',\n" +
+            "    signature VARCHAR(255) COMMENT '个性签名'\n" +
             ") COMMENT='用户表'";
 
     private static final String CREATE_ARTICLES_SQL = "CREATE TABLE articles (\n" +

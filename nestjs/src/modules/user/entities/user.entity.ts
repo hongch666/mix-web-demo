@@ -22,4 +22,7 @@ export class User {
 
   @Column({ nullable: true })
   img: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  signature: string;
 }

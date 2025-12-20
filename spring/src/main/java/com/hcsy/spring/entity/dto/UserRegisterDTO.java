@@ -33,6 +33,9 @@ public class UserRegisterDTO {
 
     private String img;
 
+    @Size(max = 255, message = "个性签名长度不能超过255个字符")
+    private String signature;
+
     @NotBlank(message = "验证码不能为空")
     @Size(min = 6, max = 6, message = "验证码为6位")
     private String verificationCode;

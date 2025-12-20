@@ -10,3 +10,4 @@ class User(SQLModel, table=True):
     email: Optional[str] = None
     role: Optional[str] = None
     img: Optional[str] = None
+    signature: Optional[str] = None

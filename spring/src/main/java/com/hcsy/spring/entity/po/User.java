@@ -15,6 +15,7 @@ public class User {
     private String email;
     private String role;
     private String img;
+    private String signature;
     // 非数据库字段
     private transient Integer loginStatus; // 登录状态，1表示在线，0表示离线
 }

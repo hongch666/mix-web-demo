@@ -930,7 +930,8 @@ CREATE TABLE user (
     email VARCHAR(255) UNIQUE COMMENT '邮箱',
     age INT COMMENT '年龄',
     role VARCHAR(255) NOT NULL COMMENT '用户权限',
-    img VARCHAR(255) COMMENT '用户头像'
+    img VARCHAR(255) COMMENT '用户头像',
+    signature VARCHAR(255) COMMENT '个性签名'
 ) COMMENT='用户表'
 ```
 
