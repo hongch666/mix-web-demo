@@ -16,18 +16,6 @@ export class TaskService {
   ) {}
 
   /**
-   * 每月1日凌晨0点执行，清除文章操作日志
-   * Cron 表达式: 秒 分 时 日 月 星期
-   * '0 0 1 * *' = 每月1日凌晨0点
-   */
-  @Cron('0 0 1 * *')
-  async handleCronWithCustomExpression() {
-    fileLogger.info('开始清除任务');
-    const result = await this.logModel.deleteMany({}).exec();
-    fileLogger.info(`清除任务完成，删除了 ${result.deletedCount} 条日志`);
-  }
-
-  /**
    * 每月1日凌晨2点执行，删除超过1个月的API日志
    * Cron 表达式: 秒 分 时 日 月 星期
    * '0 0 2 1 * *' = 每月1日凌晨2点
