@@ -212,12 +212,22 @@ class AnalyzeService:
     def get_article_statistics_service(self, db: Session = Depends(get_db)) -> Dict[str, Any]:
         """
         获取文章统计信息服务
-        合并 mapper 层的4个独立方法，返回完整的统计数据
+        合并 mapper 层的方法，返回完整的统计数据
         
         流程:
         1. 先尝试从缓存获取（L1本地 + L2 Redis）
         2. 缓存未命中时，查询DB
         3. 查询成功后更新缓存
+        
+        返回字段:
+        - total_views: 总阅读量
+        - total_articles: 文章总数
+        - active_authors: 活跃作者数
+        - average_views: 文章平均阅读次数
+        - total_likes: 总点赞数（新增，直接DB查询）
+        - average_likes: 文章平均点赞数（新增，直接DB查询）
+        - total_collects: 总收藏数（新增，直接DB查询）
+        - average_collects: 文章平均收藏数（新增，直接DB查询）
         """
         start = time.time()
         
@@ -235,18 +245,27 @@ class AnalyzeService:
             # ========== 步骤2: 缓存未命中，查询DB ==========
             logger.info("get_article_statistics_service: [缓存未命中] 开始查询数据源")
             
-            # 分别调用 mapper 层的4个方法
+            # 分别调用 mapper 层的方法
             total_views = self.articleMapper.get_total_views_mapper(db)
             total_articles = self.articleMapper.get_total_articles_mapper(db)
             active_authors = self.articleMapper.get_active_authors_mapper(db)
             average_views = self.articleMapper.get_average_views_mapper(db)
+            # 新增：点赞和收藏统计（直接DB查询）
+            total_likes = self.articleMapper.get_total_likes_mapper(db)
+            average_likes = self.articleMapper.get_average_likes_mapper(db)
+            total_collects = self.articleMapper.get_total_collects_mapper(db)
+            average_collects = self.articleMapper.get_average_collects_mapper(db)
             
             # 组合结果
             statistics = {
                 "total_views": total_views,
                 "total_articles": total_articles,
                 "active_authors": active_authors,
-                "average_views": average_views
+                "average_views": average_views,
+                "total_likes": total_likes,
+                "average_likes": average_likes,
+                "total_collects": total_collects,
+                "average_collects": average_collects
             }
             
             # ========== 步骤3: 更新缓存 ==========

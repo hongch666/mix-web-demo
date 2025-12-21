@@ -9,6 +9,8 @@ type ArticleES struct {
 	Tags             string  `json:"tags"`
 	Status           int     `json:"status"`
 	Views            int     `json:"views"`
+	LikeCount        int     `json:"likeCount"`    // 点赞数
+	CollectCount     int     `json:"collectCount"` // 收藏数
 	CategoryName     string  `json:"category_name"`
 	SubCategoryName  string  `json:"sub_category_name"`
 	CreateAt         string  `json:"create_at"`

@@ -1,11 +1,11 @@
 from functools import lru_cache
-from sqlmodel import Session, select
+from sqlmodel import Session, select, func
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 import os
 import time
 from config import load_config, get_hive_connection_pool, HiveConnectionPool
-from entity.po import Article
+from entity.po import Article, Like, Collect
 from common.utils import fileLogger as logger
 
 class ArticleMapper:
@@ -123,6 +123,50 @@ class ArticleMapper:
             return 0
         total_views = sum(article.views for article in articles)
         return round(total_views / len(articles), 2)
+
+    def get_total_likes_mapper(self, db: Session) -> int:
+        """获取所有文章的总点赞数"""
+        try:
+            statement = select(func.count(Like.id))
+            total_likes = db.exec(statement).first()
+            return total_likes if total_likes else 0
+        except Exception as e:
+            logger.warning(f"获取总点赞数失败，返回0: {e}")
+            return 0
+
+    def get_total_collects_mapper(self, db: Session) -> int:
+        """获取所有文章的总收藏数"""
+        try:
+            statement = select(func.count(Collect.id))
+            total_collects = db.exec(statement).first()
+            return total_collects if total_collects else 0
+        except Exception as e:
+            logger.warning(f"获取总收藏数失败，返回0: {e}")
+            return 0
+
+    def get_average_likes_mapper(self, db: Session) -> float:
+        """获取每篇文章的平均点赞数"""
+        try:
+            total_articles = self.get_total_articles_mapper(db)
+            if total_articles == 0:
+                return 0
+            total_likes = self.get_total_likes_mapper(db)
+            return round(total_likes / total_articles, 2)
+        except Exception as e:
+            logger.warning(f"获取平均点赞数失败，返回0: {e}")
+            return 0
+
+    def get_average_collects_mapper(self, db: Session) -> float:
+        """获取每篇文章的平均收藏数"""
+        try:
+            total_articles = self.get_total_articles_mapper(db)
+            if total_articles == 0:
+                return 0
+            total_collects = self.get_total_collects_mapper(db)
+            return round(total_collects / total_articles, 2)
+        except Exception as e:
+            logger.warning(f"获取平均收藏数失败，返回0: {e}")
+            return 0
 
     def get_category_article_count_hive_mapper(self) -> list[dict]:
         """

@@ -1021,6 +1021,32 @@ CREATE TABLE `ai_history` (
 );
 ```
 
+- 创建文章用户点赞表
+  ```sql
+  CREATE TABLE IF NOT EXISTS likes (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+      article_id BIGINT NOT NULL COMMENT '文章ID',
+      user_id BIGINT NOT NULL COMMENT '用户ID',
+      created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+      UNIQUE KEY uk_article_user (article_id, user_id),
+      KEY idx_user_id (user_id),
+      KEY idx_created_time (created_time)
+  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表';
+  ```
+- 创建文章收藏表
+
+```sql
+CREATE TABLE IF NOT EXISTS collects (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    article_id BIGINT NOT NULL COMMENT '文章ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_article_user (article_id, user_id),
+    KEY idx_user_id (user_id),
+    KEY idx_created_time (created_time)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表';
+```
+
 ### PostgreSQL 表创建
 
 LangChain 会自动创建，但是需要启用 pgvector 扩展
@@ -1390,7 +1416,7 @@ spring:
         - id: spring
           uri: lb://spring
           predicates:
-            - Path=/api_spring/**,/users/**,/articles/**,/category/**,/comments/**
+            - Path=/api_spring/**,/users/**,/articles/**,/category/**,/comments/**,/collects/**,/likes/**
 
         - id: gin-ws
           uri: ws://localhost:8082

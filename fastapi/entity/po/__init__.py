@@ -5,6 +5,8 @@ from .subCategory import SubCategory
 from .listResponse import ListResponse
 from .aiHistory import AiHistory
 from .comments import Comments
+from .like import Like
+from .collect import Collect
 
 __all__ = [
     "Article",
@@ -14,4 +16,6 @@ __all__ = [
     "ListResponse",
     "AiHistory",
     "Comments",
+    "Like",
+    "Collect",
 ]

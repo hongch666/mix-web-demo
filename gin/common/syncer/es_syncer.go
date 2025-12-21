@@ -39,6 +39,8 @@ func SyncArticlesToES() {
 				"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
 				"status": { "type": "integer" },
 				"views": { "type": "integer" },
+				"likeCount": { "type": "integer" },
+				"collectCount": { "type": "integer" },
 				"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
 				"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
 				"ai_score": { "type": "float" },
@@ -97,13 +99,20 @@ func SyncArticlesToES() {
 
 	// 批量获取所有文章的评分数据
 	articleIDs := make([]int64, 0, len(articles))
+	articleIDsInt := make([]int, 0, len(articles))
 	for _, a := range articles {
 		articleIDs = append(articleIDs, int64(a.ID))
+		articleIDsInt = append(articleIDsInt, int(a.ID))
 	}
 
 	// 调用CommentMapper批量获取评分
 	commentScores := commentMapper.GetCommentScoresByArticleIDs(ctx, articleIDs)
 	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的评分信息完成", len(articles)))
+
+	// 批量获取点赞数和收藏数
+	likeCounts := articleMapper.GetArticleLikeCounts(ctx, articleIDsInt)
+	collectCounts := articleMapper.GetArticleCollectCounts(ctx, articleIDsInt)
+	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的点赞和收藏信息完成", len(articles)))
 
 	// 批量构建ES文档
 	bulkRequest := config.ESClient.Bulk()
@@ -134,6 +143,8 @@ func SyncArticlesToES() {
 			Tags:             article.Tags,
 			Status:           article.Status,
 			Views:            article.Views,
+			LikeCount:        likeCounts[int(article.ID)],
+			CollectCount:     collectCounts[int(article.ID)],
 			CategoryName:     categoryMap[article.SubCategoryID],
 			SubCategoryName:  subCategoryMap[article.SubCategoryID],
 			CreateAt:         article.CreateAt.Format("2006-01-02 15:04:05"),

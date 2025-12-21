@@ -1,0 +1,43 @@
+package sync
+
+import (
+	"context"
+	"gin_proj/config"
+	"gin_proj/entity/po"
+)
+
+type LikeMapper struct{}
+
+// GetLikeCountByArticleID 根据文章ID获取点赞数
+func (m *LikeMapper) GetLikeCountByArticleID(ctx context.Context, articleID int) int {
+	var count int64
+	err := config.DB.Model(&po.Like{}).Where("article_id = ?", articleID).Count(&count).Error
+	if err != nil {
+		return 0
+	}
+	return int(count)
+}
+
+// GetLikeCountsByArticleIDs 根据文章ID数组批量获取点赞数
+func (m *LikeMapper) GetLikeCountsByArticleIDs(ctx context.Context, articleIDs []int) map[int]int {
+	result := make(map[int]int)
+	type CountResult struct {
+		ArticleID int `gorm:"column:article_id"`
+		Count     int `gorm:"column:count"`
+	}
+	var counts []CountResult
+	err := config.DB.Model(&po.Like{}).
+		Where("article_id IN ?", articleIDs).
+		Select("article_id, count(*) as count").
+		Group("article_id").
+		Scan(&counts).Error
+	if err != nil {
+		return result
+	}
+
+	for _, item := range counts {
+		result[item.ArticleID] = item.Count
+	}
+
+	return result
+}

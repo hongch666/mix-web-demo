@@ -26,12 +26,15 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String catalog = conn.getCatalog(); // MySQL: 数据库名
-            // 建表顺序：category -> sub_category -> user -> articles -> comments
+            // 建表顺序：category -> sub_category -> user -> articles -> comments -> likes ->
+            // collects
             ensureTable(meta, catalog, "category", CREATE_CATEGORY_SQL);
             ensureTable(meta, catalog, "sub_category", CREATE_SUBCATEGORY_SQL);
             ensureTable(meta, catalog, "user", CREATE_USER_SQL);
             ensureTable(meta, catalog, "articles", CREATE_ARTICLES_SQL);
             ensureTable(meta, catalog, "comments", CREATE_COMMENTS_SQL);
+            ensureTable(meta, catalog, "likes", CREATE_LIKES_SQL);
+            ensureTable(meta, catalog, "collects", CREATE_COLLECTS_SQL);
         } catch (Exception e) {
             logger.error("检查/创建表失败", e);
         }
@@ -98,4 +101,24 @@ public class DatabaseInitializer implements ApplicationRunner {
             "    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',\n" +
             "    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'\n" +
             ") COMMENT=''";
+
+    private static final String CREATE_LIKES_SQL = "CREATE TABLE likes (\n" +
+            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',\n" +
+            "    article_id BIGINT NOT NULL COMMENT '文章ID',\n" +
+            "    user_id BIGINT NOT NULL COMMENT '用户ID',\n" +
+            "    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n" +
+            "    UNIQUE KEY uk_article_user (article_id, user_id),\n" +
+            "    KEY idx_user_id (user_id),\n" +
+            "    KEY idx_created_time (created_time)\n" +
+            ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表'";
+
+    private static final String CREATE_COLLECTS_SQL = "CREATE TABLE collects (\n" +
+            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',\n" +
+            "    article_id BIGINT NOT NULL COMMENT '文章ID',\n" +
+            "    user_id BIGINT NOT NULL COMMENT '用户ID',\n" +
+            "    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n" +
+            "    UNIQUE KEY uk_article_user (article_id, user_id),\n" +
+            "    KEY idx_user_id (user_id),\n" +
+            "    KEY idx_created_time (created_time)\n" +
+            ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表'";
 }

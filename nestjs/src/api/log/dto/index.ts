@@ -15,6 +15,10 @@ export enum ArticleAction {
   DELETE = 'delete',
   PUBLISH = 'publish',
   VIEW = 'view',
+  LIKE = 'like',
+  UNLIKE = 'unlike',
+  COLLECT = 'collect',
+  UNCOLLECT = 'uncollect',
 }
 
 export class CreateArticleLogDto {
@@ -77,6 +81,12 @@ export class QueryArticleLogDto {
       ArticleAction.SEARCH,
       ArticleAction.EDIT,
       ArticleAction.DELETE,
+      ArticleAction.PUBLISH,
+      ArticleAction.VIEW,
+      ArticleAction.LIKE,
+      ArticleAction.UNLIKE,
+      ArticleAction.COLLECT,
+      ArticleAction.UNCOLLECT,
     ],
   })
   @IsOptional()

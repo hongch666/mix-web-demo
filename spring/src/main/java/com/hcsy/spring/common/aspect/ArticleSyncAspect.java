@@ -81,8 +81,9 @@ public class ArticleSyncAspect {
                     public void afterCommit() {
                         logger.info("事务提交后触发异步同步任务...");
                         // 根据操作类型选择不同的同步策略
-                        if ("view".equals(action)) {
-                            // 浏览量更新只同步 Hive，不同步 ES 和 Vector
+                        if ("view".equals(action) || "like".equals(action) || "unlike".equals(action)
+                                || "collect".equals(action) || "uncollect".equals(action)) {
+                            // 浏览量、点赞、收藏操作只同步 Hive，不同步 ES 和 Vector
                             asyncSyncService.syncHiveOnlyAsync(currentUserId, currentUsername);
                         } else {
                             // 其他操作同步 ES、Hive 和 Vector
@@ -133,7 +134,11 @@ public class ArticleSyncAspect {
                 break;
             }
             case "publish":
-            case "view": {
+            case "view":
+            case "like":
+            case "unlike":
+            case "collect":
+            case "uncollect": {
                 Long id = (Long) paramValues[0];
                 content.put("id", id);
                 msg.put("article_id", id);
