@@ -26,8 +26,6 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (Connection conn = dataSource.getConnection()) {
             DatabaseMetaData meta = conn.getMetaData();
             String catalog = conn.getCatalog(); // MySQL: 数据库名
-            // 建表顺序：category -> sub_category -> user -> articles -> comments -> likes ->
-            // collects
             ensureTable(meta, catalog, "category", CREATE_CATEGORY_SQL);
             ensureTable(meta, catalog, "sub_category", CREATE_SUBCATEGORY_SQL);
             ensureTable(meta, catalog, "user", CREATE_USER_SQL);
@@ -35,6 +33,8 @@ public class DatabaseInitializer implements ApplicationRunner {
             ensureTable(meta, catalog, "comments", CREATE_COMMENTS_SQL);
             ensureTable(meta, catalog, "likes", CREATE_LIKES_SQL);
             ensureTable(meta, catalog, "collects", CREATE_COLLECTS_SQL);
+            // 初始化AI用户
+            initializeAIUsers();
         } catch (Exception e) {
             logger.error("检查/创建表失败", e);
         }
@@ -49,6 +49,38 @@ public class DatabaseInitializer implements ApplicationRunner {
             } else {
                 logger.debug(String.format("表 '%s' 已存在", tableName));
             }
+        }
+    }
+
+    private void initializeAIUsers() {
+        try {
+            // 创建三个AI用户，如果不存在则插入
+            insertAIUserIfNotExists(1001L, "豆包", "doubao@example.com",
+                    "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E8%B1%86%E5%8C%85.jpeg");
+            insertAIUserIfNotExists(1002L, "Gemini", "gemini@example.com",
+                    "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gemini.jpeg");
+            insertAIUserIfNotExists(1003L, "Qwen", "qwen@example.com",
+                    "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE.jpeg");
+        } catch (Exception e) {
+            logger.error("初始化AI用户失败", e);
+        }
+    }
+
+    private void insertAIUserIfNotExists(Long id, String name, String email, String img) {
+        try {
+            String password = "******";
+            String checkSql = "SELECT COUNT(*) FROM user WHERE id = ?";
+            Integer count = jdbc.queryForObject(checkSql, Integer.class, id);
+
+            if (count == null || count == 0) {
+                String insertSql = "INSERT INTO user (id, name, password, email, role, img) VALUES (?, ?, ?, ?, 'ai', ?)";
+                jdbc.update(insertSql, id, name, password, email, img);
+                logger.info(String.format("AI用户 '%s' (id: %d) 已创建", name, id));
+            } else {
+                logger.debug(String.format("AI用户 (id: %d) 已存在", id));
+            }
+        } catch (Exception e) {
+            logger.error(String.format("插入AI用户 (id: %d) 失败", id), e);
         }
     }
 
