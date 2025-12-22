@@ -12,6 +12,10 @@ from .apilogMapper import get_apilog_mapper,ApiLogMapper
 
 from .commentsMapper import CommentsMapper,get_comments_mapper
 
+from .likeMapper import LikeMapper,get_like_mapper
+
+from .collectMapper import CollectMapper,get_collect_mapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -27,4 +31,8 @@ __all__ = [
     "ApiLogMapper",
     "CommentsMapper",
     "get_comments_mapper",
+    "LikeMapper",
+    "get_like_mapper",
+    "CollectMapper",
+    "get_collect_mapper",
 ]
