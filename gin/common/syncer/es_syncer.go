@@ -17,6 +17,8 @@ func SyncArticlesToES() {
 	categoryMapper := mapper.Group.CategoryMapper
 	userMapper := mapper.Group.UserMapper
 	commentMapper := mapper.Group.CommentMapper
+	likeMapper := mapper.Group.LikeMapper
+	collectMapper := mapper.Group.CollectMapper
 
 	ctx := context.Background()
 	// 判断索引是否存在
@@ -110,8 +112,8 @@ func SyncArticlesToES() {
 	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的评分信息完成", len(articles)))
 
 	// 批量获取点赞数和收藏数
-	likeCounts := articleMapper.GetArticleLikeCounts(ctx, articleIDsInt)
-	collectCounts := articleMapper.GetArticleCollectCounts(ctx, articleIDsInt)
+	likeCounts := likeMapper.GetLikeCountsByArticleIDs(ctx, articleIDsInt)
+	collectCounts := collectMapper.GetCollectCountsByArticleIDs(ctx, articleIDsInt)
 	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的点赞和收藏信息完成", len(articles)))
 
 	// 批量构建ES文档

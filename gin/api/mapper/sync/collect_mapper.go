@@ -4,14 +4,15 @@ import (
 	"context"
 	"gin_proj/config"
 	"gin_proj/entity/po"
+
+	"gorm.io/gorm"
 )
 
 type CollectMapper struct{}
 
 // GetCollectCountByArticleID 根据文章ID获取收藏数
 func (m *CollectMapper) GetCollectCountByArticleID(ctx context.Context, articleID int) int {
-	var count int64
-	err := config.DB.Model(&po.Collect{}).Where("article_id = ?", articleID).Count(&count).Error
+	count, err := gorm.G[po.Collect](config.DB).Where("article_id = ?", articleID).Count(ctx, "*")
 	if err != nil {
 		return 0
 	}

@@ -166,9 +166,11 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	// 从数据库获取实际阅读量、点赞数、收藏数替换ES中的数据（ES数据有延迟）
 	if len(articleIDs) > 0 {
 		articleMapper := &sync.ArticleMapper{}
+		likeMapper := &sync.LikeMapper{}
+		collectMapper := &sync.CollectMapper{}
 		viewsMap := articleMapper.GetArticleViewsByIDs(ctx, articleIDs)
-		likeCounts := articleMapper.GetArticleLikeCounts(ctx, articleIDs)
-		collectCounts := articleMapper.GetArticleCollectCounts(ctx, articleIDs)
+		likeCounts := likeMapper.GetLikeCountsByArticleIDs(ctx, articleIDs)
+		collectCounts := collectMapper.GetCollectCountsByArticleIDs(ctx, articleIDs)
 		for i := range articles {
 			if views, ok := viewsMap[articles[i].ID]; ok {
 				articles[i].Views = views

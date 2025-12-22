@@ -10,8 +10,10 @@ type MapperGroup struct {
 	ArticleMapper     sync.ArticleMapper
 	CategoryMapper    sync.CategoryMapper
 	UserMapper        sync.UserMapper
+	CommentMapper     sync.CommentMapper
+	LikeMapper        sync.LikeMapper
+	CollectMapper     sync.CollectMapper
 	ChatMessageMapper chat.ChatMessageMapper
-	CommentMapper     search.CommentMapper
 	SearchMapper      search.SearchMapper
 }
 

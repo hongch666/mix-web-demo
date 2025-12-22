@@ -4,14 +4,15 @@ import (
 	"context"
 	"gin_proj/config"
 	"gin_proj/entity/po"
+
+	"gorm.io/gorm"
 )
 
 type LikeMapper struct{}
 
 // GetLikeCountByArticleID 根据文章ID获取点赞数
 func (m *LikeMapper) GetLikeCountByArticleID(ctx context.Context, articleID int) int {
-	var count int64
-	err := config.DB.Model(&po.Like{}).Where("article_id = ?", articleID).Count(&count).Error
+	count, err := gorm.G[po.Like](config.DB).Where("article_id = ?", articleID).Count(ctx, "*")
 	if err != nil {
 		return 0
 	}
