@@ -4,12 +4,17 @@ import re
 import asyncio
 import time
 from datetime import datetime
+from fastapi import Depends
 import jieba.analyse
 from common.utils import fileLogger as logger
+from .doubaoService import DoubaoService, get_doubao_service
+from .geminiService import GeminiService, get_gemini_service
+from .qwenService import QwenService, get_qwen_service
+from api.mapper import CommentsMapper, ArticleMapper, get_comments_mapper, get_article_mapper
 
 class GenerateService:
 
-    def __init__(self, comments_mapper: Any = None, article_mapper: Any = None, doubao_service: Any = None, gemini_service: Any = None, qwen_service: Any = None):
+    def __init__(self, comments_mapper: CommentsMapper = None, article_mapper: ArticleMapper = None, doubao_service: DoubaoService = None, gemini_service: GeminiService = None, qwen_service: QwenService = None):
         self.comments_mapper = comments_mapper
         self.article_mapper = article_mapper
         self.doubao_service = doubao_service
@@ -190,7 +195,5 @@ class GenerateService:
         return content, star
 
 @lru_cache()
-def get_generate_service() -> GenerateService:
-    return GenerateService()
-
-
+def get_generate_service(comments_mapper: CommentsMapper = Depends(get_comments_mapper), article_mapper: ArticleMapper = Depends(get_article_mapper), doubao_service: DoubaoService = Depends(get_doubao_service), gemini_service: GeminiService = Depends(get_gemini_service), qwen_service: QwenService = Depends(get_qwen_service)) -> GenerateService:
+    return GenerateService(comments_mapper, article_mapper, doubao_service, gemini_service, qwen_service)

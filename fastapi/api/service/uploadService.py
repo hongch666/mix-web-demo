@@ -10,7 +10,7 @@ from common.utils import fileLogger as logger
 from config import load_config
 
 class UploadService:
-    def __init__(self, analyze_service: AnalyzeService):
+    def __init__(self, analyze_service: AnalyzeService = None):
         self.analyze_service = analyze_service
 
     async def handle_image_upload(self,file) -> Dict[str, Any]:

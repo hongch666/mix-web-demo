@@ -11,7 +11,7 @@ from common.utils import fileLogger as logger, BaseAiService, get_agent_prompt, 
 from config import load_config, load_secret_config
 
 class GeminiService(BaseAiService):
-    def __init__(self, ai_history_mapper: AiHistoryMapper, user_mapper: Optional[UserMapper] = None):
+    def __init__(self, ai_history_mapper: AiHistoryMapper = None, user_mapper: Optional[UserMapper] = None):
         super().__init__(ai_history_mapper, service_name="Gemini")
         
         # 初始化权限管理器

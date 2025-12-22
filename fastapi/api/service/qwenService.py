@@ -114,6 +114,7 @@ class QwenService(BaseAiService):
             
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
+            permission_info = ""
             if self.intent_router and db and user_id:
                 intent, has_permission, permission_msg = self.intent_router.route_with_permission_check(message, user_id, db)
                 logger.info(f"识别意图: {intent}, 有权限: {has_permission}")

@@ -14,7 +14,7 @@ from common.utils import fileLogger as logger
 from common.cache import ArticleCache, CategoryCache, PublishTimeCache, StatisticsCache, get_article_cache, get_category_cache, get_publish_time_cache, get_statistics_cache
 
 class AnalyzeService:
-    def __init__(self, articleMapper: ArticleMapper, articleLogMapper: ArticleLogMapper, userMapper: UserMapper, categoryMapper: CategoryMapper, likeMapper: LikeMapper, collectMapper: CollectMapper, article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), statistics_cache: StatisticsCache = Depends(get_statistics_cache)):
+    def __init__(self, articleMapper: ArticleMapper = None, articleLogMapper: ArticleLogMapper = None, userMapper: UserMapper = None, categoryMapper: CategoryMapper = None, likeMapper: LikeMapper = None, collectMapper: CollectMapper = None, article_cache: ArticleCache = None, category_cache: CategoryCache = None, publish_time_cache: PublishTimeCache = None, statistics_cache: StatisticsCache = None):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
         self.userMapper = userMapper
