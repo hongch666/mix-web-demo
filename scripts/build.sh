@@ -295,13 +295,17 @@ build_nestjs() {
     print_info "开始打包 NestJS 服务..."
     cd "$PROJECT_ROOT/nestjs"
     
-    # 检查 npm/yarn
-    if command -v npm &> /dev/null; then
+    # 检查是否使用 bun
+    if command -v bun &> /dev/null; then
+        print_info "检测到 bun，使用 bun 构建 NestJS..."
+        bun install
+        bun run build:bun
+    elif command -v npm &> /dev/null; then
         print_info "使用 npm 构建 NestJS..."
         npm install
         npm run build
     else
-        print_error "npm 未安装，跳过 NestJS 打包"
+        print_error "npm 和 bun 都未安装，跳过 NestJS 打包"
         return 1
     fi
     
@@ -311,14 +315,41 @@ build_nestjs() {
     
     # 复制编译后的文件
     cp -r dist "$NESTJS_DIST/"
-    cp -r node_modules "$NESTJS_DIST/"
+    
+    # 根据使用的包管理器复制依赖
+    if command -v bun &> /dev/null; then
+        print_info "使用 bun 的依赖..."
+        cp -r node_modules "$NESTJS_DIST/"
+        cp bunfig.toml "$NESTJS_DIST/" 2>/dev/null || true
+    else
+        print_info "使用 npm 的依赖..."
+        cp -r node_modules "$NESTJS_DIST/"
+    fi
     
     # 复制配置文件
     cp application.yaml "$NESTJS_DIST/"
     cp package.json "$NESTJS_DIST/"
     
-    # 创建启动脚本
-    cat > "$NESTJS_DIST/start.sh" << 'EOF'
+    # 创建启动脚本 - 优先使用 bun
+    if command -v bun &> /dev/null; then
+        cat > "$NESTJS_DIST/start.sh" << 'EOF'
+#!/bin/bash
+LOG_DIR="../logs/nestjs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 优先使用 bun 启动
+if command -v bun &> /dev/null; then
+    nohup bun run dist/main.js >> "$LOG_FILE" 2>&1 &
+else
+    nohup node dist/main.js >> "$LOG_FILE" 2>&1 &
+fi
+
+echo $! > nestjs.pid
+echo "NestJS 服务已启动，PID: $(cat nestjs.pid)"
+EOF
+    else
+        cat > "$NESTJS_DIST/start.sh" << 'EOF'
 #!/bin/bash
 LOG_DIR="../logs/nestjs"
 mkdir -p "$LOG_DIR"
@@ -327,6 +358,7 @@ nohup node dist/main.js >> "$LOG_FILE" 2>&1 &
 echo $! > nestjs.pid
 echo "NestJS 服务已启动，PID: $(cat nestjs.pid)"
 EOF
+    fi
     
     cat > "$NESTJS_DIST/stop.sh" << 'EOF'
 #!/bin/bash
