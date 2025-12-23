@@ -81,9 +81,12 @@ public class ArticleSyncAspect {
                     public void afterCommit() {
                         logger.info("事务提交后触发异步同步任务...");
                         // 根据操作类型选择不同的同步策略
-                        if ("view".equals(action) || "like".equals(action) || "unlike".equals(action)
-                                || "collect".equals(action) || "uncollect".equals(action)) {
-                            // 浏览量、点赞、收藏操作只同步 Hive，不同步 ES 和 Vector
+                        if ("like".equals(action) || "unlike".equals(action) || "collect".equals(action)
+                                || "uncollect".equals(action)) {
+                            // 点赞、取消点赞、收藏、取消收藏操作不同步
+                            logger.info("点赞/收藏类操作不同步");
+                        } else if ("view".equals(action)) {
+                            // 浏览量操作只同步 Hive
                             asyncSyncService.syncHiveOnlyAsync(currentUserId, currentUsername);
                         } else {
                             // 其他操作同步 ES、Hive 和 Vector
