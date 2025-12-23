@@ -19,7 +19,21 @@ public @interface RequirePermission {
     boolean allowSelf() default false;
 
     /**
-     * 目标用户ID的参数名
+     * 业务类型：user, article, comment, category, subcategory 等
      */
-    String targetUserIdParam() default "id";
+    String businessType() default "user";
+
+    /**
+     * 参数来源：path_single, path_multi, body
+     * path_single: 路径单个参数如 /users/{id}
+     * path_multi: 路径多个参数如 /article/{articleId}/comment/{commentId}
+     * body: 请求体中的参数如 UserUpdateDTO
+     */
+    String paramSource() default "path_single";
+
+    /**
+     * 参数名称（可以是路径参数名或请求体属性名）
+     * 如 id, articleId, commentId, username 等
+     */
+    String[] paramNames() default { "id" };
 }

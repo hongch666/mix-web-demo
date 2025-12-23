@@ -75,7 +75,8 @@ public class CommentsController {
     // 修改评论
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
-    @RequirePermission(roles = { "admin" }, allowSelf = true, targetUserIdParam = "commentUpdateDTO")
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
     @ApiLog("修改评论")
     public Result updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
         Comments comment = BeanUtil.toBean(commentUpdateDTO, Comments.class);
@@ -98,7 +99,8 @@ public class CommentsController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除评论", description = "根据id删除评论")
-    @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @RequirePermission(roles = {}, allowSelf = true, businessType = "comment", paramSource = "path_multi", paramNames = {
+            "comments", "id" })
     @ApiLog("删除评论")
     public Result deleteComment(@PathVariable Long id) {
         commentsService.removeById(id);
@@ -107,7 +109,8 @@ public class CommentsController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
-    @RequirePermission(roles = { "admin" }, allowSelf = true)
+    @RequirePermission(roles = {}, allowSelf = true, businessType = "comment", paramSource = "path_multi", paramNames = {
+            "comments", "batch", "ids" })
     @ApiLog("批量删除评论")
     public Result deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))

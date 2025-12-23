@@ -14,6 +14,7 @@ import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.UserContext;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -130,6 +131,8 @@ public class ArticleController {
 
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "article", paramSource = "body", paramNames = { "id" })
     @ApiLog("更新文章")
     public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         // 获取用户id
@@ -140,31 +143,19 @@ public class ArticleController {
 
         Article article = BeanUtil.copyProperties(dto, Article.class);
         article.setUserId(userFromUsername.getId());
-        Article dbArticle = articleService.getById(dto.getId());
-        Long userId = UserContext.getUserId();
-        User user = userService.getById(userId);
-        if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
-        }
-        if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
-            throw new RuntimeException("无权修改他人文章");
-        }
         articleService.updateArticle(article);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "article", paramSource = "path_single", paramNames = { "id" })
     @ApiLog("删除文章")
     public Result deleteArticle(@PathVariable Long id) {
-        Long userId = UserContext.getUserId();
         Article dbArticle = articleService.getById(id);
-        User user = userService.getById(userId);
         if (dbArticle == null) {
             throw new RuntimeException("文章不存在");
-        }
-        if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
-            throw new RuntimeException("无权删除他人文章");
         }
         articleService.deleteArticle(id);
         return Result.success();
@@ -172,25 +163,15 @@ public class ArticleController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
+    @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
+            "ids" })
     @ApiLog("批量删除文章")
     public Result deleteArticles(@PathVariable String ids) {
-        Long userId = UserContext.getUserId();
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .map(Long::valueOf)
                 .toList();
-
-        User user = userService.getById(userId);
-        for (Long id : idList) {
-            Article dbArticle = articleService.getById(id);
-            if (dbArticle == null) {
-                throw new RuntimeException("文章不存在");
-            }
-            if (!"admin".equals(user.getRole()) && !userId.equals(dbArticle.getUserId())) {
-                throw new RuntimeException("无权删除他人文章");
-            }
-        }
 
         articleService.deleteArticles(idList);
         return Result.success();
