@@ -74,18 +74,12 @@ async def testNestJS(request: Request) -> JSONResponse:
 @router.post(
     "/task/hive",
     summary="手动触发文章表导出任务",
-    description="手动触发文章表导出到hive的定时任务，并清除所有缓存（top10、分类文章数、月份文章数、统计信息）"
+    description="手动触发文章表导出到hive的定时任务"
 )
 @log("手动触发文章表导出任务")
-async def test_export_articles_task(request: Request, article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), statistics_cache: StatisticsCache = Depends(get_statistics_cache)) -> JSONResponse:
+async def test_export_articles_task(request: Request) -> JSONResponse:
     try:
         await run_in_threadpool(export_articles_to_csv_and_hive)
-        # 清除所有相关缓存
-        article_cache.clear_all()
-        category_cache.clear_all()
-        publish_time_cache.clear_all()
-        statistics_cache.clear_all()
-        logger.info("已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息")
         return success()
     except Exception as e:
         logger.error(f"手动触发文章表导出任务失败: {e}")

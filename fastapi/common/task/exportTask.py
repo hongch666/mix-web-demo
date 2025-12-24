@@ -17,11 +17,16 @@ def export_articles_to_csv_and_hive(
     article_mapper: Optional[Any] = None,
     user_mapper: Optional[Any] = None,
     db_factory: Optional[Callable[[], Session]] = None,
+    article_cache: Optional[Any] = None,
+    category_cache: Optional[Any] = None,
+    publish_time_cache: Optional[Any] = None,
+    statistics_cache: Optional[Any] = None,
 ) -> None:
     """
     可注入的导出任务。
     - article_mapper: ArticleMapper 实例（应包含 get_all_articles 和 get_users_by_ids 方法）
     - db_factory: callable，返回一个 DB Session（例如 next(get_db) 的封装）
+    - *_cache: 缓存实例，用于清除导出后的缓存
     如果未传入，会在运行时按原有方式自动获取 provider。
     """
     # 延迟导入 provider，避免导入环节的循环或重资源开销
@@ -41,6 +46,35 @@ def export_articles_to_csv_and_hive(
         from config import get_db as _get_db
         # 封装成 callable，调用时执行 next(get_db())
         db_factory = lambda: next(_get_db())
+
+    # 如果缓存实例未传入，延迟导入
+    if article_cache is None:
+        try:
+            from common.cache import get_article_cache
+            article_cache = get_article_cache()
+        except Exception:
+            article_cache = None
+    
+    if category_cache is None:
+        try:
+            from common.cache import get_category_cache
+            category_cache = get_category_cache()
+        except Exception:
+            category_cache = None
+    
+    if publish_time_cache is None:
+        try:
+            from common.cache import get_publish_time_cache
+            publish_time_cache = get_publish_time_cache()
+        except Exception:
+            publish_time_cache = None
+    
+    if statistics_cache is None:
+        try:
+            from common.cache import get_statistics_cache
+            statistics_cache = get_statistics_cache()
+        except Exception:
+            statistics_cache = None
 
     db: Optional[Session] = None
     try:
@@ -155,6 +189,20 @@ def export_articles_to_csv_and_hive(
             conn.close()
         except Exception as hive_e:
             logger.error(f"连接hive或LOAD DATA失败，仅导出csv: {hive_e}")
+
+        # 清除所有相关缓存
+        try:
+            if article_cache is not None and hasattr(article_cache, 'clear_all'):
+                article_cache.clear_all()
+            if category_cache is not None and hasattr(category_cache, 'clear_all'):
+                category_cache.clear_all()
+            if publish_time_cache is not None and hasattr(publish_time_cache, 'clear_all'):
+                publish_time_cache.clear_all()
+            if statistics_cache is not None and hasattr(statistics_cache, 'clear_all'):
+                statistics_cache.clear_all()
+            logger.info("已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息")
+        except Exception as cache_e:
+            logger.error(f"清除缓存失败: {cache_e}")
 
     except Exception as e:
         logger.error(f"定时任务导出文章表失败: {e}")
@@ -299,8 +347,8 @@ def start_scheduler(
         user_mapper=user_mapper, 
         db_factory=db_factory or mysql_db_factory
     )
-    # 每1小时执行一次
-    scheduler.add_job(export_job_func, 'interval', hours=1, id='export_articles')
+    # 每1天执行一次
+    scheduler.add_job(export_job_func, 'interval', hours=24, id='export_articles')
     
     # 任务2：同步文章向量到 PostgreSQL（使用LangChain）
     sync_vector_job_func = partial(
@@ -313,6 +361,6 @@ def start_scheduler(
     
     scheduler.start()
     logger.info("定时任务调度器已启动：")
-    logger.info("  - 文章导出任务：每 1 小时执行一次")
+    logger.info("  - 文章导出任务：每 1 天执行一次（包含缓存清理）")
     logger.info("  - 向量同步任务：每 1 天执行一次")
     return scheduler

@@ -104,21 +104,32 @@ class CategoryCache:
         try:
             current_version = self.get_cache_version(hive_conn)
             if not current_version:
+                logger.debug("[缓存-分类] 获取当前版本号失败，跳过版本检测")
                 return False
             
-            # 从 Redis 获取旧版本号
+            # 从 Redis 获取旧版本号（优先级最高）
             old_version = None
             if self._redis.is_available():
-                old_version = self._redis.get(self.REDIS_VERSION_KEY)
-                # 修复: 统一转换为字符串类型(Redis可能返回bytes)
-                if old_version:
-                    old_version = str(old_version) if not isinstance(old_version, bytes) else old_version.decode('utf-8')
+                try:
+                    old_version = self._redis.get(self.REDIS_VERSION_KEY)
+                    if old_version:
+                        # 统一转换为字符串类型(Redis可能返回bytes)
+                        old_version = old_version if isinstance(old_version, str) else old_version.decode('utf-8')
+                except Exception as e:
+                    logger.debug(f"[缓存-分类] Redis 读取版本号失败: {e}")
+                    old_version = None
             
-            # 本地也有版本号
-            if not old_version:
+            # 本地版本号作为备选
+            if not old_version and self._cache_version:
                 old_version = self._cache_version
             
-            if old_version and str(current_version) != str(old_version):
+            # 关键修复：如果没有旧版本号（首次调用），不认为是版本变化
+            if not old_version:
+                logger.debug(f"[缓存-分类] 首次初始化，当前版本: {current_version}")
+                return False
+            
+            # 版本号对比：有旧版本且不相等时才算变化
+            if str(current_version) != str(old_version):
                 logger.info(f"[缓存-分类] 表版本已变化 (旧: {old_version} → 新: {current_version})")
                 return True
             
