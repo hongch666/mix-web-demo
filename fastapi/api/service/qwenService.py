@@ -154,10 +154,22 @@ class QwenService(BaseAiService):
                 # Agent可以同时调用SQL工具和RAG工具，或只调用其中一个
                 logger.info("使用Agent处理，可同时调用SQL和RAG工具")
                 
+                # 设置SQL工具的用户ID
+                if user_id:
+                    from common.agent.sqlTools import get_sql_tools
+                    try:
+                        sql_tools = get_sql_tools()
+                        sql_tools.set_user_id(user_id)
+                        logger.info(f"为SQL工具设置用户ID: {user_id}")
+                    except Exception as e:
+                        logger.warning(f"设置SQL工具用户ID失败: {e}")
+                
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
+                # 如果有用户ID信息，添加到输入中
+                user_info = f"当前用户ID: {user_id}\n" if user_id else ""
                 # 如果有权限限制信息，将其添加到输入中供AI参考
-                full_input = context + f"{permission_info}当前问题: {message}"
+                full_input = context + user_info + f"{permission_info}当前问题: {message}"
                 
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
                 result = agent_response.get("output", "无法获取结果")
@@ -273,9 +285,21 @@ class QwenService(BaseAiService):
                 # 使用Agent处理获取信息,然后流式输出最终答案
                 logger.info("使用Agent处理,可同时调用SQL和RAG工具")
                 
+                # 设置SQL工具的用户ID
+                if user_id:
+                    from common.agent.sqlTools import get_sql_tools
+                    try:
+                        sql_tools = get_sql_tools()
+                        sql_tools.set_user_id(user_id)
+                        logger.info(f"为SQL工具设置用户ID: {user_id}")
+                    except Exception as e:
+                        logger.warning(f"设置SQL工具用户ID失败: {e}")
+                
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
-                full_input = context + f"当前问题: {message}"
+                # 添加用户ID信息到输入
+                user_info = f"当前用户ID: {user_id}\n" if user_id else ""
+                full_input = context + user_info + f"当前问题: {message}"
                 
                 # 第一步: 使用Agent获取信息和思考
                 logger.info("Agent开始处理...")

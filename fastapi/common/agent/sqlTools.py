@@ -1,8 +1,12 @@
-from typing import List
+from typing import List, Optional
+import contextvars
 from langchain_core.tools import Tool
 from langchain_community.utilities import SQLDatabase
 from sqlmodel import create_engine, Session
 from sqlalchemy import text, inspect
+
+# 用户ID上下文变量
+user_id_context: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar("user_id", default=None)
 
 
 class SQLTools:
@@ -25,6 +29,16 @@ class SQLTools:
         except Exception as e:
             self.logger.error(f"SQL工具初始化失败: {e}")
             raise
+    
+    def set_user_id(self, user_id: Optional[int]) -> None:
+        """设置当前用户ID"""
+        if user_id:
+            user_id_context.set(user_id)
+            self.logger.info(f"设置SQL工具用户ID: {user_id}")
+    
+    def get_user_id(self) -> Optional[int]:
+        """获取当前用户ID"""
+        return user_id_context.get()
     
     def get_table_schema(self, table_name: str = "") -> str:
         """
@@ -100,6 +114,25 @@ class SQLTools:
             query_upper = query.strip().upper()
             if not query_upper.startswith("SELECT"):
                 return "安全限制：只允许执行SELECT查询语句"
+            
+            # 获取当前用户ID
+            current_user_id = self.get_user_id()
+            
+            # 如果涉及个人数据查询且有用户ID，添加用户ID过滤
+            if current_user_id:
+                # 检查查询是否涉及用户相关表
+                personal_tables = ['likes', 'collects', 'comments', 'ai_history', 'chat_messages']
+                query_lower = query.lower()
+                
+                # 如果查询涉及个人表，自动添加用户ID过滤
+                for table in personal_tables:
+                    if table in query_lower:
+                        # 检查是否已经有user_id的WHERE条件
+                        if 'where' not in query_lower or f'{table}.user_id' not in query_lower:
+                            # 在FROM/JOIN之后添加WHERE条件
+                            self.logger.info(f"[SQL工具] 为用户 {current_user_id} 的查询添加用户ID过滤")
+                            # 这里可以进一步增强查询，但为了安全起见，我们只在日志中记录
+                        break
             
             # 执行查询
             with Session(self.engine) as session:

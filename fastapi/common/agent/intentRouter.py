@@ -150,13 +150,13 @@ class IntentRouter:
         perm_manager = UserPermissionManager(self.user_mapper)
         
         if intent == "database_query":
-            has_permission, msg = perm_manager.can_access_sql_tools(self.user_id, self.db)
+            has_permission, msg = perm_manager.can_access_sql_tools(self.user_id, self.db, question)
             if not has_permission:
                 return intent, False, msg
             return intent, True, ""
         
         elif intent == "log_analysis":
-            has_permission, msg = perm_manager.can_access_mongodb_logs(self.user_id, self.db)
+            has_permission, msg = perm_manager.can_access_mongodb_logs(self.user_id, self.db, question)
             if not has_permission:
                 return intent, False, msg
             return intent, True, ""
