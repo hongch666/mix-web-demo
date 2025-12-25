@@ -1362,6 +1362,20 @@ embedding:
   top_k: 5 # RAG检索返回的文档数量
   dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
   similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
+permission:
+  personal_info_keywords:
+    - "我的"
+    - "个人"
+    - "自己的"
+    - "本人的"
+    - "我"
+    - "自己"
+    - "点赞"
+    - "收藏"
+    - "喜欢"
+    - "评论"
+    - "互动"
+    - "关注"
 ```
 
 - `application-secret.yaml`
