@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
     app.add_exception_handler(Exception, global_exception_handler)
     app.include_router(test_router)
     app.include_router(analyze_router)
+    app.include_router(apilog_router)
     app.include_router(upload_router)
     app.include_router(generate_router)
     app.include_router(chat_router)

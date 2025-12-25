@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict, List
-from api.service import AnalyzeService, get_analyze_service, get_apilog_service, ApiLogService
+from api.service import AnalyzeService, get_analyze_service
 from entity.po import ListResponse
 from config import get_db
 from common.utils import success
@@ -45,34 +45,6 @@ async def get_excel(request: Request, db: Session = Depends(get_db), analyzeServ
     await run_in_threadpool(analyzeService.export_articles_to_excel, db)
     oss_url: str = await run_in_threadpool(analyzeService.upload_excel_to_oss)
     return success(oss_url)
-
-@router.get(
-    "/api/average-speed",
-    summary="获取所有接口的平均响应速度",
-    description="获取所有接口的平均响应速度"
-)
-@log("获取所有接口的平均响应速度")
-async def get_api_average_speed(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
-    """
-    获取所有接口的平均响应速度
-    按照接口路径和方法分组统计
-    """
-    result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_api_average_response_time_service)
-    return success(result)
-
-@router.get(
-    "/api/called-count",
-    summary="获取接口调用次数",
-    description="获取接口调用次数"
-)
-@log("获取接口调用次数")
-async def get_called_count_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
-    """
-    获取接口调用次数
-    按照接口路径和方法分组统计
-    """
-    result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_called_count_apis_service)
-    return success(result)
 
 @router.get(
     "/statistics",
