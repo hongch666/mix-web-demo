@@ -2,7 +2,6 @@ from functools import lru_cache
 from typing import Any, Dict, List
 from config import db as mongo_db
 
-
 class ApiLogMapper:
     """API 日志 Mapper"""
     

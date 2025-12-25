@@ -3,7 +3,6 @@ from pyhive import hive
 from config import load_config
 from common.utils import fileLogger as logger
 
-
 class HiveConnectionPool:
     """Hive 连接池 - 单例模式"""
     _instance = None

@@ -9,7 +9,6 @@ import warnings
 # 抑制 PGVector 弃用警告
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
-
 class RAGTools:
     """RAG工具类 - 基于LangChain实现"""
     

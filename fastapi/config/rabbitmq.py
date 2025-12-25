@@ -4,7 +4,6 @@ from typing import Any, Optional
 from config.config import load_config
 from common.utils import fileLogger as logger
 
-
 class RabbitMQClient:
     """RabbitMQ 客户端类"""
 

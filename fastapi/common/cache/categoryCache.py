@@ -8,7 +8,6 @@ from common.utils import fileLogger as logger
 # 全局单例实例
 _category_cache_instance = None
 
-
 class CategoryCache:
     """
     分类文章数缓存管理 - 二级缓存架构

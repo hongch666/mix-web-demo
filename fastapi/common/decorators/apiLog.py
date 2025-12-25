@@ -15,7 +15,6 @@ except ImportError:
     RABBITMQ_AVAILABLE = False
     logger.warning("RabbitMQ 客户端不可用，API 日志将不会发送到队列")
 
-
 class ApiLogConfig:
     """API 日志配置类"""
     

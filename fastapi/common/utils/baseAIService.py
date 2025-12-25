@@ -71,11 +71,9 @@ Final Answer: 给用户的最终回答
 Question: {input}
 Thought: {agent_scratchpad}"""
 
-
 def get_agent_prompt() -> PromptTemplate:
     """获取Agent的Prompt模板"""
     return PromptTemplate.from_template(AGENT_PROMPT_TEMPLATE)
-
 
 def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = None, include_sql: bool = True, include_logs: bool = True):
     """初始化AI工具，支持基于权限的工具选择
@@ -129,7 +127,6 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
     except Exception as e:
         logger.error(f"初始化AI工具失败: {e}")
         raise
-
 
 class BaseAiService:
     """AI服务基类"""

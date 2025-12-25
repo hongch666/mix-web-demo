@@ -4,7 +4,6 @@ from entity.po import Collect
 from common.utils import fileLogger as logger
 from . import get_article_mapper
 
-
 class CollectMapper:
     
     def get_total_collects_mapper(self, db: Session) -> int:

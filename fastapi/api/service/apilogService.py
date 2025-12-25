@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 from fastapi import Depends
 from api.mapper import ApiLogMapper, get_apilog_mapper
 
-
 class ApiLogService:
     """API 日志 Service"""
 

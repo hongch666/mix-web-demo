@@ -2,7 +2,6 @@ from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
 
-
 class Like(SQLModel, table=True):
     __tablename__ = "likes"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)

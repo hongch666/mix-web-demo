@@ -8,7 +8,6 @@ from common.utils import fileLogger as logger
 # 全局单例实例
 _statistics_cache_instance = None
 
-
 class StatisticsCache:
     """
     文章统计信息缓存 - 二级缓存架构

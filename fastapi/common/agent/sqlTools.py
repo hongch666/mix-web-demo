@@ -8,7 +8,6 @@ from sqlalchemy import text, inspect
 # 用户ID上下文变量
 user_id_context: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar("user_id", default=None)
 
-
 class SQLTools:
     """SQL数据库工具类"""
     

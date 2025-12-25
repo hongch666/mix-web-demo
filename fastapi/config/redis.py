@@ -4,7 +4,6 @@ import json
 from config import load_config
 from common.utils import fileLogger as logger
 
-
 class RedisClient:
     """Redis 客户端 - 单例模式"""
     _instance = None

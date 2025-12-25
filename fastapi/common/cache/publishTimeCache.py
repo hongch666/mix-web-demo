@@ -8,7 +8,6 @@ from common.utils import fileLogger as logger
 # 全局单例实例
 _publish_time_cache_instance = None
 
-
 class PublishTimeCache:
     """
     文章发布时间缓存管理 - 二级缓存架构

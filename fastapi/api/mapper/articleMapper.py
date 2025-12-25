@@ -1,5 +1,5 @@
 from functools import lru_cache
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 import os

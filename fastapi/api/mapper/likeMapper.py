@@ -4,7 +4,6 @@ from entity.po import Like
 from common.utils import fileLogger as logger
 from . import get_article_mapper
 
-
 class LikeMapper:
     
     def get_total_likes_mapper(self, db: Session) -> int:

@@ -6,7 +6,6 @@ from common.decorators import log
 from common.client import call_remote_service
 from common.task import export_articles_to_csv_and_hive, export_article_vectors_to_postgres
 from common.utils import success,fail,fileLogger as logger
-from common.cache import ArticleCache, CategoryCache, PublishTimeCache, StatisticsCache, get_article_cache, get_category_cache, get_publish_time_cache, get_statistics_cache
 
 router: APIRouter = APIRouter(
     prefix="/api_fastapi",
