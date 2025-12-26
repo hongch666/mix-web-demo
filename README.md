@@ -59,6 +59,7 @@
 - [火山引擎](https://www.volcengine.com/)
 - [Google AI](https://aistudio.google.com/)
 - [阿里云百炼平台](https://bailian.console.aliyun.com/)
+- [Close AI](https://platform.closeai-asia.com/dashboard)
 - [阿里云 OSS](https://oss.console.aliyun.com/overview)
 
 ## 环境要求
