@@ -86,19 +86,28 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	// 获取搜索权重配置
 	searchCfg := config.Config.Search
 
-	// 构建综合评分脚本：(0.40 * _score) + (0.30 * ai_score/5) + (0.20 * user_score/5) + (0.10 * min(views/10000, 1))
+	// 构建综合评分脚本：ES分数 + AI评分 + 用户评分 + 阅读量 + 点赞量 + 收藏量 + 作者关注数
 	scoreScript := elastic.NewScript(`
 		double score = params.esWeight * _score;
 		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 5.0 : 0);
 		double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 5.0 : 0);
 		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
-		return score + aiBoost + userBoost + viewsBoost;
+		double likesBoost = params.likesWeight * (doc['likeCount'].size() > 0 ? Math.min((double)doc['likeCount'].value / params.maxLikesNormalized, 1.0) : 0);
+		double collectsBoost = params.collectsWeight * (doc['collectCount'].size() > 0 ? Math.min((double)doc['collectCount'].value / params.maxCollectsNormalized, 1.0) : 0);
+		double followBoost = params.followWeight * (doc['authorFollowCount'].size() > 0 ? Math.min((double)doc['authorFollowCount'].value / params.maxFollowsNormalized, 1.0) : 0);
+		return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost;
 	`).
 		Param("esWeight", searchCfg.ESScoreWeight).
 		Param("aiWeight", searchCfg.AIRatingWeight).
 		Param("userWeight", searchCfg.UserRatingWeight).
 		Param("viewsWeight", searchCfg.ViewsWeight).
-		Param("maxViewsNormalized", searchCfg.MaxViewsNormalized)
+		Param("likesWeight", searchCfg.LikesWeight).
+		Param("collectsWeight", searchCfg.CollectsWeight).
+		Param("followWeight", searchCfg.AuthorFollowWeight).
+		Param("maxViewsNormalized", searchCfg.MaxViewsNormalized).
+		Param("maxLikesNormalized", searchCfg.MaxLikesNormalized).
+		Param("maxCollectsNormalized", searchCfg.MaxCollectsNormalized).
+		Param("maxFollowsNormalized", searchCfg.MaxFollowsNormalized)
 
 	// 使用script_score包装bool查询
 	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
@@ -154,8 +163,8 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 				score = *hit.Score
 			}
 			utils.FileLogger.Info(fmt.Sprintf(
-				"[搜索评分] 文章ID:%d | 标题:%.30s | AI评分:%.2f | 用户评分:%.2f | 阅读量:%d | 综合分数:%.4f",
-				article.ID, article.Title, article.AIScore, article.UserScore, article.Views, score,
+				"[搜索评分] 文章ID:%d | 标题:%.30s | AI评分:%.2f | 用户评分:%.2f | 阅读量:%d | 点赞:%d | 收藏:%d | 作者关注:%d | 综合分数:%.4f",
+				article.ID, article.Title, article.AIScore, article.UserScore, article.Views, article.LikeCount, article.CollectCount, article.AuthorFollowCount, score,
 			))
 		} else {
 			// 处理解析错误

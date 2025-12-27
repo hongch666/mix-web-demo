@@ -76,11 +76,17 @@ type LogsConfig struct {
 }
 
 type SearchConfig struct {
-	ESScoreWeight      float64 `mapstructure:"es_score_weight"`
-	AIRatingWeight     float64 `mapstructure:"ai_rating_weight"`
-	UserRatingWeight   float64 `mapstructure:"user_rating_weight"`
-	ViewsWeight        float64 `mapstructure:"views_weight"`
-	MaxViewsNormalized float64 `mapstructure:"max_views_normalized"`
+	ESScoreWeight         float64 `mapstructure:"es_score_weight"`
+	AIRatingWeight        float64 `mapstructure:"ai_rating_weight"`
+	UserRatingWeight      float64 `mapstructure:"user_rating_weight"`
+	ViewsWeight           float64 `mapstructure:"views_weight"`
+	LikesWeight           float64 `mapstructure:"likes_weight"`
+	CollectsWeight        float64 `mapstructure:"collects_weight"`
+	AuthorFollowWeight    float64 `mapstructure:"author_follow_weight"`
+	MaxViewsNormalized    float64 `mapstructure:"max_views_normalized"`
+	MaxLikesNormalized    float64 `mapstructure:"max_likes_normalized"`
+	MaxCollectsNormalized float64 `mapstructure:"max_collects_normalized"`
+	MaxFollowsNormalized  float64 `mapstructure:"max_follows_normalized"`
 }
 
 var Config AppConfig
