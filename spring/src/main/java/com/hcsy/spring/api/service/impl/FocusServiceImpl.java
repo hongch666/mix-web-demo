@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.hcsy.spring.common.annotation.ArticleSync;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
 
     @Override
     @Transactional
+    @ArticleSync(action = "focus", description = "关注了1个用户")
     public boolean addFocus(Long userId, Long focusId) {
         // 检查是否已经关注
         if (isFocused(userId, focusId)) {
@@ -44,6 +47,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
 
     @Override
     @Transactional
+    @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
     public boolean removeFocus(Long userId, Long focusId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Focus::getUserId, userId);

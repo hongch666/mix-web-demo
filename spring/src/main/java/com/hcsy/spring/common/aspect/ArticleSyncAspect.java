@@ -82,9 +82,9 @@ public class ArticleSyncAspect {
                         logger.info("事务提交后触发异步同步任务...");
                         // 根据操作类型选择不同的同步策略
                         if ("like".equals(action) || "unlike".equals(action) || "collect".equals(action)
-                                || "uncollect".equals(action)) {
-                            // 点赞、取消点赞、收藏、取消收藏操作不同步
-                            logger.info("点赞/收藏类操作不同步");
+                                || "uncollect".equals(action) || "focus".equals(action) || "unfocus".equals(action)) {
+                            // 点赞、取消点赞、收藏、取消收藏、关注、取消关注操作不同步
+                            logger.info("点赞/收藏/关注类操作不同步");
                         } else if ("view".equals(action)) {
                             // 浏览量操作只同步 Hive
                             asyncSyncService.syncHiveOnlyAsync(currentUserId, currentUsername);
@@ -141,7 +141,9 @@ public class ArticleSyncAspect {
             case "like":
             case "unlike":
             case "collect":
-            case "uncollect": {
+            case "uncollect":
+            case "focus":
+            case "unfocus": {
                 Long id = (Long) paramValues[0];
                 content.put("id", id);
                 msg.put("article_id", id);
