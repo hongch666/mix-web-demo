@@ -19,6 +19,8 @@ export enum ArticleAction {
   UNLIKE = 'unlike',
   COLLECT = 'collect',
   UNCOLLECT = 'uncollect',
+  FOCUS = 'focus',
+  UNFOCUS = 'unfocus',
 }
 
 export class CreateArticleLogDto {
@@ -87,6 +89,8 @@ export class QueryArticleLogDto {
       ArticleAction.UNLIKE,
       ArticleAction.COLLECT,
       ArticleAction.UNCOLLECT,
+      ArticleAction.FOCUS,
+      ArticleAction.UNFOCUS,
     ],
   })
   @IsOptional()
