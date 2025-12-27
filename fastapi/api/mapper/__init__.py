@@ -16,6 +16,8 @@ from .likeMapper import LikeMapper,get_like_mapper
 
 from .collectMapper import CollectMapper,get_collect_mapper
 
+from .focusMapper import FocusMapper,get_focus_mapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -35,4 +37,6 @@ __all__ = [
     "get_like_mapper",
     "CollectMapper",
     "get_collect_mapper",
+    "FocusMapper",
+    "get_focus_mapper",
 ]

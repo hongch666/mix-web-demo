@@ -14,6 +14,8 @@ from .doubaoService import DoubaoService, get_doubao_service
 
 from .apilogService import ApiLogService, get_apilog_service
 
+from .userService import UserService, get_user_service
+
 __all__ = [
     "get_analyze_service",
     "AnalyzeService",
@@ -31,4 +33,6 @@ __all__ = [
     "get_ai_history_service",
     "ApiLogService",
     "get_apilog_service",
+    "UserService",
+    "get_user_service",
 ]

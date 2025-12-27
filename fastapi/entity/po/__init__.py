@@ -7,6 +7,7 @@ from .aiHistory import AiHistory
 from .comments import Comments
 from .like import Like
 from .collect import Collect
+from .focus import Focus
 
 __all__ = [
     "Article",
@@ -18,4 +19,5 @@ __all__ = [
     "Comments",
     "Like",
     "Collect",
+    "Focus",
 ]

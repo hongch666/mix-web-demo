@@ -2,6 +2,8 @@ from functools import lru_cache
 from sqlmodel import Session, select, func
 from entity.po import Collect
 from common.utils import fileLogger as logger
+from datetime import datetime
+from sqlalchemy import cast, Date
 from . import get_article_mapper
 
 class CollectMapper:
@@ -29,6 +31,47 @@ class CollectMapper:
         except Exception as e:
             logger.warning(f"获取平均收藏数失败，返回0: {e}")
             return 0
+
+    def get_monthly_collect_trend_mapper(self, db: Session, user_id: int) -> dict:
+        """获取用户本月收藏的趋势"""
+        try:
+            today = datetime.now()
+            first_day = datetime(today.year, today.month, 1)
+            if today.month == 12:
+                last_day = datetime(today.year + 1, 1, 1).replace(hour=0, minute=0, second=0, microsecond=0)
+            else:
+                last_day = datetime(today.year, today.month + 1, 1).replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            statement = select(
+                cast(Collect.created_time, Date).label("date"),
+                func.count(Collect.id).label("count")
+            ).where(
+                Collect.user_id == user_id,
+                Collect.created_time >= first_day,
+                Collect.created_time < last_day
+            ).group_by(cast(Collect.created_time, Date)).order_by(cast(Collect.created_time, Date))
+            
+            results = db.exec(statement).all()
+            
+            daily_trends = []
+            total = 0
+            for row in results:
+                date_str = str(row[0])
+                count = row[1]
+                daily_trends.append({
+                    "date": date_str,
+                    "count": count
+                })
+                total += count
+            
+            logger.debug(f"用户 {user_id} 本月收藏趋势: 总数={total}, 天数={len(daily_trends)}")
+            return {
+                "total": total,
+                "daily_trends": daily_trends
+            }
+        except Exception as e:
+            logger.error(f"获取收藏趋势失败: {e}", exc_info=True)
+            return {"total": 0, "daily_trends": []}
 
 
 @lru_cache()

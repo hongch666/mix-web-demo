@@ -1,7 +1,7 @@
 from sqlmodel import create_engine, Session, SQLModel
 from typing import Generator, Optional, List
 from config import load_config
-from entity.po import Article, User, Category, SubCategory, AiHistory
+from entity.po import Article, User, Category, SubCategory, AiHistory, Focus
 from common.utils import fileLogger as logger
 
 HOST: str = load_config("database")["mysql"]["host"]
@@ -51,6 +51,7 @@ def create_tables(tables: Optional[List[str]] = None):
                 'user': User,
                 'category': Category,
                 'sub_category': SubCategory,
+                'focus': Focus,
             }
             
             # 筛选出需要创建的表
