@@ -11,15 +11,14 @@
 
 ## 描述
 
-这是一个基于多语言技术栈构建的文章博客管理系统，包含以下组件：
+这是一个基于多语言技术栈构建的文章博客管理系统，主要包含以下框架：
 
 - FastAPI（Python）
 - Gin（Go）
 - Spring Boot（Java）
 - NestJS（Node.js）
-- 网关组件
 
-所有服务通过统一网关进行访问，实现了服务治理、认证授权等功能。
+所有服务通过 SpringCloud Gateway 统一网关进行访问，实现了服务治理、认证授权等功能。
 
 [前端对应仓库地址](https://gitee.com/chu-shichao/react-web-demo)
 
