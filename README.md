@@ -1230,11 +1230,17 @@ logs:
   path: "../logs/gin"
 
 search:
-  es_score_weight: 0.40 # ES默认分数占40%
-  ai_rating_weight: 0.30 # AI评分占30%
-  user_rating_weight: 0.20 # 用户评分占20%
+  es_score_weight: 0.30 # ES默认分数占30%
+  ai_rating_weight: 0.20 # AI评分占20%
+  user_rating_weight: 0.15 # 用户评分占15%
   views_weight: 0.10 # 阅读量占10%
+  likes_weight: 0.10 # 点赞量占10%
+  collects_weight: 0.10 # 收藏量占10%
+  author_follow_weight: 0.05 # 作者关注数占5%
   max_views_normalized: 10000.0 # 用于归一化阅读量的基准值
+  max_likes_normalized: 1000.0 # 用于归一化点赞量的基准值
+  max_collects_normalized: 1000.0 # 用于归一化收藏量的基准值
+  max_follows_normalized: 5000.0 # 用于归一化作者关注数的基准值
 ```
 
 ### Nestjs 部分
