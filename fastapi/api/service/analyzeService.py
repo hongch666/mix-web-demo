@@ -8,10 +8,22 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 from wordcloud import WordCloud
-from api.mapper import ArticleMapper, get_article_mapper, UserMapper, get_user_mapper, ArticleLogMapper, get_articlelog_mapper, CategoryMapper, get_category_mapper, LikeMapper, get_like_mapper, CollectMapper, get_collect_mapper
+from api.mapper import (
+    ArticleMapper, get_article_mapper, 
+    UserMapper, get_user_mapper, 
+    ArticleLogMapper, get_articlelog_mapper, 
+    CategoryMapper, get_category_mapper, 
+    LikeMapper, get_like_mapper, 
+    CollectMapper, get_collect_mapper
+)
 from config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger
-from common.cache import ArticleCache, CategoryCache, PublishTimeCache, StatisticsCache, get_article_cache, get_category_cache, get_publish_time_cache, get_statistics_cache
+from common.cache import (
+    ArticleCache, get_article_cache,
+    CategoryCache, get_category_cache,
+    PublishTimeCache, get_publish_time_cache,
+    StatisticsCache, get_statistics_cache
+)
 
 class AnalyzeService:
     def __init__(self, articleMapper: ArticleMapper = None, articleLogMapper: ArticleLogMapper = None, userMapper: UserMapper = None, categoryMapper: CategoryMapper = None, likeMapper: LikeMapper = None, collectMapper: CollectMapper = None, article_cache: ArticleCache = None, category_cache: CategoryCache = None, publish_time_cache: PublishTimeCache = None, statistics_cache: StatisticsCache = None):

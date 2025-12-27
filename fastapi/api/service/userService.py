@@ -12,7 +12,6 @@ from api.mapper import (
     CommentsMapper, get_comments_mapper, 
     ArticleLogMapper, get_articlelog_mapper
 )
-from config import get_db
 from common.utils import fileLogger as logger
 
 class UserService:

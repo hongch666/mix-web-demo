@@ -5,7 +5,11 @@ from config import get_db
 from sqlmodel import Session
 from api.service import GenerateService, get_generate_service
 from api.mapper import CommentsMapper, get_comments_mapper, ArticleMapper, get_article_mapper
-from api.service import DoubaoService, get_doubao_service, GeminiService, get_gemini_service, QwenService, get_qwen_service
+from api.service import (
+    DoubaoService, get_doubao_service, 
+    GeminiService, get_gemini_service, 
+    QwenService, get_qwen_service
+)
 from common.utils import success
 from common.decorators import log
 from entity.dto import GenerateDTO

@@ -1,5 +1,5 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional, List, Dict, Any
+from sqlmodel import SQLModel
+from typing import List, Dict, Any
 
 # ======================== 粉丝数统计相关DTO ========================
 

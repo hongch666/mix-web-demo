@@ -6,7 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
-from api.service import GeminiService, get_gemini_service, QwenService, get_qwen_service, DoubaoService, get_doubao_service, AiHistoryService, get_ai_history_service
+from api.service import (
+    GeminiService, get_gemini_service, 
+    QwenService, get_qwen_service, 
+    DoubaoService, get_doubao_service, 
+    AiHistoryService, get_ai_history_service
+)
 from common.utils import success, fileLogger as logger
 from common.decorators import log
 from common.middleware import get_current_user_id

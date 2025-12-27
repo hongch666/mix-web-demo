@@ -1,7 +1,5 @@
 import os
 from datetime import datetime
-from typing import Any
-
 from config import load_config
 from common.utils import logger
 
