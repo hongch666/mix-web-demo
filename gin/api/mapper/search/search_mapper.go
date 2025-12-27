@@ -163,14 +163,24 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		}
 	}
 
-	// 从数据库获取实际阅读量、点赞数、收藏数替换ES中的数据（ES数据有延迟）
+	// 从数据库获取实际阅读量、点赞数、收藏数、作者关注数替换ES中的数据（ES数据有延迟）
 	if len(articleIDs) > 0 {
 		articleMapper := &sync.ArticleMapper{}
 		likeMapper := &sync.LikeMapper{}
 		collectMapper := &sync.CollectMapper{}
+		focusMapper := &sync.FocusMapper{}
 		viewsMap := articleMapper.GetArticleViewsByIDs(ctx, articleIDs)
 		likeCounts := likeMapper.GetLikeCountsByArticleIDs(ctx, articleIDs)
 		collectCounts := collectMapper.GetCollectCountsByArticleIDs(ctx, articleIDs)
+
+		// 提取所有作者的UserID
+		authorUserIDs := make([]int, 0)
+		for _, article := range articles {
+			authorUserIDs = append(authorUserIDs, article.UserID)
+		}
+		// 批量获取作者的关注数（粉丝数）
+		authorFollowCounts := focusMapper.GetFollowCountsByUserIDs(ctx, authorUserIDs)
+
 		for i := range articles {
 			if views, ok := viewsMap[articles[i].ID]; ok {
 				articles[i].Views = views
@@ -180,6 +190,9 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 			}
 			if collects, ok := collectCounts[articles[i].ID]; ok {
 				articles[i].CollectCount = collects
+			}
+			if followCount, ok := authorFollowCounts[articles[i].UserID]; ok {
+				articles[i].AuthorFollowCount = followCount
 			}
 		}
 	}

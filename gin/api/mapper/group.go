@@ -13,6 +13,7 @@ type MapperGroup struct {
 	CommentMapper     sync.CommentMapper
 	LikeMapper        sync.LikeMapper
 	CollectMapper     sync.CollectMapper
+	FocusMapper       sync.FocusMapper
 	ChatMessageMapper chat.ChatMessageMapper
 	SearchMapper      search.SearchMapper
 }
