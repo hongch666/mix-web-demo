@@ -33,6 +33,7 @@ public class DatabaseInitializer implements ApplicationRunner {
             ensureTable(meta, catalog, "comments", CREATE_COMMENTS_SQL);
             ensureTable(meta, catalog, "likes", CREATE_LIKES_SQL);
             ensureTable(meta, catalog, "collects", CREATE_COLLECTS_SQL);
+            ensureTable(meta, catalog, "focus", CREATE_FOCUS_SQL);
             // 初始化AI用户
             initializeAIUsers();
         } catch (Exception e) {
@@ -153,4 +154,14 @@ public class DatabaseInitializer implements ApplicationRunner {
             "    KEY idx_user_id (user_id),\n" +
             "    KEY idx_created_time (created_time)\n" +
             ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表'";
+
+    private static final String CREATE_FOCUS_SQL = "CREATE TABLE focus (\n" +
+            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',\n" +
+            "    user_id BIGINT NOT NULL COMMENT '用户ID',\n" +
+            "    focus_id BIGINT NOT NULL COMMENT '关注的用户ID',\n" +
+            "    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n" +
+            "    UNIQUE KEY uk_user_focus (user_id, focus_id),\n" +
+            "    KEY idx_user_id (user_id),\n" +
+            "    KEY idx_created_time (created_time)\n" +
+            ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关注表'";
 }
