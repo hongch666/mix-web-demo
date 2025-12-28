@@ -33,6 +33,13 @@
 7. 基于 FastAPI 服务和 Hadoop 技术栈实现系统数据的相关分析
 8. 基于 WebSocket 和 SSE 用户实时聊天功能和消息通知
 
+## 设计图
+
+- 系统架构图
+  ![architecture](./static/pic/architecture.drawio.png)
+- ER 图
+  ![er](./static/pic/er.drawio.png)
+
 ## 技术栈
 
 - FastAPI：Python 后端服务

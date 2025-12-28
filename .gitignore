@@ -184,6 +184,8 @@ bfg-1.14.0.jar
 
 static/
 !static/word/template.docx
+!static/pic/er.drawio.png
+!static/pic/architecture.drawio.png
 logs/
 
 ### Root IDEA
