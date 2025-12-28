@@ -181,11 +181,16 @@ fastapi/.python-version
 .vscode/
 bfg-1.14.0.jar
 
-
-static/
-!static/word/template.docx
+# 忽略 static 目录下的所有文件
+static/*
+# 除了这两个特定文件
+!static/pic/
+static/pic/*
 !static/pic/er.drawio.png
 !static/pic/architecture.drawio.png
+
+!static/word/template.docx
+
 logs/
 
 ### Root IDEA
