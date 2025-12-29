@@ -1,4 +1,4 @@
-# 多语言技术栈系统
+# 多语言技术栈文章博客管理系统
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
