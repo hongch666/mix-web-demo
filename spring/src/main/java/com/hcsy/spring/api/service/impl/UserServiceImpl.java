@@ -13,6 +13,7 @@ import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserVO;
+import com.hcsy.spring.entity.vo.UserListVO;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,9 +34,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final PasswordEncryptor passwordEncryptor;
 
     @Override
-    public Map<String, Object> listUsersWithFilter(long page, long size, String username) {
-        Map<String, Object> result = new HashMap<>();
-
+    public UserListVO listUsersWithFilter(long page, long size, String username) {
         // 1. 先获取所有符合条件的用户ID（轻量查询）
         LambdaQueryWrapper<User> idQueryWrapper = Wrappers.lambdaQuery();
         idQueryWrapper.select(User::getId);
@@ -47,9 +46,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<User> userIds = this.list(idQueryWrapper);
 
         if (userIds.isEmpty()) {
-            result.put("total", 0L);
-            result.put("list", Collections.emptyList());
-            return result;
+            return UserListVO.builder()
+                    .total(0L)
+                    .list(Collections.emptyList())
+                    .build();
         }
 
         // 2. 批量从Redis获取所有用户的登录状态，构建 userId -> loginStatus 映射
@@ -81,9 +81,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         long total = userMapper.countUsersByUsername(username);
 
         // 6. 返回结果
-        result.put("total", total);
-        result.put("list", userVOs);
-        return result;
+        return UserListVO.builder()
+                .total(total)
+                .list(userVOs)
+                .build();
     }
 
     @Transactional
@@ -120,9 +121,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public Map<String, Object> getAllUsers(String username) {
-        Map<String, Object> result = new HashMap<>();
-
+    public UserListVO getAllUsers(String username) {
         // 查询所有符合条件的用户
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.ne(User::getRole, "ai"); // 排除 role 为 ai 的用户
@@ -132,9 +131,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         List<User> users = this.list(queryWrapper);
 
         if (users.isEmpty()) {
-            result.put("total", 0L);
-            result.put("list", Collections.emptyList());
-            return result;
+            return UserListVO.builder()
+                    .total(0L)
+                    .list(Collections.emptyList())
+                    .build();
         }
 
         // 转换为 UserVO（不包含登录状态和设备数）
@@ -144,9 +144,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             return vo;
         }).toList();
 
-        result.put("total", (long) users.size());
-        result.put("list", voList);
-        return result;
+        return UserListVO.builder()
+                .total((long) users.size())
+                .list(voList)
+                .build();
     }
 
     @Override

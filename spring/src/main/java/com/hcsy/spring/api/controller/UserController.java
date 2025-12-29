@@ -19,6 +19,8 @@ import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserVO;
+import com.hcsy.spring.entity.vo.UserListVO;
+import com.hcsy.spring.entity.vo.UserLoginVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,9 +29,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.cache.annotation.CacheConfig;
@@ -55,7 +55,7 @@ public class UserController {
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
     @ApiLog("获取用户信息")
     public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
-        Map<String, Object> data = userService.listUsersWithFilter(
+        UserListVO data = userService.listUsersWithFilter(
                 queryDTO.getPage(),
                 queryDTO.getSize(),
                 queryDTO.getUsername());
@@ -67,7 +67,7 @@ public class UserController {
     @Cacheable(value = "userPage", key = "'all-users'")
     @ApiLog("获取所有用户")
     public Result getAllUsers() {
-        Map<String, Object> data = userService.getAllUsers(null);
+        UserListVO data = userService.getAllUsers(null);
         return Result.success(data);
     }
 
@@ -194,14 +194,14 @@ public class UserController {
         // 2. 保存 Token 到 Redis（包括标记用户在线）
         tokenService.saveToken(user.getId(), token);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("token", token);
-        data.put("userId", user.getId());
-        data.put("username", user.getName());
-        // 3. 返回当前登录设备数
-        data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
+        UserLoginVO loginVO = UserLoginVO.builder()
+                .token(token)
+                .userId(user.getId())
+                .username(user.getName())
+                .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
+                .build();
 
-        return Result.success(data);
+        return Result.success(loginVO);
     }
 
     @PostMapping("/email-login")
@@ -226,14 +226,14 @@ public class UserController {
             // 4. 保存 Token 到 Redis（包括标记用户在线）
             tokenService.saveToken(user.getId(), token);
 
-            Map<String, Object> data = new HashMap<>();
-            data.put("token", token);
-            data.put("userId", user.getId());
-            data.put("username", user.getName());
-            // 返回当前登录设备数
-            data.put("onlineDeviceCount", tokenService.getUserOnlineDeviceCount(user.getId()));
+            UserLoginVO loginVO = UserLoginVO.builder()
+                    .token(token)
+                    .userId(user.getId())
+                    .username(user.getName())
+                    .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
+                    .build();
 
-            return Result.success(data);
+            return Result.success(loginVO);
         } catch (Exception e) {
             logger.error("邮箱验证码登录失败: " + e.getMessage());
             return Result.error("邮箱验证码登录失败");

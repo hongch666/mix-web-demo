@@ -2,14 +2,14 @@ package com.hcsy.spring.api.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.UserListVO;
 
 import java.util.List;
-import java.util.Map;
 
 public interface UserService extends IService<User> {
-    Map<String, Object> listUsersWithFilter(long page, long size, String username);
+    UserListVO listUsersWithFilter(long page, long size, String username);
 
-    Map<String, Object> getAllUsers(String username);
+    UserListVO getAllUsers(String username);
 
     void saveUserAndStatus(User user);
 
