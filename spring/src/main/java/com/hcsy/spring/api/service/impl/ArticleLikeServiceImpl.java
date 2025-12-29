@@ -17,6 +17,8 @@ import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+
+import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,20 +89,15 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         List<ArticleLikeVO> voList = likePage.getRecords().stream().map(like -> {
             Article article = articleMapper.selectById(like.getArticleId());
             ArticleLikeVO vo = new ArticleLikeVO();
-            vo.setId(like.getId());
-            vo.setArticleId(like.getArticleId());
-            vo.setLikedTime(like.getCreatedTime());
 
             if (article != null) {
-                vo.setTitle(article.getTitle());
-                vo.setContent(article.getContent());
-                vo.setUserId(article.getUserId());
-                vo.setTags(article.getTags());
-                vo.setStatus(article.getStatus());
-                vo.setViews(article.getViews());
-                vo.setSubCategoryId(article.getSubCategoryId());
+                vo = BeanUtil.copyProperties(article, ArticleLikeVO.class);
                 vo.setArticleCreateAt(article.getCreateAt());
                 vo.setArticleUpdateAt(article.getUpdateAt());
+
+                vo.setId(like.getId());
+                vo.setArticleId(like.getArticleId());
+                vo.setLikedTime(like.getCreatedTime());
 
                 // 获取作者信息
                 if (article.getUserId() != null) {

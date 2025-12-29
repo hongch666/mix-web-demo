@@ -17,6 +17,8 @@ import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+
+import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,20 +90,15 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         List<ArticleCollectVO> voList = collectPage.getRecords().stream().map(collect -> {
             Article article = articleMapper.selectById(collect.getArticleId());
             ArticleCollectVO vo = new ArticleCollectVO();
-            vo.setId(collect.getId());
-            vo.setArticleId(collect.getArticleId());
-            vo.setCollectedTime(collect.getCreatedTime());
 
             if (article != null) {
-                vo.setTitle(article.getTitle());
-                vo.setContent(article.getContent());
-                vo.setUserId(article.getUserId());
-                vo.setTags(article.getTags());
-                vo.setStatus(article.getStatus());
-                vo.setViews(article.getViews());
-                vo.setSubCategoryId(article.getSubCategoryId());
+                vo = BeanUtil.copyProperties(article, ArticleCollectVO.class);
                 vo.setArticleCreateAt(article.getCreateAt());
                 vo.setArticleUpdateAt(article.getUpdateAt());
+
+                vo.setId(collect.getId());
+                vo.setArticleId(collect.getArticleId());
+                vo.setCollectedTime(collect.getCreatedTime());
 
                 // 获取作者信息
                 if (article.getUserId() != null) {

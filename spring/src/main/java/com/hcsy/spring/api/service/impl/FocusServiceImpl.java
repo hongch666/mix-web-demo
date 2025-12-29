@@ -11,6 +11,8 @@ import com.hcsy.spring.api.service.FocusService;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.FocusUserVO;
+
+import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,13 +83,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
             FocusUserVO vo = new FocusUserVO();
 
             if (user != null) {
-                vo.setId(user.getId());
-                vo.setName(user.getName());
-                vo.setAge(user.getAge());
-                vo.setEmail(user.getEmail());
-                vo.setImg(user.getImg());
-                vo.setSignature(user.getSignature());
-                vo.setRole(user.getRole());
+                vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                 vo.setFocusedTime(focus.getCreatedTime());
             }
 
@@ -116,13 +112,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
             FocusUserVO vo = new FocusUserVO();
 
             if (user != null) {
-                vo.setId(user.getId());
-                vo.setName(user.getName());
-                vo.setAge(user.getAge());
-                vo.setEmail(user.getEmail());
-                vo.setImg(user.getImg());
-                vo.setSignature(user.getSignature());
-                vo.setRole(user.getRole());
+                vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                 vo.setFocusedTime(focus.getCreatedTime());
             }
 
