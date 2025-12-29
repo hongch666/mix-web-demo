@@ -5,12 +5,15 @@ import uuid
 from typing import Any, Dict
 from fastapi import Depends
 from starlette.concurrency import run_in_threadpool
-from api.service import AnalyzeService,get_analyze_service
+from api.service import AnalyzeService, get_analyze_service
 from common.utils import fileLogger as logger
 from config import load_config
 
 class UploadService:
-    def __init__(self, analyze_service: AnalyzeService = None):
+    def __init__(
+            self, 
+            analyze_service: AnalyzeService = None
+        ):
         self.analyze_service = analyze_service
 
     async def handle_image_upload(self,file) -> Dict[str, Any]:
@@ -45,5 +48,9 @@ class UploadService:
         }
     
 @lru_cache
-def get_upload_service(analyze_service: AnalyzeService = Depends(get_analyze_service)) -> UploadService:
-    return UploadService(analyze_service)
+def get_upload_service(
+        analyze_service: AnalyzeService = Depends(get_analyze_service)
+    ) -> UploadService:
+    return UploadService(
+            analyze_service
+        )

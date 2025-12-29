@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import time
 from typing import Dict, List, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 from wordcloud import WordCloud
@@ -26,7 +26,19 @@ from common.cache import (
 )
 
 class AnalyzeService:
-    def __init__(self, articleMapper: ArticleMapper = None, articleLogMapper: ArticleLogMapper = None, userMapper: UserMapper = None, categoryMapper: CategoryMapper = None, likeMapper: LikeMapper = None, collectMapper: CollectMapper = None, article_cache: ArticleCache = None, category_cache: CategoryCache = None, publish_time_cache: PublishTimeCache = None, statistics_cache: StatisticsCache = None):
+    def __init__(
+                    self, 
+                    articleMapper: ArticleMapper = None, 
+                    articleLogMapper: ArticleLogMapper = None, 
+                    userMapper: UserMapper = None, 
+                    categoryMapper: CategoryMapper = None, 
+                    likeMapper: LikeMapper = None, 
+                    collectMapper: CollectMapper = None, 
+                    article_cache: ArticleCache = None, 
+                    category_cache: CategoryCache = None, 
+                    publish_time_cache: PublishTimeCache = None, 
+                    statistics_cache: StatisticsCache = None
+                ):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
         self.userMapper = userMapper
@@ -494,5 +506,27 @@ class AnalyzeService:
                 self.articleMapper.return_hive_connection(hive_conn)
     
 @lru_cache()
-def get_analyze_service(articleMapper: ArticleMapper = Depends(get_article_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), userMapper: UserMapper = Depends(get_user_mapper), categoryMapper: CategoryMapper = Depends(get_category_mapper), likeMapper: LikeMapper = Depends(get_like_mapper), collectMapper: CollectMapper = Depends(get_collect_mapper), article_cache: ArticleCache = Depends(get_article_cache), category_cache: CategoryCache = Depends(get_category_cache), publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), statistics_cache: StatisticsCache = Depends(get_statistics_cache)) -> AnalyzeService:
-    return AnalyzeService(articleMapper, articleLogMapper, userMapper, categoryMapper, likeMapper, collectMapper, article_cache, category_cache, publish_time_cache, statistics_cache)
+def get_analyze_service(
+        articleMapper: ArticleMapper = Depends(get_article_mapper), 
+        articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper), 
+        userMapper: UserMapper = Depends(get_user_mapper), 
+        categoryMapper: CategoryMapper = Depends(get_category_mapper), 
+        likeMapper: LikeMapper = Depends(get_like_mapper), 
+        collectMapper: CollectMapper = Depends(get_collect_mapper), 
+        article_cache: ArticleCache = Depends(get_article_cache), 
+        category_cache: CategoryCache = Depends(get_category_cache), 
+        publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), 
+        statistics_cache: StatisticsCache = Depends(get_statistics_cache)
+    ) -> AnalyzeService:
+    return AnalyzeService(
+            articleMapper, 
+            articleLogMapper, 
+            userMapper, 
+            categoryMapper,
+            likeMapper, 
+            collectMapper, 
+            article_cache, 
+            category_cache, 
+            publish_time_cache, 
+            statistics_cache
+        )

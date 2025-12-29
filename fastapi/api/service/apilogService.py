@@ -6,7 +6,10 @@ from api.mapper import ApiLogMapper, get_apilog_mapper
 class ApiLogService:
     """API 日志 Service"""
 
-    def __init__(self, api_log_mapper: ApiLogMapper = None):
+    def __init__(
+            self, 
+            api_log_mapper: ApiLogMapper = None
+        ):
         self.mapper = api_log_mapper
 
     def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:
@@ -38,5 +41,9 @@ class ApiLogService:
 
 
 @lru_cache()
-def get_apilog_service(api_log_mapper: ApiLogMapper = Depends(get_apilog_mapper)) -> ApiLogService:
-    return ApiLogService(api_log_mapper)
+def get_apilog_service(
+        api_log_mapper: ApiLogMapper = Depends(get_apilog_mapper)
+    ) -> ApiLogService:
+    return ApiLogService(
+        api_log_mapper
+    )

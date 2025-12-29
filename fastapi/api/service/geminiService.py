@@ -5,13 +5,27 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from fastapi import Depends
 from sqlmodel import Session
-from api.mapper import AiHistoryMapper, get_ai_history_mapper, UserMapper, get_user_mapper
+from api.mapper import (
+    AiHistoryMapper, 
+    get_ai_history_mapper, 
+    UserMapper, 
+    get_user_mapper
+)
 from common.agent import IntentRouter, UserPermissionManager
-from common.utils import fileLogger as logger, BaseAiService, get_agent_prompt, initialize_ai_tools
+from common.utils import (
+    fileLogger as logger, 
+    BaseAiService, 
+    get_agent_prompt, 
+    initialize_ai_tools
+)
 from config import load_config, load_secret_config
 
 class GeminiService(BaseAiService):
-    def __init__(self, ai_history_mapper: AiHistoryMapper = None, user_mapper: Optional[UserMapper] = None):
+    def __init__(
+            self, 
+            ai_history_mapper: AiHistoryMapper = None, 
+            user_mapper: Optional[UserMapper] = None
+        ):
         super().__init__(ai_history_mapper, service_name="Gemini")
         
         # 初始化权限管理器
@@ -407,4 +421,7 @@ def get_gemini_service(
     user_mapper: UserMapper = Depends(get_user_mapper)
 ) -> GeminiService:
     """获取Gemini服务单例实例"""
-    return GeminiService(ai_history_mapper, user_mapper)
+    return GeminiService(
+            ai_history_mapper, 
+            user_mapper
+        )

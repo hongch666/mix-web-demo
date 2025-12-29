@@ -15,7 +15,15 @@ from api.mapper import (
 from common.utils import fileLogger as logger
 
 class UserService:
-    def __init__(self, focusMapper: FocusMapper = None, likeMapper: LikeMapper = None, collectMapper: CollectMapper = None, articleMapper: ArticleMapper = None, commentsMapper: CommentsMapper = None, articleLogMapper: ArticleLogMapper = None):
+    def __init__(
+        self, 
+            focusMapper: FocusMapper = None, 
+            likeMapper: LikeMapper = None, 
+            collectMapper: CollectMapper = None, 
+            articleMapper: ArticleMapper = None, 
+            commentsMapper: CommentsMapper = None, 
+            articleLogMapper: ArticleLogMapper = None
+        ):
         self.focusMapper = focusMapper
         self.likeMapper = likeMapper
         self.collectMapper = collectMapper
@@ -142,6 +150,20 @@ class UserService:
 
 
 @lru_cache()
-def get_user_service(focusMapper: FocusMapper = Depends(get_focus_mapper), likeMapper: LikeMapper = Depends(get_like_mapper), collectMapper: CollectMapper = Depends(get_collect_mapper), articleMapper: ArticleMapper = Depends(get_article_mapper), commentsMapper: CommentsMapper = Depends(get_comments_mapper), articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper)) -> UserService:
+def get_user_service(
+        focusMapper: FocusMapper = Depends(get_focus_mapper), 
+        likeMapper: LikeMapper = Depends(get_like_mapper), 
+        collectMapper: CollectMapper = Depends(get_collect_mapper), 
+        articleMapper: ArticleMapper = Depends(get_article_mapper), 
+        commentsMapper: CommentsMapper = Depends(get_comments_mapper), 
+        articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper)
+    ) -> UserService:
     """获取 UserService 单例实例"""
-    return UserService(focusMapper, likeMapper, collectMapper, articleMapper, commentsMapper, articleLogMapper)
+    return UserService(
+            focusMapper, 
+            likeMapper, 
+            collectMapper, 
+            articleMapper, 
+            commentsMapper, 
+            articleLogMapper
+        )

@@ -7,7 +7,10 @@ from api.mapper import AiHistoryMapper, get_ai_history_mapper
 from entity.po import AiHistory
 
 class AiHistoryService:
-    def __init__(self, ai_history_mapper: AiHistoryMapper = None):
+    def __init__(
+            self, 
+            ai_history_mapper: AiHistoryMapper = None
+        ):
         self.ai_history_mapper = ai_history_mapper
         # 用于短时间去重的缓存（生产环境建议用 Redis）
         self._request_cache = {}
@@ -66,5 +69,9 @@ class AiHistoryService:
 
     
 @lru_cache
-def get_ai_history_service(ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper)) -> AiHistoryService:
-    return AiHistoryService(ai_history_mapper)
+def get_ai_history_service(
+        ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper)
+    ) -> AiHistoryService:
+    return AiHistoryService(
+            ai_history_mapper
+        )
