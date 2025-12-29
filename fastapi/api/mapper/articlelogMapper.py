@@ -7,14 +7,15 @@ from api.mapper import get_article_mapper
 class ArticleLogMapper:
     def get_search_keywords_articlelog_mapper(self) -> List[str]:
         logs = mongo_db["articlelogs"]
-        cursor = logs.find({"action": "search"})
-        all_keywords: List[str] = []
-        for log in cursor:
-            content: Dict[str, Any] = log.get('content', {})
-            if 'Keyword' in content:
-                if content['Keyword'] == "":
-                    continue
-                all_keywords.append(content['Keyword'])
+        pipeline = [
+            {"$match": {"action": "search"}},
+            {"$project": {"keyword": "$content.Keyword"}},
+            {"$match": {"keyword": {"$ne": "", "$exists": True}}},
+            {"$group": {"_id": "$keyword"}},
+            {"$sort": {"_id": 1}}
+        ]
+        cursor = logs.aggregate(pipeline)
+        all_keywords: List[str] = [doc["_id"] for doc in cursor]
         return all_keywords
 
     def get_user_view_distribution_mapper(self, user_id: int) -> Dict[str, Any]:
@@ -23,26 +24,45 @@ class ArticleLogMapper:
             logs = mongo_db["articlelogs"]
             logger.debug(f"开始查询用户 {user_id} 的浏览分布")
             
-            # 直接用find而不是聚合，更简单
-            cursor = logs.find({"userId": user_id, "action": "view"})
+            # 使用 aggregation pipeline 进行数据处理
+            pipeline = [
+                {
+                    "$match": {
+                        "userId": user_id,
+                        "action": "view"
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": "$articleId",
+                        "views": {"$sum": 1}
+                    }
+                },
+                {
+                    "$match": {
+                        "_id": {"$ne": None}
+                    }
+                },
+                {
+                    "$sort": {"views": -1}
+                }
+            ]
             
-            # 统计每篇文章的浏览次数
-            article_views = {}
-            total_views = 0
-            
-            for log in cursor:
-                article_id: int = log.get('articleId', {})
-                if article_id is not None:
-                    article_views[article_id] = article_views.get(article_id, 0) + 1
-                    total_views += 1
+            cursor = logs.aggregate(pipeline)
             
             # 获取article_mapper和db session
             article_mapper = get_article_mapper()
             db = get_db().__next__()
             
-            # 按浏览次数从高到低排序，并获取文章标题
+            # 处理聚合结果并获取文章标题
             articles = []
-            for article_id, views in sorted(article_views.items(), key=lambda x: x[1], reverse=True):
+            total_views = 0
+            
+            for doc in cursor:
+                article_id = doc["_id"]
+                views = doc["views"]
+                total_views += views
+                
                 try:
                     article = article_mapper.get_article_by_id_mapper(article_id, db)
                     title = article.title if article else "未知文章"
