@@ -1,19 +1,32 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
-import { ArticleService } from 'src/modules/article/article.service';
+import { DownloadService } from './download.service';
 
 @Controller('download')
 @ApiTags('下载模块')
 export class DownloadController {
-  constructor(private readonly articleService: ArticleService) {}
+  constructor(private readonly downloadService: DownloadService) {}
 
   @Get('word/:id')
   @ApiOperation({ summary: '下载文章', description: '通过id下载对应文章' })
   @ApiLog('下载文章')
   async downloadWord(@Param('id') id: number) {
-    const url = await this.articleService.exportToWordAndSave(id);
-    return url;
+    try {
+      const url = await this.downloadService.exportToWordAndSave(id);
+      return url;
+    } catch (error) {
+      throw new HttpException(
+        error.message || '下载文章失败',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('markdown/:id')
@@ -23,8 +36,17 @@ export class DownloadController {
   })
   @ApiLog('下载文章Markdown')
   async downloadMarkdown(@Param('id') id) {
-    const url = await this.articleService.exportMarkdownAndUpload(Number(id));
-    return url;
+    try {
+      const url = await this.downloadService.exportMarkdownAndUpload(
+        Number(id),
+      );
+      return url;
+    } catch (error) {
+      throw new HttpException(
+        error.message || '下载文章Markdown失败',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('pdf/:id')
@@ -34,7 +56,14 @@ export class DownloadController {
   })
   @ApiLog('下载文章PDF')
   async downloadPdf(@Param('id') id: number) {
-    const url = await this.articleService.exportToPdfAndSave(id);
-    return url;
+    try {
+      const url = await this.downloadService.exportToPdfAndSave(id);
+      return url;
+    } catch (error) {
+      throw new HttpException(
+        error.message || '下载文章PDF失败',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

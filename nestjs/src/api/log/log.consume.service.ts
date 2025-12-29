@@ -14,9 +14,9 @@ export class LogConsumerService implements OnModuleInit {
     fileLogger.info('启动 ArticleLog RabbitMQ 消息监听');
     await this.rabbitMQService.consume('log-queue', async (msg) => {
       try {
-        // ✨ 处理两种消息格式：
-        // 1. NestJS 发送的对象
-        // 2. Spring 发送的 JSON 字符串
+        // 处理两种消息格式：
+        // 1. 对象
+        // 2. JSON 字符串
         let logData = msg;
 
         if (typeof msg === 'string') {

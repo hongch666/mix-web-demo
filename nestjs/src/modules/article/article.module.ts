@@ -9,8 +9,8 @@ import { User } from '../user/entities/user.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Articles, User]),
-    WordModule,
-    NacosModule,
+    // WordModule,
+    // NacosModule,
   ],
   providers: [ArticleService],
   exports: [ArticleService],

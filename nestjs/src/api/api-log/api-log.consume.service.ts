@@ -15,9 +15,9 @@ export class ApiLogConsumerService implements OnModuleInit {
     fileLogger.info('启动 ApiLog RabbitMQ 消息监听');
     await this.rabbitMQService.consume('api-log-queue', async (msg) => {
       try {
-        // ✨ 处理两种消息格式：
-        // 1. NestJS 发送的对象
-        // 2. Spring 发送的 JSON 字符串
+        // 处理两种消息格式：
+        // 1. 对象
+        // 2. JSON 字符串
         let apiLogData = msg;
 
         if (typeof msg === 'string') {
@@ -29,7 +29,7 @@ export class ApiLogConsumerService implements OnModuleInit {
           fileLogger.info(`接收到 ApiLog 消息: ${JSON.stringify(apiLogData)}`);
         }
 
-        // ✅ 验证消息是否为 API 日志格式（必须包含 api_path 和 api_method）
+        // 验证消息是否为 API 日志格式（必须包含 api_path 和 api_method）
         if (!apiLogData.api_path || !apiLogData.api_method) {
           fileLogger.info(
             `收到非 API 日志格式的消息，已忽略: ${JSON.stringify(apiLogData)}`,
