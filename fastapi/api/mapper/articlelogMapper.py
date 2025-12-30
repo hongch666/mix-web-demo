@@ -8,11 +8,23 @@ class ArticleLogMapper:
     def get_search_keywords_articlelog_mapper(self) -> List[str]:
         logs = mongo_db["articlelogs"]
         pipeline = [
-            {"$match": {"action": "search"}},
-            {"$project": {"keyword": "$content.Keyword"}},
-            {"$match": {"keyword": {"$ne": "", "$exists": True}}},
-            {"$group": {"_id": "$keyword"}},
-            {"$sort": {"_id": 1}}
+            {
+                "$match": {"action": "search"}
+            },
+            {
+                "$project": {"keyword": "$content.Keyword"}
+            },
+            {
+                "$match": {
+                    "keyword": {"$ne": "", "$exists": True}
+                }
+            },
+            {
+                "$group": {"_id": "$keyword"}
+            },
+            {
+                "$sort": {"_id": 1}
+            }
         ]
         cursor = logs.aggregate(pipeline)
         all_keywords: List[str] = [doc["_id"] for doc in cursor]
