@@ -1236,17 +1236,19 @@ logs:
   path: "../logs/gin"
 
 search:
-  es_score_weight: 0.30 # ES默认分数占30%
-  ai_rating_weight: 0.20 # AI评分占20%
-  user_rating_weight: 0.15 # 用户评分占15%
-  views_weight: 0.10 # 阅读量占10%
-  likes_weight: 0.10 # 点赞量占10%
-  collects_weight: 0.10 # 收藏量占10%
-  author_follow_weight: 0.05 # 作者关注数占5%
+  es_score_weight: 0.25 # ES默认分数占25%
+  ai_rating_weight: 0.15 # AI评分占15%
+  user_rating_weight: 0.10 # 用户评分占10%
+  views_weight: 0.08 # 阅读量占8%
+  likes_weight: 0.08 # 点赞量占8%
+  collects_weight: 0.08 # 收藏量占8%
+  author_follow_weight: 0.04 # 作者关注数占4%
+  recency_weight: 0.22 # 文章新鲜度占22%（核心权重）
   max_views_normalized: 10000.0 # 用于归一化阅读量的基准值
   max_likes_normalized: 1000.0 # 用于归一化点赞量的基准值
   max_collects_normalized: 1000.0 # 用于归一化收藏量的基准值
   max_follows_normalized: 5000.0 # 用于归一化作者关注数的基准值
+  recency_decay_days: 30 # 时间衰减周期（30天内新鲜度评分最高）
 ```
 
 ### Nestjs 部分
@@ -1658,3 +1660,58 @@ watch_path=.
 watch_ext=.go
 verbose=false
 ```
+
+12. 搜索算法公式说明
+
+Gin 服务基于 Elasticsearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
+
+- 综合评分公式
+
+$$
+\text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
+$$
+
+其中：
+
+- $S_{es}$：Elasticsearch 基础相关性分数（0-1 范围）
+- $S_{ai} = \frac{\text{AI评分}}{5.0}$（0-1 范围，来自系统 AI 评分）
+- $S_{user} = \frac{\text{用户评分}}{5.0}$（0-1 范围，来自用户点评评分）
+- $S_{views} = \min\left(\frac{\text{阅读量}}{\text{maxViewsNormalized}}, 1.0\right)$（阅读量归一化，0-1 范围）
+- $S_{likes} = \min\left(\frac{\text{点赞量}}{\text{maxLikesNormalized}}, 1.0\right)$（点赞量归一化，0-1 范围）
+- $S_{collects} = \min\left(\frac{\text{收藏量}}{\text{maxCollectsNormalized}}, 1.0\right)$（收藏量归一化，0-1 范围）
+- $S_{follow} = \min\left(\frac{\text{作者关注数}}{\text{maxFollowsNormalized}}, 1.0\right)$（作者粉丝数归一化，0-1 范围）
+- $S_{recency}$：文章新鲜度分数（基于创建时间）
+- 新鲜度计算公式
+
+文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
+
+$$
+S_{recency} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
+$$
+
+其中：
+
+- $\Delta t$：文章创建时间与当前时间的差值（单位：天）
+- $\sigma$：时间衰减周期（默认 30 天）
+
+高斯衰减函数具有以下特性：
+
+- 当 $\Delta t = 0$（刚发布）时，$S_{recency} = 1.0$（新鲜度最高）
+- 当 $\Delta t = 30$ 天时，$S_{recency} \approx 0.606$（衰减至约 60.6%）
+- 当 $\Delta t = 60$ 天时，$S_{recency} \approx 0.135$（衰减至约 13.5%）
+- 权重配置说明
+
+默认权重分配（可在 `application.yaml` 中配置）：
+
+| 因素           | 权重     | 说明                                     |
+| -------------- | -------- | ---------------------------------------- |
+| ES 基础分数    | 0.25     | 关键词匹配的基础相关性                   |
+| AI 评分        | 0.15     | 系统 AI 模型的内容质量评估               |
+| 用户评分       | 0.10     | 用户对文章的综合评价                     |
+| 阅读量         | 0.08     | 文章的浏览热度                           |
+| 点赞量         | 0.08     | 用户的认可度                             |
+| 收藏量         | 0.08     | 用户的收藏价值指数                       |
+| 作者关注数     | 0.04     | 作者的影响力                             |
+| **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名** |
+
+权重总和为 1.0，确保评分结果的可比性和公平性。
