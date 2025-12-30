@@ -1031,17 +1031,19 @@ CREATE TABLE `ai_history` (
 ```
 
 - 创建文章用户点赞表
-  ```sql
-  CREATE TABLE IF NOT EXISTS likes (
-      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-      article_id BIGINT NOT NULL COMMENT '文章ID',
-      user_id BIGINT NOT NULL COMMENT '用户ID',
-      created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-      UNIQUE KEY uk_article_user (article_id, user_id),
-      KEY idx_user_id (user_id),
-      KEY idx_created_time (created_time)
-  ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表';
-  ```
+
+```sql
+CREATE TABLE IF NOT EXISTS likes (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    article_id BIGINT NOT NULL COMMENT '文章ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    UNIQUE KEY uk_article_user (article_id, user_id),
+    KEY idx_user_id (user_id),
+    KEY idx_created_time (created_time)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表';
+```
+
 - 创建文章收藏表
 
 ```sql
@@ -1537,28 +1539,28 @@ jwt:
 
 1. 在 `main.py` 中通过 `FastAPI` 的参数自定义全局 Swagger 信息，例如：
 
-   ```python
-   app = FastAPI(
-       title="FastAPI部分的Swagger文档集成",
-       description="这是demo项目的FastAPI部分的Swagger文档集成",
-       version="1.0.0"
-   )
-   ```
+```python
+app = FastAPI(
+    title="FastAPI部分的Swagger文档集成",
+    description="这是demo项目的FastAPI部分的Swagger文档集成",
+    version="1.0.0"
+)
+```
 
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
-   ```python
-   @router.get(
-       "/fastapi",
-       summary="这是接口简介",
-       description="这是接口描述"
-   )
-   def hello():
-       """
-       这是接口的详细说明
-       """
-       return {"msg": "hello"}
-   ```
+```python
+@router.get(
+    "/fastapi",
+    summary="这是接口简介",
+    description="这是接口描述"
+)
+def hello():
+    """
+    这是接口的详细说明
+    """
+    return {"msg": "hello"}
+```
 
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
