@@ -1667,7 +1667,7 @@ verbose=false
 
 Gin 服务基于 Elasticsearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
 
-- 综合评分公式
+综合评分公式
 
 $$
 \text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
@@ -1703,7 +1703,7 @@ $$
 - 当 $\Delta t = 60$ 天时，$S_{recency} \approx 0.135$（衰减至约 13.5%）
 - 权重配置说明
 
-默认权重分配（可在 `application.yaml` 中配置）：
+默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
 
 | 因素           | 权重     | 说明                                     |
 | -------------- | -------- | ---------------------------------------- |
