@@ -17,8 +17,15 @@ import { ArticleModule } from 'src/modules/article/article.module';
     UserModule,
     ArticleModule,
   ],
-  providers: [ArticleLogService, LogConsumerService],
-  controllers: [ArticleLogController],
-  exports: [ArticleLogService],
+  providers: [
+    ArticleLogService, 
+    LogConsumerService
+  ],
+  controllers: [
+    ArticleLogController
+  ],
+  exports: [
+    ArticleLogService
+  ],
 })
 export class ArticleLogModule {}

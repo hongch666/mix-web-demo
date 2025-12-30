@@ -11,7 +11,11 @@ import { ApiLog, ApiLogSchema } from 'src/api/api-log/schema/api-log.schema';
       { name: ApiLog.name, schema: ApiLogSchema },
     ]),
   ],
-  providers: [TaskService],
-  exports: [TaskService],
+  providers: [
+    TaskService
+  ],
+  exports: [
+    TaskService
+  ],
 })
 export class TaskModule {}

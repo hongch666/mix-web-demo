@@ -11,8 +11,15 @@ import { RabbitMQModule } from 'src/modules/mq/mq.module';
     MongooseModule.forFeature([{ name: ApiLog.name, schema: ApiLogSchema }]),
     RabbitMQModule,
   ],
-  providers: [ApiLogService, ApiLogConsumerService],
-  controllers: [ApiLogController],
-  exports: [ApiLogService],
+  providers: [
+    ApiLogService, 
+    ApiLogConsumerService
+  ],
+  controllers: [
+    ApiLogController
+  ],
+  exports: [
+    ApiLogService
+  ],
 })
 export class ApiLogModule {}

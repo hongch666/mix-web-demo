@@ -7,8 +7,17 @@ import { WordModule } from 'src/modules/word/word.module';
 import { NacosModule } from 'src/modules/nacos/nacos.module';
 
 @Module({
-  imports: [ArticleModule, UserModule, WordModule, NacosModule],
-  controllers: [DownloadController],
-  providers: [DownloadService],
+  imports: [
+    ArticleModule, 
+    UserModule, 
+    WordModule, 
+    NacosModule
+  ],
+  controllers: [
+    DownloadController
+  ],
+  providers: [
+    DownloadService
+  ],
 })
 export class DownloadModule {}
