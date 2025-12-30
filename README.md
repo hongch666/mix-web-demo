@@ -1694,9 +1694,9 @@ verbose=false
 
 2. 综合评分公式
 
-- $$
+$$
   \text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
-  $$
+$$
 
 3. 其中：
 
