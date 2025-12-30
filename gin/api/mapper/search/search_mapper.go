@@ -86,7 +86,8 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	// 获取搜索权重配置
 	searchCfg := config.Config.Search
 
-	// 构建综合评分脚本：ES分数 + AI评分 + 用户评分 + 阅读量 + 点赞量 + 收藏量 + 作者关注数
+	// 构建综合评分脚本：ES分数 + AI评分 + 用户评分 + 阅读量 + 点赞量 + 收藏量 + 作者关注数 + 文章新鲜度
+	// 新鲜度计算：使用高斯衰减函数，30天内文章最新鲜度最高，随着时间增加而衰减
 	scoreScript := elastic.NewScript(`
 		double score = params.esWeight * _score;
 		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 5.0 : 0);
@@ -95,7 +96,15 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		double likesBoost = params.likesWeight * (doc['likeCount'].size() > 0 ? Math.min((double)doc['likeCount'].value / params.maxLikesNormalized, 1.0) : 0);
 		double collectsBoost = params.collectsWeight * (doc['collectCount'].size() > 0 ? Math.min((double)doc['collectCount'].value / params.maxCollectsNormalized, 1.0) : 0);
 		double followBoost = params.followWeight * (doc['authorFollowCount'].size() > 0 ? Math.min((double)doc['authorFollowCount'].value / params.maxFollowsNormalized, 1.0) : 0);
-		return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost;
+		
+		// 计算文章新鲜度：使用高斯衰减函数
+		long now = System.currentTimeMillis();
+		long articleTime = doc['create_at'].value.getMillis();
+		long daysDiff = (now - articleTime) / (1000L * 86400L);
+		double recencyScore = Math.exp(-1.0 * (daysDiff * daysDiff) / (2.0 * params.decayDaysSq));
+		double recencyBoost = params.recencyWeight * recencyScore;
+		
+		return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
 	`).
 		Param("esWeight", searchCfg.ESScoreWeight).
 		Param("aiWeight", searchCfg.AIRatingWeight).
@@ -104,6 +113,8 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		Param("likesWeight", searchCfg.LikesWeight).
 		Param("collectsWeight", searchCfg.CollectsWeight).
 		Param("followWeight", searchCfg.AuthorFollowWeight).
+		Param("recencyWeight", searchCfg.RecencyWeight).
+		Param("decayDaysSq", float64(searchCfg.RecencyDecayDays)*float64(searchCfg.RecencyDecayDays)).
 		Param("maxViewsNormalized", searchCfg.MaxViewsNormalized).
 		Param("maxLikesNormalized", searchCfg.MaxLikesNormalized).
 		Param("maxCollectsNormalized", searchCfg.MaxCollectsNormalized).

@@ -83,10 +83,12 @@ type SearchConfig struct {
 	LikesWeight           float64 `mapstructure:"likes_weight"`
 	CollectsWeight        float64 `mapstructure:"collects_weight"`
 	AuthorFollowWeight    float64 `mapstructure:"author_follow_weight"`
+	RecencyWeight         float64 `mapstructure:"recency_weight"`
 	MaxViewsNormalized    float64 `mapstructure:"max_views_normalized"`
 	MaxLikesNormalized    float64 `mapstructure:"max_likes_normalized"`
 	MaxCollectsNormalized float64 `mapstructure:"max_collects_normalized"`
 	MaxFollowsNormalized  float64 `mapstructure:"max_follows_normalized"`
+	RecencyDecayDays      int64   `mapstructure:"recency_decay_days"`
 }
 
 var Config AppConfig
