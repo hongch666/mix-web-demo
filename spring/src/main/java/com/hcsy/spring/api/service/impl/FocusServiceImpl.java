@@ -78,17 +78,18 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         IPage<Focus> focusPage = this.page(page, queryWrapper);
 
         // 转换为VO，并关联用户信息
-        List<FocusUserVO> voList = focusPage.getRecords().stream().map(focus -> {
-            User user = userMapper.selectById(focus.getFocusId());
-            FocusUserVO vo = new FocusUserVO();
+        List<FocusUserVO> voList = focusPage.getRecords().stream().map(
+                focus -> {
+                    User user = userMapper.selectById(focus.getFocusId());
 
-            if (user != null) {
-                vo = BeanUtil.copyProperties(user, FocusUserVO.class);
-                vo.setFocusedTime(focus.getCreatedTime());
-            }
+                    if (user == null) {
+                        throw new RuntimeException("用户不存在，ID：" + focus.getFocusId());
+                    }
+                    FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
+                    vo.setFocusedTime(focus.getCreatedTime());
 
-            return vo;
-        }).collect(Collectors.toList());
+                    return vo;
+                }).collect(Collectors.toList());
 
         // 构建新的分页结果
         Page<FocusUserVO> resultPage = new Page<>(page.getCurrent(), page.getSize(), focusPage.getTotal());
@@ -107,17 +108,18 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         IPage<Focus> focusPage = this.page(page, queryWrapper);
 
         // 转换为VO，并关联用户信息
-        List<FocusUserVO> voList = focusPage.getRecords().stream().map(focus -> {
-            User user = userMapper.selectById(focus.getUserId());
-            FocusUserVO vo = new FocusUserVO();
+        List<FocusUserVO> voList = focusPage.getRecords().stream().map(
+                focus -> {
+                    User user = userMapper.selectById(focus.getUserId());
 
-            if (user != null) {
-                vo = BeanUtil.copyProperties(user, FocusUserVO.class);
-                vo.setFocusedTime(focus.getCreatedTime());
-            }
+                    if (user == null) {
+                        throw new RuntimeException("用户不存在，ID：" + focus.getUserId());
+                    }
+                    FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
+                    vo.setFocusedTime(focus.getCreatedTime());
 
-            return vo;
-        }).collect(Collectors.toList());
+                    return vo;
+                }).collect(Collectors.toList());
 
         // 构建新的分页结果
         Page<FocusUserVO> resultPage = new Page<>(page.getCurrent(), page.getSize(), focusPage.getTotal());

@@ -87,45 +87,51 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         IPage<ArticleCollect> collectPage = this.page(page, queryWrapper);
 
         // 转换为VO，并关联文章、作者、分类信息
-        List<ArticleCollectVO> voList = collectPage.getRecords().stream().map(collect -> {
-            Article article = articleMapper.selectById(collect.getArticleId());
-            ArticleCollectVO vo = new ArticleCollectVO();
+        List<ArticleCollectVO> voList = collectPage.getRecords().stream().map(
+                collect -> {
+                    Article article = articleMapper.selectById(collect.getArticleId());
+                    if (article == null) {
+                        throw new RuntimeException("文章不存在，ID：" + collect.getArticleId());
+                    }
+                    ArticleCollectVO vo = BeanUtil.copyProperties(article, ArticleCollectVO.class);
+                    vo.setArticleCreateAt(article.getCreateAt());
+                    vo.setArticleUpdateAt(article.getUpdateAt());
 
-            if (article != null) {
-                vo = BeanUtil.copyProperties(article, ArticleCollectVO.class);
-                vo.setArticleCreateAt(article.getCreateAt());
-                vo.setArticleUpdateAt(article.getUpdateAt());
+                    vo.setId(collect.getId());
+                    vo.setArticleId(collect.getArticleId());
+                    vo.setCollectedTime(collect.getCreatedTime());
 
-                vo.setId(collect.getId());
-                vo.setArticleId(collect.getArticleId());
-                vo.setCollectedTime(collect.getCreatedTime());
-
-                // 获取作者信息
-                if (article.getUserId() != null) {
+                    // 获取作者信息
+                    if (article.getUserId() == null) {
+                        throw new RuntimeException("文章作者ID为空，文章ID：" + article.getId());
+                    }
                     User author = userMapper.selectById(article.getUserId());
-                    if (author != null) {
-                        vo.setAuthorName(author.getName());
+                    if (author == null) {
+                        throw new RuntimeException("文章作者不存在，ID：" + article.getUserId());
                     }
-                }
+                    vo.setAuthorName(author.getName());
 
-                // 获取分类信息
-                if (article.getSubCategoryId() != null) {
+                    // 获取分类信息
+                    if (article.getSubCategoryId() == null) {
+                        throw new RuntimeException("文章子分类ID为空，文章ID：" + article.getId());
+                    }
                     SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
-                    if (subCategory != null) {
-                        vo.setSubCategoryName(subCategory.getName());
-                        // 获取父分类
-                        if (subCategory.getCategoryId() != null) {
-                            Category category = categoryMapper.selectById(subCategory.getCategoryId());
-                            if (category != null) {
-                                vo.setCategoryName(category.getName());
-                            }
-                        }
+                    if (subCategory == null) {
+                        throw new RuntimeException("文章子分类不存在，ID：" + article.getSubCategoryId());
                     }
-                }
-            }
+                    vo.setSubCategoryName(subCategory.getName());
+                    // 获取父分类
+                    if (subCategory.getCategoryId() == null) {
+                        throw new RuntimeException("文章子分类的父分类ID为空，子分类ID：" + subCategory.getId());
+                    }
+                    Category category = categoryMapper.selectById(subCategory.getCategoryId());
+                    if (category == null) {
+                        throw new RuntimeException("文章子分类的父分类不存在，ID：" + subCategory.getCategoryId());
+                    }
+                    vo.setCategoryName(category.getName());
 
-            return vo;
-        }).collect(Collectors.toList());
+                    return vo;
+                }).collect(Collectors.toList());
 
         // 创建新的IPage对象返回VO列表
         Page<ArticleCollectVO> voPage = new Page<>(collectPage.getCurrent(), collectPage.getSize());
