@@ -1603,10 +1603,15 @@ def hello():
 
 ## 其他说明
 
-1. 词云图的字体应进行配置对应字体的路径。
-2. 下载文件的模板路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写，目前提供如下的示例
+### 词云图说明
 
-- 内容示例
+1. 词云图的字体应进行配置对应字体的路径。
+
+### 下载模板说明
+
+1. 下载文件的模板路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写，目前提供如下的示例
+
+2. 内容示例
 
 ```word
 ${title}
@@ -1616,7 +1621,9 @@ ${tags}
 ${content}
 ```
 
-3. FastAPI 模块的阿里云 OSS 的密钥应写在 `application-secret.yaml`中，格式如下：
+### 阿里云密钥说明
+
+1. FastAPI 模块的阿里云 OSS 的密钥应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
 oss:
@@ -1624,7 +1631,13 @@ oss:
   access_key_secret: your_access_key_secret
 ```
 
-4. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `application-secret.yaml`中，格式如下：
+### Google AI 服务说明
+
+1. Gemini 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
+
+### AI 相关服务密钥说明
+
+1. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `application-secret.yaml`中，格式如下：
 
 ```yaml
 oss:
@@ -1638,13 +1651,25 @@ doubao:
   api_key: your_api_key
 ```
 
-5. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
-6. 如果没有使用 Hadoop+Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
-7. Gemini 服务需要运行的终端使用代理，请自行配置。
-8. Gemini 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
-9. AI 服务目前只有三种，对应数据库 `user`表里面 `role`为 `ai`的用户，并且代码目前写死用户 id 为 1001/1002/1003，有需要可进行更改。
-10. Spring 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
-11. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
+### 聊天相关说明
+
+1. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
+
+### Hadoop 使用说明
+
+1. 如果没有使用 Hadoop + Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
+
+### AI 用户说明
+
+1. AI 服务目前只有三种，对应数据库 `user`表里面 `role`为 `ai`的用户，并且代码目前写死用户 id 为 1001/1002/1003，系统创建用户表时会自动创建，有需要可进行更改。
+
+### 邮箱说明
+
+1.  Spring 部分的邮箱登录使用 QQ 邮箱配置发送，需单独配置 QQ 邮箱授权码。
+
+### Fresh 热启动工具说明
+
+1.  Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
 
 ```bash
 # Fresh 热启动工具配置文件
@@ -1663,17 +1688,17 @@ watch_ext=.go
 verbose=false
 ```
 
-12. 搜索算法公式说明
+### 搜索算法公式说明
 
-Gin 服务基于 Elasticsearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
+1. Gin 服务基于 Elasticsearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
 
-综合评分公式
+2. 综合评分公式
 
-$$
-\text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
-$$
+- $$
+  \text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
+  $$
 
-其中：
+3. 其中：
 
 - $S_{es}$：Elasticsearch 基础相关性分数（0-1 范围）
 - $S_{ai} = \frac{\text{AI评分}}{5.0}$（0-1 范围，来自系统 AI 评分）
@@ -1685,25 +1710,25 @@ $$
 - $S_{recency}$：文章新鲜度分数（基于创建时间）
 - 新鲜度计算公式
 
-文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
+  - 文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
 
-$$
-S_{recency} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
-$$
+  $$
+  S_{recency} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
+  $$
 
-其中：
+  - 其中：
 
-- $\Delta t$：文章创建时间与当前时间的差值（单位：天）
-- $\sigma$：时间衰减周期（默认 30 天）
+    - $\Delta t$：文章创建时间与当前时间的差值（单位：天）
+    - $\sigma$：时间衰减周期（默认 30 天）
 
-高斯衰减函数具有以下特性：
+  - 高斯衰减函数具有以下特性：
 
-- 当 $\Delta t = 0$（刚发布）时，$S_{recency} = 1.0$（新鲜度最高）
-- 当 $\Delta t = 30$ 天时，$S_{recency} \approx 0.606$（衰减至约 60.6%）
-- 当 $\Delta t = 60$ 天时，$S_{recency} \approx 0.135$（衰减至约 13.5%）
-- 权重配置说明
+    - 当 $\Delta t = 0$（刚发布）时，$S_{recency} = 1.0$（新鲜度最高）
+    - 当 $\Delta t = 30$ 天时，$S_{recency} \approx 0.606$（衰减至约 60.6%）
+    - 当 $\Delta t = 60$ 天时，$S_{recency} \approx 0.135$（衰减至约 13.5%）
+    - 权重配置说明
 
-默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
+4. 默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
 
 | 因素           | 权重     | 说明                                     |
 | -------------- | -------- | ---------------------------------------- |
@@ -1716,4 +1741,4 @@ $$
 | 作者关注数     | 0.04     | 作者的影响力                             |
 | **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名** |
 
-权重总和为 1.0，确保评分结果的可比性和公平性。
+- 权重总和为 1.0，确保评分结果的可比性和公平性。
