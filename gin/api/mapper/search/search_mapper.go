@@ -86,18 +86,25 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	// 获取搜索权重配置
 	searchCfg := config.Config.Search
 
-	// 构建综合评分脚本：ES分数 + AI评分 + 用户评分 + 阅读量 + 点赞量 + 收藏量 + 作者关注数 + 文章新鲜度
+	// 构建综合评分脚本：ES分数(sigmoid归一化) + AI评分 + 用户评分 + 阅读量 + 点赞量 + 收藏量 + 作者关注数 + 文章新鲜度
+	// ES分数使用sigmoid函数进行归一化，确保分数在0-1范围内
 	// 新鲜度计算：使用高斯衰减函数，30天内文章最新鲜度最高，随着时间增加而衰减
 	scoreScript := elastic.NewScript(`
-		double score = params.esWeight * _score;
-		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 5.0 : 0);
-		double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 5.0 : 0);
+		double esScore = 1.0 / (1.0 + Math.exp(-_score));
+		double score = params.esWeight * esScore;
+
+		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 10.0 : 0);
+
+		double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 10.0 : 0);
+
 		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
+
 		double likesBoost = params.likesWeight * (doc['likeCount'].size() > 0 ? Math.min((double)doc['likeCount'].value / params.maxLikesNormalized, 1.0) : 0);
+
 		double collectsBoost = params.collectsWeight * (doc['collectCount'].size() > 0 ? Math.min((double)doc['collectCount'].value / params.maxCollectsNormalized, 1.0) : 0);
+		
 		double followBoost = params.followWeight * (doc['authorFollowCount'].size() > 0 ? Math.min((double)doc['authorFollowCount'].value / params.maxFollowsNormalized, 1.0) : 0);
 		
-		// 计算文章新鲜度：使用高斯衰减函数
 		long now = System.currentTimeMillis();
 		long articleTime = doc['create_at'].value.getMillis();
 		long daysDiff = (now - articleTime) / (1000L * 86400L);
