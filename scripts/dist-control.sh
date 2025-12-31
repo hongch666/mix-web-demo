@@ -20,9 +20,9 @@ DIST_DIR="$PROJECT_ROOT/dist"
 declare -A SERVICE_PORTS=(
     ["spring"]="8081"
     ["gateway"]="8080"
-    ["fastapi"]="8000"
+    ["fastapi"]="8084"
     ["gin"]="8082"
-    ["nestjs"]="3000"
+    ["nestjs"]="8083"
 )
 
 # 服务进程特征（用于 pgrep 匹配）
