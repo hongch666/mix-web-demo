@@ -16,6 +16,24 @@ NC='\033[0m' # No Color
 PROJECT_ROOT=$(pwd)
 DIST_DIR="$PROJECT_ROOT/dist"
 
+# 服务端口配置（根据实际配置修改）
+declare -A SERVICE_PORTS=(
+    ["spring"]="8081"
+    ["gateway"]="8080"
+    ["fastapi"]="8000"
+    ["gin"]="8082"
+    ["nestjs"]="3000"
+)
+
+# 服务进程特征（用于 pgrep 匹配）
+declare -A SERVICE_PATTERNS=(
+    ["spring"]="spring.jar"
+    ["gateway"]="gateway.jar"
+    ["fastapi"]="fastapi.*main.py|uvicorn.*fastapi"
+    ["gin"]="gin_service"
+    ["nestjs"]="nestjs.*main.js|node.*nestjs"
+)
+
 # 打印带颜色的消息
 print_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -33,10 +51,34 @@ print_status() {
     echo -e "${BLUE}[STATUS]${NC} $1"
 }
 
-# 检查服务状态
+# 检查端口是否被占用，返回占用该端口的 PID
+check_port_in_use() {
+    local port=$1
+    local pid=$(lsof -t -i:$port 2>/dev/null | head -1)
+    if [ -n "$pid" ]; then
+        echo "$pid"
+    else
+        echo ""
+    fi
+}
+
+# 通过进程名模式查找进程
+find_process_by_pattern() {
+    local pattern=$1
+    local pid=$(pgrep -f "$pattern" 2>/dev/null | head -1)
+    if [ -n "$pid" ]; then
+        echo "$pid"
+    else
+        echo ""
+    fi
+}
+
+# 检查服务状态（综合判断：PID文件 + 端口检测 + 进程匹配）
 check_service_status() {
     local service=$1
     local service_dir="$DIST_DIR/$service"
+    local port="${SERVICE_PORTS[$service]}"
+    local pattern="${SERVICE_PATTERNS[$service]}"
     
     if [ ! -d "$service_dir" ]; then
         echo "not_found"
@@ -45,13 +87,38 @@ check_service_status() {
     
     cd "$service_dir"
     
+    local pid=""
+    local source=""
+    
+    # 方法1: 检查 PID 文件
     if [ -f "${service}.pid" ]; then
-        local pid=$(cat "${service}.pid")
-        if ps -p $pid > /dev/null 2>&1; then
-            echo "running:$pid"
-        else
-            echo "stopped"
+        local file_pid=$(cat "${service}.pid")
+        if ps -p $file_pid > /dev/null 2>&1; then
+            pid=$file_pid
+            source="pid_file"
         fi
+    fi
+    
+    # 方法2: 如果 PID 文件无效，通过端口检测
+    if [ -z "$pid" ] && [ -n "$port" ]; then
+        local port_pid=$(check_port_in_use "$port")
+        if [ -n "$port_pid" ]; then
+            pid=$port_pid
+            source="port"
+        fi
+    fi
+    
+    # 方法3: 如果端口也没找到，通过进程模式匹配
+    if [ -z "$pid" ] && [ -n "$pattern" ]; then
+        local pattern_pid=$(find_process_by_pattern "$pattern")
+        if [ -n "$pattern_pid" ]; then
+            pid=$pattern_pid
+            source="pattern"
+        fi
+    fi
+    
+    if [ -n "$pid" ]; then
+        echo "running:$pid:$source"
     else
         echo "stopped"
     fi
@@ -69,7 +136,8 @@ start_service() {
     
     local status=$(check_service_status "$service")
     if [[ $status == running:* ]]; then
-        print_warn "$service 服务已在运行中 (PID: ${status#running:})"
+        local pid=$(echo "$status" | cut -d: -f2)
+        print_warn "$service 服务已在运行中 (PID: $pid)"
         return 0
     fi
     
@@ -83,7 +151,8 @@ start_service() {
         # 验证启动
         status=$(check_service_status "$service")
         if [[ $status == running:* ]]; then
-            print_info "$service 服务启动成功 (PID: ${status#running:})"
+            local pid=$(echo "$status" | cut -d: -f2)
+            print_info "$service 服务启动成功 (PID: $pid)"
         else
             print_error "$service 服务启动失败，请查看日志"
             return 1
@@ -110,23 +179,36 @@ stop_service() {
         return 0
     fi
     
-    print_info "停止 $service 服务..."
+    # 提取真实的 PID
+    local pid=$(echo "$status" | cut -d: -f2)
+    local source=$(echo "$status" | cut -d: -f3)
+    
+    print_info "停止 $service 服务 (PID: $pid, 检测方式: $source)..."
     cd "$service_dir"
     
-    if [ -f "stop.sh" ]; then
-        bash stop.sh
+    # 直接使用检测到的 PID 来停止进程
+    if [ -n "$pid" ]; then
+        kill $pid 2>/dev/null || true
         sleep 1
         
-        # 验证停止
-        status=$(check_service_status "$service")
-        if [[ $status == "stopped" ]]; then
-            print_info "$service 服务已停止"
-        else
-            print_warn "$service 服务可能未完全停止"
+        # 如果进程还在，强制杀死
+        if ps -p $pid > /dev/null 2>&1; then
+            print_warn "进程未响应，强制终止..."
+            kill -9 $pid 2>/dev/null || true
         fi
+        
+        # 清理 PID 文件
+        rm -f "${service}.pid"
+    fi
+    
+    sleep 1
+    
+    # 验证停止
+    status=$(check_service_status "$service")
+    if [[ $status == "stopped" ]]; then
+        print_info "$service 服务已停止"
     else
-        print_error "未找到停止脚本: stop.sh"
-        return 1
+        print_warn "$service 服务可能未完全停止"
     fi
 }
 
@@ -152,27 +234,34 @@ show_status() {
     print_info "微服务运行状态"
     print_info "=========================================="
     
-    printf "%-15s %-15s %-10s\n" "服务名称" "状态" "PID"
-    echo "-------------------------------------------"
+    printf "%-15s %-15s %-10s %-10s\n" "服务名称" "状态" "PID" "检测方式"
+    echo "---------------------------------------------------"
     
     for service in "${services[@]}"; do
         local status=$(check_service_status "$service")
         
         case "$status" in
             running:*)
-                local pid="${status#running:}"
-                printf "%-15s ${GREEN}%-15s${NC} %-10s\n" "$service" "运行中" "$pid"
+                local pid=$(echo "$status" | cut -d: -f2)
+                local source=$(echo "$status" | cut -d: -f3)
+                local source_text=""
+                case "$source" in
+                    pid_file) source_text="PID文件" ;;
+                    port) source_text="端口检测" ;;
+                    pattern) source_text="进程匹配" ;;
+                esac
+                printf "%-15s ${GREEN}%-15s${NC} %-10s %-10s\n" "$service" "运行中" "$pid" "$source_text"
                 ;;
             stopped)
-                printf "%-15s ${RED}%-15s${NC} %-10s\n" "$service" "已停止" "-"
+                printf "%-15s ${RED}%-15s${NC} %-10s %-10s\n" "$service" "已停止" "-" "-"
                 ;;
             not_found)
-                printf "%-15s ${YELLOW}%-15s${NC} %-10s\n" "$service" "未安装" "-"
+                printf "%-15s ${YELLOW}%-15s${NC} %-10s %-10s\n" "$service" "未安装" "-" "-"
                 ;;
         esac
     done
     
-    echo "==========================================="
+    echo "==================================================="
 }
 
 # 查看日志
