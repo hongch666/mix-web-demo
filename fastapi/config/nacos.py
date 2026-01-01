@@ -41,6 +41,6 @@ def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
             try:
                 client.send_heartbeat(SERVICE_NAME, ip, port, group_name=GROUP_NAME)
             except Exception as e:
-                logger.error("Nacos heartbeat error: %s", e)
+                logger.error(f"Nacos heartbeat error: {e}")
             time.sleep(10)
     threading.Thread(target=keep_heartbeat, daemon=True).start()
