@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, DeleteResult } from 'mongoose';
 import { ApiLog, ApiLogDocument } from './schema/api-log.schema';
-import { CreateApiLogDto, QueryApiLogDto } from './dto';
+import { CreateApiLogDto, QueryApiLogDto } from './dto/api-log.dto';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';

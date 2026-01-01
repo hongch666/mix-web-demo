@@ -1,7 +1,7 @@
 import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLogService } from './api-log.service';
-import { QueryApiLogDto } from './dto';
+import { QueryApiLogDto } from './dto/api-log.dto';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 
 @Controller('api-logs')

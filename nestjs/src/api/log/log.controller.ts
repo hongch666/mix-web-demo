@@ -8,7 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ArticleLogService } from './log.service';
-import { CreateArticleLogDto, QueryArticleLogDto } from './dto';
+import { CreateArticleLogDto, QueryArticleLogDto } from './dto/log.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 
