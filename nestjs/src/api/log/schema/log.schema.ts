@@ -34,3 +34,9 @@ export class ArticleLog {
 }
 
 export const ArticleLogSchema = SchemaFactory.createForClass(ArticleLog);
+
+// 添加关键索引以提高查询性能
+ArticleLogSchema.index({ createdAt: -1 });
+ArticleLogSchema.index({ userId: 1, createdAt: -1 });
+ArticleLogSchema.index({ articleId: 1, createdAt: -1 });
+ArticleLogSchema.index({ action: 1, createdAt: -1 });

@@ -9,6 +9,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
 import { ArticleService } from 'src/modules/article/article.service';
+import { fileLogger } from 'src/common/utils/writeLog';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -23,7 +24,54 @@ export class ArticleLogService {
     private readonly logModel: Model<ArticleLogDocument>,
     private readonly userService: UserService,
     private readonly articleService: ArticleService,
-  ) {}
+  ) {
+    this.ensureIndexes();
+  }
+
+  /**
+   * 确保数据库中存在必要的索引
+   * 如果索引不存在则自动创建
+   */
+  private async ensureIndexes() {
+    try {
+      const collection = this.logModel.collection;
+      const existingIndexes = await collection.getIndexes();
+
+      // 定义需要的索引
+      const requiredIndexes: Array<{
+        spec: Record<string, 1 | -1>;
+        options: { name: string };
+      }> = [
+        { spec: { createdAt: -1 }, options: { name: 'createdAt_-1' } },
+        {
+          spec: { userId: 1, createdAt: -1 },
+          options: { name: 'userId_1_createdAt_-1' },
+        },
+        {
+          spec: { articleId: 1, createdAt: -1 },
+          options: { name: 'articleId_1_createdAt_-1' },
+        },
+        {
+          spec: { action: 1, createdAt: -1 },
+          options: { name: 'action_1_createdAt_-1' },
+        },
+      ];
+
+      // 检查并创建缺失的索引
+      for (const indexConfig of requiredIndexes) {
+        const indexExists = Object.values(existingIndexes).some(
+          (index: any) => index.name === indexConfig.options.name,
+        );
+
+        if (!indexExists) {
+          await collection.createIndex(indexConfig.spec, indexConfig.options);
+          fileLogger.info(`索引已创建: ${indexConfig.options.name}`);
+        }
+      }
+    } catch (error) {
+      fileLogger.error(`索引创建失败: ${error}`);
+    }
+  }
 
   async create(dto: CreateArticleLogDto) {
     // 指定 createdAt 为东八区时间
@@ -92,17 +140,26 @@ export class ArticleLogService {
         filters.createdAt.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(size);
+    const pageNum = parseInt(page);
     const take = parseInt(size);
 
     const [total, list] = await Promise.all([
       this.logModel.countDocuments(filters),
-      this.logModel
-        .find(filters)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(take)
-        .exec(),
+      // 优化大分页查询：当page > 100时，使用hint强制使用索引避免扫描全表
+      pageNum > 100
+        ? this.logModel
+            .find(filters)
+            .sort({ createdAt: -1 })
+            .hint({ createdAt: -1 })
+            .skip((pageNum - 1) * take)
+            .limit(take)
+            .exec()
+        : this.logModel
+            .find(filters)
+            .sort({ createdAt: -1 })
+            .skip((pageNum - 1) * take)
+            .limit(take)
+            .exec(),
     ]);
     // 只返回指定字段
     const resultList = await Promise.all(
