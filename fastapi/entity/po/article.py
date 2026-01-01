@@ -1,12 +1,13 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
+from sqlalchemy import LONGTEXT
 
 class Article(SQLModel, table=True):
     __tablename__ = "articles"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     title: str
-    content: str
+    content: str = Field(sa_column_kwargs={"sqlalchemy_type": LONGTEXT})
     user_id: Optional[int] = None
     tags: Optional[str] = None
     status: Optional[str] = None

@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity('articles')
@@ -18,7 +12,7 @@ export class Articles {
   title: string;
 
   @ApiProperty({ description: '内容', example: '这是文章内容' })
-  @Column('text')
+  @Column('longtext')
   content: string;
 
   @ApiProperty({ description: '用户ID', example: 1001 })
@@ -42,10 +36,10 @@ export class Articles {
   sub_category_id: number;
 
   @ApiProperty({ description: '创建时间', example: '2024-06-17T12:00:00.000Z' })
-  @CreateDateColumn({ name: 'create_at' })
+  @Column({ type: 'datetime', name: 'create_at' })
   create_at: Date;
 
   @ApiProperty({ description: '更新时间', example: '2024-06-17T12:00:00.000Z' })
-  @UpdateDateColumn({ name: 'update_at' })
+  @Column({ type: 'datetime', name: 'update_at' })
   update_at: Date;
 }
