@@ -532,8 +532,8 @@ class AnalyzeService:
                     "count": data_dict.get(month, 0)
                 })
             
-            # ========== 步骤4: 按月份从近到远排序 ==========
-            result.sort(key=lambda x: x["year_month"], reverse=True)
+            # ========== 步骤4: 按月份从远到近排序 ==========
+            result.sort(key=lambda x: x["year_month"], reverse=False)
             
             logger.info(f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}")
             
