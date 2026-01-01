@@ -26,7 +26,7 @@ import { ModulesModule } from './modules/modules.module';
           username: db.username,
           password: db.password,
           database: db.database,
-          synchronize: db.synchronize,
+          synchronize: false,
           logging: db.logging,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
         };
