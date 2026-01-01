@@ -1,7 +1,6 @@
 from sqlmodel import SQLModel, Field
 from typing import Optional
 from datetime import datetime
-from sqlalchemy import LONGTEXT
 
 class Article(SQLModel, table=True):
     __tablename__ = "articles"
