@@ -97,8 +97,8 @@ public class DatabaseInitializer implements ApplicationRunner {
             ") COMMENT='用户表'";
 
     private static final String CREATE_ARTICLES_SQL = "CREATE TABLE articles (\n" +
-            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',\n" +
-            "    title VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',\n" +
+            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '文章id',\n" +
+            "    title VARCHAR(255) NOT NULL COMMENT '文章标题',\n" +
             "    content LONGTEXT NOT NULL COMMENT '文章内容',\n" +
             "    user_id BIGINT NOT NULL COMMENT '用户id',\n" +
             "    sub_category_id BIGINT NOT NULL COMMENT '子分类id',\n" +

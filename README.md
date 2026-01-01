@@ -185,24 +185,20 @@ default = true
 
    - 自动检测 Python、Go、Java、Node.js 等必要工具的安装状态和版本
    - 如果缺少必要工具会给出明确提示
-
 2. **系统依赖管理**（仅 FastAPI 模块需要）
 
    - 自动检测并安装 PostgreSQL 开发库（`libpq-dev`）
    - 自动安装编译工具（`build-essential`、`python3-dev`）
    - 支持多种 Linux 发行版（Ubuntu/Debian、CentOS/RHEL、Fedora、Arch）
-
 3. **模块化安装**
 
    - 支持选择性安装特定模块或全部安装
    - 每个模块独立配置，互不影响
-
 4. **智能判断**
 
    - Spring: 自动检测是否有全局 Maven，如果没有则使用 mvnw
    - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
    - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
-
 5. **目录自动创建**
 
    - 自动创建 logs 目录（spring、gin、nestjs、fastapi）
@@ -271,8 +267,8 @@ default = true
 
 脚本会自动创建以下 Docker 容器：
 
-| 服务              | 端口  | 用户名   | 密码   | 说明                     |
-| ----------------- | ----- | -------- | ------ | ------------------------ |
+| 服务                    | 端口  | 用户名   | 密码   | 说明                     |
+| ----------------------- | ----- | -------- | ------ | ------------------------ |
 | **MySQL**         | 3306  | root     | 123    | 关系型数据库             |
 | **PostgreSQL**    | 5432  | postgres | 123456 | 向量数据库(含 pgvector)  |
 | **Redis**         | 6379  | -        | -      | 缓存服务                 |
@@ -288,19 +284,16 @@ default = true
    - 自动检测 Docker 是否安装和运行
    - 检测端口是否被占用，避免重复创建容器
    - 自动创建项目专用网络 `hcsy`
-
 2. **前置准备**
 
    - 自动创建数据持久化目录
    - 支持 Elasticsearch IK 分词器安装（可选）
    - 自动生成 Nacos 配置文件
-
 3. **容器管理**
 
    - 支持查看容器状态
    - 支持查看容器日志
    - 支持停止和删除容器
-
 4. **一键部署**
 
    - 完整的部署流程自动化
@@ -517,8 +510,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 脚本说明
 
-| 脚本              | 位置       | 功能                                       | 适用系统    |
-| ----------------- | ---------- | ------------------------------------------ | ----------- |
+| 脚本                | 位置       | 功能                                       | 适用系统    |
+| ------------------- | ---------- | ------------------------------------------ | ----------- |
 | `services.sh`     | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
 | `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
 | `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
@@ -599,13 +592,11 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
   - 便捷启动器，用于快速调用 `scripts/` 下的脚本
   - 支持开发环境和生产环境命令
-
 - **scripts/build.sh**
 
   - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
-
 - **scripts/dist-control.sh**
 
   - 管理打包后的分布式服务
@@ -651,8 +642,8 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ### 微服务容器说明
 
-| 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
-| ----------- | ---- | -------------------- | ----------------------- | ---------------- |
+| 服务              | 端口 | 镜像名称               | 容器名称                  | 技术栈           |
+| ----------------- | ---- | ---------------------- | ------------------------- | ---------------- |
 | **Gin**     | 8081 | `mix-gin:latest`     | `mix-gin-container`     | Go 1.23 + Alpine |
 | **NestJS**  | 8082 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
 | **Spring**  | 8083 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
@@ -665,17 +656,14 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
    - Gin/NestJS/Spring 采用多阶段构建，显著减小镜像体积
    - 生产环境只包含必要的运行时，无构建工具
-
 2. **配置文件支持**
 
    - 支持挂载 `application.yaml` 和 `application-secret.yaml`
    - 无需重新构建镜像即可修改配置
-
 3. **数据持久化**
 
    - 日志目录持久化：`logs/<service>/`
    - 文件上传目录持久化：`static/`
-
 4. **健康检查**
 
    - 容器具有健康检查配置
@@ -805,8 +793,8 @@ minikube image load mix-nestjs:latest
 
 项目提供的 K8s 资源文件位于 `k8s/` 目录：
 
-| 文件              | 说明               | 资源类型                          |
-| ----------------- | ------------------ | --------------------------------- |
+| 文件                | 说明               | 资源类型                          |
+| ------------------- | ------------------ | --------------------------------- |
 | `namespace.yaml`  | 命名空间和网络策略 | Namespace, NetworkPolicy          |
 | `configmap.yaml`  | 服务配置管理       | ConfigMap (5 个)                  |
 | `deployment.yaml` | 服务部署和内部服务 | Deployment (5 个), Service (5 个) |
@@ -903,8 +891,8 @@ kubectl describe configmap <config-name> -n mix-web-demo
 
 ### Docker 和 K8s 对比
 
-| 对比项       | Docker              | Kubernetes            |
-| ------------ | ------------------- | --------------------- |
+| 对比项             | Docker              | Kubernetes            |
+| ------------------ | ------------------- | --------------------- |
 | **部署范围** | 单机或 Docker Swarm | 集群（多机）          |
 | **可扩展性** | 有限                | 自动扩展(HPA)         |
 | **资源管理** | 基础                | 高级(requests/limits) |
@@ -948,8 +936,8 @@ CREATE TABLE user (
 
 ```sql
 CREATE TABLE articles (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
-    title VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '文章id',
+    title VARCHAR(255) NOT NULL COMMENT '文章标题',
     content LONGTEXT NOT NULL COMMENT '文章内容',
     user_id BIGINT NOT NULL COMMENT '用户id',
     sub_category_id BIGINT NOT NULL COMMENT '子分类id',
@@ -1719,7 +1707,6 @@ $$
 
   - $\Delta t$：文章创建时间与当前时间的差值（单位：天）
   - $\sigma$：时间衰减周期（默认 30 天）
-
 - 高斯衰减函数具有以下特性：
 
   - 当 $\Delta t = 0$（刚发布）时，$S_{recency} = 1.0$（新鲜度最高）
@@ -1729,15 +1716,15 @@ $$
 
 5. 默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
 
-| 因素           | 权重     | 说明                                          |
-| -------------- | -------- | --------------------------------------------- |
-| ES 基础分数    | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
-| AI 评分        | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
-| 用户评分       | 0.10     | 用户对文章的综合评价（0-10 范围）             |
-| 阅读量         | 0.08     | 文章的浏览热度                                |
-| 点赞量         | 0.08     | 用户的认可度                                  |
-| 收藏量         | 0.08     | 用户的收藏价值指数                            |
-| 作者关注数     | 0.04     | 作者的影响力                                  |
-| **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
+| 因素                 | 权重           | 说明                                           |
+| -------------------- | -------------- | ---------------------------------------------- |
+| ES 基础分数          | 0.25           | 关键词匹配的基础相关性（通过 Sigmoid 归一化）  |
+| AI 评分              | 0.15           | 系统 AI 模型的内容质量评估（0-10 范围）        |
+| 用户评分             | 0.10           | 用户对文章的综合评价（0-10 范围）              |
+| 阅读量               | 0.08           | 文章的浏览热度                                 |
+| 点赞量               | 0.08           | 用户的认可度                                   |
+| 收藏量               | 0.08           | 用户的收藏价值指数                             |
+| 作者关注数           | 0.04           | 作者的影响力                                   |
+| **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名** |
 
 - 权重总和为 1.0，确保评分结果的可比性和公平性。
