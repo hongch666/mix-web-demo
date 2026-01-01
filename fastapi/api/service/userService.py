@@ -34,7 +34,7 @@ class UserService:
     def get_new_followers_service(self, db: Session, user_id: int, period: str = "day") -> Dict[str, Any]:
         """
         获取新增粉丝数统计
-        period: "day" 前7天, "month" 前12个月, "year" 前3年
+        period: "day" 前7天, "month" 前6个月, "year" 前3年
         """
         try:
             timeline = []
@@ -51,8 +51,8 @@ class UserService:
                         "count": count
                     })
             elif period == "month":
-                # 前12个月
-                for i in range(11, -1, -1):
+                # 前6个月
+                for i in range(5, -1, -1):
                     date = datetime.now() - relativedelta(months=i)
                     start_date = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
                     if date.month == 12:

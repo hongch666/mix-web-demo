@@ -9,7 +9,7 @@ from common.decorators import log
 
 router: APIRouter = APIRouter(
     prefix="/analyze/user",
-    tags=["用户个人数据分析"],
+    tags=["用户个人数据分析接口"],
 )
 
 @router.get(
@@ -27,7 +27,7 @@ async def get_new_followers(
 ) -> Any:
     """
     获取新增粉丝数统计
-    - period: day (前7天), month (前12个月), year (前3年)
+    - period: day (前7天), month (前6个月), year (前3年)
     """
     result: Dict[str, Any] = await run_in_threadpool(userService.get_new_followers_service, db, user_id, period)
     return success(result)
