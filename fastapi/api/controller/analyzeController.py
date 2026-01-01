@@ -81,7 +81,7 @@ async def get_article_count_by_category(request: Request, db: Session = Depends(
 @router.get(
     "/monthly-publish-count",
     summary="获取月度文章发布统计",
-    description="获取最近24个月的文章发布数量统计（从当前月向前推24个月，缺失月份置为0）"
+    description="获取最近6个月的文章发布数量统计（从当前月向前推6个月，缺失月份置为0）"
 )
 @log("获取月度文章发布统计")
 async def get_monthly_publish_count(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
@@ -89,7 +89,7 @@ async def get_monthly_publish_count(request: Request, db: Session = Depends(get_
     获取月度文章发布统计
     
     特性：
-    - 从当前月份向前推24个月
+    - 从当前月份向前推6个月
     - 中间缺失的月份自动补零
     - 按月份倒序排列（最新在前）
     """

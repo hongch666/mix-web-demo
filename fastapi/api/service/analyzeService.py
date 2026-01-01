@@ -416,8 +416,8 @@ class AnalyzeService:
         获取按月份统计的文章发布数量服务
         
         流程:
-        1. 从Hive查询最近24个月的文章发布数据
-        2. 从当前月份向前推24个月，补充缺失的月份为零值
+        1. 从Hive查询最近6个月的文章发布数据
+        2. 从当前月份向前推6个月，补充缺失的月份为零值
         3. 按月份排序
         4. 使用缓存优化性能
         """
@@ -468,9 +468,9 @@ class AnalyzeService:
             # 获取当前日期所在的月份
             now = datetime.now()
             
-            # 构建最近24个月的月份列表（从当前月向前推）
+            # 构建最近6个月的月份列表（从当前月向前推）
             expected_months = []
-            for i in range(23, -1, -1):  # 从23个月前到当前月
+            for i in range(5, -1, -1):  # 从5个月前到当前月
                 month_date = now - relativedelta(months=i)
                 expected_months.append(month_date.strftime("%Y-%m"))
             
@@ -488,7 +488,7 @@ class AnalyzeService:
             # ========== 步骤4: 按月份从近到远排序 ==========
             result.sort(key=lambda x: x["year_month"], reverse=True)
             
-            logger.info(f"get_monthly_publish_count_service: 获取过去24个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}")
+            logger.info(f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}")
             
             # ========== 步骤5: 更新缓存 ==========
             if hive_conn and result:
