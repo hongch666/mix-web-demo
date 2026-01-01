@@ -950,7 +950,7 @@ CREATE TABLE user (
 CREATE TABLE articles (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
     title VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
-    content TEXT NOT NULL COMMENT '文章内容',
+    content LONGTEXT NOT NULL COMMENT '文章内容',
     user_id BIGINT NOT NULL COMMENT '用户id',
     sub_category_id BIGINT NOT NULL COMMENT '子分类id',
     tags VARCHAR(255) NOT NULL COMMENT '文章标签',
