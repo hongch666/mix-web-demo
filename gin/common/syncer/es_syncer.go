@@ -7,6 +7,7 @@ import (
 	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
+	"time"
 
 	"github.com/olivere/elastic"
 )
@@ -122,66 +123,84 @@ func SyncArticlesToES() {
 	authorFollowCounts := focusMapper.GetFollowCountsByUserIDs(ctx, userIDs)
 	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 个作者的关注信息完成", len(userIDs)))
 
-	// 批量构建ES文档
-	bulkRequest := config.ESClient.Bulk()
-	for _, article := range articles {
-		scores := commentScores[int64(article.ID)]
-
-		// 提取AI和用户评分
-		aiScore := 0.0
-		aiCount := 0
-		if aiScoreData, ok := scores["ai"]; ok {
-			aiScore = aiScoreData.AverageScore
-			aiCount = aiScoreData.Count
-		}
-
-		userScore := 0.0
-		userCount := 0
-		if userScoreData, ok := scores["user"]; ok {
-			userScore = userScoreData.AverageScore
-			userCount = userScoreData.Count
-		}
-
-		articleES := po.ArticleES{
-			ID:                int(article.ID),
-			Title:             article.Title,
-			Content:           article.Content,
-			UserID:            int(article.UserID),
-			Username:          userMap[int(article.UserID)],
-			Tags:              article.Tags,
-			Status:            article.Status,
-			Views:             article.Views,
-			LikeCount:         likeCounts[int(article.ID)],
-			CollectCount:      collectCounts[int(article.ID)],
-			AuthorFollowCount: authorFollowCounts[int(article.UserID)],
-			CategoryName:      categoryMap[article.SubCategoryID],
-			SubCategoryName:   subCategoryMap[article.SubCategoryID],
-			CreateAt:          article.CreateAt.Format("2006-01-02 15:04:05"),
-			UpdateAt:          article.UpdateAt.Format("2006-01-02 15:04:05"),
-			AIScore:           aiScore,
-			UserScore:         userScore,
-			AICommentCount:    aiCount,
-			UserCommentCount:  userCount,
-		}
-		req := elastic.NewBulkIndexRequest().
-			Index("articles").
-			Id(fmt.Sprintf("%d", article.ID)).
-			Doc(articleES)
-		bulkRequest = bulkRequest.Add(req)
-	}
-
-	if bulkRequest.NumberOfActions() == 0 {
+	if len(articles) == 0 {
 		panic("没有已发布的文章可同步")
 	}
 
-	resp, err2 := bulkRequest.Do(context.Background())
-	if err2 != nil {
-		panic(err2.Error())
-	}
-	if resp.Errors {
-		for _, item := range resp.Failed() {
-			utils.FileLogger.Error(fmt.Sprintf("ES同步失败: %+v", item.Error))
+	// 分批提交ES文档，每批1000条避免资源耗尽
+	batchSize := 1000
+	totalBatches := (len(articles) + batchSize - 1) / batchSize
+
+	for batchIdx := 0; batchIdx < totalBatches; batchIdx++ {
+		start := batchIdx * batchSize
+		end := start + batchSize
+		if end > len(articles) {
+			end = len(articles)
 		}
-		panic("ES同步有失败项")
+
+		bulkRequest := config.ESClient.Bulk()
+		for _, article := range articles[start:end] {
+			scores := commentScores[int64(article.ID)]
+
+			// 提取AI和用户评分
+			aiScore := 0.0
+			aiCount := 0
+			if aiScoreData, ok := scores["ai"]; ok {
+				aiScore = aiScoreData.AverageScore
+				aiCount = aiScoreData.Count
+			}
+
+			userScore := 0.0
+			userCount := 0
+			if userScoreData, ok := scores["user"]; ok {
+				userScore = userScoreData.AverageScore
+				userCount = userScoreData.Count
+			}
+
+			articleES := po.ArticleES{
+				ID:                int(article.ID),
+				Title:             article.Title,
+				Content:           article.Content,
+				UserID:            int(article.UserID),
+				Username:          userMap[int(article.UserID)],
+				Tags:              article.Tags,
+				Status:            article.Status,
+				Views:             article.Views,
+				LikeCount:         likeCounts[int(article.ID)],
+				CollectCount:      collectCounts[int(article.ID)],
+				AuthorFollowCount: authorFollowCounts[int(article.UserID)],
+				CategoryName:      categoryMap[article.SubCategoryID],
+				SubCategoryName:   subCategoryMap[article.SubCategoryID],
+				CreateAt:          article.CreateAt.Format("2006-01-02 15:04:05"),
+				UpdateAt:          article.UpdateAt.Format("2006-01-02 15:04:05"),
+				AIScore:           aiScore,
+				UserScore:         userScore,
+				AICommentCount:    aiCount,
+				UserCommentCount:  userCount,
+			}
+			req := elastic.NewBulkIndexRequest().
+				Index("articles").
+				Id(fmt.Sprintf("%d", article.ID)).
+				Doc(articleES)
+			bulkRequest = bulkRequest.Add(req)
+		}
+
+		resp, err2 := bulkRequest.Do(context.Background())
+		if err2 != nil {
+			panic(err2.Error())
+		}
+		if resp.Errors {
+			for _, item := range resp.Failed() {
+				utils.FileLogger.Error(fmt.Sprintf("ES同步失败: %+v", item.Error))
+			}
+			panic("ES同步有失败项")
+		}
+
+		utils.FileLogger.Info(fmt.Sprintf("[ES同步] 第 %d/%d 批提交完成，共 %d 条记录", batchIdx+1, totalBatches, end-start))
+
+		// 在批次之间添加延迟，给ES足够时间处理，防止资源耗尽
+		if batchIdx < totalBatches-1 {
+			time.Sleep(500 * time.Millisecond)
+		}
 	}
 }

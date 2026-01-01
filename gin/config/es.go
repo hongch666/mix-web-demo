@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -23,6 +24,10 @@ func InitES() {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(esUrl),
 		elastic.SetSniff(Config.Database.ES.Sniff),
+		// 优化连接池配置，防止资源耗尽
+		elastic.SetMaxRetries(3),                         // 最多重试3次
+		elastic.SetHealthcheckInterval(10 * time.Second), // 健康检查间隔
+		elastic.SetGzip(true),                            // 启用gzip压缩减少网络传输
 	}
 
 	// 如果有用户名才添加认证
