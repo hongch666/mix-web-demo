@@ -7,7 +7,7 @@ class Article(SQLModel, table=True):
     __tablename__ = "articles"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     title: str
-    content: str = Field(sa_column_kwargs={"sqlalchemy_type": LONGTEXT})
+    content: str
     user_id: Optional[int] = None
     tags: Optional[str] = None
     status: Optional[str] = None
