@@ -26,13 +26,11 @@ async def get_top10_articles(request: Request, db: Session = Depends(get_db), an
 @router.post(
     "/wordcloud",
     summary="生成词云图",
-    description="根据文章生成词云图"
+    description="根据文章生成词云图（支持Redis缓存，24h过期）"
 )
 @log("生成词云图")
 async def get_wordcloud(request: Request,analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
-    keywords_dic: Dict[str, int] = await run_in_threadpool(analyzeService.get_keywords_dic)
-    await run_in_threadpool(analyzeService.generate_wordcloud, keywords_dic)
-    oss_url: str = await run_in_threadpool(analyzeService.upload_wordcloud_to_oss)
+    oss_url: str = await run_in_threadpool(analyzeService.get_wordcloud_service)
     return success(oss_url)
 
 @router.post(

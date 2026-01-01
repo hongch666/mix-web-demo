@@ -22,7 +22,8 @@ from common.cache import (
     ArticleCache, get_article_cache,
     CategoryCache, get_category_cache,
     PublishTimeCache, get_publish_time_cache,
-    StatisticsCache, get_statistics_cache
+    StatisticsCache, get_statistics_cache,
+    WordcloudCache, get_wordcloud_cache
 )
 
 class AnalyzeService:
@@ -37,7 +38,8 @@ class AnalyzeService:
                     article_cache: ArticleCache = None, 
                     category_cache: CategoryCache = None, 
                     publish_time_cache: PublishTimeCache = None, 
-                    statistics_cache: StatisticsCache = None
+                    statistics_cache: StatisticsCache = None,
+                    wordcloud_cache: WordcloudCache = None
                 ):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
@@ -50,6 +52,7 @@ class AnalyzeService:
         self._category_cache = category_cache
         self._publish_time_cache = publish_time_cache
         self._statistics_cache = statistics_cache
+        self._wordcloud_cache = wordcloud_cache
 
     def get_top10_articles_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         """
@@ -200,6 +203,50 @@ class AnalyzeService:
             oss_path="pic/search_keywords_wordcloud.png"
         )
         return oss_url
+
+    def get_wordcloud_service(self) -> str:
+        """
+        获取词云图OSS URL服务
+        
+        流程:
+        1. 先尝试从Redis获取缓存
+        2. 缓存未命中时，生成词云图并上传到OSS
+        3. 将OSS URL缓存到Redis（24小时）
+        """
+        start = time.time()
+        
+        # ========== 步骤1: 尝试从Redis获取缓存 ==========
+        try:
+            cached_url = self._wordcloud_cache.get()
+            if cached_url:
+                elapsed = time.time() - start
+                logger.info(f"get_wordcloud_service: [缓存命中] 耗时 {elapsed:.3f}s")
+                return cached_url
+        except Exception as cache_e:
+            logger.debug(f"获取词云图缓存失败，将重新生成: {cache_e}")
+        
+        # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
+        logger.info("get_wordcloud_service: [缓存未命中] 开始生成词云图")
+        try:
+            # 获取关键词字典
+            keywords_dic = self.get_keywords_dic()
+            # 生成词云图
+            self.generate_wordcloud(keywords_dic)
+            # 上传到OSS
+            oss_url = self.upload_wordcloud_to_oss()
+            
+            # ========== 步骤3: 缓存到Redis ==========
+            try:
+                self._wordcloud_cache.set(oss_url)
+                elapsed = time.time() - start
+                logger.info(f"get_wordcloud_service: 词云图已生成并缓存，总耗时 {elapsed:.3f}s")
+            except Exception as cache_e:
+                logger.warning(f"缓存词云图URL失败: {cache_e}")
+            
+            return oss_url
+        except Exception as e:
+            logger.error(f"get_wordcloud_service: 生成词云图失败: {e}")
+            raise
 
     def export_articles_to_excel(self, db: Session = Depends(get_db)) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
@@ -516,7 +563,8 @@ def get_analyze_service(
         article_cache: ArticleCache = Depends(get_article_cache), 
         category_cache: CategoryCache = Depends(get_category_cache), 
         publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache), 
-        statistics_cache: StatisticsCache = Depends(get_statistics_cache)
+        statistics_cache: StatisticsCache = Depends(get_statistics_cache),
+        wordcloud_cache: WordcloudCache = Depends(get_wordcloud_cache)
     ) -> AnalyzeService:
     return AnalyzeService(
             articleMapper, 
@@ -528,5 +576,6 @@ def get_analyze_service(
             article_cache, 
             category_cache, 
             publish_time_cache, 
-            statistics_cache
+            statistics_cache,
+            wordcloud_cache
         )
