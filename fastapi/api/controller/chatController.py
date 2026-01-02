@@ -38,6 +38,7 @@ async def send_message(
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> JSONResponse:
     """发送聊天消息"""
+    
     try:
         user_id: str = get_current_user_id() or ""
         # 使用实际用户ID替代请求中的user_id
@@ -123,6 +124,7 @@ async def stream_message(
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service)
 ) -> StreamingResponse:
     """流式发送聊天消息"""
+    
     try:
         user_id: str = get_current_user_id() or ""
         actual_user_id: str = user_id or "1"

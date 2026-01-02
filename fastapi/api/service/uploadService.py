@@ -10,6 +10,8 @@ from common.utils import fileLogger as logger
 from config import load_config
 
 class UploadService:
+    """上传 Service"""
+    
     def __init__(
             self, 
             analyze_service: AnalyzeService = None

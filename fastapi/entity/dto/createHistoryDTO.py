@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 
 class CreateHistoryDTO(BaseModel):
+    """创建历史记录 DTO"""
+    
     user_id: int = Field(
         ...,
         description="用户ID",

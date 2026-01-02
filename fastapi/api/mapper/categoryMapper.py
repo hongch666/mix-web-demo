@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from entity.po import Category, SubCategory
 
 class CategoryMapper:
+    """分类 Mapper"""
 
     def get_all_categories_mapper(self, db: Session) -> list[Category]:
         statement = select(Category).distinct()

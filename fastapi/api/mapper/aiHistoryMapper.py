@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from entity.po import AiHistory
 
 class AiHistoryMapper:
+    """AI 历史记录 Mapper"""
     
     def create_ai_history(self, ai_history: AiHistory, db: Session) -> AiHistory:
         db.add(ai_history)

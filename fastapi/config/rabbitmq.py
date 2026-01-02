@@ -5,7 +5,7 @@ from config.config import load_config
 from common.utils import fileLogger as logger
 
 class RabbitMQClient:
-    """RabbitMQ 客户端类"""
+    """RabbitMQ 客户端"""
 
     def __init__(self):
         """初始化 RabbitMQ 客户端"""

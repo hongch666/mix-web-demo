@@ -3,6 +3,8 @@ from typing import Optional
 from datetime import datetime
 
 class Article(SQLModel, table=True):
+    """文章实体类"""
+    
     __tablename__ = "articles"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     title: str

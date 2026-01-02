@@ -5,6 +5,8 @@ from common.utils import fileLogger as logger
 from api.mapper import get_article_mapper
 
 class ArticleLogMapper:
+    """文章日志 Mapper"""
+    
     def get_search_keywords_articlelog_mapper(self) -> List[str]:
         logs = mongo_db["articlelogs"]
         pipeline = [

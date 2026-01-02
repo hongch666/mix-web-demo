@@ -3,6 +3,7 @@ from sqlmodel import Session, select
 from entity.po import User
 
 class UserMapper:
+    """用户 Mapper"""
 
     def get_users_by_ids_mapper(self,user_ids: list[int], db: Session) -> list[User]:
         statement = select(User).where(User.id.in_(user_ids))

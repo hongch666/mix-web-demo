@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 
 class UploadDTO(BaseModel):
+    """上传 DTO"""
+    
     local_file: str = Field(
         ...,
         min_length=5,

@@ -26,6 +26,8 @@ router: APIRouter = APIRouter(
 )
 @log("生成tags")
 async def generate_tags(request: Request, data: GenerateDTO, generateService: GenerateService = Depends(get_generate_service)) -> Any:
+    """生成tags接口"""
+    
     tags: list[str] = await run_in_threadpool(
         generateService.extract_tags,
         data.text,
@@ -49,6 +51,8 @@ async def create_article_ai_comment(
     gemini_service: GeminiService = Depends(get_gemini_service),
     qwen_service: QwenService = Depends(get_qwen_service)
 ) -> Any:
+    """文章创建AI评论接口"""
+    
     # 创建完整的 GenerateService 实例
     generate_service = GenerateService(
         comments_mapper=comments_mapper,

@@ -4,6 +4,8 @@ from datetime import datetime
 from sqlalchemy import Column, Text
 
 class AiHistory(SQLModel, table=True):
+    """AI 历史记录实体类"""
+    
     __tablename__ = "ai_history"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     user_id: Optional[int] = None

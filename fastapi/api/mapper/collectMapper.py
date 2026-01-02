@@ -7,6 +7,7 @@ from sqlalchemy import cast, Date
 from . import get_article_mapper
 
 class CollectMapper:
+    """收藏 Mapper"""
     
     def get_total_collects_mapper(self, db: Session) -> int:
         """获取所有文章的总收藏数"""

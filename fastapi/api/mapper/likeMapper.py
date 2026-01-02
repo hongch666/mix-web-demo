@@ -7,6 +7,7 @@ from sqlalchemy import cast, Date
 from . import get_article_mapper
 
 class LikeMapper:
+    """点赞 Mapper"""
     
     def get_total_likes_mapper(self, db: Session) -> int:
         """获取所有文章的总点赞数"""

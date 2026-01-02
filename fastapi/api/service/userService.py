@@ -15,6 +15,8 @@ from api.mapper import (
 from common.utils import fileLogger as logger
 
 class UserService:
+    """用户数据分析 Service"""
+    
     def __init__(
         self, 
             focusMapper: FocusMapper = None, 

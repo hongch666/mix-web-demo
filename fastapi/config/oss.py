@@ -9,6 +9,8 @@ bucket_name: str = load_config("oss")["bucket_name"]
 endpoint: str = load_config("oss")["endpoint"]
 
 class OSSClient:
+    """OSS 客户端"""
+    
     auth: oss2.Auth
     bucket_name: str
     endpoint: str

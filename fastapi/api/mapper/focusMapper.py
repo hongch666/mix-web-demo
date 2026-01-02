@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import cast, Date
 
 class FocusMapper:
+    """关注 Mapper"""
     
     def get_total_followers_mapper(self, db: Session, user_id: int) -> int:
         """获取用户的粉丝总数（被多少人关注）"""

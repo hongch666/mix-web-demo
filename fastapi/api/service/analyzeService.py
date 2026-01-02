@@ -27,20 +27,22 @@ from common.cache import (
 )
 
 class AnalyzeService:
+    """文章数据分析 Service"""
+    
     def __init__(
-                    self, 
-                    articleMapper: ArticleMapper = None, 
-                    articleLogMapper: ArticleLogMapper = None, 
-                    userMapper: UserMapper = None, 
-                    categoryMapper: CategoryMapper = None, 
-                    likeMapper: LikeMapper = None, 
-                    collectMapper: CollectMapper = None, 
-                    article_cache: ArticleCache = None, 
-                    category_cache: CategoryCache = None, 
-                    publish_time_cache: PublishTimeCache = None, 
-                    statistics_cache: StatisticsCache = None,
-                    wordcloud_cache: WordcloudCache = None
-                ):
+            self, 
+            articleMapper: ArticleMapper = None, 
+            articleLogMapper: ArticleLogMapper = None, 
+            userMapper: UserMapper = None, 
+            categoryMapper: CategoryMapper = None, 
+            likeMapper: LikeMapper = None, 
+            collectMapper: CollectMapper = None, 
+            article_cache: ArticleCache = None, 
+            category_cache: CategoryCache = None, 
+            publish_time_cache: PublishTimeCache = None, 
+            statistics_cache: StatisticsCache = None,
+            wordcloud_cache: WordcloudCache = None
+        ):
         self.articleMapper = articleMapper
         self.articleLogMapper = articleLogMapper
         self.userMapper = userMapper

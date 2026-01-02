@@ -5,6 +5,7 @@ from common.utils import fileLogger as logger
 
 class HiveConnectionPool:
     """Hive 连接池 - 单例模式"""
+    
     _instance = None
     _connections = []
     _max_connections = 10

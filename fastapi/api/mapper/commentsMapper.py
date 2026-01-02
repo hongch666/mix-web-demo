@@ -7,6 +7,8 @@ from sqlalchemy import func as sa_func, cast, Date
 from common.utils import fileLogger as logger
 
 class CommentsMapper:
+    """评论 Mapper"""
+    
     def get_ai_comments_num_by_article_id_mapper(self, article_id: int, db: Session) -> int:
         # 第一步: 查询所有 role 为 "ai" 的用户ID
         ai_user_statement = select(User.id).where(User.role == "ai")

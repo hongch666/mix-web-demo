@@ -7,6 +7,8 @@ from api.mapper import AiHistoryMapper, get_ai_history_mapper
 from entity.po import AiHistory
 
 class AiHistoryService:
+    """AI 历史记录 Service"""
+    
     def __init__(
             self, 
             ai_history_mapper: AiHistoryMapper = None

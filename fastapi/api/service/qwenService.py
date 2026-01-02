@@ -19,6 +19,8 @@ from common.utils import (
 from config import load_config, load_secret_config
 
 class QwenService(BaseAiService):
+    """千问 AI Service"""
+    
     def __init__(
             self, 
             ai_history_mapper: AiHistoryMapper, 

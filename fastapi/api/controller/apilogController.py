@@ -17,10 +17,8 @@ router: APIRouter = APIRouter(
 )
 @log("获取所有接口的平均响应速度")
 async def get_api_average_speed(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
-    """
-    获取所有接口的平均响应速度
-    按照接口路径和方法分组统计
-    """
+    """获取所有接口的平均响应速度"""
+    
     result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_api_average_response_time_service)
     return success(result)
 
@@ -31,9 +29,7 @@ async def get_api_average_speed(request: Request, apilogService: ApiLogService =
 )
 @log("获取接口调用次数")
 async def get_called_count_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
-    """
-    获取接口调用次数
-    按照接口路径和方法分组统计
-    """
+    """获取接口调用次数"""
+    
     result: List[Dict[str, Any]] = await run_in_threadpool(apilogService.get_called_count_apis_service)
     return success(result)

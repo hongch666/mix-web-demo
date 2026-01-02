@@ -16,6 +16,7 @@ from api.mapper import (
 )
 
 class GenerateService:
+    """生成 Service"""
 
     def __init__(
             self, 

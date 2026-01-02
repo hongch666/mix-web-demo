@@ -21,6 +21,9 @@ from common.utils import (
 from config import load_config, load_secret_config
 
 class GeminiService(BaseAiService):
+    """Gemini AI Service"""
+    
+    
     def __init__(
             self, 
             ai_history_mapper: AiHistoryMapper = None, 

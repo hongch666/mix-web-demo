@@ -9,6 +9,7 @@ from entity.po import Article
 from common.utils import fileLogger as logger
 
 class ArticleMapper:
+    """文章 Mapper"""
 
     def __init__(self):
         self._hive_pool: HiveConnectionPool = get_hive_connection_pool()
