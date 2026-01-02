@@ -4,7 +4,11 @@ from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict
 from common.decorators import log
 from common.client import call_remote_service
-from common.task import export_articles_to_csv_and_hive, export_article_vectors_to_postgres
+from common.task import (
+    export_articles_to_csv_and_hive, 
+    export_article_vectors_to_postgres, 
+    initialize_article_content_hash_cache
+)
 from common.utils import success,fail,fileLogger as logger
 
 router: APIRouter = APIRouter(
@@ -96,4 +100,18 @@ async def test_export_vector_task(request: Request) -> JSONResponse:
         return success()
     except Exception as e:
         logger.error(f"手动触发向量数据库同步任务失败: {e}")
+        return fail(f"任务执行失败: {e}")
+
+@router.post(
+    "/task/init-hash-cache",
+    summary="初始化文章内容 hash 缓存",
+    description="为所有已发布的文章初始化内容 hash 缓存。用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景。此操作只生成 hash，不进行向量同步。"
+)
+@log("初始化文章内容 hash 缓存")
+async def test_init_hash_cache_task(request: Request) -> JSONResponse:
+    try:
+        await run_in_threadpool(initialize_article_content_hash_cache)
+        return success("文章内容 hash 缓存初始化完成")
+    except Exception as e:
+        logger.error(f"初始化文章内容 hash 缓存失败: {e}")
         return fail(f"任务执行失败: {e}")
