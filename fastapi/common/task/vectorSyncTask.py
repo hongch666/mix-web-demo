@@ -100,17 +100,16 @@ def _get_last_sync_time() -> Optional[datetime]:
 
 
 def _save_sync_time(sync_time: datetime) -> None:
-    """将同步时间保存到 Redis"""
+    """将同步时间永久保存到 Redis（不设置TTL）"""
     try:
         redis_client = _get_redis_client()
         if redis_client is None:
             logger.error("Redis 连接失败，无法保存同步时间戳")
             return
         
-        # 保存时间戳，设置过期时间为 90 天（防止过期数据堆积）
-        redis_client.setex(
+        # 永久保存时间戳（不设置过期时间）
+        redis_client.set(
             _VECTOR_SYNC_TIME_KEY,
-            86400 * 90,  # 90 天
             sync_time.isoformat()
         )
         logger.info(f"已保存同步时间戳到 Redis: {sync_time.isoformat()}")
@@ -442,6 +441,10 @@ def initialize_article_content_hash_cache(
         logger.info(
             f"hash 缓存初始化完成！新增: {total_initialized} 篇，已存在: {total_skipped} 篇"
         )
+        
+        # 4. 初始化完成后，也要保存同步时间戳，以便下次增量同步时能识别这是有历史数据的
+        _save_sync_time(datetime.now())
+        logger.info("已设置同步时间戳，下次同步将使用增量模式")
         
     except Exception as e:
         logger.error(f"初始化文章 hash 缓存失败: {e}")
