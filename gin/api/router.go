@@ -1,4 +1,4 @@
-package routes
+package api
 
 import (
 	"gin_proj/api/controller"

@@ -33,15 +33,3 @@ func (m *ArticleMapper) GetArticleViewsByIDs(ctx context.Context, ids []int) map
 
 	return result
 }
-
-// // GetArticleLikeCounts 根据文章ID数组获取点赞数
-// func (m *ArticleMapper) GetArticleLikeCounts(ctx context.Context, ids []int) map[int]int {
-// 	likeMapper := &LikeMapper{}
-// 	return likeMapper.GetLikeCountsByArticleIDs(ctx, ids)
-// }
-
-// // GetArticleCollectCounts 根据文章ID数组获取收藏数
-// func (m *ArticleMapper) GetArticleCollectCounts(ctx context.Context, ids []int) map[int]int {
-// 	collectMapper := &CollectMapper{}
-// 	return collectMapper.GetCollectCountsByArticleIDs(ctx, ids)
-// }

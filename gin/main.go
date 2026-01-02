@@ -8,7 +8,7 @@ package main
 
 import (
 	"fmt"
-	"gin_proj/api/routes"
+	"gin_proj/api"
 	"gin_proj/common/migrate"
 	"gin_proj/common/task"
 	"gin_proj/config"
@@ -23,7 +23,7 @@ func main() {
 	// 开启定时任务
 	task.InitTasks()
 	// 初始化路由
-	r := routes.SetupRouter()
+	r := api.SetupRouter()
 	// 输出启动信息和Swagger地址
 	addr := fmt.Sprintf(":%d", config.Config.Server.Port)
 	log.Printf("Gin应用已启动")
