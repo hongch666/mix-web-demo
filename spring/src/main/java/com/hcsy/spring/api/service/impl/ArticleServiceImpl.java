@@ -65,6 +65,19 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     @Transactional
+    public IPage<Article> listArticlesById(Page<Article> page, Integer id, boolean onlyPublished) {
+        LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(Article::getUserId, id);
+        if (onlyPublished) {
+            queryWrapper.eq(Article::getStatus, 1); // 只查已发布
+        }
+        queryWrapper.orderByAsc(Article::getCreateAt); // 按创建时间倒序
+
+        return this.page(page, queryWrapper);
+    }
+
+    @Override
+    @Transactional
     @ArticleSync(action = "add", description = "创建了1篇文章")
     public boolean saveArticle(Article article) {
         articleMapper.insert(article);

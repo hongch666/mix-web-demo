@@ -22,6 +22,8 @@ public interface ArticleService extends IService<Article> {
 
     IPage<Article> listArticlesById(Page<Article> page, Integer id);
 
+    IPage<Article> listArticlesById(Page<Article> page, Integer id, boolean onlyPublished);
+
     void publishArticle(Long id);
 
     void addViewArticle(Long id);

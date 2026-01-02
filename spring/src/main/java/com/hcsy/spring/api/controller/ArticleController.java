@@ -75,14 +75,15 @@ public class ArticleController {
     }
 
     @GetMapping("user/{id}")
-    @Operation(summary = "获取用户所有文章", description = "返回用户所有文章")
-    @ApiLog("获取用户所有文章")
+    @Operation(summary = "获取用户文章", description = "返回用户文章，可指定是否只查询已发布的文章")
+    @ApiLog("获取用户文章")
     public Result getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            @PathVariable Integer id) {
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "0") int published) {
         Page<Article> articlePage = new Page<>(page, size);
-        IPage<Article> resultPage = articleService.listArticlesById(articlePage, id);
+        IPage<Article> resultPage = articleService.listArticlesById(articlePage, id, published == 1);
 
         List<Article> records = resultPage.getRecords();
         List<ArticleWithCategoryVO> voList = new ArrayList<>();
