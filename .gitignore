@@ -188,6 +188,9 @@ static/*
 static/pic/*
 !static/pic/er.drawio.png
 !static/pic/architecture.drawio.png
+!static/pic/structure.drawio.png
+!static/pic/uml_user.drawio.png
+!static/pic/uml_admin.drawio.png
 
 !static/word/template.docx
 
