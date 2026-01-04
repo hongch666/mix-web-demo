@@ -1,5 +1,6 @@
 import hashlib
 from datetime import datetime
+import time
 from typing import Optional, Callable, Any, List
 from sqlmodel import Session
 from config import load_config
@@ -9,7 +10,6 @@ from common.utils import fileLogger as logger
 # Redis 键名
 _VECTOR_SYNC_TIME_KEY = "vector_sync:last_sync_time"
 _ARTICLE_CONTENT_HASH_PREFIX = "article_content_hash:"
-
 
 def _get_redis_client():
     """获取 Redis 客户端"""
@@ -31,7 +31,6 @@ def _get_redis_client():
             logger.error(f"无法连接到 Redis: {e}")
             return None
 
-
 def _compute_article_hash(article: Any) -> str:
     """计算文章内容的 hash 值（只包含需要同步的字段）"""
     try:
@@ -49,7 +48,6 @@ def _compute_article_hash(article: Any) -> str:
         logger.error(f"计算文章 hash 失败: {e}")
         return ""
 
-
 def _get_article_content_hash(article_id: int) -> Optional[str]:
     """从 Redis 获取文章内容 hash"""
     try:
@@ -62,7 +60,6 @@ def _get_article_content_hash(article_id: int) -> Optional[str]:
     except Exception as e:
         logger.warning(f"从 Redis 读取文章 hash 失败: {e}")
         return None
-
 
 def _save_article_content_hash(article_id: int, hash_value: str) -> None:
     """将文章内容 hash 永久保存到 Redis（不设置TTL）"""
@@ -81,7 +78,6 @@ def _save_article_content_hash(article_id: int, hash_value: str) -> None:
     except Exception as e:
         logger.error(f"保存文章 {article_id} 的 hash 到 Redis 失败: {e}")
 
-
 def _get_last_sync_time() -> Optional[datetime]:
     """从 Redis 获取上次同步时间"""
     try:
@@ -97,7 +93,6 @@ def _get_last_sync_time() -> Optional[datetime]:
         logger.warning(f"从 Redis 读取同步时间戳失败: {e}")
     
     return None
-
 
 def _save_sync_time(sync_time: datetime) -> None:
     """将同步时间永久保存到 Redis（不设置TTL）"""
@@ -115,7 +110,6 @@ def _save_sync_time(sync_time: datetime) -> None:
         logger.info(f"已保存同步时间戳到 Redis: {sync_time.isoformat()}")
     except Exception as e:
         logger.error(f"保存同步时间戳到 Redis 失败: {e}")
-
 
 def _get_changed_articles(articles: List[Any], last_sync_time: Optional[datetime]) -> List[Any]:
     """
@@ -179,7 +173,6 @@ def _get_changed_articles(articles: List[Any], last_sync_time: Optional[datetime
             logger.debug(f"文章 {article_id} 内容未变化，跳过同步")
     
     return changed_articles
-
 
 def export_article_vectors_to_postgres(
     article_mapper: Optional[Any] = None,
@@ -311,7 +304,6 @@ def export_article_vectors_to_postgres(
                         retry_count += 1
                         if retry_count < max_retries:
                             logger.warning(f"批次 {batch_num} 同步返回失败信息，准备重试 ({retry_count}/{max_retries}): {result}")
-                            import time
                             time.sleep(retry_delay)
                             continue
                         else:
@@ -327,7 +319,6 @@ def export_article_vectors_to_postgres(
                     
                     if retry_count < max_retries:
                         logger.warning(f"批次 {batch_num} 同步失败，准备重试 ({retry_count}/{max_retries}): {e}")
-                        import time
                         time.sleep(retry_delay)
                     else:
                         total_errors += len(batch)
@@ -355,7 +346,6 @@ def export_article_vectors_to_postgres(
                 mysql_db.close()
         except Exception:
             pass
-
 
 def initialize_article_content_hash_cache(
     article_mapper: Optional[Any] = None,

@@ -7,7 +7,6 @@ from common.utils import fileLogger as logger
 from .hiveSyncTask import export_articles_to_csv_and_hive
 from .vectorSyncTask import export_article_vectors_to_postgres
 
-
 def start_scheduler(
     article_mapper: Optional[Any] = None,
     user_mapper: Optional[Any] = None,
