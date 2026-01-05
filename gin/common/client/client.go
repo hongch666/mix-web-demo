@@ -57,15 +57,15 @@ type RequestOptions struct {
 	Method      string            // HTTP方法：GET/POST/PUT/DELETE等
 	PathParams  map[string]string // 路径参数（如 /users/:id）
 	QueryParams url.Values        // URL查询参数
-	BodyData    interface{}       // 请求体数据（支持多种格式）
+	BodyData    any               // 请求体数据（支持多种格式）
 	Headers     map[string]string // 自定义请求头
 }
 
 // 定义返回数据结构体
 type Result struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data any    `json:"data"`
 }
 
 // 增强版服务调用方法，始终添加默认请求体字段
@@ -98,7 +98,7 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	case nil:
 		// 没有传递请求体
 		body = nil
-	case map[string]interface{}:
+	case map[string]any:
 		jsonData, err := json.Marshal(data)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})

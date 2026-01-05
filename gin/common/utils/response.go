@@ -8,7 +8,7 @@ import (
 )
 
 // RespondSuccess 返回成功响应
-func RespondSuccess(c *gin.Context, data interface{}) {
+func RespondSuccess(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 1,
 		"msg":  "success",
@@ -28,7 +28,7 @@ func RespondError(c *gin.Context, code int, message string) {
 }
 
 // ToJSON 将对象转换为JSON字符串
-func ToJSON(data interface{}) string {
+func ToJSON(data any) string {
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
 		return ""

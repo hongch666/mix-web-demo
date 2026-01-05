@@ -258,7 +258,7 @@ func (m *SearchMapper) GetSearchHistory(ctx context.Context, userID int64) ([]st
 			"$match": bson.M{
 				"keyword": bson.M{
 					"$exists": true,
-					"$nin":    []interface{}{nil, ""},
+					"$nin":    []any{nil, ""},
 				},
 			},
 		},

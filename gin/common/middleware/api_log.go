@@ -38,7 +38,7 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 		}
 
 		// 构建基础日志信息
-		logInfo := map[string]interface{}{
+		logInfo := map[string]any{
 			"用户ID": userID,
 			"用户名":  username,
 			"请求方法": method,
@@ -95,8 +95,8 @@ func extractPathParams(c *gin.Context) map[string]string {
 }
 
 // extractQueryParams 提取查询参数
-func extractQueryParams(c *gin.Context) map[string]interface{} {
-	queryParams := make(map[string]interface{})
+func extractQueryParams(c *gin.Context) map[string]any {
+	queryParams := make(map[string]any)
 
 	// 获取所有查询参数
 	values := c.Request.URL.Query()
@@ -114,7 +114,7 @@ func extractQueryParams(c *gin.Context) map[string]interface{} {
 }
 
 // extractRequestBody 提取请求体
-func extractRequestBody(c *gin.Context) interface{} {
+func extractRequestBody(c *gin.Context) any {
 	if c.Request.Body == nil {
 		return nil
 	}
@@ -133,7 +133,7 @@ func extractRequestBody(c *gin.Context) interface{} {
 	}
 
 	// 尝试解析为JSON
-	var jsonData interface{}
+	var jsonData any
 	if err := json.Unmarshal(bodyBytes, &jsonData); err == nil {
 		return jsonData
 	}
@@ -152,13 +152,13 @@ func extractRequestBody(c *gin.Context) interface{} {
 }
 
 // parseFormData 解析表单数据
-func parseFormData(data string) (map[string]interface{}, error) {
+func parseFormData(data string) (map[string]any, error) {
 	values, err := url.ParseQuery(data)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	for key, vals := range values {
 		if len(vals) == 1 {
 			result[key] = vals[0]
@@ -172,7 +172,7 @@ func parseFormData(data string) (map[string]interface{}, error) {
 
 // formatLogMessage 格式化日志消息
 // 格式: 用户ID:用户名 方法 路径: 描述信息
-func formatLogMessage(method, path, description string, userID int64, username string, logInfo map[string]interface{}) string {
+func formatLogMessage(method, path, description string, userID int64, username string, logInfo map[string]any) string {
 	// 基础信息按照指定格式
 	var message string
 	if userID > 0 {
@@ -190,7 +190,7 @@ func formatLogMessage(method, path, description string, userID int64, username s
 		}
 	}
 
-	if queryParams, ok := logInfo["查询参数"].(map[string]interface{}); ok && len(queryParams) > 0 {
+	if queryParams, ok := logInfo["查询参数"].(map[string]any); ok && len(queryParams) > 0 {
 		if paramsJSON, err := json.Marshal(queryParams); err == nil {
 			details = append(details, "查询参数: "+string(paramsJSON))
 		}
@@ -212,10 +212,10 @@ func formatLogMessage(method, path, description string, userID int64, username s
 
 // sendApiLogToQueue 发送 API 日志到 RabbitMQ
 func sendApiLogToQueue(userID int64, username, method, path, description string,
-	pathParams map[string]string, queryParams map[string]interface{}, requestBody interface{}, responseTimeMs int64) {
+	pathParams map[string]string, queryParams map[string]any, requestBody any, responseTimeMs int64) {
 
 	// 构建 API 日志消息（统一格式：snake_case）
-	apiLogMessage := map[string]interface{}{
+	apiLogMessage := map[string]any{
 		"user_id":         userID,
 		"username":        username,
 		"api_description": description,

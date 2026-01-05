@@ -21,7 +21,7 @@ func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.Articl
 	// 如果搜索关键字为空，就不发送消息
 	if searchDTO.Keyword != "" {
 		// 发送消息
-		msg := map[string]interface{}{
+		msg := map[string]any{
 			"action":  "search",
 			"user_id": userID,
 			"content": searchDTO,

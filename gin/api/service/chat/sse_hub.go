@@ -10,8 +10,8 @@ import (
 
 // SSE客户端
 type SSEClient struct {
-	UserID string
-	SendCh chan interface{}
+	UserID  string
+	SendCh  chan any
 	CloseCh chan bool
 }
 
@@ -35,19 +35,19 @@ func GetSSEHub() *SSEHubManager {
 }
 
 // RegisterClient 注册SSE客户端
-func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan interface{}, closeCh chan bool) {
+func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan any, closeCh chan bool) {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
-	
+
 	// 如果用户已存在，关闭旧连接
 	if existing, ok := hub.clients[userID]; ok {
 		close(existing.SendCh)
 		close(existing.CloseCh)
 	}
-	
+
 	hub.clients[userID] = &SSEClient{
-		UserID: userID,
-		SendCh: sendCh,
+		UserID:  userID,
+		SendCh:  sendCh,
 		CloseCh: closeCh,
 	}
 	utils.FileLogger.Info(fmt.Sprintf("SSE客户端 %s 已注册", userID))
@@ -57,7 +57,7 @@ func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan interface{},
 func (hub *SSEHubManager) UnregisterClient(userID string) {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
-	
+
 	if client, ok := hub.clients[userID]; ok {
 		close(client.SendCh)
 		close(client.CloseCh)
@@ -72,16 +72,16 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dt
 		utils.FileLogger.Warning(fmt.Sprintf("尝试发送空通知给用户 %s", userID))
 		return
 	}
-	
+
 	hub.mu.RLock()
 	client, ok := hub.clients[userID]
 	hub.mu.RUnlock()
-	
+
 	if !ok {
 		utils.FileLogger.Warning(fmt.Sprintf("用户 %s 的SSE客户端未找到", userID))
 		return
 	}
-	
+
 	select {
 	case client.SendCh <- notification:
 		utils.FileLogger.Info(fmt.Sprintf("SSE通知已发送给用户 %s", userID))
@@ -91,10 +91,10 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dt
 }
 
 // BroadcastNotification 广播通知给所有客户端
-func (hub *SSEHubManager) BroadcastNotification(notification interface{}) {
+func (hub *SSEHubManager) BroadcastNotification(notification any) {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
-	
+
 	for userID, client := range hub.clients {
 		select {
 		case client.SendCh <- notification:
@@ -106,23 +106,23 @@ func (hub *SSEHubManager) BroadcastNotification(notification interface{}) {
 }
 
 // FormatSSEMessage 格式化SSE消息
-func FormatSSEMessage(data interface{}) string {
+func FormatSSEMessage(data any) string {
 	if data == nil {
 		utils.FileLogger.Warning("尝试发送空的SSE消息")
 		return ""
 	}
-	
+
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		utils.FileLogger.Error(fmt.Sprintf("序列化SSE消息失败: %v", err))
 		return ""
 	}
-	
+
 	// 检查是否为null
 	if string(jsonData) == "null" {
 		utils.FileLogger.Warning("序列化后的SSE消息为null")
 		return ""
 	}
-	
+
 	return fmt.Sprintf("data: %s\n\n", string(jsonData))
 }

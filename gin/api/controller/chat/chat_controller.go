@@ -230,7 +230,7 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 	c.Header("Connection", "keep-alive")
 	// 注意：不要在这里设置CORS头，Gateway已经统一处理了
 
-	sendCh := make(chan interface{}, 256)
+	sendCh := make(chan any, 256)
 	closeCh := make(chan bool)
 
 	// 注册客户端

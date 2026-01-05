@@ -65,7 +65,7 @@ func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
 		return
 	}
 
-	utils.RespondSuccess(c, map[string]interface{}{
+	utils.RespondSuccess(c, map[string]any{
 		"keywords": keywords,
 	})
 }
