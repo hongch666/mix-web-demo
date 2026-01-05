@@ -13,17 +13,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SwaggerConfig {
 
-        @Value("${server.port}")
-        private String port;
+    @Value("${server.port}")
+    private String port;
 
-        @Bean
-        OpenAPI customOpenAPI() {
-                return new OpenAPI()
-                                .info(new Info()
-                                                .title("Spring部分的Swagger文档集成")
-                                                .version("1.0.0")
-                                                .description("这是demo项目的Spring部分的Swagger文档集成"))
-                                .servers(List.of(
-                                                new Server().url("http://localhost:" + port).description("baseURL")));
-        }
+    @Bean
+    OpenAPI customOpenAPI() {
+        return new OpenAPI()
+            .info(new Info()
+                .title("Spring部分的Swagger文档集成")
+                .version("1.0.0")
+                .description("这是demo项目的Spring部分的Swagger文档集成"))
+            .servers(List.of(
+                new Server().url("http://localhost:" + port).description("baseURL")));
+    }
 }
