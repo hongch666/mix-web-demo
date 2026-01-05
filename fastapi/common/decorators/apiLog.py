@@ -58,8 +58,8 @@ def api_log(config: Union[str, ApiLogConfig]):
                 log_config = config
                 
             # 获取用户信息
-            user_id = get_current_user_id() or ""
-            username = get_current_username() or ""
+            user_id = get_current_user_id() or "0"
+            username = get_current_username() or "unknown"
             
             # 从参数中获取 Request 对象
             request = _get_request_from_args(args, kwargs)
