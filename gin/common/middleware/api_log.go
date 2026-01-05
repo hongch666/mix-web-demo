@@ -25,6 +25,11 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 		userID, _ := c.Request.Context().Value(ctxkey.UserIDKey).(int64)
 		username, _ := c.Request.Context().Value(ctxkey.UsernameKey).(string)
 
+		// 如果用户信息为空，则设置为默认值
+		if username == "" {
+			username = "unknown"
+		}
+
 		// 获取请求信息
 		method := c.Request.Method
 		path := c.FullPath()
@@ -208,11 +213,6 @@ func formatLogMessage(method, path, description string, userID int64, username s
 // sendApiLogToQueue 发送 API 日志到 RabbitMQ
 func sendApiLogToQueue(userID int64, username, method, path, description string,
 	pathParams map[string]string, queryParams map[string]interface{}, requestBody interface{}, responseTimeMs int64) {
-
-	// username 为空时使用默认值
-	if username == "" {
-		username = "anonymous"
-	}
 
 	// 构建 API 日志消息（统一格式：snake_case）
 	apiLogMessage := map[string]interface{}{
