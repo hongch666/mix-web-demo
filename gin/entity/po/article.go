@@ -14,3 +14,7 @@ type Article struct {
 	CreateAt      time.Time `json:"createdAt"`
 	UpdateAt      time.Time `json:"updatedAt"`
 }
+
+func (Article) TableName() string {
+	return "articles"
+}
