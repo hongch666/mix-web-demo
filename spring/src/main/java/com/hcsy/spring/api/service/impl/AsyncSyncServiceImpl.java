@@ -35,7 +35,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     public void syncAllAsync(Long userId, String username) {
         try {
             logger.info("[异步任务] 用户 " + (username != null ? username : "unknown") + "(ID:"
-                    + (userId != null ? userId : "null") + ") 触发同步 ES、Hive 和 Vector...");
+                    + (userId != null ? userId : "0") + ") 触发同步 ES、Hive 和 Vector...");
 
             // 同步 ES
             try {
