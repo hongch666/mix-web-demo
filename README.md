@@ -105,8 +105,6 @@
 cd spring # 进入文件夹
 cd gateway # 进入网关
 mvn clean install # 下载依赖
-./mvnw clean install # Linux/macOS(无全局maven)
-mvnw.cmd clean install # Windows(无全局maven)
 ```
 
 ### Gin 部分
@@ -352,8 +350,6 @@ default = true
 cd spring
 mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
-./mvnw spring-boot:run # Linux/macOS 启动项目(无全局maven)
-mvnw.cmd spring-boot:run # Windows 启动项目(无全局maven)
 ```
 
 ### Gin 服务
