@@ -138,6 +138,10 @@ spring/*Test.java
 # 忽略 test 目录
 spring/src/test/
 
+# 忽略 mvnw 和 mvnw.cmd 文件
+spring/mvnw
+spring/mvnw.cmd
+
 # VSCode
 spring/.vscode/
 
@@ -161,6 +165,10 @@ gateway/*Test.java
 
 # 忽略 test 目录
 gateway/src/test/
+
+# 忽略 mvnw 和 mvnw.cmd 文件
+gateway/mvnw
+gateway/mvnw.cmd
 
 # VSCode
 gateway/.vscode/
