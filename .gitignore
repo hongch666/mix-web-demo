@@ -18,6 +18,10 @@ nestjs/lerna-debug.log*
 # OS
 nestjs/.DS_Store
 
+# 配置文件
+nestjs/eslint.config.mjs
+nestjs/.prettierrc
+
 # Tests
 nestjs/coverage
 nestjs/.nyc_output
