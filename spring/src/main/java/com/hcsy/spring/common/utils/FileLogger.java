@@ -1,19 +1,18 @@
 package com.hcsy.spring.common.utils;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 全局文件日志器
  */
 @Component
+@RequiredArgsConstructor
 public class FileLogger {
 
-    @Autowired
-    private SimpleLogger simpleLogger;
-
+    private final SimpleLogger simpleLogger;
     private static SimpleLogger fileLogger;
 
     @PostConstruct

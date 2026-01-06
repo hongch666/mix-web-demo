@@ -1,17 +1,18 @@
 package com.hcsy.spring.common.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.hcsy.spring.common.interceptor.UserInfoInterceptor;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
+@RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private UserInfoInterceptor userInfoInterceptor;
+    private final UserInfoInterceptor userInfoInterceptor;
 
     @SuppressWarnings("null")
     @Override

@@ -2,18 +2,18 @@ package com.hcsy.spring.common.task;
 
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.utils.SimpleLogger;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class TokenCleanupTask {
 
-    @Autowired
-    private TokenService tokenService;
-
-    @Autowired
-    private SimpleLogger logger;
+    private final TokenService tokenService;
+    private final SimpleLogger logger;
 
     /**
      * 定时清理过期的 Token
