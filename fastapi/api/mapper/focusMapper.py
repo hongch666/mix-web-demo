@@ -1,9 +1,8 @@
 from functools import lru_cache
-from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func, cast, Date
 from entity.po import Focus
 from common.utils import fileLogger as logger
 from datetime import datetime
-from sqlalchemy import cast, Date
 
 class FocusMapper:
     """关注 Mapper"""
