@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from typing import Dict, Any
 from contextlib import asynccontextmanager
-from api.controller import *
+from api import controller
 from config import start_nacos, load_config, create_tables
 from common.utils import logger
 from common.middleware import ContextMiddleware
@@ -38,14 +38,8 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(ContextMiddleware)
     app.add_exception_handler(Exception, global_exception_handler)
-    app.include_router(test_router)
-    app.include_router(analyze_router)
-    app.include_router(apilog_router)
-    app.include_router(upload_router)
-    app.include_router(generate_router)
-    app.include_router(chat_router)
-    app.include_router(ai_history_router)
-    app.include_router(user_router)
+    for name in controller.__all__:
+        app.include_router(getattr(controller, name))
     return app
 
 app = create_app()
