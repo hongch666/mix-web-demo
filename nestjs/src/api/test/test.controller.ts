@@ -1,16 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ClsService } from 'nestjs-cls';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
 export class TestController {
-  constructor(
-    private readonly nacosService: NacosService,
-    private readonly cls: ClsService,
-  ) {}
+  constructor(private readonly nacosService: NacosService) {}
 
   @Get('nestjs')
   @ApiOperation({ summary: 'NestJS自己的测试', description: '输出欢迎信息' })
