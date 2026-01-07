@@ -3,7 +3,7 @@ package com.hcsy.spring.common.aspect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ApiLog;
-import com.hcsy.spring.common.mq.RabbitMQService;
+import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +34,7 @@ public class ApiLogAspect {
 
     private final SimpleLogger logger;
     private final ObjectMapper objectMapper;
-    private final RabbitMQService rabbitMQService;
+    private final RabbitMQUtil rabbitMQUtil;
 
     /**
      * 环绕切面：在执行带有 @ApiLog 注解的方法前记录日志，并在执行后输出耗时
@@ -415,7 +415,7 @@ public class ApiLogAspect {
             apiLogMessage.put("response_time", responseTime);
 
             // 发送到消息队列
-            rabbitMQService.sendMessage("api-log-queue", apiLogMessage);
+            rabbitMQUtil.sendMessage("api-log-queue", apiLogMessage);
 
             logger.info(String.format(
                     "API 日志已发送到队列: %s",

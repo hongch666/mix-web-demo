@@ -16,7 +16,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ArticleSync;
-import com.hcsy.spring.common.mq.RabbitMQService;
+import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -27,7 +27,7 @@ import com.hcsy.spring.entity.po.Article;
 @RequiredArgsConstructor
 public class ArticleSyncAspect {
 
-    private final RabbitMQService rabbitMQService;
+    private final RabbitMQUtil rabbitMQUtil;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final SimpleLogger logger;
@@ -68,7 +68,7 @@ public class ArticleSyncAspect {
 
                 // 5. 发送消息
                 String json = objectMapper.writeValueAsString(msg);
-                rabbitMQService.sendMessage("log-queue", json);
+                rabbitMQUtil.sendMessage("log-queue", msg);
                 logger.info("发送到MQ：" + json);
 
                 // 6. 在主线程中保存用户信息，用于异步任务日志记录
