@@ -9,13 +9,13 @@ from api.mapper import (
     AiHistoryMapper, get_ai_history_mapper, 
     UserMapper, get_user_mapper
 )
-from common.agent import IntentRouter, UserPermissionManager
-from common.utils import (
-    fileLogger as logger, 
+from .baseAIService import (
     BaseAiService, 
     get_agent_prompt, 
     initialize_ai_tools
 )
+from common.agent import IntentRouter, UserPermissionManager
+from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
 class DoubaoService(BaseAiService):

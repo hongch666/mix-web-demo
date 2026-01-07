@@ -16,6 +16,8 @@ from .apilogService import ApiLogService, get_apilog_service
 
 from .userService import UserService, get_user_service
 
+from .baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
+
 __all__ = [
     "get_analyze_service",
     "AnalyzeService",
@@ -35,4 +37,7 @@ __all__ = [
     "get_apilog_service",
     "UserService",
     "get_user_service",
+    "BaseAiService",
+    "get_agent_prompt",
+    "initialize_ai_tools"
 ]
