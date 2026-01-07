@@ -9,7 +9,6 @@ package main
 import (
 	"fmt"
 	"gin_proj/api"
-	"gin_proj/common/migrate"
 	"gin_proj/common/task"
 	"gin_proj/config"
 	"log"
@@ -18,8 +17,6 @@ import (
 )
 
 func main() {
-	// 自动建表
-	migrate.InitMigrate()
 	// 开启定时任务
 	task.InitTasks()
 	// 初始化路由

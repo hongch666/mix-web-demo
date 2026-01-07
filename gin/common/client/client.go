@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gin_proj/common/ctxkey"
+	"gin_proj/common/keys"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -134,8 +134,8 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	}
 	// 自动加上用户信息到请求头
 	ctx := c.Request.Context()
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
-	username, _ := ctx.Value(ctxkey.UsernameKey).(string)
+	userID, _ := ctx.Value(keys.UserIDKey).(int64)
+	username, _ := ctx.Value(keys.UsernameKey).(string)
 	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
 	req.Header.Set("X-Username", username)
 

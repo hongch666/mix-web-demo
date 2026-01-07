@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"gin_proj/api/mapper/search"
-	"gin_proj/common/ctxkey"
+	"gin_proj/common/keys"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/vo"
@@ -17,7 +17,7 @@ type SearchService struct {
 func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.ArticleSearchDTO) vo.SearchVO {
 	data, total := s.SearchMapper.SearchArticle(ctx, searchDTO)
 	// 读取用户id
-	userID, _ := ctx.Value(ctxkey.UserIDKey).(int64)
+	userID, _ := ctx.Value(keys.UserIDKey).(int64)
 	// 如果搜索关键字为空，就不发送消息
 	if searchDTO.Keyword != "" {
 		// 发送消息

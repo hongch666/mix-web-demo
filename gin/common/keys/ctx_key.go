@@ -1,4 +1,4 @@
-package ctxkey
+package keys
 
 type contextKey string
 

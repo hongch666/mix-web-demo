@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gin_proj/common/ctxkey"
+	"gin_proj/common/keys"
 	"gin_proj/common/utils"
 	"gin_proj/config"
 	"io"
@@ -22,8 +22,8 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 		// 记录开始时间，用于计算处理耗时
 		start := time.Now()
 		// 获取用户信息
-		userID, _ := c.Request.Context().Value(ctxkey.UserIDKey).(int64)
-		username, _ := c.Request.Context().Value(ctxkey.UsernameKey).(string)
+		userID, _ := c.Request.Context().Value(keys.UserIDKey).(int64)
+		username, _ := c.Request.Context().Value(keys.UsernameKey).(string)
 
 		// 如果用户信息为空，则设置为默认值
 		if username == "" {

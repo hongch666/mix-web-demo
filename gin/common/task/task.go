@@ -2,7 +2,6 @@ package task
 
 import (
 	"fmt"
-	"gin_proj/common/syncer"
 	"gin_proj/common/utils"
 
 	"github.com/robfig/cron/v3"
@@ -16,7 +15,7 @@ func InitTasks() {
 	// 每5分钟同步一次 ES
 	_, err := TaskScheduler.AddFunc("*/5 * * * *", func() {
 		utils.FileLogger.Info("[定时任务] 开始同步文章到 Elasticsearch")
-		syncer.SyncArticlesToES()
+		SyncArticlesToES()
 		utils.FileLogger.Info("[定时任务] 同步成功")
 	})
 

@@ -2,7 +2,7 @@ package test
 
 import (
 	"gin_proj/api/service/test"
-	"gin_proj/common/syncer"
+	"gin_proj/common/task"
 	"gin_proj/common/utils"
 
 	"github.com/gin-gonic/gin"
@@ -57,6 +57,6 @@ func (con *TestController) FastapiController(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/syncer [post]
 func (con *TestController) SyncES(c *gin.Context) {
-	syncer.SyncArticlesToES()
+	task.SyncArticlesToES()
 	utils.RespondSuccess(c, nil)
 }

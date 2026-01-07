@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"context"
-	"gin_proj/common/ctxkey"
+	"gin_proj/common/keys"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -19,8 +19,8 @@ func InjectUserContext() gin.HandlerFunc {
 		}
 
 		// 写入 context
-		ctx := context.WithValue(c.Request.Context(), ctxkey.UserIDKey, userID)
-		ctx = context.WithValue(ctx, ctxkey.UsernameKey, username)
+		ctx := context.WithValue(c.Request.Context(), keys.UserIDKey, userID)
+		ctx = context.WithValue(ctx, keys.UsernameKey, username)
 
 		// 替换请求上下文
 		c.Request = c.Request.WithContext(ctx)
