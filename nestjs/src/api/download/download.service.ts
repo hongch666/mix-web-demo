@@ -10,8 +10,8 @@ import { UserService } from 'src/modules/user/user.service';
 import { ArticleService } from 'src/modules/article/article.service';
 import { User } from 'src/modules/user/entities/user.entity';
 import { Articles } from 'src/modules/article/entities/article.entity';
-const marked = require('marked');
-const dayjs = require('dayjs');
+import * as marked from 'marked';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class DownloadService {
