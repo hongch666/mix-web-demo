@@ -35,7 +35,7 @@ func InitGorm() {
 			SlowThreshold:             time.Second, // 慢查询阈值
 			LogLevel:                  logger.Info, // 日志级别
 			IgnoreRecordNotFoundError: true,        // 忽略记录未找到错误
-			Colorful:                  false,       // 禁用彩色打印
+			Colorful:                  true,        // 启用彩色打印
 		},
 	)
 

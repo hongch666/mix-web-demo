@@ -6,8 +6,8 @@ import (
 
 func init() {
 	// 设置log输出格式
-	log.SetFlags(0)
-	log.SetPrefix("[GIN-debug] ")
+	log.SetFlags(log.LstdFlags) // 建议保留时间，方便调试
+	log.SetPrefix("\033[34m[GIN-debug]\033[0m ")
 	// 初始化配置
 	InitConfig()
 	// 初始化Nacos
