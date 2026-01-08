@@ -1,12 +1,16 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { NacosService } from 'src/modules/nacos/nacos.service';
+import { TaskService } from 'src/modules/task/task.service';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
 export class TestController {
-  constructor(private readonly nacosService: NacosService) {}
+  constructor(
+    private readonly nacosService: NacosService,
+    private readonly taskServicce: TaskService,
+  ) {}
 
   @Get('nestjs')
   @ApiOperation({ summary: 'NestJS自己的测试', description: '输出欢迎信息' })
@@ -49,5 +53,16 @@ export class TestController {
       path: '/api_fastapi/fastapi',
     });
     return res.data;
+  }
+
+  @Post('execute/apilog')
+  @ApiOperation({
+    summary: '手动执行清理API日志任务',
+    description: '手动触发清理超过1个月的API日志任务',
+  })
+  @ApiLog('手动执行清理API日志任务')
+  async executeCleanupOldApiLogsTask() {
+    await this.taskServicce.cleanupOldApiLogs();
+    return null;
   }
 }
