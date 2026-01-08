@@ -1,7 +1,7 @@
 package com.hcsy.spring.common.exception;
 
+import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
-import com.hcsy.spring.entity.po.Result;
 
 import lombok.RequiredArgsConstructor;
 

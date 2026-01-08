@@ -7,11 +7,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
-import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
 import io.swagger.v3.oas.annotations.Operation;

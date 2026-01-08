@@ -6,7 +6,6 @@ import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
-import com.hcsy.spring.entity.po.Result;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.api.mapper.CategoryMapper;
@@ -15,6 +14,7 @@ import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 
 import cn.hutool.core.bean.BeanUtil;

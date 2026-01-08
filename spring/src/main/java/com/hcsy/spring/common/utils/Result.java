@@ -1,4 +1,4 @@
-package com.hcsy.spring.entity.po;
+package com.hcsy.spring.common.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
