@@ -1458,7 +1458,7 @@ spring:
         - id: exclude-list
           uri: no://op
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/logs,/analyze/excel
+            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/analyze/excel
           filters:
             - SetStatus=204
 
