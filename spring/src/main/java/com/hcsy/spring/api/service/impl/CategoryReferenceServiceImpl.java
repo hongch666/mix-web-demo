@@ -104,7 +104,7 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
             }
         }
 
-        // 更新信息，清空另一类型的参数
+        // 根据DTO的type判断，清除另一个type对应的数据
         reference.setType(dto.getType());
 
         if ("link".equals(dto.getType())) {
