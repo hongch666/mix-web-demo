@@ -28,6 +28,7 @@ public class DatabaseInitializer implements ApplicationRunner {
             String catalog = conn.getCatalog(); // MySQL: 数据库名
             ensureTable(meta, catalog, "category", CREATE_CATEGORY_SQL);
             ensureTable(meta, catalog, "sub_category", CREATE_SUBCATEGORY_SQL);
+            ensureTable(meta, catalog, "category_reference", CREATE_CATEGORY_REFERENCE_SQL);
             ensureTable(meta, catalog, "user", CREATE_USER_SQL);
             ensureTable(meta, catalog, "articles", CREATE_ARTICLES_SQL);
             ensureTable(meta, catalog, "comments", CREATE_COMMENTS_SQL);
@@ -124,6 +125,16 @@ public class DatabaseInitializer implements ApplicationRunner {
             "    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n" +
             "    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE\n" +
             ") COMMENT='子分类表'";
+
+    private static final String CREATE_CATEGORY_REFERENCE_SQL = "CREATE TABLE category_reference (\n" +
+            "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',\n" +
+            "    sub_category_id BIGINT NOT NULL COMMENT '子分类ID',\n" +
+            "    type VARCHAR(255) NOT NULL COMMENT '权威参考文本类型，link/pdf',\n" +
+            "    link VARCHAR(255) COMMENT '权威参考文本链接',\n" +
+            "    pdf VARCHAR(255) COMMENT '权威参考文本PDF链接（OSS）',\n" +
+            "    UNIQUE KEY uk_sub_category (sub_category_id),\n" +
+            "    FOREIGN KEY (sub_category_id) REFERENCES sub_category(id) ON DELETE CASCADE\n" +
+            ") COMMENT='分类权威参考文本表'";
 
     private static final String CREATE_COMMENTS_SQL = "CREATE TABLE comments (\n" +
             "    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',\n" +
