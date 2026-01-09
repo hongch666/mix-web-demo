@@ -64,3 +64,34 @@ async def create_article_ai_comment(
     # 添加后台任务
     background_tasks.add_task(generate_service.generate_ai_comments, article_id, db)
     return success(data={"message": "AI评论生成任务已提交", "article_id": article_id})
+
+@router.post(
+    "/ai_comment_with_reference/{article_id}",
+    summary="文章创建基于权威参考文本的AI评论",
+    description="为指定文章创建基于权威参考文本的AI评论，使用权威参考文本进行评价打分"
+)
+@log("文章创建基于权威参考文本的AI评论")
+async def create_article_ai_comment_with_reference(
+    request: Request, 
+    article_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
+    article_mapper: ArticleMapper = Depends(get_article_mapper),
+    doubao_service: DoubaoService = Depends(get_doubao_service),
+    gemini_service: GeminiService = Depends(get_gemini_service),
+    qwen_service: QwenService = Depends(get_qwen_service)
+) -> Any:
+    """文章创建基于权威参考文本的AI评论接口"""
+    
+    # 创建完整的 GenerateService 实例
+    generate_service = GenerateService(
+        comments_mapper=comments_mapper,
+        article_mapper=article_mapper,
+        doubao_service=doubao_service,
+        gemini_service=gemini_service,
+        qwen_service=qwen_service
+    )
+    # 添加后台任务
+    background_tasks.add_task(generate_service.generate_ai_comments_with_reference, article_id, db)
+    return success(data={"message": "基于权威参考文本的AI评论生成任务已提交", "article_id": article_id})

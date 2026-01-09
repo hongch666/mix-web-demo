@@ -14,7 +14,7 @@ from .baseAIService import (
     get_agent_prompt, 
     initialize_ai_tools
 )
-from common.agent import IntentRouter, UserPermissionManager
+from common.agent import IntentRouter, UserPermissionManager, get_sql_tools
 from common.utils import fileLogger as logger
 from config import load_config, load_secret_config
 
@@ -114,6 +114,55 @@ class QwenService(BaseAiService):
             logger.error(f"Qwen基础对话异常: {str(e)}")
             return f"对话服务异常: {str(e)}"
 
+    async def with_reference_chat(self, message: str, reference_content: str) -> str:
+        """
+        基于参考文本的对话接口 - 使用权威参考文本进行评论和打分
+        
+        Args:
+            message: 用户的消息或要评价的文章内容
+            reference_content: 权威参考文本内容
+            
+        Returns:
+            评价和打分结果
+        """
+        try:
+            logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
+            
+            if not getattr(self, 'llm', None):
+                return "聊天服务未配置或初始化失败"
+            
+            # 构建包含参考文本的提示
+            prompt = f"""请基于以下权威参考文本，对文章或内容进行评价。
+
+                    权威参考文本：
+                    {reference_content}
+
+                    请对以下内容进行评价，并给出评分：
+                    1. 给出简短的评价（100-200字）
+                    2. 给出0-10分的评分（可以是小数）
+                    3. 请使用以下格式输出：
+                        评价内容：[你的评价]
+                        评分：[你的评分]
+
+                    待评价内容：
+                    {message}
+                    """
+            
+            # 使用 LangChain 调用
+            messages = [
+                SystemMessage(content="你是一个专业的文章评价助手。请根据提供的权威参考文本进行客观、专业的评价。"),
+                HumanMessage(content=prompt)
+            ]
+            
+            response = await self.llm.ainvoke(messages)
+            content: str = response.content
+            logger.info(f"Qwen 参考文本对话回复长度: {len(content)} 字符")
+            return content
+            
+        except Exception as e:
+            logger.error(f"Qwen 参考文本对话异常: {str(e)}")
+            return f"对话服务异常: {str(e)}"
+
     async def simple_chat(self, message: str, user_id: int = 0, db: Optional[Session] = None) -> str:
         """增强的聊天接口 - 使用Agent和RAG"""
         try:
@@ -170,7 +219,6 @@ class QwenService(BaseAiService):
                 
                 # 设置SQL工具的用户ID
                 if user_id:
-                    from common.agent.sqlTools import get_sql_tools
                     try:
                         sql_tools = get_sql_tools()
                         sql_tools.set_user_id(user_id)
@@ -301,7 +349,6 @@ class QwenService(BaseAiService):
                 
                 # 设置SQL工具的用户ID
                 if user_id:
-                    from common.agent.sqlTools import get_sql_tools
                     try:
                         sql_tools = get_sql_tools()
                         sql_tools.set_user_id(user_id)

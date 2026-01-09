@@ -18,6 +18,8 @@ from .collectMapper import CollectMapper,get_collect_mapper
 
 from .focusMapper import FocusMapper,get_focus_mapper
 
+from .categoryReferenceMapper import CategoryReferenceMapper,get_category_reference_mapper
+
 __all__ = [
     "get_article_mapper",
     "ArticleMapper",
@@ -39,4 +41,6 @@ __all__ = [
     "get_collect_mapper",
     "FocusMapper",
     "get_focus_mapper",
+    "CategoryReferenceMapper",
+    "get_category_reference_mapper",
 ]

@@ -8,6 +8,7 @@ from .comments import Comments
 from .like import Like
 from .collect import Collect
 from .focus import Focus
+from .categoryReference import CategoryReference
 
 __all__ = [
     "Article",
@@ -20,4 +21,5 @@ __all__ = [
     "Like",
     "Collect",
     "Focus",
+    "CategoryReference",
 ]
