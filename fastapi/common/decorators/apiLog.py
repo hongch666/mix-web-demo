@@ -328,6 +328,37 @@ def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fiel
         return f"参数解析失败: {str(e)}"
 
 
+def _serialize_for_json(obj: Any) -> Any:
+    """
+    递归地序列化对象，将 UploadFile 转换为字符串
+    
+    Args:
+        obj: 要序列化的对象
+        
+    Returns:
+        JSON 序列化友好的对象
+    """
+    if obj is None:
+        return None
+    elif isinstance(obj, (str, int, float, bool)):
+        return obj
+    elif isinstance(obj, dict):
+        # 递归处理字典中的每个值
+        result = {}
+        for key, value in obj.items():
+            result[key] = _serialize_for_json(value)
+        return result
+    elif isinstance(obj, (list, tuple)):
+        # 递归处理列表/元组中的每个值
+        return [_serialize_for_json(item) for item in obj]
+    elif hasattr(obj, 'filename') and hasattr(obj, 'file'):
+        # 处理 UploadFile 对象
+        return f"UploadFile(filename='{obj.filename}')"
+    else:
+        # 其他对象转字符串
+        return str(obj)
+
+
 def _serialize_param(param: Any) -> str:
     """
     序列化参数值
@@ -344,8 +375,11 @@ def _serialize_param(param: Any) -> str:
         elif isinstance(param, (list, dict)):
             return json.dumps(param, ensure_ascii=False, default=str)
         else:
+            # 检查是否是 UploadFile 对象
+            if hasattr(param, 'filename') and hasattr(param, 'file'):
+                return f"UploadFile(filename='{param.filename}')"
             # 检查是否是 Pydantic 模型
-            if hasattr(param, 'model_dump'):
+            elif hasattr(param, 'model_dump'):
                 # Pydantic v2
                 return json.dumps(param.model_dump(), ensure_ascii=False, default=str)
             elif hasattr(param, 'dict'):
@@ -417,8 +451,15 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
                 # Pydantic v1
                 request_body_dict.update(value.dict())
             elif isinstance(value, dict):
-                # 如果已经是字典，直接更新
-                request_body_dict.update(value)
+                # 如果已经是字典，需要检查其中是否有 UploadFile
+                processed_dict = {}
+                for dict_key, dict_value in value.items():
+                    # 检查是否是 UploadFile 对象
+                    if hasattr(dict_value, 'filename') and hasattr(dict_value, 'file'):
+                        processed_dict[dict_key] = f"UploadFile(filename='{dict_value.filename}')"
+                    else:
+                        processed_dict[dict_key] = dict_value
+                request_body_dict.update(processed_dict)
             else:
                 # 其他基础类型只有在不是 int/str 查询参数时才添加
                 # 检查参数默认值，如果有默认值说明可能是查询参数
@@ -540,7 +581,7 @@ def _send_api_log_to_queue(
             "api_method": method,
             "query_params": query_params,
             "path_params": path_params,
-            "request_body": request_body,
+            "request_body": _serialize_for_json(request_body),
             "response_time": response_time_ms,
         }
         

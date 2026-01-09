@@ -48,6 +48,44 @@ class UploadService:
             "oss_filename": unique_filename,
             "oss_url": oss_url
         }
+
+    async def handle_pdf_upload(self, file, custom_filename: str = None) -> Dict[str, Any]:
+        """处理PDF上传的核心逻辑，保存本地临时文件并上传到OSS"""
+        
+        # 验证文件扩展名
+        file_extension = os.path.splitext(file['filename'])[1].lower() if file['filename'] else ""
+        if file_extension != ".pdf":
+            raise ValueError("只支持上传PDF文件")
+
+        # 如果提供了自定义文件名，使用自定义文件名；否则生成UUID
+        if custom_filename:
+            unique_filename = f"{custom_filename}.pdf"
+        else:
+            unique_filename = f"{uuid.uuid4().hex}{file_extension}"
+
+        # 保存到本地临时目录
+        save_dir = load_config("files")["upload_path"]
+        os.makedirs(save_dir, exist_ok=True)
+        local_path = os.path.join(save_dir, unique_filename)
+
+        with open(local_path, "wb") as buffer:
+            shutil.copyfileobj(file['file'], buffer)
+
+        # 上传到阿里云OSS，使用UUID文件名，路径在pdf下面
+        oss_path = f"pdf/{unique_filename}"
+        oss_url: str = await run_in_threadpool(self.analyze_service.upload_file, local_path, oss_path)
+
+        # 删除本地临时文件
+        try:
+            os.remove(local_path)
+        except Exception as e:
+            logger.warning(f"删除临时文件失败: {e}")
+
+        return {
+            "original_filename": file['filename'],
+            "oss_filename": unique_filename,
+            "oss_url": oss_url
+        }
     
 @lru_cache
 def get_upload_service(
