@@ -23,8 +23,12 @@ public class CategoryReferenceController {
 
     @Operation(summary = "创建权威参考文本")
     @PostMapping()
-    @RequirePermission(roles = { "admin" }, businessType = "categoryReference", paramSource = "body", paramNames = {
-            "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "categoryReference", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("创建权威参考文本")
     public Result addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
         categoryReferenceService.addCategoryReference(dto);
@@ -33,8 +37,12 @@ public class CategoryReferenceController {
 
     @Operation(summary = "修改权威参考文本")
     @PutMapping()
-    @RequirePermission(roles = { "admin" }, businessType = "categoryReference", paramSource = "body", paramNames = {
-            "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "categoryReference", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("修改权威参考文本")
     public Result updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
         categoryReferenceService.updateCategoryReference(dto);
@@ -43,8 +51,12 @@ public class CategoryReferenceController {
 
     @Operation(summary = "删除权威参考文本")
     @DeleteMapping("/sub/{subCategoryId}")
-    @RequirePermission(roles = {
-            "admin" }, businessType = "categoryReference", paramSource = "path_single", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "categoryReference", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @ApiLog("删除权威参考文本")
     public Result deleteCategoryReference(@PathVariable Long subCategoryId) {
         categoryReferenceService.deleteCategoryReference(subCategoryId);

@@ -73,7 +73,12 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用默认密码 123456")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -88,7 +93,12 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -100,7 +110,12 @@ public class UserController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "path_single", 
+        paramNames = { "ids" }
+    )
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -137,8 +152,13 @@ public class UserController {
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
-    @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        allowSelf = true, 
+        businessType = "user", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -167,8 +187,13 @@ public class UserController {
 
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
-    @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        allowSelf = true, 
+        businessType = "user", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -261,8 +286,12 @@ public class UserController {
      */
     @PostMapping("/force-logout/{userId}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-            "userId" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "path_single", 
+        paramNames = { "userId" }
+    )
     @ApiLog("手动下线用户")
     public Result forceLogoutUser(@PathVariable Long userId) {
         try {
@@ -379,7 +408,12 @@ public class UserController {
 
     @PostMapping("/admin/reset-all-passwords")
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为默认密码 123456")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("重置所有用户密码")
     public Result resetAllPasswords() {
         try {
@@ -404,8 +438,12 @@ public class UserController {
 
     @PostMapping("/admin/reset-password/{userId}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为默认密码 123456")
-    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-            "userId" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "path_single", 
+        paramNames = { "userId" }
+    )
     @ApiLog("重置指定用户密码")
     public Result resetUserPassword(@PathVariable Long userId) {
         try {

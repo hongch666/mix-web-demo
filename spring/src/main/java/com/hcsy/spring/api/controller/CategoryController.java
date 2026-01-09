@@ -32,7 +32,12 @@ public class CategoryController {
 
     @Operation(summary = "新增分类")
     @PostMapping()
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "category", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("新增分类")
     public Result addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
         categoryService.addCategory(dto);
@@ -41,7 +46,12 @@ public class CategoryController {
 
     @Operation(summary = "修改分类")
     @PutMapping()
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "category", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("修改分类")
     public Result updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
         categoryService.updateCategory(dto);
@@ -50,8 +60,12 @@ public class CategoryController {
 
     @Operation(summary = "删除分类（级联删除子分类）")
     @DeleteMapping("/{id}")
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
-            "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "category", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @ApiLog("删除分类")
     public Result deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
@@ -60,8 +74,12 @@ public class CategoryController {
 
     @Operation(summary = "批量删除分类（级联删除子分类）")
     @DeleteMapping("/batch/{ids}")
-    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
-            "ids" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "category", 
+        paramSource = "path_single", 
+        paramNames = { "ids" }
+    )
     @ApiLog("批量删除分类")
     public Result deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -75,7 +93,12 @@ public class CategoryController {
 
     @Operation(summary = "新增子分类")
     @PostMapping("/sub")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "subcategory", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("新增子分类")
     public Result addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
         categoryService.addSubCategory(dto);
@@ -84,7 +107,12 @@ public class CategoryController {
 
     @Operation(summary = "修改子分类")
     @PutMapping("/sub")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "subcategory", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("修改子分类")
     public Result updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
         categoryService.updateSubCategory(dto);
@@ -93,8 +121,12 @@ public class CategoryController {
 
     @Operation(summary = "删除子分类")
     @DeleteMapping("/sub/{id}")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
-            "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "subcategory", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @ApiLog("删除子分类")
     public Result deleteSubCategory(@PathVariable Long id) {
         categoryService.deleteSubCategory(id);
@@ -103,8 +135,12 @@ public class CategoryController {
 
     @Operation(summary = "批量删除子分类")
     @DeleteMapping("/sub/batch/{ids}")
-    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
-            "ids" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "subcategory", 
+        paramSource = "path_single", 
+        paramNames = { "ids" }
+    )
     @ApiLog("批量删除子分类")
     public Result deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))

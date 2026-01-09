@@ -132,8 +132,13 @@ public class ArticleController {
 
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
-    @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "article", paramSource = "body", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        allowSelf = true, 
+        businessType = "article", 
+        paramSource = "body", 
+        paramNames = { "id" }
+    )
     @ApiLog("更新文章")
     public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         // 获取用户id
@@ -150,8 +155,13 @@ public class ArticleController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
-    @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "article", paramSource = "path_single", paramNames = { "id" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        allowSelf = true, 
+        businessType = "article", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @ApiLog("删除文章")
     public Result deleteArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
@@ -164,8 +174,12 @@ public class ArticleController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
-    @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
-            "ids" })
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "article", 
+        paramSource = "path_single", 
+        paramNames = { "ids" }
+    )
     @ApiLog("批量删除文章")
     public Result deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
