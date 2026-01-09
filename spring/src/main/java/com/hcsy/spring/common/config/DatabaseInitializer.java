@@ -137,14 +137,14 @@ public class DatabaseInitializer implements ApplicationRunner {
             ") COMMENT='分类权威参考文本表'";
 
     private static final String CREATE_COMMENTS_SQL = "CREATE TABLE comments (\n" +
-            "    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',\n" +
+            "    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',\n" +
             "    content TEXT COMMENT '评论内容',\n" +
             "    star DOUBLE COMMENT '星级评分，1~10',\n" +
-            "    user_id INT NOT NULL COMMENT '用户 ID',\n" +
-            "    article_id INT NOT NULL COMMENT '文章 ID',\n" +
+            "    user_id BIGINT NOT NULL COMMENT '用户 ID',\n" +
+            "    article_id BIGINT NOT NULL COMMENT '文章 ID',\n" +
             "    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',\n" +
             "    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'\n" +
-            ") COMMENT=''";
+            ") COMMENT='文章评论表'";
 
     private static final String CREATE_LIKES_SQL = "CREATE TABLE likes (\n" +
             "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',\n" +

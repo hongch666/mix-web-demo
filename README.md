@@ -1021,14 +1021,14 @@ CREATE TABLE `chat_messages` (
 
 ```sql
 CREATE TABLE comments (
-    id int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
+    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
     content TEXT COMMENT '评论内容',
     star DOUBLE COMMENT '星级评分，1~10',
-    user_id int NOT NULL COMMENT '用户 ID',
-    article_id int NOT NULL COMMENT '文章 ID',
+    user_id BIGINT NOT NULL COMMENT '用户 ID',
+    article_id BIGINT NOT NULL COMMENT '文章 ID',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'
-) COMMENT '';
+) COMMENT '文章评论表';
 ```
 
 - 创建 AI 聊天历史记录
@@ -1044,7 +1044,7 @@ CREATE TABLE `ai_history` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
-);
+) COMMENT 'AI聊天记录';
 ```
 
 - 创建文章用户点赞表
@@ -1756,6 +1756,8 @@ verbose=false
 
 $$
 \text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
+
+
 $$
 
 3. 其中：
@@ -1775,6 +1777,8 @@ $$
 
 $$
 S_{recency} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
+
+
 $$
 
 - 其中：
