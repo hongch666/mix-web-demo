@@ -10,6 +10,8 @@ import com.hcsy.spring.entity.dto.CategoryReferenceUpdateDTO;
 import com.hcsy.spring.entity.po.CategoryReference;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.CategoryReferenceVO;
+
+import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,9 +57,7 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
             }
         }
 
-        CategoryReference reference = new CategoryReference();
-        reference.setSubCategoryId(dto.getSubCategoryId());
-        reference.setType(dto.getType());
+        CategoryReference reference = BeanUtil.copyProperties(dto, CategoryReference.class);
 
         if ("link".equals(dto.getType())) {
             reference.setLink(dto.getLink());
