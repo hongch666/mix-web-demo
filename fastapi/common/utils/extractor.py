@@ -1,28 +1,10 @@
 import re
-from typing import Optional
+from typing import Optional, Callable, Awaitable
+from langchain_community.document_loaders import PyPDFLoader, RecursiveUrlLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import requests
+import urllib.request
 from common.utils import fileLogger as logger
-
-try:
-    from langchain_community.document_loaders import PyPDFLoader
-    PDF_LOADER_AVAILABLE = True
-except ImportError:
-    PDF_LOADER_AVAILABLE = False
-    logger.warning("PyPDFLoader 未安装，PDF 提取功能将不可用")
-
-try:
-    from langchain_community.document_loaders import RecursiveUrlLoader
-    URL_LOADER_AVAILABLE = True
-except ImportError:
-    URL_LOADER_AVAILABLE = False
-    logger.warning("RecursiveUrlLoader 未安装，链接提取功能将不可用")
-
-try:
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
-    TEXT_SPLITTER_AVAILABLE = True
-except ImportError:
-    TEXT_SPLITTER_AVAILABLE = False
-    logger.warning("RecursiveCharacterTextSplitter 未安装，文本分割功能将不可用")
-
 
 class ReferenceContentExtractor:
     """权威参考文本内容提取器"""
@@ -52,7 +34,7 @@ class ReferenceContentExtractor:
     @classmethod
     def _init_text_splitter(cls):
         """初始化文本分割器"""
-        if cls.TEXT_SPLITTER is None and TEXT_SPLITTER_AVAILABLE:
+        if cls.TEXT_SPLITTER is None:
             try:
                 cls.TEXT_SPLITTER = RecursiveCharacterTextSplitter(
                     chunk_size=1000,
@@ -145,9 +127,6 @@ class ReferenceContentExtractor:
         Returns:
             提取的关键点内容
         """
-        if not PDF_LOADER_AVAILABLE:
-            logger.warning("PyPDFLoader 未安装，无法提取 PDF 内容")
-            return "PDF 提取功能不可用（缺少依赖）"
         
         try:
             logger.info(f"开始从 PDF 提取内容: {pdf_url}")
@@ -174,7 +153,7 @@ class ReferenceContentExtractor:
             # 记录提取后的总结内容
             logger.info(f"[PDF 总结内容] (共 {len(key_points)} 字):\n{key_points}")
             
-            logger.info(f"✅ 成功从 PDF 提取内容，原始长度: {len(full_text)} 字，总结长度: {len(key_points)} 字")
+            logger.info(f"成功从 PDF 提取内容，原始长度: {len(full_text)} 字，总结长度: {len(key_points)} 字")
             return key_points
             
         except Exception as e:
@@ -201,78 +180,76 @@ class ReferenceContentExtractor:
             提取的关键点内容
         """
         # 优先尝试使用 RecursiveUrlLoader
-        if URL_LOADER_AVAILABLE:
+        try:
+            logger.info(f"使用 RecursiveUrlLoader 从链接提取内容: {link_url} (最大深度: {max_depth})")
+            
+            # ... existing headers ...
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+            }
+            
+            # 使用 RecursiveUrlLoader with custom headers
             try:
-                logger.info(f"使用 RecursiveUrlLoader 从链接提取内容: {link_url} (最大深度: {max_depth})")
+                # 尝试新版本的 RecursiveUrlLoader（支持 headers）
+                loader = RecursiveUrlLoader(
+                    url=link_url,
+                    max_depth=max_depth,
+                    timeout=timeout,
+                    extractor=lambda html: ReferenceContentExtractor._clean_text(html),
+                    headers=headers,
+                    prevent_outside=True  # 确保不抓取域名外的链接
+                )
+            except TypeError:
+                # 如果不支持 headers 参数，使用基础版本
+                logger.debug("RecursiveUrlLoader 不支持 headers 参数，使用基础版本")
+                loader = RecursiveUrlLoader(
+                    url=link_url,
+                    max_depth=max_depth,
+                    timeout=timeout,
+                    extractor=lambda html: ReferenceContentExtractor._clean_text(html),
+                    prevent_outside=True
+                )
+            
+            # 加载文档
+            logger.info(f"正在递归抓取页面，这可能需要一些时间...")
+            documents = loader.load()
+            logger.info(f"抓取完成，共获取到 {len(documents) if documents else 0} 个页面的内容")
+            
+            if documents and len(documents) > 0:
+                # 合并所有文档的内容
+                full_text = "\n".join([doc.page_content for doc in documents if doc.page_content])
                 
-                # ... existing headers ...
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                    'Accept-Encoding': 'gzip, deflate, br',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1',
-                    'Sec-Fetch-Dest': 'document',
-                    'Sec-Fetch-Mode': 'navigate',
-                    'Sec-Fetch-Site': 'none',
-                }
-                
-                # 使用 RecursiveUrlLoader with custom headers
-                try:
-                    # 尝试新版本的 RecursiveUrlLoader（支持 headers）
-                    loader = RecursiveUrlLoader(
-                        url=link_url,
-                        max_depth=max_depth,
-                        timeout=timeout,
-                        extractor=lambda html: ReferenceContentExtractor._clean_text(html),
-                        headers=headers,
-                        prevent_outside=True  # 确保不抓取域名外的链接
-                    )
-                except TypeError:
-                    # 如果不支持 headers 参数，使用基础版本
-                    logger.debug("RecursiveUrlLoader 不支持 headers 参数，使用基础版本")
-                    loader = RecursiveUrlLoader(
-                        url=link_url,
-                        max_depth=max_depth,
-                        timeout=timeout,
-                        extractor=lambda html: ReferenceContentExtractor._clean_text(html),
-                        prevent_outside=True
-                    )
-                
-                # 加载文档
-                logger.info(f"正在递归抓取页面，这可能需要一些时间...")
-                documents = loader.load()
-                logger.info(f"✅ 抓取完成，共获取到 {len(documents) if documents else 0} 个页面的内容")
-                
-                if documents and len(documents) > 0:
-                    # 合并所有文档的内容
-                    full_text = "\n".join([doc.page_content for doc in documents if doc.page_content])
+                if full_text.strip():
+                    # 记录原始内容（截断到 500 字）
+                    original_text_preview = full_text[:500] if full_text else "（空内容）"
+                    logger.info(f"[链接 原始内容] (共 {len(full_text)} 字):\n{original_text_preview}...")
                     
-                    if full_text.strip():
-                        # 记录原始内容（截断到 500 字）
-                        original_text_preview = full_text[:500] if full_text else "（空内容）"
-                        logger.info(f"[链接 原始内容] (共 {len(full_text)} 字):\n{original_text_preview}...")
-                        
-                        # 提取关键点
-                        key_points = ReferenceContentExtractor._extract_key_points(full_text, max_length)
-                        
-                        # 记录提取后的总结内容
-                        logger.info(f"[链接 总结内容] (共 {len(key_points)} 字):\n{key_points}")
-                        
-                        logger.info(f"✅ 成功从链接提取内容 (RecursiveUrlLoader)，原始长度: {len(full_text)} 字，总结长度: {len(key_points)} 字，深度: {max_depth}，文档数: {len(documents)}")
-                        return key_points
-                    else:
-                        logger.warning(f"RecursiveUrlLoader 加载的文档为空: {link_url}")
+                    # 提取关键点
+                    key_points = ReferenceContentExtractor._extract_key_points(full_text, max_length)
+                    
+                    # 记录提取后的总结内容
+                    logger.info(f"[链接 总结内容] (共 {len(key_points)} 字):\n{key_points}")
+                    
+                    logger.info(f"成功从链接提取内容 (RecursiveUrlLoader)，原始长度: {len(full_text)} 字，总结长度: {len(key_points)} 字，深度: {max_depth}，文档数: {len(documents)}")
+                    return key_points
                 else:
-                    logger.warning(f"RecursiveUrlLoader 未能加载任何文档: {link_url}")
-                    
-            except Exception as e:
-                logger.warning(f"RecursiveUrlLoader 提取失败: {str(e)}，错误类型: {type(e).__name__}，尝试降级方案")
+                    logger.warning(f"RecursiveUrlLoader 加载的文档为空: {link_url}")
+            else:
+                logger.warning(f"RecursiveUrlLoader 未能加载任何文档: {link_url}")
+                
+        except Exception as e:
+            logger.warning(f"RecursiveUrlLoader 提取失败: {str(e)}，错误类型: {type(e).__name__}，尝试降级方案")
         
         # 降级处理：尝试使用 requests 库获取内容
         try:
-            import requests
             logger.info(f"使用 requests 库作为降级方案获取链接内容...")
             
             headers = {
@@ -299,7 +276,7 @@ class ReferenceContentExtractor:
                 # 记录提取后的总结内容
                 logger.info(f"[链接 总结内容] (共 {len(key_points)} 字):\n{key_points}")
                 
-                logger.info(f"✅ 成功从链接提取内容 (requests 降级方案)，原始长度: {len(text)} 字，总结长度: {len(key_points)} 字")
+                logger.info(f"成功从链接提取内容 (requests 降级方案)，原始长度: {len(text)} 字，总结长度: {len(key_points)} 字")
                 return key_points if key_points else None
             else:
                 logger.warning(f"requests 获取的内容为空: {link_url}")
@@ -315,7 +292,6 @@ class ReferenceContentExtractor:
         
         # 最后降级：使用 urllib
         try:
-            import urllib.request
             logger.info(f"使用 urllib 作为最后降级方案获取链接内容...")
             
             req = urllib.request.Request(
@@ -340,7 +316,7 @@ class ReferenceContentExtractor:
                     # 记录提取后的总结内容
                     logger.info(f"[链接 总结内容] (共 {len(key_points)} 字):\n{key_points}")
                     
-                    logger.info(f"✅ 成功从链接提取内容 (urllib 降级方案)，原始长度: {len(text)} 字，总结长度: {len(key_points)} 字")
+                    logger.info(f"成功从链接提取内容 (urllib 降级方案)，原始长度: {len(text)} 字，总结长度: {len(key_points)} 字")
                     return key_points if key_points else None
                 else:
                     logger.warning(f"urllib 获取的内容为空: {link_url}")
@@ -354,7 +330,8 @@ class ReferenceContentExtractor:
     async def extract_reference_content(
         reference_type: str,
         reference_value: str,
-        max_length: int = 1000
+        max_length: int = 1000,
+        summarizer: Optional[Callable[[str], Awaitable[str]]] = None
     ) -> Optional[str]:
         """
         根据类型自动选择提取方法
@@ -363,20 +340,39 @@ class ReferenceContentExtractor:
             reference_type: "link" 或 "pdf"
             reference_value: 对应的 URL 或路径
             max_length: 最大提取长度
+            summarizer: 可选的总结函数，用于使用大模型对提取内容进行总结
             
         Returns:
-            提取的内容
+            提取的内容（如果提供了 summarizer，则返回总结后的内容）
         """
         if not reference_value:
             return None
         
+        # 先提取原始内容
         if reference_type.lower() == "pdf":
-            return await ReferenceContentExtractor.extract_pdf_content(reference_value, max_length)
+            content = await ReferenceContentExtractor.extract_pdf_content(reference_value, max_length)
         elif reference_type.lower() == "link":
-            return await ReferenceContentExtractor.extract_link_content(reference_value, max_length)
+            content = await ReferenceContentExtractor.extract_link_content(reference_value, max_length)
         else:
             logger.warning(f"未知的参考文本类型: {reference_type}")
             return None
+        
+        # 如果提供了总结函数，则调用大模型进行总结
+        if content and summarizer:
+            try:
+                logger.info(f"开始使用大模型总结内容，原始长度: {len(content)}")
+                summarized_content = await summarizer(content)
+                if summarized_content:
+                    logger.info(f"大模型总结完成，总结长度: {len(summarized_content)}")
+                    return summarized_content
+                else:
+                    logger.warning("大模型总结返回空结果，使用原始提取内容")
+                    return content
+            except Exception as e:
+                logger.error(f"大模型总结失败: {str(e)}，使用原始提取内容")
+                return content
+        
+        return content
 
 
 def get_reference_content_extractor() -> ReferenceContentExtractor:

@@ -4,7 +4,39 @@ from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools, get_mongodb_tools
 from common.utils.writeLog import fileLogger as logger
 
-# ========== 共享的Agent Prompt模板 ==========
+# ========== 共享的Prompt模板 ==========
+
+# 内容总结提示词
+CONTENT_SUMMARIZE_PROMPT = """请对以下内容进行精要总结，提取关键信息和核心观点：
+
+原文内容：
+{content}
+
+要求：
+1. 总结长度控制在 {max_length} 字以内
+2. 提取核心要点和关键信息
+3. 保留最重要的细节
+4. 用清晰、凝练的语言表述
+"""
+
+# 基于参考文本的评价提示词
+REFERENCE_BASED_EVALUATION_PROMPT = """请基于以下权威参考文本，对文章或内容进行评价。
+
+权威参考文本：
+{reference_content}
+
+请对以下内容进行评价，并给出评分：
+1. 给出简短的评价（100-200字）
+2. 给出0-10分的评分（可以是小数）
+3. 请使用以下格式输出：
+    评价内容：[你的评价]
+    评分：[你的评分]
+
+待评价内容：
+{message}
+"""
+
+# AI 助手的Agent提示词模板
 AGENT_PROMPT_TEMPLATE = """你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
 
 你有以下工具可以使用:
@@ -138,6 +170,36 @@ class BaseAiService:
         self.agent_executor = None
         self.intent_router = None
         self.all_tools = []
+    
+    def _get_summarize_prompt(self, content: str, max_length: int = 1000) -> str:
+        """获取内容总结提示词
+        
+        Args:
+            content: 需要总结的内容
+            max_length: 最大总结长度
+            
+        Returns:
+            str: 格式化后的提示词
+        """
+        return CONTENT_SUMMARIZE_PROMPT.format(
+            content=content,
+            max_length=max_length
+        )
+    
+    def _get_reference_evaluation_prompt(self, message: str, reference_content: str) -> str:
+        """获取基于参考文本的评价提示词
+        
+        Args:
+            message: 待评价内容
+            reference_content: 权威参考文本
+            
+        Returns:
+            str: 格式化后的提示词
+        """
+        return REFERENCE_BASED_EVALUATION_PROMPT.format(
+            reference_content=reference_content,
+            message=message
+        )
     
     def _load_chat_history(self, user_id: int, db: Session) -> List[tuple]:
         """从数据库加载聊天历史"""

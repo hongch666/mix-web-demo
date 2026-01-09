@@ -133,22 +133,8 @@ class GeminiService(BaseAiService):
             if not getattr(self, 'llm', None):
                 return "聊天服务未配置或初始化失败"
             
-            # 构建包含参考文本的提示
-            prompt = f"""请基于以下权威参考文本，对文章或内容进行评价。
-
-                    权威参考文本：
-                    {reference_content}
-
-                    请对以下内容进行评价，并给出评分：
-                    1. 给出简短的评价（100-200字）
-                    2. 给出0-10分的评分（可以是小数）
-                    3. 请使用以下格式输出：
-                        评价内容：[你的评价]
-                        评分：[你的评分]
-
-                    待评价内容：
-                    {message}
-                    """
+            # 使用基类的提示词方法
+            prompt = self._get_reference_evaluation_prompt(message, reference_content)
             
             # 使用 LangChain 调用
             messages = [
@@ -162,8 +148,42 @@ class GeminiService(BaseAiService):
             return result
             
         except Exception as e:
-            logger.error(f"Gemini 参考文本对话异常: {str(e)}")
+            logger.error(f"Gemini参考文本对话异常: {str(e)}")
             return f"对话服务异常: {str(e)}"
+
+    async def summarize_content(self, content: str, max_length: int = 1000) -> str:
+        """
+        使用Gemini大模型对提取的内容进行总结
+        
+        Args:
+            content: 需要总结的内容
+            max_length: 总结后的最大长度
+            
+        Returns:
+            总结后的内容
+        """
+        try:
+            logger.info(f"Gemini开始总结内容，原始长度: {len(content)} 字符")
+            
+            if not getattr(self, 'llm', None):
+                return "总结服务未配置或初始化失败"
+            
+            # 使用基类的提示词方法
+            prompt = self._get_summarize_prompt(content, max_length)
+            
+            messages = [
+                SystemMessage(content="你是一个专业的内容总结助手。请精准提取核心信息，用凝练的语言进行总结。"),
+                HumanMessage(content=prompt)
+            ]
+            
+            response = await self.llm.ainvoke(messages)
+            result: str = response.content[:max_length]
+            logger.info(f"Gemini内容总结完成，总结长度: {len(result)} 字符")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Gemini内容总结异常: {str(e)}")
+            return f"总结服务异常: {str(e)}"
 
     async def simple_chat(self, message: str, user_id: int = 0, db: Optional[Session] = None) -> str:
         """增强的聊天接口 - 使用Agent和RAG"""

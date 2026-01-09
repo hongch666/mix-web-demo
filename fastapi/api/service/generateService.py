@@ -249,23 +249,63 @@ class GenerateService:
                     logger.info(f"找到权威参考文本，类型: {category_ref.get('type')}")
                     logger.info(f"参考文本详情: {category_ref}")
                     
-                    # 4. 根据类型提取内容
+                    # 4. 根据类型提取内容并使用大模型进行总结
                     extractor = get_reference_content_extractor()
                     ref_type = category_ref.get('type', 'link')
+                    ref_value = None
                     
                     if ref_type == 'pdf':
                         ref_value = category_ref.get('pdf')
                         logger.info(f"开始提取 PDF 权威文本: {ref_value}")
-                        reference_content = await extractor.extract_pdf_content(ref_value, max_length=1500)
                     elif ref_type == 'link':
                         ref_value = category_ref.get('link')
                         logger.info(f"开始提取链接权威文本: {ref_value}")
-                        reference_content = await extractor.extract_link_content(ref_value, max_length=1500)
                     
-                    if reference_content:
-                        logger.info(f"权威参考文本提取完成，长度: {len(reference_content)} 字")
+                    # 定义三个大模型的总结函数
+                    async def summarize_with_doubao(content: str) -> str:
+                        try:
+                            return await self.doubao_service.summarize_content(content, max_length=1500)
+                        except Exception as e:
+                            logger.error(f"豆包总结失败: {e}")
+                            return content[:1500]
+                    
+                    async def summarize_with_gemini(content: str) -> str:
+                        try:
+                            return await self.gemini_service.summarize_content(content, max_length=1500)
+                        except Exception as e:
+                            logger.error(f"Gemini总结失败: {e}")
+                            return content[:1500]
+                    
+                    async def summarize_with_qwen(content: str) -> str:
+                        try:
+                            return await self.qwen_service.summarize_content(content, max_length=1500)
+                        except Exception as e:
+                            logger.error(f"Qwen总结失败: {e}")
+                            return content[:1500]
+                    
+                    # 并发调用三个大模型对提取的内容进行总结
+                    summarize_tasks = [
+                        extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_doubao),
+                        extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_gemini),
+                        extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_qwen),
+                    ]
+                    
+                    summary_results = await asyncio.gather(*summarize_tasks, return_exceptions=True)
+                    
+                    # 合并三个大模型的总结结果
+                    summaries = []
+                    if isinstance(summary_results[0], str) and summary_results[0]:
+                        summaries.append(f"【豆包总结】\n{summary_results[0]}")
+                    if isinstance(summary_results[1], str) and summary_results[1]:
+                        summaries.append(f"【Gemini总结】\n{summary_results[1]}")
+                    if isinstance(summary_results[2], str) and summary_results[2]:
+                        summaries.append(f"【Qwen总结】\n{summary_results[2]}")
+                    
+                    if summaries:
+                        reference_content = "\n\n".join(summaries)
+                        logger.info(f"权威参考文本提取并总结完成，总结内容长度: {len(reference_content)} 字")
                     else:
-                        logger.warning(f"无法提取参考文本内容，类型: {ref_type}")
+                        logger.warning(f"无法提取或总结参考文本内容，类型: {ref_type}")
                         reference_content = f"参考文本类型: {ref_type}\n参考文本链接: {ref_value}"
                 else:
                     logger.info(f"子分类 {sub_category_id} 无权威参考文本")
@@ -389,6 +429,132 @@ class GenerateService:
         except Exception as e:
             logger.error(f"生成参考文本AI评论异常: {str(e)}")
             raise
+
+    async def generate_authority_article_with_ai_summaries(
+        self, 
+        reference_type: str, 
+        reference_value: str
+    ) -> dict:
+        """
+        生成权威文章 - 使用三个大模型并发对提取的内容进行总结
+        
+        Args:
+            reference_type: "link" 或 "pdf"
+            reference_value: 对应的 URL 或路径
+            
+        Returns:
+            包含三个大模型总结的字典
+        """
+        try:
+            logger.info(f"开始生成权威文章，类型: {reference_type}，值: {reference_value}")
+            
+            # 1. 提取原始内容
+            extractor = get_reference_content_extractor()
+            
+            if reference_type.lower() == "pdf":
+                raw_content = await extractor.extract_pdf_content(reference_value, max_length=3000)
+            elif reference_type.lower() == "link":
+                raw_content = await extractor.extract_link_content(reference_value, max_length=3000)
+            else:
+                logger.error(f"不支持的参考文本类型: {reference_type}")
+                return {
+                    "status": "error",
+                    "message": f"不支持的参考文本类型: {reference_type}"
+                }
+            
+            if not raw_content:
+                logger.warning(f"无法提取参考文本内容")
+                return {
+                    "status": "error",
+                    "message": "无法提取参考文本内容"
+                }
+            
+            logger.info(f"原始内容提取完成，长度: {len(raw_content)} 字符")
+            
+            # 2. 并发调用三个大模型进行总结
+            logger.info("开始并发调用三个大模型进行总结")
+            total_start_time = time.time()
+            
+            async def timed_doubao_summarize():
+                start = time.time()
+                try:
+                    result = await self.doubao_service.summarize_content(raw_content, max_length=1500)
+                    elapsed = time.time() - start
+                    logger.info(f"豆包总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}")
+                    return result
+                except Exception as e:
+                    elapsed = time.time() - start
+                    logger.error(f"豆包总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    return None
+            
+            async def timed_gemini_summarize():
+                start = time.time()
+                try:
+                    result = await self.gemini_service.summarize_content(raw_content, max_length=1500)
+                    elapsed = time.time() - start
+                    logger.info(f"Gemini总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}")
+                    return result
+                except Exception as e:
+                    elapsed = time.time() - start
+                    logger.error(f"Gemini总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    return None
+            
+            async def timed_qwen_summarize():
+                start = time.time()
+                try:
+                    result = await self.qwen_service.summarize_content(raw_content, max_length=1500)
+                    elapsed = time.time() - start
+                    logger.info(f"Qwen总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}")
+                    return result
+                except Exception as e:
+                    elapsed = time.time() - start
+                    logger.error(f"Qwen总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    return None
+            
+            # 并发执行三个总结任务
+            summaries = await asyncio.gather(
+                timed_doubao_summarize(),
+                timed_gemini_summarize(),
+                timed_qwen_summarize(),
+                return_exceptions=False
+            )
+            
+            total_elapsed = time.time() - total_start_time
+            logger.info(f"三个大模型总结任务全部完成，总耗时: {total_elapsed:.2f}秒")
+            
+            # 3. 构建返回结果
+            result = {
+                "status": "success",
+                "reference_type": reference_type,
+                "reference_value": reference_value,
+                "raw_content_length": len(raw_content),
+                "raw_content_preview": raw_content[:500] if raw_content else "",
+                "summaries": {
+                    "doubao": {
+                        "content": summaries[0],
+                        "length": len(summaries[0]) if summaries[0] else 0
+                    },
+                    "gemini": {
+                        "content": summaries[1],
+                        "length": len(summaries[1]) if summaries[1] else 0
+                    },
+                    "qwen": {
+                        "content": summaries[2],
+                        "length": len(summaries[2]) if summaries[2] else 0
+                    }
+                },
+                "total_execution_time": total_elapsed
+            }
+            
+            logger.info(f"权威文章生成完成，所有大模型总结已完成")
+            return result
+            
+        except Exception as e:
+            logger.error(f"生成权威文章异常: {str(e)}")
+            return {
+                "status": "error",
+                "message": f"生成权威文章失败: {str(e)}"
+            }
 
 @lru_cache()
 def get_generate_service(
