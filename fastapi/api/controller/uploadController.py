@@ -41,9 +41,7 @@ async def upload_image_to_oss(request: Request, file: UploadFile = File(...),upl
     username: str = get_current_username() or ""
     file_dict = {
         'filename': file.filename,
-        'file': file.file,
-        'user_id': user_id,
-        'username': username
+        'file': file.file
     }
     result = await uploadService.handle_image_upload(file_dict)
     return success(result)
@@ -61,9 +59,7 @@ async def upload_pdf_to_oss(request: Request, file: UploadFile = File(...), cust
     username: str = get_current_username() or ""
     file_dict = {
         'filename': file.filename,
-        'file': file.file,
-        'user_id': user_id,
-        'username': username
+        'file': file.file
     }
     result = await uploadService.handle_pdf_upload(file_dict, custom_filename)
     return success(result)
