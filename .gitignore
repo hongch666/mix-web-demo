@@ -217,6 +217,7 @@ logs/
 ### 配置文件
 **/*.yaml
 **/*.yml
+!k8s/**
 
 ssh.sh
 ssh.bat
