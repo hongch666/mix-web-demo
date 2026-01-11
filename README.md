@@ -1,4 +1,4 @@
-# 多语言技术栈文章博客管理系统
+# 基于 RAG 知识问答、权威文章 AI 引导与算法驱动推荐实现的 IT 智能博客推荐与知识问答系统(多语言技术栈构建)
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
