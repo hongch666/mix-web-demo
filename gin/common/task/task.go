@@ -9,7 +9,7 @@ import (
 
 var TaskScheduler *cron.Cron
 
-func InitTasks() {
+func init() {
 	TaskScheduler = cron.New()
 
 	// 每5分钟同步一次 ES

@@ -9,7 +9,6 @@ package main
 import (
 	"fmt"
 	"gin_proj/api"
-	"gin_proj/common/task"
 	"gin_proj/config"
 	"log"
 
@@ -17,8 +16,6 @@ import (
 )
 
 func main() {
-	// 开启定时任务
-	task.InitTasks()
 	// 初始化路由
 	r := api.SetupRouter()
 	// 输出启动信息和Swagger地址
