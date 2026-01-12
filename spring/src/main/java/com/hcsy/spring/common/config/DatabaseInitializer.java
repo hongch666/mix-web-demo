@@ -104,7 +104,7 @@ public class DatabaseInitializer implements ApplicationRunner {
             "    user_id BIGINT NOT NULL COMMENT '用户id',\n" +
             "    sub_category_id BIGINT NOT NULL COMMENT '子分类id',\n" +
             "    tags VARCHAR(255) NOT NULL COMMENT '文章标签',\n" +
-            "    status INT NOT NULL COMMENT '文章状态',\n" +
+            "    status TINYINT NOT NULL COMMENT '文章状态',\n" +
             "    views INT NOT NULL COMMENT '文章浏览量',\n" +
             "    create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n" +
             "    update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'\n" +
@@ -139,7 +139,7 @@ public class DatabaseInitializer implements ApplicationRunner {
     private static final String CREATE_COMMENTS_SQL = "CREATE TABLE comments (\n" +
             "    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',\n" +
             "    content TEXT COMMENT '评论内容',\n" +
-            "    star DOUBLE COMMENT '星级评分，1~10',\n" +
+            "    star DOUBLE COMMENT '星级评分，0~10',\n" +
             "    user_id BIGINT NOT NULL COMMENT '用户 ID',\n" +
             "    article_id BIGINT NOT NULL COMMENT '文章 ID',\n" +
             "    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',\n" +
