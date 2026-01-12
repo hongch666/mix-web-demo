@@ -957,7 +957,7 @@ CREATE TABLE articles (
     user_id BIGINT NOT NULL COMMENT '用户id',
     sub_category_id BIGINT NOT NULL COMMENT '子分类id',
     tags VARCHAR(255) NOT NULL COMMENT '文章标签',
-    status INT NOT NULL COMMENT '文章状态',
+    status TINYINT NOT NULL COMMENT '文章状态',
     views INT NOT NULL COMMENT '文章浏览量',
     create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
@@ -1023,7 +1023,7 @@ CREATE TABLE `chat_messages` (
 CREATE TABLE comments (
     id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
     content TEXT COMMENT '评论内容',
-    star DOUBLE COMMENT '星级评分，1~10',
+    star DOUBLE COMMENT '星级评分，0~10',
     user_id BIGINT NOT NULL COMMENT '用户 ID',
     article_id BIGINT NOT NULL COMMENT '文章 ID',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
