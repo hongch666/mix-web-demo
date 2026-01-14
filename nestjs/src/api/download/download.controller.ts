@@ -15,16 +15,19 @@ export class DownloadController {
   constructor(private readonly downloadService: DownloadService) {}
 
   @Get('word/:id')
-  @ApiOperation({ summary: '下载文章', description: '通过id下载对应文章' })
+  @ApiOperation({
+    summary: '下载文章Word',
+    description: '通过id下载对应文章Word',
+  })
   @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
-  @ApiLog('下载文章')
+  @ApiLog('下载文章Word')
   async downloadWord(@Param('id') id: number) {
     try {
       const url = await this.downloadService.exportToWordAndSave(id);
       return url;
     } catch (error) {
       throw new HttpException(
-        error.message || '下载文章失败',
+        error.message || '下载文章Word失败',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
