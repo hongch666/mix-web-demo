@@ -10,7 +10,7 @@ from common.decorators import log
 
 router: APIRouter = APIRouter(
     prefix="/analyze",
-    tags=["分析接口"],
+    tags=["文章分析接口"],
 )
 
 @router.get(

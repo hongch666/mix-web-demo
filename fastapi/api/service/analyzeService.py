@@ -3,6 +3,7 @@ from fastapi import Depends
 import os
 import pandas as pd
 import time
+import uuid
 from typing import Dict, List, Any
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -200,9 +201,11 @@ class AnalyzeService:
 
     def upload_wordcloud_to_oss(self) -> str:
         FILE_PATH: str = load_config("files")["pic_path"]
+        # 使用 UUID 生成随机文件名
+        random_filename = f"{uuid.uuid4()}.png"
         oss_url: str = self.upload_file(
             file_path=os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png")),
-            oss_path="pic/search_keywords_wordcloud.png"
+            oss_path=f"pic/{random_filename}"
         )
         return oss_url
 

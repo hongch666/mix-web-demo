@@ -1,17 +1,20 @@
 from functools import partial
 from typing import Optional, Callable, Any
+from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlmodel import Session
 from common.utils import fileLogger as logger
 from .hiveSyncTask import export_articles_to_csv_and_hive
 from .vectorSyncTask import export_article_vectors_to_postgres
+from .analyzeCacheTask import update_analyze_caches
 
 def start_scheduler(
     article_mapper: Optional[Any] = None,
     user_mapper: Optional[Any] = None,
     db_factory: Optional[Callable[[], Session]] = None,
     mysql_db_factory: Optional[Callable[[], Session]] = None,
+    analyze_service: Optional[Any] = None,
 ) -> BaseScheduler:
     """
     启动调度器，可把依赖注入进来（用于测试或容器式管理）。
@@ -43,8 +46,24 @@ def start_scheduler(
     # 每1天执行一次
     scheduler.add_job(sync_vector_job_func, 'interval', hours=24, id='sync_vectors')
     
+    # 任务3：更新分析接口缓存
+    analyze_cache_job_func = partial(
+        update_analyze_caches,
+        analyze_service=analyze_service,
+        db_factory=db_factory or mysql_db_factory
+    )
+    # 每10分钟执行一次，启动时立即执行一次
+    scheduler.add_job(
+        analyze_cache_job_func, 
+        'interval', 
+        minutes=10, 
+        id='update_analyze_caches', 
+        next_run_time=datetime.now()  # 立即执行
+    )
+    
     scheduler.start()
     logger.info("定时任务调度器已启动：")
     logger.info("  - 文章导出任务：每 1 天执行一次（包含缓存清理）")
     logger.info("  - 向量同步任务：每 1 天执行一次")
+    logger.info("  - 分析接口缓存更新任务：每 10 分钟执行一次（启动时立即执行）")
     return scheduler
