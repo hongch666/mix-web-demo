@@ -1,4 +1,4 @@
-# 基于 RAG 知识问答、权威文章 AI 引导与算法驱动推荐实现的 IT 智能博客推荐与知识问答系统(多语言技术栈构建)
+# 基于 RAG 知识问答、权威文章 AI 引导与算法驱动推荐实现的 IT 智能文章推荐与知识问答系统(多语言技术栈构建)
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
@@ -11,7 +11,7 @@
 
 ## 描述
 
-这是一个基于多语言技术栈构建的文章博客管理系统，主要包含以下框架：
+这是一个基于多语言技术栈构建的 IT 智能文章推荐与知识问答系统，主要包含以下框架：
 
 - FastAPI（Python）
 - Gin（Go）
@@ -24,7 +24,7 @@
 
 ## 功能说明
 
-1. 基于 Spring Boot 和 MybatisPlus 实现文章/博客发布、修改等操作，文章的创建和显示都支持 Markdown
+1. 基于 Spring Boot 和 MybatisPlus 实现文章发布、修改等操作，文章的创建和显示都支持 Markdown
 2. 基于 Gin Web 服务和 ElasticSearch 进行搜索引擎式文章搜索
 3. 基于 NestJS 和 Mongoose 框架进行文章操作日志和 API 日志的查看和分析
 4. 基于 Spring Boot 和 Redis 进行文章分类，用户状态的管理操作
