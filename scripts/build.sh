@@ -5,6 +5,11 @@
 
 set -e  # 遇到错误立即退出
 
+# 加载环境变量
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -376,6 +381,11 @@ build_nestjs() {
         print_info "使用 bun 的依赖..."
         cp -r node_modules "$NESTJS_DIST/"
         cp bunfig.toml "$NESTJS_DIST/" 2>/dev/null || true
+    else
+        print_info "使用 npm 的依赖..."
+        cp -r node_modules "$NESTJS_DIST/"
+    fi
+    
     # 复制配置文件
     cp application.yaml "$NESTJS_DIST/"
     cp package.json "$NESTJS_DIST/"
@@ -384,11 +394,6 @@ build_nestjs() {
     if [ -f ".env" ]; then
         cp .env "$NESTJS_DIST/"
     fi
-    
-    # 创建启动脚本 - 优先使用 bun
-    # 复制配置文件
-    cp application.yaml "$NESTJS_DIST/"
-    cp package.json "$NESTJS_DIST/"
     
     # 创建启动脚本 - 优先使用 bun
     if command -v bun &> /dev/null; then

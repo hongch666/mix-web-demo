@@ -5,6 +5,11 @@
 
 set -e
 
+# 加载环境变量
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'

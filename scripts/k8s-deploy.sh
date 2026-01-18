@@ -5,6 +5,11 @@
 
 set -e
 
+# 加载环境变量
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 K8S_DIR="$PROJECT_DIR/k8s"
 NAMESPACE="mix-web-demo"

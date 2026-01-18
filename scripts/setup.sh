@@ -5,6 +5,11 @@
 # 多语言技术栈系统 - 依赖安装配置脚本
 # 适用于 Linux 系统
 
+# 加载环境变量
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 # 获取脚本所在目录的父目录（项目根目录）
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$WORKDIR"
