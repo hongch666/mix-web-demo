@@ -1178,414 +1178,312 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 - 无需创建，系统同步数据时会自动创建
 
-## 配置文件说明
+## 环境变量配置文件
 
-### Spring 部分
+本项目使用 `.env` 文件管理配置，每个服务都有独立的环境变量配置文件。所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
 
-1. `spring/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. 需要 `application.yaml`和 `bootstrap.yaml`两个配置文件
-3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
-4. 内容如下
+### FastAPI 服务配置
 
-- `application.yaml`
+**文件位置**: `fastapi/.env`
 
-```yaml
-server:
-  address: 0.0.0.0
-  port: 8081
-  tomcat:
-    threads:
-      max: 25
-    accept-count: 25
-    max-connections: 100
-spring:
-  application:
-    name: spring
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      database: 0
-      # username:  # 可选：Redis 用户名（Redis 6.0+）
-      # password:  # 可选：Redis 密码
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 1
-      timeout: 3000
-  rabbitmq:
-    host: 127.0.0.1
-    port: 5672
-    username: hcsy
-    password: 123456
-    virtual-host: test
-  mail:
-    host: smtp.qq.com
-    port: 465
-    username: xxx@qq.com
-    password: xxx # 这个是QQ邮箱的授权码
-    properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true
-logging:
-  file:
-    path: "../logs/spring"
-jwt:
-  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
-  expiration: 86400000 # 毫秒数（1 天）
+```dotenv
+# FastAPI Server Configuration
+SERVER_IP=127.0.0.1
+SERVER_PORT=8084
+SERVER_RELOAD=True
+
+# Nacos Configuration
+NACOS_SERVER=127.0.0.1:8848
+NACOS_NAMESPACE=public
+NACOS_SERVICE_NAME=fastapi
+NACOS_GROUP_NAME=DEFAULT_GROUP
+
+# RabbitMQ Configuration
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=your-rabbitmq-username
+RABBITMQ_PASSWORD=your-rabbitmq-password
+RABBITMQ_VHOST=/
+
+# MySQL Database Configuration
+DB_MYSQL_HOST=localhost
+DB_MYSQL_PORT=3306
+DB_MYSQL_DATABASE=demo
+DB_MYSQL_USER=root
+DB_MYSQL_PASSWORD=your-mysql-password
+
+# PostgreSQL Database Configuration
+DB_POSTGRES_HOST=localhost
+DB_POSTGRES_PORT=5432
+DB_POSTGRES_DATABASE=demo
+DB_POSTGRES_USER=postgres
+DB_POSTGRES_PASSWORD=your-postgres-password
+DB_POSTGRES_POOL_PRE_PING=True
+DB_POSTGRES_POOL_SIZE=10
+DB_POSTGRES_MAX_OVERFLOW=20
+DB_POSTGRES_ECHO=False
+
+# MongoDB Configuration
+DB_MONGODB_HOST=localhost
+DB_MONGODB_PORT=27017
+# DB_MONGODB_USERNAME=
+# DB_MONGODB_PASSWORD=
+DB_MONGODB_DATABASE=demo
+
+# Hive Configuration
+DB_HIVE_HOST=127.0.0.1
+DB_HIVE_PORT=10000
+# DB_HIVE_USERNAME=
+# DB_HIVE_PASSWORD=
+DB_HIVE_DATABASE=default
+DB_HIVE_TABLE=articles
+DB_HIVE_CONTAINER=hive-server
+
+# Redis Configuration
+DB_REDIS_HOST=127.0.0.1
+DB_REDIS_PORT=6379
+# DB_REDIS_USERNAME=default
+# DB_REDIS_PASSWORD=
+DB_REDIS_DB=6
+DB_REDIS_DECODE_RESPONSES=True
+DB_REDIS_MAX_CONNECTIONS=10
+
+# OSS Configuration
+OSS_BUCKET_NAME=your-oss-bucket
+OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
+OSS_ACCESS_KEY_ID=your-access-key-id
+OSS_ACCESS_KEY_SECRET=your-access-key-secret
+
+# AI Service Configuration
+GEMINI_MODEL=gemini-2.0-flash
+GEMINI_BASE_URL=https://api.openai-proxy.org/v1
+GEMINI_API_KEY=your-gemini-api-key
+
+QWEN_MODEL=qwen-flash
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+QWEN_API_KEY=your-qwen-api-key
+
+DOUBAO_MODEL=doubao-1-5-lite-32k-250115
+DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+DOUBAO_API_KEY=your-doubao-api-key
+
+# Files Configuration
+FILES_PIC_PATH=../static/pic
+FILES_EXCEL_PATH=../static/excel
+FILES_UPLOAD_PATH=../static/upload
+
+# Logging Configuration
+LOGS_PATH=../logs/fastapi
 ```
 
-- `bootstrap.yaml`
+### Spring 服务配置
 
-```yml
-spring:
-  config:
-    import:
-      - "nacos:application.yml" # 将 DataId 明确设为 application.yml
-      - "optional:nacos:application-dev.yml?group=DEV_GROUP"
-  datasource:
-    url: jdbc:mysql://localhost:3306/demo?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: root
-    password: csc20040312
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  cloud:
-    nacos:
-      config:
-        server-addr: 127.0.0.1:8848 # Nacos 服务端地址
+**文件位置**: `spring/.env`
 
-mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml # 指定 Mapper XML 文件位置
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
-  global-config:
-    db-config:
-      id-type: auto # 主键策略
-      logic-delete-field: deleted # 逻辑删除字段
+```dotenv
+# Spring Server Configuration
+SERVER_ADDRESS=0.0.0.0
+SERVER_PORT=8081
+
+# Tomcat Configuration
+TOMCAT_THREADS_MAX=25
+TOMCAT_ACCEPT_COUNT=25
+TOMCAT_MAX_CONNECTIONS=100
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=demo
+DB_USERNAME=root
+DB_PASSWORD=your-mysql-password
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DATABASE=0
+# REDIS_USERNAME=
+# REDIS_PASSWORD=
+REDIS_POOL_MAX_ACTIVE=10
+REDIS_POOL_MAX_IDLE=5
+REDIS_POOL_MIN_IDLE=1
+REDIS_TIMEOUT=3000
+
+# RabbitMQ Configuration
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=your-rabbitmq-username
+RABBITMQ_PASSWORD=your-rabbitmq-password
+RABBITMQ_VHOST=/
+
+# Mail Configuration
+MAIL_HOST=smtp.qq.com
+MAIL_PORT=465
+MAIL_USERNAME=your-email@qq.com
+MAIL_PASSWORD=your-email-password
+
+# Logging Configuration
+LOGGING_PATH=../logs/spring
+
+# JWT Configuration
+JWT_SECRET=your-jwt-secret-key-must-be-32-characters-long
+JWT_EXPIRATION=86400000
+
+# Nacos Configuration
+NACOS_SERVER=127.0.0.1:8848
 ```
 
-### Gin 部分
+### Gin 服务配置
 
-1. `gin`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
-3. 内容如下
+**文件位置**: `gin/.env`
 
-- `application.yaml`
+```dotenv
+# Gin Server Configuration
+SERVER_IP=127.0.0.1
+SERVER_PORT=8082
 
-```yaml
-server:
-  ip: 127.0.0.1
-  port: 8082
+# Nacos Configuration
+NACOS_IP=127.0.0.1
+NACOS_PORT=8848
+NACOS_NAMESPACE=public
+NACOS_SERVICE_NAME=gin
+NACOS_GROUP_NAME=DEFAULT_GROUP
+NACOS_CLUSTER_NAME=DEFAULT
+NACOS_CACHE_DIR=../static/tmp/nacos/cache
+NACOS_LOG_DIR=../static/tmp/nacos/log
 
-nacos:
-  ipAddr: 127.0.0.1
-  port: 8848
-  namespace: "public"
-  serviceName: gin
-  groupName: DEFAULT_GROUP
-  clusterName: DEFAULT
-  cacheDir: "../static/tmp/nacos/cache"
-  logDir: "../static/tmp/nacos/log"
+# MySQL Database Configuration
+DB_MYSQL_HOST=127.0.0.1
+DB_MYSQL_PORT=3306
+DB_MYSQL_USERNAME=root
+DB_MYSQL_PASSWORD=your-mysql-password
+DB_MYSQL_DBNAME=demo
+DB_MYSQL_CHARSET=utf8mb4
+DB_MYSQL_LOC=Local
 
-database:
-  mysql:
-    host: 127.0.0.1
-    port: 3306
-    username: root
-    password: csc20040312
-    dbname: demo
-    charset: utf8mb4
-    loc: Local
-  es:
-    host: 127.0.0.1
-    port: 9200
-    # username:  # 可选：Elasticsearch 用户名
-    # password:  # 可选：Elasticsearch 密码
-    sniff: false
-  mongodb:
-    host: localhost
-    port: "27017"
-    # username:  # 可选：MongoDB 用户名
-    # password:  # 可选：MongoDB 密码
-    database: "demo"
+# Elasticsearch Configuration
+DB_ES_HOST=127.0.0.1
+DB_ES_PORT=9200
+# DB_ES_USERNAME=
+# DB_ES_PASSWORD=
+DB_ES_SNIFF=false
 
-mq:
-  username: hcsy
-  password: 123456
-  host: 127.0.0.1
-  port: 5672
-  vhost: test
+# MongoDB Configuration
+DB_MONGODB_HOST=localhost
+DB_MONGODB_PORT=27017
+# DB_MONGODB_USERNAME=
+# DB_MONGODB_PASSWORD=
+DB_MONGODB_DATABASE=demo
 
-logs:
-  path: "../logs/gin"
+# RabbitMQ Configuration
+RABBITMQ_USERNAME=your-rabbitmq-username
+RABBITMQ_PASSWORD=your-rabbitmq-password
+RABBITMQ_HOST=127.0.0.1
+RABBITMQ_PORT=5672
+RABBITMQ_VHOST=/
 
-search:
-  es_score_weight: 0.25 # ES默认分数占25%
-  ai_rating_weight: 0.15 # AI评分占15%
-  user_rating_weight: 0.10 # 用户评分占10%
-  views_weight: 0.08 # 阅读量占8%
-  likes_weight: 0.08 # 点赞量占8%
-  collects_weight: 0.08 # 收藏量占8%
-  author_follow_weight: 0.04 # 作者关注数占4%
-  recency_weight: 0.22 # 文章新鲜度占22%（核心权重）
-  max_views_normalized: 10000.0 # 用于归一化阅读量的基准值
-  max_likes_normalized: 1000.0 # 用于归一化点赞量的基准值
-  max_collects_normalized: 1000.0 # 用于归一化收藏量的基准值
-  max_follows_normalized: 5000.0 # 用于归一化作者关注数的基准值
-  recency_decay_days: 30 # 时间衰减周期（30天内新鲜度评分最高）
+# Logging Configuration
+LOGS_PATH=../logs/gin
+
+# Search Configuration (权重配置)
+SEARCH_ES_SCORE_WEIGHT=0.25
+SEARCH_AI_RATING_WEIGHT=0.15
+SEARCH_USER_RATING_WEIGHT=0.10
+SEARCH_VIEWS_WEIGHT=0.08
+SEARCH_LIKES_WEIGHT=0.08
+SEARCH_COLLECTS_WEIGHT=0.08
+SEARCH_AUTHOR_FOLLOW_WEIGHT=0.04
+SEARCH_RECENCY_WEIGHT=0.22
+SEARCH_MAX_VIEWS_NORMALIZED=10000.0
+SEARCH_MAX_LIKES_NORMALIZED=1000.0
+SEARCH_MAX_COLLECTS_NORMALIZED=1000.0
+SEARCH_MAX_FOLLOWS_NORMALIZED=5000.0
+SEARCH_RECENCY_DECAY_DAYS=30
 ```
 
-### Nestjs 部分
+### NestJS 服务配置
 
-1. `nestjs`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
-3. 内容如下
+**文件位置**: `nestjs/.env`
 
-- `application.yaml`
+```dotenv
+# NestJS Server Configuration
+SERVER_IP=127.0.0.1
+SERVER_PORT=8083
+SERVER_SERVICE_NAME=nestjs
 
-```yaml
-server:
-  ip: 127.0.0.1
-  port: 8083
-  serviceName: nestjs
-nacos:
-  server-addr: 127.0.0.1
-  namespace: public
-  clusterName: DEFAULT
-database:
-  type: mysql
-  host: localhost
-  port: 3306
-  username: root
-  password: csc20040312
-  database: demo
-  synchronize: false
-  logging: false
-  entities:
-    - src/**/*.entity.js
-mongodb:
-  host: localhost
-  port: 27017
-  # username:  # 可选：MongoDB 用户名
-  # password:  # 可选：MongoDB 密码
-  dbName: demo
-rabbitmq:
-  host: localhost
-  port: 5672
-  username: hcsy
-  password: 123456
-  vhost: test
-files:
-  word: ../static/word
-logs:
-  path: "../logs/nestjs"
+# Nacos Configuration
+NACOS_SERVER=127.0.0.1
+NACOS_NAMESPACE=public
+NACOS_CLUSTER_NAME=DEFAULT
+
+# Database Configuration
+DB_TYPE=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD=your-mysql-password
+DB_DATABASE=demo
+DB_SYNCHRONIZE=false
+DB_LOGGING=false
+
+# MongoDB Configuration
+DB_MONGODB_HOST=localhost
+DB_MONGODB_PORT=27017
+# DB_MONGODB_USERNAME=
+# DB_MONGODB_PASSWORD=
+DB_MONGODB_DATABASE=demo
+
+# RabbitMQ Configuration
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=your-rabbitmq-username
+RABBITMQ_PASSWORD=your-rabbitmq-password
+RABBITMQ_VHOST=/
+
+# Files Configuration
+FILES_WORD_PATH=../static/word
+
+# Logging Configuration
+LOGS_PATH=../logs/nestjs
 ```
 
-### FastAPI 部分
+### Gateway 服务配置
 
-1. `fastapi`目录下有 yaml 配置文件，可以在其中配置对应信息（注意：
-2. secret 的配置文件是存放阿里云 OSS 的 Key 和 Secret，以及火山引擎平台、 Google AI 平台和阿里云百炼平台的 api_key，不要泄露
-3. 可以在 yaml 文件配置静态文件路径，建议配置为主目录下的 `static`
-4. 内容如下
+**文件位置**: `gateway/.env`
 
-- `application.yaml`
+```dotenv
+# Gateway Server Configuration
+SERVER_PORT=8080
 
-```yaml
-server:
-  ip: 127.0.0.1
-  port: 8084
-  reload: True
-nacos:
-  server_addresses: "127.0.0.1:8848"
-  namespace: "public"
-  service_name: "fastapi"
-  group_name: "DEFAULT_GROUP"
-rabbitmq:
-  host: "127.0.0.1"
-  port: 5672
-  username: "hcsy"
-  password: "123456"
-  vhost: "test"
-database:
-  mysql:
-    host: "localhost"
-    port: 3306
-    database: "demo"
-    user: "root"
-    password: "csc20040312"
-  postgres:
-    host: "localhost"
-    port: 5432
-    database: "demo"
-    user: "postgres"
-    password: "123456"
-    pool_pre_ping: True
-    pool_size: 10
-    max_overflow: 20
-    echo: False
-  mongodb:
-    host: "localhost"
-    port: 27017
-    # username:  # 可选：MongoDB 用户名
-    # password:  # 可选：MongoDB 密码
-    database: "demo"
-  hive:
-    host: "127.0.0.1"
-    port: 10000
-    # username: "hive_user" # 可选：Hive 用户名
-    # password: "hive_password" # 可选：Hive 密码
-    database: "default"
-    table: "articles"
-    container: "hive-server"
-  redis:
-    host: "127.0.0.1"
-    port: 6379
-    # username: "default" # 可选：Redis 用户名
-    # password: "your_password" # 可选：Redis 密码
-    db: 6
-    password: ""
-    decode_responses: True
-    max_connections: 10
-oss:
-  bucket_name: mix-web-demo
-  endpoint: oss-cn-guangzhou.aliyuncs.com
-wordcloud:
-  font_path: "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
-  width: 800
-  height: 400
-  background_color: "white"
-files:
-  pic_path: "../static/pic"
-  excel_path: "../static/excel"
-  upload_path: "../static/upload"
-logs:
-  path: "../logs/fastapi"
-gemini:
-  model_name: "gemini-2.0-flash" # 第三方代理 Gemini 模型
-  base_url: "https://api.openai-proxy.org/v1" # 第三方代理 API 地址
-  timeout: 30 # 请求超时时间（秒）
-qwen:
-  model_name: "qwen-flash" # 可选: qwen-plus, qwen-turbo, qwen-max 等
-  base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-  timeout: 30 # 请求超时时间（秒）
-doubao:
-  model: "doubao-1-5-lite-32k-250115" # 豆包模型名称
-  base_url: "https://ark.cn-beijing.volces.com/api/v3" # 豆包API地址
-  timeout: 60 # 请求超时时间（秒）
-embedding:
-  embedding_model: "text-embedding-v3" # 通义千问嵌入模型（可选: text-embedding-v2, text-embedding-v1）
-  top_k: 5 # RAG检索返回的文档数量
-  dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
-  similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
-permission:
-  personal_info_keywords:
-    - "我的"
-    - "个人"
-    - "自己的"
-    - "本人的"
-    - "我"
-    - "自己"
-    - "点赞"
-    - "收藏"
-    - "喜欢"
-    - "评论"
-    - "互动"
-    - "关注"
+# Nacos Configuration
+NACOS_SERVER=127.0.0.1:8848
+
+# Gin Service Configuration
+GIN_HOST=localhost
+GIN_PORT=8082
+
+# JWT Configuration
+JWT_SECRET=your-jwt-secret-key-must-be-32-characters-long
+JWT_EXPIRATION=2592000000
 ```
 
-- `application-secret.yaml`
+### 环境变量使用说明
 
-```yaml
-oss:
-  access_key_id: your_access_key_id
-  access_key_secret: your_access_key_secret
-gemini:
-  api_key: your_api_key
-qwen:
-  api_key: your_api_key
-doubao:
-  api_key: your_api_key
-```
+1. **密钥管理**: 所有密钥信息（数据库密码、API KEY、JWT Secret 等）不应该提交到版本控制系统，应该在本地 `.env` 文件中配置
 
-### Gateway 部分
+2. **YAML 中的引用格式**: 在各服务的 `application.yaml` 配置文件中，使用以下格式引用环境变量：
 
-1. `gateway/src/main/resource`目录下有 yaml 配置文件，可以在其中配置对应信息
-2. gateway 部分的 yaml 配置文件可以配置路由
-3. 内容如下
+   ```yaml
+   # YAML 中的使用示例
+   server:
+     port: ${SERVER_PORT:8080}
+   database:
+     host: ${DB_HOST:localhost}
+     password: ${DB_PASSWORD:default-password}
+   ```
 
-- `application.yaml`
+3. **默认值**: 格式 `${VAR_NAME:default_value}` 中，冒号后面是默认值，当环境变量未设置时使用默认值
 
-```yaml
-server:
-  port: 8080
-spring:
-  application:
-    name: gateway
-  cloud:
-    nacos:
-      server-addr: 127.0.0.1:8848
-    gateway:
-      # 全局WebSocket支持
-      globalcors:
-        cors-configurations:
-          "[/**]":
-            allowedOrigins: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-      routes:
-        # 1. 先排除特殊路径
-        - id: exclude-list
-          uri: no://op
-          predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/analyze/excel
-          filters:
-            - SetStatus=204
-
-        # 2. 正常路由
-        - id: spring
-          uri: lb://spring
-          predicates:
-            - Path=/api_spring/**,/users/**,/articles/**,/category/**,/comments/**,/collects/**,/likes/**,/focus/**
-
-        - id: gin-ws
-          uri: ws://localhost:8082
-          predicates:
-            - Path=/ws/**
-          metadata:
-            # WebSocket 相关配置
-            connect-timeout: 60000
-            response-timeout: 60000
-
-        - id: gin-sse
-          uri: http://localhost:8082
-          predicates:
-            - Path=/sse/**
-          metadata:
-            # SSE 相关配置（需要持续连接，响应超时设为-1）
-            response-timeout: -1
-            connect-timeout: 60000
-
-        - id: gin
-          uri: lb://gin
-          predicates:
-            - Path=/api_gin/**,/search/**,/user-chat/**,/static/**
-
-        - id: nestjs
-          uri: lb://nestjs
-          predicates:
-            - Path=/api_nestjs/**,/logs/**,/download/**,/api-logs/**
-
-        - id: fastapi
-          uri: lb://fastapi
-          predicates:
-            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/upload/**,/ai_history/**,/ai_comment/**
-jwt:
-  secret: hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy # 至少 32 字节
-  expiration: 2592000000 # 毫秒数（30 天）
-```
+4. **加载顺序**: 系统启动时会自动从 `.env` 文件加载环境变量，然后在解析 YAML 配置文件时进行替换
 
 ## Swagger 说明
 
@@ -1750,35 +1648,13 @@ ${tags}
 ${content}
 ```
 
-### 阿里云密钥说明
-
-1. FastAPI 模块的阿里云 OSS 的密钥应写在 `application-secret.yaml`中，格式如下：
-
-```yaml
-oss:
-  access_key_id: your_access_key_id
-  access_key_secret: your_access_key_secret
-```
-
 ### Google AI 服务说明
 
 1. Gemini 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
 
 ### AI 相关服务密钥说明
 
-1. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `application-secret.yaml`中，格式如下：
-
-```yaml
-oss:
-  access_key_id: your_access_key_id
-  access_key_secret: your_access_key_secret
-gemini:
-  api_key: your_api_key
-qwen:
-  api_key: your_api_key
-doubao:
-  api_key: your_api_key
-```
+1. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `.env`中。
 
 ### 聊天相关说明
 

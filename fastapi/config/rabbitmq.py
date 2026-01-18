@@ -25,11 +25,11 @@ class RabbitMQClient:
                 logger.warning("RabbitMQ 配置不存在，跳过连接")
                 return
                 
-            host = rabbitmq_config.get("host", "127.0.0.1")
-            port = rabbitmq_config.get("port", 5672)
-            username = rabbitmq_config.get("username", "guest")
-            password = rabbitmq_config.get("password", "guest")
-            vhost = rabbitmq_config.get("vhost", "/")
+            host = str(rabbitmq_config.get("host", "127.0.0.1"))
+            port = int(rabbitmq_config.get("port", 5672))
+            username = str(rabbitmq_config.get("username", "guest"))
+            password = str(rabbitmq_config.get("password", "guest"))
+            vhost = str(rabbitmq_config.get("vhost", "/"))
 
             # 创建连接参数
             credentials = pika.PlainCredentials(username, password)

@@ -1,0 +1,35 @@
+server:
+  ip: ${SERVER_IP:127.0.0.1}
+  port: ${SERVER_PORT:8083}
+  serviceName: ${SERVER_SERVICE_NAME:nestjs}
+nacos:
+  server-addr: ${NACOS_SERVER:127.0.0.1}
+  namespace: ${NACOS_NAMESPACE:public}
+  clusterName: ${NACOS_CLUSTER_NAME:DEFAULT}
+database:
+  type: ${DB_TYPE:mysql}
+  host: ${DB_HOST:localhost}
+  port: ${DB_PORT:3306}
+  username: ${DB_USERNAME:root}
+  password: ${DB_PASSWORD:csc20040312}
+  database: ${DB_DATABASE:demo}
+  synchronize: ${DB_SYNCHRONIZE:false}
+  logging: ${DB_LOGGING:false}
+  entities:
+    - src/**/*.entity.js
+mongodb:
+  host: ${DB_MONGODB_HOST:localhost}
+  port: ${DB_MONGODB_PORT:27017}
+  # username: ${DB_MONGODB_USERNAME:}  # 可选：MongoDB 用户名
+  # password: ${DB_MONGODB_PASSWORD:}  # 可选：MongoDB 密码
+  dbName: ${DB_MONGODB_DATABASE:demo}
+rabbitmq:
+  host: ${RABBITMQ_HOST:localhost}
+  port: ${RABBITMQ_PORT:5672}
+  username: ${RABBITMQ_USERNAME:hcsy}
+  password: ${RABBITMQ_PASSWORD:123456}
+  vhost: ${RABBITMQ_VHOST:test}
+files:
+  word: ${FILES_WORD_PATH:../static/word}
+logs:
+  path: ${LOGS_PATH:../logs/nestjs}

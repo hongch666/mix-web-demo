@@ -16,7 +16,7 @@ from .baseAIService import (
 )
 from common.agent import IntentRouter, UserPermissionManager
 from common.utils import fileLogger as logger
-from config import load_config, load_secret_config
+from config import load_config
 
 class DoubaoService(BaseAiService):
     """豆包 AI Service"""
@@ -34,8 +34,7 @@ class DoubaoService(BaseAiService):
         # 初始化豆包客户端
         try:
             doubao_cfg = load_config("doubao") or {}
-            doubao_secret = load_secret_config("doubao") or {}
-            self._api_key: str = doubao_secret.get("api_key")
+            self._api_key: str = doubao_cfg.get("api_key")
             self._model: str = doubao_cfg.get("model")
             self._base_url: str = doubao_cfg.get("base_url")
             self._timeout: int = doubao_cfg.get("timeout", 60)

@@ -1,0 +1,60 @@
+server:
+  ip: ${SERVER_IP:127.0.0.1}
+  port: ${SERVER_PORT:8082}
+
+nacos:
+  ipAddr: ${NACOS_IP:127.0.0.1}
+  port: ${NACOS_PORT:8848}
+  namespace: ${NACOS_NAMESPACE:public}
+  serviceName: ${NACOS_SERVICE_NAME:gin}
+  groupName: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
+  clusterName: ${NACOS_CLUSTER_NAME:DEFAULT}
+  cacheDir: ${NACOS_CACHE_DIR:../static/tmp/nacos/cache}
+  logDir: ${NACOS_LOG_DIR:../static/tmp/nacos/log}
+
+database:
+  mysql:
+    host: ${DB_MYSQL_HOST:127.0.0.1}
+    port: ${DB_MYSQL_PORT:3306}
+    username: ${DB_MYSQL_USERNAME:root}
+    password: ${DB_MYSQL_PASSWORD:csc20040312}
+    dbname: ${DB_MYSQL_DBNAME:demo}
+    charset: ${DB_MYSQL_CHARSET:utf8mb4}
+    loc: ${DB_MYSQL_LOC:Local}
+  es:
+    host: ${DB_ES_HOST:127.0.0.1}
+    port: ${DB_ES_PORT:9200}
+    # username: ${DB_ES_USERNAME:}  # 可选：Elasticsearch 用户名
+    # password: ${DB_ES_PASSWORD:}  # 可选：Elasticsearch 密码
+    sniff: ${DB_ES_SNIFF:false}
+  mongodb:
+    host: ${DB_MONGODB_HOST:localhost}
+    port: ${DB_MONGODB_PORT:27017}
+    # username: ${DB_MONGODB_USERNAME:}  # 可选：MongoDB 用户名
+    # password: ${DB_MONGODB_PASSWORD:}  # 可选：MongoDB 密码
+    database: ${DB_MONGODB_DATABASE:demo}
+
+mq:
+  username: ${RABBITMQ_USERNAME:hcsy}
+  password: ${RABBITMQ_PASSWORD:123456}
+  host: ${RABBITMQ_HOST:127.0.0.1}
+  port: ${RABBITMQ_PORT:5672}
+  vhost: ${RABBITMQ_VHOST:test}
+
+logs:
+  path: ${LOGS_PATH:../logs/gin}
+
+search:
+  es_score_weight: ${SEARCH_ES_SCORE_WEIGHT:0.25}
+  ai_rating_weight: ${SEARCH_AI_RATING_WEIGHT:0.15}
+  user_rating_weight: ${SEARCH_USER_RATING_WEIGHT:0.10}
+  views_weight: ${SEARCH_VIEWS_WEIGHT:0.08}
+  likes_weight: ${SEARCH_LIKES_WEIGHT:0.08}
+  collects_weight: ${SEARCH_COLLECTS_WEIGHT:0.08}
+  author_follow_weight: ${SEARCH_AUTHOR_FOLLOW_WEIGHT:0.04}
+  recency_weight: ${SEARCH_RECENCY_WEIGHT:0.22}
+  max_views_normalized: ${SEARCH_MAX_VIEWS_NORMALIZED:10000.0}
+  max_likes_normalized: ${SEARCH_MAX_LIKES_NORMALIZED:1000.0}
+  max_collects_normalized: ${SEARCH_MAX_COLLECTS_NORMALIZED:1000.0}
+  max_follows_normalized: ${SEARCH_MAX_FOLLOWS_NORMALIZED:5000.0}
+  recency_decay_days: ${SEARCH_RECENCY_DECAY_DAYS:30}

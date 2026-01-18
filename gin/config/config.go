@@ -2,7 +2,11 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"regexp"
+	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
 
@@ -93,14 +97,54 @@ type SearchConfig struct {
 
 var Config AppConfig
 
+// resolveEnvVars 递归替换YAML中的环境变量占位符
+func resolveEnvVars(data []byte) []byte {
+	// 匹配 ${VAR_NAME:default_value} 或 ${VAR_NAME}
+	pattern := regexp.MustCompile(`\$\{([^:}]+)(?::([^}]*))?\}`)
+	result := pattern.ReplaceAllStringFunc(string(data), func(match string) string {
+		// 解析占位符
+		parts := pattern.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+		varName := parts[1]
+		defaultVal := ""
+		if len(parts) > 2 && parts[2] != "" {
+			defaultVal = parts[2]
+		}
+
+		// 获取环境变量，如果不存在则使用默认值
+		value := os.Getenv(varName)
+		if value == "" {
+			value = defaultVal
+		}
+		return value
+	})
+	return []byte(result)
+}
+
 func InitConfig() {
+	// 加载 .env 文件
+	_ = godotenv.Load(".env")
+
 	viper.SetConfigName("application") // 文件名 (不包含扩展名)
 	viper.SetConfigType("yaml")        // 文件类型
 	viper.AddConfigPath(".")           // 查找路径
 
-	err := viper.ReadInConfig()
+	// 读取原始文件内容，替换占位符
+	configFile, err := os.ReadFile("application.yaml")
 	if err != nil {
-		panic(fmt.Errorf("配置文件读取失败: %s", err))
+		panic(fmt.Errorf("读取配置文件失败: %s", err))
+	}
+
+	// 替换环境变量
+	configFile = resolveEnvVars(configFile)
+
+	// 用处理后的内容配置 viper
+	viper.SetConfigType("yaml")
+	err = viper.ReadConfig(strings.NewReader(string(configFile)))
+	if err != nil {
+		panic(fmt.Errorf("解析配置文件失败: %s", err))
 	}
 
 	err = viper.Unmarshal(&Config)

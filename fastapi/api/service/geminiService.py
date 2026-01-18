@@ -18,7 +18,7 @@ from .baseAIService import (
 )
 from common.agent import IntentRouter, UserPermissionManager
 from common.utils import fileLogger as logger
-from config import load_config, load_secret_config
+from config import load_config
 
 class GeminiService(BaseAiService):
     """Gemini AI Service"""
@@ -37,8 +37,7 @@ class GeminiService(BaseAiService):
         # 初始化Gemini客户端（使用第三方代理）
         try:
             gemini_cfg = load_config("gemini") or {}
-            gemini_secret = load_secret_config("gemini") or {}
-            self._api_key: str = gemini_secret.get("api_key")
+            self._api_key: str = gemini_cfg.get("api_key")
             self._model_name: str = gemini_cfg.get("model_name", "gemini-2.0-flash")
             self._base_url: str = gemini_cfg.get("base_url", "https://api.openai-proxy.org/google")
             self._timeout: int = gemini_cfg.get("timeout", 30)

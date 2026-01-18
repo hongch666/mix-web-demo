@@ -1,0 +1,105 @@
+server:
+  ip: ${SERVER_IP:127.0.0.1}
+  port: ${SERVER_PORT:8084}
+  reload: ${SERVER_RELOAD:True}
+nacos:
+  server_addresses: ${NACOS_SERVER:127.0.0.1:8848}
+  namespace: ${NACOS_NAMESPACE:public}
+  service_name: ${NACOS_SERVICE_NAME:fastapi}
+  group_name: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
+rabbitmq:
+  host: ${RABBITMQ_HOST:127.0.0.1}
+  port: ${RABBITMQ_PORT:5672}
+  username: ${RABBITMQ_USERNAME:hcsy}
+  password: ${RABBITMQ_PASSWORD:123456}
+  vhost: ${RABBITMQ_VHOST:test}
+database:
+  mysql:
+    host: ${DB_MYSQL_HOST:localhost}
+    port: ${DB_MYSQL_PORT:3306}
+    database: ${DB_MYSQL_DATABASE:demo}
+    user: ${DB_MYSQL_USER:root}
+    password: ${DB_MYSQL_PASSWORD:csc20040312}
+  postgres:
+    host: ${DB_POSTGRES_HOST:localhost}
+    port: ${DB_POSTGRES_PORT:5432}
+    database: ${DB_POSTGRES_DATABASE:demo}
+    user: ${DB_POSTGRES_USER:postgres}
+    password: ${DB_POSTGRES_PASSWORD:123456}
+    pool_pre_ping: ${DB_POSTGRES_POOL_PRE_PING:True}
+    pool_size: ${DB_POSTGRES_POOL_SIZE:10}
+    max_overflow: ${DB_POSTGRES_MAX_OVERFLOW:20}
+    echo: ${DB_POSTGRES_ECHO:False}
+  mongodb:
+    host: ${DB_MONGODB_HOST:localhost}
+    port: ${DB_MONGODB_PORT:27017}
+    # username: ${DB_MONGODB_USERNAME:}  # 可选：MongoDB 用户名
+    # password: ${DB_MONGODB_PASSWORD:}  # 可选：MongoDB 密码
+    database: ${DB_MONGODB_DATABASE:demo}
+  hive:
+    host: ${DB_HIVE_HOST:127.0.0.1}
+    port: ${DB_HIVE_PORT:10000}
+    # username: ${DB_HIVE_USERNAME:hive_user} # 可选：Hive 用户名
+    # password: ${DB_HIVE_PASSWORD:hive_password} # 可选：Hive 密码
+    database: ${DB_HIVE_DATABASE:default}
+    table: ${DB_HIVE_TABLE:articles}
+    container: ${DB_HIVE_CONTAINER:hive-server}
+  redis:
+    host: ${DB_REDIS_HOST:127.0.0.1}
+    port: ${DB_REDIS_PORT:6379}
+    # username: ${DB_REDIS_USERNAME:default} # 可选：Redis 用户名
+    # password: ${DB_REDIS_PASSWORD:} # 可选：Redis 密码
+    db: ${DB_REDIS_DB:6}
+    password: ${DB_REDIS_PASSWORD:}
+    decode_responses: ${DB_REDIS_DECODE_RESPONSES:True}
+    max_connections: ${DB_REDIS_MAX_CONNECTIONS:10}
+oss:
+  bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
+  endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
+  access_key_id: ${OSS_ACCESS_KEY_ID:}
+  access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
+wordcloud:
+  font_path: ${WORDCLOUD_FONT_PATH:/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc}
+  width: ${WORDCLOUD_WIDTH:800}
+  height: ${WORDCLOUD_HEIGHT:400}
+  background_color: ${WORDCLOUD_BG_COLOR:white}
+files:
+  pic_path: ${FILES_PIC_PATH:../static/pic}
+  excel_path: ${FILES_EXCEL_PATH:../static/excel}
+  upload_path: ${FILES_UPLOAD_PATH:../static/upload}
+logs:
+  path: ${LOGS_PATH:../logs/fastapi}
+gemini:
+  model_name: ${GEMINI_MODEL:gemini-2.0-flash} # 第三方代理 Gemini 模型
+  base_url: ${GEMINI_BASE_URL:https://api.openai-proxy.org/v1} # 第三方代理 API 地址
+  api_key: ${GEMINI_API_KEY:} # Gemini API Key
+  timeout: ${GEMINI_TIMEOUT:30} # 请求超时时间（秒）
+qwen:
+  model_name: ${QWEN_MODEL:qwen-flash} # 可选: qwen-plus, qwen-turbo, qwen-max 等
+  base_url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+  api_key: ${QWEN_API_KEY:} # Qwen API Key
+  timeout: ${QWEN_TIMEOUT:30} # 请求超时时间（秒）
+doubao:
+  model: ${DOUBAO_MODEL:doubao-1-5-lite-32k-250115} # 豆包模型名称
+  base_url: ${DOUBAO_BASE_URL:https://ark.cn-beijing.volces.com/api/v3} # 豆包API地址
+  api_key: ${DOUBAO_API_KEY:} # 豆包 API Key
+  timeout: ${DOUBAO_TIMEOUT:60} # 请求超时时间（秒）
+embedding:
+  embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 通义千问嵌入模型（可选: text-embedding-v2, text-embedding-v1）
+  top_k: ${EMBEDDING_TOP_K:5} # RAG检索返回的文档数量
+  dimension: ${EMBEDDING_DIMENSION:1536} # 嵌入维度（text-embedding-v3默认1536维）
+  similarity_threshold: ${EMBEDDING_SIMILARITY_THRESHOLD:0.3} # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
+permission:
+  personal_info_keywords:
+    - "我的"
+    - "个人"
+    - "自己的"
+    - "本人的"
+    - "我"
+    - "自己"
+    - "点赞"
+    - "收藏"
+    - "喜欢"
+    - "评论"
+    - "互动"
+    - "关注"

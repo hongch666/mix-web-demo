@@ -1,4 +1,4 @@
-from .config import load_config,load_secret_config
+from .config import load_config
 
 from .mongodb import client,db
 
@@ -14,7 +14,6 @@ from .hive import HiveConnectionPool, get_hive_connection_pool
 
 __all__ = [
     "load_config",
-    "load_secret_config",
     "client",
     "db",
     "get_db",

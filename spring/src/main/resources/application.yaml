@@ -1,0 +1,47 @@
+server:
+  address: ${SERVER_ADDRESS:0.0.0.0}
+  port: ${SERVER_PORT:8081}
+  tomcat:
+    threads:
+      max: ${TOMCAT_THREADS_MAX:25}
+    accept-count: ${TOMCAT_ACCEPT_COUNT:25}
+    max-connections: ${TOMCAT_MAX_CONNECTIONS:100}
+spring:
+  application:
+    name: spring
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      # username: ${REDIS_USERNAME:}  # 可选：Redis 用户名（Redis 6.0+）
+      # password: ${REDIS_PASSWORD:}  # 可选：Redis 密码
+      lettuce:
+        pool:
+          max-active: ${REDIS_POOL_MAX_ACTIVE:10}
+          max-idle: ${REDIS_POOL_MAX_IDLE:5}
+          min-idle: ${REDIS_POOL_MIN_IDLE:1}
+      timeout: ${REDIS_TIMEOUT:3000}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:127.0.0.1}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:hcsy}
+    password: ${RABBITMQ_PASSWORD:123456}
+    virtual-host: ${RABBITMQ_VHOST:test}
+  mail:
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    username: ${MAIL_USERNAME:3070872194@qq.com}
+    password: ${MAIL_PASSWORD:skuwsqoctrrwdfgd}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+logging:
+  file:
+    path: ${LOGGING_PATH:../logs/spring}
+jwt:
+  secret: ${JWT_SECRET:hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy} # 至少 32 字节
+  expiration: ${JWT_EXPIRATION:86400000} # 毫秒数（1 天）

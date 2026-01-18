@@ -1,0 +1,66 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+    gateway:
+      # 全局WebSocket支持
+      globalcors:
+        cors-configurations:
+          "[/**]":
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      routes:
+        # 1. 先排除特殊路径
+        - id: exclude-list
+          uri: no://op
+          predicates:
+            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/analyze/excel
+          filters:
+            - SetStatus=204
+
+        # 2. 正常路由
+        - id: spring
+          uri: lb://spring
+          predicates:
+            - Path=/api_spring/**,/users/**,/articles/**,/category/**,/comments/**,/collects/**,/likes/**,/focus/**
+
+        - id: gin-ws
+          uri: ws://${GIN_HOST:localhost}:${GIN_PORT:8082}
+          predicates:
+            - Path=/ws/**
+          metadata:
+            # WebSocket 相关配置
+            connect-timeout: 60000
+            response-timeout: 60000
+
+        - id: gin-sse
+          uri: http://${GIN_HOST:localhost}:${GIN_PORT:8082}
+          predicates:
+            - Path=/sse/**
+          metadata:
+            # SSE 相关配置（需要持续连接，响应超时设为-1）
+            response-timeout: -1
+            connect-timeout: 60000
+
+        - id: gin
+          uri: lb://gin
+          predicates:
+            - Path=/api_gin/**,/search/**,/user-chat/**,/static/**
+
+        - id: nestjs
+          uri: lb://nestjs
+          predicates:
+            - Path=/api_nestjs/**,/logs/**,/download/**,/api-logs/**
+
+        - id: fastapi
+          uri: lb://fastapi
+          predicates:
+            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/upload/**,/ai_history/**,/ai_comment/**
+jwt:
+  secret: ${JWT_SECRET:hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy} # 至少 32 字节
+  expiration: ${JWT_EXPIRATION:2592000000} # 毫秒数（30 天）

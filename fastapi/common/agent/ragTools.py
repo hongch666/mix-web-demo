@@ -15,7 +15,7 @@ class RAGTools:
     def __init__(self):
         """初始化RAG组件"""
         # 延迟导入避免循环依赖
-        from config import load_config, load_secret_config
+        from config import load_config
         from common.utils import fileLogger as logger
         
         self.logger = logger
@@ -23,10 +23,9 @@ class RAGTools:
         try:
             # 1. 初始化嵌入模型（Qwen）
             qwen_cfg = load_config("qwen") or {}
-            qwen_secret = load_secret_config("qwen") or {}
             embedding_cfg = load_config("embedding") or {}
             
-            api_key = qwen_secret.get("api_key")
+            api_key = qwen_cfg.get("api_key")
             embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
             self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
             self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）

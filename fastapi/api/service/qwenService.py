@@ -16,7 +16,7 @@ from .baseAIService import (
 )
 from common.agent import IntentRouter, UserPermissionManager, get_sql_tools
 from common.utils import fileLogger as logger
-from config import load_config, load_secret_config
+from config import load_config
 
 class QwenService(BaseAiService):
     """千问 AI Service"""
@@ -34,8 +34,7 @@ class QwenService(BaseAiService):
         # 初始化通义千问客户端
         try:
             qwen_cfg = load_config("qwen") or {}
-            qwen_secret = load_secret_config("qwen") or {}
-            self._api_key: str = qwen_secret.get("api_key")
+            self._api_key: str = qwen_cfg.get("api_key")
             self._model_name: str = qwen_cfg.get("model_name", "qwen-flash")
             self._base_url: str = qwen_cfg.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
             self._timeout: int = qwen_cfg.get("timeout", 30)

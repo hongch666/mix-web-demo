@@ -149,6 +149,9 @@ spring/mvnw.cmd
 # VSCode
 spring/.vscode/
 
+# Environment files
+spring/.env
+
 spring/bin/
 
 ### gateway
@@ -177,12 +180,14 @@ gateway/mvnw.cmd
 # VSCode
 gateway/.vscode/
 
+# Environment files
+gateway/.env
+
 ### FastAPI
 fastapi/**/__pycache__/
 fastapi/**/*.pyc
 fastapi/pic/
 fastapi/static/
-fastapi/application-secret.yaml
 fastapi/.venv/
 fastapi/venv/
 fastapi/.env
@@ -217,8 +222,6 @@ logs/
 *.ipr
 
 ### 配置文件
-**/*.yaml
-**/*.yml
 !k8s/**
 
 ssh.sh

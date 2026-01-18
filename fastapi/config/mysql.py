@@ -1,7 +1,6 @@
-from sqlmodel import create_engine, Session, SQLModel
+from sqlmodel import create_engine, Session
 from typing import Generator, Optional, List
 from config import load_config
-from entity.po import Article, User, Category, SubCategory, AiHistory, Focus
 from common.utils import fileLogger as logger
 
 HOST: str = load_config("database")["mysql"]["host"]
@@ -22,52 +21,51 @@ def create_tables(tables: Optional[List[str]] = None):
     创建数据库表
     
     Args:
-        tables: 要创建的表名列表，如 ['ai_history', 'user']
-                如果为 None，则创建所有表
+        tables: 要创建的表名列表，如 ['ai_history']
+                只支持创建 ai_history 表，使用 SQL 直接创建以确保字段类型正确
     
     Examples:
-        # 创建所有表
-        create_tables()
-        
         # 只创建 ai_history 表
         create_tables(['ai_history'])
-        
-        # 创建多个指定表
-        create_tables(['ai_history', 'user', 'article'])
     """
     
-    
     try:
-        if tables is None:
-            # 创建所有表
-            SQLModel.metadata.create_all(engine)
-            logger.info("数据库所有表初始化完成")
-        else:
-            # 只创建指定的表
-            # 获取所有模型类的映射
-            table_models = {
-                'ai_history': AiHistory,
-                'article': Article,
-                'user': User,
-                'category': Category,
-                'sub_category': SubCategory,
-                'focus': Focus,
-            }
-            
-            # 筛选出需要创建的表
-            tables_to_create = []
-            for table_name in tables:
-                if table_name in table_models:
-                    model = table_models[table_name]
-                    tables_to_create.append(model.__table__)
+        if tables and 'ai_history' in tables:
+            # 使用 SQL 直接创建 ai_history 表，确保 TEXT 类型正确
+            connection = engine.raw_connection()
+            cursor = connection.cursor()
+            try:
+                # 检查表是否已存在
+                check_sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
+                cursor.execute(check_sql, (DATABASE,))
+                table_exists = cursor.fetchone() is not None
+                
+                if not table_exists:
+                    create_sql = """
+                    CREATE TABLE `ai_history` (
+                        `id` BIGINT NOT NULL AUTO_INCREMENT,
+                        `user_id` BIGINT,
+                        `ask` TEXT NOT NULL,
+                        `reply` TEXT NOT NULL,
+                        `thinking` TEXT,
+                        `ai_type` VARCHAR(30),
+                        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (`id`),
+                        KEY `idx_user_id` (`user_id`)
+                    ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """
+                    cursor.execute(create_sql)
+                    connection.commit()
+                    logger.info("ai_history 表创建完成 (TEXT类型)")
                 else:
-                    logger.warning(f"警告: 表名 '{table_name}' 不存在，跳过")
-            
-            if tables_to_create:
-                # 创建指定的表
-                SQLModel.metadata.create_all(engine, tables=tables_to_create)
-                logger.info(f"数据库表初始化完成: {', '.join(tables)}")
-            else:
-                logger.error("没有找到需要创建的表")
+                    logger.info("ai_history 表已存在")
+            finally:
+                cursor.close()
+                connection.close()
+        else:
+            logger.warning("仅支持创建 ai_history 表")
     except Exception as e:
         logger.error(f"数据库表创建失败: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
