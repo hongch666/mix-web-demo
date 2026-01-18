@@ -73,10 +73,15 @@ LOG_DIR="../logs/spring"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
-# 加载 .env 文件
+# 加载 .env 文件并导出到环境变量
 if [ -f ".env" ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
+
+# 将环境变量转换为 Java 系统属性
+for var in $(cat .env | grep -v '^#' | cut -d= -f1); do
+    JAVA_OPTS="$JAVA_OPTS -D$var=${!var}"
+done
 
 nohup java $JAVA_OPTS -jar spring.jar --spring.config.location=bootstrap.yaml,application.yaml >> "$LOG_FILE" 2>&1 &
 echo $! > spring.pid
@@ -140,10 +145,15 @@ LOG_DIR="../logs/gateway"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
-# 加载 .env 文件
+# 加载 .env 文件并导出到环境变量
 if [ -f ".env" ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
+
+# 将环境变量转换为 Java 系统属性
+for var in $(cat .env | grep -v '^#' | cut -d= -f1); do
+    JAVA_OPTS="$JAVA_OPTS -D$var=${!var}"
+done
 
 nohup java $JAVA_OPTS -jar gateway.jar --spring.config.location=application.yaml >> "$LOG_FILE" 2>&1 &
 echo $! > gateway.pid
@@ -206,6 +216,11 @@ LOG_DIR="../logs/fastapi"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 # 激活虚拟环境
 source .venv/bin/activate
 
@@ -223,6 +238,11 @@ EOF
 LOG_DIR="../logs/fastapi"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
 
 # 检查 uv 是否已安装
 if ! command -v uv &> /dev/null; then

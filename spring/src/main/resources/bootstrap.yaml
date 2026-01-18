@@ -6,7 +6,7 @@ spring:
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:csc20040312}
+    password: ${DB_PASSWORD:csc200403121}
     driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     nacos:
