@@ -36,44 +36,83 @@
 ## 设计图
 
 - 系统架构图
+
   ![architecture](./static/pic/architecture.drawio.png)
+
 - ER 图
+
   ![er](./static/pic/er.drawio.png)
+
 - UML 用例图
+
   - 管理员 UML
+
     ![uml_admin](./static/pic/uml_admin.drawio.png)
+
   - 用户 UML
+
     ![uml_user](./static/pic/uml_user.drawio.png)
+
 - 系统功能结构图
+
   ![structure](./static/pic/structure.drawio.png)
+
 - 流程图
+
   - 整体核心流程图
+
     ![main](./static/pic/flowchart/main.drawio.png)
+
   - 基础系统操作流程图
+
     ![basic](./static/pic/flowchart/basic.drawio.png)
+
   - Agent 执行流程图
+
     ![agent](./static/pic/flowchart/agent.drawio.png)
+
   - 搜索算法流程图
+
     ![algorithm](./static/pic/flowchart/algorithm.drawio.png)
+
   - 权威文章 AI 评价生成流程图
+
     ![generate](./static/pic/flowchart/generate.drawio.png)
+
   - CSDN 文章链接爬取流程图
+
     ![getlink](./static/pic/flowchart/getlink.drawio.png)
+
   - 文章链接内容爬取流程图
+
     ![getarticle](./static/pic/flowchart/getarticle.drawio.png)
+
   - 注册/登录流程图
+
     ![login](./static/pic/flowchart/login.drawio.png)
+
   - AOP 日志记录流程图
+
     ![aop_log](./static/pic/flowchart/aop_log.drawio.png)
+
   - AOP 权限校验流程图
+
     ![aop_req](./static/pic/flowchart/aop_req.drawio.png)
+
   - 中间件权限校验流程图
+
     ![middleware](./static/pic/flowchart/middleware.drawio.png)
+
   - 拦截器权限校验流程图
+
     ![interceptor](./static/pic/flowchart/interceptor.drawio.png)
+
   - 装饰器权限校验流程图
+
     ![decorator](./static/pic/flowchart/decorator.drawio.png)
+
   - 网关登录校验流程图
+
     ![gateway](./static/pic/flowchart/gateway.drawio.png)
 
 ## 技术栈
