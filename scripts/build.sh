@@ -295,6 +295,11 @@ build_gin() {
     if command -v go &> /dev/null; then
         print_info "使用 Go 编译 Gin 服务..."
         go build -o gin_service main.go
+        
+        if [ $? -ne 0 ]; then
+            print_error "Gin 编译失败"
+            return 1
+        fi
     else
         print_error "Go 未安装，跳过 Gin 打包"
         return 1
@@ -305,6 +310,8 @@ build_gin() {
     mkdir -p "$GIN_DIST"
     
     # 复制二进制文件
+    cp gin_service "$GIN_DIST/"
+    
     # 复制配置文件
     cp application.yaml "$GIN_DIST/"
     
@@ -312,8 +319,6 @@ build_gin() {
     if [ -f ".env" ]; then
         cp .env "$GIN_DIST/"
     fi
-    
-    # 创建启动脚本cation.yaml "$GIN_DIST/"
     
     # 创建启动脚本
     cat > "$GIN_DIST/start.sh" << 'EOF'
