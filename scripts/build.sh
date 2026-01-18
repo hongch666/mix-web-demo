@@ -60,6 +60,11 @@ build_spring() {
     # 复制配置文件
     cp -r src/main/resources/* "$SPRING_DIST/"
     
+    # 复制 .env 文件
+    if [ -f ".env" ]; then
+        cp .env "$SPRING_DIST/"
+    fi
+    
     # 创建启动脚本
     cat > "$SPRING_DIST/start.sh" << 'EOF'
 #!/bin/bash
@@ -67,6 +72,12 @@ JAVA_OPTS="-Xms512m -Xmx1024m"
 LOG_DIR="../logs/spring"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 nohup java $JAVA_OPTS -jar spring.jar --spring.config.location=bootstrap.yaml,application.yaml >> "$LOG_FILE" 2>&1 &
 echo $! > spring.pid
 echo "Spring 服务已启动，PID: $(cat spring.pid)"
@@ -116,6 +127,11 @@ build_gateway() {
     # 复制配置文件
     cp -r src/main/resources/* "$GATEWAY_DIST/"
     
+    # 复制 .env 文件
+    if [ -f ".env" ]; then
+        cp .env "$GATEWAY_DIST/"
+    fi
+    
     # 创建启动脚本
     cat > "$GATEWAY_DIST/start.sh" << 'EOF'
 #!/bin/bash
@@ -123,6 +139,12 @@ JAVA_OPTS="-Xms512m -Xmx1024m"
 LOG_DIR="../logs/gateway"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 nohup java $JAVA_OPTS -jar gateway.jar --spring.config.location=application.yaml >> "$LOG_FILE" 2>&1 &
 echo $! > gateway.pid
 echo "Gateway 服务已启动，PID: $(cat gateway.pid)"
@@ -160,8 +182,10 @@ build_fastapi() {
     
     # 复制配置文件
     cp application.yaml "$FASTAPI_DIST/"
-    if [ -f application-secret.yaml ]; then
-        cp application-secret.yaml "$FASTAPI_DIST/"
+    
+    # 复制 .env 文件
+    if [ -f ".env" ]; then
+        cp .env "$FASTAPI_DIST/"
     fi
     
     # 复制 uv 配置文件
@@ -256,10 +280,15 @@ build_gin() {
     mkdir -p "$GIN_DIST"
     
     # 复制二进制文件
-    cp gin_service "$GIN_DIST/"
-    
     # 复制配置文件
     cp application.yaml "$GIN_DIST/"
+    
+    # 复制 .env 文件
+    if [ -f ".env" ]; then
+        cp .env "$GIN_DIST/"
+    fi
+    
+    # 创建启动脚本cation.yaml "$GIN_DIST/"
     
     # 创建启动脚本
     cat > "$GIN_DIST/start.sh" << 'EOF'
@@ -267,6 +296,12 @@ build_gin() {
 LOG_DIR="../logs/gin"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 nohup ./gin_service >> "$LOG_FILE" 2>&1 &
 echo $! > gin.pid
 echo "Gin 服务已启动，PID: $(cat gin.pid)"
@@ -321,11 +356,16 @@ build_nestjs() {
         print_info "使用 bun 的依赖..."
         cp -r node_modules "$NESTJS_DIST/"
         cp bunfig.toml "$NESTJS_DIST/" 2>/dev/null || true
-    else
-        print_info "使用 npm 的依赖..."
-        cp -r node_modules "$NESTJS_DIST/"
+    # 复制配置文件
+    cp application.yaml "$NESTJS_DIST/"
+    cp package.json "$NESTJS_DIST/"
+    
+    # 复制 .env 文件
+    if [ -f ".env" ]; then
+        cp .env "$NESTJS_DIST/"
     fi
     
+    # 创建启动脚本 - 优先使用 bun
     # 复制配置文件
     cp application.yaml "$NESTJS_DIST/"
     cp package.json "$NESTJS_DIST/"
@@ -337,6 +377,11 @@ build_nestjs() {
 LOG_DIR="../logs/nestjs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
 
 # 优先使用 bun 启动
 if command -v bun &> /dev/null; then
@@ -354,6 +399,12 @@ EOF
 LOG_DIR="../logs/nestjs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
+
+# 加载 .env 文件
+if [ -f ".env" ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
 nohup node dist/main.js >> "$LOG_FILE" 2>&1 &
 echo $! > nestjs.pid
 echo "NestJS 服务已启动，PID: $(cat nestjs.pid)"

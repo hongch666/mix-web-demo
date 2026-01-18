@@ -135,21 +135,21 @@ run_container() {
     
     case $service in
         gin|nestjs|spring)
-            # 这三个服务都有application.yaml配置
+            # 这三个服务都有 application.yaml 和 .env 配置
             if [ -f "$service_dir/application.yaml" ]; then
                 volume_args="$volume_args -v $service_dir/application.yaml:/app/application.yaml"
             fi
-            if [ -f "$service_dir/application-secret.yaml" ]; then
-                volume_args="$volume_args -v $service_dir/application-secret.yaml:/app/application-secret.yaml"
+            if [ -f "$service_dir/.env" ]; then
+                volume_args="$volume_args -v $service_dir/.env:/app/.env"
             fi
             ;;
         fastapi)
-            # FastAPI服务
+            # FastAPI 服务
             if [ -f "$service_dir/application.yaml" ]; then
                 volume_args="$volume_args -v $service_dir/application.yaml:/app/application.yaml"
             fi
-            if [ -f "$service_dir/application-secret.yaml" ]; then
-                volume_args="$volume_args -v $service_dir/application-secret.yaml:/app/application-secret.yaml"
+            if [ -f "$service_dir/.env" ]; then
+                volume_args="$volume_args -v $service_dir/.env:/app/.env"
             fi
             ;;
     esac
