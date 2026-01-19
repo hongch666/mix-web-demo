@@ -21,4 +21,14 @@ export class UserService {
       where: { name: Like(`%${name}%`) },
     });
   }
+
+  // 判断用户是否是管理员
+  async isAdminUser(userId: number): Promise<boolean> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      return false;
+    }
+    // 根据role字段判断是否是管理员，支持'admin'、'ADMIN'等多种格式
+    return user.role && user.role.toLowerCase() === 'admin';
+  }
 }

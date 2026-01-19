@@ -10,6 +10,7 @@ import { CommonModule } from './common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
+import { RequireAdminInterceptor } from './common/interceptors/require-admin.interceptor';
 import { ModulesModule } from './modules/modules.module';
 
 @Module({
@@ -76,6 +77,10 @@ import { ModulesModule } from './modules/modules.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: ApiLogInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequireAdminInterceptor,
     },
   ],
 })

@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLogService } from './api-log.service';
 import { QueryApiLogDto } from './dto/api-log.dto';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
+import { RequireAdmin } from 'src/common/decorators/require-admin.decorator';
 
 @Controller('api-logs')
 @ApiTags('API日志模块')
@@ -18,6 +19,7 @@ export class ApiLogController {
     description: '可根据用户ID、用户名、API路径等条件查询，支持分页',
   })
   @ApiLog('查询API日志')
+  @RequireAdmin()
   async findByFilter(@Query() query: QueryApiLogDto) {
     return await this.apiLogService.findByFilter(query);
   }
@@ -31,6 +33,7 @@ export class ApiLogController {
     description: '通过日志ID删除单条日志',
   })
   @ApiLog('删除API日志')
+  @RequireAdmin()
   async remove(@Param('id') id: string) {
     await this.apiLogService.removeById(id);
     return null;
@@ -45,6 +48,7 @@ export class ApiLogController {
     description: '通过日志ID路径参数批量删除，多个ID用英文逗号分隔',
   })
   @ApiLog('批量删除API日志')
+  @RequireAdmin()
   async removeByIds(@Param('ids') ids: string) {
     const idArr = ids
       .split(',')
