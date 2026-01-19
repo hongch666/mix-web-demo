@@ -53,6 +53,12 @@ public class UserController {
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "user", 
+        paramSource = "query", 
+        paramNames = { "page", "size", "username" }
+    )
     @ApiLog("获取用户信息")
     public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
         UserListVO data = userService.listUsersWithFilter(

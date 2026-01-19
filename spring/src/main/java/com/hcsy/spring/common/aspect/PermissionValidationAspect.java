@@ -19,6 +19,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -113,6 +114,44 @@ public class PermissionValidationAspect {
      */
     private Long getPathSingleParam(ProceedingJoinPoint joinPoint, String paramName) {
         try {
+            // 先尝试从方法参数中获取 @PathVariable 标注的参数
+            Object[] args = joinPoint.getArgs();
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            Method method = methodSignature.getMethod();
+            java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
+            
+            for (int i = 0; i < paramAnnotations.length; i++) {
+                for (java.lang.annotation.Annotation annotation : paramAnnotations[i]) {
+                    if (annotation instanceof PathVariable) {
+                        PathVariable pathVar = (PathVariable) annotation;
+                        String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
+                        
+                        // 如果参数名匹配或是通用的id参数
+                        if (name.equals(paramName) || "id".equals(paramName)) {
+                            Object argValue = args[i];
+                            if (argValue instanceof Long) {
+                                Long id = (Long) argValue;
+                                logger.info("从方法参数获取路径参数 %s = %d", paramName, id);
+                                return id;
+                            } else if (argValue instanceof String) {
+                                try {
+                                    Long id = Long.parseLong((String) argValue);
+                                    logger.info("从方法参数获取路径参数 %s = %d", paramName, id);
+                                    return id;
+                                } catch (NumberFormatException e) {
+                                    logger.warning("路径参数转换失败: " + argValue);
+                                }
+                            } else if (argValue instanceof Integer) {
+                                Long id = ((Integer) argValue).longValue();
+                                logger.info("从方法参数获取路径参数 %s = %d", paramName, id);
+                                return id;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 备用方案：从URL中提取最后一个路径段作为ID
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
                     .getRequestAttributes();
             if (attributes != null) {
@@ -124,14 +163,18 @@ public class PermissionValidationAspect {
                 }
 
                 String[] parts = pathVariable.split("/");
-                for (int i = 0; i < parts.length - 1; i++) {
-                    if (parts[i].equals(paramName) && i + 1 < parts.length) {
+                // 从路径的最后一个非空段提取ID
+                for (int i = parts.length - 1; i >= 0; i--) {
+                    if (!parts[i].isEmpty()) {
                         try {
-                            Long id = Long.parseLong(parts[i + 1]);
-                            logger.info("从路径获取参数 %s = %d", paramName, id);
+                            // 尝试将最后一个路径段转换为ID
+                            Long id = Long.parseLong(parts[i]);
+                            logger.info("从URL路径获取ID: %d", id);
                             return id;
                         } catch (NumberFormatException e) {
-                            continue;
+                            // 如果最后一个不是数字，说明这不是ID参数，返回null
+                            logger.warning("URL最后一个路径段不是数字: %s", parts[i]);
+                            return null;
                         }
                     }
                 }
@@ -148,60 +191,80 @@ public class PermissionValidationAspect {
      */
     private Long getPathMultiParams(ProceedingJoinPoint joinPoint, String[] paramNames, String businessType) {
         try {
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
-                    .getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                String pathVariable = request.getRequestURI();
-                if (request.getQueryString() != null) {
-                    pathVariable = pathVariable.split("\\?")[0];
-                }
-
-                String[] parts = pathVariable.split("/");
-
-                if ("comment".equals(businessType)) {
-                    // 处理评论的批量删除：/comments/batch/{ids} 或 /comments/{id}
-                    for (int i = 0; i < parts.length; i++) {
-                        if ("comments".equals(parts[i])) {
-                            if (i + 1 < parts.length && "batch".equals(parts[i + 1]) && i + 2 < parts.length) {
-                                // 批量删除
-                                String idsPart = parts[i + 2];
-                                String[] ids = idsPart.split(",");
-                                Long commentUserId = null;
-                                for (String idStr : ids) {
-                                    Long commentId = Long.parseLong(idStr);
-                                    Comments comment = commentsService.getById(commentId);
-                                    if (comment == null) {
-                                        throw new RuntimeException("评论ID不存在: " + commentId);
-                                    }
-                                    if (comment.getUserId() == null) {
-                                        throw new RuntimeException("评论ID未关联用户: " + commentId);
-                                    }
-                                    if (commentUserId != null
-                                            && !commentUserId.equals(comment.getUserId())) {
-                                        throw new RuntimeException("批量删除的评论属于不同用户");
-                                    }
-                                    commentUserId = comment.getUserId();
-                                }
-                                logger.info("从路径获取批量评论用户ID: %d", commentUserId);
-                                return commentUserId;
-                            } else if (i + 1 < parts.length && !parts[i + 1].equals("batch")) {
-                                // 单个删除
-                                Long commentId = Long.parseLong(parts[i + 1]);
-                                Comments comment = commentsService.getById(commentId);
-                                if (comment == null) {
-                                    throw new RuntimeException("评论ID不存在: " + commentId);
-                                }
-                                if (comment.getUserId() == null) {
-                                    throw new RuntimeException("评论ID未关联用户: " + commentId);
-                                }
-                                logger.info("从路径获取评论用户ID: %d", comment.getUserId());
-                                return comment.getUserId();
+            Object[] args = joinPoint.getArgs();
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            Method method = methodSignature.getMethod();
+            java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
+            
+            // 先尝试从方法参数中获取批量ID参数
+            String batchIdsStr = null;
+            for (int i = 0; i < paramAnnotations.length; i++) {
+                for (java.lang.annotation.Annotation annotation : paramAnnotations[i]) {
+                    if (annotation instanceof PathVariable) {
+                        PathVariable pathVar = (PathVariable) annotation;
+                        String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
+                        
+                        // 查找 ids 或 paramNames[0] 参数
+                        if ("ids".equals(name) || (paramNames.length > 0 && name.equals(paramNames[0]))) {
+                            Object argValue = args[i];
+                            if (argValue instanceof String) {
+                                batchIdsStr = (String) argValue;
+                                break;
                             }
                         }
                     }
                 }
+                if (batchIdsStr != null) break;
             }
+            
+            if (batchIdsStr != null && batchIdsStr.contains(",")) {
+                // 批量删除的情况
+                String[] ids = batchIdsStr.split(",");
+                Long commentUserId = null;
+                
+                if ("comment".equals(businessType)) {
+                    for (String idStr : ids) {
+                        idStr = idStr.trim();
+                        if (!idStr.isEmpty()) {
+                            Long commentId = Long.parseLong(idStr);
+                            Comments comment = commentsService.getById(commentId);
+                            if (comment == null) {
+                                throw new RuntimeException("评论ID不存在: " + commentId);
+                            }
+                            if (comment.getUserId() == null) {
+                                throw new RuntimeException("评论ID未关联用户: " + commentId);
+                            }
+                            if (commentUserId != null && !commentUserId.equals(comment.getUserId())) {
+                                throw new RuntimeException("批量删除的评论属于不同用户");
+                            }
+                            commentUserId = comment.getUserId();
+                        }
+                    }
+                    logger.info("从方法参数获取批量评论用户ID: %d", commentUserId);
+                    return commentUserId;
+                } else if ("article".equals(businessType)) {
+                    for (String idStr : ids) {
+                        idStr = idStr.trim();
+                        if (!idStr.isEmpty()) {
+                            Long articleId = Long.parseLong(idStr);
+                            Article article = articleService.getById(articleId);
+                            if (article == null) {
+                                throw new RuntimeException("文章ID不存在: " + articleId);
+                            }
+                            if (article.getUserId() == null) {
+                                throw new RuntimeException("文章ID未关联用户: " + articleId);
+                            }
+                            if (commentUserId != null && !commentUserId.equals(article.getUserId())) {
+                                throw new RuntimeException("批量删除的文章属于不同用户");
+                            }
+                            commentUserId = article.getUserId();
+                        }
+                    }
+                    logger.info("从方法参数获取批量文章用户ID: %d", commentUserId);
+                    return commentUserId;
+                }
+            }
+            
         } catch (Exception e) {
             logger.warning("获取路径多个参数失败: " + e.getMessage());
         }

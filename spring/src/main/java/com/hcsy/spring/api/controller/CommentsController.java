@@ -104,6 +104,13 @@ public class CommentsController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除评论", description = "根据id删除评论")
+    @RequirePermission(
+        roles = { "admin" }, 
+        allowSelf = true, 
+        businessType = "comment", 
+        paramSource = "path_single", 
+        paramNames = { "id" }
+    )
     @ApiLog("删除评论")
     public Result deleteComment(@PathVariable Long id) {
         commentsService.removeById(id);
@@ -112,6 +119,13 @@ public class CommentsController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
+    @RequirePermission(
+        roles = { "admin" }, 
+        allowSelf = true, 
+        businessType = "comment", 
+        paramSource = "path_single", 
+        paramNames = { "ids" }
+    )
     @ApiLog("批量删除评论")
     public Result deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -142,6 +156,12 @@ public class CommentsController {
 
     @GetMapping()
     @Operation(summary = "获取普通评论信息", description = "分页获取普通评论信息列表，并支持用户名和文章标题模糊查询")
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "comment", 
+        paramSource = "query", 
+        paramNames = { "page", "size", "username", "articleTitle" }
+    )
     @ApiLog("获取普通评论信息")
     public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
@@ -166,6 +186,12 @@ public class CommentsController {
 
     @GetMapping("/ai")
     @Operation(summary = "获取AI评论信息", description = "分页获取AI评论信息列表，并支持AI类型和文章标题模糊查询")
+    @RequirePermission(
+        roles = { "admin" }, 
+        businessType = "comment", 
+        paramSource = "query", 
+        paramNames = { "page", "size", "aiType", "articleTitle" }
+    )
     @ApiLog("获取AI评论信息")
     public Result listAIComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
