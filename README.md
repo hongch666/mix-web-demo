@@ -99,15 +99,18 @@
 
     ![aop_req](./static/pic/flowchart/aop_req.drawio.png)
 
-  - 中间件权限校验流程图
+  - 中间件日志记录流程图
 
     ![middleware](./static/pic/flowchart/middleware.drawio.png)
 
-  - 拦截器权限校验流程图
+  - 拦截器日志记录流程图
 
     ![interceptor](./static/pic/flowchart/interceptor.drawio.png)
 
-  - 装饰器权限校验流程图
+  - 拦截器权限校验流程图
+    ![interceptor_req](./static/pic/flowchart/interceptor_req.drawio.png)
+
+  - 装饰器日志记录流程图
 
     ![decorator](./static/pic/flowchart/decorator.drawio.png)
 
@@ -1759,175 +1762,3 @@ $$
 | **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
 
 - 权重总和为 1.0，确保评分结果的可比性和公平性。
-
-# FastAPI Server Configuration
-
-SERVER_IP=127.0.0.1
-
-SERVER_PORT=8084
-
-SERVER_RELOAD=True
-
-# Nacos Configuration
-
-NACOS_SERVER=127.0.0.1:8848
-
-NACOS_NAMESPACE=public
-
-NACOS_SERVICE_NAME=fastapi
-
-NACOS_GROUP_NAME=DEFAULT_GROUP
-
-# RabbitMQ Configuration
-
-RABBITMQ_HOST=127.0.0.1
-
-RABBITMQ_PORT=5672
-
-RABBITMQ_USERNAME=hcsy
-
-RABBITMQ_PASSWORD=123456
-
-RABBITMQ_VHOST=test
-
-# MySQL Database Configuration
-
-DB_MYSQL_HOST=localhost
-
-DB_MYSQL_PORT=3306
-
-DB_MYSQL_DATABASE=demo
-
-DB_MYSQL_USER=root
-
-DB_MYSQL_PASSWORD=csc20040312
-
-# PostgreSQL Database Configuration
-
-DB_POSTGRES_HOST=localhost
-
-DB_POSTGRES_PORT=5432
-
-DB_POSTGRES_DATABASE=demo
-
-DB_POSTGRES_USER=postgres
-
-DB_POSTGRES_PASSWORD=123456
-
-DB_POSTGRES_POOL_PRE_PING=True
-
-DB_POSTGRES_POOL_SIZE=10
-
-DB_POSTGRES_MAX_OVERFLOW=20
-
-DB_POSTGRES_ECHO=False
-
-# MongoDB Configuration
-
-DB_MONGODB_HOST=localhost
-
-DB_MONGODB_PORT=27017
-
-# DB_MONGODB_USERNAME=
-
-# DB_MONGODB_PASSWORD=
-
-DB_MONGODB_DATABASE=demo
-
-# Hive Configuration
-
-DB_HIVE_HOST=127.0.0.1
-
-DB_HIVE_PORT=10000
-
-# DB_HIVE_USERNAME=hive_user
-
-# DB_HIVE_PASSWORD=hive_password
-
-DB_HIVE_DATABASE=default
-
-DB_HIVE_TABLE=articles
-
-DB_HIVE_CONTAINER=hive-server
-
-# Redis Configuration
-
-DB_REDIS_HOST=127.0.0.1
-
-DB_REDIS_PORT=6379
-
-# DB_REDIS_USERNAME=default
-
-# DB_REDIS_PASSWORD=
-
-DB_REDIS_DB=6
-
-DB_REDIS_DECODE_RESPONSES=True
-
-DB_REDIS_MAX_CONNECTIONS=10
-
-# OSS Configuration
-
-OSS_BUCKET_NAME=your-oss-bucket
-
-OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
-
-OSS_ACCESS_KEY_ID=your-access-key-id
-
-OSS_ACCESS_KEY_SECRET=your-access-key-secret
-
-# WordCloud Configuration
-
-WORDCLOUD_FONT_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
-
-WORDCLOUD_WIDTH=800
-
-WORDCLOUD_HEIGHT=400
-
-WORDCLOUD_BG_COLOR=white
-
-# Files Configuration
-
-FILES_PIC_PATH=../static/pic
-
-FILES_EXCEL_PATH=../static/excel
-
-FILES_UPLOAD_PATH=../static/upload
-
-# Logging Configuration
-
-LOGS_PATH=../logs/fastapi
-
-# Gemini Configuration
-
-GEMINI_MODEL=gemini-2.0-flash
-
-GEMINI_BASE_URL=https://api.openai-proxy.org/v1
-
-GEMINI_API_KEY=sk-9uZUB7yzm67kee3s5OuqLbfCgK3TYeLJ4qKNrR9NvMoH4PhA
-
-# Qwen Configuration
-
-QWEN_MODEL=qwen-flash
-
-QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-
-QWEN_API_KEY=sk-750fa4980adb48e0bee331419f71bfbc
-
-# Doubao Configuration
-
-DOUBAO_MODEL=doubao-1-5-lite-32k-250115
-
-DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-
-DOUBAO_API_KEY=8e459376-ae85-4b61-b7bb-267e9567f5ef
-
-# Embedding Configuration
-
-EMBEDDING_MODEL=text-embedding-v3
-
-EMBEDDING_TOP_K=5
-
-EMBEDDING_DIMENSION=1536
-
-EMBEDDING_SIMILARITY_THRESHOLD=0.3
