@@ -108,6 +108,7 @@
     ![interceptor](./static/pic/flowchart/interceptor.drawio.png)
 
   - 拦截器权限校验流程图
+
     ![interceptor_req](./static/pic/flowchart/interceptor_req.drawio.png)
 
   - 装饰器日志记录流程图
