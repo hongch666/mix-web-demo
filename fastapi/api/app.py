@@ -3,14 +3,6 @@ from typing import Dict, Any
 from contextlib import asynccontextmanager
 from api import controller
 from api.service import AnalyzeService
-from api.mapper import (
-    get_article_mapper, get_articlelog_mapper, get_user_mapper,
-    get_category_mapper, get_like_mapper, get_collect_mapper
-)
-from common.cache import (
-    get_article_cache, get_category_cache, get_publish_time_cache,
-    get_statistics_cache, get_wordcloud_cache
-)
 from config import start_nacos, load_config, create_tables, get_db
 from common.utils import logger
 from common.middleware import ContextMiddleware
@@ -28,20 +20,8 @@ def create_app() -> FastAPI:
         create_tables(['ai_history'])
         # 启动Nacos服务注册
         start_nacos(ip=IP, port=PORT)
-        # 启动定时任务调度器（手动构建 analyze_service 依赖）
-        analyze_service = AnalyzeService(
-            articleMapper=get_article_mapper(),
-            articleLogMapper=get_articlelog_mapper(),
-            userMapper=get_user_mapper(),
-            categoryMapper=get_category_mapper(),
-            likeMapper=get_like_mapper(),
-            collectMapper=get_collect_mapper(),
-            article_cache=get_article_cache(),
-            category_cache=get_category_cache(),
-            publish_time_cache=get_publish_time_cache(),
-            statistics_cache=get_statistics_cache(),
-            wordcloud_cache=get_wordcloud_cache()
-        )
+        # 启动定时任务调度器
+        analyze_service = AnalyzeService.create_for_scheduler()
         start_scheduler(
             analyze_service=analyze_service,
             db_factory=lambda: next(get_db())

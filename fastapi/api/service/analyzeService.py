@@ -57,6 +57,23 @@ class AnalyzeService:
         self._statistics_cache = statistics_cache
         self._wordcloud_cache = wordcloud_cache
 
+    @classmethod
+    def create_for_scheduler(cls) -> 'AnalyzeService':
+        """为调度器创建 AnalyzeService 实例（手动注入所有依赖）"""
+        return cls(
+            articleMapper=get_article_mapper(),
+            articleLogMapper=get_articlelog_mapper(),
+            userMapper=get_user_mapper(),
+            categoryMapper=get_category_mapper(),
+            likeMapper=get_like_mapper(),
+            collectMapper=get_collect_mapper(),
+            article_cache=get_article_cache(),
+            category_cache=get_category_cache(),
+            publish_time_cache=get_publish_time_cache(),
+            statistics_cache=get_statistics_cache(),
+            wordcloud_cache=get_wordcloud_cache()
+        )
+
     def get_top10_articles_service(self, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         """
         获取 Top10 文章服务
