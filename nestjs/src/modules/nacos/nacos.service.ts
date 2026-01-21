@@ -5,6 +5,7 @@ import axios, { Method } from 'axios';
 import qs from 'qs';
 import { ClsService } from 'nestjs-cls';
 import { fileLogger } from '../../common/utils/writeLog';
+import { BusinessException } from 'src/common/exceptions/business.exception';
 
 interface CallOptions {
   serviceName: string;
@@ -75,7 +76,7 @@ export class NacosService implements OnModuleInit {
   async call(opts: CallOptions): Promise<any> {
     const instances = await this.getServiceInstances(opts.serviceName);
     if (!instances || instances.length === 0) {
-      throw new Error(`服务 ${opts.serviceName} 无可用实例`);
+      throw new BusinessException(`服务 ${opts.serviceName} 无可用实例`);
     }
 
     // 负载均衡策略：随机

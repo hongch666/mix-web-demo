@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import yamlConfig from '../config/yaml-config.service';
+import { BusinessException } from '../exceptions/business.exception';
 
 export class LoggerUtil {
   private static logPath: string;
@@ -20,7 +21,7 @@ export class LoggerUtil {
       this.configLoaded = true;
       Logger.log(`日志配置加载成功，路径: ${this.logPath}`);
     } catch (error) {
-      throw new Error(`加载日志配置失败: ${error.message}`);
+      throw new BusinessException(`加载日志配置失败: ${error.message}`);
     }
   }
 
@@ -53,7 +54,7 @@ export class LoggerUtil {
     try {
       fs.appendFileSync(logFile, logEntry, 'utf8');
     } catch (error) {
-      throw new Error(`写入日志失败: ${error.message}`);
+      throw new BusinessException(`写入日志失败: ${error.message}`);
     }
   }
 

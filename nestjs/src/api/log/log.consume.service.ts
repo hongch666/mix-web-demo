@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from 'src/modules/mq/mq.service';
 import { ArticleLogService } from './log.service';
 import { fileLogger } from 'src/common/utils/writeLog';
+import { BusinessException } from 'src/common/exceptions/business.exception';
 
 @Injectable()
 export class LogConsumerService implements OnModuleInit {
@@ -44,14 +45,14 @@ export class LogConsumerService implements OnModuleInit {
       fileLogger.error(
         `ArticleLog 消息缺少 action 字段: ${JSON.stringify(msg)}`,
       );
-      throw new Error('ArticleLog 消息缺少 action 字段');
+      throw new BusinessException('ArticleLog 消息缺少 action 字段');
     }
 
     if (!msg.content) {
       fileLogger.error(
         `ArticleLog 消息缺少 content 字段: ${JSON.stringify(msg)}`,
       );
-      throw new Error('ArticleLog 消息缺少 content 字段');
+      throw new BusinessException('ArticleLog 消息缺少 content 字段');
     }
 
     const dto = {

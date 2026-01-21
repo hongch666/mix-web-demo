@@ -10,6 +10,7 @@ import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { REQUIRE_ADMIN_KEY } from '../decorators/require-admin.decorator';
 import { UserService } from '../../modules/user/user.service';
+import { BusinessException } from '../exceptions/business.exception';
 
 @Injectable()
 export class RequireAdminInterceptor implements NestInterceptor {
@@ -39,7 +40,7 @@ export class RequireAdminInterceptor implements NestInterceptor {
 
     // 如果没有用户ID，拒绝访问
     if (!userId) {
-      throw new ForbiddenException('未授权的用户，无法访问');
+      throw new BusinessException('未授权的用户，无法访问');
     }
 
     // 检查用户是否是管理员
@@ -47,7 +48,7 @@ export class RequireAdminInterceptor implements NestInterceptor {
 
     // 非管理员拦截
     if (!isAdmin) {
-      throw new ForbiddenException('当前用户没有管理员权限，无法访问此功能');
+      throw new BusinessException('当前用户没有管理员权限，无法访问此功能');
     }
 
     return next.handle();

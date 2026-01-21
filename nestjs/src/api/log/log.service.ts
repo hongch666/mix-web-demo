@@ -33,43 +33,39 @@ export class ArticleLogService {
    * 如果索引不存在则自动创建
    */
   private async ensureIndexes() {
-    try {
-      const collection = this.logModel.collection;
-      const existingIndexes = await collection.getIndexes();
+    const collection = this.logModel.collection;
+    const existingIndexes = await collection.getIndexes();
 
-      // 定义需要的索引
-      const requiredIndexes: Array<{
-        spec: Record<string, 1 | -1>;
-        options: { name: string };
-      }> = [
-        { spec: { createdAt: -1 }, options: { name: 'createdAt_-1' } },
-        {
-          spec: { userId: 1, createdAt: -1 },
-          options: { name: 'userId_1_createdAt_-1' },
-        },
-        {
-          spec: { articleId: 1, createdAt: -1 },
-          options: { name: 'articleId_1_createdAt_-1' },
-        },
-        {
-          spec: { action: 1, createdAt: -1 },
-          options: { name: 'action_1_createdAt_-1' },
-        },
-      ];
+    // 定义需要的索引
+    const requiredIndexes: Array<{
+      spec: Record<string, 1 | -1>;
+      options: { name: string };
+    }> = [
+      { spec: { createdAt: -1 }, options: { name: 'createdAt_-1' } },
+      {
+        spec: { userId: 1, createdAt: -1 },
+        options: { name: 'userId_1_createdAt_-1' },
+      },
+      {
+        spec: { articleId: 1, createdAt: -1 },
+        options: { name: 'articleId_1_createdAt_-1' },
+      },
+      {
+        spec: { action: 1, createdAt: -1 },
+        options: { name: 'action_1_createdAt_-1' },
+      },
+    ];
 
-      // 检查并创建缺失的索引
-      for (const indexConfig of requiredIndexes) {
-        const indexExists = Object.values(existingIndexes).some(
-          (index: any) => index.name === indexConfig.options.name,
-        );
+    // 检查并创建缺失的索引
+    for (const indexConfig of requiredIndexes) {
+      const indexExists = Object.values(existingIndexes).some(
+        (index: any) => index.name === indexConfig.options.name,
+      );
 
-        if (!indexExists) {
-          await collection.createIndex(indexConfig.spec, indexConfig.options);
-          fileLogger.info(`索引已创建: ${indexConfig.options.name}`);
-        }
+      if (!indexExists) {
+        await collection.createIndex(indexConfig.spec, indexConfig.options);
+        fileLogger.info(`索引已创建: ${indexConfig.options.name}`);
       }
-    } catch (error) {
-      fileLogger.error(`索引创建失败: ${error}`);
     }
   }
 

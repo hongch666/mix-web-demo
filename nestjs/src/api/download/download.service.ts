@@ -12,6 +12,7 @@ import { User } from 'src/modules/user/entities/user.entity';
 import { Articles } from 'src/modules/article/entities/article.entity';
 import * as marked from 'marked';
 import dayjs from 'dayjs';
+import { BusinessException } from 'src/common/exceptions/business.exception';
 
 @Injectable()
 export class DownloadService {
@@ -27,7 +28,7 @@ export class DownloadService {
   async exportToWordAndSave(id: number) {
     const article = await this.articleService.getArticleById(id);
     if (!article) {
-      throw new Error(`Article with id ${id} not found`);
+      throw new BusinessException(`文章 ID ${id} 未找到`);
     }
     const htmlContent = marked.parse(article.content || '');
     const user = await this.userService.getUserById(article.user_id);
@@ -42,7 +43,7 @@ export class DownloadService {
     };
     const filePath = this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
-      throw new Error('Word template file path is not configured');
+      throw new BusinessException('未配置文件保存路径');
     }
     const templatePath = path.join(process.cwd(), filePath, 'template.docx'); // 模板文件路径
     const savePath = path.join(process.cwd(), filePath, `article-${id}.docx`); // 保存路径
@@ -59,13 +60,7 @@ export class DownloadService {
       `articles/article-${id}.docx`,
     );
     // 上传后删除本地Word文件
-    try {
-      fs.unlinkSync(savePath);
-    } catch (e) {
-      fileLogger.error(
-        '删除文章Word文件失败' + (e.message ? e.message : '未知错误'),
-      );
-    }
+    fs.unlinkSync(savePath);
     return url;
   }
 
@@ -73,7 +68,7 @@ export class DownloadService {
   async exportMarkdownAndUpload(id: number): Promise<string> {
     const article = await this.articleService.getArticleById(id);
     if (!article) {
-      throw new Error(`Article with id ${id} not found`);
+      throw new BusinessException(`文章 ID ${id} 未找到`);
     }
     // 拼接markdown内容
     let markdown = `# ${article.title}\n`;
@@ -97,13 +92,7 @@ export class DownloadService {
     const ossPath = `articles/article-${id}.md`;
     const url = await this.uploadFileToOSS(savePath, ossPath);
     // 上传后删除本地Markdown文件
-    try {
-      fs.unlinkSync(savePath);
-    } catch (e) {
-      fileLogger.error(
-        '删除文章Markdown文件失败' + (e.message ? e.message : '未知错误'),
-      );
-    }
+    fs.unlinkSync(savePath);
     return url;
   }
 
@@ -111,7 +100,7 @@ export class DownloadService {
   async exportToPdfAndSave(id: number): Promise<string> {
     const article = await this.articleService.getArticleById(id);
     if (!article) {
-      throw new Error(`Article with id ${id} not found`);
+      throw new BusinessException(`文章 ID ${id} 未找到`);
     }
 
     const user = await this.userService.getUserById(article.user_id);
@@ -131,51 +120,38 @@ export class DownloadService {
     );
 
     // 使用 puppeteer 生成 PDF
-    let browser;
-    try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
+    let browser: puppeteer.Browser;
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
 
-      const page = await browser.newPage();
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
-      // 生成 PDF
-      await page.pdf({
-        path: savePath,
-        format: 'A4',
-        margin: {
-          top: '20mm',
-          bottom: '20mm',
-          left: '20mm',
-          right: '20mm',
-        },
-      });
+    // 生成 PDF
+    await page.pdf({
+      path: savePath,
+      format: 'A4',
+      margin: {
+        top: '20mm',
+        bottom: '20mm',
+        left: '20mm',
+        right: '20mm',
+      },
+    });
 
-      await page.close();
-      await browser.close();
+    await page.close();
+    await browser.close();
 
-      // 上传到 OSS
-      const ossPath = `articles/article-${id}.pdf`;
-      const url = await this.uploadFileToOSS(savePath, ossPath);
+    // 上传到 OSS
+    const ossPath = `articles/article-${id}.pdf`;
+    const url = await this.uploadFileToOSS(savePath, ossPath);
 
-      // 删除本地 PDF 文件
-      try {
-        fs.unlinkSync(savePath);
-      } catch (e) {
-        fileLogger.error(
-          '删除文章PDF文件失败' + (e.message ? e.message : '未知错误'),
-        );
-      }
+    // 删除本地 PDF 文件
+    fs.unlinkSync(savePath);
 
-      return url;
-    } catch (error) {
-      fileLogger.error(
-        '生成PDF失败: ' + (error.message ? error.message : '未知错误'),
-      );
-      throw error;
-    }
+    return url;
   }
 
   // 生成 PDF 的 HTML 内容
