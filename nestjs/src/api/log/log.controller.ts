@@ -12,6 +12,7 @@ import { CreateArticleLogDto, QueryArticleLogDto } from './dto/log.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { RequireAdmin } from 'src/common/decorators/require-admin.decorator';
+import { success } from 'src/common/utils/response';
 
 @Controller('logs')
 @ApiTags('日志模块')
@@ -19,12 +20,15 @@ export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
 
   @Post()
-  @ApiOperation({ summary: '新增日志', description: '通过请求体创建日志' })
+  @ApiOperation({
+    summary: '新增日志',
+    description: '通过请求体创建日志',
+  })
   @ApiLog('新增日志')
   @RequireAdmin()
   async create(@Body() dto: CreateArticleLogDto) {
     await this.logService.create(dto);
-    return null;
+    return success(null);
   }
 
   @Get('list')
@@ -35,16 +39,19 @@ export class ArticleLogController {
   @ApiLog('查询日志')
   @RequireAdmin()
   async findByFilter(@Query() query: QueryArticleLogDto) {
-    return await this.logService.findByFilter(query);
+    const data = await this.logService.findByFilter(query);
+    return success(data);
   }
-
   @Delete(':id')
-  @ApiOperation({ summary: '删除日志', description: '通过日志 ID 删除日志' })
+  @ApiOperation({
+    summary: '删除日志',
+    description: '通过日志 ID 删除日志',
+  })
   @ApiLog('删除日志')
   @RequireAdmin()
   async remove(@Param('id') id: string) {
     await this.logService.removeById(id);
-    return null;
+    return success(null);
   }
 
   @Delete('batch/:ids')
@@ -60,6 +67,6 @@ export class ArticleLogController {
       .map((id) => id.trim())
       .filter(Boolean);
     await this.logService.removeByIds(idArr);
-    return null;
+    return success(null);
   }
 }

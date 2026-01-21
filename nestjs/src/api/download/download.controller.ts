@@ -8,6 +8,7 @@ import {
 import { ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { DownloadService } from './download.service';
+import { success } from 'src/common/utils/response';
 
 @Controller('download')
 @ApiTags('下载模块')
@@ -24,7 +25,7 @@ export class DownloadController {
   async downloadWord(@Param('id') id: number) {
     try {
       const url = await this.downloadService.exportToWordAndSave(id);
-      return url;
+      return success(url);
     } catch (error) {
       throw new HttpException(
         error.message || '下载文章Word失败',
@@ -45,7 +46,7 @@ export class DownloadController {
       const url = await this.downloadService.exportMarkdownAndUpload(
         Number(id),
       );
-      return url;
+      return success(url);
     } catch (error) {
       throw new HttpException(
         error.message || '下载文章Markdown失败',
@@ -64,7 +65,7 @@ export class DownloadController {
   async downloadPdf(@Param('id') id: number) {
     try {
       const url = await this.downloadService.exportToPdfAndSave(id);
-      return url;
+      return success(url);
     } catch (error) {
       throw new HttpException(
         error.message || '下载文章PDF失败',

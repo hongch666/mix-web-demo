@@ -6,7 +6,6 @@ import {
 import { AppModule } from './app.module';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
-import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
 export async function createApp(): Promise<NestFastifyApplication> {
@@ -29,8 +28,6 @@ export async function createApp(): Promise<NestFastifyApplication> {
   app.useGlobalFilters(new AllExceptionsFilter());
   //全局启用校验管道
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
-  // 全局注册拦截器
-  app.useGlobalInterceptors(new ResponseInterceptor());
   // 返回 app
   return app;
 }

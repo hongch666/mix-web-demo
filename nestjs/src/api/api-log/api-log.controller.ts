@@ -4,6 +4,7 @@ import { ApiLogService } from './api-log.service';
 import { QueryApiLogDto } from './dto/api-log.dto';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { RequireAdmin } from 'src/common/decorators/require-admin.decorator';
+import { success } from 'src/common/utils/response';
 
 @Controller('api-logs')
 @ApiTags('API日志模块')
@@ -21,7 +22,8 @@ export class ApiLogController {
   @ApiLog('查询API日志')
   @RequireAdmin()
   async findByFilter(@Query() query: QueryApiLogDto) {
-    return await this.apiLogService.findByFilter(query);
+    const data = await this.apiLogService.findByFilter(query);
+    return success(data);
   }
 
   /**
@@ -36,7 +38,7 @@ export class ApiLogController {
   @RequireAdmin()
   async remove(@Param('id') id: string) {
     await this.apiLogService.removeById(id);
-    return null;
+    return success(null);
   }
 
   /**
@@ -55,6 +57,6 @@ export class ApiLogController {
       .map((id) => id.trim())
       .filter(Boolean);
     await this.apiLogService.removeByIds(idArr);
-    return null;
+    return success(null);
   }
 }
