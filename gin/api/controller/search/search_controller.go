@@ -2,6 +2,7 @@ package search
 
 import (
 	"gin_proj/api/service/search"
+	"gin_proj/common/exceptions"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
 	"strconv"
@@ -32,7 +33,7 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 	// 绑定参数
 	var searchDTO dto.ArticleSearchDTO
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
-		panic("参数绑定错误：" + err.Error())
+		panic(exceptions.NewBusinessError("参数绑定错误", err.Error()))
 	}
 	ctx := c.Request.Context()
 	data := con.SearchService.SearchArticles(ctx, searchDTO)

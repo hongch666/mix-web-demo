@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"gin_proj/common/exceptions"
 	"gin_proj/common/utils"
 
 	"github.com/gin-gonic/gin"
@@ -13,28 +14,17 @@ func RecoveryMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				// 记录详细的 panic 信息和堆栈，便于排查
-				utils.FileLogger.Error(fmt.Sprintf("panic recovered: %v\n%s", err, string(debug.Stack())))
+				stack := string(debug.Stack())
 
-				// 转为字符串方便判断
-				var errMsg string
-				switch e := err.(type) {
-				case string:
-					errMsg = e
-				case error:
-					errMsg = e.Error()
-				default:
-					errMsg = "未知错误"
-				}
-
-				// 根据错误信息返回不同响应
-				switch errMsg {
-				case "not found":
-					utils.RespondError(c, 404, "资源未找到")
-				case "unauthorized":
-					utils.RespondError(c, 401, "未授权")
-				default:
-					utils.RespondError(c, 500, "出现错误："+errMsg)
+				// 判断是否是业务异常（可向客户端显示）
+				if businessErr, ok := err.(*exceptions.BusinessError); ok {
+					// 业务异常：返回对应的错误信息，记录详细堆栈
+					utils.FileLogger.Error(fmt.Sprintf("business error: %s\nerror detail: %s\n%s", businessErr.Message, businessErr.Err, stack))
+					utils.RespondError(c, 400, businessErr.Message)
+				} else {
+					// 其他异常：返回固定的错误信息，记录详细堆栈
+					utils.FileLogger.Error(fmt.Sprintf("堆栈错误信息: %v\n%s", err, stack))
+					utils.RespondError(c, 500, "Gin服务器错误")
 				}
 				c.Abort()
 			}

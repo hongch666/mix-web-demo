@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"gin_proj/api/mapper/sync"
+	"gin_proj/common/exceptions"
 	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
@@ -150,7 +151,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	searchResult, err := searchService.Do(ctx)
 
 	if err != nil {
-		panic(err.Error())
+		panic(exceptions.NewBusinessError("搜索执行错误", err.Error()))
 	}
 
 	// 解析结果
@@ -159,35 +160,34 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 
 	for _, hit := range searchResult.Hits.Hits {
 		var article po.ArticleES
-		if err := json.Unmarshal(hit.Source, &article); err == nil {
-			// 如果有高亮，优先使用高亮内容覆盖字段（带 <em> 标签）
-			if hit.Highlight != nil {
-				if hs, ok := hit.Highlight["title"]; ok && len(hs) > 0 {
-					article.Title = strings.Join(hs, " ")
-				}
-				if hs, ok := hit.Highlight["content"]; ok && len(hs) > 0 {
-					article.Content = strings.Join(hs, " ")
-				}
-				if hs, ok := hit.Highlight["tags"]; ok && len(hs) > 0 {
-					article.Tags = strings.Join(hs, " ")
-				}
-			}
-			articles = append(articles, article)
-			articleIDs = append(articleIDs, article.ID)
-
-			// 记录评分详情
-			var score float64
-			if hit.Score != nil {
-				score = *hit.Score
-			}
-			utils.FileLogger.Info(fmt.Sprintf(
-				"[搜索评分] 文章ID:%d | 标题:%.30s | AI评分:%.2f | 用户评分:%.2f | 阅读量:%d | 点赞:%d | 收藏:%d | 作者关注:%d | 综合分数:%.4f",
-				article.ID, article.Title, article.AIScore, article.UserScore, article.Views, article.LikeCount, article.CollectCount, article.AuthorFollowCount, score,
-			))
-		} else {
+		if err := json.Unmarshal(hit.Source, &article); err != nil {
 			// 处理解析错误
-			panic(err.Error())
+			panic(exceptions.NewBusinessError("搜索结果解析错误", err.Error()))
 		}
+		// 如果有高亮，优先使用高亮内容覆盖字段（带 <em> 标签）
+		if hit.Highlight != nil {
+			if hs, ok := hit.Highlight["title"]; ok && len(hs) > 0 {
+				article.Title = strings.Join(hs, " ")
+			}
+			if hs, ok := hit.Highlight["content"]; ok && len(hs) > 0 {
+				article.Content = strings.Join(hs, " ")
+			}
+			if hs, ok := hit.Highlight["tags"]; ok && len(hs) > 0 {
+				article.Tags = strings.Join(hs, " ")
+			}
+		}
+		articles = append(articles, article)
+		articleIDs = append(articleIDs, article.ID)
+
+		// 记录评分详情
+		var score float64
+		if hit.Score != nil {
+			score = *hit.Score
+		}
+		utils.FileLogger.Info(fmt.Sprintf(
+			"[搜索评分] 文章ID:%d | 标题:%.30s | AI评分:%.2f | 用户评分:%.2f | 阅读量:%d | 点赞:%d | 收藏:%d | 作者关注:%d | 综合分数:%.4f",
+			article.ID, article.Title, article.AIScore, article.UserScore, article.Views, article.LikeCount, article.CollectCount, article.AuthorFollowCount, score,
+		))
 	}
 
 	// 从数据库获取实际阅读量、点赞数、收藏数、作者关注数替换ES中的数据（ES数据有延迟）

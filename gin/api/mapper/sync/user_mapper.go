@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"gin_proj/common/exceptions"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -14,7 +15,7 @@ func (m *UserMapper) SearchUserByIds(userIDs []int) []po.User {
 	ctx := context.Background()
 	users, err := gorm.G[po.User](config.DB).Where("id IN ?", userIDs).Find(ctx)
 	if err != nil {
-		panic(err.Error())
+		panic(exceptions.NewBusinessError("用户查询错误", err.Error()))
 	}
 	return users
 }

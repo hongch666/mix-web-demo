@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"fmt"
+	"gin_proj/common/exceptions"
 	"log"
 	"time"
 
@@ -35,13 +36,13 @@ func InitMongoDB() {
 	clientOptions := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		panic(fmt.Errorf("MongoDB 连接失败: %v", err))
+		panic(exceptions.NewBusinessError("MongoDB 连接失败", err.Error()))
 	}
 
 	// 验证连接
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		panic(fmt.Errorf("MongoDB Ping 失败: %v", err))
+		panic(exceptions.NewBusinessError("MongoDB Ping 失败", err.Error()))
 	}
 
 	MongoClient = client

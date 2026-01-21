@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"gin_proj/api/mapper/search"
+	"gin_proj/common/exceptions"
 	"gin_proj/common/keys"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
@@ -30,12 +31,12 @@ func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.Articl
 		// 转成 JSON 字符串
 		jsonBytes, err := json.Marshal(msg)
 		if err != nil {
-			panic(err.Error())
+			panic(exceptions.NewBusinessError("文章搜索错误", err.Error()))
 		}
 		// 发送消息
 		err = config.RabbitMQ.Send("log-queue", string(jsonBytes))
 		if err != nil {
-			panic(err.Error())
+			panic(exceptions.NewBusinessError("文章搜索错误", err.Error()))
 		}
 	}
 	return vo.SearchVO{

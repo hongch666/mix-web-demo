@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gin_proj/api/mapper"
+	"gin_proj/common/exceptions"
 	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
@@ -26,7 +27,7 @@ func SyncArticlesToES() {
 	// 判断索引是否存在
 	exists, err := config.ESClient.IndexExists("articles").Do(ctx)
 	if err != nil {
-		panic(err.Error())
+		panic(exceptions.NewBusinessError("索引判断错误", err.Error()))
 	}
 	if !exists {
 		// 创建索引，指定mapping（根据po.Article结构体字段）
@@ -57,7 +58,7 @@ func SyncArticlesToES() {
 		}`
 		_, err := config.ESClient.CreateIndex("articles").BodyString(mapping).Do(ctx)
 		if err != nil {
-			panic(err.Error())
+			panic(exceptions.NewBusinessError("索引创建错误", err.Error()))
 		}
 	}
 	// 删除 articles 索引中的所有旧文档
@@ -65,7 +66,7 @@ func SyncArticlesToES() {
 		Query(elastic.NewMatchAllQuery()).
 		Do(ctx)
 	if err1 != nil {
-		panic(err1.Error())
+		panic(exceptions.NewBusinessError("索引删除错误", err1.Error()))
 	}
 
 	// 获取文章数据
@@ -124,7 +125,7 @@ func SyncArticlesToES() {
 	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 个作者的关注信息完成", len(userIDs)))
 
 	if len(articles) == 0 {
-		panic("没有已发布的文章可同步")
+		panic(exceptions.NewBusinessError("没有已发布的文章可同步", "没有已发布的文章可同步"))
 	}
 
 	// 分批提交ES文档，每批1000条避免资源耗尽
@@ -187,13 +188,13 @@ func SyncArticlesToES() {
 
 		resp, err2 := bulkRequest.Do(context.Background())
 		if err2 != nil {
-			panic(err2.Error())
+			panic(exceptions.NewBusinessError("ES批量同步错误", err2.Error()))
 		}
 		if resp.Errors {
 			for _, item := range resp.Failed() {
 				utils.FileLogger.Error(fmt.Sprintf("ES同步失败: %+v", item.Error))
 			}
-			panic("ES同步有失败项")
+			panic(exceptions.NewBusinessError("ES同步有失败项", "ES同步有失败项"))
 		}
 
 		utils.FileLogger.Info(fmt.Sprintf("[ES同步] 第 %d/%d 批提交完成，共 %d 条记录", batchIdx+1, totalBatches, end-start))

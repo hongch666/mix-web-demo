@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"gin_proj/common/exceptions"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -14,7 +15,7 @@ func (m *ArticleMapper) SearchArticles() []po.Article {
 	ctx := context.Background()
 	articles, err := gorm.G[po.Article](config.DB).Where("status = ?", 1).Find(ctx)
 	if err != nil {
-		panic(err.Error())
+		panic(exceptions.NewBusinessError("文章查询错误", err.Error()))
 	}
 	return articles
 }
