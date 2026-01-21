@@ -3,6 +3,7 @@ from common.utils import fileLogger as logger
 from typing import Optional, Dict, Any
 from config import get_service_instance
 from common.middleware import get_current_user_id, get_current_username
+from common.exceptions import BusinessException
 
 async def call_remote_service(
     service_name: str,
@@ -47,4 +48,4 @@ async def call_remote_service(
         except Exception as e:
             logger.error(f"调用 {service_name} 失败: {e}")
             if attempt == retries - 1:
-                raise
+                raise BusinessException(f"调用远程服务 {service_name} 失败，请稍后重试")

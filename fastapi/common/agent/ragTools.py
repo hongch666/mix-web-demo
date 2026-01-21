@@ -5,6 +5,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
 import warnings
+from common.exceptions import BusinessException
 
 # 抑制 PGVector 弃用警告
 warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -20,52 +21,47 @@ class RAGTools:
         
         self.logger = logger
         
-        try:
-            # 1. 初始化嵌入模型（Qwen）
-            qwen_cfg = load_config("qwen") or {}
-            embedding_cfg = load_config("embedding") or {}
-            
-            api_key = qwen_cfg.get("api_key")
-            embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
-            self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
-            self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
-            
-            if not api_key:
-                raise ValueError("Qwen API密钥未配置")
-            
-            self.embeddings = DashScopeEmbeddings(
-                model=embedding_model,
-                dashscope_api_key=api_key
-            )
-            self.logger.info(f"Qwen嵌入模型初始化成功: {embedding_model}")
-            
-            # 2. 初始化文本切分器
-            self.text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=800,  # 每个块的大小（字符数）
-                chunk_overlap=100,  # 块之间的重叠（字符数）
-                length_function=len,
-                separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""]
-            )
-            self.logger.info("文本切分器初始化成功")
-            
-            # 3. 初始化PostgreSQL向量存储
-            postgres_cfg = load_config("database")["postgres"]
-            connection_string = (
-                f"postgresql+psycopg2://{postgres_cfg['user']}:{postgres_cfg['password']}"
-                f"@{postgres_cfg['host']}:{postgres_cfg['port']}/{postgres_cfg['database']}"
-            )
-            
-            self.vector_store = PGVector(
-                embedding_function=self.embeddings,
-                collection_name="articles",
-                connection_string=connection_string,
-                use_jsonb=True
-            )
-            self.logger.info("PostgreSQL向量存储初始化成功")
-            
-        except Exception as e:
-            self.logger.error(f"RAG工具初始化失败: {e}")
-            raise
+        # 1. 初始化嵌入模型（Qwen）
+        qwen_cfg = load_config("qwen") or {}
+        embedding_cfg = load_config("embedding") or {}
+        
+        api_key = qwen_cfg.get("api_key")
+        embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
+        self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
+        self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
+        
+        if not api_key:
+            raise BusinessException("Qwen API密钥未配置")
+        
+        self.embeddings = DashScopeEmbeddings(
+            model=embedding_model,
+            dashscope_api_key=api_key
+        )
+        self.logger.info(f"Qwen嵌入模型初始化成功: {embedding_model}")
+        
+        # 2. 初始化文本切分器
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=800,  # 每个块的大小（字符数）
+            chunk_overlap=100,  # 块之间的重叠（字符数）
+            length_function=len,
+            separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""]
+        )
+        self.logger.info("文本切分器初始化成功")
+        
+        # 3. 初始化PostgreSQL向量存储
+        postgres_cfg = load_config("database")["postgres"]
+        connection_string = (
+            f"postgresql+psycopg2://{postgres_cfg['user']}:{postgres_cfg['password']}"
+            f"@{postgres_cfg['host']}:{postgres_cfg['port']}/{postgres_cfg['database']}"
+        )
+        
+        self.vector_store = PGVector(
+            embedding_function=self.embeddings,
+            collection_name="articles",
+            connection_string=connection_string,
+            use_jsonb=True
+        )
+        self.logger.info("PostgreSQL向量存储初始化成功")
     
     def add_articles_to_vector_store(
         self, 

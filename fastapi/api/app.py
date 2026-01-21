@@ -6,7 +6,8 @@ from api.service import AnalyzeService
 from config import start_nacos, load_config, create_tables, get_db
 from common.utils import logger
 from common.middleware import ContextMiddleware
-from common.handler import global_exception_handler
+from common.exceptions import BusinessException
+from common.handler import global_exception_handler, business_exception_handler
 from common.task import start_scheduler
 
 server_config: Dict[str, Any] = load_config("server")
@@ -40,6 +41,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     app.add_middleware(ContextMiddleware)
+    app.add_exception_handler(BusinessException, business_exception_handler)
     app.add_exception_handler(Exception, global_exception_handler)
     for name in controller.__all__:
         app.include_router(getattr(controller, name))

@@ -15,6 +15,7 @@ from api.mapper import (
     ArticleMapper, get_article_mapper,
     CategoryReferenceMapper, get_category_reference_mapper
 )
+from common.exceptions import BusinessException
 
 class GenerateService:
     """生成 Service"""
@@ -59,7 +60,7 @@ class GenerateService:
         # 2.1 获取文章标题,tags和内容
         article = self.article_mapper.get_article_by_id_mapper(article_id, db)
         if not article:
-            raise Exception("文章不存在")
+            raise BusinessException("文章不存在")
         # 2.2 构建提示词
         prompt = f"""请对以下文章进行评价，并给出评分。
         要求：
@@ -218,217 +219,212 @@ class GenerateService:
         # 延迟导入避免循环依赖
         from entity.po import Comments
         
-        try:
-            # 1. 判断是否需要生成AI评论
-            ai_comments_count = self.comments_mapper.get_ai_comments_num_by_article_id_mapper(article_id, db)
-            if ai_comments_count > 0:
-                logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
-                self.comments_mapper.delete_ai_comments_by_article_id_mapper(article_id, db)
+        # 1. 判断是否需要生成AI评论
+        ai_comments_count = self.comments_mapper.get_ai_comments_num_by_article_id_mapper(article_id, db)
+        if ai_comments_count > 0:
+            logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
+            self.comments_mapper.delete_ai_comments_by_article_id_mapper(article_id, db)
+        
+        # 2. 获取文章信息
+        article = self.article_mapper.get_article_by_id_mapper(article_id, db)
+        if not article:
+            logger.error(f"文章不存在: {article_id}")
+            return
+        
+        logger.info(f"开始基于参考文本生成AI评论，文章ID：{article_id}")
+        
+        # 3. 获取权威参考文本
+        category_ref_mapper: CategoryReferenceMapper = get_category_reference_mapper()
+        reference_content = None
+        
+        # 获取文章的子分类ID
+        sub_category_id = article.sub_category_id if hasattr(article, 'sub_category_id') else None
+        
+        if sub_category_id:
+            category_ref = category_ref_mapper.get_category_reference_by_sub_category_id_mapper(
+                sub_category_id, db
+            )
             
-            # 2. 获取文章信息
-            article = self.article_mapper.get_article_by_id_mapper(article_id, db)
-            if not article:
-                logger.error(f"文章不存在: {article_id}")
-                return
-            
-            logger.info(f"开始基于参考文本生成AI评论，文章ID：{article_id}")
-            
-            # 3. 获取权威参考文本
-            category_ref_mapper: CategoryReferenceMapper = get_category_reference_mapper()
-            reference_content = None
-            
-            # 获取文章的子分类ID
-            sub_category_id = article.sub_category_id if hasattr(article, 'sub_category_id') else None
-            
-            if sub_category_id:
-                category_ref = category_ref_mapper.get_category_reference_by_sub_category_id_mapper(
-                    sub_category_id, db
-                )
+            if category_ref:
+                logger.info(f"找到权威参考文本，类型: {category_ref.get('type')}")
+                logger.info(f"参考文本详情: {category_ref}")
                 
-                if category_ref:
-                    logger.info(f"找到权威参考文本，类型: {category_ref.get('type')}")
-                    logger.info(f"参考文本详情: {category_ref}")
-                    
-                    # 4. 根据类型提取内容并使用大模型进行总结
-                    extractor = get_reference_content_extractor()
-                    ref_type = category_ref.get('type', 'link')
-                    ref_value = None
-                    
-                    if ref_type == 'pdf':
-                        ref_value = category_ref.get('pdf')
-                        logger.info(f"开始提取 PDF 权威文本: {ref_value}")
-                    elif ref_type == 'link':
-                        ref_value = category_ref.get('link')
-                        logger.info(f"开始提取链接权威文本: {ref_value}")
-                    
-                    # 定义三个大模型的总结函数
-                    async def summarize_with_doubao(content: str) -> str:
-                        try:
-                            return await self.doubao_service.summarize_content(content, max_length=1500)
-                        except Exception as e:
-                            logger.error(f"豆包总结失败: {e}")
-                            return content[:1500]
-                    
-                    async def summarize_with_gemini(content: str) -> str:
-                        try:
-                            return await self.gemini_service.summarize_content(content, max_length=1500)
-                        except Exception as e:
-                            logger.error(f"Gemini总结失败: {e}")
-                            return content[:1500]
-                    
-                    async def summarize_with_qwen(content: str) -> str:
-                        try:
-                            return await self.qwen_service.summarize_content(content, max_length=1500)
-                        except Exception as e:
-                            logger.error(f"Qwen总结失败: {e}")
-                            return content[:1500]
-                    
-                    # 并发调用三个大模型对提取的内容进行总结
-                    summarize_tasks = [
-                        extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_doubao),
-                        extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_gemini),
-                        extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_qwen),
-                    ]
-                    
-                    summary_results = await asyncio.gather(*summarize_tasks, return_exceptions=True)
-                    
-                    # 合并三个大模型的总结结果
-                    summaries = []
-                    if isinstance(summary_results[0], str) and summary_results[0]:
-                        summaries.append(f"【豆包总结】\n{summary_results[0]}")
-                    if isinstance(summary_results[1], str) and summary_results[1]:
-                        summaries.append(f"【Gemini总结】\n{summary_results[1]}")
-                    if isinstance(summary_results[2], str) and summary_results[2]:
-                        summaries.append(f"【Qwen总结】\n{summary_results[2]}")
-                    
-                    if summaries:
-                        reference_content = "\n\n".join(summaries)
-                        logger.info(f"权威参考文本提取并总结完成，总结内容长度: {len(reference_content)} 字")
-                    else:
-                        logger.warning(f"无法提取或总结参考文本内容，类型: {ref_type}")
-                        reference_content = f"参考文本类型: {ref_type}\n参考文本链接: {ref_value}"
+                # 4. 根据类型提取内容并使用大模型进行总结
+                extractor = get_reference_content_extractor()
+                ref_type = category_ref.get('type', 'link')
+                ref_value = None
+                
+                if ref_type == 'pdf':
+                    ref_value = category_ref.get('pdf')
+                    logger.info(f"开始提取 PDF 权威文本: {ref_value}")
+                elif ref_type == 'link':
+                    ref_value = category_ref.get('link')
+                    logger.info(f"开始提取链接权威文本: {ref_value}")
+                
+                # 定义三个大模型的总结函数
+                async def summarize_with_doubao(content: str) -> str:
+                    try:
+                        return await self.doubao_service.summarize_content(content, max_length=1500)
+                    except Exception as e:
+                        logger.error(f"豆包总结失败: {e}")
+                        return content[:1500]
+                
+                async def summarize_with_gemini(content: str) -> str:
+                    try:
+                        return await self.gemini_service.summarize_content(content, max_length=1500)
+                    except Exception as e:
+                        logger.error(f"Gemini总结失败: {e}")
+                        return content[:1500]
+                
+                async def summarize_with_qwen(content: str) -> str:
+                    try:
+                        return await self.qwen_service.summarize_content(content, max_length=1500)
+                    except Exception as e:
+                        logger.error(f"Qwen总结失败: {e}")
+                        return content[:1500]
+                
+                # 并发调用三个大模型对提取的内容进行总结
+                summarize_tasks = [
+                    extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_doubao),
+                    extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_gemini),
+                    extractor.extract_reference_content(ref_type, ref_value, 3000, summarize_with_qwen),
+                ]
+                
+                summary_results = await asyncio.gather(*summarize_tasks, return_exceptions=True)
+                
+                # 合并三个大模型的总结结果
+                summaries = []
+                if isinstance(summary_results[0], str) and summary_results[0]:
+                    summaries.append(f"【豆包总结】\n{summary_results[0]}")
+                if isinstance(summary_results[1], str) and summary_results[1]:
+                    summaries.append(f"【Gemini总结】\n{summary_results[1]}")
+                if isinstance(summary_results[2], str) and summary_results[2]:
+                    summaries.append(f"【Qwen总结】\n{summary_results[2]}")
+                
+                if summaries:
+                    reference_content = "\n\n".join(summaries)
+                    logger.info(f"权威参考文本提取并总结完成，总结内容长度: {len(reference_content)} 字")
                 else:
-                    logger.info(f"子分类 {sub_category_id} 无权威参考文本")
-                    reference_content = None
+                    logger.warning(f"无法提取或总结参考文本内容，类型: {ref_type}")
+                    reference_content = f"参考文本类型: {ref_type}\n参考文本链接: {ref_value}"
             else:
-                logger.warning(f"文章 {article_id} 无子分类信息")
+                logger.info(f"子分类 {sub_category_id} 无权威参考文本")
                 reference_content = None
-            # 如果没有参考文本，使用默认参考提示
-            if not reference_content:
-                reference_content = "该分类暂无权威参考文本，请根据您的专业知识进行评价。"
-            
-            # 5. 构建要评价的内容
-            article_content = f"""
-                            标题：{article.title}
-                            标签：{article.tags}
-                            内容摘要（前500字）：{article.content[:500] if article.content else '无'}
-                            """
-            
-            # 6. 异步并发调用3个大模型生成AI评论
-            logger.info(f"开始并发调用3个大模型生成AI评论（基于参考文本），文章ID：{article_id}")
-            
-            total_start_time = time.time()
-            
-            async def timed_doubao_ref_call():
-                start = time.time()
-                try:
-                    result = await self.doubao_service.with_reference_chat(article_content, reference_content)
-                    elapsed = time.time() - start
-                    logger.info(f"豆包参考文本调用完成，耗时: {elapsed:.2f}秒")
-                    return result
-                except Exception as e:
-                    elapsed = time.time() - start
-                    logger.error(f"豆包参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
-                    return e
-            
-            async def timed_gemini_ref_call():
-                start = time.time()
-                try:
-                    result = await self.gemini_service.with_reference_chat(article_content, reference_content)
-                    elapsed = time.time() - start
-                    logger.info(f"Gemini参考文本调用完成，耗时: {elapsed:.2f}秒")
-                    return result
-                except Exception as e:
-                    elapsed = time.time() - start
-                    logger.error(f"Gemini参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
-                    return e
-            
-            async def timed_qwen_ref_call():
-                start = time.time()
-                try:
-                    result = await self.qwen_service.with_reference_chat(article_content, reference_content)
-                    elapsed = time.time() - start
-                    logger.info(f"Qwen参考文本调用完成，耗时: {elapsed:.2f}秒")
-                    return result
-                except Exception as e:
-                    elapsed = time.time() - start
-                    logger.error(f"Qwen参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
-                    return e
-            
-            # 并发执行三个调用
-            responses = await asyncio.gather(
-                timed_doubao_ref_call(),
-                timed_gemini_ref_call(),
-                timed_qwen_ref_call(),
-                return_exceptions=True
-            )
-            
-            total_elapsed = time.time() - total_start_time
-            logger.info(f"3个大模型参考文本并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}")
-            
-            response_doubao, response_gemini, response_qwen = responses
-            
-            # 检查异常返回
-            if isinstance(response_doubao, Exception):
-                logger.error(f"豆包参考文本最终失败: {response_doubao}")
-                response_doubao = "豆包调用失败"
-            if isinstance(response_gemini, Exception):
-                logger.error(f"Gemini参考文本最终失败: {response_gemini}")
-                response_gemini = "Gemini调用失败"
-            if isinstance(response_qwen, Exception):
-                logger.error(f"Qwen参考文本最终失败: {response_qwen}")
-                response_qwen = "Qwen调用失败"
-            
-            # 7. 解析大模型返回结果
-            content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
-            content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
-            content_qwen, star_qwen = self._parse_ai_comment_response(response_qwen)
-            
-            # 8. 构建AI评论对象
-            doubao_ai_comment: Any = Comments(
-                article_id=article_id,
-                user_id=1001,
-                content=content_doubao,
-                star=star_doubao,
-                create_time=datetime.now(),
-                update_time=datetime.now()
-            )
-            gemini_ai_comment: Any = Comments(
-                article_id=article_id,
-                user_id=1002,
-                content=content_gemini,
-                star=star_gemini,
-                create_time=datetime.now(),
-                update_time=datetime.now()
-            )
-            qwen_ai_comment: Any = Comments(
-                article_id=article_id,
-                user_id=1003,
-                content=content_qwen,
-                star=star_qwen,
-                create_time=datetime.now(),
-                update_time=datetime.now()
-            )
-            
-            # 9. 保存AI评论到数据库
-            self.comments_mapper.create_comment_mapper(doubao_ai_comment, db)
-            self.comments_mapper.create_comment_mapper(gemini_ai_comment, db)
-            self.comments_mapper.create_comment_mapper(qwen_ai_comment, db)
-            logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
-            
-        except Exception as e:
-            logger.error(f"生成参考文本AI评论异常: {str(e)}")
-            raise
+        else:
+            logger.warning(f"文章 {article_id} 无子分类信息")
+            reference_content = None
+        # 如果没有参考文本，使用默认参考提示
+        if not reference_content:
+            reference_content = "该分类暂无权威参考文本，请根据您的专业知识进行评价。"
+        
+        # 5. 构建要评价的内容
+        article_content = f"""
+                        标题：{article.title}
+                        标签：{article.tags}
+                        内容摘要（前500字）：{article.content[:500] if article.content else '无'}
+                        """
+        
+        # 6. 异步并发调用3个大模型生成AI评论
+        logger.info(f"开始并发调用3个大模型生成AI评论（基于参考文本），文章ID：{article_id}")
+        
+        total_start_time = time.time()
+        
+        async def timed_doubao_ref_call():
+            start = time.time()
+            try:
+                result = await self.doubao_service.with_reference_chat(article_content, reference_content)
+                elapsed = time.time() - start
+                logger.info(f"豆包参考文本调用完成，耗时: {elapsed:.2f}秒")
+                return result
+            except Exception as e:
+                elapsed = time.time() - start
+                logger.error(f"豆包参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                return e
+        
+        async def timed_gemini_ref_call():
+            start = time.time()
+            try:
+                result = await self.gemini_service.with_reference_chat(article_content, reference_content)
+                elapsed = time.time() - start
+                logger.info(f"Gemini参考文本调用完成，耗时: {elapsed:.2f}秒")
+                return result
+            except Exception as e:
+                elapsed = time.time() - start
+                logger.error(f"Gemini参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                return e
+        
+        async def timed_qwen_ref_call():
+            start = time.time()
+            try:
+                result = await self.qwen_service.with_reference_chat(article_content, reference_content)
+                elapsed = time.time() - start
+                logger.info(f"Qwen参考文本调用完成，耗时: {elapsed:.2f}秒")
+                return result
+            except Exception as e:
+                elapsed = time.time() - start
+                logger.error(f"Qwen参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                return e
+        
+        # 并发执行三个调用
+        responses = await asyncio.gather(
+            timed_doubao_ref_call(),
+            timed_gemini_ref_call(),
+            timed_qwen_ref_call(),
+            return_exceptions=True
+        )
+        
+        total_elapsed = time.time() - total_start_time
+        logger.info(f"3个大模型参考文本并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}")
+        
+        response_doubao, response_gemini, response_qwen = responses
+        
+        # 检查异常返回
+        if isinstance(response_doubao, Exception):
+            logger.error(f"豆包参考文本最终失败: {response_doubao}")
+            response_doubao = "豆包调用失败"
+        if isinstance(response_gemini, Exception):
+            logger.error(f"Gemini参考文本最终失败: {response_gemini}")
+            response_gemini = "Gemini调用失败"
+        if isinstance(response_qwen, Exception):
+            logger.error(f"Qwen参考文本最终失败: {response_qwen}")
+            response_qwen = "Qwen调用失败"
+        
+        # 7. 解析大模型返回结果
+        content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
+        content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
+        content_qwen, star_qwen = self._parse_ai_comment_response(response_qwen)
+        
+        # 8. 构建AI评论对象
+        doubao_ai_comment: Any = Comments(
+            article_id=article_id,
+            user_id=1001,
+            content=content_doubao,
+            star=star_doubao,
+            create_time=datetime.now(),
+            update_time=datetime.now()
+        )
+        gemini_ai_comment: Any = Comments(
+            article_id=article_id,
+            user_id=1002,
+            content=content_gemini,
+            star=star_gemini,
+            create_time=datetime.now(),
+            update_time=datetime.now()
+        )
+        qwen_ai_comment: Any = Comments(
+            article_id=article_id,
+            user_id=1003,
+            content=content_qwen,
+            star=star_qwen,
+            create_time=datetime.now(),
+            update_time=datetime.now()
+        )
+        
+        # 9. 保存AI评论到数据库
+        self.comments_mapper.create_comment_mapper(doubao_ai_comment, db)
+        self.comments_mapper.create_comment_mapper(gemini_ai_comment, db)
+        self.comments_mapper.create_comment_mapper(qwen_ai_comment, db)
+        logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
 
     async def generate_authority_article_with_ai_summaries(
         self, 

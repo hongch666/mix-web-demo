@@ -86,7 +86,7 @@ class ArticleLogMapper:
                         "views": views
                     })
                 except Exception as e:
-                    logger.warning(f"获取文章 {article_id} 标题失败: {e}")
+                    logger.error(f"获取文章 {article_id} 标题失败: {e}")
                     articles.append({
                         "article_id": article_id,
                         "title": "未知文章",

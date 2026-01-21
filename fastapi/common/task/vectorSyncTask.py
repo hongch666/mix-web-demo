@@ -6,6 +6,7 @@ from sqlmodel import Session
 from config import load_config
 from common.agent import get_rag_tools
 from common.utils import fileLogger as logger
+from common.exceptions import BusinessException
 
 # Redis 键名
 _VECTOR_SYNC_TIME_KEY = "vector_sync:last_sync_time"
@@ -307,7 +308,7 @@ def export_article_vectors_to_postgres(
                             time.sleep(retry_delay)
                             continue
                         else:
-                            raise Exception(f"重试 {max_retries} 次后仍然失败: {result}")
+                            raise BusinessException(f"重试 {max_retries} 次后仍然失败: {result}")
                     
                     total_synced += len(batch)
                     batch_success = True

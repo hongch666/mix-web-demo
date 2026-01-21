@@ -21,13 +21,9 @@ class SQLTools:
         mysql_cfg = load_config("database")["mysql"]
         self.database_url = f"mysql+pymysql://{mysql_cfg['user']}:{mysql_cfg['password']}@{mysql_cfg['host']}:{mysql_cfg['port']}/{mysql_cfg['database']}?charset=utf8mb4"
         
-        try:
-            self.engine = create_engine(self.database_url, pool_pre_ping=True)
-            self.db = SQLDatabase(self.engine)
-            self.logger.info("SQL工具初始化成功")
-        except Exception as e:
-            self.logger.error(f"SQL工具初始化失败: {e}")
-            raise
+        self.engine = create_engine(self.database_url, pool_pre_ping=True)
+        self.db = SQLDatabase(self.engine)
+        self.logger.info("SQL工具初始化成功")
     
     def set_user_id(self, user_id: Optional[int]) -> None:
         """设置当前用户ID"""

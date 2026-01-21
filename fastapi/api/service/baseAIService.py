@@ -120,46 +120,42 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
     Returns:
         tuple: (sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools)
     """
-    try:
-        sql_tools_instance = None
-        rag_tools_instance = None
-        mongodb_log_tools_instance = None
-        all_tools = []
-        
-        # 获取 SQL 工具
-        if include_sql:
-            try:
-                sql_tools_instance = get_sql_tools()
-                sql_tools = sql_tools_instance.get_langchain_tools()
-                all_tools.extend(sql_tools)
-                logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
-            except Exception as e:
-                logger.warning(f"加载 SQL 工具失败: {e}")
-        
-        # 获取 RAG 工具
+    sql_tools_instance = None
+    rag_tools_instance = None
+    mongodb_log_tools_instance = None
+    all_tools = []
+    
+    # 获取 SQL 工具
+    if include_sql:
         try:
-            rag_tools_instance = get_rag_tools()
-            rag_tools = rag_tools_instance.get_langchain_tools()
-            all_tools.extend(rag_tools)
-            logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
+            sql_tools_instance = get_sql_tools()
+            sql_tools = sql_tools_instance.get_langchain_tools()
+            all_tools.extend(sql_tools)
+            logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
         except Exception as e:
-            logger.warning(f"加载 RAG 工具失败: {e}")
-        
-        # 获取 MongoDB 日志工具
-        if include_logs:
-            try:
-                mongodb_tools_instance = get_mongodb_tools()
-                mongodb_tools = mongodb_tools_instance.get_langchain_tools()
-                all_tools.extend(mongodb_tools)
-                logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
-            except Exception as e:
-                logger.warning(f"加载 MongoDB 日志工具失败: {e}")
-        
-        logger.info(f"总共加载了 {len(all_tools)} 个工具")
-        return sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools
+            logger.warning(f"加载 SQL 工具失败: {e}")
+    
+    # 获取 RAG 工具
+    try:
+        rag_tools_instance = get_rag_tools()
+        rag_tools = rag_tools_instance.get_langchain_tools()
+        all_tools.extend(rag_tools)
+        logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
     except Exception as e:
-        logger.error(f"初始化AI工具失败: {e}")
-        raise
+        logger.warning(f"加载 RAG 工具失败: {e}")
+    
+    # 获取 MongoDB 日志工具
+    if include_logs:
+        try:
+            mongodb_tools_instance = get_mongodb_tools()
+            mongodb_tools = mongodb_tools_instance.get_langchain_tools()
+            all_tools.extend(mongodb_tools)
+            logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
+        except Exception as e:
+            logger.warning(f"加载 MongoDB 日志工具失败: {e}")
+    
+    logger.info(f"总共加载了 {len(all_tools)} 个工具")
+    return sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools
 
 class BaseAiService:
     """AI服务基类"""

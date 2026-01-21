@@ -7,7 +7,7 @@ def success(data: Optional[Any] = None, msg: str = "success", code: int = 1) -> 
         "msg": msg
     }
 
-def fail(msg: str = "error", code: int = 0, data: Optional[Any] = None) -> Dict[str, Any]:
+def error(msg: str = "error", code: int = 0, data: Optional[Any] = None) -> Dict[str, Any]:
     return {
         "code": code,
         "data": data,

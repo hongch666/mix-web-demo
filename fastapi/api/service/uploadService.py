@@ -7,6 +7,7 @@ from fastapi import Depends
 from starlette.concurrency import run_in_threadpool
 from api.service import AnalyzeService, get_analyze_service
 from common.utils import fileLogger as logger
+from common.exceptions import BusinessException
 from config import load_config
 
 class UploadService:
@@ -55,7 +56,7 @@ class UploadService:
         # 验证文件扩展名
         file_extension = os.path.splitext(file['filename'])[1].lower() if file['filename'] else ""
         if file_extension != ".pdf":
-            raise ValueError("只支持上传PDF文件")
+            raise BusinessException("只支持上传PDF文件")
 
         # 如果提供了自定义文件名，使用自定义文件名；否则生成UUID
         if custom_filename:

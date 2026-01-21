@@ -7,6 +7,7 @@ from fastapi import Request
 from fastapi.responses import StreamingResponse
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger as logger
+from common.exceptions import BusinessException
 from config import send_to_queue
 
 try:
@@ -144,9 +145,9 @@ def api_log(config: Union[str, ApiLogConfig]):
                     return result
             except Exception as e:
                 duration_ms = int((time.time() - start) * 1000)
-                time_message = f"{method} {path} 使用了{duration_ms}ms (异常)"
+                time_message = f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"
                 logger_method(time_message)
-                raise
+                raise BusinessException("日志装饰器捕获到异常，请检查日志详情")
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):

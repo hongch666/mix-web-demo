@@ -6,6 +6,7 @@ import random
 from typing import Any, Dict
 from config import load_config
 from common.utils import fileLogger as logger
+from common.exceptions import BusinessException
 
 # Nacos 配置
 nacos_config: Dict[str, Any] = load_config("nacos")
@@ -31,7 +32,7 @@ def get_service_instance(service_name: str) -> dict:
     # 简单负载均衡：随机选一个
     hosts: list = instances.get("hosts", [])
     if not hosts:
-        raise Exception("No instance found")
+        raise BusinessException("找不到可用的服务实例")
     return random.choice(hosts)
 
 def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
@@ -41,6 +42,6 @@ def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
             try:
                 client.send_heartbeat(SERVICE_NAME, ip, port, group_name=GROUP_NAME)
             except Exception as e:
-                logger.error(f"Nacos heartbeat error: {e}")
+                logger.error(f"Nacos 心跳错误: {e}")
             time.sleep(10)
     threading.Thread(target=keep_heartbeat, daemon=True).start()

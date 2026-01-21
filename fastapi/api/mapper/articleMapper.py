@@ -23,37 +23,31 @@ class ArticleMapper:
         ]
         
         start = time.time()
-        hive_conn = None
-        try:
-            # 从连接池获取连接
-            pool_start = time.time()
-            hive_conn = self._hive_pool.get_connection()
-            pool_time = time.time() - pool_start
-            
-            # 查询 Hive
-            logger.info("get_top10_articles_hive_mapper: 从 Hive 查询")
-            query_start = time.time()
-            with hive_conn.cursor() as cursor:
-                cursor.execute(f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10")
-                top10 = cursor.fetchall()
-            
-            query_time = time.time() - query_start
-            
-            # 转换为字典
-            result = [dict(zip(columns, r)) for r in top10]
-            
-            total_time = time.time() - start
-            logger.info(f"get_top10_articles_hive_mapper: 获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s")
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"get_top10_articles_hive_mapper 失败: {e}")
-            raise
-        finally:
-            # 归还连接到池
-            if hive_conn:
-                self._hive_pool.return_connection(hive_conn)
+        # 从连接池获取连接
+        pool_start = time.time()
+        hive_conn = self._hive_pool.get_connection()
+        pool_time = time.time() - pool_start
+        
+        # 查询 Hive
+        logger.info("get_top10_articles_hive_mapper: 从 Hive 查询")
+        query_start = time.time()
+        with hive_conn.cursor() as cursor:
+            cursor.execute(f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10")
+            top10 = cursor.fetchall()
+        
+        query_time = time.time() - query_start
+        
+        # 转换为字典
+        result = [dict(zip(columns, r)) for r in top10]
+        
+        total_time = time.time() - start
+        logger.info(f"get_top10_articles_hive_mapper: 获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s")
+        
+        # 归还连接到池
+        if hive_conn:
+            self._hive_pool.return_connection(hive_conn)
+        
+        return result
     
     def get_hive_connection(self):
         """获取 Hive 连接（用于缓存版本检查）"""
@@ -70,20 +64,16 @@ class ArticleMapper:
         columns = [
             "id", "title", "tags", "status", "views", "create_at", "update_at", "content", "user_id", "sub_category_id", "username"
         ]
-        try:
-            spark = SparkSession.builder.appName("ArticleTop10").getOrCreate()
-            df = spark.read.option("header", True).csv(csv_file)
-            df = df.withColumn("views", col("views").cast("int"))
-            for c in ["id", "status", "user_id", "sub_category_id"]:
-                df = df.withColumn(c, col(c).cast("int"))
-            for c in ["create_at", "update_at"]:
-                df = df.withColumn(c, col(c).cast("string"))
-            # username 字段直接从 csv 读取
-            top10_rows = df.orderBy(col("views").desc()).limit(10).collect()
-            return [{k: r[k] for k in columns if k in r.asDict()} for r in top10_rows]
-        except Exception as e:
-            logger.error(f"Spark 查询失败: {e}")
-            raise e
+        spark = SparkSession.builder.appName("ArticleTop10").getOrCreate()
+        df = spark.read.option("header", True).csv(csv_file)
+        df = df.withColumn("views", col("views").cast("int"))
+        for c in ["id", "status", "user_id", "sub_category_id"]:
+            df = df.withColumn(c, col(c).cast("int"))
+        for c in ["create_at", "update_at"]:
+            df = df.withColumn(c, col(c).cast("string"))
+        # username 字段直接从 csv 读取
+        top10_rows = df.orderBy(col("views").desc()).limit(10).collect()
+        return [{k: r[k] for k in columns if k in r.asDict()} for r in top10_rows]
 
     def get_top10_articles_db_mapper(self, db: Session):
         statement = select(Article).order_by(Article.views.desc()).limit(10)
@@ -132,38 +122,33 @@ class ArticleMapper:
         从Hive获取按父分类排序的文章数量
         """
         start = time.time()
-        hive_conn = None
-        try:
-            hive_conn = self._hive_pool.get_connection()
-            
-            logger.info("get_category_article_count_hive_mapper: 从 Hive 查询")
-            query_start = time.time()
-            with hive_conn.cursor() as cursor:
-                # 查询文章按sub_category_id分组统计
-                cursor.execute("""
-                    SELECT sub_category_id, COUNT(*) as count
-                    FROM articles
-                    WHERE status = 1
-                    GROUP BY sub_category_id
-                    ORDER BY count DESC
-                """)
-                results = cursor.fetchall()
-            
-            query_time = time.time() - query_start
-            
-            # 转换为字典列表
-            result = [{"sub_category_id": int(r[0]), "count": int(r[1])} for r in results]
-            
-            total_time = time.time() - start
-            logger.info(f"get_category_article_count_hive_mapper: 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类")
-            
-            return result
-        except Exception as e:
-            logger.error(f"get_category_article_count_hive_mapper 失败: {e}")
-            raise
-        finally:
-            if hive_conn:
-                self._hive_pool.return_connection(hive_conn)
+        hive_conn = self._hive_pool.get_connection()
+        
+        logger.info("get_category_article_count_hive_mapper: 从 Hive 查询")
+        query_start = time.time()
+        with hive_conn.cursor() as cursor:
+            # 查询文章按sub_category_id分组统计
+            cursor.execute("""
+                SELECT sub_category_id, COUNT(*) as count
+                FROM articles
+                WHERE status = 1
+                GROUP BY sub_category_id
+                ORDER BY count DESC
+            """)
+            results = cursor.fetchall()
+        
+        query_time = time.time() - query_start
+        
+        # 转换为字典列表
+        result = [{"sub_category_id": int(r[0]), "count": int(r[1])} for r in results]
+        
+        total_time = time.time() - start
+        logger.info(f"get_category_article_count_hive_mapper: 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类")
+        
+        if hive_conn:
+            self._hive_pool.return_connection(hive_conn)
+        
+        return result
 
     def get_category_article_count_spark_mapper(self) -> list[dict]:
         """
@@ -173,21 +158,17 @@ class ArticleMapper:
         csv_file = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.csv"))
         csv_file = os.path.abspath(csv_file)
         
-        try:
-            spark = SparkSession.builder.appName("CategoryCount").getOrCreate()
-            df = spark.read.option("header", True).csv(csv_file)
-            df = df.withColumn("sub_category_id", col("sub_category_id").cast("int"))
-            df = df.withColumn("status", col("status").cast("int"))
-            
-            # 过滤status=1的文章，按sub_category_id分组统计
-            df_grouped = df.filter(col("status") == 1).groupBy("sub_category_id").count()
-            df_sorted = df_grouped.orderBy(col("count").desc())
-            
-            results = df_sorted.collect()
-            return [{"sub_category_id": int(r["sub_category_id"]), "count": int(r["count"])} for r in results]
-        except Exception as e:
-            logger.error(f"Spark 查询失败: {e}")
-            raise
+        spark = SparkSession.builder.appName("CategoryCount").getOrCreate()
+        df = spark.read.option("header", True).csv(csv_file)
+        df = df.withColumn("sub_category_id", col("sub_category_id").cast("int"))
+        df = df.withColumn("status", col("status").cast("int"))
+        
+        # 过滤status=1的文章，按sub_category_id分组统计
+        df_grouped = df.filter(col("status") == 1).groupBy("sub_category_id").count()
+        df_sorted = df_grouped.orderBy(col("count").desc())
+        
+        results = df_sorted.collect()
+        return [{"sub_category_id": int(r["sub_category_id"]), "count": int(r["count"])} for r in results]
 
     def get_category_article_count_db_mapper(self, db: Session) -> list[dict]:
         """
@@ -215,39 +196,34 @@ class ArticleMapper:
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
         """
         start = time.time()
-        hive_conn = None
-        try:
-            hive_conn = self._hive_pool.get_connection()
-            
-            logger.info("get_monthly_publish_count_hive_mapper: 从 Hive 查询")
-            query_start = time.time()
-            with hive_conn.cursor() as cursor:
-                # 按月统计最近24个月的文章数，使用Hive的substr和concat处理日期
-                cursor.execute("""
-                    SELECT substr(create_at, 1, 7) as year_month, COUNT(*) as count
-                    FROM articles
-                    WHERE status = 1
-                    AND create_at >= date_sub(current_date(), 730)
-                    GROUP BY substr(create_at, 1, 7)
-                    ORDER BY year_month DESC
-                """)
-                results = cursor.fetchall()
-            
-            query_time = time.time() - query_start
-            
-            # 转换为字典列表
-            result = [{"year_month": str(r[0]), "count": int(r[1])} for r in results]
-            
-            total_time = time.time() - start
-            logger.info(f"get_monthly_publish_count_hive_mapper: 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份")
-            
-            return result
-        except Exception as e:
-            logger.error(f"get_monthly_publish_count_hive_mapper 失败: {e}")
-            raise
-        finally:
-            if hive_conn:
-                self._hive_pool.return_connection(hive_conn)
+        hive_conn = self._hive_pool.get_connection()
+        
+        logger.info("get_monthly_publish_count_hive_mapper: 从 Hive 查询")
+        query_start = time.time()
+        with hive_conn.cursor() as cursor:
+            # 按月统计最近24个月的文章数，使用Hive的substr和concat处理日期
+            cursor.execute("""
+                SELECT substr(create_at, 1, 7) as year_month, COUNT(*) as count
+                FROM articles
+                WHERE status = 1
+                AND create_at >= date_sub(current_date(), 730)
+                GROUP BY substr(create_at, 1, 7)
+                ORDER BY year_month DESC
+            """)
+            results = cursor.fetchall()
+        
+        query_time = time.time() - query_start
+        
+        # 转换为字典列表
+        result = [{"year_month": str(r[0]), "count": int(r[1])} for r in results]
+        
+        total_time = time.time() - start
+        logger.info(f"get_monthly_publish_count_hive_mapper: 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份")
+        
+        if hive_conn:
+            self._hive_pool.return_connection(hive_conn)
+        
+        return result
 
     def get_monthly_publish_count_spark_mapper(self) -> list[dict]:
         """
@@ -260,25 +236,21 @@ class ArticleMapper:
         csv_file = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.csv"))
         csv_file = os.path.abspath(csv_file)
         
-        try:
-            spark = SparkSession.builder.appName("MonthlyPublish").getOrCreate()
-            df = spark.read.option("header", True).csv(csv_file)
-            df = df.withColumn("create_at", col("create_at").cast("timestamp"))
-            df = df.withColumn("status", col("status").cast("int"))
-            
-            # 过滤最近24个月的数据
-            ten_months_ago = date_sub(current_date(), 730)  # 近24个月
-            df_filtered = df.filter((col("status") == 1) & (col("create_at") >= ten_months_ago))
-            
-            # 按月分组统计，不限制结果让service层补零
-            df_grouped = df_filtered.withColumn("year_month", date_format(col("create_at"), "yyyy-MM")).groupBy("year_month").count()
-            df_sorted = df_grouped.orderBy(col("year_month").desc())
-            
-            results = df_sorted.collect()
-            return [{"year_month": r["year_month"], "count": int(r["count"])} for r in results]
-        except Exception as e:
-            logger.error(f"Spark 查询失败: {e}")
-            raise
+        spark = SparkSession.builder.appName("MonthlyPublish").getOrCreate()
+        df = spark.read.option("header", True).csv(csv_file)
+        df = df.withColumn("create_at", col("create_at").cast("timestamp"))
+        df = df.withColumn("status", col("status").cast("int"))
+        
+        # 过滤最近24个月的数据
+        ten_months_ago = date_sub(current_date(), 730)  # 近24个月
+        df_filtered = df.filter((col("status") == 1) & (col("create_at") >= ten_months_ago))
+        
+        # 按月分组统计，不限制结果让service层补零
+        df_grouped = df_filtered.withColumn("year_month", date_format(col("create_at"), "yyyy-MM")).groupBy("year_month").count()
+        df_sorted = df_grouped.orderBy(col("year_month").desc())
+        
+        results = df_sorted.collect()
+        return [{"year_month": r["year_month"], "count": int(r["count"])} for r in results]
 
     def get_monthly_publish_count_db_mapper(self, db: Session) -> list[dict]:
         """

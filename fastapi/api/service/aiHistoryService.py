@@ -55,15 +55,11 @@ class AiHistoryService:
         fmt = "%Y-%m-%d %H:%M:%S"
         for item in data:
             if getattr(item, "created_at", None):
-                try:
-                    item.created_at = item.created_at.strftime(fmt)
-                except Exception:
-                    pass
+                item.created_at = item.created_at.strftime(fmt)
+
             if getattr(item, "updated_at", None):
-                try:
-                    item.updated_at = item.updated_at.strftime(fmt)
-                except Exception:
-                    pass
+                item.updated_at = item.updated_at.strftime(fmt)
+
         return data
     
     def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
