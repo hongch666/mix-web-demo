@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,13 +24,4 @@ func RespondError(c *gin.Context, code int, message string) {
 		"data": nil,
 	})
 	c.Abort()
-}
-
-// ToJSON 将对象转换为JSON字符串
-func ToJSON(data any) string {
-	jsonBytes, err := json.Marshal(data)
-	if err != nil {
-		return ""
-	}
-	return string(jsonBytes)
 }
