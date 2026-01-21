@@ -1,12 +1,20 @@
 import { NestFactory } from '@nestjs/core';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 
-export async function createApp(): Promise<INestApplication> {
-  const app: INestApplication<any> = await NestFactory.create(AppModule);
+export async function createApp(): Promise<NestFastifyApplication> {
+  const app: NestFastifyApplication =
+    await NestFactory.create<NestFastifyApplication>(
+      AppModule,
+      new FastifyAdapter(),
+    );
 
   // Swagger 配置
   const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()

@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { error } from '../utils/response'; // 之前写的 error() 方法
 import { fileLogger } from '../utils/writeLog';
 
@@ -13,8 +13,8 @@ import { fileLogger } from '../utils/writeLog';
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<FastifyReply>();
+    const request = ctx.getRequest<FastifyRequest>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = '服务器内部错误';
@@ -38,6 +38,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       `[${request.method}] ${request.url} - ${message} - ${exception.stack}`,
     );
 
-    response.status(status).json(error(message));
+    response.status(status).send(error(message));
   }
 }
