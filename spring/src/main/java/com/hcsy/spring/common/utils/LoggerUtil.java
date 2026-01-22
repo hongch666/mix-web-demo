@@ -32,7 +32,7 @@ public class LoggerUtil {
         if (!logDir.exists()) {
             logDir.mkdirs();
         }
-        logger.info("日志配置初始化完成，路径: {}", staticLogPath);
+        logger.info(Constants.LOG_INIT, staticLogPath);
     }
 
     /**
@@ -70,7 +70,7 @@ public class LoggerUtil {
             }
 
         } catch (IOException e) {
-            logger.error("写入日志失败: {}", e.getMessage(), e);
+            logger.error(Constants.LOG_WRITE, e.getMessage(), e);
         }
     }
 

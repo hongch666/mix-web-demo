@@ -1,6 +1,7 @@
 package com.hcsy.spring.common.task;
 
 import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
 import lombok.RequiredArgsConstructor;
@@ -21,12 +22,12 @@ public class TokenCleanupTask {
      */
     @Scheduled(cron = "0 0 * * * *")
     public void cleanupExpiredTokens() {
-        logger.info("开始执行定时清理过期 Token 任务");
+        logger.info(Constants.TASK_START);
         try {
             tokenService.cleanupExpiredTokens();
-            logger.info("定时清理过期 Token 任务执行完成");
+            logger.info(Constants.TASK_END);
         } catch (Exception e) {
-            logger.error("定时清理过期 Token 任务执行异常: " + e.getMessage());
+            logger.error(Constants.TASK_EXCEPTION + e.getMessage());
         }
     }
 }

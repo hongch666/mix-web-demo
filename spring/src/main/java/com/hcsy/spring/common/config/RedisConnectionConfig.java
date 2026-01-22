@@ -8,6 +8,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
 @Configuration
@@ -41,16 +42,16 @@ public class RedisConnectionConfig {
         // 只有当用户名不为空时才设置
         if (username != null && !username.isEmpty()) {
             config.setUsername(username);
-            logger.info("[Redis] 使用用户名 '%s' 连接", username);
+            logger.info(Constants.REDIS_USER, username);
         }
 
         // 只有当密码不为空时才设置
         if (password != null && !password.isEmpty()) {
             config.setPassword(password);
-            logger.info("[Redis] 已设置密码认证");
+            logger.info(Constants.REDIS_PASSWORD);
         }
 
-        logger.info("[Redis] 连接配置: %s:%d (DB: %d)", host, port, database);
+        logger.info(Constants.REDIS_CONNECT, host, port, database);
         return new LettuceConnectionFactory(config);
     }
 }

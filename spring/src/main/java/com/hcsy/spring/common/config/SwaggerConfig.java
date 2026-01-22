@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.hcsy.spring.common.utils.Constants;
+
 @Configuration
 public class SwaggerConfig {
 
@@ -20,10 +22,10 @@ public class SwaggerConfig {
     OpenAPI customOpenAPI() {
         return new OpenAPI()
             .info(new Info()
-                .title("Spring部分的Swagger文档集成")
-                .version("1.0.0")
-                .description("这是demo项目的Spring部分的Swagger文档集成"))
+                .title(Constants.SWAGGER_TITLE)
+                .version(Constants.SWAGGER_VERSION)
+                .description(Constants.SWAGGER_DESC))
             .servers(List.of(
-                new Server().url("http://localhost:" + port).description("baseURL")));
+                new Server().url(Constants.SWAGGER_URL_PREFIX + port).description("baseURL")));
     }
 }

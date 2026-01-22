@@ -75,7 +75,7 @@ public class TokenServiceImpl implements TokenService {
         // 2. 验证 Token 是否过期或格式错误
         try {
             if (!jwtUtil.validateToken(token)) {
-                logger.debug(Constants.TOKEN_EXPIRED, userId);
+                logger.debug(Constants.TOKEN_EXPIRED_CLEAN, userId);
                 removeToken(userId, token);
                 return false;
             }

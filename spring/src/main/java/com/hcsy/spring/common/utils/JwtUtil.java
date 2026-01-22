@@ -72,14 +72,14 @@ public class JwtUtil {
                     .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token);
-            logger.debug("Token验证成功");
+            logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
-            logger.warning("Token已过期");
-            throw new BusinessException("Token已过期");
+            logger.warning(Constants.TOKEN_EXPIRED);
+            throw new BusinessException(Constants.TOKEN_EXPIRED);
         } catch (JwtException | IllegalArgumentException e) {
-            logger.warning("无效的Token: %s", e.getMessage());
-            throw new BusinessException("无效的Token");
+            logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
+            throw new BusinessException(Constants.UNUSED_TOKEN);
         }
     }
 

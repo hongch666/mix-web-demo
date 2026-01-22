@@ -26,10 +26,10 @@ public class RabbitMQUtil {
             // 发送 JSON 字符串到队列
             rabbitTemplate.convertAndSend(queueName, jsonMessage);
 
-            logger.info("消息发送成功：%s -> %s", queueName, jsonMessage);
+            logger.info(Constants.MSG_SEND_SUCCESS, queueName, jsonMessage);
         } catch (Exception e) {
-            logger.error("消息发送失败：%s", e.getMessage(), e);
-            throw new BusinessException("发送消息失败：" + queueName);
+            logger.error(Constants.MSG_SEND_FAIL + e.getMessage());
+            throw new BusinessException(Constants.MSG_SEND_FAIL + queueName);
         }
     }
 
@@ -40,10 +40,10 @@ public class RabbitMQUtil {
         try {
             String jsonMessage = objectMapper.writeValueAsString(message);
             rabbitTemplate.convertAndSend(exchange, routingKey, jsonMessage);
-            logger.info("消息发送成功：%s/%s -> %s", exchange, routingKey, jsonMessage);
+            logger.info(Constants.EXCHANGE_SEND_SUCCESS, exchange, routingKey, jsonMessage);
         } catch (Exception e) {
-            logger.error("消息发送失败：%s", e.getMessage(), e);
-            throw new BusinessException("发送消息到交换机失败: " + exchange);
+            logger.error(Constants.EXCHANGE_SEND_FAIL + e.getMessage());
+            throw new BusinessException(Constants.EXCHANGE_SEND_FAIL + exchange);
         }
     }
 
@@ -54,8 +54,8 @@ public class RabbitMQUtil {
         try {
             return objectMapper.readValue(jsonMessage, targetClass);
         } catch (Exception e) {
-            logger.error("消息转换失败：%s", e.getMessage(), e);
-            throw new BusinessException("消息转换失败");
+            logger.error(Constants.TRANSFORM_MSG_FAIL, e.getMessage(), e);
+            throw new BusinessException(Constants.TRANSFORM_MSG_FAIL);
         }
     }
 }

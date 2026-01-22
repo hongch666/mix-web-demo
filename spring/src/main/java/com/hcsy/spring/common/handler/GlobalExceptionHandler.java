@@ -1,6 +1,7 @@
 package com.hcsy.spring.common.handler;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -19,7 +20,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException.class)
     public Result handleBusinessException(BusinessException ex) {
-        logger.error("捕获到业务异常: " + ex.getMessage(), ex);
+        logger.error(Constants.BUSINESS_EXCEPTION + ex.getMessage(), ex);
         return Result.error(ex.getErrorMessage());
     }
 
@@ -28,7 +29,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public Result handleException(Exception ex) {
-        logger.error("捕获到系统异常: " + ex.getMessage(), ex);
-        return Result.error("Spring服务器错误");
+        logger.error(Constants.SYSTEM_EXCEPTION + ex.getMessage(), ex);
+        return Result.error(Constants.SYSTEM_EXCEPTION_BACK);
     }
 }

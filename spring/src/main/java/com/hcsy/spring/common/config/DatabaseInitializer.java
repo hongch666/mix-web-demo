@@ -6,6 +6,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
 import javax.sql.DataSource;
@@ -38,7 +39,7 @@ public class DatabaseInitializer implements ApplicationRunner {
             // 初始化AI用户
             initializeAIUsers();
         } catch (Exception e) {
-            logger.error("检查/创建表失败", e);
+            logger.error(Constants.CREATE_TABLE, e);
         }
     }
 
@@ -47,9 +48,9 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (ResultSet rs = meta.getTables(catalog, null, tableName, new String[] { "TABLE" })) {
             if (!rs.next()) {
                 jdbc.execute(createSql);
-                logger.info(String.format("表 '%s' 不存在，已创建", tableName));
+                logger.info(String.format(Constants.NO_TABLE_CREATE, tableName));
             } else {
-                logger.debug(String.format("表 '%s' 已存在", tableName));
+                logger.debug(String.format(Constants.TABLE_EXIST, tableName));
             }
         }
     }
@@ -57,34 +58,44 @@ public class DatabaseInitializer implements ApplicationRunner {
     private void initializeAIUsers() {
         try {
             // 创建三个AI用户，如果不存在则插入
-            insertAIUserIfNotExists(1001L, "豆包", "doubao@example.com",
-                    "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E8%B1%86%E5%8C%85.jpeg");
-            insertAIUserIfNotExists(1002L, "Gemini", "gemini@example.com",
-                    "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gemini.jpeg");
-            insertAIUserIfNotExists(1003L, "Qwen", "qwen@example.com",
-                    "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE.jpeg");
+            insertAIUserIfNotExists(
+                    Constants.DOUBAO_ID,
+                    Constants.DOUBAO_NAME,
+                    Constants.DOUBAO_EMAIL,
+                    Constants.DOUBAO_IMG);
+            insertAIUserIfNotExists(
+                    Constants.GEMINI_ID,
+                    Constants.GEMINI_NAME,
+                    Constants.GEMINI_EMAIL,
+                    Constants.GEMINI_IMG);
+            insertAIUserIfNotExists(
+                    Constants.QWEN_ID,
+                    Constants.QWEN_NAME,
+                    Constants.QWEN_EMAIL,
+                    Constants.QWEN_IMG);
         } catch (Exception e) {
-            logger.error("初始化AI用户失败", e);
+            logger.error(Constants.INIT_AI, e);
         }
     }
 
     private void insertAIUserIfNotExists(Long id, String name, String email, String img) {
         try {
-            String password = "******";
-            String checkSql = "SELECT COUNT(*) FROM user WHERE id = ?";
-            Integer count = jdbc.queryForObject(checkSql, Integer.class, id);
+            Integer count = jdbc.queryForObject(CHECK_USER_SQL, Integer.class, id);
 
             if (count == null || count == 0) {
-                String insertSql = "INSERT INTO user (id, name, password, email, role, img) VALUES (?, ?, ?, ?, 'ai', ?)";
-                jdbc.update(insertSql, id, name, password, email, img);
-                logger.info(String.format("AI用户 '%s' (id: %d) 已创建", name, id));
+                jdbc.update(INSERT_AI_SQL, id, name, Constants.HIDE_PASSWORD, email, img);
+                logger.info(String.format(Constants.AI_CREATED, name, id));
             } else {
-                logger.debug(String.format("AI用户 (id: %d) 已存在", id));
+                logger.debug(String.format(Constants.AI_EXIST, id));
             }
         } catch (Exception e) {
-            logger.error(String.format("插入AI用户 (id: %d) 失败", id), e);
+            logger.error(String.format(Constants.AI_INSERT, id), e);
         }
     }
+
+    private static final String CHECK_USER_SQL = "SELECT COUNT(*) FROM user WHERE id = ?";
+
+    private static final String INSERT_AI_SQL = "INSERT INTO user (id, name, password, email, role, img) VALUES (?, ?, ?, ?, 'ai', ?)";
 
     private static final String CREATE_USER_SQL = "CREATE TABLE user (\n" +
             "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',\n" +

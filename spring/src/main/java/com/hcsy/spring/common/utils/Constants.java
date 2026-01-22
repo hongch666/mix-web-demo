@@ -183,7 +183,7 @@ public class Constants {
      * 文章分类不存在的id返回
      */
     public static String UNDEFINED_CATEGORY_AUTHOR_ID = "文章子分类的父分类不存在，ID：";
-    
+
     /**
      * 文章发布失败错误信息
      */
@@ -359,7 +359,7 @@ public class Constants {
     /**
      * token过期移除消息
      */
-    public static String TOKEN_EXPIRED = "用户 %d 的 Token 已过期或格式错误，将从 Redis 列表中移除";
+    public static String TOKEN_EXPIRED_CLEAN = "用户 %d 的 Token 已过期或格式错误，将从 Redis 列表中移除";
 
     /**
      * 验证token错误信息
@@ -597,9 +597,154 @@ public class Constants {
     public static String NO_SOURCE = "目标资源ID为空，无法检查所有权";
 
     /**
-     * 获取参数名失败
+     * 获取参数名失败消息
      */
     public static String PARAM_NAME = "获取参数名失败";
+
+    /**
+     * 创建表失败消息
+     */
+    public static String CREATE_TABLE = "检查/创建表失败";
+
+    /**
+     * 表不存在创建消息
+     */
+    public static String NO_TABLE_CREATE = "表 '%s' 不存在，已创建";
+
+    /**
+     * 表不已存在消息
+     */
+    public static String TABLE_EXIST = "表 '%s' 已存在";
+
+    /**
+     * 初始化AI用户失败消息
+     */
+    public static String INIT_AI = "初始化AI用户失败";
+
+    /**
+     * AI用户已创建消息
+     */
+    public static String AI_CREATED = "AI用户 '%s' (id: %d) 已创建";
+
+    /**
+     * AI用户已存在消息
+     */
+    public static String AI_EXIST = "AI用户 (id: %d) 已存在";
+
+    /**
+     * 插入AI用户消息
+     */
+    public static String AI_INSERT = "插入AI用户 (id: %d) 失败";
+
+    /**
+     * Redis用户连接消息
+     */
+    public static String REDIS_USER = "Redis 使用用户名 '%s' 连接";
+
+    /**
+     * Redis密码连接消息
+     */
+    public static String REDIS_PASSWORD = "Redis 已设置密码认证";
+
+    /**
+     * Redis连接消息
+     */
+    public static String REDIS_CONNECT = "Redis 连接配置: %s:%d (DB: %d)";
+
+    /**
+     * 业务异常消息
+     */
+    public static String BUSINESS_EXCEPTION = "捕获到业务异常: ";
+
+    /**
+     * 系统异常消息
+     */
+    public static String SYSTEM_EXCEPTION = "捕获到业系统异常: ";
+
+    /**
+     * 系统异常返回消息
+     */
+    public static String SYSTEM_EXCEPTION_BACK = "Spring服务器错误";
+
+    /**
+     * 用户拦截ID异常消息
+     */
+    public static String USER_INTERCEPTOR = "请求体中非法的用户id: ";
+
+    /**
+     * 定时任务开始消息
+     */
+    public static String TASK_START = "开始执行定时清理过期 Token 任务";
+
+    /**
+     * 定时任务结束消息
+     */
+    public static String TASK_END = "定时清理过期 Token 任务执行完成";
+
+    /**
+     * 定时任务异常消息
+     */
+    public static String TASK_EXCEPTION = "定时清理过期 Token 任务执行异常: ";
+
+    /**
+     * JWT密钥不能为空异常消息
+     */
+    public static String JWT_NOT_NULL = "JWT 密钥不能为 null 或者为空";
+
+    /**
+     * JWT密钥初始化完成消息
+     */
+    public static String JWT_INIT = "JWT 密钥初始化完成";
+
+    /**
+     * Token验证成功消息
+     */
+    public static String TOKEN_VERIFY_SUCCESS = "Token验证成功";
+
+    /**
+     * Token过期消息
+     */
+    public static String TOKEN_EXPIRED = "Token已过期";
+
+    /**
+     * 无效Token消息
+     */
+    public static String UNUSED_TOKEN = "无效的Token";
+
+    /**
+     * 日志配置初始化消息
+     */
+    public static String LOG_INIT = "日志配置初始化完成，路径: {}";
+
+    /**
+     * 写入日志失败消息
+     */
+    public static String LOG_WRITE = "写入日志失败: {}";
+
+    /**
+     * 消息发送成功消息
+     */
+    public static String MSG_SEND_SUCCESS = "消息发送成功：%s -> %s";
+
+    /**
+     * 消息发送失败消息
+     */
+    public static String MSG_SEND_FAIL = "消息发送失败：";
+
+    /**
+     * 交换机发送成功消息
+     */
+    public static String EXCHANGE_SEND_SUCCESS = "发送消息到交换机成功：%s -> %s";
+
+    /**
+     * 交换机发送失败消息
+     */
+    public static String EXCHANGE_SEND_FAIL = "发送消息到交换机失败: ";
+
+    /**
+     * 消息转换失败消息
+     */
+    public static String TRANSFORM_MSG_FAIL = "发送消息到交换机失败: ";
 
     // 默认返回值
 
@@ -633,4 +778,119 @@ public class Constants {
      */
     public static String DEFAULT_PASSWORD = "123456";
 
+    // AI用户相关常量
+
+    /**
+     * 豆包用户id
+     */
+    public static long DOUBAO_ID = 1001L;
+
+    /**
+     * 豆包用户名
+     */
+    public static String DOUBAO_NAME = "豆包";
+
+    /**
+     * 豆包邮箱
+     */
+    public static String DOUBAO_EMAIL = "doubao@example.com";
+
+    /**
+     * 豆包头像链接
+     */
+    public static String DOUBAO_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E8%B1%86%E5%8C%85.jpeg";
+
+    /**
+     * Gemini用户id
+     */
+    public static long GEMINI_ID = 1002L;
+
+    /**
+     * Gemini用户名
+     */
+    public static String GEMINI_NAME = "Gemini";
+
+    /**
+     * Gemini邮箱
+     */
+    public static String GEMINI_EMAIL = "gemini@example.com";
+
+    /**
+     * Gemini头像链接
+     */
+    public static String GEMINI_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gemini.jpeg";
+
+    /**
+     * Qwen用户id
+     */
+    public static long QWEN_ID = 1003L;
+
+    /**
+     * Qwen用户名
+     */
+    public static String QWEN_NAME = "Qwen";
+
+    /**
+     * Qwen邮箱
+     */
+    public static String QWEN_EMAIL = "qwen@example.com";
+
+    /**
+     * Qwen头像链接
+     */
+    public static String QWEN_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE.jpeg";
+
+    /**
+     * 通用隐藏密码
+     */
+    public static String HIDE_PASSWORD = "******";
+
+    // Swagger 消息常量
+
+    /**
+     * Swagger 标题
+     */
+    public static String SWAGGER_TITLE = "Spring部分的Swagger文档集成";
+
+    /**
+     * Swagger 版本
+     */
+    public static String SWAGGER_VERSION = "1.0.0";
+
+    /**
+     * Swagger 描述
+     */
+    public static String SWAGGER_DESC = "这是demo项目的Spring部分的Swagger文档集成";
+
+    /**
+     * Swagger URL 前缀
+     */
+    public static String SWAGGER_URL_PREFIX = "http://localhost:";
+
+    // 初始消息常量
+
+    /**
+     * 初始输出IP
+     */
+    public static String INIT_IP = "localhost";
+
+    /**
+     * 初始输出端口
+     */
+    public static String INIT_PORT = "8081";
+
+    /**
+     * 初始输出信息
+     */
+    public static String INIT_MSG = "Spring Boot应用已启动";
+
+    /**
+     * 服务地址输出信息
+     */
+    public static String INIT_ADDR = "服务地址: http://{}:{}/";
+
+    /**
+     * 服务地址输出信息
+     */
+    public static String INIT_SWAGGER_ADDR = "Swagger文档地址: http://{}:{}/swagger-ui/index.html";
 }

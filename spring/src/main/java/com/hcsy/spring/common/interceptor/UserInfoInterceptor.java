@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 
@@ -31,7 +32,7 @@ public class UserInfoInterceptor implements HandlerInterceptor {
                 UserContext.setUsername(username);
             } catch (NumberFormatException e) {
                 // 如果格式错误，可以记录日志，也可以拦截请求
-                logger.error("Invalid userId in header: " + userIdStr);
+                logger.error(Constants.USER_INTERCEPTOR + userIdStr);
             }
         }
 

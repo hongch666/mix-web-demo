@@ -38,6 +38,6 @@ public class PasswordEncryptor {
      * @return 隐藏后的密码
      */
     public static String maskPassword() {
-        return "******";
+        return Constants.HIDE_PASSWORD;
     }
 }
