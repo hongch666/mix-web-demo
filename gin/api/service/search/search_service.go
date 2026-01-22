@@ -6,6 +6,7 @@ import (
 	"gin_proj/api/mapper/search"
 	"gin_proj/common/exceptions"
 	"gin_proj/common/keys"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/dto"
 	"gin_proj/entity/vo"
@@ -26,17 +27,17 @@ func (s *SearchService) SearchArticles(ctx context.Context, searchDTO dto.Articl
 			"action":  "search",
 			"user_id": userID,
 			"content": searchDTO,
-			"msg":     "发起了文章搜索",
+			"msg":     utils.SEARCH_MSG,
 		}
 		// 转成 JSON 字符串
 		jsonBytes, err := json.Marshal(msg)
 		if err != nil {
-			panic(exceptions.NewBusinessError("文章搜索错误", err.Error()))
+			panic(exceptions.NewBusinessError(utils.SEARCH_ERR, err.Error()))
 		}
 		// 发送消息
 		err = config.RabbitMQ.Send("log-queue", string(jsonBytes))
 		if err != nil {
-			panic(exceptions.NewBusinessError("文章搜索错误", err.Error()))
+			panic(exceptions.NewBusinessError(utils.SEARCH_ERR, err.Error()))
 		}
 	}
 	return vo.SearchVO{

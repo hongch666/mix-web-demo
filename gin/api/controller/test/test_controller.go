@@ -18,7 +18,7 @@ type TestController struct {
 // @Success 200 {object} map[string]interface{}
 // @Router /api_gin/gin [get]
 func (con *TestController) TestController(c *gin.Context) {
-	utils.RespondSuccess(c, "Hello,I am Gin!")
+	utils.RespondSuccess(c, utils.TEST_MESSAGE)
 }
 
 // @Summary 调用Spring的测试
