@@ -10,6 +10,7 @@ from common.task import (
     initialize_article_content_hash_cache
 )
 from common.utils import success
+from common.utils.constants import Constants
 
 router: APIRouter = APIRouter(
     prefix="/api_fastapi",
@@ -25,7 +26,7 @@ router: APIRouter = APIRouter(
 @log("测试FastAPI服务")
 async def testFastapi(request: Request) -> JSONResponse:
     """测试FastAPI服务接口"""
-    return success("Hello, I am FastAPI!")
+    return success(Constants.TEST_MESSAGE)
 
 # 测试Spring服务
 @router.get(
@@ -115,4 +116,4 @@ async def test_init_hash_cache_task(request: Request) -> JSONResponse:
     """初始化文章内容 hash 缓存接口"""
     
     await run_in_threadpool(initialize_article_content_hash_cache)
-    return success("文章内容 hash 缓存初始化完成")
+    return success(Constants.VECTOR_SYNC_COMPLETE)
