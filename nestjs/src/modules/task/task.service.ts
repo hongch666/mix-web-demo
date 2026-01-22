@@ -4,6 +4,7 @@ import { Cron } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { ApiLog, ApiLogDocument } from 'src/api/api-log/schema/api-log.schema';
 import { fileLogger } from '../../common/utils/writeLog';
+import { Constants } from '../../common/utils/constants';
 
 @Injectable()
 export class TaskService {
@@ -20,7 +21,7 @@ export class TaskService {
   @Cron('0 0 2 1 * *')
   async cleanupOldApiLogs() {
     try {
-      fileLogger.info('开始清理超过1个月的 API 日志');
+      fileLogger.info(Constants.TASK_CLEAN);
 
       // 计算1个月前的日期
       const oneMonthAgo = new Date();

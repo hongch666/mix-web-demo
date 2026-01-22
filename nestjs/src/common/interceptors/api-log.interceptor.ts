@@ -11,6 +11,7 @@ import { finalize } from 'rxjs/operators';
 import { fileLogger } from '../utils/writeLog';
 import { API_LOG_KEY, ApiLogOptions } from '../decorators/api-log.decorator';
 import { RabbitMQService } from '../../modules/mq/mq.service';
+import { Constants } from '../utils/constants';
 
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {
@@ -172,7 +173,7 @@ export class ApiLogInterceptor implements NestInterceptor {
 
       return params.join('\n');
     } catch (error) {
-      return '参数解析失败';
+      return Constants.PARAM_ERROR;
     }
   }
 

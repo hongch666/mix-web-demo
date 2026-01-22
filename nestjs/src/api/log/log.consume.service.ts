@@ -3,6 +3,7 @@ import { RabbitMQService } from 'src/modules/mq/mq.service';
 import { ArticleLogService } from './log.service';
 import { fileLogger } from 'src/common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
+import { Constants } from 'src/common/utils/constants';
 
 @Injectable()
 export class LogConsumerService implements OnModuleInit {
@@ -12,7 +13,7 @@ export class LogConsumerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    fileLogger.info('启动 ArticleLog RabbitMQ 消息监听');
+    fileLogger.info(Constants.ARTICLE_RABBITMQ_START);
     await this.rabbitMQService.consume('log-queue', async (msg) => {
       try {
         // 处理两种消息格式：
@@ -32,7 +33,7 @@ export class LogConsumerService implements OnModuleInit {
         // 处理消息
         await this.handleMessage(logData);
 
-        fileLogger.info('ArticleLog 消息处理完成');
+        fileLogger.info(Constants.ARTICLE_HANDLER);
       } catch (error) {
         fileLogger.error(`处理 ArticleLog 消息失败: ${error.message}`);
       }
@@ -45,14 +46,14 @@ export class LogConsumerService implements OnModuleInit {
       fileLogger.error(
         `ArticleLog 消息缺少 action 字段: ${JSON.stringify(msg)}`,
       );
-      throw new BusinessException('ArticleLog 消息缺少 action 字段');
+      throw new BusinessException(Constants.ARTICLE_LESS_ACTION);
     }
 
     if (!msg.content) {
       fileLogger.error(
         `ArticleLog 消息缺少 content 字段: ${JSON.stringify(msg)}`,
       );
-      throw new BusinessException('ArticleLog 消息缺少 content 字段');
+      throw new BusinessException(Constants.ARTICLE_LESS_CONTNET);
     }
 
     const dto = {
@@ -65,6 +66,6 @@ export class LogConsumerService implements OnModuleInit {
 
     fileLogger.info(`准备保存 ArticleLog: ${JSON.stringify(dto)}`);
     await this.articleLogService.create(dto);
-    fileLogger.info('ArticleLog 写入成功');
+    fileLogger.info(Constants.ARTICLE_SAVE);
   }
 }

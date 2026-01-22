@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
 import { fileLogger } from '../../common/utils/writeLog';
+import { Constants } from '../../common/utils/constants';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
@@ -23,7 +24,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     const url = `amqp://${username}:${password}@${host}:${port}${vhost === '/' ? '' : `/${vhost}`}`;
     this.connection = await amqp.connect(url);
     this.channel = await this.connection.createChannel();
-    fileLogger.info('RabbitMQ连接成功');
+    fileLogger.info(Constants.RABBITMQ_CONNECTION);
   }
 
   async onModuleDestroy() {

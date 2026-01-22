@@ -4,6 +4,7 @@ import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 import { TaskService } from 'src/modules/task/task.service';
 import { success } from 'src/common/utils/response';
+import { Constants } from 'src/common/utils/constants';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
@@ -20,7 +21,7 @@ export class TestController {
   })
   @ApiLog('测试NestJS服务')
   async getNestjs(): Promise<any> {
-    return success('Hello,I am Nest.js!');
+    return success(Constants.TEST_WELCOME);
   }
 
   @Get('spring')

@@ -3,6 +3,7 @@ import { RabbitMQService } from 'src/modules/mq/mq.service';
 import { ApiLogService } from './api-log.service';
 import { fileLogger } from 'src/common/utils/writeLog';
 import { CreateApiLogDto } from './dto/api-log.dto';
+import { Constants } from 'src/common/utils/constants';
 
 @Injectable()
 export class ApiLogConsumerService implements OnModuleInit {
@@ -12,7 +13,7 @@ export class ApiLogConsumerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    fileLogger.info('启动 ApiLog RabbitMQ 消息监听');
+    fileLogger.info(Constants.API_RABBITMQ_START);
     await this.rabbitMQService.consume('api-log-queue', async (msg) => {
       try {
         // 处理两种消息格式：
@@ -52,7 +53,7 @@ export class ApiLogConsumerService implements OnModuleInit {
 
         // 保存到数据库
         await this.apiLogService.create(dto);
-        fileLogger.info('API 日志已保存到数据库');
+        fileLogger.info(Constants.API_SAVE);
       } catch (error) {
         fileLogger.error(`处理 ApiLog 消息失败: ${error.message}`);
       }

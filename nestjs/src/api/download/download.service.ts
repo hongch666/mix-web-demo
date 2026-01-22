@@ -13,6 +13,7 @@ import { Articles } from 'src/modules/article/entities/article.entity';
 import * as marked from 'marked';
 import dayjs from 'dayjs';
 import { BusinessException } from 'src/common/exceptions/business.exception';
+import { Constants } from 'src/common/utils/constants';
 
 @Injectable()
 export class DownloadService {
@@ -37,13 +38,13 @@ export class DownloadService {
       // 传递htmlContent给word模板
       content: htmlContent,
       tags: article.tags,
-      username: user?.name || '未知',
+      username: user?.name || Constants.UNKNOWN_USER,
       create_at: dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss'),
       update_at: dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss'),
     };
     const filePath = this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
-      throw new BusinessException('未配置文件保存路径');
+      throw new BusinessException(Constants.EMPTY_FILE_PATH);
     }
     const templatePath = path.join(process.cwd(), filePath, 'template.docx'); // 模板文件路径
     const savePath = path.join(process.cwd(), filePath, `article-${id}.docx`); // 保存路径
