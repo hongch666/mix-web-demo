@@ -380,7 +380,7 @@ public class UserController {
             return Result.success("验证码已发送");
         } catch (Exception e) {
             logger.error("发送验证码异常: " + e.getMessage());
-            return Result.error("发送验证码异常：" + e.getMessage());
+            return Result.error("发送验证码异常");
         }
     }
 

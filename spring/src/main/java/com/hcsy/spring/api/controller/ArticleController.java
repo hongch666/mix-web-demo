@@ -14,6 +14,7 @@ import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 
@@ -166,7 +167,7 @@ public class ArticleController {
     public Result deleteArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
+            throw new BusinessException("文章不存在");
         }
         articleService.deleteArticle(id);
         return Result.success();
@@ -207,7 +208,7 @@ public class ArticleController {
     public Result addViewArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
+            throw new BusinessException("文章不存在");
         }
         articleService.addViewArticle(id);
         return Result.success();

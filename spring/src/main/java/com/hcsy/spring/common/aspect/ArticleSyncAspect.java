@@ -16,6 +16,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ArticleSync;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -152,7 +153,7 @@ public class ArticleSyncAspect {
             }
             default:
                 logger.error("未知操作类型：" + action);
-                throw new RuntimeException("AOP识别失败：未知的操作类型");
+                throw new BusinessException("AOP识别失败：未知的操作类型");
         }
 
         // 公共处理逻辑

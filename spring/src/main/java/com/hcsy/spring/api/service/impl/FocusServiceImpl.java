@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hcsy.spring.common.annotation.ArticleSync;
+import com.hcsy.spring.common.exceptions.BusinessException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -83,7 +84,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
                     User user = userMapper.selectById(focus.getFocusId());
 
                     if (user == null) {
-                        throw new RuntimeException("用户不存在，ID：" + focus.getFocusId());
+                        throw new BusinessException("用户不存在，ID：" + focus.getFocusId());
                     }
                     FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                     vo.setFocusedTime(focus.getCreatedTime());
@@ -113,7 +114,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
                     User user = userMapper.selectById(focus.getUserId());
 
                     if (user == null) {
-                        throw new RuntimeException("用户不存在，ID：" + focus.getUserId());
+                        throw new BusinessException("用户不存在，ID：" + focus.getUserId());
                     }
                     FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                     vo.setFocusedTime(focus.getCreatedTime());

@@ -15,6 +15,7 @@ import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import cn.hutool.core.bean.BeanUtil;
 import com.hcsy.spring.common.annotation.ArticleSync;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
@@ -91,17 +92,17 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 校验用户
         Long currentUserId = UserContext.getUserId();
         if (currentUserId == null) {
-            throw new RuntimeException("未登录，无法更新文章");
+            throw new BusinessException("未登录，无法更新文章");
         }
 
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(article.getId());
         User user = userService.getById(currentUserId);
         if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
+            throw new BusinessException("文章不存在");
         }
         if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
-            throw new RuntimeException("无权修改他人文章");
+            throw new BusinessException("无权修改他人文章");
         }
         // 执行修改
         articleMapper.updateById(article);
@@ -115,17 +116,17 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 校验用户
         Long currentUserId = UserContext.getUserId();
         if (currentUserId == null) {
-            throw new RuntimeException("未登录，无法更新文章");
+            throw new BusinessException("未登录，无法更新文章");
         }
 
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
         User user = userService.getById(currentUserId);
         if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
+            throw new BusinessException("文章不存在");
         }
         if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
-            throw new RuntimeException("无权删除他人文章");
+            throw new BusinessException("无权删除他人文章");
         }
         // 执行删除
         articleMapper.deleteById(id);
@@ -137,16 +138,16 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public boolean deleteArticles(List<Long> ids) {
         Long currentUserId = UserContext.getUserId();
         if (currentUserId == null) {
-            throw new RuntimeException("未登录，无法删除文章");
+            throw new BusinessException("未登录，无法删除文章");
         }
         for (Long id : ids) {
             Article dbArticle = articleMapper.selectById(id);
             User user = userService.getById(currentUserId);
             if (dbArticle == null) {
-                throw new RuntimeException("文章不存在，ID:" + id);
+                throw new BusinessException("文章不存在，ID:" + id);
             }
             if (!"admin".equals(user.getRole()) && !currentUserId.equals(dbArticle.getUserId())) {
-                throw new RuntimeException("无权删除他人文章，ID:" + id);
+                throw new BusinessException("无权删除他人文章，ID:" + id);
             }
         }
         articleMapper.deleteBatchIds(ids);
@@ -159,7 +160,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
         if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
+            throw new BusinessException("文章不存在");
         }
 
         // 执行发布
@@ -169,7 +170,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw new RuntimeException("发布失败：文章不存在或更新失败");
+            throw new BusinessException("发布失败：文章不存在或更新失败");
         }
     }
 
@@ -179,10 +180,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
         if (dbArticle == null) {
-            throw new RuntimeException("文章不存在");
+            throw new BusinessException("文章不存在");
         }
         if (dbArticle.getStatus() != 1) {
-            throw new RuntimeException("文章未发布，无法增加阅读量");
+            throw new BusinessException("文章未发布，无法增加阅读量");
         }
         // 获取当前的文章的修改日期
         LocalDateTime updateAt = dbArticle.getUpdateAt();
@@ -194,7 +195,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw new RuntimeException("更新失败：文章不存在或更新失败");
+            throw new BusinessException("更新失败：文章不存在或更新失败");
         }
     }
 

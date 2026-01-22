@@ -4,6 +4,7 @@ import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Comments;
@@ -229,13 +230,13 @@ public class PermissionValidationAspect {
                             Long commentId = Long.parseLong(idStr);
                             Comments comment = commentsService.getById(commentId);
                             if (comment == null) {
-                                throw new RuntimeException("评论ID不存在: " + commentId);
+                                throw new BusinessException("评论ID不存在: " + commentId);
                             }
                             if (comment.getUserId() == null) {
-                                throw new RuntimeException("评论ID未关联用户: " + commentId);
+                                throw new BusinessException("评论ID未关联用户: " + commentId);
                             }
                             if (commentUserId != null && !commentUserId.equals(comment.getUserId())) {
-                                throw new RuntimeException("批量删除的评论属于不同用户");
+                                throw new BusinessException("批量删除的评论属于不同用户");
                             }
                             commentUserId = comment.getUserId();
                         }
@@ -249,13 +250,13 @@ public class PermissionValidationAspect {
                             Long articleId = Long.parseLong(idStr);
                             Article article = articleService.getById(articleId);
                             if (article == null) {
-                                throw new RuntimeException("文章ID不存在: " + articleId);
+                                throw new BusinessException("文章ID不存在: " + articleId);
                             }
                             if (article.getUserId() == null) {
-                                throw new RuntimeException("文章ID未关联用户: " + articleId);
+                                throw new BusinessException("文章ID未关联用户: " + articleId);
                             }
                             if (commentUserId != null && !commentUserId.equals(article.getUserId())) {
-                                throw new RuntimeException("批量删除的文章属于不同用户");
+                                throw new BusinessException("批量删除的文章属于不同用户");
                             }
                             commentUserId = article.getUserId();
                         }

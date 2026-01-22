@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcsy.spring.common.exceptions.BusinessException;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class RabbitMQUtil {
             logger.info("消息发送成功：%s -> %s", queueName, jsonMessage);
         } catch (Exception e) {
             logger.error("消息发送失败：%s", e.getMessage(), e);
-            throw new RuntimeException("Failed to send message to queue: " + queueName, e);
+            throw new BusinessException("发送消息失败：" + queueName);
         }
     }
 
@@ -42,7 +43,7 @@ public class RabbitMQUtil {
             logger.info("消息发送成功：%s/%s -> %s", exchange, routingKey, jsonMessage);
         } catch (Exception e) {
             logger.error("消息发送失败：%s", e.getMessage(), e);
-            throw new RuntimeException("Failed to send message to exchange: " + exchange, e);
+            throw new BusinessException("发送消息到交换机失败: " + exchange);
         }
     }
 
@@ -54,7 +55,7 @@ public class RabbitMQUtil {
             return objectMapper.readValue(jsonMessage, targetClass);
         } catch (Exception e) {
             logger.error("消息转换失败：%s", e.getMessage(), e);
-            throw new RuntimeException("Failed to convert message", e);
+            throw new BusinessException("消息转换失败");
         }
     }
 }

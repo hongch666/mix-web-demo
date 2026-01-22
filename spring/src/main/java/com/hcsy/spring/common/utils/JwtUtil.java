@@ -3,9 +3,11 @@ package com.hcsy.spring.common.utils;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.config.JwtProperties;
+import com.hcsy.spring.common.exceptions.BusinessException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -14,23 +16,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
     private final JwtProperties jwtProperties;
+    private final SimpleLogger logger;
     private Key key;
-
-    // 通过构造器注入（不再使用静态变量）
-    public JwtUtil(JwtProperties jwtProperties) {
-        this.jwtProperties = jwtProperties;
-        this.initKey(); // 直接初始化
-    }
 
     @PostConstruct
     public void initKey() {
         // 增加空值检查
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
-            throw new IllegalStateException("JWT secret must not be null or empty");
+            throw new BusinessException("JWT 密钥不能为 null 或者为空");
         }
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        logger.info("JWT 密钥初始化完成");
     }
 
     /**
@@ -73,11 +72,14 @@ public class JwtUtil {
                     .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token);
+            logger.debug("Token验证成功");
             return true;
         } catch (ExpiredJwtException e) {
-            throw new RuntimeException("Token已过期", e);
+            logger.warning("Token已过期");
+            throw new BusinessException("Token已过期");
         } catch (JwtException | IllegalArgumentException e) {
-            throw new RuntimeException("无效的Token", e);
+            logger.warning("无效的Token: %s", e.getMessage());
+            throw new BusinessException("无效的Token");
         }
     }
 

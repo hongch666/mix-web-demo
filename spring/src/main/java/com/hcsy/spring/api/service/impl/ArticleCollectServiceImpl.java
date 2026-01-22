@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hcsy.spring.common.annotation.ArticleSync;
+import com.hcsy.spring.common.exceptions.BusinessException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -91,7 +92,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
                 collect -> {
                     Article article = articleMapper.selectById(collect.getArticleId());
                     if (article == null) {
-                        throw new RuntimeException("文章不存在，ID：" + collect.getArticleId());
+                        throw new BusinessException("文章不存在，ID：" + collect.getArticleId());
                     }
                     ArticleCollectVO vo = BeanUtil.copyProperties(article, ArticleCollectVO.class);
                     vo.setArticleCreateAt(article.getCreateAt());
@@ -103,30 +104,30 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
 
                     // 获取作者信息
                     if (article.getUserId() == null) {
-                        throw new RuntimeException("文章作者ID为空，文章ID：" + article.getId());
+                        throw new BusinessException("文章作者ID为空，文章ID：" + article.getId());
                     }
                     User author = userMapper.selectById(article.getUserId());
                     if (author == null) {
-                        throw new RuntimeException("文章作者不存在，ID：" + article.getUserId());
+                        throw new BusinessException("文章作者不存在，ID：" + article.getUserId());
                     }
                     vo.setAuthorName(author.getName());
 
                     // 获取分类信息
                     if (article.getSubCategoryId() == null) {
-                        throw new RuntimeException("文章子分类ID为空，文章ID：" + article.getId());
+                        throw new BusinessException("文章子分类ID为空，文章ID：" + article.getId());
                     }
                     SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
                     if (subCategory == null) {
-                        throw new RuntimeException("文章子分类不存在，ID：" + article.getSubCategoryId());
+                        throw new BusinessException("文章子分类不存在，ID：" + article.getSubCategoryId());
                     }
                     vo.setSubCategoryName(subCategory.getName());
                     // 获取父分类
                     if (subCategory.getCategoryId() == null) {
-                        throw new RuntimeException("文章子分类的父分类ID为空，子分类ID：" + subCategory.getId());
+                        throw new BusinessException("文章子分类的父分类ID为空，子分类ID：" + subCategory.getId());
                     }
                     Category category = categoryMapper.selectById(subCategory.getCategoryId());
                     if (category == null) {
-                        throw new RuntimeException("文章子分类的父分类不存在，ID：" + subCategory.getCategoryId());
+                        throw new BusinessException("文章子分类的父分类不存在，ID：" + subCategory.getCategoryId());
                     }
                     vo.setCategoryName(category.getName());
 
