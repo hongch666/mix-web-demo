@@ -3,6 +3,7 @@ package com.hcsy.spring.api.service.impl;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class TokenServiceImpl implements TokenService {
         // 3. 标记用户在线
         redisUtil.set("user:status:" + userId, "1", 24 * 60 * 60);
 
-        logger.info("用户 %d 登录，Token 已保存到 Redis", userId);
+        logger.info(Constants.LOGIN_TOKEN, userId);
     }
 
     /**
@@ -50,9 +51,9 @@ public class TokenServiceImpl implements TokenService {
         long remainingTokens = redisUtil.getListSize(key);
         if (remainingTokens == 0) {
             redisUtil.set("user:status:" + userId, "0");
-            logger.info("用户 %d 没有其他登录会话，状态已设为离线", userId);
+            logger.info(Constants.REMOVE_TOKEN_LOGOUT, userId);
         } else {
-            logger.info("用户 %d 登出，还有 %d 个登录会话", userId, remainingTokens);
+            logger.info(Constants.REMOVE_TOKEN, userId, remainingTokens);
         }
     }
 
@@ -67,19 +68,19 @@ public class TokenServiceImpl implements TokenService {
 
         // 1. 检查 Token 是否在 Redis 列表中
         if (!redisUtil.existsInList(key, token)) {
-            logger.debug("用户 %d 的 Token 不在 Redis 列表中，可能已被管理员踢下线", userId);
+            logger.debug(Constants.TOKEN_REDIS, userId);
             return false;
         }
 
         // 2. 验证 Token 是否过期或格式错误
         try {
             if (!jwtUtil.validateToken(token)) {
-                logger.debug("用户 %d 的 Token 已过期或格式错误，将从 Redis 列表中移除", userId);
+                logger.debug(Constants.TOKEN_EXPIRED, userId);
                 removeToken(userId, token);
                 return false;
             }
         } catch (Exception e) {
-            logger.error("验证用户 %d 的 Token 时出错", userId, e);
+            logger.error(Constants.VERIFY_TOKEN, userId, e);
             removeToken(userId, token);
             return false;
         }
@@ -119,7 +120,7 @@ public class TokenServiceImpl implements TokenService {
         // 标记用户为离线
         redisUtil.set("user:status:" + userId, "0");
 
-        logger.info("管理员已将用户 %d 下线，共清除 %d 个登录会话", userId, tokens.size());
+        logger.info(Constants.ADMIN_TOKEN_CLEAN, userId, tokens.size());
     }
 
     /**
@@ -130,7 +131,7 @@ public class TokenServiceImpl implements TokenService {
         // 扫描所有 user:tokens:* 的 key
         Set<String> keys = redisUtil.getKeys("user:tokens:*");
         if (keys == null || keys.isEmpty()) {
-            logger.info("定时任务：没有需要清理的 Token");
+            logger.info(Constants.TASK_NO_CLEAN);
             return;
         }
 
@@ -149,14 +150,14 @@ public class TokenServiceImpl implements TokenService {
                         redisUtil.removeFromList(key, token);
                         totalCleaned++;
                         cleanedForUser++;
-                        logger.debug("移除过期 Token: %s", token.substring(0, Math.min(20, token.length())) + "...");
+                        logger.debug(Constants.REMOVE_EXPIRED_TOKEN, token.substring(0, Math.min(20, token.length())) + "...");
                     }
                 } catch (Exception e) {
                     // 格式错误的 Token 也直接移除
                     redisUtil.removeFromList(key, token);
                     totalCleaned++;
                     cleanedForUser++;
-                    logger.debug("移除无效 Token: %s", token.substring(0, Math.min(20, token.length())) + "...");
+                    logger.debug(Constants.REMOVE_INVALID_TOKEN, token.substring(0, Math.min(20, token.length())) + "...");
                 }
             }
 
@@ -166,17 +167,17 @@ public class TokenServiceImpl implements TokenService {
                 try {
                     Long userId = Long.parseLong(key.replace("user:tokens:", ""));
                     redisUtil.set("user:status:" + userId, "0");
-                    logger.debug("用户 %d 没有有效 Token，已标记为离线", userId);
+                    logger.debug(Constants.NO_TOKEN_LOGOUT, userId);
                 } catch (NumberFormatException e) {
-                    logger.error("解析用户 ID 失败: %s", key);
+                    logger.error(Constants.EXPIRED_USER_FAIL, key);
                 }
             }
 
             if (cleanedForUser > 0) {
-                logger.info("用户 %s 清理了 %d 个 Token", key, cleanedForUser);
+                logger.info(Constants.USER_TOKEN_CLEAN, key, cleanedForUser);
             }
         }
 
-        logger.info("定时任务：清理完成，扫描 %d 个用户，共清除 %d 个过期 Token", totalUsers, totalCleaned);
+        logger.info(Constants.TOTAL_CLEAN, totalUsers, totalCleaned);
     }
 }

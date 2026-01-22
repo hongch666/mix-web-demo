@@ -5,6 +5,7 @@ import com.hcsy.spring.common.client.FastAPIClient;
 import com.hcsy.spring.common.client.GinClient;
 import com.hcsy.spring.common.client.NestjsClient;
 import com.hcsy.spring.common.task.TokenCleanupTask;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +31,7 @@ public class TestController {
     @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")
     public Result getHello() {
-        return Result.success("Hello,I am Spring!");
+        return Result.success(Constants.TEST);
     }
 
     @GetMapping("/gin")

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.FocusService;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.po.Focus;
@@ -34,7 +35,7 @@ public class FocusController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error("关注失败，可能已经关注过了");
+            return Result.error(Constants.FOCUS_FAIL);
         }
     }
 
@@ -48,7 +49,7 @@ public class FocusController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error("取消关注失败，记录不存在");
+            return Result.error(Constants.UNFOCUS_FAIL);
         }
     }
 

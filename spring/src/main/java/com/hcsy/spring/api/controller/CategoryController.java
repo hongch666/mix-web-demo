@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
@@ -171,7 +172,7 @@ public class CategoryController {
     public Result getCategoryById(@PathVariable Long id) {
         CategoryVO vo = categoryService.getCategoryById(id);
         if (vo == null) {
-            return Result.error("分类不存在");
+            return Result.error(Constants.UNDEFINED_CATEGORY);
         }
         return Result.success(vo);
     }

@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ArticleSync;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -70,7 +71,7 @@ public class ArticleSyncAspect {
                 // 5. 发送消息
                 String json = objectMapper.writeValueAsString(msg);
                 rabbitMQUtil.sendMessage("log-queue", msg);
-                logger.info("发送到MQ：" + json);
+                logger.info(Constants.MQ_SEND + json);
 
                 // 6. 在主线程中保存用户信息，用于异步任务日志记录
                 final Long currentUserId = userId;
@@ -80,12 +81,12 @@ public class ArticleSyncAspect {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        logger.info("事务提交后触发异步同步任务...");
+                        logger.info(Constants.TRIGGER_SYNC);
                         // 根据操作类型选择不同的同步策略
                         if ("like".equals(action) || "unlike".equals(action) || "collect".equals(action)
                                 || "uncollect".equals(action) || "focus".equals(action) || "unfocus".equals(action)) {
                             // 点赞、取消点赞、收藏、取消收藏、关注、取消关注操作不同步
-                            logger.info("点赞/收藏/关注类操作不同步");
+                            logger.info(Constants.UNSYNC_TYPE);
                         } else if ("view".equals(action)) {
                             // 浏览量操作只同步 Hive
                             asyncSyncService.syncHiveOnlyAsync(currentUserId, currentUsername);
@@ -99,7 +100,7 @@ public class ArticleSyncAspect {
                 return result;
 
             } catch (Throwable e) {
-                logger.error("事务执行失败，已回滚", e);
+                logger.error(Constants.TRANSACTION_ROLLBACK, e);
                 status.setRollbackOnly(); // 显式回滚
                 throw new RuntimeException(e);
             }
@@ -152,8 +153,8 @@ public class ArticleSyncAspect {
                 break;
             }
             default:
-                logger.error("未知操作类型：" + action);
-                throw new BusinessException("AOP识别失败：未知的操作类型");
+                logger.error(Constants.UNKNOWN_OPERATION + action);
+                throw new BusinessException(Constants.UNKNOWN_OPERATION);
         }
 
         // 公共处理逻辑

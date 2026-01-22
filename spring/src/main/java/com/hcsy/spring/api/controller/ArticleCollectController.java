@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleCollectService;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
@@ -34,7 +35,7 @@ public class ArticleCollectController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error("收藏失败，可能已经收藏过了");
+            return Result.error(Constants.COLLECT_FAIL);
         }
     }
 
@@ -48,7 +49,7 @@ public class ArticleCollectController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error("取消收藏失败，记录不存在");
+            return Result.error(Constants.UNCOLLECT_FAIL);
         }
     }
 

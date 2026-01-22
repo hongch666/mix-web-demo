@@ -24,6 +24,7 @@ import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
@@ -58,13 +59,13 @@ public class CommentsController {
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentCreateDTO.getArticleTitle());
         if (article == null) {
-            return Result.error("文章不存在，无法评论");
+            return Result.error(Constants.UNDEFINED_ARTICLE_COMMENT);
         }
         comment.setArticleId(article.getId());
         // 获取对应用户id
         User user = userService.findByUsername(commentCreateDTO.getUsername());
         if (user == null) {
-            return Result.error("用户不存在，无法评论");
+            return Result.error(Constants.UNDEFINED_USER_COMMENT);
         }
         comment.setUserId(user.getId());
         commentsService.save(comment);
@@ -88,13 +89,13 @@ public class CommentsController {
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentUpdateDTO.getArticleTitle());
         if (article == null) {
-            return Result.error("文章不存在，无法评论");
+            return Result.error(Constants.UNDEFINED_ARTICLE_COMMENT);
         }
         comment.setArticleId(article.getId());
         // 获取对应用户id
         User user = userService.findByUsername(commentUpdateDTO.getUsername());
         if (user == null) {
-            return Result.error("用户不存在，无法评论");
+            return Result.error(Constants.UNDEFINED_USER_COMMENT);
         }
         comment.setUserId(user.getId());
 
@@ -146,11 +147,11 @@ public class CommentsController {
         CommentsVO commentsVO = BeanUtil.copyProperties(comments, CommentsVO.class);
         // 查询用户名
         User user = userService.getById(comments.getUserId());
-        commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+        commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
         commentsVO.setPic(user != null ? user.getImg() : null);
         // 查询文章标题
         Article article = articleService.getById(comments.getArticleId());
-        commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+        commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
         return Result.success(commentsVO);
     }
 
@@ -173,11 +174,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询用户名
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         data.put("list", commentVOs);
@@ -203,11 +204,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询AI类型（用户名）
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : "未知AI");
+            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_AI);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         data.put("list", commentVOs);
@@ -231,11 +232,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询用户名
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         data.put("list", commentVOs);
@@ -253,7 +254,7 @@ public class CommentsController {
             @RequestParam(defaultValue = "1", required = false) int page) {
         // 获取并校验排序方式参数
         if (!sortWay.equals("create_time") && !sortWay.equals("star")) {
-            return Result.error("不支持的排序方式: " + sortWay);
+            return Result.error(Constants.SORT_WAY + sortWay);
         }
         Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id, sortWay);
@@ -264,11 +265,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询用户名
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : "未知用户");
+            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : "未知文章");
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         data.put("list", commentVOs);

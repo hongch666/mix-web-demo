@@ -15,6 +15,7 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 
@@ -52,7 +53,7 @@ public class ArticleController {
         // 获取用户id
         User user = userService.findByUsername(dto.getUsername());
         if (user == null) {
-            return Result.error("用户不存在");
+            return Result.error(Constants.UNDEFINED_USER);
         }
         article.setUserId(user.getId());
         article.setViews(0);
@@ -90,7 +91,7 @@ public class ArticleController {
         List<ArticleWithCategoryVO> voList = new ArrayList<>();
         for (Article article : records) {
             if (article.getSubCategoryId() == null) {
-                return Result.error("子分类ID不能为空");
+                return Result.error(Constants.UNDEFINED_SUB_CATEGORY_ID);
             }
 
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
@@ -120,7 +121,7 @@ public class ArticleController {
     public Result getArticleById(@PathVariable Long id) {
         Article article = articleService.getById(id);
         if (article == null) {
-            return Result.error("文章不存在");
+            return Result.error(Constants.UNDEFINED_ARTICLE);
         }
         ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
         // 查询作者用户名
@@ -145,7 +146,7 @@ public class ArticleController {
         // 获取用户id
         User userFromUsername = userService.findByUsername(dto.getUsername());
         if (userFromUsername == null) {
-            return Result.error("用户不存在");
+            return Result.error(Constants.UNDEFINED_USER);
         }
 
         Article article = BeanUtil.copyProperties(dto, Article.class);
@@ -167,7 +168,7 @@ public class ArticleController {
     public Result deleteArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw new BusinessException("文章不存在");
+            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
         }
         articleService.deleteArticle(id);
         return Result.success();
@@ -208,7 +209,7 @@ public class ArticleController {
     public Result addViewArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw new BusinessException("文章不存在");
+            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
         }
         articleService.addViewArticle(id);
         return Result.success();

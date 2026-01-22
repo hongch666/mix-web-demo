@@ -3,6 +3,7 @@ package com.hcsy.spring.common.aspect;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -95,7 +96,7 @@ public class ApiLogAspect {
 
         } catch (Throwable t) {
             // 若方法抛出异常，仍然向上抛出，但先记录错误日志
-            logger.error("API方法执行异常", t);
+            logger.error(Constants.API_EXCEPTION, t);
             throw t;
         } finally {
             // 计算并记录耗时（无论正常或异常都会执行）
@@ -120,7 +121,7 @@ public class ApiLogAspect {
                         responseTime,
                         apiLog.excludeFields());
             } catch (Exception e) {
-                logger.error("记录执行时间失败", e);
+                logger.error(Constants.TIME_FAIL, e);
             }
         }
     }
@@ -236,8 +237,8 @@ public class ApiLogAspect {
             return String.join("\n", paramInfoList);
 
         } catch (Exception e) {
-            logger.error("提取参数信息失败", e);
-            return "参数解析失败";
+            logger.error(Constants.PARAM_EXPIRED, e);
+            return Constants.PARAM_EXPIRED;
         }
     }
 
@@ -308,7 +309,7 @@ public class ApiLogAspect {
             }
 
         } catch (JsonProcessingException e) {
-            logger.error("格式化参数值失败", e);
+            logger.error(Constants.FORMAT_PARAM, e);
             return arg.getClass().getSimpleName();
         }
     }
@@ -345,7 +346,7 @@ public class ApiLogAspect {
 
             return filteredMap;
         } catch (Exception e) {
-            logger.error("对象转Map失败", e);
+            logger.error(Constants.OBJECT_TO_MAP, e);
             return Collections.emptyMap();
         }
     }
@@ -418,11 +419,11 @@ public class ApiLogAspect {
             rabbitMQUtil.sendMessage("api-log-queue", apiLogMessage);
 
             logger.info(String.format(
-                    "API 日志已发送到队列: %s",
+                    Constants.RabbitMQ_SEND_SUCCESS,
                     objectMapper.writeValueAsString(apiLogMessage)));
 
         } catch (Exception e) {
-            logger.error("向消息队列发送 API 日志出错: " + e.getMessage(), e);
+            logger.error(Constants.RabbitMQ_SEND_FAIL + e.getMessage(), e);
             // 不要抛出异常，避免影响业务逻辑
         }
     }
@@ -448,7 +449,7 @@ public class ApiLogAspect {
                 }
             }
         } catch (Exception e) {
-            logger.error("提取路径参数失败", e);
+            logger.error(Constants.PATH_PARAM, e);
         }
         return pathParams;
     }
@@ -481,7 +482,7 @@ public class ApiLogAspect {
                 }
             }
         } catch (Exception e) {
-            logger.error("提取请求体失败", e);
+            logger.error(Constants.BODY_PARAM, e);
         }
         return null;
     }

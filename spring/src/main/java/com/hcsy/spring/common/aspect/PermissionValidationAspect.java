@@ -5,6 +5,7 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.po.Comments;
@@ -46,42 +47,42 @@ public class PermissionValidationAspect {
             Long currentUserId = UserContext.getUserId();
             if (currentUserId == null) {
                 currentUserId = -1L;
-                logger.info("用户未登录，使用默认用户ID: -1");
+                logger.info(Constants.UNLOGIN_DEFAULT);
             }
 
             // 2. 检查管理员权限
             if (currentUserId > 0) {
                 User currentUser = userService.getById(currentUserId);
                 if (currentUser != null && Arrays.asList(requirePermission.roles()).contains(currentUser.getRole())) {
-                    logger.info("用户具有管理员权限，直接通过");
+                    logger.info(Constants.ADMIN_PASS);
                     return joinPoint.proceed();
                 }
             }
 
             // 3. 获取目标资源ID
             Long targetResourceId = getTargetResourceId(joinPoint, requirePermission);
-            logger.info("当前用户ID: %d, 业务类型: %s, 参数来源: %s, 目标资源ID: %s",
+            logger.info(Constants.TARGET_SOURCE,
                     currentUserId, requirePermission.businessType(), requirePermission.paramSource(), targetResourceId);
 
             // 4. 根据业务类型校验权限
             if (requirePermission.allowSelf()) {
                 // 允许个人操作自己的数据
                 if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                    throw new RuntimeException("权限不足，无法执行此操作");
+                    throw new RuntimeException(Constants.NO_PERMISION);
                 }
             } else {
                 // 不允许操作自己，仅管理员能执行（权限已在步骤2检查）
-                throw new RuntimeException("权限不足，无法执行此操作");
+                throw new RuntimeException(Constants.NO_PERMISION);
             }
 
             return joinPoint.proceed();
 
         } catch (RuntimeException e) {
-            logger.error("权限检查失败: " + e.getMessage());
+            logger.error(Constants.PERMITION_FAIL + e.getMessage());
             throw e;
         } catch (Throwable e) {
-            logger.error("权限检查发生异常", e);
-            throw new RuntimeException("权限检查异常", e);
+            logger.error(Constants.PERMITION_FAIL, e);
+            throw new RuntimeException(Constants.PERMITION_FAIL, e);
         }
     }
 
@@ -104,7 +105,7 @@ public class PermissionValidationAspect {
                 return getBodyParam(joinPoint, paramNames[0], requirePermission.businessType());
             }
         } catch (Exception e) {
-            logger.error("获取目标资源ID失败: " + e.getMessage(), e);
+            logger.error(Constants.TARGET_FAIL + e.getMessage(), e);
         }
 
         return null;
@@ -132,19 +133,19 @@ public class PermissionValidationAspect {
                             Object argValue = args[i];
                             if (argValue instanceof Long) {
                                 Long id = (Long) argValue;
-                                logger.info("从方法参数获取路径参数 %s = %d", paramName, id);
+                                logger.info(Constants.FUNCTION_PATH, paramName, id);
                                 return id;
                             } else if (argValue instanceof String) {
                                 try {
                                     Long id = Long.parseLong((String) argValue);
-                                    logger.info("从方法参数获取路径参数 %s = %d", paramName, id);
+                                    logger.info(Constants.FUNCTION_PATH, paramName, id);
                                     return id;
                                 } catch (NumberFormatException e) {
-                                    logger.warning("路径参数转换失败: " + argValue);
+                                    logger.warning(Constants.FUNCTION_PATH_FAIL + argValue);
                                 }
                             } else if (argValue instanceof Integer) {
                                 Long id = ((Integer) argValue).longValue();
-                                logger.info("从方法参数获取路径参数 %s = %d", paramName, id);
+                                logger.info(Constants.FUNCTION_PATH, paramName, id);
                                 return id;
                             }
                         }
@@ -170,18 +171,18 @@ public class PermissionValidationAspect {
                         try {
                             // 尝试将最后一个路径段转换为ID
                             Long id = Long.parseLong(parts[i]);
-                            logger.info("从URL路径获取ID: %d", id);
+                            logger.info(Constants.URL_ID, id);
                             return id;
                         } catch (NumberFormatException e) {
                             // 如果最后一个不是数字，说明这不是ID参数，返回null
-                            logger.warning("URL最后一个路径段不是数字: %s", parts[i]);
+                            logger.warning(Constants.URL_ID_FAIL, parts[i]);
                             return null;
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            logger.warning("获取路径单个参数失败: " + e.getMessage());
+            logger.warning(Constants.SINGLE_PATH + e.getMessage());
         }
 
         return null;
@@ -230,18 +231,18 @@ public class PermissionValidationAspect {
                             Long commentId = Long.parseLong(idStr);
                             Comments comment = commentsService.getById(commentId);
                             if (comment == null) {
-                                throw new BusinessException("评论ID不存在: " + commentId);
+                                throw new BusinessException(Constants.COMMENT_ID + commentId);
                             }
                             if (comment.getUserId() == null) {
-                                throw new BusinessException("评论ID未关联用户: " + commentId);
+                                throw new BusinessException(Constants.COMMENT_NO_USER + commentId);
                             }
                             if (commentUserId != null && !commentUserId.equals(comment.getUserId())) {
-                                throw new BusinessException("批量删除的评论属于不同用户");
+                                throw new BusinessException(Constants.COMMENT_MULTI_USER);
                             }
                             commentUserId = comment.getUserId();
                         }
                     }
-                    logger.info("从方法参数获取批量评论用户ID: %d", commentUserId);
+                    logger.info(Constants.FUNCTION_COMMENT, commentUserId);
                     return commentUserId;
                 } else if ("article".equals(businessType)) {
                     for (String idStr : ids) {
@@ -250,24 +251,24 @@ public class PermissionValidationAspect {
                             Long articleId = Long.parseLong(idStr);
                             Article article = articleService.getById(articleId);
                             if (article == null) {
-                                throw new BusinessException("文章ID不存在: " + articleId);
+                                throw new BusinessException(Constants.ARTICLE_ID + articleId);
                             }
                             if (article.getUserId() == null) {
-                                throw new BusinessException("文章ID未关联用户: " + articleId);
+                                throw new BusinessException(Constants.ARTICLE_NO_USER + articleId);
                             }
                             if (commentUserId != null && !commentUserId.equals(article.getUserId())) {
-                                throw new BusinessException("批量删除的文章属于不同用户");
+                                throw new BusinessException(Constants.ARTICLE_MULTI_USER);
                             }
                             commentUserId = article.getUserId();
                         }
                     }
-                    logger.info("从方法参数获取批量文章用户ID: %d", commentUserId);
+                    logger.info(Constants.FUNCTION_ARTICLE, commentUserId);
                     return commentUserId;
                 }
             }
             
         } catch (Exception e) {
-            logger.warning("获取路径多个参数失败: " + e.getMessage());
+            logger.warning(Constants.MULTI_PATH + e.getMessage());
         }
 
         return null;
@@ -293,7 +294,7 @@ public class PermissionValidationAspect {
                 return extractUserIdFromObject(args[0], paramName, businessType);
             }
         } catch (Exception e) {
-            logger.warning("获取请求体参数失败: " + e.getMessage());
+            logger.warning(Constants.BODY_GET + e.getMessage());
         }
 
         return null;
@@ -328,7 +329,7 @@ public class PermissionValidationAspect {
                 if (username != null) {
                     User user = userService.findByUsername(username);
                     if (user != null) {
-                        logger.info("通过用户名 %s 获取用户ID: %d", username, user.getId());
+                        logger.info(Constants.USERNAME_ID, username, user.getId());
                         return user.getId();
                     }
                 }
@@ -346,7 +347,7 @@ public class PermissionValidationAspect {
             }
 
         } catch (Exception e) {
-            logger.warning("从对象中提取用户ID失败: " + e.getMessage());
+            logger.warning(Constants.OBJECT_PARAM + e.getMessage());
         }
 
         return null;
@@ -368,7 +369,7 @@ public class PermissionValidationAspect {
      */
     private boolean checkOwnership(Long currentUserId, Long targetResourceId, String businessType) {
         if (targetResourceId == null) {
-            logger.warning("目标资源ID为空，无法检查所有权");
+            logger.warning(Constants.NO_SOURCE);
             return false;
         }
 
@@ -409,11 +410,11 @@ public class PermissionValidationAspect {
                 return parameterNames;
             }
 
-            logger.warning("无法获取方法参数名");
+            logger.warning(Constants.PARAM_NAME);
             return new String[] {};
 
         } catch (Exception e) {
-            logger.warning("获取参数名失败: " + e.getMessage());
+            logger.warning(Constants.PARAM_NAME + e.getMessage());
             return new String[] {};
         }
     }

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.RedisUtil;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -55,7 +56,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         // 保存到 Redis（设置过期时间）
         String key = VERIFICATION_CODE_PREFIX + email;
         redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY);
-        logger.info("验证码已保存到 Redis: " + email + ", code: " + code);
+        logger.info(Constants.CODE_SAVE + email + ": " + code);
 
         // 异步发送邮件，避免阻塞主线程
         sendEmailAsync(email, code);
@@ -74,7 +75,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             // 设置邮件信息
             helper.setFrom(mailFrom);
             helper.setTo(email);
-            helper.setSubject("邮箱验证码");
+            helper.setSubject(Constants.EMAIL_CODE);
 
             // 构建 HTML 邮件内容
             String htmlContent = buildEmailContent(code);
@@ -82,12 +83,12 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
             // 发送邮件
             mailSender.send(message);
-            logger.info("验证码邮件已成功发送到: " + email + " (使用账户: " + mailFrom + ")");
+            logger.info(Constants.CODE_SUCCESS + email);
         } catch (MessagingException e) {
-            logger.error("邮件发送失败 (MessagingException): " + e.getMessage(), e);
+            logger.error(Constants.CODE_FAIL + e.getMessage(), e);
             handleSendFailure(email);
         } catch (Exception e) {
-            logger.error("邮件发送异常: " + e.getMessage(), e);
+            logger.error(Constants.CODE_EXCEPTION + e.getMessage(), e);
             handleSendFailure(email);
         }
     }
@@ -98,7 +99,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     private void handleSendFailure(String email) {
         String key = VERIFICATION_CODE_PREFIX + email;
         redisUtil.delete(key);
-        logger.debug("已删除过期的验证码: " + email);
+        logger.debug(Constants.CODE_DELETE + email);
     }
 
     /**
@@ -148,21 +149,21 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             String storedCode = redisUtil.get(key);
 
             if (storedCode == null) {
-                logger.info("验证码已过期或不存在: " + email);
+                logger.info(Constants.CODE_EXPIRED + email);
                 return false;
             }
 
             if (!storedCode.equals(code)) {
-                logger.info("验证码错误: " + email);
+                logger.info(Constants.CODE_VERIFY_FAIL + email);
                 return false;
             }
 
             // 验证成功，删除验证码
             redisUtil.delete(key);
-            logger.info("邮箱验证成功: " + email);
+            logger.info(Constants.CODE_VERIFY_SUCCESS + email);
             return true;
         } catch (Exception e) {
-            logger.error("验证码验证失败: " + e.getMessage(), e);
+            logger.error(Constants.CODE_VERIFY_EXCEPTION + e.getMessage(), e);
             return false;
         }
     }

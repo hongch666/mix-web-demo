@@ -5,6 +5,7 @@ import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequirePermission;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
@@ -142,7 +143,7 @@ public class UserController {
     public Result getUserById(@PathVariable Long id) {
         User user = userService.getById(id);
         if (user == null) {
-            return Result.error("用户不存在");
+            return Result.error(Constants.UNDEFINED_USER);
         }
 
         // 转换为 UserVO
@@ -173,7 +174,7 @@ public class UserController {
         // 获取原用户信息
         User existingUser = userService.getById(userDto.getId());
         if (existingUser == null) {
-            return Result.error("用户不存在");
+            return Result.error(Constants.UNDEFINED_USER);
         }
 
         User user = BeanUtil.copyProperties(userDto, User.class);
@@ -216,7 +217,7 @@ public class UserController {
     public Result login(@RequestBody LoginDTO loginDTO) {
         User user = userService.findByUsername(loginDTO.getName());
         if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
-            return Result.error("用户名或密码错误");
+            return Result.error(Constants.LOGIN);
         }
 
         // 1. 生成 JWT Token
@@ -242,13 +243,13 @@ public class UserController {
         try {
             // 1. 验证邮箱验证码
             if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
-                return Result.error("邮箱验证码无效或已过期");
+                return Result.error(Constants.VERIFY_CODE);
             }
 
             // 2. 查询用户是否存在
             User user = userService.findByEmail(emailLoginDTO.getEmail());
             if (user == null) {
-                return Result.error("用户不存在，请先注册");
+                return Result.error(Constants.UNDEFINED_USER_REGISTER);
             }
 
             // 3. 生成 JWT Token
@@ -266,8 +267,8 @@ public class UserController {
 
             return Result.success(loginVO);
         } catch (Exception e) {
-            logger.error("邮箱验证码登录失败: " + e.getMessage());
-            return Result.error("邮箱验证码登录失败");
+            logger.error(Constants.EMAIL_LOGIN + e.getMessage());
+            return Result.error(Constants.EMAIL_LOGIN);
         }
     }
 
@@ -282,8 +283,8 @@ public class UserController {
             tokenService.removeToken(id, token);
             return Result.success();
         } catch (Exception e) {
-            logger.error("登出失败: " + e.getMessage());
-            return Result.error("登出失败");
+            logger.error(Constants.LOGOUT + e.getMessage());
+            return Result.error(Constants.LOGOUT);
         }
     }
 
@@ -304,15 +305,15 @@ public class UserController {
             // 验证用户是否存在
             User user = userService.getById(userId);
             if (user == null) {
-                return Result.error("用户不存在");
+                return Result.error(Constants.UNDEFINED_USER);
             }
 
             // 执行下线操作
             tokenService.forceLogoutUser(userId);
             return Result.success();
         } catch (Exception e) {
-            logger.error("手动下线用户失败: " + e.getMessage());
-            return Result.error("手动下线用户失败");
+            logger.error(Constants.FORCE_LOGOUT + e.getMessage());
+            return Result.error(Constants.FORCE_LOGOUT);
         }
     }
 
@@ -326,12 +327,12 @@ public class UserController {
         // 1. 检查邮箱是否已被注册
         User existingUser = userService.findByEmail(registerDto.getEmail());
         if (existingUser != null) {
-            return Result.error("邮箱已被注册");
+            return Result.error(Constants.EMAIL_REGISTER);
         }
 
         // 2. 验证邮箱验证码
         if (!emailVerificationService.verifyCode(registerDto.getEmail(), registerDto.getVerificationCode())) {
-            return Result.error("邮箱验证码无效或已过期");
+            return Result.error(Constants.VERIFY_CODE);
         }
 
         // 3. 创建用户并加密密码
@@ -343,7 +344,7 @@ public class UserController {
         // 4. 标记邮箱已验证
         emailVerificationService.markEmailAsVerified(registerDto.getEmail());
 
-        return Result.success("注册成功");
+        return Result.success();
     }
 
     @PostMapping("/email/send")
@@ -354,7 +355,7 @@ public class UserController {
         try {
             // 1. 验证邮箱格式
             if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                return Result.error("邮箱格式不正确");
+                return Result.error(Constants.EMAIL);
             }
 
             // 2. 根据类型验证邮箱状态
@@ -363,24 +364,24 @@ public class UserController {
             if ("register".equals(type)) {
                 // 注册场景：邮箱不能已被注册
                 if (existingUser != null) {
-                    return Result.error("邮箱已被注册");
+                    return Result.error(Constants.EMAIL_REGISTER);
                 }
             } else if ("login".equals(type) || "reset".equals(type)) {
                 // 登录场景/重置密码场景：邮箱必须已被注册
                 if (existingUser == null) {
-                    return Result.error("邮箱未注册，请先注册");
+                    return Result.error(Constants.EMAIL_UNREGISTER);
                 }
             } else {
-                return Result.error("不支持的类型，请使用 register、login 或 reset");
+                return Result.error(Constants.VERIFY_CODE_UNSUPPORT);
             }
 
             // 3. 发送验证码
             emailVerificationService.sendVerificationCode(email);
 
-            return Result.success("验证码已发送");
+            return Result.success();
         } catch (Exception e) {
-            logger.error("发送验证码异常: " + e.getMessage());
-            return Result.error("发送验证码异常");
+            logger.error(Constants.SEND_VERIFY_CODE + e.getMessage());
+            return Result.error(Constants.SEND_VERIFY_CODE);
         }
     }
 
@@ -392,13 +393,13 @@ public class UserController {
             // 1. 验证邮箱验证码
             if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
                     resetPasswordDTO.getVerificationCode())) {
-                return Result.error("邮箱验证码无效或已过期");
+                return Result.error(Constants.VERIFY_CODE);
             }
 
             // 2. 查询用户是否存在
             User user = userService.findByEmail(resetPasswordDTO.getEmail());
             if (user == null) {
-                return Result.error("用户不存在");
+                return Result.error(Constants.UNDEFINED_USER);
             }
 
             // 3. 加密新密码后更新
@@ -407,8 +408,8 @@ public class UserController {
 
             return Result.success();
         } catch (Exception e) {
-            logger.error("重置密码失败: " + e.getMessage());
-            return Result.error("重置密码失败");
+            logger.error(Constants.PASSWORD_RESET + e.getMessage());
+            return Result.error(Constants.PASSWORD_RESET);
         }
     }
 
@@ -427,18 +428,18 @@ public class UserController {
             List<User> allUsers = userService.list();
 
             if (allUsers == null || allUsers.isEmpty()) {
-                return Result.error("没有用户可重置");
+                return Result.error(Constants.PASSWORD_NO_USER);
             }
 
             // 重置所有用户密码为加密后的 123456
-            final String defaultPassword = passwordEncryptor.encryptPassword("123456");
+            final String defaultPassword = passwordEncryptor.encryptPassword(Constants.DEFAULT_PASSWORD);
             allUsers.forEach(user -> user.setPassword(defaultPassword));
             userService.updateBatchById(allUsers);
 
             return Result.success();
         } catch (Exception e) {
-            logger.error("重置所有用户密码失败: " + e.getMessage());
-            return Result.error("重置所有用户密码失败");
+            logger.error(Constants.PASSWORD_RESET_ALL + e.getMessage());
+            return Result.error(Constants.PASSWORD_RESET_ALL);
         }
     }
 
@@ -456,18 +457,18 @@ public class UserController {
             // 查询用户是否存在
             User user = userService.getById(userId);
             if (user == null) {
-                return Result.error("用户不存在");
+                return Result.error(Constants.UNDEFINED_USER);
             }
 
             // 重置密码为加密后的 123456
-            final String defaultPassword = passwordEncryptor.encryptPassword("123456");
+            final String defaultPassword = passwordEncryptor.encryptPassword(Constants.DEFAULT_PASSWORD);
             user.setPassword(defaultPassword);
             userService.updateById(user);
 
             return Result.success();
         } catch (Exception e) {
-            logger.error("重置用户密码失败: " + e.getMessage());
-            return Result.error("重置用户密码失败");
+            logger.error(Constants.PASSWORD_RESET_USER + e.getMessage());
+            return Result.error(Constants.PASSWORD_RESET_USER);
         }
     }
 }

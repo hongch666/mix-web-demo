@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
@@ -34,7 +35,7 @@ public class ArticleLikeController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error("点赞失败，可能已经点过赞了");
+            return Result.error(Constants.LIKE_FAIL);
         }
     }
 
@@ -48,7 +49,7 @@ public class ArticleLikeController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error("取消点赞失败，记录不存在");
+            return Result.error(Constants.UNLIKE_FAIL);
         }
     }
 

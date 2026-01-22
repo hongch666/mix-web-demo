@@ -3,6 +3,7 @@ package com.hcsy.spring.api.service.impl;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.client.FastAPIClient;
 import com.hcsy.spring.common.client.GinClient;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import lombok.RequiredArgsConstructor;
@@ -34,40 +35,44 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     @Async("asyncExecutor")
     public void syncAllAsync(Long userId, String username) {
         try {
-            logger.info("[异步任务] 用户 " + (username != null ? username : "unknown") + "(ID:"
-                    + (userId != null ? userId : "0") + ") 触发同步 ES、Hive 和 Vector...");
+            logger.info(
+                (username != null ? username : Constants.DEFAULT_USER) + 
+                ":"+ 
+                (userId != null ? userId : Constants.DEFAULT_USER_ID) + 
+                Constants.SYNC
+            );
 
             // 同步 ES
             try {
                 ginClient.syncES();
-                logger.info("[异步任务] ES 同步完成");
+                logger.info(Constants.SYNC_ES_SUCCESS);
             } catch (Exception e) {
-                logger.error("[异步任务] ES 同步失败: " + e.getMessage(), e);
+                logger.error(Constants.SYNC_ES_FAIL + e.getMessage(), e);
             }
 
             // 同步 Hive
             try {
                 fastAPIClient.syncHive();
-                logger.info("[异步任务] Hive 同步完成");
+                logger.info(Constants.SYNC_HIVE_SUCCESS);
             } catch (Exception e) {
-                logger.error("[异步任务] Hive 同步失败: " + e.getMessage(), e);
+                logger.error(Constants.SYNC_HIVE_FAIL + e.getMessage(), e);
             }
 
             // 同步 Vector
             try {
                 fastAPIClient.syncVector();
-                logger.info("[异步任务] Vector 同步完成");
+                logger.info(Constants.SYNC_VECTOR_SUCCESS);
             } catch (Exception e) {
-                logger.error("[异步任务] Vector 同步失败: " + e.getMessage(), e);
+                logger.error(Constants.SYNC_VECTOR_FAIL + e.getMessage(), e);
             }
 
-            logger.info("[异步任务] 所有同步任务执行完毕");
+            logger.info(Constants.SYNC_ALL_SUCCESS);
         } catch (Exception e) {
-            logger.error("[异步任务] 同步过程发生未知异常: " + e.getMessage(), e);
+            logger.error(Constants.SYNC_ALL_FAIL + e.getMessage(), e);
         } finally {
             // 清理 ThreadLocal，避免线程池复用时污染
             UserContext.clear();
-            logger.debug("[异步任务] UserContext 已清理");
+            logger.debug(Constants.CLEAN_CONTEXT);
         }
     }
 
@@ -83,24 +88,28 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     @Async("asyncExecutor")
     public void syncHiveOnlyAsync(Long userId, String username) {
         try {
-            logger.info("[异步任务] 用户 " + (username != null ? username : "unknown") + "(ID:"
-                    + (userId != null ? userId : "null") + ") 触发 Hive 同步...");
+            logger.info(
+                (username != null ? username : "unknown") + 
+                ":"+ 
+                (userId != null ? userId : "null") + 
+                Constants.SYNC_HIVE
+            );
 
             // 仅同步 Hive
             try {
                 fastAPIClient.syncHive();
-                logger.info("[异步任务] Hive 同步完成");
+                logger.info(Constants.SYNC_HIVE_SUCCESS);
             } catch (Exception e) {
-                logger.error("[异步任务] Hive 同步失败: " + e.getMessage(), e);
+                logger.error(Constants.SYNC_HIVE_FAIL + e.getMessage(), e);
             }
 
-            logger.info("[异步任务] Hive 同步任务执行完毕");
+            logger.info(Constants.SYNC_ALL_SUCCESS);
         } catch (Exception e) {
-            logger.error("[异步任务] Hive 同步过程发生未知异常: " + e.getMessage(), e);
+            logger.error(Constants.SYNC_ALL_FAIL + e.getMessage(), e);
         } finally {
             // 清理 ThreadLocal，避免线程池复用时污染
             UserContext.clear();
-            logger.debug("[异步任务] UserContext 已清理");
+            logger.debug(Constants.CLEAN_CONTEXT);
         }
     }
 }
