@@ -30,12 +30,12 @@ func InitRabbitMQ() {
 
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		log.Fatalf("RabbitMQ 连接失败: %v", err)
+		log.Fatalf(RABBITMQ_CONNECTION_FAILURE_MESSAGE, err)
 	}
 
 	channel, err := conn.Channel()
 	if err != nil {
-		log.Fatalf("创建 Channel 失败: %v", err)
+		log.Fatalf(RABBITMQ_CREATE_CHANNEL_FAILURE_MESSAGE, err)
 	}
 
 	RabbitMQ = &RabbitMQClient{
@@ -43,7 +43,7 @@ func InitRabbitMQ() {
 		Channel: channel,
 	}
 
-	log.Println("RabbitMQ 初始化成功")
+	log.Println(RABBITMQ_INITIALIZATION_SUCCESS_MESSAGE)
 }
 
 // 发送消息到指定队列
@@ -74,10 +74,11 @@ func (r *RabbitMQClient) Send(queueName string, body string) error {
 		},
 	)
 	if err != nil {
+		log.Printf(SEND_MESSAGE_TO_QUEUE_FAILURE_MESSAGE, queueName, err)
 		return err
 	}
 
-	log.Printf("已发送到队列 [%s]: %s", queueName, body)
+	log.Printf(SEND_MESSAGE_TO_QUEUE_SUCCESS_MESSAGE, queueName, body)
 	return nil
 }
 
@@ -89,5 +90,5 @@ func (r *RabbitMQClient) Close() {
 	if r.Conn != nil {
 		r.Conn.Close()
 	}
-	log.Println("RabbitMQ 连接已关闭")
+	log.Println(CLOSE_RABBITMQ_CONNECTION_MESSAGE)
 }

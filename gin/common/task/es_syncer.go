@@ -27,38 +27,14 @@ func SyncArticlesToES() {
 	// 判断索引是否存在
 	exists, err := config.ESClient.IndexExists("articles").Do(ctx)
 	if err != nil {
-		panic(exceptions.NewBusinessError("索引判断错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.INDEX_CHECK_ERROR_MESSAGE, err.Error()))
 	}
 	if !exists {
 		// 创建索引，指定mapping（根据po.Article结构体字段）
-		mapping := `{
-		"mappings": {
-			"properties": {
-				"id": { "type": "integer" },
-				"title": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-				"content": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-				"userId": { "type": "integer" },
-				"username": { "type": "keyword" },
-				"category_name": { "type": "keyword" },
-				"sub_category_name": { "type": "keyword" },
-				"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-				"status": { "type": "integer" },
-				"views": { "type": "integer" },
-				"likeCount": { "type": "integer" },
-				"collectCount": { "type": "integer" },
-				"authorFollowCount": { "type": "integer" },
-				"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
-				"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
-				"ai_score": { "type": "float" },
-				"user_score": { "type": "float" },
-				"ai_comment_count": { "type": "integer" },
-				"user_comment_count": { "type": "integer" }
-			}
-		}
-		}`
+		mapping := utils.ES_INDEX_MAPPING
 		_, err := config.ESClient.CreateIndex("articles").BodyString(mapping).Do(ctx)
 		if err != nil {
-			panic(exceptions.NewBusinessError("索引创建错误", err.Error()))
+			panic(exceptions.NewBusinessError(utils.INDEX_CREATION_ERROR_MESSAGE, err.Error()))
 		}
 	}
 	// 删除 articles 索引中的所有旧文档
@@ -66,7 +42,7 @@ func SyncArticlesToES() {
 		Query(elastic.NewMatchAllQuery()).
 		Do(ctx)
 	if err1 != nil {
-		panic(exceptions.NewBusinessError("索引删除错误", err1.Error()))
+		panic(exceptions.NewBusinessError(utils.INDEX_DELETION_ERROR_MESSAGE, err1.Error()))
 	}
 
 	// 获取文章数据
@@ -113,19 +89,19 @@ func SyncArticlesToES() {
 
 	// 调用CommentMapper批量获取评分
 	commentScores := commentMapper.GetCommentScoresByArticleIDs(ctx, articleIDs)
-	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的评分信息完成", len(articles)))
+	utils.FileLogger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_RATINGS_COMPLETED_MESSAGE, len(articles)))
 
 	// 批量获取点赞数和收藏数
 	likeCounts := likeMapper.GetLikeCountsByArticleIDs(ctx, articleIDsInt)
 	collectCounts := collectMapper.GetCollectCountsByArticleIDs(ctx, articleIDsInt)
-	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 篇文章的点赞和收藏信息完成", len(articles)))
+	utils.FileLogger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_LIKES_COLLECTS_COMPLETED_MESSAGE, len(articles)))
 
 	// 批量获取作者的关注数（粉丝数）
 	authorFollowCounts := focusMapper.GetFollowCountsByUserIDs(ctx, userIDs)
-	utils.FileLogger.Info(fmt.Sprintf("[ES同步] 批量获取 %d 个作者的关注信息完成", len(userIDs)))
+	utils.FileLogger.Info(fmt.Sprintf(utils.BULK_FETCH_AUTHOR_FOLLOWS_COMPLETED_MESSAGE, len(userIDs)))
 
 	if len(articles) == 0 {
-		panic(exceptions.NewBusinessError("没有已发布的文章可同步", "没有已发布的文章可同步"))
+		panic(exceptions.NewBusinessErrorSame(utils.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE))
 	}
 
 	// 分批提交ES文档，每批1000条避免资源耗尽
@@ -188,16 +164,16 @@ func SyncArticlesToES() {
 
 		resp, err2 := bulkRequest.Do(context.Background())
 		if err2 != nil {
-			panic(exceptions.NewBusinessError("ES批量同步错误", err2.Error()))
+			panic(exceptions.NewBusinessError(utils.ES_BULK_SYNC_ERROR_MESSAGE, err2.Error()))
 		}
 		if resp.Errors {
 			for _, item := range resp.Failed() {
-				utils.FileLogger.Error(fmt.Sprintf("ES同步失败: %+v", item.Error))
+				utils.FileLogger.Error(fmt.Sprintf(utils.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
 			}
-			panic(exceptions.NewBusinessError("ES同步有失败项", "ES同步有失败项"))
+			panic(exceptions.NewBusinessErrorSame(utils.ES_SYNC_HAS_FAILURES_MESSAGE))
 		}
 
-		utils.FileLogger.Info(fmt.Sprintf("[ES同步] 第 %d/%d 批提交完成，共 %d 条记录", batchIdx+1, totalBatches, end-start))
+		utils.FileLogger.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_SUBMISSION_COMPLETED_MESSAGE, batchIdx+1, totalBatches, end-start))
 
 		// 在批次之间添加延迟，给ES足够时间处理，防止资源耗尽
 		if batchIdx < totalBatches-1 {

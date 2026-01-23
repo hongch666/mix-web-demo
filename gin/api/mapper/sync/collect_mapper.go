@@ -2,6 +2,8 @@ package sync
 
 import (
 	"context"
+	"gin_proj/common/exceptions"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -14,7 +16,7 @@ type CollectMapper struct{}
 func (m *CollectMapper) GetCollectCountByArticleID(ctx context.Context, articleID int) int {
 	count, err := gorm.G[po.Collect](config.DB).Where("article_id = ?", articleID).Count(ctx, "*")
 	if err != nil {
-		return 0
+		panic(exceptions.NewBusinessError(utils.COLLECT_QUERY_ERROR, err.Error()))
 	}
 	return int(count)
 }
@@ -33,7 +35,7 @@ func (m *CollectMapper) GetCollectCountsByArticleIDs(ctx context.Context, articl
 		Group("article_id").
 		Scan(&counts).Error
 	if err != nil {
-		return result
+		panic(exceptions.NewBusinessError(utils.COLLECT_QUERY_ERROR, err.Error()))
 	}
 
 	for _, item := range counts {

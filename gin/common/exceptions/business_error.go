@@ -14,3 +14,11 @@ func NewBusinessError(message string, err string) *BusinessError {
 		Err:     err,
 	}
 }
+
+// 创建新的业务异常(相同消息和错误)
+func NewBusinessErrorSame(message string) *BusinessError {
+	return &BusinessError{
+		Message: message,
+		Err:     message,
+	}
+}

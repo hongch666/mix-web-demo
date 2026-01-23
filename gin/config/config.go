@@ -134,7 +134,7 @@ func InitConfig() {
 	// 读取原始文件内容，替换占位符
 	configFile, err := os.ReadFile("application.yaml")
 	if err != nil {
-		panic(exceptions.NewBusinessError("读取配置文件失败", err.Error()))
+		panic(exceptions.NewBusinessError(READ_CONFIG_FILE_ERROR_MESSAGE, err.Error()))
 	}
 
 	// 替换环境变量
@@ -144,11 +144,11 @@ func InitConfig() {
 	viper.SetConfigType("yaml")
 	err = viper.ReadConfig(strings.NewReader(string(configFile)))
 	if err != nil {
-		panic(exceptions.NewBusinessError("解析配置文件失败", err.Error()))
+		panic(exceptions.NewBusinessError(PARSE_CONFIG_FILE_ERROR_MESSAGE, err.Error()))
 	}
 
 	err = viper.Unmarshal(&Config)
 	if err != nil {
-		panic(exceptions.NewBusinessError("配置映射失败", err.Error()))
+		panic(exceptions.NewBusinessError(CONFIG_MAPPING_ERROR_MESSAGE, err.Error()))
 	}
 }

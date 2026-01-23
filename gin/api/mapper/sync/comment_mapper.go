@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"gin_proj/common/exceptions"
 	"gin_proj/common/utils"
 	"gin_proj/config"
 )
@@ -29,21 +30,11 @@ func (m *CommentMapper) GetCommentScoresByArticleIDs(ctx context.Context, articl
 		result[id] = make(map[string]*CommentScore)
 	}
 
-	utils.FileLogger.Info(fmt.Sprintf("[评分查询] 开始从MySQL查询 %d 篇文章的评分信息", len(articleIDs)))
+	utils.FileLogger.Info(fmt.Sprintf(utils.RATING_QUERY_START, len(articleIDs)))
 
 	// 从MySQL comments表联合users表查询评分信息
 	// 根据users表的role字段区分：role='ai' 为AI评分，其他为用户评分
-	query := `
-		SELECT 
-			c.article_id,
-			CASE WHEN u.role = 'ai' THEN 'ai' ELSE 'user' END as role_type,
-			AVG(c.star) as avg_star,
-			COUNT(*) as comment_count
-		FROM comments c
-		LEFT JOIN user u ON c.user_id = u.id
-		WHERE c.article_id IN (?) AND c.star > 0
-		GROUP BY c.article_id, role_type
-	`
+	query := utils.COMMENT_RATING_QUERY
 
 	type QueryResult struct {
 		ArticleID    int64   `gorm:"column:article_id"`
@@ -56,13 +47,10 @@ func (m *CommentMapper) GetCommentScoresByArticleIDs(ctx context.Context, articl
 
 	// 执行查询
 	if err := config.DB.WithContext(ctx).Raw(query, articleIDs).Scan(&results).Error; err != nil {
-		// 日志记录错误但不中断，返回空评分
-		utils.FileLogger.Error(fmt.Sprintf("[评分查询] MySQL查询失败: %v", err))
-		return result
+		panic(exceptions.NewBusinessError(utils.RATING_QUERY_MYSQL_ERROR, err.Error()))
 	}
 
-	utils.FileLogger.Info(fmt.Sprintf("[评分查询] MySQL查询完成，共获取 %d 条评分记录", len(results)))
-
+	utils.FileLogger.Info(fmt.Sprintf(utils.RATING_QUERY_COMPLETED, len(results)))
 	// 解析查询结果
 	for _, item := range results {
 		if _, exists := result[item.ArticleID]; !exists {
@@ -75,7 +63,7 @@ func (m *CommentMapper) GetCommentScoresByArticleIDs(ctx context.Context, articl
 		}
 
 		utils.FileLogger.Debug(fmt.Sprintf(
-			"[评分查询] 文章ID:%d | 类型:%s | 平均评分:%.2f | 评论数:%d",
+			utils.RATING_QUERY_RESULT_DEBUG,
 			item.ArticleID, item.RoleType, item.AvgStar, item.CommentCount,
 		))
 	}

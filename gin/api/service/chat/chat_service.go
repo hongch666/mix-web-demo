@@ -46,15 +46,15 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 		if chatHub.SendMessageToQueue(req.ReceiverID, messageBytes) {
 			// 发送成功，消息已读
 			s.ChatMessageMapper.MarkAsRead(message.ID)
-			utils.FileLogger.Info(fmt.Sprintf("消息 %d 通过WebSocket发送成功，已标记为已读", message.ID))
+			utils.FileLogger.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.ID))
 		} else {
 			// 发送失败，用户可能刚离线，消息保持未读
-			utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在线，消息 %d 已保存为未读", req.ReceiverID, message.ID))
+			utils.FileLogger.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverID, message.ID))
 			// 触发SSE通知发送未读消息
 			go s.notifyUnreadMessage(req.ReceiverID, req.SenderID, message)
 		}
 	} else {
-		utils.FileLogger.Error(fmt.Sprintf("用户 %s 不在队列中，消息 %d 已保存为未读", req.ReceiverID, message.ID))
+		utils.FileLogger.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverID, message.ID))
 		// 触发SSE通知发送未读消息
 		go s.notifyUnreadMessage(req.ReceiverID, req.SenderID, message)
 	}
@@ -106,7 +106,7 @@ func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetCha
 
 	// 将发给当前用户的消息标记为已读
 	if err := s.ChatMessageMapper.MarkChatHistoryAsRead(req.UserID, req.OtherID); err != nil {
-		utils.FileLogger.Error(fmt.Sprintf("标记聊天历史为已读失败: %v", err))
+		utils.FileLogger.Error(fmt.Sprintf(utils.MARK_READ_FAIL, err))
 	}
 
 	// 转换为DTO
@@ -145,12 +145,12 @@ func (s *ChatService) JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueu
 	response := &dto.JoinQueueResponse{
 		UserID: req.UserID,
 	}
-	response.Status = "joined"
+	response.Status = utils.USER_CONNECTED
 
 	// 检查用户是否已经在队列中
 	chatHub := s.ChatHub
 	if chatHub.IsUserInQueue(req.UserID) {
-		response.Status = "already_in_queue"
+		response.Status = utils.USER_ALREADY_IN_QUEUE
 	} else {
 		// 创建一个虚拟的客户端（没有WebSocket连接）
 		client := &Client{
@@ -159,7 +159,7 @@ func (s *ChatService) JoinQueueManually(req *dto.JoinQueueRequest) *dto.JoinQueu
 			Send:   make(chan []byte, 256),
 		}
 		chatHub.JoinQueue(req.UserID, client)
-		response.Status = "joined"
+		response.Status = utils.USER_CONNECTED
 	}
 
 	return response
@@ -174,9 +174,9 @@ func (s *ChatService) LeaveQueueManually(req *dto.LeaveQueueRequest) *dto.LeaveQ
 	chatHub := s.ChatHub
 	if chatHub.IsUserInQueue(req.UserID) {
 		chatHub.LeaveQueue(req.UserID)
-		response.Status = "left"
+		response.Status = utils.USER_DISCONNECTED
 	} else {
-		response.Status = "not_in_queue"
+		response.Status = utils.USER_NOT_IN_QUEUE
 	}
 
 	return response

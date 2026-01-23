@@ -24,7 +24,7 @@ func WriteLog(message string, level string) {
 		// 获取当前工作目录
 		wd, err := os.Getwd()
 		if err != nil {
-			panic(exceptions.NewBusinessError("获取当前工作目录失败", err.Error()))
+			panic(exceptions.NewBusinessError(GET_WORKING_DIR_ERROR, err.Error()))
 		}
 		// 拼接成绝对路径
 		logPath = filepath.Join(wd, logPath)
@@ -32,7 +32,7 @@ func WriteLog(message string, level string) {
 
 	// 确保日志目录存在
 	if err := os.MkdirAll(logPath, 0755); err != nil {
-		panic(exceptions.NewBusinessError("创建日志目录失败", err.Error()))
+		panic(exceptions.NewBusinessError(CREATE_LOG_DIR_ERROR, err.Error()))
 	}
 
 	// 日志文件名 (按日期)
@@ -46,12 +46,12 @@ func WriteLog(message string, level string) {
 	// 写入文件
 	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		panic(exceptions.NewBusinessError("打开日志文件失败", err.Error()))
+		panic(exceptions.NewBusinessError(OPEN_LOG_FILE_ERROR, err.Error()))
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString(logEntry); err != nil {
-		panic(exceptions.NewBusinessError("写入日志文件失败", err.Error()))
+		panic(exceptions.NewBusinessError(WRITE_LOG_FILE_ERROR, err.Error()))
 	}
 }
 

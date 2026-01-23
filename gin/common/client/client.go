@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"gin_proj/common/keys"
+	"gin_proj/common/utils"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -101,7 +102,7 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	case map[string]any:
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": utils.JSON_SERIALIZATION_ERROR})
 			return Result{}, err
 		}
 		body = bytes.NewReader(jsonData)
@@ -114,7 +115,7 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	default:
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "JSON序列化失败"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": utils.JSON_SERIALIZATION_ERROR})
 			return Result{}, err
 		}
 		body = bytes.NewReader(jsonData)
@@ -165,7 +166,7 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 
 	// 10. 检查HTTP状态码
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		errorMsg := fmt.Sprintf("异常状态码: %d, 响应内容: %s", resp.StatusCode, string(body1))
+		errorMsg := fmt.Sprintf(utils.UNEXPECTED_STATUS_CODE, resp.StatusCode, string(body1))
 		return Result{}, errors.New(errorMsg)
 	}
 
@@ -194,10 +195,10 @@ func (sd *ServiceDiscovery) getServiceInstances(serviceName string) ([]model.Ins
 		HealthyOnly: true,
 	})
 	if err != nil {
-		return nil, errors.New("服务发现失败")
+		return nil, errors.New(utils.SERVICE_DISCOVERY_ERROR)
 	}
 	if len(instances) == 0 {
-		return nil, errors.New("无可用服务实例")
+		return nil, errors.New(utils.NO_AVAILABLE_SERVICE_INSTANCE)
 	}
 
 	// 更新缓存

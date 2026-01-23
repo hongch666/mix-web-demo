@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"gin_proj/common/exceptions"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -15,7 +16,7 @@ func (m *ArticleMapper) SearchArticles() []po.Article {
 	ctx := context.Background()
 	articles, err := gorm.G[po.Article](config.DB).Where("status = ?", 1).Find(ctx)
 	if err != nil {
-		panic(exceptions.NewBusinessError("文章查询错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.ARTICLE_QUERY_ERROR, err.Error()))
 	}
 	return articles
 }
@@ -25,7 +26,7 @@ func (m *ArticleMapper) GetArticleViewsByIDs(ctx context.Context, ids []int) map
 	result := make(map[int]int)
 	articles, err := gorm.G[po.Article](config.DB).Where("id IN ?", ids).Select("id", "views").Find(ctx)
 	if err != nil {
-		return result
+		panic(exceptions.NewBusinessError(utils.ARTICLE_QUERY_ERROR, err.Error()))
 	}
 
 	for _, article := range articles {

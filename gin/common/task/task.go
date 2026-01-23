@@ -14,15 +14,15 @@ func init() {
 
 	// 每5分钟同步一次 ES
 	_, err := TaskScheduler.AddFunc("*/5 * * * *", func() {
-		utils.FileLogger.Info("[定时任务] 开始同步文章到 Elasticsearch")
+		utils.FileLogger.Info(utils.TASK_SYNC_ES_STARTED_MESSAGE)
 		SyncArticlesToES()
-		utils.FileLogger.Info("[定时任务] 同步成功")
+		utils.FileLogger.Info(utils.TASK_SYNC_ES_COMPLETED_MESSAGE)
 	})
 
 	if err != nil {
-		utils.FileLogger.Error(fmt.Sprintf("[定时任务] 注册同步任务失败：%v", err))
+		utils.FileLogger.Error(fmt.Sprintf(utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
 	}
 
 	TaskScheduler.Start()
-	utils.FileLogger.Info("[定时任务] 已启动")
+	utils.FileLogger.Info(utils.TASK_SCHEDULER_STARTED_MESSAGE)
 }

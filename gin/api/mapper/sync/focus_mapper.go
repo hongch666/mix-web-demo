@@ -2,6 +2,8 @@ package sync
 
 import (
 	"context"
+	"gin_proj/common/exceptions"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -14,7 +16,7 @@ type FocusMapper struct{}
 func (m *FocusMapper) GetFollowCountByUserID(ctx context.Context, userID int) int {
 	count, err := gorm.G[po.Focus](config.DB).Where("focus_id = ?", userID).Count(ctx, "*")
 	if err != nil {
-		return 0
+		panic(exceptions.NewBusinessError(utils.FOCUS_QUERY_ERROR, err.Error()))
 	}
 	return int(count)
 }
@@ -33,7 +35,7 @@ func (m *FocusMapper) GetFollowCountsByUserIDs(ctx context.Context, userIDs []in
 		Group("focus_id").
 		Scan(&counts).Error
 	if err != nil {
-		return result
+		panic(exceptions.NewBusinessError(utils.FOCUS_QUERY_ERROR, err.Error()))
 	}
 
 	for _, item := range counts {

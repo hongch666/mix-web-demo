@@ -24,10 +24,10 @@ func InitMongoDB() {
 	// 如果有用户名和密码，构建认证 URI
 	if username != "" && password != "" {
 		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%s", username, password, host, port)
-		log.Printf("MongoDB 使用认证连接: %s:%s@%s:%s", username, "***", host, port)
+		log.Printf(MONGODB_CONNECTION_WITH_AUTH_MESSAGE, username, "***", host, port)
 	} else {
 		mongoURI = fmt.Sprintf("mongodb://%s:%s", host, port)
-		log.Printf("MongoDB 连接 (无认证): %s:%s", host, port)
+		log.Printf(MONGODB_CONNECTION_NO_AUTH_MESSAGE, host, port)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -36,17 +36,17 @@ func InitMongoDB() {
 	clientOptions := options.Client().ApplyURI(mongoURI)
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		panic(exceptions.NewBusinessError("MongoDB 连接失败", err.Error()))
+		panic(exceptions.NewBusinessError(MONGODB_CONNECTION_FAILURE_MESSAGE, err.Error()))
 	}
 
 	// 验证连接
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		panic(exceptions.NewBusinessError("MongoDB Ping 失败", err.Error()))
+		panic(exceptions.NewBusinessError(MONGODB_PING_FAILURE_MESSAGE, err.Error()))
 	}
 
 	MongoClient = client
-	log.Println(fmt.Printf("MongoDB 连接成功\n"))
+	log.Println(MONGODB_CONNECTION_SUCCESS_MESSAGE)
 }
 
 // GetMongoDatabase 获取 MongoDB 数据库实例

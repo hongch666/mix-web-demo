@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"gin_proj/common/exceptions"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -14,7 +15,7 @@ type ChatMessageMapper struct{}
 func (m *ChatMessageMapper) CreateChatMessage(message *po.ChatMessage) {
 	ctx := context.Background()
 	if err := gorm.G[po.ChatMessage](config.DB).Create(ctx, message); err != nil {
-		panic(exceptions.NewBusinessError("消息创建错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.CREATE_MESSAGE_ERROR, err.Error()))
 	}
 }
 
@@ -26,7 +27,7 @@ func (m *ChatMessageMapper) GetChatHistory(userID, otherID string, offset, limit
 		userID, otherID, otherID, userID,
 	).Count(ctx, "*")
 	if err != nil {
-		panic(exceptions.NewBusinessError("获取消息历史错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.GET_HISTORY_MESSAGE_ERROR, err.Error()))
 	}
 
 	// 分页查询，按创建时间升序排列
@@ -35,7 +36,7 @@ func (m *ChatMessageMapper) GetChatHistory(userID, otherID string, offset, limit
 		userID, otherID, otherID, userID,
 	).Order("created_at ASC").Offset(offset).Limit(limit).Find(ctx)
 	if err != nil {
-		panic(exceptions.NewBusinessError("获取消息历史错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.GET_HISTORY_MESSAGE_ERROR, err.Error()))
 	}
 
 	// 转换为指针切片
@@ -55,7 +56,7 @@ func (m *ChatMessageMapper) GetUnreadCount(userID, otherID string) int64 {
 		userID, otherID,
 	).Count(ctx, "*")
 	if err != nil {
-		panic(exceptions.NewBusinessError("获取两个用户间未读消息数错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.GET_UNREAD_COUNT_ERROR, err.Error()))
 	}
 	return count
 }
@@ -79,7 +80,7 @@ func (m *ChatMessageMapper) GetAllUnreadCounts(userID string) map[string]int64 {
 		Error
 
 	if err != nil {
-		panic(exceptions.NewBusinessError("获取用户与其他所有人的未读消息数错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.GET_ALL_UNREAD_COUNTS_ERROR, err.Error()))
 	}
 
 	unreadCounts := make(map[string]int64)

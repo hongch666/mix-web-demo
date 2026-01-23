@@ -33,14 +33,14 @@ func InitES() {
 	// 如果有用户名才添加认证
 	if Config.Database.ES.Username != "" {
 		opts = append(opts, elastic.SetBasicAuth(Config.Database.ES.Username, Config.Database.ES.Password))
-		log.Printf("ES连接使用用户名认证: %s", Config.Database.ES.Username)
+		log.Printf(ES_CONNECTION_WITH_AUTH_MESSAGE, Config.Database.ES.Username)
 	}
 
 	ESClient, err = elastic.NewClient(opts...)
 
 	if err != nil {
-		log.Fatalf("ES连接失败: %v", err)
+		log.Fatalf(ES_CONNECTION_FAILURE_MESSAGE, err)
 	}
 
-	log.Printf("ES连接成功: %s", esUrl)
+	log.Printf(ES_CONNECTION_SUCCESS_MESSAGE, esUrl)
 }

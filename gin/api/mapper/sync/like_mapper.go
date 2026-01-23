@@ -2,6 +2,8 @@ package sync
 
 import (
 	"context"
+	"gin_proj/common/exceptions"
+	"gin_proj/common/utils"
 	"gin_proj/config"
 	"gin_proj/entity/po"
 
@@ -14,7 +16,7 @@ type LikeMapper struct{}
 func (m *LikeMapper) GetLikeCountByArticleID(ctx context.Context, articleID int) int {
 	count, err := gorm.G[po.Like](config.DB).Where("article_id = ?", articleID).Count(ctx, "*")
 	if err != nil {
-		return 0
+		panic(exceptions.NewBusinessError(utils.LIKE_QUERY_ERROR, err.Error()))
 	}
 	return int(count)
 }
@@ -33,7 +35,7 @@ func (m *LikeMapper) GetLikeCountsByArticleIDs(ctx context.Context, articleIDs [
 		Group("article_id").
 		Scan(&counts).Error
 	if err != nil {
-		return result
+		panic(exceptions.NewBusinessError(utils.LIKE_QUERY_ERROR, err.Error()))
 	}
 
 	for _, item := range counts {

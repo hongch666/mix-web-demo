@@ -90,43 +90,20 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	// 构建综合评分脚本：ES分数(sigmoid归一化) + AI评分 + 用户评分 + 阅读量 + 点赞量 + 收藏量 + 作者关注数 + 文章新鲜度
 	// ES分数使用sigmoid函数进行归一化，确保分数在0-1范围内
 	// 新鲜度计算：使用高斯衰减函数，30天内文章最新鲜度最高，随着时间增加而衰减
-	scoreScript := elastic.NewScript(`
-		double esScore = 1.0 / (1.0 + Math.exp(-_score));
-		double score = params.esWeight * esScore;
-
-		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 10.0 : 0);
-
-		double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 10.0 : 0);
-
-		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
-
-		double likesBoost = params.likesWeight * (doc['likeCount'].size() > 0 ? Math.min((double)doc['likeCount'].value / params.maxLikesNormalized, 1.0) : 0);
-
-		double collectsBoost = params.collectsWeight * (doc['collectCount'].size() > 0 ? Math.min((double)doc['collectCount'].value / params.maxCollectsNormalized, 1.0) : 0);
-		
-		double followBoost = params.followWeight * (doc['authorFollowCount'].size() > 0 ? Math.min((double)doc['authorFollowCount'].value / params.maxFollowsNormalized, 1.0) : 0);
-		
-		long now = System.currentTimeMillis();
-		long articleTime = doc['create_at'].value.getMillis();
-		long daysDiff = (now - articleTime) / (1000L * 86400L);
-		double recencyScore = Math.exp(-1.0 * (daysDiff * daysDiff) / (2.0 * params.decayDaysSq));
-		double recencyBoost = params.recencyWeight * recencyScore;
-		
-		return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
-	`).
-		Param("esWeight", searchCfg.ESScoreWeight).
-		Param("aiWeight", searchCfg.AIRatingWeight).
-		Param("userWeight", searchCfg.UserRatingWeight).
-		Param("viewsWeight", searchCfg.ViewsWeight).
-		Param("likesWeight", searchCfg.LikesWeight).
-		Param("collectsWeight", searchCfg.CollectsWeight).
-		Param("followWeight", searchCfg.AuthorFollowWeight).
-		Param("recencyWeight", searchCfg.RecencyWeight).
-		Param("decayDaysSq", float64(searchCfg.RecencyDecayDays)*float64(searchCfg.RecencyDecayDays)).
-		Param("maxViewsNormalized", searchCfg.MaxViewsNormalized).
-		Param("maxLikesNormalized", searchCfg.MaxLikesNormalized).
-		Param("maxCollectsNormalized", searchCfg.MaxCollectsNormalized).
-		Param("maxFollowsNormalized", searchCfg.MaxFollowsNormalized)
+	scoreScript := elastic.NewScript(utils.ES_SEARCH_SCRIPT).
+		Param(utils.ES_WEIGHT_NAME, searchCfg.ESScoreWeight).
+		Param(utils.AI_RATING_WEIGHT_NAME, searchCfg.AIRatingWeight).
+		Param(utils.USER_RATING_WEIGHT_NAME, searchCfg.UserRatingWeight).
+		Param(utils.VIEWS_WEIGHT_NAME, searchCfg.ViewsWeight).
+		Param(utils.LIKES_WEIGHT_NAME, searchCfg.LikesWeight).
+		Param(utils.COLLECTS_WEIGHT_NAME, searchCfg.CollectsWeight).
+		Param(utils.AUTHOR_FOLLOW_WEIGHT_NAME, searchCfg.AuthorFollowWeight).
+		Param(utils.RECENCY_WEIGHT_NAME, searchCfg.RecencyWeight).
+		Param(utils.RECENCY_DECAY_DAYS_NAME, float64(searchCfg.RecencyDecayDays)*float64(searchCfg.RecencyDecayDays)).
+		Param(utils.MAX_VIEWS_NORMALIZED_NAME, searchCfg.MaxViewsNormalized).
+		Param(utils.MAX_LIKES_NORMALIZED_NAME, searchCfg.MaxLikesNormalized).
+		Param(utils.MAX_COLLECTS_NORMALIZED_NAME, searchCfg.MaxCollectsNormalized).
+		Param(utils.MAX_FOLLOWS_NORMALIZED_NAME, searchCfg.MaxFollowsNormalized)
 
 	// 使用script_score包装bool查询
 	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
@@ -151,7 +128,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 	searchResult, err := searchService.Do(ctx)
 
 	if err != nil {
-		panic(exceptions.NewBusinessError("搜索执行错误", err.Error()))
+		panic(exceptions.NewBusinessError(utils.SEARCH_EXECUTION_ERROR, err.Error()))
 	}
 
 	// 解析结果
@@ -162,7 +139,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		var article po.ArticleES
 		if err := json.Unmarshal(hit.Source, &article); err != nil {
 			// 处理解析错误
-			panic(exceptions.NewBusinessError("搜索结果解析错误", err.Error()))
+			panic(exceptions.NewBusinessError(utils.SEARCH_RESULT_PARSE_ERROR, err.Error()))
 		}
 		// 如果有高亮，优先使用高亮内容覆盖字段（带 <em> 标签）
 		if hit.Highlight != nil {
@@ -185,7 +162,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 			score = *hit.Score
 		}
 		utils.FileLogger.Info(fmt.Sprintf(
-			"[搜索评分] 文章ID:%d | 标题:%.30s | AI评分:%.2f | 用户评分:%.2f | 阅读量:%d | 点赞:%d | 收藏:%d | 作者关注:%d | 综合分数:%.4f",
+			utils.SEARCH_METRICS_INFO,
 			article.ID, article.Title, article.AIScore, article.UserScore, article.Views, article.LikeCount, article.CollectCount, article.AuthorFollowCount, score,
 		))
 	}

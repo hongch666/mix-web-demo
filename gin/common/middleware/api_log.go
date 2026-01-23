@@ -74,7 +74,7 @@ func ApiLogMiddleware(description string) gin.HandlerFunc {
 
 		// 请求处理完成，记录耗时（毫秒）
 		durationMs := time.Since(start).Milliseconds()
-		timeMessage := fmt.Sprintf("%s %s 使用了%dms", method, path, durationMs)
+		timeMessage := fmt.Sprintf(utils.RECORD_DURATION_MESSAGE, method, path, durationMs)
 		utils.LogInfo(timeMessage)
 
 		// 发送 API 日志到 RabbitMQ
@@ -176,9 +176,9 @@ func formatLogMessage(method, path, description string, userID int64, username s
 	// 基础信息按照指定格式
 	var message string
 	if userID > 0 {
-		message = fmt.Sprintf("用户%d:%s %s %s: %s", userID, username, method, path, description)
+		message = fmt.Sprintf(utils.USER_LOG_MESSAGE, userID, username, method, path, description)
 	} else {
-		message = fmt.Sprintf("匿名用户 %s %s: %s", method, path, description)
+		message = fmt.Sprintf(utils.ANONYMOUS_USER_LOG_MESSAGE, method, path, description)
 	}
 
 	// 添加参数信息
@@ -230,7 +230,7 @@ func sendApiLogToQueue(userID int64, username, method, path, description string,
 	// 序列化为 JSON
 	messageJSON, err := json.Marshal(apiLogMessage)
 	if err != nil {
-		utils.LogError(fmt.Sprintf("序列化 API 日志消息失败: %v", err))
+		utils.LogError(fmt.Sprintf(utils.SERIALIZE_API_LOG_FAIL_MESSAGE, err))
 		return
 	}
 
@@ -238,11 +238,11 @@ func sendApiLogToQueue(userID int64, username, method, path, description string,
 	if config.RabbitMQ != nil {
 		err = config.RabbitMQ.Send("api-log-queue", string(messageJSON))
 		if err != nil {
-			utils.LogError(fmt.Sprintf("发送 API 日志到队列失败: %v", err))
+			utils.LogError(fmt.Sprintf(utils.SEND_API_LOG_FAIL_MESSAGE, err))
 		} else {
-			utils.LogInfo("API 日志已发送到队列")
+			utils.LogInfo(utils.SEND_API_LOG_SUCCESS_MESSAGE)
 		}
 	} else {
-		utils.LogError("RabbitMQ 未初始化，无法发送 API 日志")
+		utils.LogError(utils.SEND_API_LOG_RABBITMQ_NOT_INITIALIZED_MESSAGE)
 	}
 }

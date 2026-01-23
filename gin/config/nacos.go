@@ -15,10 +15,10 @@ var NamingClient naming_client.INamingClient
 func InitNacos() {
 	// 创建缓存和日志目录（如果不存在）
 	if err := os.MkdirAll(Config.Nacos.CacheDir, 0755); err != nil {
-		log.Fatalf("创建缓存目录失败: %v", err)
+		log.Fatalf(CREATE_CACHE_DIR_FAILURE_MESSAGE, err)
 	}
 	if err := os.MkdirAll(Config.Nacos.LogDir, 0755); err != nil {
-		log.Fatalf("创建日志目录失败: %v", err)
+		log.Fatalf(CREATE_LOG_DIR_FAILURE_MESSAGE, err)
 	}
 
 	// 配置 Nacos 服务地址
@@ -46,7 +46,7 @@ func InitNacos() {
 		ServerConfigs: serverConfigs,
 	})
 	if err != nil {
-		log.Fatalf("创建 Nacos NamingClient 失败: %v", err)
+		log.Fatalf(CREATE_NACOS_NAMING_CLIENT_FAILURE_MESSAGE, err)
 	}
 
 	// 注册服务实例
@@ -62,8 +62,8 @@ func InitNacos() {
 		Ephemeral:   true,
 	})
 	if err != nil || !success {
-		log.Fatalf("服务注册失败: %v", err)
+		log.Fatalf(SERVICE_REGISTRATION_FAILURE_MESSAGE, err)
 	}
 
-	log.Println("服务注册成功")
+	log.Println(SERVICE_REGISTRATION_SUCCESS_MESSAGE)
 }

@@ -37,7 +37,7 @@ func (s *ChatHub) JoinQueue(userID string, client *Client) {
 	chatQueue.mu.Lock()
 	chatQueue.clients[userID] = client
 	chatQueue.mu.Unlock()
-	utils.FileLogger.Info(fmt.Sprintf("用户 %s 已加入聊天队列", userID))
+	utils.FileLogger.Info(fmt.Sprintf(utils.USER_JOINED_QUEUE, userID))
 }
 
 // 离开队列
@@ -48,7 +48,7 @@ func (s *ChatHub) LeaveQueue(userID string) {
 		delete(chatQueue.clients, userID)
 	}
 	chatQueue.mu.Unlock()
-	utils.FileLogger.Info(fmt.Sprintf("用户 %s 已离开聊天队列", userID))
+	utils.FileLogger.Info(fmt.Sprintf(utils.USER_LEFT_QUEUE, userID))
 }
 
 // 检查用户是否在队列中
@@ -72,7 +72,7 @@ func (s *ChatHub) SendMessageToQueue(userID string, message []byte) bool {
 	if client, exists := s.GetUserFromQueue(userID); exists {
 		// 如果客户端没有WebSocket连接（手动加入队列的用户），直接返回false
 		if client.Conn == nil {
-			utils.FileLogger.Warning(fmt.Sprintf("用户 %s 在队列中但没有WebSocket连接，无法发送实时消息", userID))
+			utils.FileLogger.Warning(fmt.Sprintf(utils.USER_IN_QUEUE_NOT_CONNECTED, userID))
 			return false
 		}
 
@@ -112,7 +112,7 @@ func (c *Client) ReadPump() {
 		_, messageBytes, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				utils.FileLogger.Error(fmt.Sprintf("websocket error: %v", err))
+				utils.FileLogger.Error(fmt.Sprintf(utils.WS_ERROR, err))
 			}
 			break
 		}
@@ -120,13 +120,13 @@ func (c *Client) ReadPump() {
 		// 解析消息
 		var wsMessage dto.WebSocketMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
-			utils.FileLogger.Error(fmt.Sprintf("解析消息失败: %v", err))
+			utils.FileLogger.Error(fmt.Sprintf(utils.PARSE_MESSAGE_FAIL, err))
 			continue
 		}
 
 		// 处理ping消息
-		if wsMessage.Type == "ping" {
-			pongMessage := dto.WebSocketMessage{Type: "pong"}
+		if wsMessage.Type == utils.HEARTBEAT_MESSAGE {
+			pongMessage := dto.WebSocketMessage{Type: utils.HEARTBEAT_RESPONSE}
 			pongBytes, _ := json.Marshal(pongMessage)
 			select {
 			case c.Send <- pongBytes:
