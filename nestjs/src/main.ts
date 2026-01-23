@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { createApp } from './app';
 import { ConfigService } from '@nestjs/config';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -11,10 +10,6 @@ async function bootstrap(): Promise<void> {
   const ip: string = configService.get<string>('server.ip') || '127.0.0.1';
   // 监听服务端口
   await app.listen(port, ip);
-  // 输出启动信息和Swagger地址
-  Logger.log(`NestJS应用已启动`);
-  Logger.log(`服务地址: http://${ip}:${port}`);
-  Logger.log(`Swagger文档地址: http://${ip}:${port}/api-docs`);
 }
 
 bootstrap();

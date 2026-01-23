@@ -5,9 +5,10 @@ import {
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 import { Constants } from './common/utils/constants';
+import { ConfigService } from '@nestjs/config';
 
 export async function createApp(): Promise<NestFastifyApplication> {
   const app: NestFastifyApplication =
@@ -29,6 +30,14 @@ export async function createApp(): Promise<NestFastifyApplication> {
   app.useGlobalFilters(new AllExceptionsFilter());
   //全局启用校验管道
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  // 读取yaml文件中的端口和IP
+  const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
+  const port: number = configService.get<number>('server.port') || 3000;
+  const ip: string = configService.get<string>('server.ip') || '127.0.0.1';
+  // 输出启动信息和Swagger地址
+  Logger.log(Constants.START_WELCOME);
+  Logger.log(`服务地址: http://${ip}:${port}`);
+  Logger.log(`Swagger文档地址: http://${ip}:${port}/api-docs`);
   // 返回 app
   return app;
 }

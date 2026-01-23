@@ -99,4 +99,9 @@ export class Constants {
    * test 欢迎信息
    */
   static readonly TEST_WELCOME = 'Hello,I am Nest.js!';
+
+  /**
+   * 启动欢迎信息
+   */
+  static readonly START_WELCOME = 'NestJS应用已启动';
 }
