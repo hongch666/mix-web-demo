@@ -74,14 +74,6 @@ func initMigrate() {
 	// 检查表是否存在
 	if migrator.HasTable(&po.ChatMessage{}) || migrator.HasTable("chat_messages") {
 		log.Println(TABLE_ALREADY_EXISTS_MESSAGE)
-		// 检查is_read字段是否存在，不存在则添加
-		if !migrator.HasColumn(&po.ChatMessage{}, "is_read") {
-			if err := migrator.AddColumn(&po.ChatMessage{}, "is_read"); err != nil {
-				log.Printf(ADD_COLUMN_FAILURE_MESSAGE, err)
-			} else {
-				log.Println(COLUMN_ADDED_MESSAGE)
-			}
-		}
 		return
 	}
 

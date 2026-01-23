@@ -32,13 +32,7 @@ const (
 	DATABASE_MIGRATE_SKIPPED_MESSAGE = "DB 为 nil，跳过表迁移/创建"
 
 	// 表已存在消息
-	TABLE_ALREADY_EXISTS_MESSAGE = "chat_messages 表已存在，检查是否需要添加is_read字段"
-
-	// 添加字段失败消息
-	ADD_COLUMN_FAILURE_MESSAGE = "添加 is_read 字段失败: %v"
-
-	// 字段已添加消息
-	COLUMN_ADDED_MESSAGE = "is_read 字段已添加"
+	TABLE_ALREADY_EXISTS_MESSAGE = "chat_messages 表已存在"
 
 	// 创建表失败消息
 	CREATE_TABLE_FAILURE_MESSAGE = "创建 chat_messages 表失败: %v"
@@ -101,13 +95,11 @@ const (
 			sender_id varchar(50) NOT NULL COMMENT '发送者用户ID',
 			receiver_id varchar(50) NOT NULL COMMENT '接收者用户ID',
 			content text NOT NULL COMMENT '消息内容',
-			is_read tinyint NOT NULL DEFAULT 0 COMMENT '是否已读，0为未读，1为已读',
 			created_at datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
 			PRIMARY KEY (id),
 			KEY idx_chat_messages_sender_id (sender_id) COMMENT '发送者ID索引',
 			KEY idx_chat_messages_receiver_id (receiver_id) COMMENT '接收者ID索引',
 			KEY idx_chat_messages_created_at (created_at) COMMENT '创建时间索引',
-			KEY idx_chat_messages_is_read (is_read) COMMENT '已读状态索引',
 			KEY idx_chat_messages_sender_receiver (
 				sender_id,
 				receiver_id,
