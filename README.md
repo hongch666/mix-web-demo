@@ -1600,6 +1600,22 @@ def hello():
 2. 一般成功时除查询接口外，其他接口都是无返回 `data`
 3. 失败时 `data `统一为 `null `，错误原因使用 `msg`参数
 
+### 异常处理说明
+
+1. Spring 项目使用全局异常处理类 `GlobalExceptionHandler.java` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
+2. Gin 项目使用中间件 `exceptionMiddleware.go` 进行异常捕获和处理，业务异常统一抛出 `BusinessError` 异常
+3. NestJS 项目使用全局异常过滤器 `all-exceptions.filter.ts` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
+4. FastAPI 项目使用全局异常处理函数 `exception_handlers.py` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
+
+### 常量说明
+
+1. Spring 项目使用 `CommonConstants.java` 进行常量类管理，包括相关字符串和数字常量
+2. Gin 项目使用 `common_constants.go` 进行常量管理，包括相关字符串和数字常量
+3. NestJS 项目使用 `common.constants.ts` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
+4. FastAPI 项目使用 `common_constants.py` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
+
+目前常量类均可根据需要进行扩展，尽可能使用常量类进行统一管理，避免硬编码。
+
 ## 其他说明
 
 ### FastAPI Agent 工具说明
