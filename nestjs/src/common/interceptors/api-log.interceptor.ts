@@ -34,7 +34,7 @@ export class ApiLogInterceptor implements NestInterceptor {
 
     const request = context.switchToHttp().getRequest();
     const method = request.method;
-    const url = request.route?.path || request.url;
+    const url = request.route?.path || request.url.split('?')[0];
 
     // 获取用户信息
     const userId = this.cls.get('userId') || 0;
