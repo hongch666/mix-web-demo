@@ -22,6 +22,9 @@ nestjs/.DS_Store
 nestjs/eslint.config.mjs
 nestjs/.prettierrc
 
+# bun 相关
+nestjs/bun.lock
+
 # Tests
 nestjs/coverage
 nestjs/.nyc_output
