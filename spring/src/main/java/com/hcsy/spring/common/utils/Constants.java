@@ -342,52 +342,52 @@ public class Constants {
     public static String LOGIN_TOKEN = "用户 %d 登录，Token 已保存到 Redis";
 
     /**
-     * 移除token离线信息
+     * 移除Token离线信息
      */
     public static String REMOVE_TOKEN_LOGOUT = "用户 %d 没有其他登录会话，状态已设为离线";
 
     /**
-     * 移除token消息
+     * 移除Token消息
      */
     public static String REMOVE_TOKEN = "用户 %d 登出，还有 %d 个登录会话";
 
     /**
-     * 检查token在redis列表的消息
+     * 检查Token在Redis列表的消息
      */
     public static String TOKEN_REDIS = "用户 %d 的 Token 不在 Redis 列表中，可能已被管理员踢下线";
 
     /**
-     * token过期移除消息
+     * Token过期移除消息
      */
     public static String TOKEN_EXPIRED_CLEAN = "用户 %d 的 Token 已过期或格式错误，将从 Redis 列表中移除";
 
     /**
-     * 验证token错误信息
+     * 验证Token错误信息
      */
     public static String VERIFY_TOKEN = "验证用户 %d 的 Token 时出错";
 
     /**
-     * 管理员下线token消息
+     * 管理员下线Token消息
      */
     public static String ADMIN_TOKEN_CLEAN = "管理员已将用户 %d 下线，共清除 %d 个登录会话";
 
     /**
-     * 定时任务没有要清理的token
+     * 定时任务没有要清理的Token
      */
     public static String TASK_NO_CLEAN = "定时任务：没有需要清理的 Token";
 
     /**
-     * 移除过期token
+     * 移除过期Token
      */
     public static String REMOVE_EXPIRED_TOKEN = "移除过期 Token: %s";
 
     /**
-     * 移除无效token
+     * 移除无效Token
      */
     public static String REMOVE_INVALID_TOKEN = "移除过期 Token: %s";
 
     /**
-     * 无有效token标记离线消息
+     * 无有效Token标记离线消息
      */
     public static String NO_TOKEN_LOGOUT = "用户 %d 没有有效 Token，已标记为离线";
 
@@ -397,12 +397,12 @@ public class Constants {
     public static String EXPIRED_USER_FAIL = "解析用户 ID 失败: %s";
 
     /**
-     * 清理用户的token数消息
+     * 清理用户的Token数消息
      */
     public static String USER_TOKEN_CLEAN = "用户 %s 清理了 %d 个 Token";
 
     /**
-     * 总共清理token统计消息
+     * 总共清理Token统计消息
      */
     public static String TOTAL_CLEAN = "定时任务：清理完成，扫描 %d 个用户，共清除 %d 个过期 Token";
 
@@ -427,7 +427,7 @@ public class Constants {
     public static String FORMAT_PARAM = "格式化参数值失败";
 
     /**
-     * 对象转map失败消息
+     * 对象转Map失败消息
      */
     public static String OBJECT_TO_MAP = "对象转Map失败";
 
