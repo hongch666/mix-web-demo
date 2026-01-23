@@ -217,9 +217,6 @@ class Constants:
     ]
     """默认关键字"""
     
-    HIVE_TABLE_VERSION_SQL: str = "SHOW TBLPROPERTIES articles"
-    """获取Hive表的版本号SQL"""
-    
     L1_CACHE_TTL_EXPIRED: str = "[L1缓存] TTL过期"
     """L1缓存TTL过期消息"""
     
@@ -400,6 +397,12 @@ class Constants:
     START_SYNC_TO_POSTGRES_MESSAGE: str = "开始同步文章内容到PostgreSQL向量库..."
     """开始同步文章向量到 PostgreSQL..."""
     
+    CSV_LOADED_TO_HIVE_MESSAGE: str = "CSV 文件已加载到 Hive"
+    """CSV 文件加载到 Hive 完成消息"""
+    
+    DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
+    """缓存未命中查询DB消息"""
+    
     # SQL 语句
     
     AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
@@ -420,4 +423,7 @@ class Constants:
     ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 """
     """SQL创建AI聊天表常量"""
+    
+    HIVE_TABLE_VERSION_SQL: str = "SHOW TBLPROPERTIES articles"
+    """获取Hive表的版本号SQL"""
     
