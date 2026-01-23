@@ -4,7 +4,7 @@ from bson import ObjectId
 from langchain_core.tools import tool
 from config import load_config
 from config.mongodb import db
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 class MongoDBTools:
     """MongoDB 日志查询工具集"""
@@ -101,7 +101,7 @@ class MongoDBTools:
                 
                 # 验证必需参数
                 if not collection_name:
-                    return "错误: 必须提供 collection_name 参数"
+                    return Constants.COLLECTION_NAME_VALIDATION_ERROR
                 
                 # 确保 limit 是整数
                 limit_int = int(limit) if isinstance(limit, str) else limit

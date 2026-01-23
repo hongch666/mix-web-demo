@@ -17,7 +17,7 @@ from .baseAIService import (
     initialize_ai_tools
 )
 from common.agent import IntentRouter, UserPermissionManager
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from config import load_config
 
 class GeminiService(BaseAiService):
@@ -76,7 +76,7 @@ class GeminiService(BaseAiService):
                         return_intermediate_steps=True
                     )
                     
-                    logger.info("Gemini Agent服务初始化完成")
+                    logger.info(Constants.GEMINI_AGENT_INITIALIZATION_SUCCESS)
                 except Exception as tool_error:
                     logger.warning(f"工具初始化部分失败: {tool_error}, 降级为基础对话模式")
                     self.agent_executor = None
@@ -85,7 +85,7 @@ class GeminiService(BaseAiService):
                 self.llm = None
                 self.agent_executor = None
                 self.intent_router = None
-                logger.warning("Gemini配置不完整，客户端未初始化")
+                logger.warning(Constants.GEMINI_CONFIGURATION_INCOMPLETE_ERROR)
         except Exception as e:
             self.llm = None
             self.agent_executor = None
@@ -98,11 +98,11 @@ class GeminiService(BaseAiService):
             logger.info(f"基础对话: {message}")
             
             if not getattr(self, 'llm', None):
-                return "聊天服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 使用 LangChain 调用
             messages = [
-                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                SystemMessage(content=Constants.CHAT_SYSTEM_MESSAGE),
                 HumanMessage(content=message)
             ]
             response = await self.llm.ainvoke(messages)
@@ -130,14 +130,14 @@ class GeminiService(BaseAiService):
             logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
             
             if not getattr(self, 'llm', None):
-                return "聊天服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 使用基类的提示词方法
             prompt = self._get_reference_evaluation_prompt(message, reference_content)
             
             # 使用 LangChain 调用
             messages = [
-                SystemMessage(content="你是一个专业的文章评价助手。请根据提供的权威参考文本进行客观、专业的评价。"),
+                SystemMessage(content=Constants.REFERENCE_CHAT_MESSAGE),
                 HumanMessage(content=prompt)
             ]
             
@@ -165,13 +165,13 @@ class GeminiService(BaseAiService):
             logger.info(f"Gemini开始总结内容，原始长度: {len(content)} 字符")
             
             if not getattr(self, 'llm', None):
-                return "总结服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 使用基类的提示词方法
             prompt = self._get_summarize_prompt(content, max_length)
             
             messages = [
-                SystemMessage(content="你是一个专业的内容总结助手。请精准提取核心信息，用凝练的语言进行总结。"),
+                SystemMessage(content=Constants.SUMMARIZE_CHAT_MESSAGE),
                 HumanMessage(content=prompt)
             ]
             
@@ -190,7 +190,7 @@ class GeminiService(BaseAiService):
             logger.info(f"用户 {user_id} 发送消息: {message}")
             
             if not getattr(self, 'llm', None):
-                return "聊天服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 如果Agent未初始化，降级为基础对话
             if not self.agent_executor:
@@ -205,7 +205,7 @@ class GeminiService(BaseAiService):
                 # 如果没有权限，直接返回权限提示信息
                 if not has_permission:
                     logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    return permission_msg or "您没有权限访问此功能，请联系管理员开通相关权限。"
+                    return permission_msg or Constants.NO_PERMISSION_ERROR
                     
             elif self.intent_router:
                 intent = self.intent_router.route(message)
@@ -225,7 +225,7 @@ class GeminiService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 messages = [
-                    SystemMessage(content="你是一个友好的中文AI助手。"),
+                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message)
                 ]
@@ -235,14 +235,14 @@ class GeminiService(BaseAiService):
             else:
                 # 使用Agent处理，让Agent自己决定使用哪些工具
                 # Agent可以同时调用SQL工具和RAG工具，或只调用其中一个
-                logger.info("使用Agent处理，可同时调用SQL和RAG工具")
+                logger.info(Constants.AGENT_PROCESSING_MESSAGE)
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
                 full_input = context + f"当前问题: {message}"
                 
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
-                result = agent_response.get("output", "无法获取结果")
+                result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
             
             logger.info(f"Gemini回复长度: {len(result)} 字符")
             return result
@@ -250,11 +250,11 @@ class GeminiService(BaseAiService):
         except Exception as e:
             logger.error(f"Gemini聊天异常: {str(e)}")
             if "API_KEY_INVALID" in str(e) or "invalid API key" in str(e):
-                return "API密钥无效。请检查Gemini API密钥配置。"
+                return Constants.GEMINI_INVALID_API_KEY_ERROR
             elif "QUOTA_EXCEEDED" in str(e):
-                return "API配额已超限。请稍后重试或检查配额设置。"
+                return Constants.GEMINI_QUOTA_EXCEEDED_ERROR
             elif "RATE_LIMIT_EXCEEDED" in str(e):
-                return "API调用频率超限。请稍后重试。"
+                return Constants.GEMINI_RATE_LIMIT_EXCEEDED_ERROR
             return f"聊天服务异常: {str(e)}"
         
     async def stream_chat(self, message: str, user_id: int = 0, db: Optional[Session] = None) -> AsyncGenerator[str, None]:
@@ -268,7 +268,7 @@ class GeminiService(BaseAiService):
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
             
             if not getattr(self, 'llm', None):
-                yield {"type": "error", "content": "聊天服务未配置或初始化失败"}
+                yield {"type": "error", "content": Constants.INITIALIZATION_ERROR}
                 return
             
             # 如果Agent未初始化，降级为基础流式对话
@@ -285,7 +285,7 @@ class GeminiService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 messages = [
-                    SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message)
                 ]
@@ -306,13 +306,13 @@ class GeminiService(BaseAiService):
                     # 检测配额和限流错误，作为普通内容返回
                     if "ResourceExhausted" in error_msg or "429" in error_msg:
                         if "quota" in error_msg.lower():
-                            yield {"type": "content", "content": "😔 Gemini API 配额已用完。建议切换到豆包或通义千问服务。"}
+                            yield {"type": "content", "content": Constants.GEMINI_QUOTA_EXCEEDED_ERROR}
                         else:
-                            yield {"type": "content", "content": "😔 Gemini API 请求频率超限。请稍后再试。"}
+                            yield {"type": "content", "content": Constants.GEMINI_RATE_LIMIT_EXCEEDED_ERROR}
                     elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
-                        yield {"type": "content", "content": "❌ API 密钥无效。"}
+                        yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
                     else:
-                        yield {"type": "content", "content": f"❌ 服务异常: {error_msg[:100]}"}
+                        yield {"type": "content", "content": f"服务异常: {error_msg[:100]}"}
                 return
             
             # 1. 权限检查（如果有用户ID和数据库会话）
@@ -325,7 +325,7 @@ class GeminiService(BaseAiService):
                 # 如果没有权限，直接流式输出权限提示信息并返回
                 if not has_permission:
                     logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    permission_message = permission_msg or "您没有权限访问此功能，请联系管理员开通相关权限。"
+                    permission_message = permission_msg or Constants.NO_PERMISSION_ERROR
                     
                     # 发送思考过程（说明为什么没有权限）
                     thinking = f"检测到用户请求需要 {intent} 权限，但当前用户权限不足。"
@@ -354,7 +354,7 @@ class GeminiService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 messages = [
-                    SystemMessage(content="你是一个友好的中文AI助手。"),
+                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message)
                 ]
@@ -374,27 +374,27 @@ class GeminiService(BaseAiService):
                     # 检测配额和限流错误，作为普通内容返回
                     if "ResourceExhausted" in error_msg or "429" in error_msg:
                         if "quota" in error_msg.lower():
-                            yield {"type": "content", "content": "😔 Gemini API 配额已用完。建议切换到豆包或通义千问服务。"}
+                            yield {"type": "content", "content": Constants.GEMINI_QUOTA_EXCEEDED_ERROR}
                         else:
-                            yield {"type": "content", "content": "😔 Gemini API 请求频率超限。请稍后再试。"}
+                            yield {"type": "content", "content": Constants.GEMINI_RATE_LIMIT_EXCEEDED_ERROR}
                     elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
-                        yield {"type": "content", "content": "❌ API 密钥无效。"}
+                        yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
                     else:
                         yield {"type": "content", "content": f"❌ 服务异常: {error_msg[:100]}"}
                 
             else:
                 # 使用Agent处理获取信息,然后流式输出最终答案
-                logger.info("使用Agent处理,可同时调用SQL和RAG工具")
+                logger.info(Constants.AGENT_PROCESSING_MESSAGE)
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
                 full_input = context + f"当前问题: {message}"
                 
                 # 第一步: 使用Agent获取信息和思考
-                logger.info("Agent开始处理...")
+                logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
                 try:
                     agent_response = await self.agent_executor.ainvoke({"input": full_input})
-                    agent_result = agent_response.get("output", "无法获取结果")
+                    agent_result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
                 except Exception as agent_error:
                     error_msg = str(agent_error)
                     logger.error(f"Agent执行失败: {error_msg}")
@@ -402,13 +402,13 @@ class GeminiService(BaseAiService):
                     # 检测配额和限流错误并直接返回，作为普通内容
                     if "ResourceExhausted" in error_msg or "429" in error_msg:
                         if "quota" in error_msg.lower():
-                            yield {"type": "content", "content": "😔 Gemini API 配额已用完。建议切换到豆包或通义千问服务。"}
+                            yield {"type": "content", "content": Constants.GEMINI_QUOTA_EXCEEDED_ERROR}
                         else:
-                            yield {"type": "content", "content": "😔 Gemini API 请求频率超限。请稍后再试或切换其他服务。"}
+                            yield {"type": "content", "content": Constants.GEMINI_RATE_LIMIT_EXCEEDED_ERROR}
                     elif "API_KEY_INVALID" in error_msg or "invalid API key" in error_msg.lower():
-                        yield {"type": "content", "content": "❌ API 密钥无效。"}
+                        yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
                     else:
-                        yield {"type": "content", "content": f"❌ AI 处理失败: {error_msg[:100]}"}
+                        yield {"type": "content", "content": f"AI 处理失败: {error_msg[:100]}"}
                     return
                 
                 # 提取中间步骤（工具调用）
@@ -430,7 +430,7 @@ class GeminiService(BaseAiService):
                 yield {"type": "thinking", "content": thinking_text}
                 
                 # 第二步: 基于Agent的结果,流式生成更好的回答
-                logger.info("Agent思考完成,开始流式输出优化后的答案")
+                logger.info(Constants.AGENT_START_STREAMING_MESSAGE)
                 
                 # 构建包含Agent思考结果的提示
                 history_messages = []
@@ -439,7 +439,7 @@ class GeminiService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 stream_messages = [
-                    SystemMessage(content="你是一个友好的中文AI助手。根据提供的信息,用流畅、自然的语言回答用户问题。"),
+                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=f"用户问题: {message}\n\n我已经获取到以下信息:\n{agent_result}\n\n请基于这些信息,用清晰、友好的方式回答用户的问题。")
                 ]
@@ -459,13 +459,13 @@ class GeminiService(BaseAiService):
                     # 检测配额和限流错误，作为普通内容返回
                     if "ResourceExhausted" in error_msg or "429" in error_msg:
                         if "quota" in error_msg.lower():
-                            yield {"type": "content", "content": "😔 Gemini API 配额已用完。建议切换到豆包或通义千问服务。"}
+                            yield {"type": "content", "content": Constants.GEMINI_QUOTA_EXCEEDED_ERROR}
                         else:
-                            yield {"type": "content", "content": "😔 Gemini API 请求频率超限。请稍后再试。"}
+                            yield {"type": "content", "content": Constants.GEMINI_RATE_LIMIT_EXCEEDED_ERROR}
                     elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
-                        yield {"type": "content", "content": "❌ API 密钥无效。"}
+                        yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
                     else:
-                        yield {"type": "content", "content": f"❌ 输出异常: {error_msg[:100]}"}
+                        yield {"type": "content", "content": f"输出异常: {error_msg[:100]}"}
                     
         except Exception as e:
             error_msg = str(e)
@@ -474,17 +474,17 @@ class GeminiService(BaseAiService):
             # 检测配额和限流错误，作为普通内容返回
             if "ResourceExhausted" in error_msg or "429" in error_msg:
                 if "quota" in error_msg.lower():
-                    yield {"type": "content", "content": "😔 Gemini API 配额已用完。请稍后再试或切换到其他 AI 服务（豆包/通义千问）。"}
+                    yield {"type": "content", "content": Constants.GEMINI_QUOTA_EXCEEDED_ERROR}
                 else:
-                    yield {"type": "content", "content": "😔 Gemini API 请求过于频繁，已达到速率限制。请稍后再试。"}
+                    yield {"type": "content", "content": Constants.GEMINI_RATE_LIMIT_EXCEEDED_ERROR}
             elif "API_KEY_INVALID" in error_msg or "invalid API key" in error_msg.lower():
-                yield {"type": "content", "content": "❌ API 密钥无效。请检查 Gemini API 密钥配置。"}
+                yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
             elif "403" in error_msg or "permission" in error_msg.lower():
-                yield {"type": "content", "content": "❌ API 权限不足。请检查 API 密钥权限。"}
+                yield {"type": "content", "content": Constants.NO_PERMISSION_ERROR}
             elif "timeout" in error_msg.lower():
-                yield {"type": "content", "content": "⏱️ 请求超时。请稍后重试。"}
+                yield {"type": "content", "content": Constants.REQUEST_TIMEOUT_ERROR}
             else:
-                yield {"type": "content", "content": f"❌ 服务异常: {error_msg[:200]}"}
+                yield {"type": "content", "content": f"服务异常: {error_msg[:200]}"}
 
 @lru_cache()
 def get_gemini_service(

@@ -5,7 +5,7 @@ from typing import Optional, Callable, Any, List, Dict
 from pyhive import hive
 from sqlmodel import Session
 from config import load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 def export_articles_to_csv_and_hive(
     article_mapper: Optional[Any] = None,
@@ -84,13 +84,13 @@ def export_articles_to_csv_and_hive(
             article_get_all = article_mapper if callable(article_mapper) else None
 
         if article_get_all is None:
-            logger.error('article_mapper 未提供获取全部文章的方法')
+            logger.error(Constants.ARTICLE_MAPPER_NO_GET_ALL_METHOD_ERROR)
             return
 
         # 支持传入 function 或 mapper instance
         articles = article_get_all(db) if callable(article_get_all) else []
         if not articles:
-            logger.warning("没有文章数据可导出")
+            logger.warning(Constants.NO_TEXT_CONTENT_AVAILABLE_MESSAGE)
             return
 
         # 获取所有user_id（确保类型一致）
@@ -156,29 +156,29 @@ def export_articles_to_csv_and_hive(
             cursor = conn.cursor()
             cursor.execute(f"DROP TABLE IF EXISTS {hive_table}")
             create_sql = f"""
-            CREATE TABLE IF NOT EXISTS {hive_table} (
-                id INT,
-                title STRING,
-                tags STRING,
-                status INT,
-                views INT,
-                create_at STRING,
-                update_at STRING,
-                content STRING,
-                user_id INT,
-                sub_category_id INT,
-                username STRING
-            )
-            ROW FORMAT DELIMITED
-            FIELDS TERMINATED BY ','
-            STORED AS TEXTFILE
-            TBLPROPERTIES ('skip.header.line.count'='1')
+                CREATE TABLE IF NOT EXISTS {hive_table} (
+                    id INT,
+                    title STRING,
+                    tags STRING,
+                    status INT,
+                    views INT,
+                    create_at STRING,
+                    update_at STRING,
+                    content STRING,
+                    user_id INT,
+                    sub_category_id INT,
+                    username STRING
+                )
+                ROW FORMAT DELIMITED
+                FIELDS TERMINATED BY ','
+                STORED AS TEXTFILE
+                TBLPROPERTIES ('skip.header.line.count'='1')
             """
             cursor.execute(create_sql)
-            logger.info("hive表已创建")
+            logger.info(Constants.HIVE_TABLE_CREATED_MESSAGE)
             load_sql = f"LOAD DATA LOCAL INPATH '{container_path}' OVERWRITE INTO TABLE {hive_table}"
             cursor.execute(load_sql)
-            logger.info("csv已LOAD DATA到hive表")
+            logger.info(Constants.CSV_LOADED_TO_HIVE_MESSAGE)
             cursor.close()
             conn.close()
         except Exception as hive_e:
@@ -194,7 +194,7 @@ def export_articles_to_csv_and_hive(
                 publish_time_cache.clear_all()
             if statistics_cache is not None and hasattr(statistics_cache, 'clear_all'):
                 statistics_cache.clear_all()
-            logger.info("已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息")
+            logger.info(Constants.CACHES_CLEARED_MESSAGE)
         except Exception as cache_e:
             logger.error(f"清除缓存失败: {cache_e}")
 

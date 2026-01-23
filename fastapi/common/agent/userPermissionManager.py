@@ -1,7 +1,7 @@
 from typing import Optional
 import re
 from sqlmodel import Session
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from config.config import load_config
 
 class UserPermissionManager:
@@ -22,10 +22,7 @@ class UserPermissionManager:
             logger.warning(f"从配置文件加载关键字失败: {e}，使用默认关键字")
         
         # 默认关键字
-        return [
-            "我的", "个人", "自己的", "本人的", "我", "自己",
-            "点赞", "收藏", "喜欢", "评论", "互动", "关注"
-        ]
+        return Constants.DEFAULT_KEYWORDS
     
     def __init__(self, user_mapper=None):
         """

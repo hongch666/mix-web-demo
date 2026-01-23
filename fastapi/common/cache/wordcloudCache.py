@@ -1,7 +1,7 @@
 import time
 from typing import Optional
 from config.redis import get_redis_client
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 # 全局单例实例
 _wordcloud_cache_instance = None
@@ -44,7 +44,7 @@ class WordcloudCache:
         """
         try:
             if not self._redis:
-                logger.warning("Redis客户端未初始化，跳过缓存获取")
+                logger.warning(Constants.REDIS_CACHE_CLEARED)
                 return None
             
             start = time.time()
@@ -55,7 +55,7 @@ class WordcloudCache:
                 logger.info(f"词云图缓存命中，获取耗时 {elapsed:.3f}s")
                 return cached_url.decode('utf-8') if isinstance(cached_url, bytes) else cached_url
             
-            logger.debug("词云图缓存未命中")
+            logger.debug(Constants.WORDCLOUD_CACHE_MISS)
             return None
         except Exception as e:
             logger.warning(f"从Redis获取词云图缓存失败: {e}")
@@ -74,7 +74,7 @@ class WordcloudCache:
         """
         try:
             if not self._redis:
-                logger.warning("Redis客户端未初始化，跳过缓存设置")
+                logger.warning(Constants.REDIS_CACHE_CLEARED)
                 return False
             
             start = time.time()
@@ -96,11 +96,11 @@ class WordcloudCache:
         """
         try:
             if not self._redis:
-                logger.warning("Redis客户端未初始化，跳过缓存删除")
+                logger.warning(Constants.REDIS_CACHE_CLEARED)
                 return False
             
             self._redis.delete(self.REDIS_KEY)
-            logger.info("词云图缓存已删除")
+            logger.info(Constants.WORDCLOUD_CACHE_DELETED)
             return True
         except Exception as e:
             logger.error(f"删除词云图缓存失败: {e}")

@@ -5,7 +5,7 @@ import socket
 import random
 from typing import Any, Dict
 from config import load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
 
 # Nacos 配置
@@ -32,7 +32,7 @@ def get_service_instance(service_name: str) -> dict:
     # 简单负载均衡：随机选一个
     hosts: list = instances.get("hosts", [])
     if not hosts:
-        raise BusinessException("找不到可用的服务实例")
+        raise BusinessException(Constants.AI_CHAT_NO_INSTANCE_MESSAGE)
     return random.choice(hosts)
 
 def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:

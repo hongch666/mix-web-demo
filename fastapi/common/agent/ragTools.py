@@ -6,6 +6,7 @@ from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
 import warnings
 from common.exceptions import BusinessException
+from common.utils import Constants
 
 # 抑制 PGVector 弃用警告
 warnings.filterwarnings('ignore', category=DeprecationWarning)
@@ -31,7 +32,7 @@ class RAGTools:
         self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
         
         if not api_key:
-            raise BusinessException("Qwen API密钥未配置")
+            raise BusinessException(Constants.QWEN_INVALID_API_KEY_ERROR)
         
         self.embeddings = DashScopeEmbeddings(
             model=embedding_model,
@@ -46,7 +47,7 @@ class RAGTools:
             length_function=len,
             separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""]
         )
-        self.logger.info("文本切分器初始化成功")
+        self.logger.info(Constants.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
         
         # 3. 初始化PostgreSQL向量存储
         postgres_cfg = load_config("database")["postgres"]
@@ -61,7 +62,7 @@ class RAGTools:
             connection_string=connection_string,
             use_jsonb=True
         )
-        self.logger.info("PostgreSQL向量存储初始化成功")
+        self.logger.info(Constants.VECTOR_STORE_INITIALIZATION_SUCCESS)
     
     def add_articles_to_vector_store(
         self, 
@@ -144,7 +145,7 @@ class RAGTools:
             filtered_docs = [(doc, score) for doc, score in docs if score >= self.similarity_threshold]
             
             if not filtered_docs:
-                return "未找到相关文章。可能没有匹配的内容或相似度不足。请提供更具体的查询词或重新表述问题。"
+                return Constants.NO_RELEVANT_ARTICLES_FOUND_MESSAGE
             
             # 格式化结果
             result_text = f"找到 {len(filtered_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"

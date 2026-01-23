@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from api import controller
 from api.service import AnalyzeService
 from config import start_nacos, load_config, create_tables, get_db
-from common.utils import logger
+from common.utils import logger, Constants
 from common.middleware import ContextMiddleware
 from common.exceptions import BusinessException
 from common.handler import global_exception_handler, business_exception_handler
@@ -35,9 +35,9 @@ def create_app() -> FastAPI:
         yield
 
     app = FastAPI(
-        title="FastAPI部分的Swagger文档集成",
-        description="这是demo项目的FastAPI部分的Swagger文档集成",
-        version="1.0.0",
+        title=Constants.SWAGGER_TITLE,
+        description=Constants.SWAGGER_DESCRIPTION,
+        version=Constants.SWAGGER_VERSION,
         lifespan=lifespan
     )
     app.add_middleware(ContextMiddleware)

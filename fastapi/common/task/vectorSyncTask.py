@@ -5,7 +5,7 @@ from typing import Optional, Callable, Any, List
 from sqlmodel import Session
 from config import load_config
 from common.agent import get_rag_tools
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
 
 # Redis 键名
@@ -84,7 +84,7 @@ def _get_last_sync_time() -> Optional[datetime]:
     try:
         redis_client = _get_redis_client()
         if redis_client is None:
-            logger.warning("Redis 连接失败，无法获取上次同步时间")
+            logger.warning(Constants.REDIS_CONNECTION_FAILED_MESSAGE)
             return None
         
         timestamp_str = redis_client.get(_VECTOR_SYNC_TIME_KEY)
@@ -100,7 +100,7 @@ def _save_sync_time(sync_time: datetime) -> None:
     try:
         redis_client = _get_redis_client()
         if redis_client is None:
-            logger.error("Redis 连接失败，无法保存同步时间戳")
+            logger.error(Constants.REDIS_CONNECTION_SAVE_FAILED_MESSAGE)
             return
         
         # 永久保存时间戳（不设置过期时间）
@@ -128,7 +128,7 @@ def _get_changed_articles(articles: List[Any], last_sync_time: Optional[datetime
     
     if last_sync_time is None:
         # 首次同步，返回所有已发布文章
-        logger.info("首次同步向量库，将同步所有已发布文章")
+        logger.info(Constants.FIRST_TIME_SYNC_MESSAGE)
         # 同时为这些文章保存 hash 值
         for article in published_articles:
             article_id = getattr(article, 'id', 0)
@@ -211,7 +211,7 @@ def export_article_vectors_to_postgres(
     try:
         mysql_db = mysql_db_factory()
         
-        logger.info("开始同步文章向量到 PostgreSQL...")
+        logger.info(Constants.START_SYNC_TO_POSTGRES_MESSAGE)
         
         # 1. 获取所有文章
         if hasattr(article_mapper, 'get_all_articles'):
@@ -219,11 +219,11 @@ def export_article_vectors_to_postgres(
         elif hasattr(article_mapper, 'get_all_articles_mapper'):
             articles = article_mapper.get_all_articles_mapper(mysql_db)
         else:
-            logger.error("ArticleMapper 未提供获取文章的方法")
+            logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
             return
         
         if not articles:
-            logger.info("没有文章数据")
+            logger.info(Constants.NO_ARTICLES_DATA_MESSAGE)
             return
         
         # 2. 增量同步：筛选出变更的文章
@@ -232,7 +232,7 @@ def export_article_vectors_to_postgres(
             changed_articles = _get_changed_articles(articles, last_sync_time)
             
             if not changed_articles:
-                logger.info("没有文章内容变更，跳过向量库同步")
+                logger.info(Constants.NO_CHANGED_ARTICLES_MESSAGE)
                 return
             
             logger.info(f"增量同步模式：检测到 {len(changed_articles)} 篇文章有变更")
@@ -241,7 +241,7 @@ def export_article_vectors_to_postgres(
             # 全量同步模式
             published_articles = [a for a in articles if getattr(a, 'status', 0) == 1]
             if not published_articles:
-                logger.info("没有已发布的文章需要同步")
+                logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
                 return
             logger.info(f"全量同步模式：找到 {len(published_articles)} 篇已发布文章")
             sync_articles = published_articles
@@ -375,7 +375,7 @@ def initialize_article_content_hash_cache(
     try:
         mysql_db = mysql_db_factory()
         
-        logger.info("开始初始化文章内容 hash 缓存...")
+        logger.info(Constants.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
         
         # 1. 获取所有文章
         if hasattr(article_mapper, 'get_all_articles'):
@@ -383,18 +383,18 @@ def initialize_article_content_hash_cache(
         elif hasattr(article_mapper, 'get_all_articles_mapper'):
             articles = article_mapper.get_all_articles_mapper(mysql_db)
         else:
-            logger.error("ArticleMapper 未提供获取文章的方法")
+            logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
             return
         
         if not articles:
-            logger.info("没有文章数据")
+            logger.info(Constants.NO_ARTICLES_DATA_MESSAGE)
             return
         
         # 2. 筛选已发布的文章
         published_articles = [a for a in articles if getattr(a, 'status', 0) == 1]
         
         if not published_articles:
-            logger.info("没有已发布的文章需要初始化")
+            logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
             return
         
         logger.info(f"找到 {len(published_articles)} 篇已发布文章，开始计算并缓存 hash...")
@@ -435,7 +435,7 @@ def initialize_article_content_hash_cache(
         
         # 4. 初始化完成后，也要保存同步时间戳，以便下次增量同步时能识别这是有历史数据的
         _save_sync_time(datetime.now())
-        logger.info("已设置同步时间戳，下次同步将使用增量模式")
+        logger.info(Constants.SYNC_TIME_SET_MESSAGE)
         
     except Exception as e:
         logger.error(f"初始化文章 hash 缓存失败: {e}")

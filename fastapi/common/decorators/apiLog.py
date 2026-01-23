@@ -6,7 +6,7 @@ from typing import Any, Callable, List, Optional, Union
 from fastapi import Request
 from fastapi.responses import StreamingResponse
 from common.middleware import get_current_user_id, get_current_username
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
 from config import send_to_queue
 
@@ -14,7 +14,7 @@ try:
     RABBITMQ_AVAILABLE = True
 except ImportError:
     RABBITMQ_AVAILABLE = False
-    logger.warning("RabbitMQ 客户端不可用，API 日志将不会发送到队列")
+    logger.warning(Constants.RABBITMQ_NOT_AVAILABLE)
 
 class ApiLogConfig:
     """API 日志配置类"""
@@ -147,7 +147,7 @@ def api_log(config: Union[str, ApiLogConfig]):
                 duration_ms = int((time.time() - start) * 1000)
                 time_message = f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"
                 logger_method(time_message)
-                raise BusinessException("日志装饰器捕获到异常，请检查日志详情")
+                raise BusinessException(Constants.RABBITMQ_NOT_AVAILABLE)
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
@@ -589,9 +589,9 @@ def _send_api_log_to_queue(
         # 发送到 RabbitMQ
         success = send_to_queue("api-log-queue", api_log_message, persistent=True)
         if success:
-            logger.info("API 日志已发送到队列")
+            logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)
         else:
-            logger.error("API 日志发送到队列失败")
+            logger.error(Constants.API_RABBITMQ_LOGGING_FAILURE)
             
     except Exception as e:
         logger.error(f"发送 API 日志到队列时出错: {e}")

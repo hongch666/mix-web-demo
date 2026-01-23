@@ -4,7 +4,7 @@ from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlmodel import Session
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from .hiveSyncTask import export_articles_to_csv_and_hive
 from .vectorSyncTask import export_article_vectors_to_postgres
 from .analyzeCacheTask import update_analyze_caches
@@ -62,8 +62,8 @@ def start_scheduler(
     )
     
     scheduler.start()
-    logger.info("定时任务调度器已启动：")
-    logger.info("  - 文章导出任务：每 1 天执行一次（包含缓存清理）")
-    logger.info("  - 向量同步任务：每 1 天执行一次")
-    logger.info("  - 分析接口缓存更新任务：每 10 分钟执行一次（启动时立即执行）")
+    logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
+    logger.info(Constants.SCHEDULER_TASKS_MESSAGE)
+    logger.info(Constants.SCHEDULER_VECTOR_SYNC_MESSAGE)
+    logger.info(Constants.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
     return scheduler

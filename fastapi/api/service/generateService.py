@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 from fastapi import Depends
 import jieba.analyse
-from common.utils import fileLogger as logger, get_reference_content_extractor
+from common.utils import fileLogger as logger, get_reference_content_extractor, Constants
 from .doubaoService import DoubaoService, get_doubao_service
 from .geminiService import GeminiService, get_gemini_service
 from .qwenService import QwenService, get_qwen_service
@@ -133,13 +133,13 @@ class GenerateService:
         # 检查是否有异常返回
         if isinstance(response_doubao, Exception):
             logger.error(f"豆包大模型最终失败: {response_doubao}")
-            response_doubao = "豆包调用失败"
+            response_doubao = Constants.DOUBAO_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             logger.error(f"Gemini大模型最终失败: {response_gemini}")
-            response_gemini = "Gemini调用失败"
+            response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_qwen, Exception):
             logger.error(f"Qwen大模型最终失败: {response_qwen}")
-            response_qwen = "Qwen调用失败"
+            response_qwen = Constants.QWEN_CALL_FAILED_ERROR
         
         # 2.4 解析大模型返回结果
         content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
@@ -315,7 +315,7 @@ class GenerateService:
             reference_content = None
         # 如果没有参考文本，使用默认参考提示
         if not reference_content:
-            reference_content = "该分类暂无权威参考文本，请根据您的专业知识进行评价。"
+            reference_content = Constants.CATEGORY_NO_AUTHORITATIVE_REFERENCE_TEXT_ERROR
         
         # 5. 构建要评价的内容
         article_content = f"""
@@ -381,13 +381,13 @@ class GenerateService:
         # 检查异常返回
         if isinstance(response_doubao, Exception):
             logger.error(f"豆包参考文本最终失败: {response_doubao}")
-            response_doubao = "豆包调用失败"
+            response_doubao = Constants.DOUBAO_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             logger.error(f"Gemini参考文本最终失败: {response_gemini}")
-            response_gemini = "Gemini调用失败"
+            response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_qwen, Exception):
             logger.error(f"Qwen参考文本最终失败: {response_qwen}")
-            response_qwen = "Qwen调用失败"
+            response_qwen = Constants.QWEN_CALL_FAILED_ERROR
         
         # 7. 解析大模型返回结果
         content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
@@ -459,16 +459,16 @@ class GenerateService:
                 }
             
             if not raw_content:
-                logger.warning(f"无法提取参考文本内容")
+                logger.warning(Constants.REFERENCE_TEXT_EXTRACTION_ERROR)
                 return {
                     "status": "error",
-                    "message": "无法提取参考文本内容"
+                    "message": Constants.REFERENCE_TEXT_EXTRACTION_ERROR
                 }
             
             logger.info(f"原始内容提取完成，长度: {len(raw_content)} 字符")
             
             # 2. 并发调用三个大模型进行总结
-            logger.info("开始并发调用三个大模型进行总结")
+            logger.info(Constants.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
             
             async def timed_doubao_summarize():
@@ -542,7 +542,7 @@ class GenerateService:
                 "total_execution_time": total_elapsed
             }
             
-            logger.info(f"权威文章生成完成，所有大模型总结已完成")
+            logger.info(Constants.CONCURRENT_CHAT_MESSAGE_SUCCESS)
             return result
             
         except Exception as e:

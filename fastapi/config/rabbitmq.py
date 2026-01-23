@@ -2,7 +2,7 @@ import json
 import pika
 from typing import Any, Optional
 from config.config import load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 class RabbitMQClient:
     """RabbitMQ 客户端"""
@@ -22,7 +22,7 @@ class RabbitMQClient:
             # 从配置文件获取连接参数
             rabbitmq_config = load_config("rabbitmq")
             if not rabbitmq_config:
-                logger.warning("RabbitMQ 配置不存在，跳过连接")
+                logger.warning(Constants.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
                 return
                 
             host = str(rabbitmq_config.get("host", "127.0.0.1"))
@@ -73,7 +73,7 @@ class RabbitMQClient:
             
             # 如果连接失败，返回 False
             if not self._is_connected or self.channel is None:
-                logger.error("RabbitMQ 未连接，无法发送消息")
+                logger.error(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
                 return False
 
             # 如果连接已关闭，重新连接
@@ -126,7 +126,7 @@ class RabbitMQClient:
             if self.connection and not self.connection.is_closed:
                 self.connection.close()
             self._is_connected = False
-            logger.info("RabbitMQ 连接已关闭")
+            logger.info(Constants.RABBITMQ_CONNECTION_CLOSED_MESSAGE)
         except Exception as e:
             logger.error(f"关闭 RabbitMQ 连接失败: {e}")
 
@@ -171,7 +171,7 @@ def send_to_queue(queue_name: str, message: Any, persistent: bool = True) -> boo
     try:
         client = get_rabbitmq_client()
         if client is None:
-            logger.warning("RabbitMQ 客户端未初始化")
+            logger.warning(Constants.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
             return False
         return client.send_message(queue_name, message, persistent)
     except Exception as e:

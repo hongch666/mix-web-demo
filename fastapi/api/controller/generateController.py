@@ -12,6 +12,7 @@ from api.service import (
 )
 from common.utils import success
 from common.decorators import log
+from common.utils import Constants
 from entity.dto import GenerateDTO
 
 router: APIRouter = APIRouter(
@@ -63,7 +64,7 @@ async def create_article_ai_comment(
     )
     # 添加后台任务
     background_tasks.add_task(generate_service.generate_ai_comments, article_id, db)
-    return success(data={"message": "AI评论生成任务已提交", "article_id": article_id})
+    return success(data={"message": Constants.AI_COMMENT_TASK_SUBMITTED, "article_id": article_id})
 
 @router.post(
     "/ai_comment_with_reference/{article_id}",
@@ -94,4 +95,4 @@ async def create_article_ai_comment_with_reference(
     )
     # 添加后台任务
     background_tasks.add_task(generate_service.generate_ai_comments_with_reference, article_id, db)
-    return success(data={"message": "基于权威参考文本的AI评论生成任务已提交", "article_id": article_id})
+    return success(data={"message": Constants.AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED, "article_id": article_id})

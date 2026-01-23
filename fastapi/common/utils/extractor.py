@@ -4,7 +4,7 @@ from langchain_community.document_loaders import PyPDFLoader, RecursiveUrlLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import requests
 import urllib.request
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 class ReferenceContentExtractor:
     """权威参考文本内容提取器"""
@@ -209,7 +209,7 @@ class ReferenceContentExtractor:
                 )
             except TypeError:
                 # 如果不支持 headers 参数，使用基础版本
-                logger.debug("RecursiveUrlLoader 不支持 headers 参数，使用基础版本")
+                logger.debug(Constants.RECURSIVE_URL_LOADER_NO_HEADER_SUPPORT)
                 loader = RecursiveUrlLoader(
                     url=link_url,
                     max_depth=max_depth,
@@ -219,7 +219,7 @@ class ReferenceContentExtractor:
                 )
             
             # 加载文档
-            logger.info(f"正在递归抓取页面，这可能需要一些时间...")
+            logger.info(Constants.RECURSIVE_URL_LOADER_MESSAGE)
             documents = loader.load()
             logger.info(f"抓取完成，共获取到 {len(documents) if documents else 0} 个页面的内容")
             
@@ -229,7 +229,7 @@ class ReferenceContentExtractor:
                 
                 if full_text.strip():
                     # 记录原始内容（截断到 500 字）
-                    original_text_preview = full_text[:500] if full_text else "（空内容）"
+                    original_text_preview = full_text[:500] if full_text else Constants.EMPTY_CONTENT_MESSAGE
                     logger.info(f"[链接 原始内容] (共 {len(full_text)} 字):\n{original_text_preview}...")
                     
                     # 提取关键点
@@ -250,7 +250,7 @@ class ReferenceContentExtractor:
         
         # 降级处理：尝试使用 requests 库获取内容
         try:
-            logger.info(f"使用 requests 库作为降级方案获取链接内容...")
+            logger.info(Constants.REQUEST_DEPRECATION_MESSAGE)
             
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -268,7 +268,7 @@ class ReferenceContentExtractor:
             
             if text.strip():
                 # 记录原始内容（截断到 500 字）
-                original_text_preview = text[:500] if text else "（空内容）"
+                original_text_preview = text[:500] if text else Constants.EMPTY_CONTENT_MESSAGE
                 logger.info(f"[链接 原始内容] (共 {len(text)} 字，使用 requests):\n{original_text_preview}...")
                 
                 key_points = ReferenceContentExtractor._extract_key_points(text, max_length)
@@ -288,11 +288,11 @@ class ReferenceContentExtractor:
         except requests.exceptions.RequestException as req_error:
             logger.error(f"requests 获取链接失败: {str(req_error)}")
         except ImportError:
-            logger.warning("requests 库未安装，尝试 urllib 降级方案")
+            logger.warning(Constants.URLLIB_DEPRECATION_MESSAGE)
         
         # 最后降级：使用 urllib
         try:
-            logger.info(f"使用 urllib 作为最后降级方案获取链接内容...")
+            logger.info(Constants.USING_URLLIB_DEPRECATION_MESSAGE)
             
             req = urllib.request.Request(
                 link_url,

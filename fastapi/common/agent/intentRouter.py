@@ -3,6 +3,48 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from sqlmodel import Session
 from common.agent import UserPermissionManager
+from common.utils import Constants
+
+# 意图识别路由器提示词模板定义
+ROUTER_INTENT_PROMPT = """
+    你是一个智能路由助手，需要判断用户的问题类型。
+
+    分析用户问题，判断应该使用哪种方式处理：
+
+    1. **database_query** - 需要查询数据库统计数据、获取记录列表、数据分析时选择
+    - 关键词：多少、统计、列表、查询、总数、排行、最新、用户信息等
+    - 示例：
+        * "有多少篇文章？"
+        * "最近发布的10篇文章"
+        * "user_id为123的用户信息"
+        * "各分类的文章数量统计"
+        * "浏览量最高的文章"
+
+    2. **article_search** - 需要搜索文章内容、技术知识、教程等时选择
+    - 关键词：如何、怎么做、教程、学习、介绍、什么是、原理等
+    - 示例：
+        * "如何使用Python进行数据分析？"
+        * "React Hooks的使用方法"
+        * "什么是机器学习？"
+        * "Docker容器化部署教程"
+        * "数据库索引的原理"
+
+    3. **log_analysis** - 需要查询系统日志、API日志、用户活动分析时选择
+    - 关键词：日志、活动、请求记录、错误、追踪、统计访问等
+    - 示例：
+        * "最近的错误日志"
+        * "用户活动统计"
+        * "API请求记录"
+        * "今天有哪些错误"
+
+    4. **general_chat** - 简单问候、闲聊、不需要查询数据的问题
+    - 示例：
+        * "你好"
+        * "今天天气怎么样"
+        * "你能做什么"
+
+    请只返回以下四个选项之一：database_query、article_search、log_analysis、general_chat
+"""
 
 class IntentRouter:
     """意图识别路由器，支持权限检查"""
@@ -29,43 +71,7 @@ class IntentRouter:
         
         # 创建意图识别提示词
         self.intent_prompt = ChatPromptTemplate.from_messages([
-            ("system", """你是一个智能路由助手，需要判断用户的问题类型。
-
-            分析用户问题，判断应该使用哪种方式处理：
-
-            1. **database_query** - 需要查询数据库统计数据、获取记录列表、数据分析时选择
-            - 关键词：多少、统计、列表、查询、总数、排行、最新、用户信息等
-            - 示例：
-                * "有多少篇文章？"
-                * "最近发布的10篇文章"
-                * "user_id为123的用户信息"
-                * "各分类的文章数量统计"
-                * "浏览量最高的文章"
-
-            2. **article_search** - 需要搜索文章内容、技术知识、教程等时选择
-            - 关键词：如何、怎么做、教程、学习、介绍、什么是、原理等
-            - 示例：
-                * "如何使用Python进行数据分析？"
-                * "React Hooks的使用方法"
-                * "什么是机器学习？"
-                * "Docker容器化部署教程"
-                * "数据库索引的原理"
-
-            3. **log_analysis** - 需要查询系统日志、API日志、用户活动分析时选择
-            - 关键词：日志、活动、请求记录、错误、追踪、统计访问等
-            - 示例：
-                * "最近的错误日志"
-                * "用户活动统计"
-                * "API请求记录"
-                * "今天有哪些错误"
-
-            4. **general_chat** - 简单问候、闲聊、不需要查询数据的问题
-            - 示例：
-                * "你好"
-                * "今天天气怎么样"
-                * "你能做什么"
-
-            请只返回以下四个选项之一：database_query、article_search、log_analysis、general_chat"""),
+            ("system", ROUTER_INTENT_PROMPT),
             ("human", "用户问题：{question}")
         ])
         
@@ -116,8 +122,7 @@ class IntentRouter:
             self.logger.error(f"意图识别失败: {e}, 默认使用article_search")
             return "article_search"
     
-    def route_with_permission_check(self, question: str, user_id: Optional[int] = None, 
-                                    db: Optional[Session] = None) -> Tuple[str, bool, str]:
+    def route_with_permission_check(self, question: str, user_id: Optional[int] = None, db: Optional[Session] = None) -> Tuple[str, bool, str]:
         """
         路由用户问题并检查权限
         
@@ -143,7 +148,7 @@ class IntentRouter:
         # 如果没有用户上下文，只允许文章搜索和闲聊
         if not self.user_id or not self.db:
             if intent in ["database_query", "log_analysis"]:
-                return intent, False, "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
+                return intent, False, Constants.INTENT_ROUTER_NO_PERMISSION_ERROR
             return intent, True, ""
         
         # 检查权限

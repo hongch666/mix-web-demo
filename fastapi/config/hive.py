@@ -1,7 +1,7 @@
 import time
 from pyhive import hive
 from config import load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 class HiveConnectionPool:
     """Hive 连接池 - 单例模式"""
@@ -58,7 +58,7 @@ class HiveConnectionPool:
             logger.info(f"[连接池] 连接已归还到池，池内现有: {len(self._connections)}个")
         else:
             conn.close()
-            logger.info(f"[连接池] 池已满，关闭连接")
+            logger.info(Constants.HIVE_CONNECTION_POOL_FULL_MESSAGE)
 
 
 # 全局单例

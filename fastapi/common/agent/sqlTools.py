@@ -4,6 +4,7 @@ from langchain_core.tools import Tool
 from langchain_community.utilities import SQLDatabase
 from sqlmodel import create_engine, Session
 from sqlalchemy import text, inspect
+from common.utils import Constants
 
 # 用户ID上下文变量
 user_id_context: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar("user_id", default=None)
@@ -23,7 +24,7 @@ class SQLTools:
         
         self.engine = create_engine(self.database_url, pool_pre_ping=True)
         self.db = SQLDatabase(self.engine)
-        self.logger.info("SQL工具初始化成功")
+        self.logger.info(Constants.SQL_TOOL_INITIALIZATION_SUCCESS)
     
     def set_user_id(self, user_id: Optional[int]) -> None:
         """设置当前用户ID"""

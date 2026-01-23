@@ -3,7 +3,7 @@ import hashlib
 from typing import Optional, Dict, Any
 from functools import lru_cache
 from config.redis import get_redis_client
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 # 全局单例实例
 _statistics_cache_instance = None
@@ -52,7 +52,7 @@ class StatisticsCache:
         
         # 检查 TTL
         if time.time() - self._local_cache_time > self._local_cache_ttl:
-            logger.info("[L1缓存] TTL过期")
+            logger.info(Constants.L1_CACHE_TTL_EXPIRED)
             return False
         
         return True
@@ -69,18 +69,18 @@ class StatisticsCache:
         """从 Redis 缓存获取"""
         try:
             if not self._redis.is_available():
-                logger.warning("[L2缓存] Redis 不可用")
+                logger.warning(Constants.L2_CACHE_UNAVAILABLE)
                 return None
             
             data = self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                logger.info("[L2缓存] 命中 Redis")
+                logger.info(Constants.L2_CACHE_HIT)
                 # 同时更新本地缓存
                 self._local_cache = data
                 self._local_cache_time = time.time()
                 return data
             
-            logger.info("[L2缓存] Redis 未命中")
+            logger.info(Constants.L2_CACHE_MISS)
             return None
         except Exception as e:
             logger.error(f"[L2缓存] Redis 读取失败: {e}")
@@ -106,7 +106,7 @@ class StatisticsCache:
             return redis_data
         
         # 3. 两级缓存都没有
-        logger.info("[缓存] L1/L2 都未命中，需要查询 DB")
+        logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
     
     def set(self, data: Dict[str, Any]):
@@ -120,7 +120,7 @@ class StatisticsCache:
         # 1. 更新本地缓存
         self._local_cache = data
         self._local_cache_time = time.time()
-        logger.info("[L1缓存] 已更新")
+        logger.info(Constants.L1_CACHE_UPDATED)
         
         # 2. 更新 Redis 缓存
         try:
@@ -142,7 +142,7 @@ class StatisticsCache:
         try:
             if self._redis.is_available():
                 self._redis.delete(self.REDIS_KEY_PREFIX, self.REDIS_VERSION_KEY)
-                logger.info("[L2缓存] Redis 已清除")
+                logger.info(Constants.L2_CACHE_CLEARED)
         except Exception as e:
             logger.error(f"[L2缓存] Redis 清除失败: {e}")
 

@@ -15,7 +15,7 @@ from .baseAIService import (
     initialize_ai_tools
 )
 from common.agent import IntentRouter, UserPermissionManager
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from config import load_config
 
 class DoubaoService(BaseAiService):
@@ -74,7 +74,7 @@ class DoubaoService(BaseAiService):
                         return_intermediate_steps=True
                     )
                     
-                    logger.info("豆包Agent服务初始化完成")
+                    logger.info(Constants.DOUBAO_AGENT_INITIALIZATION_SUCCESS)
                 except Exception as tool_error:
                     logger.warning(f"工具初始化部分失败: {tool_error}, 降级为基础对话模式")
                     self.agent_executor = None
@@ -83,7 +83,7 @@ class DoubaoService(BaseAiService):
                 self.llm = None
                 self.agent_executor = None
                 self.intent_router = None
-                logger.warning("豆包配置不完整，客户端未初始化")
+                logger.warning(Constants.DOUBAO_CONFIGURATION_INCOMPLETE_ERROR)
         except Exception as e:
             self.llm = None
             self.agent_executor = None
@@ -96,11 +96,11 @@ class DoubaoService(BaseAiService):
             logger.info(f"基础对话: {message}")
             
             if not getattr(self, 'llm', None):
-                return "聊天服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 使用 LangChain 调用
             messages = [
-                SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
                 HumanMessage(content=message)
             ]
             
@@ -128,14 +128,14 @@ class DoubaoService(BaseAiService):
             logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
             
             if not getattr(self, 'llm', None):
-                return "聊天服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 使用基类的提示词方法
             prompt = self._get_reference_evaluation_prompt(message, reference_content)
             
             # 使用 LangChain 调用
             messages = [
-                SystemMessage(content="你是一个专业的文章评价助手。请根据提供的权威参考文本进行客观、专业的评价。"),
+                SystemMessage(content=Constants.REFERENCE_CHAT_MESSAGE),
                 HumanMessage(content=prompt)
             ]
             
@@ -163,13 +163,13 @@ class DoubaoService(BaseAiService):
             logger.info(f"豆包开始总结内容，原始长度: {len(content)} 字符")
             
             if not getattr(self, 'llm', None):
-                return "总结服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 使用基类的提示词方法
             prompt = self._get_summarize_prompt(content, max_length)
             
             messages = [
-                SystemMessage(content="你是一个专业的内容总结助手。请精准提取核心信息，用凝练的语言进行总结。"),
+                SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
                 HumanMessage(content=prompt)
             ]
             
@@ -188,7 +188,7 @@ class DoubaoService(BaseAiService):
             logger.info(f"用户 {user_id} 发送消息: {message}")
             
             if not getattr(self, 'llm', None):
-                return "聊天服务未配置或初始化失败"
+                return Constants.INITIALIZATION_ERROR
             
             # 如果Agent未初始化，降级为基础对话
             if not self.agent_executor:
@@ -224,7 +224,7 @@ class DoubaoService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 messages = [
-                    SystemMessage(content="你是一个友好的中文AI助手。"),
+                    SystemMessage(content=Constants.CHAT_SYSTEM_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message)
                 ]
@@ -234,7 +234,7 @@ class DoubaoService(BaseAiService):
             else:
                 # 使用Agent处理，让Agent自己决定使用哪些工具
                 # Agent可以同时调用SQL工具和RAG工具，或只调用其中一个
-                logger.info("使用Agent处理，可同时调用SQL和RAG工具")
+                logger.info(Constants.AGENT_PROCESSING_MESSAGE)
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
@@ -242,7 +242,7 @@ class DoubaoService(BaseAiService):
                 full_input = context + f"{permission_info}当前问题: {message}"
                 
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
-                result = agent_response.get("output", "无法获取结果")
+                result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
             
             logger.info(f"豆包回复长度: {len(result)} 字符")
             return result
@@ -262,7 +262,7 @@ class DoubaoService(BaseAiService):
             logger.info(f"用户 {user_id} 开始流式聊天: {message}")
             
             if not getattr(self, 'llm', None):
-                yield {"type": "error", "content": "聊天服务未配置或初始化失败"}
+                yield {"type": "error", "content": Constants.INITIALIZATION_ERROR}
                 return
             
             # 如果Agent未初始化，降级为基础流式对话
@@ -279,7 +279,7 @@ class DoubaoService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 messages = [
-                    SystemMessage(content="你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"),
+                    SystemMessage(content=Constants.CHAT_SYSTEM_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message)
                 ]
@@ -303,7 +303,7 @@ class DoubaoService(BaseAiService):
                 # 如果没有权限，直接流式输出权限提示信息并返回
                 if not has_permission:
                     logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    permission_message = permission_msg or "您没有权限访问此功能，请联系管理员开通相关权限。"
+                    permission_message = permission_msg or Constants.NO_PERMISSION_ERROR
                     
                     # 发送思考过程（说明为什么没有权限）
                     thinking = f"检测到用户请求需要 {intent} 权限，但当前用户权限不足。"
@@ -332,7 +332,7 @@ class DoubaoService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 messages = [
-                    SystemMessage(content="你是一个友好的中文AI助手。"),
+                    SystemMessage(content=Constants.CHAT_SYSTEM_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message)
                 ]
@@ -347,16 +347,16 @@ class DoubaoService(BaseAiService):
                 
             else:
                 # 使用Agent处理获取信息,然后流式输出最终答案
-                logger.info("使用Agent处理,可同时调用SQL和RAG工具")
+                logger.info(Constants.AGENT_PROCESSING_MESSAGE)
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
                 full_input = context + f"当前问题: {message}"
                 
                 # 第一步: 使用Agent获取信息和思考
-                logger.info("Agent开始处理...")
+                logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
                 agent_response = await self.agent_executor.ainvoke({"input": full_input})
-                agent_result = agent_response.get("output", "无法获取结果")
+                agent_result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
                 
                 # 提取中间步骤（工具调用）
                 intermediate_steps = agent_response.get("intermediate_steps", [])
@@ -377,7 +377,7 @@ class DoubaoService(BaseAiService):
                 yield {"type": "thinking", "content": thinking_text}
                 
                 # 第二步: 基于Agent的结果,流式生成更好的回答
-                logger.info("Agent思考完成,开始流式输出优化后的答案")
+                logger.info(Constants.AGENT_START_STREAMING_MESSAGE)
                 
                 # 构建包含Agent思考结果的提示
                 history_messages = []
@@ -386,7 +386,7 @@ class DoubaoService(BaseAiService):
                     history_messages.append(AIMessage(content=ai_msg))
                 
                 stream_messages = [
-                    SystemMessage(content="你是一个友好的中文AI助手。根据提供的信息,用流畅、自然的语言回答用户问题。"),
+                    SystemMessage(content=Constants.CHAT_SYSTEM_MESSAGE),
                     *history_messages,
                     HumanMessage(content=f"用户问题: {message}\n\n我已经获取到以下信息:\n{agent_result}\n\n请基于这些信息,用清晰、友好的方式回答用户的问题。")
                 ]

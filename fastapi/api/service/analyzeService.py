@@ -18,7 +18,7 @@ from api.mapper import (
     CollectMapper, get_collect_mapper
 )
 from config import get_db,OSSClient,load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from common.cache import (
     ArticleCache, get_article_cache,
     CategoryCache, get_category_cache,
@@ -101,14 +101,14 @@ class AnalyzeService:
             logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
         
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        logger.info("get_top10_articles_service: [缓存未命中] 开始查询数据源")
+        logger.info(Constants.TOP10_CACHE_MISS)
         
         # 1.优先 Hive
         try:
             articles = self.articleMapper.get_top10_articles_hive_mapper()
             if articles and isinstance(articles[0], dict):
                 data_source = "Hive"
-                logger.info("get_top10_articles_service: 使用 Hive 数据源")
+                logger.info(Constants.TOP10_HIVE_SOURCE)
         except Exception as hive_e:
             logger.warning(f"get_top10_articles_service: Hive 查询失败，降级为 Spark: {hive_e}")
         
@@ -118,7 +118,7 @@ class AnalyzeService:
                 articles = self.articleMapper.get_top10_articles_spark_mapper()
                 if articles and isinstance(articles[0], dict):
                     data_source = "Spark"
-                    logger.info("get_top10_articles_service: 使用 Spark 数据源")
+                    logger.info(Constants.TOP10_SPARK_SOURCE)
             except Exception as spark_e:
                 logger.error(f"get_top10_articles_service: Spark 查询失败，降级为 DB: {spark_e}")
         
@@ -126,7 +126,7 @@ class AnalyzeService:
         if not articles or len(articles) == 0:
             articles = self.articleMapper.get_top10_articles_db_mapper(db)
             data_source = "DB"
-            logger.info("get_top10_articles_service: 使用 DB 数据源")
+            logger.info(Constants.TOP10_DB_SOURCE)
         
         # ========== 步骤3: 处理查询结果并更新缓存 ==========
         # 检查返回类型，如果是字典列表（Hive/Spark），直接处理
@@ -187,7 +187,7 @@ class AnalyzeService:
 
     def generate_wordcloud(self,keywords_dic: Dict[str, int]) -> None:
         if len(keywords_dic) == 0:
-            raise BusinessException("关键词字典为空，无法生成词云图")
+            raise BusinessException(Constants.KEYWORDS_EMPTY)
         wc_config = load_config("wordcloud")
         FONT_PATH: str = wc_config["font_path"]
         WIDTH: int = wc_config["width"]
@@ -202,7 +202,7 @@ class AnalyzeService:
         wc.generate_from_frequencies(keywords_dic)
         FILE_PATH: str = load_config("files")["pic_path"]
         wc.to_file(os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png")))
-        logger.info("词云图生成成功，保存为 search_keywords_wordcloud.png")
+        logger.info(Constants.WORDCLOUD_GENERATION_SUCCESS)
 
     def upload_file(self,file_path: str, oss_path: str) -> str:
         ossClient = OSSClient()
@@ -219,7 +219,7 @@ class AnalyzeService:
         # 使用 UUID 生成随机文件名
         random_filename = f"{uuid.uuid4()}.png"
         oss_url: str = self.upload_file(
-            file_path=os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png")),
+            file_path=os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, Constants.WORDCLOUD_FILENAME)),
             oss_path=f"pic/{random_filename}"
         )
         return oss_url
@@ -246,7 +246,7 @@ class AnalyzeService:
             logger.debug(f"获取词云图缓存失败，将重新生成: {cache_e}")
         
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
-        logger.info("get_wordcloud_service: [缓存未命中] 开始生成词云图")
+        logger.info(Constants.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
         keywords_dic = self.get_keywords_dic()
         # 生成词云图
@@ -266,7 +266,7 @@ class AnalyzeService:
 
     def export_articles_to_excel(self, db: Session = Depends(get_db)) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
-        file_path = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.xlsx"))
+        file_path = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME))
         articles = self.articleMapper.get_all_articles_mapper(db)
         data = []
         for article in articles:
@@ -286,15 +286,15 @@ class AnalyzeService:
         with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
             df.to_excel(writer, index=False, startrow=1)
             worksheet = writer.sheets['Sheet1']
-            worksheet.cell(row=1, column=1, value="文章表（本表导出自系统，包含所有文章数据）")
+            worksheet.cell(row=1, column=1, value=Constants.EXPORT_ARTICLES_EXCEL_TIP)
         logger.info(f"文章表已导出到 {file_path}")
         return file_path
 
     def upload_excel_to_oss(self) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
         oss_url: str = self.upload_file(
-            file_path=os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.xlsx")),
-            oss_path="excel/articles.xlsx"
+            file_path = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME)),
+            oss_path = Constants.EXPORT_ARTICLES_EXCEL_OSS_PATH
         )
         return oss_url
 
@@ -330,7 +330,7 @@ class AnalyzeService:
             logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
         
         # ========== 步骤2: 缓存未命中，查询DB ==========
-        logger.info("get_article_statistics_service: [缓存未命中] 开始查询数据源")
+        logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
         
         # 分别调用 mapper 层的方法
         total_views = self.articleMapper.get_total_views_mapper(db)
@@ -395,13 +395,13 @@ class AnalyzeService:
             logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
         
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        logger.info("get_category_article_count_service: [缓存未命中] 开始查询数据源")
+        logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
         
         # 1.优先 Hive
         try:
             category_data = self.articleMapper.get_category_article_count_hive_mapper()
             data_source = "Hive"
-            logger.info("get_category_article_count_service: 使用 Hive 数据源")
+            logger.info(Constants.CATEGORY_STATISTICS_HIVE_SOURCE)
         except Exception as hive_e:
             logger.warning(f"get_category_article_count_service: Hive 查询失败，降级为 Spark: {hive_e}")
         
@@ -410,7 +410,7 @@ class AnalyzeService:
             try:
                 category_data = self.articleMapper.get_category_article_count_spark_mapper()
                 data_source = "Spark"
-                logger.info("get_category_article_count_service: 使用 Spark 数据源")
+                logger.info(Constants.CATEGORY_STATISTICS_SPARK_SOURCE)
             except Exception as spark_e:
                 logger.error(f"get_category_article_count_service: Spark 查询失败，降级为 DB: {spark_e}")
         
@@ -418,7 +418,7 @@ class AnalyzeService:
         if not category_data or len(category_data) == 0:
             category_data = self.articleMapper.get_category_article_count_db_mapper(db)
             data_source = "DB"
-            logger.info("get_category_article_count_service: 使用 DB 数据源")
+            logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
         
         # ========== 步骤3: 获取所有大分类信息 ==========
         all_categories = self.categoryMapper.get_all_categories_mapper(db)
@@ -493,13 +493,13 @@ class AnalyzeService:
             logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
         
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        logger.info("get_monthly_publish_count_service: [缓存未命中] 开始查询数据源")
+        logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
         
         # 1.优先 Hive
         try:
             publish_data = self.articleMapper.get_monthly_publish_count_hive_mapper()
             data_source = "Hive"
-            logger.info("get_monthly_publish_count_service: 使用 Hive 数据源")
+            logger.info(Constants.MONTHLY_STATISTICS_HIVE_SOURCE)
         except Exception as hive_e:
             logger.warning(f"get_monthly_publish_count_service: Hive 查询失败，降级为 Spark: {hive_e}")
         
@@ -508,7 +508,7 @@ class AnalyzeService:
             try:
                 publish_data = self.articleMapper.get_monthly_publish_count_spark_mapper()
                 data_source = "Spark"
-                logger.info("get_monthly_publish_count_service: 使用 Spark 数据源")
+                logger.info(Constants.MONTHLY_STATISTICS_SPARK_SOURCE)
             except Exception as spark_e:
                 logger.error(f"get_monthly_publish_count_service: Spark 查询失败，降级为 DB: {spark_e}")
         
@@ -516,7 +516,7 @@ class AnalyzeService:
         if not publish_data or len(publish_data) == 0:
             publish_data = self.articleMapper.get_monthly_publish_count_db_mapper(db)
             data_source = "DB"
-            logger.info("get_monthly_publish_count_service: 使用 DB 数据源")
+            logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
         
         # ========== 步骤3: 补充缺失月份，置为0 ==========
         # 获取当前日期所在的月份

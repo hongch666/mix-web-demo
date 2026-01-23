@@ -3,7 +3,7 @@ import hashlib
 from typing import Optional, List, Dict, Any
 from functools import lru_cache
 from config.redis import get_redis_client
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 # 全局单例实例
 _article_cache_instance = None
@@ -49,7 +49,7 @@ class ArticleCache:
         """获取 Hive articles 表的版本号"""
         try:
             with hive_conn.cursor() as cursor:
-                cursor.execute("SHOW TBLPROPERTIES articles")
+                cursor.execute(Constants.HIVE_TABLE_VERSION_SQL)
                 props = cursor.fetchall()
                 version_str = str(props)
                 return hashlib.md5(version_str.encode()).hexdigest()[:8]
@@ -64,7 +64,7 @@ class ArticleCache:
         
         # 检查 TTL
         if time.time() - self._local_cache_time > self._local_cache_ttl:
-            logger.info("[L1缓存] TTL过期")
+            logger.info(Constants.L1_CACHE_TTL_EXPIRED)
             return False
         
         return True
@@ -81,18 +81,18 @@ class ArticleCache:
         """从 Redis 缓存获取"""
         try:
             if not self._redis.is_available():
-                logger.warning("[L2缓存] Redis 不可用")
+                logger.warning(Constants.L2_CACHE_UNAVAILABLE)
                 return None
             
             data = self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                logger.info("[L2缓存] 命中 Redis")
+                logger.info(Constants.L2_CACHE_HIT)
                 # 同时更新本地缓存
                 self._local_cache = data
                 self._local_cache_time = time.time()
                 return data
             
-            logger.info("[L2缓存] Redis 未命中")
+            logger.info(Constants.L2_CACHE_MISS)
             return None
         except Exception as e:
             logger.error(f"[L2缓存] Redis 读取失败: {e}")
@@ -103,7 +103,7 @@ class ArticleCache:
         try:
             current_version = self.get_cache_version(hive_conn)
             if not current_version:
-                logger.debug("[缓存] 获取当前版本号失败，跳过版本检测")
+                logger.debug(Constants.SKIP_VERSION_CHECK)
                 return False
             
             # 从 Redis 获取旧版本号（优先级最高）
@@ -148,7 +148,7 @@ class ArticleCache:
         """
         # 检查版本号是否变化
         if self.is_version_changed(hive_conn):
-            logger.info("[缓存] 版本变化，清除所有缓存")
+            logger.info(Constants.VERSION_CHANGED_CLEAR_CACHE)
             self.clear_all()
             return None
         
@@ -163,7 +163,7 @@ class ArticleCache:
             return redis_data
         
         # 3. 两级缓存都没有
-        logger.info("[缓存] L1/L2 都未命中，需要查询 Hive")
+        logger.info(Constants.HIVE_CACHE_MISS_QUERY_HIVE_MESSAGE)
         return None
     
     def set(self, data: List[Dict[str, Any]], hive_conn):
@@ -178,7 +178,7 @@ class ArticleCache:
         # 1. 更新本地缓存
         self._local_cache = data
         self._local_cache_time = time.time()
-        logger.info("[L1缓存] 已更新")
+        logger.info(Constants.L1_CACHE_UPDATED)
         
         # 2. 更新 Redis 缓存
         try:
@@ -205,13 +205,13 @@ class ArticleCache:
         self._local_cache = None
         self._local_cache_time = 0
         self._cache_version = None
-        logger.info("[L1缓存] 已清除")
+        logger.info(Constants.L1_CACHE_CLEARED)
         
         # 清除 Redis 缓存
         try:
             if self._redis.is_available():
                 self._redis.delete(self.REDIS_KEY_PREFIX, self.REDIS_VERSION_KEY)
-                logger.info("[L2缓存] Redis 已清除")
+                logger.info(Constants.L2_CACHE_UPDATED)
         except Exception as e:
             logger.error(f"[L2缓存] Redis 清除失败: {e}")
 

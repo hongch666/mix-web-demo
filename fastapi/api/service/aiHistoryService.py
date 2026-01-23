@@ -4,6 +4,7 @@ import hashlib
 import time
 from fastapi import Depends
 from api.mapper import AiHistoryMapper, get_ai_history_mapper
+from common.utils import Constants
 from entity.po import AiHistory
 
 class AiHistoryService:
@@ -29,7 +30,7 @@ class AiHistoryService:
         if request_key in self._request_cache:
             last_time = self._request_cache[request_key]
             if current_time - last_time < 5:  # 5秒内的重复请求
-                return {"status": "duplicate", "message": "请求正在处理中"}
+                return {"status": "duplicate", "message": Constants.REQUEST_PROCESSING}
         
         self._request_cache[request_key] = current_time
         

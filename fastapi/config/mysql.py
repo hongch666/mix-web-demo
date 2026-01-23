@@ -1,7 +1,7 @@
 from sqlmodel import create_engine, Session
 from typing import Generator, Optional, List
 from config import load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 HOST: str = load_config("database")["mysql"]["host"]
 PORT: int = load_config("database")["mysql"]["port"]
@@ -36,35 +36,22 @@ def create_tables(tables: Optional[List[str]] = None):
             cursor = connection.cursor()
             try:
                 # 检查表是否已存在
-                check_sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
+                check_sql = Constants.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK
                 cursor.execute(check_sql, (DATABASE,))
                 table_exists = cursor.fetchone() is not None
                 
                 if not table_exists:
-                    create_sql = """
-                    CREATE TABLE `ai_history` (
-                        `id` BIGINT NOT NULL AUTO_INCREMENT,
-                        `user_id` BIGINT,
-                        `ask` TEXT NOT NULL,
-                        `reply` TEXT NOT NULL,
-                        `thinking` TEXT,
-                        `ai_type` VARCHAR(30),
-                        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                        PRIMARY KEY (`id`),
-                        KEY `idx_user_id` (`user_id`)
-                    ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                    """
+                    create_sql = Constants.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
                     cursor.execute(create_sql)
                     connection.commit()
-                    logger.info("ai_history 表创建完成 (TEXT类型)")
+                    logger.info(Constants.AI_CHAT_TABLE_CREATION_MESSAGE)
                 else:
-                    logger.info("ai_history 表已存在")
+                    logger.info(Constants.AI_CHAT_TABLE_EXISTS_MESSAGE)
             finally:
                 cursor.close()
                 connection.close()
         else:
-            logger.warning("仅支持创建 ai_history 表")
+            logger.warning(Constants.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
     except Exception as e:
         logger.error(f"数据库表创建失败: {e}")
         import traceback

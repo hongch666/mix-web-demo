@@ -9,8 +9,7 @@ from common.task import (
     export_article_vectors_to_postgres, 
     initialize_article_content_hash_cache
 )
-from common.utils import success
-from common.utils.constants import Constants
+from common.utils import success, Constants
 
 router: APIRouter = APIRouter(
     prefix="/api_fastapi",

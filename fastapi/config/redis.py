@@ -2,7 +2,7 @@ import redis
 from typing import Optional, Any
 import json
 from config import load_config
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 
 class RedisClient:
     """Redis 客户端 - 单例模式"""
@@ -171,7 +171,7 @@ class RedisClient:
             if not self._client:
                 return False
             self._client.flushdb()
-            logger.warning("[Redis] 数据库已清空")
+            logger.warning(Constants.REDIS_DATABASE_CLEARED_MESSAGE)
             return True
         except Exception as e:
             logger.error(f"[Redis] FLUSHDB 失败: {e}")
