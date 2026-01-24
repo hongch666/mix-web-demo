@@ -1,7 +1,7 @@
 class BusinessException(Exception):
     """业务异常 - 用于返回可向客户端显示的错误信息"""
 
-    def __init__(self, message: str, status_code: int = 400):
+    def __init__(self, message: str, status_code: int = 200):
         """
         初始化业务异常
 

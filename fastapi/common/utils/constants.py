@@ -395,13 +395,22 @@ class Constants:
     """首次向量同步任务消息"""
     
     START_SYNC_TO_POSTGRES_MESSAGE: str = "开始同步文章内容到PostgreSQL向量库..."
-    """开始同步文章向量到 PostgreSQL..."""
+    """同步文章内容到 PostgreSQL 向量库消息"""
     
     CSV_LOADED_TO_HIVE_MESSAGE: str = "CSV 文件已加载到 Hive"
     """CSV 文件加载到 Hive 完成消息"""
     
     DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
     """缓存未命中查询DB消息"""
+    
+    USER_NOT_LOGGED_IN_MESSAGE: str = "用户未登录，请先登录"
+    """用户未登录消息"""
+    
+    USER_NO_ADMIN_PERMISSION_MESSAGE: str = "权限不足，仅管理员可访问"
+    """权限不足消息"""
+    
+    PERMISSION_CHECK_FAILED_MESSAGE: str = "权限检查失败"
+    """权限检查失败消息"""
     
     # SQL 语句
     

@@ -4,10 +4,12 @@
 """
 
 from .apiLog import api_log, log, log_with_config, ApiLogConfig
+from .admin_check import require_admin
 
 __all__ = [
     'apiLog',
     'log', 
     'log_with_config',
-    'ApiLogConfig'
+    'ApiLogConfig',
+    'require_admin'
 ]
