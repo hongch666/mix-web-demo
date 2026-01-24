@@ -37,7 +37,8 @@ type ChatController struct {
 func (con *ChatController) SendMessage(c *gin.Context) {
 	var req dto.SendMessageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
@@ -58,7 +59,8 @@ func (con *ChatController) SendMessage(c *gin.Context) {
 func (con *ChatController) GetChatHistory(c *gin.Context) {
 	var req dto.GetChatHistoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
@@ -91,7 +93,8 @@ func (con *ChatController) GetQueueStatus(c *gin.Context) {
 func (con *ChatController) JoinQueue(c *gin.Context) {
 	var req dto.JoinQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
@@ -111,7 +114,8 @@ func (con *ChatController) JoinQueue(c *gin.Context) {
 func (con *ChatController) LeaveQueue(c *gin.Context) {
 	var req dto.LeaveQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
@@ -133,13 +137,15 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 	}
 
 	if userID == "" {
-		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")
+		utils.FileLogger.Error(utils.USER_ID_LESS)
+		utils.RespondError(c, http.StatusOK, utils.USER_ID_LESS)
 		return
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "WebSocket连接失败: "+err.Error())
+		utils.FileLogger.Error(utils.WS_CONNECT_FAIL + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.WS_CONNECT_FAIL)
 		return
 	}
 
@@ -178,7 +184,8 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 func (con *ChatController) GetUnreadCount(c *gin.Context) {
 	var req dto.GetUnreadCountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
@@ -198,7 +205,8 @@ func (con *ChatController) GetUnreadCount(c *gin.Context) {
 func (con *ChatController) GetAllUnreadCounts(c *gin.Context) {
 	var req dto.GetAllUnreadCountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "参数错误: "+err.Error())
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
@@ -220,7 +228,8 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 	}
 
 	if userID == "" {
-		utils.RespondError(c, http.StatusBadRequest, "缺少用户ID")
+		utils.FileLogger.Error(utils.USER_ID_LESS)
+		utils.RespondError(c, http.StatusOK, utils.USER_ID_LESS)
 		return
 	}
 
@@ -258,10 +267,10 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 			return false
 		case <-ticker.C:
 			// 发送心跳消息
-			heartbeat := ": heartbeat\n\n"
+			heartbeat := utils.SSE_HEARTBEAT
 			_, err := w.Write([]byte(heartbeat))
 			if err != nil {
-				utils.FileLogger.Error("SSE心跳写入失败: " + err.Error())
+				utils.FileLogger.Error(utils.SSE_HEARTBEAT_WRITE_FAIL + err.Error())
 				return false
 			}
 			return true
@@ -270,12 +279,12 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 			sseMessage := chat.FormatSSEMessage(notification)
 			// 如果格式化后消息为空,跳过此次发送
 			if sseMessage == "" {
-				utils.FileLogger.Warning("跳过空的SSE消息")
+				utils.FileLogger.Warning(utils.EMPTY_SSE)
 				return true
 			}
 			_, err := w.Write([]byte(sseMessage))
 			if err != nil {
-				utils.FileLogger.Error("SSE写入失败: " + err.Error())
+				utils.FileLogger.Error(utils.SSE_WRITE_FAIL + err.Error())
 				return false
 			}
 			return true

@@ -2,9 +2,9 @@ package search
 
 import (
 	"gin_proj/api/service/search"
-	"gin_proj/common/exceptions"
 	"gin_proj/common/utils"
 	"gin_proj/entity/dto"
+	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -33,7 +33,8 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 	// 绑定参数
 	var searchDTO dto.ArticleSearchDTO
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
-		panic(exceptions.NewBusinessError("参数绑定错误", err.Error()))
+		utils.FileLogger.Error(utils.PARAM_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
 	}
 	ctx := c.Request.Context()
 	data := con.SearchService.SearchArticles(ctx, searchDTO)
@@ -55,14 +56,16 @@ func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
 	userIDParam := c.Param("userId")
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
-		utils.RespondError(c, 400, "用户ID格式错误")
+		utils.FileLogger.Error(utils.USER_ID_ERR + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.USER_ID_ERR)
 		return
 	}
 
 	ctx := c.Request.Context()
 	keywords, err := con.SearchService.GetSearchHistory(ctx, userID)
 	if err != nil {
-		utils.RespondError(c, 500, "获取搜索历史失败: "+err.Error())
+		utils.FileLogger.Error(utils.SEARCH_HISTORY_FAIL + err.Error())
+		utils.RespondError(c, http.StatusOK, utils.SEARCH_HISTORY_FAIL)
 		return
 	}
 

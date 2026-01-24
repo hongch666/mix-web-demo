@@ -223,6 +223,30 @@ const (
 	// 无已发布文章可同步消息
 	NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE = "没有已发布的文章可同步"
 
+	// 参数错误消息
+	PARAM_ERR = "参数错误"
+
+	// 用户ID格式错误
+	USER_ID_ERR = "用户ID格式错误"
+
+	// 搜索历史获取失败消息
+	SEARCH_HISTORY_FAIL = "获取搜索历史失败"
+
+	// 缺少用户ID消息
+	USER_ID_LESS = "缺少用户ID"
+
+	// WebSocket 连接失败消息
+	WS_CONNECT_FAIL = "WebSocket连接失败"
+
+	// SSE心跳写入失败
+	SSE_HEARTBEAT_WRITE_FAIL = "SSE心跳写入失败: "
+
+	// 跳过空的SSE消息
+	EMPTY_SSE = "跳过空的SSE消息"
+
+	// SSE写入失败
+	SSE_WRITE_FAIL = "SSE写入失败: "
+
 	// WebSocket 用户连接状态相关
 
 	// 用户已连接
@@ -242,6 +266,9 @@ const (
 
 	// 心跳响应消息
 	HEARTBEAT_RESPONSE = "pong"
+
+	// SSE 心跳消息
+	SSE_HEARTBEAT = ": heartbeat\n\n"
 
 	// 搜索相关
 
