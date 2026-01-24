@@ -115,6 +115,10 @@
 
     ![decorator](./static/pic/flowchart/decorator.drawio.png)
 
+  - 装饰器权限校验流程图
+
+    ![decorator_req](./static/pic/flowchart/decorator_req.drawio.png)
+
   - 网关登录校验流程图
 
     ![gateway](./static/pic/flowchart/gateway.drawio.png)
