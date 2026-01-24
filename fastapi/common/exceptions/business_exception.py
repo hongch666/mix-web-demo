@@ -7,7 +7,7 @@ class BusinessException(Exception):
 
         Args:
             message: 返回给客户端的错误信息
-            status_code: HTTP 状态码，默认 400
+            status_code: HTTP 状态码，默认 200
         """
         self.message = message
         self.status_code = status_code
