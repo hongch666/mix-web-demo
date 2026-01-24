@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, DeleteResult } from 'mongoose';
-import { ArticleLog, ArticleLogDocument } from './schema/log.schema';
-import { CreateArticleLogDto, QueryArticleLogDto } from './dto/log.dto';
+import { ArticleLog, ArticleLogDocument } from './schema/article-log.schema';
+import { CreateArticleLogDto, QueryArticleLogDto } from './dto/article-log.dto';
 import { UserService } from '../../modules/user/user.service';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';

@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from 'src/modules/mq/mq.service';
-import { ArticleLogService } from './log.service';
+import { ArticleLogService } from './article-log.service';
 import { fileLogger } from 'src/common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
