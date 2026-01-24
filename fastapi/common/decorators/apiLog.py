@@ -10,12 +10,6 @@ from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
 from config import send_to_queue
 
-try:
-    RABBITMQ_AVAILABLE = True
-except ImportError:
-    RABBITMQ_AVAILABLE = False
-    logger.warning(Constants.RABBITMQ_NOT_AVAILABLE)
-
 class ApiLogConfig:
     """API 日志配置类"""
     
@@ -537,8 +531,6 @@ def _send_api_log_to_queue(
         func: 被装饰的函数
         kwargs: 函数关键字参数
     """
-    if not RABBITMQ_AVAILABLE:
-        return
     
     if kwargs is None:
         kwargs = {}

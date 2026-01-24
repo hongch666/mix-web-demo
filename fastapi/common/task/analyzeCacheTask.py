@@ -3,7 +3,6 @@ from typing import Optional, Callable, Any
 from sqlmodel import Session
 from common.utils import fileLogger as logger, Constants
 
-
 def update_analyze_caches(
     analyze_service: Optional[Any] = None,
     db_factory: Optional[Callable[[], Session]] = None,

@@ -12,7 +12,6 @@ async def business_exception_handler(request: Request, exc: BusinessException) -
         content=error(exc.message)
     )
 
-
 async def global_exception_handler(request: Request, exc: Exception) -> Response:
     """全局异常处理器 - 其他异常统一返回服务器内部错误"""
     logger.error(f"请求路径: {request.url}，错误信息: {str(exc)}")
