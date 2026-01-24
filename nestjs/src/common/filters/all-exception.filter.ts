@@ -18,14 +18,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<FastifyReply>();
     const request = ctx.getRequest<FastifyRequest>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = Constants.ERROR_DEFAULT_MSG;
     let isBusinessException = false;
 
     // 判断是否是业务异常（可向客户端显示）
     if (exception instanceof BusinessException) {
       isBusinessException = true;
-      status = exception.getStatus();
       const res = exception.getResponse();
       if (typeof res === 'string') {
         message = res;
@@ -34,7 +32,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else if (exception instanceof HttpException) {
       // 其他 HttpException 只返回通用错误信息
-      status = exception.getStatus();
+      message = Constants.ERROR_DEFAULT_MSG;
     } else if (typeof exception === 'string') {
       // 其他字符串异常也只返回通用错误信息
       message = Constants.ERROR_DEFAULT_MSG;
@@ -45,6 +43,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       `[${request.method}] ${request.url} - ${isBusinessException ? message : exception?.message || Constants.ERROR_DEFAULT_MSG} - ${exception.stack}`,
     );
 
-    response.status(status).send(error(message));
+    response.status(HttpStatus.OK).send(error(message));
   }
 }

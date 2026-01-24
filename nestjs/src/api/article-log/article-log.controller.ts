@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Query,
@@ -20,6 +21,7 @@ export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
 
   @Post()
+  @HttpCode(200)
   @ApiOperation({
     summary: '新增文章日志',
     description: '通过请求体创建文章日志',
