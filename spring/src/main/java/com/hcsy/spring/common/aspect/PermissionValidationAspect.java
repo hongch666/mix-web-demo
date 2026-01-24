@@ -68,11 +68,11 @@ public class PermissionValidationAspect {
             if (requirePermission.allowSelf()) {
                 // 允许个人操作自己的数据
                 if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                    throw new RuntimeException(Constants.NO_PERMISION);
+                    throw new BusinessException(Constants.NO_PERMISION);
                 }
             } else {
                 // 不允许操作自己，仅管理员能执行（权限已在步骤2检查）
-                throw new RuntimeException(Constants.NO_PERMISION);
+                throw new BusinessException(Constants.NO_PERMISION);
             }
 
             return joinPoint.proceed();
@@ -81,8 +81,8 @@ public class PermissionValidationAspect {
             logger.error(Constants.PERMITION_FAIL + e.getMessage());
             throw e;
         } catch (Throwable e) {
-            logger.error(Constants.PERMITION_FAIL, e);
-            throw new RuntimeException(Constants.PERMITION_FAIL, e);
+            logger.error(Constants.PERMITION_FAIL + e.getMessage());
+            throw e;
         }
     }
 
@@ -121,13 +121,13 @@ public class PermissionValidationAspect {
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
             Method method = methodSignature.getMethod();
             java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
-            
+
             for (int i = 0; i < paramAnnotations.length; i++) {
                 for (java.lang.annotation.Annotation annotation : paramAnnotations[i]) {
                     if (annotation instanceof PathVariable) {
                         PathVariable pathVar = (PathVariable) annotation;
                         String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
-                        
+
                         // 如果参数名匹配或是通用的id参数
                         if (name.equals(paramName) || "id".equals(paramName)) {
                             Object argValue = args[i];
@@ -152,7 +152,7 @@ public class PermissionValidationAspect {
                     }
                 }
             }
-            
+
             // 备用方案：从URL中提取最后一个路径段作为ID
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
                     .getRequestAttributes();
@@ -197,7 +197,7 @@ public class PermissionValidationAspect {
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
             Method method = methodSignature.getMethod();
             java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
-            
+
             // 先尝试从方法参数中获取批量ID参数
             String batchIdsStr = null;
             for (int i = 0; i < paramAnnotations.length; i++) {
@@ -205,7 +205,7 @@ public class PermissionValidationAspect {
                     if (annotation instanceof PathVariable) {
                         PathVariable pathVar = (PathVariable) annotation;
                         String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
-                        
+
                         // 查找 ids 或 paramNames[0] 参数
                         if ("ids".equals(name) || (paramNames.length > 0 && name.equals(paramNames[0]))) {
                             Object argValue = args[i];
@@ -216,14 +216,15 @@ public class PermissionValidationAspect {
                         }
                     }
                 }
-                if (batchIdsStr != null) break;
+                if (batchIdsStr != null)
+                    break;
             }
-            
+
             if (batchIdsStr != null && batchIdsStr.contains(",")) {
                 // 批量删除的情况
                 String[] ids = batchIdsStr.split(",");
                 Long commentUserId = null;
-                
+
                 if ("comment".equals(businessType)) {
                     for (String idStr : ids) {
                         idStr = idStr.trim();
@@ -266,7 +267,7 @@ public class PermissionValidationAspect {
                     return commentUserId;
                 }
             }
-            
+
         } catch (Exception e) {
             logger.warning(Constants.MULTI_PATH + e.getMessage());
         }

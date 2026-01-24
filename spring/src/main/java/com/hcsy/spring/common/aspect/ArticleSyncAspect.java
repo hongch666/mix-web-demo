@@ -100,9 +100,9 @@ public class ArticleSyncAspect {
                 return result;
 
             } catch (Throwable e) {
-                logger.error(Constants.TRANSACTION_ROLLBACK, e);
+                logger.error(Constants.TRANSACTION_ROLLBACK + e.getMessage());
                 status.setRollbackOnly(); // 显式回滚
-                throw new RuntimeException(e);
+                throw new BusinessException(Constants.TRANSACTION_ROLLBACK);
             }
         });
     }
