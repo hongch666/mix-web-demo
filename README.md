@@ -1754,9 +1754,7 @@ $$
 
 - 文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
 
-$$
-S_{recency} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
-$$
+$$S_{\text{recency}} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}$$
 
 - 其中：
 
@@ -1765,9 +1763,9 @@ $$
 
 - 高斯衰减函数具有以下特性：
 
-  - 当 $\Delta t = 0$（刚发布）时，$S_{recency} = 1.0$（新鲜度最高）
-  - 当 $\Delta t = 30$ 天时，$S_{recency} \approx 0.606$（衰减至约 60.6%）
-  - 当 $\Delta t = 60$ 天时，$S_{recency} \approx 0.135$（衰减至约 13.5%）
+  - 当 $\Delta t = 0$（刚发布）时，$S_{\text{recency}} = 1.0$（新鲜度最高）
+  - 当 $\Delta t = 30$ 天时，$S_{\text{recency}} \approx 0.606$（衰减至约 60.6%）
+  - 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
   - 权重配置说明
 
 5. 默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
