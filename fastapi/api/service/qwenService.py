@@ -383,7 +383,10 @@ class QwenService(BaseAiService):
                 
                 # 第一步: 使用Agent获取信息和思考
                 logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
-                agent_response = await self.agent_executor.ainvoke({"input": full_input})
+                agent_response = await self.agent_executor.ainvoke({
+                    "input": full_input,
+                    "system_message": Constants.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE
+                })
                 agent_result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
                 
                 # 提取中间步骤（工具调用）

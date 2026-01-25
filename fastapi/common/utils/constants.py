@@ -97,6 +97,9 @@ class Constants:
     CHAT_SYSTEM_MESSAGE: str = "你是一个中文AI助手，用于提供文章和博客推荐及分析系统数据。"
     """聊天功能的系统消息"""
     
+    STREAMING_CHAT_THINKING_SYSTEM_MESSAGE: str = "你是一个中文AI思考型助手，用于提供文章和博客推荐及分析系统数据的思考内容，回答文本应该展示的是调用工具和分析的思考过程。"
+    """流式聊天思考过程系统消息"""
+    
     AGENT_PROCESSING_MESSAGE: str = "使用Agent处理，可同时调用SQL和RAG工具"
     """Agent处理消息"""
     

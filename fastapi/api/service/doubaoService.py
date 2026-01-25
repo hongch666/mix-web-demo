@@ -204,7 +204,7 @@ class DoubaoService(BaseAiService):
                 # 如果没有权限，直接返回权限提示信息
                 if not has_permission:
                     logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    return permission_msg or "您没有权限访问此功能，请联系管理员开通相关权限。"
+                    return permission_msg or Constants.NO_PERMISSION_ERROR
                     
             elif self.intent_router:
                 intent = self.intent_router.route(message)
@@ -355,7 +355,10 @@ class DoubaoService(BaseAiService):
                 
                 # 第一步: 使用Agent获取信息和思考
                 logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
-                agent_response = await self.agent_executor.ainvoke({"input": full_input})
+                agent_response = await self.agent_executor.ainvoke({
+                    "input": full_input,
+                    "system_message": Constants.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE
+                })
                 agent_result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
                 
                 # 提取中间步骤（工具调用）

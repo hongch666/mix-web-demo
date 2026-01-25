@@ -380,7 +380,7 @@ class GeminiService(BaseAiService):
                     elif "invalid" in error_msg.lower() and "key" in error_msg.lower():
                         yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
                     else:
-                        yield {"type": "content", "content": f"❌ 服务异常: {error_msg[:100]}"}
+                        yield {"type": "content", "content": f"服务异常: {error_msg[:100]}"}
                 
             else:
                 # 使用Agent处理获取信息,然后流式输出最终答案
@@ -393,7 +393,10 @@ class GeminiService(BaseAiService):
                 # 第一步: 使用Agent获取信息和思考
                 logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
                 try:
-                    agent_response = await self.agent_executor.ainvoke({"input": full_input})
+                    agent_response = await self.agent_executor.ainvoke({
+                        "input": full_input,
+                        "system_message": Constants.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE
+                    })
                     agent_result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
                 except Exception as agent_error:
                     error_msg = str(agent_error)
