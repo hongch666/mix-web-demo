@@ -268,15 +268,20 @@ export class DownloadService {
 
   // 上传Word文件到OSS
   async uploadFileToOSS(filePath: string, ossPath: string) {
-    const res = await this.nacosService.call({
-      serviceName: 'fastapi',
-      method: 'POST',
-      path: '/upload',
-      body: {
-        local_file: filePath,
-        oss_file: ossPath,
-      },
-    });
-    return res.data;
+    try {
+      const res = await this.nacosService.call({
+        serviceName: 'fastapi',
+        method: 'POST',
+        path: '/upload',
+        body: {
+          local_file: filePath,
+          oss_file: ossPath,
+        },
+      });
+      return res.data;
+    } catch (error) {
+      fileLogger.error(`上传阿里云OSS错误: ${error.message}`);
+      throw new BusinessException(Constants.OSS_UPLOAD_ERR);
+    }
   }
 }

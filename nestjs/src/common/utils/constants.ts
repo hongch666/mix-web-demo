@@ -70,6 +70,11 @@ export class Constants {
   static readonly NO_ADMIN_USER = '当前用户没有管理员权限，无法访问此功能';
 
   /**
+   * 阿里云OSS上传错误消息
+   */
+  static readonly OSS_UPLOAD_ERR = '上传阿里云OSS错误';
+
+  /**
    * 未知用户名
    */
   static readonly UNKNOWN_USER = '未知用户';

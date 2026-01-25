@@ -1,17 +1,17 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import yamlConfig from './common/config/yaml-config.service';
+import yamlConfig from '../common/config/yaml-config.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ClsModule } from 'nestjs-cls';
-import { ClsMiddleware } from './common/middleware/cls.middleware';
-import { ApiModule } from './api/api.module';
-import { CommonModule } from './common/common.module';
+import { ClsMiddleware } from '../common/middleware/cls.middleware';
+import { ApiModule } from '../api/api.module';
+import { CommonModule } from '../common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_INTERCEPTOR } from '@nestjs/core';
-import { ApiLogInterceptor } from './common/interceptors/api-log.interceptor';
-import { RequireAdminInterceptor } from './common/interceptors/require-admin.interceptor';
-import { ModulesModule } from './modules/modules.module';
+import { ApiLogInterceptor } from '../common/interceptors/api-log.interceptor';
+import { RequireAdminInterceptor } from '../common/interceptors/require-admin.interceptor';
+import { ModulesModule } from '../modules/modules.module';
 
 @Module({
   imports: [
@@ -29,7 +29,7 @@ import { ModulesModule } from './modules/modules.module';
           database: db.database,
           synchronize: false,
           logging: db.logging,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          autoLoadEntities: true,
         };
       },
     }),
