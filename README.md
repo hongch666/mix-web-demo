@@ -1,4 +1,4 @@
-# 基于 RAG 知识问答、权威文章 AI 引导与算法驱动推荐实现的 IT 智能文章推荐与知识问答系统(多语言技术栈构建)
+# 基于 RAG 知识问答与 LLM 驱动推荐的 IT 智能文章推荐与知识问答系统(多语言技术栈构建)
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
@@ -13,10 +13,10 @@
 
 这是一个基于多语言技术栈构建的 IT 智能文章推荐与知识问答系统，主要包含以下框架：
 
-- FastAPI（Python）
+- Spring（Java）
 - Gin（Go）
-- Spring Boot（Java）
 - NestJS（Node.js）
+- FastAPI（Python）
 
 所有服务通过 SpringCloud Gateway 统一网关进行访问，实现了服务治理、认证授权等功能。
 
@@ -25,13 +25,17 @@
 ## 功能说明
 
 1. 基于 Spring Boot 和 MybatisPlus 实现文章发布、修改等操作，文章的创建和显示都支持 Markdown
-2. 基于 Gin Web 服务和 ElasticSearch 进行搜索引擎式文章搜索
-3. 基于 NestJS 和 Mongoose 框架进行文章操作日志和 API 日志的查看和分析
-4. 基于 Spring Boot 和 Redis 进行文章分类，用户状态的管理操作
-5. 基于 AOP 技术权限校验实现用户端和管理端
-6. 基于 RAG 技术和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/通义千问** 进行多模型选择的 AI 聊天助手
-7. 基于 FastAPI 服务和 Hadoop 技术栈实现系统数据的相关分析
-8. 基于 WebSocket 和 SSE 用户实时聊天功能和消息通知
+2. 基于 Spring Boot 和 MybatisPlus 实现用户、分类、评论、点赞、收藏、关注等业务模块
+3. 基于 Spring Boot 和 Redis 进行文章分类，用户状态的管理操作
+4. 基于 Spring Boot 和 AOP 技术权限校验实现用户端和管理端
+5. 基于 Gin 和 ElasticSearch 进行搜索引擎式文章搜索
+6. 基于 Gin 和 GORM 实现文章相关数据获取和同步
+7. 基于 Gin 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
+8. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
+9. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
+10. 基于 FastAPI 和 Hadoop 技术栈实现系统数据的相关分析
+11. 基于 FastAPI 和 SQLModel 进行文章相关数据的获取和同步
+12. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
 
 ## 设计图
 
@@ -125,19 +129,19 @@
 
 ## 技术栈
 
-- FastAPI：Python 后端服务
-- Gin：Golang 后端框架
-- Spring Boot：Java 后端框架
-- NestJS：Node.js 后端框架
+- Spring Boot：Java 后端框架，支撑系统核心业务服务
+- Gin：Golang 后端框架，支持系统高并发服务
+- NestJS：Node.js 后端框架，支撑系统日志处理服务
+- FastAPI：Python 后端服务，支撑系统数据分析和 Agent 服务
 - Spring Cloud Gateway：API 网关
 - JWT：身份验证
 - Nacos：服务发现与配置中心
-- MySQL：关系型数据库
+- MySQL：关系型数据库，系统核心数据库
 - PostgreSQL：RAG 向量数据库
-- MongoDB：非关系型数据库
-- Elasticsearch：搜索引擎
-- Redis：缓存服务
-- RabbitMQ：消息队列
+- MongoDB：非关系型数据库，系统日志数据库
+- Elasticsearch：搜索引擎，系统搜索优化
+- Redis：缓存服务和状态管理
+- RabbitMQ：异步消息队列
 - Hadoop+Hive：大数据存储与分析
 - WebSocket：用户实时聊天
 - SSE：实时通知未读消息
@@ -153,19 +157,19 @@
 
 ## 环境要求
 
-- Python 3.12+
-- Go 1.23+
 - Java 17+
 - Maven 3.6+
+- Go 1.23+
 - Node.js 20+
+- Bun(可选)
+- Python 3.12+
+- uv(可选)
 - MySQL 8.0+
 - PostgreSQL(需要安装向量插件) 15.4+
 - MongoDB 5.0+
 - Redis 6.0+
 - RabbitMQ 3.8+
 - Hadoop+Hive(可选)
-- uv(可选)
-- Bun(可选)
 
 ## 环境设置
 
