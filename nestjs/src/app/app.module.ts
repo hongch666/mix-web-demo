@@ -6,7 +6,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ClsModule } from 'nestjs-cls';
 import { ClsMiddleware } from '../common/middleware/cls.middleware';
 import { ApiModule } from '../api/api.module';
-import { CommonModule } from '../common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiLogInterceptor } from '../common/interceptors/api-log.interceptor';
@@ -68,7 +67,6 @@ import { ModulesModule } from '../modules/modules.module';
       middleware: { mount: true },
     }),
     ScheduleModule.forRoot(),
-    CommonModule,
     ApiModule,
     ModulesModule,
   ],
