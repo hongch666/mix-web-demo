@@ -76,11 +76,9 @@ export class DownloadService {
     markdown += `\n**标签：** ${article.tags}\n`;
     const user = await this.userService.getUserById(article.user_id);
     markdown += `\n**作者：** ${user?.name || '未知'}\n`;
+    markdown += `\n**创作时间：** ${dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
     markdown += `\n---\n`;
     markdown += article.content || '';
-    markdown += `\n---\n`;
-    markdown += `\n**创建时间：** ${dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
-    markdown += `\n**更新时间：** ${dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
     // 保存到本地临时文件
     const filePath = this.configService.get<string>('files.word') || 'static';
     const saveDir = path.join(process.cwd(), filePath);
@@ -135,11 +133,12 @@ export class DownloadService {
       path: savePath,
       format: 'A4',
       margin: {
-        top: '20mm',
-        bottom: '20mm',
-        left: '20mm',
-        right: '20mm',
+        top: '15mm',
+        bottom: '15mm',
+        left: '15mm',
+        right: '15mm',
       },
+      printBackground: true,
     });
 
     await page.close();
@@ -161,6 +160,9 @@ export class DownloadService {
     const updateTime = dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss');
     const generateTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
+    // 使用 marked 解析 Markdown 内容为 HTML
+    const htmlContent = marked.parse(article.content || '');
+
     return `
       <!DOCTYPE html>
       <html lang="zh-CN">
@@ -174,69 +176,160 @@ export class DownloadService {
             padding: 0;
             box-sizing: border-box;
           }
+          html, body {
+            margin: 0;
+            padding: 0;
+            height: auto;
+          }
           body {
             font-family: 'Segoe UI', 'SimSun', '微软雅黑', '宋体', sans-serif;
             line-height: 1.8;
             color: #333;
             background: white;
           }
+          @page {
+            size: A4;
+            margin: 15mm 15mm 15mm 15mm;
+          }
           .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
           }
           .title {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: bold;
             text-align: center;
-            margin-bottom: 20px;
-            text-decoration: underline;
+            margin-bottom: 12px;
             color: #000;
           }
           .meta-info {
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
-            margin-bottom: 10px;
-            line-height: 1.6;
+            margin-bottom: 8px;
+            line-height: 1.4;
           }
           .tags {
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
             color: #0066cc;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
           }
           .divider {
             border-top: 1px solid #999;
-            margin: 20px 0;
+            margin: 12px 0;
           }
           .content {
             font-size: 14px;
             line-height: 1.8;
-            margin-bottom: 30px;
-            white-space: pre-wrap;
-            word-break: break-all;
+            margin-bottom: 10px;
+          }
+          .content h1 {
+            font-size: 22px;
+            font-weight: bold;
+            margin: 12px 0 6px 0;
+          }
+          .content h2 {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 10px 0 6px 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+          }
+          .content h3 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0 4px 0;
+          }
+          .content h4,
+          .content h5,
+          .content h6 {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 8px 0 4px 0;
+          }
+          .content p {
+            margin: 4px 0;
+            text-align: justify;
+          }
+          .content ul,
+          .content ol {
+            margin: 6px 0 6px 20px;
+          }
+          .content li {
+            margin: 2px 0;
+          }
+          .content blockquote {
+            border-left: 4px solid #d0d0d0;
+            margin: 6px 0;
+            padding-left: 12px;
+            color: #666;
+            font-size: 13px;
+          }
+          .content code {
+            background-color: #f5f5f5;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-family: 'Courier New', 'Consolas', monospace;
+            font-size: 12px;
+          }
+          .content pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 8px;
+            border-radius: 3px;
+            overflow-x: auto;
+            margin: 8px 0;
+            line-height: 1.3;
+            font-size: 11px;
+          }
+          .content pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            font-size: 11px;
+          }
+          .content table {
+            border-collapse: collapse;
+            margin: 8px 0;
+            width: 100%;
+            font-size: 12px;
+          }
+          .content table th,
+          .content table td {
+            border: 1px solid #ddd;
+            padding: 4px 6px;
+            text-align: left;
+          }
+          .content table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+          }
+          .content hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 10px 0;
           }
           .footer {
             text-align: center;
+            font-size: 10px;
+            color: #666;
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #f9f9f9;
+            line-height: 1.6;
+          }
+          .footer-line {
             font-size: 11px;
+            color: #555;
+            font-weight: 500;
+          }
+          .footer-detail {
+            font-size: 9px;
             color: #999;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-          }
-          code {
-            background-color: #f5f5f5;
-            padding: 2px 4px;
-            border-radius: 2px;
-            font-family: 'Courier New', monospace;
-          }
-          pre {
-            background-color: #f5f5f5;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-            margin: 10px 0;
+            margin-top: 4px;
           }
         </style>
       </head>
@@ -246,20 +339,15 @@ export class DownloadService {
           
           <div class="meta-info">
             <div>作者: ${user?.name || '未知'}</div>
-            <div>创建于: ${createTime}</div>
-            <div>更新于: ${updateTime}</div>
+            <div>创作时间: ${createTime}</div>
           </div>
           
           ${article.tags ? `<div class="tags">标签: ${article.tags}</div>` : ''}
           
           <div class="divider"></div>
           
-          <div class="content">${(article.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+          <div class="content">${htmlContent}</div>
           
-          <div class="footer">
-            <div>---</div>
-            <div>生成时间: ${generateTime} | 文章ID: ${article.id}</div>
-          </div>
         </div>
       </body>
       </html>

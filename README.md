@@ -1676,7 +1676,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 1. 词云图的字体应进行配置对应字体的路径。
 
-### 下载模板说明
+### Word 下载说明
 
 1. 下载文件的模板路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写，目前提供如下的示例
 2. 内容示例
@@ -1688,6 +1688,14 @@ ${tags}
 
 ${content}
 ```
+
+3. 需要使用下面指令安装 `puppeteer`的 Chrome 浏览器
+
+```bash
+npx puppeteer browsers install chrome
+```
+
+4. 当前 Word 下载只支持文章内容为纯文本，无法显示 Markdown 格式
 
 ### Google AI 服务说明
 
@@ -1758,7 +1766,9 @@ $$
 
 - 文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
 
-$$S_{\text{recency}} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}$$
+$$
+S_{\text{recency}} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
+$$
 
 - 其中：
 
