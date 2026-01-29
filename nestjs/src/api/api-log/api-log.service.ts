@@ -3,10 +3,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, DeleteResult } from 'mongoose';
 import { ApiLog, ApiLogDocument } from './schema/api-log.schema';
 import { CreateApiLogDto, QueryApiLogDto } from './dto/api-log.dto';
+import { BusinessException } from 'src/common/exceptions/business.exception';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
+import { Constants } from 'src/common/utils/constants';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -34,6 +36,10 @@ export class ApiLogService {
    * @param id 日志ID
    */
   async removeById(id: string) {
+    const existingLog = await this.apiLogModel.findById(id).exec();
+    if (!existingLog) {
+      throw new BusinessException(Constants.API_LOG_NOT_FOUND);
+    }
     return this.apiLogModel.findByIdAndDelete(id).exec();
   }
 
@@ -42,6 +48,18 @@ export class ApiLogService {
    * @param ids 日志ID数组
    */
   async removeByIds(ids: string[]): Promise<DeleteResult> {
+    // 先检查所有记录是否存在
+    const existingLogs = await this.apiLogModel
+      .find({ _id: { $in: ids } })
+      .exec();
+    const existingIds = existingLogs.map((log) => log.id);
+
+    // 找出不存在的ID
+    const notFoundIds = ids.filter((id) => !existingIds.includes(id));
+    if (notFoundIds.length > 0) {
+      throw new BusinessException(Constants.API_LOG_PARTIAL_NOT_FOUND);
+    }
+
     return this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 

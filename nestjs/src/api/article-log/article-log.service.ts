@@ -10,6 +10,8 @@ import timezone from 'dayjs/plugin/timezone';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
 import { ArticleService } from 'src/modules/article/article.service';
 import { fileLogger } from 'src/common/utils/writeLog';
+import { BusinessException } from 'src/common/exceptions/business.exception';
+import { Constants } from 'src/common/utils/constants';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -75,10 +77,24 @@ export class ArticleLogService {
   }
 
   async removeById(id: string) {
+    const existingLog = await this.logModel.findById(id).exec();
+    if (!existingLog) {
+      throw new BusinessException(Constants.ARTICLE_LOG_NOT_FOUND);
+    }
     return this.logModel.findByIdAndDelete(id).exec();
   }
 
   async removeByIds(ids: string[]): Promise<DeleteResult> {
+    // 先检查所有记录是否存在
+    const existingLogs = await this.logModel.find({ _id: { $in: ids } }).exec();
+    const existingIds = existingLogs.map((log) => log.id);
+
+    // 找出不存在的ID
+    const notFoundIds = ids.filter((id) => !existingIds.includes(id));
+    if (notFoundIds.length > 0) {
+      throw new BusinessException(Constants.ARTICLE_LOG_PARTIAL_NOT_FOUND);
+    }
+
     return this.logModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 

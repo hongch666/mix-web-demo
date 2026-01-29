@@ -16,9 +16,7 @@ export class LogConsumerService implements OnModuleInit {
     fileLogger.info(Constants.ARTICLE_RABBITMQ_START);
     await this.rabbitMQService.consume('log-queue', async (msg) => {
       try {
-        // 处理两种消息格式：
-        // 1. 对象
-        // 2. JSON 字符串
+        // 处理两种消息格式：1.对象, 2.JSON 字符串
         let logData = msg;
 
         if (typeof msg === 'string') {

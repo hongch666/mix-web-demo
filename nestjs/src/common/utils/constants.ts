@@ -75,6 +75,27 @@ export class Constants {
   static readonly OSS_UPLOAD_ERR = '上传阿里云OSS错误';
 
   /**
+   * 文章日志记录不存在消息
+   */
+  static readonly ARTICLE_LOG_NOT_FOUND = '文章日志记录不存在';
+
+  /**
+   * 部分或全部文章日志记录不存在消息
+   */
+  static readonly ARTICLE_LOG_PARTIAL_NOT_FOUND =
+    '部分或全部文章日志记录不存在';
+
+  /**
+   * API日志记录不存在消息
+   */
+  static readonly API_LOG_NOT_FOUND = 'API日志记录不存在';
+
+  /**
+   * 部分或全部API日志记录不存在消息
+   */
+  static readonly API_LOG_PARTIAL_NOT_FOUND = '部分或全部API日志记录不存在';
+
+  /**
    * 未知用户名
    */
   static readonly UNKNOWN_USER = '未知用户';

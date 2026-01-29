@@ -15,7 +15,7 @@ import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { RequireAdmin } from 'src/common/decorators/require-admin.decorator';
 import { success } from 'src/common/utils/response';
 
-@Controller('logs')
+@Controller('article-logs')
 @ApiTags('文章日志模块')
 export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
