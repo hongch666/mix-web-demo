@@ -97,13 +97,35 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Transactional
     @ArticleSync(action = "delete", description = "删除了1篇文章")
     public boolean deleteArticle(Long id) {
+        Article existing = articleMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(Constants.UNDEFINED_ARTICLE_ID + id);
+        }
         articleMapper.deleteById(id);
         return true;
     }
 
     @Transactional
-    @ArticleSync(action = "delete", description = "批量删除了")
+    @ArticleSync(action = "delete", description = "批量删除文章")
     public boolean deleteArticles(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return true;
+        }
+
+        // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
+        List<Long> distinctIds = ids.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return true;
+        }
+
+        List<Article> existingList = articleMapper.selectBatchIds(distinctIds);
+        if (existingList.size() != distinctIds.size()) {
+            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
+        }
+
         articleMapper.deleteBatchIds(ids);
         return true;
     }

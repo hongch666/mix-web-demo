@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -18,6 +19,9 @@ import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.po.Comments;
+
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 
 import lombok.RequiredArgsConstructor;
 
@@ -161,5 +165,38 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
                 .orderByDesc(Comments::getCreateTime);
 
         return this.list(commentsQueryWrapper);
+    }
+
+    @Override
+    @Transactional
+    public void deleteComment(Long id) {
+        Comments existing = this.getById(id);
+        if (existing == null) {
+            throw new BusinessException(Constants.COMMENT_ID + id);
+        }
+        this.removeById(id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteComments(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+
+        List<Long> distinctIds = ids.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return;
+        }
+
+        // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
+        if (this.listByIds(distinctIds).size() != distinctIds.size()) {
+            throw new BusinessException(Constants.COMMENT_ID);
+        }
+
+        this.removeByIds(ids);
     }
 }

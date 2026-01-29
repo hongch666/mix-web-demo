@@ -27,6 +27,8 @@ public interface CategoryService extends IService<Category> {
 
     void deleteSubCategory(Long id);
 
+    void deleteSubCategories(List<Long> ids);
+
     CategoryVO getCategoryById(Long id);
 
     IPage<CategoryVO> pageCategory(Page<?> page);

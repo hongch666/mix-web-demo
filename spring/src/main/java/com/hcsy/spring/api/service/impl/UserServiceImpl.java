@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.entity.po.User;
@@ -89,6 +91,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Transactional
     public void deleteUserAndStatusById(Long id) {
+        User existing = userMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(Constants.UNDEFINED_USER);
+        }
         userMapper.deleteById(id);
         redisUtil.delete("user:status:" + id);
     }
@@ -97,6 +103,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void deleteUsersAndStatusByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty())
             return;
+
+        List<Long> distinctIds = ids.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return;
+        }
+
+        // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
+        List<User> existingList = userMapper.selectBatchIds(distinctIds);
+        if (existingList.size() != distinctIds.size()) {
+            throw new BusinessException(Constants.UNDEFINED_USER);
+        }
+
         userMapper.deleteBatchIds(ids);
         for (Long id : ids) {
             redisUtil.delete("user:status:" + id);

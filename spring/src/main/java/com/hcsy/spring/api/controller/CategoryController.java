@@ -149,9 +149,7 @@ public class CategoryController {
                 .filter(s -> !s.isEmpty())
                 .map(Long::valueOf)
                 .toList();
-        for (Long id : idList) {
-            categoryService.deleteSubCategory(id);
-        }
+        categoryService.deleteSubCategories(idList);
         return Result.success();
     }
 

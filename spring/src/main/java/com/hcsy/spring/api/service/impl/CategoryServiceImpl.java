@@ -16,6 +16,8 @@ import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.CategoryVO;
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -67,6 +69,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             @CacheEvict(value = "categoryById", allEntries = true)
     })
     public void deleteCategory(Long id) {
+        Category existing = categoryMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(Constants.UNDEFINED_CATEGORY);
+        }
         // 先删子分类
         subCategoryMapper.delete(new QueryWrapper<SubCategory>().eq("category_id", id));
         categoryMapper.deleteById(id);
@@ -79,6 +85,24 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             @CacheEvict(value = "categoryById", allEntries = true)
     })
     public void deleteCategories(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+
+        List<Long> distinctIds = ids.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return;
+        }
+
+        // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
+        if (categoryMapper.selectBatchIds(distinctIds).size() != distinctIds.size()) {
+            throw new BusinessException(Constants.UNDEFINED_CATEGORY);
+        }
+
+        // 不通过Mapper的删除, 通过service的删除, 可以批量删除分类对应的子分类
         for (Long id : ids) {
             deleteCategory(id);
         }
@@ -120,7 +144,37 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             @CacheEvict(value = "categoryById", allEntries = true)
     })
     public void deleteSubCategory(Long id) {
+        SubCategory existing = subCategoryMapper.selectById(id);
+        if (existing == null) {
+            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY);
+        }
         subCategoryMapper.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "categoryPage", allEntries = true),
+            @CacheEvict(value = "categoryById", allEntries = true)
+    })
+    public void deleteSubCategories(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        List<Long> distinctIds = ids.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+        if (distinctIds.isEmpty()) {
+            return;
+        }
+
+        // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
+        if (subCategoryMapper.selectBatchIds(distinctIds).size() != distinctIds.size()) {
+            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY);
+        }
+
+        subCategoryMapper.deleteBatchIds(ids);
     }
 
     @Override

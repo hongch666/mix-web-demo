@@ -166,10 +166,6 @@ public class ArticleController {
     )
     @ApiLog("删除文章")
     public Result deleteArticle(@PathVariable Long id) {
-        Article dbArticle = articleService.getById(id);
-        if (dbArticle == null) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
-        }
         articleService.deleteArticle(id);
         return Result.success();
     }

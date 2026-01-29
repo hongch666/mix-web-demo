@@ -114,7 +114,7 @@ public class CommentsController {
     )
     @ApiLog("删除评论")
     public Result deleteComment(@PathVariable Long id) {
-        commentsService.removeById(id);
+        commentsService.deleteComment(id);
         return Result.success();
     }
 
@@ -134,7 +134,7 @@ public class CommentsController {
                 .filter(s -> !s.isEmpty())
                 .map(Long::valueOf)
                 .toList();
-        commentsService.removeByIds(idList);
+        commentsService.deleteComments(idList);
         return Result.success();
     }
 

@@ -18,4 +18,8 @@ public interface CommentsService extends IService<Comments> {
     IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay);
 
     List<Comments> listAICommentsByArticleId(Long articleId);
+
+    void deleteComment(Long id);
+
+    void deleteComments(List<Long> ids);
 }
