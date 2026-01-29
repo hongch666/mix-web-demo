@@ -123,7 +123,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         List<Article> existingList = articleMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
+            throw new BusinessException(Constants.UNDEFINED_ARTICLES);
         }
 
         articleMapper.deleteBatchIds(ids);

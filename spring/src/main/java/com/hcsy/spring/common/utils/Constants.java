@@ -69,6 +69,31 @@ public class Constants {
     public static String UNDEFINED_USER_COMMENT = "用户不存在，无法评论";
 
     /**
+     * 批量文章不存在错误信息
+     */
+    public static String UNDEFINED_ARTICLES = "部分或全部文章不存在";
+
+    /**
+     * 批量用户不存在错误信息
+     */
+    public static String UNDEFINED_USERS = "部分或全部用户不存在";
+
+    /**
+     * 批量分类不存在错误信息
+     */
+    public static String UNDEFINED_CATEGORIES = "部分或全部分类不存在";
+
+    /**
+     * 批量子分类不存在错误信息
+     */
+    public static String UNDEFINED_SUB_CATEGORIES = "部分或全部子分类不存在";
+
+    /**
+     * 批量评论不存在错误信息
+     */
+    public static String UNDEFINED_COMMENTS = "部分或全部评论不存在";
+
+    /**
      * 排序方式错误提示
      * 要在后面加上错误的排序类型
      */
@@ -745,6 +770,16 @@ public class Constants {
      * 消息转换失败消息
      */
     public static String TRANSFORM_MSG_FAIL = "发送消息到交换机失败: ";
+
+    /**
+     * 无法获取用户Token和id消息
+     */
+    public static String GET_USER_TOKEN_ID = "无法获取用户信息，请确保已登录";
+
+    /**
+     * 踢出其他设备失败消息
+     */
+    public static String KICK_FAIL = "踢出其他设备失败";
 
     // 默认返回值
 

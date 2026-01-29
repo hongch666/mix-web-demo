@@ -329,7 +329,7 @@ public class UserController {
             Long userId = UserContext.getUserId();
 
             if (token == null || userId == null) {
-                return Result.error("无法获取用户信息，请确保已登录");
+                return Result.error(Constants.GET_USER_TOKEN_ID);
             }
 
             int removed = tokenService.removeOtherTokens(userId, token);
@@ -342,8 +342,8 @@ public class UserController {
                     .build();
             return Result.success(vo);
         } catch (Exception e) {
-            logger.error("踢出其他设备失败: " + e.getMessage());
-            return Result.error(Constants.VERIFY_TOKEN);
+            logger.error(Constants.KICK_FAIL + e.getMessage());
+            return Result.error(Constants.KICK_FAIL);
         }
     }
 

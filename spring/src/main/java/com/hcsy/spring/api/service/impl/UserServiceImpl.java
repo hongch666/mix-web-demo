@@ -115,7 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         List<User> existingList = userMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_USER);
+            throw new BusinessException(Constants.UNDEFINED_USERS);
         }
 
         userMapper.deleteBatchIds(ids);

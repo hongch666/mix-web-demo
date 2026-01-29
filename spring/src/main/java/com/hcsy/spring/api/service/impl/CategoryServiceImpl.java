@@ -99,7 +99,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (categoryMapper.selectBatchIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_CATEGORY);
+            throw new BusinessException(Constants.UNDEFINED_CATEGORIES);
         }
 
         // 不通过Mapper的删除, 通过service的删除, 可以批量删除分类对应的子分类
@@ -171,7 +171,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (subCategoryMapper.selectBatchIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY);
+            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORIES);
         }
 
         subCategoryMapper.deleteBatchIds(ids);

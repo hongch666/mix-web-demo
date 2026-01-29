@@ -146,12 +146,10 @@ public class TokenServiceImpl implements TokenService {
             }
         }
 
-        // 兜底：如果列表空了，标记离线；否则标记在线
+        // 如果列表空了，标记离线
         long remaining = redisUtil.getListSize(key);
         if (remaining == 0) {
             redisUtil.set("user:status:" + userId, "0");
-        } else {
-            redisUtil.set("user:status:" + userId, "1", 24 * 60 * 60);
         }
 
         return removed;

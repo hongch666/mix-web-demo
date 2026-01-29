@@ -194,7 +194,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (this.listByIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(Constants.COMMENT_ID);
+            throw new BusinessException(Constants.UNDEFINED_COMMENTS);
         }
 
         this.removeByIds(ids);
