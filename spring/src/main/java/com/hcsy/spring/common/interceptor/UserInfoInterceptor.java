@@ -24,6 +24,7 @@ public class UserInfoInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         String userIdStr = request.getHeader("X-User-Id");
         String username = request.getHeader("X-Username");
+        String authHeader = request.getHeader("Authorization");
 
         if (userIdStr != null) {
             try {
@@ -34,6 +35,12 @@ public class UserInfoInterceptor implements HandlerInterceptor {
                 // 如果格式错误，可以记录日志，也可以拦截请求
                 logger.error(Constants.USER_INTERCEPTOR + userIdStr);
             }
+        }
+
+        // 从 Authorization header 中提取 token 并存储到 ThreadLocal
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7); // 移除 "Bearer " 前缀
+            UserContext.setToken(token);
         }
 
         return true;

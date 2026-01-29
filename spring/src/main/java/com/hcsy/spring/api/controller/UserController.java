@@ -11,6 +11,7 @@ import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
+import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
@@ -22,6 +23,7 @@ import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
+import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -314,6 +316,34 @@ public class UserController {
         } catch (Exception e) {
             logger.error(Constants.FORCE_LOGOUT + e.getMessage());
             return Result.error(Constants.FORCE_LOGOUT);
+        }
+    }
+
+    @PostMapping("/kick-other-devices")
+    @Operation(summary = "踢出其他设备", description = "清除当前用户除本次请求携带的 token 之外的所有 token（保留当前 token）")
+    @ApiLog("踢出其他设备")
+    public Result kickOtherDevices() {
+        try {
+            // 从 ThreadLocal 中获取当前用户的 token 和 userId
+            String token = UserContext.getToken();
+            Long userId = UserContext.getUserId();
+
+            if (token == null || userId == null) {
+                return Result.error("无法获取用户信息，请确保已登录");
+            }
+
+            int removed = tokenService.removeOtherTokens(userId, token);
+            long remaining = tokenService.getUserOnlineDeviceCount(userId);
+
+            KickOtherDevicesVO vo = KickOtherDevicesVO.builder()
+                    .userId(userId)
+                    .removedTokenCount(removed)
+                    .onlineDeviceCount(remaining)
+                    .build();
+            return Result.success(vo);
+        } catch (Exception e) {
+            logger.error("踢出其他设备失败: " + e.getMessage());
+            return Result.error(Constants.VERIFY_TOKEN);
         }
     }
 

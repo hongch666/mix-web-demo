@@ -40,6 +40,13 @@ public interface TokenService {
     void forceLogoutUser(Long userId);
 
     /**
+     * 踢出其他设备：清除该用户除 currentToken 外的所有 Token
+     *
+     * @return 被清除的 Token 数量
+     */
+    int removeOtherTokens(Long userId, String currentToken);
+
+    /**
      * 定时任务：检查并清理所有过期的 Token
      * 建议每小时执行一次
      */

@@ -124,6 +124,40 @@ public class TokenServiceImpl implements TokenService {
     }
 
     /**
+     * 踢出其他设备：清除该用户除 currentToken 外的所有 Token
+     */
+    @Override
+    public int removeOtherTokens(Long userId, String currentToken) {
+        String key = "user:tokens:" + userId;
+
+        // 如果当前 token 不在列表里（例如 Redis 丢失/重启），先补回去，确保“保留当前 token”的语义成立
+        if (!redisUtil.existsInList(key, currentToken)) {
+            redisUtil.addToList(key, currentToken);
+            redisUtil.expire(key, 24 * 60 * 60);
+            redisUtil.set("user:status:" + userId, "1", 24 * 60 * 60);
+        }
+
+        List<String> tokens = redisUtil.getList(key);
+        int removed = 0;
+        for (String token : tokens) {
+            if (token != null && !token.equals(currentToken)) {
+                redisUtil.removeFromList(key, token);
+                removed++;
+            }
+        }
+
+        // 兜底：如果列表空了，标记离线；否则标记在线
+        long remaining = redisUtil.getListSize(key);
+        if (remaining == 0) {
+            redisUtil.set("user:status:" + userId, "0");
+        } else {
+            redisUtil.set("user:status:" + userId, "1", 24 * 60 * 60);
+        }
+
+        return removed;
+    }
+
+    /**
      * 定时任务：检查并清理所有过期的 Token
      */
     @Override

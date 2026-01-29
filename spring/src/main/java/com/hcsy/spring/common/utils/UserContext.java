@@ -4,6 +4,7 @@ public class UserContext {
     // 使用 InheritableThreadLocal 支持父子线程传递
     private static final InheritableThreadLocal<Long> userIdHolder = new InheritableThreadLocal<>();
     private static final InheritableThreadLocal<String> usernameHolder = new InheritableThreadLocal<>();
+    private static final InheritableThreadLocal<String> tokenHolder = new InheritableThreadLocal<>();
 
     public static void setUserId(Long userId) {
         userIdHolder.set(userId);
@@ -21,8 +22,17 @@ public class UserContext {
         return usernameHolder.get();
     }
 
+    public static void setToken(String token) {
+        tokenHolder.set(token);
+    }
+
+    public static String getToken() {
+        return tokenHolder.get();
+    }
+
     public static void clear() {
         userIdHolder.remove();
         usernameHolder.remove();
+        tokenHolder.remove();
     }
 }
