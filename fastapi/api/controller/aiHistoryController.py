@@ -26,7 +26,7 @@ async def create_ai_history(request: Request, data: CreateHistoryDTO, db: Sessio
     return success()
 
 @router.get(
-    "",
+    "/list",
     summary="获取所有AI历史记录",
     description="获取指定用户的所有AI历史记录"
 )
