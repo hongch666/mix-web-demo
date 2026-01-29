@@ -34,7 +34,7 @@ public class TokenServiceImpl implements TokenService {
         // 2. 设置列表过期时间（与 Token 有效期一致，如 1 天）
         redisUtil.expire(key, 24 * 60 * 60);
         // 3. 标记用户在线
-        redisUtil.set("user:status:" + userId, "1", 24 * 60 * 60);
+        redisUtil.set("user:status:" + userId, "1");
 
         logger.info(Constants.LOGIN_TOKEN, userId);
     }
@@ -134,7 +134,7 @@ public class TokenServiceImpl implements TokenService {
         if (!redisUtil.existsInList(key, currentToken)) {
             redisUtil.addToList(key, currentToken);
             redisUtil.expire(key, 24 * 60 * 60);
-            redisUtil.set("user:status:" + userId, "1", 24 * 60 * 60);
+            redisUtil.set("user:status:" + userId, "1");
         }
 
         List<String> tokens = redisUtil.getList(key);
