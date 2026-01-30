@@ -159,6 +159,7 @@
 
 - Java 17+
 - Maven 3.6+
+- Gradle 9.3+（可选，但推荐用于 Java 项目构建）
 - Go 1.23+
 - Node.js 20+
 - Bun(可选)
@@ -179,12 +180,22 @@
 
 ### Spring 部分
 
-使用 Maven 构建：
+使用 Maven 构建
 
 ```bash
 cd spring # 进入文件夹
 cd gateway # 进入网关
 mvn clean install # 下载依赖
+```
+
+使用 Gradle 构建（推荐）
+
+> Gradle 不用依赖安装，运行时会自动下载依赖
+
+```bash
+cd spring
+cd gateway
+gradle wrapper          # 生成项目专用 Gradle（如果尚未生成）
 ```
 
 ### Gin 部分
@@ -284,7 +295,8 @@ default = true
 
 4. **智能判断**
 
-   - Spring: 自动检测是否有全局 Maven，如果没有则使用 mvnw
+   - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
+   - Gateway: 支持 Gradle 和 Maven 两种构建工具
    - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
    - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
@@ -425,11 +437,30 @@ default = true
 
 ### Spring 服务（包括 gateway 网关）
 
+**使用 Maven 构建**：
+
 ```bash
 # 运行Spring服务
 cd spring
 mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
+
+# 运行网关服务
+cd gateway
+mvn clean install # 构建项目
+mvn spring-boot:run # 启动项目
+```
+
+**使用 Gradle 构建（推荐）**：
+
+```bash
+# 运行Spring服务
+cd spring
+gradle bootRun # 启动项目
+
+# 网关服务
+cd gateway
+gradle bootRun # 启动项目
 ```
 
 ### Gin 服务
@@ -487,6 +518,28 @@ uv run --python 3.12 python main.py
 # 停止所有 tmux 服务
 ./services.sh stop
 
+# ===== 使用指定构建工具启动服务 =====
+# 使用 Gradle 构建并启动 Java 服务（推荐，更快）
+./services.sh multi --java-build gradle
+
+# 使用 Maven 构建并启动 Java 服务
+./services.sh multi --java-build maven
+
+# 使用 Bun 启动 NestJS 服务（推荐，比 npm 快）
+./services.sh multi --node-runtime bun
+
+# 使用 npm 启动 NestJS 服务
+./services.sh multi --node-runtime npm
+
+# 使用 UV 启动 FastAPI 服务（推荐，比 python 快）
+./services.sh multi --python-runtime uv
+
+# 使用 Python 启动 FastAPI 服务
+./services.sh multi --python-runtime python
+
+# 交互式模式：让用户选择构建工具
+./services.sh multi -i
+
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
 ./services.sh docker up
@@ -542,6 +595,28 @@ uv run --python 3.12 python main.py
 ./services.sh logs gin
 ```
 
+**构建工具参数说明**：
+
+- `--java-build gradle|maven`：选择 Java 构建工具（Spring/Gateway）
+
+  - `gradle`：使用 Gradle（推荐，更快）
+  - `maven`：使用 Maven（可选）
+  - 默认值：`gradle`（如果已安装）
+
+- `--node-runtime bun|npm`：选择 Node.js 运行时（NestJS）
+
+  - `bun`：使用 Bun（推荐，比 npm 快 4-8 倍）
+  - `npm`：使用 npm（可选）
+  - 默认值：`bun`（如果已安装）
+
+- `--python-runtime uv|python`：选择 Python 运行时（FastAPI）
+
+  - `uv`：使用 UV（推荐，更快且支持虚拟环境）
+  - `python`：使用原生 Python（可选）
+  - 默认值：`uv`（如果已安装）
+
+- `-i`/`--interactive`：交互式模式，让用户选择每个服务的工具
+
 #### Windows
 
 ```powershell
@@ -556,11 +631,17 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 #### Linux/macOS
 
 ```bash
-# 启动服务（多窗格布局）
+# 启动服务（多窗格布局） - 使用 Gradle 构建
 ./scripts/run_multi.sh
+
+# 或指定构建工具参数（推荐）
+./scripts/run.sh --java-build gradle --node-runtime bun --python-runtime uv
 
 # 启动服务（顺序窗口布局）
 ./scripts/run.sh
+
+# 交互式选择工具
+./scripts/run.sh -i
 
 # 停止所有服务
 ./scripts/stop.sh
@@ -589,6 +670,29 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 # 查看单个服务的最新日志
 ./scripts/dist-control.sh logs spring
 ./scripts/dist-control.sh logs fastapi
+```
+
+**run.sh 脚本参数**：
+
+| 参数                   | 选项               | 说明                                             |
+| ---------------------- | ------------------ | ------------------------------------------------ |
+| `--java-build`         | `gradle` / `maven` | Java 项目构建工具（Spring/Gateway），默认 gradle |
+| `--node-runtime`       | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun               |
+| `--python-runtime`     | `uv` / `python`    | Python 运行时（FastAPI），默认 uv                |
+| `-i` / `--interactive` | 无                 | 交互式模式，提示用户选择各服务的工具             |
+| `-h` / `--help`        | 无                 | 显示帮助信息                                     |
+
+示例：
+
+```bash
+# 使用 Maven 和 npm 启动
+./scripts/run.sh --java-build maven --node-runtime npm
+
+# 使用 Python 启动 FastAPI
+./scripts/run.sh --python-runtime python
+
+# 交互式选择
+./scripts/run.sh --interactive
 ```
 
 #### Windows
