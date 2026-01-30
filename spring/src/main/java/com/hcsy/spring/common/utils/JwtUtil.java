@@ -26,10 +26,10 @@ public class JwtUtil {
     public void initKey() {
         // 增加空值检查
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
-            throw new BusinessException("JWT 密钥不能为 null 或者为空");
+            throw new BusinessException(Constants.JWT_NOT_NULL);
         }
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
-        logger.info("JWT 密钥初始化完成");
+        logger.info(Constants.JWT_INIT);
     }
 
     /**
