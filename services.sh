@@ -22,8 +22,19 @@ show_help() {
     echo ""
     echo "Development Commands (开发模式):"
     echo "  multi                    - Run all services in tmux with split panes"
-    echo "  seq                      - Run all services in tmux (sequential window mode)"
+    echo "  seq [OPTIONS]            - Run all services in tmux (sequential window mode)"
     echo "  stop                     - Stop all tmux sessions"
+    echo ""
+    echo "Seq Options (用于 seq 命令的可选项):"
+    echo "  -i, --interactive        - 进入交互式选择模式"
+    echo "  --java-build TOOL        - Java 构建工具: gradle(默认)|maven"
+    echo "  --node-runtime TOOL      - Node.js 运行时: bun(默认)|npm"
+    echo "  --python-runtime TOOL    - Python 运行时: uv(默认)|python"
+    echo ""
+    echo "Seq Examples:"
+    echo "  ./services.sh seq                     # 使用默认配置 (gradle+bun+uv)"
+    echo "  ./services.sh seq -i                  # 交互式选择"
+    echo "  ./services.sh seq --java-build maven --node-runtime npm"
     echo ""
     echo "Build & Deploy Commands (编译部署):"
     echo "  build                    - Build all services to dist/"
@@ -71,7 +82,11 @@ show_help() {
     echo "Examples (示例):"
     echo "  ./services.sh setup                    # Initialize environment (first time)"
     echo "  ./services.sh multi                    # Multi-pane tmux layout (dev)"
-    echo "  ./services.sh seq                      # Sequential window layout (dev)"
+    echo "  ./services.sh seq                      # Sequential window layout (dev, default config)"
+    echo "  ./services.sh seq -i                   # Sequential layout with interactive mode"
+    echo "  ./services.sh seq --java-build maven   # Use Maven for Java services"
+    echo "  ./services.sh seq --node-runtime npm   # Use NPM for Node.js"
+    echo "  ./services.sh seq --python-runtime python  # Use Python for FastAPI"
     echo "  ./services.sh stop                     # Stop tmux sessions (dev)"
     echo "  ./services.sh build                    # Build all services"
     echo "  ./services.sh start                    # Start all built services"
@@ -110,7 +125,8 @@ case $COMMAND in
         ;;
     seq)
         echo "Starting services in sequential window layout..."
-        bash "$SCRIPTS_DIR/run.sh"
+        # 将所有额外参数传递给 run.sh
+        bash "$SCRIPTS_DIR/run.sh" "${@:2}"
         ;;
     stop)
         echo "Stopping all tmux sessions..."

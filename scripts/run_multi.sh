@@ -9,7 +9,7 @@ tmux has-session -t $SESSION 2>/dev/null && tmux kill-session -t $SESSION
 # 创建新会话和初始 pane（Spring）
 tmux new-session -d -s $SESSION -n services -c "$WORKDIR"
 SPRING_PANE=$(tmux display-message -p -t $SESSION:services.0 '#{pane_id}')
-tmux send-keys -t "$SPRING_PANE" "cd spring && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting Spring Boot...' && mvn spring-boot:run" C-m
+tmux send-keys -t "$SPRING_PANE" "cd spring && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting Spring Boot...' && gradle bootRun" C-m
 
 # 水平分屏（右上：NestJS）
 tmux split-window -h -t "$SPRING_PANE" -c "$WORKDIR"
@@ -37,7 +37,7 @@ tmux select-pane -t "$FASTAPI_PANE" -T "4. FastAPI"
 
 # 创建 Gateway 在新窗口
 tmux new-window -t $SESSION -n gateway -c "$WORKDIR"
-tmux send-keys -t $SESSION:gateway "cd gateway && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting Gateway...' && mvn spring-boot:run" C-m
+tmux send-keys -t $SESSION:gateway "cd gateway && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting Gateway...' && gradle bootRun" C-m
 
 # 切回主服务窗口并聚焦 Spring
 tmux select-window -t $SESSION:services
