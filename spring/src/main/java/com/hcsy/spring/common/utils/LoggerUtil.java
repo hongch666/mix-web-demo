@@ -19,7 +19,7 @@ public class LoggerUtil {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Value("${logging.file.path:logs}")
+    @Value("${logging.file.path:../logs/spring}")
     private String logPath;
 
     private static String staticLogPath;
