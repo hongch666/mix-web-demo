@@ -157,6 +157,12 @@ spring/.env
 
 spring/bin/
 
+spring/build/
+spring/gradle/
+spring/gradlew
+spring/gradlew.bat
+spring/.gradle/
+
 ### gateway
 
 # 忽略项目中的 Maven 构建输出目录
@@ -185,6 +191,12 @@ gateway/.vscode/
 
 # Environment files
 gateway/.env
+
+gateway/build/
+gateway/gradle/
+gateway/gradlew
+gateway/gradlew.bat
+gateway/.gradle/
 
 ### FastAPI
 fastapi/**/__pycache__/

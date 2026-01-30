@@ -1,0 +1,87 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.2.12'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.hcsy'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://maven.aliyun.com/repository/public/' }
+}
+
+// 对应 Maven 的 <dependencyManagement>
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:2023.0.1"
+        mavenBom "com.alibaba.cloud:spring-cloud-alibaba-dependencies:2023.0.1.0"
+    }
+}
+
+dependencies {
+    // 核心网关 (响应式)
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    
+    // Nacos 服务发现与配置
+    implementation ('com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery') {
+        exclude group: 'org.springframework.cloud', module: 'spring-cloud-starter-netflix-ribbon'
+    }
+    implementation 'com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-config'
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'
+
+    // 负载均衡 (Gateway 强依赖)
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+
+    // Redis (通常用于网关限流或鉴权缓存)
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // JWT 相关
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // 工具类
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // 测试
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// 自动加载 .env 环境变量配置 (针对 bootRun)
+tasks.withType(JavaExec) {
+    // 假设 .env 放在 gateway 目录或项目根目录
+    def envFile = file(".env") 
+    if (!envFile.exists()) {
+        envFile = file("../.env")
+    }
+
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            if (line.trim() && !line.startsWith("#") && line.contains("=")) {
+                def parts = line.split("=", 2)
+                environment parts[0].trim(), parts[1].trim()
+            }
+        }
+    }
+}
