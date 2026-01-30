@@ -411,9 +411,12 @@ class Constants:
     
     USER_NO_ADMIN_PERMISSION_MESSAGE: str = "权限不足，仅管理员可访问"
     """权限不足消息"""
-    
+
     PERMISSION_CHECK_FAILED_MESSAGE: str = "权限检查失败"
     """权限检查失败消息"""
+
+    USER_NOT_EXISTS_ERROR: str = "用户不存在"
+    """用户不存在错误消息"""
     
     # SQL 语句
     

@@ -3,19 +3,22 @@ from typing import Any
 import hashlib
 import time
 from fastapi import Depends
-from api.mapper import AiHistoryMapper, get_ai_history_mapper
+from api.mapper import AiHistoryMapper, get_ai_history_mapper, UserMapper, get_user_mapper
 from common.utils import Constants
+from common.exceptions import BusinessException
 from entity.po import AiHistory
 
 class AiHistoryService:
     """AI 历史记录 Service"""
     
     def __init__(
-            self, 
-            ai_history_mapper: AiHistoryMapper = None
+            self,
+            ai_history_mapper: AiHistoryMapper = None,
+            user_mapper: UserMapper = None
         ):
         self.ai_history_mapper = ai_history_mapper
-        # 用于短时间去重的缓存（生产环境建议用 Redis）
+        self.user_mapper = user_mapper
+        # 用于短时间去重的缓存
         self._request_cache = {}
         
     def create_ai_history(self, ai_history: Any, db: Any) -> Any:
@@ -64,13 +67,20 @@ class AiHistoryService:
         return data
     
     def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
+        # 检查用户是否存在
+        user = self.user_mapper.get_user_by_id(user_id, db)
+        if not user:
+            raise BusinessException(Constants.USER_NOT_EXISTS_ERROR)
+
         self.ai_history_mapper.delete_ai_history_by_userid(db, user_id)
 
     
 @lru_cache
 def get_ai_history_service(
-        ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper)
+        ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
+        user_mapper: UserMapper = Depends(get_user_mapper)
     ) -> AiHistoryService:
     return AiHistoryService(
-            ai_history_mapper
+            ai_history_mapper,
+            user_mapper
         )
