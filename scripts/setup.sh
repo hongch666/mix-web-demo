@@ -571,7 +571,7 @@ main() {
     log_info "接下来请:"
     log_info "1. 配置各服务的 yaml 配置文件"
     log_info "2. 启动必要的基础服务 (MySQL, Redis, MongoDB 等)"
-    log_info "3. 使用 ./services.sh multi 启动所有服务"
+    log_info "3. 使用 ./services.sh seq 启动所有服务"
     echo ""
 }
 
