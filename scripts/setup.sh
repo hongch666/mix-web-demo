@@ -148,22 +148,50 @@ setup_spring() {
     
     cd "$WORKDIR/spring"
     
+    # 同时使用 Gradle 和 Maven 安装依赖
+    local spring_build_success=false
+    
+    if command_exists gradle; then
+        log_info "使用 Gradle 构建 Spring..."
+        if gradle clean build -x test; then
+            log_info "Gradle 构建成功"
+            spring_build_success=true
+        else
+            log_warn "Gradle 构建失败，尝试使用 Maven"
+        fi
+    fi
+    
     if command_exists mvn; then
-        log_info "检测到全局 Maven,使用 mvn 安装依赖..."
+        log_info "使用 Maven 安装 Spring 依赖..."
         mvn clean install
-    else
-        log_warn "未检测到全局 Maven,使用 mvnw 安装依赖..."
+        spring_build_success=true
+    elif [ "$spring_build_success" = false ]; then
+        log_warn "使用 mvnw 构建 Spring..."
         chmod +x mvnw
         ./mvnw clean install
     fi
     
     cd "$WORKDIR/gateway"
     
+    # Gateway 同样同时使用 Gradle 和 Maven
+    local gateway_build_success=false
+    
+    if command_exists gradle; then
+        log_info "使用 Gradle 构建 Gateway..."
+        if gradle clean build -x test; then
+            log_info "Gradle 构建成功"
+            gateway_build_success=true
+        else
+            log_warn "Gradle 构建失败，尝试使用 Maven"
+        fi
+    fi
+    
     if command_exists mvn; then
-        log_info "安装 Gateway 依赖..."
+        log_info "使用 Maven 安装 Gateway 依赖..."
         mvn clean install
-    else
-        log_info "使用 mvnw 安装 Gateway 依赖..."
+        gateway_build_success=true
+    elif [ "$gateway_build_success" = false ]; then
+        log_info "使用 mvnw 构建 Gateway..."
         chmod +x mvnw
         ./mvnw clean install
     fi
@@ -340,6 +368,16 @@ check_prerequisites() {
         log_info "npm 版本: $npm_version"
     fi
     
+    # 检查 Maven 或 Gradle (至少需要一个)
+    if ! command_exists mvn && ! command_exists gradle; then
+        missing_tools+=("Maven 或 Gradle (至少安装其中一个)")
+    else
+        if command_exists mvn; then
+            mvn_version=$(mvn --version | head -n 1)
+            log_info "$mvn_version"
+        fi
+    fi
+    
     # 检查 Bun (可选)
     if ! command_exists bun; then
         log_warn "Bun 未安装"
@@ -358,6 +396,38 @@ check_prerequisites() {
     fi
     
     log_info "环境检查通过!"
+}
+
+# 检查 Gradle
+check_gradle() {
+    log_info "检查 Gradle..."
+    
+    if ! command_exists gradle; then
+        log_warn "未检测到全局 Gradle (可选)"
+        log_info "Gradle 用于加速 Spring/Gateway 构建"
+        echo ""
+        echo "安装 Gradle 的方法:"
+        echo "  macOS (使用 Homebrew):"
+        echo "    brew install gradle"
+        echo ""
+        echo "  Linux (Ubuntu/Debian):"
+        echo "    sudo apt-get install gradle"
+        echo ""
+        echo "  Linux (CentOS/RHEL):"
+        echo "    sudo yum install gradle"
+        echo ""
+        echo "  Linux (Arch):"
+        echo "    sudo pacman -S gradle"
+        echo ""
+        echo "  或从官网下载: https://gradle.org/install/"
+        echo ""
+        log_warn "未安装 Gradle 时将使用 Maven 进行构建"
+        return 0
+    fi
+    
+    local gradle_version=$(gradle --version | head -n 1)
+    log_info "Gradle 已安装: $gradle_version"
+    return 0
 }
 
 # 检查并安装 Bun
@@ -440,6 +510,10 @@ main() {
     
     # 检查前置条件
     check_prerequisites
+    echo ""
+    
+    # 检查 Gradle (可选)
+    check_gradle
     echo ""
     
     # 创建目录
