@@ -1,6 +1,8 @@
 package com.hcsy.spring.common.config;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +15,7 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class RedisConnectionConfig {
 
     private final SimpleLogger logger;
@@ -51,7 +54,7 @@ public class RedisConnectionConfig {
             logger.info(Constants.REDIS_PASSWORD);
         }
 
-        logger.info(Constants.REDIS_CONNECT, host, port, database);
+        log.info(Constants.REDIS_CONNECT, host, port, database);
         return new LettuceConnectionFactory(config);
     }
 }

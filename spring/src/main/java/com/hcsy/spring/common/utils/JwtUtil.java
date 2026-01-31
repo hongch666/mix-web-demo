@@ -4,6 +4,8 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.config.JwtProperties;
@@ -17,6 +19,7 @@ import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtUtil {
     private final JwtProperties jwtProperties;
     private final SimpleLogger logger;
@@ -29,7 +32,7 @@ public class JwtUtil {
             throw new BusinessException(Constants.JWT_NOT_NULL);
         }
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
-        logger.info(Constants.JWT_INIT);
+        log.info(Constants.JWT_INIT);
     }
 
     /**

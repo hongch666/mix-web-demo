@@ -674,7 +674,7 @@ public class Constants {
     /**
      * Redis连接消息
      */
-    public static String REDIS_CONNECT = "Redis 连接配置: %s:%d (DB: %d)";
+    public static String REDIS_CONNECT = "Redis 连接配置: {}:{} (DB: {})";
 
     /**
      * 业务异常消息
