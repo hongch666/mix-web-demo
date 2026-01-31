@@ -12,20 +12,32 @@ PASSWORD: str = load_config("database")["mysql"]["password"]
 
 DATABASE_URL: str = f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 
+# 从配置文件读取连接池参数
+mysql_config = load_config("database")["mysql"]
+POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
+MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
+POOL_RECYCLE: int = int(mysql_config.get("pool_recycle", 3600))
+POOL_PRE_PING: bool = mysql_config.get("pool_pre_ping", True)
+POOL_TIMEOUT: int = int(mysql_config.get("pool_timeout", 30))
+READ_TIMEOUT: int = int(mysql_config.get("read_timeout", 10))
+WRITE_TIMEOUT: int = int(mysql_config.get("write_timeout", 10))
+AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
+ECHO: bool = mysql_config.get("echo", False)
+
 # 配置连接池参数以支持高并发访问
 engine = create_engine(
     DATABASE_URL, 
-    echo=True,
+    echo=ECHO,
     poolclass=QueuePool,
-    pool_size=30,           # 基础连接池大小30个
-    max_overflow=80,        # 最多额外创建80个连接，总共可支持110个并发
-    pool_recycle=3600,      # 1小时回收一次连接
-    pool_pre_ping=True,     # 每次取连接前进行ping检查
-    pool_timeout=30,        # 获取连接的超时时间（秒）
+    pool_size=POOL_SIZE,                    # 基础连接池大小
+    max_overflow=MAX_OVERFLOW,              # 最多额外创建的连接数
+    pool_recycle=POOL_RECYCLE,              # 连接回收时间（秒）
+    pool_pre_ping=POOL_PRE_PING,            # 每次取连接前进行ping检查
+    pool_timeout=POOL_TIMEOUT,              # 获取连接的超时时间（秒）
     connect_args={
-        "read_timeout": 10,     # pymysql 读超时（秒）
-        "write_timeout": 10,    # pymysql 写超时（秒）
-        "autocommit": False
+        "read_timeout": READ_TIMEOUT,       # pymysql 读超时（秒）
+        "write_timeout": WRITE_TIMEOUT,     # pymysql 写超时（秒）
+        "autocommit": AUTOCOMMIT
     }
 )
 
