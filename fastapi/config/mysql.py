@@ -1,4 +1,5 @@
 from sqlmodel import create_engine, Session
+from sqlalchemy.pool import QueuePool
 from typing import Generator, Optional, List
 from config import load_config
 from common.utils import fileLogger as logger, Constants
@@ -10,7 +11,23 @@ USER: str = load_config("database")["mysql"]["user"]
 PASSWORD: str = load_config("database")["mysql"]["password"]
 
 DATABASE_URL: str = f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
-engine = create_engine(DATABASE_URL, echo=True)
+
+# 配置连接池参数以支持高并发访问
+engine = create_engine(
+    DATABASE_URL, 
+    echo=True,
+    poolclass=QueuePool,
+    pool_size=30,           # 基础连接池大小30个
+    max_overflow=80,        # 最多额外创建80个连接，总共可支持110个并发
+    pool_recycle=3600,      # 1小时回收一次连接
+    pool_pre_ping=True,     # 每次取连接前进行ping检查
+    pool_timeout=30,        # 获取连接的超时时间（秒）
+    connect_args={
+        "timeout": 10,
+        "check_same_thread": False,
+        "autocommit": False
+    }
+)
 
 def get_db() -> Generator[Session, None, None]:
     with Session(engine) as session:

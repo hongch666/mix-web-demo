@@ -43,64 +43,73 @@ async def send_message(
     # 使用实际用户ID替代请求中的user_id
     actual_user_id: str = user_id or "1"
     
-    # 根据请求的服务类型选择对应的AI服务
-    if request.service == AIServiceType.GEMINI:
-        logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
-        response_message: str = await geminiService.simple_chat(
-            message=request.message,
+    try:
+        # 根据请求的服务类型选择对应的AI服务
+        if request.service == AIServiceType.GEMINI:
+            logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await geminiService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db
+            )
+        elif request.service == AIServiceType.QWEN:
+            logger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await qwenService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db
+            )
+        else:  # 默认使用豆包服务
+            logger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await doubaoService.simple_chat(
+                message=request.message,
+                user_id=actual_user_id,
+                db=db
+            )
+        
+        # 生成会话ID（如果没有提供）
+        conversation_id: str = request.conversation_id or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
+        
+        # 检查是否有错误
+        if "异常" in response_message or "错误" in response_message or "失败" in response_message:
+            return ChatResponse(
+                code=0,
+                data=None,
+                msg=response_message
+            )
+        
+        # 保存AI历史记录
+        try:
+            history = AiHistory(
+                user_id=int(actual_user_id),
+                ask=request.message,
+                reply=response_message,
+                thinking=None,
+                ai_type=request.service.value
+            )
+            await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
+            logger.info(f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
+        except Exception as history_error:
+            logger.error(f"保存AI历史记录失败: {str(history_error)}")
+        
+        # 成功响应 - 按照success格式
+        response_data: ChatResponseData = ChatResponseData(
+            message=response_message,
+            conversation_id=conversation_id,
+            chat_id=chat_id,
             user_id=actual_user_id,
-            db=db
+            timestamp=int(time.time())
         )
-    elif request.service == AIServiceType.QWEN:
-        logger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
-        response_message: str = await qwenService.simple_chat(
-            message=request.message,
-            user_id=actual_user_id,
-            db=db
-        )
-    else:  # 默认使用豆包服务
-        logger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
-        response_message: str = await doubaoService.simple_chat(
-            message=request.message,
-            user_id=actual_user_id,
-            db=db
-        )
+        return success(response_data)
     
-    # 生成会话ID（如果没有提供）
-    conversation_id: str = request.conversation_id or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
-    chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
-    
-    # 检查是否有错误
-    if "异常" in response_message or "错误" in response_message or "失败" in response_message:
+    except Exception as e:
+        logger.error(f"聊天接口异常: {str(e)}", exc_info=True)
         return ChatResponse(
             code=0,
             data=None,
-            msg=response_message
+            msg=f"聊天服务异常: {str(e)}"
         )
-    
-    # 保存AI历史记录
-    try:
-        history = AiHistory(
-            user_id=int(actual_user_id),
-            ask=request.message,
-            reply=response_message,
-            thinking=None,
-            ai_type=request.service.value
-        )
-        await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
-        logger.info(f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
-    except Exception as history_error:
-        logger.error(f"保存AI历史记录失败: {str(history_error)}")
-    
-    # 成功响应 - 按照success格式
-    response_data: ChatResponseData = ChatResponseData(
-        message=response_message,
-        conversation_id=conversation_id,
-        chat_id=chat_id,
-        user_id=actual_user_id,
-        timestamp=int(time.time())
-    )
-    return success(response_data)
 
 @router.post(
     "/stream",
@@ -112,7 +121,6 @@ async def send_message(
 async def stream_message(
     httpRequest: Request,
     request: ChatRequest,
-    db: Session = Depends(get_db),
     geminiService: GeminiService = Depends(get_gemini_service),
     qwenService: QwenService = Depends(get_qwen_service),
     doubaoService: DoubaoService = Depends(get_doubao_service),
@@ -128,6 +136,11 @@ async def stream_message(
     async def event_generator():
         message_acc = ""
         thinking_acc = ""
+        # 在 event_generator 内部创建 db session，确保流式处理完成后立即释放
+        from config import get_db
+        db_gen = get_db()
+        db = next(db_gen)
+        
         try:
             # 根据请求的服务类型选择对应的AI服务
             if request.service == AIServiceType.GEMINI:
@@ -188,7 +201,7 @@ async def stream_message(
                 logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
                 yield f"data: {json_str}\n\n"
             
-            # 流式聊天完成后保存AI历史记录
+            # 流式聊天完成后保存AI历史记录（在完成流式传输后）
             if message_acc:
                 try:
                     history = AiHistory(
@@ -211,5 +224,9 @@ async def stream_message(
                 "msg": f"流式聊天服务异常: {str(e)}"
             }
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+        finally:
+            # 确保 session 被正确关闭，释放数据库连接
+            if db:
+                db.close()
     
     return StreamingResponse(event_generator(), media_type="text/event-stream")
