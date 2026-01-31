@@ -216,7 +216,25 @@ bun install # 或者使用bun安装
 
 ### FastAPI 部分
 
-使用 uv 进行项目管理：
+使用标准 venv 和 requirements.txt
+
+```bash
+cd fastapi
+
+# 创建虚拟环境
+python3 -m venv venv
+
+# 激活虚拟环境
+source venv/bin/activate
+
+# 安装依赖
+pip install -r requirements.txt
+
+# 运行项目
+python main.py
+```
+
+使用 uv 进行项目管理
 
 ```bash
 cd fastapi
@@ -437,7 +455,7 @@ default = true
 
 ### Spring 服务（包括 gateway 网关）
 
-**使用 Maven 构建**：
+**使用 Maven 运行**：
 
 ```bash
 # 运行Spring服务
@@ -451,7 +469,7 @@ mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
 ```
 
-**使用 Gradle 构建（推荐）**：
+**使用 Gradle 运行（推荐）**：
 
 ```bash
 # 运行Spring服务
@@ -475,17 +493,36 @@ fresh -c ~/.freshrc # 运行项目(有修改自启插件)
 
 ### NestJS 服务
 
+**使用 npm 运行**：
+
 ```bash
 # 运行NestJS服务
 cd nestjs
-npm run start # development
-npm run start:dev # watch mode
-npm run start:prod # production mode
-npm run start:bun:start # bun运行
-npm run start:bun:dev # bun运行(watch)
+npm run start # npm development 模式运行
+npm run start:dev # npm watch 模式运行
+npm run start:prod # npm production 模式运行
+```
+
+**使用 npm 运行**：
+
+```bash
+cd nestjs
+npm run start:bun:start # bun 运行
+npm run start:bun:dev # bun watch 模式运行
 ```
 
 ### FastAPI 服务
+
+**使用 venv 运行**：
+
+```bash
+# 运行FastAPI服务
+cd fastapi
+source venv/bin/activate # 激活虚拟环境
+python main.py
+```
+
+**使用 uv 运行**：
 
 ```bash
 # 运行FastAPI服务
@@ -1303,23 +1340,23 @@ CREATE EXTENSION IF NOT EXISTS vector;
 **文件位置**: `spring/.env`
 
 ```dotenv
-# Spring Server Configuration
+# Spring 服务配置
 SERVER_ADDRESS=0.0.0.0
 SERVER_PORT=8081
 
-# Tomcat Configuration
+# Tomcat 配置
 TOMCAT_THREADS_MAX=25
 TOMCAT_ACCEPT_COUNT=25
 TOMCAT_MAX_CONNECTIONS=100
 
-# Database Configuration
+# MySQL 配置
 DB_HOST=localhost
 DB_PORT=3306
 DB_NAME=demo
 DB_USERNAME=root
 DB_PASSWORD=csc20040312
 
-# Redis Configuration
+# Redis 配置
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DATABASE=0
@@ -1330,27 +1367,27 @@ REDIS_POOL_MAX_IDLE=5
 REDIS_POOL_MIN_IDLE=1
 REDIS_TIMEOUT=3000
 
-# RabbitMQ Configuration
+# RabbitMQ 配置
 RABBITMQ_HOST=127.0.0.1
 RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=hcsy
 RABBITMQ_PASSWORD=123456
 RABBITMQ_VHOST=test
 
-# Mail Configuration
+# 邮件配置
 MAIL_HOST=smtp.qq.com
 MAIL_PORT=465
 MAIL_USERNAME=your-email@qq.com
 MAIL_PASSWORD=your-email-password
 
-# Logging Configuration
+# 日志配置
 LOGGING_PATH=../logs/spring
 
-# JWT Configuration
+# JWT 配置
 JWT_SECRET=xxx
 JWT_EXPIRATION=86400000
 
-# Nacos Configuration
+# Nacos 配置
 NACOS_SERVER=127.0.0.1:8848
 ```
 
@@ -1359,11 +1396,11 @@ NACOS_SERVER=127.0.0.1:8848
 **文件位置**: `gin/.env`
 
 ```dotenv
-# Gin Server Configuration
+# Gin 服务配置
 SERVER_IP=127.0.0.1
 SERVER_PORT=8082
 
-# Nacos Configuration
+# Nacos 配置
 NACOS_IP=127.0.0.1
 NACOS_PORT=8848
 NACOS_NAMESPACE=public
@@ -1373,7 +1410,7 @@ NACOS_CLUSTER_NAME=DEFAULT
 NACOS_CACHE_DIR=../static/tmp/nacos/cache
 NACOS_LOG_DIR=../static/tmp/nacos/log
 
-# MySQL Database Configuration
+# MySQL 配置
 DB_MYSQL_HOST=127.0.0.1
 DB_MYSQL_PORT=3306
 DB_MYSQL_USERNAME=root
@@ -1382,31 +1419,31 @@ DB_MYSQL_DBNAME=demo
 DB_MYSQL_CHARSET=utf8mb4
 DB_MYSQL_LOC=Local
 
-# Elasticsearch Configuration
+# Elasticsearch 配置
 DB_ES_HOST=127.0.0.1
 DB_ES_PORT=9200
 # DB_ES_USERNAME=
 # DB_ES_PASSWORD=
 DB_ES_SNIFF=false
 
-# MongoDB Configuration
+# MongoDB 配置
 DB_MONGODB_HOST=localhost
 DB_MONGODB_PORT=27017
 # DB_MONGODB_USERNAME=
 # DB_MONGODB_PASSWORD=
 DB_MONGODB_DATABASE=demo
 
-# RabbitMQ Configuration
+# RabbitMQ 配置
 RABBITMQ_USERNAME=hcsy
 RABBITMQ_PASSWORD=123456
 RABBITMQ_HOST=127.0.0.1
 RABBITMQ_PORT=5672
 RABBITMQ_VHOST=test
 
-# Logging Configuration
+# 日志配置
 LOGS_PATH=../logs/gin
 
-# Search Configuration
+# 搜索配置
 SEARCH_ES_SCORE_WEIGHT=0.25
 SEARCH_AI_RATING_WEIGHT=0.15
 SEARCH_USER_RATING_WEIGHT=0.10
@@ -1427,17 +1464,17 @@ SEARCH_RECENCY_DECAY_DAYS=30
 **文件位置**: `nestjs/.env`
 
 ```dotenv
-# NestJS Server Configuration
+# NestJS 服务配置
 SERVER_IP=127.0.0.1
 SERVER_PORT=8083
 SERVER_SERVICE_NAME=nestjs
 
-# Nacos Configuration
+# Nacos 配置
 NACOS_SERVER=127.0.0.1
 NACOS_NAMESPACE=public
 NACOS_CLUSTER_NAME=DEFAULT
 
-# Database Configuration
+# MySQL 配置
 DB_TYPE=mysql
 DB_HOST=localhost
 DB_PORT=3306
@@ -1447,24 +1484,24 @@ DB_DATABASE=demo
 DB_SYNCHRONIZE=false
 DB_LOGGING=false
 
-# MongoDB Configuration
+# MongoDB 配置
 DB_MONGODB_HOST=localhost
 DB_MONGODB_PORT=27017
 # DB_MONGODB_USERNAME=
 # DB_MONGODB_PASSWORD=
 DB_MONGODB_DATABASE=demo
 
-# RabbitMQ Configuration
+# RabbitMQ 配置
 RABBITMQ_HOST=localhost
 RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=hcsy
 RABBITMQ_PASSWORD=123456
 RABBITMQ_VHOST=test
 
-# Files Configuration
+# 文件配置
 FILES_WORD_PATH=../static/word
 
-# Logging Configuration
+# 日志配置
 LOGS_PATH=../logs/nestjs
 ```
 
@@ -1473,32 +1510,41 @@ LOGS_PATH=../logs/nestjs
 **文件位置**: `fastapi/.env`
 
 ```dotenv
-# FastAPI Server Configuration
+# FastAPI 服务配置
 SERVER_IP=127.0.0.1
 SERVER_PORT=8084
 SERVER_RELOAD=True
 
-# Nacos Configuration
+# Nacos 配置
 NACOS_SERVER=127.0.0.1:8848
 NACOS_NAMESPACE=public
 NACOS_SERVICE_NAME=fastapi
 NACOS_GROUP_NAME=DEFAULT_GROUP
 
-# RabbitMQ Configuration
+# RabbitMQ 配置
 RABBITMQ_HOST=127.0.0.1
 RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=hcsy
 RABBITMQ_PASSWORD=123456
 RABBITMQ_VHOST=test
 
-# MySQL Database Configuration
+# MySQL 配置
 DB_MYSQL_HOST=localhost
 DB_MYSQL_PORT=3306
 DB_MYSQL_DATABASE=demo
 DB_MYSQL_USER=root
 DB_MYSQL_PASSWORD=csc20040312
+DB_MYSQL_POOL_SIZE=30                           # 基础连接池大小
+DB_MYSQL_MAX_OVERFLOW=80                        # 最多额外创建的连接数
+DB_MYSQL_POOL_RECYCLE=3600                      # 连接回收时间（秒），1小时回收一次
+DB_MYSQL_POOL_PRE_PING=True                     # 每次取连接前进行ping检查
+DB_MYSQL_POOL_TIMEOUT=30                        # 获取连接的超时时间（秒）
+DB_MYSQL_READ_TIMEOUT=10                        # pymysql读超时（秒）
+DB_MYSQL_WRITE_TIMEOUT=10                       # pymysql写超时（秒）
+DB_MYSQL_AUTOCOMMIT=False                       # 自动提交事务
+DB_MYSQL_ECHO=False                             # 是否打印SQL语句到日志
 
-# PostgreSQL Database Configuration
+# PostgreSQL 配置
 DB_POSTGRES_HOST=localhost
 DB_POSTGRES_PORT=5432
 DB_POSTGRES_DATABASE=demo
@@ -1509,14 +1555,14 @@ DB_POSTGRES_POOL_SIZE=10
 DB_POSTGRES_MAX_OVERFLOW=20
 DB_POSTGRES_ECHO=False
 
-# MongoDB Configuration
+# MongoDB 配置
 DB_MONGODB_HOST=localhost
 DB_MONGODB_PORT=27017
 # DB_MONGODB_USERNAME=
 # DB_MONGODB_PASSWORD=
 DB_MONGODB_DATABASE=demo
 
-# Hive Configuration
+# Hive 配置
 DB_HIVE_HOST=127.0.0.1
 DB_HIVE_PORT=10000
 # DB_HIVE_USERNAME=hive_user
@@ -1525,7 +1571,7 @@ DB_HIVE_DATABASE=default
 DB_HIVE_TABLE=articles
 DB_HIVE_CONTAINER=hive-server
 
-# Redis Configuration
+# Redis 配置
 DB_REDIS_HOST=127.0.0.1
 DB_REDIS_PORT=6379
 # DB_REDIS_USERNAME=default
@@ -1534,42 +1580,42 @@ DB_REDIS_DB=6
 DB_REDIS_DECODE_RESPONSES=True
 DB_REDIS_MAX_CONNECTIONS=10
 
-# OSS Configuration
+# OSS 配置
 OSS_BUCKET_NAME=mix-web-demo
 OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
 OSS_ACCESS_KEY_ID=your-key-id
 OSS_ACCESS_KEY_SECRET=your-key-secret
 
-# WordCloud Configuration
+# WordCloud 配置
 WORDCLOUD_FONT_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
 WORDCLOUD_WIDTH=800
 WORDCLOUD_HEIGHT=400
 WORDCLOUD_BG_COLOR=white
 
-# Files Configuration
+# 文件配置
 FILES_PIC_PATH=../static/pic
 FILES_EXCEL_PATH=../static/excel
 FILES_UPLOAD_PATH=../static/upload
 
-# Logging Configuration
+# 日志配置
 LOGS_PATH=../logs/fastapi
 
-# Gemini Configuration
+# Gemini 配置
 GEMINI_MODEL=gemini-2.0-flash
 GEMINI_BASE_URL=https://api.openai-proxy.org/v1
 GEMINI_API_KEY=your-api-key
 
-# Qwen Configuration
+# Qwen 配置
 QWEN_MODEL=qwen-flash
 QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 QWEN_API_KEY=your-api-key
 
-# Doubao Configuration
+# Doubao 配置
 DOUBAO_MODEL=doubao-1-5-lite-32k-250115
 DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
 DOUBAO_API_KEY=your-api-key
 
-# Embedding Configuration
+# Embedding 配置
 EMBEDDING_MODEL=text-embedding-v3
 EMBEDDING_TOP_K=5
 EMBEDDING_DIMENSION=1536
@@ -1581,17 +1627,17 @@ EMBEDDING_SIMILARITY_THRESHOLD=0.3
 **文件位置**: `gateway/.env`
 
 ```dotenv
-# Gateway Server Configuration
+# Gateway 服务配置
 SERVER_PORT=8080
 
-# Nacos Configuration
+# Nacos 配置
 NACOS_SERVER=127.0.0.1:8848
 
-# Gin Service Configuration
+# Gin 服务配置（长连接特殊配置）
 GIN_HOST=localhost
 GIN_PORT=8082
 
-# JWT Configuration
+# JWT 配置
 JWT_SECRET=xxx
 JWT_EXPIRATION=2592000000
 ```
