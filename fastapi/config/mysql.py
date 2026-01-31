@@ -23,8 +23,8 @@ engine = create_engine(
     pool_pre_ping=True,     # 每次取连接前进行ping检查
     pool_timeout=30,        # 获取连接的超时时间（秒）
     connect_args={
-        "timeout": 10,
-        "check_same_thread": False,
+        "read_timeout": 10,     # pymysql 读超时（秒）
+        "write_timeout": 10,    # pymysql 写超时（秒）
         "autocommit": False
     }
 )
