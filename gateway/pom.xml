@@ -10,9 +10,9 @@
     </parent>
     <groupId>com.hcsy</groupId>
     <artifactId>gateway</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>gateway</name>
-    <description>Spring网关</description>
+    <description>Gateway 网关</description>
     <url/>
     <licenses>
         <license/>
