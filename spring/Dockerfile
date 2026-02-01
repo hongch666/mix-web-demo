@@ -36,8 +36,8 @@ RUN mkdir -p /app/logs/spring && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload
 
-# 暴露端口（默认8083）
-EXPOSE 8083
+# 暴露端口（默认8081）
+EXPOSE 8081
 
 # 设置环境变量
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"

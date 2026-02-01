@@ -877,33 +877,11 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 | 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
 | ----------- | ---- | -------------------- | ----------------------- | ---------------- |
-| **Gin**     | 8081 | `mix-gin:latest`     | `mix-gin-container`     | Go 1.23 + Alpine |
-| **NestJS**  | 8082 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
-| **Spring**  | 8083 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
-| **Gateway** | 9000 | `mix-gateway:latest` | `mix-gateway-container` | Java 17 + Alpine |
+| **Gateway** | 8080 | `mix-gateway:latest` | `mix-gateway-container` | Java 17 + Alpine |
+| **Spring**  | 8081 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
+| **Gin**     | 8082 | `mix-gin:latest`     | `mix-gin-container`     | Go 1.23 + Alpine |
+| **NestJS**  | 8083 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
 | **FastAPI** | 8084 | `mix-fastapi:latest` | `mix-fastapi-container` | Python 3.12      |
-
-### 微服务容器特性
-
-1. **多阶段构建优化**
-
-   - Gin/NestJS/Spring 采用多阶段构建，显著减小镜像体积
-   - 生产环境只包含必要的运行时，无构建工具
-
-2. **配置文件支持**
-
-   - 支持挂载 `application.yaml` 和 `application-secret.yaml`
-   - 无需重新构建镜像即可修改配置
-
-3. **数据持久化**
-
-   - 日志目录持久化：`logs/<service>/`
-   - 文件上传目录持久化：`static/`
-
-4. **健康检查**
-
-   - 容器具有健康检查配置
-   - 支持自动重启（`unless-stopped` 策略）
 
 ### 高级用法
 
@@ -916,7 +894,7 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 # 手动启动容器时指定配置文件
 docker run -d --name mix-spring-custom \
-  -p 8083:8083 \
+  -p 8081:8081 \
   -v $(pwd)/spring/application.yaml:/app/application.yaml \
   -v $(pwd)/spring/application-secret.yaml:/app/application-secret.yaml \
   mix-spring:latest
@@ -1010,8 +988,8 @@ minikube image load mix-nestjs:latest
 ./services.sh k8s logs gateway
 
 # 5. 端口转发（本地访问）
-./services.sh k8s port-forward spring 8083
-./services.sh k8s port-forward gateway 9000
+./services.sh k8s port-forward spring 8081
+./services.sh k8s port-forward gateway 8080
 
 # 6. 进入Pod交互式终端
 ./services.sh k8s exec spring
@@ -1124,18 +1102,6 @@ kubectl top pods -n mix-web-demo
 kubectl get configmap -n mix-web-demo
 kubectl describe configmap <config-name> -n mix-web-demo
 ```
-
-### Docker 和 K8s 对比
-
-| 对比项       | Docker              | Kubernetes            |
-| ------------ | ------------------- | --------------------- |
-| **部署范围** | 单机或 Docker Swarm | 集群（多机）          |
-| **可扩展性** | 有限                | 自动扩展(HPA)         |
-| **资源管理** | 基础                | 高级(requests/limits) |
-| **自动恢复** | 手动                | 自动(ReplicaSet)      |
-| **更新策略** | 重启容器            | 滚动更新              |
-| **配置管理** | 环境变量+文件       | ConfigMap/Secret      |
-| **用途**     | 开发、小型生产      | 大规模生产、云原生    |
 
 ## 基础服务组件初始化
 

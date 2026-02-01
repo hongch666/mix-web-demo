@@ -44,8 +44,8 @@ RUN mkdir -p /app/logs/nestjs && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload
 
-# 暴露端口（默认8082）
-EXPOSE 8082
+# 暴露端口（默认8083）
+EXPOSE 8083
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

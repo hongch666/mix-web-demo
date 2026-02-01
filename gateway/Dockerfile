@@ -36,8 +36,8 @@ RUN mkdir -p /app/logs/gateway && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload
 
-# 暴露端口（默认9000）
-EXPOSE 9000
+# 暴露端口（默认8080）
+EXPOSE 8080
 
 # 设置环境变量
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"

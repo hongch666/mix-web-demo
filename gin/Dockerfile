@@ -42,12 +42,12 @@ RUN mkdir -p /app/logs/gin && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload
 
-# 暴露端口（默认8081）
-EXPOSE 8081
+# 暴露端口（默认8082）
+EXPOSE 8082
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8081/health || exit 1
+    CMD curl -f http://localhost:8082/api_gin/gin || exit 1
 
 # 启动命令
 CMD ["./gin-app"]
