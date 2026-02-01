@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.hcsy'
-version = '0.0.1-SNAPSHOT'
+version = '1.0.0'
 
 java {
     toolchain {
@@ -21,11 +21,10 @@ configurations {
 
 repositories {
     mavenCentral()
-    // 如果你在中国，建议加上阿里云镜像加速
+    // 阿里云镜像加速
     maven { url 'https://maven.aliyun.com/repository/public/' }
 }
 
-// 对应 Maven 的 <dependencyManagement>
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:2023.0.5"

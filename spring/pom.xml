@@ -13,9 +13,9 @@
 
     <groupId>com.hcsy</groupId>
     <artifactId>spring</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>spring</name>
-    <description>Spring微服务部分</description>
+    <description>Spring微服务</description>
 
     <properties>
         <java.version>17</java.version>
