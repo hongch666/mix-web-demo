@@ -37,26 +37,23 @@ export class NacosService implements OnModuleInit {
     this.client = new NacosNamingClient({
       logger: silentLogger,
       // Nacos 服务地址
-      serverList:
-        this.configService.get<string>('nacos.server-addr') || '127.0.0.1:8848',
+      serverList: this.configService.get<string>('nacos.server-addr')!,
       // 命名空间 ID
-      namespace: this.configService.get<string>('nacos.namespace') || 'public',
+      namespace: this.configService.get<string>('nacos.namespace')!,
     });
 
     await this.client.ready();
 
     // 注册当前服务
     await this.client.registerInstance(
-      this.configService.get<string>('server.serviceName') || 'nestjs',
+      this.configService.get<string>('server.serviceName')!,
       {
-        ip: this.configService.get<string>('server.ip') || '127.0.0.1',
-        port: this.configService.get<string>('server.port') || 3000,
+        ip: this.configService.get<string>('server.ip')!,
+        port: this.configService.get<string>('server.port')!,
         weight: 1,
         ephemeral: true,
-        clusterName:
-          this.configService.get<string>('nacos.clusterName') || 'DEFAULT',
-        serviceName:
-          this.configService.get<string>('server.serviceName') || 'nestjs',
+        clusterName: this.configService.get<string>('nacos.clusterName')!,
+        serviceName: this.configService.get<string>('server.serviceName')!,
         enabled: true,
         healthy: true,
         metadata: {
