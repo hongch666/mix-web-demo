@@ -1,6 +1,6 @@
 import uvicorn
 from typing import Dict, Any
-from api.app import create_app
+from api import create_app
 from config import load_config
 
 app = create_app()
