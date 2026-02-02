@@ -1,9 +1,9 @@
 package mapper
 
 import (
-	"gin_proj/api/mapper/chat"
-	"gin_proj/api/mapper/search"
-	"gin_proj/api/mapper/sync"
+	"github.com/hongch666/mix-web-demo/gin/api/mapper/chat"
+	"github.com/hongch666/mix-web-demo/gin/api/mapper/search"
+	"github.com/hongch666/mix-web-demo/gin/api/mapper/sync"
 )
 
 type MapperGroup struct {

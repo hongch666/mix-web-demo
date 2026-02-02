@@ -1,10 +1,10 @@
 package service
 
 import (
-	"gin_proj/api/mapper"
-	chatpkg "gin_proj/api/service/chat"
-	searchpkg "gin_proj/api/service/search"
-	testpkg "gin_proj/api/service/test"
+	"github.com/hongch666/mix-web-demo/gin/api/mapper"
+	chatpkg "github.com/hongch666/mix-web-demo/gin/api/service/chat"
+	searchpkg "github.com/hongch666/mix-web-demo/gin/api/service/search"
+	testpkg "github.com/hongch666/mix-web-demo/gin/api/service/test"
 )
 
 type ServiceGroup struct {

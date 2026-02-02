@@ -1,9 +1,9 @@
 package test
 
 import (
-	"gin_proj/api/service/test"
-	"gin_proj/common/task"
-	"gin_proj/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/api/service/test"
+	"github.com/hongch666/mix-web-demo/gin/common/task"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
 
 	"github.com/gin-gonic/gin"
 )

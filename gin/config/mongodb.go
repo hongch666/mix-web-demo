@@ -3,9 +3,10 @@ package config
 import (
 	"context"
 	"fmt"
-	"gin_proj/common/exceptions"
 	"log"
 	"time"
+
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

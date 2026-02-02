@@ -1,11 +1,12 @@
 package search
 
 import (
-	"gin_proj/api/service/search"
-	"gin_proj/common/utils"
-	"gin_proj/entity/dto"
 	"net/http"
 	"strconv"
+
+	"github.com/hongch666/mix-web-demo/gin/api/service/search"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/entity/dto"
 
 	"github.com/gin-gonic/gin"
 )

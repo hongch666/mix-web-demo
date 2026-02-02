@@ -8,10 +8,11 @@ package main
 
 import (
 	"fmt"
-	"gin_proj/api"
-	"gin_proj/config"
 
-	_ "gin_proj/docs"
+	"github.com/hongch666/mix-web-demo/gin/api"
+	"github.com/hongch666/mix-web-demo/gin/config"
+
+	_ "github.com/hongch666/mix-web-demo/gin/docs"
 )
 
 func main() {

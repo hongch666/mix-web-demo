@@ -1,12 +1,13 @@
 package chat
 
 import (
-	"gin_proj/api/service/chat"
-	"gin_proj/common/utils"
-	"gin_proj/entity/dto"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/hongch666/mix-web-demo/gin/api/service/chat"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/entity/dto"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"

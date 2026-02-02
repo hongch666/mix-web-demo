@@ -1,6 +1,6 @@
 package vo
 
-import "gin_proj/entity/po"
+import "github.com/hongch666/mix-web-demo/gin/entity/po"
 
 type SearchVO struct {
 	Total int            `json:"total"`

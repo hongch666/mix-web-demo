@@ -3,13 +3,14 @@ package search
 import (
 	"context"
 	"encoding/json"
-	"gin_proj/api/mapper/search"
-	"gin_proj/common/exceptions"
-	"gin_proj/common/keys"
-	"gin_proj/common/utils"
-	"gin_proj/config"
-	"gin_proj/entity/dto"
-	"gin_proj/entity/vo"
+
+	"github.com/hongch666/mix-web-demo/gin/api/mapper/search"
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
+	"github.com/hongch666/mix-web-demo/gin/common/keys"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
+	"github.com/hongch666/mix-web-demo/gin/entity/dto"
+	"github.com/hongch666/mix-web-demo/gin/entity/vo"
 )
 
 type SearchService struct {

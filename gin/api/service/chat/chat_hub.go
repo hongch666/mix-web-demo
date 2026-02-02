@@ -3,9 +3,10 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
-	"gin_proj/common/utils"
-	"gin_proj/entity/dto"
 	"sync"
+
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/entity/dto"
 
 	"github.com/gorilla/websocket"
 )

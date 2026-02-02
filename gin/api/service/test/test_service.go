@@ -1,11 +1,12 @@
 package test
 
 import (
-	"gin_proj/common/client"
-	"gin_proj/common/exceptions"
-	"gin_proj/common/utils"
-	"gin_proj/config"
 	"net/http"
+
+	"github.com/hongch666/mix-web-demo/gin/common/client"
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
 
 	"github.com/gin-gonic/gin"
 )

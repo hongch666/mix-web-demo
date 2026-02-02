@@ -3,12 +3,13 @@ package task
 import (
 	"context"
 	"fmt"
-	"gin_proj/api/mapper"
-	"gin_proj/common/exceptions"
-	"gin_proj/common/utils"
-	"gin_proj/config"
-	"gin_proj/entity/po"
 	"time"
+
+	"github.com/hongch666/mix-web-demo/gin/api/mapper"
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
+	"github.com/hongch666/mix-web-demo/gin/entity/po"
 
 	"github.com/olivere/elastic"
 )

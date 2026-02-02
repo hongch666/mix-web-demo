@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"gin_proj/common/exceptions"
-	"gin_proj/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
 
 	"github.com/gin-gonic/gin"
 )

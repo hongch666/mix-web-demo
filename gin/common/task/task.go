@@ -2,7 +2,8 @@ package task
 
 import (
 	"fmt"
-	"gin_proj/common/utils"
+
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
 
 	"github.com/robfig/cron/v3"
 )

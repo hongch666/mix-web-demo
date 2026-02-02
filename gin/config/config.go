@@ -1,10 +1,11 @@
 package config
 
 import (
-	"gin_proj/common/exceptions"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"

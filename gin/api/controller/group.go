@@ -1,10 +1,10 @@
 package controller
 
 import (
-	chatpkg "gin_proj/api/controller/chat"
-	searchpkg "gin_proj/api/controller/search"
-	testpkg "gin_proj/api/controller/test"
-	"gin_proj/api/service"
+	chatpkg "github.com/hongch666/mix-web-demo/gin/api/controller/chat"
+	searchpkg "github.com/hongch666/mix-web-demo/gin/api/controller/search"
+	testpkg "github.com/hongch666/mix-web-demo/gin/api/controller/test"
+	"github.com/hongch666/mix-web-demo/gin/api/service"
 )
 
 type ControllerGroup struct {

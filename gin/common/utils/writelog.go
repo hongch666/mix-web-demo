@@ -2,12 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"gin_proj/common/exceptions"
-	"gin_proj/config"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
+	"github.com/hongch666/mix-web-demo/gin/config"
 )
 
 // writeLog 直接写入日志到文件

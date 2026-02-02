@@ -1,8 +1,8 @@
 package api
 
 import (
-	"gin_proj/api/controller"
-	"gin_proj/common/middleware"
+	"github.com/hongch666/mix-web-demo/gin/api/controller"
+	"github.com/hongch666/mix-web-demo/gin/common/middleware"
 
 	"github.com/gin-gonic/gin"
 

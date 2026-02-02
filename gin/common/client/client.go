@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gin_proj/common/keys"
-	"gin_proj/common/utils"
 	"io"
 	"io/ioutil"
 	"strings"
+
+	"github.com/hongch666/mix-web-demo/gin/common/keys"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
 
 	"net/http"
 	"net/url"

@@ -3,9 +3,10 @@ package sync
 import (
 	"context"
 	"fmt"
-	"gin_proj/common/exceptions"
-	"gin_proj/common/utils"
-	"gin_proj/config"
+
+	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
 )
 
 type CommentMapper struct{}

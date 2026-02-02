@@ -3,11 +3,12 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
-	"gin_proj/api/mapper/chat"
-	"gin_proj/common/utils"
-	"gin_proj/entity/dto"
-	"gin_proj/entity/po"
 	"time"
+
+	"github.com/hongch666/mix-web-demo/gin/api/mapper/chat"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/entity/dto"
+	"github.com/hongch666/mix-web-demo/gin/entity/po"
 )
 
 type ChatService struct {

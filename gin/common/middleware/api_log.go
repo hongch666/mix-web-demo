@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gin_proj/common/keys"
-	"gin_proj/common/utils"
-	"gin_proj/config"
 	"io"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/hongch666/mix-web-demo/gin/common/keys"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
 
 	"github.com/gin-gonic/gin"
 )

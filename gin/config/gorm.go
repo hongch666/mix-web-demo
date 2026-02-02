@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"gin_proj/entity/po"
+	"github.com/hongch666/mix-web-demo/gin/entity/po"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
