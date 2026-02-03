@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FocusDTO {
-
     @NotNull(message = "用户ID不能为空")
     private Long userId;
 

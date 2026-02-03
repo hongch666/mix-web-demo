@@ -9,7 +9,6 @@ import jakarta.validation.constraints.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserCreateDTO {
-
     @Size(min = 3, max = 20, message = "密码长度必须在3到20个字符之间")
     private String password = "123456";
 

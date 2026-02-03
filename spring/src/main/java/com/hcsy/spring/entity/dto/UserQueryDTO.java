@@ -6,7 +6,6 @@ import lombok.Data;
 @Data
 @Schema(description = "用户查询参数")
 public class UserQueryDTO {
-
     @Schema(description = "页码", example = "1")
     private int page = 1;
 

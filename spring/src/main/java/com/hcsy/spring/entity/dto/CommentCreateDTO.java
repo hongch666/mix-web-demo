@@ -29,5 +29,4 @@ public class CommentCreateDTO {
     @NotNull(message = "用户名不能为空")
     @Size(min = 1, message = "用户名不能为空")
     private String username;
-
 }

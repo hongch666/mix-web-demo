@@ -8,12 +8,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 用户注册 DTO（带邮箱验证）
- */
 @Data
 public class UserRegisterDTO {
-
     @NotBlank(message = "用户名不能为空")
     @Size(min = 3, max = 50, message = "用户名长度在3-50之间")
     private String name;

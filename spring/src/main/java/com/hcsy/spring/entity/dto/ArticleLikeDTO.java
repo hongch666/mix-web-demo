@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ArticleLikeDTO {
-
     @NotNull(message = "文章ID不能为空")
     private Long articleId;
 

@@ -15,5 +15,4 @@ public class CommentUpdateDTO extends CommentCreateDTO {
     @NotNull(message = "id不能为空")
     @Min(value = 0, message = "id不能小于0")
     private Integer id;
-
 }
