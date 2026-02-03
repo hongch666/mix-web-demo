@@ -16,7 +16,6 @@ class ChatRequest(BaseModel):
     user_id: Optional[str] = Field(default="default", description="用户ID")
     conversation_id: Optional[str] = Field(default=None, description="会话ID")
     service: AIServiceType = Field(default=AIServiceType.DOUBAO, description="AI服务类型：gemini、qwen或doubao")
-    # stream: Optional[bool] = Field(default=False, description="是否流式响应")
 
 class ChatResponseData(BaseModel):
     """聊天响应数据模型 - 内部数据结构"""

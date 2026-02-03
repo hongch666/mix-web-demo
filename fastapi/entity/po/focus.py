@@ -7,6 +7,6 @@ class Focus(SQLModel, table=True):
     
     __tablename__ = "focus"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    user_id: int
-    focus_id: int
+    user_id: int = Field()
+    focus_id: int = Field()
     created_time: Optional[datetime] = Field(default_factory=datetime.now)

@@ -6,9 +6,9 @@ class Comments(SQLModel, table=True):
     
     __tablename__ = "comments"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    content: str
-    star: float
-    user_id: int
-    article_id: int
-    create_time: Optional[str] = None
-    update_time: Optional[str] = None
+    content: str = Field()
+    star: float = Field()
+    user_id: int = Field()
+    article_id: int = Field()
+    create_time: Optional[str] = Field(default=None)
+    update_time: Optional[str] = Field(default=None)

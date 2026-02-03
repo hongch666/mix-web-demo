@@ -6,10 +6,10 @@ class User(SQLModel, table=True):
     
     __tablename__ = "user"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    password: str
-    name: str
-    age: Optional[int] = None
-    email: Optional[str] = None
-    role: Optional[str] = None
-    img: Optional[str] = None
-    signature: Optional[str] = None
+    password: str = Field()
+    name: str = Field()
+    age: Optional[int] = Field(default=None)
+    email: Optional[str] = Field(default=None)
+    role: Optional[str] = Field(default=None)
+    img: Optional[str] = Field(default=None)
+    signature: Optional[str] = Field(default=None)
