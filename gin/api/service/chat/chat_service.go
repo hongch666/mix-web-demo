@@ -47,15 +47,15 @@ func (s *ChatService) SendChatMessage(req *dto.SendMessageRequest) *dto.SendMess
 		if chatHub.SendMessageToQueue(req.ReceiverID, messageBytes) {
 			// 发送成功，消息已读
 			s.ChatMessageMapper.MarkAsRead(message.ID)
-			utils.FileLogger.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.ID))
+			utils.Log.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.ID))
 		} else {
 			// 发送失败，用户可能刚离线，消息保持未读
-			utils.FileLogger.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverID, message.ID))
+			utils.Log.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverID, message.ID))
 			// 触发SSE通知发送未读消息
 			go s.notifyUnreadMessage(req.ReceiverID, req.SenderID, message)
 		}
 	} else {
-		utils.FileLogger.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverID, message.ID))
+		utils.Log.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverID, message.ID))
 		// 触发SSE通知发送未读消息
 		go s.notifyUnreadMessage(req.ReceiverID, req.SenderID, message)
 	}
@@ -107,7 +107,7 @@ func (s *ChatService) GetChatHistory(req *dto.GetChatHistoryRequest) *dto.GetCha
 
 	// 将发给当前用户的消息标记为已读
 	if err := s.ChatMessageMapper.MarkChatHistoryAsRead(req.UserID, req.OtherID); err != nil {
-		utils.FileLogger.Error(fmt.Sprintf(utils.MARK_READ_FAIL, err))
+		utils.Log.Error(fmt.Sprintf(utils.MARK_READ_FAIL, err))
 	}
 
 	// 转换为DTO

@@ -90,16 +90,16 @@ func SyncArticlesToES() {
 
 	// 调用CommentMapper批量获取评分
 	commentScores := commentMapper.GetCommentScoresByArticleIDs(ctx, articleIDs)
-	utils.FileLogger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_RATINGS_COMPLETED_MESSAGE, len(articles)))
+	utils.Log.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_RATINGS_COMPLETED_MESSAGE, len(articles)))
 
 	// 批量获取点赞数和收藏数
 	likeCounts := likeMapper.GetLikeCountsByArticleIDs(ctx, articleIDsInt)
 	collectCounts := collectMapper.GetCollectCountsByArticleIDs(ctx, articleIDsInt)
-	utils.FileLogger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_LIKES_COLLECTS_COMPLETED_MESSAGE, len(articles)))
+	utils.Log.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_LIKES_COLLECTS_COMPLETED_MESSAGE, len(articles)))
 
 	// 批量获取作者的关注数（粉丝数）
 	authorFollowCounts := focusMapper.GetFollowCountsByUserIDs(ctx, userIDs)
-	utils.FileLogger.Info(fmt.Sprintf(utils.BULK_FETCH_AUTHOR_FOLLOWS_COMPLETED_MESSAGE, len(userIDs)))
+	utils.Log.Info(fmt.Sprintf(utils.BULK_FETCH_AUTHOR_FOLLOWS_COMPLETED_MESSAGE, len(userIDs)))
 
 	if len(articles) == 0 {
 		panic(exceptions.NewBusinessErrorSame(utils.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE))
@@ -169,12 +169,12 @@ func SyncArticlesToES() {
 		}
 		if resp.Errors {
 			for _, item := range resp.Failed() {
-				utils.FileLogger.Error(fmt.Sprintf(utils.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
+				utils.Log.Error(fmt.Sprintf(utils.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
 			}
 			panic(exceptions.NewBusinessErrorSame(utils.ES_SYNC_HAS_FAILURES_MESSAGE))
 		}
 
-		utils.FileLogger.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_SUBMISSION_COMPLETED_MESSAGE, batchIdx+1, totalBatches, end-start))
+		utils.Log.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_SUBMISSION_COMPLETED_MESSAGE, batchIdx+1, totalBatches, end-start))
 
 		// 在批次之间添加延迟，给ES足够时间处理，防止资源耗尽
 		if batchIdx < totalBatches-1 {

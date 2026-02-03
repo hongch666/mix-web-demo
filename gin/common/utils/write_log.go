@@ -97,4 +97,4 @@ func (l *SimpleLogger) Debug(message string) {
 }
 
 // 创建全局logger实例
-var FileLogger = &SimpleLogger{}
+var Log = &SimpleLogger{}

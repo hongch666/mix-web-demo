@@ -31,7 +31,7 @@ func (m *CommentMapper) GetCommentScoresByArticleIDs(ctx context.Context, articl
 		result[id] = make(map[string]*CommentScore)
 	}
 
-	utils.FileLogger.Info(fmt.Sprintf(utils.RATING_QUERY_START, len(articleIDs)))
+	utils.Log.Info(fmt.Sprintf(utils.RATING_QUERY_START, len(articleIDs)))
 
 	// 从MySQL comments表联合users表查询评分信息
 	// 根据users表的role字段区分：role='ai' 为AI评分，其他为用户评分
@@ -51,7 +51,7 @@ func (m *CommentMapper) GetCommentScoresByArticleIDs(ctx context.Context, articl
 		panic(exceptions.NewBusinessError(utils.RATING_QUERY_MYSQL_ERROR, err.Error()))
 	}
 
-	utils.FileLogger.Info(fmt.Sprintf(utils.RATING_QUERY_COMPLETED, len(results)))
+	utils.Log.Info(fmt.Sprintf(utils.RATING_QUERY_COMPLETED, len(results)))
 	// 解析查询结果
 	for _, item := range results {
 		if _, exists := result[item.ArticleID]; !exists {
@@ -63,7 +63,7 @@ func (m *CommentMapper) GetCommentScoresByArticleIDs(ctx context.Context, articl
 			Count:        item.CommentCount,
 		}
 
-		utils.FileLogger.Debug(fmt.Sprintf(
+		utils.Log.Debug(fmt.Sprintf(
 			utils.RATING_QUERY_RESULT_DEBUG,
 			item.ArticleID, item.RoleType, item.AvgStar, item.CommentCount,
 		))

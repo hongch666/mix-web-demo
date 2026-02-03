@@ -51,7 +51,7 @@ func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan any, closeCh
 		SendCh:  sendCh,
 		CloseCh: closeCh,
 	}
-	utils.FileLogger.Info(fmt.Sprintf(utils.SSE_REGISTER_SUCCESS, userID))
+	utils.Log.Info(fmt.Sprintf(utils.SSE_REGISTER_SUCCESS, userID))
 }
 
 // UnregisterClient 注销SSE客户端
@@ -63,14 +63,14 @@ func (hub *SSEHubManager) UnregisterClient(userID string) {
 		close(client.SendCh)
 		close(client.CloseCh)
 		delete(hub.clients, userID)
-		utils.FileLogger.Info(fmt.Sprintf(utils.SSE_UNREGISTER_SUCCESS, userID))
+		utils.Log.Info(fmt.Sprintf(utils.SSE_UNREGISTER_SUCCESS, userID))
 	}
 }
 
 // SendNotificationToUser 发送通知给特定用户
 func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dto.SSEMessageNotification) {
 	if notification == nil {
-		utils.FileLogger.Warning(fmt.Sprintf(utils.SSE_SEND_EMPTY_WARNING, userID))
+		utils.Log.Warning(fmt.Sprintf(utils.SSE_SEND_EMPTY_WARNING, userID))
 		return
 	}
 
@@ -79,15 +79,15 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dt
 	hub.mu.RUnlock()
 
 	if !ok {
-		utils.FileLogger.Warning(fmt.Sprintf(utils.SSE_CLIENT_NOT_FOUND_WARNING, userID))
+		utils.Log.Warning(fmt.Sprintf(utils.SSE_CLIENT_NOT_FOUND_WARNING, userID))
 		return
 	}
 
 	select {
 	case client.SendCh <- notification:
-		utils.FileLogger.Info(fmt.Sprintf(utils.SSE_SEND_SUCCESS, userID))
+		utils.Log.Info(fmt.Sprintf(utils.SSE_SEND_SUCCESS, userID))
 	default:
-		utils.FileLogger.Warning(fmt.Sprintf(utils.SSE_SEND_FAIL_WARNING, userID))
+		utils.Log.Warning(fmt.Sprintf(utils.SSE_SEND_FAIL_WARNING, userID))
 	}
 }
 
@@ -99,9 +99,9 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 	for userID, client := range hub.clients {
 		select {
 		case client.SendCh <- notification:
-			utils.FileLogger.Debug(fmt.Sprintf(utils.SSE_BROADCAST_SUCCESS, userID))
+			utils.Log.Debug(fmt.Sprintf(utils.SSE_BROADCAST_SUCCESS, userID))
 		default:
-			utils.FileLogger.Warning(fmt.Sprintf(utils.SSE_BROADCAST_FAIL_WARNING, userID))
+			utils.Log.Warning(fmt.Sprintf(utils.SSE_BROADCAST_FAIL_WARNING, userID))
 		}
 	}
 }
@@ -109,19 +109,19 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 // FormatSSEMessage 格式化SSE消息
 func FormatSSEMessage(data any) string {
 	if data == nil {
-		utils.FileLogger.Warning(utils.SSE_SEND_EMPTY_MESSAGE_WARNING)
+		utils.Log.Warning(utils.SSE_SEND_EMPTY_MESSAGE_WARNING)
 		return ""
 	}
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		utils.FileLogger.Error(fmt.Sprintf(utils.SSE_SERIALIZE_MESSAGE_ERROR, err))
+		utils.Log.Error(fmt.Sprintf(utils.SSE_SERIALIZE_MESSAGE_ERROR, err))
 		return ""
 	}
 
 	// 检查是否为null
 	if string(jsonData) == "null" {
-		utils.FileLogger.Warning(utils.SSE_SERIALIZE_MESSAGE_EMPTY)
+		utils.Log.Warning(utils.SSE_SERIALIZE_MESSAGE_EMPTY)
 		return ""
 	}
 

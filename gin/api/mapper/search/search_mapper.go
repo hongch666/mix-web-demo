@@ -162,7 +162,7 @@ func (m *SearchMapper) SearchArticle(ctx context.Context, searchDTO dto.ArticleS
 		if hit.Score != nil {
 			score = *hit.Score
 		}
-		utils.FileLogger.Info(fmt.Sprintf(
+		utils.Log.Info(fmt.Sprintf(
 			utils.SEARCH_METRICS_INFO,
 			article.ID, article.Title, article.AIScore, article.UserScore, article.Views, article.LikeCount, article.CollectCount, article.AuthorFollowCount, score,
 		))
