@@ -12,7 +12,12 @@ from api.service import (
     DoubaoService, get_doubao_service, 
     AiHistoryService, get_ai_history_service
 )
-from common.utils import success, fileLogger as logger
+from common.utils import (
+    success,
+    fileLogger as logger,
+    get_agent_stream_metrics,
+    clear_agent_stream_metrics,
+)
 from common.decorators import log
 from common.middleware import get_current_user_id
 from config import get_db
@@ -20,6 +25,45 @@ from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceTyp
 from entity.po import AiHistory
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])
+
+@router.get(
+    "/agent-metrics",
+    summary="获取Agent流式指标",
+    description="获取当前内存中的Agent流式指标平均值"
+)
+async def get_agent_metrics() -> JSONResponse:
+    metrics = get_agent_stream_metrics()
+    count = len(metrics)
+    if count == 0:
+        return success({
+            "count": 0,
+            "avg_decision_ms": 0,
+            "avg_llm_wait_ms": 0,
+            "avg_total_ms": 0,
+            "avg_llm_wait_ratio": 0.0,
+        })
+
+    sum_decision_ms = sum(item.get("decision_ms", 0) for item in metrics)
+    sum_llm_wait_ms = sum(item.get("llm_wait_ms", 0) for item in metrics)
+    sum_total_ms = sum(item.get("total_ms", 0) for item in metrics)
+    sum_llm_wait_ratio = sum(item.get("llm_wait_ratio", 0.0) for item in metrics)
+
+    return success({
+        "count": count,
+        "avg_decision_ms": int(sum_decision_ms / count),
+        "avg_llm_wait_ms": int(sum_llm_wait_ms / count),
+        "avg_total_ms": int(sum_total_ms / count),
+        "avg_llm_wait_ratio": round(sum_llm_wait_ratio / count, 4),
+    })
+
+@router.post(
+    "/agent-metrics/clear",
+    summary="清除Agent流式指标",
+    description="清除Agent流式聊天的指标数据"
+)
+async def clear_agent_metrics() -> JSONResponse:
+    cleared = clear_agent_stream_metrics()
+    return success({"cleared": cleared})
 
 @router.post(
     "/send",

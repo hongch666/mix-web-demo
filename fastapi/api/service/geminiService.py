@@ -1,4 +1,5 @@
 from functools import lru_cache
+import time
 from typing import AsyncGenerator, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
@@ -17,7 +18,7 @@ from .baseAIService import (
     initialize_ai_tools
 )
 from common.agent import IntentRouter, UserPermissionManager
-from common.utils import fileLogger as logger, Constants
+from common.utils import fileLogger as logger, Constants, record_agent_stream_metric
 from config import load_config
 
 class GeminiService(BaseAiService):
@@ -385,6 +386,13 @@ class GeminiService(BaseAiService):
             else:
                 # 使用Agent处理获取信息,然后流式输出最终答案
                 logger.info(Constants.AGENT_PROCESSING_MESSAGE)
+
+                total_start = time.perf_counter()
+                decision_ms = 0
+                llm_wait_ms = 0
+                stream_started = False
+                agent_started = False
+                stream_start = 0.0
                 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
@@ -393,10 +401,14 @@ class GeminiService(BaseAiService):
                 # 第一步: 使用Agent获取信息和思考
                 logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
                 try:
+                    agent_start = time.perf_counter()
                     agent_response = await self.agent_executor.ainvoke({
                         "input": full_input,
                         "system_message": Constants.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE
                     })
+                    decision_ms = int((time.perf_counter() - agent_start) * 1000)
+                    llm_wait_ms += decision_ms
+                    agent_started = True
                     agent_result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
                 except Exception as agent_error:
                     error_msg = str(agent_error)
@@ -447,6 +459,8 @@ class GeminiService(BaseAiService):
                     HumanMessage(content=f"用户问题: {message}\n\n我已经获取到以下信息:\n{agent_result}\n\n请基于这些信息,用清晰、友好的方式回答用户的问题。")
                 ]
                 
+                stream_started = True
+                stream_start = time.perf_counter()
                 try:
                     async for chunk in self.llm.astream(stream_messages):
                         try:
@@ -469,6 +483,21 @@ class GeminiService(BaseAiService):
                         yield {"type": "content", "content": Constants.GEMINI_INVALID_API_KEY_ERROR}
                     else:
                         yield {"type": "content", "content": f"输出异常: {error_msg[:100]}"}
+                finally:
+                    if stream_started:
+                        stream_wait_ms = int((time.perf_counter() - stream_start) * 1000)
+                        llm_wait_ms += stream_wait_ms
+                    if agent_started:
+                        total_ms = int((time.perf_counter() - total_start) * 1000)
+                        llm_wait_ratio = llm_wait_ms / total_ms if total_ms > 0 else 0.0
+                        record_agent_stream_metric(
+                            service=self.service_name,
+                            user_id=user_id,
+                            decision_ms=decision_ms,
+                            llm_wait_ms=llm_wait_ms,
+                            total_ms=total_ms,
+                            llm_wait_ratio=llm_wait_ratio,
+                        )
                     
         except Exception as e:
             error_msg = str(e)
