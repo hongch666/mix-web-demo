@@ -9,6 +9,26 @@ server:
 spring:
   application:
     name: spring
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/test}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_POOL_TIMEOUT:30000}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME:1800000}
+      auto-commit: true
+      leak-detection-threshold: 60000
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URL:http://localhost:9095}
+        instance:
+          name: ${spring.application.name}
+          service-base-url: ${SERVICE_BASE_URL:http://localhost:8081}
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -45,3 +65,16 @@ logging:
 jwt:
   secret: ${JWT_SECRET:hcsyhcsyhcsyhcsyhcsyhcsyhcsyhcsy} # 至少 32 字节
   expiration: ${JWT_EXPIRATION:86400000} # 毫秒数（1 天）
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always
+  simple:
+    metrics:
+      export:
+        enabled: true

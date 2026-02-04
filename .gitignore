@@ -198,6 +198,41 @@ gateway/gradlew
 gateway/gradlew.bat
 gateway/.gradle/
 
+### admin-server
+
+# 忽略项目中的 Maven 构建输出目录
+admin-server/target/
+
+# 忽略项目中的 IntelliJ IDEA 配置文件
+admin-server/.idea/
+admin-server/.mvn/
+admin-server/*.iml
+
+# 忽略编译后的 class 文件
+admin-server/*.class
+
+# 忽略测试类
+admin-server/*Test.java
+
+# 忽略 test 目录
+admin-server/src/test/
+
+# 忽略 mvnw 和 mvnw.cmd 文件
+admin-server/mvnw
+admin-server/mvnw.cmd
+
+# VSCode
+admin-server/.vscode/
+
+# Environment files
+admin-server/.env
+
+admin-server/build/
+admin-server/gradle/
+admin-server/gradlew
+admin-server/gradlew.bat
+admin-server/.gradle/
+
 ### FastAPI
 fastapi/**/__pycache__/
 fastapi/**/*.pyc
