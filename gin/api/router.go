@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/hongch666/mix-web-demo/gin/api/controller"
+	"github.com/hongch666/mix-web-demo/gin/api/controller/monitor"
 	"github.com/hongch666/mix-web-demo/gin/common/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -70,6 +71,23 @@ func SetupRouter() *gin.Engine {
 
 	// WebSocket路由
 	r.GET("/ws/chat", middleware.ApiLogMiddleware("WebSocket连接"), chatController.WebSocketHandler)
+
+	// Goroutine 监控路由
+	monitorGroup := r.Group("/monitor")
+	{
+		// 获取goroutine统计信息
+		monitorGroup.GET("/goroutine/stats", middleware.ApiLogMiddleware("获取goroutine统计"), monitor.GetGoroutineStats)
+		// 获取goroutine历史数据
+		monitorGroup.GET("/goroutine/history", middleware.ApiLogMiddleware("获取goroutine历史"), monitor.GetGoroutineHistory)
+		// 获取峰值时刻的详细信息
+		monitorGroup.GET("/goroutine/peak-details", middleware.ApiLogMiddleware("获取峰值详情"), monitor.GetPeakDetails)
+		// 获取当前pprof profile
+		monitorGroup.GET("/goroutine/current-profile", middleware.ApiLogMiddleware("获取当前profile"), monitor.GetCurrentProfile)
+		// 按类型统计goroutine
+		monitorGroup.GET("/goroutine/by-type", middleware.ApiLogMiddleware("按类型统计goroutine"), monitor.GetGoroutinesByType)
+		// 重置监控数据
+		monitorGroup.POST("/goroutine/reset", middleware.ApiLogMiddleware("重置goroutine监控"), monitor.ResetGoroutineMonitor)
+	}
 
 	return r
 }

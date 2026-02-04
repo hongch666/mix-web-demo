@@ -20,4 +20,6 @@ func init() {
 	InitRabbitMQ()
 	// 初始化MongoDB
 	InitMongoDB()
+	// 初始化Goroutine监控
+	InitGoroutineMonitor()
 }
