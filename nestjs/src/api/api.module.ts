@@ -3,6 +3,7 @@ import { TestModule } from './test/test.module';
 import { ArticleLogModule } from './article-log/article-log.module';
 import { ApiLogModule } from './api-log/api-log.module';
 import { DownloadModule } from './download/download.module';
+import { MonitorModule } from './monitor/monitor.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { DownloadModule } from './download/download.module';
     ArticleLogModule, // 文章日志模块
     ApiLogModule, // API日志模块
     DownloadModule, // 下载模块
+    MonitorModule, // 性能监测模块
   ],
 })
 export class ApiModule {}
