@@ -88,6 +88,12 @@ const (
 	// 服务注册成功消息
 	SERVICE_REGISTRATION_SUCCESS_MESSAGE = "服务注册成功"
 
+	// 定义队列失败消息
+	DEFINE_QUEUE_FAILURE_MESSAGE = "定义队列 %s 失败: %w"
+
+	// 定义队列成功消息
+	DEFINE_QUEUE_SUCCESS_MESSAGE = "队列 %s 定义成功"
+
 	// 创建表SQL语句
 	CREATE_TABLE_SQL = `
 		CREATE TABLE IF NOT EXISTS chat_messages (

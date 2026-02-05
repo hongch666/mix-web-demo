@@ -116,9 +116,9 @@ func createQueues() error {
 			nil,   // args - 额外参数
 		)
 		if err != nil {
-			return fmt.Errorf("failed to declare queue %s: %w", queueName, err)
+			return fmt.Errorf(DEFINE_QUEUE_FAILURE_MESSAGE, queueName, err)
 		}
-		log.Printf("Queue '%s' declared successfully", queueName)
+		log.Printf(DEFINE_QUEUE_SUCCESS_MESSAGE, queueName)
 	}
 
 	return nil
