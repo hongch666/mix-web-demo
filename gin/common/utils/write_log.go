@@ -77,7 +77,7 @@ func LogDebug(message string) {
 	WriteLog(message, "DEBUG")
 }
 
-// SimpleLogger 结构体，模仿Python的类
+// SimpleLogger 结构体
 type SimpleLogger struct{}
 
 func (l *SimpleLogger) Info(message string) {

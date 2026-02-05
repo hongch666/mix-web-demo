@@ -3,7 +3,7 @@ package com.hcsy.spring.common.utils;
 import org.springframework.stereotype.Component;
 
 /**
- * 简单日志记录器，模仿 Python 的使用方式
+ * 简单日志记录器
  */
 @Component
 public class SimpleLogger {

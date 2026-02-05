@@ -92,7 +92,7 @@ export class LoggerUtil {
   }
 }
 
-// SimpleLogger 类，模仿Python的方式
+// SimpleLogger 类
 export class SimpleLogger {
   info(message: string): void {
     LoggerUtil.logInfo(message);
