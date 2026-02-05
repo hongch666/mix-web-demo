@@ -19,7 +19,6 @@ import java.time.Duration;
 
 @Configuration
 public class RedisCacheConfig {
-
     @Bean
     CacheManager cacheManager(RedisConnectionFactory factory) {
         // 自定义 ObjectMapper，注册 JavaTimeModule 以支持 LocalDateTime 等日期时间类型
