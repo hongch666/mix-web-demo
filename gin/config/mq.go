@@ -43,6 +43,12 @@ func InitRabbitMQ() {
 		Channel: channel,
 	}
 
+	// 初始化时自动创建使用的队列
+	err = createQueues()
+	if err != nil {
+		log.Fatalf("Failed to create RabbitMQ queues: %v", err)
+	}
+
 	log.Println(RABBITMQ_INITIALIZATION_SUCCESS_MESSAGE)
 }
 
@@ -91,4 +97,29 @@ func (r *RabbitMQClient) Close() {
 		r.Conn.Close()
 	}
 	log.Println(CLOSE_RABBITMQ_CONNECTION_MESSAGE)
+}
+
+// createQueues 在初始化时创建所有使用的队列
+func createQueues() error {
+	queues := []string{
+		"api-log-queue", // API日志队列，由api_log中间件使用
+		"log-queue",     // 通用日志队列，由search服务使用
+	}
+
+	for _, queueName := range queues {
+		_, err := RabbitMQ.Channel.QueueDeclare(
+			queueName,
+			true,  // durable - 队列持久化
+			false, // autoDelete - 不自动删除
+			false, // exclusive - 不独占
+			false, // noWait - 等待确认
+			nil,   // args - 额外参数
+		)
+		if err != nil {
+			return fmt.Errorf("failed to declare queue %s: %w", queueName, err)
+		}
+		log.Printf("Queue '%s' declared successfully", queueName)
+	}
+
+	return nil
 }
