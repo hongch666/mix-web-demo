@@ -1322,6 +1322,14 @@ DB_NAME=demo
 DB_USERNAME=root
 DB_PASSWORD=csc20040312
 
+# MySQL HikariCP 连接池配置
+DB_POOL_MAX=20
+DB_POOL_MIN_IDLE=5
+DB_POOL_TIMEOUT=30000
+DB_POOL_IDLE_TIMEOUT=600000
+DB_POOL_MAX_LIFETIME=1800000
+DB_POOL_LEAK_DETECTION_THRESHOLD=60000
+
 # Redis 配置
 REDIS_HOST=localhost
 REDIS_PORT=6379
@@ -1500,15 +1508,24 @@ DB_MYSQL_PORT=3306
 DB_MYSQL_DATABASE=demo
 DB_MYSQL_USER=root
 DB_MYSQL_PASSWORD=csc20040312
-DB_MYSQL_POOL_SIZE=30                           # 基础连接池大小
-DB_MYSQL_MAX_OVERFLOW=80                        # 最多额外创建的连接数
-DB_MYSQL_POOL_RECYCLE=3600                      # 连接回收时间（秒），1小时回收一次
-DB_MYSQL_POOL_PRE_PING=True                     # 每次取连接前进行ping检查
-DB_MYSQL_POOL_TIMEOUT=30                        # 获取连接的超时时间（秒）
-DB_MYSQL_READ_TIMEOUT=10                        # pymysql读超时（秒）
-DB_MYSQL_WRITE_TIMEOUT=10                       # pymysql写超时（秒）
-DB_MYSQL_AUTOCOMMIT=False                       # 自动提交事务
-DB_MYSQL_ECHO=False                             # 是否打印SQL语句到日志
+# 基础连接池大小
+DB_MYSQL_POOL_SIZE=30
+# 最多额外创建的连接数
+DB_MYSQL_MAX_OVERFLOW=80
+# 连接回收时间（秒），1小时回收一次
+DB_MYSQL_POOL_RECYCLE=3600
+# 每次取连接前进行ping检查
+DB_MYSQL_POOL_PRE_PING=True
+# 获取连接的超时时间（秒）
+DB_MYSQL_POOL_TIMEOUT=30
+# pymysql读超时（秒）
+DB_MYSQL_READ_TIMEOUT=10
+# pymysql写超时（秒）
+DB_MYSQL_WRITE_TIMEOUT=10
+# 自动提交事务
+DB_MYSQL_AUTOCOMMIT=False
+# 是否打印SQL语句到日志
+DB_MYSQL_ECHO=False
 
 # PostgreSQL 配置
 DB_POSTGRES_HOST=localhost
