@@ -13,13 +13,23 @@ spring:
     admin:
       ui:
         title: Spring Boot Admin
+      monitor:
+        status-interval: 10000
+        status-lifetime: 10000
+        default-timeout: 5000
 
 # Actuator 配置
 management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        include: "*"
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
+  info:
+    java:
+      enabled: true
+    os:
+      enabled: true

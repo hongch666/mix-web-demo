@@ -9,26 +9,20 @@ server:
 spring:
   application:
     name: spring
-  datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/test}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: ${DB_POOL_MAX:20}
-      minimum-idle: ${DB_POOL_MIN_IDLE:5}
-      connection-timeout: ${DB_POOL_TIMEOUT:30000}
-      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:600000}
-      max-lifetime: ${DB_POOL_MAX_LIFETIME:1800000}
-      auto-commit: true
-      leak-detection-threshold: 60000
   boot:
     admin:
       client:
         url: ${ADMIN_SERVER_URL:http://localhost:9095}
+        auto-registration: true
+        auto-deregistration: true
+        register-once: false
+        enabled: true
         instance:
           name: ${spring.application.name}
           service-base-url: ${SERVICE_BASE_URL:http://localhost:8081}
+          metadata:
+            description: Spring微服务
+            tags: microservice,spring-boot
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -70,11 +64,34 @@ management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        include: "*"
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
-  simple:
-    metrics:
-      export:
+      show-components: always
+      probes:
         enabled: true
+    info:
+      enabled: true
+    env:
+      show-values: when-authorized
+  info:
+    java:
+      enabled: true
+    os:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http:
+          server:
+            requests: true
+    tags:
+      application: ${spring.application.name}
+    enable:
+      jvm: true
+      process: true
+      system: true
+      logback: true
+      tomcat: true
