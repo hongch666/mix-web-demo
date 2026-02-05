@@ -6,8 +6,16 @@ spring:
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:csc200403121}
+    password: ${DB_PASSWORD:csc20040312}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_POOL_TIMEOUT:30000}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:600000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME:1800000}
+      auto-commit: true
+      leak-detection-threshold: ${DB_POOL_LEAK_DETECTION_THRESHOLD:60000}
   cloud:
     nacos:
       config:
