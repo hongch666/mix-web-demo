@@ -4,8 +4,7 @@ from langchain_community.document_loaders import PyPDFLoader, RecursiveUrlLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import requests
 import urllib.request
-from common.utils.loggers import logger
-from common.utils.constants import Constants
+from common.utils import logger
 
 class ReferenceContentExtractor:
     """权威参考文本内容提取器"""
