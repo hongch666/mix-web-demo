@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
-import { MonitorService, EventLoopMetrics } from './monitor.service';
+import type { EventLoopMetrics } from './monitor.service';
+import { MonitorService } from './monitor.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('性能监测')
