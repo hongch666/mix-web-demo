@@ -12,6 +12,8 @@ class RabbitMQClient:
         self.connection: Optional[pika.BlockingConnection] = None
         self.channel: Optional[pika.channel.Channel] = None
         self._is_connected = False
+        # 初始化时创建使用的队列
+        self._create_queues()
 
     def _connect(self):
         """建立 RabbitMQ 连接"""
@@ -129,6 +131,38 @@ class RabbitMQClient:
             logger.info(Constants.RABBITMQ_CONNECTION_CLOSED_MESSAGE)
         except Exception as e:
             logger.error(f"关闭 RabbitMQ 连接失败: {e}")
+
+    def _create_queues(self):
+        """在初始化时创建所有使用的队列"""
+        try:
+            # 先建立连接
+            if not self._is_connected:
+                self._connect()
+
+            if not self._is_connected or self.channel is None:
+                logger.warning(Constants.RABBITMQ_CREATE_QUEUES_FAILURE_MESSAGE)
+                return
+
+            # 定义使用的队列列表
+            queues = [
+                "api-log-queue",  # API日志队列，由apiLog装饰器使用
+            ]
+
+            # 声明队列
+            for queue_name in queues:
+                try:
+                    self.channel.queue_declare(
+                        queue=queue_name,
+                        durable=True,  # 队列持久化
+                        exclusive=False,
+                        auto_delete=False,
+                    )
+                    logger.info(f"队列 [{queue_name}] 创建成功")
+                except Exception as e:
+                    logger.error(f"创建队列 [{queue_name}] 失败: {e}")
+
+        except Exception as e:
+            logger.error(f"创建队列时发生错误: {e}")
 
     def __del__(self):
         """析构函数，确保连接关闭"""

@@ -301,6 +301,9 @@ class Constants:
     RABBITMQ_NOT_CONNECTED_MESSAGE: str = "RabbitMQ 未连接，无法发送消息"
     """RabbitMQ未连接消息"""
     
+    RABBITMQ_CREATE_QUEUES_FAILURE_MESSAGE: str = "无法创建队列：RabbitMQ未连接"
+    """无法创建队列消息"""
+    
     RABBITMQ_CONNECTION_CLOSED_MESSAGE: str = "RabbitMQ 连接已关闭"
     """RabbitMQ连接关闭消息"""
     
