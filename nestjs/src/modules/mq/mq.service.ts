@@ -25,11 +25,32 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     this.connection = await amqp.connect(url);
     this.channel = await this.connection.createChannel();
     fileLogger.info(Constants.RABBITMQ_CONNECTION);
+
+    // 初始化时创建使用的队列
+    await this.initializeQueues();
   }
 
   async onModuleDestroy() {
     await this.channel?.close();
     await this.connection?.close();
+  }
+
+  // 初始化时创建所有使用的队列
+  private async initializeQueues() {
+    const queues = [
+      'api-log-queue', // API日志队列
+      'log-queue',     // 通用日志队列
+    ];
+
+    for (const queue of queues) {
+      try {
+        await this.channel.assertQueue(queue, { durable: true });
+        fileLogger.info(`队列 [${queue}] 创建成功`);
+      } catch (error) {
+        fileLogger.error(`创建队列 [${queue}] 失败: ${error.message}`);
+        // 队列创建失败不应该阻止应用启动
+      }
+    }
   }
 
   // 生产者：发送消息
