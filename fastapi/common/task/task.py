@@ -5,9 +5,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlmodel import Session
 from common.utils import fileLogger as logger, Constants
-from .hiveSyncTask import export_articles_to_csv_and_hive
-from .vectorSyncTask import export_article_vectors_to_postgres
-from .analyzeCacheTask import update_analyze_caches
+from .logic import (
+    export_articles_to_csv_and_hive,
+    export_article_vectors_to_postgres,
+    update_analyze_caches
+)
 
 def start_scheduler(
     article_mapper: Optional[Any] = None,

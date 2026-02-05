@@ -1,5 +1,4 @@
 from typing import Optional
-import re
 from sqlmodel import Session
 from common.utils import fileLogger as logger, Constants
 from config.config import load_config
