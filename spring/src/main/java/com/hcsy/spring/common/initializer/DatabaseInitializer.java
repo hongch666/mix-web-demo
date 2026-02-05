@@ -1,4 +1,4 @@
-package com.hcsy.spring.common.config;
+package com.hcsy.spring.common.initializer;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;

@@ -6,7 +6,8 @@ import time
 from datetime import datetime
 from fastapi import Depends
 import jieba.analyse
-from common.utils import fileLogger as logger, get_reference_content_extractor, Constants
+from common.utils import fileLogger as logger, Constants
+from common.agent import get_reference_content_extractor
 from .doubaoService import DoubaoService, get_doubao_service
 from .geminiService import GeminiService, get_gemini_service
 from .qwenService import QwenService, get_qwen_service

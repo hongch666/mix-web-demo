@@ -137,6 +137,9 @@ def api_log(config: Union[str, ApiLogConfig]):
                         request, duration_ms, log_config, func, kwargs
                     )
                     return result
+            except BusinessException:
+                # 业务异常直接重新抛出，不记录耗时
+                raise
             except Exception as e:
                 duration_ms = int((time.time() - start) * 1000)
                 time_message = f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"

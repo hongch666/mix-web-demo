@@ -8,7 +8,12 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     @Bean
-    Queue testQueue() {
-        return new Queue("test.queue", true); // durable
+    Queue apiLogQueue() {
+        return new Queue("api-log-queue", true); // durable
+    }
+
+    @Bean
+    Queue logQueue() {
+        return new Queue("log-queue", true); // durable
     }
 }

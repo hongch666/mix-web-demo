@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/hongch666/mix-web-demo/gin/api/service/test"
-	"github.com/hongch666/mix-web-demo/gin/common/task"
+	task "github.com/hongch666/mix-web-demo/gin/common/task/logic"
 	"github.com/hongch666/mix-web-demo/gin/common/utils"
 
 	"github.com/gin-gonic/gin"

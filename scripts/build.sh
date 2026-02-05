@@ -43,15 +43,15 @@ build_spring() {
     print_info "开始打包 Spring 服务..."
     cd "$PROJECT_ROOT/spring"
     
-    # Maven 打包
-    if command -v mvn &> /dev/null; then
-        print_info "使用全局 Maven 打包 Spring..."
-        mvn clean package -DskipTests
-    elif [ -f "./mvnw" ]; then
-        print_info "使用本地 Maven Wrapper 打包 Spring..."
-        ./mvnw clean package -DskipTests
+    # Gradle 打包
+    if command -v gradle &> /dev/null; then
+        print_info "使用全局 Gradle 打包 Spring..."
+        gradle clean build -x test
+    elif [ -f "./gradlew" ]; then
+        print_info "使用本地 Gradle Wrapper 打包 Spring..."
+        ./gradlew clean build -x test
     else
-        print_error "Maven 未安装，跳过 Spring 打包"
+        print_error "Gradle 未安装，跳过 Spring 打包"
         return 1
     fi
     
@@ -59,11 +59,21 @@ build_spring() {
     SPRING_DIST="$DIST_DIR/spring"
     mkdir -p "$SPRING_DIST"
     
-    # 复制 jar 文件
-    cp target/spring-*.jar "$SPRING_DIST/spring.jar"
+    # 复制 jar 文件（排除 plain jar，只复制可执行的 jar）
+    if [ -f "build/libs/spring-1.0.0.jar" ]; then
+        cp "build/libs/spring-1.0.0.jar" "$SPRING_DIST/spring.jar"
+    elif ls build/libs/spring-*.jar 1> /dev/null 2>&1; then
+        # 如果上面的文件不存在，使用通配符找到第一个 jar 文件
+        cp $(ls build/libs/spring-*.jar | grep -v plain | head -1) "$SPRING_DIST/spring.jar"
+    else
+        print_error "未找到 Spring jar 文件"
+        return 1
+    fi
     
     # 复制配置文件
-    cp -r src/main/resources/* "$SPRING_DIST/"
+    if [ -d "src/main/resources" ]; then
+        cp -r src/main/resources/* "$SPRING_DIST/"
+    fi
     
     # 复制 .env 文件
     if [ -f ".env" ]; then
@@ -115,15 +125,15 @@ build_gateway() {
     print_info "开始打包 Gateway 服务..."
     cd "$PROJECT_ROOT/gateway"
     
-    # Maven 打包
-    if command -v mvn &> /dev/null; then
-        print_info "使用全局 Maven 打包 Gateway..."
-        mvn clean package -DskipTests
-    elif [ -f "./mvnw" ]; then
-        print_info "使用本地 Maven Wrapper 打包 Gateway..."
-        ./mvnw clean package -DskipTests
+    # Gradle 打包
+    if command -v gradle &> /dev/null; then
+        print_info "使用全局 Gradle 打包 Gateway..."
+        gradle clean build -x test
+    elif [ -f "./gradlew" ]; then
+        print_info "使用本地 Gradle Wrapper 打包 Gateway..."
+        ./gradlew clean build -x test
     else
-        print_error "Maven 未安装，跳过 Gateway 打包"
+        print_error "Gradle 未安装，跳过 Gateway 打包"
         return 1
     fi
     
@@ -131,11 +141,21 @@ build_gateway() {
     GATEWAY_DIST="$DIST_DIR/gateway"
     mkdir -p "$GATEWAY_DIST"
     
-    # 复制 jar 文件
-    cp target/gateway-*.jar "$GATEWAY_DIST/gateway.jar"
+    # 复制 jar 文件（排除 plain jar，只复制可执行的 jar）
+    if [ -f "build/libs/gateway-1.0.0.jar" ]; then
+        cp "build/libs/gateway-1.0.0.jar" "$GATEWAY_DIST/gateway.jar"
+    elif ls build/libs/gateway-*.jar 1> /dev/null 2>&1; then
+        # 如果上面的文件不存在，使用通配符找到第一个 jar 文件
+        cp $(ls build/libs/gateway-*.jar | grep -v plain | head -1) "$GATEWAY_DIST/gateway.jar"
+    else
+        print_error "未找到 Gateway jar 文件"
+        return 1
+    fi
     
     # 复制配置文件
-    cp -r src/main/resources/* "$GATEWAY_DIST/"
+    if [ -d "src/main/resources" ]; then
+        cp -r src/main/resources/* "$GATEWAY_DIST/"
+    fi
     
     # 复制 .env 文件
     if [ -f ".env" ]; then
@@ -160,7 +180,7 @@ for var in $(cat .env | grep -v '^#' | cut -d= -f1); do
     JAVA_OPTS="$JAVA_OPTS -D$var=${!var}"
 done
 
-nohup java $JAVA_OPTS -jar gateway.jar --spring.config.location=application.yaml >> "$LOG_FILE" 2>&1 &
+nohup java $JAVA_OPTS -jar gateway.jar >> "$LOG_FILE" 2>&1 &
 echo $! > gateway.pid
 echo "Gateway 服务已启动，PID: $(cat gateway.pid)"
 EOF

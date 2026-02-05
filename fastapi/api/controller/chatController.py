@@ -2,7 +2,7 @@ import datetime
 import time
 import json
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
@@ -18,6 +18,7 @@ from common.utils import (
     get_agent_stream_metrics,
     clear_agent_stream_metrics,
 )
+from common.exceptions import BusinessException
 from common.decorators import log
 from common.middleware import get_current_user_id
 from config import get_db
@@ -146,7 +147,10 @@ async def send_message(
             timestamp=int(time.time())
         )
         return success(response_data)
-    
+
+    except BusinessException:
+        # 业务异常直接重新抛出，不记录耗时
+        raise
     except Exception as e:
         logger.error(f"聊天接口异常: {str(e)}", exc_info=True)
         return ChatResponse(
@@ -259,7 +263,10 @@ async def stream_message(
                     logger.info(f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}")
                 except Exception as history_error:
                     logger.error(f"保存流式AI历史记录失败: {str(history_error)}")
-                    
+
+        except BusinessException:
+            # 业务异常直接重新抛出，不记录耗时
+            raise
         except Exception as e:
             logger.error(f"流式聊天接口异常: {str(e)}")
             data = {

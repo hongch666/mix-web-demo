@@ -8,8 +8,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.common.config.JwtProperties;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.properties.JwtProperties;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;

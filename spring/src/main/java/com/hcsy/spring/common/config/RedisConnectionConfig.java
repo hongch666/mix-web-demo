@@ -3,13 +3,13 @@ package com.hcsy.spring.common.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 
+import com.hcsy.spring.common.properties.RedisProperties;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -19,42 +19,38 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 public class RedisConnectionConfig {
 
     private final SimpleLogger logger;
-
-    @Value("${spring.data.redis.host:localhost}")
-    private String host;
-
-    @Value("${spring.data.redis.port:6379}")
-    private int port;
-
-    @Value("${spring.data.redis.database:0}")
-    private int database;
-
-    @Value("${spring.data.redis.username:}")
-    private String username;
-
-    @Value("${spring.data.redis.password:}")
-    private String password;
+    private final RedisProperties redisProperties;
 
     @Bean
     RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName(host);
-        config.setPort(port);
-        config.setDatabase(database);
+
+        if (redisProperties.getHost() != null) {
+            config.setHostName(redisProperties.getHost());
+        }
+        if (redisProperties.getPort() != null) {
+            config.setPort(redisProperties.getPort());
+        }
+        if (redisProperties.getDatabase() != null) {
+            config.setDatabase(redisProperties.getDatabase());
+        }
 
         // 只有当用户名不为空时才设置
-        if (username != null && !username.isEmpty()) {
-            config.setUsername(username);
-            logger.info(Constants.REDIS_USER, username);
+        if (redisProperties.getUsername() != null && !redisProperties.getUsername().isEmpty()) {
+            config.setUsername(redisProperties.getUsername());
+            logger.info(Constants.REDIS_USER, redisProperties.getUsername());
         }
 
         // 只有当密码不为空时才设置
-        if (password != null && !password.isEmpty()) {
-            config.setPassword(password);
+        if (redisProperties.getPassword() != null && !redisProperties.getPassword().isEmpty()) {
+            config.setPassword(redisProperties.getPassword());
             logger.info(Constants.REDIS_PASSWORD);
         }
 
-        log.info(Constants.REDIS_CONNECT, host, port, database);
+        log.info(Constants.REDIS_CONNECT,
+                redisProperties.getHost() != null ? redisProperties.getHost() : "unknown",
+                redisProperties.getPort() != null ? redisProperties.getPort() : 0,
+                redisProperties.getDatabase() != null ? redisProperties.getDatabase() : 0);
         return new LettuceConnectionFactory(config);
     }
 }

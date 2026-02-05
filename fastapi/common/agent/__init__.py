@@ -3,6 +3,7 @@ from .ragTools import RAGTools, get_rag_tools
 from .mongoDBTools import MongoDBTools, get_mongodb_tools
 from .userPermissionManager import UserPermissionManager, get_user_permission_manager
 from .intentRouter import IntentRouter
+from .extractor import ReferenceContentExtractor, get_reference_content_extractor
 
 __all__ = [
     "SQLTools",
@@ -14,4 +15,6 @@ __all__ = [
     "get_mongodb_tools",
     "UserPermissionManager",
     "get_user_permission_manager",
+    "ReferenceContentExtractor",
+    "get_reference_content_extractor",
 ]
