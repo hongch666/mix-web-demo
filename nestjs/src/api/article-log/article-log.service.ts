@@ -34,9 +34,9 @@ export class ArticleLogService {
    * 确保数据库中存在必要的索引
    * 如果索引不存在则自动创建
    */
-  private async ensureIndexes() {
-    const collection = this.logModel.collection;
-    const existingIndexes = await collection.getIndexes();
+  private async ensureIndexes(): Promise<void> {
+    const collection: any = this.logModel.collection;
+    const existingIndexes: any = await collection.getIndexes();
 
     // 定义需要的索引
     const requiredIndexes: Array<{
@@ -60,7 +60,7 @@ export class ArticleLogService {
 
     // 检查并创建缺失的索引
     for (const indexConfig of requiredIndexes) {
-      const indexExists = Object.values(existingIndexes).some(
+      const indexExists: boolean = Object.values(existingIndexes).some(
         (index: any) => index.name === indexConfig.options.name,
       );
 
@@ -86,11 +86,11 @@ export class ArticleLogService {
 
   async removeByIds(ids: string[]): Promise<DeleteResult> {
     // 先检查所有记录是否存在
-    const existingLogs = await this.logModel.find({ _id: { $in: ids } }).exec();
-    const existingIds = existingLogs.map((log) => log.id);
+    const existingLogs: any[] = await this.logModel.find({ _id: { $in: ids } }).exec();
+    const existingIds: string[] = existingLogs.map((log: any) => log.id);
 
     // 找出不存在的ID
-    const notFoundIds = ids.filter((id) => !existingIds.includes(id));
+    const notFoundIds: string[] = ids.filter((id: string) => !existingIds.includes(id));
     if (notFoundIds.length > 0) {
       throw new BusinessException(Constants.ARTICLE_LOG_PARTIAL_NOT_FOUND);
     }

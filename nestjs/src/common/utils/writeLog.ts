@@ -14,13 +14,13 @@ export class LoggerUtil {
 
     try {
       // 复用现有的 YAML 配置服务
-      const config = yamlConfig();
+      const config: Record<string, any> = yamlConfig();
 
       // 获取日志路径，支持环境变量覆盖
       this.logPath = process.env.LOG_PATH || config?.logs?.path || 'logs';
       this.configLoaded = true;
       Logger.log(`日志配置加载成功，路径: ${this.logPath}`);
-    } catch (error) {
+    } catch (error: any) {
       throw new BusinessException(`加载日志配置失败: ${error.message}`);
     }
   }
@@ -40,20 +40,20 @@ export class LoggerUtil {
     }
 
     // 日志文件名 (按日期)
-    const today = new Date().toISOString().split('T')[0];
-    const logFile = path.join(this.logPath, `app_${today}.log`);
+    const today: string = new Date().toISOString().split('T')[0];
+    const logFile: string = path.join(this.logPath, `app_${today}.log`);
 
     // 格式化日志消息
-    const timestamp = new Date()
+    const timestamp: string = new Date()
       .toISOString()
       .replace('T', ' ')
       .substring(0, 19);
-    const logEntry = `${timestamp} - ${level} - ${message}\n`;
+    const logEntry: string = `${timestamp} - ${level} - ${message}\n`;
 
     // 写入文件
     try {
       fs.appendFileSync(logFile, logEntry, 'utf8');
-    } catch (error) {
+    } catch (error: any) {
       throw new BusinessException(`写入日志失败: ${error.message}`);
     }
   }

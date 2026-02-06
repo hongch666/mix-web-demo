@@ -19,7 +19,7 @@ export class RequireAdminGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requireAdmin = this.reflector.get<boolean>(
+    const requireAdmin: boolean | undefined = this.reflector.get<boolean>(
       REQUIRE_ADMIN_KEY,
       context.getHandler(),
     );
@@ -28,13 +28,13 @@ export class RequireAdminGuard implements CanActivate {
       return true;
     }
 
-    const userId = this.cls.get('userId');
+    const userId: number | undefined = this.cls.get<number>('userId');
 
     if (!userId) {
       throw new BusinessException(Constants.UNAUTHORIZED_USER);
     }
 
-    const isAdmin = await this.userService.isAdminUser(userId);
+    const isAdmin: boolean = await this.userService.isAdminUser(userId);
 
     if (!isAdmin) {
       throw new BusinessException(Constants.NO_ADMIN_USER);

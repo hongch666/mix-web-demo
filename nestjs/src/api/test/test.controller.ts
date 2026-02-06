@@ -31,7 +31,7 @@ export class TestController {
   })
   @ApiLog('测试Spring服务')
   async getSpring(): Promise<any> {
-    const res = await this.nacosService.call({
+    const res: any = await this.nacosService.call({
       serviceName: 'spring',
       method: 'GET',
       path: '/api_spring/spring',
@@ -46,7 +46,7 @@ export class TestController {
   })
   @ApiLog('测试Gin服务')
   async getGin(): Promise<any> {
-    const res = await this.nacosService.call({
+    const res: any = await this.nacosService.call({
       serviceName: 'gin',
       method: 'GET',
       path: '/api_gin/gin',
@@ -61,7 +61,7 @@ export class TestController {
   })
   @ApiLog('测试FastAPI服务')
   async getFastAPI(): Promise<any> {
-    const res = await this.nacosService.call({
+    const res: any = await this.nacosService.call({
       serviceName: 'fastapi',
       method: 'GET',
       path: '/api_fastapi/fastapi',

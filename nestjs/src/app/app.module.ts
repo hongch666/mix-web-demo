@@ -18,7 +18,7 @@ import { ModulesModule } from '../modules/modules.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const db = configService.get('database');
+        const db: any = configService.get('database');
         return {
           type: db.type,
           host: db.host,
@@ -39,12 +39,12 @@ import { ModulesModule } from '../modules/modules.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const mongodb = configService.get('mongodb');
-        const host = mongodb.host;
-        const port = mongodb.port;
-        const username = mongodb.username;
-        const password = mongodb.password;
-        const dbName = mongodb.dbName;
+        const mongodb: any = configService.get('mongodb');
+        const host: string = mongodb.host;
+        const port: number = mongodb.port;
+        const username: string = mongodb.username;
+        const password: string = mongodb.password;
+        const dbName: string = mongodb.dbName;
 
         // 根据是否有用户名和密码构建 URI
         let uri: string;

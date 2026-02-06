@@ -40,8 +40,8 @@ export class ArticleLogController {
   })
   @ApiLog('查询文章日志')
   @RequireAdmin()
-  async findByFilter(@Query() query: QueryArticleLogDto) {
-    const data = await this.logService.findByFilter(query);
+  async findByFilter(@Query() query: QueryArticleLogDto): Promise<any> {
+    const data: any = await this.logService.findByFilter(query);
     return success(data);
   }
   @Delete(':id')
@@ -51,7 +51,7 @@ export class ArticleLogController {
   })
   @ApiLog('删除文章日志')
   @RequireAdmin()
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string): Promise<any> {
     await this.logService.removeById(id);
     return success(null);
   }
@@ -63,10 +63,10 @@ export class ArticleLogController {
   })
   @ApiLog('批量删除文章日志')
   @RequireAdmin()
-  async removeByIds(@Param('ids') ids: string) {
-    const idArr = ids
+  async removeByIds(@Param('ids') ids: string): Promise<any> {
+    const idArr: string[] = ids
       .split(',')
-      .map((id) => id.trim())
+      .map((id: string) => id.trim())
       .filter(Boolean);
     await this.logService.removeByIds(idArr);
     return success(null);

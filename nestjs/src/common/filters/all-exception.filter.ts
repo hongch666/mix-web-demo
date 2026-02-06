@@ -13,18 +13,18 @@ import { Constants } from '../utils/constants';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  catch(exception: any, host: ArgumentsHost) {
+  catch(exception: any, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<FastifyReply>();
-    const request = ctx.getRequest<FastifyRequest>();
+    const response: FastifyReply = ctx.getResponse<FastifyReply>();
+    const request: FastifyRequest = ctx.getRequest<FastifyRequest>();
 
-    let message = Constants.ERROR_DEFAULT_MSG;
-    let isBusinessException = false;
+    let message: string = Constants.ERROR_DEFAULT_MSG;
+    let isBusinessException: boolean = false;
 
     // 判断是否是业务异常（可向客户端显示）
     if (exception instanceof BusinessException) {
       isBusinessException = true;
-      const res = exception.getResponse();
+      const res: string | object = exception.getResponse();
       if (typeof res === 'string') {
         message = res;
       } else if (typeof res === 'object' && (res as any).message) {

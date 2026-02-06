@@ -12,8 +12,8 @@ config();
 function resolveEnvVars(obj: any): any {
   if (typeof obj === 'string') {
     // 匹配 ${VAR_NAME:default_value} 或 ${VAR_NAME}
-    return obj.replace(/\$\{([^:}]+)(?::([^}]*))?\}/g, (_, key, defaultVal) => {
-      const value = process.env[key];
+    return obj.replace(/\$\{([^:}]+)(?::([^}]*))?\}/g, (_: string, key: string, defaultVal?: string): string => {
+      const value: string | undefined = process.env[key];
       if (value !== undefined) {
         return value;
       }
@@ -21,11 +21,11 @@ function resolveEnvVars(obj: any): any {
     });
   }
   if (Array.isArray(obj)) {
-    return obj.map(resolveEnvVars);
+    return obj.map((item: any) => resolveEnvVars(item));
   }
   if (obj !== null && typeof obj === 'object') {
     return Object.entries(obj).reduce(
-      (acc, [key, val]) => {
+      (acc: Record<string, any>, [key, val]: [string, any]) => {
         acc[key] = resolveEnvVars(val);
         return acc;
       },
@@ -35,10 +35,10 @@ function resolveEnvVars(obj: any): any {
   return obj;
 }
 
-export default () => {
-  const YAML_CONFIG_FILENAME = 'application.yaml'; // 项目根目录路径
-  const fileContents = fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8');
-  let configObj = yaml.load(fileContents) as Record<string, any>;
+export default (): Record<string, any> => {
+  const YAML_CONFIG_FILENAME: string = 'application.yaml'; // 项目根目录路径
+  const fileContents: string = fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8');
+  let configObj: Record<string, any> = yaml.load(fileContents) as Record<string, any>;
 
   // 递归替换环境变量
   configObj = resolveEnvVars(configObj);

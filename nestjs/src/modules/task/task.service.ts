@@ -19,16 +19,16 @@ export class TaskService {
    * '0 0 2 1 * *' = 每月1日凌晨2点
    */
   @Cron('0 0 2 1 * *')
-  async cleanupOldApiLogs() {
+  async cleanupOldApiLogs(): Promise<void> {
     try {
       logger.info(Constants.TASK_CLEAN);
 
       // 计算1个月前的日期
-      const oneMonthAgo = new Date();
+      const oneMonthAgo: Date = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
       // 删除超过1个月的日志
-      const result = await this.apiLogModel
+      const result: any = await this.apiLogModel
         .deleteMany({
           createdAt: { $lt: oneMonthAgo },
         })
@@ -37,7 +37,7 @@ export class TaskService {
         logger.info(
         `API 日志清理完成，删除了 ${result.deletedCount} 条超过1个月的日志`,
       );
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`清理 API 日志失败: ${error.message}`);
     }
   }

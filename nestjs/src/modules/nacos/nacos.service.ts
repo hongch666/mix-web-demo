@@ -26,13 +26,13 @@ export class NacosService implements OnModuleInit {
     private readonly cls: ClsService,
   ) {}
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     // 取消终端与nacos相关的日志,如果需要日志可以将下面的logger设置为console
-    const silentLogger = Object.create(console);
-    silentLogger.log = () => {};
-    silentLogger.info = () => {};
-    silentLogger.debug = () => {};
-    silentLogger.warn = () => {};
+    const silentLogger: any = Object.create(console);
+    silentLogger.log = (): void => {};
+    silentLogger.info = (): void => {};
+    silentLogger.debug = (): void => {};
+    silentLogger.warn = (): void => {};
 
     this.client = new NacosNamingClient({
       logger: silentLogger,
@@ -65,22 +65,22 @@ export class NacosService implements OnModuleInit {
     logger.info('注册到 nacos 成功');
   }
 
-  async getServiceInstances(serviceName: string) {
-    const instances = await this.client.getAllInstances(serviceName);
+  async getServiceInstances(serviceName: string): Promise<any[]> {
+    const instances: any[] = await this.client.getAllInstances(serviceName);
     return instances;
   }
 
   async call(opts: CallOptions): Promise<any> {
-    const instances = await this.getServiceInstances(opts.serviceName);
+    const instances: any[] = await this.getServiceInstances(opts.serviceName);
     if (!instances || instances.length === 0) {
       throw new BusinessException(`服务 ${opts.serviceName} 无可用实例`);
     }
 
     // 负载均衡策略：随机
-    const instance = instances[Math.floor(Math.random() * instances.length)];
+    const instance: any = instances[Math.floor(Math.random() * instances.length)];
 
     // 替换 pathParams
-    let path = opts.path;
+    let path: string = opts.path;
     if (opts.pathParams) {
       for (const [key, value] of Object.entries(opts.pathParams)) {
         path = path.replace(`:${key}`, value);
@@ -88,27 +88,27 @@ export class NacosService implements OnModuleInit {
     }
 
     // 拼接 URL
-    const queryString = opts.queryParams
+    const queryString: string = opts.queryParams
       ? `?${qs.stringify(opts.queryParams)}`
       : '';
-    const url = `http://${instance.ip}:${instance.port}${path}${queryString}`;
+    const url: string = `http://${instance.ip}:${instance.port}${path}${queryString}`;
 
     // 默认请求头
-    const userId = this.cls.get('userId') || ' ';
-    const userName = this.cls.get('username') || ' ';
-    const defaultHeaders = {
+    const userId: string = this.cls.get<string>('userId') || ' ';
+    const userName: string = this.cls.get<string>('username') || ' ';
+    const defaultHeaders: Record<string, string> = {
       'X-User-Id': userId,
       'X-Username': userName,
     };
 
     // 合并默认请求头和自定义请求头
-    const headers = {
+    const headers: Record<string, string> = {
       ...defaultHeaders,
       ...(opts.headers || {}),
     };
 
     // 请求配置
-    const response = await axios.request({
+    const response: any = await axios.request({
       url,
       method: opts.method,
       data: opts.body,

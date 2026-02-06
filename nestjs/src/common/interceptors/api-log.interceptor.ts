@@ -23,7 +23,7 @@ export class ApiLogInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     // 获取装饰器配置
-    const logConfig = this.reflector.get<ApiLogOptions>(
+    const logConfig: ApiLogOptions | undefined = this.reflector.get<ApiLogOptions>(
       API_LOG_KEY,
       context.getHandler(),
     );
@@ -32,40 +32,40 @@ export class ApiLogInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const request = context.switchToHttp().getRequest();
-    const method = request.method;
-    const url = request.route?.path || request.url.split('?')[0];
+    const request: any = context.switchToHttp().getRequest();
+    const method: string = request.method;
+    const url: string = request.route?.path || request.url.split('?')[0];
 
     // 获取用户信息
-    const userId = this.cls.get('userId') || 0;
-    const username = this.cls.get('username') || 'unknown';
+    const userId: number = this.cls.get<number>('userId') || 0;
+    const username: string = this.cls.get<string>('username') || 'unknown';
 
     // 构建基础日志消息
-    let logMessage = `用户${userId}:${username} ${method} ${url}: ${logConfig.message}`;
+    let logMessage: string = `用户${userId}:${username} ${method} ${url}: ${logConfig.message}`;
 
     // 添加参数信息
     if (logConfig.includeParams) {
-      const params = this.extractParams(context, logConfig.excludeFields);
+      const params: string = this.extractParams(context, logConfig.excludeFields);
       if (params) {
         logMessage += `\n${params}`;
       }
     }
 
     // 记录日志
-    const logMethod = logger[logConfig.logLevel || 'info'];
+    const logMethod: ((message: string) => void) | undefined = logger[logConfig.logLevel || 'info' as keyof typeof logger];
     if (logMethod) {
       logMethod(logMessage);
     }
 
     // 开始计时
-    const start = Date.now();
+    const start: number = Date.now();
 
     return next.handle().pipe(
       finalize(() => {
         // 计算耗时
-        const responseTime = Date.now() - start;
-        const timeMessage = `${method} ${url} 使用了${responseTime}ms`;
-        const timeLogMethod = logger[logConfig.logLevel || 'info'];
+        const responseTime: number = Date.now() - start;
+        const timeMessage: string = `${method} ${url} 使用了${responseTime}ms`;
+        const timeLogMethod: ((message: string) => void) | undefined = logger[logConfig.logLevel || 'info' as keyof typeof logger];
         if (timeLogMethod) {
           timeLogMethod(timeMessage);
         }
@@ -80,7 +80,7 @@ export class ApiLogInterceptor implements NestInterceptor {
           url,
           responseTime,
           logConfig.excludeFields,
-        ).catch((error) => {
+        ).catch((error: any) => {
           logger.error(`发送 API 日志到队列失败: ${error.message}`);
         });
       }),
@@ -102,22 +102,22 @@ export class ApiLogInterceptor implements NestInterceptor {
   ): Promise<void> {
     try {
       // 提取查询参数
-      const queryParams = method === 'GET' ? request.query : null;
+      const queryParams: Record<string, any> | null = method === 'GET' ? request.query : null;
 
       // 提取路径参数
-      const pathParams =
+      const pathParams: Record<string, any> | null =
         request.params && Object.keys(request.params).length > 0
           ? request.params
           : null;
 
       // 提取请求体
-      let requestBody = null;
+      let requestBody: Record<string, any> | null = null;
       if (method !== 'GET' && request.body) {
         requestBody = this.filterFields(request.body, excludeFields);
       }
 
       // 构建消息对象
-      const apiLogMessage = {
+      const apiLogMessage: Record<string, any> = {
         user_id: userId,
         username: username,
         api_description: description,
@@ -133,7 +133,7 @@ export class ApiLogInterceptor implements NestInterceptor {
       await this.rabbitMQService.sendToQueue('api-log-queue', apiLogMessage);
 
       logger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`向消息队列发送 API 日志出错: ${error.message}`);
       // 不要抛出异常，避免影响业务逻辑
     }
@@ -143,8 +143,8 @@ export class ApiLogInterceptor implements NestInterceptor {
     context: ExecutionContext,
     excludeFields: string[] = [],
   ): string {
-    const request = context.switchToHttp().getRequest();
-    const method = request.method;
+    const request: any = context.switchToHttp().getRequest();
+    const method: string = request.method;
     const params: string[] = [];
 
     try {
@@ -152,27 +152,27 @@ export class ApiLogInterceptor implements NestInterceptor {
       if (method === 'GET') {
         // Query 参数
         if (request.query && Object.keys(request.query).length > 0) {
-          const filteredQuery = this.filterFields(request.query, excludeFields);
-          const paramName = this.getQueryParamName(context);
+          const filteredQuery: Record<string, any> = this.filterFields(request.query, excludeFields);
+          const paramName: string = this.getQueryParamName(context);
           params.push(`${paramName}: ${JSON.stringify(filteredQuery)}`);
         }
       } else {
         // Body 参数
         if (request.body && Object.keys(request.body).length > 0) {
-          const filteredBody = this.filterFields(request.body, excludeFields);
-          const paramName = this.getBodyParamName(context);
+          const filteredBody: Record<string, any> = this.filterFields(request.body, excludeFields);
+          const paramName: string = this.getBodyParamName(context);
           params.push(`${paramName}: ${JSON.stringify(filteredBody)}`);
         }
       }
 
       // Path 参数
       if (request.params && Object.keys(request.params).length > 0) {
-        const pathParamName = this.getPathParamName(context);
+        const pathParamName: string = this.getPathParamName(context);
         params.push(`${pathParamName}: ${JSON.stringify(request.params)}`);
       }
 
       return params.join('\n');
-    } catch (error) {
+    } catch (error: any) {
       return Constants.PARAM_ERROR;
     }
   }
@@ -208,8 +208,8 @@ export class ApiLogInterceptor implements NestInterceptor {
   }
 
   private getPathParamName(context: ExecutionContext): string {
-    const request = context.switchToHttp().getRequest();
-    const paramKeys = Object.keys(request.params);
+    const request: any = context.switchToHttp().getRequest();
+    const paramKeys: string[] = Object.keys(request.params);
 
     if (paramKeys.length === 1) {
       return paramKeys[0].toUpperCase();
@@ -219,11 +219,11 @@ export class ApiLogInterceptor implements NestInterceptor {
     return 'PathParams';
   }
 
-  private filterFields(obj: any, excludeFields: string[]): any {
+  private filterFields(obj: Record<string, any>, excludeFields: string[]): Record<string, any> {
     if (!excludeFields || !excludeFields.length) return obj;
 
-    const filtered = { ...obj };
-    excludeFields.forEach((field) => {
+    const filtered: Record<string, any> = { ...obj };
+    excludeFields.forEach((field: string) => {
       delete filtered[field];
     });
     return filtered;

@@ -16,19 +16,19 @@ export class WordService {
     templatePath: string,
   ): Promise<Buffer> {
     // 读取模板文件
-    const absTemplatePath = path.isAbsolute(templatePath)
+    const absTemplatePath: string = path.isAbsolute(templatePath)
       ? templatePath
       : path.resolve(__dirname, '../../', templatePath);
-    const template = fs.readFileSync(absTemplatePath);
+    const template: Buffer = fs.readFileSync(absTemplatePath);
 
     // 这里将content转为docx可用的rawXml
-    const processedData = {
+    const processedData: Record<string, any> = {
       ...data,
       // 这里简单转为纯文本，保留html标签需用插件
       content: htmlToText(data.content || '', { wordwrap: false }),
     };
 
-    const buffer = await createReport({
+    const buffer: any = await createReport({
       template,
       data: processedData,
       cmdDelimiter: ['${', '}'],

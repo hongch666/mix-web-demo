@@ -26,14 +26,14 @@ export class DownloadService {
   ) {}
 
   // 生成word并保存到指定位置
-  async exportToWordAndSave(id: number) {
-    const article = await this.articleService.getArticleById(id);
+  async exportToWordAndSave(id: number): Promise<string> {
+    const article: Articles | null = await this.articleService.getArticleById(id);
     if (!article) {
       throw new BusinessException(`文章 ID ${id} 未找到`);
     }
-    const htmlContent = marked.parse(article.content || '');
-    const user = await this.userService.getUserById(article.user_id);
-    const data = {
+    const htmlContent: string = marked.parse(article.content || '') as string;
+    const user: User | null = await this.userService.getUserById(article.user_id);
+    const data: Record<string, any> = {
       title: article.title,
       // 传递htmlContent给word模板
       content: htmlContent,
@@ -42,21 +42,21 @@ export class DownloadService {
       create_at: dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss'),
       update_at: dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss'),
     };
-    const filePath = this.configService.get<string>('files.word'); // 获取配置中的模板路径
+    const filePath: string | undefined = this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
       throw new BusinessException(Constants.EMPTY_FILE_PATH);
     }
-    const templatePath = path.join(process.cwd(), filePath, 'template.docx'); // 模板文件路径
-    const savePath = path.join(process.cwd(), filePath, `article-${id}.docx`); // 保存路径
+    const templatePath: string = path.join(process.cwd(), filePath, 'template.docx'); // 模板文件路径
+    const savePath: string = path.join(process.cwd(), filePath, `article-${id}.docx`); // 保存路径
     // 调用 WordService 生成并保存 Word 文档
-    const buffer = await this.wordService.exportToWord(data, templatePath);
+    const buffer: Buffer = await this.wordService.exportToWord(data, templatePath);
     // 确保保存目录存在
     if (!fs.existsSync(path.dirname(savePath))) {
       fs.mkdirSync(path.dirname(savePath), { recursive: true });
     }
     // 保存文件到指定路径
     fs.writeFileSync(savePath, buffer);
-    const url = await this.uploadFileToOSS(
+    const url: string = await this.uploadFileToOSS(
       savePath,
       `articles/article-${id}.docx`,
     );
@@ -67,29 +67,29 @@ export class DownloadService {
 
   // 生成markdown文件并上传到OSS，返回下载链接
   async exportMarkdownAndUpload(id: number): Promise<string> {
-    const article = await this.articleService.getArticleById(id);
+    const article: Articles | null = await this.articleService.getArticleById(id);
     if (!article) {
       throw new BusinessException(`文章 ID ${id} 未找到`);
     }
     // 拼接markdown内容
-    let markdown = `# ${article.title}\n`;
+    let markdown: string = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const user = await this.userService.getUserById(article.user_id);
+    const user: User | null = await this.userService.getUserById(article.user_id);
     markdown += `\n**作者：** ${user?.name || '未知'}\n`;
     markdown += `\n**创作时间：** ${dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
     markdown += `\n---\n`;
     markdown += article.content || '';
     // 保存到本地临时文件
-    const filePath = this.configService.get<string>('files.word') || 'static';
-    const saveDir = path.join(process.cwd(), filePath);
+    const filePath: string = this.configService.get<string>('files.word') || 'static';
+    const saveDir: string = path.join(process.cwd(), filePath);
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
     }
-    const savePath = path.join(saveDir, `article-${id}.md`);
+    const savePath: string = path.join(saveDir, `article-${id}.md`);
     fs.writeFileSync(savePath, markdown);
     // 上传到OSS
-    const ossPath = `articles/article-${id}.md`;
-    const url = await this.uploadFileToOSS(savePath, ossPath);
+    const ossPath: string = `articles/article-${id}.md`;
+    const url: string = await this.uploadFileToOSS(savePath, ossPath);
     // 上传后删除本地Markdown文件
     fs.unlinkSync(savePath);
     return url;
@@ -97,23 +97,23 @@ export class DownloadService {
 
   // 生成PDF文件并保存到指定位置
   async exportToPdfAndSave(id: number): Promise<string> {
-    const article = await this.articleService.getArticleById(id);
+    const article: Articles | null = await this.articleService.getArticleById(id);
     if (!article) {
       throw new BusinessException(`文章 ID ${id} 未找到`);
     }
 
-    const user = await this.userService.getUserById(article.user_id);
+    const user: User | null = await this.userService.getUserById(article.user_id);
 
     // 获取文件保存路径
-    const filePath = this.configService.get<string>('files.word') || 'static';
-    const saveDir = path.join(process.cwd(), filePath);
+    const filePath: string = this.configService.get<string>('files.word') || 'static';
+    const saveDir: string = path.join(process.cwd(), filePath);
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
     }
-    const savePath = path.join(saveDir, `article-${id}.pdf`);
+    const savePath: string = path.join(saveDir, `article-${id}.pdf`);
 
     // 创建 HTML 内容
-    const htmlContent = this.generatePdfHtml(
+    const htmlContent: string = this.generatePdfHtml(
       article,
       user || ({ name: '未知' } as User),
     );
@@ -125,7 +125,7 @@ export class DownloadService {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
-    const page = await browser.newPage();
+    const page: puppeteer.Page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
     // 生成 PDF
@@ -145,8 +145,8 @@ export class DownloadService {
     await browser.close();
 
     // 上传到 OSS
-    const ossPath = `articles/article-${id}.pdf`;
-    const url = await this.uploadFileToOSS(savePath, ossPath);
+    const ossPath: string = `articles/article-${id}.pdf`;
+    const url: string = await this.uploadFileToOSS(savePath, ossPath);
 
     // 删除本地 PDF 文件
     fs.unlinkSync(savePath);
@@ -156,12 +156,12 @@ export class DownloadService {
 
   // 生成 PDF 的 HTML 内容
   private generatePdfHtml(article: Articles, user: User): string {
-    const createTime = dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss');
-    const updateTime = dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss');
-    const generateTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    const createTime: string = dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss');
+    const updateTime: string = dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss');
+    const generateTime: string = dayjs().format('YYYY-MM-DD HH:mm:ss');
 
     // 使用 marked 解析 Markdown 内容为 HTML
-    const htmlContent = marked.parse(article.content || '');
+    const htmlContent: string = marked.parse(article.content || '') as string;
 
     return `
       <!DOCTYPE html>
@@ -355,9 +355,9 @@ export class DownloadService {
   }
 
   // 上传Word文件到OSS
-  async uploadFileToOSS(filePath: string, ossPath: string) {
+  async uploadFileToOSS(filePath: string, ossPath: string): Promise<string> {
     try {
-      const res = await this.nacosService.call({
+      const res: any = await this.nacosService.call({
         serviceName: 'fastapi',
         method: 'POST',
         path: '/upload',
@@ -367,7 +367,7 @@ export class DownloadService {
         },
       });
       return res.data;
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`上传阿里云OSS错误: ${error.message}`);
       throw new BusinessException(Constants.OSS_UPLOAD_ERR);
     }
