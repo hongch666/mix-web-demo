@@ -7,9 +7,9 @@ import { ClsModule } from 'nestjs-cls';
 import { ClsMiddleware } from '../common/middleware/cls.middleware';
 import { ApiModule } from '../api/api.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiLogInterceptor } from '../common/interceptors/api-log.interceptor';
-import { RequireAdminInterceptor } from '../common/interceptors/require-admin.interceptor';
+import { RequireAdminGuard } from '../common/guards/require-admin.guard';
 import { ModulesModule } from '../modules/modules.module';
 
 @Module({
@@ -77,8 +77,8 @@ import { ModulesModule } from '../modules/modules.module';
       useClass: ApiLogInterceptor,
     },
     {
-      provide: APP_INTERCEPTOR,
-      useClass: RequireAdminInterceptor,
+      provide: APP_GUARD,
+      useClass: RequireAdminGuard,
     },
   ],
 })

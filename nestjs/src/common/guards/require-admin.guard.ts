@@ -1,57 +1,45 @@
 import {
   Injectable,
-  NestInterceptor,
+  CanActivate,
   ExecutionContext,
-  CallHandler,
-  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
-import { Observable } from 'rxjs';
 import { REQUIRE_ADMIN_KEY } from '../decorators/require-admin.decorator';
 import { UserService } from '../../modules/user/user.service';
 import { BusinessException } from '../exceptions/business.exception';
 import { Constants } from '../utils/constants';
 
 @Injectable()
-export class RequireAdminInterceptor implements NestInterceptor {
+export class RequireAdminGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly cls: ClsService,
     private readonly userService: UserService,
   ) {}
 
-  async intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Promise<Observable<any>> {
-    // 获取装饰器标记
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requireAdmin = this.reflector.get<boolean>(
       REQUIRE_ADMIN_KEY,
       context.getHandler(),
     );
 
-    // 如果没有标记，直接放行
     if (!requireAdmin) {
-      return next.handle();
+      return true;
     }
 
-    // 获取当前用户ID
     const userId = this.cls.get('userId');
 
-    // 如果没有用户ID，拒绝访问
     if (!userId) {
       throw new BusinessException(Constants.UNAUTHORIZED_USER);
     }
 
-    // 检查用户是否是管理员
     const isAdmin = await this.userService.isAdminUser(userId);
 
-    // 非管理员拦截
     if (!isAdmin) {
       throw new BusinessException(Constants.NO_ADMIN_USER);
     }
 
-    return next.handle();
+    return true;
   }
 }
