@@ -2,10 +2,10 @@
 $workdir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Definition)
 
 # 启动 spring
-Start-Process powershell -ArgumentList "cd $workdir/spring; mvn spring-boot:run"
+Start-Process powershell -ArgumentList "cd $workdir/spring; gradle bootRun"
 
 # 启动 gateway
-Start-Process powershell -ArgumentList "cd $workdir/gateway; mvn spring-boot:run"
+Start-Process powershell -ArgumentList "cd $workdir/gateway; gradle bootRun"
 
 # 启动 gin
 Start-Process powershell -ArgumentList "cd $workdir/gin; go run main.go"
