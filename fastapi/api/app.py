@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from typing import Dict, Any
+from typing import Dict, Any, AsyncGenerator
 from contextlib import asynccontextmanager
 from api import controller
 from api.service import AnalyzeService
@@ -16,13 +16,13 @@ PORT: int = server_config["port"]
 
 def create_app() -> FastAPI:
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         # 自动建表
         create_tables(['ai_history'])
         # 启动Nacos服务注册
         start_nacos(ip=IP, port=PORT)
         # 启动定时任务调度器
-        analyze_service = AnalyzeService.create_for_scheduler()
+        analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
         start_scheduler(
             analyze_service=analyze_service,
             db_factory=lambda: next(get_db())

@@ -1,6 +1,6 @@
 import inspect
 from functools import wraps
-from typing import Callable
+from typing import Callable, Any, Optional
 from sqlmodel import Session
 from common.middleware import get_current_user_id
 from common.exceptions import BusinessException
@@ -26,9 +26,9 @@ def require_admin(func: Callable) -> Callable:
     """
     
     @wraps(func)
-    async def async_wrapper(*args, **kwargs):
+    async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
         # 获取当前用户ID
-        user_id = get_current_user_id()
+        user_id: Optional[str] = get_current_user_id()
         
         # 检查用户是否登录
         if not user_id:
@@ -36,7 +36,7 @@ def require_admin(func: Callable) -> Callable:
             raise BusinessException(Constants.USER_NOT_LOGGED_IN_MESSAGE)
         
         # 获取数据库会话
-        db: Session = kwargs.get('db')
+        db: Optional[Session] = kwargs.get('db')
         if not db:
             # 如果kwargs中没有db，尝试从args中获取或者创建新的
             for arg in args:
@@ -52,7 +52,7 @@ def require_admin(func: Callable) -> Callable:
             user_mapper = get_user_mapper()
             
             # 获取用户角色
-            user_role = user_mapper.get_user_role(int(user_id), db)
+            user_role: str = user_mapper.get_user_role(int(user_id), db)
             
             # 检查是否是管理员
             if user_role != "admin":
@@ -71,9 +71,9 @@ def require_admin(func: Callable) -> Callable:
             raise BusinessException(Constants.PERMISSION_CHECK_FAILED_MESSAGE)
     
     @wraps(func)
-    def sync_wrapper(*args, **kwargs):
+    def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
         # 获取当前用户ID
-        user_id = get_current_user_id()
+        user_id: Optional[str] = get_current_user_id()
         
         # 检查用户是否登录
         if not user_id:
@@ -81,7 +81,7 @@ def require_admin(func: Callable) -> Callable:
             raise BusinessException(Constants.USER_NOT_LOGGED_IN_MESSAGE)
         
         # 获取数据库会话
-        db: Session = kwargs.get('db')
+        db: Optional[Session] = kwargs.get('db')
         if not db:
             # 如果kwargs中没有db，尝试从args中获取或者创建新的
             for arg in args:
@@ -97,7 +97,7 @@ def require_admin(func: Callable) -> Callable:
             user_mapper = get_user_mapper()
             
             # 获取用户角色
-            user_role = user_mapper.get_user_role(int(user_id), db)
+            user_role: str = user_mapper.get_user_role(int(user_id), db)
             
             # 检查是否是管理员
             if user_role != "admin":

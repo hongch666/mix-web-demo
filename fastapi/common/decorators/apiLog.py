@@ -2,7 +2,7 @@ import inspect
 import json
 import time
 from functools import wraps
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union, Dict, AsyncGenerator
 from fastapi import Request
 from fastapi.responses import StreamingResponse
 from common.middleware import get_current_user_id, get_current_username
@@ -45,20 +45,23 @@ def api_log(config: Union[str, ApiLogConfig]):
     
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        async def async_wrapper(*args, **kwargs):
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             # 处理配置
+            log_config: ApiLogConfig
             if isinstance(config, str):
                 log_config = ApiLogConfig(config)
             else:
                 log_config = config
                 
             # 获取用户信息
-            user_id = get_current_user_id() or "0"
-            username = get_current_username() or "unknown"
+            user_id: str = get_current_user_id() or "0"
+            username: str = get_current_username() or "unknown"
             
             # 从参数中获取 Request 对象
-            request = _get_request_from_args(args, kwargs)
+            request: Optional[Request] = _get_request_from_args(args, kwargs)
             
+            method: str
+            path: str
             if request:
                 method = request.method
                 path = request.url.path
@@ -68,53 +71,53 @@ def api_log(config: Union[str, ApiLogConfig]):
                 path = f"/{func.__name__}"
             
             # 构建基础日志消息
-            log_lines = [f"用户{user_id}:{username} {method} {path}: {log_config.message}"]
+            log_lines: List[str] = [f"用户{user_id}:{username} {method} {path}: {log_config.message}"]
             
             # 添加查询参数
             if request and request.query_params:
-                query_params = dict(request.query_params)
+                query_params: Dict[str, Any] = dict(request.query_params)
                 log_lines.append(f"  查询参数: {json.dumps(query_params, ensure_ascii=False)}")
             
             # 添加路径参数
             if request and hasattr(request, "path_params") and request.path_params:
-                path_params = dict(request.path_params)
+                path_params: Dict[str, Any] = dict(request.path_params)
                 log_lines.append(f"  路径参数: {json.dumps(path_params, ensure_ascii=False)}")
             
             # 添加请求体（业务参数）
             if log_config.include_params:
-                params_info = _extract_params_info(func, args, kwargs, log_config.exclude_fields)
+                params_info: str = _extract_params_info(func, args, kwargs, log_config.exclude_fields)
                 if params_info:
                     log_lines.append(f"  请求体:")
                     log_lines.append(params_info)
             
-            log_message = "\n".join(log_lines)
+            log_message: str = "\n".join(log_lines)
             
             # 记录日志
-            logger_method = getattr(logger, log_config.log_level, logger.info)
+            logger_method: Callable[[str], None] = getattr(logger, log_config.log_level, logger.info)
             logger_method(log_message)
 
             # 执行原函数并记录耗时
-            start = time.time()
+            start: float = time.time()
             try:
-                result = await func(*args, **kwargs)
+                result: Any = await func(*args, **kwargs)
                 
                 # 如果返回的是 StreamingResponse，需要包装以追踪耗时
                 if isinstance(result, StreamingResponse):
                     original_generator = result.body_iterator
                     
                     # 提前提取请求体信息，避免在生成器执行时丢失上下文
-                    captured_func = func
-                    captured_kwargs = kwargs.copy()
-                    captured_log_config = log_config
+                    captured_func: Callable = func
+                    captured_kwargs: Dict[str, Any] = kwargs.copy()
+                    captured_log_config: ApiLogConfig = log_config
                     
-                    async def tracked_generator():
+                    async def tracked_generator() -> AsyncGenerator[bytes, None]:
                         try:
                             async for chunk in original_generator:
                                 yield chunk
                         finally:
                             # 流完成时记录耗时
-                            duration_ms = int((time.time() - start) * 1000)
-                            time_message = f"{method} {path} 使用了{duration_ms}ms"
+                            duration_ms: int = int((time.time() - start) * 1000)
+                            time_message: str = f"{method} {path} 使用了{duration_ms}ms"
                             logger_method(time_message)
                             
                             # 发送 API 日志到 RabbitMQ（使用捕获的上下文）
@@ -127,8 +130,8 @@ def api_log(config: Union[str, ApiLogConfig]):
                     return result
                 else:
                     # 非流式响应，立即记录耗时
-                    duration_ms = int((time.time() - start) * 1000)
-                    time_message = f"{method} {path} 使用了{duration_ms}ms"
+                    duration_ms: int = int((time.time() - start) * 1000)
+                    time_message: str = f"{method} {path} 使用了{duration_ms}ms"
                     logger_method(time_message)
                     
                     # 发送 API 日志到 RabbitMQ
@@ -141,26 +144,29 @@ def api_log(config: Union[str, ApiLogConfig]):
                 # 业务异常直接重新抛出，不记录耗时
                 raise
             except Exception as e:
-                duration_ms = int((time.time() - start) * 1000)
-                time_message = f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"
+                duration_ms: int = int((time.time() - start) * 1000)
+                time_message: str = f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"
                 logger_method(time_message)
                 raise BusinessException(Constants.RABBITMQ_NOT_AVAILABLE)
 
         @wraps(func)
-        def sync_wrapper(*args, **kwargs):
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
             # 处理配置
+            log_config: ApiLogConfig
             if isinstance(config, str):
                 log_config = ApiLogConfig(config)
             else:
                 log_config = config
                 
             # 获取用户信息
-            user_id = get_current_user_id() or ""
-            username = get_current_username() or ""
+            user_id: str = get_current_user_id() or ""
+            username: str = get_current_username() or ""
             
             # 从参数中获取 Request 对象
-            request = _get_request_from_args(args, kwargs)
+            request: Optional[Request] = _get_request_from_args(args, kwargs)
             
+            method: str
+            path: str
             if request:
                 method = request.method
                 path = request.url.path
@@ -170,38 +176,38 @@ def api_log(config: Union[str, ApiLogConfig]):
                 path = f"/{func.__name__}"
             
             # 构建基础日志消息
-            log_lines = [f"用户{user_id}:{username} {method} {path}: {log_config.message}"]
+            log_lines: List[str] = [f"用户{user_id}:{username} {method} {path}: {log_config.message}"]
             
             # 添加查询参数
             if request and request.query_params:
-                query_params = dict(request.query_params)
+                query_params: Dict[str, Any] = dict(request.query_params)
                 log_lines.append(f"  查询参数: {json.dumps(query_params, ensure_ascii=False)}")
             
             # 添加路径参数
             if request and hasattr(request, "path_params") and request.path_params:
-                path_params = dict(request.path_params)
+                path_params: Dict[str, Any] = dict(request.path_params)
                 log_lines.append(f"  路径参数: {json.dumps(path_params, ensure_ascii=False)}")
             
             # 添加请求体（业务参数）
             if log_config.include_params:
-                params_info = _extract_params_info(func, args, kwargs, log_config.exclude_fields)
+                params_info: str = _extract_params_info(func, args, kwargs, log_config.exclude_fields)
                 if params_info:
                     log_lines.append(f"  请求体:")
                     log_lines.append(params_info)
             
-            log_message = "\n".join(log_lines)
+            log_message: str = "\n".join(log_lines)
             
             # 记录日志
-            logger_method = getattr(logger, log_config.log_level, logger.info)
+            logger_method: Callable[[str], None] = getattr(logger, log_config.log_level, logger.info)
             logger_method(log_message)
 
             # 执行原函数并记录耗时
-            start = time.time()
+            start: float = time.time()
             try:
                 return func(*args, **kwargs)
             finally:
-                duration_ms = int((time.time() - start) * 1000)
-                time_message = f"{method} {path} 使用了{duration_ms}ms"
+                duration_ms: int = int((time.time() - start) * 1000)
+                time_message: str = f"{method} {path} 使用了{duration_ms}ms"
                 logger_method(time_message)
                 
                 # 发送 API 日志到 RabbitMQ
@@ -219,7 +225,7 @@ def api_log(config: Union[str, ApiLogConfig]):
     return decorator
 
 
-def _get_request_from_args(args: tuple, kwargs: dict) -> Optional[Request]:
+def _get_request_from_args(args: tuple, kwargs: Dict[str, Any]) -> Optional[Request]:
     """
     从函数参数中提取 Request 对象
     
@@ -243,7 +249,7 @@ def _get_request_from_args(args: tuple, kwargs: dict) -> Optional[Request]:
     return None
 
 
-def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fields: List[str]) -> str:
+def _extract_params_info(func: Callable, args: tuple, kwargs: Dict[str, Any], exclude_fields: List[str]) -> str:
     """
     提取参数信息
     
@@ -258,15 +264,15 @@ def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fiel
     """
     try:
         # 获取函数签名
-        sig = inspect.signature(func)
-        param_names = list(sig.parameters.keys())
+        sig: inspect.Signature = inspect.signature(func)
+        param_names: List[str] = list(sig.parameters.keys())
         
-        filtered_params = {}
+        filtered_params: Dict[str, str] = {}
         
         # 处理位置参数
         for i, arg in enumerate(args):
             if i < len(param_names):
-                param_name = param_names[i]
+                param_name: str = param_names[i]
                 
                 # 基本依赖注入过滤
                 if param_name in {'db', 'session', 'httpRequest'}:
@@ -299,9 +305,9 @@ def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fiel
                     continue
                 
                 # 检查参数注解，排除纯 FastAPI Request 对象
-                param_annotation = sig.parameters[key].annotation
+                param_annotation: Any = sig.parameters[key].annotation
                 if param_annotation != inspect.Parameter.empty:
-                    annotation_str = str(param_annotation)
+                    annotation_str: str = str(param_annotation)
                     # 排除 fastapi.Request 或 starlette.Request 类型的参数
                     if ('fastapi' in annotation_str or 'starlette' in annotation_str) and 'Request' in annotation_str:
                         continue
@@ -315,7 +321,7 @@ def _extract_params_info(func: Callable, args: tuple, kwargs: dict, exclude_fiel
         
         # 格式化输出
         if filtered_params:
-            param_info = []
+            param_info: List[str] = []
             for key, value in filtered_params.items():
                 param_info.append(f"    {key}: {value}")
             return "\n".join(param_info)
@@ -342,7 +348,7 @@ def _serialize_for_json(obj: Any) -> Any:
         return obj
     elif isinstance(obj, dict):
         # 递归处理字典中的每个值
-        result = {}
+        result: Dict[str, Any] = {}
         for key, value in obj.items():
             result[key] = _serialize_for_json(value)
         return result
@@ -390,7 +396,7 @@ def _serialize_param(param: Any) -> str:
         return str(type(param).__name__)
 
 
-def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields: List[str]) -> Optional[dict]:
+def _extract_request_body_for_queue(func: Callable, kwargs: Dict[str, Any], exclude_fields: List[str]) -> Optional[Dict[str, Any]]:
     """
     从函数参数中提取请求体信息用于发送到队列
     
@@ -403,16 +409,16 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
         dict: 请求体信息，如果没有则返回 None
     """
     try:
-        request_body_dict = {}
+        request_body_dict: Dict[str, Any] = {}
         
         # 需要排除的参数名称（依赖注入 - 注意：不包括 'request'，因为它可能是 Pydantic 模型）
-        exclude_param_names = {'db', 'session', 'httpRequest'}
+        exclude_param_names: set = {'db', 'session', 'httpRequest'}
         
         # 需要排除的参数类型后缀
-        exclude_type_suffixes = ('Service', 'Mapper', 'Repository', 'Dao', 'Manager', 'Client', 'Cache')
+        exclude_type_suffixes: tuple = ('Service', 'Mapper', 'Repository', 'Dao', 'Manager', 'Client', 'Cache')
         
         # 获取函数签名，检查参数是否为 Query/Path 参数
-        sig = inspect.signature(func)
+        sig: inspect.Signature = inspect.signature(func)
         
         for key, value in kwargs.items():
             # 跳过依赖注入参数（通过参数名）
@@ -433,9 +439,9 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
             
             # 检查参数注解，只提取 Body 参数（Pydantic 模型）
             if key in sig.parameters:
-                param_annotation = sig.parameters[key].annotation
+                param_annotation: Any = sig.parameters[key].annotation
                 if param_annotation != inspect.Parameter.empty:
-                    annotation_str = str(param_annotation)
+                    annotation_str: str = str(param_annotation)
                     # 跳过 Query、Path 等参数类型（它们会在 query_params 和 path_params 中显示）
                     # 只保留 Pydantic 模型（请求体）
                     if any(t in annotation_str for t in ['Query', 'Path', 'Header', 'Cookie', 'Form']):
@@ -450,7 +456,7 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
                 request_body_dict.update(value.dict())
             elif isinstance(value, dict):
                 # 如果已经是字典，需要检查其中是否有 UploadFile
-                processed_dict = {}
+                processed_dict: Dict[str, Any] = {}
                 for dict_key, dict_value in value.items():
                     # 检查是否是 UploadFile 对象
                     if hasattr(dict_value, 'filename') and hasattr(dict_value, 'file'):
@@ -462,7 +468,7 @@ def _extract_request_body_for_queue(func: Callable, kwargs: dict, exclude_fields
                 # 其他基础类型只有在不是 int/str 查询参数时才添加
                 # 检查参数默认值，如果有默认值说明可能是查询参数
                 if key in sig.parameters:
-                    param = sig.parameters[key]
+                    param: inspect.Parameter = sig.parameters[key]
                     # 如果参数有默认值且类型是基础类型（int/str/bool），很可能是查询参数，跳过
                     if param.default != inspect.Parameter.empty and isinstance(value, (int, str, bool, float)):
                         continue
@@ -495,12 +501,12 @@ def _normalize_path_with_params(path: str, request: Optional[Request]) -> str:
     if not request or not hasattr(request, "path_params") or not request.path_params:
         return path
     
-    normalized_path = path
+    normalized_path: str = path
     
     # 将每个路径参数的实际值替换为 :参数名
     for param_name, param_value in request.path_params.items():
         # 转换为字符串以防是其他类型
-        param_value_str = str(param_value)
+        param_value_str: str = str(param_value)
         # 替换路径中的实际值为 :param_name
         normalized_path = normalized_path.replace(f"/{param_value_str}", f"/:{param_name}")
     
@@ -517,8 +523,8 @@ def _send_api_log_to_queue(
     response_time_ms: int,
     log_config: ApiLogConfig,
     func: Callable,
-    kwargs: dict = None,
-):
+    kwargs: Optional[Dict[str, Any]] = None,
+) -> None:
     """
     发送 API 日志到 RabbitMQ
     
@@ -540,25 +546,25 @@ def _send_api_log_to_queue(
     
     try:
         # 提取查询参数
-        query_params = None
+        query_params: Optional[Dict[str, Any]] = None
         if request and request.query_params:
             query_params = dict(request.query_params)
         
         # 提取路径参数
-        path_params = None
+        path_params: Optional[Dict[str, Any]] = None
         if request and hasattr(request, "path_params") and request.path_params:
             path_params = dict(request.path_params)
         
         # 标准化路径：将实际参数值替换为参数名
-        normalized_path = _normalize_path_with_params(path, request)
+        normalized_path: str = _normalize_path_with_params(path, request)
         
         # 提取请求体 - 从参数中提取业务参数（需要传入 func 以检查参数注解）
-        request_body = None
+        request_body: Optional[Dict[str, Any]] = None
         if log_config.include_params:
             request_body = _extract_request_body_for_queue(func, kwargs, log_config.exclude_fields)
         
         # 确保 user_id 是数字类型，如果为空则使用默认值
-        final_user_id = user_id if user_id else 0
+        final_user_id: int = user_id if user_id else 0
         if isinstance(final_user_id, str):
             try:
                 final_user_id = int(final_user_id)
@@ -566,10 +572,10 @@ def _send_api_log_to_queue(
                 final_user_id = 0
         
         # 确保 username 不为空
-        final_username = username if username else "匿名用户"
+        final_username: str = username if username else "匿名用户"
         
         # 构建 API 日志消息（统一格式：snake_case）
-        api_log_message = {
+        api_log_message: Dict[str, Any] = {
             "user_id": final_user_id,
             "username": final_username,
             "api_description": description,
@@ -582,7 +588,7 @@ def _send_api_log_to_queue(
         }
         
         # 发送到 RabbitMQ
-        success = send_to_queue("api-log-queue", api_log_message, persistent=True)
+        success: bool = send_to_queue("api-log-queue", api_log_message, persistent=True)
         if success:
             logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)
         else:
@@ -593,7 +599,7 @@ def _send_api_log_to_queue(
 
 
 # 简化版装饰器，直接传入消息
-def log(message: str):
+def log(message: str) -> Callable:
     """
     简化版日志装饰器
     
@@ -614,7 +620,7 @@ def log_with_config(
     include_params: bool = True,
     log_level: str = "info",
     exclude_fields: Optional[List[str]] = None
-):
+) -> Callable:
     """
     带配置的日志装饰器
     

@@ -13,10 +13,10 @@ def resolve_env_vars_in_string(text: str) -> str:
     替换字符串中的环境变量占位符
     支持格式：${VAR_NAME:default_value} 或 ${VAR_NAME}
     """
-    pattern = r'\$\{([^:}]+)(?::([^}]*))?\}'
-    def replace_var(match):
-        var_name = match.group(1)
-        default_value = match.group(2) or ""
+    pattern: str = r'\$\{([^:}]+)(?::([^}]*))?\}'
+    def replace_var(match: re.Match[str]) -> str:
+        var_name: str = match.group(1)
+        default_value: str = match.group(2) or ""
         return os.getenv(var_name, default_value)
     return re.sub(pattern, replace_var, text)
 
@@ -24,11 +24,11 @@ def load_config(section: Optional[str] = None, key: Optional[str] = None) -> Any
     """
     加载 application.yaml 配置文件并解析环境变量
     """
-    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "application.yaml")
+    config_path: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "application.yaml")
     
     # 读取原始文件
     with open(config_path, "r", encoding="utf-8") as f:
-        content = f.read()
+        content: str = f.read()
     
     # 替换环境变量占位符
     content = resolve_env_vars_in_string(content)
