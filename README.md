@@ -159,18 +159,18 @@
 
 - Java 17+
 - Maven 3.6+
-- Gradle 9.3+（可选，但推荐用于 Java 项目构建）
+- Gradle 9.3+(可选，但推荐用于 Java 项目构建)
 - Go 1.23+
 - Node.js 20+
-- Bun(可选)
+- Bun 1.2+(可选)
 - Python 3.12+
-- uv(可选)
+- uv 0.9+(可选)
 - MySQL 8.0+
-- PostgreSQL(需要安装向量插件) 15.4+
+- PostgreSQL + pgvector 15.4+
 - MongoDB 5.0+
 - Redis 6.0+
 - RabbitMQ 3.8+
-- Hadoop+Hive(可选)
+- Hadoop + Hive 3.3+(可选)
 
 ## 环境设置
 
@@ -352,7 +352,7 @@ default = true
 
 脚本执行完成后，还需要：
 
-1. **配置各服务的 yaml 文件**（见下方"配置文件说明"章节）
+1. **配置各服务的 .env 文件**（见下方"配置文件说明"章节）
 2. **启动基础服务**（MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos）
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
@@ -1657,14 +1657,14 @@ JWT_EXPIRATION=2592000000
 1. 使用 `go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
 2. 在 controller 层上的路由函数使用如下注释添加 swagger 信息
 
-```go
-// @Summary 获取用户列表
-// @Description 获取所有用户信息
-// @Tags 用户
-// @Produce json
-// @Success 200 {array} map[string]string
-// @Router /users [get]
-```
+   ```go
+   // @Summary 获取用户列表
+   // @Description 获取所有用户信息
+   // @Tags 用户
+   // @Produce json
+   // @Success 200 {array} map[string]string
+   // @Router /users [get]
+   ```
 
 3. 在 `http://[ip和端口]/swagger/index.html`访问 Swagger 接口
 4. 每次添加新的 swagger 信息时需要在终端输入 `swag init`
@@ -1679,28 +1679,28 @@ JWT_EXPIRATION=2592000000
 
 1. 在 `main.py` 中通过 `FastAPI` 的参数自定义全局 Swagger 信息，例如：
 
-```python
-app = FastAPI(
-    title="FastAPI部分的Swagger文档集成",
-    description="这是demo项目的FastAPI部分的Swagger文档集成",
-    version="1.0.0"
-)
-```
+   ```python
+   app = FastAPI(
+       title="FastAPI部分的Swagger文档集成",
+       description="这是demo项目的FastAPI部分的Swagger文档集成",
+       version="1.0.0"
+   )
+   ```
 
 2. 单个接口的描述可以通过路由装饰器的 `description` 参数或函数 docstring 设置，例如：
 
-```python
-@router.get(
-    "/fastapi",
-    summary="这是接口简介",
-    description="这是接口描述"
-)
-def hello():
-    """
-    这是接口的详细说明
-    """
-    return {"msg": "hello"}
-```
+   ```python
+   @router.get(
+       "/fastapi",
+       summary="这是接口简介",
+       description="这是接口描述"
+   )
+   def hello():
+       """
+       这是接口的详细说明
+       """
+       return {"msg": "hello"}
+   ```
 
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
 
@@ -1719,27 +1719,27 @@ def hello():
 
 1. Spring 项目采用大驼峰命名方式，如 `UserCreateDTO.java`
 2. Gin 项目采用蛇形命名方式，如 `user_create_dto.go`
-3. NestJS 项目采用点号命名和下划线命名混合使用的方式，如 `user-create.service.ts`
+3. NestJS 项目采用点号命名和横杠命名混合使用的方式，横杠区分模块名，点号区分功能，如 `user-create.service.ts`
 4. FastAPI 项目采用小驼峰命名方式，如 `userCreateDTO.py`
 
 ### 返回格式说明
 
 1. 返回统一使用 `application/json`格式返回，格式如下
 
-```json
-{
-  "code": 1,
-  "data": Object,
-  "msg": "success"
-}
-```
+   ```json
+   {
+     "code": 1,
+     "data": Object,
+     "msg": "success"
+   }
+   ```
 
 - `code`为响应码，1 为成功，0 为失败
 - `data`为实际数据，可以为空，一般是查询返回的结果
 - `msg`为返回信息，成功一般为“success”，失败则为失败原因
 
-2. 一般成功时除查询接口外，其他接口都是无返回 `data`
-3. 失败时 `data `统一为 `null `，错误原因使用 `msg`参数
+2. 一般成功时除查询接口和部分状态管理外，其他接口都是无返回`data`，即`data`为`null`
+3. 失败时`data`统一为 `null`，错误原因使用`msg`参数
 4. 无论成功还是失败，HTTP 的状态码均为 200
 
 ### 异常处理说明
@@ -1751,12 +1751,17 @@ def hello():
 
 ### 常量说明
 
-1. Spring 项目使用 `CommonConstants.java` 进行常量类管理，包括相关字符串和数字常量
-2. Gin 项目使用 `common_constants.go` 进行常量管理，包括相关字符串和数字常量
-3. NestJS 项目使用 `common.constants.ts` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
-4. FastAPI 项目使用 `common_constants.py` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
+1. Spring 项目使用 `common/utils/Constants.java` 进行常量类管理，包括相关字符串和数字常量
+2. Gin 项目使用 `common/utils/constants.go` 进行常量管理，包括相关字符串和数字常量
+3. NestJS 项目使用 `common/utils/constants.ts` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
+4. FastAPI 项目使用 `common/utils/constants.py` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
 
 目前常量类均可根据需要进行扩展，尽可能使用常量类进行统一管理，避免硬编码。
+
+### 定时任务说明
+1. 统一使用Cron表达式的方式进行定时任务管理
+2. 遵循当前项目的定时任务设置方式
+3. 部分定时任务使用`logic`封装定时任务的实际逻辑，在定时任务主文件调用`logic`
 
 ## 其他说明
 
@@ -1764,7 +1769,7 @@ def hello():
 
 FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通过这些工具进行数据查询和分析。
 
-1. SQL 数据库工具
+#### 1.SQL 数据库工具
 
 通过 MySQL 数据库进行数据查询和分析：
 
@@ -1773,7 +1778,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 | `get_table_schema`  | 获取表结构    | 表名(可选)      | 返回表的详细结构信息，包括列名、类型、主键、索引等；不提供表名则返回所有表的列表 |
 | `execute_sql_query` | 执行 SQL 查询 | SQL SELECT 语句 | 仅支持 SELECT 查询，自动进行用户隔离过滤，返回最多 500 行数据                    |
 
-2. RAG 向量搜索工具
+#### 2.RAG 向量搜索工具
 
 基于 PostgreSQL + Qwen 嵌入模型的文章向量搜索：
 
@@ -1781,7 +1786,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 | ----------------- | ------------ | ------------ | ------------------------------------------------------------- |
 | `search_articles` | 向量语义搜索 | 问题或关键词 | 基于语义相似度搜索相关文章，返回相似度最高的 N 篇文章内容片段 |
 
-3. MongoDB 日志查询工具
+#### 3.MongoDB 日志查询工具
 
 查询系统日志和 API 调用记录：
 
@@ -1800,51 +1805,49 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 }
 ```
 
-4. 其他工具
+#### 4.其他工具
 
 - **意图路由工具 (intentRouter.py)**: 用于自动识别用户意图并路由到不同的处理模块
 - **用户权限管理 (userPermissionManager.py)**: 管理和校验用户权限，实现细粒度访问控制
 
 ### 词云图说明
 
-1. 词云图的字体应进行配置对应字体的路径。
+1. 词云图的字体应进行配置对应字体的路径
 
-### Word 下载说明
+### 下载说明
 
-1. 下载文件的模板路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写，目前提供如下的示例
+1. Word 下载文件的模板路径在 NestJS 部分 yaml 配置文件中配置，使用 `${字段名}`进行模板书写，目前提供如下的示例
 2. 内容示例
 
-```word
-${title}
+   ```word
+   ${title}
 
-${tags}
+   ${tags}
 
-${content}
-```
+   ${content}
+   ```
 
-3. 需要使用下面指令安装 `puppeteer`的 Chrome 浏览器
+3. PDF 下载需要使用下面指令安装 `puppeteer`的 Chrome 浏览器
 
-```bash
-npx puppeteer browsers install chrome
-```
+   ```bash
+   npx puppeteer browsers install chrome
+   ```
 
 4. 当前 Word 下载只支持文章内容为纯文本，无法显示 Markdown 格式
 
-### Google AI 服务说明
+### AI 说明
 
 1. Gemini 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
 
-### AI 相关服务密钥说明
+2. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `.env`中
 
-1. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `.env`中。
+### 用户聊天相关说明
 
-### 聊天相关说明
-
-1. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数。
+1. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数
 
 ### Hadoop 使用说明
 
-1. 如果没有使用 Hadoop + Hive 作为大数据分析工具，系统默认使用 pyspark 分析同步时产生的 csv 文章数据。
+1. 如果没有使用 Hadoop + Hive 作为大数据分析工具，系统默认使用 PySpark 分析同步时产生的 CSV 文章数据，PySpark 失败默认降级使用数据库 DB 聚合查询
 
 ### AI 用户说明
 
@@ -1858,22 +1861,22 @@ npx puppeteer browsers install chrome
 
 1. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
 
-```bash
-# Fresh 热启动工具配置文件
-# 将编译文件输出到系统临时目录，不污染项目目录
+   ```bash
+   # Fresh 热启动工具配置文件
+   # 将编译文件输出到系统临时目录，不污染项目目录
 
-root=.
-# 输出到系统临时目录 (/tmp) 而不是项目目录
-tmp_path=/tmp/fresh-runner
-build_name=runner-build
-build_path=/tmp/fresh-runner
-build_delay=1000
-ignore_folder=assets,tmp,vendor,frontend/node_modules,logs,docs
-ignore_file=.DS_Store,.gitignore
-watch_path=.
-watch_ext=.go
-verbose=false
-```
+   root=.
+   # 输出到系统临时目录 (/tmp) 而不是项目目录
+   tmp_path=/tmp/fresh-runner
+   build_name=runner-build
+   build_path=/tmp/fresh-runner
+   build_delay=1000
+   ignore_folder=assets,tmp,vendor,frontend/node_modules,logs,docs
+   ignore_file=.DS_Store,.gitignore
+   watch_path=.
+   watch_ext=.go
+   verbose=false
+   ```
 
 ### 搜索算法公式说明
 
@@ -1915,17 +1918,17 @@ $$
   - 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
   - 权重配置说明
 
-5. 默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
+5. 默认权重分配（可在 Gin 部分的 `.env` 中配置）：
 
-| 因素           | 权重     | 说明                                          |
-| -------------- | -------- | --------------------------------------------- |
-| ES 基础分数    | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
-| AI 评分        | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
-| 用户评分       | 0.10     | 用户对文章的综合评价（0-10 范围）             |
-| 阅读量         | 0.08     | 文章的浏览热度                                |
-| 点赞量         | 0.08     | 用户的认可度                                  |
-| 收藏量         | 0.08     | 用户的收藏价值指数                            |
-| 作者关注数     | 0.04     | 作者的影响力                                  |
-| **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
+   | 因素           | 权重     | 说明                                          |
+   | -------------- | -------- | --------------------------------------------- |
+   | ES 基础分数    | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
+   | AI 评分        | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
+   | 用户评分       | 0.10     | 用户对文章的综合评价（0-10 范围）             |
+   | 阅读量         | 0.08     | 文章的浏览热度                                |
+   | 点赞量         | 0.08     | 用户的认可度                                  |
+   | 收藏量         | 0.08     | 用户的收藏价值指数                            |
+   | 作者关注数     | 0.04     | 作者的影响力                                  |
+   | **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
 
 - 权重总和为 1.0，确保评分结果的可比性和公平性。
