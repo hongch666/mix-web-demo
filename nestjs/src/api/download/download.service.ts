@@ -4,7 +4,7 @@ import * as path from 'path';
 import { WordService } from 'src/modules/word/word.service';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 import { ConfigService } from '@nestjs/config';
-import { fileLogger } from 'src/common/utils/writeLog';
+import { logger } from 'src/common/utils/writeLog';
 import * as puppeteer from 'puppeteer';
 import { UserService } from 'src/modules/user/user.service';
 import { ArticleService } from 'src/modules/article/article.service';
@@ -368,7 +368,7 @@ export class DownloadService {
       });
       return res.data;
     } catch (error) {
-      fileLogger.error(`上传阿里云OSS错误: ${error.message}`);
+      logger.error(`上传阿里云OSS错误: ${error.message}`);
       throw new BusinessException(Constants.OSS_UPLOAD_ERR);
     }
   }

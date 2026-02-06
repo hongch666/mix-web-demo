@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
 import { Model } from 'mongoose';
 import { ApiLog, ApiLogDocument } from 'src/api/api-log/schema/api-log.schema';
-import { fileLogger } from '../../common/utils/writeLog';
+import { logger } from '../../common/utils/writeLog';
 import { Constants } from '../../common/utils/constants';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class TaskService {
   @Cron('0 0 2 1 * *')
   async cleanupOldApiLogs() {
     try {
-      fileLogger.info(Constants.TASK_CLEAN);
+      logger.info(Constants.TASK_CLEAN);
 
       // 计算1个月前的日期
       const oneMonthAgo = new Date();
@@ -34,11 +34,11 @@ export class TaskService {
         })
         .exec();
 
-      fileLogger.info(
+        logger.info(
         `API 日志清理完成，删除了 ${result.deletedCount} 条超过1个月的日志`,
       );
     } catch (error) {
-      fileLogger.error(`清理 API 日志失败: ${error.message}`);
+      logger.error(`清理 API 日志失败: ${error.message}`);
     }
   }
 }

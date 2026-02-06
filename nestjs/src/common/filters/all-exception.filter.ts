@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { error } from '../utils/response'; // 之前写的 error() 方法
-import { fileLogger } from '../utils/writeLog';
+import { logger } from '../utils/writeLog';
 import { BusinessException } from '../exceptions/business.exception';
 import { Constants } from '../utils/constants';
 
@@ -39,7 +39,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     // 打印错误日志（所有异常都记录详细信息）
-    fileLogger.error(
+    logger.error(
       `[${request.method}] ${request.url} - ${isBusinessException ? message : exception?.message || Constants.ERROR_DEFAULT_MSG} - ${exception.stack}`,
     );
 

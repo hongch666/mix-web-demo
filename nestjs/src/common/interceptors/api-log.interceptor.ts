@@ -8,7 +8,7 @@ import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { fileLogger } from '../utils/writeLog';
+import { logger } from '../utils/writeLog';
 import { API_LOG_KEY, ApiLogOptions } from '../decorators/api-log.decorator';
 import { RabbitMQService } from '../../modules/mq/mq.service';
 import { Constants } from '../utils/constants';
@@ -52,7 +52,7 @@ export class ApiLogInterceptor implements NestInterceptor {
     }
 
     // 记录日志
-    const logMethod = fileLogger[logConfig.logLevel || 'info'];
+    const logMethod = logger[logConfig.logLevel || 'info'];
     if (logMethod) {
       logMethod(logMessage);
     }
@@ -65,7 +65,7 @@ export class ApiLogInterceptor implements NestInterceptor {
         // 计算耗时
         const responseTime = Date.now() - start;
         const timeMessage = `${method} ${url} 使用了${responseTime}ms`;
-        const timeLogMethod = fileLogger[logConfig.logLevel || 'info'];
+        const timeLogMethod = logger[logConfig.logLevel || 'info'];
         if (timeLogMethod) {
           timeLogMethod(timeMessage);
         }
@@ -81,7 +81,7 @@ export class ApiLogInterceptor implements NestInterceptor {
           responseTime,
           logConfig.excludeFields,
         ).catch((error) => {
-          fileLogger.error(`发送 API 日志到队列失败: ${error.message}`);
+          logger.error(`发送 API 日志到队列失败: ${error.message}`);
         });
       }),
     );
@@ -132,9 +132,9 @@ export class ApiLogInterceptor implements NestInterceptor {
       // 发送到消息队列
       await this.rabbitMQService.sendToQueue('api-log-queue', apiLogMessage);
 
-      fileLogger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
+      logger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
     } catch (error) {
-      fileLogger.error(`向消息队列发送 API 日志出错: ${error.message}`);
+      logger.error(`向消息队列发送 API 日志出错: ${error.message}`);
       // 不要抛出异常，避免影响业务逻辑
     }
   }

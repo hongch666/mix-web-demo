@@ -113,4 +113,4 @@ export class SimpleLogger {
 
 // 导出静态方法和实例
 export const { logInfo, logError, logWarning, logDebug, writeLog } = LoggerUtil;
-export const fileLogger = new SimpleLogger();
+export const logger = new SimpleLogger();

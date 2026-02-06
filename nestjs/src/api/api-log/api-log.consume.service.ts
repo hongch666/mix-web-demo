@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService } from 'src/modules/mq/mq.service';
 import { ApiLogService } from './api-log.service';
-import { fileLogger } from 'src/common/utils/writeLog';
+import { logger } from 'src/common/utils/writeLog';
 import { CreateApiLogDto } from './dto/api-log.dto';
 import { Constants } from 'src/common/utils/constants';
 
@@ -13,7 +13,7 @@ export class ApiLogConsumerService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    fileLogger.info(Constants.API_RABBITMQ_START);
+    logger.info(Constants.API_RABBITMQ_START);
     await this.rabbitMQService.consume('api-log-queue', async (msg) => {
       try {
         // 处理两种消息格式：
@@ -24,15 +24,15 @@ export class ApiLogConsumerService implements OnModuleInit {
         if (typeof msg === 'string') {
           // 如果是字符串，尝试解析为 JSON
           apiLogData = JSON.parse(msg);
-          fileLogger.info(`接收到 Spring 发送的 ApiLog 消息: ${msg}`);
+          logger.info(`接收到 Spring 发送的 ApiLog 消息: ${msg}`);
         } else {
           // 如果已是对象，直接使用
-          fileLogger.info(`接收到 ApiLog 消息: ${JSON.stringify(apiLogData)}`);
+          logger.info(`接收到 ApiLog 消息: ${JSON.stringify(apiLogData)}`);
         }
 
         // 验证消息是否为 API 日志格式（必须包含 api_path 和 api_method）
         if (!apiLogData.api_path || !apiLogData.api_method) {
-          fileLogger.info(
+          logger.info(
             `收到非 API 日志格式的消息，已忽略: ${JSON.stringify(apiLogData)}`,
           );
           return;
@@ -53,9 +53,9 @@ export class ApiLogConsumerService implements OnModuleInit {
 
         // 保存到数据库
         await this.apiLogService.create(dto);
-        fileLogger.info(Constants.API_SAVE);
+        logger.info(Constants.API_SAVE);
       } catch (error) {
-        fileLogger.error(`处理 ApiLog 消息失败: ${error.message}`);
+        logger.error(`处理 ApiLog 消息失败: ${error.message}`);
       }
     });
   }

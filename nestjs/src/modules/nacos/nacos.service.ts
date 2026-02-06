@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
 import qs from 'qs';
 import { ClsService } from 'nestjs-cls';
-import { fileLogger } from '../../common/utils/writeLog';
+import { logger } from '../../common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 
 interface CallOptions {
@@ -62,7 +62,7 @@ export class NacosService implements OnModuleInit {
       } as any,
     );
 
-    fileLogger.info('注册到 nacos 成功');
+    logger.info('注册到 nacos 成功');
   }
 
   async getServiceInstances(serviceName: string) {

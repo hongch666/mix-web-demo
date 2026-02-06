@@ -9,7 +9,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
 import { ArticleService } from 'src/modules/article/article.service';
-import { fileLogger } from 'src/common/utils/writeLog';
+import { logger } from 'src/common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 
@@ -66,7 +66,7 @@ export class ArticleLogService {
 
       if (!indexExists) {
         await collection.createIndex(indexConfig.spec, indexConfig.options);
-        fileLogger.info(`索引已创建: ${indexConfig.options.name}`);
+        logger.info(`索引已创建: ${indexConfig.options.name}`);
       }
     }
   }

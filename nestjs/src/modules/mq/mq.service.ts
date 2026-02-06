@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as amqp from 'amqplib';
-import { fileLogger } from '../../common/utils/writeLog';
+import { logger } from '../../common/utils/writeLog';
 import { Constants } from '../../common/utils/constants';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     const url = `amqp://${username}:${password}@${host}:${port}${vhost === '/' ? '' : `/${vhost}`}`;
     this.connection = await amqp.connect(url);
     this.channel = await this.connection.createChannel();
-    fileLogger.info(Constants.RABBITMQ_CONNECTION);
+    logger.info(Constants.RABBITMQ_CONNECTION);
 
     // 初始化时创建使用的队列
     await this.initializeQueues();
@@ -45,9 +45,9 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     for (const queue of queues) {
       try {
         await this.channel.assertQueue(queue, { durable: true });
-        fileLogger.info(`队列 [${queue}] 创建成功`);
+        logger.info(`队列 [${queue}] 创建成功`);
       } catch (error) {
-        fileLogger.error(`创建队列 [${queue}] 失败: ${error.message}`);
+        logger.error(`创建队列 [${queue}] 失败: ${error.message}`);
         // 队列创建失败不应该阻止应用启动
       }
     }
