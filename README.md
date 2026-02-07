@@ -1363,6 +1363,10 @@ JWT_EXPIRATION=86400000
 
 # Nacos 配置
 NACOS_SERVER=127.0.0.1:8848
+
+# 内部服务令牌配置
+INTERNAL_TOKEN_SECRET=xxx
+INTERNAL_TOKEN_EXPIRATION=60000
 ```
 
 ### Gin 服务配置
@@ -1431,6 +1435,10 @@ SEARCH_MAX_LIKES_NORMALIZED=1000.0
 SEARCH_MAX_COLLECTS_NORMALIZED=1000.0
 SEARCH_MAX_FOLLOWS_NORMALIZED=5000.0
 SEARCH_RECENCY_DECAY_DAYS=30
+
+# 内部服务令牌配置
+INTERNAL_TOKEN_SECRET=xxx
+INTERNAL_TOKEN_EXPIRATION=60000
 ```
 
 ### NestJS 服务配置
@@ -1477,6 +1485,10 @@ FILES_WORD_PATH=../static/word
 
 # 日志配置
 LOGS_PATH=../logs/nestjs
+
+# 内部服务令牌配置
+INTERNAL_TOKEN_SECRET=xxx
+INTERNAL_TOKEN_EXPIRATION=60000
 ```
 
 ### FastAPI 服务配置
@@ -1603,6 +1615,10 @@ EMBEDDING_MODEL=text-embedding-v3
 EMBEDDING_TOP_K=5
 EMBEDDING_DIMENSION=1536
 EMBEDDING_SIMILARITY_THRESHOLD=0.3
+
+# 内部服务令牌配置
+INTERNAL_TOKEN_SECRET=xxx
+INTERNAL_TOKEN_EXPIRATION=60000
 ```
 
 ### Gateway 服务配置
@@ -1738,8 +1754,8 @@ JWT_EXPIRATION=2592000000
 - `data`为实际数据，可以为空，一般是查询返回的结果
 - `msg`为返回信息，成功一般为“success”，失败则为失败原因
 
-2. 一般成功时除查询接口和部分状态管理外，其他接口都是无返回`data`，即`data`为`null`
-3. 失败时`data`统一为 `null`，错误原因使用`msg`参数
+2. 一般成功时除查询接口和部分状态管理外，其他接口都是无返回 `data`，即 `data`为 `null`
+3. 失败时 `data`统一为 `null`，错误原因使用 `msg`参数
 4. 无论成功还是失败，HTTP 的状态码均为 200
 
 ### 异常处理说明
@@ -1759,9 +1775,10 @@ JWT_EXPIRATION=2592000000
 目前常量类均可根据需要进行扩展，尽可能使用常量类进行统一管理，避免硬编码。
 
 ### 定时任务说明
-1. 统一使用Cron表达式的方式进行定时任务管理
+
+1. 统一使用 Cron 表达式的方式进行定时任务管理
 2. 遵循当前项目的定时任务设置方式
-3. 部分定时任务使用`logic`封装定时任务的实际逻辑，在定时任务主文件调用`logic`
+3. 部分定时任务使用 `logic`封装定时任务的实际逻辑，在定时任务主文件调用 `logic`
 
 ## 其他说明
 
@@ -1838,7 +1855,6 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 ### AI 说明
 
 1. Gemini 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
-
 2. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `.env`中
 
 ### 用户聊天相关说明
@@ -1919,16 +1935,15 @@ $$
   - 权重配置说明
 
 5. 默认权重分配（可在 Gin 部分的 `.env` 中配置）：
-
-   | 因素           | 权重     | 说明                                          |
-   | -------------- | -------- | --------------------------------------------- |
-   | ES 基础分数    | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
-   | AI 评分        | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
-   | 用户评分       | 0.10     | 用户对文章的综合评价（0-10 范围）             |
-   | 阅读量         | 0.08     | 文章的浏览热度                                |
-   | 点赞量         | 0.08     | 用户的认可度                                  |
-   | 收藏量         | 0.08     | 用户的收藏价值指数                            |
-   | 作者关注数     | 0.04     | 作者的影响力                                  |
-   | **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
+   | 因素 | 权重 | 说明 |
+   | -------------------- | -------------- | ---------------------------------------------- |
+   | ES 基础分数 | 0.25 | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
+   | AI 评分 | 0.15 | 系统 AI 模型的内容质量评估（0-10 范围） |
+   | 用户评分 | 0.10 | 用户对文章的综合评价（0-10 范围） |
+   | 阅读量 | 0.08 | 文章的浏览热度 |
+   | 点赞量 | 0.08 | 用户的认可度 |
+   | 收藏量 | 0.08 | 用户的收藏价值指数 |
+   | 作者关注数 | 0.04 | 作者的影响力 |
+   | **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名** |
 
 - 权重总和为 1.0，确保评分结果的可比性和公平性。
