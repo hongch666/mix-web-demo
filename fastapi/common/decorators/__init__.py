@@ -5,11 +5,13 @@
 
 from .apiLog import api_log, log, log_with_config, ApiLogConfig
 from .adminCheck import require_admin
+from .requireInternalToken import requireInternalToken
 
 __all__ = [
     'api_log',
     'log', 
     'log_with_config',
     'ApiLogConfig',
-    'require_admin'
+    'require_admin',
+    'requireInternalToken'
 ]

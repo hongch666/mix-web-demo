@@ -1,9 +1,10 @@
 import requests
 from common.utils import fileLogger as logger
 from typing import Optional, Dict, Any
-from config import get_service_instance
+from config import get_service_instance, load_config
 from common.middleware import get_current_user_id, get_current_username
 from common.exceptions import BusinessException
+from common.utils import InternalTokenUtil
 
 async def call_remote_service(
     service_name: str,
@@ -26,6 +27,21 @@ async def call_remote_service(
         "X-User-Id": user_id,
         "X-Username": username,
     }
+
+    # 生成并添加内部服务令牌 (没有用户ID时用-1代表系统调用)
+    try:
+        internal_token_util: InternalTokenUtil = InternalTokenUtil()
+        user_id_num: int = int(user_id) if user_id else -1
+        final_user_id: int = user_id_num if user_id_num > 0 else -1
+        service_config: Dict[str, Any] = load_config("nacos")
+        service_name_config: str = service_config.get("service_name", "fastapi")
+        internal_token: str = internal_token_util.generate_internal_token(
+            final_user_id, service_name_config
+        )
+        default_headers["X-Internal-Token"] = f"Bearer {internal_token}"
+    except Exception as e:
+        logger.error(f"生成内部令牌失败: {str(e)}")
+
     # 合并默认和自定义请求头
     merged_headers: Dict[str, str] = {**default_headers, **(headers or {})}
 

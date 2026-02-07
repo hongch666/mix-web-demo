@@ -8,6 +8,7 @@ dependencies = [
     "uvicorn==0.35.0",
     "pydantic==2.11.9",
     "pyyaml==6.0.2",
+    "PyJWT>=2.8.0",
     "nacos-sdk-python==2.0.8",
     "requests==2.32.5",
     "sqlmodel==0.0.24",

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any, Dict, Tuple
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools, get_mongodb_tools
@@ -7,7 +7,7 @@ from common.utils.writeLog import fileLogger as logger
 # ========== 共享的Prompt模板 ==========
 
 # 内容总结提示词
-CONTENT_SUMMARIZE_PROMPT = """请对以下内容进行精要总结，提取关键信息和核心观点：
+CONTENT_SUMMARIZE_PROMPT: str = """请对以下内容进行精要总结，提取关键信息和核心观点：
 
 原文内容：
 {content}
@@ -20,7 +20,7 @@ CONTENT_SUMMARIZE_PROMPT = """请对以下内容进行精要总结，提取关�
 """
 
 # 基于参考文本的评价提示词
-REFERENCE_BASED_EVALUATION_PROMPT = """请基于以下权威参考文本，对文章或内容进行评价。
+REFERENCE_BASED_EVALUATION_PROMPT: str = \"\"\"请基于以下权威参考文本，对文章或内容进行评价。
 
 权威参考文本：
 {reference_content}
@@ -38,7 +38,7 @@ REFERENCE_BASED_EVALUATION_PROMPT = """请基于以下权威参考文本，对�
 """
 
 # AI 助手的Agent提示词模板
-AGENT_PROMPT_TEMPLATE = """你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
+AGENT_PROMPT_TEMPLATE: str = \"\"\"你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
 
 你有以下工具可以使用:
 {tools}
@@ -108,7 +108,7 @@ def get_agent_prompt() -> PromptTemplate:
     """获取Agent的Prompt模板"""
     return PromptTemplate.from_template(AGENT_PROMPT_TEMPLATE)
 
-def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = None, include_sql: bool = True, include_logs: bool = True):
+def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = None, include_sql: bool = True, include_logs: bool = True) -> Tuple[Optional[Any], Optional[Any], Optional[Any], List[Any]]:
     """初始化AI工具，支持基于权限的工具选择
     
     Args:
@@ -120,16 +120,16 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
     Returns:
         tuple: (sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools)
     """
-    sql_tools_instance = None
-    rag_tools_instance = None
-    mongodb_log_tools_instance = None
-    all_tools = []
+    sql_tools_instance: Optional[Any] = None
+    rag_tools_instance: Optional[Any] = None
+    mongodb_log_tools_instance: Optional[Any] = None
+    all_tools: List[Any] = []
     
     # 获取 SQL 工具
     if include_sql:
         try:
             sql_tools_instance = get_sql_tools()
-            sql_tools = sql_tools_instance.get_langchain_tools()
+            sql_tools: List[Any] = sql_tools_instance.get_langchain_tools()
             all_tools.extend(sql_tools)
             logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
         except Exception as e:
@@ -138,7 +138,7 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
     # 获取 RAG 工具
     try:
         rag_tools_instance = get_rag_tools()
-        rag_tools = rag_tools_instance.get_langchain_tools()
+        rag_tools: List[Any] = rag_tools_instance.get_langchain_tools()
         all_tools.extend(rag_tools)
         logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
     except Exception as e:
@@ -148,7 +148,7 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
     if include_logs:
         try:
             mongodb_tools_instance = get_mongodb_tools()
-            mongodb_tools = mongodb_tools_instance.get_langchain_tools()
+            mongodb_tools: List[Any] = mongodb_tools_instance.get_langchain_tools()
             all_tools.extend(mongodb_tools)
             logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
         except Exception as e:
@@ -160,13 +160,13 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
 class BaseAiService:
     """AI服务基类"""
     
-    def __init__(self, ai_history_mapper, service_name: str = "AI"):
-        self.ai_history_mapper = ai_history_mapper
-        self.service_name = service_name
-        self.llm = None
-        self.agent_executor = None
-        self.intent_router = None
-        self.all_tools = []
+    def __init__(self, ai_history_mapper: Any, service_name: str = "AI") -> None:
+        self.ai_history_mapper: Any = ai_history_mapper
+        self.service_name: str = service_name
+        self.llm: Optional[Any] = None
+        self.agent_executor: Optional[Any] = None
+        self.intent_router: Optional[Any] = None
+        self.all_tools: List[Any] = []
     
     def _get_summarize_prompt(self, content: str, max_length: int = 1000) -> str:
         """获取内容总结提示词

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict
-from common.decorators import log
+from common.decorators import log, requireInternalToken
 from common.client import call_remote_service
 from common.task import (
     export_articles_to_csv_and_hive, 
@@ -86,6 +86,7 @@ async def testNestJS(request: Request) -> JSONResponse:
     summary="手动触发文章表导出任务",
     description="手动触发文章表导出到hive的定时任务"
 )
+@requireInternalToken()
 @log("手动触发文章表导出任务")
 async def test_export_articles_task(request: Request) -> JSONResponse:
     """手动触发文章表导出任务接口"""
@@ -98,6 +99,7 @@ async def test_export_articles_task(request: Request) -> JSONResponse:
     summary="手动触发向量数据库同步任务",
     description="手动触发同步文章数据PostgreSQL向量数据库的定时任务"
 )
+@requireInternalToken()
 @log("手动触发向量数据库同步任务")
 async def test_export_vector_task(request: Request) -> JSONResponse:
     """手动触发向量数据库同步任务接口"""

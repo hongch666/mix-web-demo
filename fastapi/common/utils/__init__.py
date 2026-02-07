@@ -6,6 +6,8 @@ from .writeLog import write_log, log_info, log_error, log_warning, log_debug, Si
 
 from .constants import Constants
 
+from .internalToken import InternalTokenUtil
+
 __all__ = [
     "logger",
     "success",
@@ -18,4 +20,5 @@ __all__ = [
     "SimpleLogger",
     "fileLogger",
     "Constants",
+    "InternalTokenUtil",
 ]

@@ -4,6 +4,7 @@ pydantic==2.11.9
 python-multipart==0.0.20
 pyyaml==6.0.2
 python-dotenv>=1.0.0
+PyJWT>=2.8.0
 nacos-sdk-python==2.0.8
 requests==2.32.5
 httpx[socks]>=0.24.0

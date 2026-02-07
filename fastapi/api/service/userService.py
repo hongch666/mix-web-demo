@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
@@ -19,19 +19,19 @@ class UserService:
     
     def __init__(
         self, 
-            focusMapper: FocusMapper = None, 
-            likeMapper: LikeMapper = None, 
-            collectMapper: CollectMapper = None, 
-            articleMapper: ArticleMapper = None, 
-            commentsMapper: CommentsMapper = None, 
-            articleLogMapper: ArticleLogMapper = None
-        ):
-        self.focusMapper = focusMapper
-        self.likeMapper = likeMapper
-        self.collectMapper = collectMapper
-        self.articleMapper = articleMapper
-        self.commentsMapper = commentsMapper
-        self.articleLogMapper = articleLogMapper
+            focusMapper: Optional[FocusMapper] = None, 
+            likeMapper: Optional[LikeMapper] = None, 
+            collectMapper: Optional[CollectMapper] = None, 
+            articleMapper: Optional[ArticleMapper] = None, 
+            commentsMapper: Optional[CommentsMapper] = None, 
+            articleLogMapper: Optional[ArticleLogMapper] = None
+        ) -> None:
+        self.focusMapper: Optional[FocusMapper] = focusMapper
+        self.likeMapper: Optional[LikeMapper] = likeMapper
+        self.collectMapper: Optional[CollectMapper] = collectMapper
+        self.articleMapper: Optional[ArticleMapper] = articleMapper
+        self.commentsMapper: Optional[CommentsMapper] = commentsMapper
+        self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
 
     def get_new_followers_service(self, db: Session, user_id: int, period: str = "day") -> Dict[str, Any]:
         """
@@ -39,15 +39,15 @@ class UserService:
         period: "day" 前7天, "month" 前6个月, "year" 前3年
         """
         try:
-            timeline = []
+            timeline: List[Dict[str, Any]] = []
             
             if period == "day":
                 # 前7天
                 for i in range(6, -1, -1):
-                    date = datetime.now() - timedelta(days=i)
-                    start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
-                    end_date = date.replace(hour=23, minute=59, second=59, microsecond=999999)
-                    count = self.focusMapper.get_followers_in_period_mapper(db, user_id, start_date, end_date)
+                    date: datetime = datetime.now() - timedelta(days=i)
+                    start_date: datetime = date.replace(hour=0, minute=0, second=0, microsecond=0)
+                    end_date: datetime = date.replace(hour=23, minute=59, second=59, microsecond=999999)
+                    count: int = self.focusMapper.get_followers_in_period_mapper(db, user_id, start_date, end_date)
                     timeline.append({
                         "date": date.strftime("%Y-%m-%d"),
                         "count": count
@@ -61,7 +61,7 @@ class UserService:
                         end_date = (date.replace(day=1) + relativedelta(months=1)).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
                     else:
                         end_date = (date.replace(day=1) + relativedelta(months=1)).replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(seconds=1)
-                    count = self.focusMapper.get_followers_in_period_mapper(db, user_id, start_date, end_date)
+                    count: int = self.focusMapper.get_followers_in_period_mapper(db, user_id, start_date, end_date)
                     timeline.append({
                         "month": date.strftime("%Y-%m"),
                         "count": count
@@ -72,7 +72,7 @@ class UserService:
                     date = datetime.now() - relativedelta(years=i)
                     start_date = date.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
                     end_date = date.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=999999)
-                    count = self.focusMapper.get_followers_in_period_mapper(db, user_id, start_date, end_date)
+                    count: int = self.focusMapper.get_followers_in_period_mapper(db, user_id, start_date, end_date)
                     timeline.append({
                         "year": date.strftime("%Y"),
                         "count": count

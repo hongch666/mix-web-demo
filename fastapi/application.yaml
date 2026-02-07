@@ -2,6 +2,9 @@ server:
   ip: ${SERVER_IP:127.0.0.1}
   port: ${SERVER_PORT:8084}
   reload: ${SERVER_RELOAD:True}
+internal_token:
+  secret: ${INTERNAL_TOKEN_SECRET:}
+  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 nacos:
   server_addresses: ${NACOS_SERVER:127.0.0.1:8848}
   namespace: ${NACOS_NAMESPACE:public}

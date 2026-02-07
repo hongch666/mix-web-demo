@@ -1,6 +1,22 @@
 class Constants:
     """应用常量类"""
     
+    # 内部令牌相关常量
+    INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
+    """内部令牌密钥未配置错误"""
+    
+    INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"
+    """内部令牌缺失错误"""
+    
+    INTERNAL_TOKEN_INVALID: str = "内部令牌无效"
+    """内部令牌无效错误"""
+    
+    INTERNAL_TOKEN_EXPIRED: str = "内部令牌已过期"
+    """内部令牌已过期错误"""
+    
+    SERVICE_NAME_MISMATCH: str = "服务名称不匹配"
+    """服务名称不匹配错误"""
+    
     TEST_MESSAGE: str = "Hello, I am FastAPI!"
     """FastAPI 测试消息"""
     

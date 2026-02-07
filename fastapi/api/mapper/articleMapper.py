@@ -1,7 +1,8 @@
 from functools import lru_cache
 from sqlmodel import Session, select
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col
+from typing import List, Dict, Any, Optional
 import os
 import time
 from config import load_config, get_hive_connection_pool, HiveConnectionPool
@@ -11,37 +12,37 @@ from common.utils import fileLogger as logger
 class ArticleMapper:
     """文章 Mapper"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._hive_pool: HiveConnectionPool = get_hive_connection_pool()
 
-    def get_top10_articles_hive_mapper(self):
+    def get_top10_articles_hive_mapper(self) -> List[Dict[str, Any]]:
         """获取前10篇文章 - Hive 查表（无缓存,由 service 层负责缓存）"""
         
-        columns = [
+        columns: List[str] = [
             "id", "title", "tags", "status", "views", "create_at", "update_at", 
             "content", "user_id", "sub_category_id", "username"
         ]
         
-        start = time.time()
+        start: float = time.time()
         # 从连接池获取连接
-        pool_start = time.time()
-        hive_conn = self._hive_pool.get_connection()
-        pool_time = time.time() - pool_start
+        pool_start: float = time.time()
+        hive_conn: Any = self._hive_pool.get_connection()
+        pool_time: float = time.time() - pool_start
         
         # 查询 Hive
-        logger.info("get_top10_articles_hive_mapper: 从 Hive 查询")
-        query_start = time.time()
+        logger.info("总提名织器: 从 Hive 查询")
+        query_start: float = time.time()
         with hive_conn.cursor() as cursor:
             cursor.execute(f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10")
-            top10 = cursor.fetchall()
+            top10: List[tuple] = cursor.fetchall()
         
-        query_time = time.time() - query_start
+        query_time: float = time.time() - query_start
         
         # 转换为字典
-        result = [dict(zip(columns, r)) for r in top10]
+        result: List[Dict[str, Any]] = [dict(zip(columns, r)) for r in top10]
         
-        total_time = time.time() - start
-        logger.info(f"get_top10_articles_hive_mapper: 获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s")
+        total_time: float = time.time() - start
+        logger.info(f"总提名织器: 获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s")
         
         # 归还连接到池
         if hive_conn:
@@ -49,33 +50,33 @@ class ArticleMapper:
         
         return result
     
-    def get_hive_connection(self):
+    def get_hive_connection(self) -> Any:
         """获取 Hive 连接（用于缓存版本检查）"""
         return self._hive_pool.get_connection()
     
-    def return_hive_connection(self, conn):
+    def return_hive_connection(self, conn: Any) -> None:
         """归还 Hive 连接"""
         self._hive_pool.return_connection(conn)
 
-    def get_top10_articles_spark_mapper(self):
+    def get_top10_articles_spark_mapper(self) -> List[Dict[str, Any]]:
         FILE_PATH: str = load_config("files")["excel_path"]
-        csv_file = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.csv"))
+        csv_file: str = os.path.normpath(os.path.join(os.getcwd(), FILE_PATH, "articles.csv"))
         csv_file = os.path.abspath(csv_file)
-        columns = [
+        columns: List[str] = [
             "id", "title", "tags", "status", "views", "create_at", "update_at", "content", "user_id", "sub_category_id", "username"
         ]
-        spark = SparkSession.builder.appName("ArticleTop10").getOrCreate()
-        df = spark.read.option("header", True).csv(csv_file)
+        spark: SparkSession = SparkSession.builder.appName("ArticleTop10").getOrCreate()
+        df: DataFrame = spark.read.option("header", True).csv(csv_file)
         df = df.withColumn("views", col("views").cast("int"))
         for c in ["id", "status", "user_id", "sub_category_id"]:
             df = df.withColumn(c, col(c).cast("int"))
         for c in ["create_at", "update_at"]:
             df = df.withColumn(c, col(c).cast("string"))
         # username 字段直接从 csv 读取
-        top10_rows = df.orderBy(col("views").desc()).limit(10).collect()
+        top10_rows: List[Any] = df.orderBy(col("views").desc()).limit(10).collect()
         return [{k: r[k] for k in columns if k in r.asDict()} for r in top10_rows]
 
-    def get_top10_articles_db_mapper(self, db: Session):
+    def get_top10_articles_db_mapper(self, db: Session) -> List[Article]:
         statement = select(Article).order_by(Article.views.desc()).limit(10)
         return db.exec(statement).all()
 
