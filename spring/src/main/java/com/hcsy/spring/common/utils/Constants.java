@@ -928,4 +928,56 @@ public class Constants {
      * 服务地址输出信息
      */
     public static String INIT_SWAGGER_ADDR = "Swagger文档地址: http://{}:{}/swagger-ui/index.html";
+
+    // 内部服务令牌相关常量
+
+    /**
+     * 内部令牌密钥不能为空异常消息
+     */
+    public static String INTERNAL_TOKEN_NOT_NULL = "内部服务令牌密钥不能为 null 或者为空";
+
+    /**
+     * 内部令牌密钥初始化完成消息
+     */
+    public static String INTERNAL_TOKEN_INIT = "内部服务令牌密钥初始化完成";
+
+    /**
+     * 缺少内部令牌请求头错误消息
+     */
+    public static String INTERNAL_TOKEN_MISSING = "缺少必需的内部服务令牌请求头";
+
+    /**
+     * 内部令牌验证成功消息
+     */
+    public static String INTERNAL_TOKEN_VALIDATE_SUCCESS = "内部服务令牌验证成功";
+
+    /**
+     * 内部令牌已过期错误消息
+     */
+    public static String INTERNAL_TOKEN_EXPIRED = "内部服务令牌已过期";
+
+    /**
+     * 内部令牌无效错误消息
+     */
+    public static String INTERNAL_TOKEN_INVALID = "内部服务令牌无效";
+
+    /**
+     * 内部令牌验证失败错误消息
+     */
+    public static String INTERNAL_TOKEN_VALIDATION_FAIL = "内部服务令牌验证失败: ";
+
+    /**
+     * 服务名称不匹配错误消息
+     */
+    public static String SERVICE_NAME_MISMATCH = "服务名称不匹配";
+
+    /**
+     * 无法获取HTTP请求错误消息
+     */
+    public static String CANNOT_GET_HTTP_REQUEST = "无法获取当前HTTP请求";
+
+    /**
+     * 内部令牌验证方法调试消息
+     */
+    public static String INTERNAL_TOKEN_VALIDATE_METHOD = "内部服务令牌验证成功，方法: ";
 }

@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.controller;
 
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.annotation.RequireInternalToken;
 import com.hcsy.spring.common.client.FastAPIClient;
 import com.hcsy.spring.common.client.GinClient;
 import com.hcsy.spring.common.client.NestjsClient;
@@ -37,26 +38,27 @@ public class TestController {
     @GetMapping("/gin")
     @Operation(summary = "调用Gin的测试", description = "输出欢迎信息")
     @ApiLog("测试Gin服务")
-    public Result gerGin() {
+    public Result getGin() {
         return ginClient.testGin();
     }
 
     @GetMapping("/nestjs")
     @Operation(summary = "调用NestJS的测试", description = "输出欢迎信息")
     @ApiLog("测试NestJS服务")
-    public Result gerNestjs() {
+    public Result getNestjs() {
         return nestjsClient.testNestjs();
     }
 
     @GetMapping("/fastapi")
     @Operation(summary = "调用FastAPI的测试", description = "输出欢迎信息")
     @ApiLog("测试FastAPI服务")
-    public Result gerFastAPI() {
+    public Result getFastAPI() {
         return fastAPIClient.testFastAPI();
     }
 
     @PostMapping("/execute/clean")
     @Operation(summary = "手动执行清理过期Token", description = "手动触发清理过期Token任务")
+    @RequireInternalToken
     @ApiLog("手动执行清理过期Token任务")
     public Result executeTokenCleanup() {
         tokenCleanupTask.cleanupExpiredTokens();
