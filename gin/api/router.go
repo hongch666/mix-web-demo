@@ -3,6 +3,8 @@ package api
 import (
 	"github.com/hongch666/mix-web-demo/gin/api/controller"
 	"github.com/hongch666/mix-web-demo/gin/common/middleware"
+	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
 
 	"github.com/gin-gonic/gin"
 
@@ -12,6 +14,9 @@ import (
 
 // SetupRouter 初始化路由
 func SetupRouter() *gin.Engine {
+	// 初始化内部服务令牌工具
+	utils.InitInternalTokenUtil(config.Config.InternalToken.Secret, config.Config.InternalToken.Expiration)
+
 	r := gin.Default()
 	//注册中间件
 	r.Use(middleware.InjectUserContext())
@@ -35,8 +40,8 @@ func SetupRouter() *gin.Engine {
 		testGroup.GET("/nestjs", middleware.ApiLogMiddleware("测试NestJS服务"), testController.NestjsController)
 		//fastapi测试路由
 		testGroup.GET("/fastapi", middleware.ApiLogMiddleware("测试FastAPI服务"), testController.FastapiController)
-		//测试ES同步MySQL
-		testGroup.POST("/syncer", middleware.ApiLogMiddleware("手动触发同步ES任务"), testController.SyncES)
+		//测试ES同步MySQL - 需要内部令牌验证
+		testGroup.POST("/syncer", middleware.RequireInternalToken(), middleware.ApiLogMiddleware("手动触发同步ES任务"), testController.SyncES)
 	}
 	searchGroup := r.Group("/search")
 	{

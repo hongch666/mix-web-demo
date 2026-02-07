@@ -141,6 +141,17 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
 	req.Header.Set("X-Username", username)
 
+	// 自动生成并添加内部服务令牌到请求头 (没有用户ID时用-1代表系统调用)
+	tokenUtil := utils.GetTokenUtil()
+	finalUserID := userID
+	if finalUserID <= 0 {
+		finalUserID = -1
+	}
+	internalToken, err := tokenUtil.GenerateInternalToken(finalUserID, "gin")
+	if err == nil {
+		req.Header.Set("X-Internal-Token", "Bearer "+internalToken)
+	}
+
 	// 自动设置Content-Type
 	if body != nil && req.Header.Get("Content-Type") == "" {
 		switch opts.BodyData.(type) {
@@ -176,7 +187,13 @@ func (sd *ServiceDiscovery) CallService(c *gin.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	// 12. 返回解析结果
+	// 12. 检查响应业务状态码（code不为1表示业务错误）
+	if result.Code != 1 {
+		errorMsg := fmt.Sprintf(utils.SERVICE_CALL_FAILED, result.Msg)
+		return Result{}, errors.New(errorMsg)
+	}
+
+	// 13. 返回解析结果
 	return result, nil
 }
 

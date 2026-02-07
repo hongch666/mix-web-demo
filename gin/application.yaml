@@ -1,7 +1,9 @@
 server:
   ip: ${SERVER_IP:127.0.0.1}
   port: ${SERVER_PORT:8082}
-
+internal-token:
+  secret: ${INTERNAL_TOKEN_SECRET:}
+  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 nacos:
   ipAddr: ${NACOS_IP:127.0.0.1}
   port: ${NACOS_PORT:8848}
@@ -11,7 +13,6 @@ nacos:
   clusterName: ${NACOS_CLUSTER_NAME:DEFAULT}
   cacheDir: ${NACOS_CACHE_DIR:../static/tmp/nacos/cache}
   logDir: ${NACOS_LOG_DIR:../static/tmp/nacos/log}
-
 database:
   mysql:
     host: ${DB_MYSQL_HOST:127.0.0.1}
@@ -33,17 +34,14 @@ database:
     # username: ${DB_MONGODB_USERNAME:}  # 可选：MongoDB 用户名
     # password: ${DB_MONGODB_PASSWORD:}  # 可选：MongoDB 密码
     database: ${DB_MONGODB_DATABASE:demo}
-
 mq:
   username: ${RABBITMQ_USERNAME:hcsy}
   password: ${RABBITMQ_PASSWORD:123456}
   host: ${RABBITMQ_HOST:127.0.0.1}
   port: ${RABBITMQ_PORT:5672}
   vhost: ${RABBITMQ_VHOST:test}
-
 logs:
   path: ${LOGS_PATH:../logs/gin}
-
 search:
   es_score_weight: ${SEARCH_ES_SCORE_WEIGHT:0.25}
   ai_rating_weight: ${SEARCH_AI_RATING_WEIGHT:0.15}

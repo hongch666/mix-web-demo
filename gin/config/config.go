@@ -67,13 +67,19 @@ type MQConfig struct {
 	Vhost    string `mapstructure:"vhost"`
 }
 
+type InternalTokenConfig struct {
+	Secret     string `mapstructure:"secret"`
+	Expiration int64  `mapstructure:"expiration"`
+}
+
 type AppConfig struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Nacos    NacosConfig    `mapstructure:"nacos"`
-	Database DatabaseConfig `mapstructure:"database"`
-	MQ       MQConfig       `mapstructure:"mq"`
-	Logs     LogsConfig     `mapstructure:"logs"`
-	Search   SearchConfig   `mapstructure:"search"`
+	Server        ServerConfig        `mapstructure:"server"`
+	Nacos         NacosConfig         `mapstructure:"nacos"`
+	Database      DatabaseConfig      `mapstructure:"database"`
+	MQ            MQConfig            `mapstructure:"mq"`
+	Logs          LogsConfig          `mapstructure:"logs"`
+	Search        SearchConfig        `mapstructure:"search"`
+	InternalToken InternalTokenConfig `mapstructure:"internal-token"`
 }
 
 type LogsConfig struct {

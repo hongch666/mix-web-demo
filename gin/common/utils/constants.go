@@ -148,6 +148,9 @@ const (
 	// 无可用服务实例信息
 	NO_AVAILABLE_SERVICE_INSTANCE = "无可用服务实例"
 
+	// 服务调用失败信息
+	SERVICE_CALL_FAILED = "服务调用失败: %s"
+
 	// 记录耗时消息
 	RECORD_DURATION_MESSAGE = "%s %s 使用了%dms"
 
@@ -378,4 +381,21 @@ const (
 			}
 		}
 	}`
+
+	// 内部服务令牌相关常量
+
+	// 内部令牌密钥不能为空错误消息
+	INTERNAL_TOKEN_SECRET_NOT_NULL = "内部服务令牌密钥不能为空"
+
+	// 缺少内部令牌请求头错误消息
+	INTERNAL_TOKEN_MISSING = "缺少必需的内部服务令牌请求头"
+
+	// 内部令牌验证失败错误消息
+	INTERNAL_TOKEN_INVALID = "内部服务令牌无效"
+
+	// 内部令牌过期错误消息
+	INTERNAL_TOKEN_EXPIRED = "内部服务令牌已过期"
+
+	// 服务名称不匹配错误消息
+	SERVICE_NAME_MISMATCH = "服务名称不匹配"
 )
