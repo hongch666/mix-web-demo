@@ -1,3 +1,7 @@
+# 项目状态：已停止维护
+
+> 注意：本项目当前分支已停止维护。最后更新日期：2026-02-07。
+
 # 基于 RAG 知识问答与 LLM 驱动推荐的 IT 智能文章推荐与知识问答系统(多语言技术栈构建)
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
@@ -42,87 +46,67 @@
 - 系统架构图
 
   ![architecture](./static/pic/architecture.drawio.png)
-
 - ER 图
 
   ![er](./static/pic/er.drawio.png)
-
 - UML 用例图
 
   - 管理员 UML
 
     ![uml_admin](./static/pic/uml_admin.drawio.png)
-
   - 用户 UML
 
     ![uml_user](./static/pic/uml_user.drawio.png)
-
 - 系统功能结构图
 
   ![structure](./static/pic/structure.drawio.png)
-
 - 流程图
 
   - 整体核心流程图
 
     ![main](./static/pic/flowchart/main.drawio.png)
-
   - 基础系统操作流程图
 
     ![basic](./static/pic/flowchart/basic.drawio.png)
-
   - Agent 执行流程图
 
     ![agent](./static/pic/flowchart/agent.drawio.png)
-
   - 搜索算法流程图
 
     ![algorithm](./static/pic/flowchart/algorithm.drawio.png)
-
   - 权威文章 AI 评价生成流程图
 
     ![generate](./static/pic/flowchart/generate.drawio.png)
-
   - CSDN 文章链接爬取流程图
 
     ![getlink](./static/pic/flowchart/getlink.drawio.png)
-
   - 文章链接内容爬取流程图
 
     ![getarticle](./static/pic/flowchart/getarticle.drawio.png)
-
   - 注册/登录流程图
 
     ![login](./static/pic/flowchart/login.drawio.png)
-
   - AOP 日志记录流程图
 
     ![aop_log](./static/pic/flowchart/aop_log.drawio.png)
-
   - AOP 权限校验流程图
 
     ![aop_req](./static/pic/flowchart/aop_req.drawio.png)
-
   - 中间件日志记录流程图
 
     ![middleware](./static/pic/flowchart/middleware.drawio.png)
-
   - 拦截器日志记录流程图
 
     ![interceptor](./static/pic/flowchart/interceptor.drawio.png)
-
   - 拦截器权限校验流程图
 
     ![interceptor_req](./static/pic/flowchart/interceptor_req.drawio.png)
-
   - 装饰器日志记录流程图
 
     ![decorator](./static/pic/flowchart/decorator.drawio.png)
-
   - 装饰器权限校验流程图
 
     ![decorator_req](./static/pic/flowchart/decorator_req.drawio.png)
-
   - 网关登录校验流程图
 
     ![gateway](./static/pic/flowchart/gateway.drawio.png)
@@ -299,25 +283,21 @@ default = true
 
    - 自动检测 Python、Go、Java、Node.js 等必要工具的安装状态和版本
    - 如果缺少必要工具会给出明确提示
-
 2. **系统依赖管理**（仅 FastAPI 模块需要）
 
    - 自动检测并安装 PostgreSQL 开发库（`libpq-dev`）
    - 自动安装编译工具（`build-essential`、`python3-dev`）
    - 支持多种 Linux 发行版（Ubuntu/Debian、CentOS/RHEL、Fedora、Arch）
-
 3. **模块化安装**
 
    - 支持选择性安装特定模块或全部安装
    - 每个模块独立配置，互不影响
-
 4. **智能判断**
 
    - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
    - Gateway: 支持 Gradle 和 Maven 两种构建工具
    - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
    - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
-
 5. **目录自动创建**
 
    - 自动创建 logs 目录（spring、gin、nestjs、fastapi）
@@ -386,8 +366,8 @@ default = true
 
 脚本会自动创建以下 Docker 容器：
 
-| 服务              | 端口  | 用户名   | 密码   | 说明                     |
-| ----------------- | ----- | -------- | ------ | ------------------------ |
+| 服务                    | 端口  | 用户名   | 密码   | 说明                     |
+| ----------------------- | ----- | -------- | ------ | ------------------------ |
 | **MySQL**         | 3306  | root     | 123    | 关系型数据库             |
 | **PostgreSQL**    | 5432  | postgres | 123456 | 向量数据库(含 pgvector)  |
 | **Redis**         | 6379  | -        | -      | 缓存服务                 |
@@ -403,19 +383,16 @@ default = true
    - 自动检测 Docker 是否安装和运行
    - 检测端口是否被占用，避免重复创建容器
    - 自动创建项目专用网络 `hcsy`
-
 2. **前置准备**
 
    - 自动创建数据持久化目录
    - 支持 Elasticsearch IK 分词器安装（可选）
    - 自动生成 Nacos 配置文件
-
 3. **容器管理**
 
    - 支持查看容器状态
    - 支持查看容器日志
    - 支持停止和删除容器
-
 4. **一键部署**
 
    - 完整的部署流程自动化
@@ -639,19 +616,16 @@ uv run --python 3.12 python main.py
   - `gradle`：使用 Gradle（推荐，更快）
   - `maven`：使用 Maven（可选）
   - 默认值：`gradle`（如果已安装）
-
 - `--node-runtime bun|npm`：选择 Node.js 运行时（NestJS）
 
   - `bun`：使用 Bun（推荐，比 npm 快 4-8 倍）
   - `npm`：使用 npm（可选）
   - 默认值：`bun`（如果已安装）
-
 - `--python-runtime uv|python`：选择 Python 运行时（FastAPI）
 
   - `uv`：使用 UV（推荐，更快且支持虚拟环境）
   - `python`：使用原生 Python（可选）
   - 默认值：`uv`（如果已安装）
-
 - `-i`/`--interactive`：交互式模式，让用户选择每个服务的工具
 
 #### Windows
@@ -711,13 +685,13 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 **run.sh 脚本参数**：
 
-| 参数                   | 选项               | 说明                                             |
-| ---------------------- | ------------------ | ------------------------------------------------ |
-| `--java-build`         | `gradle` / `maven` | Java 项目构建工具（Spring/Gateway），默认 gradle |
-| `--node-runtime`       | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun               |
-| `--python-runtime`     | `uv` / `python`    | Python 运行时（FastAPI），默认 uv                |
-| `-i` / `--interactive` | 无                 | 交互式模式，提示用户选择各服务的工具             |
-| `-h` / `--help`        | 无                 | 显示帮助信息                                     |
+| 参数                       | 选项                   | 说明                                             |
+| -------------------------- | ---------------------- | ------------------------------------------------ |
+| `--java-build`           | `gradle` / `maven` | Java 项目构建工具（Spring/Gateway），默认 gradle |
+| `--node-runtime`         | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun               |
+| `--python-runtime`       | `uv` / `python`    | Python 运行时（FastAPI），默认 uv                |
+| `-i` / `--interactive` | 无                     | 交互式模式，提示用户选择各服务的工具             |
+| `-h` / `--help`        | 无                     | 显示帮助信息                                     |
 
 示例：
 
@@ -741,8 +715,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 脚本说明
 
-| 脚本              | 位置       | 功能                                       | 适用系统    |
-| ----------------- | ---------- | ------------------------------------------ | ----------- |
+| 脚本                | 位置       | 功能                                       | 适用系统    |
+| ------------------- | ---------- | ------------------------------------------ | ----------- |
 | `services.sh`     | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
 | `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
 | `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
@@ -823,13 +797,11 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
   - 便捷启动器，用于快速调用 `scripts/` 下的脚本
   - 支持开发环境和生产环境命令
-
 - **scripts/build.sh**
 
   - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
-
 - **scripts/dist-control.sh**
 
   - 管理打包后的分布式服务
@@ -875,8 +847,8 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ### 微服务容器说明
 
-| 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
-| ----------- | ---- | -------------------- | ----------------------- | ---------------- |
+| 服务              | 端口 | 镜像名称               | 容器名称                  | 技术栈           |
+| ----------------- | ---- | ---------------------- | ------------------------- | ---------------- |
 | **Gateway** | 8080 | `mix-gateway:latest` | `mix-gateway-container` | Java 17 + Alpine |
 | **Spring**  | 8081 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
 | **Gin**     | 8082 | `mix-gin:latest`     | `mix-gin-container`     | Go 1.23 + Alpine |
@@ -1007,8 +979,8 @@ minikube image load mix-nestjs:latest
 
 项目提供的 K8s 资源文件位于 `k8s/` 目录：
 
-| 文件              | 说明               | 资源类型                          |
-| ----------------- | ------------------ | --------------------------------- |
+| 文件                | 说明               | 资源类型                          |
+| ------------------- | ------------------ | --------------------------------- |
 | `namespace.yaml`  | 命名空间和网络策略 | Namespace, NetworkPolicy          |
 | `configmap.yaml`  | 服务配置管理       | ConfigMap (5 个)                  |
 | `deployment.yaml` | 服务部署和内部服务 | Deployment (5 个), Service (5 个) |
@@ -1638,7 +1610,6 @@ JWT_EXPIRATION=2592000000
      host: ${DB_HOST:localhost}
      password: ${DB_PASSWORD:default-password}
    ```
-
 3. **默认值**: 格式 `${VAR_NAME:default_value}` 中，冒号后面是默认值，当环境变量未设置时使用默认值
 4. **加载顺序**: 系统启动时会自动从 `.env` 文件加载环境变量，然后在解析 YAML 配置文件时进行替换
 
@@ -1768,8 +1739,8 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 通过 MySQL 数据库进行数据查询和分析：
 
-| 工具名称            | 功能          | 参数            | 说明                                                                             |
-| ------------------- | ------------- | --------------- | -------------------------------------------------------------------------------- |
+| 工具名称              | 功能          | 参数            | 说明                                                                             |
+| --------------------- | ------------- | --------------- | -------------------------------------------------------------------------------- |
 | `get_table_schema`  | 获取表结构    | 表名(可选)      | 返回表的详细结构信息，包括列名、类型、主键、索引等；不提供表名则返回所有表的列表 |
 | `execute_sql_query` | 执行 SQL 查询 | SQL SELECT 语句 | 仅支持 SELECT 查询，自动进行用户隔离过滤，返回最多 500 行数据                    |
 
@@ -1777,16 +1748,16 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 基于 PostgreSQL + Qwen 嵌入模型的文章向量搜索：
 
-| 工具名称          | 功能         | 参数         | 说明                                                          |
-| ----------------- | ------------ | ------------ | ------------------------------------------------------------- |
+| 工具名称            | 功能         | 参数         | 说明                                                          |
+| ------------------- | ------------ | ------------ | ------------------------------------------------------------- |
 | `search_articles` | 向量语义搜索 | 问题或关键词 | 基于语义相似度搜索相关文章，返回相似度最高的 N 篇文章内容片段 |
 
 3. MongoDB 日志查询工具
 
 查询系统日志和 API 调用记录：
 
-| 工具名称                   | 功能     | 参数              | 说明                                          |
-| -------------------------- | -------- | ----------------- | --------------------------------------------- |
+| 工具名称                     | 功能     | 参数              | 说明                                          |
+| ---------------------------- | -------- | ----------------- | --------------------------------------------- |
 | `list_mongodb_collections` | 列出集合 | 无                | 获取 MongoDB 中所有的 collection 及其基本信息 |
 | `query_mongodb`            | 通用查询 | JSON 格式查询参数 | 查询任意 collection，支持条件过滤和结果限制   |
 
@@ -1907,7 +1878,6 @@ $$
 
   - $\Delta t$：文章创建时间与当前时间的差值（单位：天）
   - $\sigma$：时间衰减周期（默认 30 天）
-
 - 高斯衰减函数具有以下特性：
 
   - 当 $\Delta t = 0$（刚发布）时，$S_{\text{recency}} = 1.0$（新鲜度最高）
@@ -1917,15 +1887,15 @@ $$
 
 5. 默认权重分配（可在 Gin 部分的 `application.yaml` 中配置）：
 
-| 因素           | 权重     | 说明                                          |
-| -------------- | -------- | --------------------------------------------- |
-| ES 基础分数    | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
-| AI 评分        | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
-| 用户评分       | 0.10     | 用户对文章的综合评价（0-10 范围）             |
-| 阅读量         | 0.08     | 文章的浏览热度                                |
-| 点赞量         | 0.08     | 用户的认可度                                  |
-| 收藏量         | 0.08     | 用户的收藏价值指数                            |
-| 作者关注数     | 0.04     | 作者的影响力                                  |
-| **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
+| 因素                 | 权重           | 说明                                           |
+| -------------------- | -------------- | ---------------------------------------------- |
+| ES 基础分数          | 0.25           | 关键词匹配的基础相关性（通过 Sigmoid 归一化）  |
+| AI 评分              | 0.15           | 系统 AI 模型的内容质量评估（0-10 范围）        |
+| 用户评分             | 0.10           | 用户对文章的综合评价（0-10 范围）              |
+| 阅读量               | 0.08           | 文章的浏览热度                                 |
+| 点赞量               | 0.08           | 用户的认可度                                   |
+| 收藏量               | 0.08           | 用户的收藏价值指数                             |
+| 作者关注数           | 0.04           | 作者的影响力                                   |
+| **文章新鲜度** | **0.22** | **核心权重，近期发布的内容获得更高排名** |
 
 - 权重总和为 1.0，确保评分结果的可比性和公平性。
