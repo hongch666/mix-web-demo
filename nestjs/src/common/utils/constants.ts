@@ -1,5 +1,30 @@
 export class Constants {
   /**
+   * 内部令牌密钥未配置
+   */
+  static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = '内部令牌密钥未配置';
+
+  /**
+   * 内部令牌缺失
+   */
+  static readonly INTERNAL_TOKEN_MISSING = '请求头中缺少内部令牌';
+
+  /**
+   * 内部令牌无效
+   */
+  static readonly INTERNAL_TOKEN_INVALID = '内部令牌无效';
+
+  /**
+   * 内部令牌已过期
+   */
+  static readonly INTERNAL_TOKEN_EXPIRED = '内部令牌已过期';
+
+  /**
+   * 服务名称不匹配
+   */
+  static readonly SERVICE_NAME_MISMATCH = '服务名称不匹配';
+
+  /**
    * 启动ApiLog RabbitMQ消息
    */
   static readonly API_RABBITMQ_START = '启动 ApiLog RabbitMQ 消息监听';

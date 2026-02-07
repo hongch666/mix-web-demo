@@ -10,6 +10,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ApiLogInterceptor } from '../common/interceptors/api-log.interceptor';
 import { RequireAdminGuard } from '../common/guards/require-admin.guard';
+import { InternalTokenUtil } from '../common/utils/internal-token.util';
 import { ModulesModule } from '../modules/modules.module';
 
 @Module({
@@ -72,6 +73,7 @@ import { ModulesModule } from '../modules/modules.module';
   ],
   controllers: [],
   providers: [
+    InternalTokenUtil,
     {
       provide: APP_INTERCEPTOR,
       useClass: ApiLogInterceptor,

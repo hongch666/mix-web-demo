@@ -6,6 +6,7 @@ import qs from 'qs';
 import { ClsService } from 'nestjs-cls';
 import { logger } from '../../common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
+import { InternalTokenUtil } from 'src/common/utils/internal-token.util';
 
 interface CallOptions {
   serviceName: string;
@@ -19,11 +20,12 @@ interface CallOptions {
 
 @Injectable()
 export class NacosService implements OnModuleInit {
-  private client: NacosNamingClient;
+  private client!: NacosNamingClient;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly cls: ClsService,
+    private readonly internalTokenUtil: InternalTokenUtil,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -77,7 +79,8 @@ export class NacosService implements OnModuleInit {
     }
 
     // 负载均衡策略：随机
-    const instance: any = instances[Math.floor(Math.random() * instances.length)];
+    const instance: any =
+      instances[Math.floor(Math.random() * instances.length)];
 
     // 替换 pathParams
     let path: string = opts.path;
@@ -100,6 +103,16 @@ export class NacosService implements OnModuleInit {
       'X-User-Id': userId,
       'X-Username': userName,
     };
+
+    // 生成并添加内部服务令牌 (没有用户ID时用-1代表系统调用)
+    const userIdNum: number = parseInt(userId, 10) || -1;
+    const finalUserId: number = userIdNum > 0 ? userIdNum : -1;
+    const internalToken: string =
+      await this.internalTokenUtil.generateInternalToken(
+        finalUserId,
+        this.configService.get<string>('server.serviceName') || 'nestjs',
+      );
+    defaultHeaders['X-Internal-Token'] = `Bearer ${internalToken}`;
 
     // 合并默认请求头和自定义请求头
     const headers: Record<string, string> = {

@@ -1,6 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
+import { RequireInternalToken } from 'src/common/decorators/require-internal-token.decorator';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 import { TaskService } from 'src/modules/task/task.service';
 import { success } from 'src/common/utils/response';
@@ -74,6 +75,7 @@ export class TestController {
     summary: '手动执行清理API日志任务',
     description: '手动触发清理超过1个月的API日志任务',
   })
+  @RequireInternalToken()
   @ApiLog('手动执行清理API日志任务')
   async executeCleanupOldApiLogsTask() {
     await this.taskServicce.cleanupOldApiLogs();
