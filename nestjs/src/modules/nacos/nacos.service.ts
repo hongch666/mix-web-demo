@@ -14,7 +14,7 @@ interface CallOptions {
   path: string;
   pathParams?: Record<string, string>;
   queryParams?: Record<string, string>;
-  body?: any;
+  body?: Record<string, unknown>;
   headers?: Record<string, string>;
 }
 
@@ -30,7 +30,7 @@ export class NacosService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // 取消终端与nacos相关的日志,如果需要日志可以将下面的logger设置为console
-    const silentLogger: any = Object.create(console);
+    const silentLogger: Record<string, (message?: unknown) => void> = Object.create(console);
     silentLogger.log = (): void => {};
     silentLogger.info = (): void => {};
     silentLogger.debug = (): void => {};
@@ -67,20 +67,20 @@ export class NacosService implements OnModuleInit {
     logger.info('注册到 nacos 成功');
   }
 
-  async getServiceInstances(serviceName: string): Promise<any[]> {
-    const instances: any[] = await this.client.getAllInstances(serviceName);
+  async getServiceInstances(serviceName: string): Promise<Record<string, unknown>[]> {
+    const instances: Record<string, unknown>[] = (await this.client.getAllInstances(serviceName)) as Record<string, unknown>[];
     return instances;
   }
 
-  async call(opts: CallOptions): Promise<any> {
-    const instances: any[] = await this.getServiceInstances(opts.serviceName);
+  async call(opts: CallOptions): Promise<Record<string, unknown>> {
+    const instances: Record<string, unknown>[] = await this.getServiceInstances(opts.serviceName);
     if (!instances || instances.length === 0) {
       throw new BusinessException(`服务 ${opts.serviceName} 无可用实例`);
     }
 
     // 负载均衡策略：随机
-    const instance: any =
-      instances[Math.floor(Math.random() * instances.length)];
+    const instance: Record<string, unknown> =
+      instances[Math.floor(Math.random() * instances.length)]!;
 
     // 替换 pathParams
     let path: string = opts.path;
@@ -94,7 +94,7 @@ export class NacosService implements OnModuleInit {
     const queryString: string = opts.queryParams
       ? `?${qs.stringify(opts.queryParams)}`
       : '';
-    const url: string = `http://${instance.ip}:${instance.port}${path}${queryString}`;
+    const url: string = `http://${instance.ip as string}:${instance.port as number}${path}${queryString}`;
 
     // 默认请求头
     const userId: string = this.cls.get<string>('userId') || ' ';
@@ -121,7 +121,7 @@ export class NacosService implements OnModuleInit {
     };
 
     // 请求配置
-    const response: any = await axios.request({
+    const response: { data: Record<string, unknown> } = await axios.request({
       url,
       method: opts.method,
       data: opts.body,

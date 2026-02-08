@@ -6,8 +6,8 @@ import { Constants } from '../../common/utils/constants';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
-  private connection: amqp.Connection;
-  private channel: amqp.Channel;
+  private connection!: amqp.Connection;
+  private channel!: amqp.Channel;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -54,17 +54,17 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   // 生产者：发送消息
-  async sendToQueue(queue: string, msg: any): Promise<void> {
+  async sendToQueue(queue: string, msg: Record<string, unknown>): Promise<void> {
     await this.channel.assertQueue(queue, { durable: true });
     this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(msg)));
   }
 
   // 消费者：消费消息
-  async consume(queue: string, onMessage: (msg: any) => void): Promise<void> {
+  async consume(queue: string, onMessage: (msg: Record<string, unknown>) => void): Promise<void> {
     await this.channel.assertQueue(queue, { durable: true });
-    this.channel.consume(queue, (msg: any) => {
+    this.channel.consume(queue, (msg: amqp.ConsumeMessage | null) => {
       if (msg !== null) {
-        const content: any = JSON.parse(msg.content.toString());
+        const content: Record<string, unknown> = JSON.parse(msg.content.toString()) as Record<string, unknown>;
         onMessage(content);
         this.channel.ack(msg);
       }
@@ -72,11 +72,11 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   // 消费者：只消费1条消息
-  async consumeOne(queue: string): Promise<any> {
+  async consumeOne(queue: string): Promise<Record<string, unknown> | null> {
     await this.channel.assertQueue(queue, { durable: true });
-    const msg: any = await this.channel.get(queue, { noAck: false });
+    const msg: amqp.GetMessage | false = await this.channel.get(queue, { noAck: false });
     if (msg) {
-      const content: any = JSON.parse(msg.content.toString());
+      const content: Record<string, unknown> = JSON.parse(msg.content.toString()) as Record<string, unknown>;
       this.channel.ack(msg);
       return content;
     }

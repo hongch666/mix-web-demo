@@ -78,9 +78,9 @@ export class InternalTokenGuard implements CanActivate {
   /**
    * 从请求头中提取内部令牌
    */
-  private extractInternalToken(request: any): string | null {
-    const authHeader =
-      request.headers[InternalTokenGuard.INTERNAL_TOKEN_HEADER];
+  private extractInternalToken(request: Record<string, unknown>): string | null {
+    const authHeader: unknown =
+      (request.headers as Record<string, unknown>)?.[InternalTokenGuard.INTERNAL_TOKEN_HEADER];
     if (
       authHeader &&
       typeof authHeader === 'string' &&

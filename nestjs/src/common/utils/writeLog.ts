@@ -14,14 +14,15 @@ export class LoggerUtil {
 
     try {
       // 复用现有的 YAML 配置服务
-      const config: Record<string, any> = yamlConfig();
+      const config: Record<string, unknown> = yamlConfig() as Record<string, unknown>;
 
       // 获取日志路径，支持环境变量覆盖
-      this.logPath = process.env.LOG_PATH || config?.logs?.path || 'logs';
+      this.logPath = process.env.LOG_PATH || (config?.logs as Record<string, unknown>)?.path as string || 'logs';
       this.configLoaded = true;
       Logger.log(`日志配置加载成功，路径: ${this.logPath}`);
-    } catch (error: any) {
-      throw new BusinessException(`加载日志配置失败: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage: string = error instanceof Error ? error.message : String(error);
+      throw new BusinessException(`加载日志配置失败: ${errorMessage}`);
     }
   }
 
@@ -40,7 +41,7 @@ export class LoggerUtil {
     }
 
     // 日志文件名 (按日期)
-    const today: string = new Date().toISOString().split('T')[0];
+    const today: string = new Date().toISOString().split('T')[0] || '';
     const logFile: string = path.join(this.logPath, `app_${today}.log`);
 
     // 格式化日志消息
@@ -53,8 +54,9 @@ export class LoggerUtil {
     // 写入文件
     try {
       fs.appendFileSync(logFile, logEntry, 'utf8');
-    } catch (error: any) {
-      throw new BusinessException(`写入日志失败: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage: string = error instanceof Error ? error.message : String(error);
+      throw new BusinessException(`写入日志失败: ${errorMessage}`);
     }
   }
 

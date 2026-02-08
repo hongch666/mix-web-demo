@@ -6,6 +6,10 @@ import { ApiLog, ApiLogDocument } from 'src/api/api-log/schema/api-log.schema';
 import { logger } from '../../common/utils/writeLog';
 import { Constants } from '../../common/utils/constants';
 
+interface DeleteResult {
+  deletedCount: number;
+}
+
 @Injectable()
 export class TaskService {
   constructor(
@@ -28,7 +32,7 @@ export class TaskService {
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
       // 删除超过1个月的日志
-      const result: any = await this.apiLogModel
+      const result: DeleteResult = await this.apiLogModel
         .deleteMany({
           createdAt: { $lt: oneMonthAgo },
         })
@@ -37,8 +41,9 @@ export class TaskService {
         logger.info(
         `API 日志清理完成，删除了 ${result.deletedCount} 条超过1个月的日志`,
       );
-    } catch (error: any) {
-      logger.error(`清理 API 日志失败: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage: string = error instanceof Error ? error.message : String(error);
+      logger.error(`清理 API 日志失败: ${errorMessage}`);
     }
   }
 }

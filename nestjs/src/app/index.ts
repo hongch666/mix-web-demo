@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
 export async function createApp(): Promise<NestFastifyApplication> {
-  const fastifyAdapter = new FastifyAdapter();
+  const fastifyAdapter: FastifyAdapter = new FastifyAdapter();
 
   const app: NestFastifyApplication =
     await NestFactory.create<NestFastifyApplication>(AppModule, fastifyAdapter);
@@ -19,8 +19,8 @@ export async function createApp(): Promise<NestFastifyApplication> {
   // 配置 Fastify 以接受没有 Content-Type 的请求（解决 DELETE 请求的 Unsupported Media Type 错误）
   const fastifyInstance = app.getHttpAdapter().getInstance();
   // 使用安全的正则表达式来处理各种 Content-Type
-  fastifyInstance.addContentTypeParser(/^.*/, (req: any, payload: any, done: (err: Error | null, body?: any) => void) => {
-    done(null, payload);
+  fastifyInstance.addContentTypeParser(/^.*/, async (_req: unknown, payload: NodeJS.ReadableStream): Promise<unknown> => {
+    return payload;
   });
 
   // Swagger 配置

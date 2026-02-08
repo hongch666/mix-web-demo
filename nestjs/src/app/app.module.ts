@@ -18,8 +18,8 @@ import { ModulesModule } from '../modules/modules.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
-        const db: any = configService.get('database');
+      useFactory: (configService: ConfigService): any => {
+        const db: Record<string, unknown> = configService.get('database') as Record<string, unknown>;
         return {
           type: db.type,
           host: db.host,
@@ -39,13 +39,13 @@ import { ModulesModule } from '../modules/modules.module';
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const mongodb: any = configService.get('mongodb');
-        const host: string = mongodb.host;
-        const port: number = mongodb.port;
-        const username: string = mongodb.username;
-        const password: string = mongodb.password;
-        const dbName: string = mongodb.dbName;
+      useFactory: async (configService: ConfigService): Promise<any> => {
+        const mongodb: Record<string, unknown> = configService.get('mongodb') as Record<string, unknown>;
+        const host: string = mongodb.host as string;
+        const port: number = mongodb.port as number;
+        const username: string = mongodb.username as string;
+        const password: string = mongodb.password as string;
+        const dbName: string = mongodb.dbName as string;
 
         // 根据是否有用户名和密码构建 URI
         let uri: string;

@@ -12,7 +12,7 @@ export class WordService {
    * @param templatePath 模板文件的绝对路径或相对路径
    */
   async exportToWord(
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     templatePath: string,
   ): Promise<Buffer> {
     // 读取模板文件
@@ -22,18 +22,18 @@ export class WordService {
     const template: Buffer = fs.readFileSync(absTemplatePath);
 
     // 这里将content转为docx可用的rawXml
-    const processedData: Record<string, any> = {
+    const processedData: Record<string, unknown> = {
       ...data,
       // 这里简单转为纯文本，保留html标签需用插件
-      content: htmlToText(data.content || '', { wordwrap: false }),
+      content: htmlToText((data.content as string) || '', { wordwrap: false }),
     };
 
-    const buffer: any = await createReport({
+    const buffer: Buffer | unknown = await createReport({
       template,
       data: processedData,
       cmdDelimiter: ['${', '}'],
     });
 
-    return Buffer.from(buffer);
+    return Buffer.from(buffer as Buffer);
   }
 }

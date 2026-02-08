@@ -63,10 +63,10 @@ export class InternalTokenUtil {
    */
   async validateInternalToken(token: string): Promise<InternalTokenClaims> {
     try {
-      const decoded = jwt.verify(token, this.secret) as InternalTokenClaims;
-      return decoded;
-    } catch (error: any) {
-      if (error.name === 'TokenExpiredError') {
+      const decoded: unknown = jwt.verify(token, this.secret);
+      return decoded as InternalTokenClaims;
+    } catch (error: unknown) {
+      if (error instanceof jwt.TokenExpiredError) {
         throw new BusinessException(Constants.INTERNAL_TOKEN_EXPIRED);
       }
       throw new BusinessException(Constants.INTERNAL_TOKEN_INVALID);
