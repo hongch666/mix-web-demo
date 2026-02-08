@@ -26,7 +26,7 @@ class ApiLogConfig:
         self.exclude_fields = exclude_fields or []
 
 
-def api_log(config: Union[str, ApiLogConfig]):
+def apiLog(config: Union[str, ApiLogConfig]):
     """
     API 日志装饰器
     
@@ -34,11 +34,11 @@ def api_log(config: Union[str, ApiLogConfig]):
         config: 日志配置，可以是字符串（消息）或 ApiLogConfig 对象
         
     Examples:
-        @api_log("获取前10篇文章")
+        @apiLog("获取前10篇文章")
         async def get_top10_articles():
             pass
             
-        @api_log(ApiLogConfig("生成词云图", include_params=False))
+        @apiLog(ApiLogConfig("生成词云图", include_params=False))
         async def get_wordcloud():
             pass
     """
@@ -611,11 +611,11 @@ def log(message: str) -> Callable:
         async def get_top10_articles():
             pass
     """
-    return api_log(message)
+    return apiLog(message)
 
 
 # 高级配置装饰器
-def log_with_config(
+def logWithConfig(
     message: str,
     include_params: bool = True,
     log_level: str = "info",
@@ -631,8 +631,8 @@ def log_with_config(
         exclude_fields: 排除的字段
         
     Example:
-        @log_with_config("敏感操作", include_params=False, log_level="warn")
+        @logWithConfig("敏感操作", include_params=False, log_level="warn")
         async def sensitive_operation():
             pass
     """
-    return api_log(ApiLogConfig(message, include_params, log_level, exclude_fields))
+    return apiLog(ApiLogConfig(message, include_params, log_level, exclude_fields))

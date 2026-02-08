@@ -1,17 +1,12 @@
-"""
-装饰器模块
-提供各种常用的装饰器功能
-"""
-
-from .apiLog import api_log, log, log_with_config, ApiLogConfig
-from .adminCheck import require_admin
+from .apiLog import apiLog, log, logWithConfig, ApiLogConfig
+from .adminCheck import requireAdmin
 from .requireInternalToken import requireInternalToken
 
 __all__ = [
-    'api_log',
+    'apiLog',
     'log', 
-    'log_with_config',
+    'logWithConfig',
     'ApiLogConfig',
-    'require_admin',
+    'requireAdmin',
     'requireInternalToken'
 ]

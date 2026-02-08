@@ -8,7 +8,7 @@ from config import get_db
 from api.mapper import get_user_mapper
 from common.utils import fileLogger as logger, Constants
 
-def require_admin(func: Callable) -> Callable:
+def requireAdmin(func: Callable) -> Callable:
     """
     管理员权限检查装饰器
     
@@ -16,7 +16,7 @@ def require_admin(func: Callable) -> Callable:
     
     使用方式:
         @router.get("/admin-only")
-        @require_admin
+        @requireAdmin
         async def admin_only_endpoint(db: Session = Depends(get_db)):
             # 只有管理员才能执行这个函数
             pass

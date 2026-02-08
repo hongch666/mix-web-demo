@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 from fastapi import APIRouter, Depends, Request
 from starlette.concurrency import run_in_threadpool
 from api.service import get_apilog_service, ApiLogService
-from common.decorators import log, require_admin
+from common.decorators import log, requireAdmin
 from common.utils import success
 
 router: APIRouter = APIRouter(
@@ -16,7 +16,7 @@ router: APIRouter = APIRouter(
     description="获取所有接口的平均响应速度"
 )
 @log("获取所有接口的平均响应速度")
-@require_admin
+@requireAdmin
 async def get_api_average_speed(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
     """获取所有接口的平均响应速度"""
     
@@ -29,7 +29,7 @@ async def get_api_average_speed(request: Request, apilogService: ApiLogService =
     description="获取接口调用次数"
 )
 @log("获取接口调用次数")
-@require_admin
+@requireAdmin
 async def get_called_count_apis(request: Request, apilogService: ApiLogService = Depends(get_apilog_service)) -> Any:
     """获取接口调用次数"""
     

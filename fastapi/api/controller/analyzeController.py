@@ -6,7 +6,7 @@ from api.service import AnalyzeService, get_analyze_service
 from entity.po import ListResponse
 from config import get_db
 from common.utils import success
-from common.decorators import log, requireInternalToken, require_admin
+from common.decorators import log, requireInternalToken, requireAdmin
 
 router: APIRouter = APIRouter(
     prefix="/analyze",
@@ -42,7 +42,7 @@ async def get_wordcloud(request: Request,analyzeService: AnalyzeService = Depend
     summary="获取文章数据Excel",
     description="导出文章数据到Excel并上传到OSS"
 )
-@require_admin
+@requireAdmin
 @requireInternalToken
 @log("获取文章数据Excel")
 async def get_excel(request: Request, db: Session = Depends(get_db), analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
