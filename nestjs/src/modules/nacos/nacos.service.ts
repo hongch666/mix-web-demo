@@ -7,6 +7,7 @@ import { ClsService } from 'nestjs-cls';
 import { logger } from '../../common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { InternalTokenUtil } from 'src/common/utils/internal-token.util';
+import { Constants } from 'src/common/utils/constants';
 
 interface CallOptions {
   serviceName: string;
@@ -64,7 +65,7 @@ export class NacosService implements OnModuleInit {
       } as any,
     );
 
-    logger.info('注册到 nacos 成功');
+    logger.info(Constants.REGISTER_NACOS);
   }
 
   async getServiceInstances(serviceName: string): Promise<Record<string, unknown>[]> {
@@ -97,8 +98,8 @@ export class NacosService implements OnModuleInit {
     const url: string = `http://${instance.ip as string}:${instance.port as number}${path}${queryString}`;
 
     // 默认请求头
-    const userId: string = this.cls.get<string>('userId') || ' ';
-    const userName: string = this.cls.get<string>('username') || ' ';
+    const userId: string = this.cls.get<string>('userId') || '0';
+    const userName: string = this.cls.get<string>('username') || Constants.UNKNOWN_USER;
     const defaultHeaders: Record<string, string> = {
       'X-User-Id': userId,
       'X-Username': userName,
@@ -110,7 +111,7 @@ export class NacosService implements OnModuleInit {
     const internalToken: string =
       await this.internalTokenUtil.generateInternalToken(
         finalUserId,
-        this.configService.get<string>('server.serviceName') || 'nestjs',
+        this.configService.get<string>('server.serviceName')!,
       );
     defaultHeaders['X-Internal-Token'] = `Bearer ${internalToken}`;
 

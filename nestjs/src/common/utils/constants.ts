@@ -121,6 +121,11 @@ export class Constants {
   static readonly API_LOG_PARTIAL_NOT_FOUND = '部分或全部API日志记录不存在';
 
   /**
+   * 注册Nacos成功消息
+   */
+  static readonly REGISTER_NACOS = '注册到 nacos 成功';
+
+  /**
    * 未知用户名
    */
   static readonly UNKNOWN_USER = '未知用户';
