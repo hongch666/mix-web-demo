@@ -2,7 +2,10 @@ package com.hcsy.spring.common.interceptor;
 
 import org.springframework.stereotype.Component;
 
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
+import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 
 import feign.RequestInterceptor;
@@ -14,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 public class DefaultHeaderInterceptor implements RequestInterceptor {
 
     private final InternalTokenUtil internalTokenUtil;
+    private final SimpleLogger logger;
 
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
     private static final String BEARER_PREFIX = "Bearer ";
@@ -41,7 +45,8 @@ public class DefaultHeaderInterceptor implements RequestInterceptor {
             template.header(INTERNAL_TOKEN_HEADER, BEARER_PREFIX + internalToken);
         } catch (Exception e) {
             // 令牌生成失败，记录日志但不影响正常请求
-            // 可根据需求决定是否继续或抛出异常
+            logger.error(Constants.TOKEN_GEN_FAIL + e.getMessage());
+            throw new BusinessException(Constants.TOKEN_GEN_FAIL);
         }
     }
 }

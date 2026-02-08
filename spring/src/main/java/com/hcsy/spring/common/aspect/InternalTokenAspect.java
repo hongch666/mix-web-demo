@@ -37,8 +37,7 @@ public class InternalTokenAspect {
      * 环绕切面：在执行带有 @RequireInternalToken 注解的方法前验证内部令牌
      */
     @Around("@annotation(requireInternalToken)")
-    public Object validateInternalToken(ProceedingJoinPoint pjp, RequireInternalToken requireInternalToken)
-            throws Throwable {
+    public Object validateInternalToken(ProceedingJoinPoint pjp, RequireInternalToken requireInternalToken) throws Throwable {
         HttpServletRequest request = getCurrentRequest();
         String internalToken = extractInternalToken(request);
 

@@ -781,6 +781,11 @@ public class Constants {
      */
     public static String KICK_FAIL = "踢出其他设备失败";
 
+    /**
+     * 令牌生成失败消息
+     */
+    public static String TOKEN_GEN_FAIL = "令牌生成失败";
+
     // 默认返回值
 
     /**
