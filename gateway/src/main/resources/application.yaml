@@ -20,7 +20,7 @@ spring:
           uri: no://op
           # 拦截的有:Spring查询用户列表,Gin手动同步接口,FastAPI手动同步接口,NestJS手动执行定时任务,Spring手动执行定时任务,文章日志创建,导出excel,创建AI历史记录
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/analyze/excel,/ai_history
+            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/analyze/excel,/ai_history,/upload
           filters:
             - SetStatus=204
 
