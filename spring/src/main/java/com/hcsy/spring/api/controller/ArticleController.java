@@ -13,6 +13,7 @@ import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.common.annotation.RequireInternalToken;
 import com.hcsy.spring.common.annotation.RequirePermission;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
@@ -63,6 +64,7 @@ public class ArticleController {
 
     @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
+    @RequireInternalToken
     @ApiLog("获取已发布文章列表")
     public Result getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,
