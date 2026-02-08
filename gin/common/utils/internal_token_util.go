@@ -66,7 +66,7 @@ func (t *InternalTokenUtil) GenerateInternalToken(userID int64, serviceName stri
 // ValidateInternalToken 验证内部令牌
 func (t *InternalTokenUtil) ValidateInternalToken(tokenString string) (*InternalTokenClaims, error) {
 	claims := &InternalTokenClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(t.secret), nil
 	})
 

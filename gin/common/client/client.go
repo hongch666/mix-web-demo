@@ -11,6 +11,7 @@ import (
 
 	"github.com/hongch666/mix-web-demo/gin/common/keys"
 	"github.com/hongch666/mix-web-demo/gin/common/utils"
+	"github.com/hongch666/mix-web-demo/gin/config"
 
 	"net/http"
 	"net/url"
@@ -209,7 +210,7 @@ func (sd *ServiceDiscovery) getServiceInstances(serviceName string) ([]model.Ins
 	// 从Nacos查询实例
 	instances, err := sd.namingClient.SelectInstances(vo.SelectInstancesParam{
 		ServiceName: serviceName,
-		GroupName:   "DEFAULT_GROUP",
+		GroupName:   config.Config.Nacos.GroupName,
 		HealthyOnly: true,
 	})
 	if err != nil {
