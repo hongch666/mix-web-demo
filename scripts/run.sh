@@ -152,7 +152,7 @@ echo ""
 
 # 构造 Java 启动命令
 if [ "$JAVA_BUILD" = "gradle" ]; then
-    java_cmd="gradle bootRun"
+    java_cmd="gradle bootRun --continuous"
 else
     java_cmd="mvn spring-boot:run"
 fi

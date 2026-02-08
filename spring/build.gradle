@@ -85,3 +85,18 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// 配置 Spring Boot 自动重启
+tasks.named('bootRun') {
+    // 启用 fork 模式，让 DevTools 能够重启应用
+    systemProperty 'spring.devtools.restart.enabled', 'true'
+    // 设置重启时不重新编译整个项目，只重启应用
+    systemProperty 'spring.devtools.restart.additional-paths', 'src/main'
+    // 排除静态资源的重启触发
+    systemProperty 'spring.devtools.restart.exclude', 'static/**,public/**,templates/**'
+}
+
+// 配置 bootJar 任务，排除 devtools
+tasks.named('bootJar') {
+    classpath configurations.developmentOnly
+}
