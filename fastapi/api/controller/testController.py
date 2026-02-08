@@ -7,7 +7,8 @@ from common.client import call_remote_service
 from common.task import (
     export_articles_to_csv_and_hive, 
     export_article_vectors_to_postgres, 
-    initialize_article_content_hash_cache
+    initialize_article_content_hash_cache,
+    update_analyze_caches
 )
 from common.utils import success, Constants
 
@@ -82,11 +83,24 @@ async def testNestJS(request: Request) -> JSONResponse:
     return success(result["data"])
 
 @router.post(
+    "/task/update-analyze-caches",
+    summary="更新分析接口缓存",
+    description="手动触发更新分析接口缓存的定时任务"
+)
+@requireInternalToken
+@log("手动触发更新分析接口缓存任务")
+async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
+    """手动触发更新分析接口缓存任务接口"""
+    
+    await run_in_threadpool(update_analyze_caches)
+    return success()
+
+@router.post(
     "/task/hive",
     summary="手动触发文章表导出任务",
     description="手动触发文章表导出到hive的定时任务"
 )
-@requireInternalToken()
+@requireInternalToken
 @log("手动触发文章表导出任务")
 async def test_export_articles_task(request: Request) -> JSONResponse:
     """手动触发文章表导出任务接口"""
@@ -99,7 +113,7 @@ async def test_export_articles_task(request: Request) -> JSONResponse:
     summary="手动触发向量数据库同步任务",
     description="手动触发同步文章数据PostgreSQL向量数据库的定时任务"
 )
-@requireInternalToken()
+@requireInternalToken
 @log("手动触发向量数据库同步任务")
 async def test_export_vector_task(request: Request) -> JSONResponse:
     """手动触发向量数据库同步任务接口"""
@@ -112,9 +126,10 @@ async def test_export_vector_task(request: Request) -> JSONResponse:
     summary="初始化文章内容 hash 缓存",
     description="为所有已发布的文章初始化内容 hash 缓存。用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景。此操作只生成 hash，不进行向量同步。"
 )
+@requireInternalToken
 @log("初始化文章内容 hash 缓存")
 async def test_init_hash_cache_task(request: Request) -> JSONResponse:
     """初始化文章内容 hash 缓存接口"""
     
     await run_in_threadpool(initialize_article_content_hash_cache)
-    return success(Constants.VECTOR_SYNC_COMPLETE)
+    return success()

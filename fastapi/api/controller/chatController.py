@@ -14,7 +14,7 @@ from api.service import (
 )
 from common.utils import success, fileLogger as logger
 from common.exceptions import BusinessException
-from common.decorators import log
+from common.decorators import log, requireInternalToken
 from common.middleware import get_current_user_id
 from config import get_db
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
@@ -29,6 +29,7 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])
     description="发送聊天消息并返回响应"
 )
 @log("普通聊天")
+@requireInternalToken
 async def send_message(
     httpRequest: Request,
     request: ChatRequest,

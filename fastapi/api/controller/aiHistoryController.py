@@ -4,7 +4,7 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from api.service import AiHistoryService, get_ai_history_service
 from common.utils import success
-from common.decorators import log
+from common.decorators import log, requireInternalToken
 from entity.dto import CreateHistoryDTO
 from typing import Any
 
@@ -18,6 +18,7 @@ router: APIRouter = APIRouter(
     summary="创建AI历史记录",
     description="创建一条AI历史记录"
 )
+@requireInternalToken
 @log("创建AI历史记录")
 async def create_ai_history(request: Request, data: CreateHistoryDTO, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
     """创建AI历史记录接口"""

@@ -4,7 +4,7 @@ from typing import Any
 from api.service import AnalyzeService, get_analyze_service,UploadService, get_upload_service
 from entity.dto import UploadDTO
 from common.middleware import get_current_user_id, get_current_username
-from common.decorators import log
+from common.decorators import log, requireInternalToken
 from common.utils import success
 
 router: APIRouter = APIRouter(
@@ -17,6 +17,7 @@ router: APIRouter = APIRouter(
     summary="上传文件",
     description="上传文件到OSS"
 )
+@requireInternalToken
 @log("上传文件")
 async def get_wordcloud(request: Request,data: UploadDTO, analyzeService: AnalyzeService = Depends(get_analyze_service)) -> Any:
     """上传文件接口"""
