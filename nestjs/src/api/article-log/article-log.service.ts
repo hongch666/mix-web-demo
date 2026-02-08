@@ -71,9 +71,8 @@ export class ArticleLogService {
     }
   }
 
-  async create(dto: CreateArticleLogDto) {
-    // 指定 createdAt 为东八区时间
-    return this.logModel.create(dto);
+  async create(dto: CreateArticleLogDto): Promise<void> {
+    this.logModel.create(dto);
   }
 
   async removeById(id: string) {
@@ -86,11 +85,15 @@ export class ArticleLogService {
 
   async removeByIds(ids: string[]): Promise<DeleteResult> {
     // 先检查所有记录是否存在
-    const existingLogs: any[] = await this.logModel.find({ _id: { $in: ids } }).exec();
+    const existingLogs: any[] = await this.logModel
+      .find({ _id: { $in: ids } })
+      .exec();
     const existingIds: string[] = existingLogs.map((log: any) => log.id);
 
     // 找出不存在的ID
-    const notFoundIds: string[] = ids.filter((id: string) => !existingIds.includes(id));
+    const notFoundIds: string[] = ids.filter(
+      (id: string) => !existingIds.includes(id),
+    );
     if (notFoundIds.length > 0) {
       throw new BusinessException(Constants.ARTICLE_LOG_PARTIAL_NOT_FOUND);
     }

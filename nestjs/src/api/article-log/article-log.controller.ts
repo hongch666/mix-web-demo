@@ -13,7 +13,8 @@ import { CreateArticleLogDto, QueryArticleLogDto } from './dto/article-log.dto';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { RequireAdmin } from 'src/common/decorators/require-admin.decorator';
-import { success } from 'src/common/utils/response';
+import { ApiResponse, success } from 'src/common/utils/response';
+import { RequireInternalToken } from 'src/common/decorators/require-internal-token.decorator';
 
 @Controller('article-logs')
 @ApiTags('文章日志模块')
@@ -28,7 +29,8 @@ export class ArticleLogController {
   })
   @ApiLog('新增文章日志')
   @RequireAdmin()
-  async create(@Body() dto: CreateArticleLogDto) {
+  @RequireInternalToken()
+  async create(@Body() dto: CreateArticleLogDto): Promise<ApiResponse<any>> {
     await this.logService.create(dto);
     return success(null);
   }
@@ -40,7 +42,7 @@ export class ArticleLogController {
   })
   @ApiLog('查询文章日志')
   @RequireAdmin()
-  async findByFilter(@Query() query: QueryArticleLogDto): Promise<any> {
+  async findByFilter(@Query() query: QueryArticleLogDto): Promise<ApiResponse<any>> {
     const data: any = await this.logService.findByFilter(query);
     return success(data);
   }
@@ -51,7 +53,7 @@ export class ArticleLogController {
   })
   @ApiLog('删除文章日志')
   @RequireAdmin()
-  async remove(@Param('id') id: string): Promise<any> {
+  async remove(@Param('id') id: string): Promise<ApiResponse<any>> {
     await this.logService.removeById(id);
     return success(null);
   }
@@ -63,7 +65,7 @@ export class ArticleLogController {
   })
   @ApiLog('批量删除文章日志')
   @RequireAdmin()
-  async removeByIds(@Param('ids') ids: string): Promise<any> {
+  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<any>> {
     const idArr: string[] = ids
       .split(',')
       .map((id: string) => id.trim())

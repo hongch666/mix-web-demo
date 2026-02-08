@@ -5,11 +5,13 @@ import { ApiLogService } from './api-log.service';
 import { ApiLogController } from './api-log.controller';
 import { ApiLogConsumerService } from './api-log.consume.service';
 import { RabbitMQModule } from 'src/modules/mq/mq.module';
+import { NacosModule } from 'src/modules/nacos/nacos.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: ApiLog.name, schema: ApiLogSchema }]),
     RabbitMQModule,
+    NacosModule,
   ],
   providers: [
     ApiLogService, 

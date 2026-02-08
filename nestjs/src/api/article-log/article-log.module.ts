@@ -7,6 +7,7 @@ import { LogConsumerService } from './article-log.consume.service';
 import { RabbitMQModule } from 'src/modules/mq/mq.module';
 import { UserModule } from '../../modules/user/user.module';
 import { ArticleModule } from 'src/modules/article/article.module';
+import { NacosModule } from 'src/modules/nacos/nacos.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ArticleModule } from 'src/modules/article/article.module';
     RabbitMQModule,
     UserModule,
     ArticleModule,
+    NacosModule,
   ],
   providers: [ArticleLogService, LogConsumerService],
   controllers: [ArticleLogController],

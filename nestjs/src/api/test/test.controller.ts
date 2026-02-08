@@ -4,7 +4,7 @@ import { ApiLog } from 'src/common/decorators/api-log.decorator';
 import { RequireInternalToken } from 'src/common/decorators/require-internal-token.decorator';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 import { TaskService } from 'src/modules/task/task.service';
-import { success } from 'src/common/utils/response';
+import { ApiResponse, success } from 'src/common/utils/response';
 import { Constants } from 'src/common/utils/constants';
 
 @Controller('api_nestjs')
@@ -12,7 +12,7 @@ import { Constants } from 'src/common/utils/constants';
 export class TestController {
   constructor(
     private readonly nacosService: NacosService,
-    private readonly taskServicce: TaskService,
+    private readonly taskService: TaskService,
   ) {}
 
   @Get('nestjs')
@@ -21,7 +21,7 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试NestJS服务')
-  async getNestjs(): Promise<any> {
+  async getNestjs(): Promise<ApiResponse<any>> {
     return success(Constants.TEST_WELCOME);
   }
 
@@ -31,7 +31,7 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试Spring服务')
-  async getSpring(): Promise<any> {
+  async getSpring(): Promise<ApiResponse<any>> {
     const res: any = await this.nacosService.call({
       serviceName: 'spring',
       method: 'GET',
@@ -46,7 +46,7 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试Gin服务')
-  async getGin(): Promise<any> {
+  async getGin(): Promise<ApiResponse<any>> {
     const res: any = await this.nacosService.call({
       serviceName: 'gin',
       method: 'GET',
@@ -61,7 +61,7 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试FastAPI服务')
-  async getFastAPI(): Promise<any> {
+  async getFastAPI(): Promise<ApiResponse<any>> {
     const res: any = await this.nacosService.call({
       serviceName: 'fastapi',
       method: 'GET',
@@ -77,8 +77,8 @@ export class TestController {
   })
   @RequireInternalToken()
   @ApiLog('手动执行清理API日志任务')
-  async executeCleanupOldApiLogsTask() {
-    await this.taskServicce.cleanupOldApiLogs();
+  async executeCleanupOldApiLogsTask(): Promise<ApiResponse<any>> {
+    await this.taskService.cleanupOldApiLogs();
     return success(null);
   }
 }

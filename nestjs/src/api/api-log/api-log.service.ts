@@ -27,27 +27,27 @@ export class ApiLogService {
    * 创建API日志
    * @param dto 创建日志DTO
    */
-  async create(dto: CreateApiLogDto) {
-    return this.apiLogModel.create(dto);
+  async create(dto: CreateApiLogDto): Promise<void> {
+    this.apiLogModel.create(dto);
   }
 
   /**
    * 根据ID删除日志
    * @param id 日志ID
    */
-  async removeById(id: string) {
+  async removeById(id: string): Promise<void> {
     const existingLog = await this.apiLogModel.findById(id).exec();
     if (!existingLog) {
       throw new BusinessException(Constants.API_LOG_NOT_FOUND);
     }
-    return this.apiLogModel.findByIdAndDelete(id).exec();
+    this.apiLogModel.findByIdAndDelete(id).exec();
   }
 
   /**
    * 批量删除日志
    * @param ids 日志ID数组
    */
-  async removeByIds(ids: string[]): Promise<DeleteResult> {
+  async removeByIds(ids: string[]): Promise<void> {
     // 先检查所有记录是否存在
     const existingLogs = await this.apiLogModel
       .find({ _id: { $in: ids } })
@@ -60,14 +60,14 @@ export class ApiLogService {
       throw new BusinessException(Constants.API_LOG_PARTIAL_NOT_FOUND);
     }
 
-    return this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
+    this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 
   /**
    * 根据条件查询日志（分页）
    * @param query 查询条件
    */
-  async findByFilter(query: QueryApiLogDto) {
+  async findByFilter(query: QueryApiLogDto): Promise<any> {
     const {
       userId,
       username,
