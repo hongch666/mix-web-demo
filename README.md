@@ -1780,6 +1780,80 @@ JWT_EXPIRATION=2592000000
 2. 遵循当前项目的定时任务设置方式
 3. 部分定时任务使用 `logic`封装定时任务的实际逻辑，在定时任务主文件调用 `logic`
 
+## 项目可用工具说明
+
+### 日志注解/中间件
+
+1. Spring 项目使用 `@ApiLog` 注解 + `ApiLogAspect` 进行请求日志记录，并将日志发送到 RabbitMQ
+
+- 机制: AOP 环绕切面获取请求方法/路径/参数，记录耗时并组装日志消息，最终写入日志并投递队列
+
+2. Gin 项目使用 `ApiLogMiddleware` 中间件记录请求参数、路径、耗时，并发送 API 日志到 RabbitMQ
+
+- 机制: 中间件读取请求上下文与请求体，计算耗时并发送日志消息到队列
+
+3. NestJS 项目使用 `@ApiLog` 装饰器 + `ApiLogInterceptor` 记录日志并发送到消息队列
+
+- 机制: 通过 Reflector 读取装饰器元数据，拦截请求提取参数与耗时，调用 MQ 服务发送日志
+
+4. FastAPI 项目使用 `@api_log` 装饰器（支持 `ApiLogConfig`）记录请求日志，耗时统计并发送到 RabbitMQ
+
+- 机制: 装饰器从 `Request` 提取方法/路径/参数，统计耗时，必要时包装流式响应并投递日志
+
+### 权限校验注解/中间件
+
+1. Spring 项目使用 `@RequirePermission` 注解 + `PermissionValidationAspect`，支持角色校验、allowSelf、自定义业务类型与参数来源
+
+- 机制: 切面从 `UserContext` 取用户信息，解析路径/请求体参数，按业务类型与参数来源判断权限
+
+2. Gin 项目暂无通用权限注解，中间件 `InjectUserContext` 仅负责注入用户信息，权限校验主要在业务层处理
+
+- 机制: 中间件只把 `X-User-Id`/`X-Username` 注入到上下文，具体权限由 service/handler 自行校验
+
+3. NestJS 项目使用 `@RequireAdmin` 装饰器 + `RequireAdminGuard` 进行管理员权限校验
+
+- 机制: Guard 读取装饰器元数据与 CLS 用户信息，调用用户服务判断是否管理员
+
+4. FastAPI 项目使用 `@require_admin` 装饰器进行管理员权限校验
+
+- 机制: 装饰器读取当前用户 ID 并查询用户角色，不满足条件抛出业务异常
+
+### 内部服务令牌注解/中间件
+
+1. Spring 项目使用 `@RequireInternalToken` 注解 + `InternalTokenAspect` 校验 `X-Internal-Token`，并通过 Feign `DefaultHeaderInterceptor` 自动注入内部令牌
+
+- 机制: Feign 拦截器生成内部 JWT 并写入请求头，切面解析并校验令牌及服务名称
+
+2. Gin 项目使用 `InternalTokenMiddleware`/`RequireInternalToken` 校验内部令牌，支持验证指定服务名称
+
+- 机制: 中间件从请求头读取 JWT，校验签名/过期/服务名，失败直接中断请求
+
+3. NestJS 项目使用 `@RequireInternalToken` 装饰器 + `InternalTokenGuard` 校验内部服务令牌
+
+- 机制: Guard 从请求头提取 JWT，验证并检查指定服务名匹配
+
+4. FastAPI 项目使用 `@requireInternalToken` 装饰器校验内部服务令牌，并支持指定服务名称
+
+- 机制: 装饰器读取 `X-Internal-Token`，校验并将 claims 写入 `request.state`
+
+### 服务间调用工具
+
+1. Spring 项目使用 Feign 客户端 `FastAPIClient`/`GinClient`/`NestjsClient` 调用其他服务，`DefaultHeaderInterceptor` 自动注入用户信息与内部令牌
+
+- 机制: Feign 统一注入 `X-User-Id`/`X-Username` 与内部 JWT，实现服务间安全调用
+
+2. Gin 项目使用 `ServiceDiscovery.CallService`（Nacos 服务发现 + 负载均衡），自动注入用户信息与内部令牌
+
+- 机制: 通过 Nacos 获取实例并轮询负载均衡，构建请求头后发起 HTTP 调用
+
+3. NestJS 项目使用 `NacosService.call`（Nacos 服务发现 + axios），自动注入用户信息与内部令牌
+
+- 机制: Nacos 发现实例，自动拼装请求头并用 axios 请求下游服务
+
+4. FastAPI 项目使用 `call_remote_service`（Nacos 服务发现 + requests），自动注入用户信息与内部令牌
+
+- 机制: 从 Nacos 获取服务实例，合并默认请求头后用 requests 发起调用
+
 ## 其他说明
 
 ### FastAPI Agent 工具说明
@@ -1864,6 +1938,13 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 ### Hadoop 使用说明
 
 1. 如果没有使用 Hadoop + Hive 作为大数据分析工具，系统默认使用 PySpark 分析同步时产生的 CSV 文章数据，PySpark 失败默认降级使用数据库 DB 聚合查询
+
+### PySpark 使用说明
+
+1. PySpark 使用时，系统需要安装 Spark 环境，并且配置 `SPARK_HOME`环境变量，确保 `pyspark`命令可用
+2. 当前系统使用 PySpark 进行大数据分析时，如果 Spark 环境不可用或者分析失败，则会自动降级使用 Pandas 进行数据分析
+3. Pandas 分析时，系统会将 CSV 文件加载到内存中进行处理，适用于小规模数据集
+4. 如果 Pandas 也失败，则会降级使用数据库 DB 聚合查询
 
 ### AI 用户说明
 
