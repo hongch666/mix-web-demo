@@ -14,14 +14,6 @@ class CategoryReferenceMapper:
     ) -> Optional[Dict[str, Any]]:
         """
         根据子分类ID获取权威参考文本
-        
-        Returns: {
-            "id": 1,
-            "sub_category_id": 1,
-            "type": "link" | "pdf",
-            "link": "https://...",
-            "pdf": "https://..."
-        }
         """
         
         logger.info(f"获取子分类 {sub_category_id} 的权威参考文本")

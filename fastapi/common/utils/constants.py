@@ -263,8 +263,11 @@ class Constants:
     L1_CACHE_CLEARED: str = "[L1缓存] 已清除"
     """L1缓存清除消息"""
     
-    L2_CACHE_UPDATED: str = "[L2缓存] Redis 已清除"
+    L2_CACHE_UPDATED: str = "[L2缓存] Redis 已更新"
     """L2缓存更新消息"""
+    
+    L2_CACHE_CLEARED: str = "[L2缓存] Redis 已清除"
+    """L2缓存清除消息"""
     
     REDIS_CACHE_CLEARED: str = "Redis客户端未初始化，跳过缓存"
     """Redis缓存未初始化消息"""
@@ -437,6 +440,12 @@ class Constants:
     USER_NOT_EXISTS_ERROR: str = "用户不存在"
     """用户不存在错误消息"""
     
+    HIVE_QUERY = "从 Hive 查询"
+    """Hive 查询消息"""
+    
+    UNKNOWN_ARTICLE = "未知文章"
+    """未知文章消息"""
+    
     # SQL 语句
     
     AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
@@ -461,3 +470,27 @@ class Constants:
     HIVE_TABLE_VERSION_SQL: str = "SHOW TBLPROPERTIES articles"
     """获取Hive表的版本号SQL"""
     
+    ARTICLE_COLUMN : str = [
+        "id", "title", "tags", "status", "views", "create_at", "update_at", 
+        "content", "user_id", "sub_category_id", "username"
+    ]
+    """文章表字段常量"""
+    
+    CATEGORY_ARTICLE_DISTRIBUTION_SQL: str = """
+        SELECT sub_category_id, COUNT(*) as count
+        FROM articles
+        WHERE status = 1
+        GROUP BY sub_category_id
+        ORDER BY count DESC
+    """
+    """分类文章分布SQL"""
+    
+    MONTHLY_ARTICLE_PUBLISH_SQL: str = """
+        SELECT substr(create_at, 1, 7) as year_month, COUNT(*) as count
+        FROM articles
+        WHERE status = 1
+        AND create_at >= date_sub(current_date(), 730)
+        GROUP BY substr(create_at, 1, 7)
+        ORDER BY year_month DESC
+    """
+    """按月文章发布统计SQL"""

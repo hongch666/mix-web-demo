@@ -20,7 +20,7 @@ CONTENT_SUMMARIZE_PROMPT: str = """请对以下内容进行精要总结，提取
 """
 
 # 基于参考文本的评价提示词
-REFERENCE_BASED_EVALUATION_PROMPT: str = \"\"\"请基于以下权威参考文本，对文章或内容进行评价。
+REFERENCE_BASED_EVALUATION_PROMPT: str = """请基于以下权威参考文本，对文章或内容进行评价。
 
 权威参考文本：
 {reference_content}
@@ -38,7 +38,7 @@ REFERENCE_BASED_EVALUATION_PROMPT: str = \"\"\"请基于以下权威参考文本
 """
 
 # AI 助手的Agent提示词模板
-AGENT_PROMPT_TEMPLATE: str = \"\"\"你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
+AGENT_PROMPT_TEMPLATE: str = """你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
 
 你有以下工具可以使用:
 {tools}

@@ -211,7 +211,7 @@ class ArticleCache:
         try:
             if self._redis.is_available():
                 self._redis.delete(self.REDIS_KEY_PREFIX, self.REDIS_VERSION_KEY)
-                logger.info(Constants.L2_CACHE_UPDATED)
+                logger.info(Constants.L2_CACHE_CLEARED)
         except Exception as e:
             logger.error(f"[L2缓存] Redis 清除失败: {e}")
 

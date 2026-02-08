@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Dict, List
 from config import db as mongo_db, get_db
-from common.utils import fileLogger as logger
+from common.utils import fileLogger as logger, Constants
 from api.mapper import get_article_mapper
 
 class ArticleLogMapper:
@@ -79,7 +79,7 @@ class ArticleLogMapper:
                 
                 try:
                     article = article_mapper.get_article_by_id_mapper(article_id, db)
-                    title = article.title if article else "未知文章"
+                    title = article.title if article else Constants.UNKNOWN_ARTICLE
                     articles.append({
                         "article_id": article_id,
                         "title": title,
@@ -89,7 +89,7 @@ class ArticleLogMapper:
                     logger.error(f"获取文章 {article_id} 标题失败: {e}")
                     articles.append({
                         "article_id": article_id,
-                        "title": "未知文章",
+                        "title": Constants.UNKNOWN_ARTICLE,
                         "views": views
                     })
             

@@ -14,7 +14,7 @@ pymongo==4.13.2
 psycopg2-binary>=2.9.7
 pgvector==0.4.1
 pyhive==0.7.0
-pyspark==4.0.0
+pyspark==3.5.6
 thrift==0.22.0
 thrift-sasl==0.4.3
 redis==5.0.1
