@@ -890,7 +890,7 @@ public class Constants {
     /**
      * Swagger 标题
      */
-    public static String SWAGGER_TITLE = "Spring部分的Swagger文档集成";
+    public static String SWAGGER_TITLE = "Spring部分的Swagger文档";
 
     /**
      * Swagger 版本
@@ -900,7 +900,7 @@ public class Constants {
     /**
      * Swagger 描述
      */
-    public static String SWAGGER_DESC = "这是demo项目的Spring部分的Swagger文档集成";
+    public static String SWAGGER_DESC = "这是项目的Spring部分的Swagger文档";
 
     /**
      * Swagger URL 前缀

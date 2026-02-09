@@ -133,13 +133,12 @@ export class Constants {
   /**
    * Swagger 标题
    */
-  static readonly SWAGGER_TITLE = 'NestJS部分的Swagger文档集成';
+  static readonly SWAGGER_TITLE = 'NestJS部分的Swagger文档';
 
   /**
    * Swagger 描述
    */
-  static readonly SWAGGER_DESCRIPTION =
-    '这是demo项目的NestJS部分的Swagger文档集成';
+  static readonly SWAGGER_DESCRIPTION = '这是项目的NestJS部分的Swagger文档';
 
   /**
    * Swagger 版本

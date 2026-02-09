@@ -28,7 +28,7 @@ def create_app() -> FastAPI:
             db_factory=lambda: next(get_db())
         )
         # 记录启动日志
-        logger.info(f"FastAPI应用已启动")
+        logger.info(Constants.STARTUP_MESSAGE)
         logger.info(f"服务地址:http://{IP}:{PORT}")
         logger.info(f"Swagger文档地址: http://{IP}:{PORT}/docs")
         logger.info(f"ReDoc文档地址: http://{IP}:{PORT}/redoc")

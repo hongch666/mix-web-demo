@@ -185,14 +185,17 @@ class Constants:
     CONCURRENT_CHAT_MESSAGE_SUCCESS: str = "权威文章生成完成，所有大模型总结已完成"
     """并发聊天完成消息"""
     
-    SWAGGER_TITLE: str = "FastAPI部分的Swagger文档集成"
+    SWAGGER_TITLE: str = "FastAPI部分的Swagger文档"
     """Swagger 文档标题"""
     
-    SWAGGER_DESCRIPTION: str = "这是demo项目的FastAPI部分的Swagger文档集成"
+    SWAGGER_DESCRIPTION: str = "这是项目的FastAPI部分的Swagger文档"
     """Swagger 文档描述"""
     
     SWAGGER_VERSION: str = "1.0.0"
     """Swagger 文档版本"""
+    
+    STARTUP_MESSAGE: str = "FastAPI应用已启动"
+    """启动消息"""
     
     INTENT_ROUTER_NO_PERMISSION_ERROR: str = "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
     """意图识别权限拒绝信息"""
