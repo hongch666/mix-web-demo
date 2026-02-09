@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, DeleteResult } from 'mongoose';
+import { Model } from 'mongoose';
 import { ApiLog, ApiLogDocument } from './schema/api-log.schema';
 import { CreateApiLogDto, QueryApiLogDto } from './dto/api-log.dto';
 import { BusinessException } from 'src/common/exceptions/business.exception';

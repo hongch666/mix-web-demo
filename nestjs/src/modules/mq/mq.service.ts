@@ -39,7 +39,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private async initializeQueues(): Promise<void> {
     const queues: string[] = [
       'api-log-queue', // API日志队列
-      'log-queue',     // 通用日志队列
+      'log-queue', // 通用日志队列
     ];
 
     for (const queue of queues) {
@@ -54,29 +54,37 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   }
 
   // 生产者：发送消息
-  async sendToQueue(queue: string, msg: Record<string, unknown>): Promise<void> {
+  async sendToQueue(
+    queue: string,
+    msg: Record<string, unknown>,
+  ): Promise<void> {
     await this.channel.assertQueue(queue, { durable: true });
     this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(msg)));
   }
 
   // 消费者：消费消息
-  async consume(queue: string, onMessage: (msg: Record<string, unknown>) => void): Promise<void> {
+  async consume(
+    queue: string,
+    onMessage: (msg: unknown) => Promise<void> | void,
+  ): Promise<void> {
     await this.channel.assertQueue(queue, { durable: true });
     this.channel.consume(queue, (msg: amqp.ConsumeMessage | null) => {
       if (msg !== null) {
-        const content: Record<string, unknown> = JSON.parse(msg.content.toString()) as Record<string, unknown>;
-        onMessage(content);
+        const content: unknown = JSON.parse(msg.content.toString());
+        void onMessage(content); // 使用 void 操作符处理可能的 Promise
         this.channel.ack(msg);
       }
     });
   }
 
   // 消费者：只消费1条消息
-  async consumeOne(queue: string): Promise<Record<string, unknown> | null> {
+  async consumeOne(queue: string): Promise<unknown | null> {
     await this.channel.assertQueue(queue, { durable: true });
-    const msg: amqp.GetMessage | false = await this.channel.get(queue, { noAck: false });
+    const msg: amqp.GetMessage | false = await this.channel.get(queue, {
+      noAck: false,
+    });
     if (msg) {
-      const content: Record<string, unknown> = JSON.parse(msg.content.toString()) as Record<string, unknown>;
+      const content: unknown = JSON.parse(msg.content.toString());
       this.channel.ack(msg);
       return content;
     }

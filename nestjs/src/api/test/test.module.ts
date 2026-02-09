@@ -4,10 +4,7 @@ import { NacosModule } from 'src/modules/nacos/nacos.module';
 import { TaskModule } from 'src/modules/task/task.module';
 
 @Module({
-  imports: [
-    NacosModule, 
-    TaskModule
-  ],
+  imports: [NacosModule, TaskModule],
   controllers: [TestController],
   providers: [],
 })

@@ -23,19 +23,23 @@ export class ApiLogInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     // 获取装饰器配置
-    const logConfig: ApiLogOptions | undefined = this.reflector.get<ApiLogOptions>(
-      API_LOG_KEY,
-      context.getHandler(),
-    );
+    const logConfig: ApiLogOptions | undefined =
+      this.reflector.get<ApiLogOptions>(API_LOG_KEY, context.getHandler());
 
     if (!logConfig) {
       return next.handle();
     }
 
-    const request: Record<string, unknown> = context.switchToHttp().getRequest();
+    const request: Record<string, unknown> = context
+      .switchToHttp()
+      .getRequest();
     const method: string = (request.method as string) || 'UNKNOWN';
     const url: string = (() => {
-      if (request.route && typeof request.route === 'object' && 'path' in request.route) {
+      if (
+        request.route &&
+        typeof request.route === 'object' &&
+        'path' in request.route
+      ) {
         const path = (request.route as Record<string, unknown>).path;
         if (typeof path === 'string' && path) {
           return path;
@@ -57,7 +61,10 @@ export class ApiLogInterceptor implements NestInterceptor {
 
     // 添加参数信息
     if (logConfig.includeParams) {
-      const params: string = this.extractParams(context, logConfig.excludeFields);
+      const params: string = this.extractParams(
+        context,
+        logConfig.excludeFields,
+      );
       if (params) {
         logMessage += `\n${params}`;
       }
@@ -66,7 +73,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     // 记录日志
     const logLevel: string = logConfig.logLevel || 'info';
     if (logLevel in logger) {
-      (logger[logLevel as keyof typeof logger] as (message: string) => void)(logMessage);
+      (logger[logLevel as keyof typeof logger] as (message: string) => void)(
+        logMessage,
+      );
     }
 
     // 开始计时
@@ -79,7 +88,11 @@ export class ApiLogInterceptor implements NestInterceptor {
         const timeMessage: string = `${method} ${url} 使用了${responseTime}ms`;
         const timeLogLevel: string = logConfig.logLevel || 'info';
         if (timeLogLevel in logger) {
-          (logger[timeLogLevel as keyof typeof logger] as (message: string) => void)(timeMessage);
+          (
+            logger[timeLogLevel as keyof typeof logger] as (
+              message: string,
+            ) => void
+          )(timeMessage);
         }
 
         // 向消息队列发送 API 日志
@@ -93,7 +106,8 @@ export class ApiLogInterceptor implements NestInterceptor {
           responseTime,
           logConfig.excludeFields,
         ).catch((error: unknown) => {
-          const errorMessage: string = error instanceof Error ? error.message : String(error);
+          const errorMessage: string =
+            error instanceof Error ? error.message : String(error);
           logger.error(`发送 API 日志到队列失败: ${errorMessage}`);
         });
       }),
@@ -115,18 +129,30 @@ export class ApiLogInterceptor implements NestInterceptor {
   ): Promise<void> {
     try {
       // 提取查询参数
-      const queryParams: Record<string, unknown> | null = method === 'GET' && request.query ? (request.query as Record<string, unknown>) : null;
+      const queryParams: Record<string, unknown> | null =
+        method === 'GET' && request.query
+          ? (request.query as Record<string, unknown>)
+          : null;
 
       // 提取路径参数
       const pathParams: Record<string, unknown> | null =
-        request.params && typeof request.params === 'object' && Object.keys(request.params as Record<string, unknown>).length > 0
+        request.params &&
+        typeof request.params === 'object' &&
+        Object.keys(request.params as Record<string, unknown>).length > 0
           ? (request.params as Record<string, unknown>)
           : null;
 
       // 提取请求体
       let requestBody: Record<string, unknown> | null = null;
-      if (method !== 'GET' && request.body && typeof request.body === 'object') {
-        requestBody = this.filterFields(request.body as Record<string, unknown>, excludeFields);
+      if (
+        method !== 'GET' &&
+        request.body &&
+        typeof request.body === 'object'
+      ) {
+        requestBody = this.filterFields(
+          request.body as Record<string, unknown>,
+          excludeFields,
+        );
       }
 
       // 构建消息对象
@@ -147,7 +173,8 @@ export class ApiLogInterceptor implements NestInterceptor {
 
       logger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
     } catch (error: unknown) {
-      const errorMessage: string = error instanceof Error ? error.message : String(error);
+      const errorMessage: string =
+        error instanceof Error ? error.message : String(error);
       logger.error(`向消息队列发送 API 日志出错: ${errorMessage}`);
       // 不要抛出异常，避免影响业务逻辑
     }
@@ -157,36 +184,57 @@ export class ApiLogInterceptor implements NestInterceptor {
     context: ExecutionContext,
     excludeFields: string[] = [],
   ): string {
-    const request: Record<string, unknown> = context.switchToHttp().getRequest();
-    const method: string = typeof request.method === 'string' ? request.method : 'UNKNOWN';
+    const request: Record<string, unknown> = context
+      .switchToHttp()
+      .getRequest();
+    const method: string =
+      typeof request.method === 'string' ? request.method : 'UNKNOWN';
     const params: string[] = [];
 
     try {
       // 处理不同类型的参数
       if (method === 'GET') {
         // Query 参数
-        if (request.query && typeof request.query === 'object' && Object.keys(request.query as Record<string, unknown>).length > 0) {
-          const filteredQuery: Record<string, unknown> = this.filterFields(request.query as Record<string, unknown>, excludeFields);
+        if (
+          request.query &&
+          typeof request.query === 'object' &&
+          Object.keys(request.query as Record<string, unknown>).length > 0
+        ) {
+          const filteredQuery: Record<string, unknown> = this.filterFields(
+            request.query as Record<string, unknown>,
+            excludeFields,
+          );
           const paramName: string = this.getQueryParamName(context);
           params.push(`${paramName}: ${JSON.stringify(filteredQuery)}`);
         }
       } else {
         // Body 参数
-        if (request.body && typeof request.body === 'object' && Object.keys(request.body as Record<string, unknown>).length > 0) {
-          const filteredBody: Record<string, unknown> = this.filterFields(request.body as Record<string, unknown>, excludeFields);
+        if (
+          request.body &&
+          typeof request.body === 'object' &&
+          Object.keys(request.body as Record<string, unknown>).length > 0
+        ) {
+          const filteredBody: Record<string, unknown> = this.filterFields(
+            request.body as Record<string, unknown>,
+            excludeFields,
+          );
           const paramName: string = this.getBodyParamName(context);
           params.push(`${paramName}: ${JSON.stringify(filteredBody)}`);
         }
       }
 
       // Path 参数
-      if (request.params && typeof request.params === 'object' && Object.keys(request.params as Record<string, unknown>).length > 0) {
+      if (
+        request.params &&
+        typeof request.params === 'object' &&
+        Object.keys(request.params as Record<string, unknown>).length > 0
+      ) {
         const pathParamName: string = this.getPathParamName(context);
         params.push(`${pathParamName}: ${JSON.stringify(request.params)}`);
       }
 
       return params.join('\n');
-    } catch (error: unknown) {
+    } catch {
       return Constants.PARAM_ERROR;
     }
   }
@@ -222,8 +270,13 @@ export class ApiLogInterceptor implements NestInterceptor {
   }
 
   private getPathParamName(context: ExecutionContext): string {
-    const request: Record<string, unknown> = context.switchToHttp().getRequest();
-    const paramKeys: string[] = request.params && typeof request.params === 'object' ? Object.keys(request.params as Record<string, unknown>) : [];
+    const request: Record<string, unknown> = context
+      .switchToHttp()
+      .getRequest();
+    const paramKeys: string[] =
+      request.params && typeof request.params === 'object'
+        ? Object.keys(request.params as Record<string, unknown>)
+        : [];
 
     if (paramKeys.length === 1) {
       const paramKey = paramKeys[0];
@@ -237,7 +290,10 @@ export class ApiLogInterceptor implements NestInterceptor {
     return 'PathParams';
   }
 
-  private filterFields(obj: Record<string, unknown>, excludeFields: string[]): Record<string, unknown> {
+  private filterFields(
+    obj: Record<string, unknown>,
+    excludeFields: string[],
+  ): Record<string, unknown> {
     if (!excludeFields || !excludeFields.length) return obj;
 
     const filtered: Record<string, unknown> = { ...obj };

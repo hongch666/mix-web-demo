@@ -42,7 +42,9 @@ export class ArticleLogController {
   })
   @ApiLog('查询文章日志')
   @RequireAdmin()
-  async findByFilter(@Query() query: QueryArticleLogDto): Promise<ApiResponse<any>> {
+  async findByFilter(
+    @Query() query: QueryArticleLogDto,
+  ): Promise<ApiResponse<any>> {
     const data: any = await this.logService.findByFilter(query);
     return success(data);
   }

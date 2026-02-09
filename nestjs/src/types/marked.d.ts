@@ -19,7 +19,10 @@ declare module 'marked' {
   }
 
   export function parse(markdown: string, options?: MarkedOptions): string;
-  export function parseInline(markdown: string, options?: MarkedOptions): string;
+  export function parseInline(
+    markdown: string,
+    options?: MarkedOptions,
+  ): string;
   export function setOptions(options: MarkedOptions): void;
 
   const marked: {

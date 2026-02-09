@@ -23,6 +23,15 @@ export enum ArticleAction {
   UNFOCUS = 'unfocus',
 }
 
+// RabbitMQ 消息接口定义
+export interface ArticleLogMessage {
+  action: string;
+  content: string | Record<string, any>;
+  msg?: string;
+  user_id: number;
+  article_id: number;
+}
+
 export class CreateArticleLogDto {
   @ApiProperty({ description: '用户ID', example: '1' })
   @IsNumber()

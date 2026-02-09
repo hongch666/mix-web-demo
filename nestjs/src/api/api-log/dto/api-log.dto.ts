@@ -7,6 +7,19 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+// RabbitMQ 消息接口定义
+export interface ApiLogMessage {
+  user_id: number;
+  username: string;
+  api_description: string;
+  api_path: string;
+  api_method: string;
+  query_params?: Record<string, any>;
+  path_params?: Record<string, any>;
+  request_body?: Record<string, any>;
+  response_time: number;
+}
+
 export class CreateApiLogDto {
   @ApiProperty({ description: '用户ID', example: 1 })
   @IsNumber()

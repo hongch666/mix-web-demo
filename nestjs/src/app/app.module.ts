@@ -19,7 +19,9 @@ import { ModulesModule } from '../modules/modules.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): any => {
-        const db: Record<string, unknown> = configService.get('database') as Record<string, unknown>;
+        const db: Record<string, unknown> = configService.get(
+          'database',
+        ) as Record<string, unknown>;
         return {
           type: db.type,
           host: db.host,
@@ -40,7 +42,9 @@ import { ModulesModule } from '../modules/modules.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService): Promise<any> => {
-        const mongodb: Record<string, unknown> = configService.get('mongodb') as Record<string, unknown>;
+        const mongodb: Record<string, unknown> = configService.get(
+          'mongodb',
+        ) as Record<string, unknown>;
         const host: string = mongodb.host as string;
         const port: number = mongodb.port as number;
         const username: string = mongodb.username as string;

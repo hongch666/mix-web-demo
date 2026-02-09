@@ -13,15 +13,8 @@ import { NacosModule } from 'src/modules/nacos/nacos.module';
     RabbitMQModule,
     NacosModule,
   ],
-  providers: [
-    ApiLogService, 
-    ApiLogConsumerService
-  ],
-  controllers: [
-    ApiLogController
-  ],
-  exports: [
-    ApiLogService
-  ],
+  providers: [ApiLogService, ApiLogConsumerService],
+  controllers: [ApiLogController],
+  exports: [ApiLogService],
 })
 export class ApiLogModule {}

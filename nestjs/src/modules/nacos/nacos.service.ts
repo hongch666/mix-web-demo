@@ -31,7 +31,8 @@ export class NacosService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // 取消终端与nacos相关的日志,如果需要日志可以将下面的logger设置为console
-    const silentLogger: Record<string, (message?: unknown) => void> = Object.create(console);
+    const silentLogger: Record<string, (message?: unknown) => void> =
+      Object.create(console);
     silentLogger.log = (): void => {};
     silentLogger.info = (): void => {};
     silentLogger.debug = (): void => {};
@@ -68,13 +69,21 @@ export class NacosService implements OnModuleInit {
     logger.info(Constants.REGISTER_NACOS);
   }
 
-  async getServiceInstances(serviceName: string): Promise<Record<string, unknown>[]> {
-    const instances: Record<string, unknown>[] = (await this.client.getAllInstances(serviceName)) as Record<string, unknown>[];
+  async getServiceInstances(
+    serviceName: string,
+  ): Promise<Record<string, unknown>[]> {
+    const instances: Record<string, unknown>[] =
+      (await this.client.getAllInstances(serviceName)) as Record<
+        string,
+        unknown
+      >[];
     return instances;
   }
 
   async call(opts: CallOptions): Promise<Record<string, unknown>> {
-    const instances: Record<string, unknown>[] = await this.getServiceInstances(opts.serviceName);
+    const instances: Record<string, unknown>[] = await this.getServiceInstances(
+      opts.serviceName,
+    );
     if (!instances || instances.length === 0) {
       throw new BusinessException(`服务 ${opts.serviceName} 无可用实例`);
     }
@@ -99,7 +108,8 @@ export class NacosService implements OnModuleInit {
 
     // 默认请求头
     const userId: string = this.cls.get<string>('userId') || '0';
-    const userName: string = this.cls.get<string>('username') || Constants.UNKNOWN_USER;
+    const userName: string =
+      this.cls.get<string>('username') || Constants.UNKNOWN_USER;
     const defaultHeaders: Record<string, string> = {
       'X-User-Id': userId,
       'X-Username': userName,

@@ -19,7 +19,6 @@ nestjs/lerna-debug.log*
 nestjs/.DS_Store
 
 # 配置文件
-nestjs/eslint.config.mjs
 nestjs/.prettierrc
 
 # bun 相关

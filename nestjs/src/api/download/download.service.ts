@@ -27,12 +27,15 @@ export class DownloadService {
 
   // 生成word并保存到指定位置
   async exportToWordAndSave(id: number): Promise<string> {
-    const article: Articles | null = await this.articleService.getArticleById(id);
+    const article: Articles | null =
+      await this.articleService.getArticleById(id);
     if (!article) {
       throw new BusinessException(`文章 ID ${id} 未找到`);
     }
-    const htmlContent: string = marked.parse(article.content || '') as string;
-    const user: User | null = await this.userService.getUserById(article.user_id);
+    const htmlContent: string = marked.parse(article.content || '');
+    const user: User | null = await this.userService.getUserById(
+      article.user_id,
+    );
     const data: Record<string, any> = {
       title: article.title,
       // 传递htmlContent给word模板
@@ -42,14 +45,26 @@ export class DownloadService {
       create_at: dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss'),
       update_at: dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss'),
     };
-    const filePath: string | undefined = this.configService.get<string>('files.word'); // 获取配置中的模板路径
+    const filePath: string | undefined =
+      this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
       throw new BusinessException(Constants.EMPTY_FILE_PATH);
     }
-    const templatePath: string = path.join(process.cwd(), filePath, 'template.docx'); // 模板文件路径
-    const savePath: string = path.join(process.cwd(), filePath, `article-${id}.docx`); // 保存路径
+    const templatePath: string = path.join(
+      process.cwd(),
+      filePath,
+      'template.docx',
+    ); // 模板文件路径
+    const savePath: string = path.join(
+      process.cwd(),
+      filePath,
+      `article-${id}.docx`,
+    ); // 保存路径
     // 调用 WordService 生成并保存 Word 文档
-    const buffer: Buffer = await this.wordService.exportToWord(data, templatePath);
+    const buffer: Buffer = await this.wordService.exportToWord(
+      data,
+      templatePath,
+    );
     // 确保保存目录存在
     if (!fs.existsSync(path.dirname(savePath))) {
       fs.mkdirSync(path.dirname(savePath), { recursive: true });
@@ -67,20 +82,24 @@ export class DownloadService {
 
   // 生成markdown文件并上传到OSS，返回下载链接
   async exportMarkdownAndUpload(id: number): Promise<string> {
-    const article: Articles | null = await this.articleService.getArticleById(id);
+    const article: Articles | null =
+      await this.articleService.getArticleById(id);
     if (!article) {
       throw new BusinessException(`文章 ID ${id} 未找到`);
     }
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const user: User | null = await this.userService.getUserById(article.user_id);
+    const user: User | null = await this.userService.getUserById(
+      article.user_id,
+    );
     markdown += `\n**作者：** ${user?.name || '未知'}\n`;
     markdown += `\n**创作时间：** ${dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
     markdown += `\n---\n`;
     markdown += article.content || '';
     // 保存到本地临时文件
-    const filePath: string = this.configService.get<string>('files.word') || 'static';
+    const filePath: string =
+      this.configService.get<string>('files.word') || 'static';
     const saveDir: string = path.join(process.cwd(), filePath);
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
@@ -97,15 +116,19 @@ export class DownloadService {
 
   // 生成PDF文件并保存到指定位置
   async exportToPdfAndSave(id: number): Promise<string> {
-    const article: Articles | null = await this.articleService.getArticleById(id);
+    const article: Articles | null =
+      await this.articleService.getArticleById(id);
     if (!article) {
       throw new BusinessException(`文章 ID ${id} 未找到`);
     }
 
-    const user: User | null = await this.userService.getUserById(article.user_id);
+    const user: User | null = await this.userService.getUserById(
+      article.user_id,
+    );
 
     // 获取文件保存路径
-    const filePath: string = this.configService.get<string>('files.word') || 'static';
+    const filePath: string =
+      this.configService.get<string>('files.word') || 'static';
     const saveDir: string = path.join(process.cwd(), filePath);
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
@@ -119,8 +142,7 @@ export class DownloadService {
     );
 
     // 使用 puppeteer 生成 PDF
-    let browser: puppeteer.Browser;
-    browser = await puppeteer.launch({
+    const browser: puppeteer.Browser = await puppeteer.launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
@@ -156,12 +178,12 @@ export class DownloadService {
 
   // 生成 PDF 的 HTML 内容
   private generatePdfHtml(article: Articles, user: User): string {
-    const createTime: string = dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss');
-    const updateTime: string = dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss');
-    const generateTime: string = dayjs().format('YYYY-MM-DD HH:mm:ss');
+    const createTime: string = dayjs(article.create_at).format(
+      'YYYY-MM-DD HH:mm:ss',
+    );
 
     // 使用 marked 解析 Markdown 内容为 HTML
-    const htmlContent: string = marked.parse(article.content || '') as string;
+    const htmlContent: string = marked.parse(article.content || '');
 
     return `
       <!DOCTYPE html>

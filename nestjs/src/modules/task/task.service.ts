@@ -38,11 +38,12 @@ export class TaskService {
         })
         .exec();
 
-        logger.info(
+      logger.info(
         `API 日志清理完成，删除了 ${result.deletedCount} 条超过1个月的日志`,
       );
     } catch (error: unknown) {
-      const errorMessage: string = error instanceof Error ? error.message : String(error);
+      const errorMessage: string =
+        error instanceof Error ? error.message : String(error);
       logger.error(`清理 API 日志失败: ${errorMessage}`);
     }
   }

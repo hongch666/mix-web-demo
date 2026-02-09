@@ -19,9 +19,12 @@ export async function createApp(): Promise<NestFastifyApplication> {
   // 配置 Fastify 以接受没有 Content-Type 的请求（解决 DELETE 请求的 Unsupported Media Type 错误）
   const fastifyInstance = app.getHttpAdapter().getInstance();
   // 使用安全的正则表达式来处理各种 Content-Type
-  fastifyInstance.addContentTypeParser(/^.*/, async (_req: unknown, payload: NodeJS.ReadableStream): Promise<unknown> => {
-    return payload;
-  });
+  fastifyInstance.addContentTypeParser(
+    /^.*/,
+    async (_req: unknown, payload: NodeJS.ReadableStream): Promise<unknown> => {
+      return payload;
+    },
+  );
 
   // Swagger 配置
   const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()

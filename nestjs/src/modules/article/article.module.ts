@@ -5,14 +5,8 @@ import { Articles } from './entities/article.entity';
 import { User } from '../user/entities/user.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Articles, User])
-  ],
-  providers: [
-    ArticleService
-  ],
-  exports: [
-    ArticleService
-  ],
+  imports: [TypeOrmModule.forFeature([Articles, User])],
+  providers: [ArticleService],
+  exports: [ArticleService],
 })
 export class ArticleModule {}
