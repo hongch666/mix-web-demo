@@ -68,6 +68,7 @@ show_help() {
     echo ""
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
+    echo "  swag                     - Generate Swagger API documentation"
     echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
@@ -81,6 +82,7 @@ show_help() {
     echo ""
     echo "Examples (示例):"
     echo "  ./services.sh setup                    # Initialize environment (first time)"
+    echo "  ./services.sh swag                     # Generate Swagger API documentation"
     echo "  ./services.sh multi                    # Multi-pane tmux layout (dev)"
     echo "  ./services.sh seq                      # Sequential window layout (dev, default config)"
     echo "  ./services.sh seq -i                   # Sequential layout with interactive mode"
@@ -118,6 +120,10 @@ case $COMMAND in
     setup)
         echo "Initializing environment and installing dependencies..."
         bash "$SCRIPTS_DIR/setup.sh"
+        ;;
+    swag)
+        echo "Generating Swagger API documentation..."
+        bash "$SCRIPTS_DIR/swag-init.sh"
         ;;
     multi)
         echo "Starting services in multi-pane layout..."

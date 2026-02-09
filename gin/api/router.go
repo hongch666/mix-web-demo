@@ -1,3 +1,9 @@
+// @title       Gin部分的Swagger文档集成
+// @version     1.0.0
+// @description 这是Gin部分的Swagger文档
+// @host        localhost:8082
+// @BasePath    /
+
 package api
 
 import (
