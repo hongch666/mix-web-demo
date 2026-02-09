@@ -19,9 +19,7 @@ func main() {
 	// 初始化路由
 	r := api.SetupRouter()
 	// 获取服务信息
-	port := config.Config.Server.Port
-	addr := fmt.Sprintf(":%d", port)
-	config.InitMessage()
+	addr := fmt.Sprintf(":%d", config.Config.Server.Port)
 	// 启动服务器
 	r.Run(addr)
 }
