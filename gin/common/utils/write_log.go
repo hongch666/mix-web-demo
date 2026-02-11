@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/hongch666/mix-web-demo/gin/common/config"
 	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
-	"github.com/hongch666/mix-web-demo/gin/config"
 )
 
 // writeLog 直接写入日志到文件

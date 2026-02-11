@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hongch666/mix-web-demo/gin/api"
-	"github.com/hongch666/mix-web-demo/gin/config"
+	"github.com/hongch666/mix-web-demo/gin/common/config"
 
 	_ "github.com/hongch666/mix-web-demo/gin/docs"
 )

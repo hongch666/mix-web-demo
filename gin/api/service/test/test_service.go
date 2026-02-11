@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/hongch666/mix-web-demo/gin/common/client"
+	"github.com/hongch666/mix-web-demo/gin/common/config"
 	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
 	"github.com/hongch666/mix-web-demo/gin/common/utils"
-	"github.com/hongch666/mix-web-demo/gin/config"
 
 	"github.com/gin-gonic/gin"
 )

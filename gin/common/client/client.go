@@ -9,9 +9,9 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/hongch666/mix-web-demo/gin/common/config"
 	"github.com/hongch666/mix-web-demo/gin/common/keys"
 	"github.com/hongch666/mix-web-demo/gin/common/utils"
-	"github.com/hongch666/mix-web-demo/gin/config"
 
 	"net/http"
 	"net/url"

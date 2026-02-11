@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/hongch666/mix-web-demo/gin/api/mapper/sync"
+	"github.com/hongch666/mix-web-demo/gin/common/config"
 	"github.com/hongch666/mix-web-demo/gin/common/exceptions"
 	"github.com/hongch666/mix-web-demo/gin/common/utils"
-	"github.com/hongch666/mix-web-demo/gin/config"
 	"github.com/hongch666/mix-web-demo/gin/entity/dto"
 	"github.com/hongch666/mix-web-demo/gin/entity/po"
 
