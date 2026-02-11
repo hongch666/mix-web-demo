@@ -12,6 +12,7 @@ import { ApiLogInterceptor } from '../common/interceptors/api-log.interceptor';
 import { RequireAdminGuard } from '../common/guards/require-admin.guard';
 import { InternalTokenUtil } from '../common/utils/internal-token.util';
 import { ModulesModule } from '../modules/modules.module';
+import { InternalTokenGuard } from 'src/common/guards/internal-token.guard';
 
 @Module({
   imports: [
@@ -81,6 +82,10 @@ import { ModulesModule } from '../modules/modules.module';
     {
       provide: APP_INTERCEPTOR,
       useClass: ApiLogInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: InternalTokenGuard,
     },
     {
       provide: APP_GUARD,

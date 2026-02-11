@@ -1,5 +1,4 @@
-import { SetMetadata, UseGuards, applyDecorators } from '@nestjs/common';
-import { InternalTokenGuard } from '../guards/internal-token.guard';
+import { SetMetadata, applyDecorators } from '@nestjs/common';
 
 export const REQUIRE_INTERNAL_TOKEN_KEY = 'require_internal_token';
 export const REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY =
@@ -21,10 +20,7 @@ export const REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY =
  * }
  */
 export const RequireInternalToken = (serviceName?: string) => {
-  const decorators: any[] = [
-    SetMetadata(REQUIRE_INTERNAL_TOKEN_KEY, true),
-    UseGuards(InternalTokenGuard),
-  ];
+  const decorators: any[] = [SetMetadata(REQUIRE_INTERNAL_TOKEN_KEY, true)];
 
   if (serviceName) {
     decorators.unshift(
