@@ -21,11 +21,11 @@ func RecoveryMiddleware() gin.HandlerFunc {
 				if businessErr, ok := err.(*exceptions.BusinessError); ok {
 					// 业务异常：返回对应的错误信息，记录详细堆栈
 					utils.Log.Error(fmt.Sprintf(utils.BUSINESS_ERROR_MESSAGE, businessErr.Message, businessErr.Err, stack))
-					utils.RespondError(c, http.StatusOK, businessErr.Message)
+					utils.Error(c, http.StatusOK, businessErr.Message)
 				} else {
 					// 其他异常：返回固定的错误信息，记录详细堆栈
 					utils.Log.Error(fmt.Sprintf(utils.STACK_ERROR_MESSAGE, err, stack))
-					utils.RespondError(c, http.StatusOK, utils.UNIFIED_ERROR_RESPONSE_MESSAGE)
+					utils.Error(c, http.StatusOK, utils.UNIFIED_ERROR_RESPONSE_MESSAGE)
 				}
 				c.Abort()
 			}

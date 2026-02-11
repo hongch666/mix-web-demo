@@ -39,13 +39,13 @@ func (con *ChatController) SendMessage(c *gin.Context) {
 	var req dto.SendMessageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
 	response := con.ChatService.SendChatMessage(&req)
 
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // GetChatHistory 获取聊天历史记录
@@ -61,13 +61,12 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 	var req dto.GetChatHistoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
 	response := con.ChatService.GetChatHistory(&req)
-
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // GetQueueStatus 获取队列状态
@@ -79,7 +78,7 @@ func (con *ChatController) GetChatHistory(c *gin.Context) {
 // @Router /user-chat/queue [get]
 func (con *ChatController) GetQueueStatus(c *gin.Context) {
 	response := con.ChatService.GetQueueStatus()
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // JoinQueue 手动加入队列
@@ -95,12 +94,12 @@ func (con *ChatController) JoinQueue(c *gin.Context) {
 	var req dto.JoinQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
 	response := con.ChatService.JoinQueueManually(&req)
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // LeaveQueue 手动离开队列
@@ -116,12 +115,12 @@ func (con *ChatController) LeaveQueue(c *gin.Context) {
 	var req dto.LeaveQueueRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
 	response := con.ChatService.LeaveQueueManually(&req)
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // WebSocketHandler WebSocket连接处理
@@ -139,14 +138,14 @@ func (con *ChatController) WebSocketHandler(c *gin.Context) {
 
 	if userID == "" {
 		utils.Log.Error(utils.USER_ID_LESS)
-		utils.RespondError(c, http.StatusOK, utils.USER_ID_LESS)
+		utils.Error(c, http.StatusOK, utils.USER_ID_LESS)
 		return
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		utils.Log.Error(utils.WS_CONNECT_FAIL + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.WS_CONNECT_FAIL)
+		utils.Error(c, http.StatusOK, utils.WS_CONNECT_FAIL)
 		return
 	}
 
@@ -186,12 +185,12 @@ func (con *ChatController) GetUnreadCount(c *gin.Context) {
 	var req dto.GetUnreadCountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
 	response := con.ChatService.GetUnreadCount(&req)
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // GetAllUnreadCounts 获取用户与其他所有人的未读消息数
@@ -207,12 +206,12 @@ func (con *ChatController) GetAllUnreadCounts(c *gin.Context) {
 	var req dto.GetAllUnreadCountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 		return
 	}
 
 	response := con.ChatService.GetAllUnreadCounts(&req)
-	utils.RespondSuccess(c, response)
+	utils.Success(c, response)
 }
 
 // SSEHandler SSE长连接处理
@@ -230,7 +229,7 @@ func (con *ChatController) SSEHandler(c *gin.Context) {
 
 	if userID == "" {
 		utils.Log.Error(utils.USER_ID_LESS)
-		utils.RespondError(c, http.StatusOK, utils.USER_ID_LESS)
+		utils.Error(c, http.StatusOK, utils.USER_ID_LESS)
 		return
 	}
 

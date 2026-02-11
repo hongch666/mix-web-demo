@@ -6,8 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RespondSuccess 返回成功响应
-func RespondSuccess(c *gin.Context, data any) {
+// Success 返回成功响应
+func Success(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 1,
 		"msg":  "success",
@@ -16,8 +16,8 @@ func RespondSuccess(c *gin.Context, data any) {
 	c.Abort()
 }
 
-// RespondError 返回错误响应
-func RespondError(c *gin.Context, code int, message string) {
+// Error 返回错误响应
+func Error(c *gin.Context, code int, message string) {
 	c.JSON(code, gin.H{
 		"code": 0,
 		"msg":  message,

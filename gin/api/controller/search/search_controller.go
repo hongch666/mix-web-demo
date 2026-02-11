@@ -35,11 +35,11 @@ func (con *SearchController) SearchArticlesController(c *gin.Context) {
 	var searchDTO dto.ArticleSearchDTO
 	if err := c.ShouldBindQuery(&searchDTO); err != nil {
 		utils.Log.Error(utils.PARAM_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.PARAM_ERR)
+		utils.Error(c, http.StatusOK, utils.PARAM_ERR)
 	}
 	ctx := c.Request.Context()
 	data := con.SearchService.SearchArticles(ctx, searchDTO)
-	utils.RespondSuccess(c, data)
+	utils.Success(c, data)
 }
 
 // @Summary 获取用户搜索历史
@@ -58,7 +58,7 @@ func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
 	userID, err := strconv.ParseInt(userIDParam, 10, 64)
 	if err != nil {
 		utils.Log.Error(utils.USER_ID_ERR + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.USER_ID_ERR)
+		utils.Error(c, http.StatusOK, utils.USER_ID_ERR)
 		return
 	}
 
@@ -66,11 +66,11 @@ func (con *SearchController) GetSearchHistoryController(c *gin.Context) {
 	keywords, err := con.SearchService.GetSearchHistory(ctx, userID)
 	if err != nil {
 		utils.Log.Error(utils.SEARCH_HISTORY_FAIL + err.Error())
-		utils.RespondError(c, http.StatusOK, utils.SEARCH_HISTORY_FAIL)
+		utils.Error(c, http.StatusOK, utils.SEARCH_HISTORY_FAIL)
 		return
 	}
 
-	utils.RespondSuccess(c, map[string]any{
+	utils.Success(c, map[string]any{
 		"keywords": keywords,
 	})
 }
