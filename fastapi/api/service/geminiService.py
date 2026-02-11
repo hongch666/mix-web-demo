@@ -32,7 +32,7 @@ class GeminiService(BaseAiService):
         super().__init__(ai_history_mapper, service_name="Gemini")
         
         # 初始化权限管理器
-        self.perm_manager = UserPermissionManager(user_mapper)
+        self.perm_manager: UserPermissionManager = UserPermissionManager(user_mapper)
         
         # 初始化Gemini客户端（使用第三方代理）
         try:

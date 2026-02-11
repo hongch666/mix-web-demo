@@ -1,7 +1,8 @@
 import datetime
-import time
 import json
+import time
 import uuid
+from typing import Any, AsyncGenerator, Dict
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlmodel import Session
@@ -33,7 +34,7 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])
 async def send_message(
     httpRequest: Request,
     request: ChatRequest,
-    db:Session = Depends(get_db),
+    db: Session = Depends(get_db),
     geminiService: GeminiService = Depends(get_gemini_service),
     qwenService: QwenService = Depends(get_qwen_service),
     doubaoService: DoubaoService = Depends(get_doubao_service),
@@ -138,19 +139,18 @@ async def stream_message(
     conversation_id: str = request.conversation_id or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
     
-    async def event_generator():
-        message_acc = ""
-        thinking_acc = ""
+    async def event_generator() -> AsyncGenerator[str, None]:
+        message_acc: str = ""
+        thinking_acc: str = ""
         # 在 event_generator 内部创建 db session，确保流式处理完成后立即释放
-        from common.config import get_db
         db_gen = get_db()
-        db = next(db_gen)
+        db: Session = next(db_gen)
         
         try:
             # 根据请求的服务类型选择对应的AI服务
             if request.service == AIServiceType.GEMINI:
                 logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
-                stream_generator = geminiService.stream_chat(
+                stream_generator: AsyncGenerator[Any, None] = geminiService.stream_chat(
                     message=request.message,
                     user_id=actual_user_id,
                     db=db
@@ -191,7 +191,7 @@ async def stream_message(
                     message_acc += chunk_content
                 
                 # 构建响应数据 - 确保chunk_content完整输出
-                data = success({
+                data: Dict[str, Any] = success({
                     "message": message_acc,
                     "conversation_id": conversation_id,
                     "chat_id": chat_id,
@@ -202,7 +202,7 @@ async def stream_message(
                     "chunk": chunk_content  # 保证完整的chunk内容
                 })
                 # 使用 ensure_ascii=False 保证 UTF-8 编码，avoid_json_tricks 保证完整性
-                json_str = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
+                json_str: str = json.dumps(data, ensure_ascii=False, separators=(',', ':'))
                 logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
                 yield f"data: {json_str}\n\n"
             

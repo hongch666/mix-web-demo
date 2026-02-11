@@ -19,12 +19,12 @@ class WordcloudCache:
     # Redis 键
     REDIS_KEY = "wordcloud:url"
     
-    def __init__(self):
+    def __init__(self) -> None:
         # Redis 客户端
         self._redis = get_redis_client()
         
         # Redis TTL（24小时）
-        self._redis_ttl = 86400
+        self._redis_ttl: int = 86400
     
     def __repr__(self) -> str:
         """对象表示 - 用于日志输出和序列化"""

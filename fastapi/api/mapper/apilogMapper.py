@@ -5,7 +5,7 @@ from common.config import db as mongo_db
 class ApiLogMapper:
     """API 日志 Mapper"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.logs = mongo_db["apilogs"]
 
     def get_api_average_response_time_mapper(self) -> List[Dict[str, Any]]:

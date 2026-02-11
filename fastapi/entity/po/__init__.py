@@ -10,7 +10,7 @@ from .collect import Collect
 from .focus import Focus
 from .categoryReference import CategoryReference
 
-__all__ = [
+__all__: list[str] = [
     "Article",
     "User",
     "Category",

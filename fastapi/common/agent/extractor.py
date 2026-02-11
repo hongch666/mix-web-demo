@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Callable, Awaitable
+from typing import Any, Awaitable, Callable, List, Optional
 from langchain_community.document_loaders import PyPDFLoader, RecursiveUrlLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import requests
@@ -10,7 +10,7 @@ class ReferenceContentExtractor:
     """权威参考文本内容提取器"""
 
     # 需要过滤的噪音元素
-    NOISE_PATTERNS = [
+    NOISE_PATTERNS: List[str] = [
         r'<!--.*?-->',  # HTML 注释
         r'<script.*?</script>',  # 脚本标签
         r'<style.*?</style>',  # 样式标签
@@ -29,10 +29,10 @@ class ReferenceContentExtractor:
     ]
 
     # 用于分割文本的分割器
-    TEXT_SPLITTER = None
+    TEXT_SPLITTER: Optional[RecursiveCharacterTextSplitter] = None
 
     @classmethod
-    def _init_text_splitter(cls):
+    def _init_text_splitter(cls) -> None:
         """初始化文本分割器"""
         if cls.TEXT_SPLITTER is None:
             try:
@@ -104,6 +104,7 @@ class ReferenceContentExtractor:
     @classmethod
     async def extract_pdf_content(cls, pdf_url: str, max_length: int = 2000) -> str:
         """从PDF URL提取内容"""
+        temp_pdf_path: str = ""
         try:
             if not pdf_url:
                 return ""
@@ -139,7 +140,7 @@ class ReferenceContentExtractor:
             # 清理临时文件
             try:
                 import os
-                if os.path.exists(temp_pdf_path):
+                if temp_pdf_path and os.path.exists(temp_pdf_path):
                     os.remove(temp_pdf_path)
             except:
                 pass
@@ -250,7 +251,7 @@ class ReferenceContentExtractor:
             return ""
 
     @classmethod
-    def split_text(cls, text: str) -> list:
+    def split_text(cls, text: str) -> List[str]:
         """分割长文本为多个块"""
         cls._init_text_splitter()
         if cls.TEXT_SPLITTER is None:

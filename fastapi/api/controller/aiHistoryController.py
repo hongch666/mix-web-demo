@@ -8,6 +8,8 @@ from common.decorators import log, requireInternalToken
 from entity.dto import CreateHistoryDTO
 from typing import Any
 
+from entity.po.aiHistory import AiHistory
+
 router: APIRouter = APIRouter(
     prefix="/ai_history",
     tags=["AI历史相关接口"],
@@ -35,7 +37,7 @@ async def create_ai_history(request: Request, data: CreateHistoryDTO, db: Sessio
 async def get_all_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
     """获取所有AI历史记录接口"""
     
-    histories = await run_in_threadpool(ai_history_service.get_all_ai_history, user_id, db)
+    histories: list[AiHistory] = await run_in_threadpool(ai_history_service.get_all_ai_history, user_id, db)
     return success(data=histories)
 
 @router.delete(

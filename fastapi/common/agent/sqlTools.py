@@ -12,7 +12,7 @@ user_id_context: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(
 class SQLTools:
     """SQL数据库工具类"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化数据库连接"""
         # 延迟导入避免循环依赖
         from common.config import load_config

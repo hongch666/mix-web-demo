@@ -1,8 +1,9 @@
 from functools import lru_cache
+from datetime import datetime
+from typing import Any, Dict, List
 from sqlmodel import Session, select, func, cast, Date
 from entity.po import Like
 from common.utils import fileLogger as logger
-from datetime import datetime
 from . import get_article_mapper
 
 class LikeMapper:
@@ -23,7 +24,7 @@ class LikeMapper:
         total_likes = self.get_total_likes_mapper(db)
         return round(total_likes / total_articles, 2)
 
-    def get_monthly_like_trend_mapper(self, db: Session, user_id: int) -> dict:
+    def get_monthly_like_trend_mapper(self, db: Session, user_id: int) -> Dict[str, Any]:
         """获取用户本月点赞的趋势"""
         today = datetime.now()
         first_day = datetime(today.year, today.month, 1)
@@ -43,8 +44,8 @@ class LikeMapper:
         
         results = db.exec(statement).all()
         
-        daily_trends = []
-        total = 0
+        daily_trends: List[Dict[str, Any]] = []
+        total: int = 0
         for row in results:
             date_str = str(row[0])
             count = row[1]

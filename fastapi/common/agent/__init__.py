@@ -5,7 +5,7 @@ from .userPermissionManager import UserPermissionManager, get_user_permission_ma
 from .intentRouter import IntentRouter
 from .extractor import ReferenceContentExtractor, get_reference_content_extractor
 
-__all__ = [
+__all__: list[str] = [
     "SQLTools",
     "get_sql_tools",
     "RAGTools",

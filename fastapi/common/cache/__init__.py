@@ -7,7 +7,7 @@ from .publishTimeCache import PublishTimeCache, get_publish_time_cache
 from .statisticsCache import StatisticsCache, get_statistics_cache
 from .wordcloudCache import WordcloudCache, get_wordcloud_cache
 
-__all__ = [
+__all__: list[str] = [
     'ArticleCache',
     'get_article_cache',
     'CategoryCache',

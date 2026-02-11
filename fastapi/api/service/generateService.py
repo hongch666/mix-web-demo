@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any
+from typing import Any, Dict, Optional
 import re
 import asyncio
 import time
@@ -23,17 +23,17 @@ class GenerateService:
 
     def __init__(
             self, 
-            comments_mapper: CommentsMapper = None, 
-            article_mapper: ArticleMapper = None, 
-            doubao_service: DoubaoService = None, 
-            gemini_service: GeminiService = None, 
-            qwen_service: QwenService = None
+            comments_mapper: Optional[CommentsMapper] = None, 
+            article_mapper: Optional[ArticleMapper] = None, 
+            doubao_service: Optional[DoubaoService] = None, 
+            gemini_service: Optional[GeminiService] = None, 
+            qwen_service: Optional[QwenService] = None
         ):
-        self.comments_mapper = comments_mapper
-        self.article_mapper = article_mapper
-        self.doubao_service = doubao_service
-        self.gemini_service = gemini_service
-        self.qwen_service = qwen_service
+        self.comments_mapper: Optional[CommentsMapper] = comments_mapper
+        self.article_mapper: Optional[ArticleMapper] = article_mapper
+        self.doubao_service: Optional[DoubaoService] = doubao_service
+        self.gemini_service: Optional[GeminiService] = gemini_service
+        self.qwen_service: Optional[QwenService] = qwen_service
 
     def extract_tags(self,text: str, topK: int = 5) -> str:
         """
@@ -48,7 +48,7 @@ class GenerateService:
         tags: list[str] = jieba.analyse.extract_tags(text, topK=topK)
         return ",".join(tags)
 
-    async def generate_ai_comments(self, article_id: int, db: Any):
+    async def generate_ai_comments(self, article_id: int, db: Any) -> None:
         # 延迟导入避免循环依赖
         from entity.po import Comments
         
@@ -81,7 +81,7 @@ class GenerateService:
         total_start_time = time.time()
         
         # 为每个模型创建带计时的包装函数
-        async def timed_doubao_call():
+        async def timed_doubao_call() -> Any:
             start = time.time()
             try:
                 result = await self.doubao_service.basic_chat(prompt)
@@ -93,7 +93,7 @@ class GenerateService:
                 logger.error(f"豆包调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
-        async def timed_gemini_call():
+        async def timed_gemini_call() -> Any:
             start = time.time()
             try:
                 result = await self.gemini_service.basic_chat(prompt)
@@ -105,7 +105,7 @@ class GenerateService:
                 logger.error(f"Gemini调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
-        async def timed_qwen_call():
+        async def timed_qwen_call() -> Any:
             start = time.time()
             try:
                 result = await self.qwen_service.basic_chat(prompt)
@@ -208,7 +208,7 @@ class GenerateService:
         
         return content, star
 
-    async def generate_ai_comments_with_reference(self, article_id: int, db: Any):
+    async def generate_ai_comments_with_reference(self, article_id: int, db: Any) -> None:
         """
         基于权威参考文本生成AI评论
         获取文章的子分类权威参考文本，提取内容，然后调用AI服务进行评价
@@ -330,7 +330,7 @@ class GenerateService:
         
         total_start_time = time.time()
         
-        async def timed_doubao_ref_call():
+        async def timed_doubao_ref_call() -> Any:
             start = time.time()
             try:
                 result = await self.doubao_service.with_reference_chat(article_content, reference_content)
@@ -342,7 +342,7 @@ class GenerateService:
                 logger.error(f"豆包参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
-        async def timed_gemini_ref_call():
+        async def timed_gemini_ref_call() -> Any:
             start = time.time()
             try:
                 result = await self.gemini_service.with_reference_chat(article_content, reference_content)
@@ -354,7 +354,7 @@ class GenerateService:
                 logger.error(f"Gemini参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
         
-        async def timed_qwen_ref_call():
+        async def timed_qwen_ref_call() -> Any:
             start = time.time()
             try:
                 result = await self.qwen_service.with_reference_chat(article_content, reference_content)
@@ -431,7 +431,7 @@ class GenerateService:
         self, 
         reference_type: str, 
         reference_value: str
-    ) -> dict:
+    ) -> Dict[str, Any]:
         """
         生成权威文章 - 使用三个大模型并发对提取的内容进行总结
         
@@ -472,7 +472,7 @@ class GenerateService:
             logger.info(Constants.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
             
-            async def timed_doubao_summarize():
+            async def timed_doubao_summarize() -> Optional[str]:
                 start = time.time()
                 try:
                     result = await self.doubao_service.summarize_content(raw_content, max_length=1500)
@@ -484,7 +484,7 @@ class GenerateService:
                     logger.error(f"豆包总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
             
-            async def timed_gemini_summarize():
+            async def timed_gemini_summarize() -> Optional[str]:
                 start = time.time()
                 try:
                     result = await self.gemini_service.summarize_content(raw_content, max_length=1500)
@@ -496,7 +496,7 @@ class GenerateService:
                     logger.error(f"Gemini总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
             
-            async def timed_qwen_summarize():
+            async def timed_qwen_summarize() -> Optional[str]:
                 start = time.time()
                 try:
                     result = await self.qwen_service.summarize_content(raw_content, max_length=1500)

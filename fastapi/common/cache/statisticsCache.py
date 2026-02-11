@@ -1,5 +1,5 @@
 import time
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from functools import lru_cache
 from common.config import get_redis_client
 from common.utils import fileLogger as logger, Constants
@@ -21,20 +21,20 @@ class StatisticsCache:
     REDIS_KEY_PREFIX = "article:statistics"
     REDIS_VERSION_KEY = "article:statistics:version"
     
-    def __init__(self):
+    def __init__(self) -> None:
         # L1 本地缓存
-        self._local_cache = None
-        self._local_cache_time = 0
-        self._local_cache_ttl = 600  # 10分钟
+        self._local_cache: Optional[Dict[str, Any]] = None
+        self._local_cache_time: float = 0
+        self._local_cache_ttl: int = 600  # 10分钟
         
         # 版本号
-        self._cache_version = None
+        self._cache_version: Optional[str] = None
         
         # Redis 客户端
         self._redis = get_redis_client()
         
         # Redis TTL（1天）
-        self._redis_ttl = 86400
+        self._redis_ttl: int = 86400
     
     def __repr__(self) -> str:
         """对象表示 - 用于日志输出和序列化"""
@@ -108,7 +108,7 @@ class StatisticsCache:
         logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
     
-    def set(self, data: Dict[str, Any]):
+    def set(self, data: Dict[str, Any]) -> None:
         """
         设置缓存（二级缓存）
         
@@ -129,7 +129,7 @@ class StatisticsCache:
         except Exception as e:
             logger.error(f"[L2缓存] Redis 写入失败: {e}")
     
-    def clear_all(self):
+    def clear_all(self) -> None:
         """清除所有缓存"""
         # 清除本地缓存
         self._local_cache = None

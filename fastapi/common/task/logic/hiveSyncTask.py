@@ -1,7 +1,7 @@
 import os
 import csv
 import subprocess
-from typing import Optional, Callable, Any, List, Dict
+from typing import Any, Callable, Dict, List, Optional
 from pyhive import hive
 from sqlmodel import Session
 from common.config import load_config
@@ -88,16 +88,16 @@ def export_articles_to_csv_and_hive(
             return
 
         # 支持传入 function 或 mapper instance
-        articles = article_get_all(db) if callable(article_get_all) else []
+        articles: List[Any] = article_get_all(db) if callable(article_get_all) else []
         if not articles:
             logger.warning(Constants.NO_TEXT_CONTENT_AVAILABLE_MESSAGE)
             return
 
         # 获取所有user_id（确保类型一致）
-        user_ids: List[int] = [getattr(a, 'user_id', None) for a in articles if getattr(a, 'user_id', None) is not None]
+        user_ids: List[int] = [getattr(a, "user_id", None) for a in articles if getattr(a, "user_id", None) is not None]
 
         # 解析 user 查询方法，兼容不同命名
-        user_get_by_ids = None
+        user_get_by_ids: Optional[Callable[[List[int], Session], List[Any]]] = None
         if hasattr(user_mapper, 'get_users_by_ids'):
             user_get_by_ids = user_mapper.get_users_by_ids
         elif hasattr(user_mapper, 'get_users_by_ids_mapper'):
@@ -105,7 +105,7 @@ def export_articles_to_csv_and_hive(
         elif callable(user_mapper):
             user_get_by_ids = user_mapper
 
-        users = user_get_by_ids(user_ids, db) if (user_ids and callable(user_get_by_ids)) else []
+        users: List[Any] = user_get_by_ids(user_ids, db) if (user_ids and callable(user_get_by_ids)) else []
         user_id_to_name: Dict[int, str] = {user.id: user.name for user in users}
 
         # 2. 写入csv

@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import time
 import uuid
-from typing import Dict, List, Any
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
@@ -33,30 +33,30 @@ class AnalyzeService:
     
     def __init__(
             self, 
-            articleMapper: ArticleMapper = None, 
-            articleLogMapper: ArticleLogMapper = None, 
-            userMapper: UserMapper = None, 
-            categoryMapper: CategoryMapper = None, 
-            likeMapper: LikeMapper = None, 
-            collectMapper: CollectMapper = None, 
-            article_cache: ArticleCache = None, 
-            category_cache: CategoryCache = None, 
-            publish_time_cache: PublishTimeCache = None, 
-            statistics_cache: StatisticsCache = None,
-            wordcloud_cache: WordcloudCache = None
+            articleMapper: Optional[ArticleMapper] = None, 
+            articleLogMapper: Optional[ArticleLogMapper] = None, 
+            userMapper: Optional[UserMapper] = None, 
+            categoryMapper: Optional[CategoryMapper] = None, 
+            likeMapper: Optional[LikeMapper] = None, 
+            collectMapper: Optional[CollectMapper] = None, 
+            article_cache: Optional[ArticleCache] = None, 
+            category_cache: Optional[CategoryCache] = None, 
+            publish_time_cache: Optional[PublishTimeCache] = None, 
+            statistics_cache: Optional[StatisticsCache] = None,
+            wordcloud_cache: Optional[WordcloudCache] = None
         ):
-        self.articleMapper = articleMapper
-        self.articleLogMapper = articleLogMapper
-        self.userMapper = userMapper
-        self.categoryMapper = categoryMapper
-        self.likeMapper = likeMapper
-        self.collectMapper = collectMapper
+        self.articleMapper: Optional[ArticleMapper] = articleMapper
+        self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
+        self.userMapper: Optional[UserMapper] = userMapper
+        self.categoryMapper: Optional[CategoryMapper] = categoryMapper
+        self.likeMapper: Optional[LikeMapper] = likeMapper
+        self.collectMapper: Optional[CollectMapper] = collectMapper
         # 注入缓存对象
-        self._article_cache = article_cache
-        self._category_cache = category_cache
-        self._publish_time_cache = publish_time_cache
-        self._statistics_cache = statistics_cache
-        self._wordcloud_cache = wordcloud_cache
+        self._article_cache: Optional[ArticleCache] = article_cache
+        self._category_cache: Optional[CategoryCache] = category_cache
+        self._publish_time_cache: Optional[PublishTimeCache] = publish_time_cache
+        self._statistics_cache: Optional[StatisticsCache] = statistics_cache
+        self._wordcloud_cache: Optional[WordcloudCache] = wordcloud_cache
 
     @classmethod
     def create_for_scheduler(cls) -> 'AnalyzeService':

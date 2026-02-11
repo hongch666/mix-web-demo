@@ -1,22 +1,23 @@
 from functools import lru_cache
+from typing import Dict, List
 from sqlmodel import Session, select
 from entity.po import Category, SubCategory
 
 class CategoryMapper:
     """分类 Mapper"""
 
-    def get_all_categories_mapper(self, db: Session) -> list[Category]:
+    def get_all_categories_mapper(self, db: Session) -> List[Category]:
         statement = select(Category).distinct()
         return db.exec(statement).all()
     
-    def get_subcategories_with_parent_mapper(self, db: Session) -> list[dict]:
+    def get_subcategories_with_parent_mapper(self, db: Session) -> List[Dict[str, object]]:
         """
         获取所有子分类及其对应的父分类名称
         返回: [{"id": 1, "name": "Python", "category_name": "编程语言", ...}, ...]
         """
         subcategories = db.exec(select(SubCategory)).all()
         
-        result = []
+        result: List[Dict[str, object]] = []
         for sub in subcategories:
             # 获取对应的父分类
             parent = db.exec(select(Category).where(Category.id == sub.category_id)).first()

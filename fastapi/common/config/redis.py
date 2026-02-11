@@ -1,21 +1,21 @@
 import redis
-from typing import Optional, Any
+from typing import Any, Optional
 import json
 from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 
 class RedisClient:
     """Redis 客户端 - 单例模式"""
-    _instance = None
-    _pool = None
+    _instance: Optional["RedisClient"] = None
+    _pool: Optional[redis.ConnectionPool] = None
     
-    def __new__(cls):
+    def __new__(cls) -> "RedisClient":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._initialize()
         return cls._instance
     
-    def _initialize(self):
+    def _initialize(self) -> None:
         """初始化 Redis 连接池"""
         try:
             redis_config = load_config("database")["redis"]
@@ -43,7 +43,7 @@ class RedisClient:
             self._pool = redis.ConnectionPool(**pool_params)
             
             # 创建 Redis 客户端
-            self._client = redis.Redis(connection_pool=self._pool)
+            self._client: Optional[redis.Redis] = redis.Redis(connection_pool=self._pool)
             
             # 测试连接
             self._client.ping()
@@ -155,7 +155,7 @@ class RedisClient:
             logger.error(f"[Redis] TTL 失败 key={key}: {e}")
             return -2
     
-    def keys(self, pattern: str) -> list:
+    def keys(self, pattern: str) -> list[str]:
         """获取匹配的键列表"""
         try:
             if not self._client:
@@ -179,7 +179,7 @@ class RedisClient:
 
 
 # 全局单例
-_redis_client = None
+_redis_client: Optional[RedisClient] = None
 
 def get_redis_client() -> RedisClient:
     """获取 Redis 客户端单例"""

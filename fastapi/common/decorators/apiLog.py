@@ -19,14 +19,14 @@ class ApiLogConfig:
         include_params: bool = True,
         log_level: str = "info",
         exclude_fields: Optional[List[str]] = None
-    ):
-        self.message = message
-        self.include_params = include_params
-        self.log_level = log_level
-        self.exclude_fields = exclude_fields or []
+    ) -> None:
+        self.message: str = message
+        self.include_params: bool = include_params
+        self.log_level: str = log_level
+        self.exclude_fields: List[str] = exclude_fields or []
 
 
-def apiLog(config: Union[str, ApiLogConfig]):
+def apiLog(config: Union[str, ApiLogConfig]) -> Callable:
     """
     API 日志装饰器
     
@@ -225,7 +225,7 @@ def apiLog(config: Union[str, ApiLogConfig]):
     return decorator
 
 
-def _get_request_from_args(args: tuple, kwargs: Dict[str, Any]) -> Optional[Request]:
+def _get_request_from_args(args: tuple[Any, ...], kwargs: Dict[str, Any]) -> Optional[Request]:
     """
     从函数参数中提取 Request 对象
     
@@ -249,7 +249,7 @@ def _get_request_from_args(args: tuple, kwargs: Dict[str, Any]) -> Optional[Requ
     return None
 
 
-def _extract_params_info(func: Callable, args: tuple, kwargs: Dict[str, Any], exclude_fields: List[str]) -> str:
+def _extract_params_info(func: Callable, args: tuple[Any, ...], kwargs: Dict[str, Any], exclude_fields: List[str]) -> str:
     """
     提取参数信息
     

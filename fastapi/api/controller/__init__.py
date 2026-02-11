@@ -7,7 +7,7 @@ from .uploadController import router as upload_router
 from .aiHistoryController import router as ai_history_router
 from .userController import router as user_router
 
-__all__ = [
+__all__: list[str] = [
     "analyze_router",
     "apilog_router",
     "chat_router",

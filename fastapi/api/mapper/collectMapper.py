@@ -1,8 +1,9 @@
 from functools import lru_cache
+from datetime import datetime
+from typing import Any, Dict, List
 from sqlmodel import Session, select, func, cast, Date
 from entity.po import Collect
 from common.utils import fileLogger as logger
-from datetime import datetime
 from . import get_article_mapper
 
 class CollectMapper:
@@ -25,7 +26,7 @@ class CollectMapper:
         total_collects = self.get_total_collects_mapper(db)
         return round(total_collects / total_articles, 2)
 
-    def get_monthly_collect_trend_mapper(self, db: Session, user_id: int) -> dict:
+    def get_monthly_collect_trend_mapper(self, db: Session, user_id: int) -> Dict[str, Any]:
         """获取用户本月收藏的趋势"""
         
         today = datetime.now()
@@ -46,8 +47,8 @@ class CollectMapper:
         
         results = db.exec(statement).all()
         
-        daily_trends = []
-        total = 0
+        daily_trends: List[Dict[str, Any]] = []
+        total: int = 0
         for row in results:
             date_str = str(row[0])
             count = row[1]

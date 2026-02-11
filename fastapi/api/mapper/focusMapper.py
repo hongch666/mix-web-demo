@@ -1,8 +1,9 @@
 from functools import lru_cache
+from datetime import datetime
+from typing import Any, Dict, List
 from sqlmodel import Session, select, func, cast, Date
 from entity.po import Focus
 from common.utils import fileLogger as logger
-from datetime import datetime
 
 class FocusMapper:
     """关注 Mapper"""
@@ -14,7 +15,7 @@ class FocusMapper:
         total_followers = db.exec(statement).first()
         return total_followers if total_followers else 0
 
-    def get_followers_in_period_mapper(self, db: Session, user_id: int, start_date, end_date):
+    def get_followers_in_period_mapper(self, db: Session, user_id: int, start_date: datetime, end_date: datetime) -> int:
         """获取指定时间段内的新增粉丝数"""
 
         statement = select(func.count(Focus.id)).where(
@@ -25,7 +26,7 @@ class FocusMapper:
         count = db.exec(statement).first()
         return count if count else 0
 
-    def get_daily_followers_mapper(self, db: Session, user_id: int, start_date, end_date):
+    def get_daily_followers_mapper(self, db: Session, user_id: int, start_date: datetime, end_date: datetime) -> List[Any]:
         """获取指定时间段内每天的新增粉丝数"""
 
         statement = select(
@@ -47,7 +48,7 @@ class FocusMapper:
         total_follows = db.exec(statement).first()
         return total_follows if total_follows else 0
 
-    def get_daily_follows_mapper(self, db: Session, user_id: int, start_date, end_date):
+    def get_daily_follows_mapper(self, db: Session, user_id: int, start_date: datetime, end_date: datetime) -> List[Any]:
         """获取指定时间段内每天的关注数"""
 
         statement = select(
@@ -62,7 +63,7 @@ class FocusMapper:
         results = db.exec(statement).all()
         return results if results else []
 
-    def get_monthly_follow_trend_mapper(self, db: Session, user_id: int) -> dict:
+    def get_monthly_follow_trend_mapper(self, db: Session, user_id: int) -> Dict[str, Any]:
         """获取用户本月关注的趋势"""
 
         today = datetime.now()
@@ -83,8 +84,8 @@ class FocusMapper:
         
         results = db.exec(statement).all()
         
-        daily_trends = []
-        total = 0
+        daily_trends: List[Dict[str, Any]] = []
+        total: int = 0
         for row in results:
             date_str = str(row[0])
             count = row[1]
@@ -100,7 +101,7 @@ class FocusMapper:
             "daily_trends": daily_trends
         }
 
-    def get_monthly_follower_trend_mapper(self, db: Session, user_id: int) -> dict:
+    def get_monthly_follower_trend_mapper(self, db: Session, user_id: int) -> Dict[str, Any]:
         """获取用户本月新增粉丝的趋势"""
 
         today = datetime.now()
@@ -121,8 +122,8 @@ class FocusMapper:
         
         results = db.exec(statement).all()
         
-        daily_trends = []
-        total = 0
+        daily_trends: List[Dict[str, Any]] = []
+        total: int = 0
         for row in results:
             date_str = str(row[0])
             count = row[1]

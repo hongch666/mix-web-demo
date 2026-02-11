@@ -3,7 +3,7 @@ from .generateDTO import GenerateDTO
 from .uploadDTO import UploadDTO
 from .createHistoryDTO import CreateHistoryDTO
 
-__all__ = [
+__all__: list[str] = [
     "ChatRequest",
     "ChatResponse", 
     "ChatResponseData",

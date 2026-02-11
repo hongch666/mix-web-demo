@@ -7,15 +7,15 @@ from common.utils import fileLogger as logger, Constants
 class RabbitMQClient:
     """RabbitMQ 客户端"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化 RabbitMQ 客户端"""
         self.connection: Optional[pika.BlockingConnection] = None
         self.channel: Optional[pika.channel.Channel] = None
-        self._is_connected = False
+        self._is_connected: bool = False
         # 初始化时创建使用的队列
         self._create_queues()
 
-    def _connect(self):
+    def _connect(self) -> None:
         """建立 RabbitMQ 连接"""
         if self._is_connected:
             return
@@ -120,7 +120,7 @@ class RabbitMQClient:
             self._is_connected = False
             return False
 
-    def close(self):
+    def close(self) -> None:
         """关闭连接"""
         try:
             if self.channel and not self.channel.is_closed:
@@ -132,7 +132,7 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"关闭 RabbitMQ 连接失败: {e}")
 
-    def _create_queues(self):
+    def _create_queues(self) -> None:
         """在初始化时创建所有使用的队列"""
         try:
             # 先建立连接
@@ -164,7 +164,7 @@ class RabbitMQClient:
         except Exception as e:
             logger.error(f"创建队列时发生错误: {e}")
 
-    def __del__(self):
+    def __del__(self) -> None:
         """析构函数，确保连接关闭"""
         self.close()
 

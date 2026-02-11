@@ -25,7 +25,7 @@ def update_analyze_caches(
         logger.warning(Constants.UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE)
         return
     
-    db = None
+    db: Optional[Session] = None
     try:
         # 获取数据库连接
         if db_factory:

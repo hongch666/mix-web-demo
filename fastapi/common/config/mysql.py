@@ -45,7 +45,7 @@ def get_db() -> Generator[Session, None, None]:
     with Session(engine) as session:
         yield session
 
-def create_tables(tables: Optional[List[str]] = None):
+def create_tables(tables: Optional[List[str]] = None) -> None:
     """
     创建数据库表
     

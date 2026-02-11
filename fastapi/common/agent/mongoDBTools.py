@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from bson import ObjectId
 from langchain_core.tools import tool
 from common.config import load_config, db
@@ -8,14 +9,14 @@ from common.utils import fileLogger as logger, Constants
 class MongoDBTools:
     """MongoDB 日志查询工具集"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化 MongoDB 日志工具"""
         self.db = db
         self.logger = logger
         # 获取日志集合名称（默认为 api_logs）
-        self.logs_collection_name = load_config("database").get("mongodb", {}).get("logs_collection", "api_logs")
+        self.logs_collection_name: str = load_config("database").get("mongodb", {}).get("logs_collection", "api_logs")
     
-    def get_logs_collection(self):
+    def get_logs_collection(self) -> Optional[Any]:
         """获取日志集合"""
         try:
             return self.db[self.logs_collection_name]
@@ -23,7 +24,7 @@ class MongoDBTools:
             self.logger.error(f"获取日志集合失败: {e}")
             return None
 
-    def get_langchain_tools(self):
+    def get_langchain_tools(self) -> List[Any]:
         """获取 LangChain 格式的工具列表"""
         
         # 保存对象引用，以便在嵌套函数中使用
@@ -39,7 +40,7 @@ class MongoDBTools:
                 JSON 格式的 collection 列表和每个 collection 中的记录数
             """
             try:
-                collections_info = []
+                collections_info: List[Dict[str, Any]] = []
                 for collection_name in db_tools.db.list_collection_names():
                     try:
                         collection = db_tools.db[collection_name]
@@ -119,7 +120,7 @@ class MongoDBTools:
                 
                 # 执行查询
                 cursor = collection.find(filter_obj).limit(limit_int)
-                results = []
+                results: List[Dict[str, Any]] = []
                 for doc in cursor:
                     # 转换所有 datetime 对象为 ISO 格式字符串
                     doc = db_tools._convert_datetime_to_string(doc)
@@ -135,12 +136,12 @@ class MongoDBTools:
         
         return [list_mongodb_collections, query_mongodb]
     
-    def _convert_datetime_to_string(self, obj):
+    def _convert_datetime_to_string(self, obj: Any) -> Any:
         """递归转换所有 datetime 对象为 ISO 格式字符串"""
         
         if isinstance(obj, dict):
             # 处理字典中的所有值
-            result = {}
+            result: Dict[str, Any] = {}
             for key, value in obj.items():
                 if isinstance(value, ObjectId):
                     result[key] = str(value)
@@ -166,7 +167,7 @@ class MongoDBTools:
             # 返回原值
             return obj
     
-    def _format_results(self, results) -> str:
+    def _format_results(self, results: Any) -> str:
         """将结果格式化为字符串"""
         try:
             return json.dumps(results, ensure_ascii=False, indent=2)

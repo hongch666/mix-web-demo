@@ -1,6 +1,6 @@
 import time
 import hashlib
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from functools import lru_cache
 from common.config import get_redis_client
 from common.utils import fileLogger as logger, Constants
@@ -22,20 +22,20 @@ class PublishTimeCache:
     REDIS_KEY_PREFIX = "publish:monthly_count"
     REDIS_VERSION_KEY = "publish:monthly_count:version"
     
-    def __init__(self):
+    def __init__(self) -> None:
         # L1 本地缓存
-        self._local_cache = None
-        self._local_cache_time = 0
-        self._local_cache_ttl = 300  # 5分钟
+        self._local_cache: Optional[List[Dict[str, Any]]] = None
+        self._local_cache_time: float = 0
+        self._local_cache_ttl: int = 300  # 5分钟
         
         # 版本号
-        self._cache_version = None
+        self._cache_version: Optional[str] = None
         
         # Redis 客户端
         self._redis = get_redis_client()
         
         # Redis TTL（1天）
-        self._redis_ttl = 86400
+        self._redis_ttl: int = 86400
     
     def __repr__(self) -> str:
         """对象表示 - 用于日志输出和序列化"""
@@ -45,7 +45,7 @@ class PublishTimeCache:
         """字符串表示"""
         return "PublishTimeCache()"
     
-    def get_cache_version(self, hive_conn) -> Optional[str]:
+    def get_cache_version(self, hive_conn: Any) -> Optional[str]:
         """获取 Hive articles 表的版本号"""
         try:
             with hive_conn.cursor() as cursor:
@@ -98,7 +98,7 @@ class PublishTimeCache:
             logger.error(f"[L2缓存] Redis 读取失败: {e}")
             return None
     
-    def is_version_changed(self, hive_conn) -> bool:
+    def is_version_changed(self, hive_conn: Any) -> bool:
         """检查版本号是否变化"""
         try:
             current_version = self.get_cache_version(hive_conn)
@@ -137,7 +137,7 @@ class PublishTimeCache:
             logger.warning(f"版本检测异常: {e}")
             return False
     
-    def get(self, hive_conn) -> Optional[List[Dict[str, Any]]]:
+    def get(self, hive_conn: Any) -> Optional[List[Dict[str, Any]]]:
         """
         获取缓存（二级缓存）
         
@@ -166,7 +166,7 @@ class PublishTimeCache:
         logger.info(Constants.HIVE_CACHE_MISS_QUERY_HIVE_MESSAGE)
         return None
     
-    def set(self, data: List[Dict[str, Any]], hive_conn):
+    def set(self, data: List[Dict[str, Any]], hive_conn: Any) -> None:
         """
         设置缓存（二级缓存）
         
@@ -199,7 +199,7 @@ class PublishTimeCache:
         except Exception as e:
             logger.warning(f"设置缓存版本号失败: {e}")
     
-    def clear_all(self):
+    def clear_all(self) -> None:
         """清除所有缓存"""
         # 清除本地缓存
         self._local_cache = None

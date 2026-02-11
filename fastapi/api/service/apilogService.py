@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from fastapi import Depends
 from api.mapper import ApiLogMapper, get_apilog_mapper
 
@@ -8,9 +8,9 @@ class ApiLogService:
 
     def __init__(
             self, 
-            api_log_mapper: ApiLogMapper = None
+            api_log_mapper: Optional[ApiLogMapper] = None
         ):
-        self.mapper = api_log_mapper
+        self.mapper: Optional[ApiLogMapper] = api_log_mapper
 
     def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:
         """

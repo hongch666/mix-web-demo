@@ -2,7 +2,7 @@ from functools import lru_cache
 import os
 import shutil
 import uuid
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from fastapi import Depends
 from starlette.concurrency import run_in_threadpool
 from api.service import AnalyzeService, get_analyze_service
@@ -15,11 +15,11 @@ class UploadService:
     
     def __init__(
             self, 
-            analyze_service: AnalyzeService = None
+            analyze_service: Optional[AnalyzeService] = None
         ):
-        self.analyze_service = analyze_service
+        self.analyze_service: Optional[AnalyzeService] = analyze_service
 
-    async def handle_image_upload(self,file) -> Dict[str, Any]:
+    async def handle_image_upload(self, file: Dict[str, Any]) -> Dict[str, Any]:
         """处理图片上传的核心逻辑，保存本地临时文件并上传到OSS"""
         
         # 生成随机UUID作为文件名，保留原文件扩展名
@@ -50,7 +50,7 @@ class UploadService:
             "oss_url": oss_url
         }
 
-    async def handle_pdf_upload(self, file, custom_filename: str = None) -> Dict[str, Any]:
+    async def handle_pdf_upload(self, file: Dict[str, Any], custom_filename: Optional[str] = None) -> Dict[str, Any]:
         """处理PDF上传的核心逻辑，保存本地临时文件并上传到OSS"""
         
         # 验证文件扩展名

@@ -6,10 +6,10 @@ from common.config import load_config
 
 # 从配置文件读取 MongoDB 连接信息
 mongo_config = load_config("database")["mongodb"]
-host = mongo_config["host"]
-port = mongo_config["port"]
-username = mongo_config.get("username")
-password = mongo_config.get("password")
+host: str = mongo_config["host"]
+port: int = mongo_config["port"]
+username: str | None = mongo_config.get("username")
+password: str | None = mongo_config.get("password")
 DATABASE: str = mongo_config["database"]
 
 # 根据是否有用户名和密码构建 URI

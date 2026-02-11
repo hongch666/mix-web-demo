@@ -1,24 +1,15 @@
 from .analyzeService import AnalyzeService, get_analyze_service
-
-from .generateService import GenerateService,get_generate_service
-
-from .uploadService import UploadService,get_upload_service
-
+from .generateService import GenerateService, get_generate_service
+from .uploadService import UploadService, get_upload_service
 from .aiHistoryService import AiHistoryService, get_ai_history_service
-
 from .geminiService import GeminiService, get_gemini_service
-
 from .qwenService import QwenService, get_qwen_service
-
 from .doubaoService import DoubaoService, get_doubao_service
-
 from .apilogService import ApiLogService, get_apilog_service
-
 from .userService import UserService, get_user_service
-
 from .baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
 
-__all__ = [
+__all__: list[str] = [
     "get_analyze_service",
     "AnalyzeService",
     "GenerateService",

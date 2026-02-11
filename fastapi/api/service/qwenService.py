@@ -29,7 +29,7 @@ class QwenService(BaseAiService):
         super().__init__(ai_history_mapper, service_name="Qwen")
         
         # 初始化权限管理器
-        self.perm_manager = UserPermissionManager(user_mapper)
+        self.perm_manager: UserPermissionManager = UserPermissionManager(user_mapper)
         
         # 初始化通义千问客户端
         try:

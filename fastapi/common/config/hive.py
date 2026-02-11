@@ -1,4 +1,5 @@
 import time
+from typing import Any, List, Optional
 from pyhive import hive
 from common.config import load_config
 from common.utils import fileLogger as logger, Constants
@@ -6,17 +7,17 @@ from common.utils import fileLogger as logger, Constants
 class HiveConnectionPool:
     """Hive 连接池 - 单例模式"""
     
-    _instance = None
-    _connections = []
-    _max_connections = 10
-    _conn_count = 0  # 统计创建的连接数
+    _instance: Optional["HiveConnectionPool"] = None
+    _connections: List[Any] = []
+    _max_connections: int = 10
+    _conn_count: int = 0  # 统计创建的连接数
     
-    def __new__(cls):
+    def __new__(cls) -> "HiveConnectionPool":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
     
-    def get_connection(self):
+    def get_connection(self) -> Any:
         """从池中获取连接"""
         if self._connections:
             logger.info(f"[连接池] 从池中获取复用连接，池内剩余: {len(self._connections) - 1}个")
@@ -51,7 +52,7 @@ class HiveConnectionPool:
         logger.info(f"[连接池] Hive 连接建立耗时 {conn_time:.3f}s")
         return conn
     
-    def return_connection(self, conn):
+    def return_connection(self, conn: Any) -> None:
         """归还连接到池"""
         if len(self._connections) < self._max_connections:
             self._connections.append(conn)
@@ -62,7 +63,7 @@ class HiveConnectionPool:
 
 
 # 全局单例
-_hive_pool = None
+_hive_pool: Optional[HiveConnectionPool] = None
 
 def get_hive_connection_pool() -> HiveConnectionPool:
     """获取 Hive 连接池单例"""

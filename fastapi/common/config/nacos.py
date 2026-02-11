@@ -3,7 +3,7 @@ import time
 import nacos
 import socket
 import random
-from typing import Any, Dict
+from typing import Any, Dict, List
 from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
@@ -27,10 +27,10 @@ def register_instance(ip: str = IP, port: int = PORT) -> None:
         ip = socket.gethostbyname(socket.gethostname())
     client.add_naming_instance(SERVICE_NAME, ip, port, group_name=GROUP_NAME)
 
-def get_service_instance(service_name: str) -> dict:
-    instances: dict = client.list_naming_instance(service_name, group_name=GROUP_NAME)
+def get_service_instance(service_name: str) -> Dict[str, Any]:
+    instances: Dict[str, Any] = client.list_naming_instance(service_name, group_name=GROUP_NAME)
     # 简单负载均衡：随机选一个
-    hosts: list = instances.get("hosts", [])
+    hosts: List[Dict[str, Any]] = instances.get("hosts", [])
     if not hosts:
         raise BusinessException(Constants.AI_CHAT_NO_INSTANCE_MESSAGE)
     return random.choice(hosts)

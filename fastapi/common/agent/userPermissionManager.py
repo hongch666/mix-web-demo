@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, List, Optional, Tuple
 from sqlmodel import Session
 from common.utils import fileLogger as logger, Constants
 from common.config import load_config
@@ -6,12 +6,12 @@ from common.config import load_config
 class UserPermissionManager:
     """用户权限管理器"""
     
-    ROLE_ADMIN = "admin"
-    ROLE_USER = "user"
+    ROLE_ADMIN: str = "admin"
+    ROLE_USER: str = "user"
     
     # 个人信息查询的关键字 - 从配置文件加载
     @property
-    def PERSONAL_INFO_KEYWORDS(self):
+    def PERSONAL_INFO_KEYWORDS(self) -> List[str]:
         """动态从配置文件加载个人信息查询关键字"""
         try:
             keywords = load_config("permission", "personal_info_keywords")
@@ -23,14 +23,14 @@ class UserPermissionManager:
         # 默认关键字
         return Constants.DEFAULT_KEYWORDS
     
-    def __init__(self, user_mapper=None):
+    def __init__(self, user_mapper: Optional[Any] = None) -> None:
         """
         初始化权限管理器
         
         Args:
             user_mapper: 用户 Mapper 实例
         """
-        self.user_mapper = user_mapper
+        self.user_mapper: Optional[Any] = user_mapper
     
     def get_user_role(self, user_id: int, db: Session) -> Optional[str]:
         """
@@ -95,7 +95,7 @@ class UserPermissionManager:
         
         return False
     
-    def can_access_sql_tools(self, user_id: int, db: Session, question: str = "") -> tuple[bool, str]:
+    def can_access_sql_tools(self, user_id: int, db: Session, question: str = "") -> Tuple[bool, str]:
         """
         检查用户是否有权使用 SQL 工具
         
@@ -111,7 +111,7 @@ class UserPermissionManager:
         """
         return self.can_use_tool(user_id, db, 'sql', question)
     
-    def can_access_mongodb_logs(self, user_id: int, db: Session, question: str = "") -> tuple[bool, str]:
+    def can_access_mongodb_logs(self, user_id: int, db: Session, question: str = "") -> Tuple[bool, str]:
         """
         检查用户是否有权查询 MongoDB 日志
         
@@ -127,7 +127,7 @@ class UserPermissionManager:
         """
         return self.can_use_tool(user_id, db, 'mongodb', question)
     
-    def can_use_tool(self, user_id: int, db: Session, tool_type: str, question: str = "") -> tuple[bool, str]:
+    def can_use_tool(self, user_id: int, db: Session, tool_type: str, question: str = "") -> Tuple[bool, str]:
         """
         检查用户是否有权使用指定的工具
         
@@ -166,7 +166,7 @@ class UserPermissionManager:
             logger.warning(f"用户 {user_id} (角色: {role}) 尝试访问 {tool_type} 工具被拒绝：{question}")
             return False, reason
     
-    def validate_database_query_permission(self, user_id: int, db: Session, question: str = "") -> tuple[bool, str]:
+    def validate_database_query_permission(self, user_id: int, db: Session, question: str = "") -> Tuple[bool, str]:
         """
         验证用户是否有权执行数据库查询
         
@@ -183,6 +183,6 @@ class UserPermissionManager:
         return self.can_use_tool(user_id, db, 'sql', question)
 
 
-def get_user_permission_manager(user_mapper=None) -> UserPermissionManager:
+def get_user_permission_manager(user_mapper: Optional[Any] = None) -> UserPermissionManager:
     """获取用户权限管理器单例"""
     return UserPermissionManager(user_mapper)

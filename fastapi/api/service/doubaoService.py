@@ -29,7 +29,7 @@ class DoubaoService(BaseAiService):
         super().__init__(ai_history_mapper, service_name="Doubao")
         
         # 初始化权限管理器
-        self.perm_manager = UserPermissionManager(user_mapper)
+        self.perm_manager: UserPermissionManager = UserPermissionManager(user_mapper)
         
         # 初始化豆包客户端
         try:

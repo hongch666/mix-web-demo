@@ -164,6 +164,7 @@ class BaseAiService:
         self.ai_history_mapper: Any = ai_history_mapper
         self.service_name: str = service_name
         self.llm: Optional[Any] = None
+        self.agent: Optional[Any] = None
         self.agent_executor: Optional[Any] = None
         self.intent_router: Optional[Any] = None
         self.all_tools: List[Any] = []

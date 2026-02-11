@@ -1,4 +1,4 @@
-from typing import Literal, Optional, Tuple
+from typing import Any, Literal, Optional, Tuple
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from sqlmodel import Session
@@ -49,8 +49,8 @@ ROUTER_INTENT_PROMPT = """
 class IntentRouter:
     """意图识别路由器，支持权限检查"""
     
-    def __init__(self, llm, db: Optional[Session] = None, user_id: Optional[int] = None, 
-                 user_mapper=None):
+    def __init__(self, llm: Any, db: Optional[Session] = None, user_id: Optional[int] = None,
+                 user_mapper: Optional[Any] = None) -> None:
         """
         初始化路由器
         
@@ -64,10 +64,10 @@ class IntentRouter:
         from common.utils import fileLogger as logger
         self.logger = logger
         
-        self.llm = llm
-        self.db = db
-        self.user_id = user_id
-        self.user_mapper = user_mapper
+        self.llm: Any = llm
+        self.db: Optional[Session] = db
+        self.user_id: Optional[int] = user_id
+        self.user_mapper: Optional[Any] = user_mapper
         
         # 创建意图识别提示词
         self.intent_prompt = ChatPromptTemplate.from_messages([
@@ -78,7 +78,7 @@ class IntentRouter:
         # 创建链
         self.chain = self.intent_prompt | self.llm | StrOutputParser()
     
-    def set_user_context(self, user_id: int, db: Session):
+    def set_user_context(self, user_id: int, db: Session) -> None:
         """
         设置用户上下文（用于权限检查）
         

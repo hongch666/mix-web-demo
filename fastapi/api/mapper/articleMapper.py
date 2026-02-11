@@ -2,7 +2,7 @@ from functools import lru_cache
 from sqlmodel import Session, select
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import col, date_sub, current_date, date_format
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
 from datetime import datetime, timedelta
 import os
 import time
@@ -92,11 +92,11 @@ class ArticleMapper:
         statement = select(Article).order_by(Article.views.desc()).limit(10)
         return db.exec(statement).all()
 
-    def get_all_articles_mapper(self, db: Session) -> list[Article]:
+    def get_all_articles_mapper(self, db: Session) -> List[Article]:
         statement = select(Article)
         return db.exec(statement).all()
     
-    def get_article_by_id_mapper(self, article_id: int, db: Session) -> Article | None:
+    def get_article_by_id_mapper(self, article_id: int, db: Session) -> Optional[Article]:
         statement = select(Article).where(Article.id == article_id)
         return db.exec(statement).first()
 
@@ -128,7 +128,7 @@ class ArticleMapper:
         total_views = sum(article.views for article in articles)
         return round(total_views / len(articles), 2)
 
-    def get_category_article_count_hive_mapper(self) -> list[dict]:
+    def get_category_article_count_hive_mapper(self) -> List[Dict[str, Any]]:
         """
         从Hive获取按父分类排序的文章数量
         """
@@ -155,7 +155,7 @@ class ArticleMapper:
         
         return result
 
-    def get_category_article_count_spark_mapper(self) -> list[dict]:
+    def get_category_article_count_spark_mapper(self) -> List[Dict[str, Any]]:
         """
         从Spark获取按父分类排序的文章数量
         """
@@ -186,7 +186,7 @@ class ArticleMapper:
             grouped = df.groupby("sub_category_id").size().sort_values(ascending=False)
             return [{"sub_category_id": int(k), "count": int(v)} for k, v in grouped.items()]
 
-    def get_category_article_count_db_mapper(self, db: Session) -> list[dict]:
+    def get_category_article_count_db_mapper(self, db: Session) -> List[Dict[str, Any]]:
         """
         从DB获取按父分类排序的文章数量
         """
@@ -206,7 +206,7 @@ class ArticleMapper:
         
         return result
 
-    def get_monthly_publish_count_hive_mapper(self) -> list[dict]:
+    def get_monthly_publish_count_hive_mapper(self) -> List[Dict[str, Any]]:
         """
         从Hive获取最近24个月的文章发布数量统计（包含零值月份）
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
@@ -234,7 +234,7 @@ class ArticleMapper:
         
         return result
 
-    def get_monthly_publish_count_spark_mapper(self) -> list[dict]:
+    def get_monthly_publish_count_spark_mapper(self) -> List[Dict[str, Any]]:
         """
         从Spark获取最近24个月的文章发布数量统计（包含零值月份）
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
@@ -272,7 +272,7 @@ class ArticleMapper:
             grouped = df_filtered.groupby("year_month").size().sort_index(ascending=False)
             return [{"year_month": k, "count": int(v)} for k, v in grouped.items()]
 
-    def get_monthly_publish_count_db_mapper(self, db: Session) -> list[dict]:
+    def get_monthly_publish_count_db_mapper(self, db: Session) -> List[Dict[str, Any]]:
         """
         从DB获取最近24个月的文章发布数量统计（包含零值月份）
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零

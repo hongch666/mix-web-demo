@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any
+from typing import Any, Dict, Optional
 import hashlib
 import time
 from fastapi import Depends
@@ -13,13 +13,13 @@ class AiHistoryService:
     
     def __init__(
             self,
-            ai_history_mapper: AiHistoryMapper = None,
-            user_mapper: UserMapper = None
+            ai_history_mapper: Optional[AiHistoryMapper] = None,
+            user_mapper: Optional[UserMapper] = None
         ):
-        self.ai_history_mapper = ai_history_mapper
-        self.user_mapper = user_mapper
+        self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
+        self.user_mapper: Optional[UserMapper] = user_mapper
         # 用于短时间去重的缓存
-        self._request_cache = {}
+        self._request_cache: Dict[str, float] = {}
         
     def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         data = ai_history.dict() if hasattr(ai_history, "dict") else dict(ai_history)

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from langchain_core.tools import Tool
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 class RAGTools:
     """RAG工具类 - 基于LangChain实现"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化RAG组件"""
         # 延迟导入避免循环依赖
         from common.config import load_config
@@ -28,8 +28,8 @@ class RAGTools:
         
         api_key = qwen_cfg.get("api_key")
         embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
-        self.top_k = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
-        self.similarity_threshold = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
+        self.top_k: int = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
+        self.similarity_threshold: float = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
         
         if not api_key:
             raise BusinessException(Constants.QWEN_INVALID_API_KEY_ERROR)
@@ -69,7 +69,7 @@ class RAGTools:
         article_ids: List[int],
         titles: List[str],
         contents: List[str],
-        metadata_list: Optional[List[dict]] = None
+        metadata_list: Optional[List[Dict[str, Any]]] = None
     ) -> str:
         """
         将文章添加到向量存储
@@ -84,7 +84,7 @@ class RAGTools:
             操作结果描述
         """
         try:
-            documents = []
+            documents: List[Document] = []
             
             for i, (article_id, title, content) in enumerate(zip(article_ids, titles, contents)):
                 # 合并标题和内容
@@ -208,7 +208,7 @@ class RAGTools:
             )
         ]
     
-    def get_retriever(self, k: int = 3):
+    def get_retriever(self, k: int = 3) -> Any:
         """
         获取LangChain检索器
         

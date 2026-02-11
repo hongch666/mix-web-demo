@@ -1,7 +1,7 @@
 import hashlib
 from datetime import datetime
 import time
-from typing import Optional, Callable, Any, List
+from typing import Any, Callable, List, Optional
 from sqlmodel import Session
 from common.config import load_config
 from common.agent import get_rag_tools
@@ -12,7 +12,7 @@ from common.exceptions import BusinessException
 _VECTOR_SYNC_TIME_KEY = "vector_sync:last_sync_time"
 _ARTICLE_CONTENT_HASH_PREFIX = "article_content_hash:"
 
-def _get_redis_client():
+def _get_redis_client() -> Optional[Any]:
     """获取 Redis 客户端"""
     try:
         from common.cache import get_redis_client
@@ -206,7 +206,7 @@ def export_article_vectors_to_postgres(
         return
     
     mysql_db: Optional[Session] = None
-    sync_start_time = datetime.now()
+    sync_start_time: datetime = datetime.now()
     
     try:
         mysql_db = mysql_db_factory()
@@ -247,24 +247,24 @@ def export_article_vectors_to_postgres(
             sync_articles = published_articles
         
         # 3. 批量处理文章
-        batch_size = 10  # 每批处理 10 篇文章
-        total_synced = 0
-        total_errors = 0
-        failed_articles = []
-        max_retries = 3
-        retry_delay = 2  # 秒
+        batch_size: int = 10  # 每批处理 10 篇文章
+        total_synced: int = 0
+        total_errors: int = 0
+        failed_articles: List[int] = []
+        max_retries: int = 3
+        retry_delay: int = 2  # 秒
         
         for i in range(0, len(sync_articles), batch_size):
             batch = sync_articles[i:i + batch_size]
             batch_num = i // batch_size + 1
             
             # 提取文章信息
-            article_ids = [getattr(a, 'id', 0) for a in batch]
-            titles = [getattr(a, 'title', '') for a in batch]
-            contents = [getattr(a, 'content', '') for a in batch]
+            article_ids: List[int] = [getattr(a, 'id', 0) for a in batch]
+            titles: List[str] = [getattr(a, 'title', '') for a in batch]
+            contents: List[str] = [getattr(a, 'content', '') for a in batch]
             
             # 构建元数据
-            metadata_list = []
+            metadata_list: List[dict] = []
             for a in batch:
                 metadata_list.append({
                     "user_id": getattr(a, 'user_id', None),
@@ -276,9 +276,9 @@ def export_article_vectors_to_postgres(
                 })
             
             # 重试逻辑
-            retry_count = 0
-            batch_success = False
-            last_error = None
+            retry_count: int = 0
+            batch_success: bool = False
+            last_error: Optional[str] = None
             
             while retry_count < max_retries and not batch_success:
                 try:
