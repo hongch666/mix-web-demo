@@ -22,7 +22,12 @@ router: APIRouter = APIRouter(
 )
 @requireInternalToken
 @log("创建AI历史记录")
-async def create_ai_history(request: Request, data: CreateHistoryDTO, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+async def create_ai_history(
+    _: Request, 
+    data: CreateHistoryDTO, 
+    db: Session = Depends(get_db), 
+    ai_history_service: AiHistoryService = Depends(get_ai_history_service)
+) -> Any:
     """创建AI历史记录接口"""
     
     await run_in_threadpool(ai_history_service.create_ai_history, data, db)
@@ -34,7 +39,12 @@ async def create_ai_history(request: Request, data: CreateHistoryDTO, db: Sessio
     description="获取指定用户的所有AI历史记录"
 )
 @log("获取所有AI历史记录")
-async def get_all_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+async def get_all_ai_history(
+    _: Request, 
+    user_id: int, 
+    db: Session = Depends(get_db), 
+    ai_history_service: AiHistoryService = Depends(get_ai_history_service)
+) -> Any:
     """获取所有AI历史记录接口"""
     
     histories: list[AiHistory] = await run_in_threadpool(ai_history_service.get_all_ai_history, user_id, db)
@@ -46,7 +56,12 @@ async def get_all_ai_history(request: Request, user_id: int, db: Session = Depen
     description="删除指定用户的所有AI历史记录"
 )
 @log("删除用户所有AI历史记录")
-async def delete_ai_history(request: Request, user_id: int, db: Session = Depends(get_db), ai_history_service: AiHistoryService = Depends(get_ai_history_service)) -> Any:
+async def delete_ai_history(
+    _: Request, 
+    user_id: int, 
+    db: Session = Depends(get_db), 
+    ai_history_service: AiHistoryService = Depends(get_ai_history_service)
+) -> Any:
     """删除用户所有AI历史记录接口"""
     
     await run_in_threadpool(ai_history_service.delete_ai_history_by_userid, user_id, db)

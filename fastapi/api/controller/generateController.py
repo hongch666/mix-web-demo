@@ -26,7 +26,11 @@ router: APIRouter = APIRouter(
     description="根据输入文本生成tags数组"
 )
 @log("生成tags")
-async def generate_tags(request: Request, data: GenerateDTO, generateService: GenerateService = Depends(get_generate_service)) -> Any:
+async def generate_tags(
+    _: Request, 
+    data: GenerateDTO, 
+    generateService: GenerateService = Depends(get_generate_service)
+) -> Any:
     """生成tags接口"""
     
     tags: list[str] = await run_in_threadpool(
@@ -42,7 +46,7 @@ async def generate_tags(request: Request, data: GenerateDTO, generateService: Ge
 )
 @log("文章创建AI评论")
 async def create_article_ai_comment(
-    request: Request, 
+    _: Request, 
     article_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -73,7 +77,7 @@ async def create_article_ai_comment(
 )
 @log("文章创建基于权威参考文本的AI评论")
 async def create_article_ai_comment_with_reference(
-    request: Request, 
+    _: Request, 
     article_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),

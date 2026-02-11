@@ -19,7 +19,7 @@ router: APIRouter = APIRouter(
 )
 @log("获取新增粉丝数统计")
 async def get_new_followers(
-    request: Request,
+    _: Request,
     user_id: int,
     period: str = "day",
     db: Session = Depends(get_db),
@@ -37,7 +37,7 @@ async def get_new_followers(
 )
 @log("获取文章浏览分布")
 async def get_article_view_distribution(
-    request: Request,
+    _: Request,
     user_id: int,
     userService: UserService = Depends(get_user_service)
 ) -> Any:
@@ -53,7 +53,7 @@ async def get_article_view_distribution(
 )
 @log("获取关注作者统计")
 async def get_author_follow_statistics(
-    request: Request,
+    _: Request,
     user_id: int,
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service)
@@ -70,7 +70,7 @@ async def get_author_follow_statistics(
 )
 @log("获取本月评论趋势")
 async def get_monthly_comment_trend(
-    request: Request,
+    _: Request,
     user_id: int,
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service)
@@ -87,7 +87,7 @@ async def get_monthly_comment_trend(
 )
 @log("获取本月点赞趋势")
 async def get_monthly_like_trend(
-    request: Request,
+    _: Request,
     user_id: int,
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service)
@@ -104,7 +104,7 @@ async def get_monthly_like_trend(
 )
 @log("获取本月收藏趋势")
 async def get_monthly_collect_trend(
-    request: Request,
+    _: Request,
     user_id: int,
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service)

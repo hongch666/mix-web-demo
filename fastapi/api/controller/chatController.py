@@ -32,7 +32,7 @@ router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])
 @log("普通聊天")
 @requireInternalToken
 async def send_message(
-    httpRequest: Request,
+    _: Request,
     request: ChatRequest,
     db: Session = Depends(get_db),
     geminiService: GeminiService = Depends(get_gemini_service),
@@ -125,7 +125,7 @@ async def send_message(
 )
 @log("流式聊天")
 async def stream_message(
-    httpRequest: Request,
+    _: Request,
     request: ChatRequest,
     geminiService: GeminiService = Depends(get_gemini_service),
     qwenService: QwenService = Depends(get_qwen_service),
