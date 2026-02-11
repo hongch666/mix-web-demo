@@ -2,8 +2,7 @@ import json
 from datetime import datetime
 from bson import ObjectId
 from langchain_core.tools import tool
-from config import load_config
-from config.mongodb import db
+from common.config import load_config, db
 from common.utils import fileLogger as logger, Constants
 
 class MongoDBTools:

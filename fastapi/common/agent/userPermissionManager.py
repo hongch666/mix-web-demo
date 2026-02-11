@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlmodel import Session
 from common.utils import fileLogger as logger, Constants
-from config.config import load_config
+from common.config import load_config
 
 class UserPermissionManager:
     """用户权限管理器"""

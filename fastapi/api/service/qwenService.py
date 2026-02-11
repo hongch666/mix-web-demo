@@ -16,7 +16,7 @@ from .baseAIService import (
 )
 from common.agent import IntentRouter, UserPermissionManager, get_sql_tools
 from common.utils import fileLogger as logger, Constants
-from config import load_config
+from common.config import load_config
 
 class QwenService(BaseAiService):
     """千问 AI Service"""

@@ -1,7 +1,7 @@
 import json
 import pika
 from typing import Any, Optional
-from config.config import load_config
+from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 
 class RabbitMQClient:

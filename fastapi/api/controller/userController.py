@@ -3,7 +3,7 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict
 from api.service import UserService, get_user_service
-from config import get_db
+from common.config import get_db
 from common.utils import success
 from common.decorators import log
 

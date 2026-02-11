@@ -1,6 +1,6 @@
 import time
 from pyhive import hive
-from config import load_config
+from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 
 class HiveConnectionPool:

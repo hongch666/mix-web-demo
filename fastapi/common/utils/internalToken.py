@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from common.exceptions import BusinessException
 from common.utils import Constants
-from config import load_config
+from common.config import load_config
 
 
 class InternalTokenUtil:

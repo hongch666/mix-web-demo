@@ -1,8 +1,7 @@
 import time
-import hashlib
 from typing import Optional, Dict, Any
 from functools import lru_cache
-from config.redis import get_redis_client
+from common.config import get_redis_client
 from common.utils import fileLogger as logger, Constants
 
 # 全局单例实例

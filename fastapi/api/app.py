@@ -3,7 +3,11 @@ from typing import Dict, Any, AsyncGenerator
 from contextlib import asynccontextmanager
 from api import controller
 from api.service import AnalyzeService
-from config import start_nacos, load_config, create_tables, get_db
+from common.config import (
+    start_nacos, 
+    load_config, 
+    create_tables, get_db
+)
 from common.utils import logger, Constants
 from common.middleware import ContextMiddleware
 from common.exceptions import BusinessException

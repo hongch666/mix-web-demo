@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 import os
 import time
 import pandas as pd
-from config import load_config, get_hive_connection_pool, HiveConnectionPool
+from common.config import load_config, get_hive_connection_pool, HiveConnectionPool
 from entity.po import Article
 from common.utils import fileLogger as logger, Constants
 

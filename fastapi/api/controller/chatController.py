@@ -16,7 +16,7 @@ from common.utils import success, fileLogger as logger
 from common.exceptions import BusinessException
 from common.decorators import log, requireInternalToken
 from common.middleware import get_current_user_id
-from config import get_db
+from common.config import get_db
 from entity.dto import ChatRequest, ChatResponse, ChatResponseData, AIServiceType
 from entity.po import AiHistory
 
@@ -142,7 +142,7 @@ async def stream_message(
         message_acc = ""
         thinking_acc = ""
         # 在 event_generator 内部创建 db session，确保流式处理完成后立即释放
-        from config import get_db
+        from common.config import get_db
         db_gen = get_db()
         db = next(db_gen)
         

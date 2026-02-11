@@ -24,7 +24,7 @@ def load_config(section: Optional[str] = None, key: Optional[str] = None) -> Any
     """
     加载 application.yaml 配置文件并解析环境变量
     """
-    config_path: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "application.yaml")
+    config_path: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../application.yaml")
     
     # 读取原始文件
     with open(config_path, "r", encoding="utf-8") as f:

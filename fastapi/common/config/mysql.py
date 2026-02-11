@@ -1,7 +1,7 @@
 from sqlmodel import create_engine, Session
 from sqlalchemy.pool import QueuePool
 from typing import Generator, Optional, List
-from config import load_config
+from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 
 HOST: str = load_config("database")["mysql"]["host"]

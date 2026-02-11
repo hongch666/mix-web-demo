@@ -1,7 +1,7 @@
 import requests
 from common.utils import fileLogger as logger
 from typing import Optional, Dict, Any
-from config import get_service_instance, load_config
+from common.config import get_service_instance, load_config
 from common.middleware import get_current_user_id, get_current_username
 from common.exceptions import BusinessException
 from common.utils import InternalTokenUtil

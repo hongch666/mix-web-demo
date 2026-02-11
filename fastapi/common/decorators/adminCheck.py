@@ -4,7 +4,7 @@ from typing import Callable, Any, Optional
 from sqlmodel import Session
 from common.middleware import get_current_user_id
 from common.exceptions import BusinessException
-from config import get_db
+from common.config import get_db
 from api.mapper import get_user_mapper
 from common.utils import fileLogger as logger, Constants
 

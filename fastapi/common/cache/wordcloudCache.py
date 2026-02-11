@@ -1,6 +1,6 @@
 import time
 from typing import Optional
-from config.redis import get_redis_client
+from common.config import get_redis_client
 from common.utils import fileLogger as logger, Constants
 
 # 全局单例实例

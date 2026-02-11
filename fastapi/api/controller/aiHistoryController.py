@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request
-from config import get_db
+from common.config import get_db
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from api.service import AiHistoryService, get_ai_history_service

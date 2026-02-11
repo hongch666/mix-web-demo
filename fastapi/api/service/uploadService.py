@@ -8,7 +8,7 @@ from starlette.concurrency import run_in_threadpool
 from api.service import AnalyzeService, get_analyze_service
 from common.utils import fileLogger as logger
 from common.exceptions import BusinessException
-from config import load_config
+from common.config import load_config
 
 class UploadService:
     """上传 Service"""

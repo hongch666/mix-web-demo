@@ -4,7 +4,7 @@ import subprocess
 from typing import Optional, Callable, Any, List, Dict
 from pyhive import hive
 from sqlmodel import Session
-from config import load_config
+from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 
 def export_articles_to_csv_and_hive(
@@ -37,7 +37,7 @@ def export_articles_to_csv_and_hive(
             user_mapper = article_mapper
 
     if db_factory is None:
-        from config import get_db as _get_db
+        from common.config import get_db as _get_db
         # 封装成 callable，调用时执行 next(get_db())
         db_factory = lambda: next(_get_db())
 

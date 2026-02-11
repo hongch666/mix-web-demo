@@ -4,7 +4,7 @@ from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict, List
 from api.service import AnalyzeService, get_analyze_service
 from entity.po import ListResponse
-from config import get_db
+from common.config import get_db
 from common.utils import success
 from common.decorators import log, requireInternalToken, requireAdmin
 

@@ -17,7 +17,7 @@ from api.mapper import (
     LikeMapper, get_like_mapper, 
     CollectMapper, get_collect_mapper
 )
-from config import get_db,OSSClient,load_config
+from common.config import get_db,OSSClient,load_config
 from common.utils import fileLogger as logger, Constants
 from common.cache import (
     ArticleCache, get_article_cache,

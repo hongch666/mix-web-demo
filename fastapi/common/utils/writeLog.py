@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from config import load_config
+from common.config import load_config
 from common.utils import logger
 
 def write_log(message: str, level: str = "INFO") -> None:

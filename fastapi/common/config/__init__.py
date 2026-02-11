@@ -12,6 +12,8 @@ from .rabbitmq import RabbitMQClient, get_rabbitmq_client,send_to_queue, _rabbit
 
 from .hive import HiveConnectionPool, get_hive_connection_pool
 
+from .redis import RedisClient, get_redis_client
+
 __all__ = [
     "load_config",
     "client",
@@ -28,4 +30,6 @@ __all__ = [
     "_rabbitmq_client",
     'HiveConnectionPool',
     'get_hive_connection_pool',
+    'RedisClient',
+    'get_redis_client'
 ]       

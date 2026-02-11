@@ -15,7 +15,7 @@ class SQLTools:
     def __init__(self):
         """初始化数据库连接"""
         # 延迟导入避免循环依赖
-        from config import load_config
+        from common.config import load_config
         from common.utils import fileLogger as logger
         
         self.logger = logger

@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from common.middleware import get_current_user_id, get_current_username
 from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
-from config import send_to_queue
+from common.config import send_to_queue
 
 class ApiLogConfig:
     """API 日志配置类"""

@@ -16,7 +16,7 @@ from .baseAIService import (
 )
 from common.agent import IntentRouter, UserPermissionManager
 from common.utils import fileLogger as logger, Constants
-from config import load_config
+from common.config import load_config
 
 class DoubaoService(BaseAiService):
     """豆包 AI Service"""

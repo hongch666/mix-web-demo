@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, BackgroundTasks
 from typing import Any
 from starlette.concurrency import run_in_threadpool
-from config import get_db
+from common.config import get_db
 from sqlmodel import Session
 from api.service import GenerateService, get_generate_service
 from api.mapper import CommentsMapper, get_comments_mapper, ArticleMapper, get_article_mapper

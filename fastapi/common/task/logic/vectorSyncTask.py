@@ -3,7 +3,7 @@ from datetime import datetime
 import time
 from typing import Optional, Callable, Any, List
 from sqlmodel import Session
-from config import load_config
+from common.config import load_config
 from common.agent import get_rag_tools
 from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
@@ -195,7 +195,7 @@ def export_article_vectors_to_postgres(
         article_mapper = get_article_mapper()
     
     if mysql_db_factory is None:
-        from config import get_db as _get_db
+        from common.config import get_db as _get_db
         mysql_db_factory = lambda: next(_get_db())
     
     # 导入RAG工具
@@ -367,7 +367,7 @@ def initialize_article_content_hash_cache(
         article_mapper = get_article_mapper()
     
     if mysql_db_factory is None:
-        from config import get_db as _get_db
+        from common.config import get_db as _get_db
         mysql_db_factory = lambda: next(_get_db())
     
     mysql_db: Optional[Session] = None

@@ -1,6 +1,6 @@
 from functools import lru_cache
 from typing import Any, Dict, List
-from config import db as mongo_db, get_db
+from common.config import db as mongo_db, get_db
 from common.utils import fileLogger as logger, Constants
 from api.mapper import get_article_mapper
 

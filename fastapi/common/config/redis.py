@@ -1,7 +1,7 @@
 import redis
 from typing import Optional, Any
 import json
-from config import load_config
+from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 
 class RedisClient:

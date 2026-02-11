@@ -4,7 +4,7 @@ import nacos
 import socket
 import random
 from typing import Any, Dict
-from config import load_config
+from common.config import load_config
 from common.utils import fileLogger as logger, Constants
 from common.exceptions import BusinessException
 
