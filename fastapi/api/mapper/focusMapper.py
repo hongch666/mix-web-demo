@@ -139,7 +139,6 @@ class FocusMapper:
             "daily_trends": daily_trends
         }
 
-
 @lru_cache()
 def get_focus_mapper() -> FocusMapper:
     """获取 FocusMapper 单例实例"""

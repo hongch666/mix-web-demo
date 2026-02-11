@@ -23,7 +23,6 @@ from common.config import load_config
 class GeminiService(BaseAiService):
     """Gemini AI Service"""
     
-    
     def __init__(
             self, 
             ai_history_mapper: AiHistoryMapper = None, 
@@ -38,9 +37,9 @@ class GeminiService(BaseAiService):
         try:
             gemini_cfg = load_config("gemini") or {}
             self._api_key: str = gemini_cfg.get("api_key")
-            self._model_name: str = gemini_cfg.get("model_name", "gemini-2.0-flash")
-            self._base_url: str = gemini_cfg.get("base_url", "https://api.openai-proxy.org/google")
-            self._timeout: int = gemini_cfg.get("timeout", 30)
+            self._model_name: str = gemini_cfg.get("model_name")
+            self._base_url: str = gemini_cfg.get("base_url")
+            self._timeout: int = gemini_cfg.get("timeout")
             
             if self._api_key:
                 # 使用 ChatOpenAI 调用第三方代理的 Gemini API

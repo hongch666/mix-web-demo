@@ -61,7 +61,6 @@ class LikeMapper:
             "daily_trends": daily_trends
         }
 
-
 @lru_cache()
 def get_like_mapper() -> LikeMapper:
     """获取 LikeMapper 单例实例"""

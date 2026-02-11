@@ -1,4 +1,4 @@
-from typing import List, Optional, Any, Dict, Tuple
+from typing import List, Optional, Any, Tuple
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools, get_mongodb_tools
@@ -108,7 +108,10 @@ def get_agent_prompt() -> PromptTemplate:
     """获取Agent的Prompt模板"""
     return PromptTemplate.from_template(AGENT_PROMPT_TEMPLATE)
 
-def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = None, include_sql: bool = True, include_logs: bool = True) -> Tuple[Optional[Any], Optional[Any], Optional[Any], List[Any]]:
+def initialize_ai_tools(
+    include_sql: bool = True, 
+    include_logs: bool = True
+) -> Tuple[Optional[Any], Optional[Any], Optional[Any], List[Any]]:
     """初始化AI工具，支持基于权限的工具选择
     
     Args:
@@ -122,7 +125,7 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
     """
     sql_tools_instance: Optional[Any] = None
     rag_tools_instance: Optional[Any] = None
-    mongodb_log_tools_instance: Optional[Any] = None
+    mongodb_tools_instance: Optional[Any] = None
     all_tools: List[Any] = []
     
     # 获取 SQL 工具
@@ -155,7 +158,7 @@ def initialize_ai_tools(user_id: Optional[int] = None, db: Optional[Session] = N
             logger.warning(f"加载 MongoDB 日志工具失败: {e}")
     
     logger.info(f"总共加载了 {len(all_tools)} 个工具")
-    return sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools
+    return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
 
 class BaseAiService:
     """AI服务基类"""

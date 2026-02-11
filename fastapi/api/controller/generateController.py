@@ -3,12 +3,15 @@ from typing import Any
 from starlette.concurrency import run_in_threadpool
 from common.config import get_db
 from sqlmodel import Session
-from api.service import GenerateService, get_generate_service
-from api.mapper import CommentsMapper, get_comments_mapper, ArticleMapper, get_article_mapper
 from api.service import (
+    GenerateService, get_generate_service,
     DoubaoService, get_doubao_service, 
     GeminiService, get_gemini_service, 
     QwenService, get_qwen_service
+)
+from api.mapper import (
+    CommentsMapper, get_comments_mapper, 
+    ArticleMapper, get_article_mapper
 )
 from common.utils import success
 from common.decorators import log

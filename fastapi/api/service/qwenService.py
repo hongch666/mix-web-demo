@@ -35,9 +35,9 @@ class QwenService(BaseAiService):
         try:
             qwen_cfg = load_config("qwen") or {}
             self._api_key: str = qwen_cfg.get("api_key")
-            self._model_name: str = qwen_cfg.get("model_name", "qwen-flash")
-            self._base_url: str = qwen_cfg.get("base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-            self._timeout: int = qwen_cfg.get("timeout", 30)
+            self._model_name: str = qwen_cfg.get("model_name")
+            self._base_url: str = qwen_cfg.get("base_url")
+            self._timeout: int = qwen_cfg.get("timeout")
             
             if self._api_key:
                 self.llm = ChatOpenAI(
@@ -440,7 +440,6 @@ class QwenService(BaseAiService):
                 yield {"type": "error", "content": Constants.QWEN_RATE_LIMIT_EXCEEDED_ERROR}
             else:
                 yield {"type": "error", "content": f"流式聊天服务异常: {str(e)}"}
-
 
 @lru_cache()
 def get_qwen_service(

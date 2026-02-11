@@ -1,3 +1,4 @@
+from functools import lru_cache
 import time
 from typing import Optional
 from common.config import get_redis_client
@@ -106,7 +107,7 @@ class WordcloudCache:
             logger.error(f"删除词云图缓存失败: {e}")
             return False
 
-
+@lru_cache
 def get_wordcloud_cache() -> WordcloudCache:
     """依赖注入 - 获取词云图缓存单例"""
     global _wordcloud_cache_instance

@@ -39,7 +39,6 @@ class ApiLogService:
         """
         return self.mapper.get_api_call_statistics_mapper()
 
-
 @lru_cache()
 def get_apilog_service(
         api_log_mapper: ApiLogMapper = Depends(get_apilog_mapper)

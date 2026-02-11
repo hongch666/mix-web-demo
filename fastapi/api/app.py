@@ -20,7 +20,7 @@ PORT: int = server_config["port"]
 
 def create_app() -> FastAPI:
     @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
         # 自动建表
         create_tables(['ai_history'])
         # 启动Nacos服务注册

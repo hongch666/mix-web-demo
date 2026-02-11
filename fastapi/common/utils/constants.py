@@ -449,6 +449,9 @@ class Constants:
     UNKNOWN_ARTICLE = "未知文章"
     """未知文章消息"""
     
+    GET_TOP_FAIL = "获取文章浏览分布失败"
+    """获取文章浏览分布失败消息"""
+    
     # SQL 语句
     
     AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"

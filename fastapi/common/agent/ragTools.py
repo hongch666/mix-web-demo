@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Dict, List, Optional
 from langchain_core.tools import Tool
 from langchain_community.embeddings import DashScopeEmbeddings
@@ -221,7 +222,7 @@ class RAGTools:
         search_k = k if k != 3 else self.top_k
         return self.vector_store.as_retriever(search_kwargs={"k": search_k})
 
-
+@lru_cache
 def get_rag_tools() -> RAGTools:
     """获取RAG工具实例"""
     return RAGTools()

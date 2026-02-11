@@ -1,3 +1,4 @@
+from functools import lru_cache
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -174,7 +175,7 @@ class MongoDBTools:
         except:
             return str(results)
 
-
+@lru_cache
 def get_mongodb_tools() -> MongoDBTools:
     """获取 MongoDB 日志工具实例"""
     return MongoDBTools()

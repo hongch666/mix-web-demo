@@ -37,7 +37,7 @@ class DoubaoService(BaseAiService):
             self._api_key: str = doubao_cfg.get("api_key")
             self._model: str = doubao_cfg.get("model")
             self._base_url: str = doubao_cfg.get("base_url")
-            self._timeout: int = doubao_cfg.get("timeout", 60)
+            self._timeout: int = doubao_cfg.get("timeout")
             
             if self._api_key and self._base_url:
                 self.llm = ChatOpenAI(
@@ -405,7 +405,6 @@ class DoubaoService(BaseAiService):
         except Exception as e:
             logger.error(f"流式聊天异常: {str(e)}")
             yield {"type": "error", "content": f"流式聊天服务异常: {str(e)}"}
-
 
 @lru_cache()
 def get_doubao_service(

@@ -278,7 +278,6 @@ def export_article_vectors_to_postgres(
             # 重试逻辑
             retry_count: int = 0
             batch_success: bool = False
-            last_error: Optional[str] = None
             
             while retry_count < max_retries and not batch_success:
                 try:
@@ -315,7 +314,6 @@ def export_article_vectors_to_postgres(
                     logger.info(f"批次 {batch_num} 同步成功: {result}")
                     
                 except Exception as e:
-                    last_error = str(e)
                     retry_count += 1
                     
                     if retry_count < max_retries:

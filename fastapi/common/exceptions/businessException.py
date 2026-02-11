@@ -1,5 +1,3 @@
-from typing import Optional
-
 class BusinessException(Exception):
     """业务异常 - 用于返回可向客户端显示的错误信息"""
 

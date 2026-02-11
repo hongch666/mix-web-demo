@@ -3,9 +3,8 @@ from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict, List
 from api.service import AnalyzeService, get_analyze_service
-from entity.po import ListResponse
 from common.config import get_db
-from common.utils import success
+from common.utils import success, ListResponse
 from common.decorators import log, requireInternalToken, requireAdmin
 
 router: APIRouter = APIRouter(

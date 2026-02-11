@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 from starlette.concurrency import run_in_threadpool
 from typing import Any, Dict, Optional
-from api.service import AnalyzeService, get_analyze_service, UploadService, get_upload_service
+from api.service import (
+    AnalyzeService, get_analyze_service, 
+    UploadService, get_upload_service
+)
 from entity.dto import UploadDTO
 from common.decorators import log, requireInternalToken
 from common.utils import success

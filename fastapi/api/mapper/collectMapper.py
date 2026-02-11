@@ -64,7 +64,6 @@ class CollectMapper:
             "daily_trends": daily_trends
         }
 
-
 @lru_cache()
 def get_collect_mapper() -> CollectMapper:
     """获取 CollectMapper 单例实例"""

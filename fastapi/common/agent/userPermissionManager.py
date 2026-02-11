@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, List, Optional, Tuple
 from sqlmodel import Session
 from common.utils import fileLogger as logger, Constants
@@ -182,7 +183,7 @@ class UserPermissionManager:
         """
         return self.can_use_tool(user_id, db, 'sql', question)
 
-
+@lru_cache
 def get_user_permission_manager(user_mapper: Optional[Any] = None) -> UserPermissionManager:
     """获取用户权限管理器单例"""
     return UserPermissionManager(user_mapper)

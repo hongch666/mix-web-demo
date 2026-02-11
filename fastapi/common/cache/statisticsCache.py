@@ -145,7 +145,6 @@ class StatisticsCache:
         except Exception as e:
             logger.error(f"[L2缓存] Redis 清除失败: {e}")
 
-
 @lru_cache()
 def get_statistics_cache() -> StatisticsCache:
     """获取 StatisticsCache 单例实例"""

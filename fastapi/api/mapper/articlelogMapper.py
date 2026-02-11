@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import Any, Dict, List
 from common.config import db as mongo_db, get_db
 from common.utils import fileLogger as logger, Constants
+from common.exceptions import BusinessException
 from api.mapper import get_article_mapper
 
 class ArticleLogMapper:
@@ -101,7 +102,7 @@ class ArticleLogMapper:
             }
         except Exception as e:
             logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
-            return {"total_views": 0, "articles": []}
+            raise BusinessException(Constants.GET_TOP_FAIL)
 
 @lru_cache()
 def get_articlelog_mapper() -> ArticleLogMapper:

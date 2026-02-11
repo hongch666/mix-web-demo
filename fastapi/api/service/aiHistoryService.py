@@ -3,7 +3,10 @@ from typing import Any, Dict, Optional
 import hashlib
 import time
 from fastapi import Depends
-from api.mapper import AiHistoryMapper, get_ai_history_mapper, UserMapper, get_user_mapper
+from api.mapper import (
+    AiHistoryMapper, get_ai_history_mapper, 
+    UserMapper, get_user_mapper
+)
 from common.utils import Constants
 from common.exceptions import BusinessException
 from entity.po import AiHistory
@@ -73,7 +76,6 @@ class AiHistoryService:
             raise BusinessException(Constants.USER_NOT_EXISTS_ERROR)
 
         self.ai_history_mapper.delete_ai_history_by_userid(db, user_id)
-
     
 @lru_cache
 def get_ai_history_service(

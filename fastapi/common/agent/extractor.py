@@ -1,5 +1,6 @@
+from functools import lru_cache
 import re
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Awaitable, Callable, List, Optional
 from langchain_community.document_loaders import PyPDFLoader, RecursiveUrlLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import requests
@@ -268,7 +269,7 @@ class ReferenceContentExtractor:
             logger.warning(f"文本分割失败: {e}")
             return [text] if text else []
 
-
+@lru_cache
 def get_reference_content_extractor() -> ReferenceContentExtractor:
     """获取参考内容提取器实例"""
     ReferenceContentExtractor._init_text_splitter()

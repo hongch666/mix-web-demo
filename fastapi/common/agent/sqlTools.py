@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import List, Optional
 import contextvars
 from langchain_core.tools import Tool
@@ -195,7 +196,7 @@ class SQLTools:
             )
         ]
 
-
+@lru_cache
 def get_sql_tools() -> SQLTools:
     """获取SQL工具实例"""
     return SQLTools()

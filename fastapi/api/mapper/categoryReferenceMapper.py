@@ -36,8 +36,6 @@ class CategoryReferenceMapper:
             logger.info(f"子分类 {sub_category_id} 无权威参考文本")
             return None
                 
-
-
 @lru_cache()
 def get_category_reference_mapper() -> CategoryReferenceMapper:
     """获取 CategoryReferenceMapper 实例"""
