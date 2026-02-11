@@ -7,39 +7,39 @@ export type ApiLogDocument = ApiLog & Document;
 export class ApiLog {
   // 用户ID
   @Prop({ type: Number, required: true })
-  userId: number;
+  userId!: number;
 
   // 用户名
   @Prop({ required: true })
-  username: string;
+  username!: string;
 
   // API 描述
   @Prop({ required: true })
-  apiDescription: string;
+  apiDescription!: string;
 
   // API 路径
   @Prop({ required: true })
-  apiPath: string;
+  apiPath!: string;
 
   // API 方法（GET、POST 等）
   @Prop({ required: true })
-  apiMethod: string;
+  apiMethod!: string;
 
   // 查询参数（任意 JSON 对象）
   @Prop({ type: Object })
-  queryParams: Record<string, any>;
+  queryParams!: Record<string, any>;
 
   // 路径参数（任意 JSON 对象）
   @Prop({ type: Object })
-  pathParams: Record<string, any>;
+  pathParams!: Record<string, any>;
 
   // 请求体（任意 JSON 对象）
   @Prop({ type: Object })
-  requestBody: Record<string, any>;
+  requestBody!: Record<string, any>;
 
   // 接口响应时间
   @Prop({ type: Number, required: true })
-  responseTime: number;
+  responseTime!: number;
 
   // 声明 create_at 字段，类型为 Date
   @Prop()

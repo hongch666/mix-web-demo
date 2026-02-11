@@ -24,27 +24,27 @@ export class CreateApiLogDto {
   @ApiProperty({ description: '用户ID', example: 1 })
   @IsNumber()
   @IsNotEmpty()
-  userId: number;
+  userId!: number;
 
   @ApiProperty({ description: '用户名', example: 'admin' })
   @IsString()
   @IsNotEmpty()
-  username: string;
+  username!: string;
 
   @ApiProperty({ description: 'API描述', example: '获取用户信息' })
   @IsString()
   @IsNotEmpty()
-  apiDescription: string;
+  apiDescription!: string;
 
   @ApiProperty({ description: 'API路径', example: '/api/users/1' })
   @IsString()
   @IsNotEmpty()
-  apiPath: string;
+  apiPath!: string;
 
   @ApiProperty({ description: 'API方法', example: 'GET' })
   @IsString()
   @IsNotEmpty()
-  apiMethod: string;
+  apiMethod!: string;
 
   @ApiPropertyOptional({
     description: '查询参数',
@@ -64,7 +64,7 @@ export class CreateApiLogDto {
   @ApiProperty({ description: '响应时间（毫秒）', example: 100 })
   @IsNumber()
   @IsNotEmpty()
-  responseTime: number;
+  responseTime!: number;
 }
 
 export class QueryApiLogDto {

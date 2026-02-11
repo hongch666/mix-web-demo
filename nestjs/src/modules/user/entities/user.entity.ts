@@ -3,26 +3,26 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('user')
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ length: 100 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'int', nullable: true })
-  age: number;
+  age!: number;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({ nullable: true })
-  email: string;
+  email!: string;
 
   @Column()
-  role: string;
+  role!: string;
 
   @Column({ nullable: true })
-  img: string;
+  img!: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  signature: string;
+  signature!: string;
 }

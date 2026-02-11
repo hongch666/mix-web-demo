@@ -6,7 +6,7 @@ import { ClsService } from 'nestjs-cls';
 export class ClsMiddleware implements NestMiddleware {
   constructor(private readonly cls: ClsService) {}
 
-  use(req: FastifyRequest, res: FastifyReply, next: () => void): void {
+  use(req: FastifyRequest, _res: FastifyReply, next: () => void): void {
     // userId 在请求头中，这里使用 x-user-id（小写），由于 Fastify 会将所有头部转换为小写
     const userId: string | string[] | undefined = req.headers['x-user-id'];
     const username: string | string[] | undefined = req.headers['x-username'];

@@ -36,12 +36,12 @@ export class CreateArticleLogDto {
   @ApiProperty({ description: '用户ID', example: '1' })
   @IsNumber()
   @IsNotEmpty()
-  userId: number;
+  userId!: number;
 
   @ApiProperty({ description: '文章ID', example: '1' })
   @IsNumber()
   @IsNotEmpty()
-  articleId: number;
+  articleId!: number;
 
   @ApiProperty({
     description: '操作类型',
@@ -49,14 +49,14 @@ export class CreateArticleLogDto {
     example: ArticleAction.EDIT,
   })
   @IsEnum(ArticleAction)
-  action: ArticleAction;
+  action!: ArticleAction;
 
   @ApiProperty({
     description: '任意结构的操作内容（JSON）',
     type: Object,
     example: { field: 'title', oldValue: '旧标题', newValue: '新标题' },
   })
-  content: Record<string, any>;
+  content!: Record<string, any>;
 
   @ApiPropertyOptional({ description: '操作说明', example: '修改了文章标题' })
   @IsOptional()
