@@ -27,23 +27,26 @@ public class RedisCacheConfig {
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         // 启用多态类型处理，确保序列化时写入类型信息，反序列化能恢复为具体类型（如 Page）
         objectMapper.activateDefaultTyping(
-                BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY);
+            BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
+            ObjectMapper.DefaultTyping.NON_FINAL,
+            JsonTypeInfo.As.PROPERTY);
 
         GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
         StringRedisSerializer keySerializer = new StringRedisSerializer();
 
-        RedisSerializationContext.SerializationPair<Object> pair = RedisSerializationContext.SerializationPair
-                .fromSerializer(valueSerializer);
+        RedisSerializationContext.SerializationPair<Object> pair = RedisSerializationContext
+            .SerializationPair
+            .fromSerializer(valueSerializer);
 
-        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer))
-                .serializeValuesWith(pair)
-                .entryTtl(Duration.ofHours(24));
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration
+            .defaultCacheConfig()
+            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer))
+            .serializeValuesWith(pair)
+            .entryTtl(Duration.ofHours(24));
 
-        return RedisCacheManager.builder(factory)
-                .cacheDefaults(defaultConfig)
-                .build();
+        return RedisCacheManager
+            .builder(factory)
+            .cacheDefaults(defaultConfig)
+            .build();
     }
 }

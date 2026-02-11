@@ -23,10 +23,11 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 用户列表
      */
     List<User> selectUsersWithLoginStatus(
-            @Param("username") String username,
-            @Param("loginStatusMap") Map<Long, Integer> loginStatusMap,
-            @Param("offset") long offset,
-            @Param("pageSize") long pageSize);
+        @Param("username") String username,
+        @Param("loginStatusMap") Map<Long, Integer> loginStatusMap,
+        @Param("offset") long offset,
+        @Param("pageSize") long pageSize
+    );
 
     /**
      * 统计符合条件的用户总数

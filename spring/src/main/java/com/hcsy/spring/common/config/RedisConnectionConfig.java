@@ -47,10 +47,12 @@ public class RedisConnectionConfig {
             logger.info(Constants.REDIS_PASSWORD);
         }
 
-        log.info(Constants.REDIS_CONNECT,
-                redisProperties.getHost() != null ? redisProperties.getHost() : "unknown",
-                redisProperties.getPort() != null ? redisProperties.getPort() : 0,
-                redisProperties.getDatabase() != null ? redisProperties.getDatabase() : 0);
+        log.info(
+            Constants.REDIS_CONNECT,
+            redisProperties.getHost() != null ? redisProperties.getHost() : "unknown",
+            redisProperties.getPort() != null ? redisProperties.getPort() : 0,
+            redisProperties.getDatabase() != null ? redisProperties.getDatabase() : 0
+        );
         return new LettuceConnectionFactory(config);
     }
 }

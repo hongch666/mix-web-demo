@@ -7,4 +7,5 @@ import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
 public interface SubCategoryMapper extends BaseMapper<SubCategory> {
+    // 可自定义扩展方法
 }

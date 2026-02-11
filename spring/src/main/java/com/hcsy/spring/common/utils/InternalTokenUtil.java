@@ -43,13 +43,14 @@ public class InternalTokenUtil {
         claims.put("serviceName", serviceName);
         claims.put("tokenType", "internal");
 
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject("internal_service_token")
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + internalTokenProperties.getExpiration()))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+        return Jwts
+            .builder()
+            .setClaims(claims)
+            .setSubject("internal_service_token")
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + internalTokenProperties.getExpiration()))
+            .signWith(key, SignatureAlgorithm.HS256)
+            .compact();
     }
 
     /**
@@ -57,10 +58,11 @@ public class InternalTokenUtil {
      */
     public boolean validateInternalToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
+            Jwts
+                .parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token);
             logger.debug(Constants.INTERNAL_TOKEN_VALIDATE_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
@@ -90,11 +92,12 @@ public class InternalTokenUtil {
      * 私有方法：解析令牌获取Claims
      */
     private Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        return Jwts
+            .parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
     }
 
     /**

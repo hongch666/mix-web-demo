@@ -43,13 +43,14 @@ public class JwtUtil {
         claims.put("userId", userId); // 用户ID
         claims.put("username", username); // 用户名
 
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username) // 主题设为用户名
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+        return Jwts
+            .builder()
+            .setClaims(claims)
+            .setSubject(username) // 主题设为用户名
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
+            .signWith(key, SignatureAlgorithm.HS256)
+            .compact();
     }
 
     /**
@@ -71,10 +72,11 @@ public class JwtUtil {
      */
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
+            Jwts
+                .parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token);
             logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
@@ -90,11 +92,12 @@ public class JwtUtil {
      * 私有方法：解析Token获取Claims
      */
     private Claims getClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        return Jwts
+            .parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
     }
 
     /**

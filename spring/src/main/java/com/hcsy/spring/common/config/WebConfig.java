@@ -17,8 +17,9 @@ public class WebConfig implements WebMvcConfigurer {
     @SuppressWarnings("null")
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(userInfoInterceptor)
-                .addPathPatterns("/**") // 拦截所有路径
-                .excludePathPatterns("/public/**", "/swagger-ui/**"); // 可以排除无需认证的路径
+        registry
+            .addInterceptor(userInfoInterceptor)
+            .addPathPatterns("/**") // 拦截所有路径
+            .excludePathPatterns("/public/**", "/swagger-ui/**"); // 可以排除无需认证的路径
     }
 }
