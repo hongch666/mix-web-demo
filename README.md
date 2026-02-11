@@ -1612,7 +1612,7 @@ DOUBAO_API_KEY=your-api-key
 
 # Embedding 配置
 EMBEDDING_MODEL=text-embedding-v3
-EMBEDDING_TOP_K=5
+EMBEDDING_TOP_K=10
 EMBEDDING_DIMENSION=1536
 EMBEDDING_SIMILARITY_THRESHOLD=0.3
 
@@ -1726,10 +1726,18 @@ JWT_EXPIRATION=2592000000
 
 ### 项目架构说明
 
-1. Spring 项目采用通用的三层架构，controller 对应接口，service 对应实际逻辑（使用接口+实现形式），mapper 为对应数据库操作，并且使用依赖注入进行调用
-2. Gin 项目采用上述相同的三层架构，每一层使用 group 组合对应 struct 并初始化，通过 group 单例进行类似依赖注入形式的调用
-3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 controller/service/module 文件，并且使用依赖注入进行调用
-4. FastAPI 项目采用上述的三层架构，并且基于 Depend 函数和获取实例函数进行依赖注入调用
+1. Spring 项目采用通用的三层架构，`/controller`对应接口，`/service`对应实际逻辑（使用接口+实现形式），`/mapper`为对应数据库操作，并且使用依赖注入进行调用
+2. Gin 项目采用上述相同的三层架构，每一层使用`group.go`组合对应服务 struct 并初始化，通过 group 单例进行类似依赖注入形式的调用
+3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的`xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts`文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用
+4. FastAPI 项目采用上述的三层架构，并且基于`Depend`函数和获取实例函数进行依赖注入调用
+
+### 项目文件夹命名说明
+
+1. 与接口相关的模块放在 `/api`文件夹下，如三层架构的模块、与接口相关的模块（NestJS）
+2. 和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`
+3. 通用相关的工具放在 `/common`下，如 `/config`、`/decorator`、`/middleware`
+4. NestJS 的通用工具如果要使用 module 的设计使用，放置在`/modules`下，否则就放置在`/common`下
+5. 其他相关的文件夹命名尽可能沿用当前项目的设计
 
 ### 项目文件命名说明
 
