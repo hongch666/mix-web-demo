@@ -101,6 +101,7 @@ embedding:
   top_k: ${EMBEDDING_TOP_K:5} # RAG检索返回的文档数量
   dimension: ${EMBEDDING_DIMENSION:1536} # 嵌入维度（text-embedding-v3默认1536维）
   similarity_threshold: ${EMBEDDING_SIMILARITY_THRESHOLD:0.3} # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
+  similarity_tolerance: ${EMBEDDING_SIMILARITY_TOLERANCE:0.01} # 相似度容差（用于去重，相似度差异在此范围内视为相近）
 permission:
   personal_info_keywords:
     - "我的"

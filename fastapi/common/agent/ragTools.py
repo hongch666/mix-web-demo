@@ -28,9 +28,10 @@ class RAGTools:
         embedding_cfg = load_config("embedding") or {}
         
         api_key = qwen_cfg.get("api_key")
-        embedding_model = embedding_cfg.get("embedding_model", "text-embedding-v3")
-        self.top_k: int = embedding_cfg.get("top_k", 5)  # 从配置加载top_k参数
-        self.similarity_threshold: float = embedding_cfg.get("similarity_threshold", 0.5)  # 相似度阈值（0-1之间）
+        embedding_model = embedding_cfg.get("embedding_model")
+        self.top_k: int = embedding_cfg.get("top_k")  # 从配置加载top_k参数
+        self.similarity_threshold: float = embedding_cfg.get("similarity_threshold")  # 相似度阈值（0-1之间）
+        self.similarity_tolerance: float = embedding_cfg.get("similarity_tolerance")  # 相似度容差（用于去重）
         
         if not api_key:
             raise BusinessException(Constants.QWEN_INVALID_API_KEY_ERROR)
@@ -124,6 +125,50 @@ class RAGTools:
             self.logger.error(error_msg)
             return error_msg
     
+    def _deduplicate_articles(self, docs_with_scores: List[tuple], k: int) -> List[tuple]:
+        """
+        对相似文章进行去重处理，保留相近相似度下的不同文章片段
+        
+        Args:
+            docs_with_scores: (Document, score) 的元组列表，已按相似度排序
+            k: 目标返回数量
+            
+        Returns:
+            去重后的 (Document, score) 列表
+        """
+        if not docs_with_scores:
+            return []
+        
+        result = []
+        seen_articles = set()
+        last_score = None
+        
+        for doc, score in docs_with_scores:
+            article_id = doc.metadata.get("article_id")
+            
+            # 首个结果或得分差异超过容差的结果，直接添加
+            if last_score is None or (last_score - score) > self.similarity_tolerance:
+                result.append((doc, score))
+                seen_articles.add(article_id)
+                last_score = score
+                if len(result) >= k:
+                    break
+            else:
+                # 在相近相似度的范围内，优先选择不同的文章
+                if article_id not in seen_articles:
+                    result.append((doc, score))
+                    seen_articles.add(article_id)
+                    if len(result) >= k:
+                        break
+        
+        # 如果结果不足k个，继续添加相同文章的其他片段
+        if len(result) < k:
+            for doc, score in docs_with_scores:
+                if (doc, score) not in result and len(result) < k:
+                    result.append((doc, score))
+        
+        return result
+    
     def search_similar_articles(self, query: str, k: int = 5) -> str:
         """
         搜索相似文章
@@ -139,8 +184,11 @@ class RAGTools:
             # 如果未明确传入k值，使用配置中的top_k
             search_k = k if k != 5 else self.top_k
             
+            # 搜索更多结果以便进行智能去重
+            fetch_k = max(search_k * 3, 15)
+            
             # 使用向量存储进行相似度搜索
-            docs = self.vector_store.similarity_search_with_score(query, k=search_k)
+            docs = self.vector_store.similarity_search_with_score(query, k=fetch_k)
             
             # 根据相似度阈值过滤结果
             filtered_docs = [(doc, score) for doc, score in docs if score >= self.similarity_threshold]
@@ -148,10 +196,13 @@ class RAGTools:
             if not filtered_docs:
                 return Constants.NO_RELEVANT_ARTICLES_FOUND_MESSAGE
             
-            # 格式化结果
-            result_text = f"找到 {len(filtered_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"
+            # 对相似文章进行智能去重处理
+            dedup_docs = self._deduplicate_articles(filtered_docs, search_k)
             
-            for i, (doc, score) in enumerate(filtered_docs, 1):
+            # 格式化结果
+            result_text = f"找到 {len(dedup_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"
+            
+            for i, (doc, score) in enumerate(dedup_docs, 1):
                 article_id = doc.metadata.get("article_id", "未知")
                 title = doc.metadata.get("title", "无标题")
                 chunk_index = doc.metadata.get("chunk_index", 0)
@@ -162,7 +213,7 @@ class RAGTools:
                 result_text += f"   内容片段(第{chunk_index+1}块, 共{len(content)}字):\n"
                 result_text += f"   {content}\n\n"
             
-            self.logger.info(f"RAG搜索成功，返回 {len(filtered_docs)} 个结果（过滤前: {len(docs)}）")
+            self.logger.info(f"RAG搜索成功，返回 {len(dedup_docs)} 个结果（去重前: {len(filtered_docs)}，过滤前: {len(docs)}）")
             return result_text
             
         except Exception as e:
@@ -182,9 +233,20 @@ class RAGTools:
             Document对象列表
         """
         try:
-            docs = self.vector_store.similarity_search(query, k=k)
-            self.logger.info(f"获取文章上下文成功，返回 {len(docs)} 个文档")
-            return docs
+            # 搜索更多结果以便进行智能去重
+            fetch_k = max(k * 3, 10)
+            
+            # 获取带相似度分数的结果
+            docs_with_scores = self.vector_store.similarity_search_with_score(query, k=fetch_k)
+            
+            # 对相似文章进行智能去重处理
+            dedup_docs_with_scores = self._deduplicate_articles(docs_with_scores, k)
+            
+            # 提取Document对象
+            dedup_docs = [doc for doc, _ in dedup_docs_with_scores]
+            
+            self.logger.info(f"获取文章上下文成功，返回 {len(dedup_docs)} 个文档（去重前: {len(docs_with_scores)}）")
+            return dedup_docs
         except Exception as e:
             self.logger.error(f"获取文章上下文失败: {e}")
             return []

@@ -23,9 +23,9 @@ def _get_redis_client() -> Optional[Any]:
             import redis
             cfg = load_config("database")["redis"]
             return redis.Redis(
-                host=cfg.get("host", "localhost"),
-                port=cfg.get("port", 6379),
-                db=cfg.get("db", 0),
+                host=cfg.get("host"),
+                port=cfg.get("port"),
+                db=cfg.get("db"),
                 decode_responses=True
             )
         except Exception as e:

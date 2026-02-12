@@ -15,7 +15,7 @@ class MongoDBTools:
         self.db = db
         self.logger = logger
         # 获取日志集合名称（默认为 api_logs）
-        self.logs_collection_name: str = load_config("database").get("mongodb", {}).get("logs_collection", "api_logs")
+        self.logs_collection_name: str = load_config("database").get("mongodb", {}).get("logs_collection")
     
     def get_logs_collection(self) -> Optional[Any]:
         """获取日志集合"""
