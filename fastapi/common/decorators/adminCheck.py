@@ -55,7 +55,7 @@ def requireAdmin(func: Callable) -> Callable:
             user_role: str = user_mapper.get_user_role(int(user_id), db)
             
             # 检查是否是管理员
-            if user_role != "admin":
+            if user_role != Constants.ROLE_ADMIN:
                 logger.warning(f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}")
                 raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
             
@@ -100,7 +100,7 @@ def requireAdmin(func: Callable) -> Callable:
             user_role: str = user_mapper.get_user_role(int(user_id), db)
             
             # 检查是否是管理员
-            if user_role != "admin":
+            if user_role != Constants.ROLE_ADMIN:
                 logger.warning(f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}")
                 raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
             

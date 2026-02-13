@@ -260,13 +260,8 @@ class RAGTools:
         """
         return [
             Tool(
-                name="search_articles",
-                description="""使用RAG(检索增强生成)搜索相关文章。
-                根据用户问题，在向量数据库中搜索最相关的文章内容。
-                适用于回答关于文章内容、技术知识、教程等问题。
-                参数格式: 用户的问题或关键词(字符串)
-                示例: "如何使用Python进行数据分析"
-                使用场景: 用户询问具体的技术问题、寻找相关文章、需要文章内容支持时使用。""",
+                name=Constants.RAG_TOOL_NAME,
+                description=Constants.RAG_TOOL_DESC,
                 func=lambda query: self.search_similar_articles(query, k=self.top_k)
             )
         ]

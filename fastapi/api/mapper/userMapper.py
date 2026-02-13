@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import List, Optional
 from sqlmodel import Session, select
+from common.utils import Constants
 from entity.po import User
 
 class UserMapper:
@@ -19,10 +20,10 @@ class UserMapper:
         """获取用户角色"""
         user = self.get_user_by_id(user_id, db)
         if not user:
-            return "user"  # 默认返回普通用户角色
+            return Constants.ROLE_USER  # 默认返回普通用户角色
         # 如果用户有 role 字段，返回该角色；否则默认返回 'user'
         role = getattr(user, 'role', None)
-        return role if role else "user"
+        return role if role else Constants.ROLE_USER
 
 @lru_cache()
 def get_user_mapper() -> UserMapper:

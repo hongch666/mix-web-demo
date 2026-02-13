@@ -109,8 +109,8 @@ class SQLTools:
         try:
             # 安全检查：只允许SELECT查询
             query_upper = query.strip().upper()
-            if not query_upper.startswith("SELECT"):
-                return "安全限制：只允许执行SELECT查询语句"
+            if not query_upper.startswith(Constants.SQL_QUERY_PREFIX):
+                return Constants.SQL_TOOL_LIMIT
             
             # 获取当前用户ID
             current_user_id = self.get_user_id()
@@ -118,7 +118,7 @@ class SQLTools:
             # 如果涉及个人数据查询且有用户ID，添加用户ID过滤
             if current_user_id:
                 # 检查查询是否涉及用户相关表
-                personal_tables = ['likes', 'collects', 'comments', 'ai_history', 'chat_messages']
+                personal_tables = Constants.USER_RELATED_TABLE
                 query_lower = query.lower()
                 
                 # 如果查询涉及个人表，自动添加用户ID过滤
@@ -138,7 +138,7 @@ class SQLTools:
                 columns = result.keys()
                 
                 if not rows:
-                    return "查询成功，但没有返回结果"
+                    return Constants.SQL_QUERY_NO_RES
                 
                 # 限制返回行数 - 增加到500行以支持更完整的思考过程
                 max_rows = 500
@@ -176,22 +176,13 @@ class SQLTools:
         """
         return [
             Tool(
-                name="get_table_schema",
-                description="""获取MySQL数据库表结构信息。
-                如果提供表名参数，返回该表的详细结构（列名、类型、主键、索引等）。
-                如果不提供参数，返回所有表的列表和基本信息。
-                参数格式: 表名(字符串)，如 'articles' 或 'users'，留空获取所有表。
-                使用场景: 需要了解数据库结构、查询某表有哪些字段时使用。""",
+                name=Constants.SQL_TABLE_TOOL_NAME,
+                description=Constants.SQL_TABLE_TOOL_DESC,
                 func=self.get_table_schema
             ),
             Tool(
-                name="execute_sql_query",
-                description="""执行SQL SELECT查询并返回结果。
-                只能执行SELECT查询，不允许INSERT/UPDATE/DELETE等修改操作。
-                返回最多20行数据，以表格形式展示。
-                参数格式: 完整的SQL SELECT语句。
-                示例: "SELECT * FROM articles WHERE status=1 LIMIT 10"
-                使用场景: 需要查询数据库数据、统计分析、获取具体记录时使用。""",
+                name=Constants.SQL_QUERY_TOOL_NAME,
+                description=Constants.SQL_QUERY_TOOL_DESC,
                 func=self.execute_query
             )
         ]

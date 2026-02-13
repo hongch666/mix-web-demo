@@ -1,3 +1,6 @@
+from typing import List
+
+
 class Constants:
     """应用常量类"""
     
@@ -458,19 +461,19 @@ class Constants:
     """检查AI聊天表是否存在的SQL常量"""
     
     AI_CHAT_SQL_TABLE_CREATION_MESSAGE: str = """
-    CREATE TABLE `ai_history` (
-        `id` BIGINT NOT NULL AUTO_INCREMENT,
-        `user_id` BIGINT,
-        `ask` TEXT NOT NULL,
-        `reply` TEXT NOT NULL,
-        `thinking` TEXT,
-        `ai_type` VARCHAR(30),
-        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-        `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (`id`),
-        KEY `idx_user_id` (`user_id`)
-    ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-"""
+        CREATE TABLE `ai_history` (
+            `id` BIGINT NOT NULL AUTO_INCREMENT,
+            `user_id` BIGINT,
+            `ask` TEXT NOT NULL,
+            `reply` TEXT NOT NULL,
+            `thinking` TEXT,
+            `ai_type` VARCHAR(30),
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_user_id` (`user_id`)
+        ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    """
     """SQL创建AI聊天表常量"""
     
     HIVE_TABLE_VERSION_SQL: str = "SHOW TBLPROPERTIES articles"
@@ -500,3 +503,228 @@ class Constants:
         ORDER BY year_month DESC
     """
     """按月文章发布统计SQL"""
+    
+    SQL_QUERY_PREFIX: str = "SELECT"
+    """SQL查询前缀"""
+    
+    # Agent 相关提示词/描述/消息
+    
+    ROUTER_INTENT_PROMPT: str = """
+        你是一个智能路由助手，需要判断用户的问题类型。
+
+        分析用户问题，判断应该使用哪种方式处理：
+
+        1. **database_query** - 需要查询数据库统计数据、获取记录列表、数据分析时选择
+        - 关键词：多少、统计、列表、查询、总数、排行、最新、用户信息等
+        - 示例：
+            * "有多少篇文章？"
+            * "最近发布的10篇文章"
+            * "user_id为123的用户信息"
+            * "各分类的文章数量统计"
+            * "浏览量最高的文章"
+
+        2. **article_search** - 需要搜索文章内容、技术知识、教程等时选择
+        - 关键词：如何、怎么做、教程、学习、介绍、什么是、原理等
+        - 示例：
+            * "如何使用Python进行数据分析？"
+            * "React Hooks的使用方法"
+            * "什么是机器学习？"
+            * "Docker容器化部署教程"
+            * "数据库索引的原理"
+
+        3. **log_analysis** - 需要查询系统日志、API日志、用户活动分析时选择
+        - 关键词：日志、活动、请求记录、错误、追踪、统计访问等
+        - 示例：
+            * "最近的错误日志"
+            * "用户活动统计"
+            * "API请求记录"
+            * "今天有哪些错误"
+
+        4. **general_chat** - 简单问候、闲聊、不需要查询数据的问题
+        - 示例：
+            * "你好"
+            * "今天天气怎么样"
+            * "你能做什么"
+
+        请只返回以下四个选项之一：database_query、article_search、log_analysis、general_chat
+    """
+    """意图识别路由器提示词模板"""
+    
+    RAG_TOOL_NAME: str = "search_articles"
+    """RAG工具名称"""
+    
+    RAG_TOOL_DESC: str = """
+        使用RAG(检索增强生成)搜索相关文章。
+        根据用户问题，在向量数据库中搜索最相关的文章内容。
+        适用于回答关于文章内容、技术知识、教程等问题。
+        参数格式: 用户的问题或关键词(字符串)
+        示例: "如何使用Python进行数据分析"
+        使用场景: 用户询问具体的技术问题、寻找相关文章、需要文章内容支持时使用。
+    """
+    """RAG工具描述"""
+    
+    SQL_TOOL_LIMIT: str = "安全限制：只允许执行SELECT查询语句"
+    """SQL工具限制消息"""
+    
+    USER_RELATED_TABLE: List[str] = ['likes', 'collects', 'comments', 'ai_history', 'chat_messages']
+    """用户相关表"""
+    
+    SQL_QUERY_NO_RES: str = "查询成功，但没有返回结果"
+    """SQL查询成功无结果消息"""
+    
+    SQL_TABLE_TOOL_NAME: str = "get_table_schema"
+    """SQL获取表结构工具名称"""
+    
+    SQL_TABLE_TOOL_DESC: str = """
+        获取MySQL数据库表结构信息。
+        如果提供表名参数，返回该表的详细结构（列名、类型、主键、索引等）。
+        如果不提供参数，返回所有表的列表和基本信息。
+        参数格式: 表名(字符串)，如 'articles' 或 'users'，留空获取所有表。
+        使用场景: 需要了解数据库结构、查询某表有哪些字段时使用。
+    """
+    """SQL获取表结构工具描述"""
+    
+    SQL_QUERY_TOOL_NAME: str = "execute_sql_query"
+    """SQL查询工具名称"""
+    
+    SQL_QUERY_TOOL_DESC: str = """
+        执行SQL SELECT查询并返回结果。
+        只能执行SELECT查询，不允许INSERT/UPDATE/DELETE等修改操作。
+        返回最多20行数据，以表格形式展示。
+        参数格式: 完整的SQL SELECT语句。
+        示例: "SELECT * FROM articles WHERE status=1 LIMIT 10"
+        使用场景: 需要查询数据库数据、统计分析、获取具体记录时使用。
+    """
+    """SQL查询工具描述"""
+
+    MONGODB_LIST_COLLECTIONS_TOOL_NAME: str = "list_mongodb_collections"
+    """MongoDB 列表查询工具名称"""
+
+    MONGODB_LIST_COLLECTIONS_TOOL_DESC: str = """
+        列出 MongoDB 数据库中的所有 collection 及其基本信息。
+        返回每个 collection 的记录数和样本字段，帮助确认可查询的数据集合。
+        参数格式: 无参数。
+        使用场景: 用户需要先了解日志库里有哪些 collection 以及大致字段结构时使用。
+    """
+    """MongoDB 列表查询工具描述"""
+
+    MONGODB_QUERY_TOOL_NAME: str = "query_mongodb"
+    """MongoDB 通用查询工具名称"""
+
+    MONGODB_QUERY_TOOL_DESC: str = """
+        通用的 MongoDB 查询工具，可查询任意 collection。
+        参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
+        参数示例: {"collection_name": "api_logs", "limit": 10}
+        使用场景: 已明确 collection 后，按条件查询日志、错误记录、用户活动等数据时使用。
+    """
+    """MongoDB 通用查询工具描述"""
+    
+    CONTENT_SUMMARIZE_PROMPT: str = """
+        请对以下内容进行精要总结，提取关键信息和核心观点：
+
+        原文内容：
+        {content}
+
+        要求：
+        1. 总结长度控制在 {max_length} 字以内
+        2. 提取核心要点和关键信息
+        3. 保留最重要的细节
+        4. 用清晰、凝练的语言表述
+    """
+    """内容总结提示词"""
+
+    REFERENCE_BASED_EVALUATION_PROMPT: str = """
+        请基于以下权威参考文本，对文章或内容进行评价。
+
+        权威参考文本：
+        {reference_content}
+
+        请对以下内容进行评价，并给出评分：
+        1. 给出简短的评价（100-200字），要求在评价中明确提及"参考权威文本"或"基于权威文本"等字眼
+        2. 给出0-10分的评分（可以是小数）
+        3. 请使用以下格式输出：
+            评价内容：[你的评价，需包含参考权威文本的相关表述]
+            评分：[你的评分]
+        4. 评价内容中应清晰指出哪些观点与权威文本相符或不符
+
+        待评价内容：
+        {message}
+    """
+    """基于参考文本的评价提示词"""
+
+    AGENT_PROMPT_TEMPLATE: str = """
+        你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
+
+        你有以下工具可以使用:
+        {tools}
+
+        工具名称: {tool_names}
+
+        使用以下格式回答问题:
+
+        Question: 用户的问题
+        Thought: 你需要思考应该做什么
+        Action: 选择一个工具，必须是 [{tool_names}] 中的一个
+        Action Input: 工具的输入参数
+        Observation: 工具执行的结果
+        ... (这个 Thought/Action/Action Input/Observation 可以重复N次)
+        Thought: 我现在知道最终答案了
+        Final Answer: 给用户的最终回答
+
+        重要提示 - 如何选择和使用工具:
+
+        1. 数据统计/统计查询: 优先使用 get_table_schema 查看表结构，然后用 execute_sql_query 执行SQL查询
+        示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
+
+        2. 文章内容/技术知识查询: 使用 search_articles 搜索相关文章
+        示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
+
+        3. MongoDB 日志和系统分析: 使用以下两个工具
+
+        第一步: 使用 list_mongodb_collections 列出所有可用的 collection
+        - 这会告诉你有哪些数据集合可以查询（如 api_logs, error_logs 等）
+        - 以及每个 collection 中有哪些字段
+        - Action Input: (无需参数)
+
+        第二步: 使用 query_mongodb 查询特定 collection
+        Action Input 必须是 JSON 格式字符串，包含以下参数:
+        - collection_name: 必需，collection 的名称 (字符串)
+        - filter_dict: 可选，MongoDB 查询条件 (JSON对象)
+        - limit: 可选，返回结果数量限制 (整数，默认10)
+        
+        Action Input 示例:
+        - 查询 api_logs 的前10条: {{"collection_name": "api_logs", "limit": 10}}
+        - 查询特定用户的 api_logs: {{"collection_name": "api_logs", "filter_dict": {{"user_id": 122}}, "limit": 20}}
+        - 查询错误日志: {{"collection_name": "error_logs", "limit": 10}}
+        - 查询文章日志: {{"collection_name": "articlelogs", "limit": 10}}
+
+        4. 工作流程建议:
+        - 如果用户问关于"日志"、"记录"、"API请求"、"错误"等：
+            1) 首先调用 list_mongodb_collections 查看有哪些 collection
+            2) 然后根据结果调用 query_mongodb 查询具体数据
+        
+        - 对于简单查询（如"最近的API请求"）：
+            直接使用 query_mongodb，传递 JSON 参数
+
+        关键特点:
+        - 你可以根据需要多次使用工具
+        - 对于组合问题，分步骤调用不同的工具
+        - 始终用中文回答用户
+        - MongoDB 的 filter_dict 支持完整的 MongoDB 查询语法，如 $gte, $lte, $regex 等
+        - 如果查询返回空结果，可以尝试修改查询条件或查询其他 collection
+        - Action Input 必须是有效的 JSON 字符串，不能是 Python 字典
+
+        开始!
+
+        Question: {input}
+        Thought: {agent_scratchpad}
+    """
+    """AI 助手的Agent提示词模板"""
+
+    # 权限相关常量
+    
+    ROLE_ADMIN: str = "admin"
+    """管理员权限名称"""
+    
+    ROLE_USER: str = "user"
+    """用户权限名称"""

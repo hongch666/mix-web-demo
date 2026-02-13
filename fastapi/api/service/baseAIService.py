@@ -2,111 +2,11 @@ from typing import List, Optional, Any, Tuple
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools, get_mongodb_tools
-from common.utils.writeLog import fileLogger as logger
-
-# ========== 共享的Prompt模板 ==========
-
-# 内容总结提示词
-CONTENT_SUMMARIZE_PROMPT: str = """请对以下内容进行精要总结，提取关键信息和核心观点：
-
-原文内容：
-{content}
-
-要求：
-1. 总结长度控制在 {max_length} 字以内
-2. 提取核心要点和关键信息
-3. 保留最重要的细节
-4. 用清晰、凝练的语言表述
-"""
-
-# 基于参考文本的评价提示词
-REFERENCE_BASED_EVALUATION_PROMPT: str = """请基于以下权威参考文本，对文章或内容进行评价。
-
-权威参考文本：
-{reference_content}
-
-请对以下内容进行评价，并给出评分：
-1. 给出简短的评价（100-200字），要求在评价中明确提及"参考权威文本"或"基于权威文本"等字眼
-2. 给出0-10分的评分（可以是小数）
-3. 请使用以下格式输出：
-    评价内容：[你的评价，需包含参考权威文本的相关表述]
-    评分：[你的评分]
-4. 评价内容中应清晰指出哪些观点与权威文本相符或不符
-
-待评价内容：
-{message}
-"""
-
-# AI 助手的Agent提示词模板
-AGENT_PROMPT_TEMPLATE: str = """你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
-
-你有以下工具可以使用:
-{tools}
-
-工具名称: {tool_names}
-
-使用以下格式回答问题:
-
-Question: 用户的问题
-Thought: 你需要思考应该做什么
-Action: 选择一个工具，必须是 [{tool_names}] 中的一个
-Action Input: 工具的输入参数
-Observation: 工具执行的结果
-... (这个 Thought/Action/Action Input/Observation 可以重复N次)
-Thought: 我现在知道最终答案了
-Final Answer: 给用户的最终回答
-
-重要提示 - 如何选择和使用工具:
-
-1. 数据统计/统计查询: 优先使用 get_table_schema 查看表结构，然后用 execute_sql_query 执行SQL查询
-   示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
-
-2. 文章内容/技术知识查询: 使用 search_articles 搜索相关文章
-   示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
-
-3. MongoDB 日志和系统分析: 使用以下两个工具
-
-   第一步: 使用 list_mongodb_collections 列出所有可用的 collection
-   - 这会告诉你有哪些数据集合可以查询（如 api_logs, error_logs 等）
-   - 以及每个 collection 中有哪些字段
-   - Action Input: (无需参数)
-
-   第二步: 使用 query_mongodb 查询特定 collection
-   Action Input 必须是 JSON 格式字符串，包含以下参数:
-   - collection_name: 必需，collection 的名称 (字符串)
-   - filter_dict: 可选，MongoDB 查询条件 (JSON对象)
-   - limit: 可选，返回结果数量限制 (整数，默认10)
-   
-   Action Input 示例:
-   - 查询 api_logs 的前10条: {{"collection_name": "api_logs", "limit": 10}}
-   - 查询特定用户的 api_logs: {{"collection_name": "api_logs", "filter_dict": {{"user_id": 122}}, "limit": 20}}
-   - 查询错误日志: {{"collection_name": "error_logs", "limit": 10}}
-   - 查询文章日志: {{"collection_name": "articlelogs", "limit": 10}}
-
-4. 工作流程建议:
-   - 如果用户问关于"日志"、"记录"、"API请求"、"错误"等：
-     1) 首先调用 list_mongodb_collections 查看有哪些 collection
-     2) 然后根据结果调用 query_mongodb 查询具体数据
-   
-   - 对于简单查询（如"最近的API请求"）：
-     直接使用 query_mongodb，传递 JSON 参数
-
-关键特点:
-- 你可以根据需要多次使用工具
-- 对于组合问题，分步骤调用不同的工具
-- 始终用中文回答用户
-- MongoDB 的 filter_dict 支持完整的 MongoDB 查询语法，如 $gte, $lte, $regex 等
-- 如果查询返回空结果，可以尝试修改查询条件或查询其他 collection
-- Action Input 必须是有效的 JSON 字符串，不能是 Python 字典
-
-开始!
-
-Question: {input}
-Thought: {agent_scratchpad}"""
+from common.utils import fileLogger as logger, Constants
 
 def get_agent_prompt() -> PromptTemplate:
     """获取Agent的Prompt模板"""
-    return PromptTemplate.from_template(AGENT_PROMPT_TEMPLATE)
+    return PromptTemplate.from_template(Constants.AGENT_PROMPT_TEMPLATE)
 
 def initialize_ai_tools(
     include_sql: bool = True, 
@@ -182,7 +82,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return CONTENT_SUMMARIZE_PROMPT.format(
+        return Constants.CONTENT_SUMMARIZE_PROMPT.format(
             content=content,
             max_length=max_length
         )
@@ -197,7 +97,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return REFERENCE_BASED_EVALUATION_PROMPT.format(
+        return Constants.REFERENCE_BASED_EVALUATION_PROMPT.format(
             reference_content=reference_content,
             message=message
         )

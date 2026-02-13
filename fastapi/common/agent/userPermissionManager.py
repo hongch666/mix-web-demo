@@ -7,9 +7,6 @@ from common.config import load_config
 class UserPermissionManager:
     """用户权限管理器"""
     
-    ROLE_ADMIN: str = "admin"
-    ROLE_USER: str = "user"
-    
     # 个人信息查询的关键字 - 从配置文件加载
     @property
     def PERSONAL_INFO_KEYWORDS(self) -> List[str]:
@@ -47,7 +44,7 @@ class UserPermissionManager:
         try:
             if not self.user_mapper:
                 logger.warning(f"用户Mapper未初始化，无法获取用户 {user_id} 的角色，使用默认角色 'user'")
-                return self.ROLE_USER  # 默认为 user
+                return Constants.ROLE_USER  # 默认为 user
             
             # 直接调用 user_mapper 的 get_user_role 方法
             role = self.user_mapper.get_user_role(user_id, db)
@@ -56,7 +53,7 @@ class UserPermissionManager:
             
         except Exception as e:
             logger.error(f"获取用户 {user_id} 的角色失败: {e}，使用默认角色 'user'")
-            return self.ROLE_USER  # 异常时默认为 user
+            return Constants.ROLE_USER  # 异常时默认为 user
     
     def is_admin(self, user_id: int, db: Session) -> bool:
         """
@@ -70,7 +67,7 @@ class UserPermissionManager:
             True 如果用户是管理员，否则 False
         """
         role = self.get_user_role(user_id, db)
-        return role == self.ROLE_ADMIN
+        return role == Constants.ROLE_ADMIN
     
     def is_personal_info_query(self, question: str) -> bool:
         """
@@ -158,7 +155,7 @@ class UserPermissionManager:
         
         # 第三步：不是个人信息查询，检查用户角色（最后进行）
         role = self.get_user_role(user_id, db)
-        if role == self.ROLE_ADMIN:
+        if role == Constants.ROLE_ADMIN:
             logger.info(f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具")
             return True, ""
         else:
