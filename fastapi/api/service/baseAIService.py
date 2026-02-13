@@ -1,8 +1,11 @@
-from typing import List, Optional, Any, Tuple
+from typing import Any, List, Optional, Tuple
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 from common.agent import get_sql_tools, get_rag_tools, get_mongodb_tools
 from common.utils import fileLogger as logger, Constants
+
+ChatHistoryItem = Tuple[str, str]
+IntermediateStep = Tuple[Any, Any]
 
 def get_agent_prompt() -> PromptTemplate:
     """获取Agent的Prompt模板"""
@@ -102,13 +105,13 @@ class BaseAiService:
             message=message
         )
     
-    def _load_chat_history(self, user_id: int, db: Session) -> List[tuple]:
+    def _load_chat_history(self, user_id: int, db: Session) -> List[ChatHistoryItem]:
         """从数据库加载聊天历史"""
         try:
             histories = self.ai_history_mapper.get_all_ai_history_by_userid(
                 db, user_id=user_id, limit=5
             )
-            chat_history = []
+            chat_history: List[ChatHistoryItem] = []
             for h in histories:
                 chat_history.append((h.ask, h.reply))
             return chat_history
@@ -116,7 +119,7 @@ class BaseAiService:
             logger.error(f"加载聊天历史失败: {e}")
             return []
     
-    def _build_thinking_text(self, intermediate_steps: list) -> str:
+    def _build_thinking_text(self, intermediate_steps: List[IntermediateStep]) -> str:
         """构建思考过程文本
         
         Args:
@@ -137,7 +140,7 @@ class BaseAiService:
                 thinking_text += f"  结果: {observation}\n"
         return thinking_text
     
-    def _build_complete_thinking_text(self, intermediate_steps: list, final_result: str = "") -> str:
+    def _build_complete_thinking_text(self, intermediate_steps: List[IntermediateStep], final_result: str = "") -> str:
         """构建完整的思考过程文本（包含最终结果）
         
         Args:
@@ -171,7 +174,7 @@ class BaseAiService:
         complete_text = "".join(thinking_parts)
         return complete_text
     
-    def _build_chat_context(self, chat_history: List[tuple]) -> str:
+    def _build_chat_context(self, chat_history: List[ChatHistoryItem]) -> str:
         """构建聊天历史上下文
         
         Args:

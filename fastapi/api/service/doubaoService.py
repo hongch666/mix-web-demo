@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import AsyncGenerator, Optional
+from typing import Any, AsyncGenerator, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_classic.agents import AgentExecutor, create_react_agent
@@ -25,7 +25,7 @@ class DoubaoService(BaseAiService):
             self, 
             ai_history_mapper: AiHistoryMapper, 
             user_mapper: Optional[UserMapper] = None
-        ):
+        ) -> None:
         super().__init__(ai_history_mapper, service_name="Doubao")
         
         # 初始化权限管理器
@@ -218,7 +218,7 @@ class DoubaoService(BaseAiService):
             # 3. 根据意图选择处理方式
             if intent == "general_chat":
                 # 简单闲聊，直接回复
-                history_messages = []
+                history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
                     history_messages.append(HumanMessage(content=human_msg))
                     history_messages.append(AIMessage(content=ai_msg))
@@ -251,7 +251,7 @@ class DoubaoService(BaseAiService):
             logger.error(f"豆包聊天异常: {str(e)}")
             return f"聊天服务异常: {str(e)}"
         
-    async def stream_chat(self, message: str, user_id: int = 0, db: Optional[Session] = None) -> AsyncGenerator[str, None]:
+    async def stream_chat(self, message: str, user_id: int = 0, db: Optional[Session] = None) -> AsyncGenerator[dict[str, str], None]:
         """流式聊天接口
         
         Yields:
@@ -273,7 +273,7 @@ class DoubaoService(BaseAiService):
                     chat_history = self._load_chat_history(user_id, db)
                 
                 # 构建消息
-                history_messages = []
+                history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
                     history_messages.append(HumanMessage(content=human_msg))
                     history_messages.append(AIMessage(content=ai_msg))
@@ -326,7 +326,7 @@ class DoubaoService(BaseAiService):
             # 3. 根据意图选择处理方式
             if intent == "general_chat":
                 # 简单闲聊，直接流式回复
-                history_messages = []
+                history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
                     history_messages.append(HumanMessage(content=human_msg))
                     history_messages.append(AIMessage(content=ai_msg))
@@ -383,7 +383,7 @@ class DoubaoService(BaseAiService):
                 logger.info(Constants.AGENT_START_STREAMING_MESSAGE)
                 
                 # 构建包含Agent思考结果的提示
-                history_messages = []
+                history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
                     history_messages.append(HumanMessage(content=human_msg))
                     history_messages.append(AIMessage(content=ai_msg))

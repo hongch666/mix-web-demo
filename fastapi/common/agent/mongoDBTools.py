@@ -1,7 +1,7 @@
 from functools import lru_cache
 import json
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from bson import ObjectId
 from langchain_core.tools import Tool
 from common.config import load_config, db
@@ -56,7 +56,7 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
-    def query_mongodb(self, query_params: str) -> str:
+    def query_mongodb(self, query_params: Union[str, Dict[str, Any]]) -> str:
         """通用的 MongoDB 查询工具，可以查询任意 collection"""
         try:
             # 解析 query_params

@@ -74,7 +74,7 @@ class ReferenceContentExtractor:
 
         # 简单的关键要点提取策略
         sentences = re.split(r'[。！？]', text)
-        key_points = []
+        key_points: List[str] = []
 
         # 优先选择包含关键词的句子
         keywords = ['定义', '概念', '原理', '方法', '步骤', '特点', '优势', '应用', '案例', '注意事项']
@@ -121,7 +121,7 @@ class ReferenceContentExtractor:
             documents = loader.load()
 
             # 提取文本内容
-            full_text = ""
+            full_text: str = ""
             for doc in documents:
                 full_text += doc.page_content + "\n"
 
@@ -168,7 +168,7 @@ class ReferenceContentExtractor:
             documents = loader.load()
 
             # 提取文本内容
-            full_text = ""
+            full_text: str = ""
             for doc in documents:
                 full_text += doc.page_content + "\n"
 

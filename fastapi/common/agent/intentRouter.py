@@ -5,6 +5,8 @@ from sqlmodel import Session
 from common.agent import UserPermissionManager
 from common.utils import Constants
 
+IntentType = Literal["database_query", "article_search", "log_analysis", "general_chat"]
+
 class IntentRouter:
     """意图识别路由器，支持权限检查"""
     
@@ -48,7 +50,7 @@ class IntentRouter:
         self.user_id = user_id
         self.db = db
     
-    def route(self, question: str) -> Literal["database_query", "article_search", "log_analysis", "general_chat"]:
+    def route(self, question: str) -> IntentType:
         """
         路由用户问题
         
@@ -81,7 +83,7 @@ class IntentRouter:
             self.logger.error(f"意图识别失败: {e}, 默认使用article_search")
             return "article_search"
     
-    def route_with_permission_check(self, question: str, user_id: Optional[int] = None, db: Optional[Session] = None) -> Tuple[str, bool, str]:
+    def route_with_permission_check(self, question: str, user_id: Optional[int] = None, db: Optional[Session] = None) -> Tuple[IntentType, bool, str]:
         """
         路由用户问题并检查权限
         

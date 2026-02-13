@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from langchain_core.tools import Tool
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -11,6 +11,8 @@ from common.utils import Constants
 
 # 抑制 PGVector 弃用警告
 warnings.filterwarnings('ignore', category=DeprecationWarning)
+
+DocScore = Tuple[Document, float]
 
 class RAGTools:
     """RAG工具类 - 基于LangChain实现"""
@@ -125,7 +127,7 @@ class RAGTools:
             self.logger.error(error_msg)
             return error_msg
     
-    def _deduplicate_articles(self, docs_with_scores: List[tuple], k: int) -> List[tuple]:
+    def _deduplicate_articles(self, docs_with_scores: List[DocScore], k: int) -> List[DocScore]:
         """
         对相似文章进行去重处理，保留相近相似度下的不同文章片段
         
@@ -139,9 +141,9 @@ class RAGTools:
         if not docs_with_scores:
             return []
         
-        result = []
-        seen_articles = set()
-        last_score = None
+        result: List[DocScore] = []
+        seen_articles: set[Any] = set()
+        last_score: Optional[float] = None
         
         for doc, score in docs_with_scores:
             article_id = doc.metadata.get("article_id")
