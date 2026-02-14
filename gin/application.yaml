@@ -2,7 +2,7 @@ server:
   ip: ${SERVER_IP:127.0.0.1}
   port: ${SERVER_PORT:8082}
 internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:}
+  secret: ${INTERNAL_TOKEN_SECRET:abcdefghijklmnopqrstuvwxyz123456}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 nacos:
   ipAddr: ${NACOS_IP:127.0.0.1}

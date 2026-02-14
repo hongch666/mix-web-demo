@@ -3,7 +3,7 @@ server:
   port: ${SERVER_PORT:8083}
   serviceName: ${SERVER_SERVICE_NAME:nestjs}
 internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:}
+  secret: ${INTERNAL_TOKEN_SECRET:abcdefghijklmnopqrstuvwxyz123456}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 nacos:
   server-addr: ${NACOS_SERVER:127.0.0.1}

@@ -43,8 +43,8 @@ logging:
   file:
     path: ${LOGGING_PATH:../logs/spring}
 jwt:
-  secret: ${JWT_SECRET:} # 至少 32 字节
+  secret: ${JWT_SECRET:abcdefghijklmnopqrstuvwxyz123456}
   expiration: ${JWT_EXPIRATION:86400000} # 毫秒数（1 天）
 internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:} # 至少 32 字节
+  secret: ${INTERNAL_TOKEN_SECRET:abcdefghijklmnopqrstuvwxyz123456}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000} # 毫秒数（60秒）
