@@ -21,9 +21,6 @@ nestjs/.DS_Store
 # 配置文件
 nestjs/.prettierrc
 
-# bun 相关
-nestjs/bun.lock
-
 # Tests
 nestjs/coverage
 nestjs/.nyc_output
@@ -206,7 +203,6 @@ fastapi/.venv/
 fastapi/venv/
 fastapi/.env
 fastapi/.env.local
-fastapi/uv.lock
 fastapi/.python-version
 
 .vscode/
