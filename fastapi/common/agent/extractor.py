@@ -1,7 +1,7 @@
 from functools import lru_cache
 import re
 from typing import Awaitable, Callable, List, Optional
-from langchain_community.document_loaders import PyPDFLoader, RecursiveUrlLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import requests
 import urllib.request
@@ -155,25 +155,24 @@ class ReferenceContentExtractor:
 
             logger.info(f"开始提取链接内容: {link_url}")
 
-            # 使用RecursiveUrlLoader加载网页
-            loader = RecursiveUrlLoader(
-                url=link_url,
-                max_depth=1,  # 只加载当前页面
-                extractor=lambda html: cls._clean_text(html),
-                prevent_outside=True,  # 防止跳转到外部链接
-                use_async=True,  # 使用异步加载
-                timeout=10,  # 10秒超时
-            )
+            # 构造浏览器请求头，避免被反爬虫机制拒绝
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Referer': 'https://www.google.com/',
+            }
 
-            documents = loader.load()
-
-            # 提取文本内容
-            full_text: str = ""
-            for doc in documents:
-                full_text += doc.page_content + "\n"
+            # 发送 HTTP 请求，返回报错时不抛异常
+            response = requests.get(link_url, timeout=10, headers=headers)
+            response.raise_for_status()
+            html_content = response.text
 
             # 清理文本
-            full_text = cls._clean_text(full_text)
+            full_text = cls._clean_text(html_content)
 
             # 提取关键要点
             key_points = cls._extract_key_points(full_text, max_length)
