@@ -1,7 +1,7 @@
 [project]
 name = "fastapi-app"
 version = "1.0.0"
-description = "FastAPI 微服务"
+description = "FastAPI微服务"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi==0.116.1",
