@@ -1,24 +1,20 @@
 {
   "name": "nestjs",
   "version": "1.0.0",
-  "description": "",
-  "author": "",
+  "description": "NestJS微服务",
+  "author": "hongch666",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
     "build:bun": "bun run nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "bun:prod": "bun run dist/main",
     "bun:start": "bun src/main.ts",
-    "bun:dev": "bun --watch src/main.ts",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "bun:dev": "bun --watch src/main.ts"
   },
   "dependencies": {
     "@fastify/static": "^8.3.0",
