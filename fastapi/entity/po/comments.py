@@ -1,9 +1,11 @@
-from sqlmodel import SQLModel, Field
 from typing import Optional
+
+from sqlmodel import Field, SQLModel
+
 
 class Comments(SQLModel, table=True):
     """评论实体类"""
-    
+
     __tablename__ = "comments"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     content: str = Field()

@@ -1,15 +1,19 @@
-from functools import partial
-from typing import Optional, Callable, Any
 from datetime import datetime
+from functools import partial
+from typing import Any, Callable, Optional
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
+from common.utils import Constants
+from common.utils import fileLogger as logger
 from sqlmodel import Session
-from common.utils import fileLogger as logger, Constants
+
 from .logic import (
-    export_articles_to_csv_and_hive,
     export_article_vectors_to_postgres,
-    update_analyze_caches
+    export_articles_to_csv_and_hive,
+    update_analyze_caches,
 )
+
 
 def start_scheduler(
     article_mapper: Optional[Any] = None,
@@ -22,7 +26,7 @@ def start_scheduler(
     启动调度器，可把依赖注入进来（用于测试或容器式管理）。
     例如：
       start_scheduler(
-          article_mapper=get_article_mapper(), 
+          article_mapper=get_article_mapper(),
           db_factory=lambda: next(get_db())
       )
     """
@@ -30,39 +34,39 @@ def start_scheduler(
 
     # 任务1：导出文章到 CSV 和 Hive
     export_job_func = partial[None](
-        export_articles_to_csv_and_hive, 
-        article_mapper=article_mapper, 
-        user_mapper=user_mapper, 
-        db_factory=db_factory or mysql_db_factory
+        export_articles_to_csv_and_hive,
+        article_mapper=article_mapper,
+        user_mapper=user_mapper,
+        db_factory=db_factory or mysql_db_factory,
     )
     # 每1天执行一次
-    scheduler.add_job(export_job_func, 'interval', hours=24, id='export_articles')
-    
+    scheduler.add_job(export_job_func, "interval", hours=24, id="export_articles")
+
     # 任务2：同步文章向量到 PostgreSQL（使用LangChain）- 增量同步模式
     sync_vector_job_func = partial[None](
         export_article_vectors_to_postgres,
         article_mapper=article_mapper,
         mysql_db_factory=mysql_db_factory or db_factory,
-        enable_incremental_sync=True  # 启用增量同步
+        enable_incremental_sync=True,  # 启用增量同步
     )
     # 每1天执行一次
-    scheduler.add_job(sync_vector_job_func, 'interval', hours=24, id='sync_vectors')
-    
+    scheduler.add_job(sync_vector_job_func, "interval", hours=24, id="sync_vectors")
+
     # 任务3：更新分析接口缓存
     analyze_cache_job_func = partial[None](
         update_analyze_caches,
         analyze_service=analyze_service,
-        db_factory=db_factory or mysql_db_factory
+        db_factory=db_factory or mysql_db_factory,
     )
     # 每10分钟执行一次，启动时立即执行一次
     scheduler.add_job(
-        analyze_cache_job_func, 
-        'interval', 
-        minutes=10, 
-        id='update_analyze_caches', 
-        next_run_time=datetime.now()  # 立即执行
+        analyze_cache_job_func,
+        "interval",
+        minutes=10,
+        id="update_analyze_caches",
+        next_run_time=datetime.now(),  # 立即执行
     )
-    
+
     scheduler.start()
     logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
     logger.info(Constants.SCHEDULER_TASKS_MESSAGE)

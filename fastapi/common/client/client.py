@@ -1,10 +1,12 @@
+from typing import Any, Dict, Optional
+
 import requests
-from common.utils import fileLogger as logger
-from typing import Optional, Dict, Any
 from common.config import get_service_instance, load_config
-from common.middleware import get_current_user_id, get_current_username
 from common.exceptions import BusinessException
+from common.middleware import get_current_user_id, get_current_username
 from common.utils import InternalTokenUtil
+from common.utils import fileLogger as logger
+
 
 async def call_remote_service(
     service_name: str,
@@ -15,7 +17,7 @@ async def call_remote_service(
     data: Optional[Dict[str, Any]] = None,
     json: Optional[Dict[str, Any]] = None,
     retries: int = 3,
-    timeout: int = 5
+    timeout: int = 5,
 ) -> Any:
     """
     通过 Nacos 服务发现并调用远程服务
@@ -49,7 +51,9 @@ async def call_remote_service(
         try:
             instance: Dict[str, Any] = get_service_instance(service_name)
             url: str = f"http://{instance['ip']}:{instance['port']}{path}"
-            logger.info(f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt+1} 次尝试）")
+            logger.info(
+                f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt + 1} 次尝试）"
+            )
             response: requests.Response = requests.request(
                 method=method,
                 url=url,
@@ -57,7 +61,7 @@ async def call_remote_service(
                 params=params,
                 data=data,
                 json=json,
-                timeout=timeout
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()

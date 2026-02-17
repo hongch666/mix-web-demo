@@ -1,6 +1,8 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
+
 
 class Article(SQLModel, table=True):
     """文章实体类"""

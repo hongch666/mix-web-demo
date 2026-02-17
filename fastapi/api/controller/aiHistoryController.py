@@ -1,68 +1,68 @@
-from fastapi import APIRouter, Depends, Request
-from common.config import get_db
-from sqlmodel import Session
-from starlette.concurrency import run_in_threadpool
-from api.service import AiHistoryService, get_ai_history_service
-from common.utils import success
-from common.decorators import log, requireInternalToken
-from entity.dto import CreateHistoryDTO
 from typing import Any
 
+from common.config import get_db
+from common.decorators import log, requireInternalToken
+from common.utils import success
+from entity.dto import CreateHistoryDTO
 from entity.po.aiHistory import AiHistory
+from sqlmodel import Session
+from starlette.concurrency import run_in_threadpool
+
+from api.service import AiHistoryService, get_ai_history_service
+from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/ai_history",
     tags=["AI历史相关接口"],
 )
 
-@router.post(
-    "",
-    summary="创建AI历史记录",
-    description="创建一条AI历史记录"
-)
+
+@router.post("", summary="创建AI历史记录", description="创建一条AI历史记录")
 @requireInternalToken
 @log("创建AI历史记录")
 async def create_ai_history(
-    _: Request, 
-    data: CreateHistoryDTO, 
-    db: Session = Depends(get_db), 
-    ai_history_service: AiHistoryService = Depends(get_ai_history_service)
+    _: Request,
+    data: CreateHistoryDTO,
+    db: Session = Depends(get_db),
+    ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """创建AI历史记录接口"""
-    
+
     await run_in_threadpool(ai_history_service.create_ai_history, data, db)
     return success()
 
+
 @router.get(
-    "/list",
-    summary="获取所有AI历史记录",
-    description="获取指定用户的所有AI历史记录"
+    "/list", summary="获取所有AI历史记录", description="获取指定用户的所有AI历史记录"
 )
 @log("获取所有AI历史记录")
 async def get_all_ai_history(
-    _: Request, 
-    user_id: int, 
-    db: Session = Depends(get_db), 
-    ai_history_service: AiHistoryService = Depends(get_ai_history_service)
+    _: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """获取所有AI历史记录接口"""
-    
-    histories: list[AiHistory] = await run_in_threadpool(ai_history_service.get_all_ai_history, user_id, db)
+
+    histories: list[AiHistory] = await run_in_threadpool(
+        ai_history_service.get_all_ai_history, user_id, db
+    )
     return success(data=histories)
+
 
 @router.delete(
     "/{user_id}",
     summary="删除用户所有AI历史记录",
-    description="删除指定用户的所有AI历史记录"
+    description="删除指定用户的所有AI历史记录",
 )
 @log("删除用户所有AI历史记录")
 async def delete_ai_history(
-    _: Request, 
-    user_id: int, 
-    db: Session = Depends(get_db), 
-    ai_history_service: AiHistoryService = Depends(get_ai_history_service)
+    _: Request,
+    user_id: int,
+    db: Session = Depends(get_db),
+    ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """删除用户所有AI历史记录接口"""
-    
+
     await run_in_threadpool(ai_history_service.delete_ai_history_by_userid, user_id, db)
     return success()

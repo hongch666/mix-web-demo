@@ -1,13 +1,18 @@
 from functools import wraps
-from typing import Callable, TypeVar, Optional, Any, Dict
-from fastapi import Request
+from typing import Any, Callable, Dict, Optional, TypeVar
+
 from common.exceptions import BusinessException
-from common.utils import Constants, fileLogger as logger, InternalTokenUtil
+from common.utils import Constants, InternalTokenUtil
+from common.utils import fileLogger as logger
 
-T = TypeVar('T', bound=Callable[..., Any])
+from fastapi import Request
+
+T = TypeVar("T", bound=Callable[..., Any])
 
 
-def requireInternalToken(func: Optional[T] = None, *, required_service_name: Optional[str] = None) -> Callable:
+def requireInternalToken(
+    func: Optional[T] = None, *, required_service_name: Optional[str] = None
+) -> Callable:
     """
     需要内部服务令牌验证的装饰器
     用于标记需要内部服务令牌才能访问的接口
@@ -27,7 +32,7 @@ def requireInternalToken(func: Optional[T] = None, *, required_service_name: Opt
     async def get_protected() -> Dict[str, str]:
         return {"data": "success"}
     """
-    
+
     # 绑定service名到闭包中，供后续的装饰器使用
     service_name = required_service_name
 
@@ -49,7 +54,9 @@ def requireInternalToken(func: Optional[T] = None, *, required_service_name: Opt
             try:
                 # 验证令牌
                 internal_token_util: InternalTokenUtil = InternalTokenUtil()
-                claims: Dict[str, Any] = internal_token_util.validate_internal_token(token)
+                claims: Dict[str, Any] = internal_token_util.validate_internal_token(
+                    token
+                )
 
                 # 验证服务名称（如果指定了）
                 if service_name and claims.get("serviceName") != service_name:
@@ -89,7 +96,9 @@ def requireInternalToken(func: Optional[T] = None, *, required_service_name: Opt
             try:
                 # 验证令牌
                 internal_token_util: InternalTokenUtil = InternalTokenUtil()
-                claims: Dict[str, Any] = internal_token_util.validate_internal_token(token)
+                claims: Dict[str, Any] = internal_token_util.validate_internal_token(
+                    token
+                )
 
                 # 验证服务名称（如果指定了）
                 if service_name and claims.get("serviceName") != service_name:

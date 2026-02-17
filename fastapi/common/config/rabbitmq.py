@@ -1,8 +1,11 @@
 import json
-import pika
 from typing import Any, Optional
+
+import pika
 from common.config import load_config
-from common.utils import fileLogger as logger, Constants
+from common.utils import Constants
+from common.utils import fileLogger as logger
+
 
 class RabbitMQClient:
     """RabbitMQ 客户端"""
@@ -19,14 +22,14 @@ class RabbitMQClient:
         """建立 RabbitMQ 连接"""
         if self._is_connected:
             return
-            
+
         try:
             # 从配置文件获取连接参数
             rabbitmq_config = load_config("rabbitmq")
             if not rabbitmq_config:
                 logger.warning(Constants.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
                 return
-                
+
             host = str(rabbitmq_config.get("host", "127.0.0.1"))
             port = int(rabbitmq_config.get("port", 5672))
             username = str(rabbitmq_config.get("username", "guest"))
@@ -56,7 +59,9 @@ class RabbitMQClient:
             logger.warning(f"RabbitMQ 连接失败: {e}")
             # 不抛出异常，允许应用继续运行
 
-    def send_message(self, queue_name: str, message: Any, persistent: bool = True) -> bool:
+    def send_message(
+        self, queue_name: str, message: Any, persistent: bool = True
+    ) -> bool:
         """
         发送消息到指定队列
 
@@ -72,7 +77,7 @@ class RabbitMQClient:
             # 如果还没连接，先连接
             if not self._is_connected:
                 self._connect()
-            
+
             # 如果连接失败，返回 False
             if not self._is_connected or self.channel is None:
                 logger.error(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
@@ -82,7 +87,7 @@ class RabbitMQClient:
             if self.connection is None or self.connection.is_closed:
                 self._is_connected = False
                 self._connect()
-                
+
             if not self._is_connected or self.channel is None:
                 return False
 

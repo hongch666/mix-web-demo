@@ -1,22 +1,27 @@
-from functools import lru_cache
 import json
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Union
+
 from bson import ObjectId
+from common.config import db, load_config
+from common.utils import Constants
+from common.utils import fileLogger as logger
 from langchain_core.tools import Tool
-from common.config import load_config, db
-from common.utils import fileLogger as logger, Constants
+
 
 class MongoDBTools:
     """MongoDB 日志查询工具集"""
-    
+
     def __init__(self) -> None:
         """初始化 MongoDB 日志工具"""
         self.db = db
         self.logger = logger
         # 获取日志集合名称（默认为 api_logs）
-        self.logs_collection_name: str = load_config("database").get("mongodb", {}).get("logs_collection")
-    
+        self.logs_collection_name: str = (
+            load_config("database").get("mongodb", {}).get("logs_collection")
+        )
+
     def get_logs_collection(self) -> Optional[Any]:
         """获取日志集合"""
         try:
@@ -38,17 +43,16 @@ class MongoDBTools:
                     sample_doc = collection.find_one()
                     sample_keys = list(sample_doc.keys()) if sample_doc else []
 
-                    collections_info.append({
-                        "name": collection_name,
-                        "document_count": doc_count,
-                        "sample_fields": sample_keys[:10]  # 只显示前10个字段
-                    })
+                    collections_info.append(
+                        {
+                            "name": collection_name,
+                            "document_count": doc_count,
+                            "sample_fields": sample_keys[:10],  # 只显示前10个字段
+                        }
+                    )
                 except Exception as e:
                     self.logger.warning(f"无法获取 {collection_name} 的信息: {e}")
-                    collections_info.append({
-                        "name": collection_name,
-                        "error": str(e)
-                    })
+                    collections_info.append({"name": collection_name, "error": str(e)})
 
             return json.dumps(collections_info, ensure_ascii=False, indent=2)
         except Exception as e:
@@ -66,7 +70,9 @@ class MongoDBTools:
                 else:
                     params = query_params
             except json.JSONDecodeError:
-                return f"错误: query_params 必须是有效的 JSON 格式，收到: {query_params}"
+                return (
+                    f"错误: query_params 必须是有效的 JSON 格式，收到: {query_params}"
+                )
 
             # 提取参数
             collection_name = params.get("collection_name", "")
@@ -85,7 +91,9 @@ class MongoDBTools:
                 try:
                     filter_obj = json.loads(filter_dict)
                 except json.JSONDecodeError:
-                    return f"错误: filter_dict 必须是有效的 JSON 格式，收到: {filter_dict}"
+                    return (
+                        f"错误: filter_dict 必须是有效的 JSON 格式，收到: {filter_dict}"
+                    )
             else:
                 filter_obj = filter_dict if filter_dict else {}
 
@@ -100,7 +108,9 @@ class MongoDBTools:
                 doc = self._convert_datetime_to_string(doc)
                 results.append(doc)
 
-            self.logger.info(f"查询 {collection_name}: 条件={filter_obj}, 返回 {len(results)} 条记录")
+            self.logger.info(
+                f"查询 {collection_name}: 条件={filter_obj}, 返回 {len(results)} 条记录"
+            )
             return json.dumps(results, ensure_ascii=False, indent=2)
 
         except Exception as e:
@@ -114,18 +124,18 @@ class MongoDBTools:
             Tool(
                 name=Constants.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
                 description=Constants.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
-                func=self.list_mongodb_collections
+                func=self.list_mongodb_collections,
             ),
             Tool(
                 name=Constants.MONGODB_QUERY_TOOL_NAME,
                 description=Constants.MONGODB_QUERY_TOOL_DESC,
-                func=self.query_mongodb
-            )
+                func=self.query_mongodb,
+            ),
         ]
-    
+
     def _convert_datetime_to_string(self, obj: Any) -> Any:
         """递归转换所有 datetime 对象为 ISO 格式字符串"""
-        
+
         if isinstance(obj, dict):
             # 处理字典中的所有值
             result: Dict[str, Any] = {}
@@ -153,13 +163,14 @@ class MongoDBTools:
         else:
             # 返回原值
             return obj
-    
+
     def _format_results(self, results: Any) -> str:
         """将结果格式化为字符串"""
         try:
             return json.dumps(results, ensure_ascii=False, indent=2)
         except Exception:
             return str(results)
+
 
 @lru_cache
 def get_mongodb_tools() -> MongoDBTools:

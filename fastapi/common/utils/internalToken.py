@@ -1,20 +1,21 @@
-import jwt
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
+import jwt
+from common.config import load_config
 from common.exceptions import BusinessException
 from common.utils import Constants
-from common.config import load_config
 
 
 class InternalTokenUtil:
     """内部服务令牌工具类，用于生成和验证内部服务之间通信的JWT令牌"""
 
-    _instance: Optional['InternalTokenUtil'] = None
+    _instance: Optional["InternalTokenUtil"] = None
     _initialized: bool = False
     _secret: Optional[str] = None
     _expiration: Optional[int] = None
 
-    def __new__(cls) -> 'InternalTokenUtil':
+    def __new__(cls) -> "InternalTokenUtil":
         if cls._instance is None:
             cls._instance = super(InternalTokenUtil, cls).__new__(cls)
         return cls._instance
@@ -44,7 +45,8 @@ class InternalTokenUtil:
             "serviceName": service_name,
             "tokenType": "internal",
             "iat": datetime.utcnow(),
-            "exp": datetime.utcnow() + timedelta(milliseconds=InternalTokenUtil._expiration),
+            "exp": datetime.utcnow()
+            + timedelta(milliseconds=InternalTokenUtil._expiration),
         }
         return jwt.encode(payload, InternalTokenUtil._secret, algorithm="HS256")
 

@@ -1,33 +1,26 @@
 from functools import lru_cache
 from typing import Any, Dict, List
-from common.config import db as mongo_db, get_db
-from common.utils import fileLogger as logger, Constants
+
+from common.config import db as mongo_db
+from common.config import get_db
 from common.exceptions import BusinessException
+from common.utils import Constants
+from common.utils import fileLogger as logger
+
 from api.mapper import get_article_mapper
+
 
 class ArticleLogMapper:
     """文章日志 Mapper"""
-    
+
     def get_search_keywords_articlelog_mapper(self) -> List[str]:
         logs = mongo_db["articlelogs"]
         pipeline = [
-            {
-                "$match": {"action": "search"}
-            },
-            {
-                "$project": {"keyword": "$content.Keyword"}
-            },
-            {
-                "$match": {
-                    "keyword": {"$ne": "", "$exists": True}
-                }
-            },
-            {
-                "$group": {"_id": "$keyword"}
-            },
-            {
-                "$sort": {"_id": 1}
-            }
+            {"$match": {"action": "search"}},
+            {"$project": {"keyword": "$content.Keyword"}},
+            {"$match": {"keyword": {"$ne": "", "$exists": True}}},
+            {"$group": {"_id": "$keyword"}},
+            {"$sort": {"_id": 1}},
         ]
         cursor = logs.aggregate(pipeline)
         all_keywords: List[str] = [doc["_id"] for doc in cursor]
@@ -38,71 +31,55 @@ class ArticleLogMapper:
         try:
             logs = mongo_db["articlelogs"]
             logger.debug(f"开始查询用户 {user_id} 的浏览分布")
-            
+
             # 使用 aggregation pipeline 进行数据处理
             pipeline = [
-                {
-                    "$match": {
-                        "userId": user_id,
-                        "action": "view"
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$articleId",
-                        "views": {"$sum": 1}
-                    }
-                },
-                {
-                    "$match": {
-                        "_id": {"$ne": None}
-                    }
-                },
-                {
-                    "$sort": {"views": -1}
-                }
+                {"$match": {"userId": user_id, "action": "view"}},
+                {"$group": {"_id": "$articleId", "views": {"$sum": 1}}},
+                {"$match": {"_id": {"$ne": None}}},
+                {"$sort": {"views": -1}},
             ]
-            
+
             cursor = logs.aggregate(pipeline)
-            
+
             # 获取article_mapper和db session
             article_mapper = get_article_mapper()
             db = get_db().__next__()
-            
+
             # 处理聚合结果并获取文章标题
             articles = []
             total_views = 0
-            
+
             for doc in cursor:
                 article_id = doc["_id"]
                 views = doc["views"]
                 total_views += views
-                
+
                 try:
                     article = article_mapper.get_article_by_id_mapper(article_id, db)
                     title = article.title if article else Constants.UNKNOWN_ARTICLE
-                    articles.append({
-                        "article_id": article_id,
-                        "title": title,
-                        "views": views
-                    })
+                    articles.append(
+                        {"article_id": article_id, "title": title, "views": views}
+                    )
                 except Exception as e:
                     logger.error(f"获取文章 {article_id} 标题失败: {e}")
-                    articles.append({
-                        "article_id": article_id,
-                        "title": Constants.UNKNOWN_ARTICLE,
-                        "views": views
-                    })
-            
-            logger.info(f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}")
-            
-            return {
-                "total_views": total_views,
-                "articles": articles
-            }
+                    articles.append(
+                        {
+                            "article_id": article_id,
+                            "title": Constants.UNKNOWN_ARTICLE,
+                            "views": views,
+                        }
+                    )
+
+            logger.info(
+                f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
+            )
+
+            return {"total_views": total_views, "articles": articles}
         except Exception as e:
             logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             raise BusinessException(Constants.GET_TOP_FAIL)
+
 
 @lru_cache()
 def get_articlelog_mapper() -> ArticleLogMapper:

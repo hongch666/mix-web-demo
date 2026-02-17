@@ -1,5 +1,5 @@
-from .apiLog import apiLog, log, logWithConfig, ApiLogConfig
 from .adminCheck import requireAdmin
+from .apiLog import ApiLogConfig, apiLog, log, logWithConfig
 from .requireInternalToken import requireInternalToken
 
 __all__: list[str] = [

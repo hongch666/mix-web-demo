@@ -1,11 +1,13 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
 from sqlalchemy import Column, Text
+from sqlmodel import Field, SQLModel
+
 
 class AiHistory(SQLModel, table=True):
     """AI 历史记录实体类"""
-    
+
     __tablename__ = "ai_history"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     user_id: Optional[int] = Field(default=None)
@@ -15,4 +17,3 @@ class AiHistory(SQLModel, table=True):
     ai_type: str = Field()
     created_at: Optional[datetime] = Field(default_factory=datetime.now)
     updated_at: Optional[datetime] = Field(default_factory=datetime.now)
-    

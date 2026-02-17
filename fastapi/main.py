@@ -1,5 +1,6 @@
+from typing import Any, Dict
+
 import uvicorn
-from typing import Dict, Any
 from api import create_app
 from common.config import load_config
 

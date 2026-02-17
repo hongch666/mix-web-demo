@@ -1,35 +1,33 @@
-from fastapi import FastAPI
-from typing import Dict, Any, AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator, Dict
+
+from common.config import create_tables, get_db, load_config, start_nacos
+from common.exceptions import BusinessException
+from common.handler import business_exception_handler, global_exception_handler
+from common.middleware import ContextMiddleware
+from common.task import start_scheduler
+from common.utils import Constants, logger
+
 from api import controller
 from api.service import AnalyzeService
-from common.config import (
-    start_nacos, 
-    load_config, 
-    create_tables, get_db
-)
-from common.utils import logger, Constants
-from common.middleware import ContextMiddleware
-from common.exceptions import BusinessException
-from common.handler import global_exception_handler, business_exception_handler
-from common.task import start_scheduler
+from fastapi import FastAPI
 
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 PORT: int = server_config["port"]
 
+
 def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
         # 自动建表
-        create_tables(['ai_history'])
+        create_tables(["ai_history"])
         # 启动Nacos服务注册
         start_nacos(ip=IP, port=PORT)
         # 启动定时任务调度器
         analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
         start_scheduler(
-            analyze_service=analyze_service,
-            db_factory=lambda: next(get_db())
+            analyze_service=analyze_service, db_factory=lambda: next(get_db())
         )
         # 记录启动日志
         logger.info(Constants.STARTUP_MESSAGE)
@@ -42,7 +40,7 @@ def create_app() -> FastAPI:
         title=Constants.SWAGGER_TITLE,
         description=Constants.SWAGGER_DESCRIPTION,
         version=Constants.SWAGGER_VERSION,
-        lifespan=lifespan
+        lifespan=lifespan,
     )
     app.add_middleware(ContextMiddleware)
     app.add_exception_handler(BusinessException, business_exception_handler)

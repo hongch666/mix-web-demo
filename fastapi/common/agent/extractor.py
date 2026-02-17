@@ -1,32 +1,35 @@
-from functools import lru_cache
+import os
 import re
+import urllib.request
+from functools import lru_cache
 from typing import Awaitable, Callable, List, Optional
+
+import requests
+from common.utils import logger
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-import requests
-import urllib.request
-from common.utils import logger
+
 
 class ReferenceContentExtractor:
     """权威参考文本内容提取器"""
 
     # 需要过滤的噪音元素
     NOISE_PATTERNS: List[str] = [
-        r'<!--.*?-->',  # HTML 注释
-        r'<script.*?</script>',  # 脚本标签
-        r'<style.*?</style>',  # 样式标签
-        r'<nav.*?</nav>',  # 导航栏
-        r'<footer.*?</footer>',  # 页脚
-        r'<header.*?</header>',  # 页头
-        r'<aside.*?</aside>',  # 侧边栏
-        r'<advertisement.*?</advertisement>',  # 广告
+        r"<!--.*?-->",  # HTML 注释
+        r"<script.*?</script>",  # 脚本标签
+        r"<style.*?</style>",  # 样式标签
+        r"<nav.*?</nav>",  # 导航栏
+        r"<footer.*?</footer>",  # 页脚
+        r"<header.*?</header>",  # 页头
+        r"<aside.*?</aside>",  # 侧边栏
+        r"<advertisement.*?</advertisement>",  # 广告
         r'class=".*?ad.*?"[^>]*>.*?</[^>]*>',  # CSS 类名包含 ad 的元素
         r'class=".*?nav.*?"[^>]*>.*?</[^>]*>',  # 导航相关元素
         r'class=".*?sidebar.*?"[^>]*>.*?</[^>]*>',  # 侧边栏相关
         r'id=".*?ad.*?"[^>]*>.*?</[^>]*>',  # ID 包含 ad 的元素
-        r'\s+(?:Click|Buy|Share|Like|Follow|Subscribe)\s+',  # 常见的交互词汇
-        r'(?:Advertisement|广告|赞助|推广):?',  # 广告标记
-        r'(?:Copyright|©|®|™)',  # 版权符号
+        r"\s+(?:Click|Buy|Share|Like|Follow|Subscribe)\s+",  # 常见的交互词汇
+        r"(?:Advertisement|广告|赞助|推广):?",  # 广告标记
+        r"(?:Copyright|©|®|™)",  # 版权符号
     ]
 
     # 用于分割文本的分割器
@@ -40,7 +43,7 @@ class ReferenceContentExtractor:
                 cls.TEXT_SPLITTER = RecursiveCharacterTextSplitter(
                     chunk_size=1000,
                     chunk_overlap=100,
-                    separators=["\n\n", "\n", " ", ""]
+                    separators=["\n\n", "\n", " ", ""],
                 )
             except Exception as e:
                 logger.warning(f"初始化文本分割器失败: {e}")
@@ -52,17 +55,17 @@ class ReferenceContentExtractor:
             return ""
 
         # 移除 HTML 标签
-        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r"<[^>]+>", "", text)
 
         # 应用噪音过滤模式
         for pattern in ReferenceContentExtractor.NOISE_PATTERNS:
-            text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+            text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL)
 
         # 规范化空白字符
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
 
         # 移除多余的换行符
-        text = re.sub(r'\n\s*\n', '\n\n', text)
+        text = re.sub(r"\n\s*\n", "\n\n", text)
 
         return text.strip()
 
@@ -73,11 +76,22 @@ class ReferenceContentExtractor:
             return ""
 
         # 简单的关键要点提取策略
-        sentences = re.split(r'[。！？]', text)
+        sentences = re.split(r"[。！？]", text)
         key_points: List[str] = []
 
         # 优先选择包含关键词的句子
-        keywords = ['定义', '概念', '原理', '方法', '步骤', '特点', '优势', '应用', '案例', '注意事项']
+        keywords = [
+            "定义",
+            "概念",
+            "原理",
+            "方法",
+            "步骤",
+            "特点",
+            "优势",
+            "应用",
+            "案例",
+            "注意事项",
+        ]
         for sentence in sentences:
             sentence = sentence.strip()
             if not sentence:
@@ -86,20 +100,20 @@ class ReferenceContentExtractor:
             # 检查是否包含关键词
             if any(keyword in sentence for keyword in keywords):
                 key_points.append(sentence)
-                if len(''.join(key_points)) > max_length:
+                if len("".join(key_points)) > max_length:
                     break
 
         # 如果没有找到关键词句子，按段落提取
         if not key_points:
-            paragraphs = text.split('\n\n')
+            paragraphs = text.split("\n\n")
             for para in paragraphs[:5]:  # 取前5段
                 para = para.strip()
                 if para:
                     key_points.append(para)
-                    if len(''.join(key_points)) > max_length:
+                    if len("".join(key_points)) > max_length:
                         break
 
-        result = '。'.join(key_points)
+        result = "。".join(key_points)
         return result[:max_length] if len(result) > max_length else result
 
     @classmethod
@@ -140,10 +154,9 @@ class ReferenceContentExtractor:
         finally:
             # 清理临时文件
             try:
-                import os
                 if temp_pdf_path and os.path.exists(temp_pdf_path):
                     os.remove(temp_pdf_path)
-            except:
+            except Exception:
                 pass
 
     @classmethod
@@ -157,13 +170,13 @@ class ReferenceContentExtractor:
 
             # 构造浏览器请求头，避免被反爬虫机制拒绝
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Referer': 'https://www.google.com/',
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                "Accept-Encoding": "gzip, deflate",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1",
+                "Referer": "https://www.google.com/",
             }
 
             # 发送 HTTP 请求，返回报错时不抛异常
@@ -190,7 +203,7 @@ class ReferenceContentExtractor:
         ref_type: str,
         ref_value: str,
         max_length: int = 2000,
-        summarize_func: Optional[Callable[[str], Awaitable[str]]] = None
+        summarize_func: Optional[Callable[[str], Awaitable[str]]] = None,
     ) -> str:
         """提取参考内容的主入口方法"""
         try:
@@ -198,9 +211,9 @@ class ReferenceContentExtractor:
                 return ""
 
             # 根据类型提取内容
-            if ref_type == 'pdf':
+            if ref_type == "pdf":
                 raw_content = await cls.extract_pdf_content(ref_value, max_length)
-            elif ref_type == 'link':
+            elif ref_type == "link":
                 raw_content = await cls.extract_link_content(ref_value, max_length)
             else:
                 logger.warning(f"不支持的参考类型: {ref_type}")
@@ -213,7 +226,9 @@ class ReferenceContentExtractor:
             if summarize_func:
                 try:
                     summarized_content = await summarize_func(raw_content)
-                    logger.info(f"AI总结完成，原长度: {len(raw_content)}, 总结长度: {len(summarized_content)}")
+                    logger.info(
+                        f"AI总结完成，原长度: {len(raw_content)}, 总结长度: {len(summarized_content)}"
+                    )
                     return summarized_content
                 except Exception as e:
                     logger.warning(f"AI总结失败，使用原始内容: {e}")
@@ -226,7 +241,9 @@ class ReferenceContentExtractor:
             return ""
 
     @classmethod
-    def extract_content_sync(cls, url: str, content_type: str = "link", max_length: int = 2000) -> str:
+    def extract_content_sync(
+        cls, url: str, content_type: str = "link", max_length: int = 2000
+    ) -> str:
         """同步版本的内容提取方法"""
         try:
             if content_type == "link":
@@ -261,12 +278,14 @@ class ReferenceContentExtractor:
         try:
             # 创建文档对象
             from langchain_core.documents import Document
+
             doc = Document(page_content=text)
             chunks = cls.TEXT_SPLITTER.split_documents([doc])
             return [chunk.page_content for chunk in chunks]
         except Exception as e:
             logger.warning(f"文本分割失败: {e}")
             return [text] if text else []
+
 
 @lru_cache
 def get_reference_content_extractor() -> ReferenceContentExtractor:

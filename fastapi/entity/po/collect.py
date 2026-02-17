@@ -1,10 +1,12 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+from sqlmodel import Field, SQLModel
+
 
 class Collect(SQLModel, table=True):
     """收藏实体类"""
-    
+
     __tablename__ = "collects"
     id: Optional[int] = Field(default=None, primary_key=True, index=True)
     article_id: int = Field(index=True)
