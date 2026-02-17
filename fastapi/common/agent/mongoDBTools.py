@@ -158,7 +158,7 @@ class MongoDBTools:
         """将结果格式化为字符串"""
         try:
             return json.dumps(results, ensure_ascii=False, indent=2)
-        except:
+        except Exception:
             return str(results)
 
 @lru_cache
