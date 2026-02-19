@@ -25,7 +25,7 @@ export enum ArticleAction {
 
 // RabbitMQ 消息接口定义
 export interface ArticleLogMessage {
-  action: string;
+  action: ArticleAction;
   content: string | Record<string, any>;
   msg?: string;
   user_id: number;

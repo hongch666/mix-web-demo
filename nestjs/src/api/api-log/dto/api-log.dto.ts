@@ -4,8 +4,19 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
+  IsEnum,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export enum ApiMethod {
+  GET = 'GET',
+  POST = 'POST',
+  PUT = 'PUT',
+  DELETE = 'DELETE',
+  PATCH = 'PATCH',
+  OPTIONS = 'OPTIONS',
+  HEAD = 'HEAD',
+}
 
 // RabbitMQ 消息接口定义
 export interface ApiLogMessage {
@@ -13,7 +24,7 @@ export interface ApiLogMessage {
   username: string;
   api_description: string;
   api_path: string;
-  api_method: string;
+  api_method: ApiMethod;
   query_params?: Record<string, any>;
   path_params?: Record<string, any>;
   request_body?: Record<string, any>;
@@ -41,10 +52,14 @@ export class CreateApiLogDto {
   @IsNotEmpty()
   apiPath!: string;
 
-  @ApiProperty({ description: 'API方法', example: 'GET' })
-  @IsString()
+  @ApiProperty({
+    description: 'API方法',
+    enum: Object.values(ApiMethod),
+    example: ApiMethod.GET,
+  })
+  @IsEnum(ApiMethod)
   @IsNotEmpty()
-  apiMethod!: string;
+  apiMethod!: ApiMethod;
 
   @ApiPropertyOptional({
     description: '查询参数',
@@ -88,10 +103,13 @@ export class QueryApiLogDto {
   @IsString()
   apiPath?: string;
 
-  @ApiPropertyOptional({ description: 'API方法', example: 'GET' })
+  @ApiPropertyOptional({
+    description: 'API方法',
+    enum: Object.values(ApiMethod),
+  })
   @IsOptional()
-  @IsString()
-  apiMethod?: string;
+  @IsEnum(ApiMethod)
+  apiMethod?: ApiMethod;
 
   @ApiPropertyOptional({ description: '开始时间（格式：yyyy-MM-dd HH:mm:ss）' })
   @IsOptional()
