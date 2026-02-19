@@ -161,7 +161,7 @@ fi
 if [ "$NODE_RUNTIME" = "bun" ]; then
     node_cmd="npm run bun:dev"
 else
-    node_cmd="npm run start:dev"
+    node_cmd="npm run node:start:dev"
 fi
 
 # 构造 Python 启动命令

@@ -212,7 +212,7 @@ build_fastapi() {
     mkdir -p "$FASTAPI_DIST"
     
     # 复制源代码
-    cp -r api common config entity "$FASTAPI_DIST/"
+    cp -r api common entity "$FASTAPI_DIST/"
     cp main.py "$FASTAPI_DIST/"
     
     # 复制配置文件
@@ -384,11 +384,11 @@ build_nestjs() {
     if command -v bun &> /dev/null; then
         print_info "检测到 bun，使用 bun 构建 NestJS..."
         bun install
-        bun run build:bun
+        bun run bun:build
     elif command -v npm &> /dev/null; then
         print_info "使用 npm 构建 NestJS..."
         npm install
-        npm run build
+        npm run node:build
     else
         print_error "npm 和 bun 都未安装，跳过 NestJS 打包"
         return 1
