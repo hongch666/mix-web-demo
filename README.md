@@ -1723,7 +1723,7 @@ JWT_EXPIRATION=86400000
 
 ## 项目规范说明
 
-这个为当前项目的代码和文件等相关规范，建议遵守
+> 这个为当前项目的代码和文件等相关规范，建议遵守
 
 ### 项目架构说明
 
@@ -1788,6 +1788,15 @@ JWT_EXPIRATION=86400000
 1. 统一使用 Cron 表达式的方式进行定时任务管理
 2. 遵循当前项目的定时任务设置方式
 3. 部分定时任务使用 `logic`封装定时任务的实际逻辑，在定时任务主文件调用 `logic`
+
+### 其他说明
+
+1. FastAPI 部分使用 `__init__.py`文件导出对应的函数/类，导入使用的时候以包为导入路径
+2. FastAPI 部分需要在 app 创建时添加的相关组件（如 router、中间件、异常处理器）在 `__init__.py`导出对应列表或者字典，用于 app 创建时遍历添加
+3. FastAPI 部分的 app 创建在 `app.py`的 `create_app`函数实现，主函数只进行调用和 `uvicorn`的启动
+4. Gin 部分的 router 初始化在 `SetupRouter`函数创建，main 函数只进行调用，配置相关的初始化在 `config`包下的 `init`函数默认初始化执行
+5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
+6. Spring 项目的 Main 类只进行服务的启动，相关配置或初始化行为在 `cofig`目录下使用 `@Configuration`注解实现
 
 ## 项目可用工具说明
 
