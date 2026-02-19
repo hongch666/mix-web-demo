@@ -7,6 +7,18 @@ from .testController import router as test_router
 from .uploadController import router as upload_router
 from .userController import router as user_router
 
+# 路由列表
+routers: list = [
+    analyze_router,
+    apilog_router,
+    chat_router,
+    generate_router,
+    test_router,
+    upload_router,
+    ai_history_router,
+    user_router,
+]
+
 __all__: list[str] = [
     "analyze_router",
     "apilog_router",
@@ -16,4 +28,5 @@ __all__: list[str] = [
     "upload_router",
     "ai_history_router",
     "user_router",
+    "routers",
 ]

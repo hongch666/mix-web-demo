@@ -2,13 +2,12 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, Dict
 
 from common.config import create_tables, get_db, load_config, start_nacos
-from common.exceptions import BusinessException
-from common.handler import business_exception_handler, global_exception_handler
-from common.middleware import ContextMiddleware
+from common.handler import exception_handlers
+from common.middleware import middlewares
 from common.task import start_scheduler
 from common.utils import Constants, logger
 
-from api import controller
+from api.controller import routers
 from api.service import AnalyzeService
 from fastapi import FastAPI
 
@@ -42,9 +41,15 @@ def create_app() -> FastAPI:
         version=Constants.SWAGGER_VERSION,
         lifespan=lifespan,
     )
-    app.add_middleware(ContextMiddleware)
-    app.add_exception_handler(BusinessException, business_exception_handler)
-    app.add_exception_handler(Exception, global_exception_handler)
-    for name in controller.__all__:
-        app.include_router(getattr(controller, name))
+
+    # 添加中间件
+    for middleware in middlewares:
+        app.add_middleware(middleware)
+    # 添加异常处理器
+    for exception_class, handler in exception_handlers.items():
+        app.add_exception_handler(exception_class, handler)
+    # 添加路由
+    for router in routers:
+        app.include_router(router)
+
     return app
