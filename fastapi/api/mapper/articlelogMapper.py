@@ -7,7 +7,7 @@ from common.exceptions import BusinessException
 from common.utils import Constants
 from common.utils import fileLogger as logger
 
-from api.mapper import get_article_mapper
+from .articleMapper import get_article_mapper
 
 
 class ArticleLogMapper:

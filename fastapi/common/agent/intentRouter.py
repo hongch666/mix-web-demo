@@ -1,10 +1,11 @@
 from typing import Any, Literal, Optional, Tuple
 
-from common.agent import UserPermissionManager
 from common.utils import Constants
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from sqlmodel import Session
+
+from .userPermissionManager import UserPermissionManager
 
 IntentType = Literal["database_query", "article_search", "log_analysis", "general_chat"]
 
