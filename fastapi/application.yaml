@@ -45,24 +45,23 @@ database:
   mongodb:
     host: ${DB_MONGODB_HOST:localhost}
     port: ${DB_MONGODB_PORT:27017}
-    # username: ${DB_MONGODB_USERNAME:}  # 可选：MongoDB 用户名
-    # password: ${DB_MONGODB_PASSWORD:}  # 可选：MongoDB 密码
+    username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
+    password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
     database: ${DB_MONGODB_DATABASE:demo}
   hive:
     host: ${DB_HIVE_HOST:127.0.0.1}
     port: ${DB_HIVE_PORT:10000}
-    # username: ${DB_HIVE_USERNAME:hive_user} # 可选：Hive 用户名
-    # password: ${DB_HIVE_PASSWORD:hive_password} # 可选：Hive 密码
+    username: ${DB_HIVE_USERNAME:} # 可选：Hive 用户名
+    password: ${DB_HIVE_PASSWORD:} # 可选：Hive 密码
     database: ${DB_HIVE_DATABASE:default}
     table: ${DB_HIVE_TABLE:articles}
     container: ${DB_HIVE_CONTAINER:hive-server}
   redis:
     host: ${DB_REDIS_HOST:127.0.0.1}
     port: ${DB_REDIS_PORT:6379}
-    # username: ${DB_REDIS_USERNAME:default} # 可选：Redis 用户名
-    # password: ${DB_REDIS_PASSWORD:} # 可选：Redis 密码
+    username: ${DB_REDIS_USERNAME:} # 可选：Redis 用户名
+    password: ${DB_REDIS_PASSWORD:} # 可选：Redis 密码
     db: ${DB_REDIS_DB:6}
-    password: ${DB_REDIS_PASSWORD:}
     decode_responses: ${DB_REDIS_DECODE_RESPONSES:True}
     max_connections: ${DB_REDIS_MAX_CONNECTIONS:10}
 oss:
