@@ -5,7 +5,7 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import com.hcsy.gateway.config.JwtProperties;
+import com.hcsy.gateway.properties.JwtProperties;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;

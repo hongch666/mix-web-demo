@@ -3,6 +3,14 @@ server:
 spring:
   application:
     name: gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      username: ${REDIS_USERNAME:} # 可选：Redis 用户名（Redis 6.0+）
+      password: ${REDIS_PASSWORD:} # 可选：Redis 密码
+      timeout: ${REDIS_TIMEOUT:3000}
   cloud:
     nacos:
       server-addr: ${NACOS_SERVER:127.0.0.1:8848}
