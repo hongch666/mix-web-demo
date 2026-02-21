@@ -100,3 +100,21 @@ tasks.named('bootRun') {
 tasks.named('bootJar') {
     classpath configurations.developmentOnly
 }
+
+// 自动加载 .env 环境变量配置 (针对 bootRun)
+tasks.withType(JavaExec) {
+    // 假设 .env 放在 spring 目录或项目根目录
+    def envFile = file(".env") 
+    if (!envFile.exists()) {
+        envFile = file("../.env")
+    }
+
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            if (line.trim() && !line.startsWith("#") && line.contains("=")) {
+                def parts = line.split("=", 2)
+                environment parts[0].trim(), parts[1].trim()
+            }
+        }
+    }
+}
