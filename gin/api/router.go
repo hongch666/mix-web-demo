@@ -36,6 +36,7 @@ func SetupRouter() *gin.Engine {
 	searchController := controller.Group.SearchController
 	chatController := controller.Group.ChatController
 
+	// 测试路由
 	testGroup := r.Group("/api_gin")
 	{
 		//测试路由
@@ -49,6 +50,8 @@ func SetupRouter() *gin.Engine {
 		//测试ES同步MySQL - 需要内部令牌验证
 		testGroup.POST("/syncer", middleware.RequireInternalToken(), middleware.ApiLogMiddleware("手动触发同步ES任务"), testController.SyncES)
 	}
+
+	// 搜索路由
 	searchGroup := r.Group("/search")
 	{
 		//搜索文章
@@ -57,7 +60,7 @@ func SetupRouter() *gin.Engine {
 		searchGroup.GET("/history/:userId", middleware.ApiLogMiddleware("获取搜索历史"), searchController.GetSearchHistoryController)
 	}
 
-	// 聊天相关路由
+	// 聊天路由
 	chatGroup := r.Group("/user-chat")
 	{
 		// 发送消息
