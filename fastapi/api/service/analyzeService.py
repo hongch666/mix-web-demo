@@ -311,25 +311,13 @@ class AnalyzeService:
                 os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME
             )
         )
-        articles = self.articleMapper.get_all_articles_mapper(db)
-        data = []
-        for article in articles:
-            data.append(
-                {
-                    "id": article.id,
-                    "title": article.title,
-                    "content": article.content,
-                    "user_id": article.user_id,
-                    "tags": article.tags,
-                    "status": article.status,
-                    "create_at": article.create_at.isoformat()
-                    if article.create_at
-                    else None,
-                    "update_at": article.update_at.isoformat()
-                    if article.update_at
-                    else None,
-                    "views": article.views,
-                }
+        data = self.articleMapper.get_articles_for_excel_export_mapper(db)
+        for item in data:
+            item["create_at"] = (
+                item["create_at"].isoformat() if item.get("create_at") else None
+            )
+            item["update_at"] = (
+                item["update_at"].isoformat() if item.get("update_at") else None
             )
         df = pd.DataFrame(data)
         # 先写入数据
@@ -340,15 +328,11 @@ class AnalyzeService:
         logger.info(f"文章表已导出到 {file_path}")
         return file_path
 
-    def upload_excel_to_oss(self) -> str:
-        FILE_PATH: str = load_config("files")["excel_path"]
+    def upload_excel_to_oss(self, file_path: str) -> str:
+        random_filename = f"{uuid.uuid4()}.xlsx"
         oss_url: str = self.upload_file(
-            file_path=os.path.normpath(
-                os.path.join(
-                    os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME
-                )
-            ),
-            oss_path=Constants.EXPORT_ARTICLES_EXCEL_OSS_PATH,
+            file_path=file_path,
+            oss_path=f"excel/{random_filename}",
         )
         return oss_url
 

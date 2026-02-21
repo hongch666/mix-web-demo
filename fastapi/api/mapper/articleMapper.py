@@ -8,10 +8,10 @@ import pandas as pd
 from common.config import HiveConnectionPool, get_hive_connection_pool, load_config
 from common.utils import Constants
 from common.utils import fileLogger as logger
-from entity.po import Article
+from entity.po import Article, Category, Collect, Focus, Like, SubCategory, User
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_date, date_format, date_sub
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 
 class ArticleMapper:
@@ -109,6 +109,97 @@ class ArticleMapper:
     def get_all_articles_mapper(self, db: Session) -> List[Article]:
         statement = select(Article)
         return db.exec(statement).all()
+
+    def get_articles_for_excel_export_mapper(self, db: Session) -> List[Dict[str, Any]]:
+        """获取导出Excel所需文章数据（连表聚合）"""
+
+        like_count_subquery = (
+            select(
+                Like.article_id.label("article_id"),
+                func.count(Like.id).label("like_count"),
+            )
+            .group_by(Like.article_id)
+            .subquery()
+        )
+        collect_count_subquery = (
+            select(
+                Collect.article_id.label("article_id"),
+                func.count(Collect.id).label("collect_count"),
+            )
+            .group_by(Collect.article_id)
+            .subquery()
+        )
+        follow_count_subquery = (
+            select(
+                Focus.focus_id.label("author_id"),
+                func.count(Focus.id).label("author_follow_count"),
+            )
+            .group_by(Focus.focus_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                Article.id.label("id"),
+                Article.title.label("title"),
+                Article.content.label("content"),
+                User.name.label("username"),
+                Article.tags.label("tags"),
+                Article.status.label("status"),
+                Article.create_at.label("create_at"),
+                Article.update_at.label("update_at"),
+                Article.views.label("views"),
+                SubCategory.name.label("sub_category_name"),
+                Category.name.label("category_name"),
+                func.coalesce(like_count_subquery.c.like_count, 0).label("like_count"),
+                func.coalesce(collect_count_subquery.c.collect_count, 0).label(
+                    "collect_count"
+                ),
+                func.coalesce(follow_count_subquery.c.author_follow_count, 0).label(
+                    "author_follow_count"
+                ),
+            )
+            .select_from(Article)
+            .outerjoin(User, User.id == Article.user_id)
+            .outerjoin(SubCategory, SubCategory.id == Article.sub_category_id)
+            .outerjoin(Category, Category.id == SubCategory.category_id)
+            .outerjoin(
+                like_count_subquery, like_count_subquery.c.article_id == Article.id
+            )
+            .outerjoin(
+                collect_count_subquery,
+                collect_count_subquery.c.article_id == Article.id,
+            )
+            .outerjoin(
+                follow_count_subquery,
+                follow_count_subquery.c.author_id == Article.user_id,
+            )
+            .order_by(Article.id.asc())
+        )
+        rows = db.exec(statement).all()
+
+        result: List[Dict[str, Any]] = []
+        for row in rows:
+            result.append(
+                {
+                    "id": row.id,
+                    "title": row.title,
+                    "content": row.content,
+                    "username": row.username,
+                    "tags": row.tags,
+                    "status": row.status,
+                    "create_at": row.create_at,
+                    "update_at": row.update_at,
+                    "views": row.views,
+                    "sub_category_name": row.sub_category_name,
+                    "category_name": row.category_name,
+                    "like_count": row.like_count,
+                    "collect_count": row.collect_count,
+                    "author_follow_count": row.author_follow_count,
+                }
+            )
+
+        return result
 
     def get_article_by_id_mapper(
         self, article_id: int, db: Session

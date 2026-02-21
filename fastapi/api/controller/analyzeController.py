@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
 from common.config import get_db
-from common.decorators import log, requireAdmin, requireInternalToken
+from common.decorators import log, requireAdmin
 from common.utils import ListResponse, success
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
@@ -49,7 +49,6 @@ async def get_wordcloud(
     "/excel", summary="获取文章数据Excel", description="导出文章数据到Excel并上传到OSS"
 )
 @requireAdmin
-@requireInternalToken
 @log("获取文章数据Excel")
 async def get_excel(
     _: Request,
@@ -58,8 +57,12 @@ async def get_excel(
 ) -> Any:
     """获取文章数据Excel接口"""
 
-    await run_in_threadpool(analyzeService.export_articles_to_excel, db)
-    oss_url: str = await run_in_threadpool(analyzeService.upload_excel_to_oss)
+    file_path: str = await run_in_threadpool(
+        analyzeService.export_articles_to_excel, db
+    )
+    oss_url: str = await run_in_threadpool(
+        analyzeService.upload_excel_to_oss, file_path
+    )
     return success(oss_url)
 
 
