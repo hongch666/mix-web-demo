@@ -23,8 +23,8 @@ database:
 mongodb:
   host: ${DB_MONGODB_HOST:localhost}
   port: ${DB_MONGODB_PORT:27017}
-  # username: ${DB_MONGODB_USERNAME:}  # 可选：MongoDB 用户名
-  # password: ${DB_MONGODB_PASSWORD:}  # 可选：MongoDB 密码
+  username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
+  password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
   dbName: ${DB_MONGODB_DATABASE:demo}
 rabbitmq:
   host: ${RABBITMQ_HOST:localhost}
