@@ -1646,7 +1646,7 @@ GIN_HOST=localhost
 GIN_PORT=8082
 
 # JWT 配置
-JWT_SECRET=hcsyhcsyhcsyhcsyhcsycsccsccsccsc
+JWT_SECRET=xxx
 JWT_EXPIRATION=86400000
 ```
 
@@ -1666,6 +1666,7 @@ JWT_EXPIRATION=86400000
 
 3. **默认值**: 格式 `${VAR_NAME:default_value}` 中，冒号后面是默认值，当环境变量未设置时使用默认值
 4. **加载顺序**: 系统启动时会自动从 `.env` 文件加载环境变量，然后在解析 YAML 配置文件时进行替换
+5. **JWT 密钥说明**: 系统环境变量设置的 JWT 密钥至少为 32 位字符串
 
 ## Swagger 说明
 
