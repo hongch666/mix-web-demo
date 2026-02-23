@@ -1,10 +1,12 @@
 import json
+import time
 from typing import Any, Optional
 
 import pika
 from common.config import load_config
 from common.utils import Constants
 from common.utils import fileLogger as logger
+from pika.exceptions import AMQPConnectionError, ConnectionClosed
 
 
 class RabbitMQClient:
@@ -15,6 +17,8 @@ class RabbitMQClient:
         self.connection: Optional[pika.BlockingConnection] = None
         self.channel: Optional[pika.channel.Channel] = None
         self._is_connected: bool = False
+        self._reconnect_delay: float = 1.0  # 初始重连延迟（秒）
+        self._max_reconnect_delay: float = 30.0  # 最大重连延迟（秒）
         # 初始化时创建使用的队列
         self._create_queues()
 
@@ -43,17 +47,24 @@ class RabbitMQClient:
                 port=port,
                 virtual_host=vhost,
                 credentials=credentials,
-                heartbeat=600,
-                blocked_connection_timeout=300,
+                heartbeat=60,  # 心跳间隔（秒），改为60秒以保持长连接
+                blocked_connection_timeout=300,  # 阻塞连接超时（秒）
+                connection_attempts=3,  # 最多尝试连接次数
+                retry_delay=1.0,  # 重连延迟（秒）
             )
 
             # 建立连接
             self.connection = pika.BlockingConnection(parameters)
             self.channel = self.connection.channel()
             self._is_connected = True
+            self._reconnect_delay = 1.0  # 连接成功，重置重连延迟
 
             logger.info(f"RabbitMQ 连接成功: {host}:{port}")
 
+        except (AMQPConnectionError, ConnectionClosed) as e:
+            self._is_connected = False
+            logger.warning(f"RabbitMQ 连接失败（AMQP错误）: {e}")
+            # 不抛出异常，允许应用继续运行
         except Exception as e:
             self._is_connected = False
             logger.warning(f"RabbitMQ 连接失败: {e}")
@@ -73,57 +84,71 @@ class RabbitMQClient:
         Returns:
             bool: 发送是否成功
         """
-        try:
-            # 如果还没连接，先连接
-            if not self._is_connected:
-                self._connect()
+        max_retries: int = 3
+        for attempt in range(max_retries):
+            try:
+                # 检查连接状态，如果连接已关闭，重新连接
+                if (
+                    self.connection is None
+                    or self.connection.is_closed
+                    or self.channel is None
+                    or self.channel.is_closed
+                ):
+                    self._is_connected = False
+                    self._connect()
 
-            # 如果连接失败，返回 False
-            if not self._is_connected or self.channel is None:
-                logger.error(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
-                return False
+                # 如果连接失败，返回 False
+                if not self._is_connected or self.channel is None:
+                    logger.error(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
+                    return False
 
-            # 如果连接已关闭，重新连接
-            if self.connection is None or self.connection.is_closed:
+                # 声明队列（幂等操作）
+                self.channel.queue_declare(
+                    queue=queue_name,
+                    durable=True,  # 队列持久化
+                    exclusive=False,
+                    auto_delete=False,
+                )
+
+                # 序列化消息
+                if isinstance(message, dict):
+                    message_body = json.dumps(message, ensure_ascii=False)
+                else:
+                    message_body = str(message)
+
+                # 发送消息
+                delivery_mode = 2 if persistent else 1  # 2 = persistent
+                self.channel.basic_publish(
+                    exchange="",
+                    routing_key=queue_name,
+                    body=message_body.encode("utf-8"),
+                    properties=pika.BasicProperties(
+                        delivery_mode=delivery_mode,
+                        content_type="application/json",
+                    ),
+                )
+
+                logger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
+                return True
+
+            except (AMQPConnectionError, ConnectionClosed) as e:
+                logger.warning(
+                    f"发送消息到队列 [{queue_name}] 时连接丢失（第 {attempt + 1} 次尝试）: {e}"
+                )
                 self._is_connected = False
-                self._connect()
-
-            if not self._is_connected or self.channel is None:
+                if attempt < max_retries - 1:
+                    # 等待后重试
+                    time.sleep(self._reconnect_delay)
+                    self._connect()
+                else:
+                    logger.error(
+                        f"发送消息到队列 [{queue_name}] 失败：达到最大重试次数"
+                    )
+                    return False
+            except Exception as e:
+                logger.error(f"发送消息到队列 [{queue_name}] 失败: {e}")
+                self._is_connected = False
                 return False
-
-            # 声明队列（幂等操作）
-            self.channel.queue_declare(
-                queue=queue_name,
-                durable=True,  # 队列持久化
-                exclusive=False,
-                auto_delete=False,
-            )
-
-            # 序列化消息
-            if isinstance(message, dict):
-                message_body = json.dumps(message, ensure_ascii=False)
-            else:
-                message_body = str(message)
-
-            # 发送消息
-            delivery_mode = 2 if persistent else 1  # 2 = persistent
-            self.channel.basic_publish(
-                exchange="",
-                routing_key=queue_name,
-                body=message_body.encode("utf-8"),
-                properties=pika.BasicProperties(
-                    delivery_mode=delivery_mode,
-                    content_type="application/json",
-                ),
-            )
-
-            logger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
-            return True
-
-        except Exception as e:
-            logger.error(f"发送消息到队列 [{queue_name}] 失败: {e}")
-            self._is_connected = False
-            return False
 
     def close(self) -> None:
         """关闭连接"""

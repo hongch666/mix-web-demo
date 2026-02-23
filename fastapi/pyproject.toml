@@ -11,6 +11,7 @@ dependencies = [
     "PyJWT>=2.8.0",
     "nacos-sdk-python==2.0.8",
     "requests==2.32.5",
+    "httpx[socks]>=0.25.0",
     "sqlmodel==0.0.24",
     "pymysql==1.1.1",
     "pymongo==4.13.2",
