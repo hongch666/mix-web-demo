@@ -7,6 +7,7 @@ import com.hcsy.spring.common.annotation.Starter;
 public class Main {
 
     public static void main(String[] args) {
+        // 启动 Spring Boot 应用
         SpringApplication.run(Main.class, args);
     }
 

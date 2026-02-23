@@ -12,7 +12,7 @@ import (
 func main() {
 	// 初始化路由
 	r := api.SetupRouter()
-	// 获取服务信息
+	// 获取 Gin 服务的端口和IP
 	addr := fmt.Sprintf(":%d", config.Config.Server.Port)
 	// 启动服务器
 	r.Run(addr)
