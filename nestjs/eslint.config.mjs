@@ -38,6 +38,8 @@ export default tseslint.config(
       '@typescript-eslint/no-redundant-type-constituents': 'off',
       '@typescript-eslint/triple-slash-reference': 'off',
       '@typescript-eslint/unbound-method': 'off',
+      'prettier/prettier': 'off',
+      'quotes': 'off',
     },
   },
 );
