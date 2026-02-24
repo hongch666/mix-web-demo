@@ -302,9 +302,7 @@ EOF
         read -p "请输入: " update_venv
         
         if [[ "$update_venv" =~ ^[Yy]$ ]]; then
-            log_info "更新 uv.lock 文件..."
-            uv lock --upgrade
-            
+
             log_info "同步依赖到虚拟环境..."
             uv sync
             log_info "虚拟环境更新完成!"
