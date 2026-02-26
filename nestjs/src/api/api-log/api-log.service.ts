@@ -21,7 +21,50 @@ export class ApiLogService {
   constructor(
     @InjectModel(ApiLog.name)
     private readonly apiLogModel: Model<ApiLogDocument>,
-  ) {}
+  ) {
+    this.ensureIndexes();
+  }
+
+  /**
+   * 确保数据库中存在必要的索引
+   * 如果索引不存在则自动创建
+   */
+  private async ensureIndexes(): Promise<void> {
+    const collection: any = this.apiLogModel.collection;
+    const existingIndexes: any = await collection.getIndexes();
+
+    // 定义需要的索引
+    const requiredIndexes: Array<{
+      spec: Record<string, 1 | -1>;
+      options: { name: string };
+    }> = [
+      {
+        spec: { userId: 1, createdAt: -1 },
+        options: { name: 'userId_1_createdAt_-1' },
+      },
+      { spec: { createdAt: -1 }, options: { name: 'createdAt_-1' } },
+      {
+        spec: { apiPath: 1, createdAt: -1 },
+        options: { name: 'apiPath_1_createdAt_-1' },
+      },
+      {
+        spec: { userId: 1, apiMethod: 1, createdAt: -1 },
+        options: { name: 'userId_1_apiMethod_1_createdAt_-1' },
+      },
+    ];
+
+    // 检查并创建缺失的索引
+    for (const indexConfig of requiredIndexes) {
+      const indexExists: boolean = Object.values(existingIndexes).some(
+        (index: any) => index.name === indexConfig.options.name,
+      );
+
+      if (!indexExists) {
+        await collection.createIndex(indexConfig.spec, indexConfig.options);
+        console.log(`ApiLog 索引已创建: ${indexConfig.options.name}`);
+      }
+    }
+  }
 
   /**
    * 创建API日志

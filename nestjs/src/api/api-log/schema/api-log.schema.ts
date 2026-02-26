@@ -51,3 +51,9 @@ export class ApiLog {
 }
 
 export const ApiLogSchema = SchemaFactory.createForClass(ApiLog);
+
+// 添加关键索引以提高查询性能
+ApiLogSchema.index({ userId: 1, createdAt: -1 });
+ApiLogSchema.index({ createdAt: -1 });
+ApiLogSchema.index({ apiPath: 1, createdAt: -1 });
+ApiLogSchema.index({ userId: 1, apiMethod: 1, createdAt: -1 });

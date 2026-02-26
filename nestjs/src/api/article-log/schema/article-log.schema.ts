@@ -40,3 +40,4 @@ ArticleLogSchema.index({ createdAt: -1 });
 ArticleLogSchema.index({ userId: 1, createdAt: -1 });
 ArticleLogSchema.index({ articleId: 1, createdAt: -1 });
 ArticleLogSchema.index({ action: 1, createdAt: -1 });
+ArticleLogSchema.index({ userId: 1, action: 1, articleId: 1 });
