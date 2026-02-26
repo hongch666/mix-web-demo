@@ -41,35 +41,34 @@ class ArticleLogMapper:
             ]
 
             cursor = logs.aggregate(pipeline)
+            results = list(cursor)
 
-            # 获取article_mapper和db session
+            if not results:
+                logger.info(f"用户 {user_id} 无浏览记录")
+                return {"total_views": 0, "articles": []}
+
+            # 提取所有文章ID进行批量查询
+            article_ids = [doc["_id"] for doc in results]
             article_mapper = get_article_mapper()
             db = get_db().__next__()
 
-            # 处理聚合结果并获取文章标题
+            # 批量获取所有文章信息（只需一次查询）
+            articles_dict = article_mapper.get_articles_by_ids_mapper(article_ids, db)
+
+            # 处理聚合结果并匹配文章标题
             articles = []
             total_views = 0
 
-            for doc in cursor:
+            for doc in results:
                 article_id = doc["_id"]
                 views = doc["views"]
                 total_views += views
 
-                try:
-                    article = article_mapper.get_article_by_id_mapper(article_id, db)
-                    title = article.title if article else Constants.UNKNOWN_ARTICLE
-                    articles.append(
-                        {"article_id": article_id, "title": title, "views": views}
-                    )
-                except Exception as e:
-                    logger.error(f"获取文章 {article_id} 标题失败: {e}")
-                    articles.append(
-                        {
-                            "article_id": article_id,
-                            "title": Constants.UNKNOWN_ARTICLE,
-                            "views": views,
-                        }
-                    )
+                article = articles_dict.get(article_id)
+                title = article.title if article else Constants.UNKNOWN_ARTICLE
+                articles.append(
+                    {"article_id": article_id, "title": title, "views": views}
+                )
 
             logger.info(
                 f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"

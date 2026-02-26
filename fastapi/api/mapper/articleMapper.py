@@ -207,6 +207,16 @@ class ArticleMapper:
         statement = select(Article).where(Article.id == article_id)
         return db.exec(statement).first()
 
+    def get_articles_by_ids_mapper(
+        self, article_ids: List[int], db: Session
+    ) -> Dict[int, Article]:
+        """批量获取文章信息，返回 {article_id: Article} 字典"""
+        if not article_ids:
+            return {}
+        statement = select(Article).where(Article.id.in_(article_ids))
+        articles = db.exec(statement).all()
+        return {article.id: article for article in articles}
+
     def get_total_views_mapper(self, db: Session) -> int:
         """获取所有文章的总阅读量"""
         statement = select(Article)
