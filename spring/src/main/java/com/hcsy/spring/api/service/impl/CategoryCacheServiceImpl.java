@@ -30,6 +30,7 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
     private final SubCategoryMapper subCategoryMapper;
     private final SimpleLogger logger;
 
+    @SuppressWarnings("null")
     @Override
     @Cacheable(value = "categoryById", key = "#id", unless = "#result == null")
     public CategoryVO getCategoryById(Long id) {

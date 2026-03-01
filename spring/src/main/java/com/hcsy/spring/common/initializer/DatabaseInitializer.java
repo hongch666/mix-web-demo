@@ -43,6 +43,7 @@ public class DatabaseInitializer implements ApplicationRunner {
         }
     }
 
+    @SuppressWarnings("null")
     private void ensureTable(DatabaseMetaData meta, String catalog, String tableName, String createSql)
             throws Exception {
         try (ResultSet rs = meta.getTables(catalog, null, tableName, new String[] { "TABLE" })) {

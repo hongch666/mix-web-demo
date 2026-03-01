@@ -65,6 +65,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     /**
      * 异步发送邮件
      */
+    @SuppressWarnings("null")
     @Async("taskExecutor")
     private void sendEmailAsync(String email, String code) {
         try {

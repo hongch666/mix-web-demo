@@ -17,6 +17,7 @@ public class InitMessageInitializer implements ApplicationRunner {
 
     private final Environment env;
 
+    @SuppressWarnings("null")
     @Override
     public void run(ApplicationArguments args) {
         String ip = Constants.INIT_IP;

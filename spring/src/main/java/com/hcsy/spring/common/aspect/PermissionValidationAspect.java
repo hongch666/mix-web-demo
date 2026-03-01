@@ -400,6 +400,7 @@ public class PermissionValidationAspect {
     /**
      * 获取方法参数名
      */
+    @SuppressWarnings("null")
     private String[] getParameterNames(ProceedingJoinPoint joinPoint) {
         try {
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();

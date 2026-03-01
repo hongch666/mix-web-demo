@@ -21,6 +21,7 @@ public class RedisConnectionConfig {
     private final SimpleLogger logger;
     private final RedisProperties redisProperties;
 
+    @SuppressWarnings("null")
     @Bean
     RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();

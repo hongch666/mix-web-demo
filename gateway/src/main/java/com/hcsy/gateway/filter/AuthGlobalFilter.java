@@ -122,6 +122,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         return null;
     }
 
+    @SuppressWarnings("null")
     private boolean isExcludePath(String path) {
         return EXCLUDE_PATHS.stream().anyMatch(pattern -> antPathMatcher.match(pattern, path));
     }

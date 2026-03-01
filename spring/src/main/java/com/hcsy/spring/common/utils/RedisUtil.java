@@ -17,41 +17,49 @@ public class RedisUtil {
     private final StringRedisTemplate redisTemplate;
 
     // 设置带过期时间的值
+    @SuppressWarnings("null")
     public void set(String key, String value, long timeoutSeconds) {
         redisTemplate.opsForValue().set(key, value, timeoutSeconds, TimeUnit.SECONDS);
     }
 
     // 设置永久不过期的值
+    @SuppressWarnings("null")
     public void set(String key, String value) {
         redisTemplate.opsForValue().set(key, value);
     }
 
     // 获取值
+    @SuppressWarnings("null")
     public String get(String key) {
         return redisTemplate.opsForValue().get(key);
     }
 
     // 删除值
+    @SuppressWarnings("null")
     public void delete(String key) {
         redisTemplate.delete(key);
     }
 
     // 设置过期时间
+    @SuppressWarnings("null")
     public void expire(String key, long timeoutSeconds) {
         redisTemplate.expire(key, timeoutSeconds, TimeUnit.SECONDS);
     }
 
     // 添加元素到列表末尾
+    @SuppressWarnings("null")
     public void addToList(String key, String value) {
         redisTemplate.opsForList().rightPush(key, value);
     }
 
     // 从列表中移除指定元素
+    @SuppressWarnings("null")
     public void removeFromList(String key, String value) {
         redisTemplate.opsForList().remove(key, 1, value);
     }
 
     // 获取列表所有元素
+    @SuppressWarnings("null")
     public List<String> getList(String key) {
         Long size = redisTemplate.opsForList().size(key);
         if (size == null || size == 0) {
@@ -61,12 +69,14 @@ public class RedisUtil {
     }
 
     // 获取列表大小
+    @SuppressWarnings("null")
     public long getListSize(String key) {
         Long size = redisTemplate.opsForList().size(key);
         return size != null ? size : 0;
     }
 
     // 清空列表
+    @SuppressWarnings("null")
     public void clearList(String key) {
         redisTemplate.delete(key);
     }
@@ -78,6 +88,7 @@ public class RedisUtil {
     }
 
     // 获取所有匹配 pattern 的 key
+    @SuppressWarnings("null")
     public Set<String> getKeys(String pattern) {
         return redisTemplate.keys(pattern);
     }

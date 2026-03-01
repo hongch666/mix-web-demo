@@ -17,6 +17,7 @@ public class RedisConnectionConfig {
     private final RedisProperties redisProperties;
 
     @Bean
+    @SuppressWarnings("null")
     RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
 

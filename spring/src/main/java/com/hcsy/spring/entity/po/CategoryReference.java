@@ -14,8 +14,10 @@ public class CategoryReference {
     private Long id;
     private Long subCategoryId; // 子分类ID
     private String type; // 类型：link 或 pdf
+    @SuppressWarnings("deprecation")
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String link; // 官网链接
+    @SuppressWarnings("deprecation")
     @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String pdf; // PDF链接（OSS）
 }
