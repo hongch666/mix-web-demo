@@ -48,7 +48,6 @@
   ![er](./static/pic/er.drawio.png)
 
 - UML 用例图
-
   - 管理员 UML
 
     ![uml_admin](./static/pic/uml_admin.drawio.png)
@@ -62,7 +61,6 @@
   ![structure](./static/pic/structure.drawio.png)
 
 - 流程图
-
   - 整体核心流程图
 
     ![main](./static/pic/flowchart/main.drawio.png)
@@ -273,7 +271,7 @@ default = true
 
 ```bash
 # 1. 使用便捷脚本调用（推荐）
-./services.sh setup
+./mix setup
 
 # 或直接调用
 ./scripts/setup.sh
@@ -296,37 +294,32 @@ default = true
 ### 脚本功能特性
 
 1. **环境检查**
-
    - 自动检测 Python、Go、Java、Node.js 等必要工具的安装状态和版本
    - 如果缺少必要工具会给出明确提示
 
 2. **系统依赖管理**（仅 FastAPI 模块需要）
-
    - 自动检测并安装 PostgreSQL 开发库（`libpq-dev`）
    - 自动安装编译工具（`build-essential`、`python3-dev`）
    - 支持多种 Linux 发行版（Ubuntu/Debian、CentOS/RHEL、Fedora、Arch）
 
 3. **模块化安装**
-
    - 支持选择性安装特定模块或全部安装
    - 每个模块独立配置，互不影响
 
 4. **智能判断**
-
    - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
    - Gateway: 支持 Gradle 和 Maven 两种构建工具
    - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
    - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
 5. **目录自动创建**
-
    - 自动创建 logs 目录（spring、gin、nestjs、fastapi）
    - 自动创建 static 目录（pic、excel、word）
 
 ### 脚本执行流程
 
 ```bash
-./services.sh setup
+./mix setup
 ```
 
 执行后将按以下流程进行：
@@ -364,22 +357,22 @@ default = true
 
 ```bash
 # 创建所有容器
-./services.sh docker up
+./mix docker up
 
 # 查看容器状态
-./services.sh docker status
+./mix docker status
 
 # 查看容器日志
-./services.sh docker logs <service>
+./mix docker logs <service>
 
 # 停止所有容器
-./services.sh docker stop
+./mix docker stop
 
 # 删除所有容器
-./services.sh docker delete
+./mix docker delete
 
 # 显示帮助信息
-./services.sh docker help
+./mix docker help
 ```
 
 ### 创建的容器服务
@@ -399,25 +392,21 @@ default = true
 ### 脚本功能特性
 
 1. **智能检测**
-
    - 自动检测 Docker 是否安装和运行
    - 检测端口是否被占用，避免重复创建容器
    - 自动创建项目专用网络 `hcsy`
 
 2. **前置准备**
-
    - 自动创建数据持久化目录
    - 支持 Elasticsearch IK 分词器安装（可选）
    - 自动生成 Nacos 配置文件
 
 3. **容器管理**
-
    - 支持查看容器状态
    - 支持查看容器日志
    - 支持停止和删除容器
 
 4. **一键部署**
-
    - 完整的部署流程自动化
    - 清晰的步骤提示和日志输出
 
@@ -425,19 +414,19 @@ default = true
 
 ```bash
 # 第一次使用：创建所有容器
-./services.sh docker up
+./mix docker up
 
 # 查看所有容器是否正常运行
-./services.sh docker status
+./mix docker status
 
 # 查看 MySQL 容器的日志
-./services.sh docker logs mysql
+./mix docker logs mysql
 
 # 需要时停止容器
-./services.sh docker stop
+./mix docker stop
 
 # 需要时删除容器
-./services.sh docker delete
+./mix docker delete
 ```
 
 ### 注意事项
@@ -543,111 +532,108 @@ uv run --python 3.12 python main.py
 
 ```bash
 # 查看帮助信息
-./services.sh help
+./mix help
 
 # ===== 开发环境 =====
 # 使用多窗格 tmux 布局启动所有服务（推荐用于开发调试）
-./services.sh multi
+./mix multi
 
 # 使用顺序窗口模式启动所有服务
-./services.sh seq
+./mix seq
 
 # 停止所有 tmux 服务
-./services.sh stop
+./mix stop
 
 # ===== 使用指定构建工具启动服务 =====
 # 使用 Gradle 构建并启动 Java 服务（推荐，更快）
-./services.sh multi --java-build gradle
+./mix multi --java-build gradle
 
 # 使用 Maven 构建并启动 Java 服务
-./services.sh multi --java-build maven
+./mix multi --java-build maven
 
 # 使用 Bun 启动 NestJS 服务（推荐，比 npm 快）
-./services.sh multi --node-runtime bun
+./mix multi --node-runtime bun
 
 # 使用 npm 启动 NestJS 服务
-./services.sh multi --node-runtime npm
+./mix multi --node-runtime npm
 
 # 使用 UV 启动 FastAPI 服务（推荐，比 python 快）
-./services.sh multi --python-runtime uv
+./mix multi --python-runtime uv
 
 # 使用 Python 启动 FastAPI 服务
-./services.sh multi --python-runtime python
+./mix multi --python-runtime python
 
 # 交互式模式：让用户选择构建工具
-./services.sh multi -i
+./mix multi -i
 
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
-./services.sh docker up
+./mix docker up
 
 # 构建并启动特定服务容器
-./services.sh docker up spring gin
+./mix docker up spring gin
 
 # 仅构建镜像
-./services.sh docker build
+./mix docker build
 
 # 查看容器状态
-./services.sh docker status
+./mix docker status
 
 # 查看容器日志
-./services.sh docker logs spring
+./mix docker logs spring
 
 # 停止所有容器
-./services.sh docker stop
+./mix docker stop
 
 # ===== 生产环境 =====
 # 构建所有服务到 dist/ 目录
-./services.sh build
+./mix build
 
 # 启动所有已构建的服务（后台运行）
-./services.sh start
+./mix start
 
 # 启动指定的服务
-./services.sh start spring gateway
-./services.sh start fastapi gin
+./mix start spring gateway
+./mix start fastapi gin
 
 # 查看已构建服务的运行状态
-./services.sh status
+./mix status
 
 # 查看指定服务的运行状态
-./services.sh status spring gin
+./mix status spring gin
 
 # 重启所有已构建的服务
-./services.sh restart
+./mix restart
 
 # 重启指定的服务
-./services.sh restart fastapi
-./services.sh restart spring gateway nestjs
+./mix restart fastapi
+./mix restart spring gateway nestjs
 
 # 停止所有已构建的服务
-./services.sh stop-dist
+./mix stop-dist
 
 # 停止指定的服务
-./services.sh stop-dist spring fastapi
+./mix stop-dist spring fastapi
 
 # 查看服务的最新日志（只支持查看单个服务）
-./services.sh logs spring
-./services.sh logs fastapi
-./services.sh logs gin
+./mix logs spring
+./mix logs fastapi
+./mix logs gin
 ```
 
 **构建工具参数说明**：
 
 - `--java-build gradle|maven`：选择 Java 构建工具（Spring/Gateway）
-
   - `gradle`：使用 Gradle（推荐，更快）
   - `maven`：使用 Maven（可选）
   - 默认值：`gradle`（如果已安装）
 
 - `--node-runtime bun|npm`：选择 Node.js 运行时（NestJS）
-
   - `bun`：使用 Bun（推荐，比 npm 快 4-8 倍）
   - `npm`：使用 npm（可选）
   - 默认值：`bun`（如果已安装）
 
 - `--python-runtime uv|python`：选择 Python 运行时（FastAPI）
-
   - `uv`：使用 UV（推荐，更快且支持虚拟环境）
   - `python`：使用原生 Python（可选）
   - 默认值：`uv`（如果已安装）
@@ -743,7 +729,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 | 脚本              | 位置       | 功能                                       | 适用系统    |
 | ----------------- | ---------- | ------------------------------------------ | ----------- |
-| `services.sh`     | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
+| `mix`             | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
 | `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
 | `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
 | `stop.sh`         | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
@@ -755,7 +741,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 服务名称
 
-dist-control.sh 和 services.sh 支持以下服务名称：
+dist-control.sh 和 mix 支持以下服务名称：
 
 - `spring` - Spring Boot 服务
 - `gateway` - Spring Cloud Gateway 网关服务
@@ -781,19 +767,19 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ```bash
 # 1. 一键打包所有服务
-./services.sh build
+./mix build
 
 # 2. 启动所有服务
-./services.sh start
+./mix start
 
 # 3. 查看服务状态
-./services.sh status
+./mix status
 
 # 4. 重启所有服务（代码更新后）
-./services.sh restart
+./mix restart
 
 # 5. 停止所有服务
-./services.sh stop-dist
+./mix stop-dist
 ```
 
 **快速打包和部署（方法二：直接调用脚本）：**
@@ -819,19 +805,16 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ### 脚本说明
 
-- **services.sh**（项目根目录）
-
+- **mix**（项目根目录）
   - 便捷启动器，用于快速调用 `scripts/` 下的脚本
   - 支持开发环境和生产环境命令
 
 - **scripts/build.sh**
-
   - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
 
 - **scripts/dist-control.sh**
-
   - 管理打包后的分布式服务
   - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
 
@@ -839,18 +822,18 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ```bash
 # 第一次部署
-./services.sh build
-./services.sh start
+./mix build
+./mix start
 
 # 查看运行状态
-./services.sh status
+./mix status
 
 # 代码更新后重新部署
-./services.sh build
-./services.sh restart
+./mix build
+./mix restart
 
 # 停止所有服务
-./services.sh stop-dist
+./mix stop-dist
 ```
 
 ## Docker 容器部署
@@ -861,16 +844,16 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ```bash
 # 1. 构建并启动所有微服务容器
-./services.sh docker up
+./mix docker up
 
 # 2. 查看容器状态
-./services.sh docker status
+./mix docker status
 
 # 3. 查看特定服务的日志
-./services.sh docker logs spring
+./mix docker logs spring
 
 # 4. 停止所有微服务容器
-./services.sh docker stop
+./mix docker stop
 ```
 
 ### 微服务容器说明
@@ -887,10 +870,10 @@ dist-control.sh 和 services.sh 支持以下服务名称：
 
 ```bash
 # 仅构建特定服务的镜像
-./services.sh docker build spring gin
+./mix docker build spring gin
 
 # 仅构建镜像，不启动容器
-./scripts/build_and_run_services.sh --build-only
+./scripts/build_and_run_mix --build-only
 
 # 手动启动容器时指定配置文件
 docker run -d --name mix-spring-custom \
@@ -937,14 +920,14 @@ docker restart mix-spring-container
 ./scripts/install-k8s-tools.sh start-cluster
 ```
 
-或使用 `services.sh` 便捷脚本：
+或使用 `mix` 便捷脚本：
 
 ```bash
 # 查看K8s相关命令
-./services.sh k8s help
+./mix k8s help
 
 # 安装/检查K8s工具
-./services.sh k8s install
+./mix k8s install
 ```
 
 ### 本地开发环境（Minikube）
@@ -954,11 +937,11 @@ docker restart mix-spring-container
 minikube start --driver=docker
 
 # 2. 构建Docker镜像
-./services.sh docker build
+./mix docker build
 
 # 3. 加载镜像到Minikube
 eval $(minikube docker-env)
-./services.sh docker build
+./mix docker build
 
 # 或手动加载：
 minikube image load mix-spring:latest
@@ -972,35 +955,35 @@ minikube image load mix-nestjs:latest
 
 ```bash
 # 1. 查看可用命令
-./services.sh k8s help
+./mix k8s help
 
 # 2. 部署所有服务到K8s集群
-./services.sh k8s deploy
+./mix k8s deploy
 
 # 3. 查看部署状态
-./services.sh k8s status
+./mix k8s status
 
 # 4. 查看pod日志
-./services.sh k8s logs spring
-./services.sh k8s logs gin
-./services.sh k8s logs nestjs
-./services.sh k8s logs fastapi
-./services.sh k8s logs gateway
+./mix k8s logs spring
+./mix k8s logs gin
+./mix k8s logs nestjs
+./mix k8s logs fastapi
+./mix k8s logs gateway
 
 # 5. 端口转发（本地访问）
-./services.sh k8s port-forward spring 8081
-./services.sh k8s port-forward gateway 8080
+./mix k8s port-forward spring 8081
+./mix k8s port-forward gateway 8080
 
 # 6. 进入Pod交互式终端
-./services.sh k8s exec spring
-./services.sh k8s exec gateway
+./mix k8s exec spring
+./mix k8s exec gateway
 
 # 7. 滚动重启服务（应用新配置）
-./services.sh k8s restart spring
-./services.sh k8s restart gateway
+./mix k8s restart spring
+./mix k8s restart gateway
 
 # 8. 删除所有K8s资源
-./services.sh k8s delete
+./mix k8s delete
 ```
 
 ### K8s 资源说明
@@ -1052,10 +1035,10 @@ http://<ingress-ip>/fastapi # FastAPI服务
 
 ```bash
 # 查看详细的服务信息
-./services.sh k8s describe spring
+./mix k8s describe spring
 
 # 监控部署进度
-./services.sh k8s rollout-status gateway
+./mix k8s rollout-status gateway
 
 # 直接调用k8s-deploy.sh获取更多选项
 ./scripts/k8s-deploy.sh help
@@ -2031,12 +2014,10 @@ S_{\text{recency}} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
 $$
 
 - 其中：
-
   - $\Delta t$：文章创建时间与当前时间的差值（单位：天）
   - $\sigma$：时间衰减周期（默认 30 天）
 
 - 高斯衰减函数具有以下特性：
-
   - 当 $\Delta t = 0$（刚发布）时，$S_{\text{recency}} = 1.0$（新鲜度最高）
   - 当 $\Delta t = 30$ 天时，$S_{\text{recency}} \approx 0.606$（衰减至约 60.6%）
   - 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
