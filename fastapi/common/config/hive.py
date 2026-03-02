@@ -2,8 +2,7 @@ import time
 from typing import Any, List, Optional
 
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from pyhive import hive
 
 
@@ -23,7 +22,7 @@ class HiveConnectionPool:
     def get_connection(self) -> Any:
         """从池中获取连接"""
         if self._connections:
-            logger.info(
+            Logger.info(
                 f"[连接池] 从池中获取复用连接，池内剩余: {len(self._connections) - 1}个"
             )
             return self._connections.pop()
@@ -37,7 +36,7 @@ class HiveConnectionPool:
         hive_password = hive_config.get("password")
 
         self._conn_count += 1
-        logger.info(f"[连接池] 创建新 Hive 连接 (第{self._conn_count}个)")
+        Logger.info(f"[连接池] 创建新 Hive 连接 (第{self._conn_count}个)")
         conn_start = time.time()
 
         # 根据是否有账号密码来构建连接
@@ -50,19 +49,19 @@ class HiveConnectionPool:
 
         conn = hive.Connection(**conn_params)
         conn_time = time.time() - conn_start
-        logger.info(f"[连接池] Hive 连接建立耗时 {conn_time:.3f}s")
+        Logger.info(f"[连接池] Hive 连接建立耗时 {conn_time:.3f}s")
         return conn
 
     def return_connection(self, conn: Any) -> None:
         """归还连接到池"""
         if len(self._connections) < self._max_connections:
             self._connections.append(conn)
-            logger.info(
+            Logger.info(
                 f"[连接池] 连接已归还到池，池内现有: {len(self._connections)}个"
             )
         else:
             conn.close()
-            logger.info(Constants.HIVE_CONNECTION_POOL_FULL_MESSAGE)
+            Logger.info(Constants.HIVE_CONNECTION_POOL_FULL_MESSAGE)
 
 
 # 全局单例

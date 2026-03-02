@@ -1,7 +1,6 @@
 import oss2
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 
 # 配置阿里云OSS信息
 access_key_id: str = load_config("oss")["access_key_id"]
@@ -26,9 +25,9 @@ class OSSClient:
 
     def upload_file(self, local_file: str, oss_file: str) -> str:
         """上传本地文件到OSS，返回OSS文件URL"""
-        logger.info(Constants.OSS_FILE_UPLOAD_START_MESSAGE)
+        Logger.info(Constants.OSS_FILE_UPLOAD_START_MESSAGE)
         self.bucket.put_object_from_file(oss_file, local_file)
-        logger.info(f"文件上传成功: {oss_file}")
+        Logger.info(f"文件上传成功: {oss_file}")
         # 返回文件的公网访问地址
         return self.get_file_url(oss_file)
 

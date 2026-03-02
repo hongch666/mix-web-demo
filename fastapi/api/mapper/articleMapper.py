@@ -6,8 +6,7 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from common.config import HiveConnectionPool, get_hive_connection_pool, load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from entity.po import Article, Category, Collect, Focus, Like, SubCategory, User
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, current_date, date_format, date_sub
@@ -32,7 +31,7 @@ class ArticleMapper:
         pool_time: float = time.time() - pool_start
 
         # 查询 Hive
-        logger.info(Constants.HIVE_QUERY)
+        Logger.info(Constants.HIVE_QUERY)
         query_start: float = time.time()
         with hive_conn.cursor() as cursor:
             cursor.execute(
@@ -46,7 +45,7 @@ class ArticleMapper:
         result: List[Dict[str, Any]] = [dict(zip(columns, r)) for r in top10]
 
         total_time: float = time.time() - start
-        logger.info(
+        Logger.info(
             f"获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s"
         )
 
@@ -90,7 +89,7 @@ class ArticleMapper:
                 for r in top10_rows
             ]
         except Exception as e:
-            logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
+            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
             df = pd.read_csv(csv_file)
             for c in ["views", "id", "status", "user_id", "sub_category_id"]:
                 if c in df.columns:
@@ -252,7 +251,7 @@ class ArticleMapper:
         start = time.time()
         hive_conn = self._hive_pool.get_connection()
 
-        logger.info(Constants.HIVE_QUERY)
+        Logger.info(Constants.HIVE_QUERY)
         query_start = time.time()
         with hive_conn.cursor() as cursor:
             # 查询文章按sub_category_id分组统计
@@ -265,7 +264,7 @@ class ArticleMapper:
         result = [{"sub_category_id": int(r[0]), "count": int(r[1])} for r in results]
 
         total_time = time.time() - start
-        logger.info(
+        Logger.info(
             f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类"
         )
 
@@ -303,7 +302,7 @@ class ArticleMapper:
                 for r in results
             ]
         except Exception as e:
-            logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
+            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
             df = pd.read_csv(csv_file)
             if "status" in df.columns:
                 df["status"] = (
@@ -352,7 +351,7 @@ class ArticleMapper:
         start = time.time()
         hive_conn = self._hive_pool.get_connection()
 
-        logger.info(Constants.HIVE_QUERY)
+        Logger.info(Constants.HIVE_QUERY)
         query_start = time.time()
         with hive_conn.cursor() as cursor:
             # 按月统计最近24个月的文章数，使用Hive的substr和concat处理日期
@@ -365,7 +364,7 @@ class ArticleMapper:
         result = [{"year_month": str(r[0]), "count": int(r[1])} for r in results]
 
         total_time = time.time() - start
-        logger.info(
+        Logger.info(
             f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份"
         )
 
@@ -413,7 +412,7 @@ class ArticleMapper:
                 for r in results
             ]
         except Exception as e:
-            logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
+            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
             df = pd.read_csv(csv_file)
             if "status" in df.columns:
                 df["status"] = (

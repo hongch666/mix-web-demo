@@ -30,7 +30,7 @@ class IntentRouter:
             user_mapper: 用户 Mapper 实例（用于权限检查）
         """
         # 延迟导入避免循环依赖
-        from common.utils import fileLogger as logger
+        from common.utils import Logger
 
         self.logger = logger
 
@@ -87,11 +87,11 @@ class IntentRouter:
                 # 默认使用文章搜索
                 intent = "article_search"
 
-            self.logger.info(f"意图识别结果: {question} -> {intent}")
+            self.Logger.info(f"意图识别结果: {question} -> {intent}")
             return intent
 
         except Exception as e:
-            self.logger.error(f"意图识别失败: {e}, 默认使用article_search")
+            self.Logger.error(f"意图识别失败: {e}, 默认使用article_search")
             return "article_search"
 
     def route_with_permission_check(

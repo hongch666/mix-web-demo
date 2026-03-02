@@ -5,8 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from bson import ObjectId
 from common.config import db, load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from langchain_core.tools import Tool
 
 
@@ -16,7 +15,7 @@ class MongoDBTools:
     def __init__(self) -> None:
         """初始化 MongoDB 日志工具"""
         self.db = db
-        self.logger = logger
+        self.logger = Logger
         # 获取日志集合名称（默认为 api_logs）
         self.logs_collection_name: str = (
             load_config("database").get("mongodb", {}).get("logs_collection")
@@ -27,7 +26,7 @@ class MongoDBTools:
         try:
             return self.db[self.logs_collection_name]
         except Exception as e:
-            self.logger.error(f"获取日志集合失败: {e}")
+            self.Logger.error(f"获取日志集合失败: {e}")
             return None
 
     def list_mongodb_collections(self, _: str = "") -> str:
@@ -51,13 +50,13 @@ class MongoDBTools:
                         }
                     )
                 except Exception as e:
-                    self.logger.warning(f"无法获取 {collection_name} 的信息: {e}")
+                    self.Logger.warning(f"无法获取 {collection_name} 的信息: {e}")
                     collections_info.append({"name": collection_name, "error": str(e)})
 
             return json.dumps(collections_info, ensure_ascii=False, indent=2)
         except Exception as e:
             error_msg = f"获取 collection 列表失败: {str(e)}"
-            self.logger.error(error_msg)
+            self.Logger.error(error_msg)
             return error_msg
 
     def query_mongodb(self, query_params: Union[str, Dict[str, Any]]) -> str:
@@ -108,14 +107,14 @@ class MongoDBTools:
                 doc = self._convert_datetime_to_string(doc)
                 results.append(doc)
 
-            self.logger.info(
+            self.Logger.info(
                 f"查询 {collection_name}: 条件={filter_obj}, 返回 {len(results)} 条记录"
             )
             return json.dumps(results, ensure_ascii=False, indent=2)
 
         except Exception as e:
             error_msg = f"MongoDB 查询失败: {str(e)}"
-            self.logger.error(error_msg)
+            self.Logger.error(error_msg)
             return error_msg
 
     def get_langchain_tools(self) -> List[Tool]:

@@ -1,8 +1,7 @@
 from typing import Any, List, Optional, Tuple
 
 from common.agent import get_mongodb_tools, get_rag_tools, get_sql_tools
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
 
@@ -40,18 +39,18 @@ def initialize_ai_tools(
             sql_tools_instance = get_sql_tools()
             sql_tools: List[Any] = sql_tools_instance.get_langchain_tools()
             all_tools.extend(sql_tools)
-            logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
+            Logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
         except Exception as e:
-            logger.warning(f"加载 SQL 工具失败: {e}")
+            Logger.warning(f"加载 SQL 工具失败: {e}")
 
     # 获取 RAG 工具
     try:
         rag_tools_instance = get_rag_tools()
         rag_tools: List[Any] = rag_tools_instance.get_langchain_tools()
         all_tools.extend(rag_tools)
-        logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
+        Logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
     except Exception as e:
-        logger.warning(f"加载 RAG 工具失败: {e}")
+        Logger.warning(f"加载 RAG 工具失败: {e}")
 
     # 获取 MongoDB 日志工具
     if include_logs:
@@ -59,11 +58,11 @@ def initialize_ai_tools(
             mongodb_tools_instance = get_mongodb_tools()
             mongodb_tools: List[Any] = mongodb_tools_instance.get_langchain_tools()
             all_tools.extend(mongodb_tools)
-            logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
+            Logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
         except Exception as e:
-            logger.warning(f"加载 MongoDB 日志工具失败: {e}")
+            Logger.warning(f"加载 MongoDB 日志工具失败: {e}")
 
-    logger.info(f"总共加载了 {len(all_tools)} 个工具")
+    Logger.info(f"总共加载了 {len(all_tools)} 个工具")
     return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
 
 
@@ -120,7 +119,7 @@ class BaseAiService:
                 chat_history.append((h.ask, h.reply))
             return chat_history
         except Exception as e:
-            logger.error(f"加载聊天历史失败: {e}")
+            Logger.error(f"加载聊天历史失败: {e}")
             return []
 
     def _build_thinking_text(self, intermediate_steps: List[IntermediateStep]) -> str:

@@ -2,8 +2,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Optional, TypeVar
 
 from common.exceptions import BusinessException
-from common.utils import Constants, InternalTokenUtil
-from common.utils import fileLogger as logger
+from common.utils import Constants, InternalTokenUtil, Logger
 
 from fastapi import Request
 
@@ -43,7 +42,7 @@ def requireInternalToken(
             auth_header: str = request.headers.get("X-Internal-Token", "")
 
             if not auth_header:
-                logger.error(Constants.INTERNAL_TOKEN_MISSING)
+                Logger.error(Constants.INTERNAL_TOKEN_MISSING)
                 raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
 
             # 移除 "Bearer " 前缀
@@ -61,10 +60,10 @@ def requireInternalToken(
                 # 验证服务名称（如果指定了）
                 if service_name and claims.get("serviceName") != service_name:
                     error_msg: str = f"{Constants.SERVICE_NAME_MISMATCH}. 期望: {service_name}, 获得: {claims.get('serviceName')}"
-                    logger.error(error_msg)
+                    Logger.error(error_msg)
                     raise BusinessException(Constants.SERVICE_NAME_MISMATCH)
 
-                logger.debug(
+                Logger.debug(
                     f"内部令牌验证成功 - 用户ID: {claims.get('userId')}, 服务: {claims.get('serviceName')}"
                 )
 
@@ -76,7 +75,7 @@ def requireInternalToken(
             except BusinessException:
                 raise
             except Exception as e:
-                logger.error(f"令牌验证失败: {str(e)}")
+                Logger.error(f"令牌验证失败: {str(e)}")
                 raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
 
         @wraps(f)
@@ -85,7 +84,7 @@ def requireInternalToken(
             auth_header: str = request.headers.get("X-Internal-Token", "")
 
             if not auth_header:
-                logger.error(Constants.INTERNAL_TOKEN_MISSING)
+                Logger.error(Constants.INTERNAL_TOKEN_MISSING)
                 raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
 
             # 移除 "Bearer " 前缀
@@ -103,10 +102,10 @@ def requireInternalToken(
                 # 验证服务名称（如果指定了）
                 if service_name and claims.get("serviceName") != service_name:
                     error_msg: str = f"{Constants.SERVICE_NAME_MISMATCH}. 期望: {service_name}, 获得: {claims.get('serviceName')}"
-                    logger.error(error_msg)
+                    Logger.error(error_msg)
                     raise BusinessException(Constants.SERVICE_NAME_MISMATCH)
 
-                logger.debug(
+                Logger.debug(
                     f"内部令牌验证成功 - 用户ID: {claims.get('userId')}, 服务: {claims.get('serviceName')}"
                 )
 
@@ -118,7 +117,7 @@ def requireInternalToken(
             except BusinessException:
                 raise
             except Exception as e:
-                logger.error(f"令牌验证失败: {str(e)}")
+                Logger.error(f"令牌验证失败: {str(e)}")
                 raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
 
         # 判断是否为异步函数

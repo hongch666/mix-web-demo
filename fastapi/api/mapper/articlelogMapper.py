@@ -4,8 +4,7 @@ from typing import Any, Dict, List
 from common.config import db as mongo_db
 from common.config import get_db
 from common.exceptions import BusinessException
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 
 from .articleMapper import get_article_mapper
 
@@ -30,7 +29,7 @@ class ArticleLogMapper:
         """获取用户的文章浏览分布"""
         try:
             logs = mongo_db["articlelogs"]
-            logger.debug(f"开始查询用户 {user_id} 的浏览分布")
+            Logger.debug(f"开始查询用户 {user_id} 的浏览分布")
 
             # 使用 aggregation pipeline 进行数据处理
             pipeline = [
@@ -44,7 +43,7 @@ class ArticleLogMapper:
             results = list(cursor)
 
             if not results:
-                logger.info(f"用户 {user_id} 无浏览记录")
+                Logger.info(f"用户 {user_id} 无浏览记录")
                 return {"total_views": 0, "articles": []}
 
             # 提取所有文章ID进行批量查询
@@ -70,13 +69,13 @@ class ArticleLogMapper:
                     {"article_id": article_id, "title": title, "views": views}
                 )
 
-            logger.info(
+            Logger.info(
                 f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
             )
 
             return {"total_views": total_views, "articles": articles}
         except Exception as e:
-            logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
+            Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             raise BusinessException(Constants.GET_TOP_FAIL)
 
 

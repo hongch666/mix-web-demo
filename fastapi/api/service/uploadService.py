@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from common.config import load_config
 from common.exceptions import BusinessException
-from common.utils import fileLogger as logger
+from common.utils import Logger
 from starlette.concurrency import run_in_threadpool
 
 from api.service import AnalyzeService, get_analyze_service
@@ -46,7 +46,7 @@ class UploadService:
         try:
             os.remove(local_path)
         except Exception as e:
-            logger.warning(f"删除临时文件失败: {e}")
+            Logger.warning(f"删除临时文件失败: {e}")
 
         return {
             "original_filename": file["filename"],
@@ -90,7 +90,7 @@ class UploadService:
         try:
             os.remove(local_path)
         except Exception as e:
-            logger.warning(f"删除临时文件失败: {e}")
+            Logger.warning(f"删除临时文件失败: {e}")
 
         return {
             "original_filename": file["filename"],

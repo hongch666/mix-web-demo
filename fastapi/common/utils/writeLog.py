@@ -59,4 +59,4 @@ class SimpleLogger:
         log_debug(message)
 
 
-fileLogger: SimpleLogger = SimpleLogger()
+Logger: SimpleLogger = SimpleLogger()

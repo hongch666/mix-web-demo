@@ -4,8 +4,8 @@ from .listResponse import ListResponse
 from .logger import logger
 from .response import error, success
 from .writeLog import (
+    Logger,
     SimpleLogger,
-    fileLogger,
     log_debug,
     log_error,
     log_info,
@@ -23,7 +23,7 @@ __all__: list[str] = [
     "log_warning",
     "log_debug",
     "SimpleLogger",
-    "fileLogger",
+    "Logger",
     "Constants",
     "InternalTokenUtil",
     "ListResponse",

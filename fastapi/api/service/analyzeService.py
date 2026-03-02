@@ -20,8 +20,7 @@ from common.cache import (
 )
 from common.config import OSSClient, get_db, load_config
 from common.exceptions import BusinessException
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 from wordcloud import WordCloud
@@ -112,24 +111,24 @@ class AnalyzeService:
             cached_result = self._article_cache.get(hive_conn)
             if cached_result:
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_top10_articles_service: [缓存命中] 耗时 {total_time:.3f}s"
                 )
                 return cached_result
         except Exception as cache_e:
-            logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        logger.info(Constants.TOP10_CACHE_MISS)
+        Logger.info(Constants.TOP10_CACHE_MISS)
 
         # 1.优先 Hive
         try:
             articles = self.articleMapper.get_top10_articles_hive_mapper()
             if articles and isinstance(articles[0], dict):
                 data_source = "Hive"
-                logger.info(Constants.TOP10_HIVE_SOURCE)
+                Logger.info(Constants.TOP10_HIVE_SOURCE)
         except Exception as hive_e:
-            logger.warning(
+            Logger.warning(
                 f"get_top10_articles_service: Hive 查询失败，降级为 Spark: {hive_e}"
             )
 
@@ -139,9 +138,9 @@ class AnalyzeService:
                 articles = self.articleMapper.get_top10_articles_spark_mapper()
                 if articles and isinstance(articles[0], dict):
                     data_source = "Spark"
-                    logger.info(Constants.TOP10_SPARK_SOURCE)
+                    Logger.info(Constants.TOP10_SPARK_SOURCE)
             except Exception as spark_e:
-                logger.error(
+                Logger.error(
                     f"get_top10_articles_service: Spark 查询失败，降级为 DB: {spark_e}"
                 )
 
@@ -149,7 +148,7 @@ class AnalyzeService:
         if not articles or len(articles) == 0:
             articles = self.articleMapper.get_top10_articles_db_mapper(db)
             data_source = "DB"
-            logger.info(Constants.TOP10_DB_SOURCE)
+            Logger.info(Constants.TOP10_DB_SOURCE)
 
         # ========== 步骤3: 处理查询结果并更新缓存 ==========
         # 检查返回类型，如果是字典列表（Hive/Spark），直接处理
@@ -196,11 +195,11 @@ class AnalyzeService:
             try:
                 self._article_cache.set(result, hive_conn)
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_top10_articles_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
                 )
             except Exception as cache_e:
-                logger.warning(f"更新缓存失败: {cache_e}")
+                Logger.warning(f"更新缓存失败: {cache_e}")
 
         # 归还 Hive 连接
         if hive_conn:
@@ -241,13 +240,13 @@ class AnalyzeService:
                 os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png")
             )
         )
-        logger.info(Constants.WORDCLOUD_GENERATION_SUCCESS)
+        Logger.info(Constants.WORDCLOUD_GENERATION_SUCCESS)
 
     def upload_file(self, file_path: str, oss_path: str) -> str:
         ossClient = OSSClient()
         oss_url: str = ossClient.upload_file(local_file=file_path, oss_file=oss_path)
-        logger.info(f"文件上传成功，OSS地址: {oss_url}")
-        logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
+        Logger.info(f"文件上传成功，OSS地址: {oss_url}")
+        Logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
         return oss_url
 
     def upload_wordcloud_to_oss(self) -> str:
@@ -278,13 +277,13 @@ class AnalyzeService:
             cached_url = self._wordcloud_cache.get()
             if cached_url:
                 elapsed = time.time() - start
-                logger.info(f"get_wordcloud_service: [缓存命中] 耗时 {elapsed:.3f}s")
+                Logger.info(f"get_wordcloud_service: [缓存命中] 耗时 {elapsed:.3f}s")
                 return cached_url
         except Exception as cache_e:
-            logger.debug(f"获取词云图缓存失败，将重新生成: {cache_e}")
+            Logger.debug(f"获取词云图缓存失败，将重新生成: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
-        logger.info(Constants.WORDCLOUD_CACHE_FETCH_FAILED)
+        Logger.info(Constants.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
         keywords_dic = self.get_keywords_dic()
         # 生成词云图
@@ -296,11 +295,11 @@ class AnalyzeService:
         try:
             self._wordcloud_cache.set(oss_url)
             elapsed = time.time() - start
-            logger.info(
+            Logger.info(
                 f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {elapsed:.3f}s"
             )
         except Exception as cache_e:
-            logger.warning(f"缓存词云图URL失败: {cache_e}")
+            Logger.warning(f"缓存词云图URL失败: {cache_e}")
 
         return oss_url
 
@@ -325,7 +324,7 @@ class AnalyzeService:
             df.to_excel(writer, index=False, startrow=1)
             worksheet = writer.sheets["Sheet1"]
             worksheet.cell(row=1, column=1, value=Constants.EXPORT_ARTICLES_EXCEL_TIP)
-        logger.info(f"文章表已导出到 {file_path}")
+        Logger.info(f"文章表已导出到 {file_path}")
         return file_path
 
     def upload_excel_to_oss(self, file_path: str) -> str:
@@ -364,15 +363,15 @@ class AnalyzeService:
             cached_result = self._statistics_cache.get()
             if cached_result:
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_article_statistics_service: [缓存命中] 耗时 {total_time:.3f}s"
                 )
                 return cached_result
         except Exception as cache_e:
-            logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，查询DB ==========
-        logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
+        Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
 
         # 分别调用 mapper 层的方法
         total_views = self.articleMapper.get_total_views_mapper(db)
@@ -400,13 +399,13 @@ class AnalyzeService:
         try:
             self._statistics_cache.set(statistics)
             total_time = time.time() - start
-            logger.info(
+            Logger.info(
                 f"get_article_statistics_service: DB 数据已更新缓存，总耗时 {total_time:.3f}s"
             )
         except Exception as cache_e:
-            logger.warning(f"更新缓存失败: {cache_e}")
+            Logger.warning(f"更新缓存失败: {cache_e}")
 
-        logger.info(f"获取文章统计信息: {statistics}")
+        Logger.info(f"获取文章统计信息: {statistics}")
         return statistics
 
     def get_category_article_count_service(
@@ -435,23 +434,23 @@ class AnalyzeService:
             cached_result = self._category_cache.get(hive_conn)
             if cached_result:
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_category_article_count_service: [缓存命中] 耗时 {total_time:.3f}s"
                 )
                 return cached_result
         except Exception as cache_e:
-            logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
+        Logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
 
         # 1.优先 Hive
         try:
             category_data = self.articleMapper.get_category_article_count_hive_mapper()
             data_source = "Hive"
-            logger.info(Constants.CATEGORY_STATISTICS_HIVE_SOURCE)
+            Logger.info(Constants.CATEGORY_STATISTICS_HIVE_SOURCE)
         except Exception as hive_e:
-            logger.warning(
+            Logger.warning(
                 f"get_category_article_count_service: Hive 查询失败，降级为 Spark: {hive_e}"
             )
 
@@ -462,9 +461,9 @@ class AnalyzeService:
                     self.articleMapper.get_category_article_count_spark_mapper()
                 )
                 data_source = "Spark"
-                logger.info(Constants.CATEGORY_STATISTICS_SPARK_SOURCE)
+                Logger.info(Constants.CATEGORY_STATISTICS_SPARK_SOURCE)
             except Exception as spark_e:
-                logger.error(
+                Logger.error(
                     f"get_category_article_count_service: Spark 查询失败，降级为 DB: {spark_e}"
                 )
 
@@ -472,7 +471,7 @@ class AnalyzeService:
         if not category_data or len(category_data) == 0:
             category_data = self.articleMapper.get_category_article_count_db_mapper(db)
             data_source = "DB"
-            logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
+            Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
 
         # ========== 步骤3: 获取所有大分类信息 ==========
         all_categories = self.categoryMapper.get_all_categories_mapper(db)
@@ -504,7 +503,7 @@ class AnalyzeService:
         result = list(parent_category_count.values())
         result.sort(key=lambda x: x["article_count"], reverse=True)
 
-        logger.info(
+        Logger.info(
             f"get_category_article_count_service: 获取 {len(result)} 个大分类，有文章的分类数: {len([c for c in result if c['article_count'] > 0])}"
         )
 
@@ -513,11 +512,11 @@ class AnalyzeService:
             try:
                 self._category_cache.set(result, hive_conn)
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_category_article_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
                 )
             except Exception as cache_e:
-                logger.warning(f"更新缓存失败: {cache_e}")
+                Logger.warning(f"更新缓存失败: {cache_e}")
 
         if hive_conn:
             self.articleMapper.return_hive_connection(hive_conn)
@@ -547,23 +546,23 @@ class AnalyzeService:
             cached_result = self._publish_time_cache.get(hive_conn)
             if cached_result:
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_monthly_publish_count_service: [缓存命中] 耗时 {total_time:.3f}s"
                 )
                 return cached_result
         except Exception as cache_e:
-            logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-        logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
+        Logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
 
         # 1.优先 Hive
         try:
             publish_data = self.articleMapper.get_monthly_publish_count_hive_mapper()
             data_source = "Hive"
-            logger.info(Constants.MONTHLY_STATISTICS_HIVE_SOURCE)
+            Logger.info(Constants.MONTHLY_STATISTICS_HIVE_SOURCE)
         except Exception as hive_e:
-            logger.warning(
+            Logger.warning(
                 f"get_monthly_publish_count_service: Hive 查询失败，降级为 Spark: {hive_e}"
             )
 
@@ -574,9 +573,9 @@ class AnalyzeService:
                     self.articleMapper.get_monthly_publish_count_spark_mapper()
                 )
                 data_source = "Spark"
-                logger.info(Constants.MONTHLY_STATISTICS_SPARK_SOURCE)
+                Logger.info(Constants.MONTHLY_STATISTICS_SPARK_SOURCE)
             except Exception as spark_e:
-                logger.error(
+                Logger.error(
                     f"get_monthly_publish_count_service: Spark 查询失败，降级为 DB: {spark_e}"
                 )
 
@@ -584,7 +583,7 @@ class AnalyzeService:
         if not publish_data or len(publish_data) == 0:
             publish_data = self.articleMapper.get_monthly_publish_count_db_mapper(db)
             data_source = "DB"
-            logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
+            Logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
 
         # ========== 步骤3: 补充缺失月份，置为0 ==========
         # 获取当前日期所在的月份
@@ -607,7 +606,7 @@ class AnalyzeService:
         # ========== 步骤4: 按月份从远到近排序 ==========
         result.sort(key=lambda x: x["year_month"], reverse=False)
 
-        logger.info(
+        Logger.info(
             f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}"
         )
 
@@ -616,11 +615,11 @@ class AnalyzeService:
             try:
                 self._publish_time_cache.set(result, hive_conn)
                 total_time = time.time() - start
-                logger.info(
+                Logger.info(
                     f"get_monthly_publish_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
                 )
             except Exception as cache_e:
-                logger.warning(f"更新缓存失败: {cache_e}")
+                Logger.warning(f"更新缓存失败: {cache_e}")
 
         if hive_conn:
             self.articleMapper.return_hive_connection(hive_conn)

@@ -6,8 +6,7 @@ from api.mapper import get_user_mapper
 from common.config import get_db
 from common.exceptions import BusinessException
 from common.middleware import get_current_user_id
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from sqlmodel import Session
 
 
@@ -35,7 +34,7 @@ def requireAdmin(func: Callable) -> Callable:
 
         # 检查用户是否登录
         if not user_id:
-            logger.warning(Constants.USER_NOT_LOGGED_IN_MESSAGE)
+            Logger.warning(Constants.USER_NOT_LOGGED_IN_MESSAGE)
             raise BusinessException(Constants.USER_NOT_LOGGED_IN_MESSAGE)
 
         # 获取数据库会话
@@ -59,12 +58,12 @@ def requireAdmin(func: Callable) -> Callable:
 
             # 检查是否是管理员
             if user_role != Constants.ROLE_ADMIN:
-                logger.warning(
+                Logger.warning(
                     f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
                 )
                 raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
 
-            logger.info(f"管理员 {user_id} 访问受保护的接口")
+            Logger.info(f"管理员 {user_id} 访问受保护的接口")
 
             # 如果检查通过，执行原函数
             return await func(*args, **kwargs)
@@ -72,7 +71,7 @@ def requireAdmin(func: Callable) -> Callable:
         except BusinessException:
             raise
         except Exception as e:
-            logger.error(f"检查管理员权限时出错: {e}")
+            Logger.error(f"检查管理员权限时出错: {e}")
             raise BusinessException(Constants.PERMISSION_CHECK_FAILED_MESSAGE)
 
     @wraps(func)
@@ -82,7 +81,7 @@ def requireAdmin(func: Callable) -> Callable:
 
         # 检查用户是否登录
         if not user_id:
-            logger.warning(Constants.USER_NOT_LOGGED_IN_MESSAGE)
+            Logger.warning(Constants.USER_NOT_LOGGED_IN_MESSAGE)
             raise BusinessException(Constants.USER_NOT_LOGGED_IN_MESSAGE)
 
         # 获取数据库会话
@@ -106,12 +105,12 @@ def requireAdmin(func: Callable) -> Callable:
 
             # 检查是否是管理员
             if user_role != Constants.ROLE_ADMIN:
-                logger.warning(
+                Logger.warning(
                     f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
                 )
                 raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
 
-            logger.info(f"管理员 {user_id} 访问受保护的接口")
+            Logger.info(f"管理员 {user_id} 访问受保护的接口")
 
             # 如果检查通过，执行原函数
             return func(*args, **kwargs)
@@ -119,7 +118,7 @@ def requireAdmin(func: Callable) -> Callable:
         except BusinessException:
             raise
         except Exception as e:
-            logger.error(f"检查管理员权限时出错: {e}")
+            Logger.error(f"检查管理员权限时出错: {e}")
             raise BusinessException(Constants.PERMISSION_CHECK_FAILED_MESSAGE)
 
     # 判断是否是异步函数

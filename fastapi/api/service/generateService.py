@@ -8,8 +8,7 @@ from typing import Any, Dict, Optional
 import jieba.analyse
 from common.agent import get_reference_content_extractor
 from common.exceptions import BusinessException
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 
 from api.mapper import (
     ArticleMapper,
@@ -71,7 +70,7 @@ class GenerateService:
             )
         )
         if ai_comments_count > 0:
-            logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
+            Logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
             self.comments_mapper.delete_ai_comments_by_article_id_mapper(article_id, db)
         # 2. 调用大模型生成AI评论
         # 2.1 获取文章标题,tags和内容
@@ -91,7 +90,7 @@ class GenerateService:
         文章内容：{article.content}
         """
         # 2.3 异步并发调用3个大模型生成AI评论
-        logger.info(f"开始并发调用3个大模型生成AI评论，文章ID：{article_id}")
+        Logger.info(f"开始并发调用3个大模型生成AI评论，文章ID：{article_id}")
 
         # 记录整体开始时间
         total_start_time = time.time()
@@ -102,11 +101,11 @@ class GenerateService:
             try:
                 result = await self.doubao_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                logger.info(f"豆包调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"豆包调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"豆包调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"豆包调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         async def timed_gemini_call() -> Any:
@@ -114,11 +113,11 @@ class GenerateService:
             try:
                 result = await self.gemini_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                logger.info(f"Gemini调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"Gemini调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"Gemini调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"Gemini调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         async def timed_qwen_call() -> Any:
@@ -126,11 +125,11 @@ class GenerateService:
             try:
                 result = await self.qwen_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                logger.info(f"Qwen调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"Qwen调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"Qwen调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"Qwen调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         # 使用 asyncio.gather 并发执行三个异步调用
@@ -143,7 +142,7 @@ class GenerateService:
 
         # 记录整体结束时间
         total_elapsed = time.time() - total_start_time
-        logger.info(
+        Logger.info(
             f"3个大模型并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}"
         )
 
@@ -151,13 +150,13 @@ class GenerateService:
 
         # 检查是否有异常返回
         if isinstance(response_doubao, Exception):
-            logger.error(f"豆包大模型最终失败: {response_doubao}")
+            Logger.error(f"豆包大模型最终失败: {response_doubao}")
             response_doubao = Constants.DOUBAO_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
-            logger.error(f"Gemini大模型最终失败: {response_gemini}")
+            Logger.error(f"Gemini大模型最终失败: {response_gemini}")
             response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_qwen, Exception):
-            logger.error(f"Qwen大模型最终失败: {response_qwen}")
+            Logger.error(f"Qwen大模型最终失败: {response_qwen}")
             response_qwen = Constants.QWEN_CALL_FAILED_ERROR
 
         # 2.4 解析大模型返回结果
@@ -193,7 +192,7 @@ class GenerateService:
         self.comments_mapper.create_comment_mapper(doubao_ai_comment, db)
         self.comments_mapper.create_comment_mapper(gemini_ai_comment, db)
         self.comments_mapper.create_comment_mapper(qwen_ai_comment, db)
-        logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
+        Logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
 
     # 定义工具函数解析大模型返回结果
     def _parse_ai_comment_response(self, response: str) -> tuple[str, float]:
@@ -249,16 +248,16 @@ class GenerateService:
             )
         )
         if ai_comments_count > 0:
-            logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
+            Logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
             self.comments_mapper.delete_ai_comments_by_article_id_mapper(article_id, db)
 
         # 2. 获取文章信息
         article = self.article_mapper.get_article_by_id_mapper(article_id, db)
         if not article:
-            logger.error(f"文章不存在: {article_id}")
+            Logger.error(f"文章不存在: {article_id}")
             return
 
-        logger.info(f"开始基于参考文本生成AI评论，文章ID：{article_id}")
+        Logger.info(f"开始基于参考文本生成AI评论，文章ID：{article_id}")
 
         # 3. 获取权威参考文本
         category_ref_mapper: CategoryReferenceMapper = get_category_reference_mapper()
@@ -277,8 +276,8 @@ class GenerateService:
             )
 
             if category_ref:
-                logger.info(f"找到权威参考文本，类型: {category_ref.get('type')}")
-                logger.info(f"参考文本详情: {category_ref}")
+                Logger.info(f"找到权威参考文本，类型: {category_ref.get('type')}")
+                Logger.info(f"参考文本详情: {category_ref}")
 
                 # 4. 根据类型提取内容并使用大模型进行总结
                 extractor = get_reference_content_extractor()
@@ -287,10 +286,10 @@ class GenerateService:
 
                 if ref_type == "pdf":
                     ref_value = category_ref.get("pdf")
-                    logger.info(f"开始提取 PDF 权威文本: {ref_value}")
+                    Logger.info(f"开始提取 PDF 权威文本: {ref_value}")
                 elif ref_type == "link":
                     ref_value = category_ref.get("link")
-                    logger.info(f"开始提取链接权威文本: {ref_value}")
+                    Logger.info(f"开始提取链接权威文本: {ref_value}")
 
                 # 定义三个大模型的总结函数
                 async def summarize_with_doubao(content: str) -> str:
@@ -299,7 +298,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        logger.error(f"豆包总结失败: {e}")
+                        Logger.error(f"豆包总结失败: {e}")
                         return content[:1500]
 
                 async def summarize_with_gemini(content: str) -> str:
@@ -308,7 +307,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        logger.error(f"Gemini总结失败: {e}")
+                        Logger.error(f"Gemini总结失败: {e}")
                         return content[:1500]
 
                 async def summarize_with_qwen(content: str) -> str:
@@ -317,7 +316,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        logger.error(f"Qwen总结失败: {e}")
+                        Logger.error(f"Qwen总结失败: {e}")
                         return content[:1500]
 
                 # 并发调用三个大模型对提取的内容进行总结
@@ -348,19 +347,19 @@ class GenerateService:
 
                 if summaries:
                     reference_content = "\n\n".join(summaries)
-                    logger.info(
+                    Logger.info(
                         f"权威参考文本提取并总结完成，总结内容长度: {len(reference_content)} 字"
                     )
                 else:
-                    logger.warning(f"无法提取或总结参考文本内容，类型: {ref_type}")
+                    Logger.warning(f"无法提取或总结参考文本内容，类型: {ref_type}")
                     reference_content = (
                         f"参考文本类型: {ref_type}\n参考文本链接: {ref_value}"
                     )
             else:
-                logger.info(f"子分类 {sub_category_id} 无权威参考文本")
+                Logger.info(f"子分类 {sub_category_id} 无权威参考文本")
                 reference_content = None
         else:
-            logger.warning(f"文章 {article_id} 无子分类信息")
+            Logger.warning(f"文章 {article_id} 无子分类信息")
             reference_content = None
         # 如果没有参考文本，使用默认参考提示
         if not reference_content:
@@ -374,7 +373,7 @@ class GenerateService:
                         """
 
         # 6. 异步并发调用3个大模型生成AI评论
-        logger.info(
+        Logger.info(
             f"开始并发调用3个大模型生成AI评论（基于参考文本），文章ID：{article_id}"
         )
 
@@ -387,11 +386,11 @@ class GenerateService:
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                logger.info(f"豆包参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"豆包参考文本调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"豆包参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"豆包参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         async def timed_gemini_ref_call() -> Any:
@@ -401,11 +400,11 @@ class GenerateService:
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                logger.info(f"Gemini参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"Gemini参考文本调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(
+                Logger.error(
                     f"Gemini参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}"
                 )
                 return e
@@ -417,11 +416,11 @@ class GenerateService:
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                logger.info(f"Qwen参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"Qwen参考文本调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                logger.error(f"Qwen参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"Qwen参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         # 并发执行三个调用
@@ -433,7 +432,7 @@ class GenerateService:
         )
 
         total_elapsed = time.time() - total_start_time
-        logger.info(
+        Logger.info(
             f"3个大模型参考文本并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}"
         )
 
@@ -441,13 +440,13 @@ class GenerateService:
 
         # 检查异常返回
         if isinstance(response_doubao, Exception):
-            logger.error(f"豆包参考文本最终失败: {response_doubao}")
+            Logger.error(f"豆包参考文本最终失败: {response_doubao}")
             response_doubao = Constants.DOUBAO_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
-            logger.error(f"Gemini参考文本最终失败: {response_gemini}")
+            Logger.error(f"Gemini参考文本最终失败: {response_gemini}")
             response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_qwen, Exception):
-            logger.error(f"Qwen参考文本最终失败: {response_qwen}")
+            Logger.error(f"Qwen参考文本最终失败: {response_qwen}")
             response_qwen = Constants.QWEN_CALL_FAILED_ERROR
 
         # 7. 解析大模型返回结果
@@ -485,7 +484,7 @@ class GenerateService:
         self.comments_mapper.create_comment_mapper(doubao_ai_comment, db)
         self.comments_mapper.create_comment_mapper(gemini_ai_comment, db)
         self.comments_mapper.create_comment_mapper(qwen_ai_comment, db)
-        logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
+        Logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
 
     async def generate_authority_article_with_ai_summaries(
         self, reference_type: str, reference_value: str
@@ -501,7 +500,7 @@ class GenerateService:
             包含三个大模型总结的字典
         """
         try:
-            logger.info(
+            Logger.info(
                 f"开始生成权威文章，类型: {reference_type}，值: {reference_value}"
             )
 
@@ -517,23 +516,23 @@ class GenerateService:
                     reference_value, max_length=3000
                 )
             else:
-                logger.error(f"不支持的参考文本类型: {reference_type}")
+                Logger.error(f"不支持的参考文本类型: {reference_type}")
                 return {
                     "status": "error",
                     "message": f"不支持的参考文本类型: {reference_type}",
                 }
 
             if not raw_content:
-                logger.warning(Constants.REFERENCE_TEXT_EXTRACTION_ERROR)
+                Logger.warning(Constants.REFERENCE_TEXT_EXTRACTION_ERROR)
                 return {
                     "status": "error",
                     "message": Constants.REFERENCE_TEXT_EXTRACTION_ERROR,
                 }
 
-            logger.info(f"原始内容提取完成，长度: {len(raw_content)} 字符")
+            Logger.info(f"原始内容提取完成，长度: {len(raw_content)} 字符")
 
             # 2. 并发调用三个大模型进行总结
-            logger.info(Constants.CONCURRENT_SUMMARY_MESSAGE)
+            Logger.info(Constants.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
 
             async def timed_doubao_summarize() -> Optional[str]:
@@ -543,13 +542,13 @@ class GenerateService:
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
-                    logger.info(
+                    Logger.info(
                         f"豆包总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    logger.error(f"豆包总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(f"豆包总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:
@@ -559,13 +558,13 @@ class GenerateService:
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
-                    logger.info(
+                    Logger.info(
                         f"Gemini总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    logger.error(f"Gemini总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(f"Gemini总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
 
             async def timed_qwen_summarize() -> Optional[str]:
@@ -575,13 +574,13 @@ class GenerateService:
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
-                    logger.info(
+                    Logger.info(
                         f"Qwen总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    logger.error(f"Qwen总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(f"Qwen总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
 
             # 并发执行三个总结任务
@@ -593,7 +592,7 @@ class GenerateService:
             )
 
             total_elapsed = time.time() - total_start_time
-            logger.info(f"三个大模型总结任务全部完成，总耗时: {total_elapsed:.2f}秒")
+            Logger.info(f"三个大模型总结任务全部完成，总耗时: {total_elapsed:.2f}秒")
 
             # 3. 构建返回结果
             result = {
@@ -619,11 +618,11 @@ class GenerateService:
                 "total_execution_time": total_elapsed,
             }
 
-            logger.info(Constants.CONCURRENT_CHAT_MESSAGE_SUCCESS)
+            Logger.info(Constants.CONCURRENT_CHAT_MESSAGE_SUCCESS)
             return result
 
         except Exception as e:
-            logger.error(f"生成权威文章异常: {str(e)}")
+            Logger.error(f"生成权威文章异常: {str(e)}")
             return {"status": "error", "message": f"生成权威文章失败: {str(e)}"}
 
 

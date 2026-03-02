@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-from common.utils import fileLogger as logger
+from common.utils import Logger
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 
@@ -111,7 +111,7 @@ class UserService:
 
             return {"period": period, "timeline": timeline}
         except Exception as e:
-            logger.error(f"获取新增粉丝数统计失败: {e}")
+            Logger.error(f"获取新增粉丝数统计失败: {e}")
             return {"period": period, "timeline": []}
 
     def get_article_view_distribution_service(self, user_id: int) -> Dict[str, Any]:
@@ -120,7 +120,7 @@ class UserService:
             result = self.articleLogMapper.get_user_view_distribution_mapper(user_id)
             return result
         except Exception as e:
-            logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
+            Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             return {"total_views": 0, "articles": []}
 
     def get_author_follow_statistics_service(
@@ -153,7 +153,7 @@ class UserService:
 
             return {"total_authors": total_authors, "daily_follows": daily_follows}
         except Exception as e:
-            logger.error(f"获取关注作者统计失败: {e}")
+            Logger.error(f"获取关注作者统计失败: {e}")
             return {"total_authors": 0, "daily_follows": []}
 
     def get_monthly_comment_trend_service(
@@ -163,7 +163,7 @@ class UserService:
         try:
             return self.commentsMapper.get_monthly_comment_trend_mapper(db, user_id)
         except Exception as e:
-            logger.error(f"获取评论趋势失败: {e}")
+            Logger.error(f"获取评论趋势失败: {e}")
             return {"total": 0, "daily_trends": []}
 
     def get_monthly_like_trend_service(
@@ -173,7 +173,7 @@ class UserService:
         try:
             return self.likeMapper.get_monthly_like_trend_mapper(db, user_id)
         except Exception as e:
-            logger.error(f"获取点赞趋势失败: {e}")
+            Logger.error(f"获取点赞趋势失败: {e}")
             return {"total": 0, "daily_trends": []}
 
     def get_monthly_collect_trend_service(
@@ -183,7 +183,7 @@ class UserService:
         try:
             return self.collectMapper.get_monthly_collect_trend_mapper(db, user_id)
         except Exception as e:
-            logger.error(f"获取收藏趋势失败: {e}")
+            Logger.error(f"获取收藏趋势失败: {e}")
             return {"total": 0, "daily_trends": []}
 
 

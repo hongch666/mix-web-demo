@@ -8,8 +8,7 @@ from common.config import get_db
 from common.decorators import log, requireInternalToken
 from common.exceptions import BusinessException
 from common.middleware import get_current_user_id
-from common.utils import fileLogger as logger
-from common.utils import success
+from common.utils import Logger, success
 from entity.dto import AIServiceType, ChatRequest, ChatResponse, ChatResponseData
 from entity.po import AiHistory
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -57,17 +56,17 @@ async def send_message(
     try:
         # 根据请求的服务类型选择对应的AI服务
         if request.service == AIServiceType.GEMINI:
-            logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
+            Logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
             response_message: str = await geminiService.simple_chat(
                 message=request.message, user_id=actual_user_id, db=db
             )
         elif request.service == AIServiceType.QWEN:
-            logger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
+            Logger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
             response_message: str = await qwenService.simple_chat(
                 message=request.message, user_id=actual_user_id, db=db
             )
         else:  # 默认使用豆包服务
-            logger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
+            Logger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
             response_message: str = await doubaoService.simple_chat(
                 message=request.message, user_id=actual_user_id, db=db
             )
@@ -97,11 +96,11 @@ async def send_message(
                 ai_type=request.service.value,
             )
             await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
-            logger.info(
+            Logger.info(
                 f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}"
             )
         except Exception as history_error:
-            logger.error(f"保存AI历史记录失败: {str(history_error)}")
+            Logger.error(f"保存AI历史记录失败: {str(history_error)}")
 
         # 成功响应 - 按照success格式
         response_data: ChatResponseData = ChatResponseData(
@@ -117,7 +116,7 @@ async def send_message(
         # 业务异常直接重新抛出，不记录耗时
         raise
     except Exception as e:
-        logger.error(f"聊天接口异常: {str(e)}", exc_info=True)
+        Logger.error(f"聊天接口异常: {str(e)}", exc_info=True)
         return ChatResponse(code=0, data=None, msg=f"聊天服务异常: {str(e)}")
 
 
@@ -156,17 +155,17 @@ async def stream_message(
         try:
             # 根据请求的服务类型选择对应的AI服务
             if request.service == AIServiceType.GEMINI:
-                logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
+                Logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
                 stream_generator: AsyncGenerator[Any, None] = geminiService.stream_chat(
                     message=request.message, user_id=actual_user_id, db=db
                 )
             elif request.service == AIServiceType.QWEN:
-                logger.info(f"使用Qwen流式服务处理用户 {actual_user_id} 的请求")
+                Logger.info(f"使用Qwen流式服务处理用户 {actual_user_id} 的请求")
                 stream_generator = qwenService.stream_chat(
                     message=request.message, user_id=actual_user_id, db=db
                 )
             else:  # 默认使用豆包服务
-                logger.info(f"使用豆包流式服务处理用户 {actual_user_id} 的请求")
+                Logger.info(f"使用豆包流式服务处理用户 {actual_user_id} 的请求")
                 stream_generator = doubaoService.stream_chat(
                     message=request.message, user_id=actual_user_id, db=db
                 )
@@ -183,7 +182,7 @@ async def stream_message(
                     chunk_content = str(chunk)
 
                 # 记录chunk长度（用于调试）
-                logger.debug(
+                Logger.debug(
                     f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}"
                 )
 
@@ -210,7 +209,7 @@ async def stream_message(
                 json_str: str = json.dumps(
                     data, ensure_ascii=False, separators=(",", ":")
                 )
-                logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
+                Logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
                 yield f"data: {json_str}\n\n"
 
             # 流式聊天完成后保存AI历史记录（在完成流式传输后）
@@ -226,17 +225,17 @@ async def stream_message(
                     await run_in_threadpool(
                         aiHistoryService.create_ai_history, history, db
                     )
-                    logger.info(
+                    Logger.info(
                         f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}"
                     )
                 except Exception as history_error:
-                    logger.error(f"保存流式AI历史记录失败: {str(history_error)}")
+                    Logger.error(f"保存流式AI历史记录失败: {str(history_error)}")
 
         except BusinessException:
             # 业务异常直接重新抛出，不记录耗时
             raise
         except Exception as e:
-            logger.error(f"流式聊天接口异常: {str(e)}")
+            Logger.error(f"流式聊天接口异常: {str(e)}")
             data = {"code": 0, "data": None, "msg": f"流式聊天服务异常: {str(e)}"}
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
         finally:

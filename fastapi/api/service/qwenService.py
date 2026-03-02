@@ -3,8 +3,7 @@ from typing import Any, AsyncGenerator, Optional
 
 from common.agent import IntentRouter, UserPermissionManager, get_sql_tools
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
@@ -75,9 +74,9 @@ class QwenService(BaseAiService):
                         return_intermediate_steps=True,
                     )
 
-                    logger.info(Constants.QWEN_AGENT_INITIALIZATION_SUCCESS)
+                    Logger.info(Constants.QWEN_AGENT_INITIALIZATION_SUCCESS)
                 except Exception as tool_error:
-                    logger.warning(
+                    Logger.warning(
                         f"工具初始化部分失败: {tool_error}, 降级为基础对话模式"
                     )
                     self.agent_executor = None
@@ -86,17 +85,17 @@ class QwenService(BaseAiService):
                 self.llm = None
                 self.agent_executor = None
                 self.intent_router = None
-                logger.warning(Constants.QWEN_CONFIGURATION_INCOMPLETE_ERROR)
+                Logger.warning(Constants.QWEN_CONFIGURATION_INCOMPLETE_ERROR)
         except Exception as e:
             self.llm = None
             self.agent_executor = None
             self.intent_router = None
-            logger.error(f"初始化Qwen客户端失败: {e}")
+            Logger.error(f"初始化Qwen客户端失败: {e}")
 
     async def basic_chat(self, message: str) -> str:
         """最基础的对话接口 - 不使用知识库和向量数据库"""
         try:
-            logger.info(f"基础对话: {message}")
+            Logger.info(f"基础对话: {message}")
 
             if not getattr(self, "llm", None):
                 return Constants.INITIALIZATION_ERROR
@@ -109,11 +108,11 @@ class QwenService(BaseAiService):
             response = await self.llm.ainvoke(messages)
 
             content: str = response.content
-            logger.info(f"Qwen基础回复长度: {len(content)} 字符")
+            Logger.info(f"Qwen基础回复长度: {len(content)} 字符")
             return content
 
         except Exception as e:
-            logger.error(f"Qwen基础对话异常: {str(e)}")
+            Logger.error(f"Qwen基础对话异常: {str(e)}")
             return f"对话服务异常: {str(e)}"
 
     async def with_reference_chat(self, message: str, reference_content: str) -> str:
@@ -128,7 +127,7 @@ class QwenService(BaseAiService):
             评价和打分结果
         """
         try:
-            logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
+            Logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
 
             if not getattr(self, "llm", None):
                 return Constants.INITIALIZATION_ERROR
@@ -144,11 +143,11 @@ class QwenService(BaseAiService):
 
             response = await self.llm.ainvoke(messages)
             content: str = response.content
-            logger.info(f"Qwen 参考文本对话回复长度: {len(content)} 字符")
+            Logger.info(f"Qwen 参考文本对话回复长度: {len(content)} 字符")
             return content
 
         except Exception as e:
-            logger.error(f"Qwen参考文本对话异常: {str(e)}")
+            Logger.error(f"Qwen参考文本对话异常: {str(e)}")
             return f"对话服务异常: {str(e)}"
 
     async def summarize_content(self, content: str, max_length: int = 1000) -> str:
@@ -163,7 +162,7 @@ class QwenService(BaseAiService):
             总结后的内容
         """
         try:
-            logger.info(f"Qwen开始总结内容，原始长度: {len(content)} 字符")
+            Logger.info(f"Qwen开始总结内容，原始长度: {len(content)} 字符")
 
             if not getattr(self, "llm", None):
                 return Constants.INITIALIZATION_ERROR
@@ -178,11 +177,11 @@ class QwenService(BaseAiService):
 
             response = await self.llm.ainvoke(messages)
             result: str = response.content[:max_length]
-            logger.info(f"Qwen内容总结完成，总结长度: {len(result)} 字符")
+            Logger.info(f"Qwen内容总结完成，总结长度: {len(result)} 字符")
             return result
 
         except Exception as e:
-            logger.error(f"Qwen内容总结异常: {str(e)}")
+            Logger.error(f"Qwen内容总结异常: {str(e)}")
             return f"总结服务异常: {str(e)}"
 
     async def simple_chat(
@@ -190,7 +189,7 @@ class QwenService(BaseAiService):
     ) -> str:
         """增强的聊天接口 - 使用Agent和RAG"""
         try:
-            logger.info(f"用户 {user_id} 发送消息: {message}")
+            Logger.info(f"用户 {user_id} 发送消息: {message}")
 
             if not getattr(self, "llm", None):
                 return Constants.INITIALIZATION_ERROR
@@ -206,16 +205,16 @@ class QwenService(BaseAiService):
                 intent, has_permission, permission_msg = (
                     self.intent_router.route_with_permission_check(message, user_id, db)
                 )
-                logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
+                Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
                 # 如果没有权限，直接返回权限提示信息
                 if not has_permission:
-                    logger.info(f"用户 {user_id} 无权限访问: {intent}")
+                    Logger.info(f"用户 {user_id} 无权限访问: {intent}")
                     return permission_msg or Constants.NO_PERMISSION_ERROR
 
             elif self.intent_router:
                 intent = self.intent_router.route(message)
-                logger.info(f"识别意图: {intent}")
+                Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
             chat_history = []
@@ -241,16 +240,16 @@ class QwenService(BaseAiService):
             else:
                 # 使用Agent处理，让Agent自己决定使用哪些工具
                 # Agent可以同时调用SQL工具和RAG工具，或只调用其中一个
-                logger.info(Constants.AGENT_PROCESSING_MESSAGE)
+                Logger.info(Constants.AGENT_PROCESSING_MESSAGE)
 
                 # 设置SQL工具的用户ID
                 if user_id:
                     try:
                         sql_tools = get_sql_tools()
                         sql_tools.set_user_id(user_id)
-                        logger.info(f"为SQL工具设置用户ID: {user_id}")
+                        Logger.info(f"为SQL工具设置用户ID: {user_id}")
                     except Exception as e:
-                        logger.warning(f"设置SQL工具用户ID失败: {e}")
+                        Logger.warning(f"设置SQL工具用户ID失败: {e}")
 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
@@ -266,11 +265,11 @@ class QwenService(BaseAiService):
                 )
                 result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
 
-            logger.info(f"Qwen回复长度: {len(result)} 字符")
+            Logger.info(f"Qwen回复长度: {len(result)} 字符")
             return result
 
         except Exception as e:
-            logger.error(f"Qwen聊天异常: {str(e)}")
+            Logger.error(f"Qwen聊天异常: {str(e)}")
             if "invalid" in str(e).lower() and "key" in str(e).lower():
                 return Constants.QWEN_INVALID_API_KEY_ERROR
             elif "quota" in str(e).lower() or "exceeded" in str(e).lower():
@@ -289,7 +288,7 @@ class QwenService(BaseAiService):
             或直接返回字符串（向后兼容）
         """
         try:
-            logger.info(f"用户 {user_id} 开始流式聊天: {message}")
+            Logger.info(f"用户 {user_id} 开始流式聊天: {message}")
 
             if not getattr(self, "llm", None):
                 yield {"type": "error", "content": Constants.INITIALIZATION_ERROR}
@@ -317,12 +316,12 @@ class QwenService(BaseAiService):
                 async for chunk in self.llm.astream(messages):
                     try:
                         if chunk.content:
-                            logger.debug(
+                            Logger.debug(
                                 f"收到流式内容块，长度: {len(chunk.content)} 字符"
                             )
                             yield {"type": "content", "content": chunk.content}
                     except Exception as chunk_error:
-                        logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                        Logger.error(f"处理流式内容块异常: {str(chunk_error)}")
                         continue
                 return
 
@@ -332,11 +331,11 @@ class QwenService(BaseAiService):
                 intent, has_permission, permission_msg = (
                     self.intent_router.route_with_permission_check(message, user_id, db)
                 )
-                logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
+                Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
                 # 如果没有权限，直接流式输出权限提示信息并返回
                 if not has_permission:
-                    logger.info(f"用户 {user_id} 无权限访问: {intent}")
+                    Logger.info(f"用户 {user_id} 无权限访问: {intent}")
                     permission_message = permission_msg or Constants.NO_PERMISSION_ERROR
 
                     # 发送思考过程（说明为什么没有权限）
@@ -350,7 +349,7 @@ class QwenService(BaseAiService):
 
             elif self.intent_router:
                 intent = self.intent_router.route(message)
-                logger.info(f"识别意图: {intent}")
+                Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
             chat_history = []
@@ -376,21 +375,21 @@ class QwenService(BaseAiService):
                         if chunk.content:
                             yield {"type": "content", "content": chunk.content}
                     except Exception as chunk_error:
-                        logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                        Logger.error(f"处理流式内容块异常: {str(chunk_error)}")
                         continue
 
             else:
                 # 使用Agent处理获取信息,然后流式输出最终答案
-                logger.info(Constants.AGENT_PROCESSING_MESSAGE)
+                Logger.info(Constants.AGENT_PROCESSING_MESSAGE)
 
                 # 设置SQL工具的用户ID
                 if user_id:
                     try:
                         sql_tools = get_sql_tools()
                         sql_tools.set_user_id(user_id)
-                        logger.info(f"为SQL工具设置用户ID: {user_id}")
+                        Logger.info(f"为SQL工具设置用户ID: {user_id}")
                     except Exception as e:
-                        logger.warning(f"设置SQL工具用户ID失败: {e}")
+                        Logger.warning(f"设置SQL工具用户ID失败: {e}")
 
                 # 添加历史上下文到输入
                 context = self._build_chat_context(chat_history)
@@ -399,7 +398,7 @@ class QwenService(BaseAiService):
                 full_input = context + user_info + f"当前问题: {message}"
 
                 # 第一步: 使用Agent获取信息和思考
-                logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
+                Logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
                 agent_response = await self.agent_executor.ainvoke(
                     {
                         "input": full_input,
@@ -418,22 +417,22 @@ class QwenService(BaseAiService):
                     intermediate_steps, agent_result
                 )
 
-                logger.info(f"思考过程长度: {len(thinking_text)} 字符")
+                Logger.info(f"思考过程长度: {len(thinking_text)} 字符")
                 # 记录完整的思考内容用于调试
                 if len(thinking_text) > 5000:
-                    logger.debug(f"思考过程内容（前2000字）: {thinking_text[:2000]}")
-                    logger.debug(
+                    Logger.debug(f"思考过程内容（前2000字）: {thinking_text[:2000]}")
+                    Logger.debug(
                         f"思考过程内容（中间2000字）: {thinking_text[len(thinking_text) // 2 - 1000 : len(thinking_text) // 2 + 1000]}"
                     )
-                    logger.debug(f"思考过程内容（末尾2000字）: {thinking_text[-2000:]}")
+                    Logger.debug(f"思考过程内容（末尾2000字）: {thinking_text[-2000:]}")
                 else:
-                    logger.debug(f"完整思考过程: {thinking_text}")
+                    Logger.debug(f"完整思考过程: {thinking_text}")
 
                 # 一次性输出完整的思考过程（不分块，确保完整）
                 yield {"type": "thinking", "content": thinking_text}
 
                 # 第二步: 基于Agent的结果,流式生成更好的回答
-                logger.info(Constants.AGENT_START_STREAMING_MESSAGE)
+                Logger.info(Constants.AGENT_START_STREAMING_MESSAGE)
 
                 # 构建包含Agent思考结果的提示
                 history_messages: list[Any] = []
@@ -454,11 +453,11 @@ class QwenService(BaseAiService):
                         if chunk.content:
                             yield {"type": "content", "content": chunk.content}
                     except Exception as chunk_error:
-                        logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                        Logger.error(f"处理流式内容块异常: {str(chunk_error)}")
                         continue
 
         except Exception as e:
-            logger.error(f"流式聊天异常: {str(e)}")
+            Logger.error(f"流式聊天异常: {str(e)}")
             if "invalid" in str(e).lower() and "key" in str(e).lower():
                 yield {"type": "error", "content": Constants.QWEN_INVALID_API_KEY_ERROR}
             elif "quota" in str(e).lower() or "exceeded" in str(e).lower():

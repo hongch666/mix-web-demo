@@ -4,8 +4,7 @@ import requests
 from common.config import get_service_instance, load_config
 from common.exceptions import BusinessException
 from common.middleware import get_current_user_id, get_current_username
-from common.utils import InternalTokenUtil
-from common.utils import fileLogger as logger
+from common.utils import InternalTokenUtil, Logger
 
 
 async def call_remote_service(
@@ -42,7 +41,7 @@ async def call_remote_service(
         )
         default_headers["X-Internal-Token"] = f"Bearer {internal_token}"
     except Exception as e:
-        logger.error(f"生成内部令牌失败: {str(e)}")
+        Logger.error(f"生成内部令牌失败: {str(e)}")
 
     # 合并默认和自定义请求头
     merged_headers: Dict[str, str] = {**default_headers, **(headers or {})}
@@ -51,7 +50,7 @@ async def call_remote_service(
         try:
             instance: Dict[str, Any] = get_service_instance(service_name)
             url: str = f"http://{instance['ip']}:{instance['port']}{path}"
-            logger.info(
+            Logger.info(
                 f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt + 1} 次尝试）"
             )
             response: requests.Response = requests.request(
@@ -66,6 +65,6 @@ async def call_remote_service(
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.error(f"调用 {service_name} 失败: {e}")
+            Logger.error(f"调用 {service_name} 失败: {e}")
             if attempt == retries - 1:
                 raise BusinessException(f"调用远程服务 {service_name} 失败，请稍后重试")

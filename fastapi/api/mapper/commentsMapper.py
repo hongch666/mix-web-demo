@@ -2,7 +2,7 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List
 
-from common.utils import fileLogger as logger
+from common.utils import Logger
 from entity.po import Comments
 from entity.po.user import User
 from sqlmodel import Date, Session, cast, select
@@ -93,7 +93,7 @@ class CommentsMapper:
             daily_trends.append({"date": date_str, "count": count})
             total += count
 
-        logger.debug(
+        Logger.debug(
             f"用户 {user_id} 本月评论趋势: 总数={total}, 天数={len(daily_trends)}"
         )
         return {"total": total, "daily_trends": daily_trends}

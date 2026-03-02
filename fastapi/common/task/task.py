@@ -4,8 +4,7 @@ from typing import Any, Callable, Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from sqlmodel import Session
 
 from .logic import (
@@ -68,8 +67,8 @@ def start_scheduler(
     )
 
     scheduler.start()
-    logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
-    logger.info(Constants.SCHEDULER_TASKS_MESSAGE)
-    logger.info(Constants.SCHEDULER_VECTOR_SYNC_MESSAGE)
-    logger.info(Constants.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
+    Logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
+    Logger.info(Constants.SCHEDULER_TASKS_MESSAGE)
+    Logger.info(Constants.SCHEDULER_VECTOR_SYNC_MESSAGE)
+    Logger.info(Constants.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
     return scheduler

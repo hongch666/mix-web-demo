@@ -3,8 +3,7 @@ from typing import Any, Optional
 
 import redis
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 
 
 class RedisClient:
@@ -53,12 +52,12 @@ class RedisClient:
 
             # 测试连接
             self._client.ping()
-            logger.info(
+            Logger.info(
                 f"[Redis] 连接成功: {redis_config['host']}:{redis_config['port']}, DB: {redis_config['db']}"
             )
 
         except Exception as e:
-            logger.error(f"[Redis] 连接失败: {e}")
+            Logger.error(f"[Redis] 连接失败: {e}")
             self._client = None
 
     def get_client(self) -> Optional[redis.Redis]:
@@ -91,7 +90,7 @@ class RedisClient:
                     return value
             return None
         except Exception as e:
-            logger.error(f"[Redis] GET 失败 key={key}: {e}")
+            Logger.error(f"[Redis] GET 失败 key={key}: {e}")
             return None
 
     def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
@@ -113,7 +112,7 @@ class RedisClient:
             self._client.set(key, value, ex=ex)
             return True
         except Exception as e:
-            logger.error(f"[Redis] SET 失败 key={key}: {e}")
+            Logger.error(f"[Redis] SET 失败 key={key}: {e}")
             return False
 
     def delete(self, *keys: str) -> bool:
@@ -124,7 +123,7 @@ class RedisClient:
             self._client.delete(*keys)
             return True
         except Exception as e:
-            logger.error(f"[Redis] DELETE 失败 keys={keys}: {e}")
+            Logger.error(f"[Redis] DELETE 失败 keys={keys}: {e}")
             return False
 
     def exists(self, key: str) -> bool:
@@ -134,7 +133,7 @@ class RedisClient:
                 return False
             return self._client.exists(key) > 0
         except Exception as e:
-            logger.error(f"[Redis] EXISTS 失败 key={key}: {e}")
+            Logger.error(f"[Redis] EXISTS 失败 key={key}: {e}")
             return False
 
     def expire(self, key: str, seconds: int) -> bool:
@@ -144,7 +143,7 @@ class RedisClient:
                 return False
             return self._client.expire(key, seconds)
         except Exception as e:
-            logger.error(f"[Redis] EXPIRE 失败 key={key}: {e}")
+            Logger.error(f"[Redis] EXPIRE 失败 key={key}: {e}")
             return False
 
     def ttl(self, key: str) -> int:
@@ -160,7 +159,7 @@ class RedisClient:
                 return -2
             return self._client.ttl(key)
         except Exception as e:
-            logger.error(f"[Redis] TTL 失败 key={key}: {e}")
+            Logger.error(f"[Redis] TTL 失败 key={key}: {e}")
             return -2
 
     def keys(self, pattern: str) -> list[str]:
@@ -170,7 +169,7 @@ class RedisClient:
                 return []
             return self._client.keys(pattern)
         except Exception as e:
-            logger.error(f"[Redis] KEYS 失败 pattern={pattern}: {e}")
+            Logger.error(f"[Redis] KEYS 失败 pattern={pattern}: {e}")
             return []
 
     def flushdb(self) -> bool:
@@ -179,10 +178,10 @@ class RedisClient:
             if not self._client:
                 return False
             self._client.flushdb()
-            logger.warning(Constants.REDIS_DATABASE_CLEARED_MESSAGE)
+            Logger.warning(Constants.REDIS_DATABASE_CLEARED_MESSAGE)
             return True
         except Exception as e:
-            logger.error(f"[Redis] FLUSHDB 失败: {e}")
+            Logger.error(f"[Redis] FLUSHDB 失败: {e}")
             return False
 
 

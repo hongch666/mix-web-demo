@@ -1,8 +1,7 @@
 from typing import Generator, List, Optional
 
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from sqlalchemy.pool import QueuePool
 from sqlmodel import Session, create_engine
 
@@ -79,16 +78,16 @@ def create_tables(tables: Optional[List[str]] = None) -> None:
                     create_sql = Constants.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
                     cursor.execute(create_sql)
                     connection.commit()
-                    logger.info(Constants.AI_CHAT_TABLE_CREATION_MESSAGE)
+                    Logger.info(Constants.AI_CHAT_TABLE_CREATION_MESSAGE)
                 else:
-                    logger.info(Constants.AI_CHAT_TABLE_EXISTS_MESSAGE)
+                    Logger.info(Constants.AI_CHAT_TABLE_EXISTS_MESSAGE)
             finally:
                 cursor.close()
                 connection.close()
         else:
-            logger.warning(Constants.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
+            Logger.warning(Constants.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
     except Exception as e:
-        logger.error(f"数据库表创建失败: {e}")
+        Logger.error(f"数据库表创建失败: {e}")
         import traceback
 
-        logger.error(traceback.format_exc())
+        Logger.error(traceback.format_exc())

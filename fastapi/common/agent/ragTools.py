@@ -23,9 +23,9 @@ class RAGTools:
         """初始化RAG组件"""
         # 延迟导入避免循环依赖
         from common.config import load_config
-        from common.utils import fileLogger as logger
+        from common.utils import Logger
 
-        self.logger = logger
+        self.logger = Logger
 
         # 1. 初始化嵌入模型（Qwen）
         qwen_cfg = load_config("qwen") or {}
@@ -47,7 +47,7 @@ class RAGTools:
         self.embeddings = DashScopeEmbeddings(
             model=embedding_model, dashscope_api_key=api_key
         )
-        self.logger.info(f"Qwen嵌入模型初始化成功: {embedding_model}")
+        self.Logger.info(f"Qwen嵌入模型初始化成功: {embedding_model}")
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -56,7 +56,7 @@ class RAGTools:
             length_function=len,
             separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""],
         )
-        self.logger.info(Constants.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
+        self.Logger.info(Constants.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
 
         # 3. 初始化PostgreSQL向量存储
         postgres_cfg = load_config("database")["postgres"]
@@ -71,7 +71,7 @@ class RAGTools:
             connection_string=connection_string,
             use_jsonb=True,
         )
-        self.logger.info(Constants.VECTOR_STORE_INITIALIZATION_SUCCESS)
+        self.Logger.info(Constants.VECTOR_STORE_INITIALIZATION_SUCCESS)
 
     def add_articles_to_vector_store(
         self,
@@ -123,12 +123,12 @@ class RAGTools:
             self.vector_store.add_documents(documents)
 
             result = f"成功添加 {len(article_ids)} 篇文章，共 {len(documents)} 个文本块到向量存储"
-            self.logger.info(result)
+            self.Logger.info(result)
             return result
 
         except Exception as e:
             error_msg = f"添加文章到向量存储失败: {str(e)}"
-            self.logger.error(error_msg)
+            self.Logger.error(error_msg)
             return error_msg
 
     def _deduplicate_articles(
@@ -227,14 +227,14 @@ class RAGTools:
                 )
                 result_text += f"   {content}\n\n"
 
-            self.logger.info(
+            self.Logger.info(
                 f"RAG搜索成功，返回 {len(dedup_docs)} 个结果（去重前: {len(filtered_docs)}，过滤前: {len(docs)}）"
             )
             return result_text
 
         except Exception as e:
             error_msg = f"RAG搜索失败: {str(e)}"
-            self.logger.error(error_msg)
+            self.Logger.error(error_msg)
             return error_msg
 
     def get_article_context(self, query: str, k: int = 3) -> List[Document]:
@@ -263,12 +263,12 @@ class RAGTools:
             # 提取Document对象
             dedup_docs = [doc for doc, _ in dedup_docs_with_scores]
 
-            self.logger.info(
+            self.Logger.info(
                 f"获取文章上下文成功，返回 {len(dedup_docs)} 个文档（去重前: {len(docs_with_scores)}）"
             )
             return dedup_docs
         except Exception as e:
-            self.logger.error(f"获取文章上下文失败: {e}")
+            self.Logger.error(f"获取文章上下文失败: {e}")
             return []
 
     def get_langchain_tools(self) -> List[Tool]:

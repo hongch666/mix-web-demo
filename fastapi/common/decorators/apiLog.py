@@ -7,8 +7,7 @@ from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Union
 from common.config import send_to_queue
 from common.exceptions import BusinessException
 from common.middleware import get_current_user_id, get_current_username
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from fastapi.responses import StreamingResponse
 
 from fastapi import Request
@@ -106,7 +105,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable:
 
             # 记录日志
             logger_method: Callable[[str], None] = getattr(
-                logger, log_config.log_level, logger.info
+                Logger, log_config.log_level, Logger.info
             )
             logger_method(log_message)
 
@@ -239,7 +238,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable:
 
             # 记录日志
             logger_method: Callable[[str], None] = getattr(
-                logger, log_config.log_level, logger.info
+                Logger, log_config.log_level, Logger.info
             )
             logger_method(log_message)
 
@@ -560,7 +559,7 @@ def _extract_request_body_for_queue(
         return request_body_dict if request_body_dict else None
 
     except Exception as e:
-        logger.warning(f"提取请求体信息时出错: {str(e)}")
+        Logger.warning(f"提取请求体信息时出错: {str(e)}")
         return None
 
 
@@ -674,12 +673,12 @@ def _send_api_log_to_queue(
         # 发送到 RabbitMQ
         success: bool = send_to_queue("api-log-queue", api_log_message, persistent=True)
         if success:
-            logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)
+            Logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)
         else:
-            logger.error(Constants.API_RABBITMQ_LOGGING_FAILURE)
+            Logger.error(Constants.API_RABBITMQ_LOGGING_FAILURE)
 
     except Exception as e:
-        logger.error(f"发送 API 日志到队列时出错: {e}")
+        Logger.error(f"发送 API 日志到队列时出错: {e}")
 
 
 # 简化版装饰器，直接传入消息

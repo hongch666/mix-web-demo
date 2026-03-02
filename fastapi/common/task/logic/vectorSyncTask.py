@@ -6,8 +6,7 @@ from typing import Any, Callable, List, Optional
 from common.agent import get_rag_tools
 from common.config import load_config
 from common.exceptions import BusinessException
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from sqlmodel import Session
 
 # Redis 键名
@@ -34,7 +33,7 @@ def _get_redis_client() -> Optional[Any]:
                 decode_responses=True,
             )
         except Exception as e:
-            logger.error(f"无法连接到 Redis: {e}")
+            Logger.error(f"无法连接到 Redis: {e}")
             return None
 
 
@@ -49,10 +48,10 @@ def _compute_article_hash(article: Any) -> str:
         # 组合成统一格式用于hash计算
         hash_str = f"{title}||{content}||{tags}"
         new_hash = hashlib.md5(hash_str.encode()).hexdigest()
-        logger.debug(f"计算文章 hash 完成: title='{title[:20]}...', hash={new_hash}")
+        Logger.debug(f"计算文章 hash 完成: title='{title[:20]}...', hash={new_hash}")
         return new_hash
     except Exception as e:
-        logger.error(f"计算文章 hash 失败: {e}")
+        Logger.error(f"计算文章 hash 失败: {e}")
         return ""
 
 
@@ -66,7 +65,7 @@ def _get_article_content_hash(article_id: int) -> Optional[str]:
         hash_value = redis_client.get(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}")
         return hash_value
     except Exception as e:
-        logger.warning(f"从 Redis 读取文章 hash 失败: {e}")
+        Logger.warning(f"从 Redis 读取文章 hash 失败: {e}")
         return None
 
 
@@ -75,14 +74,14 @@ def _save_article_content_hash(article_id: int, hash_value: str) -> None:
     try:
         redis_client = _get_redis_client()
         if redis_client is None:
-            logger.warning(f"Redis 连接失败，无法保存文章 {article_id} 的 hash")
+            Logger.warning(f"Redis 连接失败，无法保存文章 {article_id} 的 hash")
             return
 
         # 永久保存 hash（不设置过期时间）
         redis_client.set(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}", hash_value)
-        logger.debug(f"已保存文章 {article_id} 的 hash 到 Redis: {hash_value}")
+        Logger.debug(f"已保存文章 {article_id} 的 hash 到 Redis: {hash_value}")
     except Exception as e:
-        logger.error(f"保存文章 {article_id} 的 hash 到 Redis 失败: {e}")
+        Logger.error(f"保存文章 {article_id} 的 hash 到 Redis 失败: {e}")
 
 
 def _get_last_sync_time() -> Optional[datetime]:
@@ -90,14 +89,14 @@ def _get_last_sync_time() -> Optional[datetime]:
     try:
         redis_client = _get_redis_client()
         if redis_client is None:
-            logger.warning(Constants.REDIS_CONNECTION_FAILED_MESSAGE)
+            Logger.warning(Constants.REDIS_CONNECTION_FAILED_MESSAGE)
             return None
 
         timestamp_str = redis_client.get(_VECTOR_SYNC_TIME_KEY)
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
-        logger.warning(f"从 Redis 读取同步时间戳失败: {e}")
+        Logger.warning(f"从 Redis 读取同步时间戳失败: {e}")
 
     return None
 
@@ -107,14 +106,14 @@ def _save_sync_time(sync_time: datetime) -> None:
     try:
         redis_client = _get_redis_client()
         if redis_client is None:
-            logger.error(Constants.REDIS_CONNECTION_SAVE_FAILED_MESSAGE)
+            Logger.error(Constants.REDIS_CONNECTION_SAVE_FAILED_MESSAGE)
             return
 
         # 永久保存时间戳（不设置过期时间）
         redis_client.set(_VECTOR_SYNC_TIME_KEY, sync_time.isoformat())
-        logger.info(f"已保存同步时间戳到 Redis: {sync_time.isoformat()}")
+        Logger.info(f"已保存同步时间戳到 Redis: {sync_time.isoformat()}")
     except Exception as e:
-        logger.error(f"保存同步时间戳到 Redis 失败: {e}")
+        Logger.error(f"保存同步时间戳到 Redis 失败: {e}")
 
 
 def _get_changed_articles(
@@ -135,7 +134,7 @@ def _get_changed_articles(
 
     if last_sync_time is None:
         # 首次同步，返回所有已发布文章
-        logger.info(Constants.FIRST_TIME_SYNC_MESSAGE)
+        Logger.info(Constants.FIRST_TIME_SYNC_MESSAGE)
         # 同时为这些文章保存 hash 值
         for article in published_articles:
             article_id = getattr(article, "id", 0)
@@ -154,26 +153,26 @@ def _get_changed_articles(
         # 计算当前内容的 hash
         current_hash = _compute_article_hash(article)
         if not current_hash:
-            logger.warning(f"无法计算文章 {article_id} 的 hash")
+            Logger.warning(f"无法计算文章 {article_id} 的 hash")
             continue
 
         # 从 Redis 获取上次保存的 hash
         cached_hash = _get_article_content_hash(article_id)
-        logger.info(
+        Logger.info(
             f"文章 {article_id}: 缓存hash={cached_hash}, 当前hash={current_hash}"
         )
 
         # 比对 hash 值
         if cached_hash is None:
             # 缓存中没有（可能是新文章），视为有变化
-            logger.info(f"文章 {article_id} 在缓存中不存在，视为新增，将同步")
+            Logger.info(f"文章 {article_id} 在缓存中不存在，视为新增，将同步")
             changed_articles.append(article)
             # 保存当前 hash
             if current_hash:
                 _save_article_content_hash(article_id, current_hash)
         elif cached_hash != current_hash:
             # hash 不相同，说明内容有变化
-            logger.info(
+            Logger.info(
                 f"文章 {article_id} 内容已变化，将同步 (旧: {cached_hash}, 新: {current_hash})"
             )
             changed_articles.append(article)
@@ -182,7 +181,7 @@ def _get_changed_articles(
                 _save_article_content_hash(article_id, current_hash)
         else:
             # hash 相同，内容未变化
-            logger.debug(f"文章 {article_id} 内容未变化，跳过同步")
+            Logger.debug(f"文章 {article_id} 内容未变化，跳过同步")
 
     return changed_articles
 
@@ -217,7 +216,7 @@ def export_article_vectors_to_postgres(
     try:
         rag_tools = get_rag_tools()
     except ImportError as e:
-        logger.error(f"RAG工具未找到: {e}")
+        Logger.error(f"RAG工具未找到: {e}")
         return
 
     mysql_db: Optional[Session] = None
@@ -226,7 +225,7 @@ def export_article_vectors_to_postgres(
     try:
         mysql_db = mysql_db_factory()
 
-        logger.info(Constants.START_SYNC_TO_POSTGRES_MESSAGE)
+        Logger.info(Constants.START_SYNC_TO_POSTGRES_MESSAGE)
 
         # 1. 获取所有文章
         if hasattr(article_mapper, "get_all_articles"):
@@ -234,11 +233,11 @@ def export_article_vectors_to_postgres(
         elif hasattr(article_mapper, "get_all_articles_mapper"):
             articles = article_mapper.get_all_articles_mapper(mysql_db)
         else:
-            logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
+            Logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
             return
 
         if not articles:
-            logger.info(Constants.NO_ARTICLES_DATA_MESSAGE)
+            Logger.info(Constants.NO_ARTICLES_DATA_MESSAGE)
             return
 
         # 2. 增量同步：筛选出变更的文章
@@ -247,18 +246,18 @@ def export_article_vectors_to_postgres(
             changed_articles = _get_changed_articles(articles, last_sync_time)
 
             if not changed_articles:
-                logger.info(Constants.NO_CHANGED_ARTICLES_MESSAGE)
+                Logger.info(Constants.NO_CHANGED_ARTICLES_MESSAGE)
                 return
 
-            logger.info(f"增量同步模式：检测到 {len(changed_articles)} 篇文章有变更")
+            Logger.info(f"增量同步模式：检测到 {len(changed_articles)} 篇文章有变更")
             sync_articles = changed_articles
         else:
             # 全量同步模式
             published_articles = [a for a in articles if getattr(a, "status", 0) == 1]
             if not published_articles:
-                logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
+                Logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
                 return
-            logger.info(f"全量同步模式：找到 {len(published_articles)} 篇已发布文章")
+            Logger.info(f"全量同步模式：找到 {len(published_articles)} 篇已发布文章")
             sync_articles = published_articles
 
         # 3. 批量处理文章
@@ -304,9 +303,9 @@ def export_article_vectors_to_postgres(
                     ):
                         try:
                             rag_tools.delete_articles_from_vector_store(article_ids)
-                            logger.debug(f"已删除旧向量 (IDs: {article_ids})")
+                            Logger.debug(f"已删除旧向量 (IDs: {article_ids})")
                         except Exception as e:
-                            logger.warning(f"删除旧向量失败，将覆盖: {e}")
+                            Logger.warning(f"删除旧向量失败，将覆盖: {e}")
 
                     # 使用RAG工具添加到向量存储
                     result = rag_tools.add_articles_to_vector_store(
@@ -321,7 +320,7 @@ def export_article_vectors_to_postgres(
                     if "失败" in result_str or "error" in result_str.lower():
                         retry_count += 1
                         if retry_count < max_retries:
-                            logger.warning(
+                            Logger.warning(
                                 f"批次 {batch_num} 同步返回失败信息，准备重试 ({retry_count}/{max_retries}): {result}"
                             )
                             time.sleep(retry_delay)
@@ -333,20 +332,20 @@ def export_article_vectors_to_postgres(
 
                     total_synced += len(batch)
                     batch_success = True
-                    logger.info(f"批次 {batch_num} 同步成功: {result}")
+                    Logger.info(f"批次 {batch_num} 同步成功: {result}")
 
                 except Exception as e:
                     retry_count += 1
 
                     if retry_count < max_retries:
-                        logger.warning(
+                        Logger.warning(
                             f"批次 {batch_num} 同步失败，准备重试 ({retry_count}/{max_retries}): {e}"
                         )
                         time.sleep(retry_delay)
                     else:
                         total_errors += len(batch)
                         failed_articles.extend(article_ids)
-                        logger.error(
+                        Logger.error(
                             f"批次 {batch_num} 重试 {max_retries} 次仍然失败，放弃同步: {e}"
                         )
 
@@ -355,15 +354,15 @@ def export_article_vectors_to_postgres(
             _save_sync_time(sync_start_time)
 
         sync_mode = "增量" if enable_incremental_sync else "全量"
-        logger.info(
+        Logger.info(
             f"{sync_mode}同步完成！成功: {total_synced} 篇，失败: {total_errors} 篇"
         )
 
         if failed_articles:
-            logger.warning(f"失败的文章 ID: {failed_articles}")
+            Logger.warning(f"失败的文章 ID: {failed_articles}")
 
     except Exception as e:
-        logger.error(f"同步文章向量任务失败: {e}")
+        Logger.error(f"同步文章向量任务失败: {e}")
     finally:
         # 关闭数据库会话
         try:
@@ -403,7 +402,7 @@ def initialize_article_content_hash_cache(
     try:
         mysql_db = mysql_db_factory()
 
-        logger.info(Constants.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
+        Logger.info(Constants.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
 
         # 1. 获取所有文章
         if hasattr(article_mapper, "get_all_articles"):
@@ -411,21 +410,21 @@ def initialize_article_content_hash_cache(
         elif hasattr(article_mapper, "get_all_articles_mapper"):
             articles = article_mapper.get_all_articles_mapper(mysql_db)
         else:
-            logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
+            Logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
             return
 
         if not articles:
-            logger.info(Constants.NO_ARTICLES_DATA_MESSAGE)
+            Logger.info(Constants.NO_ARTICLES_DATA_MESSAGE)
             return
 
         # 2. 筛选已发布的文章
         published_articles = [a for a in articles if getattr(a, "status", 0) == 1]
 
         if not published_articles:
-            logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
+            Logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
             return
 
-        logger.info(
+        Logger.info(
             f"找到 {len(published_articles)} 篇已发布文章，开始计算并缓存 hash..."
         )
 
@@ -448,7 +447,7 @@ def initialize_article_content_hash_cache(
             # 计算当前内容的 hash
             current_hash = _compute_article_hash(article)
             if not current_hash:
-                logger.warning(f"无法计算文章 {article_id} 的 hash")
+                Logger.warning(f"无法计算文章 {article_id} 的 hash")
                 continue
 
             # 保存 hash 到 Redis
@@ -457,18 +456,18 @@ def initialize_article_content_hash_cache(
 
             # 每 100 篇输出一次进度
             if total_initialized % 100 == 0:
-                logger.info(f"已初始化 {total_initialized} 篇文章的 hash 缓存...")
+                Logger.info(f"已初始化 {total_initialized} 篇文章的 hash 缓存...")
 
-        logger.info(
+        Logger.info(
             f"hash 缓存初始化完成！新增: {total_initialized} 篇，已存在: {total_skipped} 篇"
         )
 
         # 4. 初始化完成后，也要保存同步时间戳，以便下次增量同步时能识别这是有历史数据的
         _save_sync_time(datetime.now())
-        logger.info(Constants.SYNC_TIME_SET_MESSAGE)
+        Logger.info(Constants.SYNC_TIME_SET_MESSAGE)
 
     except Exception as e:
-        logger.error(f"初始化文章 hash 缓存失败: {e}")
+        Logger.error(f"初始化文章 hash 缓存失败: {e}")
     finally:
         # 关闭数据库会话
         try:

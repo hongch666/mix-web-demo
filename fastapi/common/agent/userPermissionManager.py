@@ -2,8 +2,7 @@ from functools import lru_cache
 from typing import Any, List, Optional, Tuple
 
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from sqlmodel import Session
 
 
@@ -19,7 +18,7 @@ class UserPermissionManager:
             if keywords:
                 return keywords
         except Exception as e:
-            logger.warning(f"从配置文件加载关键字失败: {e}，使用默认关键字")
+            Logger.warning(f"从配置文件加载关键字失败: {e}，使用默认关键字")
 
         # 默认关键字
         return Constants.DEFAULT_KEYWORDS
@@ -46,18 +45,18 @@ class UserPermissionManager:
         """
         try:
             if not self.user_mapper:
-                logger.warning(
+                Logger.warning(
                     f"用户Mapper未初始化，无法获取用户 {user_id} 的角色，使用默认角色 'user'"
                 )
                 return Constants.ROLE_USER  # 默认为 user
 
             # 直接调用 user_mapper 的 get_user_role 方法
             role = self.user_mapper.get_user_role(user_id, db)
-            logger.info(f"用户 {user_id} 的角色: {role}")
+            Logger.info(f"用户 {user_id} 的角色: {role}")
             return role
 
         except Exception as e:
-            logger.error(f"获取用户 {user_id} 的角色失败: {e}，使用默认角色 'user'")
+            Logger.error(f"获取用户 {user_id} 的角色失败: {e}，使用默认角色 'user'")
             return Constants.ROLE_USER  # 异常时默认为 user
 
     def is_admin(self, user_id: int, db: Session) -> bool:
@@ -93,7 +92,7 @@ class UserPermissionManager:
         # 检查是否包含个人信息查询的关键字
         for keyword in self.PERSONAL_INFO_KEYWORDS:
             if keyword in question_lower:
-                logger.debug(f"[权限] 检测到个人信息查询关键字: '{keyword}'")
+                Logger.debug(f"[权限] 检测到个人信息查询关键字: '{keyword}'")
                 return True
 
         return False
@@ -164,18 +163,18 @@ class UserPermissionManager:
 
         # 第二步：检查是否是个人信息查询
         if question and self.is_personal_info_query(question):
-            logger.info(f"用户 {user_id} 查询个人信息，允许访问 {tool_type} 工具")
+            Logger.info(f"用户 {user_id} 查询个人信息，允许访问 {tool_type} 工具")
             return True, ""
 
         # 第三步：不是个人信息查询，检查用户角色（最后进行）
         role = self.get_user_role(user_id, db)
         if role == Constants.ROLE_ADMIN:
-            logger.info(f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具")
+            Logger.info(f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具")
             return True, ""
         else:
             tool_name = "数据库查询" if tool_type == "sql" else "日志查询"
             reason = f"权限拒绝：您的账户权限不足，无法访问{tool_name}功能。仅管理员账户可以使用此功能。如需查询个人信息（如'我的点赞文章'），请在问题中包含相关关键词。"
-            logger.warning(
+            Logger.warning(
                 f"用户 {user_id} (角色: {role}) 尝试访问 {tool_type} 工具被拒绝：{question}"
             )
             return False, reason

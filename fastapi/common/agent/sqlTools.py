@@ -21,21 +21,21 @@ class SQLTools:
         """初始化数据库连接"""
         # 延迟导入避免循环依赖
         from common.config import load_config
-        from common.utils import fileLogger as logger
+        from common.utils import Logger
 
-        self.logger = logger
+        self.logger = Logger
         mysql_cfg = load_config("database")["mysql"]
         self.database_url = f"mysql+pymysql://{mysql_cfg['user']}:{mysql_cfg['password']}@{mysql_cfg['host']}:{mysql_cfg['port']}/{mysql_cfg['database']}?charset=utf8mb4"
 
         self.engine = create_engine(self.database_url, pool_pre_ping=True)
         self.db = SQLDatabase(self.engine)
-        self.logger.info(Constants.SQL_TOOL_INITIALIZATION_SUCCESS)
+        self.Logger.info(Constants.SQL_TOOL_INITIALIZATION_SUCCESS)
 
     def set_user_id(self, user_id: Optional[int]) -> None:
         """设置当前用户ID"""
         if user_id:
             user_id_context.set(user_id)
-            self.logger.info(f"设置SQL工具用户ID: {user_id}")
+            self.Logger.info(f"设置SQL工具用户ID: {user_id}")
 
     def get_user_id(self) -> Optional[int]:
         """获取当前用户ID"""
@@ -101,7 +101,7 @@ class SQLTools:
 
         except Exception as e:
             error_msg = f"获取表结构失败: {str(e)}"
-            self.logger.error(error_msg)
+            self.Logger.error(error_msg)
             return error_msg
 
     def execute_query(self, query: str) -> str:
@@ -138,7 +138,7 @@ class SQLTools:
                             or f"{table}.user_id" not in query_lower
                         ):
                             # 在FROM/JOIN之后添加WHERE条件
-                            self.logger.info(
+                            self.Logger.info(
                                 f"[SQL工具] 为用户 {current_user_id} 的查询添加用户ID过滤"
                             )
                             # 这里可以进一步增强查询，但为了安全起见，我们只在日志中记录
@@ -174,12 +174,12 @@ class SQLTools:
                     ]
                     result_text += " | ".join(row_data) + "\n"
 
-                self.logger.info(f"SQL查询成功，返回 {len(rows)} 行")
+                self.Logger.info(f"SQL查询成功，返回 {len(rows)} 行")
                 return result_text
 
         except Exception as e:
             error_msg = f"SQL查询失败: {str(e)}"
-            self.logger.error(error_msg)
+            self.Logger.error(error_msg)
             return error_msg
 
     def get_langchain_tools(self) -> List[Tool]:

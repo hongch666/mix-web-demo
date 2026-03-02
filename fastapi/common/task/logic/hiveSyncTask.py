@@ -4,8 +4,7 @@ import subprocess
 from typing import Any, Callable, Dict, List, Optional
 
 from common.config import load_config
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
 from pyhive import hive
 from sqlmodel import Session
 
@@ -95,13 +94,13 @@ def export_articles_to_csv_and_hive(
             article_get_all = article_mapper if callable(article_mapper) else None
 
         if article_get_all is None:
-            logger.error(Constants.ARTICLE_MAPPER_NO_GET_ALL_METHOD_ERROR)
+            Logger.error(Constants.ARTICLE_MAPPER_NO_GET_ALL_METHOD_ERROR)
             return
 
         # 支持传入 function 或 mapper instance
         articles: List[Any] = article_get_all(db) if callable(article_get_all) else []
         if not articles:
-            logger.warning(Constants.NO_TEXT_CONTENT_AVAILABLE_MESSAGE)
+            Logger.warning(Constants.NO_TEXT_CONTENT_AVAILABLE_MESSAGE)
             return
 
         # 获取所有user_id（确保类型一致）
@@ -174,7 +173,7 @@ def export_articles_to_csv_and_hive(
                         user_id_to_name.get(getattr(a, "user_id", None), ""),
                     ]
                 )
-        logger.info(f"文章表已导出到本地csv: {csv_file}")
+        Logger.info(f"文章表已导出到本地csv: {csv_file}")
 
         # 3. 尝试COPY并LOAD DATA到hive（保持原逻辑）
         try:
@@ -189,7 +188,7 @@ def export_articles_to_csv_and_hive(
             container_path = f"/tmp/{os.path.basename(csv_file)}"
             copy_cmd = f"docker cp {csv_file} {hive_container}:{container_path}"
             subprocess.run(copy_cmd, shell=True, check=True, capture_output=True)
-            logger.info(f"已将csv复制到hive容器: {container_path}")
+            Logger.info(f"已将csv复制到hive容器: {container_path}")
 
             # 连接 hive 并重建表、加载数据
             conn = hive.Connection(host=hive_host, port=hive_port, database=hive_db)
@@ -215,14 +214,14 @@ def export_articles_to_csv_and_hive(
                 TBLPROPERTIES ('skip.header.line.count'='1')
             """
             cursor.execute(create_sql)
-            logger.info(Constants.HIVE_TABLE_CREATED_MESSAGE)
+            Logger.info(Constants.HIVE_TABLE_CREATED_MESSAGE)
             load_sql = f"LOAD DATA LOCAL INPATH '{container_path}' OVERWRITE INTO TABLE {hive_table}"
             cursor.execute(load_sql)
-            logger.info(Constants.CSV_LOADED_TO_HIVE_MESSAGE)
+            Logger.info(Constants.CSV_LOADED_TO_HIVE_MESSAGE)
             cursor.close()
             conn.close()
         except Exception as hive_e:
-            logger.error(f"连接hive或LOAD DATA失败，仅导出csv: {hive_e}")
+            Logger.error(f"连接hive或LOAD DATA失败，仅导出csv: {hive_e}")
 
         # 清除所有相关缓存
         try:
@@ -236,12 +235,12 @@ def export_articles_to_csv_and_hive(
                 publish_time_cache.clear_all()
             if statistics_cache is not None and hasattr(statistics_cache, "clear_all"):
                 statistics_cache.clear_all()
-            logger.info(Constants.CACHES_CLEARED_MESSAGE)
+            Logger.info(Constants.CACHES_CLEARED_MESSAGE)
         except Exception as cache_e:
-            logger.error(f"清除缓存失败: {cache_e}")
+            Logger.error(f"清除缓存失败: {cache_e}")
 
     except Exception as e:
-        logger.error(f"定时任务导出文章表失败: {e}")
+        Logger.error(f"定时任务导出文章表失败: {e}")
     finally:
         # 关闭 db session（如果支持）
         try:
