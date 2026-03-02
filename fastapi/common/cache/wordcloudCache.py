@@ -2,15 +2,15 @@ import time
 from functools import lru_cache
 from typing import Optional
 
-from common.config import get_redis_client
-from common.utils import Constants
-from common.utils import fileLogger as logger
+from common.utils import Constants, Logger
+
+from .baseCache import BaseCache
 
 # 全局单例实例
 _wordcloud_cache_instance = None
 
 
-class WordcloudCache:
+class WordcloudCache(BaseCache):
     """
     词云图缓存管理 - 二级缓存架构
 
@@ -21,57 +21,18 @@ class WordcloudCache:
 
     # Redis 键前缀
     REDIS_KEY_PREFIX = "wordcloud:url"
-
-    def __init__(self) -> None:
-        # L1 本地缓存
-        self._local_cache: Optional[str] = None
-        self._local_cache_time: float = 0
-        self._local_cache_ttl: int = 300  # 5分钟
-
-        # Redis 客户端
-        self._redis = get_redis_client()
-
-        # Redis TTL（1天）
-        self._redis_ttl: int = 86400
-
-    def __repr__(self) -> str:
-        """对象表示 - 用于日志输出和序列化"""
-        return "WordcloudCache()"
-
-    def __str__(self) -> str:
-        """字符串表示"""
-        return "WordcloudCache()"
-
-    def is_local_cache_valid(self) -> bool:
-        """检查本地缓存是否有效"""
-        if not self._local_cache:
-            return False
-
-        # 检查 TTL
-        if time.time() - self._local_cache_time > self._local_cache_ttl:
-            logger.info(Constants.L1_CACHE_TTL_EXPIRED)
-            return False
-
-        return True
-
-    def get_from_local(self) -> Optional[str]:
-        """从本地缓存获取"""
-        if self.is_local_cache_valid():
-            cache_age = time.time() - self._local_cache_time
-            logger.info(f"[L1缓存] 命中，缓存年龄: {cache_age:.1f}s")
-            return self._local_cache
-        return None
+    L1_CACHE_TTL = 300  # 5分钟
 
     def get_from_redis(self) -> Optional[str]:
         """从 Redis 缓存获取"""
         try:
             if not self._redis.is_available():
-                logger.warning(Constants.L2_CACHE_UNAVAILABLE)
+                Logger.warning(Constants.L2_CACHE_UNAVAILABLE)
                 return None
 
             data = self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                logger.info(Constants.L2_CACHE_HIT)
+                Logger.info(Constants.L2_CACHE_HIT)
                 # 统一转换为字符串类型（Redis可能返回bytes）
                 url = data if isinstance(data, str) else data.decode("utf-8")
                 # 同时更新本地缓存
@@ -79,10 +40,10 @@ class WordcloudCache:
                 self._local_cache_time = time.time()
                 return url
 
-            logger.info(Constants.L2_CACHE_MISS)
+            Logger.info(Constants.L2_CACHE_MISS)
             return None
         except Exception as e:
-            logger.error(f"[L2缓存] Redis 读取失败: {e}")
+            Logger.error(f"[L2缓存] Redis 读取失败: {e}")
             return None
 
     def get(self) -> Optional[str]:
@@ -105,7 +66,7 @@ class WordcloudCache:
             return redis_data
 
         # 3. 两级缓存都没有
-        logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
+        Logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
     def set(self, oss_url: str) -> None:
@@ -119,37 +80,18 @@ class WordcloudCache:
         参数:
             oss_url: OSS中词云图的URL
         """
-        # 1. 更新本地缓存
-        self._local_cache = oss_url
-        self._local_cache_time = time.time()
-        logger.info(Constants.L1_CACHE_UPDATED)
-
-        # 2. 更新 Redis 缓存
-        try:
-            if self._redis.is_available():
-                self._redis.set(self.REDIS_KEY_PREFIX, oss_url, ex=self._redis_ttl)
-                logger.info(f"[L2缓存] 已更新 Redis，TTL={self._redis_ttl}s (1天)")
-        except Exception as e:
-            logger.error(f"[L2缓存] Redis 写入失败: {e}")
+        self.update_local_cache(oss_url)
+        self.update_redis_cache(oss_url)
 
     def delete(self) -> None:
         """删除所有级别的词云图缓存"""
-        # 清除本地缓存
-        self._local_cache = None
-        self._local_cache_time = 0
-        logger.info(Constants.L1_CACHE_CLEARED)
-
-        # 清除 Redis 缓存
+        self.clear_local_cache()
         try:
             if self._redis.is_available():
                 self._redis.delete(self.REDIS_KEY_PREFIX)
-                logger.info(Constants.WORDCLOUD_CACHE_DELETED)
+                Logger.info(Constants.WORDCLOUD_CACHE_DELETED)
         except Exception as e:
-            logger.error(f"[L2缓存] Redis 清除失败: {e}")
-
-    def clear_all(self) -> None:
-        """清除所有缓存（别名方法，用于兼容）"""
-        self.delete()
+            Logger.error(f"[L2缓存] Redis 清除失败: {e}")
 
 
 @lru_cache
