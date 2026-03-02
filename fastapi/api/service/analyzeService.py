@@ -267,13 +267,13 @@ class AnalyzeService:
         获取词云图OSS URL服务
 
         流程:
-        1. 先尝试从Redis获取缓存
+        1. 先尝试从缓存获取（L1本地 + L2 Redis）
         2. 缓存未命中时，生成词云图并上传到OSS
-        3. 将OSS URL缓存到Redis（24小时）
+        3. 将OSS URL缓存到两级缓存（L1本地5分钟 + L2 Redis 24小时）
         """
         start = time.time()
 
-        # ========== 步骤1: 尝试从Redis获取缓存 ==========
+        # ========== 步骤1: 尝试从缓存获取（二级缓存） ==========
         try:
             cached_url = self._wordcloud_cache.get()
             if cached_url:
@@ -292,12 +292,12 @@ class AnalyzeService:
         # 上传到OSS
         oss_url = self.upload_wordcloud_to_oss()
 
-        # ========== 步骤3: 缓存到Redis ==========
+        # ========== 步骤3: 缓存到两级缓存 ==========
         try:
             self._wordcloud_cache.set(oss_url)
             elapsed = time.time() - start
             logger.info(
-                f"get_wordcloud_service: 词云图已生成并缓存，总耗时 {elapsed:.3f}s"
+                f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {elapsed:.3f}s"
             )
         except Exception as cache_e:
             logger.warning(f"缓存词云图URL失败: {cache_e}")
