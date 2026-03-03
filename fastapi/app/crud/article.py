@@ -1,0 +1,466 @@
+import os
+import time
+from datetime import datetime, timedelta
+from functools import lru_cache
+from typing import Any, Dict, List, Optional
+
+import pandas as pd
+from app.db import HiveConnectionPool, get_hive_connection_pool, load_config
+from app.core import Constants, Logger
+from app.models import Article, Category, Collect, Focus, Like, SubCategory, User
+from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.functions import col, current_date, date_format, date_sub
+from sqlmodel import Session, func, select
+
+
+class ArticleMapper:
+    """文章 Mapper"""
+
+    def __init__(self) -> None:
+        self._hive_pool: HiveConnectionPool = get_hive_connection_pool()
+
+    def get_top10_articles_hive_mapper(self) -> List[Dict[str, Any]]:
+        """获取前10篇文章 - Hive 查表"""
+
+        columns: List[str] = Constants.ARTICLE_COLUMN
+
+        start: float = time.time()
+        # 从连接池获取连接
+        pool_start: float = time.time()
+        hive_conn: Any = self._hive_pool.get_connection()
+        pool_time: float = time.time() - pool_start
+
+        # 查询 Hive
+        Logger.info(Constants.HIVE_QUERY)
+        query_start: float = time.time()
+        with hive_conn.cursor() as cursor:
+            cursor.execute(
+                f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10"
+            )
+            top10: List[tuple] = cursor.fetchall()
+
+        query_time: float = time.time() - query_start
+
+        # 转换为字典
+        result: List[Dict[str, Any]] = [dict(zip(columns, r)) for r in top10]
+
+        total_time: float = time.time() - start
+        Logger.info(
+            f"获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s"
+        )
+
+        # 归还连接到池
+        if hive_conn:
+            self._hive_pool.return_connection(hive_conn)
+
+        return result
+
+    def get_hive_connection(self) -> Any:
+        """获取 Hive 连接（用于缓存版本检查）"""
+        return self._hive_pool.get_connection()
+
+    def return_hive_connection(self, conn: Any) -> None:
+        """归还 Hive 连接"""
+        self._hive_pool.return_connection(conn)
+
+    def get_top10_articles_spark_mapper(self) -> List[Dict[str, Any]]:
+        """获取前10篇文章 - Spark 查表"""
+
+        FILE_PATH: str = load_config("files")["excel_path"]
+        csv_file: str = os.path.normpath(
+            os.path.join(os.getcwd(), FILE_PATH, "articles.csv")
+        )
+        csv_file = os.path.abspath(csv_file)
+        columns: List[str] = Constants.ARTICLE_COLUMN
+        try:
+            spark: SparkSession = SparkSession.builder.appName(
+                "ArticleTop10"
+            ).getOrCreate()
+            df: DataFrame = spark.read.option("header", True).csv(csv_file)
+            df = df.withColumn("views", col("views").cast("integer"))
+            for c in ["id", "status", "user_id", "sub_category_id"]:
+                df = df.withColumn(c, col(c).cast("integer"))
+            for c in ["create_at", "update_at"]:
+                df = df.withColumn(c, col(c).cast("string"))
+            # username 字段直接从 csv 读取
+            top10_rows: List[Any] = df.orderBy(col("views").desc()).limit(10).collect()
+            return [
+                {k: r.asDict()[k] for k in columns if k in r.asDict()}
+                for r in top10_rows
+            ]
+        except Exception as e:
+            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
+            df = pd.read_csv(csv_file)
+            for c in ["views", "id", "status", "user_id", "sub_category_id"]:
+                if c in df.columns:
+                    df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+            df = df.where(pd.notnull(df), None)
+            if "views" in df.columns:
+                df = df.sort_values("views", ascending=False)
+            top10_df = df.head(10)
+            available_columns = [c for c in columns if c in top10_df.columns]
+            return top10_df[available_columns].to_dict(orient="records")
+
+    def get_top10_articles_db_mapper(self, db: Session) -> List[Article]:
+        statement = select(Article).order_by(Article.views.desc()).limit(10)
+        return db.exec(statement).all()
+
+    def get_all_articles_mapper(self, db: Session) -> List[Article]:
+        statement = select(Article)
+        return db.exec(statement).all()
+
+    def get_articles_for_excel_export_mapper(self, db: Session) -> List[Dict[str, Any]]:
+        """获取导出Excel所需文章数据（连表聚合）"""
+
+        like_count_subquery = (
+            select(
+                Like.article_id.label("article_id"),
+                func.count(Like.id).label("like_count"),
+            )
+            .group_by(Like.article_id)
+            .subquery()
+        )
+        collect_count_subquery = (
+            select(
+                Collect.article_id.label("article_id"),
+                func.count(Collect.id).label("collect_count"),
+            )
+            .group_by(Collect.article_id)
+            .subquery()
+        )
+        follow_count_subquery = (
+            select(
+                Focus.focus_id.label("author_id"),
+                func.count(Focus.id).label("author_follow_count"),
+            )
+            .group_by(Focus.focus_id)
+            .subquery()
+        )
+
+        statement = (
+            select(
+                Article.id.label("id"),
+                Article.title.label("title"),
+                Article.content.label("content"),
+                User.name.label("username"),
+                Article.tags.label("tags"),
+                Article.status.label("status"),
+                Article.create_at.label("create_at"),
+                Article.update_at.label("update_at"),
+                Article.views.label("views"),
+                SubCategory.name.label("sub_category_name"),
+                Category.name.label("category_name"),
+                func.coalesce(like_count_subquery.c.like_count, 0).label("like_count"),
+                func.coalesce(collect_count_subquery.c.collect_count, 0).label(
+                    "collect_count"
+                ),
+                func.coalesce(follow_count_subquery.c.author_follow_count, 0).label(
+                    "author_follow_count"
+                ),
+            )
+            .select_from(Article)
+            .outerjoin(User, User.id == Article.user_id)
+            .outerjoin(SubCategory, SubCategory.id == Article.sub_category_id)
+            .outerjoin(Category, Category.id == SubCategory.category_id)
+            .outerjoin(
+                like_count_subquery, like_count_subquery.c.article_id == Article.id
+            )
+            .outerjoin(
+                collect_count_subquery,
+                collect_count_subquery.c.article_id == Article.id,
+            )
+            .outerjoin(
+                follow_count_subquery,
+                follow_count_subquery.c.author_id == Article.user_id,
+            )
+            .order_by(Article.id.asc())
+        )
+        rows = db.exec(statement).all()
+
+        result: List[Dict[str, Any]] = []
+        for row in rows:
+            result.append(
+                {
+                    "id": row.id,
+                    "title": row.title,
+                    "content": row.content,
+                    "username": row.username,
+                    "tags": row.tags,
+                    "status": row.status,
+                    "create_at": row.create_at,
+                    "update_at": row.update_at,
+                    "views": row.views,
+                    "sub_category_name": row.sub_category_name,
+                    "category_name": row.category_name,
+                    "like_count": row.like_count,
+                    "collect_count": row.collect_count,
+                    "author_follow_count": row.author_follow_count,
+                }
+            )
+
+        return result
+
+    def get_article_by_id_mapper(
+        self, article_id: int, db: Session
+    ) -> Optional[Article]:
+        statement = select(Article).where(Article.id == article_id)
+        return db.exec(statement).first()
+
+    def get_articles_by_ids_mapper(
+        self, article_ids: List[int], db: Session
+    ) -> Dict[int, Article]:
+        """批量获取文章信息，返回 {article_id: Article} 字典"""
+        if not article_ids:
+            return {}
+        statement = select(Article).where(Article.id.in_(article_ids))
+        articles = db.exec(statement).all()
+        return {article.id: article for article in articles}
+
+    def get_total_views_mapper(self, db: Session) -> int:
+        """获取所有文章的总阅读量"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        return sum(article.views for article in articles)
+
+    def get_total_articles_mapper(self, db: Session) -> int:
+        """获取文章总数"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        return len(articles)
+
+    def get_active_authors_mapper(self, db: Session) -> int:
+        """获取活跃作者数（所有有文章的用户）"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        active_author_ids = set(article.user_id for article in articles)
+        return len(active_author_ids)
+
+    def get_average_views_mapper(self, db: Session) -> float:
+        """获取平均阅读次数"""
+        statement = select(Article)
+        articles = db.exec(statement).all()
+        if not articles:
+            return 0
+        total_views = sum(article.views for article in articles)
+        return round(total_views / len(articles), 2)
+
+    def get_category_article_count_hive_mapper(self) -> List[Dict[str, Any]]:
+        """
+        从Hive获取按父分类排序的文章数量
+        """
+        start = time.time()
+        hive_conn = self._hive_pool.get_connection()
+
+        Logger.info(Constants.HIVE_QUERY)
+        query_start = time.time()
+        with hive_conn.cursor() as cursor:
+            # 查询文章按sub_category_id分组统计
+            cursor.execute(Constants.CATEGORY_ARTICLE_DISTRIBUTION_SQL)
+            results = cursor.fetchall()
+
+        query_time = time.time() - query_start
+
+        # 转换为字典列表
+        result = [{"sub_category_id": int(r[0]), "count": int(r[1])} for r in results]
+
+        total_time = time.time() - start
+        Logger.info(
+            f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类"
+        )
+
+        if hive_conn:
+            self._hive_pool.return_connection(hive_conn)
+
+        return result
+
+    def get_category_article_count_spark_mapper(self) -> List[Dict[str, Any]]:
+        """
+        从Spark获取按父分类排序的文章数量
+        """
+        FILE_PATH: str = load_config("files")["excel_path"]
+        csv_file = os.path.normpath(
+            os.path.join(os.getcwd(), FILE_PATH, "articles.csv")
+        )
+        csv_file = os.path.abspath(csv_file)
+        try:
+            spark = SparkSession.builder.appName("CategoryCount").getOrCreate()
+            df = spark.read.option("header", True).csv(csv_file)
+            df = df.withColumn(
+                "sub_category_id", col("sub_category_id").cast("integer")
+            )
+            df = df.withColumn("status", col("status").cast("integer"))
+
+            # 过滤status=1的文章，按sub_category_id分组统计
+            df_grouped = (
+                df.filter(col("status") == 1).groupBy("sub_category_id").count()
+            )
+            df_sorted = df_grouped.orderBy(col("count").desc())
+
+            results = df_sorted.collect()
+            return [
+                {"sub_category_id": int(r["sub_category_id"]), "count": int(r["count"])}
+                for r in results
+            ]
+        except Exception as e:
+            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
+            df = pd.read_csv(csv_file)
+            if "status" in df.columns:
+                df["status"] = (
+                    pd.to_numeric(df["status"], errors="coerce").fillna(0).astype(int)
+                )
+            if "sub_category_id" in df.columns:
+                df["sub_category_id"] = pd.to_numeric(
+                    df["sub_category_id"], errors="coerce"
+                )
+            df = df[df.get("status", 0) == 1]
+            df = (
+                df.dropna(subset=["sub_category_id"])
+                if "sub_category_id" in df.columns
+                else df
+            )
+            grouped = df.groupby("sub_category_id").size().sort_values(ascending=False)
+            return [
+                {"sub_category_id": int(k), "count": int(v)} for k, v in grouped.items()
+            ]
+
+    def get_category_article_count_db_mapper(self, db: Session) -> List[Dict[str, Any]]:
+        """
+        从DB获取按父分类排序的文章数量
+        """
+        statement = select(Article).where(Article.status == 1)
+        articles = db.exec(statement).all()
+
+        # 按sub_category_id分组统计
+        category_count = {}
+        for article in articles:
+            if article.sub_category_id not in category_count:
+                category_count[article.sub_category_id] = 0
+            category_count[article.sub_category_id] += 1
+
+        # 排序
+        result = [{"sub_category_id": k, "count": v} for k, v in category_count.items()]
+        result.sort(key=lambda x: x["count"], reverse=True)
+
+        return result
+
+    def get_monthly_publish_count_hive_mapper(self) -> List[Dict[str, Any]]:
+        """
+        从Hive获取最近24个月的文章发布数量统计（包含零值月份）
+        说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
+        """
+        start = time.time()
+        hive_conn = self._hive_pool.get_connection()
+
+        Logger.info(Constants.HIVE_QUERY)
+        query_start = time.time()
+        with hive_conn.cursor() as cursor:
+            # 按月统计最近24个月的文章数，使用Hive的substr和concat处理日期
+            cursor.execute(Constants.MONTHLY_ARTICLE_PUBLISH_SQL)
+            results = cursor.fetchall()
+
+        query_time = time.time() - query_start
+
+        # 转换为字典列表
+        result = [{"year_month": str(r[0]), "count": int(r[1])} for r in results]
+
+        total_time = time.time() - start
+        Logger.info(
+            f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份"
+        )
+
+        if hive_conn:
+            self._hive_pool.return_connection(hive_conn)
+
+        return result
+
+    def get_monthly_publish_count_spark_mapper(self) -> List[Dict[str, Any]]:
+        """
+        从Spark获取最近24个月的文章发布数量统计（包含零值月份）
+        说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
+        """
+
+        FILE_PATH: str = load_config("files")["excel_path"]
+        csv_file = os.path.normpath(
+            os.path.join(os.getcwd(), FILE_PATH, "articles.csv")
+        )
+        csv_file = os.path.abspath(csv_file)
+        try:
+            spark = SparkSession.builder.appName("MonthlyPublish").getOrCreate()
+            df = spark.read.option("header", True).csv(csv_file)
+            df = df.withColumn("create_at", col("create_at").cast("timestamp"))
+            df = df.withColumn("status", col("status").cast("integer"))
+
+            # 过滤最近24个月的数据
+            ten_months_ago = date_sub(current_date(), 730)  # 近24个月
+            df_filtered = df.filter(
+                (col("status") == 1) & (col("create_at") >= ten_months_ago)
+            )
+
+            # 按月分组统计，不限制结果让service层补零
+            df_grouped = (
+                df_filtered.withColumn(
+                    "year_month", date_format(col("create_at"), "yyyy-MM")
+                )
+                .groupBy("year_month")
+                .count()
+            )
+            df_sorted = df_grouped.orderBy(col("year_month").desc())
+
+            results = df_sorted.collect()
+            return [
+                {"year_month": r["year_month"], "count": int(r["count"])}
+                for r in results
+            ]
+        except Exception as e:
+            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
+            df = pd.read_csv(csv_file)
+            if "status" in df.columns:
+                df["status"] = (
+                    pd.to_numeric(df["status"], errors="coerce").fillna(0).astype(int)
+                )
+            df["create_at"] = pd.to_datetime(df.get("create_at"), errors="coerce")
+            cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=730)
+            df_filtered = df[
+                (df.get("status", 0) == 1) & (df["create_at"] >= cutoff_date)
+            ]
+            df_filtered = df_filtered.dropna(subset=["create_at"])
+            df_filtered["year_month"] = df_filtered["create_at"].dt.strftime("%Y-%m")
+            grouped = (
+                df_filtered.groupby("year_month").size().sort_index(ascending=False)
+            )
+            return [{"year_month": k, "count": int(v)} for k, v in grouped.items()]
+
+    def get_monthly_publish_count_db_mapper(self, db: Session) -> List[Dict[str, Any]]:
+        """
+        从DB获取最近24个月的文章发布数量统计（包含零值月份）
+        说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
+        """
+
+        statement = select(Article).where(Article.status == 1)
+        articles = db.exec(statement).all()
+
+        # 过滤最近24个月的文章
+        ten_months_ago = datetime.now() - timedelta(days=730)
+        filtered_articles = [
+            a for a in articles if a.create_at and a.create_at >= ten_months_ago
+        ]
+
+        # 按月分组统计
+        monthly_count = {}
+        for article in filtered_articles:
+            year_month = article.create_at.strftime("%Y-%m")
+            if year_month not in monthly_count:
+                monthly_count[year_month] = 0
+            monthly_count[year_month] += 1
+
+        # 排序，不限制数量让service层补零
+        result = [{"year_month": k, "count": v} for k, v in monthly_count.items()]
+        result.sort(key=lambda x: x["year_month"], reverse=True)
+
+        return result
+
+
+@lru_cache()
+def get_article_mapper() -> ArticleMapper:
+    """获取 ArticleMapper 单例实例"""
+    return ArticleMapper()
