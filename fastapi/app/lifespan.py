@@ -2,6 +2,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
+from sqlmodel import Session
+
 from app.core import Constants, logger
 from app.db import create_tables, get_db, load_config, start_nacos
 from app.services import AnalyzeService, start_scheduler
@@ -21,7 +23,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
 
-    def db_factory():
+    def db_factory() -> Session:
         return next(get_db())
 
     start_scheduler(analyze_service=analyze_service, db_factory=db_factory)

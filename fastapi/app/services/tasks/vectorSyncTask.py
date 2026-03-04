@@ -209,7 +209,7 @@ def export_article_vectors_to_postgres(
     if mysql_db_factory is None:
         from app.db import get_db as _get_db
 
-        def mysql_db_factory():
+        def mysql_db_factory() -> Session:
             return next(_get_db())
 
     # 导入RAG工具
@@ -394,7 +394,7 @@ def initialize_article_content_hash_cache(
     if mysql_db_factory is None:
         from app.db import get_db as _get_db
 
-        def mysql_db_factory():
+        def mysql_db_factory() -> Session:
             return next(_get_db())
 
     mysql_db: Optional[Session] = None

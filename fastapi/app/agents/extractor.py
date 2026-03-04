@@ -37,7 +37,11 @@ class ReferenceContentExtractor:
 
     @classmethod
     def _init_text_splitter(cls) -> None:
-        """初始化文本分割器"""
+        """初始化文本分割器
+        
+        Returns:
+            None
+        """
         if cls.TEXT_SPLITTER is None:
             try:
                 cls.TEXT_SPLITTER = RecursiveCharacterTextSplitter(
@@ -50,7 +54,14 @@ class ReferenceContentExtractor:
 
     @staticmethod
     def _clean_text(text: str) -> str:
-        """清理和规范化文本"""
+        """清理和规范化文本
+        
+        Args:
+            text: 原始文本内容
+            
+        Returns:
+            清理后的文本
+        """
         if not text:
             return ""
 
@@ -71,7 +82,15 @@ class ReferenceContentExtractor:
 
     @staticmethod
     def _extract_key_points(text: str, max_length: int = 2000) -> str:
-        """提取关键要点"""
+        """提取关键要点
+        
+        Args:
+            text: 输入文本
+            max_length: 最大长度限制，默认 2000
+            
+        Returns:
+            提取的关键要点
+        """
         if not text:
             return ""
 

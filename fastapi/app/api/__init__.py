@@ -1,3 +1,5 @@
+from typing import List
+
 from .user.userRouter import router as userRouter
 from .chat.chatRouter import router as chatRouter
 from .analyze.analyzeRouter import router as analyzeRouter
@@ -7,7 +9,7 @@ from .aiHistory.aiHistoryRouter import router as aiHistoryRouter
 from .apiLog.apiLogRouter import router as apiLogRouter
 from .test.testRouter import router as testRouter
 
-__all__ = [
+__all__: List[str] = [
     "userRouter",
     "chatRouter",
     "analyzeRouter",

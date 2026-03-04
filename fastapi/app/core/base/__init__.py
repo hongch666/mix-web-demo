@@ -1,3 +1,5 @@
+from typing import List
+
 from .constants import Constants
 from .listResponse import ListResponse
 from .logger import logger
@@ -12,7 +14,7 @@ from .writeLog import (
     write_log,
 )
 
-__all__: list[str] = [
+__all__: List[str] = [
     "logger",
     "success",
     "error",

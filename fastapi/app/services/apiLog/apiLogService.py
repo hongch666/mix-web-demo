@@ -8,7 +8,7 @@ from fastapi import Depends
 class ApiLogService:
     """API 日志 Service"""
 
-    def __init__(self, api_log_mapper: Optional[ApiLogMapper] = None):
+    def __init__(self, api_log_mapper: Optional[ApiLogMapper] = None) -> None:
         self.mapper: Optional[ApiLogMapper] = api_log_mapper
 
     def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:

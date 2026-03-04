@@ -29,12 +29,17 @@ class ApiLogConfig:
         self.exclude_fields: List[str] = exclude_fields or []
 
 
-def apiLog(config: Union[str, ApiLogConfig]) -> Callable:
+def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
     """
     API 日志装饰器
+    
+    填充跟踪 API 调用情况，记录用户操作、请求方法、更加方便确保系统可控性。
 
     Args:
         config: 日志配置，可以是字符串（消息）或 ApiLogConfig 对象
+
+    Returns:
+        装饰器函数
 
     Examples:
         @apiLog("获取前10篇文章")

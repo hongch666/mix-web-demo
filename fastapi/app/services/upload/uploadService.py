@@ -16,7 +16,7 @@ from fastapi import Depends
 class UploadService:
     """上传 Service"""
 
-    def __init__(self, analyze_service: Optional[AnalyzeService] = None):
+    def __init__(self, analyze_service: Optional[AnalyzeService] = None) -> None:
         self.analyze_service: Optional[AnalyzeService] = analyze_service
 
     async def handle_image_upload(self, file: Dict[str, Any]) -> Dict[str, Any]:

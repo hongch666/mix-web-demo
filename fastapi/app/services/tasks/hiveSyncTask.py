@@ -44,7 +44,7 @@ def export_articles_to_csv_and_hive(
         from app.db import get_db as _get_db
 
         # 封装成 callable，调用时执行 next(get_db())
-        def db_factory():
+        def db_factory() -> Session:
             return next(_get_db())
 
     # 如果缓存实例未传入，延迟导入

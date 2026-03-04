@@ -10,7 +10,7 @@ from app.core import Constants, Logger
 from sqlmodel import Session
 
 
-def requireAdmin(func: Callable) -> Callable:
+def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     管理员权限检查装饰器
 

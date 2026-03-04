@@ -47,7 +47,23 @@ async def send_message(
     doubaoService: DoubaoService = Depends(get_doubao_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service),
 ) -> JSONResponse:
-    """发送聊天消息"""
+    """当前用户发送聊天消息
+    
+    根据请求中指定的 AI 服务类型（Gemini/Qwen/Doubao），将消息发送到对应的 LLM 服务，
+    并将聊天记录存储到数据库。支持流式响应和普通响应两种方式。
+    
+    Args:
+        _: 请求对象（已集成令牌验证）
+        request: 聊天请求对象，包含消息内容和模型选择
+        db: 数据库会话
+        geminiService: Gemini AI 服务实例
+        qwenService: Qwen AI 服务实例
+        doubaoService: 豆包 AI 服务实例
+        aiHistoryService: AI 对话历史服务实例
+        
+    Returns:
+        JSONResponse: JSON 格式的响应，包含 AI 回复内容和对话 ID
+    """
 
     user_id: str = get_current_user_id() or ""
     # 使用实际用户ID替代请求中的user_id

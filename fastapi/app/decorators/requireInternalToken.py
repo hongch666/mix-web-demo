@@ -12,7 +12,7 @@ T = TypeVar("T", bound=Callable[..., Any])
 
 def requireInternalToken(
     func: Optional[T] = None, *, required_service_name: Optional[str] = None
-) -> Callable:
+) -> Callable[..., Any]:
     """
     需要内部服务令牌验证的装饰器
     用于标记需要内部服务令牌才能访问的接口

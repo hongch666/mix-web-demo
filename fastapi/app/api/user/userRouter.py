@@ -27,7 +27,7 @@ async def get_new_followers(
     period: str = "day",
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> Dict[str, Any]:
     """获取新增粉丝数统计"""
 
     result: Dict[str, Any] = await run_in_threadpool(
@@ -44,7 +44,7 @@ async def get_new_followers(
 @log("获取文章浏览分布")
 async def get_article_view_distribution(
     _: Request, user_id: int, userService: UserService = Depends(get_user_service)
-) -> Any:
+) -> Dict[str, Any]:
     """获取文章浏览分布"""
 
     result: Dict[str, Any] = await run_in_threadpool(
@@ -64,7 +64,7 @@ async def get_author_follow_statistics(
     user_id: int,
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> Dict[str, Any]:
     """获取关注作者统计"""
 
     result: Dict[str, Any] = await run_in_threadpool(
@@ -84,7 +84,7 @@ async def get_monthly_comment_trend(
     user_id: int,
     db: Session = Depends(get_db),
     userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> Dict[str, Any]:
     """获取本月评论趋势"""
 
     result: Dict[str, Any] = await run_in_threadpool(
