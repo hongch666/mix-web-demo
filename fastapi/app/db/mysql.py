@@ -1,10 +1,12 @@
 from typing import Generator, List, Optional
 
-from app.db import load_config
-from app.core import Constants, Logger
 from sqlalchemy.pool import QueuePool
 from sqlmodel import Session, create_engine
 
+from app.core import Constants, Logger
+from app.db import load_config
+
+# 数据库连接配置
 HOST: str = load_config("database")["mysql"]["host"]
 PORT: int = load_config("database")["mysql"]["port"]
 DATABASE: str = load_config("database")["mysql"]["database"]
