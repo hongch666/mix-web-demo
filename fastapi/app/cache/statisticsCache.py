@@ -19,8 +19,8 @@ class StatisticsCache(BaseCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX = "article:statistics"
-    L1_CACHE_TTL = 600  # 10分钟
+    REDIS_KEY_PREFIX: str = "article:statistics"
+    L1_CACHE_TTL: int = 600  # 10分钟
 
     def get(self) -> Optional[Dict[str, Any]]:
         """

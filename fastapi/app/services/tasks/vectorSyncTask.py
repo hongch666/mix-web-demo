@@ -3,15 +3,16 @@ import time
 from datetime import datetime
 from typing import Any, Callable, List, Optional
 
+from sqlmodel import Session
+
 from app.agents import get_rag_tools
 from app.core import Constants, Logger
 from app.core.errors.exceptions import BusinessException
 from app.db import load_config
-from sqlmodel import Session
 
 # Redis 键名
-_VECTOR_SYNC_TIME_KEY = "vector_sync:last_sync_time"
-_ARTICLE_CONTENT_HASH_PREFIX = "article_content_hash:"
+_VECTOR_SYNC_TIME_KEY: str = "vector_sync:last_sync_time"
+_ARTICLE_CONTENT_HASH_PREFIX: str = "article_content_hash:"
 
 
 def _get_redis_client() -> Optional[Any]:

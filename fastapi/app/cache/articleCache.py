@@ -20,9 +20,9 @@ class ArticleCache(VersionedCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX = "article:top10"
-    REDIS_VERSION_KEY = "article:top10:version"
-    L1_CACHE_TTL = 300  # 5分钟
+    REDIS_KEY_PREFIX: str = "article:top10"
+    REDIS_VERSION_KEY: str = "article:top10:version"
+    L1_CACHE_TTL: int = 300  # 5分钟
 
     def get(self, hive_conn: Any) -> Optional[List[Dict[str, Any]]]:
         """

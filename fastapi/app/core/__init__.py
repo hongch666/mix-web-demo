@@ -1,3 +1,5 @@
+from typing import List
+
 from .base.constants import Constants
 from .base.listResponse import ListResponse
 from .base.logger import logger
@@ -13,7 +15,7 @@ from .base.writeLog import (
 )
 from .errors.exceptions import BusinessException
 
-__all__ = [
+__all__: List[str] = [
     "logger",
     "success",
     "error",

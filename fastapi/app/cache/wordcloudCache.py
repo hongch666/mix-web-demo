@@ -20,8 +20,8 @@ class WordcloudCache(BaseCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX = "wordcloud:url"
-    L1_CACHE_TTL = 300  # 5分钟
+    REDIS_KEY_PREFIX: str = "wordcloud:url"
+    L1_CACHE_TTL: int = 300  # 5分钟
 
     def get_from_redis(self) -> Optional[str]:
         """从 Redis 缓存获取"""

@@ -3,7 +3,6 @@ from typing import List
 from .aiHistory import AiHistoryService, get_ai_history_service
 from .analyze import AnalyzeService, get_analyze_service
 from .apiLog import ApiLogService, get_apilog_service
-from .chat import ChatService
 from .generate import GenerateService, get_generate_service
 from .llm import (
     BaseAiService,
@@ -23,7 +22,6 @@ from .user import UserService, get_user_service
 __all__: List[str] = [
     "UserService",
     "get_user_service",
-    "ChatService",
     "AnalyzeService",
     "get_analyze_service",
     "GenerateService",

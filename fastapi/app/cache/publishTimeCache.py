@@ -20,9 +20,9 @@ class PublishTimeCache(VersionedCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX = "publish:monthly_count"
-    REDIS_VERSION_KEY = "publish:monthly_count:version"
-    L1_CACHE_TTL = 300  # 5分钟
+    REDIS_KEY_PREFIX: str = "publish:monthly_count"
+    REDIS_VERSION_KEY: str = "publish:monthly_count:version"
+    L1_CACHE_TTL: int = 300  # 5分钟
 
     def get(self, hive_conn: Any) -> Optional[List[Dict[str, Any]]]:
         """

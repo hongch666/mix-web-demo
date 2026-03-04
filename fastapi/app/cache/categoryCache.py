@@ -20,9 +20,9 @@ class CategoryCache(VersionedCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX = "category:article_count"
-    REDIS_VERSION_KEY = "category:article_count:version"
-    L1_CACHE_TTL = 300  # 5分钟
+    REDIS_KEY_PREFIX: str = "category:article_count"
+    REDIS_VERSION_KEY: str = "category:article_count:version"
+    L1_CACHE_TTL: int = 300  # 5分钟
 
     def get(self, hive_conn: Any) -> Optional[List[Dict[str, Any]]]:
         """
