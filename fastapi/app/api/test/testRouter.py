@@ -1,14 +1,14 @@
 from typing import Any, Dict
 
-from app.services.external import call_remote_service
+from app.core import Constants, success
 from app.decorators import log, requireInternalToken
+from app.services.external import call_remote_service
 from app.services.tasks import (
     export_article_vectors_to_postgres,
     export_articles_to_csv_and_hive,
     initialize_article_content_hash_cache,
     update_analyze_caches,
 )
-from app.core import Constants, success
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
@@ -40,14 +40,14 @@ async def testSpring(_: Request) -> JSONResponse:
     return success(result["data"])
 
 
-# 测试Gin服务
-@router.get("/gin", summary="测试Gin服务", description="测试Gin服务")
-@log("测试Gin服务")
-async def testGin(_: Request) -> JSONResponse:
-    """测试Gin服务接口"""
+# 测试GoZero服务
+@router.get("/gozero", summary="测试GoZero服务", description="测试GoZero服务")
+@log("测试GoZero服务")
+async def testGoZero(_: Request) -> JSONResponse:
+    """测试GoZero服务接口"""
 
     result: Dict[str, Any] = await call_remote_service(
-        service_name="gin", path="/api_gin/gin", method="GET", retries=2
+        service_name="gozero", path="/api_gozero/gozero", method="GET", retries=2
     )
     return success(result["data"])
 
