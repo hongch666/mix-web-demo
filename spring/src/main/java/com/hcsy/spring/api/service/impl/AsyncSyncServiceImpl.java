@@ -2,7 +2,7 @@ package com.hcsy.spring.api.service.impl;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.client.FastAPIClient;
-import com.hcsy.spring.common.client.GinClient;
+import com.hcsy.spring.common.client.GoZeroClient;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AsyncSyncServiceImpl implements AsyncSyncService {
 
-    private final GinClient ginClient;
+    private final GoZeroClient goZeroClient;
     private final FastAPIClient fastAPIClient;
     private final SimpleLogger logger;
 
@@ -44,7 +44,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
 
             // 同步 ES
             try {
-                ginClient.syncES();
+                goZeroClient.syncES();
                 logger.info(Constants.SYNC_ES_SUCCESS);
             } catch (Exception e) {
                 logger.error(Constants.SYNC_ES_FAIL + e.getMessage(), e);

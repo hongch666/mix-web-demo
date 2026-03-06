@@ -3,7 +3,7 @@ package com.hcsy.spring.api.controller;
 import com.hcsy.spring.common.annotation.ApiLog;
 import com.hcsy.spring.common.annotation.RequireInternalToken;
 import com.hcsy.spring.common.client.FastAPIClient;
-import com.hcsy.spring.common.client.GinClient;
+import com.hcsy.spring.common.client.GoZeroClient;
 import com.hcsy.spring.common.client.NestjsClient;
 import com.hcsy.spring.common.task.TokenCleanupTask;
 import com.hcsy.spring.common.utils.Constants;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @Tag(name = "测试模块", description = "测试相关接口")
 public class TestController {
-    private final GinClient ginClient;
+    private final GoZeroClient goZeroClient;
     private final NestjsClient nestjsClient;
     private final FastAPIClient fastAPIClient;
     private final TokenCleanupTask tokenCleanupTask;
@@ -39,7 +39,7 @@ public class TestController {
     @Operation(summary = "调用Gin的测试", description = "输出欢迎信息")
     @ApiLog("测试Gin服务")
     public Result getGin() {
-        return ginClient.testGin();
+        return goZeroClient.testGin();
     }
 
     @GetMapping("/nestjs")
