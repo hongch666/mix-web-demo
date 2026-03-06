@@ -23,7 +23,6 @@ import (
 	"app/model/user"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/olivere/elastic/v7"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -80,6 +80,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	if err != nil {
 		panic(err)
 	}
+
+	utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration)
 
 	mysqlConn := initSqlx(c)
 	db := initGorm(c)
@@ -172,7 +174,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Logger:                    zLogger,
 		UserContextMiddleware:     middleware.NewUserContextMiddleware().Handle,
 		RecoveryMiddleware:        middleware.NewRecoveryMiddleware(zLogger).Handle,
-		InternalServiceMiddleware: middleware.NewInternalServiceMiddleware().Handle,
+		InternalServiceMiddleware: middleware.NewInternalServiceMiddleware(zLogger).Handle,
 	}
 }
 
@@ -217,16 +219,16 @@ func initMigrate(db *gorm.DB) {
 	}
 
 	if err := db.Exec(utils.CREATE_CHAT_MESSAGES_TABLE_SQL).Error; err != nil {
-		log.Printf("auto create table chat_messages failed: %v", err)
+		logx.Errorf(utils.AUTO_CREATE_TABLE_FAIL, err)
 		return
 	}
 
-	log.Printf("auto created table: chat_messages")
+	logx.Info(utils.AUTO_CREATE_TABLE_SUCCESS)
 }
 
 func buildMysqlDsn(c config.Config) string {
 	mysqlConf := c.Database.Mysql
-	if mysqlConf.Host == "" || mysqlConf.Port == "" || mysqlConf.Username == "" || mysqlConf.Dbname == "" {
+	if mysqlConf.Host == "" || mysqlConf.Port == 0 || mysqlConf.Username == "" || mysqlConf.Dbname == "" {
 		return ""
 	}
 
@@ -239,7 +241,7 @@ func buildMysqlDsn(c config.Config) string {
 		loc = "Local"
 	}
 
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=True&loc=%s",
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=%s",
 		mysqlConf.Username,
 		mysqlConf.Password,
 		mysqlConf.Host,
@@ -277,7 +279,7 @@ func initES(c config.Config) *elastic.Client {
 
 func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 	mqConf := c.MQ
-	if mqConf.Host == "" || mqConf.Port == "" {
+	if mqConf.Host == "" || mqConf.Port == 0 {
 		return nil, nil
 	}
 
@@ -285,7 +287,7 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 	if vhost == "" {
 		vhost = "/"
 	}
-	url := fmt.Sprintf("amqp://%s:%s@%s:%s/%s", mqConf.Username, mqConf.Password, mqConf.Host, mqConf.Port, trimSlashPrefix(vhost))
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", mqConf.Username, mqConf.Password, mqConf.Host, mqConf.Port, trimSlashPrefix(vhost))
 
 	conn, err := amqp.Dial(url)
 	if err != nil {
@@ -310,15 +312,15 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 
 func initMongoDB(c config.Config) *mongo.Client {
 	mongoConf := c.Database.MongoDB
-	if mongoConf.Host == "" || mongoConf.Port == "" {
+	if mongoConf.Host == "" || mongoConf.Port == 0 {
 		return nil
 	}
 
 	var mongoURI string
 	if mongoConf.Username != "" && mongoConf.Password != "" {
-		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%s", mongoConf.Username, mongoConf.Password, mongoConf.Host, mongoConf.Port)
+		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%d", mongoConf.Username, mongoConf.Password, mongoConf.Host, mongoConf.Port)
 	} else {
-		mongoURI = fmt.Sprintf("mongodb://%s:%s", mongoConf.Host, mongoConf.Port)
+		mongoURI = fmt.Sprintf("mongodb://%s:%d", mongoConf.Host, mongoConf.Port)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

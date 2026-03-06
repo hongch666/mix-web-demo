@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"app/common/logger"
 	"app/common/utils"
 )
 
@@ -14,10 +15,12 @@ const (
 	BearerPrefix        = "Bearer "
 )
 
-type InternalServiceMiddleware struct{}
+type InternalServiceMiddleware struct {
+	*logger.ZeroLogger
+}
 
-func NewInternalServiceMiddleware() *InternalServiceMiddleware {
-	return &InternalServiceMiddleware{}
+func NewInternalServiceMiddleware(log *logger.ZeroLogger) *InternalServiceMiddleware {
+	return &InternalServiceMiddleware{ZeroLogger: log}
 }
 
 // Handle 处理内部服务令牌验证
@@ -27,8 +30,8 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 		// 从请求头中提取内部令牌
 		authHeader := r.Header.Get(InternalTokenHeader)
 		if authHeader == "" {
-			log.Printf("[内部令牌验证] 缺少 %s 请求头，路径: %s", InternalTokenHeader, r.URL.Path)
-			http.Error(w, utils.INTERNAL_TOKEN_MISSING, http.StatusBadRequest)
+			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
+			utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
 			return
 		}
 
@@ -39,8 +42,8 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 		}
 
 		if tokenString == "" {
-			log.Printf("[内部令牌验证] 令牌为空，路径: %s", r.URL.Path)
-			http.Error(w, utils.INTERNAL_TOKEN_MISSING, http.StatusBadRequest)
+			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EMPTY_LOG, r.URL.Path))
+			utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
 			return
 		}
 
@@ -48,33 +51,34 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 		tokenUtil := utils.GetTokenUtil()
 		claims, err := tokenUtil.ValidateInternalToken(tokenString)
 		if err != nil {
-			log.Printf("[内部令牌验证] 令牌验证失败: %v, 路径: %s", err, r.URL.Path)
-			http.Error(w, utils.INTERNAL_TOKEN_INVALID, http.StatusUnauthorized)
+			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
+			utils.Error(w, utils.INTERNAL_TOKEN_INVALID)
 			return
 		}
 
 		// 检查令牌是否过期
 		if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
-			log.Printf("[内部令牌验证] 令牌已过期，路径: %s", r.URL.Path)
-			http.Error(w, utils.INTERNAL_TOKEN_EXPIRED, http.StatusUnauthorized)
+			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EXPIRED_LOG, r.URL.Path))
+			utils.Error(w, utils.INTERNAL_TOKEN_EXPIRED)
 			return
 		}
 
-		log.Printf("[内部令牌验证] 验证成功，用户ID: %d, 服务: %s, 路径: %s", claims.UserID, claims.ServiceName, r.URL.Path)
+		m.Info(fmt.Sprintf(utils.INTERNAL_TOKEN_VALIDATE_SUCCESS_LOG, claims.UserID, claims.ServiceName, r.URL.Path))
 		// 令牌验证成功，继续处理请求
 		next(w, r)
 	}
 }
 
 // NewInternalTokenMiddleware 创建需要验证特定服务的中间件
-func NewInternalTokenMiddleware(serviceName string) func(http.HandlerFunc) http.HandlerFunc {
+func NewInternalTokenMiddleware(log *logger.ZeroLogger, serviceName string) func(http.HandlerFunc) http.HandlerFunc {
+	m := &InternalServiceMiddleware{ZeroLogger: log}
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			// 从请求头中提取内部令牌
 			authHeader := r.Header.Get(InternalTokenHeader)
 			if authHeader == "" {
-				log.Printf("[内部令牌验证] 缺少 %s 请求头，路径: %s", InternalTokenHeader, r.URL.Path)
-				http.Error(w, utils.INTERNAL_TOKEN_MISSING, http.StatusBadRequest)
+				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
+				utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
 				return
 			}
 
@@ -85,8 +89,8 @@ func NewInternalTokenMiddleware(serviceName string) func(http.HandlerFunc) http.
 			}
 
 			if tokenString == "" {
-				log.Printf("[内部令牌验证] 令牌为空，路径: %s", r.URL.Path)
-				http.Error(w, utils.INTERNAL_TOKEN_MISSING, http.StatusBadRequest)
+				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EMPTY_LOG, r.URL.Path))
+				utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
 				return
 			}
 
@@ -94,26 +98,26 @@ func NewInternalTokenMiddleware(serviceName string) func(http.HandlerFunc) http.
 			tokenUtil := utils.GetTokenUtil()
 			claims, err := tokenUtil.ValidateInternalToken(tokenString)
 			if err != nil {
-				log.Printf("[内部令牌验证] 令牌验证失败: %v, 路径: %s", err, r.URL.Path)
-				http.Error(w, utils.INTERNAL_TOKEN_INVALID, http.StatusUnauthorized)
+				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
+				utils.Error(w, utils.INTERNAL_TOKEN_INVALID)
 				return
 			}
 
 			// 检查令牌是否过期
 			if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
-				log.Printf("[内部令牌验证] 令牌已过期，路径: %s", r.URL.Path)
-				http.Error(w, utils.INTERNAL_TOKEN_EXPIRED, http.StatusUnauthorized)
+				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EXPIRED_LOG, r.URL.Path))
+				utils.Error(w, utils.INTERNAL_TOKEN_EXPIRED)
 				return
 			}
 
 			// 验证服务名称（如果指定了）
 			if serviceName != "" && claims.ServiceName != serviceName {
-				log.Printf("[内部令牌验证] 服务名不匹配，期望: %s, 实际: %s, 路径: %s", serviceName, claims.ServiceName, r.URL.Path)
-				http.Error(w, utils.SERVICE_NAME_MISMATCH, http.StatusUnauthorized)
+				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_SERVICE_MISMATCH_LOG, serviceName, claims.ServiceName, r.URL.Path))
+				utils.Error(w, utils.SERVICE_NAME_MISMATCH)
 				return
 			}
 
-			log.Printf("[内部令牌验证] 验证成功，用户ID: %d, 服务: %s, 路径: %s", claims.UserID, claims.ServiceName, r.URL.Path)
+			m.Info(fmt.Sprintf(utils.INTERNAL_TOKEN_VALIDATE_SUCCESS_LOG, claims.UserID, claims.ServiceName, r.URL.Path))
 			// 令牌验证成功，继续处理请求
 			next(w, r)
 		}

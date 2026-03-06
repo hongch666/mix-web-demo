@@ -2,7 +2,7 @@ package utils
 
 const (
 	// Gin 自己的测试欢迎信息
-	TEST_MESSAGE = "Hello,I am Gin!"
+	TEST_MESSAGE = "Hello,I am GoZero!"
 
 	// 文章搜索错误信息
 	SEARCH_ERR = "文章搜索错误"
@@ -112,6 +112,18 @@ const (
 	// 写入日志文件失败信息
 	WRITE_LOG_FILE_ERROR = "写入日志文件失败"
 
+	// 读取配置文件失败信息
+	READ_CONFIG_FILE_ERROR = "读取配置文件失败: %s, %v"
+
+	// 解析配置文件失败信息
+	PARSE_CONFIG_FILE_ERROR = "解析配置文件失败: %s, %v"
+
+	// 自动建表失败信息
+	AUTO_CREATE_TABLE_FAIL = "自动创建 chat_messages 表失败: %v"
+
+	// 自动建表成功信息
+	AUTO_CREATE_TABLE_SUCCESS = "自动创建 chat_messages 表成功"
+
 	// JSON序列化错误信息
 	JSON_SERIALIZATION_ERROR = "JSON序列化失败"
 
@@ -156,6 +168,24 @@ const (
 
 	// WebSocket 连接建立消息
 	WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE = "WebSocket 连接已建立"
+
+	// 内部令牌验证：缺少请求头
+	INTERNAL_TOKEN_HEADER_MISSING_LOG = "[内部令牌验证] 缺少 %s 请求头，路径: %s"
+
+	// 内部令牌验证：令牌为空
+	INTERNAL_TOKEN_EMPTY_LOG = "[内部令牌验证] 令牌为空，路径: %s"
+
+	// 内部令牌验证：验证失败
+	INTERNAL_TOKEN_VALIDATE_FAIL_LOG = "[内部令牌验证] 令牌验证失败: %v, 路径: %s"
+
+	// 内部令牌验证：令牌已过期
+	INTERNAL_TOKEN_EXPIRED_LOG = "[内部令牌验证] 令牌已过期，路径: %s"
+
+	// 内部令牌验证：服务名不匹配
+	INTERNAL_TOKEN_SERVICE_MISMATCH_LOG = "[内部令牌验证] 服务名不匹配，期望: %s, 实际: %s, 路径: %s"
+
+	// 内部令牌验证：验证成功
+	INTERNAL_TOKEN_VALIDATE_SUCCESS_LOG = "[内部令牌验证] 验证成功，用户ID: %d, 服务: %s, 路径: %s"
 
 	// SSE 连接建立消息
 	SSE_CONNECTION_ESTABLISHED_MESSAGE = "SSE 连接已建立"
@@ -271,21 +301,21 @@ const (
 	// 跳过空的SSE消息
 	EMPTY_SSE = "跳过空的SSE消息"
 
-	// SSE写入失败
+	// SSE写入失败消息
 	SSE_WRITE_FAIL = "SSE写入失败: "
 
 	// WebSocket 用户连接状态相关
 
-	// 用户已连接
+	// 用户已连接消息
 	USER_CONNECTED = "joined"
 
-	// 用户已经在队列中
+	// 用户已经在队列中消息
 	USER_ALREADY_IN_QUEUE = "already_in_queue"
 
-	// 用户已断开连接
+	// 用户已断开连接消息
 	USER_DISCONNECTED = "left"
 
-	// 用户不在队列中
+	// 用户不在队列中消息
 	USER_NOT_IN_QUEUE = "not_in_queue"
 
 	// 心跳检测消息
@@ -368,16 +398,16 @@ const (
 
 	// chat_messages 表创建 SQL 语句
 	CREATE_CHAT_MESSAGES_TABLE_SQL = `
-CREATE TABLE IF NOT EXISTS chat_messages (
-	id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '消息ID，主键',
-	sender_id varchar(50) NOT NULL COMMENT '发送者ID',
-	receiver_id varchar(50) NOT NULL COMMENT '接收者ID',
-	content text NOT NULL COMMENT '消息内容',
-	is_read tinyint NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
-	created_at datetime(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
-	PRIMARY KEY (id),
-	KEY idx_sender_receiver (sender_id, receiver_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
+		CREATE TABLE IF NOT EXISTS chat_messages (
+			id bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '消息ID，主键',
+			sender_id varchar(50) NOT NULL COMMENT '发送者ID',
+			receiver_id varchar(50) NOT NULL COMMENT '接收者ID',
+			content text NOT NULL COMMENT '消息内容',
+			is_read tinyint NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
+			created_at datetime(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+			PRIMARY KEY (id),
+			KEY idx_sender_receiver (sender_id, receiver_id)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
 	`
 
 	// 复杂查询语句
@@ -494,4 +524,35 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 	// 服务启动成功消息
 	SERVER_START_SUCCESS = "服务启动成功"
+
+	// 获取Swagger失败消息
+	GET_SWAGGER_FAIL = "获取 Swagger 文档失败"
+
+	// Swagger 静态HTML
+	SWAGGER_HTML = `<!DOCTYPE html>
+		<html>
+		<head>
+			<title>GoZero API 文档</title>
+			<meta charset="UTF-8">
+			<meta name="viewport" content="width=device-width, initial-scale=1">
+			<link rel="stylesheet" href="/swagger/swagger-ui.css">
+		</head>
+		<body>
+			<div id="swagger-ui"></div>
+			<script src="/swagger/swagger-ui-bundle.js"></script>
+			<script src="/swagger/swagger-ui-standalone-preset.js"></script>
+			<script>
+				window.onload = function() {
+					SwaggerUIBundle({
+						url: '/swagger/doc.json',
+						dom_id: '#swagger-ui',
+						presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+						layout: 'StandaloneLayout',
+						deepLinking: true
+					})
+				}
+			</script>
+		</body>
+		</html>
+	`
 )

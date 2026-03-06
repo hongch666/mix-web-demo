@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+
 	"net/http"
 	"net/url"
 	"strings"
@@ -255,15 +255,9 @@ func sendApiLogToQueue(ctx context.Context, lgr *logger.ZeroLogger, rabbitChanne
 	)
 
 	if err != nil {
-		log.Printf(utils.API_LOG_SEND_FAIL_MESSAGE, err)
-		if lgr != nil {
-			lgr.Error(utils.SEND_API_LOG_FAIL_MESSAGE)
-		}
+		lgr.Error(utils.SEND_API_LOG_FAIL_MESSAGE)
 	} else {
-		log.Printf(utils.API_LOG_SEND_SUCCESS_MESSAGE, string(messageJSON))
-		if lgr != nil {
-			lgr.Info(utils.SEND_API_LOG_SUCCESS_MESSAGE)
-		}
+		lgr.Info(utils.SEND_API_LOG_SUCCESS_MESSAGE)
 	}
 }
 

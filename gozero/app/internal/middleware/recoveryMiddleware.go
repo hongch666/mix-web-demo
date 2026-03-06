@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"app/common/exceptions"
@@ -26,26 +25,14 @@ func (m *RecoveryMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 				if businessErr, ok := err.(*exceptions.BusinessError); ok {
 					// 业务异常：返回对应的错误信息，记录详细堆栈
 					m.Error(utils.BUSINESS_ERROR_MESSAGE)
-					responseError(w, businessErr.Message)
+					utils.Error(w, businessErr.Message)
 				} else {
 					// 其他异常：返回固定的错误信息，记录详细堆栈
 					m.Error(utils.STACK_ERROR_MESSAGE)
-					responseError(w, utils.UNIFIED_ERROR_RESPONSE_MESSAGE)
+					utils.Error(w, utils.UNIFIED_ERROR_RESPONSE_MESSAGE)
 				}
 			}
 		}()
 		next(w, r)
 	}
-}
-
-// responseError 返回错误响应
-func responseError(w http.ResponseWriter, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	response := map[string]any{
-		"code": 0,
-		"msg":  message,
-		"data": nil,
-	}
-	json.NewEncoder(w).Encode(response)
 }

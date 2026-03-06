@@ -15,16 +15,12 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 		SSE连接
-// @Description 	建立SSE连接用于接收实时消息推送（长连接，需通过WebSocket客户端连接）
-// @Tags 			chat
-// @Accept  		json
-// @Produce 		text/event-stream
-// @Param   		userId query string true "用户ID"
+// @Summary SSE消息通知连接
+// @Description 建立SSE连接，用于接收实时消息通知
+// @Tags 聊天
+// @Param userId query string true "用户ID"
 // @Success 		200 {string} string "消息流"
-// @Failure 		400 {object} map[string]interface{} "缺少用户ID"
-// @Failure 		500 {object} map[string]interface{} "服务器错误"
-// @Router  		/sse/chat [get]
+// @Router /sse/chat [get]
 // SSE连接
 func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +32,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		if userID == "" {
 			svcCtx.Logger.Error(utils.USER_ID_LESS)
-			utils.Error(w, http.StatusBadRequest, utils.USER_ID_LESS)
+			utils.Error(w, utils.USER_ID_LESS)
 			return
 		}
 
@@ -50,7 +46,8 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		// 注册客户端
 		svcCtx.SSEHub.RegisterClient(userID, sendCh, closeCh)
-		defer svcCtx.SSEHub.UnregisterClient(userID)
+		// 传入 sendCh 作为身份标识，防止旧连接的 defer 误关闭新连接
+		defer svcCtx.SSEHub.UnregisterClient(userID, sendCh)
 
 		// 发送初始化连接消息
 		initMessage := &dto.SSEMessageNotification{
@@ -71,6 +68,9 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// 响应流
 		for {
 			select {
+			case <-r.Context().Done():
+				// 客户端主动断开连接
+				return
 			case <-closeCh:
 				return
 			case <-ticker.C:

@@ -2,12 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"app/common/exceptions"
+
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 // writeLog 直接写入日志到文件
@@ -53,22 +54,22 @@ func WriteLog(message string, level string) {
 
 // 便捷函数
 func LogInfo(message string) {
-	log.Println(message)
+	logx.Info(message)
 	WriteLog(message, "INFO")
 }
 
 func LogError(message string) {
-	log.Println(message)
+	logx.Error(message)
 	WriteLog(message, "ERROR")
 }
 
 func LogWarning(message string) {
-	log.Println(message)
+	logx.Info(message)
 	WriteLog(message, "WARNING")
 }
 
 func LogDebug(message string) {
-	log.Println(message)
+	logx.Debug(message)
 	WriteLog(message, "DEBUG")
 }
 

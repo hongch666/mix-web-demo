@@ -34,7 +34,7 @@ type NacosConfig struct {
 
 type MysqlConfig struct {
 	Host     string `json:"host"`
-	Port     string `json:"port"`
+	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Dbname   string `json:"dbname"`
@@ -52,7 +52,7 @@ type ESConfig struct {
 
 type MongoDBConfig struct {
 	Host     string `json:"host"`
-	Port     string `json:"port"`
+	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Database string `json:"database"`
@@ -68,7 +68,7 @@ type MQConfig struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Host     string `json:"host"`
-	Port     string `json:"port"`
+	Port     int    `json:"port"`
 	Vhost    string `json:"vhost"`
 }
 

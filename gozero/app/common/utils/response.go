@@ -16,8 +16,8 @@ func Success(w http.ResponseWriter, data any) {
 }
 
 // Error 返回错误响应
-func Error(w http.ResponseWriter, code int, message string) {
-	httpx.WriteJson(w, code, map[string]any{
+func Error(w http.ResponseWriter, message string) {
+	httpx.WriteJson(w, http.StatusOK, map[string]any{
 		"code": 0,
 		"msg":  message,
 		"data": nil,

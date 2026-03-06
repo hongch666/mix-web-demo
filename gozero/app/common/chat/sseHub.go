@@ -59,13 +59,14 @@ func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan any, closeCh
 }
 
 // UnregisterClient 注销SSE客户端
-func (hub *SSEHubManager) UnregisterClient(userID string) {
+// 通过 sendCh 进行身份校验，防止新连接注册后旧连接的 defer 误关闭新连接的通道
+func (hub *SSEHubManager) UnregisterClient(userID string, sendCh chan any) {
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
 
-	if client, ok := hub.clients[userID]; ok {
-		close(client.SendCh)
-		close(client.CloseCh)
+	client, ok := hub.clients[userID]
+	// 仅当存储的 sendCh 与传入的一致时才注销，否则说明已有新连接接管，跳过
+	if ok && client.SendCh == sendCh {
 		delete(hub.clients, userID)
 		if hub.ZeroLogger != nil {
 			hub.Info(utils.SSE_UNREGISTER_SUCCESS_MESSAGE)

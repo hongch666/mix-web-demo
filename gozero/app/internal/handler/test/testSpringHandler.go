@@ -12,21 +12,17 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 		测试Spring服务
-// @Description 	调用Spring服务进行测试
-// @Tags 			test
-// @Accept  		json
-// @Produce 		json
-// @Success 		200 {object} map[string]interface{} "测试成功"
-// @Failure 		500 {object} map[string]interface{} "服务器错误"
-// @Router  		/api_gin/spring [get]
-// 测试Spring服务
+// @Summary 调用Spring的测试
+// @Description 输出欢迎信息
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gozero/spring [get]
 func TestSpringHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		l := test.NewTestSpringLogic(r.Context(), svcCtx)
 		resp, err := l.TestSpring()
 		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err.Error())
+			utils.Error(w, err.Error())
 		} else {
 			utils.Success(w, resp.Data)
 		}

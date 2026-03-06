@@ -10,7 +10,6 @@ require (
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/swaggo/files v1.0.1
 	github.com/zeromicro/go-zero v1.10.0
 	go.mongodb.org/mongo-driver v1.17.9
 	gorm.io/driver/mysql v1.6.0
@@ -23,6 +22,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
+	github.com/swaggo/files v1.0.1
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/tools v0.35.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

@@ -15,29 +15,27 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 		发送消息
-// @Description 	用户发送聊天消息
-// @Tags 			chat
-// @Accept  		json
-// @Produce 		json
+// @Summary 发送聊天消息
+// @Description 发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户
+// @Tags 聊天
+// @Accept json
+// @Produce json
 // @Param   		request body types.ChatSendMessageReq true "消息内容"
 // @Success 		200 {object} map[string]interface{} "消息发送成功"
-// @Failure 		400 {object} map[string]interface{} "请求参数错误"
-// @Failure 		500 {object} map[string]interface{} "服务器错误"
-// @Router  		/user-chat/send [post]
+// @Router /user-chat/send [post]
 // 发送消息
 func ChatSendMessageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var req types.ChatSendMessageReq
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, http.StatusBadRequest, err.Error())
+			utils.Error(w, err.Error())
 			return
 		}
 
 		l := chat.NewChatSendMessageLogic(r.Context(), svcCtx)
 		resp, err := l.ChatSendMessage(&req)
 		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err.Error())
+			utils.Error(w, err.Error())
 		} else {
 			utils.Success(w, resp)
 		}

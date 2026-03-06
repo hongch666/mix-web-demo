@@ -12,21 +12,19 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 		获取队列状态
-// @Description 	获取当前聊天队列的在线用户和队列长度
-// @Tags 			chat
-// @Accept  		json
-// @Produce 		json
+// @Summary 获取队列状态
+// @Description 获取当前在队列中的所有用户
+// @Tags 聊天
+// @Produce json
 // @Success 		200 {object} types.ChatGetQueueStatusResp "队列状态"
-// @Failure 		500 {object} map[string]interface{} "服务器错误"
-// @Router  		/user-chat/queue [get]
+// @Router /user-chat/queue [get]
 // 获取队列状态
 func ChatGetQueueStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		l := chat.NewChatGetQueueStatusLogic(r.Context(), svcCtx)
 		resp, err := l.ChatGetQueueStatus()
 		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err.Error())
+			utils.Error(w, err.Error())
 		} else {
 			utils.Success(w, resp)
 		}

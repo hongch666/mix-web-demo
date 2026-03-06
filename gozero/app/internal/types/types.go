@@ -145,7 +145,7 @@ type TestFastAPIResp struct {
 	Data string `json:"data"`
 }
 
-type TestGinResp struct {
+type TestGoZeroResp struct {
 	Data string `json:"data"`
 }
 

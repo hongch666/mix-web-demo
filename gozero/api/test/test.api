@@ -7,10 +7,10 @@ syntax = "v2"
 )
 service App {
 	@doc (
-		summary: "测试Gin服务"
+		summary: "测试GoZero服务"
 	)
-	@handler TestGinHandler
-	get /gozero returns (TestGinResp)
+	@handler TestGoZeroHandler
+	get /gozero returns (TestGoZeroResp)
 
 	@doc (
 		summary: "测试Spring服务"
@@ -34,7 +34,7 @@ service App {
 @server (
 	group:      test
 	tags:       test
-	prefix:     /api_gin
+	prefix:     /api_gozero
 	middleware: InternalServiceMiddleware
 )
 service App {
@@ -47,7 +47,7 @@ service App {
 
 type (
 	SyncESReq  {}
-	TestGinResp {
+	TestGoZeroResp {
 		Data string `json:"data"`
 	}
 	TestSpringResp {

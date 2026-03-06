@@ -28,6 +28,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
+				// SSE连接
+				Method:  http.MethodGet,
+				Path:    "/sse/chat",
+				Handler: chat.ChatSSEHandler(serverCtx),
+			},
+			{
+				// WebSocket连接
+				Method:  http.MethodGet,
+				Path:    "/ws/chat",
+				Handler: chat.ChatWebsocketHandler(serverCtx),
+			},
+		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
 				// 获取所有未读消息数
 				Method:  http.MethodPost,
 				Path:    "/all-unread-counts",
@@ -76,23 +93,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				// SSE连接
-				Method:  http.MethodGet,
-				Path:    "/sse/chat",
-				Handler: chat.ChatSSEHandler(serverCtx),
-			},
-			{
-				// WebSocket连接
-				Method:  http.MethodGet,
-				Path:    "/ws/chat",
-				Handler: chat.ChatWebsocketHandler(serverCtx),
-			},
-		},
-	)
-
-	server.AddRoutes(
-		[]rest.Route{
-			{
 				// 搜索文章
 				Method:  http.MethodGet,
 				Path:    "/",
@@ -117,10 +117,10 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: test.TestFastAPIHandler(serverCtx),
 			},
 			{
-				// 测试Gin服务
+				// 测试GoZero服务
 				Method:  http.MethodGet,
 				Path:    "/gozero",
-				Handler: test.TestGinHandler(serverCtx),
+				Handler: test.TestGoZeroHandler(serverCtx),
 			},
 			{
 				// 测试NestJS服务
@@ -150,6 +150,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				},
 			}...,
 		),
-		rest.WithPrefix("/api_gin"),
+		rest.WithPrefix("/api_gozero"),
 	)
 }

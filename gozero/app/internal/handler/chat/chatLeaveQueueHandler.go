@@ -15,29 +15,27 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 		离开队列
-// @Description 	用户离开聊天队列
-// @Tags 			chat
-// @Accept  		json
-// @Produce 		json
+// @Summary 手动离开聊天队列
+// @Description 用户手动离开聊天队列
+// @Tags 聊天
+// @Accept json
+// @Produce json
 // @Param   		request body types.ChatLeaveQueueReq true "用户ID"
 // @Success 		200 {object} types.ChatLeaveQueueResp "离开结果"
-// @Failure 		400 {object} map[string]interface{} "请求参数错误"
-// @Failure 		500 {object} map[string]interface{} "服务器错误"
-// @Router  		/user-chat/leave [post]
+// @Router /user-chat/leave [post]
 // 离开队列
 func ChatLeaveQueueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var req types.ChatLeaveQueueReq
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, http.StatusBadRequest, err.Error())
+			utils.Error(w, err.Error())
 			return
 		}
 
 		l := chat.NewChatLeaveQueueLogic(r.Context(), svcCtx)
 		resp, err := l.ChatLeaveQueue(&req)
 		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err.Error())
+			utils.Error(w, err.Error())
 		} else {
 			utils.Success(w, resp)
 		}

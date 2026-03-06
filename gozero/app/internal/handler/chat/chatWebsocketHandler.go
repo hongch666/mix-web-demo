@@ -20,16 +20,12 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// @Summary 		WebSocket连接
-// @Description 	建立WebSocket连接用于实时聊天通信（长连接，需通过WebSocket客户端连接）
-// @Tags 			chat
-// @Accept  		json
-// @Produce 		json
+// @Summary WebSocket聊天连接
+// @Description 建立WebSocket连接，自动加入聊天队列
+// @Tags 聊天
 // @Param   		userId query string true "用户ID"
 // @Success 		101 {string} string "切换为WebSocket协议"
-// @Failure 		400 {object} map[string]interface{} "缺少用户ID"
-// @Failure 		500 {object} map[string]interface{} "连接失败"
-// @Router  		/ws/chat [get]
+// @Router /ws/chat [get]
 // WebSocket连接
 func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +37,7 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		if userID == "" {
 			svcCtx.Logger.Error(utils.USER_ID_LESS)
-			utils.Error(w, http.StatusBadRequest, utils.USER_ID_LESS)
+			utils.Error(w, utils.USER_ID_LESS)
 			return
 		}
 

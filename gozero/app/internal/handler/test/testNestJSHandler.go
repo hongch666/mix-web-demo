@@ -12,21 +12,18 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 		测试NestJS服务
-// @Description 	调用NestJS服务进行测试
-// @Tags 			test
-// @Accept  		json
-// @Produce 		json
-// @Success 		200 {object} map[string]interface{} "测试成功"
-// @Failure 		500 {object} map[string]interface{} "服务器错误"
-// @Router  		/api_gin/nestjs [get]
+// @Summary 调用NestJS的测试
+// @Description 输出欢迎信息
+// @Tags 测试
+// @Success 200 {object} map[string]interface{}
+// @Router /api_gozero/nestjs [get]
 // 测试NestJS服务
 func TestNestJSHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		l := test.NewTestNestJSLogic(r.Context(), svcCtx)
 		resp, err := l.TestNestJS()
 		if err != nil {
-			utils.Error(w, http.StatusInternalServerError, err.Error())
+			utils.Error(w, err.Error())
 		} else {
 			utils.Success(w, resp.Data)
 		}

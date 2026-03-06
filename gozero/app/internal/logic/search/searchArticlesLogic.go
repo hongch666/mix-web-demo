@@ -35,10 +35,7 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 
 func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp *types.SearchArticlesResp, err error) {
 	// 设置默认分页
-	page := req.Page
-	if page < 1 {
-		page = 1
-	}
+	page := max(req.Page, 1)
 	size := req.Size
 	if size < 1 {
 		size = 10
