@@ -26,9 +26,9 @@ spring:
         # 1. 先排除特殊路径
         - id: exclude-list
           uri: no://op
-          # 拦截的有:Spring查询用户列表,Gin手动同步接口,FastAPI手动同步接口,NestJS手动执行定时任务,Spring手动执行定时任务,文章日志创建,导出excel,创建AI历史记录
+          # 拦截的有:Spring查询用户列表,GoZero手动同步接口,FastAPI手动同步接口,NestJS手动执行定时任务,Spring手动执行定时任务,文章日志创建,导出excel,创建AI历史记录
           predicates:
-            - Path=/articles/list,/api_gin/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/ai_history,/upload
+            - Path=/articles/list,/api_gozero/syncer,/api_fastapi/task/**,/api_nestjs/execute/**,/api_spring/execute/**,/logs,/ai_history,/upload
           filters:
             - SetStatus=204
 
@@ -38,8 +38,8 @@ spring:
           predicates:
             - Path=/api_spring/**,/users/**,/articles/**,/category/**,/comments/**,/collects/**,/likes/**,/focus/**
 
-        - id: gin-ws
-          uri: ws://${GIN_HOST:localhost}:${GIN_PORT:8082}
+        - id: gozero-ws
+          uri: ws://${GOZERO_HOST:localhost}:${GOZERO_PORT:8082}
           predicates:
             - Path=/ws/**
           metadata:
@@ -47,8 +47,8 @@ spring:
             connect-timeout: 60000
             response-timeout: 60000
 
-        - id: gin-sse
-          uri: http://${GIN_HOST:localhost}:${GIN_PORT:8082}
+        - id: gozero-sse
+          uri: http://${GOZERO_HOST:localhost}:${GOZERO_PORT:8082}
           predicates:
             - Path=/sse/**
           metadata:
@@ -56,10 +56,10 @@ spring:
             response-timeout: -1
             connect-timeout: 60000
 
-        - id: gin
-          uri: lb://gin
+        - id: gozero
+          uri: lb://gozero
           predicates:
-            - Path=/api_gin/**,/search/**,/user-chat/**,/static/**
+            - Path=/api_gozero/**,/search/**,/user-chat/**,/static/**
 
         - id: nestjs
           uri: lb://nestjs
