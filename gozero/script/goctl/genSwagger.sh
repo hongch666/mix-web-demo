@@ -9,10 +9,11 @@ then
 fi
 
 # 进入app目录
-cd "$(dirname "$0")/../app"
+cd "$(dirname "$0")/../../app"
 
 echo "正在生成Swagger文档..."
-swag init
+# 使用 -g 参数指定包含swagger注释的文件
+swag init -g internal/handler/routes.go
 
 echo "Swagger文档生成完成！"
 echo "文档位置：./docs/"

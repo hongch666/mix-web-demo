@@ -13,7 +13,7 @@ $appPath = Join-Path $scriptPath "..\..\app"
 Push-Location $appPath
 
 Write-Host "正在生成Swagger文档..."
-swag init
+swag init -g internal/handler/routes.go
 
 Write-Host "Swagger文档生成完成！"
 Write-Host "文档位置：./docs/"
@@ -21,6 +21,6 @@ Write-Host ""
 Write-Host "运行以下命令启动服务器："
 Write-Host "  go run main.go"
 Write-Host ""
-Write-Host "然后访问 http://localhost:8080/swagger/index.html"
+Write-Host "然后访问 http://localhost:8082/swagger/index.html"
 
 Pop-Location
