@@ -332,8 +332,9 @@ build_gozero() {
     # 复制二进制文件
     cp gozero "$GOZERO_DIST/"
     
-    # 复制配置文件
-    cp etc/application.yaml "$GOZERO_DIST/"
+    # 复制配置文件（保留 etc/ 目录结构，与二进制默认路径一致）
+    mkdir -p "$GOZERO_DIST/etc"
+    cp etc/application.yaml "$GOZERO_DIST/etc/"
     
     # 复制 .env 文件
     if [ -f ".env" ]; then
