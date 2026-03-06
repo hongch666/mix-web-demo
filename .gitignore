@@ -175,6 +175,7 @@ gozero/app/.DS_Store
 gozero/app/*.orig
 
 gozero/app/gozero_service
+gozero/app/gozero
 
 ### spring
 
