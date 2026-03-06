@@ -6,6 +6,7 @@ package chat
 import (
 	"context"
 
+	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -14,19 +15,21 @@ import (
 type ChatWebsocketLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	*logger.ZeroLogger
 }
 
 // WebSocket连接
 func NewChatWebsocketLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatWebsocketLogic {
 	return &ChatWebsocketLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
 func (l *ChatWebsocketLogic) ChatWebsocket(req *types.ChatWsConnectReq) (resp *types.ChatWsConnectResp, err error) {
 	// WebSocket实时瘪天实现
-	l.svcCtx.Logger.Info(utils.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
+	l.Info(utils.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
 
 	return
 }

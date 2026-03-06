@@ -22,14 +22,14 @@ import (
 type ApiLogMiddleware struct {
 	description   string
 	rabbitChannel *amqp.Channel
-	logger        *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 func NewApiLogMiddleware(description string, rabbitChannel *amqp.Channel, log *logger.ZeroLogger) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
 		description:   description,
 		rabbitChannel: rabbitChannel,
-		logger:        log,
+		ZeroLogger:    log,
 	}
 }
 
@@ -81,7 +81,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 记录日志（请求开始）
 		logMessage := formatLogMessage(method, path, m.description, userID, username, logInfo)
-		m.logger.Info(logMessage)
+		m.Info(logMessage)
 
 		// 继续处理请求
 		next(w, r)
@@ -89,11 +89,11 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 请求处理完成，记录耗时（毫秒）
 		durationMs := time.Since(start).Milliseconds()
 		timeMessage := fmt.Sprintf(utils.RECORD_DURATION_MESSAGE, method, path, durationMs)
-		m.logger.Info(timeMessage)
+		m.Info(timeMessage)
 
 		// 发送 API 日志到队列（异步，不阻塞主流程）
-		if m.rabbitChannel != nil {
-			go sendApiLogToQueue(r.Context(), m.rabbitChannel, m.logger, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
+		if m.ZeroLogger != nil {
+			go sendApiLogToQueue(r.Context(), m.ZeroLogger, m.rabbitChannel, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
 		}
 	}
 }
@@ -208,7 +208,7 @@ func formatLogMessage(method, path, description string, userID int64, username s
 }
 
 // sendApiLogToQueue 发送 API 日志到队列（异步处理）
-func sendApiLogToQueue(ctx context.Context, rabbitChannel *amqp.Channel, lgr *logger.ZeroLogger, userID int64, username, method, path, description string,
+func sendApiLogToQueue(ctx context.Context, lgr *logger.ZeroLogger, rabbitChannel *amqp.Channel, userID int64, username, method, path, description string,
 	queryParams map[string]any, requestBody any, responseTimeMs int64) {
 
 	// 构建 API 日志消息（统一格式：snake_case）
@@ -227,7 +227,7 @@ func sendApiLogToQueue(ctx context.Context, rabbitChannel *amqp.Channel, lgr *lo
 	messageJSON, err := json.Marshal(apiLogMessage)
 	if err != nil {
 		if lgr != nil {
-			lgr.Error(fmt.Sprintf(utils.SERIALIZE_API_LOG_FAIL_MESSAGE, err))
+			lgr.Error(utils.SERIALIZE_API_LOG_FAIL_MESSAGE)
 		}
 		return
 	}
@@ -255,12 +255,12 @@ func sendApiLogToQueue(ctx context.Context, rabbitChannel *amqp.Channel, lgr *lo
 	)
 
 	if err != nil {
-		log.Printf("[API日志发送失败] 队列: api-log-queue, 错误: %v", err)
+		log.Printf(utils.API_LOG_SEND_FAIL_MESSAGE, err)
 		if lgr != nil {
-			lgr.Error(fmt.Sprintf(utils.SEND_API_LOG_FAIL_MESSAGE, err))
+			lgr.Error(utils.SEND_API_LOG_FAIL_MESSAGE)
 		}
 	} else {
-		log.Printf("[API日志发送成功] 队列: api-log-queue, 消息: %s", string(messageJSON))
+		log.Printf(utils.API_LOG_SEND_SUCCESS_MESSAGE, string(messageJSON))
 		if lgr != nil {
 			lgr.Info(utils.SEND_API_LOG_SUCCESS_MESSAGE)
 		}

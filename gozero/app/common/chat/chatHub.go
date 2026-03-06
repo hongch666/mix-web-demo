@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -17,7 +18,7 @@ type Client struct {
 	UserID string
 	Conn   *websocket.Conn
 	Send   chan []byte
-	Logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 全局聊天队列管理
@@ -34,7 +35,8 @@ type ChatQueue struct {
 }
 
 type ChatHub struct {
-	Logger *logger.ZeroLogger
+	ctx context.Context
+	*logger.ZeroLogger
 }
 
 // 加入队列
@@ -42,11 +44,11 @@ func (s *ChatHub) JoinQueue(userID string, client *Client) {
 	chatQueue.mu.Lock()
 	chatQueue.clients[userID] = client
 	chatQueue.mu.Unlock()
-	if client != nil && s.Logger != nil {
-		client.Logger = s.Logger
+	if client != nil && s.ZeroLogger != nil {
+		client.ZeroLogger = s.ZeroLogger
 	}
-	if s.Logger != nil {
-		s.Logger.Info(fmt.Sprintf(utils.USER_JOINED_QUEUE, userID))
+	if s.ZeroLogger != nil {
+		s.Info(utils.USER_JOINED_QUEUE_MESSAGE)
 	}
 }
 
@@ -58,8 +60,8 @@ func (s *ChatHub) LeaveQueue(userID string) {
 		delete(chatQueue.clients, userID)
 	}
 	chatQueue.mu.Unlock()
-	if s.Logger != nil {
-		s.Logger.Info(fmt.Sprintf(utils.USER_LEFT_QUEUE, userID))
+	if s.ZeroLogger != nil {
+		s.Info(utils.USER_LEFT_QUEUE_MESSAGE)
 	}
 }
 
@@ -84,8 +86,8 @@ func (s *ChatHub) SendMessageToQueue(userID string, message []byte) bool {
 	if client, exists := s.GetUserFromQueue(userID); exists {
 		// 如果客户端没有WebSocket连接（手动加入队列的用户），直接返回false
 		if client.Conn == nil {
-			if s.Logger != nil {
-				s.Logger.Warning(fmt.Sprintf(utils.USER_IN_QUEUE_NOT_CONNECTED, userID))
+			if s.ZeroLogger != nil {
+				s.Warning(utils.USER_IN_QUEUE_NOT_CONNECTED_WARNING)
 			}
 			return false
 		}
@@ -126,8 +128,8 @@ func (c *Client) ReadPump() {
 		_, messageBytes, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				if c.Logger != nil {
-					c.Logger.Error(fmt.Sprintf(utils.WS_ERROR, err))
+				if c.ZeroLogger != nil {
+					c.Error(fmt.Sprintf(utils.WS_ERROR, err))
 				}
 			}
 			break
@@ -136,8 +138,8 @@ func (c *Client) ReadPump() {
 		// 解析消息
 		var wsMessage dto.WebSocketMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
-			if c.Logger != nil {
-				c.Logger.Error(fmt.Sprintf(utils.PARSE_MESSAGE_FAIL, err))
+			if c.ZeroLogger != nil {
+				c.Error(fmt.Sprintf(utils.PARSE_MESSAGE_FAIL, err))
 			}
 			continue
 		}

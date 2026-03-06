@@ -21,15 +21,15 @@ import (
 type SearchArticlesLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 搜索文章
 func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SearchArticlesLogic {
 	return &SearchArticlesLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		logger: svcCtx.Logger,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -77,7 +77,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	// 执行搜索
 	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf(utils.SEARCH_EXECUTION_ERROR+": %v", err))
+		l.Error(fmt.Sprintf(utils.SEARCH_EXECUTION_ERROR+": %v", err))
 		panic(exceptions.NewBusinessError(utils.SEARCH_EXECUTION_ERROR, err.Error()))
 	}
 
@@ -107,7 +107,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		}
 	}
 
-	l.svcCtx.Logger.Info(utils.ARTICLE_SEARCH_SUCCESS)
+	l.Info(utils.ARTICLE_SEARCH_SUCCESS)
 
 	resp = &types.SearchArticlesResp{
 		Total: total,
@@ -125,7 +125,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		}
 		jsonBytes, err := json.Marshal(msg)
 		if err != nil {
-			l.logger.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
+			l.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
 		} else {
 			// 通过RabbitMQ发送消息
 			if l.svcCtx.RabbitMQChannel != nil {
@@ -140,7 +140,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 					},
 				)
 				if err != nil {
-					l.logger.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
+					l.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
 				}
 			}
 		}

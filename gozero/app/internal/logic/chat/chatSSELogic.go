@@ -6,6 +6,7 @@ package chat
 import (
 	"context"
 
+	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -14,19 +15,21 @@ import (
 type ChatSSELogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	*logger.ZeroLogger
 }
 
 // SSE连接
 func NewChatSSELogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatSSELogic {
 	return &ChatSSELogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
 func (l *ChatSSELogic) ChatSSE(req *types.ChatSSEConnectReq) (resp *types.ChatSSEConnectResp, err error) {
 	// SSE实时推送实现
-	l.svcCtx.Logger.Info(utils.SSE_CONNECTION_ESTABLISHED_MESSAGE)
+	l.Info(utils.SSE_CONNECTION_ESTABLISHED_MESSAGE)
 
 	return
 }

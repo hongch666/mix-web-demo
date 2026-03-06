@@ -439,6 +439,51 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 	// 服务名称不匹配错误消息
 	SERVICE_NAME_MISMATCH = "服务名称不匹配"
 
+	// 用户加入队列消息（不含参数）
+	USER_JOINED_QUEUE_MESSAGE = "用户已加入聊天队列"
+
+	// 用户离开队列消息（不含参数）
+	USER_LEFT_QUEUE_MESSAGE = "用户已离开聊天队列"
+
+	// 用户在队列但未连接警告（不含参数）
+	USER_IN_QUEUE_NOT_CONNECTED_WARNING = "用户在队列中但没有WebSocket连接，无法发送实时消息"
+
+	// SSE客户端注册成功消息（不含参数）
+	SSE_REGISTER_SUCCESS_MESSAGE = "SSE客户端已注册"
+
+	// SSE客户端注销成功消息（不含参数）
+	SSE_UNREGISTER_SUCCESS_MESSAGE = "SSE客户端已注销"
+
+	// SSE通知发送成功消息（不含参数）
+	SSE_SEND_SUCCESS_MESSAGE = "SSE通知已发送"
+
+	// SSE通知发送失败警告（不含参数）
+	SSE_SEND_FAIL_WARNING_MESSAGE = "无法发送SSE通知，通道已满"
+
+	// SSE客户端未找到警告（不含参数）
+	SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE = "SSE客户端未找到"
+
+	// SSE广播消息发送成功消息（不含参数）
+	SSE_BROADCAST_SUCCESS_MESSAGE = "广播消息已发送"
+
+	// SSE广播消息发送失败警告（不含参数）
+	SSE_BROADCAST_FAIL_WARNING_MESSAGE = "无法广播消息，通道已满"
+
+	// SSE发送空通知警告（不含参数）
+	SSE_SEND_EMPTY_WARNING_MESSAGE = "尝试发送空通知"
+
+	// SSE发送空消息警告（不含参数）
+	SSE_SEND_EMPTY_MESSAGE_WARNING_MESSAGE = "尝试发送空的SSE消息"
+
+	// SSE消息序列化错误（不含参数）
+	SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE = "序列化SSE消息错误"
+
+	// API日志发送失败消息
+	API_LOG_SEND_FAIL_MESSAGE = "[API日志发送失败] 队列: api-log-queue, 错误: %v"
+
+	// API日志发送成功消息
+	API_LOG_SEND_SUCCESS_MESSAGE = "[API日志发送成功] 队列: api-log-queue, 消息: %s"
+
 	// Swagger 文档相关常量
 
 	// 服务启动消息

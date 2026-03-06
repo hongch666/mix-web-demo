@@ -21,15 +21,15 @@ import (
 type ChatSendMessageLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 发送消息
 func NewChatSendMessageLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatSendMessageLogic {
 	return &ChatSendMessageLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		logger: svcCtx.Logger,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -43,11 +43,11 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 	}
 
 	if err := l.svcCtx.ChatMessagesModel.CreateChatMessage(l.ctx, message); err != nil {
-		l.svcCtx.Logger.Error(fmt.Sprintf(utils.CREATE_MESSAGE_ERROR+": %v", err))
+		l.Error(fmt.Sprintf(utils.CREATE_MESSAGE_ERROR+": %v", err))
 		panic(exceptions.NewBusinessError(utils.CREATE_MESSAGE_ERROR, err.Error()))
 	}
 
-	l.logger.Info(utils.CHAT_MESSAGE_SEND_SUCCESS)
+	l.Info(utils.CHAT_MESSAGE_SEND_SUCCESS)
 
 	// 2. 检查接收者是否在队列中，如果在就通过WebSocket发送
 	if l.svcCtx.ChatHub.IsUserInQueue(req.ReceiverId) {
@@ -64,15 +64,15 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {
 			// 发送成功，消息已读
 			l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.SenderId, req.ReceiverId)
-			l.logger.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.Id))
+			l.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.Id))
 		} else {
 			// 发送失败，用户可能刷离线，消息保持未读
-			l.logger.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
+			l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
 			// 触发SSE通知发送未读消息
 			go l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
 		}
 	} else {
-		l.logger.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
+		l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
 		// 触发SSE通知发送未读消息
 		go l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
 	}
@@ -89,7 +89,7 @@ func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ string, message *ch
 	// 获取该用户的所有未读消息数
 	unreadCounts, err := l.svcCtx.ChatMessagesModel.GetAllUnreadCounts(l.ctx, userID)
 	if err != nil {
-		l.svcCtx.Logger.Error(fmt.Sprintf(utils.GET_UNREAD_COUNT_MESSAGE_ERROR, err))
+		l.Error(fmt.Sprintf(utils.GET_UNREAD_COUNT_MESSAGE_ERROR, err))
 		return
 	}
 

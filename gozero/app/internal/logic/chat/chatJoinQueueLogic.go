@@ -16,15 +16,15 @@ import (
 type ChatJoinQueueLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 加入队列
 func NewChatJoinQueueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatJoinQueueLogic {
 	return &ChatJoinQueueLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		logger: svcCtx.Logger,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -48,6 +48,6 @@ func (l *ChatJoinQueueLogic) ChatJoinQueue(req *types.ChatJoinQueueReq) (resp *t
 		resp.Status = utils.USER_CONNECTED
 	}
 
-	l.svcCtx.Logger.Info(utils.JOIN_QUEUE_SUCCESS)
+	l.Info(utils.JOIN_QUEUE_SUCCESS)
 	return
 }

@@ -19,15 +19,15 @@ import (
 type TestSpringLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 测试Spring服务
 func NewTestSpringLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestSpringLogic {
 	return &TestSpringLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		logger: svcCtx.Logger,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -39,7 +39,7 @@ func (l *TestSpringLogic) TestSpring() (resp *types.TestSpringResp, err error) {
 	sd := client.NewServiceDiscovery(l.svcCtx.NamingClient)
 	result, err := sd.CallService(l.ctx, "spring", "/api_spring/spring", opts)
 	if err != nil {
-		l.logger.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
+		l.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
 		panic(exceptions.NewBusinessError(utils.PARSE_ERR, err.Error()))
 	}
 

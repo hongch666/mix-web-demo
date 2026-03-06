@@ -21,7 +21,7 @@ type SSEClient struct {
 type SSEHubManager struct {
 	clients map[string]*SSEClient // userID -> SSEClient
 	mu      sync.RWMutex
-	Logger  *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 var sseHubInstance *SSEHubManager
@@ -53,8 +53,8 @@ func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan any, closeCh
 		SendCh:  sendCh,
 		CloseCh: closeCh,
 	}
-	if hub.Logger != nil {
-		hub.Logger.Info(fmt.Sprintf(utils.SSE_REGISTER_SUCCESS, userID))
+	if hub.ZeroLogger != nil {
+		hub.Info(utils.SSE_REGISTER_SUCCESS_MESSAGE)
 	}
 }
 
@@ -67,8 +67,8 @@ func (hub *SSEHubManager) UnregisterClient(userID string) {
 		close(client.SendCh)
 		close(client.CloseCh)
 		delete(hub.clients, userID)
-		if hub.Logger != nil {
-			hub.Logger.Info(fmt.Sprintf(utils.SSE_UNREGISTER_SUCCESS, userID))
+		if hub.ZeroLogger != nil {
+			hub.Info(utils.SSE_UNREGISTER_SUCCESS_MESSAGE)
 		}
 	}
 }
@@ -76,8 +76,8 @@ func (hub *SSEHubManager) UnregisterClient(userID string) {
 // SendNotificationToUser 发送通知给特定用户
 func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dto.SSEMessageNotification) {
 	if notification == nil {
-		if hub.Logger != nil {
-			hub.Logger.Warning(fmt.Sprintf(utils.SSE_SEND_EMPTY_WARNING, userID))
+		if hub.ZeroLogger != nil {
+			hub.Warning(utils.SSE_SEND_EMPTY_WARNING_MESSAGE)
 		}
 		return
 	}
@@ -87,20 +87,20 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dt
 	hub.mu.RUnlock()
 
 	if !ok {
-		if hub.Logger != nil {
-			hub.Logger.Warning(fmt.Sprintf(utils.SSE_CLIENT_NOT_FOUND_WARNING, userID))
+		if hub.ZeroLogger != nil {
+			hub.Warning(utils.SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE)
 		}
 		return
 	}
 
 	select {
 	case client.SendCh <- notification:
-		if hub.Logger != nil {
-			hub.Logger.Info(fmt.Sprintf(utils.SSE_SEND_SUCCESS, userID))
+		if hub.ZeroLogger != nil {
+			hub.Info(utils.SSE_SEND_SUCCESS_MESSAGE)
 		}
 	default:
-		if hub.Logger != nil {
-			hub.Logger.Warning(fmt.Sprintf(utils.SSE_SEND_FAIL_WARNING, userID))
+		if hub.ZeroLogger != nil {
+			hub.Warning(utils.SSE_SEND_FAIL_WARNING_MESSAGE)
 		}
 	}
 }
@@ -110,15 +110,15 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
 
-	for userID, client := range hub.clients {
+	for _, client := range hub.clients {
 		select {
 		case client.SendCh <- notification:
-			if hub.Logger != nil {
-				hub.Logger.Debug(fmt.Sprintf(utils.SSE_BROADCAST_SUCCESS, userID))
+			if hub.ZeroLogger != nil {
+				hub.Debug(utils.SSE_BROADCAST_SUCCESS_MESSAGE)
 			}
 		default:
-			if hub.Logger != nil {
-				hub.Logger.Warning(fmt.Sprintf(utils.SSE_BROADCAST_FAIL_WARNING, userID))
+			if hub.ZeroLogger != nil {
+				hub.Warning(utils.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
 			}
 		}
 	}
@@ -127,24 +127,24 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 // FormatSSEMessage 格式化SSE消息
 func FormatSSEMessage(data any) string {
 	if data == nil {
-		if sseHubInstance != nil && sseHubInstance.Logger != nil {
-			sseHubInstance.Logger.Warning(utils.SSE_SEND_EMPTY_MESSAGE_WARNING)
+		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
+			sseHubInstance.Warning(utils.SSE_SEND_EMPTY_MESSAGE_WARNING_MESSAGE)
 		}
 		return ""
 	}
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		if sseHubInstance != nil && sseHubInstance.Logger != nil {
-			sseHubInstance.Logger.Error(fmt.Sprintf(utils.SSE_SERIALIZE_MESSAGE_ERROR, err))
+		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
+			sseHubInstance.Error(utils.SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE)
 		}
 		return ""
 	}
 
 	// 检查是否为null
 	if string(jsonData) == "null" {
-		if sseHubInstance != nil && sseHubInstance.Logger != nil {
-			sseHubInstance.Logger.Warning(utils.SSE_SERIALIZE_MESSAGE_EMPTY)
+		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
+			sseHubInstance.Warning(utils.SSE_SERIALIZE_MESSAGE_EMPTY)
 		}
 		return ""
 	}

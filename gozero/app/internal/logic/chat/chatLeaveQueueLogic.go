@@ -6,6 +6,7 @@ package chat
 import (
 	"context"
 
+	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -14,13 +15,15 @@ import (
 type ChatLeaveQueueLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	*logger.ZeroLogger
 }
 
 // 离开队列
 func NewChatLeaveQueueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatLeaveQueueLogic {
 	return &ChatLeaveQueueLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -38,6 +41,6 @@ func (l *ChatLeaveQueueLogic) ChatLeaveQueue(req *types.ChatLeaveQueueReq) (resp
 		resp.Status = utils.USER_NOT_IN_QUEUE
 	}
 
-	l.svcCtx.Logger.Info(utils.LEAVE_QUEUE_SUCCESS)
+	l.Info(utils.LEAVE_QUEUE_SUCCESS)
 	return
 }

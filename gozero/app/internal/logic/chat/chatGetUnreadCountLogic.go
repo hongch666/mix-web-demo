@@ -17,15 +17,15 @@ import (
 type ChatGetUnreadCountLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 获取未读消息数
 func NewChatGetUnreadCountLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatGetUnreadCountLogic {
 	return &ChatGetUnreadCountLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		logger: svcCtx.Logger,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -33,11 +33,11 @@ func (l *ChatGetUnreadCountLogic) ChatGetUnreadCount(req *types.ChatGetUnreadCou
 	// 获取两个用户间的未读消息数
 	unreadCount, err := l.svcCtx.ChatMessagesModel.GetUnreadCount(l.ctx, req.UserId, req.OtherId)
 	if err != nil {
-		l.svcCtx.Logger.Error(fmt.Sprintf(utils.GET_UNREAD_COUNT_ERROR+": %v", err))
+		l.Error(fmt.Sprintf(utils.GET_UNREAD_COUNT_ERROR+": %v", err))
 		panic(exceptions.NewBusinessError(utils.GET_UNREAD_COUNT_ERROR, err.Error()))
 	}
 
-	l.svcCtx.Logger.Info(utils.GET_UNREAD_COUNT_SUCCESS)
+	l.Info(utils.GET_UNREAD_COUNT_SUCCESS)
 
 	resp = &types.ChatGetUnreadCountResp{
 		UnreadCount: unreadCount,

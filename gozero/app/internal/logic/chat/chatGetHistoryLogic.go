@@ -17,15 +17,15 @@ import (
 type ChatGetHistoryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	logger *logger.ZeroLogger
+	*logger.ZeroLogger
 }
 
 // 获取聊天历史
 func NewChatGetHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatGetHistoryLogic {
 	return &ChatGetHistoryLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		logger: svcCtx.Logger,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -45,13 +45,13 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 	// 获取聊天历史
 	messages, total, err := l.svcCtx.ChatMessagesModel.GetChatHistory(l.ctx, req.UserId, req.OtherId, offset, size)
 	if err != nil {
-		l.svcCtx.Logger.Error(fmt.Sprintf(utils.GET_HISTORY_MESSAGE_ERROR+": %v", err))
+		l.Error(fmt.Sprintf(utils.GET_HISTORY_MESSAGE_ERROR+": %v", err))
 		panic(exceptions.NewBusinessError(utils.GET_HISTORY_MESSAGE_ERROR, err.Error()))
 	}
 
 	// 标记消息为已读
 	if err := l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.UserId, req.OtherId); err != nil {
-		l.logger.Error(fmt.Sprintf(utils.MARK_READ_FAIL, err))
+		l.Error(fmt.Sprintf(utils.MARK_READ_FAIL, err))
 	}
 
 	// 转换为ChatMessageItem
@@ -67,7 +67,7 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 		}
 	}
 
-	l.svcCtx.Logger.Info(utils.GET_CHAT_HISTORY_SUCCESS)
+	l.Info(utils.GET_CHAT_HISTORY_SUCCESS)
 
 	resp = &types.ChatGetHistoryResp{
 		Messages: messageItems,

@@ -10,6 +10,7 @@ import (
 
 	"app/common/client"
 	"app/common/exceptions"
+	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -18,13 +19,15 @@ import (
 type TestFastAPILogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	*logger.ZeroLogger
 }
 
 // 测试FastAPI服务
 func NewTestFastAPILogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestFastAPILogic {
 	return &TestFastAPILogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 
@@ -36,7 +39,7 @@ func (l *TestFastAPILogic) TestFastAPI() (resp *types.TestFastAPIResp, err error
 	sd := client.NewServiceDiscovery(l.svcCtx.NamingClient)
 	result, err := sd.CallService(l.ctx, "fastapi", "/api_fastapi/fastapi", opts)
 	if err != nil {
-		l.svcCtx.Logger.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
+		l.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
 		panic(exceptions.NewBusinessError(utils.PARSE_ERR, err.Error()))
 	}
 
