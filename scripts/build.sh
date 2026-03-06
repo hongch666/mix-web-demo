@@ -212,7 +212,7 @@ build_fastapi() {
     mkdir -p "$FASTAPI_DIST"
     
     # 复制源代码
-    cp -r api common entity "$FASTAPI_DIST/"
+    cp -r app "$FASTAPI_DIST/"
     cp main.py "$FASTAPI_DIST/"
     
     # 复制配置文件
