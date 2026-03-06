@@ -1,10 +1,11 @@
 import os
 from typing import Any, List, Optional, Tuple
 
-from app.agents import get_mongodb_tools, get_rag_tools, get_sql_tools
-from app.core import Constants, Logger
 from langchain_core.prompts import PromptTemplate
 from sqlmodel import Session
+
+from app.agents import get_mongodb_tools, get_rag_tools, get_sql_tools
+from app.core import Constants, Logger
 
 ChatHistoryItem = Tuple[str, str]
 IntermediateStep = Tuple[Any, Any]
@@ -138,27 +139,6 @@ class BaseAiService:
         except Exception as e:
             Logger.error(f"加载聊天历史失败: {e}")
             return []
-
-    def _build_thinking_text(self, intermediate_steps: List[IntermediateStep]) -> str:
-        """构建思考过程文本
-
-        Args:
-            intermediate_steps: Agent的中间步骤列表
-
-        Returns:
-            str: 格式化的思考过程文本
-        """
-        thinking_text = ""
-        if intermediate_steps:
-            thinking_text = "Agent 执行过程:\n"
-            for i, (action, observation) in enumerate(intermediate_steps, 1):
-                tool_name = action.tool if hasattr(action, "tool") else str(action)
-                tool_input = action.tool_input if hasattr(action, "tool_input") else ""
-                thinking_text += f"\n步骤 {i}:\n"
-                thinking_text += f"  工具: {tool_name}\n"
-                thinking_text += f"  输入: {tool_input}\n"
-                thinking_text += f"  结果: {observation}\n"
-        return thinking_text
 
     def _build_complete_thinking_text(
         self, intermediate_steps: List[IntermediateStep], final_result: str = ""

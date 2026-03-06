@@ -244,28 +244,6 @@ class Constants:
     COLLECTION_NAME_VALIDATION_ERROR: str = "错误: 必须提供 collection_name 参数"
     """collection_name参数验证错误消息"""
 
-    RECURSIVE_URL_LOADER_NO_HEADER_SUPPORT: str = (
-        "RecursiveUrlLoader 不支持 headers 参数，使用基础版本"
-    )
-    """RecursiveUrlLoader不支持header参数"""
-
-    RECURSIVE_URL_LOADER_MESSAGE: str = "正在递归抓取页面，这可能需要一些时间..."
-    """递归抓取页面消息"""
-
-    EMPTY_CONTENT_MESSAGE: str = "（空内容）"
-    """空内容消息"""
-
-    REQUEST_DEPRECATION_MESSAGE: str = "使用 requests 库作为降级方案获取链接内容..."
-    """request库降级提示消息"""
-
-    URLLIB_DEPRECATION_MESSAGE: str = "requests 库未安装，尝试 urllib 降级方案"
-    """urllib降级提示消息"""
-
-    USING_URLLIB_DEPRECATION_MESSAGE: str = (
-        "使用 urllib 作为最后降级方案获取链接内容..."
-    )
-    """使用urllib库降级提示消息"""
-
     TEXT_SPLITTER_INITIALIZATION_SUCCESS: str = "文本切分器初始化成功"
     """文本切分器初始化"""
 
@@ -326,12 +304,6 @@ class Constants:
 
     L2_CACHE_CLEARED: str = "[L2缓存] Redis 已清除"
     """L2缓存清除消息"""
-
-    REDIS_CACHE_CLEARED: str = "Redis客户端未初始化，跳过缓存"
-    """Redis缓存未初始化消息"""
-
-    WORDCLOUD_CACHE_MISS: str = "词云图缓存未命中"
-    """词云图缓存未命中消息"""
 
     WORDCLOUD_CACHE_DELETED: str = "词云图缓存已删除"
     """词云图缓存删除消息"""

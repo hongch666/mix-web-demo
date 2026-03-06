@@ -4,10 +4,6 @@ import time
 import uuid
 from typing import Any, AsyncGenerator, Dict
 
-from fastapi.responses import JSONResponse, StreamingResponse
-from sqlmodel import Session
-from starlette.concurrency import run_in_threadpool
-
 from app.core import Logger, success
 from app.core.errors.exceptions import BusinessException
 from app.db import get_db
@@ -25,6 +21,10 @@ from app.services import (
     get_gemini_service,
     get_qwen_service,
 )
+from fastapi.responses import JSONResponse, StreamingResponse
+from sqlmodel import Session
+from starlette.concurrency import run_in_threadpool
+
 from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])

@@ -39,21 +39,3 @@ class ChatResponse(BaseModel):
     code: int = Field(default=1, description="响应码：1成功，0失败")
     data: Optional[ChatResponseData] = Field(default=None, description="响应数据")
     msg: str = Field(default="success", description="响应消息")
-
-
-class ChatHistoryRequest(BaseModel):
-    """聊天历史请求模型"""
-
-    conversation_id: str = Field(..., description="会话ID")
-    user_id: Optional[str] = Field(default=None, description="用户ID")
-    limit: Optional[int] = Field(default=50, description="限制数量")
-
-
-class ChatMessage(BaseModel):
-    """聊天消息模型"""
-
-    id: str = Field(..., description="消息ID")
-    role: str = Field(..., description="角色")
-    content: str = Field(..., description="内容")
-    type: str = Field(..., description="类型")
-    created_at: int = Field(..., description="创建时间")
