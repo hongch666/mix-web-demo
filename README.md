@@ -123,7 +123,7 @@
 
   - 网关登录校验流程图
 
-    ![gateway](./static/pic/flowchart/gateway.drawio.png) 
+    ![gateway](./static/pic/flowchart/gateway.drawio.png)
 
 -->
 
@@ -311,12 +311,14 @@ default = true
 4. **智能判断**
    - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
    - Gateway: 支持 Gradle 和 Maven 两种构建工具
-  - GoZero: 自动安装 goctl（API/ORM 代码生成工具）和 swag（Swagger 文档生成工具）
-   - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
+
+- GoZero: 自动安装 goctl（API/ORM 代码生成工具）和 swag（Swagger 文档生成工具）
+- FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
 5. **目录自动创建**
-  - 自动创建 logs 目录（spring、gozero、nestjs、fastapi）
-   - 自动创建 static 目录（pic、excel、word）
+
+- 自动创建 logs 目录（spring、gozero、nestjs、fastapi）
+- 自动创建 static 目录（pic、excel、word）
 
 ### 脚本执行流程
 
@@ -736,20 +738,20 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 脚本说明
 
-| 脚本              | 位置       | 功能                                       | 适用系统    |
-| ----------------- | ---------- | ------------------------------------------ | ----------- |
-| `mix`             | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
-| `run_multi.sh`    | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
-| `run.sh`          | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
-| `stop.sh`         | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
-| `build.sh`        | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
-| `dist-control.sh` | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
-| `setup.sh`        | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
-| `swag-init.sh`    | scripts/   | 生成 GoZero Swagger 文档                  | Linux/macOS |
-| `goctl-api-init.sh` | scripts/ | 生成 GoZero API 代码                      | Linux/macOS |
-| `goctl-orm-init.sh` | scripts/ | 生成 GoZero ORM 代码                      | Linux/macOS |
-| `ssh.sh`          | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
-| `run.ps1`         | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
+| 脚本                | 位置       | 功能                                       | 适用系统    |
+| ------------------- | ---------- | ------------------------------------------ | ----------- |
+| `mix`               | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
+| `run_multi.sh`      | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
+| `run.sh`            | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
+| `stop.sh`           | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
+| `build.sh`          | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
+| `dist-control.sh`   | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
+| `setup.sh`          | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
+| `swag-init.sh`      | scripts/   | 生成 GoZero Swagger 文档                   | Linux/macOS |
+| `goctl-api-init.sh` | scripts/   | 生成 GoZero API 代码                       | Linux/macOS |
+| `goctl-orm-init.sh` | scripts/   | 生成 GoZero ORM 代码                       | Linux/macOS |
+| `ssh.sh`            | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
+| `run.ps1`           | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
 
 ### 服务名称
 
@@ -1374,6 +1376,7 @@ SERVER_NAME=gozero
 SERVER_IP=127.0.0.1
 SERVER_PORT=8082
 SERVER_PREFIX=/
+SERVER_TIMEOUT=0
 
 # Nacos 配置
 NACOS_IP=127.0.0.1
@@ -1734,7 +1737,7 @@ JWT_EXPIRATION=86400000
 ### 项目架构说明
 
 1. Spring 项目采用通用的三层架构，`/controller`为对应接口，`/service`为对应实际逻辑（使用接口+实现形式），`/mapper`为对应数据库操作，并且使用依赖注入进行调用
-2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用`svc`依赖注入进行调用
+2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用 `svc`依赖注入进行调用
 3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts`文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用
 4. FastAPI 项目采用官方推荐的目录结构，在app下实现代码，`api`路由接口，`services`服务逻辑，`crud`为对应数据库操作，`core`放置核心功能模块，并且基于 `Depend`函数和获取实例函数进行依赖注入调用
 
@@ -2038,14 +2041,14 @@ $$
   - 权重配置说明
 
 5. | 默认权重分配（可在 GoZero 部分的 `.env` 中配置）： | 因素     | 权重                                          | 说明 |
-   | ----------------------------------------------- | -------- | --------------------------------------------- | ---- |
-   | ES 基础分数                                     | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
-   | AI 评分                                         | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
-   | 用户评分                                        | 0.10     | 用户对文章的综合评价（0-10 范围）             |
-   | 阅读量                                          | 0.08     | 文章的浏览热度                                |
-   | 点赞量                                          | 0.08     | 用户的认可度                                  |
-   | 收藏量                                          | 0.08     | 用户的收藏价值指数                            |
-   | 作者关注数                                      | 0.04     | 作者的影响力                                  |
-   | **文章新鲜度**                                  | **0.22** | **核心权重，近期发布的内容获得更高排名**      |
+   | -------------------------------------------------- | -------- | --------------------------------------------- | ---- |
+   | ES 基础分数                                        | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |      |
+   | AI 评分                                            | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |      |
+   | 用户评分                                           | 0.10     | 用户对文章的综合评价（0-10 范围）             |      |
+   | 阅读量                                             | 0.08     | 文章的浏览热度                                |      |
+   | 点赞量                                             | 0.08     | 用户的认可度                                  |      |
+   | 收藏量                                             | 0.08     | 用户的收藏价值指数                            |      |
+   | 作者关注数                                         | 0.04     | 作者的影响力                                  |      |
+   | **文章新鲜度**                                     | **0.22** | **核心权重，近期发布的内容获得更高排名**      |      |
 
 - 权重总和为 1.0，确保评分结果的可比性和公平性。
