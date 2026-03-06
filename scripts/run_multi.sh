@@ -19,7 +19,7 @@ tmux send-keys -t "$NEST_PANE" "cd nestjs && [ -f .env ] && export \$(cat .env |
 # 垂直分屏（左下：GoZero）
 tmux split-window -v -t "$SPRING_PANE" -c "$WORKDIR"
 GOZERO_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$GOZERO_PANE" "cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting GoZero...' && go run main.go" C-m
+tmux send-keys -t "$GOZERO_PANE" "cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting GoZero...' && fresh" C-m
 
 # 垂直分屏（右下：FastAPI）
 tmux split-window -v -t "$NEST_PANE" -c "$WORKDIR"

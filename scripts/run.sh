@@ -180,7 +180,7 @@ tmux send-keys -t $SESSION:1 \
 # window 2: gozero
 tmux new-window -t $SESSION:2 -n gozero -c "$WORKDIR"
 tmux send-keys -t $SESSION:2 \
-"cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && go run main.go" C-m
+"cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && fresh" C-m
 
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"

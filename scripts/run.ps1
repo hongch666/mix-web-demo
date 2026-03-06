@@ -8,7 +8,7 @@ Start-Process powershell -ArgumentList "cd $workdir/spring; gradle bootRun"
 Start-Process powershell -ArgumentList "cd $workdir/gateway; gradle bootRun"
 
 # 启动 gozero
-Start-Process powershell -ArgumentList "cd $workdir/gozero/app; go run main.go"
+Start-Process powershell -ArgumentList "cd $workdir/gozero/app; fresh"
 
 # 启动 nestjs
 Start-Process powershell -ArgumentList "cd $workdir/nestjs; npm run bun:dev"
