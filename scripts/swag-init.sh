@@ -33,13 +33,12 @@ fi
 
 log_info "开始初始化 Swagger 文档..."
 
-# Gin 项目 Swagger 初始化
-log_info "初始化 Gin 项目的 Swagger 文档..."
-cd "$WORKDIR/gin"
-if swag init -g api/router.go; then
-    log_info "Gin Swagger 文档初始化成功"
+# GoZero 项目 Swagger 初始化
+log_info "初始化 GoZero 项目的 Swagger 文档..."
+if bash "$WORKDIR/gozero/script/swagger/genSwagger.sh"; then
+    log_info "GoZero Swagger 文档初始化成功"
 else
-    log_error "Gin Swagger 文档初始化失败"
+    log_error "GoZero Swagger 文档初始化失败"
     exit 1
 fi
 

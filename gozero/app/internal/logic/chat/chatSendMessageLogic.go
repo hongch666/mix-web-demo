@@ -78,7 +78,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 	}
 
 	resp = &types.ChatSendMessageResp{
-		MessageID: message.Id,
+		MessageId: message.Id,
 	}
 
 	return

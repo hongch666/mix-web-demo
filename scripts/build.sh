@@ -307,43 +307,43 @@ EOF
 }
 
 # ==================== Gin 服务打包 ====================
-build_gin() {
-    print_info "开始打包 Gin 服务..."
-    cd "$PROJECT_ROOT/gin"
+build_gozero() {
+    print_info "开始打包 GoZero 服务..."
+    cd "$PROJECT_ROOT/gozero/app"
     
     # Go 编译
     if command -v go &> /dev/null; then
-        print_info "使用 Go 编译 Gin 服务..."
-        go build -o gin_service main.go
+        print_info "使用 Go 编译 GoZero 服务..."
+        go build -o gozero main.go
         
         if [ $? -ne 0 ]; then
-            print_error "Gin 编译失败"
+            print_error "GoZero 编译失败"
             return 1
         fi
     else
-        print_error "Go 未安装，跳过 Gin 打包"
+        print_error "Go 未安装，跳过 GoZero 打包"
         return 1
     fi
     
     # 创建发布目录
-    GIN_DIST="$DIST_DIR/gin"
-    mkdir -p "$GIN_DIST"
+    GOZERO_DIST="$DIST_DIR/gozero"
+    mkdir -p "$GOZERO_DIST"
     
     # 复制二进制文件
-    cp gin_service "$GIN_DIST/"
+    cp gozero "$GOZERO_DIST/"
     
     # 复制配置文件
-    cp application.yaml "$GIN_DIST/"
+    cp etc/application.yaml "$GOZERO_DIST/"
     
     # 复制 .env 文件
     if [ -f ".env" ]; then
-        cp .env "$GIN_DIST/"
+        cp .env "$GOZERO_DIST/"
     fi
     
     # 创建启动脚本
-    cat > "$GIN_DIST/start.sh" << 'EOF'
+    cat > "$GOZERO_DIST/start.sh" << 'EOF'
 #!/bin/bash
-LOG_DIR="../logs/gin"
+LOG_DIR="../logs/gozero"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
@@ -352,27 +352,27 @@ if [ -f ".env" ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-nohup ./gin_service >> "$LOG_FILE" 2>&1 &
-echo $! > gin.pid
-echo "Gin 服务已启动，PID: $(cat gin.pid)"
+nohup ./gozero >> "$LOG_FILE" 2>&1 &
+echo $! > gozero.pid
+echo "GoZero 服务已启动，PID: $(cat gozero.pid)"
 EOF
     
-    cat > "$GIN_DIST/stop.sh" << 'EOF'
+    cat > "$GOZERO_DIST/stop.sh" << 'EOF'
 #!/bin/bash
-if [ -f gin.pid ]; then
-    kill $(cat gin.pid)
-    rm gin.pid
-    echo "Gin 服务已停止"
+if [ -f gozero.pid ]; then
+    kill $(cat gozero.pid)
+    rm gozero.pid
+    echo "GoZero 服务已停止"
 else
     echo "未找到 PID 文件"
 fi
 EOF
     
-    chmod +x "$GIN_DIST/start.sh"
-    chmod +x "$GIN_DIST/stop.sh"
-    chmod +x "$GIN_DIST/gin_service"
+    chmod +x "$GOZERO_DIST/start.sh"
+    chmod +x "$GOZERO_DIST/stop.sh"
+    chmod +x "$GOZERO_DIST/gozero"
     
-    print_info "Gin 服务打包完成: $GIN_DIST"
+    print_info "GoZero 服务打包完成: $GOZERO_DIST"
 }
 
 # ==================== NestJS 服务打包 ====================
@@ -488,7 +488,7 @@ main() {
     SERVICES=()
     if [ $# -eq 0 ]; then
         # 默认打包所有服务
-        SERVICES=("spring" "gateway" "fastapi" "gin" "nestjs")
+        SERVICES=("spring" "gateway" "fastapi" "gozero" "nestjs")
     else
         SERVICES=("$@")
     fi
@@ -505,8 +505,8 @@ main() {
             fastapi)
                 build_fastapi || print_warn "FastAPI 打包失败"
                 ;;
-            gin)
-                build_gin || print_warn "Gin 打包失败"
+            gozero)
+                build_gozero || print_warn "GoZero 打包失败"
                 ;;
             nestjs)
                 build_nestjs || print_warn "NestJS 打包失败"

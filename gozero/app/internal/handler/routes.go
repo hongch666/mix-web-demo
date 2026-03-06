@@ -119,7 +119,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{
 				// 测试Gin服务
 				Method:  http.MethodGet,
-				Path:    "/gin",
+				Path:    "/gozero",
 				Handler: test.TestGinHandler(serverCtx),
 			},
 			{
@@ -135,7 +135,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: test.TestSpringHandler(serverCtx),
 			},
 		},
-		rest.WithPrefix("/api_gin"),
+		rest.WithPrefix("/api_gozero"),
 	)
 
 	server.AddRoutes(

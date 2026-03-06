@@ -3,14 +3,14 @@ syntax = "v2"
 @server (
 	group:  test
 	tags:   test
-	prefix: /api_gin
+	prefix: /api_gozero
 )
 service App {
 	@doc (
 		summary: "测试Gin服务"
 	)
 	@handler TestGinHandler
-	get /gin returns (TestGinResp)
+	get /gozero returns (TestGinResp)
 
 	@doc (
 		summary: "测试Spring服务"

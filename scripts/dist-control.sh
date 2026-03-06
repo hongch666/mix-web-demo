@@ -26,7 +26,7 @@ declare -A SERVICE_PORTS=(
     ["spring"]="8081"
     ["gateway"]="8080"
     ["fastapi"]="8084"
-    ["gin"]="8082"
+    ["gozero"]="8082"
     ["nestjs"]="8083"
 )
 
@@ -35,7 +35,7 @@ declare -A SERVICE_PATTERNS=(
     ["spring"]="spring.jar"
     ["gateway"]="gateway.jar"
     ["fastapi"]="fastapi.*main.py|uvicorn.*fastapi"
-    ["gin"]="gin_service"
+    ["gozero"]="gin_service"
     ["nestjs"]="nestjs.*main.js|node.*nestjs"
 )
 
@@ -232,7 +232,7 @@ show_status() {
     
     if [ ${#services[@]} -eq 0 ]; then
         # 默认显示所有服务
-        services=("spring" "gateway" "fastapi" "gin" "nestjs")
+        services=("spring" "gateway" "fastapi" "gozero" "nestjs")
     fi
     
     print_info "=========================================="
@@ -309,7 +309,7 @@ show_usage() {
   spring      Spring Boot 服务
   gateway     Spring Cloud Gateway 服务
   fastapi     FastAPI 服务
-  gin         Gin 服务
+  gozero         Gin 服务
   nestjs      NestJS 服务
 
 示例:
@@ -338,7 +338,7 @@ main() {
     
     # 如果没有指定服务，默认操作所有服务
     if [ ${#services[@]} -eq 0 ]; then
-        services=("spring" "gateway" "fastapi" "gin" "nestjs")
+        services=("spring" "gateway" "fastapi" "gozero" "nestjs")
     fi
     
     case "$command" in

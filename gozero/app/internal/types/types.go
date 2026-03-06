@@ -100,7 +100,7 @@ type ChatSendMessageReq struct {
 }
 
 type ChatSendMessageResp struct {
-	MessageID uint64 `json:"messageId"`
+	MessageId uint64 `json:"messageId"`
 }
 
 type ChatWsConnectReq struct {

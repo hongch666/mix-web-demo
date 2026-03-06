@@ -177,10 +177,10 @@ tmux move-window -s $SESSION:0 -t $SESSION:1
 tmux send-keys -t $SESSION:1 \
 "cd spring && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && $java_cmd" C-m
 
-# window 2: gin
-tmux new-window -t $SESSION:2 -n gin -c "$WORKDIR"
+# window 2: gozero
+tmux new-window -t $SESSION:2 -n gozero -c "$WORKDIR"
 tmux send-keys -t $SESSION:2 \
-"cd gin && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && fresh -c ~/.freshrc" C-m
+"cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && go run main.go" C-m
 
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"

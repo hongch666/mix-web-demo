@@ -201,35 +201,33 @@ setup_spring() {
 }
 
 # 2. Gin 部分配置
-setup_gin() {
-    log_info "开始配置 Gin 部分..."
+setup_gozero() {
+    log_info "开始配置 GoZero 部分..."
     
-    cd "$WORKDIR/gin"
+    cd "$WORKDIR/gozero/app"
     
     # 安装依赖
     log_info "安装 Go 依赖..."
     go mod tidy
     
-    # 安装 fresh 工具(可选)
-    if ! command_exists fresh; then
-        log_info "安装 fresh 热重载工具..."
-        go install github.com/gravityblast/fresh@latest
-    else
-        log_info "fresh 工具已安装,跳过..."
-    fi
-    
-    # 安装 swag 工具(可选)
+    # 安装 swag 工具是需要的
     if ! command_exists swag; then
         log_info "安装 swag Swagger 工具..."
         go install github.com/swaggo/swag/cmd/swag@latest
-        swag init
+        bash "$WORKDIR/gozero/script/swagger/genSwagger.sh"
     else
         log_info "swag 工具已安装,更新 Swagger 文档..."
-        swag init
+        bash "$WORKDIR/gozero/script/swagger/genSwagger.sh"
+    fi
+    
+    # 安装 goctl 工具
+    if ! command_exists goctl; then
+        log_info "安装 goctl 工具..."
+        go install github.com/zeromicro/go-zero/tools/goctl@latest
     fi
     
     cd "$WORKDIR"
-    log_info "Gin 部分配置完成!"
+    log_info "GoZero 部分配置完成!"
 }
 
 # 3. NestJS 部分配置
@@ -537,7 +535,7 @@ main() {
     if [[ "$choices" == *"5"* ]]; then
         setup_spring
         echo ""
-        setup_gin
+        setup_gozero
         echo ""
         setup_nestjs
         echo ""
@@ -548,7 +546,7 @@ main() {
             echo ""
         fi
         if [[ "$choices" == *"2"* ]]; then
-            setup_gin
+            setup_gozero
             echo ""
         fi
         if [[ "$choices" == *"3"* ]]; then

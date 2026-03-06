@@ -69,6 +69,8 @@ show_help() {
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
     echo "  swag                     - Generate Swagger API documentation"
+    echo "  goctl-api [args...]      - Generate GoZero API code"
+    echo "  goctl-orm [args...]      - Generate GoZero ORM code"
     echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
@@ -77,12 +79,14 @@ show_help() {
     echo "  spring                   - Spring Boot 服务"
     echo "  gateway                  - Spring Cloud Gateway 服务"
     echo "  fastapi                  - FastAPI 服务"
-    echo "  gin                      - Gin 服务"
+    echo "  gozero                   - GoZero 服务"
     echo "  nestjs                   - NestJS 服务"
     echo ""
     echo "Examples (示例):"
     echo "  ./mix setup                    # Initialize environment (first time)"
     echo "  ./mix swag                     # Generate Swagger API documentation"
+    echo "  ./mix goctl-api                # Generate GoZero API code"
+    echo "  ./mix goctl-orm                # Generate GoZero ORM code"
     echo "  ./mix multi                    # Multi-pane tmux layout (dev)"
     echo "  ./mix seq                      # Sequential window layout (dev, default config)"
     echo "  ./mix seq -i                   # Sequential layout with interactive mode"
@@ -92,7 +96,7 @@ show_help() {
     echo "  ./mix stop                     # Stop tmux sessions (dev)"
     echo "  ./mix build                    # Build all services"
     echo "  ./mix start                    # Start all built services"
-    echo "  ./mix start spring gin         # Start specific services"
+    echo "  ./mix start spring gozero      # Start specific services"
     echo "  ./mix restart fastapi          # Restart FastAPI service"
     echo "  ./mix status                   # Check status of all services"
     echo "  ./mix status spring gateway    # Check status of specific services"
@@ -100,7 +104,7 @@ show_help() {
     echo "  ./mix stop-dist                # Stop all services"
     echo "  ./mix stop-dist fastapi nestjs # Stop specific services"
     echo "  ./mix docker up                # Build and run all containers"
-    echo "  ./mix docker up spring gin     # Build and run specific containers"
+    echo "  ./mix docker up spring gozero  # Build and run specific containers"
     echo "  ./mix docker build             # Build all images only"
     echo "  ./mix docker status            # Show container status"
     echo "  ./mix docker logs spring       # View Spring container logs"
@@ -124,6 +128,14 @@ case $COMMAND in
     swag)
         echo "Generating Swagger API documentation..."
         bash "$SCRIPTS_DIR/swag-init.sh"
+        ;;
+    goctl-api)
+        echo "Generating GoZero API code..."
+        bash "$SCRIPTS_DIR/goctl-api-init.sh" "${@:2}"
+        ;;
+    goctl-orm)
+        echo "Generating GoZero ORM code..."
+        bash "$SCRIPTS_DIR/goctl-orm-init.sh" "${@:2}"
         ;;
     multi)
         echo "Starting services in multi-pane layout..."

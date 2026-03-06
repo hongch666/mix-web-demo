@@ -13,7 +13,7 @@ fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICES_CONFIG=(
-    "gin:8081"
+    "gozero:8081"
     "nestjs:8082"
     "spring:8083"
     "fastapi:8084"
@@ -45,21 +45,21 @@ print_error() {
 
 # 声明关联数组存储服务信息
 declare -A SERVICE_INFO=(
-    [gin]="gin:8081"
+    [gozero]="gozero:8081"
     [nestjs]="nestjs:8082"
     [spring]="spring:8083"
     [fastapi]="fastapi:8084"
 )
 
 declare -A SERVICE_LANG=(
-    [gin]="go"
+    [gozero]="go"
     [nestjs]="node"
     [spring]="java"
     [fastapi]="python"
 )
 
 declare -A SERVICE_PORT=(
-    [gin]="8081"
+    [gozero]="8081"
     [nestjs]="8082"
     [spring]="8083"
     [gateway]="9000"
@@ -69,7 +69,7 @@ declare -A SERVICE_PORT=(
 # 获取服务列表
 get_services() {
     if [ $# -eq 0 ]; then
-        echo "gin nestjs spring fastapi"
+        echo "gozero nestjs spring fastapi"
     else
         echo "$@"
     fi
@@ -236,7 +236,7 @@ show_help() {
   --help          显示此帮助信息
 
 服务名称:
-  gin      - Gin Go 微服务 (端口 8081)
+  gozero      - Gin Go 微服务 (端口 8081)
   nestjs   - NestJS 微服务 (端口 8082)
   spring   - Spring Boot 微服务 (端口 8083)
   gateway  - Spring Cloud Gateway (端口 9000)
@@ -294,7 +294,7 @@ main() {
 
     # 如果没有指定服务，使用所有服务
     if [ ${#services[@]} -eq 0 ]; then
-        services=(gin nestjs spring gateway fastapi)
+        services=(gozero nestjs spring gateway fastapi)
     fi
 
     print_info "开始处理服务: ${services[*]}"
