@@ -35,11 +35,11 @@ public class TestController {
         return Result.success(Constants.TEST);
     }
 
-    @GetMapping("/gin")
-    @Operation(summary = "调用Gin的测试", description = "输出欢迎信息")
-    @ApiLog("测试Gin服务")
-    public Result getGin() {
-        return goZeroClient.testGin();
+    @GetMapping("/gozero")
+    @Operation(summary = "调用GoZero的测试", description = "输出欢迎信息")
+    @ApiLog("测试GoZero服务")
+    public Result getGoZero() {
+        return goZeroClient.testGoZero();
     }
 
     @GetMapping("/nestjs")

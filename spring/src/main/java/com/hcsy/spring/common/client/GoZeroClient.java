@@ -8,8 +8,8 @@ import com.hcsy.spring.common.utils.Result;
 
 @FeignClient(name = "gozero")
 public interface GoZeroClient {
-    @GetMapping("/api_gozero/gin")
-    Result testGin();
+    @GetMapping("/api_gozero/gozero")
+    Result testGoZero();
 
     @PostMapping("/api_gozero/syncer")
     Result syncES();
