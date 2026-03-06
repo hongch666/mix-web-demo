@@ -40,17 +40,17 @@ export class TestController {
     return success(res.data);
   }
 
-  @Get('gin')
+  @Get('gozero')
   @ApiOperation({
-    summary: '调用Gin的测试',
+    summary: '调用GoZero的测试',
     description: '输出欢迎信息',
   })
-  @ApiLog('测试Gin服务')
+  @ApiLog('测试GoZero服务')
   async getGin(): Promise<ApiResponse<any>> {
     const res: any = await this.nacosService.call({
-      serviceName: 'gin',
+      serviceName: 'gozero',
       method: 'GET',
-      path: '/api_gin/gin',
+      path: '/api_gozero/gozero',
     });
     return success(res.data);
   }
