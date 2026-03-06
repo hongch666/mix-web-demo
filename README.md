@@ -3,7 +3,7 @@
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go&logoColor=white)
-![Gin](https://img.shields.io/badge/Gin-Framework-00ADD8?logo=go&logoColor=white)
+![GoZero](https://img.shields.io/badge/GoZero-Framework-00ADD8?logo=go&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-Framework-E0234E?logo=nestjs&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
@@ -14,7 +14,7 @@
 这是一个基于多语言技术栈构建的 IT 智能文章推荐与知识问答系统，主要包含以下框架：
 
 - Spring（Java）
-- Gin（Go）
+- GoZero（Go）
 - NestJS（Node.js）
 - FastAPI（Python）
 
@@ -28,16 +28,16 @@
 2. 基于 Spring Boot 和 MybatisPlus 实现用户、分类、评论、点赞、收藏、关注等业务模块
 3. 基于 Spring Boot 和 Redis 进行文章分类，用户状态的管理操作
 4. 基于 Spring Boot 和 AOP 技术权限校验实现用户端和管理端
-5. 基于 Gin 和 ElasticSearch 进行搜索引擎式文章搜索
-6. 基于 Gin 和 GORM 实现文章相关数据获取和同步
-7. 基于 Gin 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
+5. 基于 GoZero 和 ElasticSearch 进行搜索引擎式文章搜索
+6. 基于 GoZero 和 GORM 实现文章相关数据获取和同步
+7. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 8. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
 9. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
 10. 基于 FastAPI 和 Hadoop 技术栈实现系统数据的相关分析
 11. 基于 FastAPI 和 SQLModel 进行文章相关数据的获取和同步
 12. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
 
-## 设计图
+<!-- ## 设计图
 
 - 系统架构图
 
@@ -123,12 +123,14 @@
 
   - 网关登录校验流程图
 
-    ![gateway](./static/pic/flowchart/gateway.drawio.png)
+    ![gateway](./static/pic/flowchart/gateway.drawio.png) 
+
+-->
 
 ## 技术栈
 
 - Spring Boot：Java 后端框架，支撑系统核心业务服务
-- Gin：Golang 后端框架，支持系统高并发服务
+- GoZero：Golang 后端框架，支持系统高并发服务
 - NestJS：Node.js 后端框架，支撑系统日志处理服务
 - FastAPI：Python 后端服务，支撑系统数据分析和 Agent 服务
 - Spring Cloud Gateway：API 网关
@@ -196,12 +198,12 @@ cd gateway
 gradle wrapper          # 生成项目专用 Gradle（如果尚未生成）
 ```
 
-### Gin 部分
+### GoZero 部分
 
 ```bash
-cd gin # 进入文件夹
+cd gozero/app # 进入文件夹
 go mod tidy # 安装依赖
-go install github.com/gravityblast/fresh@latest # 修改热启动工具(推荐)
+go install github.com/zeromicro/go-zero/tools/goctl@latest # 安装 goctl 代码生成工具
 ```
 
 ### NestJS 部分
@@ -285,7 +287,7 @@ default = true
 # 根据提示选择要配置的模块
 # 选项:
 # 1) Spring      - 配置 Spring Boot 服务
-# 2) Gin         - 配置 Gin 服务
+# 2) GoZero      - 配置 GoZero 服务
 # 3) NestJS      - 配置 NestJS 服务
 # 4) FastAPI     - 配置 FastAPI 服务
 # 5) 全部        - 配置所有模块
@@ -309,11 +311,11 @@ default = true
 4. **智能判断**
    - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
    - Gateway: 支持 Gradle 和 Maven 两种构建工具
-   - Gin: 可选安装 fresh（热重载工具）和 swag（Swagger 文档生成工具）
+  - GoZero: 自动安装 goctl（API/ORM 代码生成工具）和 swag（Swagger 文档生成工具）
    - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
 5. **目录自动创建**
-   - 自动创建 logs 目录（spring、gin、nestjs、fastapi）
+  - 自动创建 logs 目录（spring、gozero、nestjs、fastapi）
    - 自动创建 static 目录（pic、excel、word）
 
 ### 脚本执行流程
@@ -470,14 +472,13 @@ cd gateway
 gradle bootRun # 启动项目
 ```
 
-### Gin 服务
+### GoZero 服务
 
 ```bash
-# 运行Gin服务
-cd gin
-go build -o bin/gin main.go # 构建项目
-go run main.go # 运行项目(无修改自启插件)
-fresh -c ~/.freshrc # 运行项目(有修改自启插件)
+# 运行 GoZero 服务
+cd gozero/app
+go build -o bin/gozero main.go # 构建项目
+go run main.go # 运行项目
 ```
 
 ### NestJS 服务
@@ -544,34 +545,38 @@ uv run --python 3.12 python main.py
 # 停止所有 tmux 服务
 ./mix stop
 
-# ===== 使用指定构建工具启动服务 =====
+# ===== Seq 模式下使用指定构建工具启动服务 =====
 # 使用 Gradle 构建并启动 Java 服务（推荐，更快）
-./mix multi --java-build gradle
+./mix seq --java-build gradle
 
 # 使用 Maven 构建并启动 Java 服务
-./mix multi --java-build maven
+./mix seq --java-build maven
 
 # 使用 Bun 启动 NestJS 服务（推荐，比 npm 快）
-./mix multi --node-runtime bun
+./mix seq --node-runtime bun
 
 # 使用 npm 启动 NestJS 服务
-./mix multi --node-runtime npm
+./mix seq --node-runtime npm
 
 # 使用 UV 启动 FastAPI 服务（推荐，比 python 快）
-./mix multi --python-runtime uv
+./mix seq --python-runtime uv
 
 # 使用 Python 启动 FastAPI 服务
-./mix multi --python-runtime python
+./mix seq --python-runtime python
 
 # 交互式模式：让用户选择构建工具
-./mix multi -i
+./mix seq -i
+
+# ===== GoZero 代码生成 =====
+./mix goctl-api
+./mix goctl-orm
 
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
 ./mix docker up
 
 # 构建并启动特定服务容器
-./mix docker up spring gin
+./mix docker up spring gozero
 
 # 仅构建镜像
 ./mix docker build
@@ -594,13 +599,13 @@ uv run --python 3.12 python main.py
 
 # 启动指定的服务
 ./mix start spring gateway
-./mix start fastapi gin
+./mix start fastapi gozero
 
 # 查看已构建服务的运行状态
 ./mix status
 
 # 查看指定服务的运行状态
-./mix status spring gin
+./mix status spring gozero
 
 # 重启所有已构建的服务
 ./mix restart
@@ -618,7 +623,7 @@ uv run --python 3.12 python main.py
 # 查看服务的最新日志（只支持查看单个服务）
 ./mix logs spring
 ./mix logs fastapi
-./mix logs gin
+./mix logs gozero
 ```
 
 **构建工具参数说明**：
@@ -676,7 +681,11 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 # 启动所有服务或指定服务
 ./scripts/dist-control.sh start              # 启动所有
-./scripts/dist-control.sh start spring gin   # 启动指定
+./scripts/dist-control.sh start spring gozero   # 启动指定
+
+# GoZero 代码生成
+./scripts/goctl-api-init.sh
+./scripts/goctl-orm-init.sh
 
 # 停止所有服务或指定服务
 ./scripts/dist-control.sh stop               # 停止所有
@@ -736,6 +745,9 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `build.sh`        | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
 | `dist-control.sh` | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
 | `setup.sh`        | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
+| `swag-init.sh`    | scripts/   | 生成 GoZero Swagger 文档                  | Linux/macOS |
+| `goctl-api-init.sh` | scripts/ | 生成 GoZero API 代码                      | Linux/macOS |
+| `goctl-orm-init.sh` | scripts/ | 生成 GoZero ORM 代码                      | Linux/macOS |
 | `ssh.sh`          | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
 | `run.ps1`         | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
 
@@ -746,7 +758,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 - `spring` - Spring Boot 服务
 - `gateway` - Spring Cloud Gateway 网关服务
 - `fastapi` - FastAPI 服务
-- `gin` - Gin 服务
+- `gozero` - GoZero 服务
 - `nestjs` - NestJS 服务
 
 如不指定服务名称，则对所有服务进行操作。
@@ -810,7 +822,7 @@ dist-control.sh 和 mix 支持以下服务名称：
   - 支持开发环境和生产环境命令
 
 - **scripts/build.sh**
-  - 编译所有服务：Spring、Gateway、FastAPI、Gin、NestJS
+  - 编译所有服务：Spring、Gateway、FastAPI、GoZero、NestJS
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
 
@@ -862,7 +874,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 | ----------- | ---- | -------------------- | ----------------------- | ---------------- |
 | **Gateway** | 8080 | `mix-gateway:latest` | `mix-gateway-container` | Java 17 + Alpine |
 | **Spring**  | 8081 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
-| **Gin**     | 8082 | `mix-gin:latest`     | `mix-gin-container`     | Go 1.23 + Alpine |
+| **GoZero**  | 8082 | `mix-gozero:latest`  | `mix-gozero-container`  | Go 1.23 + Alpine |
 | **NestJS**  | 8083 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
 | **FastAPI** | 8084 | `mix-fastapi:latest` | `mix-fastapi-container` | Python 3.12      |
 
@@ -870,10 +882,10 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 ```bash
 # 仅构建特定服务的镜像
-./mix docker build spring gin
+./mix docker build spring gozero
 
 # 仅构建镜像，不启动容器
-./scripts/build_and_run_mix --build-only
+./scripts/build_and_run_services.sh --build-only
 
 # 手动启动容器时指定配置文件
 docker run -d --name mix-spring-custom \
@@ -947,7 +959,7 @@ eval $(minikube docker-env)
 minikube image load mix-spring:latest
 minikube image load mix-gateway:latest
 minikube image load mix-fastapi:latest
-minikube image load mix-gin:latest
+minikube image load mix-gozero:latest
 minikube image load mix-nestjs:latest
 ```
 
@@ -965,7 +977,7 @@ minikube image load mix-nestjs:latest
 
 # 4. 查看pod日志
 ./mix k8s logs spring
-./mix k8s logs gin
+./mix k8s logs gozero
 ./mix k8s logs nestjs
 ./mix k8s logs fastapi
 ./mix k8s logs gateway
@@ -1025,7 +1037,7 @@ kubectl get ingress -n mix-web-demo
 
 # 然后访问相应的路由
 http://<ingress-ip>/        # Gateway
-http://<ingress-ip>/gin     # Gin服务
+http://<ingress-ip>/gozero  # GoZero服务
 http://<ingress-ip>/nestjs  # NestJS服务
 http://<ingress-ip>/spring  # Spring服务
 http://<ingress-ip>/fastapi # FastAPI服务
@@ -1352,24 +1364,26 @@ INTERNAL_TOKEN_SECRET=xxx
 INTERNAL_TOKEN_EXPIRATION=60000
 ```
 
-### Gin 服务配置
+### GoZero 服务配置
 
-**文件位置**: `gin/.env`
+**文件位置**: `gozero/app/.env`
 
 ```dotenv
-# Gin 服务配置
+# gozero 服务配置
+SERVER_NAME=gozero
 SERVER_IP=127.0.0.1
 SERVER_PORT=8082
+SERVER_PREFIX=/
 
 # Nacos 配置
 NACOS_IP=127.0.0.1
 NACOS_PORT=8848
 NACOS_NAMESPACE=public
-NACOS_SERVICE_NAME=gin
+NACOS_SERVICE_NAME=gozero
 NACOS_GROUP_NAME=DEFAULT_GROUP
 NACOS_CLUSTER_NAME=DEFAULT
-NACOS_CACHE_DIR=../static/tmp/nacos/cache
-NACOS_LOG_DIR=../static/tmp/nacos/log
+NACOS_CACHE_DIR=../../static/tmp/nacos/cache
+NACOS_LOG_DIR=../../static/tmp/nacos/log
 
 # MySQL 配置
 DB_MYSQL_HOST=127.0.0.1
@@ -1388,7 +1402,7 @@ DB_ES_PORT=9200
 DB_ES_SNIFF=false
 
 # MongoDB 配置
-DB_MONGODB_HOST=localhost
+DB_MONGODB_HOST=127.0.0.1
 DB_MONGODB_PORT=27017
 # DB_MONGODB_USERNAME=
 # DB_MONGODB_PASSWORD=
@@ -1402,7 +1416,7 @@ RABBITMQ_PORT=5672
 RABBITMQ_VHOST=test
 
 # 日志配置
-LOGS_PATH=../logs/gin
+LOGS_PATH=../../logs/gozero
 
 # 搜索配置
 SEARCH_ES_SCORE_WEIGHT=0.25
@@ -1624,9 +1638,9 @@ REDIS_DATABASE=0
 # REDIS_PASSWORD=
 REDIS_TIMEOUT=3000
 
-# Gin 服务配置（长连接特殊配置）
-GIN_HOST=localhost
-GIN_PORT=8082
+# GoZero 服务配置（长连接特殊配置）
+GOZERO_HOST=localhost
+GOZERO_PORT=8082
 
 # JWT 配置
 JWT_SECRET=xxx
@@ -1661,10 +1675,10 @@ JWT_EXPIRATION=86400000
 2. 使用 `@Operation(summary = "spring自己的测试", description = "输出欢迎信息")`设置对应接口
 3. 在 `http://[ip和端口]/swagger-ui/index.html`访问 Swagger 接口
 
-### Gin 部分
+### GoZero 部分
 
 1. 使用 `go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
-2. 在 controller 层上的路由函数使用如下注释添加 swagger 信息
+2. 在 GoZero Handler 上方使用如下注释添加 swagger 信息
 
    ```go
    // @Summary 获取用户列表
@@ -1676,7 +1690,7 @@ JWT_EXPIRATION=86400000
    ```
 
 3. 在 `http://[ip和端口]/swagger/index.html`访问 Swagger 接口
-4. 每次添加新的 swagger 信息时需要在终端输入 `swag init`
+4. 每次添加新的 swagger 信息时需要在终端使用 `./mix swag` 命令重新生成 swagger 文档
 
 ### NestJS
 
@@ -1719,10 +1733,10 @@ JWT_EXPIRATION=86400000
 
 ### 项目架构说明
 
-1. Spring 项目采用通用的三层架构，`/controller`对应接口，`/service`对应实际逻辑（使用接口+实现形式），`/mapper`为对应数据库操作，并且使用依赖注入进行调用
-2. Gin 项目采用上述相同的三层架构，每一层使用 `group.go`组合对应服务 struct 并初始化，通过 group 单例进行类似依赖注入形式的调用
+1. Spring 项目采用通用的三层架构，`/controller`为对应接口，`/service`为对应实际逻辑（使用接口+实现形式），`/mapper`为对应数据库操作，并且使用依赖注入进行调用
+2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用`svc`依赖注入进行调用
 3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts`文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用
-4. FastAPI 项目采用上述的三层架构，并且基于 `Depend`函数和获取实例函数进行依赖注入调用
+4. FastAPI 项目采用官方推荐的目录结构，在app下实现代码，`api`路由接口，`services`服务逻辑，`crud`为对应数据库操作，`core`放置核心功能模块，并且基于 `Depend`函数和获取实例函数进行依赖注入调用
 
 ### 项目文件夹命名说明
 
@@ -1735,7 +1749,7 @@ JWT_EXPIRATION=86400000
 ### 项目文件命名说明
 
 1. Spring 项目采用大驼峰命名方式，如 `UserCreateDTO.java`
-2. Gin 项目采用蛇形命名方式，如 `user_create_dto.go`
+2. GoZero 项目采用小驼峰命名方式，如 `userCreateDTO.go`
 3. NestJS 项目采用点号命名和横杠命名混合使用的方式，横杠区分模块名，点号区分功能，如 `user-create.service.ts`
 4. FastAPI 项目采用小驼峰命名方式，如 `userCreateDTO.py`
 
@@ -1762,16 +1776,16 @@ JWT_EXPIRATION=86400000
 ### 异常处理说明
 
 1. Spring 项目使用全局异常处理类 `GlobalExceptionHandler.java` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
-2. Gin 项目使用中间件 `exceptionMiddleware.go` 进行异常捕获和处理，业务异常统一抛出 `BusinessError` 异常
+2. GoZero 项目使用中间件 `recoveryMiddleware.go` 进行异常捕获和处理，业务异常统一抛出 `BusinessError` 异常
 3. NestJS 项目使用全局异常过滤器 `all-exceptions.filter.ts` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 4. FastAPI 项目使用全局异常处理函数 `exception_handlers.py` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 
 ### 常量说明
 
 1. Spring 项目使用 `common/utils/Constants.java` 进行常量类管理，包括相关字符串和数字常量
-2. Gin 项目使用 `common/utils/constants.go` 进行常量管理，包括相关字符串和数字常量
+2. GoZero 项目使用 `common/utils/constants.go` 进行常量管理，包括相关字符串和数字常量
 3. NestJS 项目使用 `common/utils/constants.ts` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
-4. FastAPI 项目使用 `common/utils/constants.py` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
+4. FastAPI 项目使用 `core/base/constants.py` 进行常量类管理，包括相关字符串和数字常量，当前模板字符串没有抽离常量
 
 目前常量类均可根据需要进行扩展，尽可能使用常量类进行统一管理，避免硬编码。
 
@@ -1785,10 +1799,10 @@ JWT_EXPIRATION=86400000
 
 1. FastAPI 部分使用 `__init__.py`文件导出对应的函数/类，导入使用的时候以包为导入路径
 2. FastAPI 部分需要在 app 创建时添加的相关组件（如 router、中间件、异常处理器）在 `__init__.py`导出对应列表或者字典，用于 app 创建时遍历添加
-3. FastAPI 部分的 app 创建在 `app.py`的 `create_app`函数实现，主函数只进行调用和 `uvicorn`的启动
-4. Gin 部分的 router 初始化在 `SetupRouter`函数创建，main 函数只进行调用，配置相关的初始化在 `config`包下的 `init`函数默认初始化执行
+3. FastAPI 部分的 app 创建在 `app.py`的 `create_app`函数实现，lifespan 操作在 `lifespan.py`实现，主函数只进行调用和 `uvicorn`的启动
+4. GoZero 部分的初始化在 `internel/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
 5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
-6. Spring 项目的 Main 类只进行服务的启动，相关配置或初始化行为在 `cofig`目录下使用 `@Configuration`注解实现
+6. Spring 项目的 Main 类只进行服务的启动，相关配置或初始化行为在 `config`目录下使用 `@Configuration`注解实现
 
 ## 项目可用工具说明
 
@@ -1798,7 +1812,7 @@ JWT_EXPIRATION=86400000
 
 - 机制: AOP 环绕切面获取请求方法/路径/参数，记录耗时并组装日志消息，最终写入日志并投递队列
 
-2. Gin 项目使用 `ApiLogMiddleware` 中间件记录请求参数、路径、耗时，并发送 API 日志到 RabbitMQ
+2. GoZero 项目使用 `apiLogMiddleware` 中间件记录请求参数、路径、耗时，并发送 API 日志到 RabbitMQ，在 `handler`中使用 `ApplyApiLog` 函数启用日志记录
 
 - 机制: 中间件读取请求上下文与请求体，计算耗时并发送日志消息到队列
 
@@ -1806,7 +1820,7 @@ JWT_EXPIRATION=86400000
 
 - 机制: 通过 Reflector 读取装饰器元数据，拦截请求提取参数与耗时，调用 MQ 服务发送日志
 
-4. FastAPI 项目使用 `@api_log` 装饰器（支持 `ApiLogConfig`）记录请求日志，耗时统计并发送到 RabbitMQ
+1. FastAPI 项目使用 `@log` 装饰器（支持 `ApiLogConfig`）记录请求日志，耗时统计并发送到 RabbitMQ
 
 - 机制: 装饰器从 `Request` 提取方法/路径/参数，统计耗时，必要时包装流式响应并投递日志
 
@@ -1816,7 +1830,7 @@ JWT_EXPIRATION=86400000
 
 - 机制: 切面从 `UserContext` 取用户信息，解析路径/请求体参数，按业务类型与参数来源判断权限
 
-2. Gin 项目暂无通用权限注解，中间件 `InjectUserContext` 仅负责注入用户信息，权限校验主要在业务层处理
+2. GoZero 项目暂无通用权限注解，中间件 `InjectUserContext` 仅负责注入用户信息，权限校验主要在业务层处理
 
 - 机制: 中间件只把 `X-User-Id`/`X-Username` 注入到上下文，具体权限由 service/handler 自行校验
 
@@ -1834,7 +1848,7 @@ JWT_EXPIRATION=86400000
 
 - 机制: Feign 拦截器生成内部 JWT 并写入请求头，切面解析并校验令牌及服务名称
 
-2. Gin 项目使用 `InternalTokenMiddleware`/`RequireInternalToken` 校验内部令牌，支持验证指定服务名称
+1. GoZero 项目使用 `InternalTokenMiddleware` 校验内部令牌，支持验证指定服务名称
 
 - 机制: 中间件从请求头读取 JWT，校验签名/过期/服务名，失败直接中断请求
 
@@ -1848,11 +1862,11 @@ JWT_EXPIRATION=86400000
 
 ### 服务间调用工具
 
-1. Spring 项目使用 Feign 客户端 `FastAPIClient`/`GinClient`/`NestjsClient` 调用其他服务，`DefaultHeaderInterceptor` 自动注入用户信息与内部令牌
+1. Spring 项目使用 Feign 客户端 `FastAPIClient`/`GoZeroClient`/`NestjsClient` 调用其他服务，`DefaultHeaderInterceptor` 自动注入用户信息与内部令牌
 
 - 机制: Feign 统一注入 `X-User-Id`/`X-Username` 与内部 JWT，实现服务间安全调用
 
-2. Gin 项目使用 `ServiceDiscovery.CallService`（Nacos 服务发现 + 负载均衡），自动注入用户信息与内部令牌
+2. GoZero 项目使用 `ServiceDiscovery.CallService`（Nacos 服务发现 + 负载均衡），自动注入用户信息与内部令牌
 
 - 机制: 通过 Nacos 获取实例并轮询负载均衡，构建请求头后发起 HTTP 调用
 
@@ -1943,7 +1957,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### 用户聊天相关说明
 
-1. Gin 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数
+1. GoZero 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数
 
 ### Hadoop 使用说明
 
@@ -1966,7 +1980,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### Fresh 热启动工具说明
 
-1. Gin 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
+1. GoZero 服务若使用 `fresh`修改热启动工具，可以在配置对应配置文件用于修改编译结果产生位置，示例如下
 
    ```bash
    # Fresh 热启动工具配置文件
@@ -1987,7 +2001,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### 搜索算法公式说明
 
-1. Gin 服务基于 Elasticsearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
+1. GoZero 服务基于 ElasticSearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
 2. 综合评分公式
 
 $$
@@ -2023,7 +2037,7 @@ $$
   - 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
   - 权重配置说明
 
-5. | 默认权重分配（可在 Gin 部分的 `.env` 中配置）： | 因素     | 权重                                          | 说明 |
+5. | 默认权重分配（可在 GoZero 部分的 `.env` 中配置）： | 因素     | 权重                                          | 说明 |
    | ----------------------------------------------- | -------- | --------------------------------------------- | ---- |
    | ES 基础分数                                     | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
    | AI 评分                                         | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |
