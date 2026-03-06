@@ -1,0 +1,35 @@
+# Go构建文件
+gozero-app
+gozero-app.exe
+bin/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# 文档
+*.md
+docs/
+
+# 测试文件
+*_test.go
+.coverage
+
+# 日志
+logs/
+
+# 临时文件
+tmp/
+*.tmp

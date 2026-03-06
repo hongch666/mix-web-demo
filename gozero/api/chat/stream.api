@@ -1,0 +1,31 @@
+syntax = "v2"
+
+@server (
+	group: chat
+	tags:  chat
+)
+service App {
+	@doc (
+		summary: "SSE连接"
+	)
+	@handler ChatSSEHandler
+	get /sse/chat (ChatSSEConnectReq) returns (ChatSSEConnectResp)
+
+	@doc (
+		summary: "WebSocket连接"
+	)
+	@handler ChatWebsocketHandler
+	get /ws/chat (ChatWsConnectReq) returns (ChatWsConnectResp)
+}
+
+type (
+	ChatSSEConnectReq {
+		UserId *string `form:"userId,optional"`
+	}
+	ChatSSEConnectResp  {}
+	ChatWsConnectReq {
+		UserId *string `form:"userId,optional"`
+	}
+	ChatWsConnectResp  {}
+)
+

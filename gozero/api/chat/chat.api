@@ -1,0 +1,111 @@
+syntax = "v2"
+
+@server (
+	group:  chat
+	tags:   chat
+	prefix: /user-chat
+)
+service App {
+	@doc (
+		summary: "发送消息"
+	)
+	@handler ChatSendMessageHandler
+	post /send (ChatSendMessageReq) returns (ChatSendMessageResp)
+
+	@doc (
+		summary: "获取聊天历史"
+	)
+	@handler ChatGetHistoryHandler
+	post /history (ChatGetHistoryReq) returns (ChatGetHistoryResp)
+
+	@doc (
+		summary: "获取队列状态"
+	)
+	@handler ChatGetQueueStatusHandler
+	get /queue returns (ChatGetQueueStatusResp)
+
+	@doc (
+		summary: "加入队列"
+	)
+	@handler ChatJoinQueueHandler
+	post /join (ChatJoinQueueReq) returns (ChatJoinQueueResp)
+
+	@doc (
+		summary: "离开队列"
+	)
+	@handler ChatLeaveQueueHandler
+	post /leave (ChatLeaveQueueReq) returns (ChatLeaveQueueResp)
+
+	@doc (
+		summary: "获取未读消息数"
+	)
+	@handler ChatGetUnreadCountHandler
+	post /unread-count (ChatGetUnreadCountReq) returns (ChatGetUnreadCountResp)
+
+	@doc (
+		summary: "获取所有未读消息数"
+	)
+	@handler ChatGetAllUnreadCountsHandler
+	post /all-unread-counts (ChatGetAllUnreadCountsReq) returns (ChatGetAllUnreadCountsResp)
+}
+
+type (
+	ChatSendMessageReq {
+		SenderId   string `json:"senderId"`
+		ReceiverId string `json:"receiverId"`
+		Content    string `json:"content"`
+	}
+	ChatSendMessageResp {
+		MessageId uint64 `json:"messageId"`
+	}
+	ChatGetHistoryReq {
+		UserId  string `json:"userId"`
+		OtherId string `json:"otherId"`
+		Page    int    `json:"page,optional"`
+		Size    int    `json:"size,optional"`
+	}
+	ChatGetHistoryResp {
+		Messages []ChatMessageItem `json:"messages"`
+		Total    int64             `json:"total"`
+	}
+	ChatMessageItem {
+		Id         uint64 `json:"id"`
+		SenderId   string `json:"senderId"`
+		ReceiverId string `json:"receiverId"`
+		Content    string `json:"content"`
+		IsRead     int8   `json:"isRead"`
+		CreatedAt  string `json:"createdAt"`
+	}
+	ChatGetQueueStatusResp {
+		OnlineUsers []string `json:"onlineUsers"`
+		Count       int      `json:"count"`
+	}
+	ChatJoinQueueReq {
+		UserId string `json:"userId"`
+	}
+	ChatJoinQueueResp {
+		UserId string `json:"userId"`
+		Status string `json:"status"`
+	}
+	ChatLeaveQueueReq {
+		UserId string `json:"userId"`
+	}
+	ChatLeaveQueueResp {
+		UserId string `json:"userId"`
+		Status string `json:"status"`
+	}
+	ChatGetUnreadCountReq {
+		UserId  string `json:"userId"`
+		OtherId string `json:"otherId"`
+	}
+	ChatGetUnreadCountResp {
+		UnreadCount int64 `json:"unreadCount"`
+	}
+	ChatGetAllUnreadCountsReq {
+		UserId string `json:"userId"`
+	}
+	ChatGetAllUnreadCountsResp {
+		Data map[string]int64 `json:"data"`
+	}
+)
+

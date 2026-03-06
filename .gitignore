@@ -122,6 +122,60 @@ gin/*.orig
 
 gin/gin_service
 
+### gozero
+
+# Go binaries
+gozero/app/bin/
+gozero/app/*.exe
+gozero/app/*.exe~
+gozero/app/*.dll
+gozero/app/*.so
+gozero/app/*.dylib
+
+# Vendor directory
+gozero/app/vendor/
+
+# Compiled object files and binaries
+gozero/app/*.a
+gozero/app/*.o
+gozero/app/*.out
+
+# Logs
+gozero/app/logs/
+gozero/app/*.log
+gozero/app/nacos/log/*.log
+gozero/app/nacos/log/**
+gozero/app/nacos/
+
+# Swagger
+gozero/app/docs/
+
+# Test binaries
+gozero/app/*.test
+
+# Coverage and profiling
+gozero/app/coverage.out
+gozero/app/profile.out
+
+# IDE/editor settings
+gozero/.idea/
+gozero/.vscode/
+gozero/*.swp
+
+# Environment files
+gozero/app/.env
+gozero/app/.env.*
+
+# Temporary files
+gozero/app/tmp/
+gozero/app/temp/
+gozero/app/.DS_Store
+
+# Git merge/diff tools
+gozero/app/*.orig
+
+gozero/app/gozero_service
+
 ### spring
 
 # 忽略项目中的 Maven 构建输出目录

@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS `comments` (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+    content TEXT COMMENT '评论内容',
+    star DOUBLE COMMENT '星级评分，0~10',
+    user_id BIGINT NOT NULL COMMENT '用户 ID',
+    article_id BIGINT NOT NULL COMMENT '文章 ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time',
+    PRIMARY KEY (id)
+) COMMENT = '文章评论表';

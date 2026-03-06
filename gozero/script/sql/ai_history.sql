@@ -1,0 +1,11 @@
+CREATE TABLE `ai_history` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `user_id` BIGINT NOT NULL,
+    `ask` TEXT NOT NULL,
+    `reply` TEXT NOT NULL,
+    `thinking` TEXT,
+    `ai_type` VARCHAR(30),
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) COMMENT 'AI聊天记录';

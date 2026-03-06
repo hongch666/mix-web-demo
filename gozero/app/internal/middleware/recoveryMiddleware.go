@@ -1,0 +1,55 @@
+package middleware
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"runtime/debug"
+
+	"app/common/exceptions"
+	"app/common/logger"
+	"app/common/utils"
+)
+
+type RecoveryMiddleware struct {
+	logger *logger.ZeroLogger
+}
+
+func NewRecoveryMiddleware(log *logger.ZeroLogger) *RecoveryMiddleware {
+	return &RecoveryMiddleware{logger: log}
+}
+
+// Handle 处理 panic 恢复
+func (m *RecoveryMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				stack := string(debug.Stack())
+
+				// 判断是否是业务异常（可向客户端显示）
+				if businessErr, ok := err.(*exceptions.BusinessError); ok {
+					// 业务异常：返回对应的错误信息，记录详细堆栈
+					m.logger.Error(fmt.Sprintf(utils.BUSINESS_ERROR_MESSAGE, businessErr.Message, businessErr.Err, stack))
+					responseError(w, businessErr.Message)
+				} else {
+					// 其他异常：返回固定的错误信息，记录详细堆栈
+					m.logger.Error(fmt.Sprintf(utils.STACK_ERROR_MESSAGE, err, stack))
+					responseError(w, utils.UNIFIED_ERROR_RESPONSE_MESSAGE)
+				}
+			}
+		}()
+		next(w, r)
+	}
+}
+
+// responseError 返回错误响应
+func responseError(w http.ResponseWriter, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	response := map[string]any{
+		"code": 0,
+		"msg":  message,
+		"data": nil,
+	}
+	json.NewEncoder(w).Encode(response)
+}

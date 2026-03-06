@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS `user` (
+    id BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+    name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
+    password VARCHAR(255) NOT NULL COMMENT '密码',
+    email VARCHAR(255) UNIQUE COMMENT '邮箱',
+    age INT COMMENT '年龄',
+    role VARCHAR(255) NOT NULL COMMENT '用户权限',
+    img VARCHAR(255) COMMENT '用户头像',
+    signature VARCHAR(255) COMMENT '个性签名',
+    PRIMARY KEY (id)
+) COMMENT = '用户表';

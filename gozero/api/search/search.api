@@ -1,0 +1,69 @@
+syntax = "v2"
+
+@server (
+	group:  search
+	tags:   search
+	prefix: /search
+)
+service App {
+	@doc (
+		summary: "搜索文章"
+	)
+	@handler SearchArticlesHandler
+	get / (SearchArticlesReq) returns (SearchArticlesResp)
+
+	@doc (
+		summary: "获取搜索历史"
+	)
+	@handler GetSearchHistoryHandler
+	get /history/:userId (GetSearchHistoryReq) returns (GetSearchHistoryResp)
+}
+
+type (
+	SearchArticlesReq {
+		Keyword         *string `form:"keyword,optional"`
+		UserId          *uint64 `form:"userId,optional"`
+		Username        *string `form:"username,optional"`
+		CategoryName    *string `form:"category_name,optional"`
+		SubCategoryName *string `form:"sub_category_name,optional"`
+		StartDate       *string `form:"startDate,optional"`
+		EndDate         *string `form:"endDate,optional"`
+		Page            int     `form:"page,optional,default=1"`
+		Size            int     `form:"size,optional,default=10"`
+	}
+	SearchArticlesResp {
+		Total int             `json:"total"`
+		List  []ArticleEsItem `json:"list"`
+	}
+	ArticleEsItem {
+		Id                int64   `json:"id"`
+		Title             string  `json:"title"`
+		Content           string  `json:"content"`
+		UserId            int64   `json:"userId"`
+		Username          string  `json:"username"`
+		Tags              string  `json:"tags"`
+		Status            int     `json:"status"`
+		Views             int     `json:"views"`
+		LikeCount         int     `json:"likeCount"`
+		CollectCount      int     `json:"collectCount"`
+		AuthorFollowCount int     `json:"authorFollowCount"`
+		CategoryName      string  `json:"category_name"`
+		SubCategoryName   string  `json:"sub_category_name"`
+		CreateAt          string  `json:"create_at"`
+		UpdateAt          string  `json:"update_at"`
+		AiScore           float64 `json:"ai_score"`
+		UserScore         float64 `json:"user_score"`
+		AiCommentCount    int     `json:"ai_comment_count"`
+		UserCommentCount  int     `json:"user_comment_count"`
+	}
+)
+
+type (
+	GetSearchHistoryReq {
+		UserId string `path:"userId"`
+	}
+	GetSearchHistoryResp {
+		Keywords []string `json:"keywords"`
+	}
+)
+

@@ -1,0 +1,46 @@
+// Code scaffolded by goctl. Safe to edit.
+// goctl 1.9.2
+
+package chat
+
+import (
+	"net/http"
+
+	"app/common/utils"
+	"app/internal/logic/chat"
+	"app/internal/middleware"
+	"app/internal/svc"
+	"app/internal/types"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
+)
+
+// @Summary 		离开队列
+// @Description 	用户离开聊天队列
+// @Tags 			chat
+// @Accept  		json
+// @Produce 		json
+// @Param   		request body types.ChatLeaveQueueReq true "用户ID"
+// @Success 		200 {object} types.ChatLeaveQueueResp "离开结果"
+// @Failure 		400 {object} map[string]interface{} "请求参数错误"
+// @Failure 		500 {object} map[string]interface{} "服务器错误"
+// @Router  		/user-chat/leave [post]
+// 离开队列
+func ChatLeaveQueueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		var req types.ChatLeaveQueueReq
+		if err := httpx.Parse(r, &req); err != nil {
+			utils.Error(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		l := chat.NewChatLeaveQueueLogic(r.Context(), svcCtx)
+		resp, err := l.ChatLeaveQueue(&req)
+		if err != nil {
+			utils.Error(w, http.StatusInternalServerError, err.Error())
+		} else {
+			utils.Success(w, resp)
+		}
+	}
+	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, handler, "离开队列")
+}

@@ -1,0 +1,64 @@
+syntax = "v2"
+
+@server (
+	group:  test
+	tags:   test
+	prefix: /api_gin
+)
+service App {
+	@doc (
+		summary: "测试Gin服务"
+	)
+	@handler TestGinHandler
+	get /gin returns (TestGinResp)
+
+	@doc (
+		summary: "测试Spring服务"
+	)
+	@handler TestSpringHandler
+	get /spring returns (TestSpringResp)
+
+	@doc (
+		summary: "测试NestJS服务"
+	)
+	@handler TestNestJSHandler
+	get /nestjs returns (TestNestJSResp)
+
+	@doc (
+		summary: "测试FastAPI服务"
+	)
+	@handler TestFastAPIHandler
+	get /fastapi returns (TestFastAPIResp)
+}
+
+@server (
+	group:      test
+	tags:       test
+	prefix:     /api_gin
+	middleware: InternalServiceMiddleware
+)
+service App {
+	@doc (
+		summary: "手动触发同步ES任务"
+	)
+	@handler SyncESHandler
+	post /syncer (SyncESReq) returns (SyncESResp)
+}
+
+type (
+	SyncESReq  {}
+	TestGinResp {
+		Data string `json:"data"`
+	}
+	TestSpringResp {
+		Data string `json:"data"`
+	}
+	TestNestJSResp {
+		Data string `json:"data"`
+	}
+	TestFastAPIResp {
+		Data string `json:"data"`
+	}
+	SyncESResp  {}
+)
+

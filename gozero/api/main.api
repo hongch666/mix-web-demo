@@ -1,0 +1,21 @@
+syntax = "v2"
+
+info (
+	title:   "GoZero 微服务"
+	desc:    "GoZero 微服务 API 定义"
+	author:  "hongch666"
+	version: "v1"
+)
+
+@server (
+	middleware: userContextMiddleware,recoveryMiddleware
+)
+service App {}
+
+import (
+	"./chat/chat.api"
+	"./chat/stream.api"
+	"./search/search.api"
+	"./test/test.api"
+)
+
