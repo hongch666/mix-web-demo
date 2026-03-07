@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"app/common/chat"
+	"app/common/dto"
+	"app/common/hub"
 	"app/common/utils"
-	"app/dto"
 	"app/internal/middleware"
 	"app/internal/svc"
 )
@@ -55,7 +55,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			UserID:       userID,
 			UnreadCounts: make(map[string]int64),
 		}
-		sseMessage := chat.FormatSSEMessage(initMessage)
+		sseMessage := hub.FormatSSEMessage(initMessage)
 		_, _ = io.WriteString(w, sseMessage)
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
@@ -86,7 +86,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				}
 			case notification := <-sendCh:
 				// 发送SSE格式的消息
-				sseMessage := chat.FormatSSEMessage(notification)
+				sseMessage := hub.FormatSSEMessage(notification)
 				// 如果格式化后消息为空,跳过此次发送
 				if sseMessage == "" {
 					svcCtx.Logger.Warning(utils.EMPTY_SSE)

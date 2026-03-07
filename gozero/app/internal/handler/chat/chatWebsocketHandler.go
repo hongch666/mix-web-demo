@@ -6,7 +6,7 @@ package chat
 import (
 	"net/http"
 
-	"app/common/chat"
+	"app/common/hub"
 	"app/common/utils"
 	"app/internal/middleware"
 	"app/internal/svc"
@@ -54,7 +54,7 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			existingClient.Send = make(chan []byte, 256)
 		} else {
 			// 创建新的客户端并加入队列
-			client := &chat.Client{
+			client := &hub.Client{
 				UserID: userID,
 				Conn:   conn,
 				Send:   make(chan []byte, 256),

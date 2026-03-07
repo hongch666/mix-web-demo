@@ -6,7 +6,7 @@ package chat
 import (
 	"context"
 
-	"app/common/chat"
+	"app/common/hub"
 	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
@@ -39,7 +39,7 @@ func (l *ChatJoinQueueLogic) ChatJoinQueue(req *types.ChatJoinQueueReq) (resp *t
 		resp.Status = utils.USER_ALREADY_IN_QUEUE
 	} else {
 		// 创建一个虚拟的客户端（没有WebSocket连接）
-		client := &chat.Client{
+		client := &hub.Client{
 			UserID: req.UserId,
 			Conn:   nil, // 没有WebSocket连接
 			Send:   make(chan []byte, 256),

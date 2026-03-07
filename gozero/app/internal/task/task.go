@@ -3,9 +3,9 @@ package task
 import (
 	"fmt"
 
-	"app/common/task/logic"
 	"app/common/utils"
 	"app/internal/svc"
+	"app/internal/task/logic"
 
 	"github.com/robfig/cron/v3"
 )
@@ -26,7 +26,6 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 			svcCtx.Logger.Info(utils.TASK_SYNC_ES_COMPLETED_MESSAGE)
 		}
 	})
-
 	if err != nil {
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Error(fmt.Sprintf(utils.TASK_SYNC_ES_FAILED_MESSAGE, err))

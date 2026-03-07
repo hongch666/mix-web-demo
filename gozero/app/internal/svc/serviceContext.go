@@ -4,7 +4,12 @@
 package svc
 
 import (
-	"app/common/chat"
+	"context"
+	"fmt"
+	"os"
+	"time"
+
+	"app/common/hub"
 	"app/common/logger"
 	"app/common/utils"
 	"app/internal/config"
@@ -21,10 +26,6 @@ import (
 	"app/model/search"
 	"app/model/subCategory"
 	"app/model/user"
-	"context"
-	"fmt"
-	"os"
-	"time"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -64,8 +65,8 @@ type ServiceContext struct {
 	UserModel              user.UserModel
 	SearchModel            search.SearchModel
 
-	ChatHub *chat.ChatHub
-	SSEHub  *chat.SSEHubManager
+	ChatHub *hub.ChatHub
+	SSEHub  *hub.SSEHubManager
 
 	Logger *logger.ZeroLogger
 
@@ -165,9 +166,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SubCategoryModel:       subCategoryModel,
 		UserModel:              userModel,
 		SearchModel:            searchModel,
-		ChatHub:                &chat.ChatHub{ZeroLogger: zLogger},
-		SSEHub: func() *chat.SSEHubManager {
-			hub := chat.GetSSEHub()
+		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
+		SSEHub: func() *hub.SSEHubManager {
+			hub := hub.GetSSEHub()
 			hub.ZeroLogger = zLogger
 			return hub
 		}(),
@@ -344,10 +345,10 @@ func initNacos(c config.Config) naming_client.INamingClient {
 	}
 
 	if nacosConf.CacheDir != "" {
-		_ = os.MkdirAll(nacosConf.CacheDir, 0755)
+		_ = os.MkdirAll(nacosConf.CacheDir, 0o755)
 	}
 	if nacosConf.LogDir != "" {
-		_ = os.MkdirAll(nacosConf.LogDir, 0755)
+		_ = os.MkdirAll(nacosConf.LogDir, 0o755)
 	}
 
 	serverConfigs := []constant.ServerConfig{{

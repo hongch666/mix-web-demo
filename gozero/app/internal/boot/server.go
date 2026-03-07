@@ -1,10 +1,10 @@
 package boot
 
 import (
-	"app/common/task"
 	"app/internal/config"
 	"app/internal/handler"
 	"app/internal/svc"
+	"app/internal/task"
 
 	"github.com/zeromicro/go-zero/rest"
 

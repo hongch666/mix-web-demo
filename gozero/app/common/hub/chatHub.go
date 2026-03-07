@@ -1,4 +1,4 @@
-package chat
+package hub
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"sync"
 
+	"app/common/dto"
 	"app/common/logger"
 	"app/common/utils"
-	"app/dto"
 
 	"github.com/gorilla/websocket"
 )

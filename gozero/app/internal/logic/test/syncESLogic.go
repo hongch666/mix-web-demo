@@ -7,9 +7,9 @@ import (
 	"context"
 
 	"app/common/logger"
-	"app/common/task/logic"
 	"app/common/utils"
 	"app/internal/svc"
+	"app/internal/task/logic"
 	"app/internal/types"
 )
 

@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"time"
 
+	"app/common/dto"
 	"app/common/exceptions"
 	"app/common/logger"
 	"app/common/utils"
-	"app/dto"
 	"app/internal/svc"
 	"app/internal/types"
 	"app/model/chatMessages"

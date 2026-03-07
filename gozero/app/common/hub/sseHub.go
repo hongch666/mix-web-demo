@@ -1,13 +1,13 @@
-package chat
+package hub
 
 import (
 	"encoding/json"
 	"fmt"
 	"sync"
 
+	"app/common/dto"
 	"app/common/logger"
 	"app/common/utils"
-	"app/dto"
 )
 
 // SSE客户端
@@ -24,8 +24,10 @@ type SSEHubManager struct {
 	*logger.ZeroLogger
 }
 
-var sseHubInstance *SSEHubManager
-var once sync.Once
+var (
+	sseHubInstance *SSEHubManager
+	once           sync.Once
+)
 
 // GetSSEHub 获取SSE中心实例
 func GetSSEHub() *SSEHubManager {
