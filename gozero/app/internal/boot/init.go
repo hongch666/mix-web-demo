@@ -3,6 +3,7 @@ package boot
 import (
 	"flag"
 
+	"app/common/utils"
 	"app/internal/svc"
 )
 
@@ -14,7 +15,7 @@ const (
 // ParseFlags 解析命令行标志
 func ParseFlags() string {
 	var configFile string
-	flag.StringVar(&configFile, "f", DefaultConfigFile, "the config file")
+	flag.StringVar(&configFile, "f", DefaultConfigFile, utils.CONFIG_DESCRIPTION)
 	flag.Parse()
 
 	if configFile == "" {

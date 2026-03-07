@@ -304,6 +304,9 @@ const (
 	// SSE写入失败消息
 	SSE_WRITE_FAIL = "SSE写入失败: "
 
+	// 配置信息描述
+	CONFIG_DESCRIPTION = "配置文件路径，默认为 etc/application.yaml"
+
 	// WebSocket 用户连接状态相关
 
 	// 用户已连接消息
