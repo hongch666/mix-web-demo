@@ -28,23 +28,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				// SSE连接
-				Method:  http.MethodGet,
-				Path:    "/sse/chat",
-				Handler: chat.ChatSSEHandler(serverCtx),
-			},
-			{
-				// WebSocket连接
-				Method:  http.MethodGet,
-				Path:    "/ws/chat",
-				Handler: chat.ChatWebsocketHandler(serverCtx),
-			},
-		},
-	)
-
-	server.AddRoutes(
-		[]rest.Route{
-			{
 				// 获取所有未读消息数
 				Method:  http.MethodPost,
 				Path:    "/all-unread-counts",
@@ -88,6 +71,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 		},
 		rest.WithPrefix("/user-chat"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				// SSE连接
+				Method:  http.MethodGet,
+				Path:    "/sse/chat",
+				Handler: chat.ChatSSEHandler(serverCtx),
+			},
+			{
+				// WebSocket连接
+				Method:  http.MethodGet,
+				Path:    "/ws/chat",
+				Handler: chat.ChatWebsocketHandler(serverCtx),
+			},
+		},
 	)
 
 	server.AddRoutes(

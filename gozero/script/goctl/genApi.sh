@@ -67,6 +67,32 @@ if [ -f "$app_dir/app.go" ]; then
 	echo "Removed generated app.go"
 fi
 
+# 在 routes.go 文件顶部插入 Swagger 注释
+routes_file="$app_dir/internal/handler/routes.go"
+if [ -f "$routes_file" ]; then
+	echo "Adding Swagger documentation to routes.go..."
+	
+	# 创建临时文件
+	temp_routes=$(mktemp)
+	
+	# 写入 Swagger 注释
+	cat > "$temp_routes" << 'EOF'
+// @title GoZero部分的Swagger文档
+// @description 这是项目的GoZero部分的Swagger文档
+// @version 1.0.0
+// @host localhost:8082
+// @basePath /
+
+EOF
+	
+	# 追加原有的路由文件内容，同时移除 goctl 生成的两行注释和空行
+	tail -n +4 "$routes_file" >> "$temp_routes"
+	
+	# 替换原文件
+	mv "$temp_routes" "$routes_file"
+	echo "Swagger documentation added to routes.go"
+fi
+
 # Restore main.go
 if [ -f "$backup_dir/main.go" ]; then
 	cp "$backup_dir/main.go" "$main_go_file"

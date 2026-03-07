@@ -1,3 +1,8 @@
+// @title GoZero部分的Swagger文档
+// @description 这是项目的GoZero部分的Swagger文档
+// @version 1.0.0
+// @host localhost:8082
+// @basePath /
 syntax = "v2"
 
 info (
@@ -8,7 +13,7 @@ info (
 )
 
 @server (
-	middleware: userContextMiddleware,recoveryMiddleware
+	middleware: UserContextMiddleware,RecoveryMiddleware
 )
 service App {}
 

@@ -36,8 +36,8 @@ type ChatGetAllUnreadCountsResp struct {
 type ChatGetHistoryReq struct {
 	UserId  string `json:"userId"`
 	OtherId string `json:"otherId"`
-	Page    int    `json:"page"`
-	Size    int    `json:"size"`
+	Page    int    `json:"page,optional"`
+	Size    int    `json:"size,optional"`
 }
 
 type ChatGetHistoryResp struct {
