@@ -4,7 +4,7 @@
   "description": "NestJS微服务",
   "author": "hongch666",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "node:build": "nest build",
     "node:start": "nest start",
