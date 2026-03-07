@@ -38,12 +38,16 @@ done
 # Save the original location
 original_location=$(pwd)
 
-# Change to the repository root (two levels up)
-cd "$(dirname "$(readlink -f "$0")")/../.." || exit 1
+# Change to the repository root (three levels up from genOrm.sh)
+script_dir=$(dirname "$(readlink -f "$0")")
+repo_root=$(cd "$script_dir/../../.." && pwd)
+cd "$repo_root" || exit 1
 
 # Resolve full source path
 if [ ! -d "$srcDir" ]; then
 	echo "Source directory '$srcDir' not found. Aborting."
+	echo "Current working directory: $(pwd)"
+	echo "Expected path: $srcDir"
 	cd "$original_location" || exit 1
 	exit 1
 fi
