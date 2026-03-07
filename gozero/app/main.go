@@ -1,23 +1,12 @@
 package main
 
 import (
-	"flag"
-
 	"app/internal/boot"
-	"app/internal/svc"
 )
 
-var configFile = flag.String("f", "etc/application.yaml", "the config file")
-
 func main() {
-	flag.Parse()
-	// 加载配置
-	cfg := boot.LoadConfig(*configFile)
-	// 创建服务上下文
-	ctx := svc.NewServiceContext(cfg)
-	// 创建并初始化服务器
-	server := boot.CreateServer(cfg, ctx)
-	defer server.Stop()
-	// 启动服务器
-	server.Start()
+	// 解析命令行参数，获取配置文件路径
+	configFile := boot.ParseFlags()
+	// 启动 GoZero 应用服务
+	boot.Run(configFile)
 }
