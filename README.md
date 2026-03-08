@@ -1740,12 +1740,12 @@ JWT_EXPIRATION=86400000
 3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts`文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用
 4. FastAPI 项目采用官方推荐的目录结构，在app下实现代码，`api`路由接口，`services`服务逻辑，`crud`为对应数据库操作，`core`放置核心功能模块，并且基于 `Depend`函数和获取实例函数进行依赖注入调用
 
-### 项目文件夹命名说明
+### 项目文件夹结构说明
 
-1. 与接口相关的模块放在 `/api`文件夹下，如三层架构的模块、与接口相关的模块（NestJS）
-2. 和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`
-3. 通用相关的工具放在 `/common`下，如 `/config`、`/decorator`、`/middleware`
-4. NestJS 的通用工具如果要使用 module 的设计使用，放置在 `/modules`下，否则就放置在 `/common`下
+1. Spring 项目将三层架构代码放置在 `/api`文件夹下，通用模块放置在 `/common`文件夹下，注解和配置相关放置在 `/core`文件夹下，基础设施相关放置在 `/infra`文件夹下，和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`
+2. GoZero 项目将`.api`设计文件放置在 `/api`文件夹下，脚本放置在`/scripts`文件夹下，生成的代码放置在 `/app`文件夹下，`/app` 下采用GoZero的设计方式，`/model`下放置数据库实体和操作，`/common`下放置通用代码模块，`/internal`下放置业务相关的代码模块，`/etc`下放配置文件，`/internal`文件夹下按照`/handler`、`/logic`等GoZero的设计方式进行划分
+3. NestJS 项目的通用工具放置在`/common`下，module 相关的工具模块放置在 `/modules`下，接口相关的模块放置在 `/api`下，和系统相关的模块放置在 `/framework`下，如 `filters`、`guards`、`interceptors`等
+4. FastAPI 项目的核心代码放置在 `/app`下，`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`core`下放置核心功能模块，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
 5. 其他相关的文件夹命名尽可能沿用当前项目的设计
 
 ### 项目文件命名说明
