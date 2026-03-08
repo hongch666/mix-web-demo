@@ -1,7 +1,7 @@
 package com.hcsy.spring;
 
 import org.springframework.boot.SpringApplication;
-import com.hcsy.spring.common.annotation.Starter;
+import com.hcsy.spring.core.annotation.Starter;
 
 @Starter
 public class Main {

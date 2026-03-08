@@ -14,7 +14,7 @@ import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import cn.hutool.core.bean.BeanUtil;
-import com.hcsy.spring.common.annotation.ArticleSync;
+import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.entity.po.Article;

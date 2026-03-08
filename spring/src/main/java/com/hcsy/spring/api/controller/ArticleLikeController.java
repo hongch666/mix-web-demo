@@ -3,7 +3,7 @@ package com.hcsy.spring.api.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleLikeService;
-import com.hcsy.spring.common.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;

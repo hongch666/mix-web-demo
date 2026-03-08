@@ -1,13 +1,13 @@
 package com.hcsy.spring.api.controller;
 
-import com.hcsy.spring.common.annotation.ApiLog;
-import com.hcsy.spring.common.annotation.RequireInternalToken;
-import com.hcsy.spring.common.client.FastAPIClient;
-import com.hcsy.spring.common.client.GoZeroClient;
-import com.hcsy.spring.common.client.NestjsClient;
-import com.hcsy.spring.common.task.TokenCleanupTask;
+import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.infra.client.FastAPIClient;
+import com.hcsy.spring.infra.client.GoZeroClient;
+import com.hcsy.spring.infra.client.NestjsClient;
+import com.hcsy.spring.infra.task.TokenCleanupTask;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +29,7 @@ public class TestController {
     private final TokenCleanupTask tokenCleanupTask;
 
     @GetMapping("/spring")
-    @Operation(summary = "spring自己的测试", description = "输出欢迎信息")
+    @Operation(summary = "Spring自己的测试", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")
     public Result getHello() {
         return Result.success(Constants.TEST);

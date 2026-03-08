@@ -1,11 +1,12 @@
 package com.hcsy.spring.api.service.impl;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
-import com.hcsy.spring.common.client.FastAPIClient;
-import com.hcsy.spring.common.client.GoZeroClient;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.infra.client.FastAPIClient;
+import com.hcsy.spring.infra.client.GoZeroClient;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
