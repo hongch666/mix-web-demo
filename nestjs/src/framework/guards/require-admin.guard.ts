@@ -3,8 +3,8 @@ import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 import { REQUIRE_ADMIN_KEY } from '../../framework/decorators/require-admin.decorator';
 import { UserService } from '../../modules/user/user.service';
-import { BusinessException } from '../exceptions/business.exception';
-import { Constants } from '../utils/constants';
+import { BusinessException } from 'src/common/exceptions/business.exception';
+import { Constants } from 'src/common/utils/constants';
 
 @Injectable()
 export class RequireAdminGuard implements CanActivate {

@@ -5,10 +5,10 @@ import {
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { AllExceptionsFilter } from '../common/filters/all-exception.filter';
 import { Constants } from '../common/utils/constants';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from 'src/framework/filters/all-exception.filter';
 
 export async function createApp(): Promise<NestFastifyApplication> {
   const fastifyAdapter: FastifyAdapter = new FastifyAdapter();

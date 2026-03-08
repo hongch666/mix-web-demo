@@ -6,10 +6,10 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { error } from '../utils/response'; // 之前写的 error() 方法
-import { logger } from '../utils/writeLog';
-import { BusinessException } from '../exceptions/business.exception';
-import { Constants } from '../utils/constants';
+import { BusinessException } from 'src/common/exceptions/business.exception';
+import { Constants } from 'src/common/utils/constants';
+import { error } from 'src/common/utils/response';
+import { logger } from 'src/common/utils/writeLog';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {

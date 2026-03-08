@@ -8,13 +8,13 @@ import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { logger } from '../utils/writeLog';
 import {
   API_LOG_KEY,
   ApiLogOptions,
 } from '../../framework/decorators/api-log.decorator';
 import { RabbitMQService } from '../../modules/mq/mq.service';
-import { Constants } from '../utils/constants';
+import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
 
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {

@@ -4,10 +4,10 @@ import {
   REQUIRE_INTERNAL_TOKEN_KEY,
   REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY,
 } from '../../framework/decorators/require-internal-token.decorator';
-import { InternalTokenUtil } from '../utils/internal-token.util';
-import { BusinessException } from '../exceptions/business.exception';
-import { Constants } from '../utils/constants';
-import { logger } from '../utils/writeLog';
+import { InternalTokenUtil } from 'src/common/utils/internal-token.util';
+import { BusinessException } from 'src/common/exceptions/business.exception';
+import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
 
 /**
  * 内部服务令牌验证守卫
