@@ -294,8 +294,8 @@ create_rabbitmq() {
     fi
     
     docker run \
-        -e RABBITMQ_DEFAULT_USER=itheima \
-        -e RABBITMQ_DEFAULT_PASS=123321 \
+        -e RABBITMQ_DEFAULT_USER=test \
+        -e RABBITMQ_DEFAULT_PASS=123456 \
         -v mq-plugins:/plugins \
         --name mq \
         --hostname mq \
