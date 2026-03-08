@@ -391,7 +391,7 @@ default = true
 | **MongoDB**       | 27017 | root     | 123456 | 非关系型数据库           |
 | **Elasticsearch** | 9200  | -        | -      | 搜索引擎(7.12.1)         |
 | **Nacos**         | 8848  | -        | -      | 服务发现与配置中心       |
-| **RabbitMQ**      | 5672  | itheima  | 123321 | 消息队列(管理界面 15672) |
+| **RabbitMQ**      | 5672  | test     | 123456 | 消息队列(管理界面 15672) |
 
 ### 脚本功能特性
 
@@ -750,7 +750,6 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `swag-init.sh`      | scripts/   | 生成 GoZero Swagger 文档                   | Linux/macOS |
 | `goctl-api-init.sh` | scripts/   | 生成 GoZero API 代码                       | Linux/macOS |
 | `goctl-orm-init.sh` | scripts/   | 生成 GoZero ORM 代码                       | Linux/macOS |
-| `ssh.sh`            | scripts/   | SSH 远程端口转发配置                       | Linux/macOS |
 | `run.ps1`           | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
 
 ### 服务名称
@@ -1781,7 +1780,7 @@ JWT_EXPIRATION=86400000
 1. Spring 项目使用全局异常处理类 `GlobalExceptionHandler.java` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 2. GoZero 项目使用中间件 `recoveryMiddleware.go` 进行异常捕获和处理，业务异常统一抛出 `BusinessError` 异常
 3. NestJS 项目使用全局异常过滤器 `all-exceptions.filter.ts` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
-4. FastAPI 项目使用全局异常处理函数 `exception_handlers.py` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
+4. FastAPI 项目使用 `exceptionHandlers.py` 下的全局异常处理函数进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 
 ### 常量说明
 
@@ -1851,7 +1850,7 @@ JWT_EXPIRATION=86400000
 
 - 机制: Feign 拦截器生成内部 JWT 并写入请求头，切面解析并校验令牌及服务名称
 
-1. GoZero 项目使用 `InternalTokenMiddleware` 校验内部令牌，支持验证指定服务名称
+2. GoZero 项目使用 `InternalTokenMiddleware` 校验内部令牌，支持验证指定服务名称
 
 - 机制: 中间件从请求头读取 JWT，校验签名/过期/服务名，失败直接中断请求
 
