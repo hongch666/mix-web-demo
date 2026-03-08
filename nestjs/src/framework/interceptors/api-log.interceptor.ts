@@ -9,7 +9,10 @@ import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { logger } from '../utils/writeLog';
-import { API_LOG_KEY, ApiLogOptions } from '../decorators/api-log.decorator';
+import {
+  API_LOG_KEY,
+  ApiLogOptions,
+} from '../../framework/decorators/api-log.decorator';
 import { RabbitMQService } from '../../modules/mq/mq.service';
 import { Constants } from '../utils/constants';
 

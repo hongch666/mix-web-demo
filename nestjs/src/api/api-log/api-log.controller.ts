@@ -10,9 +10,9 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiLogService } from './api-log.service';
 import { CreateApiLogDto, QueryApiLogDto } from './dto/api-log.dto';
-import { ApiLog } from 'src/common/decorators/api-log.decorator';
-import { RequireAdmin } from 'src/common/decorators/require-admin.decorator';
-import { RequireInternalToken } from 'src/common/decorators/require-internal-token.decorator';
+import { ApiLog } from 'src/framework/decorators/api-log.decorator';
+import { RequireAdmin } from 'src/framework/decorators/require-admin.decorator';
+import { RequireInternalToken } from 'src/framework/decorators/require-internal-token.decorator';
 import { ApiResponse, success } from 'src/common/utils/response';
 
 @Controller('api-logs')

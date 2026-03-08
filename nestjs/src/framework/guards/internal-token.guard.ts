@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import {
   REQUIRE_INTERNAL_TOKEN_KEY,
   REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY,
-} from '../decorators/require-internal-token.decorator';
+} from '../../framework/decorators/require-internal-token.decorator';
 import { InternalTokenUtil } from '../utils/internal-token.util';
 import { BusinessException } from '../exceptions/business.exception';
 import { Constants } from '../utils/constants';

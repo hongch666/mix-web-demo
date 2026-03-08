@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
-import { ApiLog } from 'src/common/decorators/api-log.decorator';
+import { ApiLog } from 'src/framework/decorators/api-log.decorator';
 import { DownloadService } from './download.service';
 import { ApiResponse, success } from 'src/common/utils/response';
 
