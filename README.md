@@ -312,7 +312,7 @@ default = true
    - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
    - Gateway: 支持 Gradle 和 Maven 两种构建工具
 
-- GoZero: 自动安装 goctl（API/ORM 代码生成工具）和 swag（Swagger 文档生成工具）
+- GoZero: 自动安装 goctl（API/ORM 代码生成工具、API-First 方式代码生成和 Swagger 文档生成工具）
 - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
 5. **目录自动创建**
@@ -1679,20 +1679,36 @@ JWT_EXPIRATION=86400000
 
 ### GoZero 部分
 
-1. 使用 `go install github.com/swaggo/swag/cmd/swag@latest`安装 swag 命令
-2. 在 GoZero Handler 上方使用如下注释添加 swagger 信息
+本项目已采用 **API-First** 方式管理 Swagger 文档，所有 API 定义统一存放在 `.api` 文件中，使用 goctl 的内置 Swagger 生成工具自动生成文档。
 
-   ```go
-   // @Summary 获取用户列表
-   // @Description 获取所有用户信息
-   // @Tags 用户
-   // @Produce json
-   // @Success 200 {array} map[string]string
-   // @Router /users [get]
+**使用方式：**
+
+1. 在 `gozero/api` 目录下对应的 `.api` 文件中使用 `@doc` 注释定义 API
+
+   ```api
+   @doc(
+       summary: "获取用户列表"
+       description: "获取所有用户信息"
+   )
+   get /users returns (UserListResp)
    ```
 
-3. 在 `http://[ip和端口]/swagger/index.html`访问 Swagger 接口
-4. 每次添加新的 swagger 信息时需要在终端使用 `./mix swag` 命令重新生成 swagger 文档
+2. 在 `gozero/app/main.go` 启动时会自动提供 Swagger UI
+   - Swagger UI: `http://[ip和端口]:8082/swagger/index.html`
+
+3. 每次修改 `.api` 文件后，运行以下命令重新生成 Swagger 文档：
+
+   ```bash
+   # 使用快捷方式
+   ./mix swag
+
+   # 或直接调用脚本
+   cd gozero && bash script/swagger/genSwagger.sh
+   ```
+
+4. 生成的 Swagger 文件位于 `gozero/app/docs/` 目录
+
+5. 目前 Swagger 文档的描述、作者、版本信息和中文分组等相关 Swagger 内容存在问题，使用 `/script/swager/fix.py` 脚本进行修复，修复后会覆盖原来的 Swagger 文件
 
 ### NestJS
 
