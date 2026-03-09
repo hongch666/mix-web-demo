@@ -7,8 +7,6 @@ import (
 	"app/internal/task"
 
 	"github.com/zeromicro/go-zero/rest"
-
-	_ "app/docs"
 )
 
 // CreateServer 创建并初始化 REST 服务器

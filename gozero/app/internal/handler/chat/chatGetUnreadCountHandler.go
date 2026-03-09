@@ -15,14 +15,6 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 获取两个用户间的未读消息数
-// @Description 获取指定用户与另一个用户间的未读消息数
-// @Tags 聊天
-// @Accept json
-// @Produce json
-// @Param   		request body types.ChatGetUnreadCountReq true "查询参数"
-// @Success 		200 {object} types.ChatGetUnreadCountResp "未读消息数"
-// @Router /user-chat/unread-count [post]
 // 获取未读消息数
 func ChatGetUnreadCountHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

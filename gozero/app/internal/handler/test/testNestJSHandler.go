@@ -12,11 +12,6 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 调用NestJS的测试
-// @Description 输出欢迎信息
-// @Tags 测试
-// @Success 200 {object} map[string]interface{}
-// @Router /api_gozero/nestjs [get]
 // 测试NestJS服务
 func TestNestJSHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

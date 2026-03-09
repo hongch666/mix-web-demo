@@ -15,11 +15,6 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 调用同步ES的测试
-// @Description 查看是否同步成功
-// @Tags 测试
-// @Success 200 {object} map[string]interface{}
-// @Router /api_gozero/syncer [post]
 // 手动触发同步ES任务
 func SyncESHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

@@ -12,11 +12,6 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 调用FastAPI的测试
-// @Description 输出欢迎信息
-// @Tags 测试
-// @Success 200 {object} map[string]interface{}
-// @Router /api_gozero/fastapi [get]
 // 测试FastAPI服务
 func TestFastAPIHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

@@ -15,14 +15,6 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 获取聊天历史记录
-// @Description 获取两个用户之间的聊天历史记录
-// @Tags 聊天
-// @Accept json
-// @Produce json
-// @Param   		request body types.ChatGetHistoryReq true "查询参数"
-// @Success 		200 {object} types.ChatGetHistoryResp "聊天历史"
-// @Router /user-chat/history [post]
 // 获取聊天历史
 func ChatGetHistoryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

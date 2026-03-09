@@ -15,12 +15,6 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary SSE消息通知连接
-// @Description 建立SSE连接，用于接收实时消息通知
-// @Tags 聊天
-// @Param userId query string true "用户ID"
-// @Success 		200 {string} string "消息流"
-// @Router /sse/chat [get]
 // SSE连接
 func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {

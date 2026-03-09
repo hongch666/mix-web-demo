@@ -7,43 +7,50 @@ syntax = "v2"
 )
 service App {
 	@doc (
-		summary: "发送消息"
+		summary:     "发送聊天消息"
+		description: "发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户"
 	)
 	@handler ChatSendMessageHandler
 	post /send (ChatSendMessageReq) returns (ChatSendMessageResp)
 
 	@doc (
-		summary: "获取聊天历史"
+		summary:     "获取聊天历史"
+		description: "分页获取指定两个用户之间的聊天记录"
 	)
 	@handler ChatGetHistoryHandler
 	post /history (ChatGetHistoryReq) returns (ChatGetHistoryResp)
 
 	@doc (
-		summary: "获取队列状态"
+		summary:     "获取队列状态"
+		description: "获取当前在队列中的所有用户"
 	)
 	@handler ChatGetQueueStatusHandler
 	get /queue returns (ChatGetQueueStatusResp)
 
 	@doc (
-		summary: "加入队列"
+		summary:     "手动加入聊天队列"
+		description: "用户手动加入聊天队列，不需要建立WebSocket连接"
 	)
 	@handler ChatJoinQueueHandler
 	post /join (ChatJoinQueueReq) returns (ChatJoinQueueResp)
 
 	@doc (
-		summary: "离开队列"
+		summary:     "手动离开聊天队列"
+		description: "用户手动离开聊天队列"
 	)
 	@handler ChatLeaveQueueHandler
 	post /leave (ChatLeaveQueueReq) returns (ChatLeaveQueueResp)
 
 	@doc (
-		summary: "获取未读消息数"
+		summary:     "获取两个用户间的未读消息数"
+		description: "获取指定用户与另一个用户间的未读消息数"
 	)
 	@handler ChatGetUnreadCountHandler
 	post /unread-count (ChatGetUnreadCountReq) returns (ChatGetUnreadCountResp)
 
 	@doc (
-		summary: "获取所有未读消息数"
+		summary:     "获取用户的所有未读消息数"
+		description: "获取指定用户与所有其他用户的未读消息数统计"
 	)
 	@handler ChatGetAllUnreadCountsHandler
 	post /all-unread-counts (ChatGetAllUnreadCountsReq) returns (ChatGetAllUnreadCountsResp)

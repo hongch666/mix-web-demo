@@ -7,25 +7,29 @@ syntax = "v2"
 )
 service App {
 	@doc (
-		summary: "测试GoZero服务"
+		summary:     "测试GoZero服务"
+		description: "验证GoZero服务是否正常运行"
 	)
 	@handler TestGoZeroHandler
 	get /gozero returns (TestGoZeroResp)
 
 	@doc (
-		summary: "测试Spring服务"
+		summary:     "调用Spring的测试"
+		description: "输出欢迎信息"
 	)
 	@handler TestSpringHandler
 	get /spring returns (TestSpringResp)
 
 	@doc (
-		summary: "测试NestJS服务"
+		summary:     "调用NestJS的测试"
+		description: "输出欢迎信息"
 	)
 	@handler TestNestJSHandler
 	get /nestjs returns (TestNestJSResp)
 
 	@doc (
-		summary: "测试FastAPI服务"
+		summary:     "调用FastAPI的测试"
+		description: "输出欢迎信息"
 	)
 	@handler TestFastAPIHandler
 	get /fastapi returns (TestFastAPIResp)
@@ -39,7 +43,8 @@ service App {
 )
 service App {
 	@doc (
-		summary: "手动触发同步ES任务"
+		summary:     "调用同步ES的测试"
+		description: "查看是否同步成功"
 	)
 	@handler SyncESHandler
 	post /syncer (SyncESReq) returns (SyncESResp)

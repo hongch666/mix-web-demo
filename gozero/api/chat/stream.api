@@ -6,13 +6,15 @@ syntax = "v2"
 )
 service App {
 	@doc (
-		summary: "SSE连接"
+		summary:     "SSE消息通知连接"
+		description: "建立SSE连接，用于接收实时消息通知"
 	)
 	@handler ChatSSEHandler
 	get /sse/chat (ChatSSEConnectReq) returns (ChatSSEConnectResp)
 
 	@doc (
-		summary: "WebSocket连接"
+		summary:     "WebSocket聊天连接"
+		description: "建立WebSocket连接，自动加入聊天队列"
 	)
 	@handler ChatWebsocketHandler
 	get /ws/chat (ChatWsConnectReq) returns (ChatWsConnectResp)

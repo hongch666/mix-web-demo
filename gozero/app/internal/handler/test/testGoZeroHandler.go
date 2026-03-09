@@ -12,11 +12,6 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary GoZero自己的测试
-// @Description 输出欢迎信息
-// @Tags 测试
-// @Success 200 {object} map[string]interface{}
-// @Router /api_gozero/gozero [get]
 // 测试GoZero服务
 func TestGoZeroHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

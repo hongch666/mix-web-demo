@@ -16,17 +16,7 @@ require (
 	gorm.io/gorm v1.31.1
 )
 
-require (
-	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/go-openapi/jsonpointer v0.19.6 // indirect
-	github.com/go-openapi/jsonreference v0.20.2 // indirect
-	github.com/go-openapi/spec v0.20.4 // indirect
-	github.com/go-openapi/swag v0.22.4 // indirect
-	github.com/swaggo/files v1.0.1
-	golang.org/x/mod v0.26.0 // indirect
-	golang.org/x/tools v0.35.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
+require github.com/swaggo/files v1.0.1
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -91,7 +81,6 @@ require (
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/swaggo/swag v1.16.6
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.2.0 // indirect

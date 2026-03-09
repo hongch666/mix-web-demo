@@ -1,15 +1,11 @@
-// @title GoZero部分的Swagger文档
-// @description 这是项目的GoZero部分的Swagger文档
-// @version 1.0.0
-// @host localhost:8082
-// @basePath /
 syntax = "v2"
 
 info (
-	title:   "GoZero 微服务"
-	desc:    "GoZero 微服务 API 定义"
+	title:   "GoZero部分的Swagger文档"
+	desc:    "这是项目的GoZero部分的Swagger文档"
 	author:  "hongch666"
-	version: "v1"
+	version: "1.0.0"
+	schemes: http
 )
 
 @server (

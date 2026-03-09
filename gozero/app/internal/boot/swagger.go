@@ -1,11 +1,13 @@
 package boot
 
 import (
-	"app/common/utils"
 	"net/http"
+	"os"
+	"path/filepath"
+
+	"app/common/utils"
 
 	swaggerFiles "github.com/swaggo/files"
-	"github.com/swaggo/swag"
 	"github.com/zeromicro/go-zero/rest"
 )
 
@@ -31,19 +33,21 @@ func registerSwaggerRoute(server *rest.Server) {
 		},
 	})
 
-	// /swagger/doc.json 直接从内存中返回 Swagger JSON 数据
+	// /swagger/doc.json 从文件系统返回 Swagger JSON 数据
 	server.AddRoute(rest.Route{
 		Method: http.MethodGet,
 		Path:   "/swagger/doc.json",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			doc, err := swag.ReadDoc()
+			// 尝试读取goctl生成的main.json文件
+			swaggerPath := filepath.Join("docs", "main.json")
+			doc, err := os.ReadFile(swaggerPath)
 			if err != nil {
 				http.Error(w, utils.GET_SWAGGER_FAIL, http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(doc))
+			_, _ = w.Write(doc)
 		},
 	})
 

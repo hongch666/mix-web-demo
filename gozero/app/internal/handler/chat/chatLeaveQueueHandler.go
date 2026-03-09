@@ -15,14 +15,6 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 手动离开聊天队列
-// @Description 用户手动离开聊天队列
-// @Tags 聊天
-// @Accept json
-// @Produce json
-// @Param   		request body types.ChatLeaveQueueReq true "用户ID"
-// @Success 		200 {object} types.ChatLeaveQueueResp "离开结果"
-// @Router /user-chat/leave [post]
 // 离开队列
 func ChatLeaveQueueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

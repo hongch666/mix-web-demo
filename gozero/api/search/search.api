@@ -7,13 +7,15 @@ syntax = "v2"
 )
 service App {
 	@doc (
-		summary: "搜索文章"
+		summary:     "搜索文章"
+		description: "根据关键词、用户ID、用户名、发布时间范围等条件搜索文章（支持分页）"
 	)
 	@handler SearchArticlesHandler
 	get / (SearchArticlesReq) returns (SearchArticlesResp)
 
 	@doc (
-		summary: "获取搜索历史"
+		summary:     "获取用户搜索历史"
+		description: "获取指定用户最近10条搜索关键词列表"
 	)
 	@handler GetSearchHistoryHandler
 	get /history/:userId (GetSearchHistoryReq) returns (GetSearchHistoryResp)

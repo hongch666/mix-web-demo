@@ -15,14 +15,6 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-// @Summary 获取用户的所有未读消息数
-// @Description 获取指定用户与所有其他用户的未读消息数统计
-// @Tags 聊天
-// @Accept json
-// @Produce json
-// @Param   		request body types.ChatGetAllUnreadCountsReq true "用户ID"
-// @Success 		200 {object} types.ChatGetAllUnreadCountsResp "未读消息统计"
-// @Router /user-chat/all-unread-counts [post]
 // 获取所有未读消息数
 func ChatGetAllUnreadCountsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {

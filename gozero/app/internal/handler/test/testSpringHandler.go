@@ -12,11 +12,6 @@ import (
 	"app/internal/svc"
 )
 
-// @Summary 调用Spring的测试
-// @Description 输出欢迎信息
-// @Tags 测试
-// @Success 200 {object} map[string]interface{}
-// @Router /api_gozero/spring [get]
 func TestSpringHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		l := test.NewTestSpringLogic(r.Context(), svcCtx)
