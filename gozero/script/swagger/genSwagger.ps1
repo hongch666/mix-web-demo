@@ -36,7 +36,7 @@ if ((Test-Path (Join-Path $docsPath "main.json")) -and (Test-Path (Join-Path $do
     Write-Host "YAML文档位置：./app/docs/main.yaml"
     
     # 使用Python脚本为swagger添加中文标签和版本信息
-    $pythonScript = Join-Path $scriptPath "add-chinese-tags.py"
+    $pythonScript = Join-Path $scriptPath "fix.py"
     if ((Test-Path $pythonScript) -and ($null -ne (Get-Command python3 -ErrorAction SilentlyContinue))) {
         Write-Host "正在添加中文分组和版本信息..."
         $jsonPath = Join-Path $docsPath "main.json"

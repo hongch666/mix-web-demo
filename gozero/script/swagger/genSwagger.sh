@@ -35,7 +35,7 @@ if [ -f "../app/docs/main.json" ] && [ -f "../app/docs/main.yaml" ]; then
     echo "YAML文档位置：./app/docs/main.yaml"
     
     # 使用Python脚本为swagger添加中文标签和版本信息
-    python_script="$(dirname "$0")/add-chinese-tags.py"
+    python_script="$(dirname "$0")/fix.py"
     if [ -f "$python_script" ] && command -v python3 &> /dev/null; then
         echo "正在添加中文分组和版本信息..."
         python3 "$python_script" "../app/docs/main.json" "../app/docs/main.yaml"
