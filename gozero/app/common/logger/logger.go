@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"app/common/utils"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -21,14 +23,14 @@ func NewZeroLogger(logPath string) (*ZeroLogger, error) {
 	if !filepath.IsAbs(logPath) {
 		wd, err := os.Getwd()
 		if err != nil {
-			return nil, fmt.Errorf("获取工作目录失败: %w", err)
+			return nil, fmt.Errorf(utils.LOGGER_GET_WORKDIR_ERROR, err)
 		}
 		logPath = filepath.Join(wd, logPath)
 	}
 
 	// 确保日志目录存在
-	if err := os.MkdirAll(logPath, 0755); err != nil {
-		return nil, fmt.Errorf("创建日志目录失败: %w", err)
+	if err := os.MkdirAll(logPath, 0o755); err != nil {
+		return nil, fmt.Errorf(utils.LOGGER_CREATE_DIR_ERROR, err)
 	}
 
 	logger := &ZeroLogger{
@@ -49,15 +51,15 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 	logEntry := fmt.Sprintf("%s - %s - %s\n", timestamp, level, message)
 
 	// 写入文件
-	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
-		logx.Error(fmt.Sprintf("打开日志文件失败: %v", err))
+		logx.Error(fmt.Sprintf(utils.LOGGER_OPEN_FILE_ERROR, err))
 		return
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString(logEntry); err != nil {
-		logx.Error(fmt.Sprintf("写入日志文件失败: %v", err))
+		logx.Error(fmt.Sprintf(utils.LOGGER_WRITE_FILE_ERROR, err))
 	}
 }
 

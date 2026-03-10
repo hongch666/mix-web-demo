@@ -112,6 +112,18 @@ const (
 	// 写入日志文件失败信息
 	WRITE_LOG_FILE_ERROR = "写入日志文件失败"
 
+	// 获取工作目录失败错误消息 (用于 logger)
+	LOGGER_GET_WORKDIR_ERROR = "获取工作目录失败: %w"
+
+	// 创建日志目录失败错误消息 (用于 logger)
+	LOGGER_CREATE_DIR_ERROR = "创建日志目录失败: %w"
+
+	// 打开日志文件失败错误消息 (用于 logger)
+	LOGGER_OPEN_FILE_ERROR = "打开日志文件失败: %v"
+
+	// 写入日志文件失败错误消息 (用于 logger)
+	LOGGER_WRITE_FILE_ERROR = "写入日志文件失败: %v"
+
 	// 读取配置文件失败信息
 	READ_CONFIG_FILE_ERROR = "读取配置文件失败: %s, %v"
 
