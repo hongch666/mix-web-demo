@@ -16,16 +16,12 @@ from app.crud import (
     get_category_reference_mapper,
     get_comments_mapper,
 )
-from app.services import (
-    DoubaoService,
-    GeminiService,
-    QwenService,
-    get_doubao_service,
-    get_gemini_service,
-    get_qwen_service,
-)
 
 from fastapi import Depends
+
+from ..llm.doubaoService import DoubaoService, get_doubao_service
+from ..llm.geminiService import GeminiService, get_gemini_service
+from ..llm.qwenService import QwenService, get_qwen_service
 
 
 class GenerateService:

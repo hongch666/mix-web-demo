@@ -2,7 +2,10 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import jwt
-from app.core import BusinessException, Constants, load_config
+
+from ..base.constants import Constants
+from ..config.config import load_config
+from ..errors.exceptions import BusinessException
 
 
 class InternalTokenUtil:

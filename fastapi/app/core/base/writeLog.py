@@ -1,7 +1,8 @@
 import os
 from datetime import datetime
 
-from app.core import load_config, logger
+from ..config.config import load_config
+from .logger import logger
 
 
 def write_log(message: str, level: str = "INFO") -> None:

@@ -2,16 +2,15 @@ from datetime import datetime
 from functools import partial
 from typing import Any, Callable, Optional
 
-from app.core import Constants, Logger
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlmodel import Session
 
-from .tasks import (
-    export_article_vectors_to_postgres,
-    export_articles_to_csv_and_hive,
-    update_analyze_caches,
-)
+from app.core import Constants, Logger
+
+from .tasks.analyzeCacheTask import update_analyze_caches
+from .tasks.hiveSyncTask import export_articles_to_csv_and_hive
+from .tasks.vectorSyncTask import export_article_vectors_to_postgres
 
 
 def start_scheduler(
