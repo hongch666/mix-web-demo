@@ -3,8 +3,7 @@ from typing import Any, Optional
 
 import redis
 
-from app.core import Constants, Logger
-from app.core.config.config import load_config
+from app.core import Constants, Logger, load_config
 
 
 class RedisClient:

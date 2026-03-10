@@ -2,8 +2,8 @@ from typing import Any, Dict
 
 from app.core import Constants, success
 from app.decorators import log, requireInternalToken
-from app.services.external import call_remote_service
-from app.services.tasks import (
+from app.services import (
+    call_remote_service,
     export_article_vectors_to_postgres,
     export_articles_to_csv_and_hive,
     initialize_article_content_hash_cache,

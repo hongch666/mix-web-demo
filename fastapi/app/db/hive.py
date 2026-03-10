@@ -1,9 +1,9 @@
 import time
 from typing import Any, List, Optional
 
-from app.core import Constants, Logger
-from app.core.config.config import load_config
 from pyhive import hive
+
+from app.core import Constants, Logger, load_config
 
 
 class HiveConnectionPool:

@@ -1,9 +1,9 @@
 from typing import Any, List, NoReturn
 
-from app.core.config.config import load_config
+from app.core import load_config
 
 try:
-    from app.core.config.nacos import (
+    from app.core import (
         get_service_instance,
         register_instance,
         start_nacos,

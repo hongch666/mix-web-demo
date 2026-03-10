@@ -2,8 +2,7 @@ import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core import Constants
-from app.core.errors.exceptions import BusinessException
+from app.core import BusinessException, Constants
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document

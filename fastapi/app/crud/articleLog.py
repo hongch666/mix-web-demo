@@ -1,8 +1,7 @@
 from functools import lru_cache
 from typing import Any, Dict, List
 
-from app.core import Constants, Logger
-from app.core.errors.exceptions import BusinessException
+from app.core import BusinessException, Constants, Logger
 from app.db import db as mongo_db
 from app.db import get_db
 

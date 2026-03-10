@@ -1,6 +1,6 @@
 import oss2
-from app.core import Constants, Logger
-from app.core.config.config import load_config
+
+from app.core import Constants, Logger, load_config
 
 # 配置阿里云OSS信息
 access_key_id: str = load_config("oss")["access_key_id"]

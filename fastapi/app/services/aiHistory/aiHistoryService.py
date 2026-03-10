@@ -3,16 +3,14 @@ import time
 from functools import lru_cache
 from typing import Any, Dict, Optional
 
-from app.core.errors.exceptions import BusinessException
-from app.core import Constants
-from app.models import AiHistory
-
+from app.core import BusinessException, Constants
 from app.crud import (
     AiHistoryMapper,
     UserMapper,
     get_ai_history_mapper,
     get_user_mapper,
 )
+from app.models import AiHistory
 from fastapi import Depends
 
 
