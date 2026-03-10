@@ -787,3 +787,22 @@ class Constants:
 
     ROLE_USER: str = "user"
     """用户权限名称"""
+
+    # 数据库初始化相关常量
+
+    NACOS_INITIALIZATION_FAILED: str = "nacos 初始化不可用"
+    """Nacos 初始化失败错误消息"""
+
+    PYHIVE_NOT_INSTALLED_ERROR: str = (
+        "pyhive 未安装，请先执行 `uv sync` 或安装 `pyhive`。"
+    )
+    """PyHive 未安装错误消息"""
+
+    OSS2_NOT_INSTALLED_ERROR: str = "oss2 未安装，请先执行 `uv sync` 或安装 `oss2`。"
+    """oss2 未安装错误消息"""
+
+    PIKA_NOT_INSTALLED_ERROR: str = "pika 未安装，请先执行 `uv sync` 或安装 `pika`。"
+    """pika 未安装错误消息"""
+
+    REDIS_NOT_INSTALLED_ERROR: str = "redis 未安装，请先执行 `uv sync` 或安装 `redis`。"
+    """redis 未安装错误消息"""

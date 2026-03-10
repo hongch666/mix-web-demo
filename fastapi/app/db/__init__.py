@@ -1,6 +1,6 @@
 from typing import Any, List, NoReturn
 
-from app.core import load_config
+from app.core import Constants, Logger, load_config
 
 try:
     from app.core import (
@@ -10,9 +10,10 @@ try:
     )
 except Exception as _exc:
     _nacos_error: str = str(_exc)
+    Logger.error(f"导入 Nacos 相关函数时出错: {_nacos_error}")
 
     def _missing_nacos(*args: Any, **kwargs: Any) -> NoReturn:
-        raise RuntimeError(f"nacos 初始化不可用: {_nacos_error}")
+        raise RuntimeError(Constants.NACOS_INITIALIZATION_FAILED)
 
     get_service_instance = _missing_nacos
     register_instance = _missing_nacos
@@ -25,25 +26,25 @@ try:
     from .hive import HiveConnectionPool, get_hive_connection_pool
 except ModuleNotFoundError as _exc:
     _hive_error: str = str(_exc)
+    Logger.error(f"导入 HiveConnectionPool 时出错: {_hive_error}")
 
-    class HiveConnectionPool:  # type: ignore[no-redef]
+    class HiveConnectionPool:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError(
-                "pyhive 未安装，请先执行 `uv sync` 或安装 `pyhive`。"
-            )
+            raise ModuleNotFoundError(Constants.PYHIVE_NOT_INSTALLED_ERROR)
 
     def get_hive_connection_pool(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError("pyhive 未安装，请先执行 `uv sync` 或安装 `pyhive`。")
+        raise ModuleNotFoundError(Constants.PYHIVE_NOT_INSTALLED_ERROR)
 
 
 try:
     from .oss import OSSClient
 except ModuleNotFoundError as _exc:
     _oss_error: str = str(_exc)
+    Logger.error(f"导入 OSSClient 时出错: {_oss_error}")
 
-    class OSSClient:  # type: ignore[no-redef]
+    class OSSClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError("oss2 未安装，请先执行 `uv sync` 或安装 `oss2`。")
+            raise ModuleNotFoundError(Constants.OSS2_NOT_INSTALLED_ERROR)
 
 
 try:
@@ -55,33 +56,33 @@ try:
     )
 except ModuleNotFoundError as _exc:
     _rabbitmq_error: str = str(_exc)
+    Logger.error(f"导入 RabbitMQClient 时出错: {_rabbitmq_error}")
 
-    class RabbitMQClient:  # type: ignore[no-redef]
+    class RabbitMQClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError("pika 未安装，请先执行 `uv sync` 或安装 `pika`。")
+            raise ModuleNotFoundError(Constants.PIKA_NOT_INSTALLED_ERROR)
 
-    _rabbitmq_client = None  # type: ignore[assignment]
+    _rabbitmq_client = None
 
-    def get_rabbitmq_client(*args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[no-redef]
-        raise ModuleNotFoundError("pika 未安装，请先执行 `uv sync` 或安装 `pika`。")
+    def get_rabbitmq_client(*args: Any, **kwargs: Any) -> NoReturn:
+        raise ModuleNotFoundError(Constants.PIKA_NOT_INSTALLED_ERROR)
 
-    def send_to_queue(*args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[no-redef]
-        raise ModuleNotFoundError("pika 未安装，请先执行 `uv sync` 或安装 `pika`。")
+    def send_to_queue(*args: Any, **kwargs: Any) -> NoReturn:
+        raise ModuleNotFoundError(Constants.PIKA_NOT_INSTALLED_ERROR)
 
 
 try:
     from .redis import RedisClient, get_redis_client
 except ModuleNotFoundError as _exc:
     _redis_error: str = str(_exc)
+    Logger.error(f"导入 RedisClient 时出错: {_redis_error}")
 
     class RedisClient:  # type: ignore[no-redef]
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError(
-                "redis 未安装，请先执行 `uv sync` 或安装 `redis`。"
-            )
+            raise ModuleNotFoundError(Constants.REDIS_NOT_INSTALLED_ERROR)
 
-    def get_redis_client(*args: Any, **kwargs: Any) -> NoReturn:  # type: ignore[no-redef]
-        raise ModuleNotFoundError("redis 未安装，请先执行 `uv sync` 或安装 `redis`。")
+    def get_redis_client(*args: Any, **kwargs: Any) -> NoReturn:
+        raise ModuleNotFoundError(Constants.REDIS_NOT_INSTALLED_ERROR)
 
 
 __all__: List[str] = [
