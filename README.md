@@ -139,7 +139,7 @@
 - MySQL：关系型数据库，系统核心数据库
 - PostgreSQL：RAG 向量数据库
 - MongoDB：非关系型数据库，系统日志数据库
-- Elasticsearch：搜索引擎，系统搜索优化
+- ElasticSearch：搜索引擎，系统搜索优化
 - Redis：缓存服务和状态管理
 - RabbitMQ：异步消息队列
 - Hadoop+Hive：大数据存储与分析
@@ -168,6 +168,7 @@
 - MySQL 8.0+
 - PostgreSQL + pgvector 15.4+
 - MongoDB 5.0+
+- ElasticSearch 7.12.1+
 - Redis 6.0+
 - RabbitMQ 3.8+
 - Hadoop + Hive 3.3+(可选)
@@ -350,7 +351,7 @@ default = true
 脚本执行完成后，还需要：
 
 1. **配置各服务的 .env 文件**（见下方"配置文件说明"章节）
-2. **启动基础服务**（MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos）
+2. **启动基础服务**（MySQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos）
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
 ## Docker 容器环境管理
@@ -389,30 +390,9 @@ default = true
 | **PostgreSQL**    | 5432  | postgres | 123456 | 向量数据库(含 pgvector)  |
 | **Redis**         | 6379  | -        | -      | 缓存服务                 |
 | **MongoDB**       | 27017 | root     | 123456 | 非关系型数据库           |
-| **Elasticsearch** | 9200  | -        | -      | 搜索引擎(7.12.1)         |
+| **ElasticSearch** | 9200  | -        | -      | 搜索引擎(7.12.1)         |
 | **Nacos**         | 8848  | -        | -      | 服务发现与配置中心       |
 | **RabbitMQ**      | 5672  | test     | 123456 | 消息队列(管理界面 15672) |
-
-### 脚本功能特性
-
-1. **智能检测**
-   - 自动检测 Docker 是否安装和运行
-   - 检测端口是否被占用，避免重复创建容器
-   - 自动创建项目专用网络 `hcsy`
-
-2. **前置准备**
-   - 自动创建数据持久化目录
-   - 支持 Elasticsearch IK 分词器安装（可选）
-   - 自动生成 Nacos 配置文件
-
-3. **容器管理**
-   - 支持查看容器状态
-   - 支持查看容器日志
-   - 支持停止和删除容器
-
-4. **一键部署**
-   - 完整的部署流程自动化
-   - 清晰的步骤提示和日志输出
 
 ### 快速开始示例
 
@@ -437,7 +417,7 @@ default = true
 
 - **首次创建**: 首次执行 `docker up` 时会创建 Docker 网络，可能需要一些时间
 - **数据持久化**: 所有容器的数据都会持久化到宿主机目录
-- **Elasticsearch**: 首次创建后会提示是否安装 IK 分词器（可选）
+- **ElasticSearch**: 首次创建后会提示是否安装 IK 分词器（可选）
 - **Nacos**: 自动生成 `nacos/custom.env` 配置文件，可根据需要修改
 - **权限问题**: 如果遇到权限错误，可能需要使用 `sudo` 或将用户加入 docker 组
 - 如果有额外创建的组件，按照个人的配置改动配置文件
@@ -490,17 +470,19 @@ go run main.go # 运行项目
 ```bash
 # 运行NestJS服务
 cd nestjs
-npm run start # npm development 模式运行
-npm run start:dev # npm watch 模式运行
-npm run start:prod # npm production 模式运行
+npm run node:start # npm development 模式运行
+npm run node:start:dev # npm watch 模式运行
+npm run node:start:debug # npm debug 模式运行
+npm run node:start:prod # npm production 模式运行
 ```
 
 **使用 npm 运行**：
 
 ```bash
 cd nestjs
-npm run start:bun:start # bun 运行
-npm run start:bun:dev # bun watch 模式运行
+npm run bun:start # bun 运行
+npm run bun:dev # bun watch 模式运行
+npm run bun:prod # bun production 模式运行
 ```
 
 ### FastAPI 服务
@@ -769,7 +751,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
 2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
 3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
-4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、Elasticsearch、RabbitMQ、Nacos 等基础服务已运行
+4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos 等基础服务已运行
 5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
 
 ## 生产环境部署
@@ -1108,7 +1090,7 @@ kubectl describe configmap <config-name> -n mix-web-demo
   - 需要安装 `pgvector`插件
 - MongoDB
 - Redis
-- Elasticsearch
+- ElasticSearch
 - RabbitMQ
 - Nacos
 
@@ -1396,7 +1378,7 @@ DB_MYSQL_DBNAME=demo
 DB_MYSQL_CHARSET=utf8mb4
 DB_MYSQL_LOC=Local
 
-# Elasticsearch 配置
+# ElasticSearch 配置
 DB_ES_HOST=127.0.0.1
 DB_ES_PORT=9200
 # DB_ES_USERNAME=
@@ -2028,7 +2010,7 @@ $$
 
 3. 其中：
 
-- $S_{es} = \frac{1}{1 + e^{-x}}$（Sigmoid 归一化的 Elasticsearch 相关性分数，0-1 范围）
+- $S_{es} = \frac{1}{1 + e^{-x}}$（Sigmoid 归一化的 ElasticSearch 相关性分数，0-1 范围）
 - $S_{ai} = \frac{\text{AI评分}}{10.0}$（0-1 范围，AI 评分范围为 0-10）
 - $S_{user} = \frac{\text{用户评分}}{10.0}$（0-1 范围，用户评分范围为 0-10）
 - $S_{views} = \min\left(\frac{\text{阅读量}}{\text{maxViewsNormalized}}, 1.0\right)$（阅读量归一化，0-1 范围）
