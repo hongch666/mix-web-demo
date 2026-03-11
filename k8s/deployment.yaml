@@ -1,42 +1,46 @@
 ---
-# Gin Deployment
+# GoZero Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: gin
+  name: gozero
   namespace: mix-web-demo
   labels:
-    app: gin
+    app: gozero
     version: v1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: gin
+      app: gozero
   template:
     metadata:
       labels:
-        app: gin
+        app: gozero
         version: v1
     spec:
       containers:
-        - name: gin
-          image: mix-gin:latest
+        - name: gozero
+          image: mix-gozero:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8081
+            - containerPort: 8082
               name: http
           env:
             - name: SERVER_IP
               value: "0.0.0.0"
             - name: SERVER_PORT
-              value: "8081"
+              value: "8082"
+            - name: NACOS_IP
+              value: "nacos"
+            - name: NACOS_PORT
+              value: "8848"
           volumeMounts:
             - name: config
-              mountPath: /app/application.yaml
+              mountPath: /app/etc/application.yaml
               subPath: application.yaml
             - name: logs
-              mountPath: /app/logs/gin
+              mountPath: /app/logs/gozero
           resources:
             requests:
               memory: "256Mi"
@@ -47,40 +51,40 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 8081
+              port: 8082
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
-              port: 8081
+              port: 8082
             initialDelaySeconds: 5
             periodSeconds: 5
       volumes:
         - name: config
           configMap:
-            name: gin-config
+            name: gozero-config
         - name: logs
           emptyDir: {}
 
 ---
-# Gin Service
+# GoZero Service
 apiVersion: v1
 kind: Service
 metadata:
-  name: gin
+  name: gozero
   namespace: mix-web-demo
   labels:
-    app: gin
+    app: gozero
 spec:
   type: ClusterIP
   ports:
-    - port: 8081
-      targetPort: 8081
+    - port: 8082
+      targetPort: 8082
       protocol: TCP
       name: http
   selector:
-    app: gin
+    app: gozero
 
 ---
 # NestJS Deployment
@@ -113,6 +117,10 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
+            - name: SERVER_PORT
+              value: "8083"
+            - name: NACOS_SERVER
+              value: "nacos"
           volumeMounts:
             - name: config
               mountPath: /app/application.yaml
@@ -163,6 +171,10 @@ spec:
       name: http
   selector:
     app: nestjs
+      protocol: TCP
+      name: http
+  selector:
+    app: nestjs
 
 ---
 # Spring Deployment
@@ -195,6 +207,8 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+            - name: NACOS_SERVER
+              value: "nacos:8848"
           volumeMounts:
             - name: config
               mountPath: /app/application.yaml
@@ -277,6 +291,8 @@ spec:
           env:
             - name: JAVA_OPTS
               value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+            - name: NACOS_SERVER
+              value: "nacos:8848"
           volumeMounts:
             - name: config
               mountPath: /app/application.yaml
@@ -363,6 +379,8 @@ spec:
               value: "8084"
             - name: PYTHONUNBUFFERED
               value: "1"
+            - name: NACOS_SERVER
+              value: "nacos:8848"
           volumeMounts:
             - name: config
               mountPath: /app/application.yaml

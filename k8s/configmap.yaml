@@ -1,20 +1,25 @@
 ---
-# ConfigMap - Gin 应用配置
+# ConfigMap - GoZero 应用配置
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gin-config
+  name: gozero-config
   namespace: mix-web-demo
 data:
   application.yaml: |
     server:
       ip: 0.0.0.0
-      port: 8081
+      port: 8082
+      name: gozero
     nacos:
-      server_addresses: "nacos:8848"
+      ipAddr: "nacos"
+      port: 8848
       namespace: "public"
-      service_name: "gin"
+      service_name: "gozero"
       group_name: "DEFAULT_GROUP"
+      cluster_name: "DEFAULT"
+      cache_dir: /app/cache/nacos
+      log_dir: /app/logs/nacos
     database:
       mysql:
         host: "mysql"
@@ -26,6 +31,15 @@ data:
         host: "mongodb"
         port: 27017
         database: "demo"
+      es:
+        host: "elasticsearch"
+        port: 9200
+    mq:
+      host: "rabbitmq"
+      port: 5672
+      username: "hcsy"
+      password: "123456"
+      vhost: "test"
 
 ---
 # ConfigMap - NestJS 应用配置
@@ -38,12 +52,12 @@ data:
   application.yaml: |
     server:
       ip: 0.0.0.0
-      port: 8082
+      port: 8083
     nacos:
-      server_addresses: "nacos:8848"
+      server_addr: "nacos:8848"
       namespace: "public"
       service_name: "nestjs"
-      group_name: "DEFAULT_GROUP"
+      cluster_name: "DEFAULT"
     database:
       mysql:
         host: "mysql"
@@ -66,7 +80,7 @@ metadata:
 data:
   application.yaml: |
     server:
-      port: 8083
+      port: 8081
     spring:
       application:
         name: spring
@@ -92,7 +106,7 @@ metadata:
 data:
   application.yaml: |
     server:
-      port: 9000
+      port: 8080
     spring:
       application:
         name: gateway
@@ -119,6 +133,12 @@ data:
       namespace: "public"
       service_name: "fastapi"
       group_name: "DEFAULT_GROUP"
+    rabbitmq:
+      host: "rabbitmq"
+      port: 5672
+      username: "hcsy"
+      password: "123456"
+      vhost: "test"
     database:
       mysql:
         host: "mysql"

@@ -16,25 +16,32 @@ spec:
     - host: "localhost"
       http:
         paths:
-          - path: /gin
+          - path: /
             pathType: Prefix
             backend:
               service:
-                name: gin
+                name: gateway
                 port:
-                  number: 8081
-          - path: /nestjs
-            pathType: Prefix
-            backend:
-              service:
-                name: nestjs
-                port:
-                  number: 8082
+                  number: 8080
           - path: /spring
             pathType: Prefix
             backend:
               service:
                 name: spring
+                port:
+                  number: 8081
+          - path: /gozero
+            pathType: Prefix
+            backend:
+              service:
+                name: gozero
+                port:
+                  number: 8082
+          - path: /nestjs
+            pathType: Prefix
+            backend:
+              service:
+                name: nestjs
                 port:
                   number: 8083
           - path: /fastapi
@@ -44,10 +51,3 @@ spec:
                 name: fastapi
                 port:
                   number: 8084
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: gateway
-                port:
-                  number: 9000
