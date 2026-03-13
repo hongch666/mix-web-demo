@@ -12,8 +12,8 @@ const (
 	DefaultConfigFile = "etc/application.yaml"
 )
 
-// ParseFlags 解析命令行标志
-func ParseFlags() string {
+// GetConfigFilePath 获取配置文件路径（支持通过 -f 参数指定）
+func GetConfigFilePath() string {
 	var configFile string
 	flag.StringVar(&configFile, "f", DefaultConfigFile, utils.CONFIG_DESCRIPTION)
 	flag.Parse()
