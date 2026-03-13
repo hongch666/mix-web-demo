@@ -11,9 +11,6 @@ public interface FastAPIClient {
     @GetMapping("/api_fastapi/fastapi")
     Result testFastAPI();
 
-    @PostMapping("/api_fastapi/task/hive")
-    Result syncHive();
-
     @PostMapping("/api_fastapi/task/vector")
     Result syncVector();
 }

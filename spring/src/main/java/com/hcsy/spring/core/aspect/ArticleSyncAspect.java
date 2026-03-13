@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.List;
 
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -35,25 +34,14 @@ public class ArticleSyncAspect {
     private final SimpleLogger logger;
     private final AsyncSyncService asyncSyncService;
 
-    @Pointcut("@annotation(com.hcsy.spring.common.annotation.ArticleSync)")
-    public void articleSyncMethods() {
-    }
-
-    @Around("articleSyncMethods()")
-    public Object handleArticleSync(ProceedingJoinPoint joinPoint) throws Throwable {
+    @Around("@annotation(articleSync)")
+    public Object handleArticleSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync) throws Throwable {
         return transactionTemplate.execute(status -> {
             try {
                 // 1. 执行业务方法（写数据库）
                 Object result = joinPoint.proceed();
 
-                // 2. 获取注解信息和方法元数据
-                MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-                ArticleSync articleSync = methodSignature.getMethod().getAnnotation(ArticleSync.class);
-
-                if (articleSync == null) {
-                    return result;
-                }
-
+                // 2. 获取注解信息（articleSync 已通过参数注入）
                 String action = articleSync.action();
                 String description = articleSync.description();
                 Object[] paramValues = joinPoint.getArgs();
@@ -77,21 +65,19 @@ public class ArticleSyncAspect {
                 final Long currentUserId = userId;
                 final String currentUsername = UserContext.getUsername();
 
-                // 7. 注册事务提交后的回调，异步同步 ES、Hive 和 Vector
+                // 7. 注册事务提交后的回调，异步同步 ES 和 Vector
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
                         logger.info(Constants.TRIGGER_SYNC);
                         // 根据操作类型选择不同的同步策略
                         if ("like".equals(action) || "unlike".equals(action) || "collect".equals(action)
-                                || "uncollect".equals(action) || "focus".equals(action) || "unfocus".equals(action)) {
-                            // 点赞、取消点赞、收藏、取消收藏、关注、取消关注操作不同步
+                                || "uncollect".equals(action) || "focus".equals(action) || "unfocus".equals(action)
+                                || "view".equals(action)) {
+                            // 点赞、取消点赞、收藏、取消收藏、关注、取消关注、浏览操作不同步
                             logger.info(Constants.UNSYNC_TYPE);
-                        } else if ("view".equals(action)) {
-                            // 浏览量操作只同步 Hive
-                            asyncSyncService.syncHiveOnlyAsync(currentUserId, currentUsername);
                         } else {
-                            // 其他操作同步 ES、Hive 和 Vector
+                            // 其他操作同步 ES 和 Vector
                             asyncSyncService.syncAllAsync(currentUserId, currentUsername);
                         }
                     }

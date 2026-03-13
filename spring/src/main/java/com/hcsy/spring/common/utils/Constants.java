@@ -227,12 +227,7 @@ public class Constants {
     /**
      * 触发同步信息
      */
-    public static String SYNC = "触发同步 ES、Hive 和 Vector...";
-
-    /**
-     * 触发同步Hive信息
-     */
-    public static String SYNC_HIVE = "触发 Hive 同步";
+    public static String SYNC = "触发同步 ES 和 Vector...";
 
     /**
      * ES同步成功
@@ -243,16 +238,6 @@ public class Constants {
      * ES同步失败
      */
     public static String SYNC_ES_FAIL = "ES 同步失败: ";
-
-    /**
-     * Hive同步成功
-     */
-    public static String SYNC_HIVE_SUCCESS = "Hive 同步完成";
-
-    /**
-     * Hive同步失败
-     */
-    public static String SYNC_HIVE_FAIL = "Hive 同步失败: ";
 
     /**
      * Vector同步成功

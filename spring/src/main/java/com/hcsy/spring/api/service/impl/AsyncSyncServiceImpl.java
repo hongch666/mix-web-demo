@@ -51,14 +51,6 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 logger.error(Constants.SYNC_ES_FAIL + e.getMessage(), e);
             }
 
-            // 同步 Hive
-            try {
-                fastAPIClient.syncHive();
-                logger.info(Constants.SYNC_HIVE_SUCCESS);
-            } catch (Exception e) {
-                logger.error(Constants.SYNC_HIVE_FAIL + e.getMessage(), e);
-            }
-
             // 同步 Vector
             try {
                 fastAPIClient.syncVector();
@@ -77,40 +69,4 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         }
     }
 
-    /**
-     * 异步同步 Hive 只
-     * 此方法会在后台线程池中执行，不阻塞主流程
-     * 仅同步 Hive，不同步 ES 和 Vector（用于浏览量更新等轻量级操作）
-     * 
-     * @param userId   触发同步的用户ID（用于日志记录）
-     * @param username 触发同步的用户名（用于日志记录）
-     */
-    @Override
-    @Async("asyncExecutor")
-    public void syncHiveOnlyAsync(Long userId, String username) {
-        try {
-            logger.info(
-                (username != null ? username : "unknown") + 
-                ":"+ 
-                (userId != null ? userId : "null") + 
-                Constants.SYNC_HIVE
-            );
-
-            // 仅同步 Hive
-            try {
-                fastAPIClient.syncHive();
-                logger.info(Constants.SYNC_HIVE_SUCCESS);
-            } catch (Exception e) {
-                logger.error(Constants.SYNC_HIVE_FAIL + e.getMessage(), e);
-            }
-
-            logger.info(Constants.SYNC_ALL_SUCCESS);
-        } catch (Exception e) {
-            logger.error(Constants.SYNC_ALL_FAIL + e.getMessage(), e);
-        } finally {
-            // 清理 ThreadLocal，避免线程池复用时污染
-            UserContext.clear();
-            logger.debug(Constants.CLEAN_CONTEXT);
-        }
-    }
 }
