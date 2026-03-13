@@ -42,6 +42,12 @@ export class ApiLogConsumerService implements OnModuleInit {
           }
 
           // 转换为 DTO 格式
+          let responseTime = apiLogData.response_time;
+          if (responseTime < 0) {
+            logger.warning(`接口响应时间为${responseTime}，已将其设置为0: `);
+            responseTime = 0;
+          }
+
           const dto: CreateApiLogDto = {
             userId: apiLogData.user_id,
             username: apiLogData.username,
@@ -51,7 +57,7 @@ export class ApiLogConsumerService implements OnModuleInit {
             queryParams: apiLogData.query_params,
             pathParams: apiLogData.path_params,
             requestBody: apiLogData.request_body,
-            responseTime: apiLogData.response_time,
+            responseTime: responseTime,
           };
 
           // 保存到数据库
