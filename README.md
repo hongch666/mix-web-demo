@@ -33,7 +33,7 @@
 7. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 8. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
 9. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
-10. 基于 FastAPI 和 Hadoop 技术栈实现系统数据的相关分析
+10. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
 11. 基于 FastAPI 和 SQLModel 进行文章相关数据的获取和同步
 12. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
 
@@ -142,7 +142,7 @@
 - ElasticSearch：搜索引擎，系统搜索优化
 - Redis：缓存服务和状态管理
 - RabbitMQ：异步消息队列
-- Hadoop+Hive：大数据存储与分析
+- ClickHouse：大数据存储与分析
 - WebSocket：用户实时聊天
 - SSE：实时通知未读消息
 - Langchain：大模型调用和 RAG 框架
@@ -171,7 +171,7 @@
 - ElasticSearch 7.12.1+
 - Redis 6.0+
 - RabbitMQ 3.8+
-- Hadoop + Hive 3.3+(可选)
+- ClickHouse 21.8+(可选)
 
 ## 环境设置
 
@@ -1271,9 +1271,41 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 - 无需创建，系统同步数据时会自动创建
 
-### Hadoop+Hive 创建
+### ClickHouse 创建
 
-- 无需创建，系统同步数据时会自动创建
+- 需要创建创建MySQL映射库，并创建对应文章表本地视图
+
+```sql
+-- 1. 创建映射库 (填入你的实际 MySQL 密码)
+CREATE DATABASE demo ENGINE = MySQL (
+    '127.0.0.1:3306',
+    'demo',
+    'root',
+    '123456'
+);
+
+-- 2. 创建本地物理表 (对应你图片中的字段)
+CREATE TABLE articles (
+    id Int64,
+    title String,
+    content String,
+    user_id Int64,
+    sub_category_id Int64,
+    tags String,
+    status Int8,
+    views Int32,
+    create_at DateTime,
+    update_at DateTime
+) ENGINE = MergeTree ()
+ORDER BY id;
+-- 以 ID 排序，方便快速查找
+
+-- 3. 创建物化视图，定期从 MySQL 同步数据到 ClickHouse
+CREATE MATERIALIZED VIEW articles_sync_view REFRESH EVERY 10 SECOND -- 10 秒
+TO default.articles AS
+SELECT *
+FROM demo.articles;
+```
 
 ## 环境变量配置文件
 
@@ -1538,21 +1570,20 @@ DB_MONGODB_PORT=27017
 # DB_MONGODB_PASSWORD=
 DB_MONGODB_DATABASE=demo
 
-# Hive 配置
-DB_HIVE_HOST=127.0.0.1
-DB_HIVE_PORT=10000
-# DB_HIVE_USERNAME=hive_user
-# DB_HIVE_PASSWORD=hive_password
-DB_HIVE_DATABASE=default
-DB_HIVE_TABLE=articles
-DB_HIVE_CONTAINER=hive-server
+# ClickHouse 配置
+DB_CLICKHOUSE_HOST=127.0.0.1
+DB_CLICKHOUSE_PORT=9002
+DB_CLICKHOUSE_USERNAME=hcsy
+DB_CLICKHOUSE_PASSWORD=123456
+DB_CLICKHOUSE_DATABASE=default
+DB_CLICKHOUSE_TABLE=articles
 
 # Redis 配置
 DB_REDIS_HOST=127.0.0.1
 DB_REDIS_PORT=6379
 # DB_REDIS_USERNAME=default
 # DB_REDIS_PASSWORD=
-DB_REDIS_DB=6
+DB_REDIS_DB=0
 DB_REDIS_DECODE_RESPONSES=True
 DB_REDIS_MAX_CONNECTIONS=10
 
@@ -1689,7 +1720,6 @@ JWT_EXPIRATION=86400000
    ```
 
 4. 生成的 Swagger 文件位于 `gozero/app/docs/` 目录
-
 5. 目前 Swagger 文档的描述、作者、版本信息和中文分组等相关 Swagger 内容存在问题，使用 `/script/swager/fix.py` 脚本进行修复，修复后会覆盖原来的 Swagger 文件
 
 ### NestJS
@@ -1741,8 +1771,8 @@ JWT_EXPIRATION=86400000
 ### 项目文件夹结构说明
 
 1. Spring 项目将三层架构代码放置在 `/api`文件夹下，通用模块放置在 `/common`文件夹下，注解和配置相关放置在 `/core`文件夹下，基础设施相关放置在 `/infra`文件夹下，和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`
-2. GoZero 项目将`.api`设计文件放置在 `/api`文件夹下，脚本放置在`/scripts`文件夹下，生成的代码放置在 `/app`文件夹下，`/app` 下采用GoZero的设计方式，`/model`下放置数据库实体和操作，`/common`下放置通用代码模块，`/internal`下放置业务相关的代码模块，`/etc`下放配置文件，`/internal`文件夹下按照`/handler`、`/logic`等GoZero的设计方式进行划分
-3. NestJS 项目的通用工具放置在`/common`下，module 相关的工具模块放置在 `/modules`下，接口相关的模块放置在 `/api`下，和系统相关的模块放置在 `/framework`下，如 `filters`、`guards`、`interceptors`等
+2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，脚本放置在 `/scripts`文件夹下，生成的代码放置在 `/app`文件夹下，`/app` 下采用GoZero的设计方式，`/model`下放置数据库实体和操作，`/common`下放置通用代码模块，`/internal`下放置业务相关的代码模块，`/etc`下放配置文件，`/internal`文件夹下按照 `/handler`、`/logic`等GoZero的设计方式进行划分
+3. NestJS 项目的通用工具放置在 `/common`下，module 相关的工具模块放置在 `/modules`下，接口相关的模块放置在 `/api`下，和系统相关的模块放置在 `/framework`下，如 `filters`、`guards`、`interceptors`等
 4. FastAPI 项目的核心代码放置在 `/app`下，`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`core`下放置核心功能模块，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
 5. 其他相关的文件夹命名尽可能沿用当前项目的设计
 
@@ -1958,17 +1988,6 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 ### 用户聊天相关说明
 
 1. GoZero 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数
-
-### Hadoop 使用说明
-
-1. 如果没有使用 Hadoop + Hive 作为大数据分析工具，系统默认使用 PySpark 分析同步时产生的 CSV 文章数据，PySpark 失败默认降级使用数据库 DB 聚合查询
-
-### PySpark 使用说明
-
-1. PySpark 使用时，系统需要安装 Spark 环境，并且配置 `SPARK_HOME`环境变量，确保 `pyspark`命令可用
-2. 当前系统使用 PySpark 进行大数据分析时，如果 Spark 环境不可用或者分析失败，则会自动降级使用 Pandas 进行数据分析
-3. Pandas 分析时，系统会将 CSV 文件加载到内存中进行处理，适用于小规模数据集
-4. 如果 Pandas 也失败，则会降级使用数据库 DB 聚合查询
 
 ### AI 用户说明
 
