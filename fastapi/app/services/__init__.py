@@ -11,7 +11,6 @@ from .llm.geminiService import GeminiService, get_gemini_service
 from .llm.qwenService import QwenService, get_qwen_service
 from .scheduler import start_scheduler
 from .tasks.analyzeCacheTask import update_analyze_caches
-from .tasks.hiveSyncTask import export_articles_to_csv_and_hive
 from .tasks.vectorSyncTask import (
     export_article_vectors_to_postgres,
     initialize_article_content_hash_cache,
@@ -42,7 +41,6 @@ __all__: List[str] = [
     "get_agent_prompt",
     "initialize_ai_tools",
     "update_analyze_caches",
-    "export_articles_to_csv_and_hive",
     "export_article_vectors_to_postgres",
     "initialize_article_content_hash_cache",
     "start_scheduler",

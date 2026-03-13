@@ -1,18 +1,15 @@
 from typing import Any
 
-from app.db import get_db
-from app.decorators import log
 from app.core import Constants, success
-from app.schemas import GenerateDTO
-from sqlmodel import Session
-from starlette.concurrency import run_in_threadpool
-
 from app.crud import (
     ArticleMapper,
     CommentsMapper,
     get_article_mapper,
     get_comments_mapper,
 )
+from app.db import get_db
+from app.decorators import log
+from app.schemas import GenerateDTO
 from app.services import (
     DoubaoService,
     GeminiService,
@@ -23,6 +20,9 @@ from app.services import (
     get_generate_service,
     get_qwen_service,
 )
+from sqlmodel import Session
+from starlette.concurrency import run_in_threadpool
+
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 
 router: APIRouter = APIRouter(
@@ -34,7 +34,7 @@ router: APIRouter = APIRouter(
 @router.post("/tags", summary="生成tags", description="根据输入文本生成tags数组")
 @log("生成tags")
 async def generate_tags(
-    _: Request,
+    request: Request,
     data: GenerateDTO,
     generateService: GenerateService = Depends(get_generate_service),
 ) -> Any:
@@ -54,7 +54,7 @@ async def generate_tags(
 )
 @log("文章创建AI评论")
 async def create_article_ai_comment(
-    _: Request,
+    request: Request,
     article_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
@@ -88,7 +88,7 @@ async def create_article_ai_comment(
 )
 @log("文章创建基于权威参考文本的AI评论")
 async def create_article_ai_comment_with_reference(
-    _: Request,
+    request: Request,
     article_id: int,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),

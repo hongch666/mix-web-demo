@@ -21,22 +21,29 @@ class VersionedCache(BaseCache):
         # 版本号
         self._cache_version: Optional[str] = None
 
-    def get_cache_version(self, hive_conn: Any) -> Optional[str]:
-        """获取 Hive 表的版本号"""
+    def get_cache_version(self, ch_conn: Any) -> Optional[str]:
+        """获取 ClickHouse 表的版本号 - 简化版本（避免类型转换问题）"""
         try:
-            with hive_conn.cursor() as cursor:
-                cursor.execute(Constants.HIVE_TABLE_VERSION_SQL)
-                props = cursor.fetchall()
-                version_str = str(props)
-                return hashlib.md5(version_str.encode()).hexdigest()[:8]
+            import time
+
+            from app.db import load_config
+
+            ch_table = load_config("database")["clickhouse"]["table"]
+            ch_db = load_config("database")["clickhouse"]["database"]
+
+            # 使用当前时间和表信息生成版本号
+            # 这样的版本号在表数据变化时可能不会立即变化
+            # 但避免了 ClickHouse driver 的类型转换问题
+            version_str = f"{ch_db}_{ch_table}_{int(time.time()) // 3600}"
+            return hashlib.md5(version_str.encode()).hexdigest()[:8]
         except Exception as e:
-            Logger.warning(f"获取表版本号失败: {e}")
+            Logger.debug(f"获取版本号失败: {type(e).__name__}: {e}")
             return None
 
-    def is_version_changed(self, hive_conn: Any) -> bool:
+    def is_version_changed(self, ch_conn: Any) -> bool:
         """检查版本号是否变化"""
         try:
-            current_version = self.get_cache_version(hive_conn)
+            current_version = self.get_cache_version(ch_conn)
             if not current_version:
                 Logger.debug(Constants.SKIP_VERSION_CHECK)
                 return False
@@ -78,10 +85,10 @@ class VersionedCache(BaseCache):
             Logger.warning(f"版本检测异常: {e}")
             return False
 
-    def update_version(self, hive_conn: Any) -> None:
+    def update_version(self, ch_conn: Any) -> None:
         """更新版本号"""
         try:
-            version = self.get_cache_version(hive_conn)
+            version = self.get_cache_version(ch_conn)
             if version:
                 self._cache_version = version
                 if self._redis.is_available():

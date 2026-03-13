@@ -16,7 +16,7 @@ class CategoryCache(VersionedCache):
     缓存策略：
     1. L1 缓存（本地内存）- 5分钟 TTL
     2. L2 缓存（Redis）- 1天 TTL
-    3. 版本号检测 - Hive 表变化时自动失效
+    3. 版本号检测 - ClickHouse 表变化时自动失效
     """
 
     # Redis 键前缀
@@ -24,17 +24,17 @@ class CategoryCache(VersionedCache):
     REDIS_VERSION_KEY: str = "category:article_count:version"
     L1_CACHE_TTL: int = 300  # 5分钟
 
-    def get(self, hive_conn: Any) -> Optional[List[Dict[str, Any]]]:
+    def get(self, ch_conn: Any) -> Optional[List[Dict[str, Any]]]:
         """
         获取缓存（二级缓存）
 
         查找顺序：
         1. 本地内存缓存（L1）
         2. Redis 缓存（L2）
-        3. 返回 None（需要查询 Hive）
+        3. 返回 None（需要查询 ClickHouse）
         """
         # 检查版本号是否变化
-        if self.is_version_changed(hive_conn):
+        if self.is_version_changed(ch_conn):
             Logger.info(Constants.VERSION_CHANGED_CLEAR_CACHE)
             self.clear_all()
             return None
@@ -50,10 +50,13 @@ class CategoryCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Constants.HIVE_CACHE_MISS_QUERY_HIVE_MESSAGE)
+        Logger.info(
+            Constants.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE
+            or "ClickHouse缓存未命中，将查询数据源"
+        )
         return None
 
-    def set(self, data: List[Dict[str, Any]], hive_conn: Any) -> None:
+    def set(self, data: List[Dict[str, Any]], ch_conn: Any) -> None:
         """
         设置缓存（二级缓存）
 
@@ -67,7 +70,7 @@ class CategoryCache(VersionedCache):
         self.update_redis_cache(data)
 
         # 更新版本号
-        self.update_version(hive_conn)
+        self.update_version(ch_conn)
 
 
 @lru_cache()

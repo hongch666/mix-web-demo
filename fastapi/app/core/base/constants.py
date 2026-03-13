@@ -40,11 +40,11 @@ class Constants:
     TOP10_CACHE_MISS: str = "get_top10_articles_service: [缓存未命中] 开始查询数据源"
     """TOP10文章缓存未命中消息"""
 
-    TOP10_HIVE_SOURCE: str = "get_top10_articles_service: 使用 Hive 数据源"
-    """TOP10文章使用Hive数据源消息"""
+    TOP10_CLICKHOUSE_QUERY: str = "从ClickHouse查询Top10文章数据"
+    """从ClickHouse查询Top10文章数据消息"""
 
-    TOP10_SPARK_SOURCE: str = "get_top10_articles_service: 使用 Spark 数据源"
-    """TOP10文章使用Spark数据源消息"""
+    TOP10_CLICKHOUSE_GET: str = "从ClickHouse获取Top10文章"
+    """从ClickHouse获取Top10文章消息"""
 
     TOP10_DB_SOURCE: str = "get_top10_articles_service: 使用 DB 数据源"
     """TOP10文章使用DB数据源消息"""
@@ -84,15 +84,11 @@ class Constants:
     )
     """分类文章统计缓存未命中消息"""
 
-    CATEGORY_STATISTICS_HIVE_SOURCE: str = (
-        "get_category_article_count_service: 使用 Hive 数据源"
-    )
-    """分类文章统计使用Hive数据源消息"""
+    CATEGORY_STATISTICS_CLICKHOUSE_QUERY: str = "从ClickHouse查询分类文章统计数据"
+    """从ClickHouse查询分类文章统计数据消息"""
 
-    CATEGORY_STATISTICS_SPARK_SOURCE: str = (
-        "get_category_article_count_service: 使用 Spark 数据源"
-    )
-    """分类文章统计使用Spark数据源消息"""
+    CATEGORY_STATISTICS_CLICKHOUSE_GET: str = "从ClickHouse获取分类文章统计"
+    """从ClickHouse获取分类文章统计消息"""
 
     CATEGORY_STATISTICS_DB_SOURCE: str = (
         "get_category_article_count_service: 使用 DB 数据源"
@@ -104,15 +100,11 @@ class Constants:
     )
     """月度文章统计缓存未命中消息"""
 
-    MONTHLY_STATISTICS_HIVE_SOURCE: str = (
-        "get_monthly_publish_count_service: 使用 Hive 数据源"
-    )
-    """月度文章统计使用Hive数据源消息"""
+    MONTHLY_STATISTICS_CLICKHOUSE_QUERY: str = "从ClickHouse查询月度发布统计数据"
+    """从ClickHouse查询月度发布统计数据消息"""
 
-    MONTHLY_STATISTICS_SPARK_SOURCE: str = (
-        "get_monthly_publish_count_service: 使用 Spark 数据源"
-    )
-    """月度文章统计使用Spark数据源消息"""
+    MONTHLY_STATISTICS_CLICKHOUSE_GET: str = "从ClickHouse获取月度发布统计"
+    """从ClickHouse获取月度发布统计消息"""
 
     MONTHLY_STATISTICS_DB_SOURCE: str = (
         "get_monthly_publish_count_service: 使用 DB 数据源"
@@ -290,8 +282,16 @@ class Constants:
     VERSION_CHANGED_CLEAR_CACHE: str = "[缓存] 版本变化，清除所有缓存"
     """版本变化清除缓存消息"""
 
-    HIVE_CACHE_MISS_QUERY_HIVE_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 Hive"
-    """缓存未命中查询Hive消息"""
+    CLICKHOUSE_CONNECTION_POOL_FULL_MESSAGE: str = (
+        "[ClickHouse连接池] 连接池已满，连接已关闭"
+    )
+    """ClickHouse连接池满消息"""
+
+    CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE: str = "[ClickHouse连接池] 所有连接已关闭"
+    """ClickHouse所有连接已关闭消息"""
+
+    DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
+    """缓存未命中查询DB消息"""
 
     L1_CACHE_UPDATED: str = "[L1缓存] 已更新"
     """L1缓存更新消息"""
@@ -322,9 +322,6 @@ class Constants:
 
     EXCEPTION_HANDLER_MESSAGE: str = "FastAPI服务器错误"
     """异常处理统一消息"""
-
-    HIVE_CONNECTION_POOL_FULL_MESSAGE: str = "[连接池] 池已满，关闭连接"
-    """Hive 连接池满消息"""
 
     AI_CHAT_TABLE_CREATION_MESSAGE: str = "ai_history 表创建完成"
     """表创建完成消息"""
@@ -418,9 +415,6 @@ class Constants:
     NO_TEXT_CONTENT_AVAILABLE_MESSAGE: str = "没有文章数据可导出"
     """没有文字内容可导出的提示信息"""
 
-    HIVE_TABLE_CREATED_MESSAGE: str = "hive表已创建"
-    """Hive表已创建消息"""
-
     CACHES_CLEARED_MESSAGE: str = (
         "已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息"
     )
@@ -472,12 +466,6 @@ class Constants:
     START_SYNC_TO_POSTGRES_MESSAGE: str = "开始同步文章内容到PostgreSQL向量库..."
     """同步文章内容到 PostgreSQL 向量库消息"""
 
-    CSV_LOADED_TO_HIVE_MESSAGE: str = "CSV 文件已加载到 Hive"
-    """CSV 文件加载到 Hive 完成消息"""
-
-    DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
-    """缓存未命中查询DB消息"""
-
     USER_NOT_LOGGED_IN_MESSAGE: str = "用户未登录，请先登录"
     """用户未登录消息"""
 
@@ -489,9 +477,6 @@ class Constants:
 
     USER_NOT_EXISTS_ERROR: str = "用户不存在"
     """用户不存在错误消息"""
-
-    HIVE_QUERY = "从 Hive 查询"
-    """Hive 查询消息"""
 
     UNKNOWN_ARTICLE = "未知文章"
     """未知文章消息"""
@@ -519,24 +504,6 @@ class Constants:
         ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     """
     """SQL创建AI聊天表常量"""
-
-    HIVE_TABLE_VERSION_SQL: str = "SHOW TBLPROPERTIES articles"
-    """获取Hive表的版本号SQL"""
-
-    ARTICLE_COLUMN: str = [
-        "id",
-        "title",
-        "tags",
-        "status",
-        "views",
-        "create_at",
-        "update_at",
-        "content",
-        "user_id",
-        "sub_category_id",
-        "username",
-    ]
-    """文章表字段常量"""
 
     CATEGORY_ARTICLE_DISTRIBUTION_SQL: str = """
         SELECT sub_category_id, COUNT(*) as count
@@ -792,11 +759,6 @@ class Constants:
 
     NACOS_INITIALIZATION_FAILED: str = "nacos 初始化不可用"
     """Nacos 初始化失败错误消息"""
-
-    PYHIVE_NOT_INSTALLED_ERROR: str = (
-        "pyhive 未安装，请先执行 `uv sync` 或安装 `pyhive`。"
-    )
-    """PyHive 未安装错误消息"""
 
     OSS2_NOT_INSTALLED_ERROR: str = "oss2 未安装，请先执行 `uv sync` 或安装 `oss2`。"
     """oss2 未安装错误消息"""

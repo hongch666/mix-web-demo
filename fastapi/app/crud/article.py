@@ -1,109 +1,134 @@
-import os
 import time
 from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
-from app.db import HiveConnectionPool, get_hive_connection_pool, load_config
-from app.core import Constants, Logger
-from app.models import Article, Category, Collect, Focus, Like, SubCategory, User
-from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, current_date, date_format, date_sub
 from sqlmodel import Session, func, select
+
+from app.core import Constants, Logger
+from app.db import ClickhouseConnectionPool, get_clickhouse_connection_pool, load_config
+from app.db.mysql import engine
+from app.models import Article, Category, Collect, Focus, Like, SubCategory, User
 
 
 class ArticleMapper:
     """文章 Mapper"""
 
     def __init__(self) -> None:
-        self._hive_pool: HiveConnectionPool = get_hive_connection_pool()
+        self._clickhouse_pool: ClickhouseConnectionPool = (
+            get_clickhouse_connection_pool()
+        )
 
-    def get_top10_articles_hive_mapper(self) -> List[Dict[str, Any]]:
-        """获取前10篇文章 - Hive 查表"""
+    def _safe_convert_to_list_of_dicts(
+        self, results: Any, columns: List[str]
+    ) -> List[Dict[str, Any]]:
+        """安全转换 ClickHouse 查询结果为字典列表"""
+        result: List[Dict[str, Any]] = []
+        for row in results:
+            try:
+                row_dict = {}
+                for col, val in zip(columns, row):
+                    # 安全转换值类型
+                    try:
+                        if val is None:
+                            row_dict[col] = None
+                        else:
+                            row_dict[col] = val
+                    except Exception as val_e:
+                        Logger.debug(f"值转换失败 {col}={val}: {val_e}")
+                        row_dict[col] = None
+                result.append(row_dict)
+            except Exception as row_e:
+                Logger.debug(f"行数据转换失败: {row_e}")
+                continue
+        return result
 
-        columns: List[str] = Constants.ARTICLE_COLUMN
+    def get_top10_articles_clickhouse_mapper(self) -> List[Dict[str, Any]]:
+        """获取前10篇文章 - ClickHouse 查表"""
+
+        # ClickHouse 表中实际存在的字段（不包含 username）
+        columns: List[str] = [
+            "id",
+            "title",
+            "tags",
+            "status",
+            "views",
+            "create_at",
+            "update_at",
+            "content",
+            "user_id",
+            "sub_category_id",
+        ]
 
         start: float = time.time()
         # 从连接池获取连接
         pool_start: float = time.time()
-        hive_conn: Any = self._hive_pool.get_connection()
+        ch_conn: Any = self._clickhouse_pool.get_connection()
         pool_time: float = time.time() - pool_start
 
-        # 查询 Hive
-        Logger.info(Constants.HIVE_QUERY)
+        # 查询 ClickHouse
+        Logger.info(Constants.TOP10_CLICKHOUSE_QUERY)
         query_start: float = time.time()
-        with hive_conn.cursor() as cursor:
-            cursor.execute(
-                f"SELECT {', '.join(columns)} FROM articles ORDER BY views DESC LIMIT 10"
-            )
-            top10: List[tuple] = cursor.fetchall()
-
-        query_time: float = time.time() - query_start
-
-        # 转换为字典
-        result: List[Dict[str, Any]] = [dict(zip(columns, r)) for r in top10]
-
-        total_time: float = time.time() - start
-        Logger.info(
-            f"获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s"
+        ch_table = load_config("database")["clickhouse"]["table"]
+        query = (
+            f"SELECT {', '.join(columns)} FROM {ch_table} ORDER BY views DESC LIMIT 10"
         )
 
-        # 归还连接到池
-        if hive_conn:
-            self._hive_pool.return_connection(hive_conn)
+        try:
+            results: List[tuple] = ch_conn.execute(query)
+            query_time: float = time.time() - query_start
 
-        return result
+            # 安全转换为字典
+            result: List[Dict[str, Any]] = self._safe_convert_to_list_of_dicts(
+                results, columns
+            )
 
-    def get_hive_connection(self) -> Any:
-        """获取 Hive 连接（用于缓存版本检查）"""
-        return self._hive_pool.get_connection()
+            total_time: float = time.time() - start
+            Logger.info(
+                f"获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s"
+            )
 
-    def return_hive_connection(self, conn: Any) -> None:
-        """归还 Hive 连接"""
-        self._hive_pool.return_connection(conn)
+            return result
+        except AttributeError as ae:
+            Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
+            import traceback
+
+            Logger.error(f"详细错误: {traceback.format_exc()}")
+            # 降级到 DB
+            return self.get_top10_articles_db_mapper(Session(engine))
+        except Exception as e:
+            Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
+            import traceback
+
+            Logger.debug(f"详细异常: {traceback.format_exc()}")
+            # 降级到 DB
+            return self.get_top10_articles_db_mapper(Session(engine))
+        finally:
+            # 归还连接到池
+            if ch_conn:
+                self._clickhouse_pool.return_connection(ch_conn)
+
+    def get_top10_articles_hive_mapper(self) -> List[Dict[str, Any]]:
+        """获取前10篇文章 - Hive 查表（已弃用，保留向后兼容）"""
+        Logger.warning("Hive 已删除，使用 DB 替代")
+        return self.get_top10_articles_db_mapper(Session(engine))
 
     def get_top10_articles_spark_mapper(self) -> List[Dict[str, Any]]:
-        """获取前10篇文章 - Spark 查表"""
-
-        FILE_PATH: str = load_config("files")["excel_path"]
-        csv_file: str = os.path.normpath(
-            os.path.join(os.getcwd(), FILE_PATH, "articles.csv")
-        )
-        csv_file = os.path.abspath(csv_file)
-        columns: List[str] = Constants.ARTICLE_COLUMN
-        try:
-            spark: SparkSession = SparkSession.builder.appName(
-                "ArticleTop10"
-            ).getOrCreate()
-            df: DataFrame = spark.read.option("header", True).csv(csv_file)
-            df = df.withColumn("views", col("views").cast("integer"))
-            for c in ["id", "status", "user_id", "sub_category_id"]:
-                df = df.withColumn(c, col(c).cast("integer"))
-            for c in ["create_at", "update_at"]:
-                df = df.withColumn(c, col(c).cast("string"))
-            # username 字段直接从 csv 读取
-            top10_rows: List[Any] = df.orderBy(col("views").desc()).limit(10).collect()
-            return [
-                {k: r.asDict()[k] for k in columns if k in r.asDict()}
-                for r in top10_rows
-            ]
-        except Exception as e:
-            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
-            df = pd.read_csv(csv_file)
-            for c in ["views", "id", "status", "user_id", "sub_category_id"]:
-                if c in df.columns:
-                    df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
-            df = df.where(pd.notnull(df), None)
-            if "views" in df.columns:
-                df = df.sort_values("views", ascending=False)
-            top10_df = df.head(10)
-            available_columns = [c for c in columns if c in top10_df.columns]
-            return top10_df[available_columns].to_dict(orient="records")
+        """获取前10篇文章 - Spark 查表（已弃用，保留向后兼容）"""
+        Logger.warning("Spark 已删除，使用 DB 替代")
+        return self.get_top10_articles_db_mapper(Session(engine))
 
     def get_top10_articles_db_mapper(self, db: Session) -> List[Article]:
         statement = select(Article).order_by(Article.views.desc()).limit(10)
         return db.exec(statement).all()
+
+    def get_clickhouse_connection(self) -> Any:
+        """获取 ClickHouse 连接（用于缓存版本检查）"""
+        return self._clickhouse_pool.get_connection()
+
+    def return_clickhouse_connection(self, conn: Any) -> None:
+        """归还 ClickHouse 连接"""
+        self._clickhouse_pool.return_connection(conn)
 
     def get_all_articles_mapper(self, db: Session) -> List[Article]:
         statement = select(Article)
@@ -244,84 +269,73 @@ class ArticleMapper:
         total_views = sum(article.views for article in articles)
         return round(total_views / len(articles), 2)
 
-    def get_category_article_count_hive_mapper(self) -> List[Dict[str, Any]]:
+    def get_category_article_count_clickhouse_mapper(self) -> List[Dict[str, Any]]:
         """
-        从Hive获取按父分类排序的文章数量
+        从ClickHouse获取按父分类排序的文章数量
         """
         start = time.time()
-        hive_conn = self._hive_pool.get_connection()
+        ch_conn = self._clickhouse_pool.get_connection()
 
-        Logger.info(Constants.HIVE_QUERY)
+        Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
         query_start = time.time()
-        with hive_conn.cursor() as cursor:
-            # 查询文章按sub_category_id分组统计
-            cursor.execute(Constants.CATEGORY_ARTICLE_DISTRIBUTION_SQL)
-            results = cursor.fetchall()
+        ch_table = load_config("database")["clickhouse"]["table"]
+        query = f"SELECT sub_category_id, count() as count FROM {ch_table} WHERE status = 1 GROUP BY sub_category_id ORDER BY count DESC"
 
-        query_time = time.time() - query_start
+        try:
+            results = ch_conn.execute(query)
+            query_time = time.time() - query_start
 
-        # 转换为字典列表
-        result = [{"sub_category_id": int(r[0]), "count": int(r[1])} for r in results]
+            # 安全转换为字典列表
+            result: List[Dict[str, Any]] = []
+            for r in results:
+                try:
+                    result.append(
+                        {
+                            "sub_category_id": int(r[0]) if r[0] is not None else None,
+                            "count": int(r[1]) if r[1] is not None else 0,
+                        }
+                    )
+                except (ValueError, TypeError) as e:
+                    Logger.debug(f"行转换失败: {e}，跳过此行")
+                    continue
 
-        total_time = time.time() - start
-        Logger.info(
-            f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类"
-        )
+            total_time = time.time() - start
+            Logger.info(
+                f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类"
+            )
 
-        if hive_conn:
-            self._hive_pool.return_connection(hive_conn)
+            return result
+        except AttributeError as ae:
+            Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
+            import traceback
 
-        return result
+            Logger.error(f"详细错误: {traceback.format_exc()}")
+            # 降级到 DB
+            return self.get_category_article_count_db_mapper(Session(engine))
+        except Exception as e:
+            Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
+            import traceback
+
+            Logger.debug(f"详细异常: {traceback.format_exc()}")
+            # 降级到 DB
+            return self.get_category_article_count_db_mapper(Session(engine))
+        finally:
+            if ch_conn:
+                self._clickhouse_pool.return_connection(ch_conn)
+
+    def get_category_article_count_hive_mapper(self) -> List[Dict[str, Any]]:
+        """
+        从Hive获取按父分类排序的文章数量（已弃用）
+        """
+        Logger.warning("Hive 已删除，使用 DB 替代")
+        return self.get_category_article_count_db_mapper(Session(engine))
 
     def get_category_article_count_spark_mapper(self) -> List[Dict[str, Any]]:
         """
-        从Spark获取按父分类排序的文章数量
+        从Spark获取按父分类排序的文章数量（已弃用）
         """
-        FILE_PATH: str = load_config("files")["excel_path"]
-        csv_file = os.path.normpath(
-            os.path.join(os.getcwd(), FILE_PATH, "articles.csv")
-        )
-        csv_file = os.path.abspath(csv_file)
-        try:
-            spark = SparkSession.builder.appName("CategoryCount").getOrCreate()
-            df = spark.read.option("header", True).csv(csv_file)
-            df = df.withColumn(
-                "sub_category_id", col("sub_category_id").cast("integer")
-            )
-            df = df.withColumn("status", col("status").cast("integer"))
-
-            # 过滤status=1的文章，按sub_category_id分组统计
-            df_grouped = (
-                df.filter(col("status") == 1).groupBy("sub_category_id").count()
-            )
-            df_sorted = df_grouped.orderBy(col("count").desc())
-
-            results = df_sorted.collect()
-            return [
-                {"sub_category_id": int(r["sub_category_id"]), "count": int(r["count"])}
-                for r in results
-            ]
-        except Exception as e:
-            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
-            df = pd.read_csv(csv_file)
-            if "status" in df.columns:
-                df["status"] = (
-                    pd.to_numeric(df["status"], errors="coerce").fillna(0).astype(int)
-                )
-            if "sub_category_id" in df.columns:
-                df["sub_category_id"] = pd.to_numeric(
-                    df["sub_category_id"], errors="coerce"
-                )
-            df = df[df.get("status", 0) == 1]
-            df = (
-                df.dropna(subset=["sub_category_id"])
-                if "sub_category_id" in df.columns
-                else df
-            )
-            grouped = df.groupby("sub_category_id").size().sort_values(ascending=False)
-            return [
-                {"sub_category_id": int(k), "count": int(v)} for k, v in grouped.items()
-            ]
+        Logger.warning("Spark 已删除，使用 DB 替代")
+        return self.get_category_article_count_db_mapper(Session(engine))
 
     def get_category_article_count_db_mapper(self, db: Session) -> List[Dict[str, Any]]:
         """
@@ -343,92 +357,84 @@ class ArticleMapper:
 
         return result
 
-    def get_monthly_publish_count_hive_mapper(self) -> List[Dict[str, Any]]:
+    def get_monthly_publish_count_clickhouse_mapper(self) -> List[Dict[str, Any]]:
         """
-        从Hive获取最近24个月的文章发布数量统计（包含零值月份）
+        从ClickHouse获取最近24个月的文章发布数量统计（包含零值月份）
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
         """
         start = time.time()
-        hive_conn = self._hive_pool.get_connection()
+        ch_conn = self._clickhouse_pool.get_connection()
 
-        Logger.info(Constants.HIVE_QUERY)
+        Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_QUERY)
         query_start = time.time()
-        with hive_conn.cursor() as cursor:
-            # 按月统计最近24个月的文章数，使用Hive的substr和concat处理日期
-            cursor.execute(Constants.MONTHLY_ARTICLE_PUBLISH_SQL)
-            results = cursor.fetchall()
+        ch_table = load_config("database")["clickhouse"]["table"]
 
-        query_time = time.time() - query_start
+        # 使用 ClickHouse 的日期函数
+        query = f"""
+            SELECT 
+                formatDateTime(create_at, '%Y-%m') as year_month, 
+                count() as count 
+            FROM {ch_table} 
+            WHERE status = 1 AND create_at >= subtractMonths(now(), 24)
+            GROUP BY year_month
+            ORDER BY year_month DESC
+        """
 
-        # 转换为字典列表
-        result = [{"year_month": str(r[0]), "count": int(r[1])} for r in results]
+        try:
+            results = ch_conn.execute(query)
+            query_time = time.time() - query_start
 
-        total_time = time.time() - start
-        Logger.info(
-            f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份"
-        )
+            # 安全转换为字典列表
+            result: List[Dict[str, Any]] = []
+            for r in results:
+                try:
+                    result.append(
+                        {
+                            "year_month": str(r[0]) if r[0] is not None else "",
+                            "count": int(r[1]) if r[1] is not None else 0,
+                        }
+                    )
+                except (ValueError, TypeError) as e:
+                    Logger.debug(f"行转换失败: {e}，跳过此行")
+                    continue
 
-        if hive_conn:
-            self._hive_pool.return_connection(hive_conn)
+            total_time = time.time() - start
+            Logger.info(
+                f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份"
+            )
 
-        return result
+            return result
+        except AttributeError as ae:
+            Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
+            import traceback
+
+            Logger.error(f"详细错误: {traceback.format_exc()}")
+            # 降级到 DB
+            return self.get_monthly_publish_count_db_mapper(Session(engine))
+        except Exception as e:
+            Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
+            import traceback
+
+            Logger.debug(f"详细异常: {traceback.format_exc()}")
+            # 降级到 DB
+            return self.get_monthly_publish_count_db_mapper(Session(engine))
+        finally:
+            if ch_conn:
+                self._clickhouse_pool.return_connection(ch_conn)
+
+    def get_monthly_publish_count_hive_mapper(self) -> List[Dict[str, Any]]:
+        """
+        从Hive获取最近24个月的文章发布数量统计（已弃用）
+        """
+        Logger.warning("Hive 已删除，使用 DB 替代")
+        return self.get_monthly_publish_count_db_mapper(Session(engine))
 
     def get_monthly_publish_count_spark_mapper(self) -> List[Dict[str, Any]]:
         """
-        从Spark获取最近24个月的文章发布数量统计（包含零值月份）
-        说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
+        从Spark获取最近24个月的文章发布数量统计（已弃用）
         """
-
-        FILE_PATH: str = load_config("files")["excel_path"]
-        csv_file = os.path.normpath(
-            os.path.join(os.getcwd(), FILE_PATH, "articles.csv")
-        )
-        csv_file = os.path.abspath(csv_file)
-        try:
-            spark = SparkSession.builder.appName("MonthlyPublish").getOrCreate()
-            df = spark.read.option("header", True).csv(csv_file)
-            df = df.withColumn("create_at", col("create_at").cast("timestamp"))
-            df = df.withColumn("status", col("status").cast("integer"))
-
-            # 过滤最近24个月的数据
-            ten_months_ago = date_sub(current_date(), 730)  # 近24个月
-            df_filtered = df.filter(
-                (col("status") == 1) & (col("create_at") >= ten_months_ago)
-            )
-
-            # 按月分组统计，不限制结果让service层补零
-            df_grouped = (
-                df_filtered.withColumn(
-                    "year_month", date_format(col("create_at"), "yyyy-MM")
-                )
-                .groupBy("year_month")
-                .count()
-            )
-            df_sorted = df_grouped.orderBy(col("year_month").desc())
-
-            results = df_sorted.collect()
-            return [
-                {"year_month": r["year_month"], "count": int(r["count"])}
-                for r in results
-            ]
-        except Exception as e:
-            Logger.warning(f"Spark 读取失败，改用 Pandas 处理: {e}")
-            df = pd.read_csv(csv_file)
-            if "status" in df.columns:
-                df["status"] = (
-                    pd.to_numeric(df["status"], errors="coerce").fillna(0).astype(int)
-                )
-            df["create_at"] = pd.to_datetime(df.get("create_at"), errors="coerce")
-            cutoff_date = pd.Timestamp.now() - pd.Timedelta(days=730)
-            df_filtered = df[
-                (df.get("status", 0) == 1) & (df["create_at"] >= cutoff_date)
-            ]
-            df_filtered = df_filtered.dropna(subset=["create_at"])
-            df_filtered["year_month"] = df_filtered["create_at"].dt.strftime("%Y-%m")
-            grouped = (
-                df_filtered.groupby("year_month").size().sort_index(ascending=False)
-            )
-            return [{"year_month": k, "count": int(v)} for k, v in grouped.items()]
+        Logger.warning("Spark 已删除，使用 DB 替代")
+        return self.get_monthly_publish_count_db_mapper(Session(engine))
 
     def get_monthly_publish_count_db_mapper(self, db: Session) -> List[Dict[str, Any]]:
         """

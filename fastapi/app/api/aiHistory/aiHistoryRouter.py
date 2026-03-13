@@ -21,7 +21,7 @@ router: APIRouter = APIRouter(
 @requireInternalToken
 @log("创建AI历史记录")
 async def create_ai_history(
-    _: Request,
+    request: Request,
     data: CreateHistoryDTO,
     db: Session = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
@@ -37,7 +37,7 @@ async def create_ai_history(
 )
 @log("获取所有AI历史记录")
 async def get_all_ai_history(
-    _: Request,
+    request: Request,
     user_id: int,
     db: Session = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
@@ -57,7 +57,7 @@ async def get_all_ai_history(
 )
 @log("删除用户所有AI历史记录")
 async def delete_ai_history(
-    _: Request,
+    request: Request,
     user_id: int,
     db: Session = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),

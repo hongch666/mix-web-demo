@@ -23,17 +23,17 @@ from .mongodb import client, db
 from .mysql import create_tables, get_db
 
 try:
-    from .hive import HiveConnectionPool, get_hive_connection_pool
+    from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
 except ModuleNotFoundError as _exc:
-    _hive_error: str = str(_exc)
-    Logger.error(f"导入 HiveConnectionPool 时出错: {_hive_error}")
+    _clickhouse_error: str = str(_exc)
+    Logger.error(f"导入 ClickhouseConnectionPool 时出错: {_clickhouse_error}")
 
-    class HiveConnectionPool:
+    class ClickhouseConnectionPool:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError(Constants.PYHIVE_NOT_INSTALLED_ERROR)
+            raise ModuleNotFoundError("clickhouse-driver 未安装")
 
-    def get_hive_connection_pool(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError(Constants.PYHIVE_NOT_INSTALLED_ERROR)
+    def get_clickhouse_connection_pool(*args: Any, **kwargs: Any) -> NoReturn:
+        raise ModuleNotFoundError("clickhouse-driver 未安装")
 
 
 try:
@@ -99,8 +99,8 @@ __all__: List[str] = [
     "get_rabbitmq_client",
     "send_to_queue",
     "_rabbitmq_client",
-    "HiveConnectionPool",
-    "get_hive_connection_pool",
+    "ClickhouseConnectionPool",
+    "get_clickhouse_connection_pool",
     "RedisClient",
     "get_redis_client",
 ]

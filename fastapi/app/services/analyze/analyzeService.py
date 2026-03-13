@@ -6,10 +6,6 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from dateutil.relativedelta import relativedelta
-from sqlmodel import Session
-from wordcloud import WordCloud
-
 from app.cache import (
     ArticleCache,
     CategoryCache,
@@ -38,6 +34,10 @@ from app.crud import (
     get_user_mapper,
 )
 from app.db import OSSClient, get_db, load_config
+from dateutil.relativedelta import relativedelta
+from sqlmodel import Session
+from wordcloud import WordCloud
+
 from fastapi import Depends
 
 
@@ -96,18 +96,18 @@ class AnalyzeService:
 
         流程:
         1. 先尝试从缓存获取（L1本地 + L2 Redis）
-        2. 缓存未命中时，按优先级查询: Hive → Spark → DB
+        2. 缓存未命中时，按优先级查询: ClickHouse → DB
         3. 查询成功后更新缓存
         """
         articles = None
-        hive_conn = None
+        ch_conn = None
         data_source = None
         start = time.time()
 
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            hive_conn = self.articleMapper.get_hive_connection()
-            cached_result = self._article_cache.get(hive_conn)
+            ch_conn = self.articleMapper.get_clickhouse_connection()
+            cached_result = self._article_cache.get(ch_conn)
             if cached_result:
                 total_time = time.time() - start
                 Logger.info(
@@ -120,38 +120,38 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
         Logger.info(Constants.TOP10_CACHE_MISS)
 
-        # 1.优先 Hive
+        # 1.优先 ClickHouse
         try:
-            articles = self.articleMapper.get_top10_articles_hive_mapper()
+            articles = self.articleMapper.get_top10_articles_clickhouse_mapper()
             if articles and isinstance(articles[0], dict):
-                data_source = "Hive"
-                Logger.info(Constants.TOP10_HIVE_SOURCE)
-        except Exception as hive_e:
+                data_source = "ClickHouse"
+                Logger.info(Constants.TOP10_CLICKHOUSE_GET)
+        except Exception as ch_e:
             Logger.warning(
-                f"get_top10_articles_service: Hive 查询失败，降级为 Spark: {hive_e}"
+                f"get_top10_articles_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
             )
 
-        # 2.Spark 降级
-        if not articles or len(articles) == 0:
-            try:
-                articles = self.articleMapper.get_top10_articles_spark_mapper()
-                if articles and isinstance(articles[0], dict):
-                    data_source = "Spark"
-                    Logger.info(Constants.TOP10_SPARK_SOURCE)
-            except Exception as spark_e:
-                Logger.error(
-                    f"get_top10_articles_service: Spark 查询失败，降级为 DB: {spark_e}"
-                )
-
-        # 3.DB 兜底
+        # 2.DB 兜底
         if not articles or len(articles) == 0:
             articles = self.articleMapper.get_top10_articles_db_mapper(db)
             data_source = "DB"
             Logger.info(Constants.TOP10_DB_SOURCE)
 
         # ========== 步骤3: 处理查询结果并更新缓存 ==========
-        # 检查返回类型，如果是字典列表（Hive/Spark），直接处理
+        # 检查返回类型，如果是字典列表（ClickHouse），直接处理
         if articles and isinstance(articles[0], dict):
+            # ClickHouse 返回的字典包含 user_id，需要查询 username
+            user_ids = [
+                article.get("user_id") for article in articles if article.get("user_id")
+            ]
+            if user_ids:
+                users = self.userMapper.get_users_by_ids_mapper(user_ids, db)
+                user_id_to_name = {user.id: user.name for user in users}
+                # 为每条记录添加 username
+                for article in articles:
+                    article["username"] = user_id_to_name.get(article.get("user_id"))
+
+            # 处理日期格式
             for article in articles:
                 if article.get("create_at") and hasattr(
                     article["create_at"], "isoformat"
@@ -190,9 +190,9 @@ class AnalyzeService:
             ]
 
         # 更新缓存
-        if hive_conn and result:
+        if ch_conn and result:
             try:
-                self._article_cache.set(result, hive_conn)
+                self._article_cache.set(result, ch_conn)
                 total_time = time.time() - start
                 Logger.info(
                     f"get_top10_articles_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
@@ -200,9 +200,9 @@ class AnalyzeService:
             except Exception as cache_e:
                 Logger.warning(f"更新缓存失败: {cache_e}")
 
-        # 归还 Hive 连接
-        if hive_conn:
-            self.articleMapper.return_hive_connection(hive_conn)
+        # 归还 ClickHouse 连接
+        if ch_conn:
+            self.articleMapper.return_clickhouse_connection(ch_conn)
 
         return result
 
@@ -414,7 +414,7 @@ class AnalyzeService:
         获取按大分类统计的文章数量服务
 
         流程:
-        1. 从Hive查询文章数据（按子分类分组）
+        1. 从ClickHouse查询文章数据（按子分类分组）
         2. 从MySQL获取所有大分类信息
         3. 将文章数据按大分类聚合（没有文章的分类返回0）
         4. 按文章数量排序
@@ -423,14 +423,14 @@ class AnalyzeService:
         返回: 所有大分类及其文章总数（从多到少排序）
         """
         category_data = None
-        hive_conn = None
+        ch_conn = None
         data_source = None
         start = time.time()
 
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            hive_conn = self.articleMapper.get_hive_connection()
-            cached_result = self._category_cache.get(hive_conn)
+            ch_conn = self.articleMapper.get_clickhouse_connection()
+            cached_result = self._category_cache.get(ch_conn)
             if cached_result:
                 total_time = time.time() - start
                 Logger.info(
@@ -443,30 +443,19 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
         Logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
 
-        # 1.优先 Hive
+        # 1.优先 ClickHouse
         try:
-            category_data = self.articleMapper.get_category_article_count_hive_mapper()
-            data_source = "Hive"
-            Logger.info(Constants.CATEGORY_STATISTICS_HIVE_SOURCE)
-        except Exception as hive_e:
+            category_data = (
+                self.articleMapper.get_category_article_count_clickhouse_mapper()
+            )
+            data_source = "ClickHouse"
+            Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_GET)
+        except Exception as ch_e:
             Logger.warning(
-                f"get_category_article_count_service: Hive 查询失败，降级为 Spark: {hive_e}"
+                f"get_category_article_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
             )
 
-        # 2.Spark 降级
-        if not category_data or len(category_data) == 0:
-            try:
-                category_data = (
-                    self.articleMapper.get_category_article_count_spark_mapper()
-                )
-                data_source = "Spark"
-                Logger.info(Constants.CATEGORY_STATISTICS_SPARK_SOURCE)
-            except Exception as spark_e:
-                Logger.error(
-                    f"get_category_article_count_service: Spark 查询失败，降级为 DB: {spark_e}"
-                )
-
-        # 3.DB 兜底
+        # 2.DB 兜底
         if not category_data or len(category_data) == 0:
             category_data = self.articleMapper.get_category_article_count_db_mapper(db)
             data_source = "DB"
@@ -507,9 +496,9 @@ class AnalyzeService:
         )
 
         # ========== 步骤7: 更新缓存 ==========
-        if hive_conn and result:
+        if ch_conn and result:
             try:
-                self._category_cache.set(result, hive_conn)
+                self._category_cache.set(result, ch_conn)
                 total_time = time.time() - start
                 Logger.info(
                     f"get_category_article_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
@@ -517,8 +506,8 @@ class AnalyzeService:
             except Exception as cache_e:
                 Logger.warning(f"更新缓存失败: {cache_e}")
 
-        if hive_conn:
-            self.articleMapper.return_hive_connection(hive_conn)
+        if ch_conn:
+            self.articleMapper.return_clickhouse_connection(ch_conn)
 
         return result
 
@@ -529,20 +518,20 @@ class AnalyzeService:
         获取按月份统计的文章发布数量服务
 
         流程:
-        1. 从Hive查询最近6个月的文章发布数据
+        1. 从ClickHouse查询最近6个月的文章发布数据
         2. 从当前月份向前推6个月，补充缺失的月份为零值
         3. 按月份排序
         4. 使用缓存优化性能
         """
         publish_data = None
-        hive_conn = None
+        ch_conn = None
         data_source = None
         start = time.time()
 
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            hive_conn = self.articleMapper.get_hive_connection()
-            cached_result = self._publish_time_cache.get(hive_conn)
+            ch_conn = self.articleMapper.get_clickhouse_connection()
+            cached_result = self._publish_time_cache.get(ch_conn)
             if cached_result:
                 total_time = time.time() - start
                 Logger.info(
@@ -555,30 +544,19 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
         Logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
 
-        # 1.优先 Hive
+        # 1.优先 ClickHouse
         try:
-            publish_data = self.articleMapper.get_monthly_publish_count_hive_mapper()
-            data_source = "Hive"
-            Logger.info(Constants.MONTHLY_STATISTICS_HIVE_SOURCE)
-        except Exception as hive_e:
+            publish_data = (
+                self.articleMapper.get_monthly_publish_count_clickhouse_mapper()
+            )
+            data_source = "ClickHouse"
+            Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_GET)
+        except Exception as ch_e:
             Logger.warning(
-                f"get_monthly_publish_count_service: Hive 查询失败，降级为 Spark: {hive_e}"
+                f"get_monthly_publish_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
             )
 
-        # 2.Spark 降级
-        if not publish_data or len(publish_data) == 0:
-            try:
-                publish_data = (
-                    self.articleMapper.get_monthly_publish_count_spark_mapper()
-                )
-                data_source = "Spark"
-                Logger.info(Constants.MONTHLY_STATISTICS_SPARK_SOURCE)
-            except Exception as spark_e:
-                Logger.error(
-                    f"get_monthly_publish_count_service: Spark 查询失败，降级为 DB: {spark_e}"
-                )
-
-        # 3.DB 兜底
+        # 2.DB 兜底
         if not publish_data or len(publish_data) == 0:
             publish_data = self.articleMapper.get_monthly_publish_count_db_mapper(db)
             data_source = "DB"
@@ -610,9 +588,9 @@ class AnalyzeService:
         )
 
         # ========== 步骤5: 更新缓存 ==========
-        if hive_conn and result:
+        if ch_conn and result:
             try:
-                self._publish_time_cache.set(result, hive_conn)
+                self._publish_time_cache.set(result, ch_conn)
                 total_time = time.time() - start
                 Logger.info(
                     f"get_monthly_publish_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
@@ -620,8 +598,8 @@ class AnalyzeService:
             except Exception as cache_e:
                 Logger.warning(f"更新缓存失败: {cache_e}")
 
-        if hive_conn:
-            self.articleMapper.return_hive_connection(hive_conn)
+        if ch_conn:
+            self.articleMapper.return_clickhouse_connection(ch_conn)
 
         return result
 

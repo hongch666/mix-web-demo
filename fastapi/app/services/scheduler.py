@@ -9,7 +9,6 @@ from sqlmodel import Session
 from app.core import Constants, Logger
 
 from .tasks.analyzeCacheTask import update_analyze_caches
-from .tasks.hiveSyncTask import export_articles_to_csv_and_hive
 from .tasks.vectorSyncTask import export_article_vectors_to_postgres
 
 
@@ -30,18 +29,8 @@ def start_scheduler(
     """
     scheduler: BackgroundScheduler = BackgroundScheduler()
 
-    # 任务1：导出文章到 CSV 和 Hive
-    export_job_func = partial[None](
-        export_articles_to_csv_and_hive,
-        article_mapper=article_mapper,
-        user_mapper=user_mapper,
-        db_factory=db_factory or mysql_db_factory,
-    )
-    # 每1天执行一次
-    scheduler.add_job(export_job_func, "interval", hours=24, id="export_articles")
-
-    # 任务2：同步文章向量到 PostgreSQL（使用LangChain）- 增量同步模式
-    sync_vector_job_func = partial[None](
+    # 任务1：同步文章向量到 PostgreSQL（使用LangChain）- 增量同步模式
+    sync_vector_job_func = partial(
         export_article_vectors_to_postgres,
         article_mapper=article_mapper,
         mysql_db_factory=mysql_db_factory or db_factory,
@@ -50,8 +39,8 @@ def start_scheduler(
     # 每1天执行一次
     scheduler.add_job(sync_vector_job_func, "interval", hours=24, id="sync_vectors")
 
-    # 任务3：更新分析接口缓存
-    analyze_cache_job_func = partial[None](
+    # 任务2：更新分析接口缓存
+    analyze_cache_job_func = partial(
         update_analyze_caches,
         analyze_service=analyze_service,
         db_factory=db_factory or mysql_db_factory,
@@ -67,7 +56,6 @@ def start_scheduler(
 
     scheduler.start()
     Logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
-    Logger.info(Constants.SCHEDULER_TASKS_MESSAGE)
     Logger.info(Constants.SCHEDULER_VECTOR_SYNC_MESSAGE)
     Logger.info(Constants.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
     return scheduler

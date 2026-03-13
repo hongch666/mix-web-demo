@@ -1,12 +1,12 @@
 from typing import Any, Dict, List
 
+from app.core import ListResponse, success
 from app.db import get_db
 from app.decorators import log, requireAdmin
-from app.core import ListResponse, success
+from app.services import AnalyzeService, get_analyze_service
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool
 
-from app.services import AnalyzeService, get_analyze_service
 from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
@@ -18,7 +18,7 @@ router: APIRouter = APIRouter(
 @router.get("/top10", summary="获取前10篇文章", description="获取阅读量前10的文章")
 @log("获取前10篇文章")
 async def get_top10_articles(
-    _: Request,
+    request: Request,
     db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
@@ -37,7 +37,7 @@ async def get_top10_articles(
 )
 @log("生成词云图")
 async def get_wordcloud(
-    _: Request, analyzeService: AnalyzeService = Depends(get_analyze_service)
+    request: Request, analyzeService: AnalyzeService = Depends(get_analyze_service)
 ) -> Any:
     """生成词云图接口"""
 
@@ -51,7 +51,7 @@ async def get_wordcloud(
 @requireAdmin
 @log("获取文章数据Excel")
 async def get_excel(
-    _: Request,
+    request: Request,
     db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
@@ -69,7 +69,7 @@ async def get_excel(
 @router.get("/statistics", summary="获取文章统计信息", description="获取文章统计信息")
 @log("获取文章统计信息")
 async def get_article_statistics(
-    _: Request,
+    request: Request,
     db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
@@ -88,7 +88,7 @@ async def get_article_statistics(
 )
 @log("按分类统计文章数量")
 async def get_article_count_by_category(
-    _: Request,
+    request: Request,
     db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
@@ -107,7 +107,7 @@ async def get_article_count_by_category(
 )
 @log("获取月度文章发布统计")
 async def get_monthly_publish_count(
-    _: Request,
+    request: Request,
     db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:

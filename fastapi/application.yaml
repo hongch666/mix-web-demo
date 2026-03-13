@@ -48,14 +48,13 @@ database:
     username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
     password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
     database: ${DB_MONGODB_DATABASE:demo}
-  hive:
-    host: ${DB_HIVE_HOST:127.0.0.1}
-    port: ${DB_HIVE_PORT:10000}
-    username: ${DB_HIVE_USERNAME:} # 可选：Hive 用户名
-    password: ${DB_HIVE_PASSWORD:} # 可选：Hive 密码
-    database: ${DB_HIVE_DATABASE:default}
-    table: ${DB_HIVE_TABLE:articles}
-    container: ${DB_HIVE_CONTAINER:hive-server}
+  clickhouse:
+    host: ${DB_CLICKHOUSE_HOST:127.0.0.1}
+    port: ${DB_CLICKHOUSE_PORT:9000}
+    username: ${DB_CLICKHOUSE_USERNAME:default}
+    password: ${DB_CLICKHOUSE_PASSWORD:}
+    database: ${DB_CLICKHOUSE_DATABASE:default}
+    table: ${DB_CLICKHOUSE_TABLE:articles}
   redis:
     host: ${DB_REDIS_HOST:127.0.0.1}
     port: ${DB_REDIS_PORT:6379}

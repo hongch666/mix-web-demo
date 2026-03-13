@@ -5,7 +5,6 @@ from app.decorators import log, requireInternalToken
 from app.services import (
     call_remote_service,
     export_article_vectors_to_postgres,
-    export_articles_to_csv_and_hive,
     initialize_article_content_hash_cache,
     update_analyze_caches,
 )
@@ -23,7 +22,7 @@ router: APIRouter = APIRouter(
 # 测试
 @router.get("/fastapi", summary="测试FastAPI服务", description="测试FastAPI服务")
 @log("测试FastAPI服务")
-async def testFastapi(_: Request) -> JSONResponse:
+async def testFastapi(request: Request) -> JSONResponse:
     """测试FastAPI服务接口"""
     return success(Constants.TEST_MESSAGE)
 
@@ -31,7 +30,7 @@ async def testFastapi(_: Request) -> JSONResponse:
 # 测试Spring服务
 @router.get("/spring", summary="测试Spring服务", description="测试Spring服务")
 @log("测试Spring服务")
-async def testSpring(_: Request) -> JSONResponse:
+async def testSpring(request: Request) -> JSONResponse:
     """测试Spring服务接口"""
 
     result: Dict[str, Any] = await call_remote_service(
@@ -43,7 +42,7 @@ async def testSpring(_: Request) -> JSONResponse:
 # 测试GoZero服务
 @router.get("/gozero", summary="测试GoZero服务", description="测试GoZero服务")
 @log("测试GoZero服务")
-async def testGoZero(_: Request) -> JSONResponse:
+async def testGoZero(request: Request) -> JSONResponse:
     """测试GoZero服务接口"""
 
     result: Dict[str, Any] = await call_remote_service(
@@ -55,7 +54,7 @@ async def testGoZero(_: Request) -> JSONResponse:
 # 测试NestJS服务
 @router.get("/nestjs", summary="测试NestJS服务", description="测试NestJS服务")
 @log("测试NestJS服务")
-async def testNestJS(_: Request) -> JSONResponse:
+async def testNestJS(request: Request) -> JSONResponse:
     """测试NestJS服务接口"""
 
     result: Dict[str, Any] = await call_remote_service(
@@ -71,24 +70,10 @@ async def testNestJS(_: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("手动触发更新分析接口缓存任务")
-async def test_update_analyze_caches_task(_: Request) -> JSONResponse:
+async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
     """手动触发更新分析接口缓存任务接口"""
 
     await run_in_threadpool(update_analyze_caches)
-    return success()
-
-
-@router.post(
-    "/task/hive",
-    summary="手动触发文章表导出任务",
-    description="手动触发文章表导出到hive的定时任务",
-)
-@requireInternalToken
-@log("手动触发文章表导出任务")
-async def test_export_articles_task(_: Request) -> JSONResponse:
-    """手动触发文章表导出任务接口"""
-
-    await run_in_threadpool(export_articles_to_csv_and_hive)
     return success()
 
 
@@ -99,7 +84,7 @@ async def test_export_articles_task(_: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("手动触发向量数据库同步任务")
-async def test_export_vector_task(_: Request) -> JSONResponse:
+async def test_export_vector_task(request: Request) -> JSONResponse:
     """手动触发向量数据库同步任务接口"""
 
     await run_in_threadpool(export_article_vectors_to_postgres)
@@ -113,7 +98,7 @@ async def test_export_vector_task(_: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("初始化文章内容 hash 缓存")
-async def test_init_hash_cache_task(_: Request) -> JSONResponse:
+async def test_init_hash_cache_task(request: Request) -> JSONResponse:
     """初始化文章内容 hash 缓存接口"""
 
     await run_in_threadpool(initialize_article_content_hash_cache)
