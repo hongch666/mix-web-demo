@@ -210,16 +210,6 @@ setup_gozero() {
     log_info "安装 Go 依赖..."
     go mod tidy
     
-    # 安装 swag 工具是需要的
-    if ! command_exists swag; then
-        log_info "安装 swag Swagger 工具..."
-        go install github.com/swaggo/swag/cmd/swag@latest
-        bash "$WORKDIR/gozero/script/swagger/genSwagger.sh"
-    else
-        log_info "swag 工具已安装,更新 Swagger 文档..."
-        bash "$WORKDIR/gozero/script/swagger/genSwagger.sh"
-    fi
-    
     # 安装 goctl 工具
     if ! command_exists goctl; then
         log_info "安装 goctl 工具..."

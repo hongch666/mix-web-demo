@@ -24,13 +24,6 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 检查 swag 工具是否安装
-if ! command -v swag &> /dev/null; then
-    log_error "swag 工具未安装"
-    log_info "请先运行: go install github.com/swaggo/swag/cmd/swag@latest"
-    exit 1
-fi
-
 log_info "开始初始化 Swagger 文档..."
 
 # GoZero 项目 Swagger 初始化
