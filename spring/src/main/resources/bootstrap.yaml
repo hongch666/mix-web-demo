@@ -8,5 +8,9 @@ spring:
       server-addr: ${NACOS_SERVER:127.0.0.1:8848} # Nacos 服务端地址
       config:
         server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
       discovery:
         server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP_NAME:DEFAULT_GROUP}

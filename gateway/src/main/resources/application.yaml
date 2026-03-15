@@ -14,6 +14,12 @@ spring:
   cloud:
     nacos:
       server-addr: ${NACOS_SERVER:127.0.0.1:8848}
+      config:
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
+      discovery:
+        namespace: ${NACOS_NAMESPACE:public}
+        group: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
     gateway:
       # 全局WebSocket支持
       globalcors:
