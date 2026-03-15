@@ -1,9 +1,13 @@
 package com.hcsy.gateway.filter;
 
+import com.hcsy.gateway.config.AuthProperties;
 import com.hcsy.gateway.utils.JwtUtil;
 import com.hcsy.gateway.utils.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -18,8 +22,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.List;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -27,21 +29,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
+    private final AuthProperties authProperties;
     private final AntPathMatcher antPathMatcher = new AntPathMatcher();
-
-    // 需要排除的路径（建议通过配置中心管理）
-    private static final List<String> EXCLUDE_PATHS = List.of(
-            "/users/login",
-            "/users/register",
-            "/users/email/send",
-            "/users/email-login",
-            "/static/**",
-            "/upload/**",
-            "/public/**",
-            "/actuator/**",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-resources/**");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -50,6 +39,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         // 1. 排除不需要认证的路径
         if (isExcludePath(path)) {
+            log.info("排除身份验证的路径: {}", path);
             return chain.filter(exchange);
         }
 
@@ -91,6 +81,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
             // 8. 记录审计日志（异步）
             logAccess(userId, path);
+            log.info("身份验证成功 - 用户ID: {}, 路径: {}", userId, path);
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
 
@@ -124,7 +115,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     @SuppressWarnings("null")
     private boolean isExcludePath(String path) {
-        return EXCLUDE_PATHS.stream().anyMatch(pattern -> antPathMatcher.match(pattern, path));
+        return authProperties.getExcludePaths().stream()
+                .anyMatch(pattern -> antPathMatcher.match(pattern, path));
     }
 
     private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {

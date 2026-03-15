@@ -76,6 +76,20 @@ spring:
           uri: lb://fastapi
           predicates:
             - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/upload/**,/ai_history/**,/ai_comment/**
+auth:
+  exclude-paths:
+    - /users/login
+    - /users/register
+    - /users/email/send
+    - /users/email-login
+    - /static/**
+    - /upload/**
+    - /public/**
+    - /actuator/**
+    - /v3/api-docs/**
+    - /swagger-ui/**
+    - /swagger-resources/**
+
 jwt:
   secret: ${JWT_SECRET:abcdefghijklmnopqrstuvwxyz123456}
   expiration: ${JWT_EXPIRATION:86400000}
