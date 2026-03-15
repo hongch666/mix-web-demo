@@ -50,7 +50,7 @@ export class ApiLogConsumerService implements OnModuleInit {
 
           const dto: CreateApiLogDto = {
             userId: apiLogData.user_id,
-            username: apiLogData.username,
+            username: apiLogData.username || Constants.UNKNOWN_USERNAME,
             apiDescription: apiLogData.api_description,
             apiPath: apiLogData.api_path,
             apiMethod: apiLogData.api_method,

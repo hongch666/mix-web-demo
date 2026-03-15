@@ -100,6 +100,11 @@ export class Constants {
   static readonly OSS_UPLOAD_ERR = '上传阿里云OSS错误';
 
   /**
+   * 未知用户名
+   */
+  static readonly UNKNOWN_USERNAME = 'unknown';
+
+  /**
    * 文章日志记录不存在消息
    */
   static readonly ARTICLE_LOG_NOT_FOUND = '文章日志记录不存在';
