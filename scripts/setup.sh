@@ -216,6 +216,14 @@ setup_gozero() {
         go install github.com/zeromicro/go-zero/tools/goctl@latest
     fi
     
+    # 安装 fresh 工具 (热重载)
+    if ! command_exists fresh; then
+        log_info "安装 fresh 工具..."
+        go install github.com/pilu/fresh@latest
+    else
+        log_info "fresh 工具已安装"
+    fi
+    
     cd "$WORKDIR"
     log_info "GoZero 部分配置完成!"
 }

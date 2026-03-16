@@ -196,12 +196,12 @@ create_mongodb() {
     log_info "MongoDB 容器创建成功 (端口 27017)"
 }
 
-# Elasticsearch 容器
+# ElasticSearch 容器
 create_elasticsearch() {
-    log_info "创建 Elasticsearch 容器..."
+    log_info "创建 ElasticSearch 容器..."
     
-    if check_port 9200 "Elasticsearch"; then
-        log_warn "Elasticsearch 已存在，是否安装 IK 分词器? (y/n)"
+    if check_port 9200 "ElasticSearch"; then
+        log_warn "ElasticSearch 已存在，是否安装 IK 分词器? (y/n)"
         read -p "请输入: " install_ik
         if [[ "$install_ik" =~ ^[Yy]$ ]]; then
             install_elasticsearch_ik_plugin
@@ -222,10 +222,10 @@ create_elasticsearch() {
         -p 9300:9300 \
         elasticsearch:7.12.1
     
-    log_info "Elasticsearch 容器创建成功 (端口 9200, 9300)"
+    log_info "ElasticSearch 容器创建成功 (端口 9200, 9300)"
     
-    # 等待 Elasticsearch 启动
-    log_info "等待 Elasticsearch 启动 (约 30 秒)..."
+    # 等待 ElasticSearch 启动
+    log_info "等待 ElasticSearch 启动 (约 30 秒)..."
     sleep 30
     
     # 询问是否安装 IK 分词器
@@ -236,16 +236,16 @@ create_elasticsearch() {
     fi
 }
 
-# 安装 Elasticsearch IK 分词器插件
+# 安装 ElasticSearch IK 分词器插件
 install_elasticsearch_ik_plugin() {
-    log_info "安装 Elasticsearch IK 分词器插件..."
+    log_info "安装 ElasticSearch IK 分词器插件..."
     
     docker exec -it es elasticsearch-plugin install https://release.infinilabs.com/analysis-ik/7.12.1/elasticsearch-analysis-ik-7.12.1.zip
     
-    log_info "IK 分词器安装完成，重启 Elasticsearch 容器..."
+    log_info "IK 分词器安装完成，重启 ElasticSearch 容器..."
     docker restart es
     
-    log_info "Elasticsearch 容器已重启"
+    log_info "ElasticSearch 容器已重启"
 }
 
 # Nacos 容器
@@ -411,7 +411,7 @@ Docker 容器管理脚本
   - postgresql    PostgreSQL 数据库 (端口 5432)
   - redis         Redis 缓存 (端口 6379)
   - mongodb       MongoDB 数据库 (端口 27017)
-  - elasticsearch Elasticsearch 搜索引擎 (端口 9200)
+  - elasticsearch ElasticSearch 搜索引擎 (端口 9200)
   - nacos         Nacos 服务发现 (端口 8848)
   - rabbitmq      RabbitMQ 消息队列 (端口 5672)
 
@@ -489,7 +489,7 @@ main() {
             echo "  PostgreSQL:  localhost:5432 (postgres/123456)"
             echo "  Redis:       localhost:6379"
             echo "  MongoDB:     localhost:27017 (root/123456)"
-            echo "  Elasticsearch: http://localhost:9200"
+            echo "  ElasticSearch: http://localhost:9200"
             echo "  Nacos:       http://localhost:8848"
             echo "  RabbitMQ:    http://localhost:15672 (itheima/123321)"
             echo ""
