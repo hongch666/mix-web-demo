@@ -42,7 +42,7 @@ client: nacos.NacosClient = _build_client()
 
 
 def register_instance(ip: str = IP, port: int = PORT) -> None:
-    if not ip:
+    if not ip or ip == "127.0.0.1" or ip == "0.0.0.0":
         ip = socket.gethostbyname(socket.gethostname())
 
     last_error: Exception | None = None
