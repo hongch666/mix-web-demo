@@ -13,7 +13,7 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-// SyncArticlesToES 同步文章到Elasticsearch
+// SyncArticlesToES 同步文章到ElasticSearch
 func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 	ctx := context.Background()
 

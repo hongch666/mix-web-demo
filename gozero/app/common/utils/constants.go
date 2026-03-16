@@ -248,7 +248,7 @@ const (
 	ES_SYNC_BATCH_SUBMISSION_COMPLETED_MESSAGE = "第 %d/%d 批提交完成，共 %d 条记录"
 
 	// 定时任务同步ES启动消息
-	TASK_SYNC_ES_STARTED_MESSAGE = "[定时任务] 开始同步文章到 Elasticsearch"
+	TASK_SYNC_ES_STARTED_MESSAGE = "[定时任务] 开始同步文章到 ElasticSearch"
 
 	// 定时任务同步ES完成消息
 	TASK_SYNC_ES_COMPLETED_MESSAGE = "[定时任务] 同步成功"
