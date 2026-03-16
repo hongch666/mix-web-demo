@@ -13,4 +13,7 @@ public interface FastAPIClient {
 
     @PostMapping("/api_fastapi/task/vector")
     Result syncVector();
+
+    @PostMapping("/api_fastapi/task/clear-analyze-caches")
+    Result clearAnalyzeCaches();
 }

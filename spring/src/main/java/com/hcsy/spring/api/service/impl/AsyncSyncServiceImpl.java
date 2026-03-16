@@ -59,6 +59,14 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 logger.error(Constants.SYNC_VECTOR_FAIL + e.getMessage(), e);
             }
 
+            // 清除文章分析缓存
+            try {
+                fastAPIClient.clearAnalyzeCaches();
+                logger.info(Constants.CLEAR_CACHE_SUCCESS);
+            } catch (Exception e) {
+                logger.error(Constants.CLEAR_CACHE_FAIL + e.getMessage(), e);
+            }
+
             logger.info(Constants.SYNC_ALL_SUCCESS);
         } catch (Exception e) {
             logger.error(Constants.SYNC_ALL_FAIL + e.getMessage(), e);

@@ -771,6 +771,16 @@ public class Constants {
      */
     public static String TOKEN_GEN_FAIL = "令牌生成失败";
 
+    /**
+     * 清除缓存成功消息
+     */
+    public static String CLEAR_CACHE_SUCCESS = "成功清除分析相关缓存";
+
+    /**
+     * 清除缓存失败消息
+     */
+    public static String CLEAR_CACHE_FAIL = "清除分析相关缓存失败: ";
+
     // 默认返回值
 
     /**
