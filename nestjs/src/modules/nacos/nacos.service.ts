@@ -8,6 +8,7 @@ import { logger } from '../../common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { InternalTokenUtil } from 'src/common/utils/internal-token.util';
 import { Constants } from 'src/common/utils/constants';
+import * as os from 'os';
 
 interface CallOptions {
   serviceName: string;
@@ -48,11 +49,23 @@ export class NacosService implements OnModuleInit {
 
     await this.client.ready();
 
+    // 获取注册的 IP 地址，处理本地地址
+    let registrationIp = this.configService.get<string>('server.ip')!;
+    if (
+      !registrationIp ||
+      registrationIp === '127.0.0.1' ||
+      registrationIp === '0.0.0.0'
+    ) {
+      // 自动解析
+      registrationIp = this.getLocalIp();
+      logger.info(`本地 IP 已转换为: ${registrationIp}`);
+    }
+
     // 注册当前服务
     await this.client.registerInstance(
       this.configService.get<string>('server.serviceName')!,
       {
-        ip: this.configService.get<string>('server.ip')!,
+        ip: registrationIp,
         port: this.configService.get<string>('server.port')!,
         weight: 1,
         ephemeral: true,
@@ -67,6 +80,25 @@ export class NacosService implements OnModuleInit {
     );
 
     logger.info(Constants.REGISTER_NACOS);
+  }
+
+  /**
+   * 获取本机 IP 地址
+   */
+  private getLocalIp(): string {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      const networkInterface = interfaces[name];
+      if (!networkInterface) continue;
+      for (const addr of networkInterface) {
+        // 获取第一个非本地地址的 IPv4 地址
+        if (addr.family === 'IPv4' && !addr.internal) {
+          return addr.address;
+        }
+      }
+    }
+    // 如果没有找到，使用主机名
+    return os.hostname();
   }
 
   async getServiceInstances(
