@@ -1,7 +1,7 @@
 package utils
 
 const (
-	// Gin 自己的测试欢迎信息
+	// GoZero 自己的测试欢迎信息
 	TEST_MESSAGE = "Hello,I am GoZero!"
 
 	// 文章搜索错误信息
