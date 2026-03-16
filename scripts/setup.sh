@@ -200,7 +200,7 @@ setup_spring() {
     log_info "Spring 部分配置完成!"
 }
 
-# 2. Gin 部分配置
+# 2. GoZero 部分配置
 setup_gozero() {
     log_info "开始配置 GoZero 部分..."
     
@@ -480,7 +480,7 @@ create_directories() {
     log_info "创建必要的目录..."
     
     mkdir -p logs/spring
-    mkdir -p logs/gin
+    mkdir -p logs/gozero
     mkdir -p logs/nestjs
     mkdir -p logs/fastapi
     mkdir -p static/pic
@@ -521,7 +521,7 @@ main() {
     # 询问用户要配置哪些模块
     echo "请选择要配置的模块 (可多选,用空格分隔,例如: 1 2 3 4):"
     echo "1) Spring"
-    echo "2) Gin"
+    echo "2) GoZero"
     echo "3) NestJS"
     echo "4) FastAPI"
     echo "5) 全部"

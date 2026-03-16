@@ -35,7 +35,7 @@ declare -A SERVICE_PATTERNS=(
     ["spring"]="spring.jar"
     ["gateway"]="gateway.jar"
     ["fastapi"]="fastapi.*main.py|uvicorn.*fastapi"
-    ["gozero"]="gin_service"
+    ["gozero"]="gozero-app"
     ["nestjs"]="nestjs.*main.js|node.*nestjs"
 )
 
@@ -309,7 +309,7 @@ show_usage() {
   spring      Spring Boot 服务
   gateway     Spring Cloud Gateway 服务
   fastapi     FastAPI 服务
-  gozero         Gin 服务
+  gozero         GoZero 服务
   nestjs      NestJS 服务
 
 示例:

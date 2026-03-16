@@ -206,7 +206,7 @@ port_forward() {
         print_error "请指定服务名称和端口"
         echo "用法: $0 port-forward <service_name> <local_port>:<pod_port>"
         echo "示例:"
-        echo "  $0 port-forward gin 8081:8081"
+        echo "  $0 port-forward gozero 8081:8081"
         echo "  $0 port-forward spring 8083:8083"
         exit 1
     fi
@@ -226,7 +226,7 @@ restart() {
     
     if [ -z "$1" ]; then
         print_error "请指定Deployment名称"
-        echo "可用的Deployment: gin, nestjs, spring, gateway, fastapi"
+        echo "可用的Deployment: gozero, nestjs, spring, gateway, fastapi"
         exit 1
     fi
     
@@ -260,7 +260,7 @@ Kubernetes 部署管理脚本
   delete              - 删除K8s中的所有资源
   status              - 查看部署状态
   describe [TYPE]     - 查看资源详细信息 (deployment/pod/service/ingress)
-  logs [SERVICE]      - 查看Pod日志 (SERVICE: gin/nestjs/spring/gateway/fastapi)
+  logs [SERVICE]      - 查看Pod日志 (SERVICE: gozero/nestjs/spring/gateway/fastapi)
   exec [SERVICE]      - 进入Pod交互式终端
   port-forward [SERVICE] [PORT] - 进行端口转发
   restart [SERVICE]   - 重启Deployment
@@ -274,8 +274,8 @@ Kubernetes 部署管理脚本
   # 查看状态
   $0 status
 
-  # 查看Gin服务的日志
-  $0 logs gin
+  # 查看GoZero服务的日志
+  $0 logs gozero
 
   # 进入Spring Pod交互式终端
   $0 exec spring
@@ -292,7 +292,7 @@ Kubernetes 部署管理脚本
 前置要求:
   - kubectl (Kubernetes客户端工具)
   - 一个运行中的Kubernetes集群 (例如Minikube、Docker Desktop K8s等)
-  - 已构建的Docker镜像 (mix-gin, mix-nestjs, mix-spring, mix-gateway, mix-fastapi)
+  - 已构建的Docker镜像 (mix-gozero, mix-nestjs, mix-spring, mix-gateway, mix-fastapi)
 
 安装Minikube:
   macOS: brew install minikube
@@ -305,7 +305,7 @@ Kubernetes 部署管理脚本
 
 加载本地Docker镜像到Minikube:
   eval \$(minikube docker-env)
-  docker build -t mix-gin:latest ./gin
+  docker build -t mix-gozero:latest ./gozero
   docker build -t mix-nestjs:latest ./nestjs
   docker build -t mix-spring:latest ./spring
   docker build -t mix-gateway:latest ./gateway

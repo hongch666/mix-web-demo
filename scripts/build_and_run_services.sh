@@ -139,7 +139,7 @@ run_container() {
     local volume_args=""
     
     case $service in
-        gin|nestjs|spring)
+        gozero|nestjs|spring)
             # 这三个服务都有 application.yaml 和 .env 配置
             if [ -f "$service_dir/application.yaml" ]; then
                 volume_args="$volume_args -v $service_dir/application.yaml:/app/application.yaml"
@@ -236,7 +236,7 @@ show_help() {
   --help          显示此帮助信息
 
 服务名称:
-  gozero      - Gin Go 微服务 (端口 8081)
+  gozero      - GoZero 微服务 (端口 8081)
   nestjs   - NestJS 微服务 (端口 8082)
   spring   - Spring Boot 微服务 (端口 8083)
   gateway  - Spring Cloud Gateway (端口 9000)

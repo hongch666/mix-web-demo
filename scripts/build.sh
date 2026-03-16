@@ -306,7 +306,7 @@ EOF
     print_info "FastAPI 服务打包完成: $FASTAPI_DIST"
 }
 
-# ==================== Gin 服务打包 ====================
+# ==================== GoZero 服务打包 ====================
 build_gozero() {
     print_info "开始打包 GoZero 服务..."
     cd "$PROJECT_ROOT/gozero/app"
