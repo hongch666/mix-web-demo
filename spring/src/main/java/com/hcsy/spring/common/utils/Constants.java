@@ -980,4 +980,21 @@ public class Constants {
      * 内部令牌验证方法调试消息
      */
     public static String INTERNAL_TOKEN_VALIDATE_METHOD = "内部服务令牌验证成功，方法: ";
+
+    // dotenv 加载器相关常量
+
+    /**
+     * .env文件不存在提示信息
+     */
+    public static String DOTENV_FILE_NOT_EXIST = "[DotenvLoader] .env文件不存在，跳过加载";
+
+    /**
+     * .env文件加载成功信息
+     */
+    public static String DOTENV_LOAD_SUCCESS = "[DotenvLoader] 成功加载 {} 个环境变量";
+
+    /**
+     * .env文件加载失败错误信息
+     */
+    public static String DOTENV_LOAD_FAIL = "[DotenvLoader] 加载.env文件失败: ";
 }
