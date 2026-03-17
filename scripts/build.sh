@@ -234,7 +234,7 @@ build_fastapi() {
         print_info "检测到开发环境中存在 .venv 虚拟环境，进行打包..."
         cp -r .venv "$FASTAPI_DIST/"
         
-        # 创建启动脚本 - 使用打包后的虚拟环境
+        # 创建启动脚本 - 使用虚拟环境
         cat > "$FASTAPI_DIST/start.sh" << 'EOF'
 #!/bin/bash
 LOG_DIR="../logs/fastapi"
@@ -255,9 +255,9 @@ echo $! > fastapi.pid
 echo "FastAPI 服务已启动，PID: $(cat fastapi.pid)"
 EOF
     else
-        print_info "未检测到 .venv 虚拟环境，使用 uv 方式部署..."
+        print_info "未检测到 .venv 虚拟环境，使用灵活启动方式..."
         
-        # 创建启动脚本 - 使用 uv 同步依赖
+        # 创建启动脚本 - 使用虚拟环境
         cat > "$FASTAPI_DIST/start.sh" << 'EOF'
 #!/bin/bash
 LOG_DIR="../logs/fastapi"
@@ -269,21 +269,11 @@ if [ -f ".env" ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-# 检查 uv 是否已安装
-if ! command -v uv &> /dev/null; then
-    echo "安装 uv 包管理工具..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
-
-# 同步依赖（如果存在 uv.lock）
-if [ -f "uv.lock" ]; then
-    echo "使用 uv sync 同步依赖..."
-    uv sync
-fi
+# 激活虚拟环境
+source .venv/bin/activate
 
 # 启动服务
-nohup uv run python main.py >> "$LOG_FILE" 2>&1 &
+nohup python main.py >> "$LOG_FILE" 2>&1 &
 echo $! > fastapi.pid
 echo "FastAPI 服务已启动，PID: $(cat fastapi.pid)"
 EOF
