@@ -67,4 +67,4 @@ ENTRYPOINT ["./gozero-app", "-f", "etc/application.yaml"]
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8082/api_gin/gin || exit 1
+    CMD curl -f http://localhost:8082/api_gozero/gozero || exit 1
