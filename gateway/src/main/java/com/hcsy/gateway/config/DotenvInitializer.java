@@ -1,5 +1,6 @@
 package com.hcsy.gateway.config;
 
+import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -9,6 +10,7 @@ import java.util.Map;
 /**
  * .env文件加载器，用于在应用启动前加载环境变量
  */
+@Slf4j
 public class DotenvInitializer {
 
     private static final String DOT_ENV_FILE = ".env";
@@ -22,7 +24,7 @@ public class DotenvInitializer {
             File envFile = new File(DOT_ENV_FILE);
             
             if (!envFile.exists()) {
-                System.out.println("[DotenvLoader] .env文件不存在，跳过加载");
+                log.info("[DotenvLoader] .env文件不存在，跳过加载");
                 return;
             }
 
@@ -40,11 +42,10 @@ public class DotenvInitializer {
                 }
             }
 
-            System.out.println("[DotenvLoader] 成功加载 " + envMap.size() + " 个环境变量");
+            log.info("[DotenvLoader] 成功加载 {} 个环境变量", envMap.size());
 
         } catch (Exception e) {
-            System.err.println("[DotenvLoader] 加载.env文件失败: " + e.getMessage());
-            e.printStackTrace();
+            log.error("[DotenvLoader] 加载.env文件失败: " + e.getMessage(), e);
         }
     }
 
