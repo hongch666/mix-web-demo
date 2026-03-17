@@ -64,64 +64,6 @@ nestjs/report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # 忽略所有 .class 文件
 *.class
 
-
-### gin
-
-# Go binaries
-gin/bin/
-gin/*.exe
-gin/*.exe~
-gin/*.dll
-gin/*.so
-gin/*.dylib
-
-# Vendor directory
-gin/vendor/
-
-# Compiled object files and binaries
-gin/*.a
-gin/*.o
-gin/*.out
-
-# Logs
-gin/logs/
-gin/*.log
-gin/nacos/log/*.log
-gin/nacos/log/**
-gin/nacos/
-
-# Swagger
-gin/docs/
-
-# SQL
-gin/sql/
-
-# Test binaries
-gin/*.test
-
-# Coverage and profiling
-gin/coverage.out
-gin/profile.out
-
-# IDE/editor settings
-gin/.idea/
-gin/.vscode/
-gin/*.swp
-
-# Environment files
-gin/.env
-gin/.env.*
-
-# Temporary files
-gin/tmp/
-gin/temp/
-gin/.DS_Store
-
-# Git merge/diff tools
-gin/*.orig
-
-gin/gin_service
-
 ### gozero
 
 # Go binaries
