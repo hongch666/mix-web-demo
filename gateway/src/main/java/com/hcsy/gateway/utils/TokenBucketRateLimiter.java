@@ -115,6 +115,7 @@ public class TokenBucketRateLimiter {
      * @param key 限流key
      * @return 包含当前令牌数和上次填充时间的信息
      */
+    @SuppressWarnings("null")
     public String getStatus(String key) {
         try {
             String tokens = redisTemplate.opsForHash().get(key, "tokens").toString();

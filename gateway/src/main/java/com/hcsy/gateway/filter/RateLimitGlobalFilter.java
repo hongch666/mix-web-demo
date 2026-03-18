@@ -100,6 +100,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
     /**
      * 获取客户端真实IP地址
      */
+    @SuppressWarnings("null")
     private String getClientIp(ServerWebExchange exchange) {
         // 尝试多个可能的IP头
         String[] headers = {
