@@ -93,3 +93,28 @@ auth:
 jwt:
   secret: ${JWT_SECRET:abcdefghijklmnopqrstuvwxyz123456}
   expiration: ${JWT_EXPIRATION:86400000}
+
+# 限流配置
+rate-limit:
+  # 是否启用限流
+  enabled: ${RATE_LIMIT_ENABLED:true}
+
+  # 限流路径配置
+  paths:
+    # 文件上传限流配置（严格的限流）
+    "/upload/**":
+      # 令牌桶容量（最多可以突发的请求数）
+      capacity: ${RATE_LIMIT_UPLOAD_CAPACITY:20}
+      # 令牌填充速率（每秒填充多少个令牌）
+      refill-rate: ${RATE_LIMIT_UPLOAD_REFILL_RATE:2}
+      # 是否启用
+      enabled: true
+      # 限流超出时的响应消息
+      message: "上传请求过于频繁，请稍后再试"
+
+    # Spring 发送验证码接口限流配置
+    "/api_spring/users/email/send":
+      capacity: ${RATE_LIMIT_SEND_CODE_CAPACITY:10}
+      refill-rate: ${RATE_LIMIT_SEND_CODE_REFILL_RATE:1}
+      enabled: true
+      message: "发送验证码请求过于频繁，请稍后再试"

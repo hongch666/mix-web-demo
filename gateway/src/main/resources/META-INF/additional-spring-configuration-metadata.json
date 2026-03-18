@@ -13,10 +13,53 @@
     {
       "name": "auth.exclude-paths",
       "type": "java.util.List",
-      "items": {
-        "type": "java.lang.String"
-      },
+      "items": { "type": "java.lang.String" },
       "description": "排除身份验证的路径列表"
+    },
+    {
+      "name": "rate-limit.enabled",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.enabled'"
+    },
+    {
+      "name": "rate-limit.paths./upload/**.capacity",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./upload/**.capacity'"
+    },
+    {
+      "name": "rate-limit.paths./upload/**.refill-rate",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./upload/**.refill-rate'"
+    },
+    {
+      "name": "rate-limit.paths./upload/**.enabled",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./upload/**.enabled'"
+    },
+    {
+      "name": "rate-limit.paths./upload/**.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./upload/**.message'"
+    },
+    {
+      "name": "rate-limit.paths./api_spring/users/email/send.capacity",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.capacity'"
+    },
+    {
+      "name": "rate-limit.paths./api_spring/users/email/send.refill-rate",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.refill-rate'"
+    },
+    {
+      "name": "rate-limit.paths./api_spring/users/email/send.enabled",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.enabled'"
+    },
+    {
+      "name": "rate-limit.paths./api_spring/users/email/send.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.message'"
     }
   ]
 }
