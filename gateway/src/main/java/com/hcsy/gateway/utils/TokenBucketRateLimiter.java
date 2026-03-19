@@ -74,6 +74,7 @@ public class TokenBucketRateLimiter {
      * @param refillRate 令牌填充速率(每秒)
      * @return true表示请求被允许，false表示被限流
      */
+    @SuppressWarnings("rawtypes")
     public boolean isAllowed(String key, Integer capacity, Integer refillRate) {
         try {
             long now = System.currentTimeMillis();
