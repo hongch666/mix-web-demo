@@ -18,8 +18,8 @@ export async function createApp(): Promise<NestFastifyApplication> {
     await NestFactory.create<NestFastifyApplication>(AppModule, fastifyAdapter);
 
   // 支持 multipart/form-data 文件上传
-  await app.register(multipart, {
-    attachFieldsToBody: true,
+  await app.register(multipart as any, {
+    attachFieldsToBody: false,
     limits: {
       fileSize: 20 * 1024 * 1024, // 最大 20MB，可根据需要调整
     },

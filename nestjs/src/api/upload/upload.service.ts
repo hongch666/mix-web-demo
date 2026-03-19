@@ -124,15 +124,12 @@ export class UploadService {
     filename: string,
     allowExt?: string[],
   ): Promise<string> {
-    // 当启用 attachFieldsToBody: true 时，文件对象结构是 { file: ReadableStream, filename, encoding, mimetype }
+    // 禁用 attachFieldsToBody 后，file 本身就是流对象，有 filename、encoding、mimetype 等属性
     if (!file) {
       throw new BadRequestException('未上传文件');
     }
 
-    // 提取实际的流和文件名
-    const fileStream: Readable = file.file || file;
     const originalFilename = file.filename || '';
-
     if (allowExt && allowExt.length > 0) {
       const ext = path.extname(originalFilename).toLowerCase() || '';
       if (!allowExt.includes(ext)) {
@@ -157,8 +154,8 @@ export class UploadService {
     const localPath = path.join(uploadDir, filename);
 
     try {
-      // 使用提取的流进行保存
-      await pump(fileStream, fs.createWriteStream(localPath));
+      // 文件对象本身是一个流
+      await pump(file as Readable, fs.createWriteStream(localPath));
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;
     } catch (error: unknown) {
