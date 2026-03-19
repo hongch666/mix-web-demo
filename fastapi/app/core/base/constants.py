@@ -23,9 +23,6 @@ class Constants:
     TEST_MESSAGE: str = "Hello, I am FastAPI!"
     """FastAPI 测试消息"""
 
-    VECTOR_SYNC_COMPLETE: str = "文章内容 hash 缓存初始化完成"
-    """向量数据库同步完成消息"""
-
     AI_COMMENT_TASK_SUBMITTED: str = "AI生成评论任务已提交"
     """AI生成评论任务提交消息"""
 
@@ -287,6 +284,9 @@ class Constants:
     CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE: str = "[ClickHouse连接池] 所有连接已关闭"
     """ClickHouse所有连接已关闭消息"""
 
+    CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE: str = "ClickHouse缓存未命中，将查询数据源"
+    """ClickHouse缓存未命中消息"""
+
     DB_CACHE_MISS_QUERY_DB_MESSAGE: str = "[缓存] L1/L2 都未命中，需要查询 DB"
     """缓存未命中查询DB消息"""
 
@@ -296,17 +296,11 @@ class Constants:
     L1_CACHE_CLEARED: str = "[L1缓存] 已清除"
     """L1缓存清除消息"""
 
-    L2_CACHE_UPDATED: str = "[L2缓存] Redis 已更新"
-    """L2缓存更新消息"""
-
     L2_CACHE_CLEARED: str = "[L2缓存] Redis 已清除"
     """L2缓存清除消息"""
 
     WORDCLOUD_CACHE_DELETED: str = "词云图缓存已删除"
     """词云图缓存删除消息"""
-
-    RABBITMQ_LOGGING_FAILURE: str = "RabbitMQ 客户端不可用，API 日志将不会发送到队列"
-    """RabbitMQ 不可用导致API日志记录失败消息"""
 
     RABBITMQ_NOT_AVAILABLE: str = "日志装饰器捕获到异常，请检查日志详情"
     """日志装饰器异常捕获消息"""
@@ -401,24 +395,8 @@ class Constants:
     UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE: str = "分析接口缓存更新完成"
     """分析接口缓存更新完成消息"""
 
-    ARTICLE_MAPPER_NO_GET_ALL_METHOD_ERROR: str = (
-        "article_mapper 未提供获取全部文章的方法"
-    )
-    """article_mapper 未提供获取全部文章的方法错误消息"""
-
-    NO_TEXT_CONTENT_AVAILABLE_MESSAGE: str = "没有文章数据可导出"
-    """没有文字内容可导出的提示信息"""
-
-    CACHES_CLEARED_MESSAGE: str = (
-        "已清除所有缓存: top10文章、分类文章数、月份文章数、统计信息"
-    )
-    """已清除所有缓存消息"""
-
     SCHEDULER_STARTED_MESSAGE: str = "定时任务调度器已启动："
     """调度器启动消息"""
-
-    SCHEDULER_TASKS_MESSAGE: str = "  - 文章导出任务：每 1 天执行一次（包含缓存清理）"
-    """调度器文章导出任务消息"""
 
     SCHEDULER_VECTOR_SYNC_MESSAGE: str = "  - 向量同步任务：每 1 天执行一次"
     """调度器向量同步任务消息"""
@@ -498,25 +476,6 @@ class Constants:
         ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     """
     """SQL创建AI聊天表常量"""
-
-    CATEGORY_ARTICLE_DISTRIBUTION_SQL: str = """
-        SELECT sub_category_id, COUNT(*) as count
-        FROM articles
-        WHERE status = 1
-        GROUP BY sub_category_id
-        ORDER BY count DESC
-    """
-    """分类文章分布SQL"""
-
-    MONTHLY_ARTICLE_PUBLISH_SQL: str = """
-        SELECT substr(create_at, 1, 7) as year_month, COUNT(*) as count
-        FROM articles
-        WHERE status = 1
-        AND create_at >= date_sub(current_date(), 730)
-        GROUP BY substr(create_at, 1, 7)
-        ORDER BY year_month DESC
-    """
-    """按月文章发布统计SQL"""
 
     SQL_QUERY_PREFIX: str = "SELECT"
     """SQL查询前缀"""

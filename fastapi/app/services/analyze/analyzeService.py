@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 import os
 import time
 import uuid
@@ -269,8 +270,6 @@ class AnalyzeService:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
                     # 如果已有事件循环运行中，使用 run_in_executor 在线程池中运行
-                    import concurrent.futures
-
                     def run_async_in_thread():
                         new_loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(new_loop)
