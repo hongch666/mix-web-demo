@@ -15,7 +15,6 @@ from .tasks.vectorSyncTask import (
     export_article_vectors_to_postgres,
     initialize_article_content_hash_cache,
 )
-from .upload.uploadService import UploadService, get_upload_service
 from .user.userService import UserService, get_user_service
 
 __all__: List[str] = [
@@ -25,8 +24,6 @@ __all__: List[str] = [
     "get_analyze_service",
     "GenerateService",
     "get_generate_service",
-    "UploadService",
-    "get_upload_service",
     "AiHistoryService",
     "get_ai_history_service",
     "ApiLogService",

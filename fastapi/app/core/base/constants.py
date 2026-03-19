@@ -71,9 +71,6 @@ class Constants:
     EXPORT_ARTICLES_EXCEL_FILENAME: str = "articles.xlsx"
     """文章表导出Excel文件名"""
 
-    EXPORT_ARTICLES_EXCEL_OSS_PATH: str = "excel/articles.xlsx"
-    """文章表导出Excel表OSS路径"""
-
     STATISTICS_CACHE_FETCH_FAILED: str = (
         "get_article_statistics_service: [缓存未命中] 开始查询数据源"
     )
@@ -334,9 +331,6 @@ class Constants:
 
     AI_CHAT_NO_INSTANCE_MESSAGE: str = "找不到可用的服务实例"
     """找不到实例消息"""
-
-    OSS_FILE_UPLOAD_START_MESSAGE: str = "开始上传文件到OSS"
-    """开始上传阿里云OSS文件消息"""
 
     RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE: str = (
         "RabbitMQ 客户端未初始化，无法发送消息到队列"
@@ -759,9 +753,6 @@ class Constants:
 
     NACOS_INITIALIZATION_FAILED: str = "nacos 初始化不可用"
     """Nacos 初始化失败错误消息"""
-
-    OSS2_NOT_INSTALLED_ERROR: str = "oss2 未安装，请先执行 `uv sync` 或安装 `oss2`。"
-    """oss2 未安装错误消息"""
 
     PIKA_NOT_INSTALLED_ERROR: str = "pika 未安装，请先执行 `uv sync` 或安装 `pika`。"
     """pika 未安装错误消息"""

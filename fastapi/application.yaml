@@ -63,11 +63,6 @@ database:
     db: ${DB_REDIS_DB:6}
     decode_responses: ${DB_REDIS_DECODE_RESPONSES:True}
     max_connections: ${DB_REDIS_MAX_CONNECTIONS:10}
-oss:
-  bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
-  endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
-  access_key_id: ${OSS_ACCESS_KEY_ID:}
-  access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
 wordcloud:
   font_path: ${WORDCLOUD_FONT_PATH:/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc}
   width: ${WORDCLOUD_WIDTH:800}
@@ -76,7 +71,6 @@ wordcloud:
 files:
   pic_path: ${FILES_PIC_PATH:../static/pic}
   excel_path: ${FILES_EXCEL_PATH:../static/excel}
-  upload_path: ${FILES_UPLOAD_PATH:../static/upload}
 logs:
   path: ${LOGS_PATH:../logs/fastapi}
 gemini:

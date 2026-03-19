@@ -1,3 +1,4 @@
+import asyncio
 import os
 import time
 import uuid
@@ -33,7 +34,8 @@ from app.crud import (
     get_like_mapper,
     get_user_mapper,
 )
-from app.db import OSSClient, get_db, load_config
+from app.db import get_db, load_config
+from app.services import call_remote_service
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session
 from wordcloud import WordCloud
@@ -242,11 +244,39 @@ class AnalyzeService:
         Logger.info(Constants.WORDCLOUD_GENERATION_SUCCESS)
 
     def upload_file(self, file_path: str, oss_path: str) -> str:
-        ossClient = OSSClient()
-        oss_url: str = ossClient.upload_file(local_file=file_path, oss_file=oss_path)
-        Logger.info(f"文件上传成功，OSS地址: {oss_url}")
-        Logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
-        return oss_url
+        """远程调用NestJS上传文件到OSS"""
+
+        async def _upload_async() -> str:
+            result: Dict[str, Any] = await call_remote_service(
+                service_name="nestjs",
+                path="/upload",
+                method="POST",
+                json={
+                    "local_file": file_path,
+                    "oss_file": oss_path,
+                },
+                retries=3,
+            )
+            oss_url: str = result.get("data", "")
+            Logger.info(f"文件上传成功，OSS地址: {oss_url}")
+            Logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
+            return oss_url
+
+        try:
+            # 在同步方法中运行异步函数
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 如果已有事件循环运行中，则直接创建新的
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    future = executor.submit(asyncio.run, _upload_async())
+                    return future.result()
+            else:
+                return asyncio.run(_upload_async())
+        except Exception as e:
+            Logger.error(f"远程上传文件到OSS失败: {str(e)}")
+            raise
 
     def upload_wordcloud_to_oss(self) -> str:
         FILE_PATH: str = load_config("files")["pic_path"]

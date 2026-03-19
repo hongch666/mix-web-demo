@@ -37,17 +37,6 @@ except ModuleNotFoundError as _exc:
 
 
 try:
-    from .oss import OSSClient
-except ModuleNotFoundError as _exc:
-    _oss_error: str = str(_exc)
-    Logger.error(f"导入 OSSClient 时出错: {_oss_error}")
-
-    class OSSClient:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError(Constants.OSS2_NOT_INSTALLED_ERROR)
-
-
-try:
     from .rabbitmq import (
         RabbitMQClient,
         _rabbitmq_client,
@@ -94,7 +83,6 @@ __all__: List[str] = [
     "start_nacos",
     "register_instance",
     "get_service_instance",
-    "OSSClient",
     "RabbitMQClient",
     "get_rabbitmq_client",
     "send_to_queue",

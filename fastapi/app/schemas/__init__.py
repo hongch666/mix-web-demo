@@ -3,7 +3,6 @@ from typing import List
 from .chatDTO import AIServiceType, ChatRequest, ChatResponse, ChatResponseData
 from .createHistoryDTO import CreateHistoryDTO
 from .generateDTO import GenerateDTO
-from .uploadDTO import UploadDTO
 
 __all__: List[str] = [
     "ChatRequest",
@@ -11,6 +10,5 @@ __all__: List[str] = [
     "ChatResponseData",
     "AIServiceType",
     "GenerateDTO",
-    "UploadDTO",
     "CreateHistoryDTO",
 ]

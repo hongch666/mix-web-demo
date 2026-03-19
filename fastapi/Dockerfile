@@ -26,8 +26,7 @@ RUN pip install --upgrade pip setuptools && \
 # 创建日志目录和文件目录
 RUN mkdir -p /app/logs/fastapi \
     && mkdir -p /app/static/pic \
-    && mkdir -p /app/static/excel \
-    && mkdir -p /app/static/upload
+    && mkdir -p /app/static/excel
 
 # 暴露端口（默认8084）
 EXPOSE 8084
