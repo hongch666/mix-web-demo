@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { OssService } from 'src/modules/oss/oss.service';
 import { logger } from 'src/common/utils/writeLog';
+import { Constants } from 'src/common/utils/constants';
 import { UploadResult } from './dto/upload.dto';
 
 const pump = promisify(pipeline);
@@ -31,16 +32,19 @@ export class UploadService {
    */
   async uploadImage(file: any): Promise<UploadResult> {
     logger.info(`uploadImage 开始，文件信息: filename=${file?.filename}`);
-    logger.info(`文件对象类型: ${typeof file}, 是否有 readable: ${file?.readable}, 是否有 pipe: ${typeof file?.pipe}`);
+    logger.info(
+      `文件对象类型: ${typeof file}, 是否有 readable: ${file?.readable}, 是否有 pipe: ${typeof file?.pipe}`,
+    );
     logger.info(`文件对象键: ${Object.keys(file || {}).join(', ')}`);
-    
+
     const originalFilename = file.filename || 'image';
-    const fileExtension = path.extname(originalFilename).toLowerCase() || '.jpg';
+    const fileExtension =
+      path.extname(originalFilename).toLowerCase() || '.jpg';
     const uniqueFilename = `${crypto.randomUUID()}${fileExtension}`;
     logger.info(`生成唯一文件名: ${uniqueFilename}`);
 
     // 保存到本地临时目录
-    logger.info(`开始保存文件到临时目录...`);
+    logger.info(Constants.FILE_SAVE_TEMP_START);
     const localPath = await this.saveFileToTemp(file, uniqueFilename, [
       '.png',
       '.jpg',
@@ -52,10 +56,10 @@ export class UploadService {
 
     try {
       // 上传到 OSS
-      logger.info(`开始上传文件到 OSS...`);
+      logger.info(Constants.FILE_UPLOAD_OSS_START);
       const ossPath = `pic/${uniqueFilename}`;
       logger.info(`OSS 目标路径: ${ossPath}`);
-      
+
       const ossUrl = await this.ossService.uploadFile(localPath, ossPath);
       logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
@@ -66,23 +70,23 @@ export class UploadService {
       };
     } finally {
       // 删除本地临时文件
-      logger.info(`开始清理临时文件...`);
+      logger.info(Constants.FILE_CLEANUP_START);
       await this.cleanupTempFile(localPath);
-      logger.info(`临时文件清理完成`);
+      logger.info(Constants.FILE_CLEANUP_COMPLETED);
     }
   }
 
   /**
-   * 上传 PDF 到 OSS（参照 FastAPI 逻辑）
+   * 上传 PDF 到 OSS
    */
   async uploadPdf(file: any, customFilename?: string): Promise<UploadResult> {
     logger.info(`uploadPdf 开始，文件信息: filename=${file?.filename}`);
-    
+
     const originalFilename = file.filename || 'document.pdf';
     const fileExtension = path.extname(originalFilename).toLowerCase();
 
     if (fileExtension !== '.pdf') {
-      throw new BadRequestException('只支持上传 PDF 文件');
+      throw new BadRequestException(Constants.ONLY_PDF_SUPPORTED);
     }
 
     // 如果提供了自定义文件名，使用自定义文件名；否则生成 UUID
@@ -95,16 +99,16 @@ export class UploadService {
     logger.info(`生成唯一文件名: ${uniqueFilename}`);
 
     // 保存到本地临时目录
-    logger.info(`开始保存文件到临时目录...`);
+    logger.info(Constants.FILE_SAVE_TEMP_START);
     const localPath = await this.saveFileToTemp(file, uniqueFilename);
     logger.info(`文件已保存到临时目录: ${localPath}`);
 
     try {
       // 上传到 OSS
-      logger.info(`开始上传文件到 OSS...`);
+      logger.info(Constants.FILE_UPLOAD_OSS_START);
       const ossPath = `pdf/${uniqueFilename}`;
       logger.info(`OSS 目标路径: ${ossPath}`);
-      
+
       const ossUrl = await this.ossService.uploadFile(localPath, ossPath);
       logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
@@ -115,9 +119,9 @@ export class UploadService {
       };
     } finally {
       // 删除本地临时文件
-      logger.info(`开始清理临时文件...`);
+      logger.info(Constants.FILE_CLEANUP_START);
       await this.cleanupTempFile(localPath);
-      logger.info(`临时文件清理完成`);
+      logger.info(Constants.FILE_CLEANUP_COMPLETED);
     }
   }
 
@@ -128,52 +132,54 @@ export class UploadService {
   ): Promise<string> {
     // 禁用 attachFieldsToBody 后，file 本身就是流对象，有 filename、encoding、mimetype 等属性
     if (!file) {
-      throw new BadRequestException('未上传文件');
+      throw new BadRequestException(Constants.NO_FILE_UPLOADED);
     }
 
     const originalFilename = file.filename || '';
     if (allowExt && allowExt.length > 0) {
       const ext = path.extname(originalFilename).toLowerCase() || '';
       if (!allowExt.includes(ext)) {
-        logger.error(`不支持的文件格式: ${ext}，允许格式: ${allowExt.join(', ')}`);
-        throw new BadRequestException(
-          `仅支持以下格式: ${allowExt.join(', ')}`,
+        logger.error(
+          `不支持的文件格式: ${ext}，允许格式: ${allowExt.join(', ')}`,
         );
+        throw new BadRequestException(`仅支持以下格式: ${allowExt.join(', ')}`);
       }
     }
 
     // 从配置中获取上传目录，如果没有配置则使用系统临时目录
-    let uploadDir: string = this.configService.get<string>(
-      'files.upload',
-    ) || path.join(os.tmpdir(), 'nestjs-upload');
-    
+    let uploadDir: string =
+      this.configService.get<string>('files.upload') ||
+      path.join(os.tmpdir(), 'nestjs-upload');
+
     // 如果是相对路径，转换为绝对路径
     if (!path.isAbsolute(uploadDir)) {
       uploadDir = path.join(process.cwd(), uploadDir);
     }
-    
+
     await fs.promises.mkdir(uploadDir, { recursive: true });
     const localPath = path.join(uploadDir, filename);
 
     try {
       // @fastify/multipart 返回的对象有 file 属性是真正的 Readable stream
       logger.info(`检查 file.file 属性, 类型: ${typeof file?.file}`);
-      
+
       if (!file.file) {
         // 如果没有 file.file 属性，尝试使用 toBuffer() 方法
         if (typeof file.toBuffer === 'function') {
-          logger.info(`使用 toBuffer() 方法读取文件`);
+          logger.info(Constants.USING_TO_BUFFER_METHOD);
           const buffer = await file.toBuffer();
           await fs.promises.writeFile(localPath, buffer);
           logger.info(`文件已保存到临时目录: ${localPath}`);
           return localPath;
         } else {
-          throw new Error('文件对象既没有 file 属性也没有 toBuffer 方法');
+          throw new Error(Constants.FILE_NO_VALID_METHOD);
         }
       }
-      
+
       // 使用 file.file 作为流
-      logger.info(`使用 file.file 作为流, 类型: ${typeof file.file}, 是否有 pipe: ${typeof file.file?.pipe}`);
+      logger.info(
+        `使用 file.file 作为流, 类型: ${typeof file.file}, 是否有 pipe: ${typeof file.file?.pipe}`,
+      );
       await pump(file.file as Readable, fs.createWriteStream(localPath));
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;

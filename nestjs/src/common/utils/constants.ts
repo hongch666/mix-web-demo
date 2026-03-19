@@ -164,4 +164,70 @@ export class Constants {
    * 启动欢迎信息
    */
   static readonly START_WELCOME = 'NestJS应用已启动';
+
+  // OSS 相关常量
+
+  /**
+   * OSS 配置不完整错误消息
+   */
+  static readonly OSS_CONFIG_INCOMPLETE =
+    'OSS 配置不完整，请检查 application.yaml 中的 oss 配置';
+
+  /**
+   * 开始执行 OSS put 操作消息
+   */
+  static readonly OSS_PUT_OPERATION_START = '开始执行 OSS put 操作...';
+
+  /**
+   * OSS 上传失败消息
+   */
+  static readonly OSS_UPLOAD_FAILED = 'OSS 上传失败';
+
+  // 文件上传相关常量
+
+  /**
+   * 开始保存文件到临时目录消息
+   */
+  static readonly FILE_SAVE_TEMP_START = '开始保存文件到临时目录...';
+
+  /**
+   * 开始上传文件到 OSS 消息
+   */
+  static readonly FILE_UPLOAD_OSS_START = '开始上传文件到 OSS...';
+
+  /**
+   * 开始清理临时文件消息
+   */
+  static readonly FILE_CLEANUP_START = '开始清理临时文件...';
+
+  /**
+   * 临时文件清理完成消息
+   */
+  static readonly FILE_CLEANUP_COMPLETED = '临时文件清理完成';
+
+  /**
+   * 仅支持上传 PDF 文件错误消息
+   */
+  static readonly ONLY_PDF_SUPPORTED = '只支持上传 PDF 文件';
+
+  /**
+   * 未上传文件错误消息
+   */
+  static readonly NO_FILE_UPLOADED = '未上传文件';
+
+  /**
+   * 使用 toBuffer 方法读取文件消息
+   */
+  static readonly USING_TO_BUFFER_METHOD = '使用 toBuffer() 方法读取文件';
+
+  /**
+   * 文件对象既没有 file 属性也没有 toBuffer 方法错误消息
+   */
+  static readonly FILE_NO_VALID_METHOD =
+    '文件对象既没有 file 属性也没有 toBuffer 方法';
+
+  /**
+   * 未找到文件部分错误消息
+   */
+  static readonly FILE_PART_NOT_FOUND = '未找到文件部分';
 }

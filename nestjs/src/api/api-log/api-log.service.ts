@@ -9,6 +9,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isLeapYear from 'dayjs/plugin/isLeapYear';
 import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -61,7 +62,7 @@ export class ApiLogService {
 
       if (!indexExists) {
         await collection.createIndex(indexConfig.spec, indexConfig.options);
-        console.log(`ApiLog 索引已创建: ${indexConfig.options.name}`);
+        logger.info(`ApiLog 索引已创建: ${indexConfig.options.name}`);
       }
     }
   }
