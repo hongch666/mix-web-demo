@@ -41,15 +41,12 @@ export class UploadController {
   @ApiOperation({ summary: '上传图片到 OSS', description: '通过 multipart/form-data 上传图片到 OSS' })
   @ApiLog('上传图片到 OSS')
   async uploadImage(@Req() req: FastifyRequest) {
-    const parts = (req as any).parts();
-    for await (const part of parts) {
-      console.log('Part:', { type: part.type, fieldname: part.fieldname, filename: part.filename });
-      if (part.type === 'file' || part.filename) {
-        const result = await this.uploadService.uploadImage(part);
-        return success(result);
-      }
+    const file = (req as any).body?.file;
+    if (!file) {
+      throw new Error('未找到文件部分');
     }
-    throw new Error('未找到文件部分');
+    const result = await this.uploadService.uploadImage(file);
+    return success(result);
   }
 
   @Post('pdf')
@@ -78,14 +75,11 @@ export class UploadController {
     @Req() req: FastifyRequest,
     @Query('custom_filename') customFilename?: string,
   ) {
-    const parts = (req as any).parts();
-    for await (const part of parts) {
-      console.log('Part:', { type: part.type, fieldname: part.fieldname, filename: part.filename });
-      if (part.type === 'file' || part.filename) {
-        const result = await this.uploadService.uploadPdf(part, customFilename);
-        return success(result);
-      }
+    const file = (req as any).body?.file;
+    if (!file) {
+      throw new Error('未找到文件部分');
     }
-    throw new Error('未找到文件部分');
+    const result = await this.uploadService.uploadPdf(file, customFilename);
+    return success(result);
   }
 }
