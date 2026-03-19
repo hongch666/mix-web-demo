@@ -5,6 +5,7 @@ import { NacosModule } from './nacos/nacos.module';
 import { RabbitMQModule } from './mq/mq.module';
 import { TaskModule } from './task/task.module';
 import { WordModule } from './word/word.module';
+import { OssModule } from './oss/oss.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { WordModule } from './word/word.module';
     RabbitMQModule,
     TaskModule,
     WordModule,
+    OssModule,
   ],
   exports: [
     ArticleModule,
@@ -22,6 +24,7 @@ import { WordModule } from './word/word.module';
     RabbitMQModule,
     TaskModule,
     WordModule,
+    OssModule,
   ],
 })
 export class ModulesModule {}

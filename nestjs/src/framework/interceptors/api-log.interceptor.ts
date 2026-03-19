@@ -131,6 +131,14 @@ export class ApiLogInterceptor implements NestInterceptor {
     excludeFields: string[] = [],
   ): Promise<void> {
     try {
+      // 检查是否是 multipart/form-data 请求（文件上传）
+      const contentType: string =
+        typeof (request.headers as Record<string, unknown>)?.['content-type'] ===
+        'string'
+          ? ((request.headers as Record<string, unknown>)['content-type'] as string)
+          : '';
+      const isMultipart: boolean = contentType.includes('multipart/form-data');
+
       // 提取查询参数
       const queryParams: Record<string, unknown> | null =
         method === 'GET' && request.query
@@ -145,9 +153,10 @@ export class ApiLogInterceptor implements NestInterceptor {
           ? (request.params as Record<string, unknown>)
           : null;
 
-      // 提取请求体
+      // 提取请求体（跳过 multipart 请求）
       let requestBody: Record<string, unknown> | null = null;
       if (
+        !isMultipart &&
         method !== 'GET' &&
         request.body &&
         typeof request.body === 'object'
@@ -167,7 +176,7 @@ export class ApiLogInterceptor implements NestInterceptor {
         api_method: method,
         query_params: queryParams,
         path_params: pathParams,
-        request_body: requestBody,
+        request_body: isMultipart ? '[文件上传]' : requestBody,
         response_time: responseTime,
       };
 
@@ -192,9 +201,20 @@ export class ApiLogInterceptor implements NestInterceptor {
       .getRequest();
     const method: string =
       typeof request.method === 'string' ? request.method : 'UNKNOWN';
+    const contentType: string =
+      typeof (request.headers as Record<string, unknown>)?.['content-type'] ===
+      'string'
+        ? ((request.headers as Record<string, unknown>)['content-type'] as string)
+        : '';
     const params: string[] = [];
 
     try {
+      // 检查是否是 multipart/form-data 请求（文件上传）
+      if (contentType.includes('multipart/form-data')) {
+        params.push('RequestType: multipart/form-data [文件上传]');
+        return params.join('\n');
+      }
+
       // 处理不同类型的参数
       if (method === 'GET') {
         // Query 参数

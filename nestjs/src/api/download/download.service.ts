@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { WordService } from 'src/modules/word/word.service';
-import { NacosService } from 'src/modules/nacos/nacos.service';
+import { OssService } from 'src/modules/oss/oss.service';
 import { ConfigService } from '@nestjs/config';
 import { logger } from 'src/common/utils/writeLog';
 import * as puppeteer from 'puppeteer';
@@ -21,7 +21,7 @@ export class DownloadService {
     private readonly userService: UserService,
     private readonly articleService: ArticleService,
     private readonly wordService: WordService,
-    private readonly nacosService: NacosService,
+    private readonly ossService: OssService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -379,16 +379,8 @@ export class DownloadService {
   // 上传Word文件到OSS
   async uploadFileToOSS(filePath: string, ossPath: string): Promise<string> {
     try {
-      const res: any = await this.nacosService.call({
-        serviceName: 'fastapi',
-        method: 'POST',
-        path: '/upload',
-        body: {
-          local_file: filePath,
-          oss_file: ossPath,
-        },
-      });
-      return res.data;
+      const url: string = await this.ossService.uploadFile(filePath, ossPath);
+      return url;
     } catch (error: any) {
       logger.error(`上传阿里云OSS错误: ${error.message}`);
       throw new BusinessException(Constants.OSS_UPLOAD_ERR);

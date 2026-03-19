@@ -34,5 +34,11 @@ rabbitmq:
   vhost: ${RABBITMQ_VHOST:test}
 files:
   word: ${FILES_WORD_PATH:../static/word}
+  upload: ${FILES_UPLOAD_PATH:../static/upload}
 logs:
   path: ${LOGS_PATH:../logs/nestjs}
+oss:
+  bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
+  endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
+  access_key_id: ${OSS_ACCESS_KEY_ID:}
+  access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
