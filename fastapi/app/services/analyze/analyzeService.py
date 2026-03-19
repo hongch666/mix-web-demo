@@ -265,15 +265,27 @@ class AnalyzeService:
 
         try:
             # 在同步方法中运行异步函数
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # 如果已有事件循环运行中，则直接创建新的
-                import concurrent.futures
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # 如果已有事件循环运行中，使用 run_in_executor 在线程池中运行
+                    import concurrent.futures
 
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(asyncio.run, _upload_async())
-                    return future.result()
-            else:
+                    def run_async_in_thread():
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        try:
+                            return new_loop.run_until_complete(_upload_async())
+                        finally:
+                            new_loop.close()
+
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        future = executor.submit(run_async_in_thread)
+                        return future.result()
+                else:
+                    return asyncio.run(_upload_async())
+            except RuntimeError:
+                # 如果没有事件循环，创建一个新的
                 return asyncio.run(_upload_async())
         except Exception as e:
             Logger.error(f"远程上传文件到OSS失败: {str(e)}")
