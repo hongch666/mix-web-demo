@@ -102,12 +102,15 @@ export class UploadService {
     filename: string,
     allowExt?: string[],
   ): Promise<string> {
-    // fastify-multipart 返回的文件对象本身就是 Readable 流
+    // 当启用 attachFieldsToBody: true 时，文件对象结构是 { file: ReadableStream, filename, encoding, mimetype }
     if (!file) {
       throw new BadRequestException('未上传文件');
     }
 
+    // 提取实际的流和文件名
+    const fileStream: Readable = file.file || file;
     const originalFilename = file.filename || '';
+
     if (allowExt && allowExt.length > 0) {
       const ext = path.extname(originalFilename).toLowerCase() || '';
       if (!allowExt.includes(ext)) {
@@ -132,8 +135,8 @@ export class UploadService {
     const localPath = path.join(uploadDir, filename);
 
     try {
-      // 文件对象本身是一个流，直接使用
-      await pump(file as Readable, fs.createWriteStream(localPath));
+      // 使用提取的流进行保存
+      await pump(fileStream, fs.createWriteStream(localPath));
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;
     } catch (error: unknown) {
