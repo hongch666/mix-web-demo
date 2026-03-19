@@ -56,7 +56,12 @@ export class OssService implements OnModuleInit {
    */
   async uploadFile(localFile: string, ossFile: string): Promise<string> {
     try {
-      await this.client.put(ossFile, localFile);
+      logger.info(`开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`);
+      logger.info(`OSS 客户端配置: bucket=${this.bucketName}, endpoint=${this.endpoint}`);
+      
+      const result = await this.client.put(ossFile, localFile);
+      logger.info(`OSS put 返回结果: ${JSON.stringify(result)}`);
+      
       const url: string = this.getFileUrl(ossFile);
       logger.info(`OSS 文件上传成功: ${url}`);
       return url;
@@ -64,6 +69,7 @@ export class OssService implements OnModuleInit {
       const message: string =
         error instanceof Error ? error.message : String(error);
       logger.error(`OSS 上传失败: ${message}`);
+      logger.error(`失败的 localFile: ${localFile}, ossFile: ${ossFile}`);
       throw new BusinessException('OSS 上传失败');
     }
   }

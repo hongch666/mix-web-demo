@@ -30,11 +30,15 @@ export class UploadService {
    * 上传图片到 OSS
    */
   async uploadImage(file: any): Promise<UploadResult> {
+    logger.info(`uploadImage 开始，文件信息: filename=${file?.filename}`);
+    
     const originalFilename = file.filename || 'image';
     const fileExtension = path.extname(originalFilename).toLowerCase() || '.jpg';
     const uniqueFilename = `${crypto.randomUUID()}${fileExtension}`;
+    logger.info(`生成唯一文件名: ${uniqueFilename}`);
 
     // 保存到本地临时目录
+    logger.info(`开始保存文件到临时目录...`);
     const localPath = await this.saveFileToTemp(file, uniqueFilename, [
       '.png',
       '.jpg',
@@ -42,11 +46,16 @@ export class UploadService {
       '.gif',
       '.webp',
     ]);
+    logger.info(`文件已保存到临时目录: ${localPath}`);
 
     try {
       // 上传到 OSS
+      logger.info(`开始上传文件到 OSS...`);
       const ossPath = `pic/${uniqueFilename}`;
+      logger.info(`OSS 目标路径: ${ossPath}`);
+      
       const ossUrl = await this.ossService.uploadFile(localPath, ossPath);
+      logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
       return {
         original_filename: originalFilename,
@@ -55,7 +64,9 @@ export class UploadService {
       };
     } finally {
       // 删除本地临时文件
+      logger.info(`开始清理临时文件...`);
       await this.cleanupTempFile(localPath);
+      logger.info(`临时文件清理完成`);
     }
   }
 
@@ -63,6 +74,8 @@ export class UploadService {
    * 上传 PDF 到 OSS（参照 FastAPI 逻辑）
    */
   async uploadPdf(file: any, customFilename?: string): Promise<UploadResult> {
+    logger.info(`uploadPdf 开始，文件信息: filename=${file?.filename}`);
+    
     const originalFilename = file.filename || 'document.pdf';
     const fileExtension = path.extname(originalFilename).toLowerCase();
 
@@ -77,14 +90,21 @@ export class UploadService {
     } else {
       uniqueFilename = `${crypto.randomUUID()}${fileExtension}`;
     }
+    logger.info(`生成唯一文件名: ${uniqueFilename}`);
 
     // 保存到本地临时目录
+    logger.info(`开始保存文件到临时目录...`);
     const localPath = await this.saveFileToTemp(file, uniqueFilename);
+    logger.info(`文件已保存到临时目录: ${localPath}`);
 
     try {
       // 上传到 OSS
+      logger.info(`开始上传文件到 OSS...`);
       const ossPath = `pdf/${uniqueFilename}`;
+      logger.info(`OSS 目标路径: ${ossPath}`);
+      
       const ossUrl = await this.ossService.uploadFile(localPath, ossPath);
+      logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
       return {
         original_filename: originalFilename,
@@ -93,7 +113,9 @@ export class UploadService {
       };
     } finally {
       // 删除本地临时文件
+      logger.info(`开始清理临时文件...`);
       await this.cleanupTempFile(localPath);
+      logger.info(`临时文件清理完成`);
     }
   }
 
