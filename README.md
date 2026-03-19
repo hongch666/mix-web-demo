@@ -1497,6 +1497,7 @@ RABBITMQ_VHOST=test
 
 # 文件配置
 FILES_WORD_PATH=../static/word
+FILES_UPLOAD_PATH=../static/upload
 
 # 日志配置
 LOGS_PATH=../logs/nestjs
@@ -1504,6 +1505,12 @@ LOGS_PATH=../logs/nestjs
 # 内部服务令牌配置
 INTERNAL_TOKEN_SECRET=xxx
 INTERNAL_TOKEN_EXPIRATION=60000
+
+# OSS 配置
+OSS_BUCKET_NAME=mix-web-demo
+OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
+OSS_ACCESS_KEY_ID=your-key-id
+OSS_ACCESS_KEY_SECRET=your-key-secret
 ```
 
 ### FastAPI 服务配置
@@ -1589,12 +1596,6 @@ DB_REDIS_DB=0
 DB_REDIS_DECODE_RESPONSES=True
 DB_REDIS_MAX_CONNECTIONS=10
 
-# OSS 配置
-OSS_BUCKET_NAME=mix-web-demo
-OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
-OSS_ACCESS_KEY_ID=your-key-id
-OSS_ACCESS_KEY_SECRET=your-key-secret
-
 # WordCloud 配置
 WORDCLOUD_FONT_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
 WORDCLOUD_WIDTH=800
@@ -1604,7 +1605,6 @@ WORDCLOUD_BG_COLOR=white
 # 文件配置
 FILES_PIC_PATH=../static/pic
 FILES_EXCEL_PATH=../static/excel
-FILES_UPLOAD_PATH=../static/upload
 
 # 日志配置
 LOGS_PATH=../logs/fastapi
