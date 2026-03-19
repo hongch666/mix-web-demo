@@ -36,11 +36,12 @@ from app.crud import (
 )
 from app.db import get_db, load_config
 from dateutil.relativedelta import relativedelta
-from services.external.client import call_remote_service
 from sqlmodel import Session
 from wordcloud import WordCloud
 
 from fastapi import Depends
+
+from ..external.client import call_remote_service
 
 
 class AnalyzeService:
