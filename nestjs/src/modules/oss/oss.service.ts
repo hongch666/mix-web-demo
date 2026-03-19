@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { logger } from 'src/common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
+import * as fs from 'fs';
 
 import OSS from 'ali-oss';
 
@@ -59,7 +60,27 @@ export class OssService implements OnModuleInit {
       logger.info(`开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`);
       logger.info(`OSS 客户端配置: bucket=${this.bucketName}, endpoint=${this.endpoint}`);
       
-      const result = await this.client.put(ossFile, localFile);
+      // 检查文件是否存在
+      logger.info(`检查本地文件是否存在: ${localFile}`);
+      const fileExists = fs.existsSync(localFile);
+      logger.info(`文件存在性检查结果: ${fileExists}`);
+      
+      if (!fileExists) {
+        throw new Error(`本地文件不存在: ${localFile}`);
+      }
+      
+      // 获取文件大小
+      const stats = fs.statSync(localFile);
+      logger.info(`本地文件大小: ${stats.size} bytes`);
+      
+      // 添加超时控制（30秒）
+      logger.info(`开始执行 OSS put 操作...`);
+      const uploadPromise = this.client.put(ossFile, localFile);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('OSS put 操作超时（30秒）')), 30000)
+      );
+      
+      const result = await Promise.race([uploadPromise, timeoutPromise]);
       logger.info(`OSS put 返回结果: ${JSON.stringify(result)}`);
       
       const url: string = this.getFileUrl(ossFile);
@@ -70,6 +91,7 @@ export class OssService implements OnModuleInit {
         error instanceof Error ? error.message : String(error);
       logger.error(`OSS 上传失败: ${message}`);
       logger.error(`失败的 localFile: ${localFile}, ossFile: ${ossFile}`);
+      logger.error(`错误堆栈: ${error instanceof Error ? error.stack : ''}`);
       throw new BusinessException('OSS 上传失败');
     }
   }
