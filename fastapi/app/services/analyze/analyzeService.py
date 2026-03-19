@@ -35,8 +35,8 @@ from app.crud import (
     get_user_mapper,
 )
 from app.db import get_db, load_config
-from app.services import call_remote_service
 from dateutil.relativedelta import relativedelta
+from services.external.client import call_remote_service
 from sqlmodel import Session
 from wordcloud import WordCloud
 
