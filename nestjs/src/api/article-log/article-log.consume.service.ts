@@ -1,12 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { RabbitMQService } from 'src/modules/mq/mq.service';
-import { ArticleLogService } from './article-log.service';
-import { logger } from 'src/common/utils/writeLog';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
+import { RabbitMQService } from 'src/modules/mq/mq.service';
+import { ArticleLogService } from './article-log.service';
 import {
-  ArticleLogMessage,
   ArticleAction,
+  ArticleLogMessage,
   CreateArticleLogDto,
 } from './dto/article-log.dto';
 
@@ -63,7 +63,7 @@ export class LogConsumerService implements OnModuleInit {
 
     // 验证 action 是否是有效的枚举值
     const validActions = Object.values(ArticleAction);
-    if (!validActions.includes(msg.action as ArticleAction)) {
+    if (!validActions.includes(msg.action)) {
       logger.error(`ArticleLog 消息包含无效的 action 值: ${msg.action}`);
       throw new BusinessException(`无效的操作类型: ${msg.action}`);
     }
@@ -83,7 +83,7 @@ export class LogConsumerService implements OnModuleInit {
     const dto: CreateArticleLogDto = {
       articleId: msg.article_id ? msg.article_id : -1,
       userId: msg.user_id ? msg.user_id : -1,
-      action: msg.action as ArticleAction,
+      action: msg.action,
       msg: msg.msg ? msg.msg : undefined,
       content: contentObj,
     };

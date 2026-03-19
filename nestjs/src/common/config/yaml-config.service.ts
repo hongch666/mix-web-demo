@@ -1,6 +1,6 @@
-import * as yaml from 'js-yaml';
-import * as fs from 'fs';
 import { config } from 'dotenv';
+import * as fs from 'fs';
+import * as yaml from 'js-yaml';
 
 // 加载 .env 文件
 config();

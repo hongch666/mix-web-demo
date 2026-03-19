@@ -1,6 +1,6 @@
-import { createApp } from './app';
 import { ConfigService } from '@nestjs/config';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { createApp } from './app';
 
 async function bootstrap(): Promise<void> {
   // 初始化app

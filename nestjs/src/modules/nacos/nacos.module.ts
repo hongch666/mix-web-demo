@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { NacosService } from './nacos.service';
 import { InternalTokenUtil } from '../../common/utils/internal-token.util';
+import { NacosService } from './nacos.service';
 
 @Module({
   providers: [NacosService, InternalTokenUtil],

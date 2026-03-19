@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEnum,
   IsNotEmpty,
@@ -6,7 +7,6 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ArticleAction {
   ADD = 'add',

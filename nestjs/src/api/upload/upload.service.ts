@@ -1,14 +1,14 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { pipeline, Readable } from 'stream';
-import { promisify } from 'util';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as crypto from 'crypto';
-import { OssService } from 'src/modules/oss/oss.service';
-import { logger } from 'src/common/utils/writeLog';
 import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
+import { OssService } from 'src/modules/oss/oss.service';
+import { pipeline, Readable } from 'stream';
+import { promisify } from 'util';
 import { UploadResult } from './dto/upload.dto';
 
 const pump = promisify(pipeline);

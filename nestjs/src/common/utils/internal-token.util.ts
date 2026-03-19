@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
+import * as jwt from 'jsonwebtoken';
 import { BusinessException } from '../exceptions/business.exception';
 import { Constants } from './constants';
 

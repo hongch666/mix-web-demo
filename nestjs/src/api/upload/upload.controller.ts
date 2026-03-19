@@ -1,18 +1,18 @@
-import { Body, Controller, Post, Req, Query } from '@nestjs/common';
+import { Body, Controller, Post, Query, Req } from '@nestjs/common';
 import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
-  ApiTags,
   ApiQuery,
+  ApiTags,
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
-import { ApiLog } from 'src/framework/decorators/api-log.decorator';
+import { Constants } from 'src/common/utils/constants';
 import { success } from 'src/common/utils/response';
+import { ApiLog } from 'src/framework/decorators/api-log.decorator';
+import { RequireInternalToken } from 'src/framework/decorators/require-internal-token.decorator';
 import { UploadDto } from './dto/upload.dto';
 import { UploadService } from './upload.service';
-import { RequireInternalToken } from 'src/framework/decorators/require-internal-token.decorator';
-import { Constants } from 'src/common/utils/constants';
 
 @Controller('upload')
 @ApiTags('文件上传')

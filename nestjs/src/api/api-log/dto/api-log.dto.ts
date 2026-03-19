@@ -1,12 +1,12 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsNumberString,
   IsOptional,
   IsString,
-  IsEnum,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ApiMethod {
   GET = 'GET',

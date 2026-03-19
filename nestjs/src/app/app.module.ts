@@ -1,18 +1,18 @@
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import yamlConfig from '../common/config/yaml-config.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ClsModule } from 'nestjs-cls';
-import { ClsMiddleware } from '../framework/middleware/cls.middleware';
-import { ApiModule } from '../api/api.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { InternalTokenUtil } from '../common/utils/internal-token.util';
-import { ModulesModule } from '../modules/modules.module';
-import { ApiLogInterceptor } from 'src/framework/interceptors/api-log.interceptor';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ClsModule } from 'nestjs-cls';
 import { InternalTokenGuard } from 'src/framework/guards/internal-token.guard';
 import { RequireAdminGuard } from 'src/framework/guards/require-admin.guard';
+import { ApiLogInterceptor } from 'src/framework/interceptors/api-log.interceptor';
+import { ApiModule } from '../api/api.module';
+import yamlConfig from '../common/config/yaml-config.service';
+import { InternalTokenUtil } from '../common/utils/internal-token.util';
+import { ClsMiddleware } from '../framework/middleware/cls.middleware';
+import { ModulesModule } from '../modules/modules.module';
 
 @Module({
   imports: [

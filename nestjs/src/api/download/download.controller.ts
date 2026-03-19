@@ -1,8 +1,8 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOperation, ApiTags, ApiParam } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiResponse, success } from 'src/common/utils/response';
 import { ApiLog } from 'src/framework/decorators/api-log.decorator';
 import { DownloadService } from './download.service';
-import { ApiResponse, success } from 'src/common/utils/response';
 
 @Controller('download')
 @ApiTags('下载模块')

@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { TaskService } from './task.service';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ApiLog, ApiLogSchema } from 'src/api/api-log/schema/api-log.schema';
 import {
   ArticleLog,
   ArticleLogSchema,
 } from 'src/api/article-log/schema/article-log.schema';
-import { ApiLog, ApiLogSchema } from 'src/api/api-log/schema/api-log.schema';
+import { TaskService } from './task.service';
 
 @Module({
   imports: [

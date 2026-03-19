@@ -1,8 +1,8 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import amqp from 'amqplib';
-import { logger } from '../../common/utils/writeLog';
 import { Constants } from '../../common/utils/constants';
+import { logger } from '../../common/utils/writeLog';
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {

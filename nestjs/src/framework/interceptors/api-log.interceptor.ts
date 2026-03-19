@@ -1,20 +1,20 @@
 import {
+  CallHandler,
+  ExecutionContext,
   Injectable,
   NestInterceptor,
-  ExecutionContext,
-  CallHandler,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
+import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
 import {
   API_LOG_KEY,
   ApiLogOptions,
 } from '../../framework/decorators/api-log.decorator';
 import { RabbitMQService } from '../../modules/mq/mq.service';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
 
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {
@@ -133,9 +133,12 @@ export class ApiLogInterceptor implements NestInterceptor {
     try {
       // 检查是否是 multipart/form-data 请求（文件上传）
       const contentType: string =
-        typeof (request.headers as Record<string, unknown>)?.['content-type'] ===
-        'string'
-          ? ((request.headers as Record<string, unknown>)['content-type'] as string)
+        typeof (request.headers as Record<string, unknown>)?.[
+          'content-type'
+        ] === 'string'
+          ? ((request.headers as Record<string, unknown>)[
+              'content-type'
+            ] as string)
           : '';
       const isMultipart: boolean = contentType.includes('multipart/form-data');
 
@@ -204,7 +207,9 @@ export class ApiLogInterceptor implements NestInterceptor {
     const contentType: string =
       typeof (request.headers as Record<string, unknown>)?.['content-type'] ===
       'string'
-        ? ((request.headers as Record<string, unknown>)['content-type'] as string)
+        ? ((request.headers as Record<string, unknown>)[
+            'content-type'
+          ] as string)
         : '';
     const params: string[] = [];
 

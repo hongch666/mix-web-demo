@@ -1,19 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { WordService } from 'src/modules/word/word.service';
-import { OssService } from 'src/modules/oss/oss.service';
 import { ConfigService } from '@nestjs/config';
-import { logger } from 'src/common/utils/writeLog';
-import * as puppeteer from 'puppeteer';
-import { UserService } from 'src/modules/user/user.service';
-import { ArticleService } from 'src/modules/article/article.service';
-import { User } from 'src/modules/user/entities/user.entity';
-import { Articles } from 'src/modules/article/entities/article.entity';
-import * as marked from 'marked';
 import dayjs from 'dayjs';
+import * as fs from 'fs';
+import * as marked from 'marked';
+import * as path from 'path';
+import * as puppeteer from 'puppeteer';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
+import { logger } from 'src/common/utils/writeLog';
+import { ArticleService } from 'src/modules/article/article.service';
+import { Articles } from 'src/modules/article/entities/article.entity';
+import { OssService } from 'src/modules/oss/oss.service';
+import { User } from 'src/modules/user/entities/user.entity';
+import { UserService } from 'src/modules/user/user.service';
+import { WordService } from 'src/modules/word/word.service';
 
 @Injectable()
 export class DownloadService {

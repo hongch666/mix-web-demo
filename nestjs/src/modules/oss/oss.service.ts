@@ -1,9 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { logger } from 'src/common/utils/writeLog';
+import * as fs from 'fs';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
-import * as fs from 'fs';
+import { logger } from 'src/common/utils/writeLog';
 
 import OSS from 'ali-oss';
 

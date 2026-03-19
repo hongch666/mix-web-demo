@@ -1,15 +1,15 @@
+import multipart from '@fastify/multipart';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import multipart from '@fastify/multipart';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { Constants } from '../common/utils/constants';
-import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
 import { AllExceptionsFilter } from 'src/framework/filters/all-exception.filter';
+import { Constants } from '../common/utils/constants';
+import { AppModule } from './app.module';
 
 export async function createApp(): Promise<NestFastifyApplication> {
   const fastifyAdapter: FastifyAdapter = new FastifyAdapter();
