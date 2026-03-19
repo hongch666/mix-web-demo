@@ -31,6 +31,8 @@ export class UploadService {
    */
   async uploadImage(file: any): Promise<UploadResult> {
     logger.info(`uploadImage 开始，文件信息: filename=${file?.filename}`);
+    logger.info(`文件对象类型: ${typeof file}, 是否有 readable: ${file?.readable}, 是否有 pipe: ${typeof file?.pipe}`);
+    logger.info(`文件对象键: ${Object.keys(file || {}).join(', ')}`);
     
     const originalFilename = file.filename || 'image';
     const fileExtension = path.extname(originalFilename).toLowerCase() || '.jpg';
