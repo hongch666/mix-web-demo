@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { error } from 'src/common/utils/response';

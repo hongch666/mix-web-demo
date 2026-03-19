@@ -1,6 +1,6 @@
 import { Body, Controller, Post, Req, Query } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags, ApiQuery } from '@nestjs/swagger';
-import { FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import { ApiLog } from 'src/framework/decorators/api-log.decorator';
 import { success } from 'src/common/utils/response';
 import { UploadDto } from './dto/upload.dto';
