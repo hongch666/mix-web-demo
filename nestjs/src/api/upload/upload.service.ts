@@ -30,8 +30,8 @@ export class UploadService {
    * 上传图片到 OSS
    */
   async uploadImage(file: any): Promise<UploadResult> {
-    const originalFilename = file.filename || 'unknown';
-    const fileExtension = path.extname(originalFilename).toLowerCase() || '';
+    const originalFilename = file.filename || 'image';
+    const fileExtension = path.extname(originalFilename).toLowerCase() || '.jpg';
     const uniqueFilename = `${crypto.randomUUID()}${fileExtension}`;
 
     // 保存到本地临时目录
@@ -63,7 +63,7 @@ export class UploadService {
    * 上传 PDF 到 OSS（参照 FastAPI 逻辑）
    */
   async uploadPdf(file: any, customFilename?: string): Promise<UploadResult> {
-    const originalFilename = file.filename || 'unknown';
+    const originalFilename = file.filename || 'document.pdf';
     const fileExtension = path.extname(originalFilename).toLowerCase();
 
     if (fileExtension !== '.pdf') {
@@ -102,13 +102,16 @@ export class UploadService {
     filename: string,
     allowExt?: string[],
   ): Promise<string> {
-    if (!file || !file.file) {
+    // fastify-multipart 返回的文件对象本身就是 Readable 流
+    if (!file) {
       throw new BadRequestException('未上传文件');
     }
 
+    const originalFilename = file.filename || '';
     if (allowExt && allowExt.length > 0) {
-      const ext = path.extname(file.filename || '').toLowerCase() || '';
+      const ext = path.extname(originalFilename).toLowerCase() || '';
       if (!allowExt.includes(ext)) {
+        logger.error(`不支持的文件格式: ${ext}，允许格式: ${allowExt.join(', ')}`);
         throw new BadRequestException(
           `仅支持以下格式: ${allowExt.join(', ')}`,
         );
@@ -129,7 +132,8 @@ export class UploadService {
     const localPath = path.join(uploadDir, filename);
 
     try {
-      await pump(file.file as Readable, fs.createWriteStream(localPath));
+      // 文件对象本身是一个流，直接使用
+      await pump(file as Readable, fs.createWriteStream(localPath));
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;
     } catch (error: unknown) {
