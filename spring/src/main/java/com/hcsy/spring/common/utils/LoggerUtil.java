@@ -1,16 +1,16 @@
 package com.hcsy.spring.common.utils;
 
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-
-import java.io.File;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Component
 public class LoggerUtil {
@@ -37,7 +37,7 @@ public class LoggerUtil {
 
     /**
      * 直接写入日志到文件
-     * 
+     *
      * @param message 日志消息
      * @param level   日志级别
      */

@@ -1,5 +1,9 @@
 package com.hcsy.spring.api.service.impl;
 
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
@@ -8,9 +12,6 @@ import com.hcsy.spring.infra.client.FastAPIClient;
 import com.hcsy.spring.infra.client.GoZeroClient;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 异步同步服务实现
@@ -28,7 +29,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     /**
      * 异步同步 ES、Hive 和 Vector
      * 此方法会在后台线程池中执行，不阻塞主流程
-     * 
+     *
      * @param userId   触发同步的用户ID（用于日志记录）
      * @param username 触发同步的用户名（用于日志记录）
      */
@@ -37,9 +38,9 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     public void syncAllAsync(Long userId, String username) {
         try {
             logger.info(
-                (username != null ? username : Constants.DEFAULT_USER) + 
-                ":"+ 
-                (userId != null ? userId : Constants.DEFAULT_USER_ID) + 
+                (username != null ? username : Constants.DEFAULT_USER) +
+                ":"+
+                (userId != null ? userId : Constants.DEFAULT_USER_ID) +
                 Constants.SYNC
             );
 

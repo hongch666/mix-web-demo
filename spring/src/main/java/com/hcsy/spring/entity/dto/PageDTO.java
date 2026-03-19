@@ -1,9 +1,9 @@
 package com.hcsy.spring.entity.dto;
 
-import lombok.Data;
-
 import java.io.Serializable;
 import java.util.List;
+
+import lombok.Data;
 
 @Data
 public class PageDTO<T> implements Serializable {

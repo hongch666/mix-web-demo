@@ -19,7 +19,7 @@ public interface TokenService {
 
     /**
      * 验证 Token 是否有效且在 Redis 列表中
-     * 
+     *
      * @return true 表示 Token 有效且在列表中；false 表示无效或不在列表中
      */
     boolean validateTokenInRedis(Long userId, String token);

@@ -1,10 +1,12 @@
 package com.hcsy.spring.common.utils;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.exceptions.BusinessException;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor

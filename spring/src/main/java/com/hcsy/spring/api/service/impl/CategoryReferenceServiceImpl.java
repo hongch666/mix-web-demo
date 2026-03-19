@@ -1,5 +1,8 @@
 package com.hcsy.spring.api.service.impl;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.CategoryReferenceMapper;
@@ -15,8 +18,6 @@ import com.hcsy.spring.entity.vo.CategoryReferenceVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor

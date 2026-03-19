@@ -1,19 +1,22 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.util.Random;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.stereotype.Service;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.hcsy.spring.api.service.EmailVerificationService;
-import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.common.utils.SimpleLogger;
+
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import java.util.Random;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 邮箱验证服务实现
@@ -44,7 +47,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     /**
      * 发送邮箱验证码
-     * 
+     *
      * @param email 目标邮箱
      * @return 是否发送成功
      */
@@ -138,7 +141,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     /**
      * 验证邮箱验证码
-     * 
+     *
      * @param email 邮箱地址
      * @param code  验证码
      * @return 是否验证成功
@@ -171,7 +174,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     /**
      * 检查邮箱验证状态
-     * 
+     *
      * @param email 邮箱地址
      * @return 是否已验证
      */
@@ -183,7 +186,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     /**
      * 标记邮箱已验证
-     * 
+     *
      * @param email 邮箱地址
      */
     @Override

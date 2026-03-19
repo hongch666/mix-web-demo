@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.service;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -9,8 +11,6 @@ import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.vo.CategoryVO;
-
-import java.util.List;
 
 public interface CategoryService extends IService<Category> {
     Long addCategory(CategoryCreateDTO dto);

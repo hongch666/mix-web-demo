@@ -1,10 +1,10 @@
 package com.hcsy.spring.api.service;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserListVO;
-
-import java.util.List;
 
 public interface UserService extends IService<User> {
     UserListVO listUsersWithFilter(long page, long size, String username);

@@ -1,44 +1,54 @@
 package com.hcsy.spring.api.controller;
 
-import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.api.service.TokenService;
+import java.util.Arrays;
+import java.util.List;
+
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.hcsy.spring.api.service.EmailVerificationService;
-import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.JwtUtil;
+import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
-import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
-import com.hcsy.spring.entity.dto.EmailLoginDTO;
-import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.entity.vo.UserVO;
+import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
-import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
+import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import java.util.Arrays;
-import java.util.List;
-
-import org.springframework.web.bind.annotation.*;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 
 @RestController
 @RequestMapping("/users")
@@ -57,9 +67,9 @@ public class UserController {
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "query", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "query",
         paramNames = { "page", "size", "username" }
     )
     @ApiLog("获取用户信息")
@@ -83,9 +93,9 @@ public class UserController {
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用默认密码 123456")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "body", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @Caching(evict = {
@@ -103,9 +113,9 @@ public class UserController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "path_single",
         paramNames = { "id" }
     )
     @Caching(evict = {
@@ -120,9 +130,9 @@ public class UserController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "path_single",
         paramNames = { "ids" }
     )
     @Caching(evict = {
@@ -162,10 +172,10 @@ public class UserController {
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(
-        roles = { "admin" }, 
-        allowSelf = true, 
-        businessType = "user", 
-        paramSource = "body", 
+        roles = { "admin" },
+        allowSelf = true,
+        businessType = "user",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @Caching(evict = {
@@ -197,10 +207,10 @@ public class UserController {
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
     @RequirePermission(
-        roles = { "admin" }, 
-        allowSelf = true, 
-        businessType = "user", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        allowSelf = true,
+        businessType = "user",
+        paramSource = "path_single",
         paramNames = { "id" }
     )
     @Caching(evict = {
@@ -296,9 +306,9 @@ public class UserController {
     @PostMapping("/force-logout/{userId}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "path_single",
         paramNames = { "userId" }
     )
     @ApiLog("手动下线用户")
@@ -446,9 +456,9 @@ public class UserController {
     @PostMapping("/admin/reset-all-passwords")
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为默认密码 123456")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "body", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @ApiLog("重置所有用户密码")
@@ -476,9 +486,9 @@ public class UserController {
     @PostMapping("/admin/reset-password/{userId}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为默认密码 123456")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "user", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "user",
+        paramSource = "path_single",
         paramNames = { "userId" }
     )
     @ApiLog("重置指定用户密码")

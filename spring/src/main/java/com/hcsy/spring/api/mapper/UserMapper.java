@@ -1,13 +1,13 @@
 package com.hcsy.spring.api.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.hcsy.spring.entity.po.User;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.util.List;
-import java.util.Map;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.hcsy.spring.entity.po.User;
 
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
@@ -15,7 +15,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 根据用户名模糊查询用户，并按登录状态排序后分页
-     * 
+     *
      * @param username       用户名（可选，用于模糊查询）
      * @param loginStatusMap 用户ID到登录状态的映射
      * @param offset         分页偏移量
@@ -31,7 +31,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     /**
      * 统计符合条件的用户总数
-     * 
+     *
      * @param username 用户名（可选）
      * @return 用户总数
      */

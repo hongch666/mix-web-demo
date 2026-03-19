@@ -1,7 +1,7 @@
 package com.hcsy.spring.entity.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import jakarta.validation.constraints.*;
 
 @Data
 public class CategoryCreateDTO {

@@ -1,13 +1,13 @@
 package com.hcsy.spring.infra.task;
 
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor

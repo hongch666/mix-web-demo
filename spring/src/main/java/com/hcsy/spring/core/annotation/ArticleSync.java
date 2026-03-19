@@ -1,6 +1,10 @@
 package com.hcsy.spring.core.annotation;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * 文章同步注解，用于标记需要同步到MQ、ES、Hive和Vector的方法

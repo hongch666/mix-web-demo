@@ -1,15 +1,17 @@
 package com.hcsy.spring.api.service.impl;
 
-import com.hcsy.spring.api.service.TokenService;
-import com.hcsy.spring.common.utils.RedisUtil;
-import com.hcsy.spring.common.utils.SimpleLogger;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.JwtUtil;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Set;
+
+import org.springframework.stereotype.Service;
+
+import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.JwtUtil;
+import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.common.utils.SimpleLogger;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Token 管理服务实现
@@ -59,7 +61,7 @@ public class TokenServiceImpl implements TokenService {
 
     /**
      * 验证 Token 是否有效且在 Redis 列表中
-     * 
+     *
      * @return true 表示 Token 有效且在列表中；false 表示无效或不在列表中
      */
     @Override

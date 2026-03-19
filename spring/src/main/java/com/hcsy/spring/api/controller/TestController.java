@@ -1,9 +1,14 @@
 package com.hcsy.spring.api.controller;
 
-import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.RequireInternalToken;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.infra.client.FastAPIClient;
 import com.hcsy.spring.infra.client.GoZeroClient;
 import com.hcsy.spring.infra.client.NestjsClient;
@@ -12,11 +17,6 @@ import com.hcsy.spring.infra.task.TokenCleanupTask;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api_spring")

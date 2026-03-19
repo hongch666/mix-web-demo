@@ -1,12 +1,5 @@
 package com.hcsy.spring.core.aspect;
 
-import com.hcsy.spring.core.annotation.RequireInternalToken;
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.InternalTokenUtil;
-import com.hcsy.spring.common.utils.SimpleLogger;
-
-import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -14,12 +7,19 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.InternalTokenUtil;
+import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
+
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 内部服务令牌验证切面
  * 用于验证带有 @RequireInternalToken 注解的方法的请求令牌
- * 
+ *
  * @author hcsy
  */
 @Aspect

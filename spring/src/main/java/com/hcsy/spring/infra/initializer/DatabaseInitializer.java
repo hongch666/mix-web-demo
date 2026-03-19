@@ -1,6 +1,11 @@
 package com.hcsy.spring.infra.initializer;
 
-import lombok.RequiredArgsConstructor;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+
+import javax.sql.DataSource;
+
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -9,10 +14,7 @@ import org.springframework.stereotype.Component;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
-import javax.sql.DataSource;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.Connection;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor

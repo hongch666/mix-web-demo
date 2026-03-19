@@ -1,39 +1,47 @@
 package com.hcsy.spring.api.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.hcsy.spring.api.mapper.CategoryMapper;
+import com.hcsy.spring.api.mapper.SubCategoryMapper;
+import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
+import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.api.mapper.CategoryMapper;
-import com.hcsy.spring.api.mapper.SubCategoryMapper;
-import com.hcsy.spring.api.service.ArticleService;
-import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.RequireInternalToken;
-import com.hcsy.spring.core.annotation.RequirePermission;
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.Result;
-import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ArrayList;
-import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
-
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/articles")
@@ -137,10 +145,10 @@ public class ArticleController {
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
     @RequirePermission(
-        roles = { "admin" }, 
-        allowSelf = true, 
-        businessType = "article", 
-        paramSource = "body", 
+        roles = { "admin" },
+        allowSelf = true,
+        businessType = "article",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @ApiLog("更新文章")
@@ -160,10 +168,10 @@ public class ArticleController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
     @RequirePermission(
-        roles = { "admin" }, 
-        allowSelf = true, 
-        businessType = "article", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        allowSelf = true,
+        businessType = "article",
+        paramSource = "path_single",
         paramNames = { "id" }
     )
     @ApiLog("删除文章")
@@ -175,9 +183,9 @@ public class ArticleController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "article", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "article",
+        paramSource = "path_single",
         paramNames = { "ids" }
     )
     @ApiLog("批量删除文章")

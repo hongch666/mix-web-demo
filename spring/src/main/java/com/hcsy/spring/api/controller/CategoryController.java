@@ -1,14 +1,27 @@
 package com.hcsy.spring.api.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
-import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
@@ -16,12 +29,8 @@ import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Arrays;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/category")
@@ -34,9 +43,9 @@ public class CategoryController {
     @Operation(summary = "新增分类")
     @PostMapping()
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "category", 
-        paramSource = "body", 
+        roles = { "admin" },
+        businessType = "category",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @ApiLog("新增分类")
@@ -48,9 +57,9 @@ public class CategoryController {
     @Operation(summary = "修改分类")
     @PutMapping()
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "category", 
-        paramSource = "body", 
+        roles = { "admin" },
+        businessType = "category",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @ApiLog("修改分类")
@@ -62,9 +71,9 @@ public class CategoryController {
     @Operation(summary = "删除分类（级联删除子分类）")
     @DeleteMapping("/{id}")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "category", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "category",
+        paramSource = "path_single",
         paramNames = { "id" }
     )
     @ApiLog("删除分类")
@@ -76,9 +85,9 @@ public class CategoryController {
     @Operation(summary = "批量删除分类（级联删除子分类）")
     @DeleteMapping("/batch/{ids}")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "category", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "category",
+        paramSource = "path_single",
         paramNames = { "ids" }
     )
     @ApiLog("批量删除分类")
@@ -95,9 +104,9 @@ public class CategoryController {
     @Operation(summary = "新增子分类")
     @PostMapping("/sub")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "subcategory", 
-        paramSource = "body", 
+        roles = { "admin" },
+        businessType = "subcategory",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @ApiLog("新增子分类")
@@ -109,9 +118,9 @@ public class CategoryController {
     @Operation(summary = "修改子分类")
     @PutMapping("/sub")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "subcategory", 
-        paramSource = "body", 
+        roles = { "admin" },
+        businessType = "subcategory",
+        paramSource = "body",
         paramNames = { "id" }
     )
     @ApiLog("修改子分类")
@@ -123,9 +132,9 @@ public class CategoryController {
     @Operation(summary = "删除子分类")
     @DeleteMapping("/sub/{id}")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "subcategory", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "subcategory",
+        paramSource = "path_single",
         paramNames = { "id" }
     )
     @ApiLog("删除子分类")
@@ -137,9 +146,9 @@ public class CategoryController {
     @Operation(summary = "批量删除子分类")
     @DeleteMapping("/sub/batch/{ids}")
     @RequirePermission(
-        roles = { "admin" }, 
-        businessType = "subcategory", 
-        paramSource = "path_single", 
+        roles = { "admin" },
+        businessType = "subcategory",
+        paramSource = "path_single",
         paramNames = { "ids" }
     )
     @ApiLog("批量删除子分类")

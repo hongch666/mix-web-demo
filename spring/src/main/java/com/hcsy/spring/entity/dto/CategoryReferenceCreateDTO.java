@@ -1,7 +1,9 @@
 package com.hcsy.spring.entity.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import jakarta.validation.constraints.*;
 
 @Data
 public class CategoryReferenceCreateDTO {
@@ -13,6 +15,6 @@ public class CategoryReferenceCreateDTO {
     private String type;
 
     private String link; // 当type为link时，此字段必填
-    
+
     private String pdf; // 当type为pdf时，此字段必填
 }
