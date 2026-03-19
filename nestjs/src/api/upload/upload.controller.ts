@@ -43,7 +43,8 @@ export class UploadController {
   async uploadImage(@Req() req: FastifyRequest) {
     const parts = (req as any).parts();
     for await (const part of parts) {
-      if (part.type === 'file') {
+      console.log('Part:', { type: part.type, fieldname: part.fieldname, filename: part.filename });
+      if (part.type === 'file' || part.filename) {
         const result = await this.uploadService.uploadImage(part);
         return success(result);
       }
@@ -79,7 +80,8 @@ export class UploadController {
   ) {
     const parts = (req as any).parts();
     for await (const part of parts) {
-      if (part.type === 'file') {
+      console.log('Part:', { type: part.type, fieldname: part.fieldname, filename: part.filename });
+      if (part.type === 'file' || part.filename) {
         const result = await this.uploadService.uploadPdf(part, customFilename);
         return success(result);
       }
