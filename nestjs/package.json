@@ -17,6 +17,7 @@
     "bun:prod": "bun dist/main.js"
   },
   "dependencies": {
+    "@fastify/multipart": "^9.4.0",
     "@fastify/static": "^8.3.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -26,6 +27,7 @@
     "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^11.2.0",
     "@nestjs/typeorm": "^11.0.0",
+    "ali-oss": "^6.9.0",
     "amqplib": "^0.10.8",
     "axios": "^1.9.0",
     "class-transformer": "^0.5.1",
@@ -44,9 +46,7 @@
     "puppeteer": "^24.28.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.24",
-    "ali-oss": "^6.9.0",
-    "@fastify/multipart": "^9.2.0"
+    "typeorm": "^0.3.24"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

@@ -156,8 +156,25 @@ export class UploadService {
     const localPath = path.join(uploadDir, filename);
 
     try {
-      // 文件对象本身是一个流
-      await pump(file as Readable, fs.createWriteStream(localPath));
+      // @fastify/multipart 返回的对象有 file 属性是真正的 Readable stream
+      logger.info(`检查 file.file 属性, 类型: ${typeof file?.file}`);
+      
+      if (!file.file) {
+        // 如果没有 file.file 属性，尝试使用 toBuffer() 方法
+        if (typeof file.toBuffer === 'function') {
+          logger.info(`使用 toBuffer() 方法读取文件`);
+          const buffer = await file.toBuffer();
+          await fs.promises.writeFile(localPath, buffer);
+          logger.info(`文件已保存到临时目录: ${localPath}`);
+          return localPath;
+        } else {
+          throw new Error('文件对象既没有 file 属性也没有 toBuffer 方法');
+        }
+      }
+      
+      // 使用 file.file 作为流
+      logger.info(`使用 file.file 作为流, 类型: ${typeof file.file}, 是否有 pipe: ${typeof file.file?.pipe}`);
+      await pump(file.file as Readable, fs.createWriteStream(localPath));
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;
     } catch (error: unknown) {
