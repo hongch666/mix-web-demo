@@ -1,14 +1,15 @@
 package com.hcsy.gateway.utils;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Redis令牌桶限流器
@@ -74,12 +75,12 @@ public class TokenBucketRateLimiter {
      * @param refillRate 令牌填充速率(每秒)
      * @return true表示请求被允许，false表示被限流
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "null" })
     public boolean isAllowed(String key, Integer capacity, Integer refillRate) {
         try {
             long now = System.currentTimeMillis();
             DefaultRedisScript<List> script = new DefaultRedisScript<>(TOKEN_BUCKET_LUA_SCRIPT, List.class);
-            
+
             List result = Objects.requireNonNull(
                 redisTemplate.execute(
                     script,
@@ -133,6 +134,7 @@ public class TokenBucketRateLimiter {
      * @param key 限流key
      * @param capacity 令牌桶容量
      */
+    @SuppressWarnings("null")
     public void reset(String key, Integer capacity) {
         try {
             redisTemplate.opsForHash().put(key, "tokens", String.valueOf(capacity));

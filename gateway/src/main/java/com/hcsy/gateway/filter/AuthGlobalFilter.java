@@ -1,11 +1,5 @@
 package com.hcsy.gateway.filter;
 
-import com.hcsy.gateway.config.AuthProperties;
-import com.hcsy.gateway.utils.JwtUtil;
-import com.hcsy.gateway.utils.RedisUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.List;
 
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -19,6 +13,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.hcsy.gateway.config.AuthProperties;
+import com.hcsy.gateway.utils.JwtUtil;
+import com.hcsy.gateway.utils.RedisUtil;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 

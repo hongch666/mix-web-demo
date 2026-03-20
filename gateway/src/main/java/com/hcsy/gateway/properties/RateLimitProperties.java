@@ -1,11 +1,12 @@
 package com.hcsy.gateway.properties;
 
-import lombok.Data;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import lombok.Data;
 
 /**
  * 限流配置属性

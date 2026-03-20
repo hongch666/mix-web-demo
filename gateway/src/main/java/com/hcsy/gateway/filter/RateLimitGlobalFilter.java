@@ -1,9 +1,5 @@
 package com.hcsy.gateway.filter;
 
-import com.hcsy.gateway.properties.RateLimitProperties;
-import com.hcsy.gateway.utils.TokenBucketRateLimiter;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -12,6 +8,12 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
+
+import com.hcsy.gateway.properties.RateLimitProperties;
+import com.hcsy.gateway.utils.TokenBucketRateLimiter;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 /**
@@ -67,6 +69,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
     /**
      * 匹配该路径是否需要限流
      */
+    @SuppressWarnings("null")
     private RateLimitProperties.RateLimitPath matchRateLimitPath(String path) {
         for (String pattern : rateLimitProperties.getPaths().keySet()) {
             if (antPathMatcher.match(pattern, path)) {
@@ -141,6 +144,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
     /**
      * 返回限流超出响应
      */
+    @SuppressWarnings("null")
     private Mono<Void> rateLimitExceededResponse(ServerWebExchange exchange, String message) {
         exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
@@ -152,7 +156,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         );
 
         return exchange.getResponse()
-            .writeWith(Mono.fromSupplier(() -> 
+            .writeWith(Mono.fromSupplier(() ->
                 exchange.getResponse().bufferFactory().wrap(jsonResponse.getBytes())
             ));
     }
