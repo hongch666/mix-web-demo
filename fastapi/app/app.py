@@ -1,7 +1,8 @@
-from app.api import routers
-from app.core import Constants, exception_handlers
+from app.core.base import Constants
+from app.core.errors import exception_handlers
+from app.framework.middleware import middlewares
+from app.internal.api import routers
 from app.lifespan import lifespan
-from app.middleware import middlewares
 from fastapi import FastAPI
 
 

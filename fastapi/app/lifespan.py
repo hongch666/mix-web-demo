@@ -4,9 +4,10 @@ from typing import Any, Dict
 
 from sqlmodel import Session
 
-from app.core import Constants, logger
-from app.db import create_tables, get_db, load_config, start_nacos
-from app.services import AnalyzeService, start_scheduler
+from app.core.base import Constants, logger
+from app.core.config import load_config, start_nacos
+from app.core.db import create_tables, get_db
+from app.internal.services import AnalyzeService, start_scheduler
 from fastapi import FastAPI
 
 # 加载服务器配置

@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 import uvicorn
 from app import create_app
-from app.db import load_config
+from app.core.config import load_config
 
 # 初始化 FastAPI 应用
 app = create_app()
