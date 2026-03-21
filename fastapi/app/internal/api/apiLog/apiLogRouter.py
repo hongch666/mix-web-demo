@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 
+from app.common.decorators import log, requireAdmin
 from app.core.base import success
-from app.framework.decorators import log, requireAdmin
 from app.internal.services import ApiLogService, get_apilog_service
 from starlette.concurrency import run_in_threadpool
 

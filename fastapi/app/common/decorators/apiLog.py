@@ -4,10 +4,10 @@ import time
 from functools import wraps
 from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Union
 
+from app.common.middleware import get_current_user_id, get_current_username
 from app.core.base import Constants, Logger
 from app.core.db import send_to_queue
 from app.core.errors import BusinessException
-from app.framework.middleware import get_current_user_id, get_current_username
 from fastapi.responses import StreamingResponse
 
 from fastapi import Request

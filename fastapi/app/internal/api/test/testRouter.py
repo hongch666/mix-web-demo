@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
+from app.common.decorators import log, requireInternalToken
 from app.core.base import Constants, Logger, success
-from app.framework.decorators import log, requireInternalToken
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,

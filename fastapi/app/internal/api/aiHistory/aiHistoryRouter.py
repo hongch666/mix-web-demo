@@ -1,8 +1,8 @@
 from typing import Any
 
+from app.common.decorators import log, requireInternalToken
 from app.core.base import success
 from app.core.db import get_db
-from app.framework.decorators import log, requireInternalToken
 from app.internal.models import AiHistory
 from app.internal.schemas import CreateHistoryDTO
 from app.internal.services import AiHistoryService, get_ai_history_service

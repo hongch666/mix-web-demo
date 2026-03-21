@@ -1,8 +1,8 @@
 from typing import Any
 
+from app.common.decorators import log
 from app.core.base import Constants, success
 from app.core.db import get_db
-from app.framework.decorators import log
 from app.internal.crud import (
     ArticleMapper,
     CommentsMapper,

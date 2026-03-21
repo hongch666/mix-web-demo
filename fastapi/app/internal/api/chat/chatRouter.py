@@ -4,11 +4,11 @@ import time
 import uuid
 from typing import Any, AsyncGenerator, Dict
 
+from app.common.decorators import log, requireInternalToken
+from app.common.middleware import get_current_user_id
 from app.core.base import Logger, success
 from app.core.db import get_db
 from app.core.errors import BusinessException
-from app.framework.decorators import log, requireInternalToken
-from app.framework.middleware import get_current_user_id
 from app.internal.models import AiHistory
 from app.internal.schemas import (
     AIServiceType,

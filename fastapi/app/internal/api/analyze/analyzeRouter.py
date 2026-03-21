@@ -1,8 +1,8 @@
 from typing import Any, Dict, List
 
+from app.common.decorators import log, requireAdmin
 from app.core.base import ListResponse, success
 from app.core.db import get_db
-from app.framework.decorators import log, requireAdmin
 from app.internal.services import AnalyzeService, get_analyze_service
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool

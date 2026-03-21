@@ -1,12 +1,12 @@
 from typing import Any, Dict, Optional
 
 import requests
+from app.common.middleware import get_current_user_id, get_current_username
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.db import get_service_instance
 from app.core.errors import BusinessException
-from app.framework.middleware import get_current_user_id, get_current_username
 
 
 async def call_remote_service(

@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
+from app.common.decorators import log
 from app.core.base import success
 from app.core.db import get_db
-from app.framework.decorators import log
 from app.internal.services import UserService, get_user_service
 from sqlmodel import Session
 from starlette.concurrency import run_in_threadpool

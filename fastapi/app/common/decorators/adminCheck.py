@@ -2,10 +2,10 @@ import inspect
 from functools import wraps
 from typing import Any, Callable, Optional
 
+from app.common.middleware import get_current_user_id
 from app.core.base import Constants, Logger
 from app.core.db import get_db
 from app.core.errors import BusinessException
-from app.framework.middleware import get_current_user_id
 from app.internal.crud import get_user_mapper
 from sqlmodel import Session
 
