@@ -1793,10 +1793,10 @@ RATE_LIMIT_SEND_CODE_REFILL_RATE=1
 
 ### 项目文件命名说明
 
-1. Spring 项目采用大驼峰命名方式，如 `UserCreateDTO.java`
-2. GoZero 项目采用小驼峰命名方式，如 `userCreateDTO.go`
-3. NestJS 项目采用点号命名和横杠命名混合使用的方式，横杠区分模块名，点号区分功能，如 `user-create.service.ts`
-4. FastAPI 项目采用小驼峰命名方式，如 `userCreateDTO.py`
+1. Spring 项目采用驼峰命名方式，如 `UserCreateDTO.java`
+2. GoZero 项目采用驼峰命名方式，如 `userCreateDTO.go`
+3. NestJS 项目采用点号命名和驼峰命名混合使用的方式，驼峰命名区分模块名，点号区分功能，如 `userCreate.dto.ts`
+4. FastAPI 项目采用驼峰命名方式，如 `userCreateDTO.py`
 
 ### 返回格式说明
 
