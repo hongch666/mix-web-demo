@@ -7,7 +7,7 @@ import * as os from 'os';
 import qs from 'qs';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
-import { InternalTokenUtil } from 'src/common/utils/internal-token.util';
+import { InternalTokenUtil } from 'src/common/utils/internalToken.util';
 import { logger } from '../../common/utils/writeLog';
 
 interface CallOptions {

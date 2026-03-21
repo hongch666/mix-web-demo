@@ -9,11 +9,11 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiResponse, success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/api-log.decorator';
-import { RequireAdmin } from 'src/framework/decorators/require-admin.decorator';
-import { RequireInternalToken } from 'src/framework/decorators/require-internal-token.decorator';
-import { ApiLogService } from './api-log.service';
-import { CreateApiLogDto, QueryApiLogDto } from './dto/api-log.dto';
+import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
+import { RequireAdmin } from 'src/framework/decorators/requireAdmin.decorator';
+import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
+import { ApiLogService } from './apiLog.service';
+import { CreateApiLogDto, QueryApiLogDto } from './dto/apiLog.dto';
 
 @Controller('api-logs')
 @ApiTags('API日志模块')

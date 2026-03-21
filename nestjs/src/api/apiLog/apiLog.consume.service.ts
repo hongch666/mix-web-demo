@@ -2,8 +2,8 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 import { RabbitMQService } from 'src/modules/mq/mq.service';
-import { ApiLogService } from './api-log.service';
-import { ApiLogMessage, CreateApiLogDto } from './dto/api-log.dto';
+import { ApiLogService } from './apiLog.service';
+import { ApiLogMessage, CreateApiLogDto } from './dto/apiLog.dto';
 
 @Injectable()
 export class ApiLogConsumerService implements OnModuleInit {

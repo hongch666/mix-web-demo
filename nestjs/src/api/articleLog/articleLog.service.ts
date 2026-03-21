@@ -10,8 +10,8 @@ import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 import { ArticleService } from 'src/modules/article/article.service';
 import { UserService } from '../../modules/user/user.service';
-import { CreateArticleLogDto, QueryArticleLogDto } from './dto/article-log.dto';
-import { ArticleLog, ArticleLogDocument } from './schema/article-log.schema';
+import { CreateArticleLogDto, QueryArticleLogDto } from './dto/articleLog.dto';
+import { ArticleLog, ArticleLogDocument } from './schema/articleLog.schema';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

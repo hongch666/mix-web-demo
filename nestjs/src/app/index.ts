@@ -7,7 +7,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { AllExceptionsFilter } from 'src/framework/filters/all-exception.filter';
+import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
 import { Constants } from '../common/utils/constants';
 import { AppModule } from './app.module';
 

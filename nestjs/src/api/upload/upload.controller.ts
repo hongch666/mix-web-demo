@@ -9,8 +9,8 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { Constants } from 'src/common/utils/constants';
 import { success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/api-log.decorator';
-import { RequireInternalToken } from 'src/framework/decorators/require-internal-token.decorator';
+import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
+import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
 import { UploadDto } from './dto/upload.dto';
 import { UploadService } from './upload.service';
 

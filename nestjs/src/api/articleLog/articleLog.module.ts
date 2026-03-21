@@ -4,10 +4,10 @@ import { ArticleModule } from 'src/modules/article/article.module';
 import { RabbitMQModule } from 'src/modules/mq/mq.module';
 import { NacosModule } from 'src/modules/nacos/nacos.module';
 import { UserModule } from '../../modules/user/user.module';
-import { LogConsumerService } from './article-log.consume.service';
-import { ArticleLogController } from './article-log.controller';
-import { ArticleLogService } from './article-log.service';
-import { ArticleLog, ArticleLogSchema } from './schema/article-log.schema';
+import { LogConsumerService } from './articleLog.consume.service';
+import { ArticleLogController } from './articleLog.controller';
+import { ArticleLogService } from './articleLog.service';
+import { ArticleLog, ArticleLogSchema } from './schema/articleLog.schema';
 
 @Module({
   imports: [

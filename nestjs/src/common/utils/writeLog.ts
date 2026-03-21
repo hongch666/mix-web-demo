@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import yamlConfig from '../config/yaml-config.service';
+import yamlConfig from '../config/yamlConfig.service';
 import { BusinessException } from '../exceptions/business.exception';
 
 export class LoggerUtil {

@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ApiLog, ApiLogSchema } from 'src/api/api-log/schema/api-log.schema';
+import { ApiLog, ApiLogSchema } from 'src/api/apiLog/schema/apiLog.schema';
 import {
   ArticleLog,
   ArticleLogSchema,
-} from 'src/api/article-log/schema/article-log.schema';
+} from 'src/api/articleLog/schema/articleLog.schema';
 import { TaskService } from './task.service';
 
 @Module({

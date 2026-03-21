@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { RabbitMQModule } from 'src/modules/mq/mq.module';
 import { NacosModule } from 'src/modules/nacos/nacos.module';
-import { ApiLogConsumerService } from './api-log.consume.service';
-import { ApiLogController } from './api-log.controller';
-import { ApiLogService } from './api-log.service';
-import { ApiLog, ApiLogSchema } from './schema/api-log.schema';
+import { ApiLogConsumerService } from './apiLog.consume.service';
+import { ApiLogController } from './apiLog.controller';
+import { ApiLogService } from './apiLog.service';
+import { ApiLog, ApiLogSchema } from './schema/apiLog.schema';
 
 @Module({
   imports: [

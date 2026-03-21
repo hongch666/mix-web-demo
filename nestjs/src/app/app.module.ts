@@ -5,12 +5,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
-import { InternalTokenGuard } from 'src/framework/guards/internal-token.guard';
-import { RequireAdminGuard } from 'src/framework/guards/require-admin.guard';
-import { ApiLogInterceptor } from 'src/framework/interceptors/api-log.interceptor';
+import { InternalTokenGuard } from 'src/framework/guards/internalToken.guard';
+import { RequireAdminGuard } from 'src/framework/guards/requireAdmin.guard';
+import { ApiLogInterceptor } from 'src/framework/interceptors/apiLog.interceptor';
 import { ApiModule } from '../api/api.module';
-import yamlConfig from '../common/config/yaml-config.service';
-import { InternalTokenUtil } from '../common/utils/internal-token.util';
+import yamlConfig from '../common/config/yamlConfig.service';
+import { InternalTokenUtil } from '../common/utils/internalToken.util';
 import { ClsMiddleware } from '../framework/middleware/cls.middleware';
 import { ModulesModule } from '../modules/modules.module';
 

@@ -3,12 +3,12 @@ import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 import { RabbitMQService } from 'src/modules/mq/mq.service';
-import { ArticleLogService } from './article-log.service';
+import { ArticleLogService } from './articleLog.service';
 import {
   ArticleAction,
   ArticleLogMessage,
   CreateArticleLogDto,
-} from './dto/article-log.dto';
+} from './dto/articleLog.dto';
 
 @Injectable()
 export class LogConsumerService implements OnModuleInit {

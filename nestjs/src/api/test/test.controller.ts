@@ -2,8 +2,8 @@ import { Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Constants } from 'src/common/utils/constants';
 import { ApiResponse, success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/api-log.decorator';
-import { RequireInternalToken } from 'src/framework/decorators/require-internal-token.decorator';
+import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
+import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 import { TaskService } from 'src/modules/task/task.service';
 

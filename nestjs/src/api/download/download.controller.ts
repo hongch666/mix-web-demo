@@ -1,7 +1,7 @@
 import { Controller, Get, Param } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ApiResponse, success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/api-log.decorator';
+import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
 import { DownloadService } from './download.service';
 
 @Controller('download')

@@ -2,12 +2,12 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
-import { InternalTokenUtil } from 'src/common/utils/internal-token.util';
+import { InternalTokenUtil } from 'src/common/utils/internalToken.util';
 import { logger } from 'src/common/utils/writeLog';
 import {
   REQUIRE_INTERNAL_TOKEN_KEY,
   REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY,
-} from '../../framework/decorators/require-internal-token.decorator';
+} from '../decorators/requireInternalToken.decorator';
 
 /**
  * 内部服务令牌验证守卫
