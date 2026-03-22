@@ -6,14 +6,14 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "node:build": "nest build",
     "node:start": "nest start",
     "node:start:dev": "nest start --watch",
     "node:start:debug": "nest start --debug --watch",
+    "node:build": "nest build",
     "node:start:prod": "node dist/main",
-    "bun:build": "bun run nest build",
     "bun:start": "bun src/main.ts",
     "bun:dev": "bun --watch src/main.ts",
+    "bun:build": "bun run nest build",
     "bun:prod": "bun dist/main.js"
   },
   "dependencies": {
