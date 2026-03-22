@@ -127,10 +127,10 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			// 通过RabbitMQ发送消息
 			if l.svcCtx.RabbitMQChannel != nil {
 				err = l.svcCtx.RabbitMQChannel.Publish(
-					"",          // exchange
-					"log-queue", // routing key
-					false,       // mandatory
-					false,       // immediate
+					"",                  // exchange
+					"article-log-queue", // routing key
+					false,               // mandatory
+					false,               // immediate
 					amqp.Publishing{
 						ContentType: "application/json",
 						Body:        jsonBytes,
