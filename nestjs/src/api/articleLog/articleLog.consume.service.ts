@@ -20,7 +20,7 @@ export class LogConsumerService implements OnModuleInit {
   async onModuleInit() {
     logger.info(Constants.ARTICLE_RABBITMQ_START);
     await this.rabbitMQService.consume(
-      'log-queue',
+      'article-log-queue',
       async (msg): Promise<void> => {
         try {
           // 处理两种消息格式：1.对象, 2.JSON 字符串

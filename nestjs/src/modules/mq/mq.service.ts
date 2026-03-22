@@ -39,7 +39,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
   private async initializeQueues(): Promise<void> {
     const queues: string[] = [
       'api-log-queue', // API日志队列
-      'log-queue', // 通用日志队列
+      'article-log-queue', // 文章日志队列
     ];
 
     for (const queue of queues) {
