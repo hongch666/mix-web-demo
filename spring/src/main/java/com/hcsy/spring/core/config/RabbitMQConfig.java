@@ -14,6 +14,6 @@ public class RabbitMQConfig {
 
     @Bean
     Queue logQueue() {
-        return new Queue("log-queue", true); // durable
+        return new Queue("article-log-queue", true); // durable
     }
 }

@@ -59,7 +59,7 @@ public class ArticleSyncAspect {
 
                 // 5. 发送消息
                 String json = objectMapper.writeValueAsString(msg);
-                rabbitMQUtil.sendMessage("log-queue", msg);
+                rabbitMQUtil.sendMessage("article-log-queue", msg);
                 logger.info(Constants.MQ_SEND + json);
 
                 // 6. 在主线程中保存用户信息，用于异步任务日志记录
