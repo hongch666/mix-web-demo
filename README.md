@@ -34,7 +34,7 @@
 8. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
 9. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
 10. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
-11. 基于 FastAPI 和 SQLModel 进行文章相关数据的获取和同步
+11. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
 12. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
 
 ## 设计图
