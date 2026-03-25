@@ -374,9 +374,10 @@ def _extract_params_info(
                         "fastapi" in annotation_str or "starlette" in annotation_str
                     ) and "Request" in annotation_str:
                         continue
-                    # 排除 sqlmodel.Session 等数据库相关
+                    # 排除数据库会话类型（SQLAlchemy）
                     if any(
-                        db_type in annotation_str for db_type in ["Session", "sqlmodel"]
+                        db_type in annotation_str
+                        for db_type in ["Session", "sqlalchemy"]
                     ):
                         continue
 

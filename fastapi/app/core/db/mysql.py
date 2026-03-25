@@ -56,11 +56,11 @@ SessionLocal = sessionmaker(
 )
 
 
-# 保留原 SQLModel-like 的 .exec 兼容方法
+# exec 兼容方法
 def _session_exec(self, statement):
     result = self.execute(statement)
 
-    # SQLModel 兼容性：如果 query 只返回一个 ORM 模型或一个列，则使用 scalars()
+    # 如果 query 只返回一个 ORM 模型或一个列，则使用 scalars()
     if hasattr(statement, "_raw_columns") and len(statement._raw_columns) == 1:
         try:
             return result.scalars()
