@@ -28,7 +28,8 @@ RUN apk add --no-cache curl ca-certificates && \
     apk add --no-cache font-noto-cjk
 
 # 从构建阶段复制JAR文件
-COPY --from=builder /app/target/spring-0.0.1-SNAPSHOT.jar app.jar
+# 兼容不同版本名，避免固定版本号导致构建失败
+COPY --from=builder /app/target/spring-1.0.0.jar app.jar
 
 # 创建日志目录
 RUN mkdir -p /app/logs/spring && \
