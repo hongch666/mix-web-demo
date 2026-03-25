@@ -3,23 +3,23 @@ from typing import Generator, List, Optional
 from app.core.base import Constants, Logger
 from app.core.config import load_config
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session as SASession
+from sqlalchemy.orm import Session as SASession, declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
 
-# 数据库连接配置
-HOST: str = load_config("database")["mysql"]["host"]
-PORT: int = load_config("database")["mysql"]["port"]
-DATABASE: str = load_config("database")["mysql"]["database"]
-USER: str = load_config("database")["mysql"]["user"]
-PASSWORD: str = load_config("database")["mysql"]["password"]
+Base = declarative_base()
+
+mysql_config = load_config("database")["mysql"]
+HOST: str = mysql_config["host"]
+PORT: int = mysql_config["port"]
+DATABASE: str = mysql_config["database"]
+USER: str = mysql_config["user"]
+PASSWORD: str = mysql_config["password"]
 
 DATABASE_URL: str = (
     f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 )
 
-# 从配置文件读取连接池参数
-mysql_config = load_config("database")["mysql"]
 POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
 MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
 POOL_RECYCLE: int = int(mysql_config.get("pool_recycle", 3600))
@@ -54,24 +54,6 @@ SessionLocal = sessionmaker(
     future=True,
     class_=SASession,
 )
-
-
-# exec 兼容方法
-def _session_exec(self, statement):
-    result = self.execute(statement)
-
-    # 如果 query 只返回一个 ORM 模型或一个列，则使用 scalars()
-    if hasattr(statement, "_raw_columns") and len(statement._raw_columns) == 1:
-        try:
-            return result.scalars()
-        except Exception:
-            pass
-
-    # 其他查询返回完整结果（row tuples 等）
-    return result
-
-
-SASession.exec = _session_exec
 
 
 def get_db() -> Generator[SASession, None, None]:

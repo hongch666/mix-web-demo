@@ -21,7 +21,7 @@ class UserMapper:
             用户对象列表
         """
         statement = select(User).where(User.id.in_(user_ids))
-        return db.exec(statement).all()
+        return db.execute(statement).scalars().all()
 
     def get_user_by_id(self, user_id: int, db: Session) -> Optional[User]:
         """根据用户ID获取用户信息
@@ -34,7 +34,7 @@ class UserMapper:
             用户对象或None
         """
         statement = select(User).where(User.id == user_id)
-        return db.exec(statement).first()
+        return db.execute(statement).scalars().first()
 
     def get_user_role(self, user_id: int, db: Session) -> str:
         """获取用户角色

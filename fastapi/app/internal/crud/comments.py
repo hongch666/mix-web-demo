@@ -18,7 +18,7 @@ class CommentsMapper:
     ) -> int:
         # 第一步: 查询所有 role 为 "ai" 的用户ID
         ai_user_statement = select(User.id).where(User.role == "ai")
-        ai_user_ids = db.exec(ai_user_statement).all()
+        ai_user_ids = db.execute(ai_user_statement).scalars().all()
 
         # 如果没有AI用户,直接返回0
         if not ai_user_ids:
@@ -28,7 +28,7 @@ class CommentsMapper:
         comments_statement = select(Comments).where(
             Comments.article_id == article_id, Comments.user_id.in_(ai_user_ids)
         )
-        ai_comments = db.exec(comments_statement).all()
+        ai_comments = db.execute(comments_statement).scalars().all()
 
         return len(ai_comments)
 
@@ -43,11 +43,11 @@ class CommentsMapper:
     ) -> None:
         # 查询所有 role 为 "ai" 的用户ID
         ai_user_statement = select(User.id).where(User.role == "ai")
-        ai_user_ids = db.exec(ai_user_statement).all()
+        ai_user_ids = db.execute(ai_user_statement).scalars().all()
         comments_statement = select(Comments).where(
             Comments.article_id == article_id, Comments.user_id.in_(ai_user_ids)
         )
-        comments_to_delete = db.exec(comments_statement).all()
+        comments_to_delete = db.execute(comments_statement).scalars().all()
 
         for comment in comments_to_delete:
             db.delete(comment)
@@ -84,7 +84,7 @@ class CommentsMapper:
             .order_by(cast(Comments.create_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0

@@ -31,11 +31,11 @@ class AiHistoryMapper:
                 .order_by(AiHistory.created_at.asc())
                 .limit(limit)
             )
-        return db.exec(statement).all()
+        return db.execute(statement).scalars().all()
 
     def delete_ai_history_by_userid(self, db: Session, user_id: int) -> None:
         statement = select(AiHistory).where(AiHistory.user_id == user_id)
-        histories = db.exec(statement).all()
+        histories = db.execute(statement).scalars().all()
         for history in histories:
             db.delete(history)
         db.commit()

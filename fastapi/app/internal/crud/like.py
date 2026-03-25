@@ -16,8 +16,7 @@ class LikeMapper:
     def get_total_likes_mapper(self, db: Session) -> int:
         """获取所有文章的总点赞数"""
         statement = select(func.count(Like.id))
-        total_likes = db.exec(statement).first()
-        return total_likes if total_likes else 0
+        return db.execute(statement).scalar_one()
 
     def get_average_likes_mapper(self, db: Session) -> float:
         """获取每篇文章的平均点赞数"""
@@ -57,7 +56,7 @@ class LikeMapper:
             .order_by(cast(Like.created_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0

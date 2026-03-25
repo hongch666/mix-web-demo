@@ -11,7 +11,7 @@ class CategoryMapper:
 
     def get_all_categories_mapper(self, db: Session) -> List[Category]:
         statement = select(Category).distinct()
-        return db.exec(statement).all()
+        return db.execute(statement).scalars().all()
 
     def get_subcategories_with_parent_mapper(
         self, db: Session
@@ -20,14 +20,14 @@ class CategoryMapper:
         获取所有子分类及其对应的父分类名称
         返回: [{"id": 1, "name": "Python", "category_name": "编程语言", ...}, ...]
         """
-        subcategories = db.exec(select(SubCategory)).all()
+        subcategories = db.execute(select(SubCategory)).scalars().all()
 
         result: List[Dict[str, object]] = []
         for sub in subcategories:
             # 获取对应的父分类
-            parent = db.exec(
+            parent = db.execute(
                 select(Category).where(Category.id == sub.category_id)
-            ).first()
+            ).scalars().first()
             result.append(
                 {
                     "id": sub.id,

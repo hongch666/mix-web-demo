@@ -128,7 +128,7 @@ class ArticleMapper:
 
     def get_top10_articles_db_mapper(self, db: Session) -> List[Article]:
         statement = select(Article).order_by(Article.views.desc()).limit(10)
-        return db.exec(statement).all()
+        return db.execute(statement).scalars().all()
 
     def get_clickhouse_connection(self) -> Any:
         """获取 ClickHouse 连接（用于缓存版本检查）"""
@@ -140,7 +140,7 @@ class ArticleMapper:
 
     def get_all_articles_mapper(self, db: Session) -> List[Article]:
         statement = select(Article)
-        return db.exec(statement).all()
+        return db.execute(statement).scalars().all()
 
     def get_articles_for_excel_export_mapper(self, db: Session) -> List[Dict[str, Any]]:
         """获取导出Excel所需文章数据（连表聚合）"""
@@ -208,7 +208,7 @@ class ArticleMapper:
             )
             .order_by(Article.id.asc())
         )
-        rows = db.exec(statement).all()
+        rows = db.execute(statement).all()
 
         result: List[Dict[str, Any]] = []
         for row in rows:
@@ -237,7 +237,7 @@ class ArticleMapper:
         self, article_id: int, db: Session
     ) -> Optional[Article]:
         statement = select(Article).where(Article.id == article_id)
-        return db.exec(statement).first()
+        return db.execute(statement).scalars().first()
 
     def get_articles_by_ids_mapper(
         self, article_ids: List[int], db: Session
@@ -246,32 +246,32 @@ class ArticleMapper:
         if not article_ids:
             return {}
         statement = select(Article).where(Article.id.in_(article_ids))
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
         return {article.id: article for article in articles}
 
     def get_total_views_mapper(self, db: Session) -> int:
         """获取所有文章的总阅读量"""
         statement = select(Article)
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
         return sum(article.views for article in articles)
 
     def get_total_articles_mapper(self, db: Session) -> int:
         """获取文章总数"""
         statement = select(Article)
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
         return len(articles)
 
     def get_active_authors_mapper(self, db: Session) -> int:
         """获取活跃作者数（所有有文章的用户）"""
         statement = select(Article)
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
         active_author_ids = set(article.user_id for article in articles)
         return len(active_author_ids)
 
     def get_average_views_mapper(self, db: Session) -> float:
         """获取平均阅读次数"""
         statement = select(Article)
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
         if not articles:
             return 0
         total_views = sum(article.views for article in articles)
@@ -350,7 +350,7 @@ class ArticleMapper:
         从DB获取按父分类排序的文章数量
         """
         statement = select(Article).where(Article.status == 1)
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
 
         # 按sub_category_id分组统计
         category_count = {}
@@ -451,7 +451,7 @@ class ArticleMapper:
         """
 
         statement = select(Article).where(Article.status == 1)
-        articles = db.exec(statement).all()
+        articles = db.execute(statement).scalars().all()
 
         # 过滤最近24个月的文章
         ten_months_ago = datetime.now() - timedelta(days=730)

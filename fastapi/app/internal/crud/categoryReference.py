@@ -22,7 +22,7 @@ class CategoryReferenceMapper:
         statement = select(CategoryReference).where(
             CategoryReference.sub_category_id == sub_category_id
         )
-        category_ref = db.exec(statement).first()
+        category_ref = db.execute(statement).scalars().first()
 
         if category_ref:
             Logger.info(f"成功获取参考文本: type={category_ref.type}")

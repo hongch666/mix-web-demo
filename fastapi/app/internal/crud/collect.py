@@ -17,8 +17,7 @@ class CollectMapper:
         """获取所有文章的总收藏数"""
 
         statement = select(func.count(Collect.id))
-        total_collects = db.exec(statement).first()
-        return total_collects if total_collects else 0
+        return db.execute(statement).scalar_one()
 
     def get_average_collects_mapper(self, db: Session) -> float:
         """获取每篇文章的平均收藏数"""
@@ -60,7 +59,7 @@ class CollectMapper:
             .order_by(cast(Collect.created_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0

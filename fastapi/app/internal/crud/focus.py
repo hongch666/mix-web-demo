@@ -15,8 +15,7 @@ class FocusMapper:
         """获取用户的粉丝总数（被多少人关注）"""
 
         statement = select(func.count(Focus.id)).where(Focus.focus_id == user_id)
-        total_followers = db.exec(statement).first()
-        return total_followers if total_followers else 0
+        return db.execute(statement).scalar_one()
 
     def get_followers_in_period_mapper(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
@@ -28,8 +27,7 @@ class FocusMapper:
             Focus.created_time >= start_date,
             Focus.created_time <= end_date,
         )
-        count = db.exec(statement).first()
-        return count if count else 0
+        return db.execute(statement).scalar_one()
 
     def get_daily_followers_mapper(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
@@ -50,15 +48,14 @@ class FocusMapper:
             .order_by(cast(Focus.created_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
         return results if results else []
 
     def get_total_follows_mapper(self, db: Session, user_id: int) -> int:
         """获取用户的总关注数"""
 
         statement = select(func.count(Focus.id)).where(Focus.user_id == user_id)
-        total_follows = db.exec(statement).first()
-        return total_follows if total_follows else 0
+        return db.execute(statement).scalar_one()
 
     def get_daily_follows_mapper(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
@@ -79,7 +76,7 @@ class FocusMapper:
             .order_by(cast(Focus.created_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
         return results if results else []
 
     def get_monthly_follow_trend_mapper(
@@ -112,7 +109,7 @@ class FocusMapper:
             .order_by(cast(Focus.created_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0
@@ -157,7 +154,7 @@ class FocusMapper:
             .order_by(cast(Focus.created_time, Date))
         )
 
-        results = db.exec(statement).all()
+        results = db.execute(statement).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0

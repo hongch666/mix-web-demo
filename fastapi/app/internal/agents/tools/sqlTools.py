@@ -146,7 +146,7 @@ class SQLTools:
 
             # 执行查询
             with Session(self.engine) as session:
-                result = session.exec(text(query))
+                result = session.execute(text(query))
                 rows = result.fetchall()
                 columns = result.keys()
 
