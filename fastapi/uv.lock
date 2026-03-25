@@ -734,7 +734,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "redis" },
     { name = "requests" },
-    { name = "sqlmodel" },
+    { name = "sqlalchemy" },
     { name = "uvicorn" },
     { name = "wordcloud" },
 ]
@@ -768,7 +768,7 @@ requires-dist = [
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "redis", specifier = "==5.0.1" },
     { name = "requests", specifier = "==2.32.5" },
-    { name = "sqlmodel", specifier = "==0.0.24" },
+    { name = "sqlalchemy", specifier = ">=2.0.20" },
     { name = "uvicorn", specifier = "==0.35.0" },
     { name = "wordcloud", specifier = "==1.9.4" },
 ]
@@ -2508,19 +2508,6 @@ wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/33/75/f28622ba6dde79cd545055ea7bd4062dc934e0621f7b3be2891f8563f8de/sqlalchemy-2.0.46-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:ff33c6e6ad006bbc0f34f5faf941cfc62c45841c64c0a058ac38c799f15b5ede" },
     { url = "https://mirrors.aliyun.com/pypi/packages/a9/42/4afecbbc38d5e99b18acef446453c76eec6fbd03db0a457a12a056836e22/sqlalchemy-2.0.46-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:82ec52100ec1e6ec671563bbd02d7c7c8d0b9e71a0723c72f22ecf52d1755330" },
     { url = "https://mirrors.aliyun.com/pypi/packages/fc/a1/9c4efa03300926601c19c18582531b45aededfb961ab3c3585f1e24f120b/sqlalchemy-2.0.46-py3-none-any.whl", hash = "sha256:f9c11766e7e7c0a2767dda5acb006a118640c9fc0a4104214b96269bfb78399e" },
-]
-
-[[package]]
-name = "sqlmodel"
-version = "0.0.24"
-source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
-dependencies = [
-    { name = "pydantic" },
-    { name = "sqlalchemy" },
-]
-sdist = { url = "https://mirrors.aliyun.com/pypi/packages/86/4b/c2ad0496f5bdc6073d9b4cef52be9c04f2b37a5773441cc6600b1857648b/sqlmodel-0.0.24.tar.gz", hash = "sha256:cc5c7613c1a5533c9c7867e1aab2fd489a76c9e8a061984da11b4e613c182423" }
-wheels = [
-    { url = "https://mirrors.aliyun.com/pypi/packages/16/91/484cd2d05569892b7fef7f5ceab3bc89fb0f8a8c0cde1030d383dbc5449c/sqlmodel-0.0.24-py3-none-any.whl", hash = "sha256:6778852f09370908985b667d6a3ab92910d0d5ec88adcaf23dbc242715ff7193" },
 ]
 
 [[package]]

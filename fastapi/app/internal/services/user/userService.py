@@ -18,7 +18,7 @@ from app.internal.crud import (
     get_like_mapper,
 )
 from dateutil.relativedelta import relativedelta
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 from fastapi import Depends
 

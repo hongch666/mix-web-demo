@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Tuple
 from app.core.base import Constants, Logger
 from app.internal.agents import get_mongodb_tools, get_rag_tools, get_sql_tools
 from langchain_core.prompts import PromptTemplate
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 ChatHistoryItem = Tuple[str, str]
 IntermediateStep = Tuple[Any, Any]

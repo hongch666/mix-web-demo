@@ -1,20 +1,18 @@
-from datetime import datetime
-from typing import Optional
-
-from sqlmodel import Field, SQLModel
+from app.core.db.base import Base
+from sqlalchemy import Column, DateTime, Integer, String, Text
 
 
-class Article(SQLModel, table=True):
+class Article(Base):
     """文章实体类"""
 
     __tablename__ = "articles"
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    title: str = Field()
-    content: str = Field()
-    user_id: Optional[int] = Field(default=None)
-    tags: Optional[str] = Field(default=None)
-    status: Optional[str] = Field(default=None)
-    create_at: Optional[datetime] = Field(default=None)
-    update_at: Optional[datetime] = Field(default=None)
-    views: Optional[int] = Field(default=0)
-    sub_category_id: Optional[int] = Field(default=None)  # 子分类ID
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    user_id = Column(Integer, nullable=True)
+    tags = Column(String(255), nullable=True)
+    status = Column(String(50), nullable=True)
+    create_at = Column(DateTime, nullable=True)
+    update_at = Column(DateTime, nullable=True)
+    views = Column(Integer, default=0, nullable=False)
+    sub_category_id = Column(Integer, nullable=True)  # 子分类ID

@@ -7,7 +7,7 @@ from app.core.base import Constants, Logger
 from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.crud import get_user_mapper
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 
 def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:

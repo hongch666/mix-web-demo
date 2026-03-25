@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlmodel import Field, SQLModel
+from app.core.db.base import Base
+from sqlalchemy import Column, DateTime, Integer
 
 
-class Focus(SQLModel, table=True):
+class Focus(Base):
     """关注实体类"""
 
     __tablename__ = "focus"
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    user_id: int = Field()
-    focus_id: int = Field()
-    created_time: Optional[datetime] = Field(default_factory=datetime.now)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    focus_id = Column(Integer, nullable=False)
+    created_time = Column(DateTime, nullable=True, default=datetime.now)

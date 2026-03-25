@@ -19,6 +19,7 @@ except Exception as _exc:
     register_instance = _missing_nacos
     start_nacos = _missing_nacos
 
+from .base import Base
 from .mongodb import client, db
 from .mysql import create_tables, engine, get_db
 

@@ -1,19 +1,18 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import Column, Text
-from sqlmodel import Field, SQLModel
+from app.core.db.base import Base
+from sqlalchemy import Column, DateTime, Integer, String, Text
 
 
-class AiHistory(SQLModel, table=True):
+class AiHistory(Base):
     """AI 历史记录实体类"""
 
     __tablename__ = "ai_history"
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    user_id: Optional[int] = Field(default=None)
-    ask: str = Field(default="", sa_column=Column(Text))
-    reply: str = Field(default="", sa_column=Column(Text))
-    thinking: Optional[str] = Field(default=None, sa_column=Column(Text))
-    ai_type: str = Field()
-    created_at: Optional[datetime] = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = Field(default_factory=datetime.now)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, nullable=True)
+    ask = Column(Text, nullable=False, default="")
+    reply = Column(Text, nullable=False, default="")
+    thinking = Column(Text, nullable=True)
+    ai_type = Column(String(50), nullable=False)
+    created_at = Column(DateTime, nullable=True, default=datetime.now)
+    updated_at = Column(DateTime, nullable=True, default=datetime.now)

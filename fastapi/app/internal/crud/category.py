@@ -2,7 +2,8 @@ from functools import lru_cache
 from typing import Dict, List
 
 from app.internal.models import Category, SubCategory
-from sqlmodel import Session, select
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 
 class CategoryMapper:

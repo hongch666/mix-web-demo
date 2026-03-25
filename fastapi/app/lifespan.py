@@ -2,7 +2,7 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 from app.core.base import Constants, logger
 from app.core.config import load_config, start_nacos

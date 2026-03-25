@@ -7,7 +7,7 @@ from app.core.base import Constants, Logger
 from app.core.config import load_config
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 # Redis 键名
 _VECTOR_SYNC_TIME_KEY: str = "vector_sync:last_sync_time"

@@ -1,14 +1,14 @@
 from datetime import datetime
-from typing import Optional
 
-from sqlmodel import Field, SQLModel
+from app.core.db.base import Base
+from sqlalchemy import Column, DateTime, Integer
 
 
-class Collect(SQLModel, table=True):
+class Collect(Base):
     """收藏实体类"""
 
     __tablename__ = "collects"
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    article_id: int = Field(index=True)
-    user_id: int = Field(index=True)
-    created_time: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    article_id = Column(Integer, nullable=False, index=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    created_time = Column(DateTime, nullable=True, default=datetime.utcnow)

@@ -13,7 +13,7 @@ from app.internal.crud import (
 from langchain_classic.agents import AgentExecutor, create_react_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 from fastapi import Depends
 

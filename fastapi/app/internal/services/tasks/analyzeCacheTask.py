@@ -2,7 +2,7 @@ import traceback
 from typing import Any, Callable, Optional
 
 from app.core.base import Constants, Logger
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 
 def update_analyze_caches(

@@ -15,7 +15,8 @@ from app.internal.models import (
     SubCategory,
     User,
 )
-from sqlmodel import Session, func, select
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 
 
 class ArticleMapper:

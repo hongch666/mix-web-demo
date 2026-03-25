@@ -1,17 +1,16 @@
-from typing import Optional
+from app.core.db.base import Base
+from sqlalchemy import Column, Integer, String
 
-from sqlmodel import Field, SQLModel
 
-
-class User(SQLModel, table=True):
+class User(Base):
     """用户实体类"""
 
     __tablename__ = "user"
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    password: str = Field()
-    name: str = Field()
-    age: Optional[int] = Field(default=None)
-    email: Optional[str] = Field(default=None)
-    role: Optional[str] = Field(default=None)
-    img: Optional[str] = Field(default=None)
-    signature: Optional[str] = Field(default=None)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    password = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
+    age = Column(Integer, nullable=True)
+    email = Column(String(255), nullable=True)
+    role = Column(String(50), nullable=True)
+    img = Column(String(512), nullable=True)
+    signature = Column(String(512), nullable=True)

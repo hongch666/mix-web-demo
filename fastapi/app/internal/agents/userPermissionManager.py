@@ -3,7 +3,7 @@ from typing import Any, List, Optional, Tuple
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 
 class UserPermissionManager:

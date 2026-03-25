@@ -5,8 +5,8 @@ from typing import List, Optional
 from app.core.base import Constants
 from langchain_community.utilities import SQLDatabase
 from langchain_core.tools import Tool
-from sqlalchemy import inspect, text
-from sqlmodel import Session, create_engine
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.orm import Session
 
 # 用户ID上下文变量
 user_id_context: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(

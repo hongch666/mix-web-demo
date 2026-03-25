@@ -4,7 +4,8 @@ from typing import Any, Dict, List
 
 from app.core.base import Logger
 from app.internal.models import Like
-from sqlmodel import Date, Session, cast, func, select
+from sqlalchemy import Date, cast, func, select
+from sqlalchemy.orm import Session
 
 from . import get_article_mapper
 

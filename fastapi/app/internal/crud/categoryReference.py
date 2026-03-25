@@ -3,7 +3,8 @@ from typing import Any, Dict, Optional
 
 from app.core.base import Logger
 from app.internal.models import CategoryReference
-from sqlmodel import Session, select
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 
 class CategoryReferenceMapper:

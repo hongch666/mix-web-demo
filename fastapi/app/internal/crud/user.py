@@ -3,7 +3,8 @@ from typing import Any, List, Optional
 
 from app.core.base import Constants
 from app.internal.models import User
-from sqlmodel import Session, select
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 
 class UserMapper:

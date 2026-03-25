@@ -6,7 +6,7 @@ from app.core.db import get_db
 from app.internal.models import AiHistory
 from app.internal.schemas import CreateHistoryDTO
 from app.internal.services import AiHistoryService, get_ai_history_service
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Depends, Request

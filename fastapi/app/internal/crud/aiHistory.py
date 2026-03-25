@@ -2,7 +2,8 @@ from functools import lru_cache
 from typing import List, Optional
 
 from app.internal.models import AiHistory
-from sqlmodel import Session, select
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 
 class AiHistoryMapper:

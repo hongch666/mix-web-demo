@@ -2,8 +2,10 @@ from typing import Generator, List, Optional
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session as SASession
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import QueuePool
-from sqlmodel import Session, create_engine
 
 # 数据库连接配置
 HOST: str = load_config("database")["mysql"]["host"]
@@ -45,9 +47,35 @@ engine = create_engine(
     },
 )
 
+SessionLocal = sessionmaker(
+    bind=engine,
+    autocommit=False,
+    autoflush=False,
+    future=True,
+    class_=SASession,
+)
 
-def get_db() -> Generator[Session, None, None]:
-    with Session(engine) as session:
+
+# 保留原 SQLModel-like 的 .exec 兼容方法
+def _session_exec(self, statement):
+    result = self.execute(statement)
+
+    # SQLModel 兼容性：如果 query 只返回一个 ORM 模型或一个列，则使用 scalars()
+    if hasattr(statement, "_raw_columns") and len(statement._raw_columns) == 1:
+        try:
+            return result.scalars()
+        except Exception:
+            pass
+
+    # 其他查询返回完整结果（row tuples 等）
+    return result
+
+
+SASession.exec = _session_exec
+
+
+def get_db() -> Generator[SASession, None, None]:
+    with SessionLocal() as session:
         yield session
 
 

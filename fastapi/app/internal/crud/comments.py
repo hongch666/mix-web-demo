@@ -4,8 +4,10 @@ from typing import Any, Dict, List
 
 from app.core.base import Logger
 from app.internal.models import Comments, User
-from sqlmodel import Date, Session, cast, select
-from sqlmodel import func as sa_func
+from sqlalchemy import Date, cast, func, select
+from sqlalchemy.orm import Session
+
+sa_func = func
 
 
 class CommentsMapper:

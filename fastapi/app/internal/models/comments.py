@@ -1,16 +1,15 @@
-from typing import Optional
+from app.core.db.base import Base
+from sqlalchemy import Column, Float, Integer, String
 
-from sqlmodel import Field, SQLModel
 
-
-class Comments(SQLModel, table=True):
+class Comments(Base):
     """评论实体类"""
 
     __tablename__ = "comments"
-    id: Optional[int] = Field(default=None, primary_key=True, index=True)
-    content: str = Field()
-    star: float = Field()
-    user_id: int = Field()
-    article_id: int = Field()
-    create_time: Optional[str] = Field(default=None)
-    update_time: Optional[str] = Field(default=None)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    content = Column(String(2048), nullable=False)
+    star = Column(Float, nullable=False)
+    user_id = Column(Integer, nullable=False)
+    article_id = Column(Integer, nullable=False)
+    create_time = Column(String(64), nullable=True)
+    update_time = Column(String(64), nullable=True)

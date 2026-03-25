@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional
 from app.core.base import Constants, Logger
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import BaseScheduler
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
 from .tasks.analyzeCacheTask import update_analyze_caches
 from .tasks.vectorSyncTask import export_article_vectors_to_postgres
