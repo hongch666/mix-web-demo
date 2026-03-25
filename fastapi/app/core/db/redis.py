@@ -1,4 +1,6 @@
 import json
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Optional
 
 import redis
@@ -64,6 +66,15 @@ class RedisClient:
         """获取 Redis 客户端"""
         return self._client
 
+    def _json_default(self, obj: Any) -> Any:
+        """将常见非 JSON 类型转换为可序列化类型"""
+        if isinstance(obj, Decimal):
+            # 尽量保留数值语义，整数返回 int，其他返回 float
+            return int(obj) if obj == obj.to_integral_value() else float(obj)
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return str(obj)
+
     def is_available(self) -> bool:
         """检查 Redis 是否可用"""
         try:
@@ -105,9 +116,11 @@ class RedisClient:
             if not self._client:
                 return False
 
-            # 序列化为 JSON
+            # 序列化为 JSON，支持 Decimal / datetime 等常见数据库类型
             if isinstance(value, (dict, list)):
-                value = json.dumps(value, ensure_ascii=False)
+                value = json.dumps(
+                    value, ensure_ascii=False, default=self._json_default
+                )
 
             self._client.set(key, value, ex=ex)
             return True

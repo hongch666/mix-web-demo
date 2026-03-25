@@ -251,31 +251,24 @@ class ArticleMapper:
 
     def get_total_views_mapper(self, db: Session) -> int:
         """获取所有文章的总阅读量"""
-        statement = select(Article)
-        articles = db.execute(statement).scalars().all()
-        return sum(article.views for article in articles)
+        statement = select(func.coalesce(func.sum(Article.views), 0))
+        return db.execute(statement).scalar_one()
 
     def get_total_articles_mapper(self, db: Session) -> int:
         """获取文章总数"""
-        statement = select(Article)
-        articles = db.execute(statement).scalars().all()
-        return len(articles)
+        statement = select(func.count(Article.id))
+        return db.execute(statement).scalar_one()
 
     def get_active_authors_mapper(self, db: Session) -> int:
         """获取活跃作者数（所有有文章的用户）"""
-        statement = select(Article)
-        articles = db.execute(statement).scalars().all()
-        active_author_ids = set(article.user_id for article in articles)
-        return len(active_author_ids)
+        statement = select(func.count(func.distinct(Article.user_id)))
+        return db.execute(statement).scalar_one()
 
     def get_average_views_mapper(self, db: Session) -> float:
         """获取平均阅读次数"""
-        statement = select(Article)
-        articles = db.execute(statement).scalars().all()
-        if not articles:
-            return 0
-        total_views = sum(article.views for article in articles)
-        return round(total_views / len(articles), 2)
+        statement = select(func.coalesce(func.avg(Article.views), 0))
+        average_views = db.execute(statement).scalar_one()
+        return round(float(average_views), 2)
 
     def get_category_article_count_clickhouse_mapper(self) -> List[Dict[str, Any]]:
         """
@@ -349,21 +342,27 @@ class ArticleMapper:
         """
         从DB获取按父分类排序的文章数量
         """
-        statement = select(Article).where(Article.status == 1)
-        articles = db.execute(statement).scalars().all()
+        count_expr = func.count(Article.id)
+        statement = (
+            select(
+                Article.sub_category_id.label("sub_category_id"),
+                count_expr.label("count"),
+            )
+            .where(Article.status == 1)
+            .group_by(Article.sub_category_id)
+            .order_by(count_expr.desc())
+        )
+        rows = db.execute(statement).all()
 
-        # 按sub_category_id分组统计
-        category_count = {}
-        for article in articles:
-            if article.sub_category_id not in category_count:
-                category_count[article.sub_category_id] = 0
-            category_count[article.sub_category_id] += 1
-
-        # 排序
-        result = [{"sub_category_id": k, "count": v} for k, v in category_count.items()]
-        result.sort(key=lambda x: x["count"], reverse=True)
-
-        return result
+        return [
+            {
+                "sub_category_id": row._mapping["sub_category_id"],
+                "count": (
+                    int(row._mapping["count"]) if row._mapping["count"] is not None else 0
+                ),
+            }
+            for row in rows
+        ]
 
     def get_monthly_publish_count_clickhouse_mapper(self) -> List[Dict[str, Any]]:
         """
@@ -450,28 +449,32 @@ class ArticleMapper:
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
         """
 
-        statement = select(Article).where(Article.status == 1)
-        articles = db.execute(statement).scalars().all()
+        months_ago = datetime.now() - timedelta(days=730)
+        year_month = func.date_format(Article.create_at, "%Y-%m")
+        count_expr = func.count(Article.id)
+        statement = (
+            select(
+                year_month.label("year_month"),
+                count_expr.label("count"),
+            )
+            .where(
+                Article.status == 1,
+                Article.create_at >= months_ago,
+            )
+            .group_by(year_month)
+            .order_by(year_month.desc())
+        )
+        rows = db.execute(statement).all()
 
-        # 过滤最近24个月的文章
-        ten_months_ago = datetime.now() - timedelta(days=730)
-        filtered_articles = [
-            a for a in articles if a.create_at and a.create_at >= ten_months_ago
+        return [
+            {
+                "year_month": row._mapping["year_month"],
+                "count": (
+                    int(row._mapping["count"]) if row._mapping["count"] is not None else 0
+                ),
+            }
+            for row in rows
         ]
-
-        # 按月分组统计
-        monthly_count = {}
-        for article in filtered_articles:
-            year_month = article.create_at.strftime("%Y-%m")
-            if year_month not in monthly_count:
-                monthly_count[year_month] = 0
-            monthly_count[year_month] += 1
-
-        # 排序，不限制数量让service层补零
-        result = [{"year_month": k, "count": v} for k, v in monthly_count.items()]
-        result.sort(key=lambda x: x["year_month"], reverse=True)
-
-        return result
 
 
 @lru_cache()
