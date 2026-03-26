@@ -9,19 +9,15 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    fonts-noto-cjk \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制项目文件
-COPY . /app/
+# 先复制依赖清单，单独安装依赖，方便缓存复用
+COPY requirements.txt /app/
 
 # 安装Python依赖
 RUN pip install --upgrade pip setuptools && \
-    pip install -e .
+    pip install -r requirements.txt
+
+# 再复制项目代码，避免代码改动触发依赖重装
+COPY . /app/
 
 # 创建日志目录和文件目录
 RUN mkdir -p /app/logs/fastapi \
