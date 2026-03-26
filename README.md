@@ -270,7 +270,7 @@ default = true
 
 脚本执行完成后，还需要：
 
-1. **配置各服务的 .env 文件**（见下方"配置文件说明"章节）
+1. **配置各服务的环境变量文件**（见下方"配置文件说明"章节，先参考 `.env.example` 生成本地 `.env`，Docker 则使用 `.env.docker`）
 2. **启动基础服务**（MySQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos）
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
@@ -771,6 +771,8 @@ dist-control.sh 和 mix 支持以下服务名称：
 ./mix docker stop
 ```
 
+Docker 环境会优先读取每个服务目录下的 `.env.docker`，不会自动创建该文件。请根据需要手动准备 Docker 专用环境变量文件，本地开发仍然使用 `.env`。
+
 ### 微服务容器说明
 
 | 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
@@ -1229,11 +1231,21 @@ FROM demo.articles;
 
 ## 环境变量配置文件
 
-本项目使用 `.env` 文件管理配置，每个服务都有独立的环境变量配置文件。所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
+本项目按环境拆分配置文件：
+
+- `.env.example`：示例文件，保留全部变量名，用于复制生成本地配置
+- `.env`：本地开发使用的真实配置文件，不建议提交敏感值
+- `.env.docker`：Docker 容器使用的环境变量文件，脚本会在容器启动时读取它
+
+所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
 
 ### Spring 服务配置
 
 **文件位置**: `spring/.env`
+
+**示例文件**: `spring/.env.example`
+
+**Docker 文件**: `spring/.env.docker`
 
 ```dotenv
 # Spring 服务配置
@@ -1304,6 +1316,10 @@ INTERNAL_TOKEN_EXPIRATION=60000
 ### GoZero 服务配置
 
 **文件位置**: `gozero/app/.env`
+
+**示例文件**: `gozero/app/.env.example`
+
+**Docker 文件**: `gozero/app/.env.docker`
 
 ```dotenv
 # gozero 服务配置
@@ -1380,6 +1396,10 @@ INTERNAL_TOKEN_EXPIRATION=60000
 
 **文件位置**: `nestjs/.env`
 
+**示例文件**: `nestjs/.env.example`
+
+**Docker 文件**: `nestjs/.env.docker`
+
 ```dotenv
 # NestJS 服务配置
 SERVER_IP=127.0.0.1
@@ -1436,6 +1456,10 @@ OSS_ACCESS_KEY_SECRET=your-key-secret
 ### FastAPI 服务配置
 
 **文件位置**: `fastapi/.env`
+
+**示例文件**: `fastapi/.env.example`
+
+**Docker 文件**: `fastapi/.env.docker`
 
 ```dotenv
 # FastAPI 服务配置
@@ -1560,6 +1584,10 @@ INTERNAL_TOKEN_EXPIRATION=60000
 
 **文件位置**: `gateway/.env`
 
+**示例文件**: `gateway/.env.example`
+
+**Docker 文件**: `gateway/.env.docker`
+
 ```dotenv
 # Gateway 服务配置
 SERVER_PORT=8080
@@ -1600,7 +1628,9 @@ RATE_LIMIT_SEND_CODE_REFILL_RATE=1
 ### 环境变量使用说明
 
 1. **密钥管理**: 所有密钥信息（数据库密码、API KEY、JWT Secret 等）不应该提交到版本控制系统，应该在本地 `.env` 文件中配置
-2. **YAML 中的引用格式**: 在各服务的 `application.yaml` 配置文件中，使用以下格式引用环境变量：
+2. **示例文件**: 新克隆项目后，先复制对应服务的 `.env.example` 为 `.env`，再填写真实值
+3. **Docker 文件**: Docker 运行时读取 `.env.docker`，如果需要修改容器环境变量，请单独维护该文件，不要复用本地 `.env`
+4. **YAML 中的引用格式**: 在各服务的 `application.yaml` 配置文件中，使用以下格式引用环境变量：
 
    ```yaml
    # YAML 中的使用示例
@@ -1611,9 +1641,9 @@ RATE_LIMIT_SEND_CODE_REFILL_RATE=1
      password: ${DB_PASSWORD:default-password}
    ```
 
-3. **默认值**: 格式 `${VAR_NAME:default_value}` 中，冒号后面是默认值，当环境变量未设置时使用默认值
-4. **加载顺序**: 系统启动时会自动从 `.env` 文件加载环境变量，然后在解析 YAML 配置文件时进行替换
-5. **JWT 密钥说明**: 系统环境变量设置的 JWT 密钥至少为 32 位字符串
+5. **默认值**: 格式 `${VAR_NAME:default_value}` 中，冒号后面是默认值，当环境变量未设置时使用默认值
+6. **加载顺序**: 本地启动时会自动从 `.env` 文件加载环境变量，Docker 启动时会读取 `.env.docker`，然后再解析 YAML 配置文件
+7. **JWT 密钥说明**: 系统环境变量设置的 JWT 密钥至少为 32 位字符串
 
 ## Swagger 说明
 
