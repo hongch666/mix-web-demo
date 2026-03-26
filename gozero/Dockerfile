@@ -2,12 +2,13 @@
 # 多阶段构建：构建阶段 + 运行阶段
 
 # 阶段1：构建阶段
-FROM golang:1.23.0-alpine3.20 AS builder
+FROM golang:1.23.5-alpine3.20 AS builder
 
 WORKDIR /app
 
 # 安装构建依赖
-RUN apk add --no-cache git=2.43.4-r0 make=4.4.1-r2
+# 不锁定精确版本，避免 Alpine 仓库更新后构建失败
+RUN apk add --no-cache git make
 
 # 使用 --platform 标志支持跨平台构建
 # 复制go文件
