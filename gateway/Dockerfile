@@ -27,7 +27,8 @@ WORKDIR /app
 RUN apk add --no-cache curl ca-certificates
 
 # 从构建阶段复制JAR文件
-COPY --from=builder /app/target/gateway-0.0.1-SNAPSHOT.jar app.jar
+# 与 pom.xml / build.gradle 中的版本号 1.0.0 对齐
+COPY --from=builder /app/target/gateway-1.0.0.jar app.jar
 
 # 创建日志目录
 RUN mkdir -p /app/logs/gateway && \
