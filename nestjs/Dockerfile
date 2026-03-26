@@ -12,13 +12,14 @@ COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
 # 安装依赖
-RUN npm ci --prefer-offline --no-audit
+# package.json 和 package-lock.json 当前不同步，使用 npm install 保持构建可用
+RUN npm install --prefer-offline --no-audit
 
 # 复制源代码
 COPY src ./src
 
 # 构建应用
-RUN npm run build
+RUN npm run node:build
 
 # 阶段2：运行阶段
 FROM node:20-alpine
@@ -33,7 +34,7 @@ RUN apk add --no-cache curl ca-certificates && \
 COPY package*.json ./
 
 # 只安装生产依赖
-RUN npm ci --only=production --prefer-offline --no-audit
+RUN npm install --omit=dev --prefer-offline --no-audit
 
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist ./dist
