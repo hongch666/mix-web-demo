@@ -47,6 +47,7 @@ nestjs/.env.development.local
 nestjs/.env.test.local
 nestjs/.env.production.local
 nestjs/.env.local
+nestjs/.env.docker
 
 # temp directory
 nestjs/.temp
@@ -106,7 +107,7 @@ gozero/*.swp
 
 # Environment files
 gozero/app/.env
-gozero/app/.env.*
+gozero/app/.env.docker
 
 # Temporary files
 gozero/app/tmp/
@@ -147,6 +148,7 @@ spring/.vscode/
 
 # Environment files
 spring/.env
+spring/.env.docker
 
 spring/bin/
 
@@ -184,6 +186,7 @@ gateway/.vscode/
 
 # Environment files
 gateway/.env
+gateway/.env.docker
 
 gateway/build/
 gateway/gradle/
@@ -200,6 +203,8 @@ fastapi/.venv/
 fastapi/venv/
 fastapi/.env
 fastapi/.env.local
+fastapi/.env.docker
+
 fastapi/.python-version
 
 .vscode/
