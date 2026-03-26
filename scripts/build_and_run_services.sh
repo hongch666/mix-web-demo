@@ -91,6 +91,19 @@ append_env_file() {
     fi
 }
 
+get_env_file_path() {
+    local service=$1
+
+    case $service in
+        gozero)
+            echo "${PROJECT_DIR}/gozero/app/.env.docker"
+            ;;
+        *)
+            echo "${PROJECT_DIR}/${service}/.env.docker"
+            ;;
+    esac
+}
+
 # 获取服务列表
 get_services() {
     if [ $# -eq 0 ]; then
@@ -137,6 +150,7 @@ run_container() {
     local image_name="mix-${service}:latest"
     local container_name="mix-${service}-container"
     local service_dir="${PROJECT_DIR}/${service}"
+    local env_file
 
     # 检查镜像是否存在
     if ! docker image inspect "$image_name" > /dev/null 2>&1; then
@@ -164,7 +178,7 @@ run_container() {
     local run_args=(docker run -d --name "$container_name" --network "$NETWORK_NAME" -p "$port:$port")
     local env_args=()
     local volume_args=()
-    local env_file="$service_dir/.env.docker"
+    env_file="$(get_env_file_path "$service")"
 
     case $service in
         gozero)
