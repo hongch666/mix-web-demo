@@ -26,9 +26,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 安装基础工具和字体
-RUN apk add --no-cache curl ca-certificates && \
-    apk add --no-cache font-noto-cjk
+# 安装基础工具
+RUN apk add --no-cache curl ca-certificates
 
 # 复制package文件
 COPY package*.json ./

@@ -23,9 +23,8 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# 安装基础工具和字体
-RUN apk add --no-cache curl ca-certificates && \
-    apk add --no-cache font-noto-cjk
+# 安装基础工具
+RUN apk add --no-cache curl ca-certificates
 
 # 从构建阶段复制JAR文件
 COPY --from=builder /app/target/gateway-0.0.1-SNAPSHOT.jar app.jar

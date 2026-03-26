@@ -23,9 +23,8 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# 安装基础工具和字体
-RUN apk add --no-cache curl ca-certificates && \
-    apk add --no-cache font-noto-cjk
+# 安装基础工具
+RUN apk add --no-cache curl ca-certificates
 
 # 从构建阶段复制JAR文件
 # 兼容不同版本名，避免固定版本号导致构建失败
