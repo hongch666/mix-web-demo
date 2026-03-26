@@ -1,15 +1,10 @@
 #!/bin/bash
 
 # 微服务 Docker 构建和容器部署脚本
-# 用途：构建镜像并创建/启动容器（支持配置文件挂载）
+# 用途：构建镜像并创建/启动容器（Docker 环境使用 .env.docker）
 # 用法：./build_and_run_services.sh [service1] [service2] ...
 
 set -e
-
-# 加载环境变量
-if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
-fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="hcsy"
@@ -82,6 +77,17 @@ append_env() {
 
     if [ -n "$value" ]; then
         target+=( -e "$key=$value" )
+    fi
+}
+
+append_env_file() {
+    local -n target=$1
+    local env_file=$2
+
+    if [ -f "$env_file" ]; then
+        target+=( --env-file "$env_file" )
+    else
+        print_warning "未找到 Docker 环境文件: $env_file"
     fi
 }
 
@@ -158,6 +164,7 @@ run_container() {
     local run_args=(docker run -d --name "$container_name" --network "$NETWORK_NAME" -p "$port:$port")
     local env_args=()
     local volume_args=()
+    local env_file="$service_dir/.env.docker"
 
     case $service in
         gozero)
@@ -197,15 +204,14 @@ run_container() {
             append_env env_args "DB_CLICKHOUSE_HOST" "clickhouse"
             ;;
     esac
+
+    append_env_file env_args "$env_file"
     
     case $service in
         gozero|nestjs|spring)
-            # 这三个服务都有 application.yaml 和 .env 配置
+            # 这三个服务都有 application.yaml 配置
             if [ -f "$service_dir/application.yaml" ]; then
                 volume_args+=( -v "$service_dir/application.yaml:/app/application.yaml" )
-            fi
-            if [ -f "$service_dir/.env" ]; then
-                volume_args+=( -v "$service_dir/.env:/app/.env" )
             fi
             ;;
         fastapi)
@@ -213,14 +219,9 @@ run_container() {
             if [ -f "$service_dir/application.yaml" ]; then
                 volume_args+=( -v "$service_dir/application.yaml:/app/application.yaml" )
             fi
-            if [ -f "$service_dir/.env" ]; then
-                volume_args+=( -v "$service_dir/.env:/app/.env" )
-            fi
             ;;
         gateway)
-            if [ -f "$service_dir/.env" ]; then
-                volume_args+=( -v "$service_dir/.env:/app/.env" )
-            fi
+            # Gateway 仅需要 Docker 环境文件，不额外挂载 .env
             ;;
     esac
 
