@@ -12,10 +12,12 @@ if [ -f ".env" ]; then
 fi
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+NETWORK_NAME="hcsy"
 SERVICES_CONFIG=(
     "gozero:8081"
     "nestjs:8082"
     "spring:8083"
+    "gateway:8080"
     "fastapi:8084"
 )
 
@@ -62,14 +64,31 @@ declare -A SERVICE_PORT=(
     [gozero]="8081"
     [nestjs]="8082"
     [spring]="8083"
-    [gateway]="9000"
+    [gateway]="8080"
     [fastapi]="8084"
 )
+
+ensure_network() {
+    if ! docker network inspect "$NETWORK_NAME" > /dev/null 2>&1; then
+        print_info "创建 Docker 网络: $NETWORK_NAME"
+        docker network create "$NETWORK_NAME" > /dev/null
+    fi
+}
+
+append_env() {
+    local -n target=$1
+    local key=$2
+    local value=$3
+
+    if [ -n "$value" ]; then
+        target+=( -e "$key=$value" )
+    fi
+}
 
 # 获取服务列表
 get_services() {
     if [ $# -eq 0 ]; then
-        echo "gozero nestjs spring fastapi"
+        echo "gozero nestjs spring gateway fastapi"
     else
         echo "$@"
     fi
@@ -135,47 +154,91 @@ run_container() {
 
     print_info "启动 ${service} 容器..."
 
-    # 构建卷挂载参数
-    local volume_args=""
+    # 构建启动参数
+    local run_args=(docker run -d --name "$container_name" --network "$NETWORK_NAME" -p "$port:$port")
+    local env_args=()
+    local volume_args=()
+
+    case $service in
+        gozero)
+            append_env env_args "SERVER_IP" "0.0.0.0"
+            append_env env_args "NACOS_IP" "nacos"
+            append_env env_args "DB_MYSQL_HOST" "mysql"
+            append_env env_args "DB_ES_HOST" "es"
+            append_env env_args "DB_MONGODB_HOST" "mongodb"
+            append_env env_args "RABBITMQ_HOST" "mq"
+            ;;
+        nestjs)
+            append_env env_args "SERVER_IP" "0.0.0.0"
+            append_env env_args "NACOS_SERVER" "nacos:8848"
+            append_env env_args "DB_HOST" "mysql"
+            append_env env_args "DB_MONGODB_HOST" "mongodb"
+            append_env env_args "RABBITMQ_HOST" "mq"
+            ;;
+        spring)
+            append_env env_args "NACOS_SERVER" "nacos:8848"
+            append_env env_args "DB_HOST" "mysql"
+            append_env env_args "REDIS_HOST" "redis"
+            append_env env_args "RABBITMQ_HOST" "mq"
+            ;;
+        gateway)
+            append_env env_args "NACOS_SERVER" "nacos:8848"
+            append_env env_args "REDIS_HOST" "redis"
+            append_env env_args "GOZERO_HOST" "gozero"
+            ;;
+        fastapi)
+            append_env env_args "SERVER_IP" "0.0.0.0"
+            append_env env_args "NACOS_SERVER" "nacos:8848"
+            append_env env_args "RABBITMQ_HOST" "mq"
+            append_env env_args "DB_MYSQL_HOST" "mysql"
+            append_env env_args "DB_POSTGRES_HOST" "pgvector-db"
+            append_env env_args "DB_MONGODB_HOST" "mongodb"
+            append_env env_args "DB_REDIS_HOST" "redis"
+            append_env env_args "DB_CLICKHOUSE_HOST" "clickhouse"
+            ;;
+    esac
     
     case $service in
         gozero|nestjs|spring)
             # 这三个服务都有 application.yaml 和 .env 配置
             if [ -f "$service_dir/application.yaml" ]; then
-                volume_args="$volume_args -v $service_dir/application.yaml:/app/application.yaml"
+                volume_args+=( -v "$service_dir/application.yaml:/app/application.yaml" )
             fi
             if [ -f "$service_dir/.env" ]; then
-                volume_args="$volume_args -v $service_dir/.env:/app/.env"
+                volume_args+=( -v "$service_dir/.env:/app/.env" )
             fi
             ;;
         fastapi)
             # FastAPI 服务
             if [ -f "$service_dir/application.yaml" ]; then
-                volume_args="$volume_args -v $service_dir/application.yaml:/app/application.yaml"
+                volume_args+=( -v "$service_dir/application.yaml:/app/application.yaml" )
             fi
             if [ -f "$service_dir/.env" ]; then
-                volume_args="$volume_args -v $service_dir/.env:/app/.env"
+                volume_args+=( -v "$service_dir/.env:/app/.env" )
+            fi
+            ;;
+        gateway)
+            if [ -f "$service_dir/.env" ]; then
+                volume_args+=( -v "$service_dir/.env:/app/.env" )
             fi
             ;;
     esac
 
     # 挂载日志目录
     mkdir -p "$PROJECT_DIR/logs/$service"
-    volume_args="$volume_args -v $PROJECT_DIR/logs/$service:/app/logs/$service"
+    volume_args+=( -v "$PROJECT_DIR/logs/$service:/app/logs/$service" )
 
     # 挂载静态文件目录
     for dir in pic excel upload; do
         mkdir -p "$PROJECT_DIR/static/$dir"
-        volume_args="$volume_args -v $PROJECT_DIR/static/$dir:/app/static/$dir"
+        volume_args+=( -v "$PROJECT_DIR/static/$dir:/app/static/$dir" )
     done
 
     # 创建并启动容器
-    docker run -d \
-        --name "$container_name" \
-        -p "$port:$port" \
-        $volume_args \
-        --restart unless-stopped \
-        "$image_name"
+    run_args+=( "${env_args[@]}" )
+    run_args+=( "${volume_args[@]}" )
+    run_args+=( --restart unless-stopped "$image_name" )
+    "${run_args[@]}"
 
     if [ $? -eq 0 ]; then
         print_success "${service} 容器启动成功 (端口: $port, 容器: $container_name)"
@@ -239,7 +302,7 @@ show_help() {
   gozero      - GoZero 微服务 (端口 8081)
   nestjs   - NestJS 微服务 (端口 8082)
   spring   - Spring Boot 微服务 (端口 8083)
-  gateway  - Spring Cloud Gateway (端口 9000)
+  gateway  - Spring Cloud Gateway (端口 8080)
   fastapi  - FastAPI 微服务 (端口 8084)
 
 示例:
@@ -298,6 +361,9 @@ main() {
     fi
 
     print_info "开始处理服务: ${services[*]}"
+    echo ""
+
+    ensure_network
     echo ""
 
     local failed=0

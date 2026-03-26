@@ -43,4 +43,4 @@ EXPOSE 8081
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"
 
 # 启动命令
-CMD ["java", "${JAVA_OPTS}", "-jar", "app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
