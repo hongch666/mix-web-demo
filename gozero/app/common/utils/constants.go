@@ -103,6 +103,9 @@ const (
 	// 获取工作目录失败信息
 	GET_WORKING_DIR_ERROR = "获取当前工作目录失败"
 
+	// 未找到本机可用的IPv4地址信息
+	LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR = "未找到本机可用的 IPv4 地址"
+
 	// 创建日志目录失败信息
 	CREATE_LOG_DIR_ERROR = "创建日志目录失败"
 

@@ -6,7 +6,9 @@ package svc
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
+	"strings"
 	"time"
 
 	"app/common/hub"
@@ -41,6 +43,8 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
+
+var detectLocalIP = getLocalIPv4Address
 
 type ServiceContext struct {
 	Config          config.Config
@@ -373,9 +377,9 @@ func initNacos(c config.Config) naming_client.INamingClient {
 		panic(err)
 	}
 
-	if c.Host != "" && c.Port > 0 && nacosConf.ServiceName != "" {
+	if registerIP := resolveNacosRegisterIP(c.Host); registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
 		_, _ = namingClient.RegisterInstance(vo.RegisterInstanceParam{
-			Ip:          c.Host,
+			Ip:          registerIP,
 			Port:        uint64(c.Port),
 			ServiceName: nacosConf.ServiceName,
 			GroupName:   nacosConf.GroupName,
@@ -388,6 +392,70 @@ func initNacos(c config.Config) naming_client.INamingClient {
 	}
 
 	return namingClient
+}
+
+func resolveNacosRegisterIP(listenHost string) string {
+	listenHost = strings.TrimSpace(listenHost)
+	if listenHost != "" && !isUnspecifiedHost(listenHost) {
+		return listenHost
+	}
+
+	if localIP, err := detectLocalIP(); err == nil && localIP != "" {
+		return localIP
+	}
+
+	return listenHost
+}
+
+func isUnspecifiedHost(host string) bool {
+	switch strings.TrimSpace(host) {
+	case "", "0.0.0.0", "::", "[::]":
+		return true
+	default:
+		return false
+	}
+}
+
+func getLocalIPv4Address() (string, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return "", err
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, err := iface.Addrs()
+		if err != nil {
+			continue
+		}
+
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+
+			if ip == nil {
+				continue
+			}
+			ip = ip.To4()
+			if ip == nil {
+				continue
+			}
+			if ip.IsLoopback() {
+				continue
+			}
+			return ip.String(), nil
+		}
+	}
+
+	return "", fmt.Errorf(utils.LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR)
 }
 
 func trimSlashPrefix(v string) string {
