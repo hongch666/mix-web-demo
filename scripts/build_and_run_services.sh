@@ -189,6 +189,7 @@ run_container() {
             append_env env_args "DB_ES_HOST" "es"
             append_env env_args "DB_MONGODB_HOST" "mongodb"
             append_env env_args "RABBITMQ_HOST" "mq"
+            append_env env_args "LOGS_PATH" "/app/logs/gozero"
             ;;
         nestjs)
             append_env env_args "SERVER_IP" "0.0.0.0"
@@ -196,12 +197,14 @@ run_container() {
             append_env env_args "DB_HOST" "mysql"
             append_env env_args "DB_MONGODB_HOST" "mongodb"
             append_env env_args "RABBITMQ_HOST" "mq"
+            append_env env_args "LOGS_PATH" "/app/logs/nestjs"
             ;;
         spring)
             append_env env_args "NACOS_SERVER" "nacos:8848"
             append_env env_args "DB_HOST" "mysql"
             append_env env_args "REDIS_HOST" "redis"
             append_env env_args "RABBITMQ_HOST" "mq"
+            append_env env_args "LOGGING_PATH" "/app/logs/spring"
             ;;
         gateway)
             append_env env_args "NACOS_SERVER" "nacos:8848"
@@ -217,6 +220,7 @@ run_container() {
             append_env env_args "DB_MONGODB_HOST" "mongodb"
             append_env env_args "DB_REDIS_HOST" "redis"
             append_env env_args "DB_CLICKHOUSE_HOST" "clickhouse"
+            append_env env_args "LOGS_PATH" "/app/logs/fastapi"
             ;;
     esac
 
