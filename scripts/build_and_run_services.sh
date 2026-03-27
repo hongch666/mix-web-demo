@@ -253,6 +253,7 @@ run_container() {
 
     # 挂载日志目录
     mkdir -p "$PROJECT_DIR/logs/$service"
+    chmod -R a+rwX "$PROJECT_DIR/logs/$service"
     volume_args+=( -v "$PROJECT_DIR/logs/$service:/app/logs/$service" )
 
     # 挂载静态文件目录
