@@ -9,10 +9,10 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="hcsy"
 SERVICES_CONFIG=(
-    "gozero:8081"
-    "nestjs:8082"
-    "spring:8083"
     "gateway:8080"
+    "spring:8081"
+    "gozero:8082"
+    "nestjs:8083"
     "fastapi:8084"
 )
 
@@ -42,9 +42,10 @@ print_error() {
 
 # 声明关联数组存储服务信息
 declare -A SERVICE_INFO=(
-    [gozero]="gozero:8081"
-    [nestjs]="nestjs:8082"
-    [spring]="spring:8083"
+    [gateway]="gateway:8080"
+    [spring]="spring:8081"
+    [gozero]="gozero:8082"
+    [nestjs]="nestjs:8083"
     [fastapi]="fastapi:8084"
 )
 
@@ -56,10 +57,10 @@ declare -A SERVICE_LANG=(
 )
 
 declare -A SERVICE_PORT=(
-    [gozero]="8081"
-    [nestjs]="8082"
-    [spring]="8083"
     [gateway]="8080"
+    [spring]="8081"
+    [gozero]="8082"
+    [nestjs]="8083"
     [fastapi]="8084"
 )
 
@@ -314,10 +315,10 @@ show_help() {
   --help          显示此帮助信息
 
 服务名称:
-  gozero      - GoZero 微服务 (端口 8081)
-  nestjs   - NestJS 微服务 (端口 8082)
-  spring   - Spring Boot 微服务 (端口 8083)
   gateway  - Spring Cloud Gateway (端口 8080)
+  spring   - Spring Boot 微服务 (端口 8081)
+  gozero   - GoZero 微服务 (端口 8082)
+  nestjs   - NestJS 微服务 (端口 8083)
   fastapi  - FastAPI 微服务 (端口 8084)
 
 示例:
