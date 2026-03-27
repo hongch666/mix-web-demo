@@ -114,6 +114,8 @@ get_services() {
     fi
 }
 
+start_only=false
+
 # 构建镜像
 build_image() {
     local service=$1
@@ -155,6 +157,11 @@ run_container() {
 
     # 检查镜像是否存在
     if ! docker image inspect "$image_name" > /dev/null 2>&1; then
+        if [ "$start_only" = true ]; then
+            print_error "${service} 镜像不存在，请先执行 ./mix docker build ${service}"
+            return 1
+        fi
+
         print_warning "${service} 镜像不存在，开始构建..."
         if ! build_image "$service"; then
             return 1
@@ -274,13 +281,19 @@ build_and_run() {
     
     print_info "处理服务: $service"
     
-    if ! build_image "$service"; then
-        print_warning "跳过 ${service} 容器启动 (镜像构建失败)"
-        return 1
-    fi
-    
-    if ! run_container "$service"; then
-        return 1
+    if [ "$start_only" = true ]; then
+        if ! run_container "$service"; then
+            return 1
+        fi
+    else
+        if ! build_image "$service"; then
+            print_warning "跳过 ${service} 容器启动 (镜像构建失败)"
+            return 1
+        fi
+
+        if ! run_container "$service"; then
+            return 1
+        fi
     fi
 }
 
@@ -314,6 +327,7 @@ show_help() {
 
 选项:
   --build-only    仅构建镜像，不启动容器
+  --start-only    仅启动已构建镜像，不重新构建
   --clean         清理所有容器
   --status        显示容器状态
   --help          显示此帮助信息
@@ -354,6 +368,10 @@ main() {
         case $1 in
             --build-only)
                 build_only=true
+                shift
+                ;;
+            --start-only)
+                start_only=true
                 shift
                 ;;
             --clean)

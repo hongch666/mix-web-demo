@@ -47,6 +47,7 @@ show_help() {
     echo "Docker Commands (Docker 容器管理):"
     echo "  docker [command]         - Manage Docker containers"
     echo "    up [services...]       - Build and run containers (or all if not specified)"
+    echo "    start [services...]    - Start containers from existing images only"
     echo "    build [services...]    - Build images only"
     echo "    status                 - Show container status"
     echo "    logs <service>         - View container logs"
@@ -105,6 +106,8 @@ show_help() {
     echo "  ./mix stop-dist fastapi nestjs # Stop specific services"
     echo "  ./mix docker up                # Build and run all containers"
     echo "  ./mix docker up spring gozero  # Build and run specific containers"
+    echo "  ./mix docker start             # Start all containers from existing images"
+    echo "  ./mix docker start spring      # Start a specific container only"
     echo "  ./mix docker build             # Build all images only"
     echo "  ./mix docker status            # Show container status"
     echo "  ./mix docker logs spring       # View Spring container logs"
@@ -219,6 +222,15 @@ case $COMMAND in
                     else
                         echo "Building and running specified services: ${@:3}"
                         bash "$SCRIPTS_DIR/build_and_run_services.sh" "${@:3}"
+                    fi
+                    ;;
+                start)
+                    if [ $# -le 2 ]; then
+                        echo "Starting all Docker containers from existing images..."
+                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --start-only
+                    else
+                        echo "Starting specified containers from existing images: ${@:3}"
+                        bash "$SCRIPTS_DIR/build_and_run_services.sh" --start-only "${@:3}"
                     fi
                     ;;
                 build)
