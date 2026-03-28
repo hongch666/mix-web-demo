@@ -23,6 +23,12 @@ services:
       DB_HOST: mysql
       REDIS_HOST: redis
       RABBITMQ_HOST: rabbitmq
+    volumes:
+      - ./spring/application.yaml:/app/application.yaml:ro
+      - ./logs/spring:/app/logs/spring
+      - ./static/pic:/app/static/pic
+      - ./static/excel:/app/static/excel
+      - ./static/upload:/app/static/upload
     networks:
       - hcsy
 
@@ -39,6 +45,12 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: rabbitmq
       LOGS_PATH: /app/logs/gozero
+    volumes:
+      - ./gozero/etc:/app/etc:ro
+      - ./logs/gozero:/app/logs/gozero
+      - ./static/pic:/app/static/pic
+      - ./static/excel:/app/static/excel
+      - ./static/upload:/app/static/upload
     networks:
       - hcsy
 
@@ -55,6 +67,12 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: rabbitmq
       LOGS_PATH: /app/logs/nestjs
+    volumes:
+      - ./nestjs/application.yaml:/app/application.yaml:ro
+      - ./logs/nestjs:/app/logs/nestjs
+      - ./static/pic:/app/static/pic
+      - ./static/excel:/app/static/excel
+      - ./static/upload:/app/static/upload
     networks:
       - hcsy
 
@@ -73,6 +91,12 @@ services:
       DB_REDIS_HOST: redis
       DB_CLICKHOUSE_HOST: clickhouse
       LOGS_PATH: /app/logs/fastapi
+    volumes:
+      - ./fastapi/application.yaml:/app/application.yaml:ro
+      - ./logs/fastapi:/app/logs/fastapi
+      - ./static/pic:/app/static/pic
+      - ./static/excel:/app/static/excel
+      - ./static/upload:/app/static/upload
     networks:
       - hcsy
 

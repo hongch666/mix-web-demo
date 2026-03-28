@@ -24,6 +24,18 @@ if ! docker network inspect hcsy >/dev/null 2>&1; then
     docker network create hcsy
 fi
 
+# 预创建日志目录并调整权限，避免 GoZero/NestJS 权限问题
+for d in spring gozero nestjs fastapi; do
+    mkdir -p "$WORKDIR/logs/$d"
+    chmod -R 777 "$WORKDIR/logs/$d"
+done
+
+# 预创建静态目录
+for d in pic excel upload; do
+    mkdir -p "$WORKDIR/static/$d"
+    chmod -R 777 "$WORKDIR/static/$d"
+done
+
 echo "启动应用服务（5个服务：gateway、spring、gozero、nestjs、fastapi），不含第三方依赖组件。"
 
 echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖。"
