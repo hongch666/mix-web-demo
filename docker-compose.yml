@@ -46,7 +46,7 @@ services:
       RABBITMQ_HOST: rabbitmq
       LOGS_PATH: /app/logs/gozero
     volumes:
-      - ./gozero/etc:/app/etc:ro
+      - ./gozero/app/etc:/app/etc:ro
       - ./logs/gozero:/app/logs/gozero
       - ./static/pic:/app/static/pic
       - ./static/excel:/app/static/excel
