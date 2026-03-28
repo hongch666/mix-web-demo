@@ -847,6 +847,17 @@ docker restart mix-spring-container
 ./mix docker build gateway spring gozero nestjs fastapi
 ```
 
+为了与 `mix docker` 启动一致，`docker-compose` 会挂载以下配置与日志目录：
+
+- `spring/application.yaml -> /app/application.yaml`
+- `gozero/etc -> /app/etc`
+- `nestjs/application.yaml -> /app/application.yaml`
+- `fastapi/application.yaml -> /app/application.yaml`
+- `logs/<service> -> /app/logs/<service>`
+- `static/pic`, `static/excel`, `static/upload`
+
+`./scripts/docker-compose-up.sh` 已自动创建目录并设置可写权限，避免 `ENOENT application.yaml` 与 `permission denied` 问题。
+
 建议先构建镜像，再启动 Compose。
 
 ### 前置要求
