@@ -55,17 +55,17 @@ COPY --from=builder /app/gozero-app .
 # 复制配置文件
 COPY app/etc ./etc
 
-# 创建日志和文件目录
+# 创建非root用户提高安全性
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -u 1001 -S appuser -G appgroup
+
+# 创建日志和文件目录并设置权限
 RUN mkdir -p /app/logs/gozero && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload && \
-    chmod -R 755 /app && \
-    chown -R appuser:appgroup /app/logs
-
-# 创建非root用户提高安全性
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+    chown -R appuser:appgroup /app/logs /app/static && \
+    chmod -R 755 /app
 
 USER appuser
 
