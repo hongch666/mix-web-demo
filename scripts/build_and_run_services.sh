@@ -5,6 +5,7 @@
 # 用法：./build_and_run_services.sh [service1] [service2] ...
 
 set -e
+set -o pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="hcsy"
@@ -135,8 +136,9 @@ build_image() {
     cd "$service_dir"
     
     docker build -t "mix-${service}:latest" . 2>&1 | tail -20
+    local build_status=${PIPESTATUS[0]}
     
-    if [ $? -eq 0 ]; then
+    if [ $build_status -eq 0 ]; then
         print_success "${service} 镜像构建完成"
     else
         print_error "${service} 镜像构建失败"
