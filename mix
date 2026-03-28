@@ -54,18 +54,13 @@ show_help() {
     echo "    stop                   - Stop all containers"
     echo "    delete                 - Delete all containers"
     echo ""
-    echo "Kubernetes Commands (K8s 集群管理):"
-    echo "  k8s [command] [args]     - Manage Kubernetes deployment"
-    echo "    deploy                 - Deploy all services to K8s"
-    echo "    delete                 - Delete all K8s resources"
-    echo "    status                 - Show deployment/pod/service status"
-    echo "    logs <service>         - View pod logs of a service"
-    echo "    exec <service>         - Execute shell in service pod"
-    echo "    port-forward <service> <port> - Forward local port to service"
-    echo "    restart <service>      - Rolling restart a service"
-    echo "    describe <service>     - Show detailed info about service"
-    echo "    install                - Install/check K8s tools"
-    echo "    help                   - Show K8s help message"
+    echo "Docker Compose Commands (容器编排):"
+    echo "  compose [command]        - Manage Docker Compose stack"
+    echo "    up                     - 通过 docker-compose 构建并启动服务"
+    echo "    down                   - 停止并删除 docker-compose 服务及卷"
+    echo "    status                 - 查看 docker-compose 服务状态 (docker-compose ps)"
+    echo "    logs <service>         - 查看指定服务日志 (docker-compose logs -f <service>)"
+    echo "    help                   - 显示 docker-compose 帮助"
     echo ""
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
@@ -269,12 +264,37 @@ case $COMMAND in
             esac
         fi
         ;;
-    k8s)
+    compose)
         if [ $# -lt 2 ]; then
-            bash "$SCRIPTS_DIR/k8s-deploy.sh" help
-        else
-            bash "$SCRIPTS_DIR/k8s-deploy.sh" "$@"
+            echo "用法: ./mix compose <up|down|status|logs> [service]"
+            exit 1
         fi
+
+        case $2 in
+            up)
+                bash "$SCRIPTS_DIR/docker-compose-up.sh"
+                ;;
+            down)
+                bash "$SCRIPTS_DIR/docker-compose-down.sh"
+                ;;
+            status)
+                docker-compose -f "$WORKDIR/docker-compose.yml" ps
+                ;;
+            logs)
+                if [ $# -le 2 ]; then
+                    echo "Error: compose logs requires a service name"
+                    exit 1
+                fi
+                docker-compose -f "$WORKDIR/docker-compose.yml" logs -f "$3"
+                ;;
+            help)
+                echo "docker-compose help: 使用 up/down/status/logs"
+                ;;
+            *)
+                echo "Unknown compose command: $2"
+                exit 1
+                ;;
+        esac
         ;;
     help|--help|-h)
         show_help

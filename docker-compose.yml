@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  gateway:
+    build: ./gateway
+    container_name: mix-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      NACOS_SERVER: nacos:8848
+      REDIS_HOST: redis
+      GOZERO_HOST: gozero
+    networks:
+      - hcsy
+
+  spring:
+    build: ./spring
+    container_name: mix-spring
+    ports:
+      - "8081:8081"
+    environment:
+      NACOS_SERVER: nacos:8848
+      DB_HOST: mysql
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+    networks:
+      - hcsy
+
+  gozero:
+    build: ./gozero/app
+    container_name: mix-gozero
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_IP: 0.0.0.0
+      NACOS_IP: nacos
+      DB_MYSQL_HOST: mysql
+      DB_ES_HOST: es
+      DB_MONGODB_HOST: mongodb
+      RABBITMQ_HOST: rabbitmq
+      LOGS_PATH: /app/logs/gozero
+    networks:
+      - hcsy
+
+  nestjs:
+    build: ./nestjs
+    container_name: mix-nestjs
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_IP: 0.0.0.0
+      NACOS_SERVER: nacos
+      NACOS_PORT: 8848
+      DB_HOST: mysql
+      DB_MONGODB_HOST: mongodb
+      RABBITMQ_HOST: rabbitmq
+      LOGS_PATH: /app/logs/nestjs
+    networks:
+      - hcsy
+
+  fastapi:
+    build: ./fastapi
+    container_name: mix-fastapi
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_IP: 0.0.0.0
+      NACOS_SERVER: nacos:8848
+      RABBITMQ_HOST: rabbitmq
+      DB_MYSQL_HOST: mysql
+      DB_POSTGRES_HOST: pgvector-db
+      DB_MONGODB_HOST: mongodb
+      DB_REDIS_HOST: redis
+      DB_CLICKHOUSE_HOST: clickhouse
+      LOGS_PATH: /app/logs/fastapi
+    networks:
+      - hcsy
+
+networks:
+  hcsy:
+    external: true
