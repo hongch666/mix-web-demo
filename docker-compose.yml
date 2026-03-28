@@ -27,7 +27,7 @@ services:
       - hcsy
 
   gozero:
-    build: ./gozero/app
+    build: ./gozero
     container_name: mix-gozero
     ports:
       - "8082:8082"
