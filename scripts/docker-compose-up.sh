@@ -6,8 +6,13 @@ set -e
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$WORKDIR/docker-compose.yml"
 
-if ! command -v docker-compose >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
-    echo "Error: docker-compose 或 Docker 未安装"
+# 查找可用的 compose 命令
+if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE_CMD="docker-compose"
+elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    COMPOSE_CMD="docker compose"
+else
+    echo "Error: docker-compose 或 Docker Compose CLI 未安装"
     exit 1
 fi
 
@@ -23,6 +28,6 @@ echo "启动应用服务（5个服务：gateway、spring、gozero、nestjs、fas
 
 echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖。"
 
-docker-compose -f "$COMPOSE_FILE" up -d --build
+$COMPOSE_CMD -f "$COMPOSE_FILE" up -d --build
 
-echo "应用服务已启动。使用 docker-compose -f $COMPOSE_FILE ps 查看状态。"
+echo "应用服务已启动。使用 $COMPOSE_CMD -f $COMPOSE_FILE ps 查看状态。"
