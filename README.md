@@ -841,6 +841,14 @@ docker restart mix-spring-container
 
 第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
+应用容器镜像将由 `./mix docker build` 生成：
+
+```bash
+./mix docker build gateway spring gozero nestjs fastapi
+```
+
+建议先构建镜像，再启动 Compose。
+
 ### 前置要求
 
 - **Docker**：>= 20.10
