@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"app/common/exceptions"
+	"app/common/keys"
 	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
@@ -59,9 +60,19 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		subCategoryName = *req.SubCategoryName
 	}
 
+	currentUserID, currentUsername := getCurrentUserFromContext(l.ctx)
+	userID := req.UserId
+	if userID == nil && currentUserID > 0 {
+		currentUserIDAsUint := uint64(currentUserID)
+		userID = &currentUserIDAsUint
+	}
+	if username == "" {
+		username = currentUsername
+	}
+
 	searchDTO := search.ArticleSearchDTO{
 		Keyword:         keyword,
-		UserID:          req.UserId,
+		UserID:          userID,
 		Username:        username,
 		CategoryName:    categoryName,
 		SubCategoryName: subCategoryName,
@@ -113,10 +124,15 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 
 	// 如果指定了搜索关键字，记录搜索信息
 	if req.Keyword != nil && *req.Keyword != "" {
+		logUserID := currentUserID
+		if logUserID <= 0 && req.UserId != nil {
+			logUserID = int64(*req.UserId)
+		}
+
 		// 发送搜索信息到消息队列中进行异步处理
 		msg := map[string]any{
 			"action":  "search",
-			"user_id": req.UserId,
+			"user_id": logUserID,
 			"content": searchDTO,
 			"msg":     utils.SEARCH_MSG,
 		}
@@ -144,4 +160,10 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	}
 
 	return
+}
+
+func getCurrentUserFromContext(ctx context.Context) (int64, string) {
+	userID, _ := ctx.Value(keys.UserIDKey).(int64)
+	username, _ := ctx.Value(keys.UsernameKey).(string)
+	return userID, username
 }
