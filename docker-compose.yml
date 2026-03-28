@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   gateway:
-    build: ./gateway
+    image: mix-gateway:latest
     container_name: mix-gateway
     ports:
       - "8080:8080"
@@ -14,7 +14,7 @@ services:
       - hcsy
 
   spring:
-    build: ./spring
+    image: mix-spring:latest
     container_name: mix-spring
     ports:
       - "8081:8081"
@@ -27,7 +27,7 @@ services:
       - hcsy
 
   gozero:
-    build: ./gozero
+    image: mix-gozero:latest
     container_name: mix-gozero
     ports:
       - "8082:8082"
@@ -43,7 +43,7 @@ services:
       - hcsy
 
   nestjs:
-    build: ./nestjs
+    image: mix-nestjs:latest
     container_name: mix-nestjs
     ports:
       - "8083:8083"
@@ -59,7 +59,7 @@ services:
       - hcsy
 
   fastapi:
-    build: ./fastapi
+    image: mix-fastapi:latest
     container_name: mix-fastapi
     ports:
       - "8084:8084"
