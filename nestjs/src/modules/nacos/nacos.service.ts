@@ -39,10 +39,15 @@ export class NacosService implements OnModuleInit {
     silentLogger.debug = (): void => {};
     silentLogger.warn = (): void => {};
 
+    const nacosHost: string =
+      this.configService.get<string>('nacos.host') || '127.0.0.1';
+    const nacosPort: string =
+      this.configService.get<string>('nacos.port') || '8848';
+
     this.client = new NacosNamingClient({
       logger: silentLogger,
-      // Nacos 服务地址
-      serverList: this.configService.get<string>('nacos.server-addr')!,
+      // Nacos 服务地址，默认端口为 8848
+      serverList: `${nacosHost}:${nacosPort}`,
       // 命名空间 ID
       namespace: this.configService.get<string>('nacos.namespace')!,
     });
