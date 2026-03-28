@@ -26,7 +26,7 @@ services:
       NACOS_SERVER: nacos:8848
       DB_HOST: mysql
       REDIS_HOST: redis
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: mq
     volumes:
       - ./spring/application.yaml:/app/application.yaml:ro
       - ./logs/spring:/app/logs/spring
@@ -49,7 +49,7 @@ services:
       DB_MYSQL_HOST: mysql
       DB_ES_HOST: es
       DB_MONGODB_HOST: mongodb
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/gozero
     volumes:
       - ./gozero/app/etc:/app/etc:ro
@@ -73,7 +73,7 @@ services:
       NACOS_PORT: 8848
       DB_HOST: mysql
       DB_MONGODB_HOST: mongodb
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/nestjs
     volumes:
       - ./nestjs/application.yaml:/app/application.yaml:ro
@@ -94,7 +94,7 @@ services:
     environment:
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos:8848
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: mq
       DB_MYSQL_HOST: mysql
       DB_POSTGRES_HOST: pgvector-db
       DB_MONGODB_HOST: mongodb
