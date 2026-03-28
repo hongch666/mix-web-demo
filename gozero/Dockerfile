@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
 
 # 复制源代码
-COPY app . 
+COPY app .
 
 # 构建应用（禁用CGO以避免glibc依赖）
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
@@ -56,11 +56,12 @@ COPY --from=builder /app/gozero-app .
 COPY app/etc ./etc
 
 # 创建日志和文件目录
-RUN mkdir -p /app/logs && \
+RUN mkdir -p /app/logs/gozero && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload && \
-    chmod -R 755 /app
+    chmod -R 755 /app && \
+    chown -R appuser:appgroup /app/logs
 
 # 创建非root用户提高安全性
 RUN addgroup -g 1001 -S appgroup && \

@@ -38,11 +38,15 @@ RUN npm install --omit=dev --prefer-offline --no-audit
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist ./dist
 
+# 复制默认配置文件
+COPY application.yaml ./
+
 # 创建日志目录
 RUN mkdir -p /app/logs/nestjs && \
     mkdir -p /app/static/pic && \
     mkdir -p /app/static/excel && \
-    mkdir -p /app/static/upload
+    mkdir -p /app/static/upload && \
+    chown -R node:node /app/logs/nestjs /app/static
 
 # 暴露端口（默认8083）
 EXPOSE 8083
