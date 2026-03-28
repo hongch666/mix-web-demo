@@ -46,7 +46,7 @@ class ApiLogMapper:
         ]
 
         cursor = self.logs.aggregate(pipeline)
-        return list[Dict[str, Any]](cursor)
+        return list(cursor)
 
     def get_called_count_apis_mapper(self) -> List[Dict[str, Any]]:
         """
@@ -84,7 +84,7 @@ class ApiLogMapper:
         ]
 
         cursor = self.logs.aggregate(pipeline)
-        return list[Dict[str, Any]](cursor)
+        return list(cursor)
 
 
 @lru_cache()

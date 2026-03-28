@@ -1,5 +1,7 @@
 from typing import Any, Dict, Optional
 
+from fastapi.encoders import jsonable_encoder
+
 
 def success(
     data: Optional[Any] = None, msg: str = "success", code: int = 1
@@ -14,7 +16,7 @@ def success(
     Returns:
         包含 code, data, msg 的字典
     """
-    return {"code": code, "data": data, "msg": msg}
+    return jsonable_encoder({"code": code, "data": data, "msg": msg})
 
 
 def error(
@@ -30,4 +32,4 @@ def error(
     Returns:
         包含 code, data, msg 的字典
     """
-    return {"code": code, "data": data, "msg": msg}
+    return jsonable_encoder({"code": code, "data": data, "msg": msg})

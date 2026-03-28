@@ -3,7 +3,6 @@ from typing import Any
 from app.common.decorators import log, requireInternalToken
 from app.core.base import success
 from app.core.db import get_db
-from app.internal.models import AiHistory
 from app.internal.schemas import CreateHistoryDTO
 from app.internal.services import AiHistoryService, get_ai_history_service
 from sqlalchemy.orm import Session
@@ -44,7 +43,7 @@ async def get_all_ai_history(
 ) -> Any:
     """获取所有AI历史记录接口"""
 
-    histories: list[AiHistory] = await run_in_threadpool(
+    histories: list[dict[str, Any]] = await run_in_threadpool(
         ai_history_service.get_all_ai_history, user_id, db
     )
     return success(data=histories)

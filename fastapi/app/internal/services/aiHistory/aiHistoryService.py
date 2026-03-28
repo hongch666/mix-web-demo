@@ -60,20 +60,11 @@ class AiHistoryService:
 
         return self.ai_history_mapper.create_ai_history(history, db)
 
-    def get_all_ai_history(self, user_id: int, db: Any) -> list[AiHistory]:
+    def get_all_ai_history(self, user_id: int, db: Any) -> list[Dict[str, Any]]:
         data = self.ai_history_mapper.get_all_ai_history_by_userid(
             db, user_id=user_id, limit=None
         )
-        # 格式化时间为 "YYYY-MM-DD HH:MM:SS"
-        fmt = "%Y-%m-%d %H:%M:%S"
-        for item in data:
-            if getattr(item, "created_at", None):
-                item.created_at = item.created_at.strftime(fmt)
-
-            if getattr(item, "updated_at", None):
-                item.updated_at = item.updated_at.strftime(fmt)
-
-        return data
+        return [self._serialize_ai_history(item) for item in data]
 
     def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
         # 检查用户是否存在
@@ -82,6 +73,25 @@ class AiHistoryService:
             raise BusinessException(Constants.USER_NOT_EXISTS_ERROR)
 
         self.ai_history_mapper.delete_ai_history_by_userid(db, user_id)
+
+    @staticmethod
+    def _serialize_ai_history(ai_history: AiHistory) -> Dict[str, Any]:
+        """将 ORM 对象转换为可序列化的响应字典。"""
+        fmt = "%Y-%m-%d %H:%M:%S"
+        return {
+            "id": ai_history.id,
+            "user_id": ai_history.user_id,
+            "ask": ai_history.ask,
+            "reply": ai_history.reply,
+            "thinking": ai_history.thinking,
+            "ai_type": ai_history.ai_type,
+            "created_at": ai_history.created_at.strftime(fmt)
+            if getattr(ai_history, "created_at", None)
+            else None,
+            "updated_at": ai_history.updated_at.strftime(fmt)
+            if getattr(ai_history, "updated_at", None)
+            else None,
+        }
 
 
 @lru_cache
