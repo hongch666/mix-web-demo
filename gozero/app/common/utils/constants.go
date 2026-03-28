@@ -361,15 +361,15 @@ const (
 		double likesBoost = params.likesWeight * (doc['likeCount'].size() > 0 ? Math.min((double)doc['likeCount'].value / params.maxLikesNormalized, 1.0) : 0);
 
 		double collectsBoost = params.collectsWeight * (doc['collectCount'].size() > 0 ? Math.min((double)doc['collectCount'].value / params.maxCollectsNormalized, 1.0) : 0);
-		
+
 		double followBoost = params.followWeight * (doc['authorFollowCount'].size() > 0 ? Math.min((double)doc['authorFollowCount'].value / params.maxFollowsNormalized, 1.0) : 0);
-		
+
 		long now = System.currentTimeMillis();
 		long articleTime = doc['create_at'].value.getMillis();
 		long daysDiff = (now - articleTime) / (1000L * 86400L);
 		double recencyScore = Math.exp(-1.0 * (daysDiff * daysDiff) / (2.0 * params.decayDaysSq));
 		double recencyBoost = params.recencyWeight * recencyScore;
-		
+
 		return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
 	`
 
@@ -432,7 +432,7 @@ const (
 
 	// comments表联合users表查询评分信息
 	COMMENT_RATING_QUERY = `
-		SELECT 
+		SELECT
 			c.article_id,
 			CASE WHEN u.role = 'ai' THEN 'ai' ELSE 'user' END as role_type,
 			AVG(c.star) as avg_star,
@@ -539,6 +539,9 @@ const (
 
 	// Swagger 文档地址消息
 	SWAGGER_DOCS_MESSAGE = "Swagger 文档地址 http://%s:%d/swagger/index.html"
+
+	// 服务初始IP
+	INIT_IP = "127.0.0.1"
 
 	// 服务启动成功消息
 	SERVER_START_SUCCESS = "服务启动成功"
