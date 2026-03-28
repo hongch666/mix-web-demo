@@ -270,6 +270,16 @@ case $COMMAND in
             exit 1
         fi
 
+        # 查找可用的 compose 命令
+        if command -v docker-compose >/dev/null 2>&1; then
+            COMPOSE_CMD="docker-compose"
+        elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+            COMPOSE_CMD="docker compose"
+        else
+            echo "Error: docker-compose 或 Docker Compose CLI 未安装"
+            exit 1
+        fi
+
         case $2 in
             up)
                 bash "$SCRIPTS_DIR/docker-compose-up.sh"
@@ -278,14 +288,14 @@ case $COMMAND in
                 bash "$SCRIPTS_DIR/docker-compose-down.sh"
                 ;;
             status)
-                docker-compose -f "$WORKDIR/docker-compose.yml" ps
+                $COMPOSE_CMD -f "$WORKDIR/docker-compose.yml" ps
                 ;;
             logs)
                 if [ $# -le 2 ]; then
                     echo "Error: compose logs requires a service name"
                     exit 1
                 fi
-                docker-compose -f "$WORKDIR/docker-compose.yml" logs -f "$3"
+                $COMPOSE_CMD -f "$WORKDIR/docker-compose.yml" logs -f "$3"
                 ;;
             help)
                 echo "docker-compose help: 使用 up/down/status/logs"
