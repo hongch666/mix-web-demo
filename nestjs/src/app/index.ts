@@ -51,7 +51,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
   // 读取yaml文件中的端口和IP
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
   const port: number = configService.get<number>('server.port')!;
-  const ip: string = configService.get<string>('server.ip')!;
+  const ip: string = Constants.INIT_IP;
   // 输出启动信息和Swagger地址
   Logger.log(Constants.START_WELCOME);
   Logger.log(`服务地址: http://${ip}:${port}`);

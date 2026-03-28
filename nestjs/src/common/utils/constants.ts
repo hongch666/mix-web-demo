@@ -165,6 +165,11 @@ export class Constants {
    */
   static readonly START_WELCOME = 'NestJS应用已启动';
 
+  /**
+   * 初始IP地址
+   */
+  static readonly INIT_IP = '127.0.0.1';
+
   // OSS 相关常量
 
   /**
