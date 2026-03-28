@@ -43,11 +43,15 @@ export class NacosService implements OnModuleInit {
       this.configService.get<string>('nacos.host') || '127.0.0.1';
     const nacosPort: string =
       this.configService.get<string>('nacos.port') || '8848';
+    const nacosServerList: string = this.resolveNacosServerList(
+      nacosHost,
+      nacosPort,
+    );
 
     this.client = new NacosNamingClient({
       logger: silentLogger,
       // Nacos 服务地址，默认端口为 8848
-      serverList: `${nacosHost}:${nacosPort}`,
+      serverList: nacosServerList,
       // 命名空间 ID
       namespace: this.configService.get<string>('nacos.namespace')!,
     });
@@ -104,6 +108,22 @@ export class NacosService implements OnModuleInit {
     }
     // 如果没有找到，使用主机名
     return os.hostname();
+  }
+
+  /**
+   * 组装 Nacos 服务地址，兼容：
+   * 1. host + port
+   * 2. 已经写成 host:port 的 host 配置
+   */
+  private resolveNacosServerList(host: string, port: string): string {
+    const trimmedHost = host.trim();
+    const trimmedPort = port.trim() || '8848';
+
+    if (trimmedHost.includes(':') && !trimmedHost.startsWith('[')) {
+      return trimmedHost;
+    }
+
+    return `${trimmedHost}:${trimmedPort}`;
   }
 
   async getServiceInstances(

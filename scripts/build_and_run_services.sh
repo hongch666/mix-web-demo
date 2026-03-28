@@ -200,7 +200,8 @@ run_container() {
             ;;
         nestjs)
             append_env env_args "SERVER_IP" "0.0.0.0"
-            append_env env_args "NACOS_SERVER" "nacos:8848"
+            append_env env_args "NACOS_SERVER" "nacos"
+            append_env env_args "NACOS_PORT" "8848"
             append_env env_args "DB_HOST" "mysql"
             append_env env_args "DB_MONGODB_HOST" "mongodb"
             append_env env_args "RABBITMQ_HOST" "mq"
