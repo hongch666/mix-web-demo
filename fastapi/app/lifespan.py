@@ -12,7 +12,7 @@ from fastapi import FastAPI
 
 # 加载服务器配置
 server_config: Dict[str, Any] = load_config("server")
-IP: str = server_config["ip"]
+IP: str = Constants.INIT_IP
 PORT: int = server_config["port"]
 
 

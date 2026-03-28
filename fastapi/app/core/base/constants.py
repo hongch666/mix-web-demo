@@ -224,6 +224,9 @@ class Constants:
     STARTUP_MESSAGE: str = "FastAPI应用已启动"
     """启动消息"""
 
+    INIT_IP: str = "127.0.0.1"
+    """初始IP地址"""
+
     INTENT_ROUTER_NO_PERMISSION_ERROR: str = "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
     """意图识别权限拒绝信息"""
 
@@ -670,7 +673,7 @@ class Constants:
         - collection_name: 必需，collection 的名称 (字符串)
         - filter_dict: 可选，MongoDB 查询条件 (JSON对象)
         - limit: 可选，返回结果数量限制 (整数，默认10)
-        
+
         Action Input 示例:
         - 查询 api_logs 的前10条: {{"collection_name": "api_logs", "limit": 10}}
         - 查询特定用户的 api_logs: {{"collection_name": "api_logs", "filter_dict": {{"user_id": 122}}, "limit": 20}}
@@ -681,7 +684,7 @@ class Constants:
         - 如果用户问关于"日志"、"记录"、"API请求"、"错误"等：
             1) 首先调用 list_mongodb_collections 查看有哪些 collection
             2) 然后根据结果调用 query_mongodb 查询具体数据
-        
+
         - 对于简单查询（如"最近的API请求"）：
             直接使用 query_mongodb，传递 JSON 参数
 
