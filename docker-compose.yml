@@ -4,6 +4,8 @@ services:
   gateway:
     image: mix-gateway:latest
     container_name: mix-gateway
+    env_file:
+      - ./gateway/.env.docker
     ports:
       - "8080:8080"
     environment:
@@ -16,6 +18,8 @@ services:
   spring:
     image: mix-spring:latest
     container_name: mix-spring
+    env_file:
+      - ./spring/.env.docker
     ports:
       - "8081:8081"
     environment:
@@ -35,6 +39,8 @@ services:
   gozero:
     image: mix-gozero:latest
     container_name: mix-gozero
+    env_file:
+      - ./gozero/app/.env.docker
     ports:
       - "8082:8082"
     environment:
@@ -57,6 +63,8 @@ services:
   nestjs:
     image: mix-nestjs:latest
     container_name: mix-nestjs
+    env_file:
+      - ./nestjs/.env.docker
     ports:
       - "8083:8083"
     environment:
@@ -79,6 +87,8 @@ services:
   fastapi:
     image: mix-fastapi:latest
     container_name: mix-fastapi
+    env_file:
+      - ./fastapi/.env.docker
     ports:
       - "8084:8084"
     environment:
