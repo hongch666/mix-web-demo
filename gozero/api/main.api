@@ -8,11 +8,6 @@ info (
 	schemes: http
 )
 
-@server (
-	middleware: UserContextMiddleware,RecoveryMiddleware
-)
-service App {}
-
 import (
 	"./chat/chat.api"
 	"./chat/stream.api"

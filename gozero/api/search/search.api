@@ -1,9 +1,10 @@
 syntax = "v2"
 
 @server (
-	group:  search
-	tags:   search
-	prefix: /search
+	group:      search
+	tags:       search
+	prefix:     /search
+	middleware: UserContextMiddleware,RecoveryMiddleware
 )
 service App {
 	@doc (

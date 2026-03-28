@@ -1,9 +1,10 @@
 syntax = "v2"
 
 @server (
-	group:  test
-	tags:   test
-	prefix: /api_gozero
+	group:      test
+	tags:       test
+	prefix:     /api_gozero
+	middleware: UserContextMiddleware,RecoveryMiddleware
 )
 service App {
 	@doc (
@@ -39,7 +40,7 @@ service App {
 	group:      test
 	tags:       test
 	prefix:     /api_gozero
-	middleware: InternalServiceMiddleware
+	middleware: UserContextMiddleware,RecoveryMiddleware,InternalServiceMiddleware
 )
 service App {
 	@doc (

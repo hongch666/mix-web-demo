@@ -1,8 +1,9 @@
 syntax = "v2"
 
 @server (
-	group: chat
-	tags:  chat
+	group:      chat
+	tags:       chat
+	middleware: UserContextMiddleware,RecoveryMiddleware
 )
 service App {
 	@doc (
