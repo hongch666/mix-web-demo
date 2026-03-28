@@ -829,198 +829,92 @@ docker exec -it mix-spring-container bash
 docker restart mix-spring-container
 ```
 
-## Kubernetes 集群部署
+## Docker Compose 部署
+
+目前 `docker-compose.yml` 仅包含 5 个应用服务：
+
+- gateway
+- spring
+- gozero
+- nestjs
+- fastapi
+
+第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
 ### 前置要求
 
-部署到 Kubernetes 集群需要以下工具：
+- **Docker**：>= 20.10
+- **docker-compose**：或使用 `docker compose` (Docker CLI 集成)
 
-- **kubectl**：Kubernetes 命令行工具（>=1.24）
-- **Minikube** (本地开发) 或其他 K8s 集群
-- **Docker**：用于构建容器镜像
-
-### 工具安装
-
-本项目提供了自动化的 K8s 工具安装脚本：
+### 启动服务
 
 ```bash
-# 安装所有必要工具（kubectl + Docker + Minikube）
-./scripts/install-k8s-tools.sh all
+# 启动依赖服务（如果尚未启动）
+./scripts/docker-services.sh
 
-# 仅安装kubectl
-./scripts/install-k8s-tools.sh kubectl
-
-# 仅安装Minikube
-./scripts/install-k8s-tools.sh minikube
-
-# 启动Minikube集群
-./scripts/install-k8s-tools.sh start-cluster
+# 启动应用服务（5 个）
+./mix compose up
 ```
 
-或使用 `mix` 便捷脚本：
+### 停止服务
 
 ```bash
-# 查看K8s相关命令
-./mix k8s help
-
-# 安装/检查K8s工具
-./mix k8s install
+./mix compose down
 ```
 
-### 本地开发环境（Minikube）
+### 状态查看
 
 ```bash
-# 1. 启动Minikube集群（首次使用）
-minikube start --driver=docker
-
-# 2. 构建Docker镜像
-./mix docker build
-
-# 3. 加载镜像到Minikube
-eval $(minikube docker-env)
-./mix docker build
-
-# 或手动加载：
-minikube image load mix-spring:latest
-minikube image load mix-gateway:latest
-minikube image load mix-fastapi:latest
-minikube image load mix-gozero:latest
-minikube image load mix-nestjs:latest
+./mix compose status
 ```
 
-### K8s 部署快速开始
+### 查看日志
 
 ```bash
-# 1. 查看可用命令
-./mix k8s help
-
-# 2. 部署所有服务到K8s集群
-./mix k8s deploy
-
-# 3. 查看部署状态
-./mix k8s status
-
-# 4. 查看pod日志
-./mix k8s logs spring
-./mix k8s logs gozero
-./mix k8s logs nestjs
-./mix k8s logs fastapi
-./mix k8s logs gateway
-
-# 5. 端口转发（本地访问）
-./mix k8s port-forward spring 8081
-./mix k8s port-forward gateway 8080
-
-# 6. 进入Pod交互式终端
-./mix k8s exec spring
-./mix k8s exec gateway
-
-# 7. 滚动重启服务（应用新配置）
-./mix k8s restart spring
-./mix k8s restart gateway
-
-# 8. 删除所有K8s资源
-./mix k8s delete
+./mix compose logs <service>
 ```
 
-### K8s 资源说明
+### 手动命令（可选）
 
-项目提供的 K8s 资源文件位于 `k8s/` 目录：
+```bash
+docker-compose up -d --build
+docker-compose down -v
+```
 
-| 文件              | 说明               | 资源类型                          |
-| ----------------- | ------------------ | --------------------------------- |
-| `namespace.yaml`  | 命名空间和网络策略 | Namespace, NetworkPolicy          |
-| `configmap.yaml`  | 服务配置管理       | ConfigMap (5 个)                  |
-| `deployment.yaml` | 服务部署和内部服务 | Deployment (5 个), Service (5 个) |
-| `ingress.yaml`    | 外部访问入口       | Ingress                           |
+### 文件说明
 
-**部署配置：**
-
-- **副本数**: 2 (可根据负载调整)
-- **资源限制**:
-  - Go/Node 服务: 256Mi 内存, 100m CPU
-  - Java 服务: 512Mi 内存, 200m CPU
-  - Python 服务: 256Mi 内存, 100m CPU
-- **健康检查**: 所有 Pod 都包含存活探针(livenessProbe)和就绪探针(readinessProbe)
+- `docker-compose.yml`：整套应用编排（数据库、缓存、消息队列、服务容器）
+- `scripts/docker-compose-up.sh`：快速启动脚本
+- `scripts/docker-compose-down.sh`：快速停止脚本
 
 ### 访问服务
 
-**通过 kubectl port-forward：**
+服务启动后可直接访问本地端口：
 
-```bash
-# 转发网关到本地 8080 端口
-kubectl port-forward -n mix-web-demo svc/gateway 8080:8080
-
-# 然后访问: http://localhost:8080
-```
-
-**通过 Ingress（集群内）：**
-
-```bash
-# 获取 Ingress 地址
-kubectl get ingress -n mix-web-demo
-
-# 然后访问相应的路由
-http://<ingress-ip>/        # Gateway
-http://<ingress-ip>/gozero  # GoZero服务
-http://<ingress-ip>/nestjs  # NestJS服务
-http://<ingress-ip>/spring  # Spring服务
-http://<ingress-ip>/fastapi # FastAPI服务
-```
+- Gateway: http://localhost:8080
+- Spring: http://localhost:8081
+- GoZero: http://localhost:8082
+- NestJS: http://localhost:8083
+- FastAPI: http://localhost:8084
 
 ### 高级用法
 
 ```bash
-# 查看详细的服务信息
-./mix k8s describe spring
+# 查看某个服务实时日志
+./mix compose logs spring
 
-# 监控部署进度
-./mix k8s rollout-status gateway
+# 查看所有服务状态
+./mix compose status
 
-# 直接调用k8s-deploy.sh获取更多选项
-./scripts/k8s-deploy.sh help
+# 重启某个服务（可配合 docker-compose restart）
+cd /home/hongch666/mix-web-demo
+sudo docker-compose -f docker-compose.yml restart spring
 
-# 手动应用K8s清单文件
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/ingress.yaml
+# 进入容器调试
+sudo docker exec -it mix-spring /bin/bash
 
-# 查看集群中的所有资源
-kubectl get all -n mix-web-demo
-
-# 查看Pod的详细信息
-kubectl describe pod <pod-name> -n mix-web-demo
-
-# 查看服务的端点
-kubectl get endpoints -n mix-web-demo
-```
-
-### 故障排查
-
-```bash
-# 检查Pod状态
-kubectl get pods -n mix-web-demo
-
-# 查看Pod详细信息
-kubectl describe pod <pod-name> -n mix-web-demo
-
-# 查看Pod日志
-kubectl logs <pod-name> -n mix-web-demo
-
-# 查看事件日志
-kubectl get events -n mix-web-demo --sort-by='.lastTimestamp'
-
-# 进入Pod容器
-kubectl exec -it <pod-name> -n mix-web-demo -- /bin/bash
-
-# 检查资源使用情况
-kubectl top nodes
-kubectl top pods -n mix-web-demo
-
-# 检查ConfigMap是否正确挂载
-kubectl get configmap -n mix-web-demo
-kubectl describe configmap <config-name> -n mix-web-demo
+# 清理未用镜像与容器
+docker system prune -af
 ```
 
 ## 基础服务组件初始化
