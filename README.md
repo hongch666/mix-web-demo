@@ -65,12 +65,11 @@
 - ClickHouse：大数据存储与分析
 - WebSocket：用户实时聊天
 - SSE：实时通知未读消息
-- Langchain：大模型调用和 RAG 框架
+- LangChain：大模型调用和 RAG 框架
 
 ## 第三方服务
 
 - [火山引擎](https://www.volcengine.com/)
-- [Google AI](https://aistudio.google.com/)
 - [阿里云百炼平台](https://bailian.console.aliyun.com/)
 - [Close AI](https://platform.closeai-asia.com/dashboard)
 - [阿里云 OSS](https://oss.console.aliyun.com/overview)
@@ -101,22 +100,11 @@
 
 ### Spring 部分
 
-使用 Maven 构建
-
 ```bash
 cd spring # 进入文件夹
 cd gateway # 进入网关
 mvn clean install # 下载依赖
-```
-
-使用 Gradle 构建（推荐）
-
-> Gradle 不用依赖安装，运行时会自动下载依赖
-
-```bash
-cd spring
-cd gateway
-gradle wrapper          # 生成项目专用 Gradle（如果尚未生成）
+gradle wrapper # 生成项目专用 Gradle，运行自动下载依赖
 ```
 
 ### GoZero 部分
@@ -137,43 +125,24 @@ bun install # 或者使用bun安装
 
 ### FastAPI 部分
 
-使用标准 venv 和 requirements.txt
-
 ```bash
+# 使用标准 venv 和 requirements.txt
 cd fastapi
-
 # 创建虚拟环境
 python3 -m venv venv
-
 # 激活虚拟环境
 source venv/bin/activate
-
 # 安装依赖
 pip install -r requirements.txt
 
-# 运行项目
-python main.py
-```
-
-使用 uv 进行项目管理
-
-```bash
+# 使用 uv 进行项目管理
 cd fastapi
-
-# 安装 uv（如果未安装）
-# 参考: https://docs.astral.sh/uv/getting-started/installation/
-
 # 配置 uv 虚拟环境
 uv venv --python /usr/bin/python3.11 # 创建虚拟环境时指定 Python
-
 # 激活虚拟环境
 source .venv/bin/activate
-
-# 同步依赖（使用国内镜像）
+# 同步依赖（可以使用国内镜像）
 uv sync
-
-# 运行项目
-uv run python main.py
 ```
 
 > 项目使用 uv 进行依赖管理，配置文件为 `pyproject.toml`。镜像源配置在 `~/.config/uv/uv.toml`，内容如下
@@ -274,30 +243,32 @@ default = true
 2. **启动基础服务**（MySQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos）
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
-## Docker 容器环境管理
+## Docker 基础中间件容器部署
 
-项目提供了 Docker 容器管理脚本，用于快速创建和管理所有依赖的容器服务。
+项目提供了基础依赖容器部署脚本，用于快速创建和管理 MySQL、PostgreSQL、Redis、MongoDB、ElasticSearch、Nacos 和 RabbitMQ 等服务，供下方微服务部署使用。
 
-### Docker 容器脚本用法
+### 基础容器部署命令
+
+`mix docker-services` 用于创建、启动、查看和清理基础中间件容器；下面的 `Docker 容器部署` 章节才是应用服务编排内容。
 
 ```bash
 # 创建所有容器
-./mix docker up
+./mix docker-services up
 
 # 查看容器状态
-./mix docker status
+./mix docker-services status
 
 # 查看容器日志
-./mix docker logs <service>
+./mix docker-services logs <service>
 
 # 停止所有容器
-./mix docker stop
+./mix docker-services stop
 
 # 删除所有容器
-./mix docker delete
+./mix docker-services delete
 
 # 显示帮助信息
-./mix docker help
+./mix docker-services help
 ```
 
 ### 创建的容器服务
@@ -313,25 +284,6 @@ default = true
 | **ElasticSearch** | 9200  | -        | -      | 搜索引擎(7.12.1)         |
 | **Nacos**         | 8848  | -        | -      | 服务发现与配置中心       |
 | **RabbitMQ**      | 5672  | test     | 123456 | 消息队列(管理界面 15672) |
-
-### 快速开始示例
-
-```bash
-# 第一次使用：创建所有容器
-./mix docker up
-
-# 查看所有容器是否正常运行
-./mix docker status
-
-# 查看 MySQL 容器的日志
-./mix docker logs mysql
-
-# 需要时停止容器
-./mix docker stop
-
-# 需要时删除容器
-./mix docker delete
-```
 
 ### 注意事项
 
@@ -396,7 +348,7 @@ npm run node:start:debug # npm debug 模式运行
 npm run node:start:prod # npm production 模式运行
 ```
 
-**使用 npm 运行**：
+**使用 bun 运行**：
 
 ```bash
 cd nestjs
@@ -678,7 +630,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 本项目提供了统一的打包和部署脚本，可以一键打包所有微服务并统一管理。
 
-**快速打包和部署（方法一：使用便捷脚本）：**
+**方法一：使用便捷脚本**
 
 ```bash
 # 1. 一键打包所有服务
@@ -697,7 +649,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 ./mix stop-dist
 ```
 
-**快速打包和部署（方法二：直接调用脚本）：**
+**方法二：直接调用脚本**
 
 ```bash
 # 1. 一键打包所有服务
@@ -732,24 +684,6 @@ dist-control.sh 和 mix 支持以下服务名称：
 - **scripts/dist-control.sh**
   - 管理打包后的分布式服务
   - 支持的操作：`start`、`stop`、`status`、`restart`、`logs`
-
-**示例用法：**
-
-```bash
-# 第一次部署
-./mix build
-./mix start
-
-# 查看运行状态
-./mix status
-
-# 代码更新后重新部署
-./mix build
-./mix restart
-
-# 停止所有服务
-./mix stop-dist
-```
 
 ## Docker 容器部署
 
@@ -949,218 +883,41 @@ docker system prune -af
 - RabbitMQ
 - Nacos
 
-### MySQL 表创建(可选，代码会自动创建)
+### SQL 初始化脚本说明
 
-- 在配置文件中指定对应的数据库
-- 创建用户表
+项目的 SQL 初始化脚本已经统一迁移到根目录的 `db/` 目录下，按数据库类型拆分管理。
 
-```sql
-CREATE TABLE user (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
-    name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
-    password VARCHAR(255) NOT NULL COMMENT '密码',
-    email VARCHAR(255) UNIQUE COMMENT '邮箱',
-    age INT COMMENT '年龄',
-    role VARCHAR(255) NOT NULL COMMENT '用户权限',
-    img VARCHAR(255) COMMENT '用户头像',
-    signature VARCHAR(255) COMMENT '个性签名'
-) COMMENT='用户表'
-```
+- `db/mysql/`：MySQL 建表脚本，按表拆分为独立文件
+- `db/postgresql/`：PostgreSQL 初始化脚本，主要用于扩展启用
+- `db/clickhouse/`：ClickHouse 初始化脚本，主要用于映射库和物化视图
 
-- 创建文章表
+建议执行顺序如下：
 
-```sql
-CREATE TABLE articles (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '文章id',
-    title VARCHAR(255) NOT NULL COMMENT '文章标题',
-    content LONGTEXT NOT NULL COMMENT '文章内容',
-    user_id BIGINT NOT NULL COMMENT '用户id',
-    sub_category_id BIGINT NOT NULL COMMENT '子分类id',
-    tags VARCHAR(255) NOT NULL COMMENT '文章标签',
-    status TINYINT NOT NULL COMMENT '文章状态',
-    views INT NOT NULL COMMENT '文章浏览量',
-    create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) COMMENT='文章表'
-```
+1. 先执行 `db/mysql/` 下的建表脚本
+2. 再执行 `db/postgresql/` 下的扩展脚本
+3. 最后执行 `db/clickhouse/` 下的同步脚本
 
-- 创建分类表
+如果后续新增数据库初始化内容，也请继续放到 `db/` 下对应的数据库目录中，便于统一维护和查找
 
-```sql
-CREATE TABLE category (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    name VARCHAR(255) NOT NULL COMMENT '分类名称',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-) COMMENT='分类表';
-```
+### MySQL 表创建
 
-- 创建子分类表
-
-```sql
-CREATE TABLE sub_category (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    name VARCHAR(255) NOT NULL COMMENT '子分类名称',
-    category_id BIGINT NOT NULL COMMENT '所属分类ID',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE
-) COMMENT='子分类表';
-```
-
-- 创建权威参考文本表
-
-```sql
-CREATE TABLE category_reference (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    sub_category_id BIGINT NOT NULL COMMENT '子分类ID',
-    type VARCHAR(255) NOT NULL COMMENT '权威参考文本类型，link/pdf',
-    link VARCHAR(255) COMMENT '权威参考文本链接',
-    pdf VARCHAR(255) COMMENT '权威参考文本PDF链接（OSS）',
-    UNIQUE KEY uk_sub_category (sub_category_id),
-    FOREIGN KEY (sub_category_id) REFERENCES sub_category(id) ON DELETE CASCADE
-) COMMENT='分类权威参考文本表';
-```
-
-- 创建用户聊天历史记录表
-
-```sql
-CREATE TABLE `chat_messages` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '消息ID，主键',
-    `sender_id` VARCHAR(50) NOT NULL COMMENT '发送者ID',
-    `receiver_id` VARCHAR(50) NOT NULL COMMENT '接收者ID',
-    `content` TEXT NOT NULL COMMENT '消息内容',
-    `is_read` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读，0未读，1已读',
-    `created_at` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
-    PRIMARY KEY (`id`),
-    KEY `idx_sender_receiver` (`sender_id`, `receiver_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
-```
-
-- 创建文章评论表
-
-```sql
-CREATE TABLE comments (
-    id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
-    content TEXT COMMENT '评论内容',
-    star DOUBLE COMMENT '星级评分，0~10',
-    user_id BIGINT NOT NULL COMMENT '用户 ID',
-    article_id BIGINT NOT NULL COMMENT '文章 ID',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Update Time'
-) COMMENT '文章评论表';
-```
-
-- 创建 AI 聊天历史记录
-
-```sql
-CREATE TABLE `ai_history` (
-    `id` BIGINT NOT NULL AUTO_INCREMENT,
-    `user_id` BIGINT NOT NULL,
-    `ask` TEXT NOT NULL,
-    `reply` TEXT NOT NULL,
-    `thinking` TEXT,
-    `ai_type` VARCHAR(30),
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`)
-) COMMENT 'AI聊天记录';
-```
-
-- 创建文章用户点赞表
-
-```sql
-CREATE TABLE IF NOT EXISTS likes (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    article_id BIGINT NOT NULL COMMENT '文章ID',
-    user_id BIGINT NOT NULL COMMENT '用户ID',
-    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY uk_article_user (article_id, user_id),
-    KEY idx_user_id (user_id),
-    KEY idx_created_time (created_time)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户点赞表';
-```
-
-- 创建文章收藏表
-
-```sql
-CREATE TABLE IF NOT EXISTS collects (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    article_id BIGINT NOT NULL COMMENT '文章ID',
-    user_id BIGINT NOT NULL COMMENT '用户ID',
-    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY uk_article_user (article_id, user_id),
-    KEY idx_user_id (user_id),
-    KEY idx_created_time (created_time)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '文章用户收藏表';
-```
-
-- 创建用户关注表
-
-```sql
-CREATE TABLE IF NOT EXISTS focus (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
-    user_id BIGINT NOT NULL COMMENT '用户ID',
-    focus_id BIGINT NOT NULL COMMENT '关注的用户ID',
-    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    UNIQUE KEY uk_user_focus (user_id, focus_id),
-    KEY idx_user_id (user_id),
-    KEY idx_created_time (created_time)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '关注表';
-```
+系统服务会自动创建，也可以先执行 `db/mysql/` 下的SQL脚步创建基础表结构
 
 ### PostgreSQL 表创建
 
-LangChain 会自动创建，但是需要启用 pgvector 扩展
-
-```pgsql
--- 启用 pgvector 扩展
-CREATE EXTENSION IF NOT EXISTS vector;
-```
+LangChain 会自动创建，但需要先执行 `db/postgresql/extensions.sql` 启用 `pgvector` 扩展
 
 ### MongoDB 表创建
 
-- 数据库为 `demo`，集合为 `articlelogs`和 `apilogs`，系统会自动创建
+数据库为 `demo`，集合为 `articlelogs`和 `apilogs`，系统会自动创建
 
 ### ElasticSearch 索引创建
 
-- 无需创建，系统同步数据时会自动创建
+无需创建，系统同步数据时会自动创建
 
 ### ClickHouse 创建
 
-- 需要创建创建MySQL映射库，并创建对应文章表本地视图
-
-```sql
--- 1. 创建映射库 (填入你的实际 MySQL 密码)
-CREATE DATABASE demo ENGINE = MySQL (
-    '127.0.0.1:3306',
-    'demo',
-    'root',
-    '123456'
-);
-
--- 2. 创建本地物理表 (对应你图片中的字段)
-CREATE TABLE articles (
-    id Int64,
-    title String,
-    content String,
-    user_id Int64,
-    sub_category_id Int64,
-    tags String,
-    status Int8,
-    views Int32,
-    create_at DateTime,
-    update_at DateTime
-) ENGINE = MergeTree ()
-ORDER BY id;
--- 以 ID 排序，方便快速查找
-
--- 3. 创建物化视图，定期从 MySQL 同步数据到 ClickHouse
-CREATE MATERIALIZED VIEW articles_sync_view REFRESH EVERY 10 SECOND -- 10 秒
-TO default.articles AS
-SELECT *
-FROM demo.articles;
-```
+需要先执行 `db/clickhouse/articles_sync.sql`，其中包含 MySQL 映射库、本地表和物化视图的创建语句
 
 ## 环境变量配置文件
 
@@ -1172,397 +929,21 @@ FROM demo.articles;
 
 所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
 
-### Spring 服务配置
+### 各服务配置说明
 
-**文件位置**: `spring/.env`
+各服务的具体环境变量请直接参考对应的 `.env.example`，这里不再重复列出完整配置。
 
-**示例文件**: `spring/.env.example`
+- Spring：`spring/.env.example`、`spring/.env.docker`
+- GoZero：`gozero/app/.env.example`、`gozero/app/.env.docker`
+- NestJS：`nestjs/.env.example`、`nestjs/.env.docker`
+- FastAPI：`fastapi/.env.example`、`fastapi/.env.docker`
+- Gateway：`gateway/.env.example`、`gateway/.env.docker`
 
-**Docker 文件**: `spring/.env.docker`
+使用方式保持一致：
 
-```dotenv
-# Spring 服务配置
-SERVER_ADDRESS=0.0.0.0
-SERVER_PORT=8081
-SERVER_MODE=dev
-
-# Tomcat 配置
-TOMCAT_THREADS_MAX=25
-TOMCAT_ACCEPT_COUNT=25
-TOMCAT_MAX_CONNECTIONS=100
-
-# MySQL 配置
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=demo
-DB_USERNAME=root
-DB_PASSWORD=csc20040312
-
-# MySQL HikariCP 连接池配置
-DB_POOL_MAX=20
-DB_POOL_MIN_IDLE=5
-DB_POOL_TIMEOUT=30000
-DB_POOL_IDLE_TIMEOUT=600000
-DB_POOL_MAX_LIFETIME=1800000
-DB_POOL_LEAK_DETECTION_THRESHOLD=60000
-
-# Redis 配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DATABASE=0
-# REDIS_USERNAME=
-# REDIS_PASSWORD=
-REDIS_POOL_MAX_ACTIVE=10
-REDIS_POOL_MAX_IDLE=5
-REDIS_POOL_MIN_IDLE=1
-REDIS_TIMEOUT=3000
-
-# RabbitMQ 配置
-RABBITMQ_HOST=127.0.0.1
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=hcsy
-RABBITMQ_PASSWORD=123456
-RABBITMQ_VHOST=test
-
-# 邮件配置
-MAIL_HOST=smtp.qq.com
-MAIL_PORT=465
-MAIL_USERNAME=your-email@qq.com
-MAIL_PASSWORD=your-email-password
-
-# 日志配置
-LOGGING_PATH=../logs/spring
-
-# JWT 配置
-JWT_SECRET=xxx
-JWT_EXPIRATION=86400000
-
-# Nacos 配置
-NACOS_SERVER=127.0.0.1:8848
-NACOS_NAMESPACE=public
-NACOS_GROUP_NAME=DEFAULT_GROUP
-
-# 内部服务令牌配置
-INTERNAL_TOKEN_SECRET=xxx
-INTERNAL_TOKEN_EXPIRATION=60000
-```
-
-### GoZero 服务配置
-
-**文件位置**: `gozero/app/.env`
-
-**示例文件**: `gozero/app/.env.example`
-
-**Docker 文件**: `gozero/app/.env.docker`
-
-```dotenv
-# gozero 服务配置
-SERVER_NAME=gozero
-SERVER_IP=127.0.0.1
-SERVER_PORT=8082
-SERVER_PREFIX=/
-SERVER_TIMEOUT=0
-SERVER_MODE=dev
-
-# Nacos 配置
-NACOS_IP=127.0.0.1
-NACOS_PORT=8848
-NACOS_NAMESPACE=public
-NACOS_SERVICE_NAME=gozero
-NACOS_GROUP_NAME=DEFAULT_GROUP
-NACOS_CLUSTER_NAME=DEFAULT
-NACOS_CACHE_DIR=../../static/tmp/nacos/cache
-NACOS_LOG_DIR=../../static/tmp/nacos/log
-
-# MySQL 配置
-DB_MYSQL_HOST=127.0.0.1
-DB_MYSQL_PORT=3306
-DB_MYSQL_USERNAME=root
-DB_MYSQL_PASSWORD=csc20040312
-DB_MYSQL_DBNAME=demo
-DB_MYSQL_CHARSET=utf8mb4
-DB_MYSQL_LOC=Local
-
-# ElasticSearch 配置
-DB_ES_HOST=127.0.0.1
-DB_ES_PORT=9200
-# DB_ES_USERNAME=
-# DB_ES_PASSWORD=
-DB_ES_SNIFF=false
-
-# MongoDB 配置
-DB_MONGODB_HOST=127.0.0.1
-DB_MONGODB_PORT=27017
-# DB_MONGODB_USERNAME=
-# DB_MONGODB_PASSWORD=
-DB_MONGODB_DATABASE=demo
-
-# RabbitMQ 配置
-RABBITMQ_USERNAME=hcsy
-RABBITMQ_PASSWORD=123456
-RABBITMQ_HOST=127.0.0.1
-RABBITMQ_PORT=5672
-RABBITMQ_VHOST=test
-
-# 日志配置
-LOGS_PATH=../../logs/gozero
-
-# 搜索配置
-SEARCH_ES_SCORE_WEIGHT=0.25
-SEARCH_AI_RATING_WEIGHT=0.15
-SEARCH_USER_RATING_WEIGHT=0.10
-SEARCH_VIEWS_WEIGHT=0.08
-SEARCH_LIKES_WEIGHT=0.08
-SEARCH_COLLECTS_WEIGHT=0.08
-SEARCH_AUTHOR_FOLLOW_WEIGHT=0.04
-SEARCH_RECENCY_WEIGHT=0.22
-SEARCH_MAX_VIEWS_NORMALIZED=10000.0
-SEARCH_MAX_LIKES_NORMALIZED=1000.0
-SEARCH_MAX_COLLECTS_NORMALIZED=1000.0
-SEARCH_MAX_FOLLOWS_NORMALIZED=5000.0
-SEARCH_RECENCY_DECAY_DAYS=30
-
-# 内部服务令牌配置
-INTERNAL_TOKEN_SECRET=xxx
-INTERNAL_TOKEN_EXPIRATION=60000
-```
-
-### NestJS 服务配置
-
-**文件位置**: `nestjs/.env`
-
-**示例文件**: `nestjs/.env.example`
-
-**Docker 文件**: `nestjs/.env.docker`
-
-```dotenv
-# NestJS 服务配置
-SERVER_IP=127.0.0.1
-SERVER_PORT=8083
-SERVER_SERVICE_NAME=nestjs
-SERVER_MODE=dev
-
-# Nacos 配置
-NACOS_SERVER=127.0.0.1
-NACOS_PORT=8848
-NACOS_NAMESPACE=public
-NACOS_CLUSTER_NAME=DEFAULT
-
-# MySQL 配置
-DB_TYPE=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=csc20040312
-DB_DATABASE=demo
-DB_SYNCHRONIZE=false
-DB_LOGGING=false
-
-# MongoDB 配置
-DB_MONGODB_HOST=localhost
-DB_MONGODB_PORT=27017
-# DB_MONGODB_USERNAME=
-# DB_MONGODB_PASSWORD=
-DB_MONGODB_DATABASE=demo
-
-# RabbitMQ 配置
-RABBITMQ_HOST=localhost
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=hcsy
-RABBITMQ_PASSWORD=123456
-RABBITMQ_VHOST=test
-
-# 文件配置
-FILES_WORD_PATH=../static/word
-FILES_UPLOAD_PATH=../static/upload
-
-# 日志配置
-LOGS_PATH=../logs/nestjs
-
-# 内部服务令牌配置
-INTERNAL_TOKEN_SECRET=xxx
-INTERNAL_TOKEN_EXPIRATION=60000
-
-# OSS 配置
-OSS_BUCKET_NAME=mix-web-demo
-OSS_ENDPOINT=oss-cn-guangzhou.aliyuncs.com
-OSS_ACCESS_KEY_ID=your-key-id
-OSS_ACCESS_KEY_SECRET=your-key-secret
-```
-
-### FastAPI 服务配置
-
-**文件位置**: `fastapi/.env`
-
-**示例文件**: `fastapi/.env.example`
-
-**Docker 文件**: `fastapi/.env.docker`
-
-```dotenv
-# FastAPI 服务配置
-SERVER_IP=127.0.0.1
-SERVER_PORT=8084
-SERVER_RELOAD=True
-SERVER_MODE=dev
-
-# Nacos 配置
-NACOS_SERVER=127.0.0.1:8848
-NACOS_NAMESPACE=public
-NACOS_SERVICE_NAME=fastapi
-NACOS_GROUP_NAME=DEFAULT_GROUP
-
-# RabbitMQ 配置
-RABBITMQ_HOST=127.0.0.1
-RABBITMQ_PORT=5672
-RABBITMQ_USERNAME=hcsy
-RABBITMQ_PASSWORD=123456
-RABBITMQ_VHOST=test
-
-# MySQL 配置
-DB_MYSQL_HOST=localhost
-DB_MYSQL_PORT=3306
-DB_MYSQL_DATABASE=demo
-DB_MYSQL_USER=root
-DB_MYSQL_PASSWORD=csc20040312
-# 基础连接池大小
-DB_MYSQL_POOL_SIZE=30
-# 最多额外创建的连接数
-DB_MYSQL_MAX_OVERFLOW=80
-# 连接回收时间（秒），1小时回收一次
-DB_MYSQL_POOL_RECYCLE=3600
-# 每次取连接前进行ping检查
-DB_MYSQL_POOL_PRE_PING=True
-# 获取连接的超时时间（秒）
-DB_MYSQL_POOL_TIMEOUT=30
-# pymysql读超时（秒）
-DB_MYSQL_READ_TIMEOUT=10
-# pymysql写超时（秒）
-DB_MYSQL_WRITE_TIMEOUT=10
-# 自动提交事务
-DB_MYSQL_AUTOCOMMIT=False
-# 是否打印SQL语句到日志
-DB_MYSQL_ECHO=False
-
-# PostgreSQL 配置
-DB_POSTGRES_HOST=localhost
-DB_POSTGRES_PORT=5432
-DB_POSTGRES_DATABASE=demo
-DB_POSTGRES_USER=postgres
-DB_POSTGRES_PASSWORD=123456
-DB_POSTGRES_POOL_PRE_PING=True
-DB_POSTGRES_POOL_SIZE=10
-DB_POSTGRES_MAX_OVERFLOW=20
-DB_POSTGRES_ECHO=False
-
-# MongoDB 配置
-DB_MONGODB_HOST=localhost
-DB_MONGODB_PORT=27017
-# DB_MONGODB_USERNAME=
-# DB_MONGODB_PASSWORD=
-DB_MONGODB_DATABASE=demo
-
-# ClickHouse 配置
-DB_CLICKHOUSE_HOST=127.0.0.1
-DB_CLICKHOUSE_PORT=9002
-DB_CLICKHOUSE_USERNAME=hcsy
-DB_CLICKHOUSE_PASSWORD=123456
-DB_CLICKHOUSE_DATABASE=default
-DB_CLICKHOUSE_TABLE=articles
-
-# Redis 配置
-DB_REDIS_HOST=127.0.0.1
-DB_REDIS_PORT=6379
-# DB_REDIS_USERNAME=default
-# DB_REDIS_PASSWORD=
-DB_REDIS_DB=0
-DB_REDIS_DECODE_RESPONSES=True
-DB_REDIS_MAX_CONNECTIONS=10
-
-# WordCloud 配置
-WORDCLOUD_FONT_PATH=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc
-WORDCLOUD_WIDTH=800
-WORDCLOUD_HEIGHT=400
-WORDCLOUD_BG_COLOR=white
-
-# 文件配置
-FILES_PIC_PATH=../static/pic
-FILES_EXCEL_PATH=../static/excel
-
-# 日志配置
-LOGS_PATH=../logs/fastapi
-
-# Gemini 配置
-GEMINI_MODEL=gemini-2.0-flash
-GEMINI_BASE_URL=https://api.openai-proxy.org/v1
-GEMINI_API_KEY=your-api-key
-
-# Qwen 配置
-QWEN_MODEL=qwen-flash
-QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-QWEN_API_KEY=your-api-key
-
-# Doubao 配置
-DOUBAO_MODEL=doubao-1-5-lite-32k-250115
-DOUBAO_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-DOUBAO_API_KEY=your-api-key
-
-# Embedding 配置
-EMBEDDING_MODEL=text-embedding-v3
-EMBEDDING_TOP_K=10
-EMBEDDING_DIMENSION=1536
-EMBEDDING_SIMILARITY_THRESHOLD=0.3
-EMBEDDING_SIMILARITY_TOLERANCE=0.01
-
-# 内部服务令牌配置
-INTERNAL_TOKEN_SECRET=xxx
-INTERNAL_TOKEN_EXPIRATION=60000
-```
-
-### Gateway 服务配置
-
-**文件位置**: `gateway/.env`
-
-**示例文件**: `gateway/.env.example`
-
-**Docker 文件**: `gateway/.env.docker`
-
-```dotenv
-# Gateway 服务配置
-SERVER_PORT=8080
-SERVER_MODE=dev
-
-# Nacos 配置
-NACOS_SERVER=127.0.0.1:8848
-NACOS_NAMESPACE=public
-NACOS_GROUP_NAME=DEFAULT_GROUP
-
-# Redis 配置
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DATABASE=0
-# REDIS_USERNAME=
-# REDIS_PASSWORD=
-REDIS_TIMEOUT=3000
-
-# GoZero 服务配置（长连接特殊配置）
-GOZERO_HOST=localhost
-GOZERO_PORT=8082
-
-# JWT 配置
-JWT_SECRET=xxx
-JWT_EXPIRATION=86400000
-
-# 限流配置
-RATE_LIMIT_ENABLED=true
-
-# 上传文件限流配置
-RATE_LIMIT_UPLOAD_CAPACITY=20
-RATE_LIMIT_UPLOAD_REFILL_RATE=2
-
-# 发送验证码限流配置
-RATE_LIMIT_SEND_CODE_CAPACITY=10
-RATE_LIMIT_SEND_CODE_REFILL_RATE=1
-```
+1. 先复制 `.env.example` 为本地 `.env`
+2. 再按实际环境填写真实值
+3. Docker 场景单独维护 `.env.docker`
 
 ### 环境变量使用说明
 

@@ -54,6 +54,15 @@ show_help() {
     echo "    stop                   - Stop all containers"
     echo "    delete                 - Delete all containers"
     echo ""
+    echo "Base Service Commands (基础中间件容器):"
+    echo "  docker-services [command] - Manage MySQL/PostgreSQL/Redis/MongoDB/ES/Nacos/RabbitMQ"
+    echo "    up                     - Create all base service containers"
+    echo "    status                 - Show base container status"
+    echo "    logs <service>         - View base container logs"
+    echo "    stop                   - Stop all base containers"
+    echo "    delete                 - Delete all base containers"
+    echo "    help                   - Show base container help"
+    echo ""
     echo "Docker Compose Commands (容器编排):"
     echo "  compose [command]        - Manage Docker Compose stack"
     echo "    up                     - 通过 docker-compose 构建并启动服务"
@@ -107,6 +116,10 @@ show_help() {
     echo "  ./mix docker status            # Show container status"
     echo "  ./mix docker logs spring       # View Spring container logs"
     echo "  ./mix docker stop              # Stop all containers"
+    echo "  ./mix docker-services up       # Create base middleware containers"
+    echo "  ./mix docker-services status   # Show base container status"
+    echo "  ./mix docker-services logs mysql # View MySQL container logs"
+    echo "  ./mix docker-services stop     # Stop base containers"
     echo ""
     echo "Notes (备注):"
     echo "  - For Windows PowerShell: PowerShell -ExecutionPolicy Bypass -File ./scripts/run.ps1"
@@ -262,6 +275,15 @@ case $COMMAND in
                     exit 1
                     ;;
             esac
+        fi
+        ;;
+    docker-services)
+        if [ $# -lt 2 ]; then
+            echo "Creating all base service containers..."
+            bash "$SCRIPTS_DIR/docker-services.sh" up
+        else
+            echo "Executing base service command: ${@:2}"
+            bash "$SCRIPTS_DIR/docker-services.sh" "${@:2}"
         fi
         ;;
     compose)

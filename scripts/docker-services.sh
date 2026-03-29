@@ -397,7 +397,7 @@ show_help() {
     cat << 'EOF'
 Docker 容器管理脚本
 
-用法: ./services.sh docker [命令] [参数]
+用法: ./scripts/docker-services.sh [命令] [参数]
 
 命令:
   up              创建所有容器 (默认)
@@ -416,11 +416,11 @@ Docker 容器管理脚本
   - rabbitmq      RabbitMQ 消息队列 (端口 5672)
 
 示例:
-  ./services.sh docker up               # 创建所有容器
-  ./services.sh docker status           # 显示容器状态
-  ./services.sh docker logs mysql       # 查看 MySQL 日志
-  ./services.sh docker logs rabbitmq    # 查看 RabbitMQ 日志
-  ./services.sh docker stop             # 停止所有容器
+  ./scripts/docker-services.sh up               # 创建所有容器
+  ./scripts/docker-services.sh status           # 显示容器状态
+  ./scripts/docker-services.sh logs mysql       # 查看 MySQL 日志
+  ./scripts/docker-services.sh logs rabbitmq    # 查看 RabbitMQ 日志
+  ./scripts/docker-services.sh stop             # 停止所有容器
 
 EOF
 }
