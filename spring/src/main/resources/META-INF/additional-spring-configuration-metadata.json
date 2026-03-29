@@ -19,6 +19,11 @@
       "name": "internal-token.expiration",
       "type": "java.lang.String",
       "description": "A description for 'internal-token.expiration'"
+    },
+    {
+      "name": "server.mode",
+      "type": "java.lang.String",
+      "description": "A description for 'server.mode'"
     }
   ]
 }

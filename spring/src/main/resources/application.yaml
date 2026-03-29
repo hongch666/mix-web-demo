@@ -1,5 +1,6 @@
 server:
   address: ${SERVER_ADDRESS:0.0.0.0}
+  mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8081}
   tomcat:
     threads:
