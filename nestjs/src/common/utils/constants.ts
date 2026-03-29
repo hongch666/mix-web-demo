@@ -131,6 +131,12 @@ export class Constants {
   static readonly REGISTER_NACOS = '注册到 nacos 成功';
 
   /**
+   * dev 模式下 Nacos 注册消息
+   */
+  static readonly REGISTER_NACOS_DEV_MODE =
+    'SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1';
+
+  /**
    * 未知用户名
    */
   static readonly UNKNOWN_USER = '未知用户';

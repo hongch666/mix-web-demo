@@ -1,5 +1,6 @@
 server:
   ip: ${SERVER_IP:127.0.0.1}
+  mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8083}
   serviceName: ${SERVER_SERVICE_NAME:nestjs}
 internal-token:

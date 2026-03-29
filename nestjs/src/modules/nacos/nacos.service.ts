@@ -47,6 +47,9 @@ export class NacosService implements OnModuleInit {
       nacosHost,
       nacosPort,
     );
+    const serverMode: string =
+      this.configService.get<string>('server.mode')?.trim().toLowerCase() ||
+      'dev';
 
     this.client = new NacosNamingClient({
       logger: silentLogger,
@@ -60,7 +63,10 @@ export class NacosService implements OnModuleInit {
 
     // 获取注册的 IP 地址，处理本地地址
     let registrationIp = this.configService.get<string>('server.ip')!;
-    if (
+    if (serverMode === 'dev') {
+      registrationIp = '127.0.0.1';
+      logger.info(Constants.REGISTER_NACOS_DEV_MODE);
+    } else if (
       !registrationIp ||
       registrationIp === '127.0.0.1' ||
       registrationIp === '0.0.0.0'
