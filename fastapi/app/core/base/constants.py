@@ -227,6 +227,11 @@ class Constants:
     INIT_IP: str = "127.0.0.1"
     """初始IP地址"""
 
+    NACOS_REGISTER_DEV_MODE_MESSAGE: str = (
+        "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
+    )
+    """dev 模式下 Nacos 注册日志"""
+
     INTENT_ROUTER_NO_PERMISSION_ERROR: str = "权限拒绝：此功能需要登录后才能使用。请先登录您的账户。您可以继续使用文章搜索和闲聊功能。"
     """意图识别权限拒绝信息"""
 

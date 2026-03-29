@@ -25,6 +25,7 @@ RETRY_INTERVAL: int = int(nacos_config.get("retry_interval", 2))
 
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
+SERVER_MODE: str = str(server_config.get("mode", "dev")).strip().lower()
 PORT: int = server_config["port"]
 
 
@@ -43,9 +44,14 @@ client: nacos.NacosClient = _build_client()
 def _get_registration_ip(ip: str) -> str:
     """
     获取用于 Nacos 注册的 IP 地址
-    - 如果 ip 为空、127.0.0.1 或 0.0.0.0，获取真实 IP 地址
-    - 否则自动解析真实 IP 地址
+    - 如果 SERVER_MODE=dev，统一使用 127.0.0.1
+    - 其他模式下，ip 为空、127.0.0.1 或 0.0.0.0 时获取真实 IP 地址
+    - 否则直接使用传入的 IP
     """
+    if SERVER_MODE == "dev":
+        Logger.info(Constants.NACOS_REGISTER_DEV_MODE_MESSAGE)
+        return "127.0.0.1"
+
     if not ip or ip == "127.0.0.1" or ip == "0.0.0.0":
         # 自动解析真实 IP
         try:
@@ -100,9 +106,8 @@ def get_service_instance(service_name: str) -> Dict[str, Any]:
 
 
 def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
-    # 获取实际用于注册的 IP 地址
+    register_instance(ip=ip, port=port)
     registration_ip = _get_registration_ip(ip)
-    register_instance(ip=registration_ip, port=port)
 
     def keep_heartbeat() -> None:
         while True:
