@@ -60,6 +60,11 @@
       "name": "rate-limit.paths./api_spring/users/email/send.message",
       "type": "java.lang.String",
       "description": "A description for 'rate-limit.paths./api_spring/users/email/send.message'"
+    },
+    {
+      "name": "server.mode",
+      "type": "java.lang.String",
+      "description": "A description for 'server.mode'"
     }
   ]
 }

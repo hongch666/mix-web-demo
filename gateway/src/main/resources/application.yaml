@@ -1,4 +1,5 @@
 server:
+  mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8080}
 spring:
   application:
