@@ -9,6 +9,7 @@ type Config struct {
 	rest.RestConf
 
 	Prefix string `json:"prefix"`
+	Mode   string `json:"mode"`
 
 	Nacos NacosConfig `json:"nacos"`
 

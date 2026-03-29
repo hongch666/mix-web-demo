@@ -2,6 +2,7 @@ Name: ${SERVER_NAME:gozero}
 Host: ${SERVER_IP:127.0.0.1}
 Port: ${SERVER_PORT:8082}
 Timeout: ${SERVER_TIMEOUT:0}
+Mode: ${SERVER_MODE:dev}
 
 Prefix: ${SERVER_PREFIX:/}
 

@@ -377,7 +377,13 @@ func initNacos(c config.Config) naming_client.INamingClient {
 		panic(err)
 	}
 
-	if registerIP := resolveNacosRegisterIP(c.Host); registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
+	registerIP := resolveNacosRegisterIP(c.Host)
+	if strings.EqualFold(strings.TrimSpace(c.Mode), "dev") {
+		registerIP = "127.0.0.1"
+		logx.Info(utils.REGISTER_NACOS_DEV_MODE_MESSAGE)
+	}
+
+	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
 		_, _ = namingClient.RegisterInstance(vo.RegisterInstanceParam{
 			Ip:          registerIP,
 			Port:        uint64(c.Port),

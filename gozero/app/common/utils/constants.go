@@ -4,6 +4,9 @@ const (
 	// GoZero 自己的测试欢迎信息
 	TEST_MESSAGE = "Hello,I am GoZero!"
 
+	// dev 模式下 Nacos 注册消息
+	REGISTER_NACOS_DEV_MODE_MESSAGE = "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
+
 	// 文章搜索错误信息
 	SEARCH_ERR = "文章搜索错误"
 
