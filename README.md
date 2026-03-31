@@ -273,24 +273,54 @@ default = true
 
 ### 创建的容器服务
 
-脚本会自动创建以下 Docker 容器：
+脚本会自动创建以下 Docker 容器（密码均为默认值，可通过 `.env` 文件自定义）：
 
-| 服务              | 端口  | 用户名   | 密码   | 说明                     |
-| ----------------- | ----- | -------- | ------ | ------------------------ |
-| **MySQL**         | 3306  | root     | 123    | 关系型数据库             |
-| **PostgreSQL**    | 5432  | postgres | 123456 | 向量数据库(含 pgvector)  |
-| **Redis**         | 6379  | -        | -      | 缓存服务                 |
-| **MongoDB**       | 27017 | root     | 123456 | 非关系型数据库           |
-| **ElasticSearch** | 9200  | -        | -      | 搜索引擎(7.12.1)         |
-| **Nacos**         | 8848  | -        | -      | 服务发现与配置中心       |
-| **RabbitMQ**      | 5672  | test     | 123456 | 消息队列(管理界面 15672) |
+| 服务              | 端口        | 用户名   | 默认密码 | 说明                     |
+| ----------------- | ----------- | -------- | -------- | ------------------------ |
+| **MySQL**         | 3306        | root     | 123456   | 关系型数据库             |
+| **PostgreSQL**    | 5432        | postgres | 123456   | 向量数据库(含 pgvector)  |
+| **Redis**         | 6379        | -        | 123456   | 缓存服务                 |
+| **MongoDB**       | 27017       | root     | 123456   | 非关系型数据库           |
+| **ClickHouse**    | 8123, 9002  | hcsy     | 123456   | 大数据分析数据库         |
+| **ElasticSearch** | 9200, 9300  | -        | -        | 搜索引擎(7.12.1)         |
+| **Nacos**         | 8848, 9848  | -        | -        | 服务发现与配置中心       |
+| **RabbitMQ**      | 5672, 15672 | hcsy     | 123456   | 消息队列(管理界面 15672) |
+
+### 自定义密码配置
+
+所有容器密码均支持通过项目根目录 `.env` 文件自定义，脚本会优先读取 `.env` 中的变量，未设置时使用默认值：
+
+```bash
+# .env 文件示例
+DB_PASSWORD=你的数据库密码          # MySQL 和 PostgreSQL 密码
+REDIS_PASSWORD=你的Redis密码        # Redis 密码
+MONGO_PASSWORD=你的MongoDB密码      # MongoDB 密码
+CLICKHOUSE_USER=hcsy               # ClickHouse 用户名
+CLICKHOUSE_PASSWORD=你的密码        # ClickHouse 密码
+RABBITMQ_USER=hcsy                 # RabbitMQ 用户名
+RABBITMQ_PASSWORD=你的密码          # RabbitMQ 密码
+```
+
+### 数据持久化目录
+
+| 服务          | 宿主机目录                                     |
+| ------------- | ---------------------------------------------- |
+| MySQL         | `~/mysql/data`, `~/mysql/conf`, `~/mysql/init` |
+| PostgreSQL    | `~/pgdata`                                     |
+| Redis         | `~/redis_data`                                 |
+| MongoDB       | `~/mongo_data`                                 |
+| ClickHouse    | `~/clickhouse/data`, `~/clickhouse/logs`       |
+| ElasticSearch | Docker Volume: `es-data`, `es-plugins`         |
+| RabbitMQ      | Docker Volume: `mq-plugins`                    |
 
 ### 注意事项
 
-- **首次创建**: 首次执行 `docker up` 时会创建 Docker 网络，可能需要一些时间
+- **首次创建**: 首次执行 `docker-services up` 时会自动创建 Docker 网络 `hcsy` 和所有数据持久化目录
 - **数据持久化**: 所有容器的数据都会持久化到宿主机目录
+- **密码配置**: 建议在 `.env` 文件中统一配置密码，避免使用默认密码
 - **ElasticSearch**: 首次创建后会提示是否安装 IK 分词器（可选）
-- **Nacos**: 自动生成 `nacos/custom.env` 配置文件，可根据需要修改
+- **ClickHouse**: 端口 9002 映射到容器内 9000（避免与其他服务冲突），需设置 `ulimit nofile=262144`
+- **Nacos**: 自动生成 `nacos/custom.env` 配置文件，MySQL 密码与 `DB_PASSWORD` 同步
 - **权限问题**: 如果遇到权限错误，可能需要使用 `sudo` 或将用户加入 docker 组
 - 如果有额外创建的组件，按照个人的配置改动配置文件
 
