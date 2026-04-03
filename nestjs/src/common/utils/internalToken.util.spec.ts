@@ -1,9 +1,8 @@
-import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { Test, TestingModule } from "@nestjs/testing";
-import { InternalTokenUtil } from "./internalToken.util";
+import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
+import { InternalTokenUtil } from './internalToken.util';
 
-describe("InternalTokenUtil", () => {
+describe('InternalTokenUtil', () => {
   let internalTokenUtil: InternalTokenUtil;
 
   beforeEach(async () => {
@@ -14,10 +13,10 @@ describe("InternalTokenUtil", () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
-              if (key === "internal-token.secret") {
-                return "abcdefghijklmnopqrstuvwxyz123456";
+              if (key === 'internal-token.secret') {
+                return 'abcdefghijklmnopqrstuvwxyz123456';
               }
-              if (key === "internal-token.expiration") {
+              if (key === 'internal-token.expiration') {
                 return 60000;
               }
               return undefined;
@@ -30,18 +29,18 @@ describe("InternalTokenUtil", () => {
     internalTokenUtil = module.get<InternalTokenUtil>(InternalTokenUtil);
   });
 
-  it("应该生成可用的内部Token", async () => {
+  it('应该生成可用的内部Token', async () => {
     const token = await internalTokenUtil.generateInternalToken(
       10001,
-      "nestjs",
+      'nestjs',
     );
 
+    console.log(`生成的内部Token: ${token}`);
     expect(token).toBeTruthy();
     expect(token.length).toBeGreaterThan(0);
-    Logger.log("生成的内部Token:", token);
   });
 
-  it("应该使用环境变量中的内部Token校验通过", async () => {
+  it('应该使用环境变量中的内部Token校验通过', async () => {
     const token = process.env.INTERNAL_TOKEN_TEST_TOKEN;
 
     expect(token).toBeTruthy();
@@ -52,6 +51,6 @@ describe("InternalTokenUtil", () => {
 
     expect(claims.userId).toBeDefined();
     expect(claims.serviceName).toBeDefined();
-    expect(claims.tokenType).toBe("internal");
+    expect(claims.tokenType).toBe('internal');
   });
 });
