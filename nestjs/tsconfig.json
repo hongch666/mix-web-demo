@@ -9,6 +9,7 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
@@ -17,6 +18,8 @@
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
+    "ignoreDeprecations": "6.0",
+    "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types", "./src/types"]
   }
 }

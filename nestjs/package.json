@@ -14,7 +14,8 @@
     "bun:start": "bun src/main.ts",
     "bun:dev": "bun --watch src/main.ts",
     "bun:build": "bun run nest build",
-    "bun:prod": "bun dist/main.js"
+    "bun:prod": "bun dist/main.js",
+    "test": "jest"
   },
   "dependencies": {
     "@fastify/multipart": "^9.4.0",
@@ -56,7 +57,7 @@
     "@nestjs/testing": "^11.0.1",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
-    "@types/jest": "^29.5.14",
+    "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.7",
