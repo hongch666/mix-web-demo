@@ -409,6 +409,80 @@ uv run python main.py
 uv run --python 3.12 python main.py
 ```
 
+## 测试说明
+
+本项目按服务拆分测试代码，各服务的测试入口和运行方式如下。
+
+### 测试运行方式
+
+1. Spring
+
+```bash
+cd spring
+mvn test
+```
+
+只运行某个测试：
+
+```bash
+export INTERNAL_TOKEN_TEST_TOKEN=实际Token
+cd spring
+mvn -Dtest=InternalTokenUtilTest test
+```
+
+2. GoZero
+
+```bash
+cd gozero/app
+go test ./...
+```
+
+只运行某个测试：
+
+```bash
+export INTERNAL_TOKEN_TEST_TOKEN=实际Token
+cd gozero/app
+go test ./common/utils -run 'TestGenerateInternalToken|TestValidateInternalToken' -v
+```
+
+3. NestJS
+
+```bash
+cd nestjs
+npm test
+```
+
+只运行某个测试：
+
+```bash
+export INTERNAL_TOKEN_TEST_TOKEN=实际Token
+cd nestjs
+npx jest src/common/utils/internalToken.util.spec.ts
+```
+
+4. FastAPI
+
+```bash
+cd fastapi
+pytest
+```
+
+只运行某个测试：
+
+```bash
+export INTERNAL_TOKEN_TEST_TOKEN=实际Token
+cd fastapi
+pytest tests/core/auth/test_internal_token.py
+```
+
+### 测试代码规范
+
+1. **Spring**：测试文件放在 `spring/src/test/java` 下，命名建议使用 `*Test.java`。
+2. **GoZero**：测试文件放在同包目录下，命名使用 `_test.go`，测试函数使用 `TestXxx`。
+3. **NestJS**：测试文件放在 `nestjs/src` 下，命名使用 `*.spec.ts`，默认使用 Jest。
+4. **FastAPI**：测试文件放在 `fastapi/tests` 下，命名使用 `test_*.py`，默认使用 pytest。
+5. **其他说明**：生成测试参数可以写死在代码中，但是敏感信息的参数建议使用环境变量提供。
+
 ## 运行脚本配置
 
 所有运行脚本已组织到 `scripts/` 目录中，便于项目管理和维护。
