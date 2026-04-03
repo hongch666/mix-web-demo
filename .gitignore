@@ -237,3 +237,5 @@ dist/
 .github/**
 
 /**/.VSCodeCounter/
+
+.vscode-jest
