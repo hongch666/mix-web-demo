@@ -1,9 +1,19 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { InternalTokenUtil } from './internalToken.util';
 
 describe('InternalTokenUtil', () => {
   let internalTokenUtil: InternalTokenUtil;
+
+  const defaultInternalTokenSecret = 'abcdefghijklmnopqrstuvwxyz123456';
+  const defaultInternalTokenExpiration = 60000;
+
+  beforeAll(() => {
+    loadDotEnv();
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -14,10 +24,18 @@ describe('InternalTokenUtil', () => {
           useValue: {
             get: jest.fn((key: string) => {
               if (key === 'internal-token.secret') {
-                return 'abcdefghijklmnopqrstuvwxyz123456';
+                return resolveConfigValue(
+                  'INTERNAL_TOKEN_SECRET',
+                  defaultInternalTokenSecret,
+                );
               }
               if (key === 'internal-token.expiration') {
-                return 60000;
+                return Number(
+                  resolveConfigValue(
+                    'INTERNAL_TOKEN_EXPIRATION',
+                    String(defaultInternalTokenExpiration),
+                  ),
+                );
               }
               return undefined;
             }),
@@ -54,3 +72,68 @@ describe('InternalTokenUtil', () => {
     expect(claims.tokenType).toBe('internal');
   });
 });
+
+function loadDotEnv(): void {
+  const candidates = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), 'nestjs/.env'),
+    path.resolve(process.cwd(), '../.env'),
+  ];
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) {
+      continue;
+    }
+
+    const content = fs.readFileSync(candidate, 'utf8');
+    for (const line of content.split(/\r?\n/)) {
+      const trimmedLine = line.trim();
+      if (
+        !trimmedLine ||
+        trimmedLine.startsWith('#') ||
+        !trimmedLine.includes('=')
+      ) {
+        continue;
+      }
+
+      const keyValueParts = trimmedLine.split('=');
+      const rawKey = keyValueParts[0];
+      if (!rawKey) {
+        continue;
+      }
+
+      const key = rawKey.trim();
+      const value = stripQuotes(keyValueParts.slice(1).join('=').trim());
+
+      if (key && process.env[key] === undefined) {
+        process.env[key] = value;
+      }
+    }
+
+    break;
+  }
+}
+
+function resolveConfigValue(key: string, defaultValue: string): string {
+  const envValue = process.env[key];
+  if (envValue && envValue.trim()) {
+    return envValue.trim();
+  }
+
+  return defaultValue;
+}
+
+function stripQuotes(value: string): string {
+  if (value.length >= 2) {
+    const firstChar = value[0];
+    const lastChar = value[value.length - 1];
+    if (
+      (firstChar === '"' && lastChar === '"') ||
+      (firstChar === "'" && lastChar === "'")
+    ) {
+      return value.slice(1, -1);
+    }
+  }
+
+  return value;
+}
