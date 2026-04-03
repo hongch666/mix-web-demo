@@ -3,7 +3,6 @@ from typing import Generator
 
 import pytest
 from app.core.auth.internalToken import InternalTokenUtil
-from app.core.base import logger
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +21,7 @@ def reset_internal_token_util() -> Generator[None, None, None]:
 def test_generate_internal_token() -> None:
     internal_token_util = InternalTokenUtil()
     token = internal_token_util.generate_internal_token(10001, "fastapi")
-    logger.info(f"生成的内部Token: {token}")
+    print(f"生成的内部Token: {token}")
 
     assert token
 
