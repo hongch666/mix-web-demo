@@ -103,6 +103,7 @@ async def test_export_vector_task(request: Request) -> JSONResponse:
     summary="初始化文章内容 hash 缓存",
     description="为所有已发布的文章初始化内容 hash 缓存。用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景。此操作只生成 hash，不进行向量同步。",
 )
+@requireInternalToken
 @log("初始化文章内容 hash 缓存")
 async def test_init_hash_cache_task(request: Request) -> JSONResponse:
     """初始化文章内容 hash 缓存接口"""
