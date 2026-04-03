@@ -8,11 +8,14 @@ import (
 	"app/common/utils"
 	"app/internal/boot"
 
+	"github.com/joho/godotenv"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func initTestInternalTokenUtil(t *testing.T) *utils.InternalTokenUtil {
 	t.Helper()
+
+	_ = godotenv.Load(filepath.Join("..", "..", ".env"))
 
 	configFile := filepath.Join("..", "..", "etc", "application.yaml")
 	c := boot.LoadConfig(configFile)
