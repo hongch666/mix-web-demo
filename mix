@@ -49,6 +49,7 @@ show_help() {
     echo "    up [services...]       - Build and run containers (or all if not specified)"
     echo "    start [services...]    - Start containers from existing images only"
     echo "    build [services...]    - Build images only"
+    echo "    push [services...]     - Push built images to remote registry"
     echo "    status                 - Show container status"
     echo "    logs <service>         - View container logs"
     echo "    stop                   - Stop all containers"
@@ -113,6 +114,8 @@ show_help() {
     echo "  ./mix docker start             # Start all containers from existing images"
     echo "  ./mix docker start spring      # Start a specific container only"
     echo "  ./mix docker build             # Build all images only"
+    echo "  ./mix docker push --prefix docker.io/yourname # Push all images to remote"
+    echo "  ./mix docker push --prefix registry.example.com/team spring gozero"
     echo "  ./mix docker status            # Show container status"
     echo "  ./mix docker logs spring       # View Spring container logs"
     echo "  ./mix docker stop              # Stop all containers"
@@ -249,6 +252,14 @@ case $COMMAND in
                         echo "Building specified images: ${@:3}"
                         bash "$SCRIPTS_DIR/build_and_run_services.sh" --build-only "${@:3}"
                     fi
+                    ;;
+                push)
+                    if [ $# -le 2 ]; then
+                        echo "Pushing all Docker images..."
+                    else
+                        echo "Pushing specified images: ${@:3}"
+                    fi
+                    bash "$SCRIPTS_DIR/docker-push-images.sh" "${@:3}"
                     ;;
                 status)
                     echo "Showing Docker container status..."
