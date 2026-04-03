@@ -133,12 +133,6 @@ spring/*.iml
 # 忽略编译后的 class 文件
 spring/*.class
 
-# 忽略测试类
-spring/*Test.java
-
-# 忽略 test 目录
-spring/src/test/
-
 # 忽略 mvnw 和 mvnw.cmd 文件
 spring/mvnw
 spring/mvnw.cmd
@@ -170,12 +164,6 @@ gateway/*.iml
 
 # 忽略编译后的 class 文件
 gateway/*.class
-
-# 忽略测试类
-gateway/*Test.java
-
-# 忽略 test 目录
-gateway/src/test/
 
 # 忽略 mvnw 和 mvnw.cmd 文件
 gateway/mvnw
