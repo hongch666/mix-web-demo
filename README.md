@@ -467,6 +467,12 @@ uv run --python 3.12 python main.py
 # 仅构建镜像
 ./mix docker build
 
+# 推送所有镜像到远程仓库
+./mix docker push --prefix docker.io/yourname
+
+# 推送指定服务镜像到远程仓库
+./mix docker push --prefix registry.example.com/team --tag v1.0.0 spring gozero
+
 # 查看容器状态
 ./mix docker status
 
@@ -622,19 +628,20 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 脚本说明
 
-| 脚本                | 位置       | 功能                                       | 适用系统    |
-| ------------------- | ---------- | ------------------------------------------ | ----------- |
-| `mix`               | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
-| `run_multi.sh`      | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
-| `run.sh`            | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
-| `stop.sh`           | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
-| `build.sh`          | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
-| `dist-control.sh`   | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
-| `setup.sh`          | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
-| `swag-init.sh`      | scripts/   | 生成 GoZero Swagger 文档                   | Linux/macOS |
-| `goctl-api-init.sh` | scripts/   | 生成 GoZero API 代码                       | Linux/macOS |
-| `goctl-orm-init.sh` | scripts/   | 生成 GoZero ORM 代码                       | Linux/macOS |
-| `run.ps1`           | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
+| 脚本                    | 位置       | 功能                                       | 适用系统    |
+| ----------------------- | ---------- | ------------------------------------------ | ----------- |
+| `mix`                   | 项目根目录 | 便捷启动器，用于快速调用 scripts/ 下的脚本 | Linux/macOS |
+| `run_multi.sh`          | scripts/   | 使用 tmux 多窗格布局启动所有服务（推荐）   | Linux/macOS |
+| `run.sh`                | scripts/   | 使用 tmux 顺序窗口模式启动所有服务         | Linux/macOS |
+| `stop.sh`               | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
+| `build.sh`              | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
+| `dist-control.sh`       | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
+| `docker-push-images.sh` | scripts/   | 将已构建的 Docker 镜像推送到远程仓库       | Linux/macOS |
+| `setup.sh`              | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
+| `swag-init.sh`          | scripts/   | 生成 GoZero Swagger 文档                   | Linux/macOS |
+| `goctl-api-init.sh`     | scripts/   | 生成 GoZero API 代码                       | Linux/macOS |
+| `goctl-orm-init.sh`     | scripts/   | 生成 GoZero ORM 代码                       | Linux/macOS |
+| `run.ps1`               | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
 
 ### 服务名称
 
