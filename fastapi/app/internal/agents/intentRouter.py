@@ -30,7 +30,7 @@ class IntentRouter:
             user_mapper: 用户 Mapper 实例（用于权限检查）
         """
         # 延迟导入避免循环依赖
-        from app.core import Logger
+        from app.core.base import Logger
 
         self.logger = Logger
 

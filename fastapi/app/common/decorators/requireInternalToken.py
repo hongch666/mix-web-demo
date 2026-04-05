@@ -38,7 +38,12 @@ def requireInternalToken(
 
     def decorator(f: T) -> T:
         @wraps(f)
-        async def async_wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
+        async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+            request: Optional[Request] = _get_request_from_args(args, kwargs)
+            if request is None:
+                Logger.error(Constants.INTERNAL_TOKEN_MISSING)
+                raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
+
             # 获取请求头中的内部令牌
             auth_header: str = request.headers.get("X-Internal-Token", "")
 
@@ -72,7 +77,7 @@ def requireInternalToken(
                 request.state.internal_token_claims = claims
 
                 # 调用原始函数
-                return await f(request, *args, **kwargs)
+                return await f(*args, **kwargs)
             except BusinessException:
                 raise
             except Exception as e:
@@ -80,7 +85,12 @@ def requireInternalToken(
                 raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
 
         @wraps(f)
-        def sync_wrapper(request: Request, *args: Any, **kwargs: Any) -> Any:
+        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
+            request: Optional[Request] = _get_request_from_args(args, kwargs)
+            if request is None:
+                Logger.error(Constants.INTERNAL_TOKEN_MISSING)
+                raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
+
             # 获取请求头中的内部令牌
             auth_header: str = request.headers.get("X-Internal-Token", "")
 
@@ -114,7 +124,7 @@ def requireInternalToken(
                 request.state.internal_token_claims = claims
 
                 # 调用原始函数
-                return f(request, *args, **kwargs)
+                return f(*args, **kwargs)
             except BusinessException:
                 raise
             except Exception as e:
@@ -135,3 +145,27 @@ def requireInternalToken(
     # 否则返回 decorator，供后续的路由函数使用（@requireInternalToken() 或 @requireInternalToken(required_service_name="xxx")）
     else:
         return decorator
+
+
+def _get_request_from_args(
+    args: tuple[Any, ...], kwargs: Dict[str, Any]
+) -> Optional[Request]:
+    """
+    从函数参数中提取 Request 对象
+
+    Args:
+        args: 位置参数
+        kwargs: 关键字参数
+
+    Returns:
+        Request 对象或 None
+    """
+    for arg in args:
+        if isinstance(arg, Request):
+            return arg
+
+    for value in kwargs.values():
+        if isinstance(value, Request):
+            return value
+
+    return None
