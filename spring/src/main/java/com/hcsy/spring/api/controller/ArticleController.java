@@ -203,6 +203,12 @@ public class ArticleController {
 
     @PutMapping("/publish/{id}")
     @Operation(summary = "发布文章", description = "将文章状态修改为发布")
+    @RequirePermission(
+        roles = { "admin" },
+        businessType = "article",
+        paramSource = "path_single",
+        paramNames = { "id" }
+    )
     @ApiLog("发布文章")
     public Result publishArticle(@PathVariable Long id) {
         articleService.publishArticle(id);
