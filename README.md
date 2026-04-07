@@ -9,6 +9,36 @@
 ![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Framework-009688?logo=fastapi&logoColor=white)
 
+## 目录
+
+<details>
+<summary>点击展开目录</summary>
+
+- [描述](#描述)
+- [功能说明](#功能说明)
+- [设计图](#设计图)
+- [技术栈](#技术栈)
+- [第三方服务](#第三方服务)
+- [环境要求](#环境要求)
+- [环境设置](#环境设置)
+- [环境配置脚本](#环境配置脚本)
+- [Docker 基础中间件容器部署](#docker-基础中间件容器部署)
+- [编译和运行项目](#编译和运行项目)
+- [测试说明](#测试说明)
+- [运行脚本配置](#运行脚本配置)
+- [生产环境部署](#生产环境部署)
+- [Docker 容器部署](#docker-容器部署)
+- [Docker Compose 部署](#docker-compose-部署)
+- [基础服务组件初始化](#基础服务组件初始化)
+- [环境变量配置文件](#环境变量配置文件)
+- [Swagger 说明](#swagger-说明)
+- [项目规范说明](#项目规范说明)
+- [项目可用工具说明](#项目可用工具说明)
+- [其他说明](#其他说明)
+- [许可证](#许可证)
+
+</details>
+
 ## 描述
 
 这是一个基于多语言技术栈构建的 IT 智能文章推荐与知识问答系统，主要包含以下框架：
