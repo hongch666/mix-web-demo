@@ -61,7 +61,6 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
     }
 
     @Override
-    @Transactional
     public boolean isFocused(Long userId, Long focusId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Focus::getUserId, userId);
@@ -71,7 +70,6 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
     }
 
     @Override
-    @Transactional
     public IPage<FocusUserVO> listUserFocuses(Long userId, Page<Focus> page) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Focus::getUserId, userId);
@@ -101,7 +99,6 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
     }
 
     @Override
-    @Transactional
     public IPage<FocusUserVO> listUserFollowers(Long userId, Page<Focus> page) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Focus::getFocusId, userId);
@@ -131,7 +128,6 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
     }
 
     @Override
-    @Transactional
     public Long getFocusCountByUserId(Long userId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Focus::getUserId, userId);
@@ -140,7 +136,6 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
     }
 
     @Override
-    @Transactional
     public Long getFollowerCountByUserId(Long userId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Focus::getFocusId, userId);

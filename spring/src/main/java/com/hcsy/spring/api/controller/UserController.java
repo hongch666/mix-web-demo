@@ -223,6 +223,7 @@ public class UserController {
         return Result.success();
     }
 
+    // TODO: 抽离核心逻辑到 Service 层
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("用户登录")
@@ -248,6 +249,7 @@ public class UserController {
         return Result.success(loginVO);
     }
 
+    // TODO: 抽离核心逻辑到 Service 层
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("邮箱验证码登录")
@@ -357,6 +359,7 @@ public class UserController {
         }
     }
 
+    // TODO: 抽离核心逻辑到 Service 层
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
     @ApiLog("用户注册")

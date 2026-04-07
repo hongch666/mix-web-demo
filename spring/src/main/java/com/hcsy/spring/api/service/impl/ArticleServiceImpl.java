@@ -37,7 +37,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final SubCategoryMapper subCategoryMapper;
 
     @Override
-    @Transactional
     public List<Article> listPublishedArticles() {
         return lambdaQuery()
                 .eq(Article::getStatus, 1)
@@ -45,7 +44,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    @Transactional
     public IPage<Article> listPublishedArticles(Page<Article> page) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getStatus, 1); // 只查已发布
@@ -55,7 +53,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    @Transactional
     public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getUserId, id);
@@ -65,7 +62,6 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
-    @Transactional
     public IPage<Article> listArticlesById(Page<Article> page, Integer id, boolean onlyPublished) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getUserId, id);

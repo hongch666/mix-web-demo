@@ -2,7 +2,6 @@ package com.hcsy.spring.api.service.impl;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.utils.Constants;
@@ -19,7 +18,6 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AsyncSyncServiceImpl implements AsyncSyncService {
 
     private final GoZeroClient goZeroClient;

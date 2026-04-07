@@ -30,6 +30,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     private final ArticleService articleService;
     private final UserService userService;
 
+    @Override
     public IPage<Comments> listCommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
         // 准备查询条件
         String content = (queryDTO.getContent() != null && !queryDTO.getContent().isEmpty())
@@ -80,6 +81,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
+    @Override
     public IPage<Comments> listAICommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
         // 准备查询条件
         String content = (queryDTO.getContent() != null && !queryDTO.getContent().isEmpty())
@@ -127,6 +129,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
+    @Override
     public IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId) {
         LambdaQueryWrapper<Comments> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Comments::getUserId, userId);
@@ -134,12 +137,14 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return commentsPage;
     }
 
+    @Override
     public IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay) {
         // ✨ 使用SQL级别JOIN过滤，确保分页基于已过滤的数据
         // 这样避免了分页不准确的问题（当前面页数中有AI评论时）
         return this.baseMapper.selectCommentsByArticleIdWithoutAI(page, articleId, sortWay);
     }
 
+    @Override
     public List<Comments> listAICommentsByArticleId(Long articleId) {
         // 查询所有 AI 用户的 ID 列表
         LambdaQueryWrapper<User> userQueryWrapper = Wrappers.lambdaQuery();

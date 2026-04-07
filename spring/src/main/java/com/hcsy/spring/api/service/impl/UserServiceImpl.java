@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
@@ -54,6 +53,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 批量从Redis获取所有用户的登录状态，构建 userId -> loginStatus 映射
+        // TODO: 这里使用Redis Pipeline批量获取进一步优化性能
         Map<Long, Integer> loginStatusMap = new HashMap<>();
         for (User user : userIds) {
             String status = (String) redisUtil.get("user:status:" + user.getId());
@@ -88,6 +88,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
     }
 
+    @Override
     @Transactional
     public void deleteUserAndStatusById(Long id) {
         User existing = userMapper.selectById(id);
@@ -98,6 +99,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         redisUtil.delete("user:status:" + id);
     }
 
+    @Override
     @Transactional
     public void deleteUsersAndStatusByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty())
@@ -123,7 +125,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
     }
 
-    @Transactional
+    @Override
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         if (username != null && !username.isEmpty()) {
@@ -132,6 +134,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userMapper.selectOne(queryWrapper);
     }
 
+    @Override
     public List<User> listAllUserByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         if (username != null && !username.isEmpty()) {

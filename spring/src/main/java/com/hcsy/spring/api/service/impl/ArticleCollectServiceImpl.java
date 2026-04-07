@@ -71,7 +71,6 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
     }
 
     @Override
-    @Transactional
     public boolean isCollected(Long articleId, Long userId) {
         LambdaQueryWrapper<ArticleCollect> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(ArticleCollect::getArticleId, articleId);
@@ -81,7 +80,6 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
     }
 
     @Override
-    @Transactional
     public IPage<ArticleCollectVO> listUserCollects(Long userId, Page<ArticleCollect> page) {
         LambdaQueryWrapper<ArticleCollect> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(ArticleCollect::getUserId, userId);
@@ -145,7 +143,6 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
     }
 
     @Override
-    @Transactional
     public Long getCollectCountByArticleId(Long articleId) {
         LambdaQueryWrapper<ArticleCollect> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(ArticleCollect::getArticleId, articleId);

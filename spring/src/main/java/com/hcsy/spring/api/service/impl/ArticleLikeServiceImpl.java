@@ -70,7 +70,6 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
     }
 
     @Override
-    @Transactional
     public boolean isLiked(Long articleId, Long userId) {
         LambdaQueryWrapper<ArticleLike> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(ArticleLike::getArticleId, articleId);
@@ -80,7 +79,6 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
     }
 
     @Override
-    @Transactional
     public IPage<ArticleLikeVO> listUserLikes(Long userId, Page<ArticleLike> page) {
         LambdaQueryWrapper<ArticleLike> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(ArticleLike::getUserId, userId);
@@ -145,7 +143,6 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
     }
 
     @Override
-    @Transactional
     public Long getLikeCountByArticleId(Long articleId) {
         LambdaQueryWrapper<ArticleLike> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(ArticleLike::getArticleId, articleId);
