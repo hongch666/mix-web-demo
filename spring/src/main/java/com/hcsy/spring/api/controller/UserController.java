@@ -22,8 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
@@ -59,7 +59,6 @@ public class UserController {
     private final UserService userService;
     private final TokenService tokenService;
     private final RedisUtil redisUtil;
-    private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncryptor passwordEncryptor;
@@ -223,63 +222,30 @@ public class UserController {
         return Result.success();
     }
 
-    // TODO: 抽离核心逻辑到 Service 层
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("用户登录")
     public Result login(@RequestBody LoginDTO loginDTO) {
-        User user = userService.findByUsername(loginDTO.getName());
-        if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
+        try {
+            UserLoginVO loginVO = userService.login(loginDTO);
+            return Result.success(loginVO);
+        } catch (BusinessException e) {
+            return Result.error(e.getErrorMessage());
+        } catch (Exception e) {
+            logger.error(Constants.LOGIN + e.getMessage());
             return Result.error(Constants.LOGIN);
         }
-
-        // 1. 生成 JWT Token
-        String token = jwtUtil.generateToken(user.getId(), user.getName());
-
-        // 2. 保存 Token 到 Redis（包括标记用户在线）
-        tokenService.saveToken(user.getId(), token);
-
-        UserLoginVO loginVO = UserLoginVO.builder()
-                .token(token)
-                .userId(user.getId())
-                .username(user.getName())
-                .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
-                .build();
-
-        return Result.success(loginVO);
     }
 
-    // TODO: 抽离核心逻辑到 Service 层
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("邮箱验证码登录")
     public Result emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
         try {
-            // 1. 验证邮箱验证码
-            if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
-                return Result.error(Constants.VERIFY_CODE);
-            }
-
-            // 2. 查询用户是否存在
-            User user = userService.findByEmail(emailLoginDTO.getEmail());
-            if (user == null) {
-                return Result.error(Constants.UNDEFINED_USER_REGISTER);
-            }
-
-            // 3. 生成 JWT Token
-            String token = jwtUtil.generateToken(user.getId(), user.getName());
-
-            // 4. 保存 Token 到 Redis（包括标记用户在线）
-            tokenService.saveToken(user.getId(), token);
-
-            UserLoginVO loginVO = UserLoginVO.builder()
-                    .token(token)
-                    .userId(user.getId())
-                    .username(user.getName())
-                    .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
-                    .build();
-
+            UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
             return Result.success(loginVO);
+        } catch (BusinessException e) {
+            return Result.error(e.getErrorMessage());
         } catch (Exception e) {
             logger.error(Constants.EMAIL_LOGIN + e.getMessage());
             return Result.error(Constants.EMAIL_LOGIN);
@@ -359,7 +325,6 @@ public class UserController {
         }
     }
 
-    // TODO: 抽离核心逻辑到 Service 层
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
     @ApiLog("用户注册")
@@ -367,27 +332,15 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     public Result registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
-        // 1. 检查邮箱是否已被注册
-        User existingUser = userService.findByEmail(registerDto.getEmail());
-        if (existingUser != null) {
+        try {
+            userService.registerUser(registerDto);
+            return Result.success();
+        } catch (BusinessException e) {
+            return Result.error(e.getErrorMessage());
+        } catch (Exception e) {
+            logger.error(Constants.EMAIL_REGISTER + e.getMessage());
             return Result.error(Constants.EMAIL_REGISTER);
         }
-
-        // 2. 验证邮箱验证码
-        if (!emailVerificationService.verifyCode(registerDto.getEmail(), registerDto.getVerificationCode())) {
-            return Result.error(Constants.VERIFY_CODE);
-        }
-
-        // 3. 创建用户并加密密码
-        User user = BeanUtil.copyProperties(registerDto, User.class);
-        user.setRole("user");
-        user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
-        userService.saveUserAndStatus(user);
-
-        // 4. 标记邮箱已验证
-        emailVerificationService.markEmailAsVerified(registerDto.getEmail());
-
-        return Result.success();
     }
 
     @PostMapping("/email/send")

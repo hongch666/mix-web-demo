@@ -2,10 +2,13 @@ package com.hcsy.spring.common.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,32 @@ public class RedisUtil {
     @SuppressWarnings("null")
     public String get(String key) {
         return redisTemplate.opsForValue().get(key);
+    }
+
+    // 批量获取值，保持返回顺序与入参一致
+    public List<String> batchGet(List<String> keys) {
+        if (keys == null || keys.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        StringRedisSerializer serializer = new StringRedisSerializer();
+        List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            for (String key : keys) {
+                if (key != null) {
+                    byte[] rawKey = serializer.serialize(key);
+                    if (rawKey != null) {
+                        connection.stringCommands().get(rawKey);
+                    }
+                }
+            }
+            return null;
+        });
+
+        List<String> values = new ArrayList<>(results.size());
+        for (Object result : results) {
+            values.add(Objects.toString(result, null));
+        }
+        return values;
     }
 
     // 删除值

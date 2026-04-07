@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,15 +13,21 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.UserMapper;
+import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserListVO;
+import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
+import com.hcsy.spring.entity.dto.EmailLoginDTO;
+import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.UserRegisterDTO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +39,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisUtil redisUtil;
     private final TokenService tokenService;
     private final PasswordEncryptor passwordEncryptor;
+    private final JwtUtil jwtUtil;
+    private final EmailVerificationService emailVerificationService;
 
     @Override
     public UserListVO listUsersWithFilter(long page, long size, String username) {
@@ -53,10 +62,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         // 2. 批量从Redis获取所有用户的登录状态，构建 userId -> loginStatus 映射
-        // TODO: 这里使用Redis Pipeline批量获取进一步优化性能
         Map<Long, Integer> loginStatusMap = new HashMap<>();
+        List<String> statusKeys = new ArrayList<>(userIds.size());
         for (User user : userIds) {
-            String status = (String) redisUtil.get("user:status:" + user.getId());
+            statusKeys.add("user:status:" + user.getId());
+        }
+        List<String> statuses = redisUtil.batchGet(statusKeys);
+        for (int i = 0; i < userIds.size(); i++) {
+            User user = userIds.get(i);
+            String status = i < statuses.size() ? statuses.get(i) : null;
             int loginStatus = "1".equals(status) ? 1 : 0;
             loginStatusMap.put(user.getId(), loginStatus);
         }
@@ -144,6 +158,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserLoginVO login(LoginDTO loginDTO) {
+        User user = findByUsername(loginDTO.getName());
+        if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
+            throw new BusinessException(Constants.LOGIN);
+        }
+        return buildLoginVO(user);
+    }
+
+    @Override
+    public UserLoginVO emailLogin(EmailLoginDTO emailLoginDTO) {
+        if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
+            throw new BusinessException(Constants.VERIFY_CODE);
+        }
+
+        User user = findByEmail(emailLoginDTO.getEmail());
+        if (user == null) {
+            throw new BusinessException(Constants.UNDEFINED_USER_REGISTER);
+        }
+
+        return buildLoginVO(user);
+    }
+
+    @Override
+    public void registerUser(UserRegisterDTO registerDTO) {
+        User existingUser = findByEmail(registerDTO.getEmail());
+        if (existingUser != null) {
+            throw new BusinessException(Constants.EMAIL_REGISTER);
+        }
+
+        if (!emailVerificationService.verifyCode(registerDTO.getEmail(), registerDTO.getVerificationCode())) {
+            throw new BusinessException(Constants.VERIFY_CODE);
+        }
+
+        User user = BeanUtil.copyProperties(registerDTO, User.class);
+        user.setRole("user");
+        user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
+        saveUserAndStatus(user);
+
+        emailVerificationService.markEmailAsVerified(registerDTO.getEmail());
+    }
+
+    @Override
     public UserListVO getAllUsers(String username) {
         // 查询所有符合条件的用户
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
@@ -193,5 +249,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(User::getEmail, email);
         return this.getOne(queryWrapper);
+    }
+
+    private UserLoginVO buildLoginVO(User user) {
+        String token = jwtUtil.generateToken(user.getId(), user.getName());
+        tokenService.saveToken(user.getId(), token);
+
+        return UserLoginVO.builder()
+                .token(token)
+                .userId(user.getId())
+                .username(user.getName())
+                .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
+                .build();
     }
 }
