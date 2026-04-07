@@ -21,7 +21,12 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Info(utils.TASK_SYNC_ES_STARTED_MESSAGE)
 		}
-		logic.SyncArticlesToES(svcCtx)
+		if err := logic.SyncArticlesToES(svcCtx); err != nil {
+			if svcCtx.Logger != nil {
+				svcCtx.Logger.Error(fmt.Sprintf(utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
+			}
+			return
+		}
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Info(utils.TASK_SYNC_ES_COMPLETED_MESSAGE)
 		}

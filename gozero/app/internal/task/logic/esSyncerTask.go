@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"app/common/exceptions"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/model/search"
@@ -14,7 +13,7 @@ import (
 )
 
 // SyncArticlesToES 同步文章到ElasticSearch
-func SyncArticlesToES(svcCtx *svc.ServiceContext) {
+func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 	ctx := context.Background()
 
 	// 检查ESClient是否初始化
@@ -22,20 +21,20 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Error(utils.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 		}
-		return
+		return fmt.Errorf("%s", utils.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 	}
 
 	// 判断索引是否存在
 	exists, err := svcCtx.ESClient.IndexExists("articles").Do(ctx)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.INDEX_CHECK_ERROR_MESSAGE, err.Error()))
+		return logAndWrapError(svcCtx, utils.INDEX_CHECK_ERROR_MESSAGE, err)
 	}
 	if !exists {
 		// 创建索引，指定mapping
 		mapping := utils.ES_INDEX_MAPPING
 		_, err := svcCtx.ESClient.CreateIndex("articles").BodyString(mapping).Do(ctx)
 		if err != nil {
-			panic(exceptions.NewBusinessError(utils.INDEX_CREATION_ERROR_MESSAGE, err.Error()))
+			return logAndWrapError(svcCtx, utils.INDEX_CREATION_ERROR_MESSAGE, err)
 		}
 	}
 
@@ -44,20 +43,20 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 		Query(elastic.NewMatchAllQuery()).
 		Do(ctx)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.INDEX_DELETION_ERROR_MESSAGE, err.Error()))
+		return logAndWrapError(svcCtx, utils.INDEX_DELETION_ERROR_MESSAGE, err)
 	}
 
 	// 从数据库获取所有发布的文章
 	articles, err := svcCtx.ArticlesModel.SearchArticles(ctx)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.ARTICLE_QUERY_ERROR, err.Error()))
+		return logAndWrapError(svcCtx, utils.ARTICLE_QUERY_ERROR, err)
 	}
 
 	if len(articles) == 0 {
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Info(utils.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
 		}
-		return
+		return nil
 	}
 
 	// 收集用户IDs和子分类IDs
@@ -111,7 +110,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 	// 批量获取评分数据
 	commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.CREATE_MESSAGE_ERROR, err.Error()))
+		return logAndWrapError(svcCtx, utils.CREATE_MESSAGE_ERROR, err)
 	}
 	if svcCtx.Logger != nil {
 		svcCtx.Logger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_RATINGS_COMPLETED_MESSAGE, len(articles)))
@@ -120,12 +119,12 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 	// 批量获取点赞数和收藏数
 	likeCounts, err := svcCtx.LikesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.LIKE_QUERY_ERROR, err.Error()))
+		return logAndWrapError(svcCtx, utils.LIKE_QUERY_ERROR, err)
 	}
 
 	collectCounts, err := svcCtx.CollectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.COLLECT_QUERY_ERROR, err.Error()))
+		return logAndWrapError(svcCtx, utils.COLLECT_QUERY_ERROR, err)
 	}
 	if svcCtx.Logger != nil {
 		svcCtx.Logger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_LIKES_COLLECTS_COMPLETED_MESSAGE, len(articles)))
@@ -134,7 +133,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 	// 批量获取作者的关注数（粉丝数）
 	authorFollowCounts, err := svcCtx.FocusModel.GetFollowCountsByUserIDs(ctx, userIDs)
 	if err != nil {
-		panic(exceptions.NewBusinessError(utils.FOCUS_QUERY_ERROR, err.Error()))
+		return logAndWrapError(svcCtx, utils.FOCUS_QUERY_ERROR, err)
 	}
 	if svcCtx.Logger != nil {
 		svcCtx.Logger.Info(fmt.Sprintf(utils.BULK_FETCH_AUTHOR_FOLLOWS_COMPLETED_MESSAGE, len(userIDs)))
@@ -216,7 +215,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 
 		resp, err := bulkRequest.Do(context.Background())
 		if err != nil {
-			panic(exceptions.NewBusinessError(utils.ES_BULK_SYNC_ERROR_MESSAGE, err.Error()))
+			return logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
 
 		if resp.Errors {
@@ -225,7 +224,10 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 					svcCtx.Logger.Error(fmt.Sprintf(utils.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
 				}
 			}
-			panic(exceptions.NewBusinessErrorSame(utils.ES_SYNC_HAS_FAILURES_MESSAGE))
+			if svcCtx.Logger != nil {
+				svcCtx.Logger.Error(utils.ES_SYNC_HAS_FAILURES_MESSAGE)
+			}
+			return fmt.Errorf("%s", utils.ES_SYNC_HAS_FAILURES_MESSAGE)
 		}
 
 		if svcCtx.Logger != nil {
@@ -237,4 +239,13 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
+
+	return nil
+}
+
+func logAndWrapError(svcCtx *svc.ServiceContext, message string, err error) error {
+	if svcCtx != nil && svcCtx.Logger != nil {
+		svcCtx.Logger.Error(fmt.Sprintf("%s: %v", message, err))
+	}
+	return fmt.Errorf("%s: %w", message, err)
 }

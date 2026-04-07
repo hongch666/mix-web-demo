@@ -5,6 +5,7 @@ package test
 
 import (
 	"context"
+	"fmt"
 
 	"app/common/logger"
 	"app/common/utils"
@@ -33,7 +34,10 @@ func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err 
 	l.Info(utils.TASK_SYNC_ES_STARTED_MESSAGE)
 
 	// 调用实际的ES同步逻辑
-	logic.SyncArticlesToES(l.svcCtx)
+	if err = logic.SyncArticlesToES(l.svcCtx); err != nil {
+		l.Error(fmt.Sprintf("%s: %v", utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
+		return nil, err
+	}
 
 	l.Info(utils.TASK_SYNC_ES_COMPLETED_MESSAGE)
 
