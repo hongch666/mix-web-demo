@@ -304,7 +304,7 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 		panic(err)
 	}
 
-	queues := []string{"api-log-queue", "log-queue"}
+	queues := []string{"api-log-queue", "article-log-queue"}
 	for _, queueName := range queues {
 		_, err = channel.QueueDeclare(queueName, true, false, false, false, nil)
 		if err != nil {
