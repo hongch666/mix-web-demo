@@ -1,4 +1,5 @@
 import contextvars
+import re
 from functools import lru_cache
 from typing import List, Optional
 
@@ -40,6 +41,69 @@ class SQLTools:
     def get_user_id(self) -> Optional[int]:
         """获取当前用户ID"""
         return user_id_context.get()
+
+    @staticmethod
+    def _strip_sql_comments(sql: str) -> str:
+        """移除SQL注释，降低注释绕过风险"""
+        sql = re.sub(r"/\*.*?\*/", " ", sql, flags=re.DOTALL)
+        sql = re.sub(r"(?m)--[^\n]*$", " ", sql)
+        sql = re.sub(r"(?m)#[^\n]*$", " ", sql)
+        return sql
+
+    @staticmethod
+    def _strip_sql_strings(sql: str) -> str:
+        """移除字符串字面量，避免误判字符串中的关键字"""
+        sql = re.sub(r"'([^'\\\\]|\\\\.)*'", "''", sql)
+        sql = re.sub(r'"([^"\\\\]|\\\\.)*"', '""', sql)
+        return sql
+
+    def _normalize_sql_for_validation(self, query: str) -> str:
+        """标准化SQL文本用于安全校验"""
+        sql = self._strip_sql_comments(query or "")
+        sql = self._strip_sql_strings(sql)
+        sql = sql.strip()
+        return re.sub(r"\s+", " ", sql).upper()
+
+    def _is_read_only_query(self, query: str) -> tuple[bool, str]:
+        """校验整条SQL是否为单条只读查询"""
+        normalized_sql = self._normalize_sql_for_validation(query)
+        if not normalized_sql:
+            return False, Constants.SQL_TOOL_LIMIT
+
+        # 只允许单条语句，允许末尾保留一个分号
+        sql_without_trailing_semicolon = normalized_sql.rstrip(";").strip()
+        if not sql_without_trailing_semicolon:
+            return False, Constants.SQL_TOOL_LIMIT
+        if ";" in sql_without_trailing_semicolon:
+            return False, Constants.SQL_QUERY_MULTIPLE_STATEMENTS_ERROR
+
+        if not any(
+            sql_without_trailing_semicolon.startswith(prefix)
+            for prefix in Constants.SQL_READONLY_ALLOWED_PREFIXES
+        ):
+            return False, Constants.SQL_TOOL_LIMIT
+
+        dangerous_keywords = Constants.SQL_DANGEROUS_KEYWORDS
+        for keyword in dangerous_keywords:
+            if re.search(rf"\b{re.escape(keyword)}\b", sql_without_trailing_semicolon):
+                return False, Constants.SQL_QUERY_WRITE_OPERATION_ERROR
+
+        for pattern in Constants.SQL_DANGEROUS_PATTERNS:
+            if pattern in sql_without_trailing_semicolon:
+                return False, Constants.SQL_QUERY_WRITE_OPERATION_ERROR
+
+        return True, ""
+
+    def is_dangerous_nl_request(self, question: str) -> bool:
+        """判断自然语言是否在引导生成数据库写操作SQL"""
+        normalized_question = re.sub(r"\s+", " ", (question or "")).strip().lower()
+        if not normalized_question:
+            return False
+
+        for pattern in Constants.DANGEROUS_SQL_REQUEST_PATTERNS:
+            if re.search(pattern, normalized_question, flags=re.IGNORECASE):
+                return True
+        return False
 
     def get_table_schema(self, table_name: str = "") -> str:
         """
@@ -115,10 +179,9 @@ class SQLTools:
             查询结果的文本描述
         """
         try:
-            # 安全检查：只允许SELECT查询
-            query_upper = query.strip().upper()
-            if not query_upper.startswith(Constants.SQL_QUERY_PREFIX):
-                return Constants.SQL_TOOL_LIMIT
+            is_safe, error_message = self._is_read_only_query(query)
+            if not is_safe:
+                return error_message
 
             # 获取当前用户ID
             current_user_id = self.get_user_id()

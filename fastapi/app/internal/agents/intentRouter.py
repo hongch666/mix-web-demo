@@ -6,6 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.orm import Session
 
 from .userPermissionManager import UserPermissionManager
+from .tools.sqlTools import get_sql_tools
 
 IntentType = Literal["database_query", "article_search", "log_analysis", "general_chat"]
 
@@ -129,6 +130,18 @@ class IntentRouter:
         perm_manager = UserPermissionManager(self.user_mapper)
 
         if intent == "database_query":
+            try:
+                sql_tools = get_sql_tools()
+                if sql_tools.is_dangerous_nl_request(question):
+                    self.logger.warning(f"拦截疑似写操作SQL请求: {question}")
+                    return (
+                        intent,
+                        False,
+                        Constants.SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE,
+                    )
+            except Exception as e:
+                self.logger.warning(f"写操作意图检测失败，继续执行权限校验: {e}")
+
             has_permission, msg = perm_manager.can_access_sql_tools(
                 self.user_id, self.db, question
             )

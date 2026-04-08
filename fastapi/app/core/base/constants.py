@@ -488,6 +488,69 @@ class Constants:
     SQL_QUERY_PREFIX: str = "SELECT"
     """SQL查询前缀"""
 
+    SQL_READONLY_ALLOWED_PREFIXES: List[str] = [
+        "SELECT",
+        "WITH",
+        "SHOW",
+        "DESC",
+        "DESCRIBE",
+        "EXPLAIN",
+    ]
+    """只读SQL允许的起始关键字"""
+
+    SQL_DANGEROUS_KEYWORDS: List[str] = [
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "DROP",
+        "ALTER",
+        "TRUNCATE",
+        "CREATE",
+        "REPLACE",
+        "MERGE",
+        "CALL",
+        "GRANT",
+        "REVOKE",
+        "COMMIT",
+        "ROLLBACK",
+        "SET",
+        "USE",
+        "RENAME",
+        "LOCK",
+        "UNLOCK",
+        "HANDLER",
+        "LOAD",
+        "ANALYZE",
+        "OPTIMIZE",
+        "REPAIR",
+        "KILL",
+    ]
+    """SQL中禁止出现的危险关键字"""
+
+    SQL_DANGEROUS_PATTERNS: List[str] = [
+        "INTO OUTFILE",
+        "INTO DUMPFILE",
+        "FOR UPDATE",
+        "LOCK IN SHARE MODE",
+    ]
+    """SQL中禁止出现的危险片段"""
+
+    DANGEROUS_SQL_REQUEST_PATTERNS: List[str] = [
+        r"\b(update|delete|insert|drop|alter|truncate|create|replace|merge)\b",
+        r"(把|将).*(修改|更新|删除|新增|插入|写入|创建|清空|重置|下架|发布|设为|设置为|改成|改为)",
+        r"(帮我|请|给我|直接|批量).*(修改|更新|删除|新增|插入|写入|创建|清空|重置|下架|发布|设为|设置为|改成|改为).*(数据库|数据|表|记录|文章|用户|评论|点赞|收藏|status|状态|字段)",
+        r"(修改|更新|删除|新增|插入|写入|创建|清空|重置).*(数据库|数据|表|记录|文章|用户|评论|点赞|收藏|status|状态|字段)",
+        r"(删除|清空|重置).*(数据|记录|表|文章|用户|评论)",
+        r"(新增|插入|写入|创建).*(数据|记录|表|文章|用户|评论)",
+    ]
+    """自然语言中疑似引导生成写操作SQL的模式"""
+
+    SAFE_SQL_QUERY_REQUEST_PATTERNS: List[str] = [
+        r"^(查询|查看|统计|列出|展示|获取|分析).*(最近|最新|已)?(更新|新增)的",
+        r"^(查询|查看|统计|列出|展示|获取|分析).*(列表|数量|总数|排行|明细)",
+    ]
+    """自然语言中明确的只读查询模式"""
+
     # Agent 相关提示词/描述/消息
 
     ROUTER_INTENT_PROMPT: str = """
@@ -547,6 +610,21 @@ class Constants:
     SQL_TOOL_LIMIT: str = "安全限制：只允许执行SELECT查询语句"
     """SQL工具限制消息"""
 
+    SQL_QUERY_MULTIPLE_STATEMENTS_ERROR: str = (
+        "安全限制：SQL 工具只允许执行单条只读查询，禁止多语句执行。"
+    )
+    """SQL多语句限制消息"""
+
+    SQL_QUERY_WRITE_OPERATION_ERROR: str = (
+        "安全限制：检测到 SQL 包含写操作或锁表行为，只允许执行只读查询。"
+    )
+    """SQL写操作限制消息"""
+
+    SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE: str = (
+        "安全限制：当前请求带有新增、修改、删除等数据库写操作意图。SQL 工具仅支持只读查询，请改为查询类问题。"
+    )
+    """自然语言写操作意图拦截消息"""
+
     USER_RELATED_TABLE: List[str] = [
         "likes",
         "collects",
@@ -575,10 +653,11 @@ class Constants:
     """SQL查询工具名称"""
 
     SQL_QUERY_TOOL_DESC: str = """
-        执行SQL SELECT查询并返回结果。
-        只能执行SELECT查询，不允许INSERT/UPDATE/DELETE等修改操作。
+        执行只读SQL查询并返回结果。
+        只允许单条只读语句，例如 SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN。
+        不允许 INSERT/UPDATE/DELETE/DDL/锁表/多语句 等任何修改或高风险操作。
         返回最多20行数据，以表格形式展示。
-        参数格式: 完整的SQL SELECT语句。
+        参数格式: 完整的只读SQL语句。
         示例: "SELECT * FROM articles WHERE status=1 LIMIT 10"
         使用场景: 需要查询数据库数据、统计分析、获取具体记录时使用。
     """
