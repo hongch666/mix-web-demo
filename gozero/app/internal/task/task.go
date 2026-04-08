@@ -16,8 +16,8 @@ var TaskScheduler *cron.Cron
 func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 	TaskScheduler = cron.New()
 
-	// 每5分钟同步一次 ES
-	_, err := TaskScheduler.AddFunc("*/5 * * * *", func() {
+	// 每天同步一次 ES
+	_, err := TaskScheduler.AddFunc("* * */1 * *", func() {
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Info(utils.TASK_SYNC_ES_STARTED_MESSAGE)
 		}
