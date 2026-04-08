@@ -18,31 +18,33 @@ show_help() {
     echo "Mix Web Demo - Service Launcher"
     echo "================================"
     echo ""
-    echo "Usage: ./mix <COMMAND> [SERVICE_NAME] [SERVICE_NAME] ..."
+    echo "Usage: ./mix <COMMAND> [SUBCOMMAND] [ARGS] ..."
     echo ""
     echo "Development Commands (开发模式):"
-    echo "  multi                    - Run all services in tmux with split panes"
-    echo "  seq [OPTIONS]            - Run all services in tmux (sequential window mode)"
-    echo "  stop                     - Stop all tmux sessions"
+    echo "  dev multi                - Run all services in tmux with split panes"
+    echo "  dev seq [OPTIONS]        - Run all services in tmux (sequential window mode)"
+    echo "  dev stop                 - Stop all tmux sessions"
     echo ""
-    echo "Seq Options (用于 seq 命令的可选项):"
+    echo "Dev Seq Options (用于 dev seq 命令的可选项):"
     echo "  -i, --interactive        - 进入交互式选择模式"
     echo "  --java-build TOOL        - Java 构建工具: gradle(默认)|maven"
     echo "  --node-runtime TOOL      - Node.js 运行时: bun(默认)|npm"
     echo "  --python-runtime TOOL    - Python 运行时: uv(默认)|python"
     echo ""
-    echo "Seq Examples:"
-    echo "  ./mix seq                     # 使用默认配置 (gradle+bun+uv)"
-    echo "  ./mix seq -i                  # 交互式选择"
-    echo "  ./mix seq --java-build maven --node-runtime npm"
+    echo "Dev Examples:"
+    echo "  ./mix dev seq                # 使用默认配置 (gradle+bun+uv)"
+    echo "  ./mix dev seq -i             # 交互式选择"
+    echo "  ./mix dev seq --java-build maven --node-runtime npm"
+    echo "  ./mix dev multi              # 多窗格开发模式"
+    echo "  ./mix dev stop               # 停止 tmux 开发会话"
     echo ""
     echo "Build & Deploy Commands (编译部署):"
-    echo "  build                    - Build all services to dist/"
-    echo "  start [services...]      - Start built services (or all if not specified)"
-    echo "  stop-dist [services...]  - Stop built services (or all if not specified)"
-    echo "  restart [services...]    - Restart built services (or all if not specified)"
-    echo "  status [services...]     - Check status of services (or all if not specified)"
-    echo "  logs <service>           - View latest logs of a specific service"
+    echo "  dist build               - Build all services to dist/"
+    echo "  dist start [services...] - Start built services (or all if not specified)"
+    echo "  dist stop [services...]  - Stop built services (or all if not specified)"
+    echo "  dist restart [services...] - Restart built services (or all if not specified)"
+    echo "  dist status [services...] - Check status of services (or all if not specified)"
+    echo "  dist logs <service>      - View latest logs of a specific service"
     echo ""
     echo "Docker Commands (Docker 容器管理):"
     echo "  docker [command]         - Manage Docker containers"
@@ -93,22 +95,22 @@ show_help() {
     echo "  ./mix swag                     # Generate Swagger API documentation"
     echo "  ./mix goctl-api                # Generate GoZero API code"
     echo "  ./mix goctl-orm                # Generate GoZero ORM code"
-    echo "  ./mix multi                    # Multi-pane tmux layout (dev)"
-    echo "  ./mix seq                      # Sequential window layout (dev, default config)"
-    echo "  ./mix seq -i                   # Sequential layout with interactive mode"
-    echo "  ./mix seq --java-build maven   # Use Maven for Java services"
-    echo "  ./mix seq --node-runtime npm   # Use NPM for Node.js"
-    echo "  ./mix seq --python-runtime python  # Use Python for FastAPI"
-    echo "  ./mix stop                     # Stop tmux sessions (dev)"
-    echo "  ./mix build                    # Build all services"
-    echo "  ./mix start                    # Start all built services"
-    echo "  ./mix start spring gozero      # Start specific services"
-    echo "  ./mix restart fastapi          # Restart FastAPI service"
-    echo "  ./mix status                   # Check status of all services"
-    echo "  ./mix status spring gateway    # Check status of specific services"
-    echo "  ./mix logs spring              # View Spring service logs"
-    echo "  ./mix stop-dist                # Stop all services"
-    echo "  ./mix stop-dist fastapi nestjs # Stop specific services"
+    echo "  ./mix dev multi                # Multi-pane tmux layout (dev)"
+    echo "  ./mix dev seq                  # Sequential window layout (dev, default config)"
+    echo "  ./mix dev seq -i               # Sequential layout with interactive mode"
+    echo "  ./mix dev seq --java-build maven   # Use Maven for Java services"
+    echo "  ./mix dev seq --node-runtime npm   # Use NPM for Node.js"
+    echo "  ./mix dev seq --python-runtime python  # Use Python for FastAPI"
+    echo "  ./mix dev stop                 # Stop tmux sessions (dev)"
+    echo "  ./mix dist build               # Build all services"
+    echo "  ./mix dist start               # Start all built services"
+    echo "  ./mix dist start spring gozero # Start specific services"
+    echo "  ./mix dist restart fastapi     # Restart FastAPI service"
+    echo "  ./mix dist status              # Check status of all services"
+    echo "  ./mix dist status spring gateway   # Check status of specific services"
+    echo "  ./mix dist logs spring         # View Spring service logs"
+    echo "  ./mix dist stop                # Stop all services"
+    echo "  ./mix dist stop fastapi nestjs # Stop specific services"
     echo "  ./mix docker up                # Build and run all containers"
     echo "  ./mix docker up spring gozero  # Build and run specific containers"
     echo "  ./mix docker start             # Start all containers from existing images"
@@ -127,8 +129,105 @@ show_help() {
     echo "Notes (备注):"
     echo "  - For Windows PowerShell: PowerShell -ExecutionPolicy Bypass -File ./scripts/run.ps1"
     echo "  - Direct script calls are also supported: ./scripts/run_multi.sh"
-    echo "  - Use 'logs' command with exactly one service name"
+    echo "  - Use 'dist logs' command with exactly one service name"
     echo ""
+}
+
+run_dev_command() {
+    local subcommand=${1:-help}
+
+    case $subcommand in
+        multi)
+            echo "Starting services in multi-pane layout..."
+            bash "$SCRIPTS_DIR/run_multi.sh"
+            ;;
+        seq)
+            echo "Starting services in sequential window layout..."
+            bash "$SCRIPTS_DIR/run.sh" "${@:2}"
+            ;;
+        stop)
+            echo "Stopping all tmux sessions..."
+            bash "$SCRIPTS_DIR/stop.sh"
+            ;;
+        help|--help|-h)
+            echo "用法: ./mix dev <multi|seq|stop> [args]"
+            ;;
+        *)
+            echo "Unknown dev command: $subcommand"
+            echo "用法: ./mix dev <multi|seq|stop> [args]"
+            exit 1
+            ;;
+    esac
+}
+
+run_dist_command() {
+    local subcommand=${1:-help}
+
+    case $subcommand in
+        build)
+            echo "Building all services..."
+            bash "$SCRIPTS_DIR/build.sh"
+            ;;
+        start)
+            if [ $# -le 1 ]; then
+                echo "Starting all built services..."
+                bash "$SCRIPTS_DIR/dist-control.sh" start
+            else
+                echo "Starting specified services: ${@:2}"
+                bash "$SCRIPTS_DIR/dist-control.sh" start "${@:2}"
+            fi
+            ;;
+        stop)
+            if [ $# -le 1 ]; then
+                echo "Stopping all built services..."
+                bash "$SCRIPTS_DIR/dist-control.sh" stop
+            else
+                echo "Stopping specified services: ${@:2}"
+                bash "$SCRIPTS_DIR/dist-control.sh" stop "${@:2}"
+            fi
+            ;;
+        restart)
+            if [ $# -le 1 ]; then
+                echo "Restarting all built services..."
+                bash "$SCRIPTS_DIR/dist-control.sh" restart
+            else
+                echo "Restarting specified services: ${@:2}"
+                bash "$SCRIPTS_DIR/dist-control.sh" restart "${@:2}"
+            fi
+            ;;
+        status)
+            if [ $# -le 1 ]; then
+                echo "Checking all services status..."
+                bash "$SCRIPTS_DIR/dist-control.sh" status
+            else
+                echo "Checking specified services status: ${@:2}"
+                bash "$SCRIPTS_DIR/dist-control.sh" status "${@:2}"
+            fi
+            ;;
+        logs)
+            if [ $# -le 1 ]; then
+                echo "Error: 'dist logs' command requires a service name"
+                echo "Usage: ./mix dist logs <service_name>"
+                echo ""
+                echo "Example: ./mix dist logs spring"
+                exit 1
+            elif [ $# -gt 2 ]; then
+                echo "Error: 'dist logs' command only accepts one service name"
+                exit 1
+            else
+                echo "Viewing logs for service: $2"
+                bash "$SCRIPTS_DIR/dist-control.sh" logs "$2"
+            fi
+            ;;
+        help|--help|-h)
+            echo "用法: ./mix dist <build|start|stop|restart|status|logs> [services]"
+            ;;
+        *)
+            echo "Unknown dist command: $subcommand"
+            echo "用法: ./mix dist <build|start|stop|restart|status|logs> [services]"
+            exit 1
+            ;;
+    esac
 }
 
 # 解析命令参数
@@ -151,73 +250,11 @@ case $COMMAND in
         echo "Generating GoZero ORM code..."
         bash "$SCRIPTS_DIR/goctl-orm-init.sh" "${@:2}"
         ;;
-    multi)
-        echo "Starting services in multi-pane layout..."
-        bash "$SCRIPTS_DIR/run_multi.sh"
+    dev)
+        run_dev_command "${@:2}"
         ;;
-    seq)
-        echo "Starting services in sequential window layout..."
-        # 将所有额外参数传递给 run.sh
-        bash "$SCRIPTS_DIR/run.sh" "${@:2}"
-        ;;
-    stop)
-        echo "Stopping all tmux sessions..."
-        bash "$SCRIPTS_DIR/stop.sh"
-        ;;
-    build)
-        echo "Building all services..."
-        bash "$SCRIPTS_DIR/build.sh"
-        ;;
-    start)
-        if [ $# -le 1 ]; then
-            echo "Starting all built services..."
-            bash "$SCRIPTS_DIR/dist-control.sh" start
-        else
-            echo "Starting specified services: ${@:2}"
-            bash "$SCRIPTS_DIR/dist-control.sh" start "${@:2}"
-        fi
-        ;;
-    stop-dist)
-        if [ $# -le 1 ]; then
-            echo "Stopping all built services..."
-            bash "$SCRIPTS_DIR/dist-control.sh" stop
-        else
-            echo "Stopping specified services: ${@:2}"
-            bash "$SCRIPTS_DIR/dist-control.sh" stop "${@:2}"
-        fi
-        ;;
-    restart)
-        if [ $# -le 1 ]; then
-            echo "Restarting all built services..."
-            bash "$SCRIPTS_DIR/dist-control.sh" restart
-        else
-            echo "Restarting specified services: ${@:2}"
-            bash "$SCRIPTS_DIR/dist-control.sh" restart "${@:2}"
-        fi
-        ;;
-    status)
-        if [ $# -le 1 ]; then
-            echo "Checking all services status..."
-            bash "$SCRIPTS_DIR/dist-control.sh" status
-        else
-            echo "Checking specified services status: ${@:2}"
-            bash "$SCRIPTS_DIR/dist-control.sh" status "${@:2}"
-        fi
-        ;;
-    logs)
-        if [ $# -le 1 ]; then
-            echo "Error: 'logs' command requires a service name"
-            echo "Usage: ./mix logs <service_name>"
-            echo ""
-            echo "Example: ./mix logs spring"
-            exit 1
-        elif [ $# -gt 2 ]; then
-            echo "Error: 'logs' command only accepts one service name"
-            exit 1
-        else
-            echo "Viewing logs for service: $2"
-            bash "$SCRIPTS_DIR/dist-control.sh" logs "$2"
-        fi
+    dist)
+        run_dist_command "${@:2}"
         ;;
     docker)
         if [ $# -lt 2 ]; then
