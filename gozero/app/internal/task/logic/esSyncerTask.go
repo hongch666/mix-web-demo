@@ -7,6 +7,7 @@ import (
 
 	"app/common/utils"
 	"app/internal/svc"
+	"app/model/articles"
 	"app/model/search"
 
 	"github.com/olivere/elastic/v7"
@@ -46,112 +47,88 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 		return logAndWrapError(svcCtx, utils.INDEX_DELETION_ERROR_MESSAGE, err)
 	}
 
-	// 从数据库获取所有发布的文章
-	articles, err := svcCtx.ArticlesModel.SearchArticles(ctx)
-	if err != nil {
-		return logAndWrapError(svcCtx, utils.ARTICLE_QUERY_ERROR, err)
-	}
-
-	if len(articles) == 0 {
-		if svcCtx.Logger != nil {
-			svcCtx.Logger.Info(utils.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
-		}
-		return nil
-	}
-
-	// 收集用户IDs和子分类IDs
-	userIDs := make([]int64, 0, len(articles))
-	subCategoryIDs := make([]int64, 0, len(articles))
-	articleIDs := make([]int64, 0, len(articles))
-
-	for _, a := range articles {
-		userIDs = append(userIDs, a.UserId)
-		subCategoryIDs = append(subCategoryIDs, int64(a.SubCategoryId))
-		articleIDs = append(articleIDs, a.Id)
-	}
-
-	// 查询所有相关用户
 	userMap := make(map[int64]string)
-	for _, uid := range userIDs {
-		u, err := svcCtx.UserModel.FindOne(ctx, uid)
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_USER_ERROR, uid, err))
-			}
-			continue
-		}
-		userMap[uid] = u.Name
-	}
-
-	// 查询分类信息
 	categoryMap := make(map[int64]string)
 	subCategoryMap := make(map[int64]string)
-	for _, scID := range subCategoryIDs {
-		sc, err := svcCtx.SubCategoryModel.FindOne(ctx, scID)
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_SUBCATEGORY_ERROR, scID, err))
-			}
-			continue
+	const batchSize = 500
+	totalSynced := 0
+	batchIdx := 0
+	err = svcCtx.ArticlesModel.IteratePublishedArticles(ctx, batchSize, func(articles []articles.Articles) error {
+		if len(articles) == 0 {
+			return nil
 		}
-		subCategoryMap[scID] = sc.Name
 
-		// 查询对应的分类
-		c, err := svcCtx.CategoryModel.FindOne(ctx, int64(sc.CategoryId))
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_CATEGORY_ERROR, sc.CategoryId, err))
-			}
-			continue
+		batchIdx++
+		totalSynced += len(articles)
+
+		userIDs := make([]int64, 0, len(articles))
+		subCategoryIDs := make([]int64, 0, len(articles))
+		articleIDs := make([]int64, 0, len(articles))
+		for _, a := range articles {
+			userIDs = append(userIDs, a.UserId)
+			subCategoryIDs = append(subCategoryIDs, int64(a.SubCategoryId))
+			articleIDs = append(articleIDs, a.Id)
 		}
-		categoryMap[scID] = c.Name
-	}
 
-	// 批量获取评分数据
-	commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return logAndWrapError(svcCtx, utils.CREATE_MESSAGE_ERROR, err)
-	}
-	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_RATINGS_COMPLETED_MESSAGE, len(articles)))
-	}
+		for _, uid := range userIDs {
+			if _, ok := userMap[uid]; ok {
+				continue
+			}
+			u, err := svcCtx.UserModel.FindOne(ctx, uid)
+			if err != nil {
+				if svcCtx.Logger != nil {
+					svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_USER_ERROR, uid, err))
+				}
+				continue
+			}
+			userMap[uid] = u.Name
+		}
 
-	// 批量获取点赞数和收藏数
-	likeCounts, err := svcCtx.LikesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return logAndWrapError(svcCtx, utils.LIKE_QUERY_ERROR, err)
-	}
+		for _, scID := range subCategoryIDs {
+			if _, ok := subCategoryMap[scID]; ok {
+				continue
+			}
+			sc, err := svcCtx.SubCategoryModel.FindOne(ctx, scID)
+			if err != nil {
+				if svcCtx.Logger != nil {
+					svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_SUBCATEGORY_ERROR, scID, err))
+				}
+				continue
+			}
+			subCategoryMap[scID] = sc.Name
 
-	collectCounts, err := svcCtx.CollectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return logAndWrapError(svcCtx, utils.COLLECT_QUERY_ERROR, err)
-	}
-	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(utils.BULK_FETCH_ARTICLE_LIKES_COLLECTS_COMPLETED_MESSAGE, len(articles)))
-	}
+			if _, ok := categoryMap[scID]; ok {
+				continue
+			}
+			c, err := svcCtx.CategoryModel.FindOne(ctx, int64(sc.CategoryId))
+			if err != nil {
+				if svcCtx.Logger != nil {
+					svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_CATEGORY_ERROR, sc.CategoryId, err))
+				}
+				continue
+			}
+			categoryMap[scID] = c.Name
+		}
 
-	// 批量获取作者的关注数（粉丝数）
-	authorFollowCounts, err := svcCtx.FocusModel.GetFollowCountsByUserIDs(ctx, userIDs)
-	if err != nil {
-		return logAndWrapError(svcCtx, utils.FOCUS_QUERY_ERROR, err)
-	}
-	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(utils.BULK_FETCH_AUTHOR_FOLLOWS_COMPLETED_MESSAGE, len(userIDs)))
-	}
-
-	// 分批提交ES文档，每批1000条避免资源耗尽
-	batchSize := 1000
-	totalBatches := (len(articles) + batchSize - 1) / batchSize
-
-	for batchIdx := 0; batchIdx < totalBatches; batchIdx++ {
-		start := batchIdx * batchSize
-		end := start + batchSize
-		if end > len(articles) {
-			end = len(articles)
+		commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
+		if err != nil {
+			return logAndWrapError(svcCtx, utils.CREATE_MESSAGE_ERROR, err)
+		}
+		likeCounts, err := svcCtx.LikesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
+		if err != nil {
+			return logAndWrapError(svcCtx, utils.LIKE_QUERY_ERROR, err)
+		}
+		collectCounts, err := svcCtx.CollectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
+		if err != nil {
+			return logAndWrapError(svcCtx, utils.COLLECT_QUERY_ERROR, err)
+		}
+		authorFollowCounts, err := svcCtx.FocusModel.GetFollowCountsByUserIDs(ctx, userIDs)
+		if err != nil {
+			return logAndWrapError(svcCtx, utils.FOCUS_QUERY_ERROR, err)
 		}
 
 		bulkRequest := svcCtx.ESClient.Bulk()
-		for _, article := range articles[start:end] {
+		for _, article := range articles {
 			scores := commentScores[article.Id]
 
 			// 提取AI和用户评分
@@ -213,7 +190,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 			bulkRequest = bulkRequest.Add(req)
 		}
 
-		resp, err := bulkRequest.Do(context.Background())
+		resp, err := bulkRequest.Do(ctx)
 		if err != nil {
 			return logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
@@ -231,13 +208,21 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 		}
 
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_SUBMISSION_COMPLETED_MESSAGE, batchIdx+1, totalBatches, end-start))
+			svcCtx.Logger.Info(fmt.Sprintf("第 %d 批提交完成，本批 %d 条，累计同步 %d 条", batchIdx, len(articles), totalSynced))
 		}
 
-		// 在批次之间添加延迟，给ES足够时间处理
-		if batchIdx < totalBatches-1 {
-			time.Sleep(500 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if totalSynced == 0 {
+		if svcCtx.Logger != nil {
+			svcCtx.Logger.Info(utils.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
 		}
+		return nil
 	}
 
 	return nil

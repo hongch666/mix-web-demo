@@ -16,6 +16,7 @@ type (
 		Update(ctx context.Context, data *Articles) error
 		Delete(ctx context.Context, id int64) error
 		SearchArticles(ctx context.Context) ([]Articles, error)
+		IteratePublishedArticles(ctx context.Context, batchSize int, handler func([]Articles) error) error
 		GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error)
 	}
 
@@ -48,13 +49,48 @@ func (m *customArticlesModel) Delete(ctx context.Context, id int64) error {
 }
 
 func (m *customArticlesModel) SearchArticles(ctx context.Context) ([]Articles, error) {
-	db, err := m.crud.Query(ctx)
+	const defaultBatchSize = 500
+
+	articles := make([]Articles, 0, defaultBatchSize)
+	err := m.IteratePublishedArticles(ctx, defaultBatchSize, func(batch []Articles) error {
+		articles = append(articles, batch...)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	var articles []Articles
-	err = db.Where("status = ?", 1).Find(&articles).Error
-	return articles, err
+	return articles, nil
+}
+
+func (m *customArticlesModel) IteratePublishedArticles(ctx context.Context, batchSize int, handler func([]Articles) error) error {
+	db, err := m.crud.Query(ctx)
+	if err != nil {
+		return err
+	}
+
+	if batchSize <= 0 {
+		batchSize = 500
+	}
+
+	var lastID int64
+	for {
+		batch := make([]Articles, 0, batchSize)
+		query := db.Where("status = ? AND id > ?", 1, lastID).
+			Order("id ASC").
+			Limit(batchSize)
+		if err := query.Find(&batch).Error; err != nil {
+			return err
+		}
+		if len(batch) == 0 {
+			return nil
+		}
+
+		if err := handler(batch); err != nil {
+			return err
+		}
+
+		lastID = batch[len(batch)-1].Id
+	}
 }
 
 func (m *customArticlesModel) GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
