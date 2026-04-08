@@ -57,8 +57,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 		return err
 	}
 
-	// 这些 map 是本次同步过程中的简单本地缓存。
-	// 同一批次或后续批次中如果重复遇到同一个作者/分类，就不用再反复查数据库。
+	// 这些 map 是本次同步过程中的简单本地缓存，同一批次或后续批次中如果重复遇到同一个作者/分类，就不用再反复查数据库
 	userMap := make(map[int64]string)
 	categoryMap := make(map[int64]string)
 	subCategoryMap := make(map[int64]string)
@@ -90,7 +89,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 
 			existingHash, ok := existingDocs[doc.ID]
 			if !ok {
-				// DB 中有、ES 中没有：新增文档。
+				// DB 中有、ES 中没有，就新增文档
 				bulkRequest = bulkRequest.Add(
 					elastic.NewBulkIndexRequest().
 						Index(esArticlesIndexName).
@@ -99,7 +98,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 				)
 				batchAdded++
 			} else if existingHash != docHash {
-				// DB 和 ES 都有，但内容 hash 不一致：更新文档。
+				// DB 和 ES 都有，但内容 hash 不一致，就更新文档
 				bulkRequest = bulkRequest.Add(
 					elastic.NewBulkIndexRequest().
 						Index(esArticlesIndexName).
@@ -177,7 +176,7 @@ func buildArticleESBatch(
 		if _, ok := userMap[uid]; ok {
 			continue
 		}
-		// 用户名是 ES 文档的一部分，这里按需查一次并放入缓存。
+		// 用户名是 ES 文档的一部分，这里按需查一次并放入缓存
 		user, err := svcCtx.UserModel.FindOne(ctx, uid)
 		if err != nil {
 			if svcCtx.Logger != nil {
@@ -193,7 +192,7 @@ func buildArticleESBatch(
 			continue
 		}
 
-		// 子分类名和父分类名同样是 ES 文档里的检索字段，因此在同步时补齐。
+		// 子分类名和父分类名同样是 ES 文档里的检索字段，因此在同步时补齐
 		subCategory, err := svcCtx.SubCategoryModel.FindOne(ctx, subCategoryID)
 		if err != nil {
 			if svcCtx.Logger != nil {
@@ -216,7 +215,7 @@ func buildArticleESBatch(
 		categoryMap[subCategoryID] = category.Name
 	}
 
-	// 下面这些统计信息会影响搜索排序或文档展示，因此统一按批拉取。
+	// 下面这些统计信息会影响搜索排序或文档展示，因此统一按批拉取
 	commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
 	if err != nil {
 		return nil, logAndWrapError(svcCtx, utils.CREATE_MESSAGE_ERROR, err)
@@ -238,7 +237,7 @@ func buildArticleESBatch(
 	for _, article := range articleBatch {
 		scores := commentScores[article.Id]
 
-		// 评论分数拆分为 AI 评分和用户评分两个维度，分别写入 ES。
+		// 评论分数拆分为 AI 评分和用户评分两个维度，分别写入 ES
 		aiScore := 0.0
 		aiCount := 0
 		if aiScoreData, ok := scores["ai"]; ok {
@@ -253,7 +252,7 @@ func buildArticleESBatch(
 			userCount = int(userScoreData.Count)
 		}
 
-		// 组装出最终写入 ES 的完整文档。
+		// 组装出最终写入 ES 的完整文档
 		docs = append(docs, search.ArticleES{
 			ID:                article.Id,
 			Title:             article.Title,
@@ -291,8 +290,7 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 		return existingDocs, nil
 	}
 
-	// 使用 Scroll 分批扫描 ES，避免一次性把索引中的所有文档拉回来。
-	// 这里不做复杂差量状态表，而是直接读取“ES 当前状态”，实现上更直观。
+	// 使用 Scroll 分批扫描 ES，避免一次性把索引中的所有文档拉回来
 	scroll := svcCtx.ESClient.Scroll(esArticlesIndexName).Size(esSyncBatchSize)
 	for {
 		result, err := scroll.Do(ctx)
@@ -308,7 +306,7 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 			if err := json.Unmarshal(hit.Source, &doc); err != nil {
 				return nil, logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
-			// 这里直接对 ES 中现有文档计算 hash，后面和 DB 生成的新文档做同口径比对。
+			// 这里直接对 ES 中现有文档计算 hash，后面和 DB 生成的新文档做同口径比对
 			hashValue, err := hashArticleES(doc)
 			if err != nil {
 				return nil, logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
@@ -325,8 +323,7 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 		return 0, nil
 	}
 
-	// 剩余 staleDocs 的 key 就是“ES 中存在、但 DB 中已不存在的已发布文章”。
-	// 常见于文章被删除或状态从已发布改成未发布。
+	// 剩余 staleDocs 的 key 就是“ES 中存在、但 DB 中已不存在的已发布文章”
 	ids := make([]int64, 0, len(staleDocs))
 	for id := range staleDocs {
 		ids = append(ids, id)
@@ -348,7 +345,7 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 			)
 		}
 
-		// 删除也走 bulk，保持和新增/更新一致的批处理方式。
+		// 删除也走 bulk，保持和新增/更新一致的批处理方式
 		if err := executeESBulk(ctx, svcCtx, bulkRequest); err != nil {
 			return deleted, err
 		}
@@ -363,7 +360,7 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 		return nil
 	}
 
-	// 统一封装 bulk 执行和失败处理，避免新增、更新、删除各写一套错误判断。
+	// 统一封装 bulk 执行和失败处理，避免新增、更新、删除各写一套错误判断
 	resp, err := bulkRequest.Do(ctx)
 	if err != nil {
 		return logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
@@ -385,8 +382,7 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 }
 
 func hashArticleES(doc search.ArticleES) (string, error) {
-	// 直接对完整文档做 JSON 序列化后计算哈希。
-	// 这样实现最简单，且能覆盖标题、内容、标签、分类、统计值等任一字段变化。
+	// 直接对完整文档做 JSON 序列化后计算哈希
 	payload, err := json.Marshal(doc)
 	if err != nil {
 		return "", err
