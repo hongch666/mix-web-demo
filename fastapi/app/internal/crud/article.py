@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
@@ -142,8 +142,41 @@ class ArticleMapper:
         statement = select(Article)
         return db.execute(statement).scalars().all()
 
+    def iter_all_articles_mapper(
+        self, db: Session, batch_size: int = 500
+    ) -> Iterator[List[Article]]:
+        """按批获取文章，避免一次性加载整表"""
+        if batch_size <= 0:
+            batch_size = 500
+
+        last_id = 0
+        while True:
+            statement = (
+                select(Article)
+                .where(Article.id > last_id)
+                .order_by(Article.id.asc())
+                .limit(batch_size)
+            )
+            articles = db.execute(statement).scalars().all()
+            if not articles:
+                break
+
+            yield articles
+            last_id = articles[-1].id
+
     def get_articles_for_excel_export_mapper(self, db: Session) -> List[Dict[str, Any]]:
         """获取导出Excel所需文章数据（连表聚合）"""
+        result: List[Dict[str, Any]] = []
+        for batch in self.iter_articles_for_excel_export_mapper(db):
+            result.extend(batch)
+        return result
+
+    def iter_articles_for_excel_export_mapper(
+        self, db: Session, batch_size: int = 500
+    ) -> Iterator[List[Dict[str, Any]]]:
+        """分批获取导出Excel所需文章数据，避免5表JOIN结果一次性堆积在内存中"""
+        if batch_size <= 0:
+            batch_size = 500
 
         like_count_subquery = (
             select(
@@ -170,68 +203,77 @@ class ArticleMapper:
             .subquery()
         )
 
-        statement = (
-            select(
-                Article.id.label("id"),
-                Article.title.label("title"),
-                Article.content.label("content"),
-                User.name.label("username"),
-                Article.tags.label("tags"),
-                Article.status.label("status"),
-                Article.create_at.label("create_at"),
-                Article.update_at.label("update_at"),
-                Article.views.label("views"),
-                SubCategory.name.label("sub_category_name"),
-                Category.name.label("category_name"),
-                func.coalesce(like_count_subquery.c.like_count, 0).label("like_count"),
-                func.coalesce(collect_count_subquery.c.collect_count, 0).label(
-                    "collect_count"
-                ),
-                func.coalesce(follow_count_subquery.c.author_follow_count, 0).label(
-                    "author_follow_count"
-                ),
+        last_id = 0
+        while True:
+            statement = (
+                select(
+                    Article.id.label("id"),
+                    Article.title.label("title"),
+                    Article.content.label("content"),
+                    User.name.label("username"),
+                    Article.tags.label("tags"),
+                    Article.status.label("status"),
+                    Article.create_at.label("create_at"),
+                    Article.update_at.label("update_at"),
+                    Article.views.label("views"),
+                    SubCategory.name.label("sub_category_name"),
+                    Category.name.label("category_name"),
+                    func.coalesce(like_count_subquery.c.like_count, 0).label(
+                        "like_count"
+                    ),
+                    func.coalesce(collect_count_subquery.c.collect_count, 0).label(
+                        "collect_count"
+                    ),
+                    func.coalesce(follow_count_subquery.c.author_follow_count, 0).label(
+                        "author_follow_count"
+                    ),
+                )
+                .select_from(Article)
+                .outerjoin(User, User.id == Article.user_id)
+                .outerjoin(SubCategory, SubCategory.id == Article.sub_category_id)
+                .outerjoin(Category, Category.id == SubCategory.category_id)
+                .outerjoin(
+                    like_count_subquery, like_count_subquery.c.article_id == Article.id
+                )
+                .outerjoin(
+                    collect_count_subquery,
+                    collect_count_subquery.c.article_id == Article.id,
+                )
+                .outerjoin(
+                    follow_count_subquery,
+                    follow_count_subquery.c.author_id == Article.user_id,
+                )
+                .where(Article.id > last_id)
+                .order_by(Article.id.asc())
+                .limit(batch_size)
             )
-            .select_from(Article)
-            .outerjoin(User, User.id == Article.user_id)
-            .outerjoin(SubCategory, SubCategory.id == Article.sub_category_id)
-            .outerjoin(Category, Category.id == SubCategory.category_id)
-            .outerjoin(
-                like_count_subquery, like_count_subquery.c.article_id == Article.id
-            )
-            .outerjoin(
-                collect_count_subquery,
-                collect_count_subquery.c.article_id == Article.id,
-            )
-            .outerjoin(
-                follow_count_subquery,
-                follow_count_subquery.c.author_id == Article.user_id,
-            )
-            .order_by(Article.id.asc())
-        )
-        rows = db.execute(statement).all()
+            rows = db.execute(statement).all()
+            if not rows:
+                break
 
-        result: List[Dict[str, Any]] = []
-        for row in rows:
-            result.append(
-                {
-                    "id": row.id,
-                    "title": row.title,
-                    "content": row.content,
-                    "username": row.username,
-                    "tags": row.tags,
-                    "status": row.status,
-                    "create_at": row.create_at,
-                    "update_at": row.update_at,
-                    "views": row.views,
-                    "sub_category_name": row.sub_category_name,
-                    "category_name": row.category_name,
-                    "like_count": row.like_count,
-                    "collect_count": row.collect_count,
-                    "author_follow_count": row.author_follow_count,
-                }
-            )
+            result: List[Dict[str, Any]] = []
+            for row in rows:
+                result.append(
+                    {
+                        "id": row.id,
+                        "title": row.title,
+                        "content": row.content,
+                        "username": row.username,
+                        "tags": row.tags,
+                        "status": row.status,
+                        "create_at": row.create_at,
+                        "update_at": row.update_at,
+                        "views": row.views,
+                        "sub_category_name": row.sub_category_name,
+                        "category_name": row.category_name,
+                        "like_count": row.like_count,
+                        "collect_count": row.collect_count,
+                        "author_follow_count": row.author_follow_count,
+                    }
+                )
 
-        return result
+            yield result
+            last_id = rows[-1].id
 
     def get_article_by_id_mapper(
         self, article_id: int, db: Session

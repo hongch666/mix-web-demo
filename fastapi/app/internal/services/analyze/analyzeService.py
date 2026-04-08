@@ -7,7 +7,6 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-import pandas as pd
 from app.core.base import Constants, Logger
 from app.core.config import load_config
 from app.core.db import get_db
@@ -39,6 +38,7 @@ from app.internal.crud import (
     get_user_mapper,
 )
 from dateutil.relativedelta import relativedelta
+from openpyxl import Workbook
 from sqlalchemy.orm import Session
 from wordcloud import WordCloud
 
@@ -353,21 +353,58 @@ class AnalyzeService:
                 os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME
             )
         )
-        data = self.articleMapper.get_articles_for_excel_export_mapper(db)
-        for item in data:
-            item["create_at"] = (
-                item["create_at"].isoformat() if item.get("create_at") else None
-            )
-            item["update_at"] = (
-                item["update_at"].isoformat() if item.get("update_at") else None
-            )
-        df = pd.DataFrame(data)
-        # 先写入数据
-        with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-            df.to_excel(writer, index=False, startrow=1)
-            worksheet = writer.sheets["Sheet1"]
-            worksheet.cell(row=1, column=1, value=Constants.EXPORT_ARTICLES_EXCEL_TIP)
-        Logger.info(f"文章表已导出到 {file_path}")
+
+        headers = [
+            "id",
+            "title",
+            "content",
+            "username",
+            "tags",
+            "status",
+            "create_at",
+            "update_at",
+            "views",
+            "sub_category_name",
+            "category_name",
+            "like_count",
+            "collect_count",
+            "author_follow_count",
+        ]
+
+        workbook = Workbook(write_only=True)
+        worksheet = workbook.create_sheet(title="Sheet1")
+        worksheet.append([Constants.EXPORT_ARTICLES_EXCEL_TIP])
+        worksheet.append(headers)
+
+        total_rows = 0
+        for batch in self.articleMapper.iter_articles_for_excel_export_mapper(db):
+            for item in batch:
+                worksheet.append(
+                    [
+                        item.get("id"),
+                        item.get("title"),
+                        item.get("content"),
+                        item.get("username"),
+                        item.get("tags"),
+                        item.get("status"),
+                        item.get("create_at").isoformat()
+                        if item.get("create_at")
+                        else None,
+                        item.get("update_at").isoformat()
+                        if item.get("update_at")
+                        else None,
+                        item.get("views"),
+                        item.get("sub_category_name"),
+                        item.get("category_name"),
+                        item.get("like_count"),
+                        item.get("collect_count"),
+                        item.get("author_follow_count"),
+                    ]
+                )
+                total_rows += 1
+
+        workbook.save(file_path)
+        Logger.info(f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录")
         return file_path
 
     def upload_excel_to_oss(self, file_path: str) -> str:
