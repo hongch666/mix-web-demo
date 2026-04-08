@@ -71,16 +71,8 @@ public class ArticleSyncAspect {
                     @Override
                     public void afterCommit() {
                         logger.info(Constants.TRIGGER_SYNC);
-                        // 根据操作类型选择不同的同步策略
-                        if ("like".equals(action) || "unlike".equals(action) || "collect".equals(action)
-                                || "uncollect".equals(action) || "focus".equals(action) || "unfocus".equals(action)
-                                || "view".equals(action)) {
-                            // 点赞、取消点赞、收藏、取消收藏、关注、取消关注、浏览操作不同步
-                            logger.info(Constants.UNSYNC_TYPE);
-                        } else {
-                            // 其他操作同步 ES 和 Vector
-                            asyncSyncService.syncAllAsync(currentUserId, currentUsername);
-                        }
+                        // 所有文章相关操作在事务提交后统一触发 ES 和 Vector 同步，
+                        asyncSyncService.syncAllAsync(currentUserId, currentUsername);
                     }
                 });
 
