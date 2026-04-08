@@ -73,7 +73,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
     private RateLimitProperties.RateLimitPath matchRateLimitPath(String path) {
         for (String pattern : rateLimitProperties.getPaths().keySet()) {
             if (antPathMatcher.match(pattern, path)) {
-                return rateLimitProperties.getPaths().get(pattern);
+                return rateLimitProperties.mergeWithCommon(rateLimitProperties.getPaths().get(pattern));
             }
         }
         return null;

@@ -76,20 +76,14 @@ spring:
         - id: fastapi
           uri: lb://fastapi
           predicates:
-            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/ai_history/**,/ai_comment/**
+            - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/ai_history/**
 auth:
   exclude-paths:
     - /users/login
     - /users/register
     - /users/email/send
     - /users/email-login
-    - /static/**
     - /upload/**
-    - /public/**
-    - /actuator/**
-    - /v3/api-docs/**
-    - /swagger-ui/**
-    - /swagger-resources/**
 
 jwt:
   secret: ${JWT_SECRET:abcdefghijklmnopqrstuvwxyz123456}
@@ -100,22 +94,34 @@ rate-limit:
   # 是否启用限流
   enabled: ${RATE_LIMIT_ENABLED:true}
 
+  # 通用限流配置
+  common:
+    # 令牌桶容量（最多可以突发的请求数）
+    capacity: ${RATE_LIMIT_COMMON_CAPACITY:10}
+    # 令牌填充速率（每秒填充多少个令牌）
+    refill-rate: ${RATE_LIMIT_COMMON_REFILL_RATE:1}
+    # 是否启用
+    enabled: true
+
   # 限流路径配置
   paths:
     # 文件上传限流配置（严格的限流）
     "/upload/**":
-      # 令牌桶容量（最多可以突发的请求数）
-      capacity: ${RATE_LIMIT_UPLOAD_CAPACITY:20}
-      # 令牌填充速率（每秒填充多少个令牌）
-      refill-rate: ${RATE_LIMIT_UPLOAD_REFILL_RATE:2}
-      # 是否启用
-      enabled: true
       # 限流超出时的响应消息
       message: "上传请求过于频繁，请稍后再试"
 
-    # Spring 发送验证码接口限流配置
+    # 发送验证码接口限流配置
     "/api_spring/users/email/send":
-      capacity: ${RATE_LIMIT_SEND_CODE_CAPACITY:10}
-      refill-rate: ${RATE_LIMIT_SEND_CODE_REFILL_RATE:1}
-      enabled: true
       message: "发送验证码请求过于频繁，请稍后再试"
+
+    # 用户登录接口限流配置
+    "/users/login":
+      message: "登录请求过于频繁，请稍后再试"
+
+    # 用户注册接口限流配置
+    "/users/register":
+      message: "注册请求过于频繁，请稍后再试"
+
+    # 用户邮箱登录接口限流配置
+    "/users/email-login":
+      message: "邮箱登录请求过于频繁，请稍后再试"

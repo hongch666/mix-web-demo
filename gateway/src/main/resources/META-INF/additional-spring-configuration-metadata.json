@@ -65,6 +65,36 @@
       "name": "server.mode",
       "type": "java.lang.String",
       "description": "A description for 'server.mode'"
+    },
+    {
+      "name": "rate-limit.common.capacity",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.common.capacity'"
+    },
+    {
+      "name": "rate-limit.common.refill-rate",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.common.refill-rate'"
+    },
+    {
+      "name": "rate-limit.common.enabled",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.common.enabled'"
+    },
+    {
+      "name": "rate-limit.paths./users/login.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./users/login.message'"
+    },
+    {
+      "name": "rate-limit.paths./users/register.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./users/register.message'"
+    },
+    {
+      "name": "rate-limit.paths./users/email-login.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./users/email-login.message'"
     }
   ]
 }
