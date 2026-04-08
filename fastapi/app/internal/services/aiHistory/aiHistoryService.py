@@ -30,7 +30,7 @@ class AiHistoryService:
         self._request_cache: Dict[str, float] = {}
 
     def create_ai_history(self, ai_history: Any, db: Any) -> Any:
-        data = ai_history.dict() if hasattr(ai_history, "dict") else dict(ai_history)
+        data = self._normalize_ai_history_data(ai_history)
 
         # 方案1：基于内容和用户ID生成唯一键进行去重（5秒内相同请求只处理一次）
         request_key = hashlib.md5(
@@ -92,6 +92,26 @@ class AiHistoryService:
             if getattr(ai_history, "updated_at", None)
             else None,
         }
+
+    @staticmethod
+    def _normalize_ai_history_data(ai_history: Any) -> Dict[str, Any]:
+        """统一兼容 ORM 实体、Pydantic 模型和字典对象。"""
+        if isinstance(ai_history, AiHistory):
+            return {
+                "user_id": ai_history.user_id,
+                "ask": ai_history.ask,
+                "reply": ai_history.reply,
+                "thinking": ai_history.thinking,
+                "ai_type": ai_history.ai_type,
+            }
+
+        if hasattr(ai_history, "model_dump"):
+            return ai_history.model_dump()
+
+        if hasattr(ai_history, "dict"):
+            return ai_history.dict()
+
+        return dict(ai_history)
 
 
 @lru_cache
