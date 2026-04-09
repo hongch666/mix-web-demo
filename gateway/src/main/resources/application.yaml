@@ -86,7 +86,7 @@ auth:
     - /upload/**
 
 jwt:
-  secret: ${JWT_SECRET:abcdefghijklmnopqrstuvwxyz123456}
+  secret: ${JWT_SECRET:}
   expiration: ${JWT_EXPIRATION:86400000}
 
 # 限流配置
