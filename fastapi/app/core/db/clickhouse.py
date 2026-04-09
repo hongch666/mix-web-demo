@@ -1,4 +1,5 @@
 import time
+from threading import Condition, Lock
 from typing import Any, List, Optional
 
 from app.core.base import Constants, Logger
@@ -13,19 +14,42 @@ class ClickhouseConnectionPool:
     _connections: List[Any] = []
     _max_connections: int = 10
     _conn_count: int = 0  # 统计创建的连接数
+    _active_connections: int = 0
+    _lock: Lock
+    _condition: Condition
 
     def __new__(cls) -> "ClickhouseConnectionPool":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+            cls._instance._lock = Lock()
+            cls._instance._condition = Condition(cls._instance._lock)
         return cls._instance
 
     def get_connection(self) -> Any:
         """从池中获取连接"""
-        if self._connections:
-            Logger.info(
-                f"[ClickHouse连接池] 从池中获取复用连接，池内剩余: {len(self._connections) - 1}个"
-            )
-            return self._connections.pop()
+        with self._condition:
+            if self._connections:
+                conn = self._connections.pop()
+                Logger.info(
+                    f"[ClickHouse连接池] 从池中获取复用连接，池内剩余: {len(self._connections)}个"
+                )
+                return conn
+
+            if self._active_connections < self._max_connections:
+                self._active_connections += 1
+                self._conn_count += 1
+                conn_index = self._conn_count
+            else:
+                Logger.warning(
+                    f"[ClickHouse连接池] 连接池已耗尽，等待可用连接 (活跃连接: {self._active_connections}/{self._max_connections})"
+                )
+                while not self._connections:
+                    self._condition.wait()
+                conn = self._connections.pop()
+                Logger.info(
+                    f"[ClickHouse连接池] 等待后获取复用连接，池内剩余: {len(self._connections)}个"
+                )
+                return conn
 
         # 如果池为空，创建新连接
         clickhouse_config = load_config("database")["clickhouse"]
@@ -41,8 +65,7 @@ class ClickhouseConnectionPool:
         elif not ch_password or ch_password == "None":
             ch_password = ""
 
-        self._conn_count += 1
-        Logger.info(f"[ClickHouse连接池] 创建新连接 (第{self._conn_count}个)")
+        Logger.info(f"[ClickHouse连接池] 创建新连接 (第{conn_index}个)")
         Logger.info(
             f"[ClickHouse连接池] 连接配置 - Host: {ch_host}, Port: {ch_port}, DB: {ch_database}, User: {ch_username}"
         )
@@ -62,22 +85,34 @@ class ClickhouseConnectionPool:
             Logger.info(f"[ClickHouse连接池] 连接建立耗时 {conn_time:.3f}s")
             return conn
         except Exception as e:
+            with self._condition:
+                self._active_connections = max(self._active_connections - 1, 0)
+                self._condition.notify()
             Logger.error(f"[ClickHouse连接池] 创建连接失败: {e}")
             raise
 
     def return_connection(self, conn: Any) -> None:
         """归还连接到池"""
-        if len(self._connections) < self._max_connections:
-            self._connections.append(conn)
-            Logger.info(
-                f"[ClickHouse连接池] 连接已归还到池，池内现有: {len(self._connections)}个"
-            )
-        else:
-            try:
-                conn.disconnect()
-            except Exception:
-                pass
-            Logger.info(Constants.CLICKHOUSE_CONNECTION_POOL_FULL_MESSAGE)
+        if conn is None:
+            return
+
+        with self._condition:
+            if len(self._connections) < self._max_connections:
+                self._connections.append(conn)
+                Logger.info(
+                    f"[ClickHouse连接池] 连接已归还到池，池内现有: {len(self._connections)}个"
+                )
+                self._condition.notify()
+                return
+
+            self._active_connections = max(self._active_connections - 1, 0)
+            self._condition.notify()
+
+        try:
+            conn.disconnect()
+        except Exception:
+            pass
+        Logger.info(Constants.CLICKHOUSE_CONNECTION_POOL_FULL_MESSAGE)
 
     def close_all(self) -> None:
         """关闭所有连接"""
@@ -87,6 +122,7 @@ class ClickhouseConnectionPool:
             except Exception:
                 pass
         self._connections.clear()
+        self._active_connections = 0
         Logger.info(Constants.CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE)
 
 

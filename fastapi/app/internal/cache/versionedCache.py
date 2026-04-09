@@ -2,6 +2,7 @@ import hashlib
 from typing import Any, Optional
 
 from app.core.base import Constants, Logger
+from app.core.config import load_config
 
 from .baseCache import BaseCache
 
@@ -22,23 +23,37 @@ class VersionedCache(BaseCache):
         self._cache_version: Optional[str] = None
 
     def get_cache_version(self, ch_conn: Any) -> Optional[str]:
-        """获取 ClickHouse 表的版本号 - 简化版本（避免类型转换问题）"""
+        """基于 ClickHouse 表内容生成稳定版本号。"""
         try:
-            import time
-
-            from app.core.config import load_config
-
+            if ch_conn is None:
+                return None
             ch_table = load_config("database")["clickhouse"]["table"]
             ch_db = load_config("database")["clickhouse"]["database"]
+            query = f"""
+                SELECT
+                    count() AS total_rows,
+                    ifNull(max(toUnixTimestamp(update_at)), 0) AS max_update_ts,
+                    ifNull(max(id), 0) AS max_id
+                FROM {ch_db}.{ch_table}
+            """
+            result = ch_conn.execute(query)
+            if not result:
+                return None
 
-            # 使用当前时间和表信息生成版本号
-            # 这样的版本号在表数据变化时可能不会立即变化
-            # 但避免了 ClickHouse driver 的类型转换问题
-            version_str = f"{ch_db}_{ch_table}_{int(time.time()) // 3600}"
+            total_rows, max_update_ts, max_id = result[0]
+            version_str = (
+                f"{ch_db}.{ch_table}:{int(total_rows)}:{int(max_update_ts)}:{int(max_id)}"
+            )
             return hashlib.md5(version_str.encode()).hexdigest()[:8]
         except Exception as e:
             Logger.debug(f"获取版本号失败: {type(e).__name__}: {e}")
             return None
+
+    def _persist_version(self, version: str) -> None:
+        """同步更新本地版本号，并尽量写入 Redis。"""
+        self._cache_version = version
+        if self._redis.is_available():
+            self._redis.set(self.REDIS_VERSION_KEY, version, ex=self._redis_ttl)
 
     def is_version_changed(self, ch_conn: Any) -> bool:
         """检查版本号是否变化"""
@@ -70,6 +85,7 @@ class VersionedCache(BaseCache):
 
             # 关键修复：如果没有旧版本号（首次调用），不认为是版本变化
             if not old_version:
+                self._persist_version(current_version)
                 Logger.debug(f"[缓存] 首次初始化，当前版本: {current_version}")
                 return False
 
@@ -90,9 +106,7 @@ class VersionedCache(BaseCache):
         try:
             version = self.get_cache_version(ch_conn)
             if version:
-                self._cache_version = version
-                if self._redis.is_available():
-                    self._redis.set(self.REDIS_VERSION_KEY, version, ex=self._redis_ttl)
+                self._persist_version(version)
                 Logger.info(f"[缓存] 版本号已更新: {version}")
         except Exception as e:
             Logger.warning(f"设置缓存版本号失败: {e}")
