@@ -15,9 +15,10 @@ import (
 
 // WebSocket客户端
 type Client struct {
-	UserID string
-	Conn   *websocket.Conn
-	Send   chan []byte
+	UserID    string
+	Conn      *websocket.Conn
+	Send      chan []byte
+	closeOnce sync.Once
 	*logger.ZeroLogger
 }
 
@@ -56,11 +57,25 @@ func (s *ChatHub) JoinQueue(userID string, client *Client) {
 func (s *ChatHub) LeaveQueue(userID string) {
 	chatQueue.mu.Lock()
 	if client, ok := chatQueue.clients[userID]; ok {
-		close(client.Send)
+		client.Shutdown()
 		delete(chatQueue.clients, userID)
 	}
 	chatQueue.mu.Unlock()
 	if s.ZeroLogger != nil {
+		s.Info(utils.USER_LEFT_QUEUE_MESSAGE)
+	}
+}
+
+// LeaveQueueIfMatch 仅当当前队列中的 client 与传入实例一致时才移除，避免旧连接退出时误删新连接
+func (s *ChatHub) LeaveQueueIfMatch(userID string, client *Client) {
+	chatQueue.mu.Lock()
+	currentClient, ok := chatQueue.clients[userID]
+	if ok && currentClient == client {
+		client.Shutdown()
+		delete(chatQueue.clients, userID)
+	}
+	chatQueue.mu.Unlock()
+	if ok && currentClient == client && s.ZeroLogger != nil {
 		s.Info(utils.USER_LEFT_QUEUE_MESSAGE)
 	}
 }
@@ -92,14 +107,13 @@ func (s *ChatHub) SendMessageToQueue(userID string, message []byte) bool {
 			return false
 		}
 
-		select {
-		case client.Send <- message:
+		if client.SafeSend(message) {
 			return true
-		default:
-			// 发送失败，移除用户
-			s.LeaveQueue(userID)
-			return false
 		}
+
+		// 发送失败，移除用户
+		s.LeaveQueueIfMatch(userID, client)
+		return false
 	}
 	return false
 }
@@ -116,11 +130,42 @@ func (s *ChatHub) GetAllUsersInQueue() []string {
 	return users
 }
 
+// Shutdown 安全关闭客户端资源，允许重复调用
+func (c *Client) Shutdown() {
+	if c == nil {
+		return
+	}
+
+	c.closeOnce.Do(func() {
+		if c.Conn != nil {
+			_ = c.Conn.Close()
+		}
+		if c.Send != nil {
+			close(c.Send)
+		}
+	})
+}
+
+// SafeSend 向客户端发送消息；如果连接已关闭或 channel 已关闭，返回 false 而不是 panic
+func (c *Client) SafeSend(message []byte) (ok bool) {
+	defer func() {
+		if recover() != nil {
+			ok = false
+		}
+	}()
+
+	select {
+	case c.Send <- message:
+		return true
+	default:
+		return false
+	}
+}
+
 func (c *Client) ReadPump() {
 	defer func() {
-		chatHub := &ChatHub{}
-		chatHub.LeaveQueue(c.UserID)
-		c.Conn.Close()
+		chatHub := &ChatHub{ZeroLogger: c.ZeroLogger}
+		chatHub.LeaveQueueIfMatch(c.UserID, c)
 	}()
 
 	c.Conn.SetReadLimit(512)
@@ -148,10 +193,7 @@ func (c *Client) ReadPump() {
 		if wsMessage.Type == utils.HEARTBEAT_MESSAGE {
 			pongMessage := dto.WebSocketMessage{Type: utils.HEARTBEAT_RESPONSE}
 			pongBytes, _ := json.Marshal(pongMessage)
-			select {
-			case c.Send <- pongBytes:
-			default:
-				close(c.Send)
+			if !c.SafeSend(pongBytes) {
 				return
 			}
 		}
@@ -159,10 +201,15 @@ func (c *Client) ReadPump() {
 }
 
 func (c *Client) WritePump() {
-	defer c.Conn.Close()
+	defer c.Shutdown()
 
 	for message := range c.Send {
-		c.Conn.WriteMessage(websocket.TextMessage, message)
+		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+			if c.ZeroLogger != nil {
+				c.Error(fmt.Sprintf("WebSocket 写消息失败: %v", err))
+			}
+			break
+		}
 	}
-	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+	_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 }

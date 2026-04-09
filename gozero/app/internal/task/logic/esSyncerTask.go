@@ -161,7 +161,7 @@ func buildArticleESBatch(
 	categoryMap map[int64]string,
 	subCategoryMap map[int64]string,
 ) ([]search.ArticleES, error) {
-	// 先收集本批次涉及到的主键集合，便于后续批量查询统计信息。
+	// 先收集本批次涉及到的主键集合，便于后续批量查询统计信息
 	userIDs := make([]int64, 0, len(articleBatch))
 	subCategoryIDs := make([]int64, 0, len(articleBatch))
 	articleIDs := make([]int64, 0, len(articleBatch))

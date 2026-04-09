@@ -5,6 +5,7 @@ package chat
 
 import (
 	"net/http"
+	"time"
 
 	"app/common/hub"
 	"app/common/utils"
@@ -41,25 +42,22 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		// 检查用户是否已经在队列中
+		// 用户重连时，先把旧连接及其读写协程对应的资源优雅关闭, 避免旧 ReadPump/WritePump 长时间占用连接和 goroutine
 		if existingClient, exists := svcCtx.ChatHub.GetUserFromQueue(userID); exists {
-			// 用户已在队列中，更新其WebSocket连接
-			existingClient.Conn = conn
-			existingClient.Send = make(chan []byte, 256)
-		} else {
-			// 创建新的客户端并加入队列
-			client := &hub.Client{
-				UserID: userID,
-				Conn:   conn,
-				Send:   make(chan []byte, 256),
-			}
-			svcCtx.ChatHub.JoinQueue(userID, client)
+			existingClient.Shutdown()
+			svcCtx.ChatHub.LeaveQueueIfMatch(userID, existingClient)
+			time.Sleep(100 * time.Millisecond)
 		}
 
-		// 获取更新后的客户端
-		client, _ := svcCtx.ChatHub.GetUserFromQueue(userID)
+		// 创建新的客户端并加入队列
+		client := &hub.Client{
+			UserID: userID,
+			Conn:   conn,
+			Send:   make(chan []byte, 256),
+		}
+		svcCtx.ChatHub.JoinQueue(userID, client)
 
-		// 启动读写协程。这里使用带 recover 的安全封装，避免子 goroutine panic 直接影响整个进程。
+		// 启动读写协程，这里使用带 recover 的安全封装，避免子 goroutine panic 直接影响整个进程
 		utils.SafeGo(svcCtx.Logger, "websocket_write_pump", func() {
 			client.WritePump()
 		})
