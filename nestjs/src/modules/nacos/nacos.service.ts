@@ -170,17 +170,16 @@ export class NacosService implements OnModuleInit {
     const url: string = `http://${instance.ip as string}:${instance.port as number}${path}${queryString}`;
 
     // 默认请求头
-    const userId: string = this.cls.get<string>('userId') || '0';
+    const userId: number = this.cls.get<number>('userId') || 0;
     const userName: string =
       this.cls.get<string>('username') || Constants.UNKNOWN_USER;
     const defaultHeaders: Record<string, string> = {
-      'X-User-Id': userId,
+      'X-User-Id': String(userId || 0),
       'X-Username': userName,
     };
 
     // 生成并添加内部服务令牌 (没有用户ID时用-1代表系统调用)
-    const userIdNum: number = parseInt(userId, 10) || -1;
-    const finalUserId: number = userIdNum > 0 ? userIdNum : -1;
+    const finalUserId: number = userId > 0 ? userId : -1;
     const internalToken: string =
       await this.internalTokenUtil.generateInternalToken(
         finalUserId,
