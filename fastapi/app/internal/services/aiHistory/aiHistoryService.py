@@ -31,6 +31,9 @@ class AiHistoryService:
 
     def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         data = self._normalize_ai_history_data(ai_history)
+        thinking = data.get("thinking")
+        if thinking == "":
+            thinking = None
 
         # 方案1：基于内容和用户ID生成唯一键进行去重（5秒内相同请求只处理一次）
         request_key = hashlib.md5(
@@ -54,7 +57,7 @@ class AiHistoryService:
             user_id=data["user_id"],
             ask=data["ask"],
             reply=data["reply"],
-            thinking=data.get("thinking"),
+            thinking=thinking,
             ai_type=data["ai_type"],
         )
 

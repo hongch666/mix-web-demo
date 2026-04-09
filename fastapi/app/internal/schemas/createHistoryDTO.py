@@ -19,6 +19,10 @@ class CreateHistoryDTO(BaseModel):
         description="AI回复内容",
         min_length=1,
     )
+    thinking: str | None = Field(
+        default=None,
+        description="AI思考过程，可选",
+    )
     ai_type: str = Field(
         ...,
         description="AI类型（例：doubao、gpt、claude等）",
