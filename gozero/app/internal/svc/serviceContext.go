@@ -83,6 +83,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	// 初始化日志
 	zLogger, err := logger.NewZeroLogger(c.Logs.Path)
 	if err != nil {
+		logx.Errorf(utils.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -199,6 +200,7 @@ func initGorm(c config.Config) *gorm.DB {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
+		logx.Errorf(utils.GORM_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -277,6 +279,7 @@ func initES(c config.Config) *elastic.Client {
 
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
+		logx.Errorf(utils.ES_CLIENT_INIT_FAIL, err)
 		panic(err)
 	}
 	return client
@@ -296,11 +299,13 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 
 	conn, err := amqp.Dial(url)
 	if err != nil {
+		logx.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 
 	channel, err := conn.Channel()
 	if err != nil {
+		logx.Errorf(utils.RABBITMQ_CHANNEL_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -308,6 +313,7 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 	for _, queueName := range queues {
 		_, err = channel.QueueDeclare(queueName, true, false, false, false, nil)
 		if err != nil {
+			logx.Errorf(utils.RABBITMQ_DECLARE_QUEUE_FAIL, queueName, err)
 			panic(err)
 		}
 	}
@@ -333,9 +339,11 @@ func initMongoDB(c config.Config) *mongo.Client {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
+		logx.Errorf(utils.MONGODB_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 	if err = client.Ping(ctx, nil); err != nil {
+		logx.Errorf(utils.MONGODB_PING_FAIL, err)
 		panic(err)
 	}
 
@@ -374,6 +382,7 @@ func initNacos(c config.Config) naming_client.INamingClient {
 		ServerConfigs: serverConfigs,
 	})
 	if err != nil {
+		logx.Errorf(utils.NACOS_CLIENT_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -384,7 +393,7 @@ func initNacos(c config.Config) naming_client.INamingClient {
 	}
 
 	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
-		_, _ = namingClient.RegisterInstance(vo.RegisterInstanceParam{
+		_, err = namingClient.RegisterInstance(vo.RegisterInstanceParam{
 			Ip:          registerIP,
 			Port:        uint64(c.Port),
 			ServiceName: nacosConf.ServiceName,
@@ -395,6 +404,11 @@ func initNacos(c config.Config) naming_client.INamingClient {
 			Healthy:     true,
 			Ephemeral:   true,
 		})
+		if err != nil {
+			logx.Errorf(utils.NACOS_REGISTER_FAIL,
+				nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, err)
+			panic(err)
+		}
 	}
 
 	return namingClient

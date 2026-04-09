@@ -112,6 +112,36 @@ const (
 	// 创建日志目录失败信息
 	CREATE_LOG_DIR_ERROR = "创建日志目录失败"
 
+	// 初始化日志失败信息
+	ZERO_LOGGER_INIT_FAIL = "初始化日志失败: %v"
+
+	// 初始化 Gorm 失败信息
+	GORM_INIT_FAIL = "初始化 Gorm 失败: %v"
+
+	// 初始化 ES 客户端失败信息
+	ES_CLIENT_INIT_FAIL = "初始化 ES 客户端失败: %v"
+
+	// 初始化 RabbitMQ 连接失败信息
+	RABBITMQ_CONNECTION_INIT_FAIL = "初始化 RabbitMQ 连接失败: %v"
+
+	// 初始化 RabbitMQ 通道失败信息
+	RABBITMQ_CHANNEL_INIT_FAIL = "初始化 RabbitMQ 通道失败: %v"
+
+	// 声明 RabbitMQ 队列失败信息
+	RABBITMQ_DECLARE_QUEUE_FAIL = "声明 RabbitMQ 队列失败, queue=%s, err=%v"
+
+	// 初始化 MongoDB 连接失败信息
+	MONGODB_CONNECTION_INIT_FAIL = "初始化 MongoDB 连接失败: %v"
+
+	// MongoDB 心跳检测失败信息
+	MONGODB_PING_FAIL = "MongoDB 心跳检测失败: %v"
+
+	// 初始化 Nacos 客户端失败信息
+	NACOS_CLIENT_INIT_FAIL = "初始化 Nacos 客户端失败: %v"
+
+	// Nacos 注册失败信息
+	NACOS_REGISTER_FAIL = "Nacos 注册失败: service=%s, address=%s:%d, group=%s, err=%v"
+
 	// 打开日志文件失败信息
 	OPEN_LOG_FILE_ERROR = "打开日志文件失败"
 
