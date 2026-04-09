@@ -52,8 +52,8 @@ RUN mkdir -p /app/logs/nestjs && \
 EXPOSE 8083
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8082/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fsS http://localhost:8083/api_nestjs/nestjs >/dev/null || exit 1
 
 # 启动命令
 CMD ["node", "dist/main"]

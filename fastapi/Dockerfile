@@ -29,5 +29,9 @@ RUN mkdir -p /app/logs/fastapi \
 # 暴露端口（默认8084）
 EXPOSE 8084
 
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8084/api_fastapi/fastapi', timeout=5).getcode() == 200 else 1)" || exit 1
+
 # 启动命令
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8084"]

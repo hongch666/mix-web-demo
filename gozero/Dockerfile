@@ -76,5 +76,5 @@ EXPOSE 8082
 ENTRYPOINT ["./gozero-app", "-f", "etc/application.yaml"]
 
 # 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8082/api_gozero/gozero || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -fsS http://localhost:8082/api_gozero/gozero >/dev/null || exit 1
