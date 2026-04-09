@@ -69,12 +69,16 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 			// 发送失败，用户可能刷离线，消息保持未读
 			l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
 			// 触发SSE通知发送未读消息
-			go l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
+			utils.SafeGo(l.ZeroLogger, "notifyUnreadMessage", func() {
+				l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
+			})
 		}
 	} else {
 		l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
 		// 触发SSE通知发送未读消息
-		go l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
+		utils.SafeGo(l.ZeroLogger, "notifyUnreadMessage", func() {
+			l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
+		})
 	}
 
 	resp = &types.ChatSendMessageResp{

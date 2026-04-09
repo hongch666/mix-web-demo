@@ -226,6 +226,9 @@ const (
 	// 堆栈错误信息消息
 	STACK_ERROR_MESSAGE = "堆栈错误信息: %v\n%s"
 
+	// 子 goroutine panic 恢复日志
+	SAFE_GO_PANIC_RECOVERED_MESSAGE = "异步任务 %s 执行时发生 panic，已自动恢复: %v\n堆栈信息:\n%s"
+
 	// 统一错误响应消息
 	UNIFIED_ERROR_RESPONSE_MESSAGE = "服务器错误"
 

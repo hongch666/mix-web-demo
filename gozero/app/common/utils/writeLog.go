@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"app/common/exceptions"
-
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -21,15 +19,15 @@ func WriteLog(message string, level string) {
 		// 获取当前工作目录
 		wd, err := os.Getwd()
 		if err != nil {
-			panic(exceptions.NewBusinessError(GET_WORKING_DIR_ERROR, err.Error()))
+			logx.Error(GET_WORKING_DIR_ERROR)
 		}
 		// 拼接成绝对路径
 		logPath = filepath.Join(wd, logPath)
 	}
 
 	// 确保日志目录存在
-	if err := os.MkdirAll(logPath, 0755); err != nil {
-		panic(exceptions.NewBusinessError(CREATE_LOG_DIR_ERROR, err.Error()))
+	if err := os.MkdirAll(logPath, 0o755); err != nil {
+		logx.Error(CREATE_LOG_DIR_ERROR)
 	}
 
 	// 日志文件名 (按日期)
@@ -41,14 +39,14 @@ func WriteLog(message string, level string) {
 	logEntry := fmt.Sprintf("%s - %s - %s\n", timestamp, level, message)
 
 	// 写入文件
-	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 	if err != nil {
-		panic(exceptions.NewBusinessError(OPEN_LOG_FILE_ERROR, err.Error()))
+		logx.Error(OPEN_LOG_FILE_ERROR)
 	}
 	defer file.Close()
 
 	if _, err := file.WriteString(logEntry); err != nil {
-		panic(exceptions.NewBusinessError(WRITE_LOG_FILE_ERROR, err.Error()))
+		logx.Error(WRITE_LOG_FILE_ERROR)
 	}
 }
 

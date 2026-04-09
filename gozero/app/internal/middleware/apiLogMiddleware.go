@@ -93,7 +93,9 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 发送 API 日志到队列（异步，不阻塞主流程）
 		if m.ZeroLogger != nil {
-			go sendApiLogToQueue(r.Context(), m.ZeroLogger, m.rabbitChannel, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
+			utils.SafeGo(m.ZeroLogger, "sendApiLogToQueue", func() {
+				sendApiLogToQueue(r.Context(), m.ZeroLogger, m.rabbitChannel, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
+			})
 		}
 	}
 }

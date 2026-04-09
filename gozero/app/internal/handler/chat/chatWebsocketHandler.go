@@ -59,8 +59,12 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		// 获取更新后的客户端
 		client, _ := svcCtx.ChatHub.GetUserFromQueue(userID)
 
-		// 启动读写协程
-		go client.WritePump()
-		go client.ReadPump()
+		// 启动读写协程。这里使用带 recover 的安全封装，避免子 goroutine panic 直接影响整个进程。
+		utils.SafeGo(svcCtx.Logger, "websocket_write_pump", func() {
+			client.WritePump()
+		})
+		utils.SafeGo(svcCtx.Logger, "websocket_read_pump", func() {
+			client.ReadPump()
+		})
 	}, "WebSocket连接")
 }
