@@ -26,7 +26,7 @@ class VersionedCache(BaseCache):
         try:
             import time
 
-            from app.core.db import load_config
+            from app.core.config import load_config
 
             ch_table = load_config("database")["clickhouse"]["table"]
             ch_db = load_config("database")["clickhouse"]["database"]
