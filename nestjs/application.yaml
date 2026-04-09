@@ -4,7 +4,7 @@ server:
   port: ${SERVER_PORT:8083}
   serviceName: ${SERVER_SERVICE_NAME:nestjs}
 internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:abcdefghijklmnopqrstuvwxyz123456}
+  secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 nacos:
   host: ${NACOS_SERVER:127.0.0.1}
@@ -15,8 +15,8 @@ database:
   type: ${DB_TYPE:mysql}
   host: ${DB_HOST:localhost}
   port: ${DB_PORT:3306}
-  username: ${DB_USERNAME:root}
-  password: ${DB_PASSWORD:123456}
+  username: ${DB_USERNAME:}
+  password: ${DB_PASSWORD:}
   database: ${DB_DATABASE:demo}
   synchronize: ${DB_SYNCHRONIZE:false}
   logging: ${DB_LOGGING:false}
@@ -31,8 +31,8 @@ mongodb:
 rabbitmq:
   host: ${RABBITMQ_HOST:localhost}
   port: ${RABBITMQ_PORT:5672}
-  username: ${RABBITMQ_USERNAME:hcsy}
-  password: ${RABBITMQ_PASSWORD:123456}
+  username: ${RABBITMQ_USERNAME:}
+  password: ${RABBITMQ_PASSWORD:}
   vhost: ${RABBITMQ_VHOST:test}
 files:
   word: ${FILES_WORD_PATH:../static/word}

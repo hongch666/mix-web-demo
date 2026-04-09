@@ -7,7 +7,7 @@ Mode: ${SERVER_MODE:dev}
 Prefix: ${SERVER_PREFIX:/}
 
 internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:abcdefghijklmnopqrstuvwxyz123456}
+  secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 
 nacos:
@@ -24,7 +24,7 @@ database:
   mysql:
     host: ${DB_MYSQL_HOST:127.0.0.1}
     port: ${DB_MYSQL_PORT:3306}
-    username: ${DB_MYSQL_USERNAME:root}
+    username: ${DB_MYSQL_USERNAME:}
     password: ${DB_MYSQL_PASSWORD:}
     dbname: ${DB_MYSQL_DBNAME:demo}
     charset: ${DB_MYSQL_CHARSET:utf8mb4}
@@ -43,8 +43,8 @@ database:
     database: ${DB_MONGODB_DATABASE:demo}
 
 mq:
-  username: ${RABBITMQ_USERNAME:guest}
-  password: ${RABBITMQ_PASSWORD:guest}
+  username: ${RABBITMQ_USERNAME:}
+  password: ${RABBITMQ_PASSWORD:}
   host: ${RABBITMQ_HOST:127.0.0.1}
   port: ${RABBITMQ_PORT:5672}
   vhost: ${RABBITMQ_VHOST:/}

@@ -12,8 +12,8 @@ spring:
     name: spring
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_MAX:20}
@@ -39,8 +39,8 @@ spring:
   rabbitmq:
     host: ${RABBITMQ_HOST:127.0.0.1}
     port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USERNAME:hcsy}
-    password: ${RABBITMQ_PASSWORD:123456}
+    username: ${RABBITMQ_USERNAME:}
+    password: ${RABBITMQ_PASSWORD:}
     virtual-host: ${RABBITMQ_VHOST:test}
   mail:
     host: ${MAIL_HOST:smtp.qq.com}
@@ -67,8 +67,8 @@ logging:
   file:
     path: ${LOGGING_PATH:../logs/spring}
 jwt:
-  secret: ${JWT_SECRET:abcdefghijklmnopqrstuvwxyz123456}
+  secret: ${JWT_SECRET:}
   expiration: ${JWT_EXPIRATION:86400000} # 毫秒数（1 天）
 internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:abcdefghijklmnopqrstuvwxyz123456}
+  secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000} # 毫秒数（60秒）
