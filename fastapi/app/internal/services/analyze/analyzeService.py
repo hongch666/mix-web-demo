@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
@@ -76,6 +76,130 @@ class AnalyzeService:
         self._publish_time_cache: Optional[PublishTimeCache] = publish_time_cache
         self._statistics_cache: Optional[StatisticsCache] = statistics_cache
         self._wordcloud_cache: Optional[WordcloudCache] = wordcloud_cache
+        self._singleflight_locks: Dict[str, asyncio.Lock] = {}
+        self._singleflight_guard: asyncio.Lock = asyncio.Lock()
+
+    async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
+        async with self._singleflight_guard:
+            lock = self._singleflight_locks.get(key)
+            if lock is None:
+                lock = asyncio.Lock()
+                self._singleflight_locks[key] = lock
+            return lock
+
+    async def _run_with_singleflight(
+        self,
+        key: str,
+        cache_getter: Callable[[], Optional[Any]],
+        loader: Callable[[], Any],
+    ) -> Any:
+        """使用 asyncio.Lock 合并同 key 的并发缓存回源请求，避免缓存雪崩时同时打到数据库。"""
+        cached_result = await asyncio.to_thread(cache_getter)
+        if cached_result is not None:
+            return cached_result
+
+        lock = await self._get_singleflight_lock(key)
+        async with lock:
+            cached_result = await asyncio.to_thread(cache_getter)
+            if cached_result is not None:
+                Logger.info(f"[singleflight] key={key} 命中回填缓存，复用首个请求结果")
+                return cached_result
+
+            Logger.info(f"[singleflight] key={key} 开始执行缓存回源")
+            return await asyncio.to_thread(loader)
+
+    def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
+        ch_conn = None
+        try:
+            ch_conn = self.articleMapper.get_clickhouse_connection()
+            return self._article_cache.get(ch_conn)
+        except Exception as e:
+            Logger.debug(f"_get_top10_cached 失败: {e}")
+            return None
+        finally:
+            if ch_conn:
+                self.articleMapper.return_clickhouse_connection(ch_conn)
+
+    def _get_wordcloud_cached(self) -> Optional[str]:
+        try:
+            return self._wordcloud_cache.get()
+        except Exception as e:
+            Logger.debug(f"_get_wordcloud_cached 失败: {e}")
+            return None
+
+    def _get_statistics_cached(self) -> Optional[Dict[str, Any]]:
+        try:
+            return self._statistics_cache.get()
+        except Exception as e:
+            Logger.debug(f"_get_statistics_cached 失败: {e}")
+            return None
+
+    def _get_category_article_count_cached(self) -> Optional[List[Dict[str, Any]]]:
+        ch_conn = None
+        try:
+            ch_conn = self.articleMapper.get_clickhouse_connection()
+            return self._category_cache.get(ch_conn)
+        except Exception as e:
+            Logger.debug(f"_get_category_article_count_cached 失败: {e}")
+            return None
+        finally:
+            if ch_conn:
+                self.articleMapper.return_clickhouse_connection(ch_conn)
+
+    def _get_monthly_publish_count_cached(self) -> Optional[List[Dict[str, Any]]]:
+        ch_conn = None
+        try:
+            ch_conn = self.articleMapper.get_clickhouse_connection()
+            return self._publish_time_cache.get(ch_conn)
+        except Exception as e:
+            Logger.debug(f"_get_monthly_publish_count_cached 失败: {e}")
+            return None
+        finally:
+            if ch_conn:
+                self.articleMapper.return_clickhouse_connection(ch_conn)
+
+    async def get_top10_articles_service_sf(
+        self, db: Session = Depends(get_db)
+    ) -> List[Dict[str, Any]]:
+        return await self._run_with_singleflight(
+            "analyze:top10",
+            self._get_top10_cached,
+            lambda: self.get_top10_articles_service(db),
+        )
+
+    async def get_wordcloud_service_sf(self) -> str:
+        return await self._run_with_singleflight(
+            "analyze:wordcloud",
+            self._get_wordcloud_cached,
+            self.get_wordcloud_service,
+        )
+
+    async def get_article_statistics_service_sf(
+        self, db: Session = Depends(get_db)
+    ) -> Dict[str, Any]:
+        return await self._run_with_singleflight(
+            "analyze:statistics",
+            self._get_statistics_cached,
+            lambda: self.get_article_statistics_service(db),
+        )
+
+    async def get_category_article_count_service_sf(
+        self, db: Session = Depends(get_db)
+    ) -> List[Dict[str, Any]]:
+        return await self._run_with_singleflight(
+            "analyze:category_article_count",
+            self._get_category_article_count_cached,
+            lambda: self.get_category_article_count_service(db),
+        )
+
+    async def get_monthly_publish_count_service_sf(
+        self, db: Session = Depends(get_db)
+    ) -> List[Dict[str, Any]]:
+        return await self._run_with_singleflight(
+            "analyze:monthly_publish_count",
+            self._get_monthly_publish_count_cached,
+            lambda: self.get_monthly_publish_count_service(db),
+        )
 
     @classmethod
     def create_for_scheduler(cls) -> "AnalyzeService":
