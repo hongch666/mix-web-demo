@@ -4,7 +4,7 @@ from typing import Any, Callable, Optional
 
 from app.common.middleware import get_current_user_id
 from app.core.base import Constants, Logger
-from app.core.db import get_db
+from app.core.db import get_db_sync
 from app.core.errors import BusinessException
 from app.internal.crud import get_user_mapper
 from sqlalchemy.orm import Session
@@ -46,15 +46,12 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     db = arg
                     break
 
-        if not db:
-            db = next(get_db())
-
-        try:
+        def _check_permission(current_db: Session) -> None:
             # 获取用户Mapper
             user_mapper = get_user_mapper()
 
             # 获取用户角色
-            user_role: str = user_mapper.get_user_role(int(user_id), db)
+            user_role: str = user_mapper.get_user_role(int(user_id), current_db)
 
             # 检查是否是管理员
             if user_role != Constants.ROLE_ADMIN:
@@ -65,8 +62,14 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
 
             Logger.info(f"管理员 {user_id} 访问受保护的接口")
 
-            # 如果检查通过，执行原函数
-            return await func(*args, **kwargs)
+        try:
+            if db:
+                _check_permission(db)
+                return await func(*args, **kwargs)
+
+            with get_db_sync() as current_db:
+                _check_permission(current_db)
+                return await func(*args, **kwargs)
 
         except BusinessException:
             raise
@@ -93,15 +96,12 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     db = arg
                     break
 
-        if not db:
-            db = next(get_db())
-
-        try:
+        def _check_permission(current_db: Session) -> None:
             # 获取用户Mapper
             user_mapper = get_user_mapper()
 
             # 获取用户角色
-            user_role: str = user_mapper.get_user_role(int(user_id), db)
+            user_role: str = user_mapper.get_user_role(int(user_id), current_db)
 
             # 检查是否是管理员
             if user_role != Constants.ROLE_ADMIN:
@@ -112,8 +112,14 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
 
             Logger.info(f"管理员 {user_id} 访问受保护的接口")
 
-            # 如果检查通过，执行原函数
-            return func(*args, **kwargs)
+        try:
+            if db:
+                _check_permission(db)
+                return func(*args, **kwargs)
+
+            with get_db_sync() as current_db:
+                _check_permission(current_db)
+                return func(*args, **kwargs)
 
         except BusinessException:
             raise

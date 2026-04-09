@@ -22,7 +22,7 @@ class StatisticsCache(BaseCache):
     REDIS_KEY_PREFIX: str = "article:statistics"
     L1_CACHE_TTL: int = 600  # 10分钟
 
-    def get(self) -> Optional[Dict[str, Any]]:
+    async def get(self) -> Optional[Dict[str, Any]]:
         """
         获取缓存（二级缓存）
 
@@ -37,7 +37,7 @@ class StatisticsCache(BaseCache):
             return local_data
 
         # 2. 本地缓存失效，查 Redis
-        redis_data = self.get_from_redis()
+        redis_data = await self.get_from_redis()
         if redis_data:
             return redis_data
 
@@ -45,7 +45,7 @@ class StatisticsCache(BaseCache):
         Logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
-    def set(self, data: Dict[str, Any]) -> None:
+    async def set(self, data: Dict[str, Any]) -> None:
         """
         设置缓存（二级缓存）
 
@@ -54,7 +54,7 @@ class StatisticsCache(BaseCache):
         2. Redis 缓存（L2）
         """
         self.update_local_cache(data)
-        self.update_redis_cache(data)
+        await self.update_redis_cache(data)
 
 
 @lru_cache()

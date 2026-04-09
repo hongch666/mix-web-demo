@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 from typing import Any, Optional
 
@@ -22,7 +23,7 @@ class VersionedCache(BaseCache):
         # 版本号
         self._cache_version: Optional[str] = None
 
-    def get_cache_version(self, ch_conn: Any) -> Optional[str]:
+    async def get_cache_version(self, ch_conn: Any) -> Optional[str]:
         """基于 ClickHouse 表内容生成稳定版本号。"""
         try:
             if ch_conn is None:
@@ -36,7 +37,7 @@ class VersionedCache(BaseCache):
                     ifNull(max(id), 0) AS max_id
                 FROM {ch_db}.{ch_table}
             """
-            result = ch_conn.execute(query)
+            result = await asyncio.to_thread(ch_conn.execute, query)
             if not result:
                 return None
 
@@ -49,35 +50,33 @@ class VersionedCache(BaseCache):
             Logger.debug(f"获取版本号失败: {type(e).__name__}: {e}")
             return None
 
-    def _persist_version(self, version: str) -> None:
+    async def _persist_version(self, version: str) -> None:
         """同步更新本地版本号，并尽量写入 Redis。"""
         self._cache_version = version
-        if self._redis.is_available():
-            self._redis.set(self.REDIS_VERSION_KEY, version, ex=self._redis_ttl)
+        await self._redis.set(self.REDIS_VERSION_KEY, version, ex=self._redis_ttl)
 
-    def is_version_changed(self, ch_conn: Any) -> bool:
+    async def is_version_changed(self, ch_conn: Any) -> bool:
         """检查版本号是否变化"""
         try:
-            current_version = self.get_cache_version(ch_conn)
+            current_version = await self.get_cache_version(ch_conn)
             if not current_version:
                 Logger.debug(Constants.SKIP_VERSION_CHECK)
                 return False
 
             # 从 Redis 获取旧版本号（优先级最高）
             old_version = None
-            if self._redis.is_available():
-                try:
-                    old_version = self._redis.get(self.REDIS_VERSION_KEY)
-                    if old_version:
-                        # 统一转换为字符串类型(Redis可能返回bytes)
-                        old_version = (
-                            old_version
-                            if isinstance(old_version, str)
-                            else old_version.decode("utf-8")
-                        )
-                except Exception as e:
-                    Logger.debug(f"[缓存] Redis 读取版本号失败: {e}")
-                    old_version = None
+            try:
+                old_version = await self._redis.get(self.REDIS_VERSION_KEY)
+                if old_version:
+                    # 统一转换为字符串类型(Redis可能返回bytes)
+                    old_version = (
+                        old_version
+                        if isinstance(old_version, str)
+                        else old_version.decode("utf-8")
+                    )
+            except Exception as e:
+                Logger.debug(f"[缓存] Redis 读取版本号失败: {e}")
+                old_version = None
 
             # 本地版本号作为备选
             if not old_version and self._cache_version:
@@ -85,7 +84,7 @@ class VersionedCache(BaseCache):
 
             # 关键修复：如果没有旧版本号（首次调用），不认为是版本变化
             if not old_version:
-                self._persist_version(current_version)
+                await self._persist_version(current_version)
                 Logger.debug(f"[缓存] 首次初始化，当前版本: {current_version}")
                 return False
 
@@ -101,22 +100,21 @@ class VersionedCache(BaseCache):
             Logger.warning(f"版本检测异常: {e}")
             return False
 
-    def update_version(self, ch_conn: Any) -> None:
+    async def update_version(self, ch_conn: Any) -> None:
         """更新版本号"""
         try:
-            version = self.get_cache_version(ch_conn)
+            version = await self.get_cache_version(ch_conn)
             if version:
-                self._persist_version(version)
+                await self._persist_version(version)
                 Logger.info(f"[缓存] 版本号已更新: {version}")
         except Exception as e:
             Logger.warning(f"设置缓存版本号失败: {e}")
 
-    def clear_all(self) -> None:
+    async def clear_all(self) -> None:
         """清除所有缓存，包括版本号"""
         self._cache_version = None
-        super().clear_all()
+        await super().clear_all()
         try:
-            if self._redis.is_available():
-                self._redis.delete(self.REDIS_VERSION_KEY)
+            await self._redis.delete(self.REDIS_VERSION_KEY)
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 清除版本号失败: {e}")

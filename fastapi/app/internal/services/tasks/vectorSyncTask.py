@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import time
 from datetime import datetime
@@ -23,7 +24,7 @@ def _get_redis_client() -> Optional[Any]:
     except ImportError:
         # 备用方案：使用 redis 库直接连接
         try:
-            import redis
+            import redis.asyncio as redis
 
             cfg = load_config("database")["redis"]
             return redis.Redis(
@@ -35,6 +36,15 @@ def _get_redis_client() -> Optional[Any]:
         except Exception as e:
             Logger.error(f"无法连接到 Redis: {e}")
             return None
+
+
+def _run_redis_coro(coro: Any) -> Any:
+    """在同步任务中执行 Redis 协程。"""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coro)
+    raise RuntimeError(Constants.REDIS_COROUTINE_SYNC_EXECUTION_ERROR)
 
 
 def _compute_article_hash(article: Any) -> str:
@@ -62,7 +72,9 @@ def _get_article_content_hash(article_id: int) -> Optional[str]:
         if redis_client is None:
             return None
 
-        hash_value = redis_client.get(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}")
+        hash_value = _run_redis_coro(
+            redis_client.get(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}")
+        )
         return hash_value
     except Exception as e:
         Logger.warning(f"从 Redis 读取文章 hash 失败: {e}")
@@ -78,7 +90,9 @@ def _save_article_content_hash(article_id: int, hash_value: str) -> None:
             return
 
         # 永久保存 hash（不设置过期时间）
-        redis_client.set(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}", hash_value)
+        _run_redis_coro(
+            redis_client.set(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}", hash_value)
+        )
         Logger.debug(f"已保存文章 {article_id} 的 hash 到 Redis: {hash_value}")
     except Exception as e:
         Logger.error(f"保存文章 {article_id} 的 hash 到 Redis 失败: {e}")
@@ -92,7 +106,7 @@ def _get_last_sync_time() -> Optional[datetime]:
             Logger.warning(Constants.REDIS_CONNECTION_FAILED_MESSAGE)
             return None
 
-        timestamp_str = redis_client.get(_VECTOR_SYNC_TIME_KEY)
+        timestamp_str = _run_redis_coro(redis_client.get(_VECTOR_SYNC_TIME_KEY))
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
@@ -110,7 +124,7 @@ def _save_sync_time(sync_time: datetime) -> None:
             return
 
         # 永久保存时间戳（不设置过期时间）
-        redis_client.set(_VECTOR_SYNC_TIME_KEY, sync_time.isoformat())
+        _run_redis_coro(redis_client.set(_VECTOR_SYNC_TIME_KEY, sync_time.isoformat()))
         Logger.info(f"已保存同步时间戳到 Redis: {sync_time.isoformat()}")
     except Exception as e:
         Logger.error(f"保存同步时间戳到 Redis 失败: {e}")
@@ -207,10 +221,10 @@ def export_article_vectors_to_postgres(
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:
-        from app.core.db import get_db as _get_db
+        from app.core.db import create_db_session as _create_db_session
 
         def mysql_db_factory() -> Session:
-            return next(_get_db())
+            return _create_db_session()
 
     # 导入RAG工具
     try:
@@ -392,10 +406,10 @@ def initialize_article_content_hash_cache(
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:
-        from app.core.db import get_db as _get_db
+        from app.core.db import create_db_session as _create_db_session
 
         def mysql_db_factory() -> Session:
-            return next(_get_db())
+            return _create_db_session()
 
     mysql_db: Optional[Session] = None
 

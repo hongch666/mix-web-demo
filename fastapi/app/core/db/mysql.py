@@ -1,3 +1,6 @@
+from collections.abc import AsyncGenerator
+from contextlib import contextmanager
+from urllib.parse import quote_plus
 from typing import Generator, List, Optional
 
 from app.core.base import Constants, Logger
@@ -9,15 +12,18 @@ from sqlalchemy.pool import QueuePool
 
 Base = declarative_base()
 
+server_config = load_config("server")
 mysql_config = load_config("database")["mysql"]
+SERVER_MODE: str = str(server_config.get("mode", "dev")).strip().lower()
 HOST: str = mysql_config["host"]
 PORT: int = mysql_config["port"]
 DATABASE: str = mysql_config["database"]
 USER: str = mysql_config["user"]
 PASSWORD: str = mysql_config["password"]
+ENCODED_PASSWORD: str = quote_plus(PASSWORD)
 
 DATABASE_URL: str = (
-    f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
+    f"mysql+pymysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 )
 
 POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
@@ -28,7 +34,7 @@ POOL_TIMEOUT: int = int(mysql_config.get("pool_timeout", 30))
 READ_TIMEOUT: int = int(mysql_config.get("read_timeout", 10))
 WRITE_TIMEOUT: int = int(mysql_config.get("write_timeout", 10))
 AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
-ECHO: bool = mysql_config.get("echo", False)
+ECHO: bool = SERVER_MODE == "dev"
 
 # 配置连接池参数以支持高并发访问
 engine = create_engine(
@@ -56,7 +62,17 @@ SessionLocal = sessionmaker(
 )
 
 
-def get_db() -> Generator[SASession, None, None]:
+async def get_db() -> AsyncGenerator[SASession, None]:
+    with SessionLocal() as session:
+        yield session
+
+
+def create_db_session() -> SASession:
+    return SessionLocal()
+
+
+@contextmanager
+def get_db_sync() -> Generator[SASession, None, None]:
     with SessionLocal() as session:
         yield session
 

@@ -24,7 +24,7 @@ class ArticleCache(VersionedCache):
     REDIS_VERSION_KEY: str = "article:top10:version"
     L1_CACHE_TTL: int = 300  # 5分钟
 
-    def get(self, ch_conn: Any) -> Optional[List[Dict[str, Any]]]:
+    async def get(self, ch_conn: Any) -> Optional[List[Dict[str, Any]]]:
         """
         获取缓存（二级缓存）
 
@@ -34,9 +34,9 @@ class ArticleCache(VersionedCache):
         3. 返回 None（需要查询 ClickHouse）
         """
         # 检查版本号是否变化
-        if self.is_version_changed(ch_conn):
+        if await self.is_version_changed(ch_conn):
             Logger.info(Constants.VERSION_CHANGED_CLEAR_CACHE)
-            self.clear_all()
+            await self.clear_all()
             return None
 
         # 1. 先查本地缓存
@@ -45,18 +45,15 @@ class ArticleCache(VersionedCache):
             return local_data
 
         # 2. 本地缓存失效，查 Redis
-        redis_data = self.get_from_redis()
+        redis_data = await self.get_from_redis()
         if redis_data:
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(
-            Constants.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE
-            or "ClickHouse缓存未命中，将查询数据源"
-        )
+        Logger.info(Constants.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
-    def set(self, data: List[Dict[str, Any]], ch_conn: Any) -> None:
+    async def set(self, data: List[Dict[str, Any]], ch_conn: Any) -> None:
         """
         设置缓存（二级缓存）
 
@@ -67,10 +64,10 @@ class ArticleCache(VersionedCache):
         """
         # 更新两级缓存
         self.update_local_cache(data)
-        self.update_redis_cache(data)
+        await self.update_redis_cache(data)
 
         # 更新版本号
-        self.update_version(ch_conn)
+        await self.update_version(ch_conn)
 
 
 @lru_cache()

@@ -354,6 +354,46 @@ class Constants:
     REDIS_DATABASE_CLEARED_MESSAGE: str = "Redis数据库已清空"
     """Redis数据库已清空消息"""
 
+    REDIS_CLIENT_INITIALIZED_MESSAGE_PREFIX: str = "[Redis] 客户端已初始化: "
+    """Redis 客户端初始化前缀消息"""
+
+    REDIS_CONNECTION_FAILED_MESSAGE_PREFIX: str = "[Redis] 连接失败: "
+    """Redis 连接失败前缀消息"""
+
+    REDIS_GET_FAILED_MESSAGE_PREFIX: str = "[Redis] GET 失败 key="
+    """Redis GET 失败前缀消息"""
+
+    REDIS_SET_FAILED_MESSAGE_PREFIX: str = "[Redis] SET 失败 key="
+    """Redis SET 失败前缀消息"""
+
+    REDIS_DELETE_FAILED_MESSAGE_PREFIX: str = "[Redis] DELETE 失败 keys="
+    """Redis DELETE 失败前缀消息"""
+
+    REDIS_EXISTS_FAILED_MESSAGE_PREFIX: str = "[Redis] EXISTS 失败 key="
+    """Redis EXISTS 失败前缀消息"""
+
+    REDIS_EXPIRE_FAILED_MESSAGE_PREFIX: str = "[Redis] EXPIRE 失败 key="
+    """Redis EXPIRE 失败前缀消息"""
+
+    REDIS_TTL_FAILED_MESSAGE_PREFIX: str = "[Redis] TTL 失败 key="
+    """Redis TTL 失败前缀消息"""
+
+    REDIS_KEYS_FAILED_MESSAGE_PREFIX: str = "[Redis] KEYS 失败 pattern="
+    """Redis KEYS 失败前缀消息"""
+
+    REDIS_FLUSHDB_FAILED_MESSAGE_PREFIX: str = "[Redis] FLUSHDB 失败: "
+    """Redis FLUSHDB 失败前缀消息"""
+
+    ASYNC_SYNC_CALL_IN_EVENT_LOOP_ERROR: str = (
+        "同步方法不能在运行中的事件循环里直接调用"
+    )
+    """同步方法在事件循环中调用错误"""
+
+    REDIS_COROUTINE_SYNC_EXECUTION_ERROR: str = (
+        "Redis 协程不能在运行中的事件循环里直接同步执行"
+    )
+    """Redis 协程同步执行错误"""
+
     UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE: str = (
         "update_analyze_caches: analyze_service 为 None，跳过缓存更新"
     )

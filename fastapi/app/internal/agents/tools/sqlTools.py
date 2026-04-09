@@ -2,6 +2,7 @@ import contextvars
 import re
 from functools import lru_cache
 from typing import List, Optional
+from urllib.parse import quote_plus
 
 from app.core.base import Constants
 from langchain_community.utilities import SQLDatabase
@@ -26,7 +27,8 @@ class SQLTools:
 
         self.logger = Logger
         mysql_cfg = load_config("database")["mysql"]
-        self.database_url = f"mysql+pymysql://{mysql_cfg['user']}:{mysql_cfg['password']}@{mysql_cfg['host']}:{mysql_cfg['port']}/{mysql_cfg['database']}?charset=utf8mb4"
+        encoded_password = quote_plus(mysql_cfg["password"])
+        self.database_url = f"mysql+pymysql://{mysql_cfg['user']}:{encoded_password}@{mysql_cfg['host']}:{mysql_cfg['port']}/{mysql_cfg['database']}?charset=utf8mb4"
 
         self.engine = create_engine(self.database_url, pool_pre_ping=True)
         self.db = SQLDatabase(self.engine)

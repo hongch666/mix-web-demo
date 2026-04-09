@@ -23,18 +23,14 @@ class WordcloudCache(BaseCache):
     REDIS_KEY_PREFIX: str = "wordcloud:url"
     L1_CACHE_TTL: int = 300  # 5分钟
 
-    def get_from_redis(self) -> Optional[str]:
+    async def get_from_redis(self) -> Optional[str]:
         """从 Redis 缓存获取"""
         try:
-            if not self._redis.is_available():
-                Logger.warning(Constants.L2_CACHE_UNAVAILABLE)
-                return None
-
-            data = self._redis.get(self.REDIS_KEY_PREFIX)
+            data = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
                 Logger.info(Constants.L2_CACHE_HIT)
-                # 统一转换为字符串类型（Redis可能返回bytes）
-                url = data if isinstance(data, str) else data.decode("utf-8")
+                # 统一转换为字符串类型
+                url = data if isinstance(data, str) else str(data)
                 # 同时更新本地缓存
                 self._local_cache = url
                 self._local_cache_time = time.time()
@@ -46,7 +42,7 @@ class WordcloudCache(BaseCache):
             Logger.error(f"[L2缓存] Redis 读取失败: {e}")
             return None
 
-    def get(self) -> Optional[str]:
+    async def get(self) -> Optional[str]:
         """
         获取词云图OSS URL缓存（二级缓存）
 
@@ -61,7 +57,7 @@ class WordcloudCache(BaseCache):
             return local_data
 
         # 2. 本地缓存失效，查 Redis
-        redis_data = self.get_from_redis()
+        redis_data = await self.get_from_redis()
         if redis_data:
             return redis_data
 
@@ -69,7 +65,7 @@ class WordcloudCache(BaseCache):
         Logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
-    def set(self, oss_url: str) -> None:
+    async def set(self, oss_url: str) -> None:
         """
         设置词云图OSS URL缓存（二级缓存）
 
@@ -81,15 +77,14 @@ class WordcloudCache(BaseCache):
             oss_url: OSS中词云图的URL
         """
         self.update_local_cache(oss_url)
-        self.update_redis_cache(oss_url)
+        await self.update_redis_cache(oss_url)
 
-    def delete(self) -> None:
+    async def delete(self) -> None:
         """删除所有级别的词云图缓存"""
         self.clear_local_cache()
         try:
-            if self._redis.is_available():
-                self._redis.delete(self.REDIS_KEY_PREFIX)
-                Logger.info(Constants.WORDCLOUD_CACHE_DELETED)
+            await self._redis.delete(self.REDIS_KEY_PREFIX)
+            Logger.info(Constants.WORDCLOUD_CACHE_DELETED)
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 清除失败: {e}")
 

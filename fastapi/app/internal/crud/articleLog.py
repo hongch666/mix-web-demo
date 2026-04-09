@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 from app.core.base import Constants, Logger
 from app.core.db import db as mongo_db
-from app.core.db import get_db
+from app.core.db import get_db_sync
 from app.core.errors import BusinessException
 
 from .article import get_article_mapper
@@ -49,31 +49,33 @@ class ArticleLogMapper:
             # 提取所有文章ID进行批量查询
             article_ids = [doc["_id"] for doc in results]
             article_mapper = get_article_mapper()
-            db = get_db().__next__()
 
             # 批量获取所有文章信息（只需一次查询）
-            articles_dict = article_mapper.get_articles_by_ids_mapper(article_ids, db)
-
-            # 处理聚合结果并匹配文章标题
-            articles = []
-            total_views = 0
-
-            for doc in results:
-                article_id = doc["_id"]
-                views = doc["views"]
-                total_views += views
-
-                article = articles_dict.get(article_id)
-                title = article.title if article else Constants.UNKNOWN_ARTICLE
-                articles.append(
-                    {"article_id": article_id, "title": title, "views": views}
+            with get_db_sync() as db:
+                articles_dict = article_mapper.get_articles_by_ids_mapper(
+                    article_ids, db
                 )
 
-            Logger.info(
-                f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
-            )
+                # 处理聚合结果并匹配文章标题
+                articles = []
+                total_views = 0
 
-            return {"total_views": total_views, "articles": articles}
+                for doc in results:
+                    article_id = doc["_id"]
+                    views = doc["views"]
+                    total_views += views
+
+                    article = articles_dict.get(article_id)
+                    title = article.title if article else Constants.UNKNOWN_ARTICLE
+                    articles.append(
+                        {"article_id": article_id, "title": title, "views": views}
+                    )
+
+                Logger.info(
+                    f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
+                )
+
+                return {"total_views": total_views, "articles": articles}
         except Exception as e:
             Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             raise BusinessException(Constants.GET_TOP_FAIL)

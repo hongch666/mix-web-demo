@@ -23,7 +23,7 @@ def start_scheduler(
     例如：
       start_scheduler(
           article_mapper=get_article_mapper(),
-          db_factory=lambda: next(get_db())
+          db_factory=lambda: create_db_session()
       )
     """
     scheduler: BackgroundScheduler = BackgroundScheduler()

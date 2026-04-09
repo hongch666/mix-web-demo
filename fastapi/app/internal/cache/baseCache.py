@@ -59,14 +59,10 @@ class BaseCache(ABC):
             return self._local_cache
         return None
 
-    def get_from_redis(self) -> Optional[Any]:
+    async def get_from_redis(self) -> Optional[Any]:
         """从 Redis 缓存获取"""
         try:
-            if not self._redis.is_available():
-                Logger.warning(Constants.L2_CACHE_UNAVAILABLE)
-                return None
-
-            data = self._redis.get(self.REDIS_KEY_PREFIX)
+            data = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
                 Logger.info(Constants.L2_CACHE_HIT)
                 # 同时更新本地缓存
@@ -86,12 +82,11 @@ class BaseCache(ABC):
         self._local_cache_time = time.time()
         Logger.info(Constants.L1_CACHE_UPDATED)
 
-    def update_redis_cache(self, data: Any) -> None:
+    async def update_redis_cache(self, data: Any) -> None:
         """更新 Redis 缓存"""
         try:
-            if self._redis.is_available():
-                self._redis.set(self.REDIS_KEY_PREFIX, data, ex=self._redis_ttl)
-                Logger.info(f"[L2缓存] 已更新 Redis，TTL={self._redis_ttl}s (1天)")
+            await self._redis.set(self.REDIS_KEY_PREFIX, data, ex=self._redis_ttl)
+            Logger.info(f"[L2缓存] 已更新 Redis，TTL={self._redis_ttl}s (1天)")
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 写入失败: {e}")
 
@@ -101,26 +96,25 @@ class BaseCache(ABC):
         self._local_cache_time = 0
         Logger.info(Constants.L1_CACHE_CLEARED)
 
-    def clear_redis_cache(self) -> None:
+    async def clear_redis_cache(self) -> None:
         """清除 Redis 缓存"""
         try:
-            if self._redis.is_available():
-                self._redis.delete(self.REDIS_KEY_PREFIX)
-                Logger.info(Constants.L2_CACHE_CLEARED)
+            await self._redis.delete(self.REDIS_KEY_PREFIX)
+            Logger.info(Constants.L2_CACHE_CLEARED)
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 清除失败: {e}")
 
-    def clear_all(self) -> None:
+    async def clear_all(self) -> None:
         """清除所有缓存"""
         self.clear_local_cache()
-        self.clear_redis_cache()
+        await self.clear_redis_cache()
 
     @abstractmethod
-    def get(self) -> Optional[Any]:
+    async def get(self) -> Optional[Any]:
         """获取缓存（需要子类实现）"""
         pass
 
     @abstractmethod
-    def set(self, data: Any) -> None:
+    async def set(self, data: Any) -> None:
         """设置缓存（需要子类实现）"""
         pass

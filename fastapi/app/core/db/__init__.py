@@ -20,7 +20,7 @@ except Exception as _exc:
     start_nacos = _missing_nacos
 
 from .mongodb import client, db
-from .mysql import Base, create_tables, engine, get_db
+from .mysql import Base, create_db_session, create_tables, engine, get_db, get_db_sync
 
 try:
     from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
@@ -81,6 +81,8 @@ __all__: List[str] = [
     "create_tables",
     "engine",
     "Base",
+    "create_db_session",
+    "get_db_sync",
     "start_nacos",
     "register_instance",
     "get_service_instance",

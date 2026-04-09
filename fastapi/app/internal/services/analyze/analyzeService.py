@@ -79,6 +79,14 @@ class AnalyzeService:
         self._singleflight_locks: Dict[str, asyncio.Lock] = {}
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
 
+    def _run_coro(self, coro: Any) -> Any:
+        """在同步上下文中执行协程。"""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(coro)
+        raise RuntimeError(Constants.ASYNC_SYNC_CALL_IN_EVENT_LOOP_ERROR)
+
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
             lock = self._singleflight_locks.get(key)
@@ -90,17 +98,17 @@ class AnalyzeService:
     async def _run_with_singleflight(
         self,
         key: str,
-        cache_getter: Callable[[], Optional[Any]],
+        cache_getter: Callable[[], Any],
         loader: Callable[[], Any],
     ) -> Any:
         """使用 asyncio.Lock 合并同 key 的并发缓存回源请求，避免缓存雪崩时同时打到数据库。"""
-        cached_result = await asyncio.to_thread(cache_getter)
+        cached_result = await cache_getter()
         if cached_result is not None:
             return cached_result
 
         lock = await self._get_singleflight_lock(key)
         async with lock:
-            cached_result = await asyncio.to_thread(cache_getter)
+            cached_result = await cache_getter()
             if cached_result is not None:
                 Logger.info(f"[singleflight] key={key} 命中回填缓存，复用首个请求结果")
                 return cached_result
@@ -108,11 +116,11 @@ class AnalyzeService:
             Logger.info(f"[singleflight] key={key} 开始执行缓存回源")
             return await asyncio.to_thread(loader)
 
-    def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
+    async def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
         ch_conn = None
         try:
             ch_conn = self.articleMapper.get_clickhouse_connection()
-            return self._article_cache.get(ch_conn)
+            return await self._article_cache.get(ch_conn)
         except Exception as e:
             Logger.debug(f"_get_top10_cached 失败: {e}")
             return None
@@ -120,25 +128,25 @@ class AnalyzeService:
             if ch_conn:
                 self.articleMapper.return_clickhouse_connection(ch_conn)
 
-    def _get_wordcloud_cached(self) -> Optional[str]:
+    async def _get_wordcloud_cached(self) -> Optional[str]:
         try:
-            return self._wordcloud_cache.get()
+            return await self._wordcloud_cache.get()
         except Exception as e:
             Logger.debug(f"_get_wordcloud_cached 失败: {e}")
             return None
 
-    def _get_statistics_cached(self) -> Optional[Dict[str, Any]]:
+    async def _get_statistics_cached(self) -> Optional[Dict[str, Any]]:
         try:
-            return self._statistics_cache.get()
+            return await self._statistics_cache.get()
         except Exception as e:
             Logger.debug(f"_get_statistics_cached 失败: {e}")
             return None
 
-    def _get_category_article_count_cached(self) -> Optional[List[Dict[str, Any]]]:
+    async def _get_category_article_count_cached(self) -> Optional[List[Dict[str, Any]]]:
         ch_conn = None
         try:
             ch_conn = self.articleMapper.get_clickhouse_connection()
-            return self._category_cache.get(ch_conn)
+            return await self._category_cache.get(ch_conn)
         except Exception as e:
             Logger.debug(f"_get_category_article_count_cached 失败: {e}")
             return None
@@ -146,11 +154,11 @@ class AnalyzeService:
             if ch_conn:
                 self.articleMapper.return_clickhouse_connection(ch_conn)
 
-    def _get_monthly_publish_count_cached(self) -> Optional[List[Dict[str, Any]]]:
+    async def _get_monthly_publish_count_cached(self) -> Optional[List[Dict[str, Any]]]:
         ch_conn = None
         try:
             ch_conn = self.articleMapper.get_clickhouse_connection()
-            return self._publish_time_cache.get(ch_conn)
+            return await self._publish_time_cache.get(ch_conn)
         except Exception as e:
             Logger.debug(f"_get_monthly_publish_count_cached 失败: {e}")
             return None
@@ -237,7 +245,7 @@ class AnalyzeService:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = self.articleMapper.get_clickhouse_connection()
-                cached_result = self._article_cache.get(ch_conn)
+                cached_result = self._run_coro(self._article_cache.get(ch_conn))
                 if cached_result:
                     total_time = time.time() - start
                     Logger.info(
@@ -326,7 +334,7 @@ class AnalyzeService:
             # 更新缓存
             if ch_conn and result:
                 try:
-                    self._article_cache.set(result, ch_conn)
+                    self._run_coro(self._article_cache.set(result, ch_conn))
                     total_time = time.time() - start
                     Logger.info(
                         f"get_top10_articles_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
@@ -444,7 +452,7 @@ class AnalyzeService:
 
         # ========== 步骤1: 尝试从缓存获取（二级缓存） ==========
         try:
-            cached_url = self._wordcloud_cache.get()
+            cached_url = self._run_coro(self._wordcloud_cache.get())
             if cached_url:
                 elapsed = time.time() - start
                 Logger.info(f"get_wordcloud_service: [缓存命中] 耗时 {elapsed:.3f}s")
@@ -463,7 +471,7 @@ class AnalyzeService:
 
         # ========== 步骤3: 缓存到两级缓存 ==========
         try:
-            self._wordcloud_cache.set(oss_url)
+            self._run_coro(self._wordcloud_cache.set(oss_url))
             elapsed = time.time() - start
             Logger.info(
                 f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {elapsed:.3f}s"
@@ -567,7 +575,7 @@ class AnalyzeService:
         start = time.time()
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            cached_result = self._statistics_cache.get()
+            cached_result = self._run_coro(self._statistics_cache.get())
             if cached_result:
                 total_time = time.time() - start
                 Logger.info(
@@ -604,7 +612,7 @@ class AnalyzeService:
 
         # ========== 步骤3: 更新缓存 ==========
         try:
-            self._statistics_cache.set(statistics)
+            self._run_coro(self._statistics_cache.set(statistics))
             total_time = time.time() - start
             Logger.info(
                 f"get_article_statistics_service: DB 数据已更新缓存，总耗时 {total_time:.3f}s"
@@ -638,7 +646,7 @@ class AnalyzeService:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = self.articleMapper.get_clickhouse_connection()
-                cached_result = self._category_cache.get(ch_conn)
+                cached_result = self._run_coro(self._category_cache.get(ch_conn))
                 if cached_result:
                     total_time = time.time() - start
                     Logger.info(
@@ -708,7 +716,7 @@ class AnalyzeService:
             # ========== 步骤7: 更新缓存 ==========
             if ch_conn and result:
                 try:
-                    self._category_cache.set(result, ch_conn)
+                    self._run_coro(self._category_cache.set(result, ch_conn))
                     total_time = time.time() - start
                     Logger.info(
                         f"get_category_article_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
@@ -741,7 +749,7 @@ class AnalyzeService:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = self.articleMapper.get_clickhouse_connection()
-                cached_result = self._publish_time_cache.get(ch_conn)
+                cached_result = self._run_coro(self._publish_time_cache.get(ch_conn))
                 if cached_result:
                     total_time = time.time() - start
                     Logger.info(
@@ -802,7 +810,7 @@ class AnalyzeService:
             # ========== 步骤5: 更新缓存 ==========
             if ch_conn and result:
                 try:
-                    self._publish_time_cache.set(result, ch_conn)
+                    self._run_coro(self._publish_time_cache.set(result, ch_conn))
                     total_time = time.time() - start
                     Logger.info(
                         f"get_monthly_publish_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"

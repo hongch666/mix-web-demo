@@ -1,9 +1,11 @@
+import asyncio
 import json
 from datetime import date, datetime
 from decimal import Decimal
+from threading import Lock
 from typing import Any, Optional
 
-import redis
+import redis.asyncio as redis
 from app.core.base import Constants, Logger
 from app.core.config import load_config
 
@@ -12,7 +14,7 @@ class RedisClient:
     """Redis 客户端 - 单例模式"""
 
     _instance: Optional["RedisClient"] = None
-    _pool: Optional[redis.ConnectionPool] = None
+    _pool: Optional[Any] = None
 
     def __new__(cls) -> "RedisClient":
         if cls._instance is None:
@@ -21,184 +23,190 @@ class RedisClient:
         return cls._instance
 
     def _initialize(self) -> None:
-        """初始化 Redis 连接池"""
+        """加载 Redis 配置，连接池在当前事件循环中按需创建"""
         try:
-            redis_config = load_config("database")["redis"]
-
-            # 构建连接参数
-            pool_params = {
-                "host": redis_config.get("host", "127.0.0.1"),
-                "port": redis_config.get("port", 6379),
-                "db": redis_config.get("db", 0),
-                "decode_responses": redis_config.get("decode_responses", True),
-                "max_connections": redis_config.get("max_connections", 10),
-                "socket_connect_timeout": 5,
-                "socket_timeout": 5,
-            }
-
-            # 如果有用户名才添加
-            if redis_config.get("username"):
-                pool_params["username"] = redis_config["username"]
-
-            # 如果有密码才添加
-            if redis_config.get("password"):
-                pool_params["password"] = redis_config["password"]
-
-            # 创建连接池
-            self._pool = redis.ConnectionPool(**pool_params)
-
-            # 创建 Redis 客户端
-            self._client: Optional[redis.Redis] = redis.Redis(
-                connection_pool=self._pool
-            )
-
-            # 测试连接
-            self._client.ping()
-            Logger.info(
-                f"[Redis] 连接成功: {redis_config['host']}:{redis_config['port']}, DB: {redis_config['db']}"
-            )
-
+            self._redis_config = load_config("database")["redis"]
+            self._client: Optional[Any] = None
+            self._client_loop_id: Optional[int] = None
+            self._init_lock = Lock()
         except Exception as e:
-            Logger.error(f"[Redis] 连接失败: {e}")
+            Logger.error(f"{Constants.REDIS_CONNECTION_FAILED_MESSAGE_PREFIX}{e}")
+            self._redis_config = None
             self._client = None
+            self._client_loop_id = None
+            self._init_lock = Lock()
 
-    def get_client(self) -> Optional[redis.Redis]:
+    def _build_pool_params(self) -> dict[str, Any]:
+        redis_config = self._redis_config or {}
+        pool_params = {
+            "host": redis_config.get("host", "127.0.0.1"),
+            "port": redis_config.get("port", 6379),
+            "db": redis_config.get("db", 0),
+            "decode_responses": redis_config.get("decode_responses", True),
+            "max_connections": redis_config.get("max_connections", 10),
+            "socket_connect_timeout": 5,
+            "socket_timeout": 5,
+        }
+        if redis_config.get("username"):
+            pool_params["username"] = redis_config["username"]
+        if redis_config.get("password"):
+            pool_params["password"] = redis_config["password"]
+        return pool_params
+
+    async def _ensure_client(self) -> Optional[Any]:
+        """确保当前事件循环对应的 Redis 客户端可用。"""
+        if self._redis_config is None:
+            return None
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop_id = id(loop)
+        except RuntimeError:
+            return self._client
+
+        if self._client is not None and self._client_loop_id == loop_id:
+            return self._client
+
+        with self._init_lock:
+            if self._client is not None and self._client_loop_id == loop_id:
+                return self._client
+
+            pool_params = self._build_pool_params()
+            self._pool = redis.ConnectionPool(**pool_params)
+            self._client = redis.Redis(connection_pool=self._pool)
+            self._client_loop_id = loop_id
+
+            Logger.info(
+                f"{Constants.REDIS_CLIENT_INITIALIZED_MESSAGE_PREFIX}{pool_params['host']}:{pool_params['port']}, DB: {pool_params['db']}"
+            )
+            return self._client
+
+    def get_client(self) -> Optional[Any]:
         """获取 Redis 客户端"""
         return self._client
 
     def _json_default(self, obj: Any) -> Any:
         """将常见非 JSON 类型转换为可序列化类型"""
         if isinstance(obj, Decimal):
-            # 尽量保留数值语义，整数返回 int，其他返回 float
             return int(obj) if obj == obj.to_integral_value() else float(obj)
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
         return str(obj)
 
-    def is_available(self) -> bool:
+    async def is_available(self) -> bool:
         """检查 Redis 是否可用"""
         try:
-            if self._client:
-                self._client.ping()
+            client = await self._ensure_client()
+            if client:
+                await client.ping()
                 return True
         except Exception:
             pass
         return False
 
-    # ========== 基本操作 ==========
-
-    def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Optional[Any]:
         """获取值"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return None
-            value = self._client.get(key)
+            value = await client.get(key)
             if value:
-                # 尝试解析 JSON
                 try:
                     return json.loads(value)
                 except Exception:
                     return value
             return None
         except Exception as e:
-            Logger.error(f"[Redis] GET 失败 key={key}: {e}")
+            Logger.error(f"{Constants.REDIS_GET_FAILED_MESSAGE_PREFIX}{key}: {e}")
             return None
 
-    def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
-        """设置值
-
-        Args:
-            key: 键
-            value: 值
-            ex: 过期时间（秒）
-        """
+    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+        """设置值"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return False
-
-            # 序列化为 JSON，支持 Decimal / datetime 等常见数据库类型
             if isinstance(value, (dict, list)):
                 value = json.dumps(
                     value, ensure_ascii=False, default=self._json_default
                 )
-
-            self._client.set(key, value, ex=ex)
+            await client.set(key, value, ex=ex)
             return True
         except Exception as e:
-            Logger.error(f"[Redis] SET 失败 key={key}: {e}")
+            Logger.error(f"{Constants.REDIS_SET_FAILED_MESSAGE_PREFIX}{key}: {e}")
             return False
 
-    def delete(self, *keys: str) -> bool:
+    async def delete(self, *keys: str) -> bool:
         """删除键"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return False
-            self._client.delete(*keys)
+            await client.delete(*keys)
             return True
         except Exception as e:
-            Logger.error(f"[Redis] DELETE 失败 keys={keys}: {e}")
+            Logger.error(f"{Constants.REDIS_DELETE_FAILED_MESSAGE_PREFIX}{keys}: {e}")
             return False
 
-    def exists(self, key: str) -> bool:
+    async def exists(self, key: str) -> bool:
         """检查键是否存在"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return False
-            return self._client.exists(key) > 0
+            return (await client.exists(key)) > 0
         except Exception as e:
-            Logger.error(f"[Redis] EXISTS 失败 key={key}: {e}")
+            Logger.error(f"{Constants.REDIS_EXISTS_FAILED_MESSAGE_PREFIX}{key}: {e}")
             return False
 
-    def expire(self, key: str, seconds: int) -> bool:
+    async def expire(self, key: str, seconds: int) -> bool:
         """设置过期时间"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return False
-            return self._client.expire(key, seconds)
+            return bool(await client.expire(key, seconds))
         except Exception as e:
-            Logger.error(f"[Redis] EXPIRE 失败 key={key}: {e}")
+            Logger.error(f"{Constants.REDIS_EXPIRE_FAILED_MESSAGE_PREFIX}{key}: {e}")
             return False
 
-    def ttl(self, key: str) -> int:
-        """获取剩余生存时间（秒）
-
-        Returns:
-            -2: key 不存在
-            -1: key 存在但未设置过期时间
-            其他: 剩余秒数
-        """
+    async def ttl(self, key: str) -> int:
+        """获取剩余生存时间（秒）"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return -2
-            return self._client.ttl(key)
+            return await client.ttl(key)
         except Exception as e:
-            Logger.error(f"[Redis] TTL 失败 key={key}: {e}")
+            Logger.error(f"{Constants.REDIS_TTL_FAILED_MESSAGE_PREFIX}{key}: {e}")
             return -2
 
-    def keys(self, pattern: str) -> list[str]:
+    async def keys(self, pattern: str) -> list[str]:
         """获取匹配的键列表"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return []
-            return self._client.keys(pattern)
+            return await client.keys(pattern)
         except Exception as e:
-            Logger.error(f"[Redis] KEYS 失败 pattern={pattern}: {e}")
+            Logger.error(f"{Constants.REDIS_KEYS_FAILED_MESSAGE_PREFIX}{pattern}: {e}")
             return []
 
-    def flushdb(self) -> bool:
+    async def flushdb(self) -> bool:
         """清空当前数据库"""
         try:
-            if not self._client:
+            client = await self._ensure_client()
+            if not client:
                 return False
-            self._client.flushdb()
+            await client.flushdb()
             Logger.warning(Constants.REDIS_DATABASE_CLEARED_MESSAGE)
             return True
         except Exception as e:
-            Logger.error(f"[Redis] FLUSHDB 失败: {e}")
+            Logger.error(f"{Constants.REDIS_FLUSHDB_FAILED_MESSAGE_PREFIX}{e}")
             return False
 
 
-# 全局单例
 _redis_client: Optional[RedisClient] = None
 
 

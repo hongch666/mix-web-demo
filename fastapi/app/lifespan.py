@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.base import Constants, logger
 from app.core.config import load_config, start_nacos
-from app.core.db import create_tables, get_db
+from app.core.db import create_db_session, create_tables
 from app.internal.services import AnalyzeService, start_scheduler
 from fastapi import FastAPI
 
@@ -25,7 +25,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
 
     def db_factory() -> Session:
-        return next(get_db())
+        return create_db_session()
 
     start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
 
