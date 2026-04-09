@@ -101,6 +101,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return true;
     }
 
+    @Override
     @Transactional
     @ArticleSync(action = "delete", description = "批量删除文章")
     public boolean deleteArticles(List<Long> ids) {
@@ -127,6 +128,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @Transactional
     @ArticleSync(action = "publish", description = "发布了1篇文章")
     public void publishArticle(Long id) {
         // 查询文章所属用户ID
@@ -147,6 +149,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    @Transactional
     @ArticleSync(action = "view", description = "浏览了1篇文章")
     public void addViewArticle(Long id) {
         // 查询文章所属用户ID
