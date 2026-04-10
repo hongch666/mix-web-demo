@@ -1,4 +1,4 @@
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS `comments` (
     id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
     content TEXT COMMENT '评论内容',
     star DOUBLE COMMENT '星级评分，0~10',

@@ -1,4 +1,4 @@
-CREATE TABLE `ai_history` (
+CREATE TABLE IF NOT EXISTS `ai_history` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `user_id` BIGINT NOT NULL,
     `ask` TEXT NOT NULL,

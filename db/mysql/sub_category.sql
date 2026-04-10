@@ -1,4 +1,4 @@
-CREATE TABLE sub_category (
+CREATE TABLE IF NOT EXISTS `sub_category` (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
     name VARCHAR(255) NOT NULL COMMENT '子分类名称',
     category_id BIGINT NOT NULL COMMENT '所属分类ID',

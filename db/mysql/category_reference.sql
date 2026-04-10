@@ -1,4 +1,4 @@
-CREATE TABLE category_reference (
+CREATE TABLE IF NOT EXISTS `category_reference` (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
     sub_category_id BIGINT NOT NULL COMMENT '子分类ID',
     type VARCHAR(255) NOT NULL COMMENT '权威参考文本类型，link/pdf',
