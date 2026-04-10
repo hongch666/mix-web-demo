@@ -5,17 +5,18 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class UserRegisterDTO {
     @NotBlank(message = "用户名不能为空")
-    @Size(min = 3, max = 50, message = "用户名长度在3-50之间")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,20}$", message = "用户名需由字母和数字组成，长度至少8位")
     private String name;
 
     @NotBlank(message = "密码不能为空")
-    @Size(min = 6, max = 100, message = "密码长度在6-100之间")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,20}$", message = "密码需由字母和数字组成，长度至少8位")
     private String password;
 
     @NotBlank(message = "邮箱不能为空")

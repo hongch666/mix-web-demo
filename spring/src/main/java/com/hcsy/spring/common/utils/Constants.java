@@ -808,11 +808,6 @@ public class Constants {
      */
     public static String TEST = "Hello,I am Spring!";
 
-    /**
-     * 重置默认密码
-     */
-    public static String DEFAULT_PASSWORD = "123456";
-
     // AI用户相关常量
 
     /**
