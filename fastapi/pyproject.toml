@@ -9,6 +9,7 @@ dependencies = [
   "nacos-sdk-python==2.0.8",
   "requests==2.32.5",
   "httpx[socks]>=0.25.0",
+  "tenacity>=9.0.0",
   "sqlalchemy>=2.0.20",
   "pymysql==1.1.1",
   "pymongo==4.13.2",

@@ -736,6 +736,7 @@ dependencies = [
     { name = "redis" },
     { name = "requests" },
     { name = "sqlalchemy" },
+    { name = "tenacity" },
     { name = "uvicorn" },
     { name = "wordcloud" },
 ]
@@ -771,6 +772,7 @@ requires-dist = [
     { name = "redis", specifier = "==5.0.1" },
     { name = "requests", specifier = "==2.32.5" },
     { name = "sqlalchemy", specifier = ">=2.0.20" },
+    { name = "tenacity", specifier = ">=9.0.0" },
     { name = "uvicorn", specifier = "==0.35.0" },
     { name = "wordcloud", specifier = "==1.9.4" },
 ]

@@ -1,4 +1,4 @@
-import asyncio
+import time
 from typing import Any, Dict, Optional
 
 import httpx
@@ -8,6 +8,50 @@ from app.core.base import Logger
 from app.core.config import load_config
 from app.core.db import get_service_instance
 from app.core.errors import BusinessException
+from tenacity import AsyncRetrying, RetryCallState, retry_if_exception, stop_after_attempt, wait_exponential
+
+
+class CircuitBreakerOpenError(Exception):
+    """熔断器处于打开状态。"""
+
+
+class SimpleCircuitBreaker:
+    """轻量级熔断器，避免下游持续故障时请求雪崩。"""
+
+    def __init__(
+        self,
+        failure_threshold: int = 3,
+        recovery_timeout: float = 15.0,
+    ) -> None:
+        self.failure_threshold: int = failure_threshold
+        self.recovery_timeout: float = recovery_timeout
+        self.failure_count: int = 0
+        self.open_until: float = 0.0
+
+    def allow_request(self) -> None:
+        now: float = time.monotonic()
+        if self.open_until > now:
+            raise CircuitBreakerOpenError("熔断器已打开，跳过远程调用")
+
+    def record_success(self) -> None:
+        self.failure_count = 0
+        self.open_until = 0.0
+
+    def record_failure(self) -> None:
+        self.failure_count += 1
+        if self.failure_count >= self.failure_threshold:
+            self.open_until = time.monotonic() + self.recovery_timeout
+
+
+_SERVICE_BREAKERS: Dict[str, SimpleCircuitBreaker] = {}
+
+
+def _get_service_breaker(service_name: str) -> SimpleCircuitBreaker:
+    breaker: Optional[SimpleCircuitBreaker] = _SERVICE_BREAKERS.get(service_name)
+    if breaker is None:
+        breaker = SimpleCircuitBreaker()
+        _SERVICE_BREAKERS[service_name] = breaker
+    return breaker
 
 
 def _build_default_headers() -> Dict[str, str]:
@@ -51,6 +95,23 @@ def _resolve_service_url(service_name: str, path: str) -> str:
     return f"http://{instance['ip']}:{instance['port']}{path}"
 
 
+def _should_retry_remote_call(error: Exception) -> bool:
+    """仅对瞬时性错误重试，避免无意义放大故障。"""
+    if isinstance(error, httpx.RequestError):
+        return True
+    if isinstance(error, httpx.HTTPStatusError):
+        return error.response.status_code >= 500 or error.response.status_code == 429
+    return False
+
+
+def _before_retry_log(retry_state: RetryCallState) -> None:
+    """输出 tenacity 重试日志。"""
+    error: Optional[BaseException] = retry_state.outcome.exception()
+    Logger.warning(
+        f"调用远程服务失败，准备第 {retry_state.attempt_number + 1} 次重试: {error}"
+    )
+
+
 async def _request_remote_service(
     client: httpx.AsyncClient,
     method: str,
@@ -75,6 +136,9 @@ async def _request_remote_service(
 
 def _build_remote_service_error(service_name: str, error: Exception) -> BusinessException:
     """统一映射远程调用错误。"""
+    if isinstance(error, CircuitBreakerOpenError):
+        Logger.warning(f"调用 {service_name} 已触发熔断，直接降级返回")
+        return BusinessException(f"调用远程服务 {service_name} 已降级，请稍后再试")
     if isinstance(error, httpx.HTTPStatusError):
         status_code: int = error.response.status_code
         Logger.error(
@@ -105,32 +169,37 @@ async def call_remote_service(
     通过 Nacos 服务发现并调用远程服务
     """
     merged_headers: Dict[str, str] = _merge_headers(headers)
-    retry_delay_seconds: float = 0.2
+    breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
 
     async with httpx.AsyncClient(timeout=timeout) as client:
-        for attempt in range(retries):
-            try:
-                url: str = _resolve_service_url(service_name, path)
-                Logger.info(
-                    f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt + 1} 次尝试）"
-                )
-                return await _request_remote_service(
-                    client=client,
-                    method=method,
-                    url=url,
-                    headers=merged_headers,
-                    params=params,
-                    data=data,
-                    json=json,
-                )
-            except Exception as e:
-                if attempt < retries - 1:
-                    Logger.warning(
-                        f"调用 {service_name} 失败，第 {attempt + 1}/{retries} 次重试: {e}"
+        try:
+            breaker.allow_request()
+            async for attempt in AsyncRetrying(
+                stop=stop_after_attempt(retries),
+                wait=wait_exponential(multiplier=0.2, min=0.2, max=2),
+                retry=retry_if_exception(_should_retry_remote_call),
+                before_sleep=_before_retry_log,
+                reraise=True,
+            ):
+                with attempt:
+                    url: str = _resolve_service_url(service_name, path)
+                    Logger.info(
+                        f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt.retry_state.attempt_number} 次尝试）"
                     )
-                    await asyncio.sleep(min(retry_delay_seconds * (2**attempt), 2.0))
-                    continue
-
-                raise _build_remote_service_error(service_name, e)
+                    result: Any = await _request_remote_service(
+                        client=client,
+                        method=method,
+                        url=url,
+                        headers=merged_headers,
+                        params=params,
+                        data=data,
+                        json=json,
+                    )
+                    breaker.record_success()
+                    return result
+        except Exception as e:
+            if not isinstance(e, CircuitBreakerOpenError):
+                breaker.record_failure()
+            raise _build_remote_service_error(service_name, e)
 
     raise BusinessException(f"调用远程服务 {service_name} 失败，请稍后重试")
