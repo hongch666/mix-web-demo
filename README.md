@@ -54,18 +54,20 @@
 
 ## 功能说明
 
-1. 基于 Spring Boot 和 MybatisPlus 实现文章发布、修改等操作，文章的创建和显示都支持 Markdown
-2. 基于 Spring Boot 和 MybatisPlus 实现用户、分类、评论、点赞、收藏、关注等业务模块
-3. 基于 Spring Boot 和 Redis 进行文章分类，用户状态的管理操作
-4. 基于 Spring Boot 和 AOP 技术权限校验实现用户端和管理端
-5. 基于 GoZero 和 ElasticSearch 进行搜索引擎式文章搜索
-6. 基于 GoZero 和 GORM 实现文章相关数据获取和同步
-7. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
-8. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
-9. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
-10. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
-11. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
-12. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
+1. 基于 SpringBoot 和 MybatisPlus 实现文章发布、修改等操作，文章的创建和显示都支持 Markdown
+2. 基于 SpringBoot 和 MybatisPlus 实现用户、分类、评论、点赞、收藏、关注等业务模块
+3. 基于 SpringBoot 和 Redis 进行文章分类，用户状态/Token的管理操作
+4. 基于 SpringBoot 和 AOP 技术权限校验实现用户端和管理端
+5. 基于 SpringCloud Gateway 和 JWT 实现 API 网关的统一认证和权限控制
+6. 基于 Redis Token Bucket 算法在网关层实现 API 限流和防刷功能
+7. 基于 GoZero 和 ElasticSearch 进行搜索引擎式文章搜索
+8. 基于 GoZero 和 GORM/sqlx 实现文章相关数据获取和同步（双 ORM 并存）
+9. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
+10. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
+11. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
+12. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
+13. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
+14. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
 
 ## 设计图
 
@@ -79,7 +81,7 @@
 
 ## 技术栈
 
-- Spring Boot：Java 后端框架，支撑系统核心业务服务
+- SpringBoot：Java 后端框架，支撑系统核心业务服务
 - GoZero：Golang 后端框架，支持系统高并发服务
 - NestJS：Node.js 后端框架，支撑系统日志处理服务
 - FastAPI：Python 后端服务，支撑系统数据分析和 Agent 服务
@@ -206,7 +208,7 @@ default = true
 ```bash
 # 根据提示选择要配置的模块
 # 选项:
-# 1) Spring      - 配置 Spring Boot 服务
+# 1) Spring      - 配置 SpringBoot 服务
 # 2) GoZero      - 配置 GoZero 服务
 # 3) NestJS      - 配置 NestJS 服务
 # 4) FastAPI     - 配置 FastAPI 服务
@@ -740,6 +742,10 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `stop.sh`               | scripts/   | 停止所有 tmux 服务                         | Linux/macOS |
 | `build.sh`              | scripts/   | 编译所有服务到 dist/ 目录                  | Linux/macOS |
 | `dist-control.sh`       | scripts/   | 管理打包后的分布式服务（支持服务指定）     | Linux/macOS |
+| `docker-services.sh`    | scripts/   | 创建、启动、停止和清理基础中间件容器       | Linux/macOS |
+| `docker-compose-up.sh`  | scripts/   | 使用 Docker Compose 启动应用服务           | Linux/macOS |
+| `docker-compose-down.sh`| scripts/   | 使用 Docker Compose 停止应用服务           | Linux/macOS |
+| `build_and_run_services.sh` | scripts/ | 构建并运行服务容器                         | Linux/macOS |
 | `docker-push-images.sh` | scripts/   | 将已构建的 Docker 镜像推送到远程仓库       | Linux/macOS |
 | `setup.sh`              | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
 | `swag-init.sh`          | scripts/   | 生成 GoZero Swagger 文档                   | Linux/macOS |
@@ -751,7 +757,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 dist-control.sh 和 mix 支持以下服务名称：
 
-- `spring` - Spring Boot 服务
+- `spring` - SpringBoot 服务
 - `gateway` - Spring Cloud Gateway 网关服务
 - `fastapi` - FastAPI 服务
 - `gozero` - GoZero 服务
@@ -980,6 +986,8 @@ docker-compose down -v
 - `docker-compose.yml`：整套应用编排（数据库、缓存、消息队列、服务容器）
 - `scripts/docker-compose-up.sh`：快速启动脚本
 - `scripts/docker-compose-down.sh`：快速停止脚本
+- `scripts/docker-services.sh`：创建和管理基础中间件容器
+- `scripts/build_and_run_services.sh`：构建并运行服务容器
 
 ### 访问服务
 
@@ -1417,7 +1425,7 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### AI 用户说明
 
-1. AI 服务目前只有三种，对应数据库 `user`表里面 `role`为 `ai`的用户，并且代码目前写死用户 id 为 1001/1002/1003，系统创建用户表时会自动创建，有需要可进行更改。
+1. AI 服务目前只有三种，对应数据库 `user` 表里面 `role` 为 `ai` 的用户，并且代码目前写死用户 id 为 1001/1002/1003；`db/mysql/user.sql` 里也已补充这三条 AI 用户初始化数据，重复执行会按 `id` 跳过已有记录。
 
 ### 邮箱说明
 
