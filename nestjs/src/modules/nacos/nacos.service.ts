@@ -20,9 +20,47 @@ interface CallOptions {
   headers?: Record<string, string>;
 }
 
+class CircuitBreakerOpenError extends Error {
+  constructor(message = '熔断器已打开') {
+    super(message);
+    this.name = 'CircuitBreakerOpenError';
+  }
+}
+
+class SimpleCircuitBreaker {
+  private failureCount = 0;
+
+  private openUntil = 0;
+
+  constructor(
+    private readonly failureThreshold = 3,
+    private readonly recoveryTimeoutMs = 15000,
+  ) {}
+
+  allowRequest(): void {
+    if (this.openUntil > Date.now()) {
+      throw new CircuitBreakerOpenError();
+    }
+  }
+
+  recordSuccess(): void {
+    this.failureCount = 0;
+    this.openUntil = 0;
+  }
+
+  recordFailure(): void {
+    this.failureCount += 1;
+    if (this.failureCount >= this.failureThreshold) {
+      this.openUntil = Date.now() + this.recoveryTimeoutMs;
+    }
+  }
+}
+
 @Injectable()
 export class NacosService implements OnModuleInit {
   private client!: NacosNamingClient;
+
+  private readonly breakers = new Map<string, SimpleCircuitBreaker>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -143,7 +181,20 @@ export class NacosService implements OnModuleInit {
     return instances;
   }
 
+  private getBreaker(serviceName: string): SimpleCircuitBreaker {
+    const existing: SimpleCircuitBreaker | undefined = this.breakers.get(serviceName);
+    if (existing) {
+      return existing;
+    }
+
+    const breaker = new SimpleCircuitBreaker();
+    this.breakers.set(serviceName, breaker);
+    return breaker;
+  }
+
   async call(opts: CallOptions): Promise<Record<string, unknown>> {
+    const breaker = this.getBreaker(opts.serviceName);
+
     const instances: Record<string, unknown>[] = await this.getServiceInstances(
       opts.serviceName,
     );
@@ -193,15 +244,32 @@ export class NacosService implements OnModuleInit {
       ...(opts.headers || {}),
     };
 
-    // 请求配置
-    const response: { data: Record<string, unknown> } = await axios.request({
-      url,
-      method: opts.method,
-      data: opts.body,
-      headers,
-      timeout: 10000,
-    });
+    try {
+      breaker.allowRequest();
 
-    return response.data;
+      const response: { data: Record<string, unknown> } = await axios.request({
+        url,
+        method: opts.method,
+        data: opts.body,
+        headers,
+        timeout: 3000,
+      });
+
+      breaker.recordSuccess();
+      return response.data;
+    } catch (err) {
+      if (err instanceof CircuitBreakerOpenError) {
+        logger.warning(`调用 ${opts.serviceName} 已触发熔断，直接返回降级结果`);
+        return {
+          code: 0,
+          msg: `调用 ${opts.serviceName} 已降级，请稍后再试`,
+          data: null,
+        };
+      }
+
+      breaker.recordFailure();
+      logger.error(`调用 ${opts.serviceName} 失败: ${err instanceof Error ? err.message : String(err)}`);
+      throw new BusinessException(`调用 ${opts.serviceName} 失败，请稍后重试`);
+    }
   }
 }
