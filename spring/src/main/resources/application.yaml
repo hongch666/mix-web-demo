@@ -10,6 +10,15 @@ server:
 spring:
   application:
     name: spring
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          default:
+            connectTimeout: ${FEIGN_CONNECT_TIMEOUT:2000}
+            readTimeout: ${FEIGN_READ_TIMEOUT:3000}
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:}
@@ -72,3 +81,45 @@ jwt:
 internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000} # 毫秒数（60秒）
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      gozero:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 3s
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      fastapi:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 3s
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+      nestjs:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 3s
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+  timelimiter:
+    instances:
+      gozero:
+        timeoutDuration: 3s
+      fastapi:
+        timeoutDuration: 3s
+      nestjs:
+        timeoutDuration: 3s

@@ -66,6 +66,7 @@ dependencies {
     // Feign & LoadBalancer
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 
     // Tools
     compileOnly 'org.projectlombok:lombok'
