@@ -7,8 +7,6 @@ import { OssService } from './oss.service';
 
 const LOCAL_TEST_FILE_NAME = 'search_keywords_wordcloud.png';
 const OSS_TEST_FILE_NAME = 'test/search_keywords_wordcloud.png';
-const DEFAULT_BUCKET_NAME = 'mix-web-demo';
-const DEFAULT_ENDPOINT = 'oss-cn-guangzhou.aliyuncs.com';
 
 describe('OssService', () => {
   let ossService: OssService;
@@ -34,11 +32,11 @@ describe('OssService', () => {
                   ),
                   bucket_name: resolveConfigValue(
                     'OSS_BUCKET_NAME',
-                    DEFAULT_BUCKET_NAME,
+                    'mix-web-demo',
                   ),
                   endpoint: resolveConfigValue(
                     'OSS_ENDPOINT',
-                    DEFAULT_ENDPOINT,
+                    'oss-cn-guangzhou.aliyuncs.com',
                   ),
                 };
               }
@@ -145,11 +143,11 @@ function isValidOssUrl(ossUrl: string, ossFile: string): boolean {
     const urlObject: URL = new URL(ossUrl);
     const bucketName: string = resolveConfigValue(
       'OSS_BUCKET_NAME',
-      DEFAULT_BUCKET_NAME,
+      'mix-web-demo',
     );
     const endpoint: string = resolveConfigValue(
       'OSS_ENDPOINT',
-      DEFAULT_ENDPOINT,
+      'oss-cn-guangzhou.aliyuncs.com',
     );
 
     return (
