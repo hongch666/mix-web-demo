@@ -194,6 +194,42 @@ export class Constants {
    */
   static readonly OSS_UPLOAD_FAILED = 'OSS 上传失败';
 
+  /**
+   * 检测到 Bun 运行时消息
+   */
+  static readonly OSS_BUN_RUNTIME_COMPAT_MESSAGE =
+    '检测到 Bun 运行时，OSS 上传将使用兼容实现';
+
+  /**
+   * OSS 客户端未初始化消息
+   */
+  static readonly OSS_CLIENT_NOT_INITIALIZED = 'OSS 客户端尚未初始化';
+
+  /**
+   * OSS 上传超时消息
+   */
+  static readonly OSS_PUT_OPERATION_TIMEOUT = 'OSS put 操作超时（30秒）';
+
+  /**
+   * OSS 返回非成功状态码前缀
+   */
+  static readonly OSS_RESPONSE_NON_SUCCESS_PREFIX = 'OSS 返回非成功状态码';
+
+  /**
+   * OSS 响应内容前缀
+   */
+  static readonly OSS_RESPONSE_CONTENT_PREFIX = '响应内容:';
+
+  /**
+   * OSS HTTP 方法
+   */
+  static readonly OSS_HTTP_PUT_METHOD = 'PUT';
+
+  /**
+   * OSS 默认上传内容类型
+   */
+  static readonly OSS_DEFAULT_CONTENT_TYPE = 'application/octet-stream';
+
   // 文件上传相关常量
 
   /**
