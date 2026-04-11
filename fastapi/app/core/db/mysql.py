@@ -1,13 +1,13 @@
 from collections.abc import AsyncGenerator
 from contextlib import contextmanager
-from urllib.parse import quote_plus
 from typing import Generator, List, Optional
+from urllib.parse import quote_plus
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session as SASession, declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session as SASession
+from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 Base = declarative_base()
@@ -19,12 +19,10 @@ HOST: str = mysql_config["host"]
 PORT: int = mysql_config["port"]
 DATABASE: str = mysql_config["database"]
 USER: str = mysql_config["user"]
-PASSWORD: str = mysql_config["password"]
-ENCODED_PASSWORD: str = quote_plus(PASSWORD)
+PASSWORD: str = str(mysql_config["password"])
+ENCODED_PASSWORD: str = quote_plus(str(PASSWORD))
 
-DATABASE_URL: str = (
-    f"mysql+pymysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
-)
+DATABASE_URL: str = f"mysql+pymysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 
 POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
 MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
