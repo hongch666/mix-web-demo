@@ -31,6 +31,7 @@ import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
@@ -62,6 +63,7 @@ public class UserController {
     private final SimpleLogger logger;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncryptor passwordEncryptor;
+    private final UserPasswordProperties userPasswordProperties;
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
@@ -90,7 +92,7 @@ public class UserController {
     }
 
     @PostMapping
-    @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用默认密码 123456")
+    @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用配置中的默认密码")
     @RequirePermission(
         roles = { "admin" },
         businessType = "user",
@@ -104,7 +106,9 @@ public class UserController {
     public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
         User user = BeanUtil.copyProperties(userDto, User.class);
         user.setRole("user");
-        // 密码使用 DTO 中的默认值 "123456"，在 service 层加密
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            user.setPassword(userPasswordProperties.getDefaultPassword());
+        }
         userService.saveUserAndStatus(user);
         return Result.success();
     }
@@ -190,11 +194,9 @@ public class UserController {
 
         User user = BeanUtil.copyProperties(userDto, User.class);
 
-        // 如果前端没有提供密码（为默认值"123456"），则保留原密码
-        // 只有当前端明确提供了不同的密码时才更新
-        if ("123456".equals(userDto.getPassword())) {
+        if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
             user.setPassword(existingUser.getPassword());
-        } else if (userDto.getPassword() != null && !userDto.getPassword().isEmpty()) {
+        } else {
             // 新密码需要加密
             user.setPassword(passwordEncryptor.encryptPassword(userDto.getPassword()));
         }
@@ -410,7 +412,7 @@ public class UserController {
     }
 
     @PostMapping("/admin/reset-all-passwords")
-    @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为默认密码 123456")
+    @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为配置中的重置密码")
     @RequirePermission(
         roles = { "admin" },
         businessType = "user",
@@ -427,9 +429,8 @@ public class UserController {
                 return Result.error(Constants.PASSWORD_NO_USER);
             }
 
-            // 重置所有用户密码为加密后的 123456
-            final String defaultPassword = passwordEncryptor.encryptPassword(Constants.DEFAULT_PASSWORD);
-            allUsers.forEach(user -> user.setPassword(defaultPassword));
+            final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
+            allUsers.forEach(user -> user.setPassword(resetPassword));
             userService.updateBatchById(allUsers);
 
             return Result.success();
@@ -440,7 +441,7 @@ public class UserController {
     }
 
     @PostMapping("/admin/reset-password/{userId}")
-    @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为默认密码 123456")
+    @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为配置中的重置密码")
     @RequirePermission(
         roles = { "admin" },
         businessType = "user",
@@ -456,9 +457,8 @@ public class UserController {
                 return Result.error(Constants.UNDEFINED_USER);
             }
 
-            // 重置密码为加密后的 123456
-            final String defaultPassword = passwordEncryptor.encryptPassword(Constants.DEFAULT_PASSWORD);
-            user.setPassword(defaultPassword);
+            final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
+            user.setPassword(resetPassword);
             userService.updateById(user);
 
             return Result.success();

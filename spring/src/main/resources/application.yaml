@@ -82,6 +82,10 @@ internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000} # 毫秒数（60秒）
 
+user:
+  default-password: ${USER_DEFAULT_PASSWORD:}
+  reset-password: ${USER_RESET_PASSWORD:}
+
 resilience4j:
   circuitbreaker:
     instances:

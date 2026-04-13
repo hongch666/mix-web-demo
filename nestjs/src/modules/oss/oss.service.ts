@@ -1,11 +1,12 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 
-import OSS from 'ali-oss';
+import type OSS from 'ali-oss';
 
 export interface OssConfig {
   access_key_id: string;
@@ -16,13 +17,15 @@ export interface OssConfig {
 
 @Injectable()
 export class OssService implements OnModuleInit {
-  private client!: OSS;
+  private client: OSS | null = null;
   private bucketName!: string;
   private endpoint!: string;
+  private accessKeyId!: string;
+  private accessKeySecret!: string;
 
   constructor(private readonly configService: ConfigService) {}
 
-  onModuleInit(): void {
+  async onModuleInit(): Promise<void> {
     const config: Record<string, unknown> =
       this.configService.get<Record<string, unknown>>('oss') ?? {};
 
@@ -44,6 +47,15 @@ export class OssService implements OnModuleInit {
       throw new BusinessException(Constants.OSS_CONFIG_INCOMPLETE);
     }
 
+    this.accessKeyId = accessKeyId;
+    this.accessKeySecret = accessKeySecret;
+
+    if (this.isBunRuntime()) {
+      logger.info(Constants.OSS_BUN_RUNTIME_COMPAT_MESSAGE);
+      return;
+    }
+
+    const { default: OSS } = await import('ali-oss');
     this.client = new OSS({
       accessKeyId,
       accessKeySecret,
@@ -82,12 +94,10 @@ export class OssService implements OnModuleInit {
 
       // 添加超时控制（30秒）
       logger.info(Constants.OSS_PUT_OPERATION_START);
-      const uploadPromise = this.client.put(ossFile, localFile);
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('OSS put 操作超时（30秒）')), 30000),
-      );
+      const result = this.isBunRuntime()
+        ? await this.uploadFileWithBun(localFile, ossFile)
+        : await this.uploadFileWithAliOss(localFile, ossFile);
 
-      const result = await Promise.race([uploadPromise, timeoutPromise]);
       logger.info(`OSS put 返回结果: ${JSON.stringify(result)}`);
 
       const url: string = this.getFileUrl(ossFile);
@@ -108,5 +118,101 @@ export class OssService implements OnModuleInit {
    */
   getFileUrl(ossFile: string): string {
     return `https://${this.bucketName}.${this.endpoint}/${ossFile}`;
+  }
+
+  private isBunRuntime(): boolean {
+    return Boolean(
+      (process as NodeJS.Process & { versions?: { bun?: string } }).versions
+        ?.bun,
+    );
+  }
+
+  private async uploadFileWithAliOss(
+    localFile: string,
+    ossFile: string,
+  ): Promise<unknown> {
+    if (!this.client) {
+      throw new Error(Constants.OSS_CLIENT_NOT_INITIALIZED);
+    }
+
+    const uploadPromise = this.client.put(ossFile, localFile);
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error(Constants.OSS_PUT_OPERATION_TIMEOUT)),
+        30000,
+      ),
+    );
+
+    return Promise.race([uploadPromise, timeoutPromise]);
+  }
+
+  private async uploadFileWithBun(
+    localFile: string,
+    ossFile: string,
+  ): Promise<unknown> {
+    const fileBuffer = await fs.promises.readFile(localFile);
+    const normalizedOssFile: string = ossFile.replace(/^\/+/, '');
+    const requestPath: string = `/${this.bucketName}/${normalizedOssFile}`;
+    const requestUrl: string = `https://${this.bucketName}.${this.endpoint}/${this.encodeOssPath(normalizedOssFile)}`;
+    const contentType: string = Constants.OSS_DEFAULT_CONTENT_TYPE;
+    const requestDate: string = new Date().toUTCString();
+    const stringToSign: string = [
+      Constants.OSS_HTTP_PUT_METHOD,
+      '',
+      contentType,
+      requestDate,
+      requestPath,
+    ].join('\n');
+    const signature: string = crypto
+      .createHmac('sha1', this.accessKeySecret)
+      .update(stringToSign)
+      .digest('base64');
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), 30000);
+
+    try {
+      const response: Response = await fetch(requestUrl, {
+        method: 'PUT',
+        headers: {
+          Authorization: `OSS ${this.accessKeyId}:${signature}`,
+          Date: requestDate,
+          'Content-Type': contentType,
+          'Content-Length': String(fileBuffer.byteLength),
+        },
+        body: new Uint8Array(fileBuffer),
+        signal: timeoutController.signal,
+      });
+
+      if (!response.ok) {
+        const responseText: string = await response.text();
+        throw new Error(
+          `${Constants.OSS_RESPONSE_NON_SUCCESS_PREFIX}: ${response.status} ${response.statusText}，${Constants.OSS_RESPONSE_CONTENT_PREFIX} ${responseText}`,
+        );
+      }
+
+      return {
+        name: normalizedOssFile,
+        url: this.getFileUrl(normalizedOssFile),
+        res: {
+          status: response.status,
+          statusText: response.statusText,
+        },
+      };
+    } catch (error: unknown) {
+      if (timeoutController.signal.aborted) {
+        throw new Error(Constants.OSS_PUT_OPERATION_TIMEOUT);
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private encodeOssPath(ossFile: string): string {
+    return ossFile
+      .split('/')
+      .map((segment: string) => encodeURIComponent(segment))
+      .join('/');
   }
 }

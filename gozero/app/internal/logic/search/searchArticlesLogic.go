@@ -60,15 +60,8 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		subCategoryName = *req.SubCategoryName
 	}
 
-	currentUserID, currentUsername := getCurrentUserFromContext(l.ctx)
+	currentUserID, _ := getCurrentUserFromContext(l.ctx)
 	userID := req.UserId
-	if userID == nil && currentUserID > 0 {
-		currentUserIDAsUint := uint64(currentUserID)
-		userID = &currentUserIDAsUint
-	}
-	if username == "" {
-		username = currentUsername
-	}
 
 	searchDTO := search.ArticleSearchDTO{
 		Keyword:         keyword,

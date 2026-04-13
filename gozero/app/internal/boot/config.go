@@ -60,6 +60,7 @@ func expandLineEnv(line string) string {
 		if envValue, ok := os.LookupEnv(varName); ok {
 			value = envValue
 		}
+		value = normalizeModeValue(fieldName, value)
 
 		// 对嵌套字段中的纯数字值加引号（不包括 Port 字段和顶层）
 		// Port、Expiration 等整数字段不加引号，让 YAML 保持数字类型
@@ -94,6 +95,19 @@ func getLineIndent(line string) int {
 		}
 	}
 	return count
+}
+
+// normalizeModeValue 将生产环境别名统一为 go-zero 识别的模式值。
+func normalizeModeValue(fieldName, value string) string {
+	if !strings.EqualFold(strings.TrimSpace(fieldName), "mode") {
+		return value
+	}
+
+	if strings.EqualFold(strings.TrimSpace(value), "prod") {
+		return "pro"
+	}
+
+	return value
 }
 
 // isNumeric 检查值是否为纯数字（整数）
