@@ -41,7 +41,7 @@ public class Constants {
     /**
      * 密码复杂度错误信息
      */
-    public static String PASSWORD_COMPLEXITY = "密码需由字母和数字组成，长度至少8位";
+    public static String PASSWORD_COMPLEXITY = "密码至少包含字母和数字，长度8到20位";
 
     /**
      * 子分类ID为空的消息

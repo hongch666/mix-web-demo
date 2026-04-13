@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class PasswordEncryptor {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-    private static final String PASSWORD_COMPLEXITY_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,20}$";
+    private static final String PASSWORD_COMPLEXITY_REGEX = "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$";
 
     /**
      * 加密密码
