@@ -108,6 +108,10 @@ public class UserController {
         user.setRole("user");
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             user.setPassword(userPasswordProperties.getDefaultPassword());
+        } else if (!passwordEncryptor.isPasswordComplexityValid(user.getPassword())) {
+            throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
+        } else {
+            user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
         }
         userService.saveUserAndStatus(user);
         return Result.success();
@@ -197,6 +201,9 @@ public class UserController {
         if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
             user.setPassword(existingUser.getPassword());
         } else {
+            if (!passwordEncryptor.isPasswordComplexityValid(userDto.getPassword())) {
+                throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
+            }
             // 新密码需要加密
             user.setPassword(passwordEncryptor.encryptPassword(userDto.getPassword()));
         }
@@ -392,6 +399,10 @@ public class UserController {
             if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
                     resetPasswordDTO.getVerificationCode())) {
                 return Result.error(Constants.VERIFY_CODE);
+            }
+
+            if (!passwordEncryptor.isPasswordComplexityValid(resetPasswordDTO.getNewPassword())) {
+                throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
             }
 
             // 2. 查询用户是否存在

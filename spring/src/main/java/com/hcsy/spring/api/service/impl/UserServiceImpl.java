@@ -1,7 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,13 +21,13 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.entity.dto.EmailLoginDTO;
+import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
-import com.hcsy.spring.entity.dto.EmailLoginDTO;
-import com.hcsy.spring.entity.dto.LoginDTO;
-import com.hcsy.spring.entity.dto.UserRegisterDTO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
@@ -185,6 +185,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User existingUser = findByEmail(registerDTO.getEmail());
         if (existingUser != null) {
             throw new BusinessException(Constants.EMAIL_REGISTER);
+        }
+
+        if (!passwordEncryptor.isPasswordComplexityValid(registerDTO.getPassword())) {
+            throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
         }
 
         if (!emailVerificationService.verifyCode(registerDTO.getEmail(), registerDTO.getVerificationCode())) {

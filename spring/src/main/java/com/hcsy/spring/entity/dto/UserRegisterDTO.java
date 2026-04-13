@@ -16,7 +16,6 @@ public class UserRegisterDTO {
     private String name;
 
     @NotBlank(message = "密码不能为空")
-    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,20}$", message = "密码需由字母和数字组成，长度至少8位")
     private String password;
 
     @NotBlank(message = "邮箱不能为空")

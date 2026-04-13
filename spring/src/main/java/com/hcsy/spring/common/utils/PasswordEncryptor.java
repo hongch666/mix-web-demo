@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class PasswordEncryptor {
 
     private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+    private static final String PASSWORD_COMPLEXITY_REGEX = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]{8,20}$";
 
     /**
      * 加密密码
@@ -30,6 +31,16 @@ public class PasswordEncryptor {
      */
     public boolean matchPassword(String rawPassword, String encodedPassword) {
         return bCryptPasswordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    /**
+     * 校验密码复杂度
+     *
+     * @param password 原始密码
+     * @return 是否符合复杂度要求
+     */
+    public boolean isPasswordComplexityValid(String password) {
+        return password != null && password.matches(PASSWORD_COMPLEXITY_REGEX);
     }
 
     /**

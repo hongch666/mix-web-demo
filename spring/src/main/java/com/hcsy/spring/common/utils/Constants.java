@@ -39,6 +39,11 @@ public class Constants {
     public static String UNDEFINED_USER = "用户不存在";
 
     /**
+     * 密码复杂度错误信息
+     */
+    public static String PASSWORD_COMPLEXITY = "密码需由字母和数字组成，长度至少8位";
+
+    /**
      * 子分类ID为空的消息
      */
     public static String UNDEFINED_SUB_CATEGORY_ID = "子分类ID不能为空";
