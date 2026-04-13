@@ -17,7 +17,6 @@ public class UserCreateDTO {
     private String password;
 
     @NotBlank(message = "用户名不能为空")
-    @Size(min = 3, max = 20, message = "用户名长度必须在3到20个字符之间")
     private String name;
 
     @NotNull(message = "年龄不能为空")

@@ -11,7 +11,6 @@ import lombok.Data;
 @Data
 public class UserRegisterDTO {
     @NotBlank(message = "用户名不能为空")
-    @Size(min = 3, max = 50, message = "用户名长度在3-50之间")
     private String name;
 
     @NotBlank(message = "密码不能为空")
