@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pydantic_core import PydanticCustomError
 
 
 class CreateHistoryDTO(BaseModel):
@@ -7,17 +8,14 @@ class CreateHistoryDTO(BaseModel):
     user_id: int = Field(
         ...,
         description="用户ID",
-        gt=0,
     )
     ask: str = Field(
         ...,
         description="用户提问内容",
-        min_length=1,
     )
     reply: str = Field(
         ...,
         description="AI回复内容",
-        min_length=1,
     )
     thinking: str | None = Field(
         default=None,
@@ -26,6 +24,34 @@ class CreateHistoryDTO(BaseModel):
     ai_type: str = Field(
         ...,
         description="AI类型（例：doubao、gpt、claude等）",
-        min_length=1,
-        max_length=50,
     )
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_user_id(cls, value: int) -> int:
+        if value <= 0:
+            raise PydanticCustomError("user_id_error", "用户ID必须大于0")
+        return value
+
+    @field_validator("ask")
+    @classmethod
+    def validate_ask(cls, value: str) -> str:
+        if not value.strip():
+            raise PydanticCustomError("ask_error", "用户提问内容不能为空")
+        return value
+
+    @field_validator("reply")
+    @classmethod
+    def validate_reply(cls, value: str) -> str:
+        if not value.strip():
+            raise PydanticCustomError("reply_error", "AI回复内容不能为空")
+        return value
+
+    @field_validator("ai_type")
+    @classmethod
+    def validate_ai_type(cls, value: str) -> str:
+        if not value.strip():
+            raise PydanticCustomError("ai_type_empty", "AI类型不能为空")
+        if len(value) > 50:
+            raise PydanticCustomError("ai_type_length", "AI类型长度不能超过50个字符")
+        return value

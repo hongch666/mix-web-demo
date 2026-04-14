@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pydantic_core import PydanticCustomError
 
 
 class AIServiceType(str, Enum):
@@ -15,12 +16,36 @@ class AIServiceType(str, Enum):
 class ChatRequest(BaseModel):
     """聊天请求模型"""
 
-    message: str = Field(..., description="用户消息", min_length=1)
+    message: str = Field(..., description="用户消息")
     user_id: Optional[str] = Field(default="default", description="用户ID")
     conversation_id: Optional[str] = Field(default=None, description="会话ID")
     service: AIServiceType = Field(
         default=AIServiceType.DOUBAO, description="AI服务类型：gemini、qwen或doubao"
     )
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        if not value.strip():
+            raise PydanticCustomError("message_empty", "用户消息不能为空")
+        return value
+
+    @field_validator("service", mode="before")
+    @classmethod
+    def validate_service(cls, value: object) -> object:
+        allowed_values = {
+            AIServiceType.GEMINI.value,
+            AIServiceType.QWEN.value,
+            AIServiceType.DOUBAO.value,
+        }
+        if isinstance(value, AIServiceType):
+            return value
+        if not isinstance(value, str) or value not in allowed_values:
+            raise PydanticCustomError(
+                "service_invalid",
+                "AI服务类型必须是gemini、qwen或doubao",
+            )
+        return value
 
 
 class ChatResponseData(BaseModel):

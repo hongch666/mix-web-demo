@@ -1,4 +1,5 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from pydantic_core import PydanticCustomError
 
 
 class GenerateDTO(BaseModel):
@@ -7,5 +8,11 @@ class GenerateDTO(BaseModel):
     text: str = Field(
         ...,
         description="需要生成标签的文本内容",
-        min_length=1,
     )
+
+    @field_validator("text")
+    @classmethod
+    def validate_text(cls, value: str) -> str:
+        if not value.strip():
+            raise PydanticCustomError("text_empty", "需要生成标签的文本内容不能为空")
+        return value

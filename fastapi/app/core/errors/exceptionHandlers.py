@@ -1,5 +1,6 @@
 from typing import Callable, Dict, List, Type
 
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 
 from fastapi import Request
@@ -42,13 +43,43 @@ async def global_exception_handler(request: Request, exc: Exception) -> Response
     )
 
 
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> Response:
+    """请求校验异常处理器 - 将字段校验错误统一返回为项目格式
+
+    Args:
+        request: 请求对象
+        exc: 请求校验异常
+
+    Returns:
+        Response: JSON 格式的错误响应
+    """
+
+    validation_message_parts: List[str] = []
+    for item in exc.errors():
+        message = item.get("msg")
+        if message:
+            validation_message_parts.append(str(message))
+
+    validation_message = (
+        "; ".join(validation_message_parts)
+        if validation_message_parts
+        else Constants.EXCEPTION_HANDLER_MESSAGE
+    )
+    Logger.error(f"请求路径: {request.url}，校验错误: {validation_message}")
+    return JSONResponse(status_code=200, content=error(validation_message))
+
+
 exception_handlers: Dict[Type[Exception], Callable] = {
     BusinessException: business_exception_handler,
+    RequestValidationError: request_validation_exception_handler,
     Exception: global_exception_handler,
 }
 
 __all__: List[str] = [
     "global_exception_handler",
     "business_exception_handler",
+    "request_validation_exception_handler",
     "exception_handlers",
 ]
