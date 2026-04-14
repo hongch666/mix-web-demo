@@ -1,15 +1,41 @@
-import multipart from '@fastify/multipart';
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import multipart from "@fastify/multipart";
+import { Logger, ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { NestFactory } from "@nestjs/core";
 import {
   FastifyAdapter,
   NestFastifyApplication,
-} from '@nestjs/platform-fastify';
-import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
-import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
-import { Constants } from '../common/utils/constants';
-import { AppModule } from './app.module';
+} from "@nestjs/platform-fastify";
+import { DocumentBuilder, OpenAPIObject, SwaggerModule } from "@nestjs/swagger";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
+import { Constants } from "../common/utils/constants";
+import { AppModule } from "./app.module";
+
+function extractValidationMessage(errors: unknown[]): string {
+  const messages: string[] = [];
+
+  for (const item of errors as Array<{
+    constraints?: Record<string, string>;
+  }>) {
+    const constraints = item.constraints;
+    if (!constraints) {
+      continue;
+    }
+
+    const constraintMessages = Object.values(constraints);
+    if (constraintMessages.length > 0) {
+      const firstMessage = constraintMessages[0];
+      if (firstMessage) {
+        messages.push(firstMessage);
+      }
+    }
+  }
+
+  return messages.length > 0
+    ? messages.join("; ")
+    : Constants.ERROR_DEFAULT_MSG;
+}
 
 export async function createApp(): Promise<NestFastifyApplication> {
   const fastifyAdapter: FastifyAdapter = new FastifyAdapter();
@@ -36,7 +62,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
   );
 
   // Swagger 配置
-  const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
+  const config: Omit<OpenAPIObject, "paths"> = new DocumentBuilder()
     .setTitle(Constants.SWAGGER_TITLE)
     .setDescription(Constants.SWAGGER_DESCRIPTION)
     .setVersion(Constants.SWAGGER_VERSION)
@@ -46,11 +72,19 @@ export async function createApp(): Promise<NestFastifyApplication> {
 
   // 注册全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
-  //全局启用校验管道
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  // 全局启用校验管道
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      exceptionFactory: (errors) => {
+        const message = extractValidationMessage(errors);
+        return new BusinessException(message);
+      },
+    }),
+  );
   // 读取yaml文件中的端口和IP
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
-  const port: number = configService.get<number>('server.port')!;
+  const port: number = configService.get<number>("server.port")!;
   const ip: string = Constants.INIT_IP;
   // 输出启动信息和Swagger地址
   Logger.log(Constants.START_WELCOME);
