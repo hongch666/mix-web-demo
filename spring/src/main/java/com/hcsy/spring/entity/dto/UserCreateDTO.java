@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserCreateDTO {
+    @Pattern(regexp = "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$", message = "密码必须为8到20位且包含字母和数字")
     private String password;
 
     @NotBlank(message = "用户名不能为空")
@@ -28,6 +30,7 @@ public class UserCreateDTO {
     @Email(message = "邮箱格式不正确")
     private String email;
 
+    @Size(max = 255, message = "头像链接长度不能超过255个字符")
     private String img;
 
     @Size(max = 255, message = "个性签名长度不能超过255个字符")

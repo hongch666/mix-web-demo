@@ -67,12 +67,8 @@ public class UserController {
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "query",
-        paramNames = { "page", "size", "username" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "query", paramNames = { "page", "size",
+            "username" })
     @ApiLog("获取用户信息")
     public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
         UserListVO data = userService.listUsersWithFilter(
@@ -93,12 +89,7 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用配置中的默认密码")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -108,8 +99,6 @@ public class UserController {
         user.setRole("user");
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             user.setPassword(userPasswordProperties.getDefaultPassword());
-        } else if (!passwordEncryptor.isPasswordComplexityValid(user.getPassword())) {
-            throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
         } else {
             user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
         }
@@ -119,12 +108,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "path_single",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "id" })
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -136,12 +120,7 @@ public class UserController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "path_single",
-        paramNames = { "ids" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -178,13 +157,8 @@ public class UserController {
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
-    @RequirePermission(
-        roles = { "admin" },
-        allowSelf = true,
-        businessType = "user",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -201,9 +175,6 @@ public class UserController {
         if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
             user.setPassword(existingUser.getPassword());
         } else {
-            if (!passwordEncryptor.isPasswordComplexityValid(userDto.getPassword())) {
-                throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
-            }
             // 新密码需要加密
             user.setPassword(passwordEncryptor.encryptPassword(userDto.getPassword()));
         }
@@ -214,13 +185,8 @@ public class UserController {
 
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
-    @RequirePermission(
-        roles = { "admin" },
-        allowSelf = true,
-        businessType = "user",
-        paramSource = "path_single",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single", paramNames = { "id" })
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
@@ -282,12 +248,8 @@ public class UserController {
      */
     @PostMapping("/force-logout/{userId}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "path_single",
-        paramNames = { "userId" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
+            "userId" })
     @ApiLog("手动下线用户")
     public Result forceLogoutUser(@PathVariable Long userId) {
         try {
@@ -401,10 +363,6 @@ public class UserController {
                 return Result.error(Constants.VERIFY_CODE);
             }
 
-            if (!passwordEncryptor.isPasswordComplexityValid(resetPasswordDTO.getNewPassword())) {
-                throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
-            }
-
             // 2. 查询用户是否存在
             User user = userService.findByEmail(resetPasswordDTO.getEmail());
             if (user == null) {
@@ -424,12 +382,7 @@ public class UserController {
 
     @PostMapping("/admin/reset-all-passwords")
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为配置中的重置密码")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
     @ApiLog("重置所有用户密码")
     public Result resetAllPasswords() {
         try {
@@ -453,12 +406,8 @@ public class UserController {
 
     @PostMapping("/admin/reset-password/{userId}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为配置中的重置密码")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "user",
-        paramSource = "path_single",
-        paramNames = { "userId" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
+            "userId" })
     @ApiLog("重置指定用户密码")
     public Result resetUserPassword(@PathVariable Long userId) {
         try {

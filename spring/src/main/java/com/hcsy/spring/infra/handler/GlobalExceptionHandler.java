@@ -1,5 +1,8 @@
 package com.hcsy.spring.infra.handler;
 
+import org.springframework.validation.BindException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -8,6 +11,8 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 
 @RestControllerAdvice
@@ -25,11 +30,52 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理参数校验异常
+     */
+    @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class,
+            ConstraintViolationException.class })
+    public Result handleValidationException(Exception ex) {
+        String message = extractValidationMessage(ex);
+        logger.error(Constants.SYSTEM_EXCEPTION + message, ex);
+        return Result.error(message);
+    }
+
+    /**
      * 处理其他异常
      */
     @ExceptionHandler(Exception.class)
     public Result handleException(Exception ex) {
         logger.error(Constants.SYSTEM_EXCEPTION + ex.getMessage(), ex);
         return Result.error(Constants.SYSTEM_EXCEPTION_BACK);
+    }
+
+    private String extractValidationMessage(Exception ex) {
+        if (ex instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
+            FieldError fieldError = methodArgumentNotValidException.getBindingResult().getFieldError();
+            String message = fieldError == null ? null : fieldError.getDefaultMessage();
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
+            return Constants.SYSTEM_EXCEPTION_BACK;
+        }
+
+        if (ex instanceof BindException bindException) {
+            FieldError fieldError = bindException.getBindingResult().getFieldError();
+            String message = fieldError == null ? null : fieldError.getDefaultMessage();
+            if (message != null && !message.isBlank()) {
+                return message;
+            }
+            return Constants.SYSTEM_EXCEPTION_BACK;
+        }
+
+        if (ex instanceof ConstraintViolationException constraintViolationException) {
+            return constraintViolationException.getConstraintViolations().stream()
+                    .map(ConstraintViolation::getMessage)
+                    .filter(message -> message != null && !message.isBlank())
+                    .findFirst()
+                    .orElse(Constants.SYSTEM_EXCEPTION_BACK);
+        }
+
+        return Constants.SYSTEM_EXCEPTION_BACK;
     }
 }

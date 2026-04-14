@@ -187,10 +187,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(Constants.EMAIL_REGISTER);
         }
 
-        if (!passwordEncryptor.isPasswordComplexityValid(registerDTO.getPassword())) {
-            throw new BusinessException(Constants.PASSWORD_COMPLEXITY);
-        }
-
         if (!emailVerificationService.verifyCode(registerDTO.getEmail(), registerDTO.getVerificationCode())) {
             throw new BusinessException(Constants.VERIFY_CODE);
         }
