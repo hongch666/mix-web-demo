@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"time"
 
-	"app/common/dto"
 	"app/common/exceptions"
+	"app/common/hub"
 	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
@@ -51,7 +51,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 
 	// 2. 检查接收者是否在队列中，如果在就通过WebSocket发送
 	if l.svcCtx.ChatHub.IsUserInQueue(req.ReceiverId) {
-		wsMessage := &dto.WebSocketMessage{
+		wsMessage := &hub.WebSocketMessage{
 			Type:       "message",
 			SenderID:   req.SenderId,
 			ReceiverID: req.ReceiverId,
@@ -97,11 +97,11 @@ func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ string, message *ch
 		return
 	}
 
-	notification := &dto.SSEMessageNotification{
+	notification := &hub.SSEMessageNotification{
 		Type:         "message",
 		UserID:       userID,
 		UnreadCounts: unreadCounts,
-		Message: &dto.ChatMessageItem{
+		Message: &hub.ChatMessageItem{
 			ID:         uint(message.Id),
 			SenderID:   message.SenderId,
 			ReceiverID: message.ReceiverId,

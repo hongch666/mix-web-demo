@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"app/common/dto"
 	"app/common/logger"
 	"app/common/utils"
 
@@ -181,7 +180,7 @@ func (c *Client) ReadPump() {
 		}
 
 		// 解析消息
-		var wsMessage dto.WebSocketMessage
+		var wsMessage WebSocketMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
 			if c.ZeroLogger != nil {
 				c.Error(fmt.Sprintf(utils.PARSE_MESSAGE_FAIL, err))
@@ -191,7 +190,7 @@ func (c *Client) ReadPump() {
 
 		// 处理ping消息
 		if wsMessage.Type == utils.HEARTBEAT_MESSAGE {
-			pongMessage := dto.WebSocketMessage{Type: utils.HEARTBEAT_RESPONSE}
+			pongMessage := WebSocketMessage{Type: utils.HEARTBEAT_RESPONSE}
 			pongBytes, _ := json.Marshal(pongMessage)
 			if !c.SafeSend(pongBytes) {
 				return

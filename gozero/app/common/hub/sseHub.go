@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"app/common/dto"
 	"app/common/logger"
 	"app/common/utils"
 )
@@ -77,7 +76,7 @@ func (hub *SSEHubManager) UnregisterClient(userID string, sendCh chan any) {
 }
 
 // SendNotificationToUser 发送通知给特定用户
-func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *dto.SSEMessageNotification) {
+func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *SSEMessageNotification) {
 	if notification == nil {
 		if hub.ZeroLogger != nil {
 			hub.Warning(utils.SSE_SEND_EMPTY_WARNING_MESSAGE)

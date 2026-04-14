@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"app/common/dto"
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/middleware"
@@ -44,7 +43,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		defer svcCtx.SSEHub.UnregisterClient(userID, sendCh)
 
 		// 发送初始化连接消息
-		initMessage := &dto.SSEMessageNotification{
+		initMessage := &hub.SSEMessageNotification{
 			Type:         "connected",
 			UserID:       userID,
 			UnreadCounts: make(map[string]int64),
