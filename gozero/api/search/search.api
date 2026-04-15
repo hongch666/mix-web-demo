@@ -69,4 +69,3 @@ type (
 		Keywords []string `json:"keywords"`
 	}
 )
-

@@ -90,8 +90,7 @@ type ChatSSEConnectReq struct {
 	UserId *string `form:"userId,optional"`
 }
 
-type ChatSSEConnectResp struct {
-}
+type ChatSSEConnectResp struct{}
 
 type ChatSendMessageReq struct {
 	SenderId   string `json:"senderId"`
@@ -107,8 +106,7 @@ type ChatWsConnectReq struct {
 	UserId *string `form:"userId,optional"`
 }
 
-type ChatWsConnectResp struct {
-}
+type ChatWsConnectResp struct{}
 
 type GetSearchHistoryReq struct {
 	UserId string `path:"userId"`
@@ -135,11 +133,9 @@ type SearchArticlesResp struct {
 	List  []ArticleEsItem `json:"list"`
 }
 
-type SyncESReq struct {
-}
+type SyncESReq struct{}
 
-type SyncESResp struct {
-}
+type SyncESResp struct{}
 
 type TestFastAPIResp struct {
 	Data string `json:"data"`

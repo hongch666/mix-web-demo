@@ -313,6 +313,48 @@ const (
 	// 用户ID格式错误
 	USER_ID_ERR = "用户ID格式错误"
 
+	// 通用字段为空错误格式
+	FIELD_EMPTY_ERROR = "%s不能为空"
+
+	// 通用字段必须是正整数错误格式
+	FIELD_POSITIVE_INT_ERROR = "%s必须是正整数"
+
+	// 通用字段必须大于0错误格式
+	FIELD_GREATER_THAN_ZERO_ERROR = "%s必须大于0"
+
+	// 发送者ID字段名
+	CHAT_SENDER_ID_FIELD = "发送者ID"
+
+	// 接收者ID字段名
+	CHAT_RECEIVER_ID_FIELD = "接收者ID"
+
+	// 用户ID字段名
+	USER_ID_FIELD = "用户ID"
+
+	// 对方用户ID字段名
+	OTHER_USER_ID_FIELD = "对方用户ID"
+
+	// 消息内容为空错误
+	CHAT_CONTENT_EMPTY_ERROR = "消息内容不能为空"
+
+	// 页码必须大于0错误
+	SEARCH_PAGE_GREATER_THAN_ZERO_ERROR = "页码必须大于0"
+
+	// 每页数量必须大于0错误
+	SEARCH_SIZE_GREATER_THAN_ZERO_ERROR = "每页数量必须大于0"
+
+	// 聊天历史页码必须大于0错误
+	CHAT_HISTORY_PAGE_GREATER_THAN_ZERO_ERROR = "页码必须大于0"
+
+	// 聊天历史每页数量必须大于0错误
+	CHAT_HISTORY_SIZE_GREATER_THAN_ZERO_ERROR = "每页数量必须大于0"
+
+	// 开始时间不能晚于结束时间错误
+	SEARCH_START_AFTER_END_ERROR = "开始时间不能晚于结束时间"
+
+	// 搜索时间格式错误模板
+	SEARCH_TIME_FORMAT_ERROR = "%s格式必须为%s"
+
 	// 搜索历史获取失败消息
 	SEARCH_HISTORY_FAIL = "获取搜索历史失败"
 
