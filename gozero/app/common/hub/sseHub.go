@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"app/common/logger"
 	"app/common/utils"
 )
 
@@ -20,7 +19,7 @@ type SSEClient struct {
 type SSEHubManager struct {
 	clients map[string]*SSEClient // userID -> SSEClient
 	mu      sync.RWMutex
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 var (

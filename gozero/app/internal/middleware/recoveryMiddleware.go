@@ -4,15 +4,14 @@ import (
 	"net/http"
 
 	"app/common/exceptions"
-	"app/common/logger"
 	"app/common/utils"
 )
 
 type RecoveryMiddleware struct {
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
-func NewRecoveryMiddleware(log *logger.ZeroLogger) *RecoveryMiddleware {
+func NewRecoveryMiddleware(log *utils.ZeroLogger) *RecoveryMiddleware {
 	return &RecoveryMiddleware{ZeroLogger: log}
 }
 

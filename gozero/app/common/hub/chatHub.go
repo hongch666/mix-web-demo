@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sync"
 
-	"app/common/logger"
 	"app/common/utils"
 
 	"github.com/gorilla/websocket"
@@ -18,7 +17,7 @@ type Client struct {
 	Conn      *websocket.Conn
 	Send      chan []byte
 	closeOnce sync.Once
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 全局聊天队列管理
@@ -36,7 +35,7 @@ type ChatQueue struct {
 
 type ChatHub struct {
 	ctx context.Context
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 加入队列

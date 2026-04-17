@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"app/common/hub"
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/config"
 	"app/internal/middleware"
@@ -72,7 +71,7 @@ type ServiceContext struct {
 	ChatHub *hub.ChatHub
 	SSEHub  *hub.SSEHubManager
 
-	Logger *logger.ZeroLogger
+	Logger *utils.ZeroLogger
 
 	UserContextMiddleware     rest.Middleware
 	RecoveryMiddleware        rest.Middleware
@@ -81,7 +80,7 @@ type ServiceContext struct {
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	// 初始化日志
-	zLogger, err := logger.NewZeroLogger(c.Logs.Path)
+	zLogger, err := utils.NewZeroLogger(c.Logs.Path)
 	if err != nil {
 		logx.Errorf(utils.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)

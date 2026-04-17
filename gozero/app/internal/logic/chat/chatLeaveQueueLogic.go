@@ -6,7 +6,6 @@ package chat
 import (
 	"context"
 
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -15,7 +14,7 @@ import (
 type ChatLeaveQueueLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 离开队列

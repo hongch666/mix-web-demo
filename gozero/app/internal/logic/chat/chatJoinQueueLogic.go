@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"app/common/hub"
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -16,7 +15,7 @@ import (
 type ChatJoinQueueLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 加入队列
