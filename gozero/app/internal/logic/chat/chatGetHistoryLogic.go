@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"app/common/exceptions"
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -17,7 +16,7 @@ import (
 type ChatGetHistoryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 获取聊天历史

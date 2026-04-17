@@ -11,7 +11,6 @@ import (
 
 	"app/common/exceptions"
 	"app/common/hub"
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -21,7 +20,7 @@ import (
 type ChatSendMessageLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 发送消息

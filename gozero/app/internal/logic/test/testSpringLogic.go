@@ -10,7 +10,6 @@ import (
 
 	"app/common/client"
 	"app/common/exceptions"
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -19,7 +18,7 @@ import (
 type TestSpringLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 测试Spring服务

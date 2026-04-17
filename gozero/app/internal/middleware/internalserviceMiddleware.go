@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"app/common/logger"
 	"app/common/utils"
 )
 
@@ -16,10 +15,10 @@ const (
 )
 
 type InternalServiceMiddleware struct {
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
-func NewInternalServiceMiddleware(log *logger.ZeroLogger) *InternalServiceMiddleware {
+func NewInternalServiceMiddleware(log *utils.ZeroLogger) *InternalServiceMiddleware {
 	return &InternalServiceMiddleware{ZeroLogger: log}
 }
 
@@ -70,7 +69,7 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 }
 
 // NewInternalTokenMiddleware 创建需要验证特定服务的中间件
-func NewInternalTokenMiddleware(log *logger.ZeroLogger, serviceName string) func(http.HandlerFunc) http.HandlerFunc {
+func NewInternalTokenMiddleware(log *utils.ZeroLogger, serviceName string) func(http.HandlerFunc) http.HandlerFunc {
 	m := &InternalServiceMiddleware{ZeroLogger: log}
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {

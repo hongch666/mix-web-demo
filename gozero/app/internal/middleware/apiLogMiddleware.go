@@ -6,14 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
 	"app/common/keys"
-	"app/common/logger"
 	"app/common/utils"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -22,10 +20,10 @@ import (
 type ApiLogMiddleware struct {
 	description   string
 	rabbitChannel *amqp.Channel
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
-func NewApiLogMiddleware(description string, rabbitChannel *amqp.Channel, log *logger.ZeroLogger) *ApiLogMiddleware {
+func NewApiLogMiddleware(description string, rabbitChannel *amqp.Channel, log *utils.ZeroLogger) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
 		description:   description,
 		rabbitChannel: rabbitChannel,
@@ -210,9 +208,9 @@ func formatLogMessage(method, path, description string, userID int64, username s
 }
 
 // sendApiLogToQueue 发送 API 日志到队列（异步处理）
-func sendApiLogToQueue(ctx context.Context, lgr *logger.ZeroLogger, rabbitChannel *amqp.Channel, userID int64, username, method, path, description string,
-	queryParams map[string]any, requestBody any, responseTimeMs int64) {
-
+func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitChannel *amqp.Channel, userID int64, username, method, path, description string,
+	queryParams map[string]any, requestBody any, responseTimeMs int64,
+) {
 	// 构建 API 日志消息（统一格式：snake_case）
 	apiLogMessage := map[string]any{
 		"user_id":         userID,
@@ -265,7 +263,7 @@ func sendApiLogToQueue(ctx context.Context, lgr *logger.ZeroLogger, rabbitChanne
 
 // WithApiLog 为 handler 添加 API 日志中间件
 // WithApiLog 中间件工厂函数
-func WithApiLog(rabbitChannel *amqp.Channel, log *logger.ZeroLogger, description string) func(http.HandlerFunc) http.HandlerFunc {
+func WithApiLog(rabbitChannel *amqp.Channel, log *utils.ZeroLogger, description string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
 		return NewApiLogMiddleware(description, rabbitChannel, log).Handle(handler)
 	}
@@ -273,6 +271,6 @@ func WithApiLog(rabbitChannel *amqp.Channel, log *logger.ZeroLogger, description
 
 // ApplyApiLog 直接应用 API 日志中间件到 handler
 // 用法: return middleware.ApplyApiLog(rabbitChannel, logger, handler, "操作描述")
-func ApplyApiLog(rabbitChannel *amqp.Channel, log *logger.ZeroLogger, handler http.HandlerFunc, description string) http.HandlerFunc {
+func ApplyApiLog(rabbitChannel *amqp.Channel, log *utils.ZeroLogger, handler http.HandlerFunc, description string) http.HandlerFunc {
 	return WithApiLog(rabbitChannel, log, description)(handler)
 }

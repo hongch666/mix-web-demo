@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/task/logic"
@@ -17,7 +16,7 @@ import (
 type SyncESLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 手动触发同步ES任务

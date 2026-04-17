@@ -9,22 +9,20 @@ import (
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type TestGoZeroLogic struct {
-	logx.Logger
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
+	*utils.ZeroLogger
 }
 
 // 测试GoZero服务
 func NewTestGoZeroLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestGoZeroLogic {
 	return &TestGoZeroLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
+		ctx:        ctx,
+		svcCtx:     svcCtx,
+		ZeroLogger: svcCtx.Logger,
 	}
 }
 

@@ -10,7 +10,6 @@ import (
 
 	"app/common/exceptions"
 	"app/common/keys"
-	"app/common/logger"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -22,7 +21,7 @@ import (
 type SearchArticlesLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
-	*logger.ZeroLogger
+	*utils.ZeroLogger
 }
 
 // 搜索文章
