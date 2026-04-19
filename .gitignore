@@ -239,3 +239,5 @@ dist/
 /**/.VSCodeCounter/
 
 .vscode-jest
+
+CLAUDE.md
