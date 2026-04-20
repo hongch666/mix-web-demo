@@ -241,3 +241,7 @@ dist/
 .vscode-jest
 
 CLAUDE.md
+
+.claude
+
+.trae
