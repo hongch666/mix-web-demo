@@ -1,11 +1,12 @@
 package search
 
 import (
-	"app/common/utils"
 	"context"
 	"encoding/json"
 	"strings"
 	"time"
+
+	"app/common/utils"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -92,7 +93,8 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 		Index(articlesIndexName).
 		Query(scriptScoreQuery).
 		From(from).
-		Size(size)
+		Size(size).
+		RequestCache(true)
 
 	if searchDTO.Keyword != "" {
 		highlight := elastic.NewHighlight().PreTags("<em>").PostTags("</em>").

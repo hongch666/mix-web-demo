@@ -271,6 +271,9 @@ func initES(c config.Config) *elastic.Client {
 		elastic.SetMaxRetries(3),
 		elastic.SetHealthcheckInterval(10 * time.Second),
 		elastic.SetGzip(true),
+		elastic.SetHealthcheckTimeoutStartup(5 * time.Second),
+		elastic.SetErrorLog(&esLoggerAdapter{}),
+		elastic.SetInfoLog(&esLoggerAdapter{}),
 	}
 	if esConf.Username != "" {
 		opts = append(opts, elastic.SetBasicAuth(esConf.Username, esConf.Password))
@@ -347,6 +350,12 @@ func initMongoDB(c config.Config) *mongo.Client {
 	}
 
 	return client
+}
+
+type esLoggerAdapter struct{}
+
+func (l *esLoggerAdapter) Printf(format string, v ...interface{}) {
+	logx.Infof(format, v...)
 }
 
 func initNacos(c config.Config) naming_client.INamingClient {
