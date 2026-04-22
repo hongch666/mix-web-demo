@@ -498,6 +498,9 @@ class Constants:
     USER_NOT_EXISTS_ERROR: str = "用户不存在"
     """用户不存在错误消息"""
 
+    ARTICLE_NOT_EXISTS_ERROR: str = "文章不存在"
+    """文章不存在错误消息"""
+
     UNKNOWN_ARTICLE = "未知文章"
     """未知文章消息"""
 
@@ -660,9 +663,7 @@ class Constants:
     )
     """SQL写操作限制消息"""
 
-    SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE: str = (
-        "安全限制：当前请求带有新增、修改、删除等数据库写操作意图。SQL 工具仅支持只读查询，请改为查询类问题。"
-    )
+    SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE: str = "安全限制：当前请求带有新增、修改、删除等数据库写操作意图。SQL 工具仅支持只读查询，请改为查询类问题。"
     """自然语言写操作意图拦截消息"""
 
     USER_RELATED_TABLE: List[str] = [

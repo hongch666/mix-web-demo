@@ -76,7 +76,7 @@ class GenerateService:
         # 2.1 获取文章标题,tags和内容
         article = self.article_mapper.get_article_by_id_mapper(article_id, db)
         if not article:
-            raise BusinessException("文章不存在")
+            raise BusinessException(Constants.ARTICLE_NOT_EXISTS_ERROR)
         # 2.2 构建提示词
         prompt = f"""请对以下文章进行评价，并给出评分。
         要求：
