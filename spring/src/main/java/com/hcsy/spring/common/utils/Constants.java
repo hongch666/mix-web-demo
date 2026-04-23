@@ -260,6 +260,91 @@ public class Constants {
     public static String SYNC_ALL_FAIL = "同步过程发生未知异常: ";
 
     /**
+     * 并行同步完成消息
+     */
+    public static String SYNC_PARALLEL_SUCCESS = "%s 并行同步完成，总耗时: %dms";
+
+    /**
+     * 并行同步失败消息
+     */
+    public static String SYNC_PARALLEL_FAIL = "%s 并行同步失败，耗时: %dms, 错误: %s";
+
+    /**
+     * ES同步耗时消息
+     */
+    public static String SYNC_ES_DURATION = "ES 同步成功，耗时: %dms";
+
+    /**
+     * ES同步重试消息
+     */
+    public static String SYNC_ES_RETRY = "ES 同步失败，第 %d 次重试，错误: %s";
+
+    /**
+     * ES同步达到最大重试次数消息
+     */
+    public static String SYNC_ES_MAX_RETRY = "ES 同步失败，已达到最大重试次数: %s";
+
+    /**
+     * ES同步重试被中断消息
+     */
+    public static String SYNC_ES_RETRY_INTERRUPTED = "ES 同步重试被中断";
+
+    /**
+     * ES同步失败消息
+     */
+    public static String SYNC_ES_FAILED = "ES 同步失败";
+
+    /**
+     * Vector同步耗时消息
+     */
+    public static String SYNC_VECTOR_DURATION = "Vector 同步成功，耗时: %dms";
+
+    /**
+     * Vector同步重试消息
+     */
+    public static String SYNC_VECTOR_RETRY = "Vector 同步失败，第 %d 次重试，错误: %s";
+
+    /**
+     * Vector同步重试最大次数消息
+     */
+    public static String SYNC_VECTOR_MAX_RETRY = "Vector 同步失败，已达到最大重试次数: %s";
+
+    /**
+     * Vector同步重试被中断消息
+     */
+    public static String SYNC_VECTOR_RETRY_INTERRUPTED = "Vector 同步重试被中断";
+
+    /**
+     * Vector同步失败消息
+     */
+    public static String SYNC_VECTOR_FAILED = "Vector 同步失败";
+
+    /**
+     * 缓存清理耗时消息
+     */
+    public static String CACHE_CLEAR_DURATION = "缓存清理成功，耗时: %dms";
+
+    /**
+     * 缓存清理重试消息
+     */
+    public static String CACHE_CLEAR_RETRY = "缓存清理失败，第 %d 次重试，错误: %s";
+
+    /**
+     * 缓存清理重试最大次数消息
+     */
+    public static String CACHE_CLEAR_MAX_RETRY = "缓存清理失败，已达到最大重试次数: %s";
+
+    /**
+     * 缓存清理重试被中断消息
+     */
+    public static String CACHE_CLEAR_RETRY_INTERRUPTED = "缓存清理重试被中断";
+
+    /**
+     * 缓存清理失败消息
+     */
+    public static String CACHE_CLEAR_FAILED = "缓存清理失败";
+
+    /**
      * 清理Context消息
      */
     public static String CLEAN_CONTEXT = "UserContext 已清理";
