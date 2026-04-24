@@ -12,13 +12,13 @@ from sqlalchemy.orm import Session
 class FocusMapper:
     """关注 Mapper"""
 
-    async def _get_total_followers_mapper_sync(self, db: Session, user_id: int) -> int:
+    def _get_total_followers_mapper_sync(self, db: Session, user_id: int) -> int:
         """获取用户的粉丝总数（被多少人关注）"""
 
         statement = select(func.count(Focus.id)).where(Focus.focus_id == user_id)
         return db.execute(statement).scalar_one()
 
-    async def _get_followers_in_period_mapper_sync(
+    def _get_followers_in_period_mapper_sync(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
     ) -> int:
         """获取指定时间段内的新增粉丝数"""
@@ -30,7 +30,7 @@ class FocusMapper:
         )
         return db.execute(statement).scalar_one()
 
-    async def _get_daily_followers_mapper_sync(
+    def _get_daily_followers_mapper_sync(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
     ) -> List[Any]:
         """获取指定时间段内每天的新增粉丝数"""
@@ -52,13 +52,13 @@ class FocusMapper:
         results = db.execute(statement).all()
         return results if results else []
 
-    async def _get_total_follows_mapper_sync(self, db: Session, user_id: int) -> int:
+    def _get_total_follows_mapper_sync(self, db: Session, user_id: int) -> int:
         """获取用户的总关注数"""
 
         statement = select(func.count(Focus.id)).where(Focus.user_id == user_id)
         return db.execute(statement).scalar_one()
 
-    async def _get_daily_follows_mapper_sync(
+    def _get_daily_follows_mapper_sync(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
     ) -> List[Any]:
         """获取指定时间段内每天的关注数"""
@@ -80,7 +80,7 @@ class FocusMapper:
         results = db.execute(statement).all()
         return results if results else []
 
-    async def _get_monthly_follow_trend_mapper_sync(
+    def _get_monthly_follow_trend_mapper_sync(
         self, db: Session, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月关注的趋势"""
@@ -125,7 +125,7 @@ class FocusMapper:
         )
         return {"total": total, "daily_trends": daily_trends}
 
-    async def _get_monthly_follower_trend_mapper_sync(
+    def _get_monthly_follower_trend_mapper_sync(
         self, db: Session, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月新增粉丝的趋势"""
@@ -171,7 +171,9 @@ class FocusMapper:
         return {"total": total, "daily_trends": daily_trends}
 
     async def get_total_followers_mapper_async(self, db: Session, user_id: int) -> int:
-        return await self._get_total_followers_mapper_sync(db, user_id)
+        return await asyncio.to_thread(
+            self._get_total_followers_mapper_sync, db, user_id
+        )
 
     async def get_followers_in_period_mapper_async(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
@@ -188,7 +190,7 @@ class FocusMapper:
         )
 
     async def get_total_follows_mapper_async(self, db: Session, user_id: int) -> int:
-        return await self._get_total_follows_mapper_sync(db, user_id)
+        return await asyncio.to_thread(self._get_total_follows_mapper_sync, db, user_id)
 
     async def get_daily_follows_mapper_async(
         self, db: Session, user_id: int, start_date: datetime, end_date: datetime
@@ -200,7 +202,9 @@ class FocusMapper:
     async def get_monthly_follow_trend_mapper_async(
         self, db: Session, user_id: int
     ) -> Dict[str, Any]:
-        return await self._get_monthly_follow_trend_mapper_sync(db, user_id)
+        return await asyncio.to_thread(
+            self._get_monthly_follow_trend_mapper_sync, db, user_id
+        )
 
     async def get_monthly_follower_trend_mapper_async(
         self, db: Session, user_id: int
