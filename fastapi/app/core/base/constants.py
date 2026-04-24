@@ -134,7 +134,13 @@ class Constants:
     )
     """聊天功能的系统消息"""
 
-    STREAMING_CHAT_THINKING_SYSTEM_MESSAGE: str = "你是一个中文AI思考型助手，用于提供文章和博客推荐及分析系统数据的思考内容，回答文本应该展示的是调用工具和分析的思考过程。"
+    STREAMING_CHAT_THINKING_SYSTEM_MESSAGE: str = (
+        "你是一个中文AI思考型助手，用于提供文章和博客推荐、日志分析以及系统数据查询的思考内容。"
+        "其中 MongoDB 工具仅用于日志相关查询，例如 API 请求日志、错误日志和操作日志；"
+        "系统相关数据、统计数据和业务数据必须优先使用 SQL 工具查询。"
+        "当查询的数据量可能较大时，必须主动加上时间范围、用户范围、状态条件或 limit 等限制，避免一次性返回过多数据。"
+        "回答文本应该展示调用工具和分析的思考过程。"
+    )
     """流式聊天思考过程系统消息"""
 
     AGENT_PROCESSING_MESSAGE: str = "使用Agent处理，可同时调用SQL和RAG工具"
@@ -700,7 +706,8 @@ class Constants:
         返回最多20行数据，以表格形式展示。
         参数格式: 完整的只读SQL语句。
         示例: "SELECT * FROM articles WHERE status=1 LIMIT 10"
-        使用场景: 需要查询数据库数据、统计分析、获取具体记录时使用。
+        使用场景: 需要查询系统数据、业务数据、统计分析、获取具体记录时使用。
+        如果涉及大表或可能返回大量数据，必须主动加上时间范围、用户范围、状态条件或 LIMIT。
     """
     """SQL查询工具描述"""
 
@@ -708,7 +715,7 @@ class Constants:
     """MongoDB 列表查询工具名称"""
 
     MONGODB_LIST_COLLECTIONS_TOOL_DESC: str = """
-        列出 MongoDB 数据库中的所有 collection 及其基本信息。
+        列出 MongoDB 日志数据库中的所有 collection 及其基本信息。
         返回每个 collection 的记录数和样本字段，帮助确认可查询的数据集合。
         参数格式: 无参数。
         使用场景: 用户需要先了解日志库里有哪些 collection 以及大致字段结构时使用。
@@ -719,10 +726,11 @@ class Constants:
     """MongoDB 通用查询工具名称"""
 
     MONGODB_QUERY_TOOL_DESC: str = """
-        通用的 MongoDB 查询工具，可查询任意 collection。
+        MongoDB 日志查询工具，仅用于查询日志相关 collection。
         参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
         参数示例: {"collection_name": "api_logs", "limit": 10}
-        使用场景: 已明确 collection 后，按条件查询日志、错误记录、用户活动等数据时使用。
+        使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
+        如果日志量可能较大，必须加上时间范围、用户范围、状态条件或 limit。
     """
     """MongoDB 通用查询工具描述"""
 
@@ -780,16 +788,18 @@ class Constants:
 
         重要提示 - 如何选择和使用工具:
 
-        1. 数据统计/统计查询: 优先使用 get_table_schema 查看表结构，然后用 execute_sql_query 执行SQL查询
+        1. 系统相关数据、统计数据和业务数据查询: 优先使用 SQL 工具。
+        先用 get_table_schema 查看表结构，再用 execute_sql_query 执行 SQL 查询。
+        对于数据量可能较大的表，必须主动增加时间范围、用户范围、状态条件、分页或 limit，避免一次性返回过多数据。
         示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
 
         2. 文章内容/技术知识查询: 使用 search_articles 搜索相关文章
         示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
 
-        3. MongoDB 日志和系统分析: 使用以下两个工具
+        3. MongoDB 日志查询: MongoDB 工具仅用于日志相关查询。
 
         第一步: 使用 list_mongodb_collections 列出所有可用的 collection
-        - 这会告诉你有哪些数据集合可以查询（如 api_logs, error_logs 等）
+        - 这会告诉你有哪些日志集合可以查询（如 api_logs, error_logs 等）
         - 以及每个 collection 中有哪些字段
         - Action Input: (无需参数)
 
@@ -810,7 +820,10 @@ class Constants:
             1) 首先调用 list_mongodb_collections 查看有哪些 collection
             2) 然后根据结果调用 query_mongodb 查询具体数据
 
-        - 对于简单查询（如"最近的API请求"）：
+        - 对于系统统计、业务统计、用户统计、文章统计等场景：
+            使用 SQL 工具，并确保查询有明确限制条件，尤其是时间范围、用户范围和 limit
+
+        - 对于简单日志查询（如"最近的API请求"）：
             直接使用 query_mongodb，传递 JSON 参数
 
         关键特点:
@@ -818,7 +831,7 @@ class Constants:
         - 对于组合问题，分步骤调用不同的工具
         - 始终用中文回答用户
         - MongoDB 的 filter_dict 支持完整的 MongoDB 查询语法，如 $gte, $lte, $regex 等
-        - 如果查询返回空结果，可以尝试修改查询条件或查询其他 collection
+        - 如果查询返回空结果，可以尝试修改查询条件或查询其他日志 collection
         - Action Input 必须是有效的 JSON 字符串，不能是 Python 字典
 
         开始!
