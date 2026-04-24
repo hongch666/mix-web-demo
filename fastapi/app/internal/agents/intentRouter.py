@@ -113,7 +113,7 @@ class IntentRouter:
         if intent == "database_query":
             try:
                 sql_tools = get_sql_tools()
-                if await sql_tools.is_dangerous_nl_request(question):
+                if sql_tools.is_dangerous_nl_request(question):
                     self.logger.warning(f"拦截疑似写操作SQL请求: {question}")
                     return (
                         intent,
