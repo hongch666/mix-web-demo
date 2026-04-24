@@ -48,30 +48,21 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 
 	l.Info(utils.CHAT_MESSAGE_SEND_SUCCESS)
 
-	// 2. 检查接收者是否在队列中，如果在就通过WebSocket发送
-	if l.svcCtx.ChatHub.IsUserInQueue(req.ReceiverId) {
-		wsMessage := &hub.WebSocketMessage{
-			Type:       "message",
-			SenderID:   req.SenderId,
-			ReceiverID: req.ReceiverId,
-			Content:    req.Content,
-			MessageID:  uint(message.Id),
-			Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
-		}
+	// 2. 检查接收者的所有WebSocket连接，如果存在就统一投递
+	wsMessage := &hub.WebSocketMessage{
+		Type:       "message",
+		SenderID:   req.SenderId,
+		ReceiverID: req.ReceiverId,
+		Content:    req.Content,
+		MessageID:  uint(message.Id),
+		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
+	}
 
-		messageBytes, _ := json.Marshal(wsMessage)
-		if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {
-			// 发送成功，消息已读
-			l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.SenderId, req.ReceiverId)
-			l.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.Id))
-		} else {
-			// 发送失败，用户可能刷离线，消息保持未读
-			l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
-			// 触发SSE通知发送未读消息
-			utils.SafeGo(l.ZeroLogger, "notifyUnreadMessage", func() {
-				l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
-			})
-		}
+	messageBytes, _ := json.Marshal(wsMessage)
+	if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {
+		// 发送成功，消息已读
+		l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.SenderId, req.ReceiverId)
+		l.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.Id))
 	} else {
 		l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
 		// 触发SSE通知发送未读消息

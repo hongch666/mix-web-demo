@@ -10,14 +10,15 @@ import (
 
 // SSE客户端
 type SSEClient struct {
-	UserID  string
-	SendCh  chan any
-	CloseCh chan bool
+	UserID       string
+	ConnectionID string
+	SendCh       chan any
+	CloseCh      chan bool
 }
 
 // SSE中心管理
 type SSEHubManager struct {
-	clients map[string]*SSEClient // userID -> SSEClient
+	clients map[string]map[string]*SSEClient // userID -> connectionID -> SSEClient
 	mu      sync.RWMutex
 	*utils.ZeroLogger
 }
@@ -31,27 +32,30 @@ var (
 func GetSSEHub() *SSEHubManager {
 	once.Do(func() {
 		sseHubInstance = &SSEHubManager{
-			clients: make(map[string]*SSEClient),
+			clients: make(map[string]map[string]*SSEClient),
 		}
 	})
 	return sseHubInstance
 }
 
 // RegisterClient 注册SSE客户端
-func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan any, closeCh chan bool) {
+func (hub *SSEHubManager) RegisterClient(userID string, connectionID string, sendCh chan any, closeCh chan bool) {
+	if connectionID == "" {
+		return
+	}
+
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
 
-	// 如果用户已存在，关闭旧连接
-	if existing, ok := hub.clients[userID]; ok {
-		close(existing.SendCh)
-		close(existing.CloseCh)
+	if _, ok := hub.clients[userID]; !ok {
+		hub.clients[userID] = make(map[string]*SSEClient)
 	}
 
-	hub.clients[userID] = &SSEClient{
-		UserID:  userID,
-		SendCh:  sendCh,
-		CloseCh: closeCh,
+	hub.clients[userID][connectionID] = &SSEClient{
+		UserID:       userID,
+		ConnectionID: connectionID,
+		SendCh:       sendCh,
+		CloseCh:      closeCh,
 	}
 	if hub.ZeroLogger != nil {
 		hub.Info(utils.SSE_REGISTER_SUCCESS_MESSAGE)
@@ -59,15 +63,24 @@ func (hub *SSEHubManager) RegisterClient(userID string, sendCh chan any, closeCh
 }
 
 // UnregisterClient 注销SSE客户端
-// 通过 sendCh 进行身份校验，防止新连接注册后旧连接的 defer 误关闭新连接的通道
-func (hub *SSEHubManager) UnregisterClient(userID string, sendCh chan any) {
+// 通过 connectionID 进行身份校验，防止旧连接的 defer 误关闭新连接
+func (hub *SSEHubManager) UnregisterClient(userID string, connectionID string) {
+	if connectionID == "" {
+		return
+	}
+
 	hub.mu.Lock()
 	defer hub.mu.Unlock()
 
-	client, ok := hub.clients[userID]
-	// 仅当存储的 sendCh 与传入的一致时才注销，否则说明已有新连接接管，跳过
-	if ok && client.SendCh == sendCh {
-		delete(hub.clients, userID)
+	clients, ok := hub.clients[userID]
+	if ok {
+		if _, exists := clients[connectionID]; !exists {
+			return
+		}
+		delete(clients, connectionID)
+		if len(clients) == 0 {
+			delete(hub.clients, userID)
+		}
 		if hub.ZeroLogger != nil {
 			hub.Info(utils.SSE_UNREGISTER_SUCCESS_MESSAGE)
 		}
@@ -84,25 +97,34 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *SS
 	}
 
 	hub.mu.RLock()
-	client, ok := hub.clients[userID]
+	clients, ok := hub.clients[userID]
 	hub.mu.RUnlock()
 
-	if !ok {
+	if !ok || len(clients) == 0 {
 		if hub.ZeroLogger != nil {
 			hub.Warning(utils.SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE)
 		}
 		return
 	}
 
-	select {
-	case client.SendCh <- notification:
-		if hub.ZeroLogger != nil {
-			hub.Info(utils.SSE_SEND_SUCCESS_MESSAGE)
+	var sentAny bool
+	for _, client := range clients {
+		if client == nil {
+			continue
 		}
-	default:
-		if hub.ZeroLogger != nil {
-			hub.Warning(utils.SSE_SEND_FAIL_WARNING_MESSAGE)
+
+		select {
+		case client.SendCh <- notification:
+			sentAny = true
+		default:
+			if hub.ZeroLogger != nil {
+				hub.Warning(utils.SSE_SEND_FAIL_WARNING_MESSAGE)
+			}
 		}
+	}
+
+	if sentAny && hub.ZeroLogger != nil {
+		hub.Info(utils.SSE_SEND_SUCCESS_MESSAGE)
 	}
 }
 
@@ -111,15 +133,21 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
 
-	for _, client := range hub.clients {
-		select {
-		case client.SendCh <- notification:
-			if hub.ZeroLogger != nil {
-				hub.Debug(utils.SSE_BROADCAST_SUCCESS_MESSAGE)
+	for _, userClients := range hub.clients {
+		for _, client := range userClients {
+			if client == nil {
+				continue
 			}
-		default:
-			if hub.ZeroLogger != nil {
-				hub.Warning(utils.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
+
+			select {
+			case client.SendCh <- notification:
+				if hub.ZeroLogger != nil {
+					hub.Debug(utils.SSE_BROADCAST_SUCCESS_MESSAGE)
+				}
+			default:
+				if hub.ZeroLogger != nil {
+					hub.Warning(utils.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
+				}
 			}
 		}
 	}

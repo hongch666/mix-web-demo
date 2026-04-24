@@ -34,13 +34,14 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
 
+		connectionID := hub.NewConnectionID("sse")
 		sendCh := make(chan any, 256)
 		closeCh := make(chan bool)
 
 		// 注册客户端
-		svcCtx.SSEHub.RegisterClient(userID, sendCh, closeCh)
-		// 传入 sendCh 作为身份标识，防止旧连接的 defer 误关闭新连接
-		defer svcCtx.SSEHub.UnregisterClient(userID, sendCh)
+		svcCtx.SSEHub.RegisterClient(userID, connectionID, sendCh, closeCh)
+		// 传入 connectionID 作为身份标识，防止旧连接的 defer 误关闭新连接
+		defer svcCtx.SSEHub.UnregisterClient(userID, connectionID)
 
 		// 发送初始化连接消息
 		initMessage := &hub.SSEMessageNotification{

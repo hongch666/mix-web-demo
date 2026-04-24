@@ -5,7 +5,6 @@ package chat
 
 import (
 	"net/http"
-	"time"
 
 	"app/common/hub"
 	"app/common/utils"
@@ -42,18 +41,12 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		// 用户重连时，先把旧连接及其读写协程对应的资源优雅关闭, 避免旧 ReadPump/WritePump 长时间占用连接和 goroutine
-		if existingClient, exists := svcCtx.ChatHub.GetUserFromQueue(userID); exists {
-			existingClient.Shutdown()
-			svcCtx.ChatHub.LeaveQueueIfMatch(userID, existingClient)
-			time.Sleep(100 * time.Millisecond)
-		}
-
 		// 创建新的客户端并加入队列
 		client := &hub.Client{
-			UserID: userID,
-			Conn:   conn,
-			Send:   make(chan []byte, 256),
+			UserID:       userID,
+			ConnectionID: hub.NewConnectionID("ws"),
+			Conn:         conn,
+			Send:         make(chan []byte, 256),
 		}
 		svcCtx.ChatHub.JoinQueue(userID, client)
 
