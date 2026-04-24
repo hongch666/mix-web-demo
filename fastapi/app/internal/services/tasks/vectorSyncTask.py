@@ -200,7 +200,7 @@ def _get_changed_articles(
     return changed_articles
 
 
-def export_article_vectors_to_postgres(
+def _export_article_vectors_to_postgres(
     article_mapper: Optional[Any] = None,
     mysql_db_factory: Optional[Callable[[], Session]] = None,
     enable_incremental_sync: bool = True,
@@ -221,10 +221,10 @@ def export_article_vectors_to_postgres(
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:
-        from app.core.db import create_db_session as _create_db_session
+        from app.core.db.mysql import SessionLocal
 
         def mysql_db_factory() -> Session:
-            return _create_db_session()
+            return SessionLocal()
 
     # 导入RAG工具
     try:
@@ -386,7 +386,7 @@ def export_article_vectors_to_postgres(
             pass
 
 
-def initialize_article_content_hash_cache(
+def _initialize_article_content_hash_cache(
     article_mapper: Optional[Any] = None,
     mysql_db_factory: Optional[Callable[[], Session]] = None,
 ) -> None:
@@ -406,10 +406,10 @@ def initialize_article_content_hash_cache(
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:
-        from app.core.db import create_db_session as _create_db_session
+        from app.core.db.mysql import SessionLocal
 
         def mysql_db_factory() -> Session:
-            return _create_db_session()
+            return SessionLocal()
 
     mysql_db: Optional[Session] = None
 
@@ -497,7 +497,7 @@ async def export_article_vectors_to_postgres_async(
     enable_incremental_sync: bool = True,
 ) -> None:
     await asyncio.to_thread(
-        export_article_vectors_to_postgres,
+        _export_article_vectors_to_postgres,
         article_mapper,
         mysql_db_factory,
         enable_incremental_sync,
@@ -509,7 +509,7 @@ async def initialize_article_content_hash_cache_async(
     mysql_db_factory: Optional[Callable[[], Session]] = None,
 ) -> None:
     await asyncio.to_thread(
-        initialize_article_content_hash_cache,
+        _initialize_article_content_hash_cache,
         article_mapper,
         mysql_db_factory,
     )

@@ -1,4 +1,3 @@
-import asyncio
 import inspect
 import json
 import time
@@ -7,7 +6,7 @@ from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Union
 
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.base import Constants, Logger
-from app.core.db import send_to_queue
+from app.core.db import send_to_queue_async
 from app.core.errors import BusinessException
 from fastapi.responses import StreamingResponse
 
@@ -186,98 +185,11 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 logger_method(time_message)
                 raise BusinessException(Constants.RABBITMQ_NOT_AVAILABLE)
 
-        @wraps(func)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            # 处理配置
-            log_config: ApiLogConfig
-            if isinstance(config, str):
-                log_config = ApiLogConfig(config)
-            else:
-                log_config = config
-
-            # 获取用户信息
-            user_id: str = get_current_user_id() or ""
-            username: str = get_current_username() or ""
-
-            # 从参数中获取 Request 对象
-            request: Optional[Request] = _get_request_from_args(args, kwargs)
-
-            method: str
-            path: str
-            if request:
-                method = request.method
-                path = request.url.path
-            else:
-                # 如果没有 Request 对象，使用默认值
-                method = "UNKNOWN"
-                path = f"/{func.__name__}"
-
-            # 构建基础日志消息
-            log_lines: List[str] = [
-                f"用户{user_id}:{username} {method} {path}: {log_config.message}"
-            ]
-
-            # 添加查询参数
-            if request and request.query_params:
-                query_params: Dict[str, Any] = dict(request.query_params)
-                log_lines.append(
-                    f"  查询参数: {json.dumps(query_params, ensure_ascii=False)}"
-                )
-
-            # 添加路径参数
-            if request and hasattr(request, "path_params") and request.path_params:
-                path_params: Dict[str, Any] = dict(request.path_params)
-                log_lines.append(
-                    f"  路径参数: {json.dumps(path_params, ensure_ascii=False)}"
-                )
-
-            # 添加请求体（业务参数）
-            if log_config.include_params:
-                params_info: str = _extract_params_info(
-                    func, args, kwargs, log_config.exclude_fields
-                )
-                if params_info:
-                    log_lines.append("  请求体:")
-                    log_lines.append(params_info)
-
-            log_message: str = "\n".join(log_lines)
-
-            # 记录日志
-            logger_method: Callable[[str], None] = getattr(
-                Logger, log_config.log_level, Logger.info
-            )
-            logger_method(log_message)
-
-            # 执行原函数并记录耗时
-            start: float = time.time()
-            try:
-                return func(*args, **kwargs)
-            finally:
-                duration_ms: int = int((time.time() - start) * 1000)
-                time_message: str = f"{method} {path} 使用了{duration_ms}ms"
-                logger_method(time_message)
-
-                # 发送 API 日志到 RabbitMQ
-                asyncio.run(
-                    _send_api_log_to_queue_async(
-                        user_id,
-                        username,
-                        method,
-                        path,
-                        log_config.message,
-                        request,
-                        duration_ms,
-                        log_config,
-                        func,
-                        kwargs,
-                    )
-                )
-
         # 根据函数是否为协程选择包装器
         if inspect.iscoroutinefunction(func):
             return async_wrapper
-        else:
-            return sync_wrapper
+
+        raise TypeError("apiLog 装饰器只支持异步函数")
 
     return decorator
 
@@ -680,8 +592,8 @@ async def _send_api_log_to_queue_async(
         }
 
         # 发送到 RabbitMQ
-        success: bool = await asyncio.to_thread(
-            send_to_queue, "api-log-queue", api_log_message, persistent=True
+        success: bool = await send_to_queue_async(
+            "api-log-queue", api_log_message, persistent=True
         )
         if success:
             Logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)

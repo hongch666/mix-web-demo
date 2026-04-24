@@ -3,12 +3,12 @@ from functools import partial
 from typing import Any, Callable, Optional
 
 from app.core.base import Constants, Logger
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlalchemy.orm import Session
 
-from .tasks.analyzeCacheTask import update_analyze_caches
-from .tasks.vectorSyncTask import export_article_vectors_to_postgres
+from .tasks.analyzeCacheTask import update_analyze_caches_async
+from .tasks.vectorSyncTask import export_article_vectors_to_postgres_async
 
 
 def start_scheduler(
@@ -23,14 +23,14 @@ def start_scheduler(
     例如：
       start_scheduler(
           article_mapper=get_article_mapper(),
-          db_factory=lambda: create_db_session()
+                    db_factory=lambda: SessionLocal()
       )
     """
-    scheduler: BackgroundScheduler = BackgroundScheduler()
+    scheduler: AsyncIOScheduler = AsyncIOScheduler()
 
     # 任务1：同步文章向量到 PostgreSQL（使用LangChain）- 增量同步模式
     sync_vector_job_func = partial(
-        export_article_vectors_to_postgres,
+        export_article_vectors_to_postgres_async,
         article_mapper=article_mapper,
         mysql_db_factory=mysql_db_factory or db_factory,
         enable_incremental_sync=True,  # 启用增量同步
@@ -40,7 +40,7 @@ def start_scheduler(
 
     # 任务2：更新分析接口缓存
     analyze_cache_job_func = partial(
-        update_analyze_caches,
+        update_analyze_caches_async,
         analyze_service=analyze_service,
         db_factory=db_factory or mysql_db_factory,
     )

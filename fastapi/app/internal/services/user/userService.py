@@ -119,10 +119,9 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户的文章浏览分布"""
         try:
-            result = await asyncio.to_thread(
-                self.articleLogMapper.get_user_view_distribution_mapper, user_id
+            return await self.articleLogMapper.get_user_view_distribution_mapper(
+                user_id
             )
-            return result
         except Exception as e:
             Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             return {"total_views": 0, "articles": []}

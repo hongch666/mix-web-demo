@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
-from app.core.db import db
+from app.core.db import async_db
 from bson import ObjectId
 from langchain_core.tools import Tool
 
@@ -15,14 +15,14 @@ class MongoDBTools:
 
     def __init__(self) -> None:
         """初始化 MongoDB 日志工具"""
-        self.db = db
+        self.db = async_db
         self.logger = Logger
         # 获取日志集合名称（默认为 api_logs）
         self.logs_collection_name: str = (
             load_config("database").get("mongodb", {}).get("logs_collection")
         )
 
-    def get_logs_collection(self) -> Optional[Any]:
+    async def get_logs_collection(self) -> Optional[Any]:
         """获取日志集合"""
         try:
             return self.db[self.logs_collection_name]
@@ -30,17 +30,17 @@ class MongoDBTools:
             self.logger.error(f"获取日志集合失败: {e}")
             return None
 
-    def list_mongodb_collections(self, _: str = "") -> str:
+    async def list_mongodb_collections(self, _: str = "") -> str:
         """列出 MongoDB 数据库中的所有 collection 及其基本信息"""
         try:
             collections_info: List[Dict[str, Any]] = []
-            for collection_name in self.db.list_collection_names():
+            for collection_name in await self.db.list_collection_names():
                 try:
                     collection = self.db[collection_name]
-                    doc_count = collection.count_documents({})
+                    doc_count = await collection.count_documents({})
 
                     # 获取一个样本文档以了解结构
-                    sample_doc = collection.find_one()
+                    sample_doc = await collection.find_one()
                     sample_keys = list(sample_doc.keys()) if sample_doc else []
 
                     collections_info.append(
@@ -60,7 +60,7 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
-    def query_mongodb(self, query_params: Union[str, Dict[str, Any]]) -> str:
+    async def query_mongodb(self, query_params: Union[str, Dict[str, Any]]) -> str:
         """通用的 MongoDB 查询工具，可以查询任意 collection"""
         try:
             # 解析 query_params
@@ -102,11 +102,10 @@ class MongoDBTools:
 
             # 执行查询
             cursor = collection.find(filter_obj).limit(limit_int)
-            results: List[Dict[str, Any]] = []
-            for doc in cursor:
-                # 转换所有 datetime 对象为 ISO 格式字符串
-                doc = self._convert_datetime_to_string(doc)
-                results.append(doc)
+            docs = await cursor.to_list(length=limit_int if limit_int > 0 else None)
+            results: List[Dict[str, Any]] = [
+                self._convert_datetime_to_string(doc) for doc in docs
+            ]
 
             self.logger.info(
                 f"查询 {collection_name}: 条件={filter_obj}, 返回 {len(results)} 条记录"
@@ -124,12 +123,14 @@ class MongoDBTools:
             Tool(
                 name=Constants.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
                 description=Constants.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
-                func=self.list_mongodb_collections,
+                func=None,
+                coroutine=self.list_mongodb_collections,
             ),
             Tool(
                 name=Constants.MONGODB_QUERY_TOOL_NAME,
                 description=Constants.MONGODB_QUERY_TOOL_DESC,
-                func=self.query_mongodb,
+                func=None,
+                coroutine=self.query_mongodb,
             ),
         ]
 

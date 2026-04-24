@@ -841,8 +841,5 @@ class Constants:
     NACOS_INITIALIZATION_FAILED: str = "nacos 初始化不可用"
     """Nacos 初始化失败错误消息"""
 
-    PIKA_NOT_INSTALLED_ERROR: str = "pika 未安装，请先执行 `uv sync` 或安装 `pika`。"
-    """pika 未安装错误消息"""
-
     REDIS_NOT_INSTALLED_ERROR: str = "redis 未安装，请先执行 `uv sync` 或安装 `redis`。"
     """redis 未安装错误消息"""

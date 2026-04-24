@@ -1,4 +1,3 @@
-import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
@@ -20,7 +19,7 @@ class ApiLogService:
         Returns:
             List[Dict]: 接口平均响应时间列表
         """
-        return await asyncio.to_thread(self.mapper.get_api_average_response_time_mapper)
+        return await self.mapper.get_api_average_response_time_mapper()
 
     async def get_called_count_apis_service(self) -> List[Dict[str, Any]]:
         """
@@ -29,7 +28,7 @@ class ApiLogService:
         Returns:
             List[Dict]: 接口调用次数
         """
-        return await asyncio.to_thread(self.mapper.get_called_count_apis_mapper)
+        return await self.mapper.get_called_count_apis_mapper()
 
     async def get_api_call_statistics_service(self) -> Dict[str, Any]:
         """
@@ -38,7 +37,7 @@ class ApiLogService:
         Returns:
             Dict: 统计信息
         """
-        return await asyncio.to_thread(self.mapper.get_api_call_statistics_mapper)
+        return await self.mapper.get_api_call_statistics_mapper()
 
 
 @lru_cache()

@@ -19,8 +19,17 @@ except Exception as _exc:
     register_instance = _missing_nacos
     start_nacos = _missing_nacos
 
-from .mongodb import client, db
-from .mysql import Base, create_db_session, create_tables, engine, get_db, get_db_sync
+from .mongodb import async_client, async_db
+from .mysql import (
+    AsyncSessionLocal,
+    Base,
+    SessionLocal,
+    async_engine,
+    create_tables_async,
+    engine,
+    get_db,
+    get_db_async,
+)
 
 try:
     from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
@@ -41,7 +50,7 @@ try:
         RabbitMQClient,
         _rabbitmq_client,
         get_rabbitmq_client,
-        send_to_queue,
+        send_to_queue_async,
     )
 except ModuleNotFoundError as _exc:
     _rabbitmq_error: str = str(_exc)
@@ -49,15 +58,17 @@ except ModuleNotFoundError as _exc:
 
     class RabbitMQClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError(Constants.PIKA_NOT_INSTALLED_ERROR)
+            raise ModuleNotFoundError(
+                "aio-pika 未安装，请先执行 uv sync 或安装 aio-pika。"
+            )
 
     _rabbitmq_client = None
 
     def get_rabbitmq_client(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError(Constants.PIKA_NOT_INSTALLED_ERROR)
+        raise ModuleNotFoundError("aio-pika 未安装，请先执行 uv sync 或安装 aio-pika。")
 
-    def send_to_queue(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError(Constants.PIKA_NOT_INSTALLED_ERROR)
+    def send_to_queue_async(*args: Any, **kwargs: Any) -> NoReturn:
+        raise ModuleNotFoundError("aio-pika 未安装，请先执行 uv sync 或安装 aio-pika。")
 
 
 try:
@@ -75,20 +86,22 @@ except ModuleNotFoundError as _exc:
 
 
 __all__: List[str] = [
-    "client",
-    "db",
+    "async_client",
+    "async_db",
     "get_db",
-    "create_tables",
+    "get_db_async",
+    "create_tables_async",
     "engine",
+    "async_engine",
     "Base",
-    "create_db_session",
-    "get_db_sync",
+    "AsyncSessionLocal",
+    "SessionLocal",
     "start_nacos",
     "register_instance",
     "get_service_instance",
     "RabbitMQClient",
     "get_rabbitmq_client",
-    "send_to_queue",
+    "send_to_queue_async",
     "_rabbitmq_client",
     "ClickhouseConnectionPool",
     "get_clickhouse_connection_pool",

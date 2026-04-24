@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.base import Constants, logger
 from app.core.config import load_config, start_nacos
-from app.core.db import create_db_session, create_tables
+from app.core.db import SessionLocal, create_tables_async
 from app.internal.services import AnalyzeService, start_scheduler
 from fastapi import FastAPI
 
@@ -18,14 +18,14 @@ PORT: int = server_config["port"]
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-    create_tables(["ai_history"])
+    await create_tables_async(["ai_history"])
     start_nacos(ip=IP, port=PORT)
     logger.info("Nacos 服务注册成功")
 
     analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
 
     def db_factory() -> Session:
-        return create_db_session()
+        return SessionLocal()
 
     start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
 

@@ -7,7 +7,7 @@ from typing import Any, AsyncGenerator, Dict
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
 from app.core.base import Logger, success
-from app.core.db import get_db, get_db_sync
+from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.models import AiHistory
 from app.internal.schemas import (
@@ -65,7 +65,6 @@ async def send_message(
                 message=request.message, user_id=actual_user_id, db=db
             )
         elif request.service == AIServiceType.QWEN:
-            Logger.info(f"使用Qwen服务处理用户 {actual_user_id} 的请求")
             response_message: str = await qwenService.simple_chat(
                 message=request.message, user_id=actual_user_id, db=db
             )
@@ -154,7 +153,9 @@ async def stream_message(
         thinking_acc: str = ""
         # 在 event_generator 内部创建 db session，确保流式处理完成后立即释放
         try:
-            with get_db_sync() as db:
+            db_generator = get_db()
+            db = await anext(db_generator)
+            try:
                 # 根据请求的服务类型选择对应的AI服务
                 if request.service == AIServiceType.GEMINI:
                     Logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
@@ -232,6 +233,8 @@ async def stream_message(
                         )
                     except Exception as history_error:
                         Logger.error(f"保存流式AI历史记录失败: {str(history_error)}")
+            finally:
+                await db_generator.aclose()
 
         except BusinessException:
             # 业务异常直接重新抛出，不记录耗时

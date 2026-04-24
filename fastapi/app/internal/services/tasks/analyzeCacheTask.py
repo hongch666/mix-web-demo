@@ -1,4 +1,3 @@
-import asyncio
 import traceback
 from typing import Any, Callable, Optional
 
@@ -108,10 +107,3 @@ async def update_analyze_caches_async(
     db_factory: Optional[Callable[[], Session]] = None,
 ) -> None:
     await _update_analyze_caches_async(analyze_service, db_factory)
-
-
-def update_analyze_caches(
-    analyze_service: Optional[Any] = None,
-    db_factory: Optional[Callable[[], Session]] = None,
-) -> None:
-    asyncio.run(_update_analyze_caches_async(analyze_service, db_factory))

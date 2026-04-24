@@ -1,11 +1,11 @@
 from collections.abc import AsyncGenerator
-from contextlib import contextmanager
-from typing import Generator, List, Optional
+from typing import List, Optional
 from urllib.parse import quote_plus
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session as SASession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
@@ -23,6 +23,7 @@ PASSWORD: str = str(mysql_config["password"])
 ENCODED_PASSWORD: str = quote_plus(str(PASSWORD))
 
 DATABASE_URL: str = f"mysql+pymysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
+ASYNC_DATABASE_URL: str = f"mysql+aiomysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 
 POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
 MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
@@ -51,6 +52,19 @@ engine = create_engine(
     },
 )
 
+async_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    echo=ECHO,
+    pool_pre_ping=POOL_PRE_PING,
+    pool_recycle=POOL_RECYCLE,
+    pool_size=POOL_SIZE,
+    max_overflow=MAX_OVERFLOW,
+    pool_timeout=POOL_TIMEOUT,
+    connect_args={
+        "autocommit": AUTOCOMMIT,
+    },
+)
+
 SessionLocal = sessionmaker(
     bind=engine,
     autocommit=False,
@@ -59,56 +73,48 @@ SessionLocal = sessionmaker(
     class_=SASession,
 )
 
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine,
+    autoflush=False,
+    expire_on_commit=False,
+    class_=AsyncSession,
+)
+
 
 async def get_db() -> AsyncGenerator[SASession, None]:
     with SessionLocal() as session:
         yield session
 
 
-def create_db_session() -> SASession:
-    return SessionLocal()
-
-
-@contextmanager
-def get_db_sync() -> Generator[SASession, None, None]:
-    with SessionLocal() as session:
+async def get_db_async() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
         yield session
 
 
-def create_tables(tables: Optional[List[str]] = None) -> None:
+async def create_tables_async(tables: Optional[List[str]] = None) -> None:
     """
-    创建数据库表
+    使用异步 MySQL 连接创建数据库表。
 
     Args:
         tables: 要创建的表名列表，如 ['ai_history']
-                只支持创建 ai_history 表，使用 SQL 直接创建以确保字段类型正确
-
-    Examples:
-        # 只创建 ai_history 表
-        create_tables(['ai_history'])
     """
 
     try:
         if tables and "ai_history" in tables:
-            # 使用 SQL 直接创建 ai_history 表，确保 TEXT 类型正确
-            connection = engine.raw_connection()
-            cursor = connection.cursor()
-            try:
-                # 检查表是否已存在
-                check_sql = Constants.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK
-                cursor.execute(check_sql, (DATABASE,))
-                table_exists = cursor.fetchone() is not None
+            async with async_engine.begin() as connection:
+                result = await connection.exec_driver_sql(
+                    Constants.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK,
+                    (DATABASE,),
+                )
+                table_exists = result.fetchone() is not None
 
                 if not table_exists:
-                    create_sql = Constants.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
-                    cursor.execute(create_sql)
-                    connection.commit()
+                    await connection.exec_driver_sql(
+                        Constants.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
+                    )
                     Logger.info(Constants.AI_CHAT_TABLE_CREATION_MESSAGE)
                 else:
                     Logger.info(Constants.AI_CHAT_TABLE_EXISTS_MESSAGE)
-            finally:
-                cursor.close()
-                connection.close()
         else:
             Logger.warning(Constants.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
     except Exception as e:

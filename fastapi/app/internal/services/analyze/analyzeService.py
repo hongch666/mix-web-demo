@@ -353,10 +353,10 @@ class AnalyzeService:
                     self.articleMapper.return_clickhouse_connection, ch_conn
                 )
 
-    def get_keywords_dic(self) -> Dict[str, int]:
-        all_keywords: List[str] = (
-            self.articleLogMapper.get_search_keywords_articlelog_mapper()
-        )
+    async def get_keywords_dic(self) -> Dict[str, int]:
+        all_keywords: List[
+            str
+        ] = await self.articleLogMapper.get_search_keywords_articlelog_mapper()
         keywords_dic: Dict[str, int] = {}
         for keyword in all_keywords:
             if keyword in keywords_dic:
@@ -446,7 +446,7 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
         Logger.info(Constants.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
-        keywords_dic = await asyncio.to_thread(self.get_keywords_dic)
+        keywords_dic = await self.get_keywords_dic()
         # 生成词云图
         await asyncio.to_thread(self.generate_wordcloud, keywords_dic)
         # 上传到OSS

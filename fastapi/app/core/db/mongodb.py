@@ -1,7 +1,5 @@
 from app.core.config.config import load_config
-from pymongo import MongoClient
-from pymongo.database import Database
-from pymongo.mongo_client import MongoClient as MongoClientType
+from motor.motor_asyncio import AsyncIOMotorClient
 
 # 从配置文件读取 MongoDB 连接信息
 mongo_config = load_config("database")["mongodb"]
@@ -17,5 +15,5 @@ if username and password:
 else:
     URL: str = f"mongodb://{host}:{port}"
 
-client: MongoClientType = MongoClient(URL)
-db: Database = client[DATABASE]
+async_client: AsyncIOMotorClient = AsyncIOMotorClient(URL)
+async_db = async_client[DATABASE]

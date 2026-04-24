@@ -1,3 +1,4 @@
+import inspect
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, TypeVar
 
@@ -84,60 +85,10 @@ def requireInternalToken(
                 Logger.error(f"令牌验证失败: {str(e)}")
                 raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
 
-        @wraps(f)
-        def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
-            request: Optional[Request] = _get_request_from_args(args, kwargs)
-            if request is None:
-                Logger.error(Constants.INTERNAL_TOKEN_MISSING)
-                raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
+        if not inspect.iscoroutinefunction(f):
+            raise TypeError("requireInternalToken 装饰器只支持异步函数")
 
-            # 获取请求头中的内部令牌
-            auth_header: str = request.headers.get("X-Internal-Token", "")
-
-            if not auth_header:
-                Logger.error(Constants.INTERNAL_TOKEN_MISSING)
-                raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
-
-            # 移除 "Bearer " 前缀
-            token: str = auth_header
-            if token.startswith("Bearer "):
-                token = token[7:]
-
-            try:
-                # 验证令牌
-                internal_token_util: InternalTokenUtil = InternalTokenUtil()
-                claims: Dict[str, Any] = internal_token_util.validate_internal_token(
-                    token
-                )
-
-                # 验证服务名称（如果指定了）
-                if service_name and claims.get("serviceName") != service_name:
-                    error_msg: str = f"{Constants.SERVICE_NAME_MISMATCH}. 期望: {service_name}, 获得: {claims.get('serviceName')}"
-                    Logger.error(error_msg)
-                    raise BusinessException(Constants.SERVICE_NAME_MISMATCH)
-
-                Logger.debug(
-                    f"内部令牌验证成功 - 用户ID: {claims.get('userId')}, 服务: {claims.get('serviceName')}"
-                )
-
-                # 将令牌信息存储到请求中供后续使用
-                request.state.internal_token_claims = claims
-
-                # 调用原始函数
-                return f(*args, **kwargs)
-            except BusinessException:
-                raise
-            except Exception as e:
-                Logger.error(f"令牌验证失败: {str(e)}")
-                raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
-
-        # 判断是否为异步函数
-        if hasattr(f, "__wrapped__") or (
-            hasattr(f, "__code__") and f.__code__.co_flags & 0x80
-        ):
-            return async_wrapper
-        else:
-            return sync_wrapper
+        return async_wrapper
 
     # 如果 func 是可调用的且不是字符串，说明被直接用作装饰器（@requireInternalToken）
     if callable(func):

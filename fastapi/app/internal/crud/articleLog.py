@@ -1,9 +1,10 @@
+import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List
 
 from app.core.base import Constants, Logger
-from app.core.db import db as mongo_db
-from app.core.db import get_db_sync
+from app.core.db import async_db as mongo_db
+from app.core.db import get_db
 from app.core.errors import BusinessException
 
 from .article import get_article_mapper
@@ -12,7 +13,7 @@ from .article import get_article_mapper
 class ArticleLogMapper:
     """文章日志 Mapper"""
 
-    def get_search_keywords_articlelog_mapper(self) -> List[str]:
+    async def get_search_keywords_articlelog_mapper(self) -> List[str]:
         logs = mongo_db["articlelogs"]
         pipeline = [
             {"$match": {"action": "search"}},
@@ -22,10 +23,11 @@ class ArticleLogMapper:
             {"$sort": {"_id": 1}},
         ]
         cursor = logs.aggregate(pipeline)
-        all_keywords: List[str] = [doc["_id"] for doc in cursor]
+        results = await cursor.to_list(length=None)
+        all_keywords: List[str] = [doc["_id"] for doc in results]
         return all_keywords
 
-    def get_user_view_distribution_mapper(self, user_id: int) -> Dict[str, Any]:
+    async def get_user_view_distribution_mapper(self, user_id: int) -> Dict[str, Any]:
         """获取用户的文章浏览分布"""
         try:
             logs = mongo_db["articlelogs"]
@@ -40,7 +42,7 @@ class ArticleLogMapper:
             ]
 
             cursor = logs.aggregate(pipeline)
-            results = list(cursor)
+            results = await cursor.to_list(length=None)
 
             if not results:
                 Logger.info(f"用户 {user_id} 无浏览记录")
@@ -51,31 +53,35 @@ class ArticleLogMapper:
             article_mapper = get_article_mapper()
 
             # 批量获取所有文章信息（只需一次查询）
-            with get_db_sync() as db:
-                articles_dict = article_mapper.get_articles_by_ids_mapper(
-                    article_ids, db
+            db_generator = get_db()
+            db = await anext(db_generator)
+            try:
+                articles_dict = await asyncio.to_thread(
+                    article_mapper.get_articles_by_ids_mapper, article_ids, db
+                )
+            finally:
+                await db_generator.aclose()
+
+            # 处理聚合结果并匹配文章标题
+            articles = []
+            total_views = 0
+
+            for doc in results:
+                article_id = doc["_id"]
+                views = doc["views"]
+                total_views += views
+
+                article = articles_dict.get(article_id)
+                title = article.title if article else Constants.UNKNOWN_ARTICLE
+                articles.append(
+                    {"article_id": article_id, "title": title, "views": views}
                 )
 
-                # 处理聚合结果并匹配文章标题
-                articles = []
-                total_views = 0
+            Logger.info(
+                f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
+            )
 
-                for doc in results:
-                    article_id = doc["_id"]
-                    views = doc["views"]
-                    total_views += views
-
-                    article = articles_dict.get(article_id)
-                    title = article.title if article else Constants.UNKNOWN_ARTICLE
-                    articles.append(
-                        {"article_id": article_id, "title": title, "views": views}
-                    )
-
-                Logger.info(
-                    f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
-                )
-
-                return {"total_views": total_views, "articles": articles}
+            return {"total_views": total_views, "articles": articles}
         except Exception as e:
             Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             raise BusinessException(Constants.GET_TOP_FAIL)
