@@ -1,4 +1,3 @@
-import asyncio
 from functools import wraps
 from typing import Any, Callable, Optional
 
@@ -45,30 +44,30 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     db = arg
                     break
 
-        def _check_permission(current_db: Session) -> None:
-            # 获取用户Mapper
-            user_mapper = get_user_mapper()
-
-            # 获取用户角色
-            user_role: str = user_mapper.get_user_role(int(user_id), current_db)
-
-            # 检查是否是管理员
-            if user_role != Constants.ROLE_ADMIN:
-                Logger.warning(
-                    f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
-                )
-                raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
-
-            Logger.info(f"管理员 {user_id} 访问受保护的接口")
-
         try:
             if db:
-                await asyncio.to_thread(_check_permission, db)
+                user_mapper = get_user_mapper()
+                user_role: str = await user_mapper.get_user_role_async(int(user_id), db)
+                if user_role != Constants.ROLE_ADMIN:
+                    Logger.warning(
+                        f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
+                    )
+                    raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
+                Logger.info(f"管理员 {user_id} 访问受保护的接口")
                 return await func(*args, **kwargs)
             db_generator = get_db()
             current_db = await anext(db_generator)
             try:
-                await asyncio.to_thread(_check_permission, current_db)
+                user_mapper = get_user_mapper()
+                user_role = await user_mapper.get_user_role_async(
+                    int(user_id), current_db
+                )
+                if user_role != Constants.ROLE_ADMIN:
+                    Logger.warning(
+                        f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
+                    )
+                    raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
+                Logger.info(f"管理员 {user_id} 访问受保护的接口")
                 return await func(*args, **kwargs)
             finally:
                 await db_generator.aclose()

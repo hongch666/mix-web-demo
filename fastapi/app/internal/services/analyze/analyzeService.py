@@ -110,18 +110,14 @@ class AnalyzeService:
     async def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
         ch_conn = None
         try:
-            ch_conn = await asyncio.to_thread(
-                self.articleMapper.get_clickhouse_connection
-            )
+            ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._article_cache.get(ch_conn)
         except Exception as e:
             Logger.debug(f"_get_top10_cached 失败: {e}")
             return None
         finally:
             if ch_conn:
-                await asyncio.to_thread(
-                    self.articleMapper.return_clickhouse_connection, ch_conn
-                )
+                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def _get_wordcloud_cached(self) -> Optional[str]:
         try:
@@ -142,34 +138,26 @@ class AnalyzeService:
     ) -> Optional[List[Dict[str, Any]]]:
         ch_conn = None
         try:
-            ch_conn = await asyncio.to_thread(
-                self.articleMapper.get_clickhouse_connection
-            )
+            ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._category_cache.get(ch_conn)
         except Exception as e:
             Logger.debug(f"_get_category_article_count_cached 失败: {e}")
             return None
         finally:
             if ch_conn:
-                await asyncio.to_thread(
-                    self.articleMapper.return_clickhouse_connection, ch_conn
-                )
+                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def _get_monthly_publish_count_cached(self) -> Optional[List[Dict[str, Any]]]:
         ch_conn = None
         try:
-            ch_conn = await asyncio.to_thread(
-                self.articleMapper.get_clickhouse_connection
-            )
+            ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._publish_time_cache.get(ch_conn)
         except Exception as e:
             Logger.debug(f"_get_monthly_publish_count_cached 失败: {e}")
             return None
         finally:
             if ch_conn:
-                await asyncio.to_thread(
-                    self.articleMapper.return_clickhouse_connection, ch_conn
-                )
+                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_top10_articles_service_sf(
         self, db: Session = Depends(get_db)
@@ -248,9 +236,7 @@ class AnalyzeService:
         start = time.time()
         try:
             try:
-                ch_conn = await asyncio.to_thread(
-                    self.articleMapper.get_clickhouse_connection
-                )
+                ch_conn = await self.articleMapper.get_clickhouse_connection_async()
                 cached_result = await self._article_cache.get(ch_conn)
                 if cached_result:
                     total_time = time.time() - start
@@ -264,9 +250,7 @@ class AnalyzeService:
             Logger.info(Constants.TOP10_CACHE_MISS)
 
             try:
-                articles = await asyncio.to_thread(
-                    self.articleMapper.get_top10_articles_clickhouse_mapper
-                )
+                articles = await self.articleMapper.get_top10_articles_clickhouse_mapper_async()
                 if articles and isinstance(articles[0], dict):
                     data_source = "ClickHouse"
                     Logger.info(Constants.TOP10_CLICKHOUSE_GET)
@@ -276,8 +260,8 @@ class AnalyzeService:
                 )
 
             if not articles or len(articles) == 0:
-                articles = await asyncio.to_thread(
-                    self.articleMapper.get_top10_articles_db_mapper, db
+                articles = await self.articleMapper.get_top10_articles_db_mapper_async(
+                    db
                 )
                 data_source = "DB"
                 Logger.info(Constants.TOP10_DB_SOURCE)
@@ -289,8 +273,8 @@ class AnalyzeService:
                     if article.get("user_id")
                 ]
                 if user_ids:
-                    users = await asyncio.to_thread(
-                        self.userMapper.get_users_by_ids_mapper, user_ids, db
+                    users = await self.userMapper.get_users_by_ids_mapper_async(
+                        user_ids, db
                     )
                     user_id_to_name = {user.id: user.name for user in users}
                     for article in articles:
@@ -311,8 +295,8 @@ class AnalyzeService:
                 result = articles
             else:
                 user_ids = [article.user_id for article in articles]
-                users = await asyncio.to_thread(
-                    self.userMapper.get_users_by_ids_mapper, user_ids, db
+                users = await self.userMapper.get_users_by_ids_mapper_async(
+                    user_ids, db
                 )
                 user_id_to_name = {user.id: user.name for user in users}
                 result = [
@@ -349,9 +333,7 @@ class AnalyzeService:
             return result
         finally:
             if ch_conn:
-                await asyncio.to_thread(
-                    self.articleMapper.return_clickhouse_connection, ch_conn
-                )
+                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_keywords_dic(self) -> Dict[str, int]:
         all_keywords: List[
@@ -448,7 +430,7 @@ class AnalyzeService:
         # 获取关键词字典
         keywords_dic = await self.get_keywords_dic()
         # 生成词云图
-        await asyncio.to_thread(self.generate_wordcloud, keywords_dic)
+        self.generate_wordcloud(keywords_dic)
         # 上传到OSS
         oss_url = await self.upload_wordcloud_to_oss()
 
@@ -494,38 +476,34 @@ class AnalyzeService:
         worksheet.append([Constants.EXPORT_ARTICLES_EXCEL_TIP])
         worksheet.append(headers)
 
-        def _export_to_excel() -> int:
-            total_rows = 0
-            for batch in self.articleMapper.iter_articles_for_excel_export_mapper(db):
-                for item in batch:
-                    worksheet.append(
-                        [
-                            item.get("id"),
-                            item.get("title"),
-                            item.get("content"),
-                            item.get("username"),
-                            item.get("tags"),
-                            item.get("status"),
-                            item.get("create_at").isoformat()
-                            if item.get("create_at")
-                            else None,
-                            item.get("update_at").isoformat()
-                            if item.get("update_at")
-                            else None,
-                            item.get("views"),
-                            item.get("sub_category_name"),
-                            item.get("category_name"),
-                            item.get("like_count"),
-                            item.get("collect_count"),
-                            item.get("author_follow_count"),
-                        ]
-                    )
-                    total_rows += 1
+        total_rows = 0
+        rows = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
+        for item in rows:
+            worksheet.append(
+                [
+                    item.get("id"),
+                    item.get("title"),
+                    item.get("content"),
+                    item.get("username"),
+                    item.get("tags"),
+                    item.get("status"),
+                    item.get("create_at").isoformat()
+                    if item.get("create_at")
+                    else None,
+                    item.get("update_at").isoformat()
+                    if item.get("update_at")
+                    else None,
+                    item.get("views"),
+                    item.get("sub_category_name"),
+                    item.get("category_name"),
+                    item.get("like_count"),
+                    item.get("collect_count"),
+                    item.get("author_follow_count"),
+                ]
+            )
+            total_rows += 1
 
-            workbook.save(file_path)
-            return total_rows
-
-        total_rows = await asyncio.to_thread(_export_to_excel)
+        workbook.save(file_path)
         Logger.info(f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录")
         return file_path
 
@@ -574,29 +552,27 @@ class AnalyzeService:
 
         # ========== 步骤2: 缓存未命中，查询DB ==========
         Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
+        total_views = await self.articleMapper.get_total_views_mapper_async(db)
+        total_articles = await self.articleMapper.get_total_articles_mapper_async(db)
+        active_authors = await self.articleMapper.get_active_authors_mapper_async(db)
+        average_views = await self.articleMapper.get_average_views_mapper_async(db)
+        total_likes = await self.likeMapper.get_total_likes_mapper_async(db)
+        average_likes = await self.likeMapper.get_average_likes_mapper_async(db)
+        total_collects = await self.collectMapper.get_total_collects_mapper_async(db)
+        average_collects = await self.collectMapper.get_average_collects_mapper_async(
+            db
+        )
 
-        def _load_statistics() -> Dict[str, Any]:
-            total_views = self.articleMapper.get_total_views_mapper(db)
-            total_articles = self.articleMapper.get_total_articles_mapper(db)
-            active_authors = self.articleMapper.get_active_authors_mapper(db)
-            average_views = self.articleMapper.get_average_views_mapper(db)
-            total_likes = self.likeMapper.get_total_likes_mapper(db)
-            average_likes = self.likeMapper.get_average_likes_mapper(db)
-            total_collects = self.collectMapper.get_total_collects_mapper(db)
-            average_collects = self.collectMapper.get_average_collects_mapper(db)
-
-            return {
-                "total_views": total_views,
-                "total_articles": total_articles,
-                "active_authors": active_authors,
-                "average_views": average_views,
-                "total_likes": total_likes,
-                "average_likes": average_likes,
-                "total_collects": total_collects,
-                "average_collects": average_collects,
-            }
-
-        statistics = await asyncio.to_thread(_load_statistics)
+        statistics = {
+            "total_views": total_views,
+            "total_articles": total_articles,
+            "active_authors": active_authors,
+            "average_views": average_views,
+            "total_likes": total_likes,
+            "average_likes": average_likes,
+            "total_collects": total_collects,
+            "average_collects": average_collects,
+        }
 
         # ========== 步骤3: 更新缓存 ==========
         try:
@@ -633,9 +609,7 @@ class AnalyzeService:
         try:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
-                ch_conn = await asyncio.to_thread(
-                    self.articleMapper.get_clickhouse_connection
-                )
+                ch_conn = await self.articleMapper.get_clickhouse_connection_async()
                 cached_result = await self._category_cache.get(ch_conn)
                 if cached_result:
                     total_time = time.time() - start
@@ -648,63 +622,61 @@ class AnalyzeService:
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
+            local_category_data = None
+            local_data_source = "DB"
 
-            def _load_category_statistics() -> tuple[List[Dict[str, Any]], str]:
-                local_category_data = None
+            try:
+                local_category_data = await self.articleMapper.get_category_article_count_clickhouse_mapper_async()
+                local_data_source = "ClickHouse"
+                Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_GET)
+            except Exception as ch_e:
+                Logger.warning(
+                    f"get_category_article_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
+                )
                 local_data_source = "DB"
 
-                try:
-                    local_category_data = self.articleMapper.get_category_article_count_clickhouse_mapper()
-                    local_data_source = "ClickHouse"
-                    Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_GET)
-                except Exception as ch_e:
-                    Logger.warning(
-                        f"get_category_article_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
+            if not local_category_data:
+                local_category_data = (
+                    await self.articleMapper.get_category_article_count_db_mapper_async(
+                        db
                     )
-                    local_data_source = "DB"
-
-                if not local_category_data:
-                    local_category_data = (
-                        self.articleMapper.get_category_article_count_db_mapper(db)
-                    )
-                    local_data_source = "DB"
-                    Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
-
-                all_categories = self.categoryMapper.get_all_categories_mapper(db)
-                subcategories = (
-                    self.categoryMapper.get_subcategories_with_parent_mapper(db)
                 )
-                sub_cat_map = {sc["id"]: sc for sc in subcategories}
+                local_data_source = "DB"
+                Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
 
-                parent_category_count = {}
-                for category in all_categories:
-                    parent_category_count[category.id] = {
-                        "category_id": category.id,
-                        "category_name": category.name,
-                        "article_count": 0,
-                    }
+            all_categories = await self.categoryMapper.get_all_categories_mapper_async(
+                db
+            )
+            subcategories = (
+                await self.categoryMapper.get_subcategories_with_parent_mapper_async(db)
+            )
+            sub_cat_map = {sc["id"]: sc for sc in subcategories}
 
-                for item in local_category_data:
-                    sub_cat_id = item["sub_category_id"]
-                    sub_cat_info = sub_cat_map.get(sub_cat_id, {})
+            parent_category_count = {}
+            for category in all_categories:
+                parent_category_count[category.id] = {
+                    "category_id": category.id,
+                    "category_name": category.name,
+                    "article_count": 0,
+                }
 
-                    parent_id = sub_cat_info.get("category_id")
-                    if parent_id and parent_id in parent_category_count:
-                        parent_category_count[parent_id]["article_count"] += item[
-                            "count"
-                        ]
+            for item in local_category_data:
+                sub_cat_id = item["sub_category_id"]
+                sub_cat_info = sub_cat_map.get(sub_cat_id, {})
 
-                result = list(parent_category_count.values())
-                result.sort(key=lambda x: x["article_count"], reverse=True)
+                parent_id = sub_cat_info.get("category_id")
+                if parent_id and parent_id in parent_category_count:
+                    parent_category_count[parent_id]["article_count"] += item["count"]
 
-                non_zero_count = len([c for c in result if c["article_count"] > 0])
-                Logger.info(
-                    f"get_category_article_count_service: 获取 {len(result)} 个大分类，有文章的分类数: {non_zero_count}"
-                )
+            result = list(parent_category_count.values())
+            result.sort(key=lambda x: x["article_count"], reverse=True)
 
-                return result, local_data_source
+            non_zero_count = len([c for c in result if c["article_count"] > 0])
+            Logger.info(
+                f"get_category_article_count_service: 获取 {len(result)} 个大分类，有文章的分类数: {non_zero_count}"
+            )
 
-            result, data_source = await asyncio.to_thread(_load_category_statistics)
+            data_source = local_data_source
 
             # ========== 步骤7: 更新缓存 ==========
             if ch_conn and result:
@@ -720,9 +692,7 @@ class AnalyzeService:
             return result
         finally:
             if ch_conn:
-                await asyncio.to_thread(
-                    self.articleMapper.return_clickhouse_connection, ch_conn
-                )
+                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_monthly_publish_count_service(
         self, db: Session = Depends(get_db)
@@ -743,9 +713,7 @@ class AnalyzeService:
         try:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
-                ch_conn = await asyncio.to_thread(
-                    self.articleMapper.get_clickhouse_connection
-                )
+                ch_conn = await self.articleMapper.get_clickhouse_connection_async()
                 cached_result = await self._publish_time_cache.get(ch_conn)
                 if cached_result:
                     total_time = time.time() - start
@@ -758,52 +726,46 @@ class AnalyzeService:
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
+            local_publish_data = None
+            local_data_source = "DB"
 
-            def _load_monthly_statistics() -> tuple[List[Dict[str, Any]], str]:
-                local_publish_data = None
-                local_data_source = "DB"
-
-                try:
-                    local_publish_data = (
-                        self.articleMapper.get_monthly_publish_count_clickhouse_mapper()
-                    )
-                    local_data_source = "ClickHouse"
-                    Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_GET)
-                except Exception as ch_e:
-                    Logger.warning(
-                        f"get_monthly_publish_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
-                    )
-
-                if not local_publish_data:
-                    local_publish_data = (
-                        self.articleMapper.get_monthly_publish_count_db_mapper(db)
-                    )
-                    local_data_source = "DB"
-                    Logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
-
-                now = datetime.now()
-                expected_months = []
-                for i in range(5, -1, -1):
-                    month_date = now - relativedelta(months=i)
-                    expected_months.append(month_date.strftime("%Y-%m"))
-
-                data_dict = {
-                    item["year_month"]: item["count"] for item in local_publish_data
-                }
-
-                result = []
-                for month in expected_months:
-                    result.append(
-                        {"year_month": month, "count": data_dict.get(month, 0)}
-                    )
-
-                result.sort(key=lambda x: x["year_month"], reverse=False)
-                Logger.info(
-                    f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}"
+            try:
+                local_publish_data = await self.articleMapper.get_monthly_publish_count_clickhouse_mapper_async()
+                local_data_source = "ClickHouse"
+                Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_GET)
+            except Exception as ch_e:
+                Logger.warning(
+                    f"get_monthly_publish_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
                 )
-                return result, local_data_source
 
-            result, data_source = await asyncio.to_thread(_load_monthly_statistics)
+            if not local_publish_data:
+                local_publish_data = (
+                    await self.articleMapper.get_monthly_publish_count_db_mapper_async(
+                        db
+                    )
+                )
+                local_data_source = "DB"
+                Logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
+
+            now = datetime.now()
+            expected_months = []
+            for i in range(5, -1, -1):
+                month_date = now - relativedelta(months=i)
+                expected_months.append(month_date.strftime("%Y-%m"))
+
+            data_dict = {
+                item["year_month"]: item["count"] for item in local_publish_data
+            }
+
+            result = []
+            for month in expected_months:
+                result.append({"year_month": month, "count": data_dict.get(month, 0)})
+
+            result.sort(key=lambda x: x["year_month"], reverse=False)
+            Logger.info(
+                f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}"
+            )
+            data_source = local_data_source
 
             # ========== 步骤5: 更新缓存 ==========
             if ch_conn and result:
@@ -819,9 +781,7 @@ class AnalyzeService:
             return result
         finally:
             if ch_conn:
-                await asyncio.to_thread(
-                    self.articleMapper.return_clickhouse_connection, ch_conn
-                )
+                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
 
 @lru_cache()

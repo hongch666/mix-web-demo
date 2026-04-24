@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List
@@ -13,7 +14,7 @@ sa_func = func
 class CommentsMapper:
     """评论 Mapper"""
 
-    def get_ai_comments_num_by_article_id_mapper(
+    async def _get_ai_comments_num_by_article_id_mapper_sync(
         self, article_id: int, db: Session
     ) -> int:
         # 第一步: 查询所有 role 为 "ai" 的用户ID
@@ -32,13 +33,15 @@ class CommentsMapper:
 
         return len(ai_comments)
 
-    def create_comment_mapper(self, comment: Comments, db: Session) -> Comments:
+    async def _create_comment_mapper_sync(
+        self, comment: Comments, db: Session
+    ) -> Comments:
         db.add(comment)
         db.commit()
         db.refresh(comment)
         return comment
 
-    def delete_ai_comments_by_article_id_mapper(
+    async def _delete_ai_comments_by_article_id_mapper_sync(
         self, article_id: int, db: Session
     ) -> None:
         # 查询所有 role 为 "ai" 的用户ID
@@ -54,7 +57,7 @@ class CommentsMapper:
 
         db.commit()
 
-    def get_monthly_comment_trend_mapper(
+    async def _get_monthly_comment_trend_mapper_sync(
         self, db: Session, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月评论的趋势"""
@@ -98,6 +101,28 @@ class CommentsMapper:
             f"用户 {user_id} 本月评论趋势: 总数={total}, 天数={len(daily_trends)}"
         )
         return {"total": total, "daily_trends": daily_trends}
+
+    async def get_ai_comments_num_by_article_id_mapper_async(
+        self, article_id: int, db: Session
+    ) -> int:
+        return await self._get_ai_comments_num_by_article_id_mapper_sync(article_id, db)
+
+    async def create_comment_mapper_async(
+        self, comment: Comments, db: Session
+    ) -> Comments:
+        return await self._create_comment_mapper_sync(comment, db)
+
+    async def delete_ai_comments_by_article_id_mapper_async(
+        self, article_id: int, db: Session
+    ) -> None:
+        await asyncio.to_thread(
+            self._delete_ai_comments_by_article_id_mapper_sync, article_id, db
+        )
+
+    async def get_monthly_comment_trend_mapper_async(
+        self, db: Session, user_id: int
+    ) -> Dict[str, Any]:
+        return await self._get_monthly_comment_trend_mapper_sync(db, user_id)
 
 
 @lru_cache()

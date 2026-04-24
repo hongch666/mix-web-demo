@@ -1,4 +1,3 @@
-import asyncio
 import os
 from typing import Any, List, Optional, Tuple
 
@@ -131,11 +130,8 @@ class BaseAiService:
     ) -> List[ChatHistoryItem]:
         """从数据库加载聊天历史"""
         try:
-            histories = await asyncio.to_thread(
-                self.ai_history_mapper.get_all_ai_history_by_userid,
-                db,
-                user_id,
-                5,
+            histories = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
+                db, user_id, 5
             )
             chat_history: List[ChatHistoryItem] = []
             for h in histories:

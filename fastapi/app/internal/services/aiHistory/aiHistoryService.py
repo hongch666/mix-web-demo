@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 import time
 from functools import lru_cache
@@ -62,28 +61,21 @@ class AiHistoryService:
             ai_type=data["ai_type"],
         )
 
-        return await asyncio.to_thread(
-            self.ai_history_mapper.create_ai_history, history, db
-        )
+        return await self.ai_history_mapper.create_ai_history_async(history, db)
 
     async def get_all_ai_history(self, user_id: int, db: Any) -> list[Dict[str, Any]]:
-        data = await asyncio.to_thread(
-            self.ai_history_mapper.get_all_ai_history_by_userid,
-            db,
-            user_id,
-            None,
+        data = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
+            db, user_id, None
         )
         return [self._serialize_ai_history(item) for item in data]
 
     async def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
         # 检查用户是否存在
-        user = await asyncio.to_thread(self.user_mapper.get_user_by_id, user_id, db)
+        user = await self.user_mapper.get_user_by_id_async(user_id, db)
         if not user:
             raise BusinessException(Constants.USER_NOT_EXISTS_ERROR)
 
-        await asyncio.to_thread(
-            self.ai_history_mapper.delete_ai_history_by_userid, db, user_id
-        )
+        await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
 
     @staticmethod
     def _serialize_ai_history(ai_history: AiHistory) -> Dict[str, Any]:

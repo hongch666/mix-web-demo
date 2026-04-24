@@ -32,7 +32,7 @@ class StatisticsCache(BaseCache):
         3. 返回 None（需要查询 DB）
         """
         # 1. 先查本地缓存
-        local_data = self.get_from_local()
+        local_data = await self.get_from_local()
         if local_data:
             return local_data
 
@@ -53,7 +53,7 @@ class StatisticsCache(BaseCache):
         1. 本地内存缓存（L1）
         2. Redis 缓存（L2）
         """
-        self.update_local_cache(data)
+        await self.update_local_cache(data)
         await self.update_redis_cache(data)
 
 

@@ -52,7 +52,7 @@ class WordcloudCache(BaseCache):
         3. 返回 None（需要重新生成）
         """
         # 1. 先查本地缓存
-        local_data = self.get_from_local()
+        local_data = await self.get_from_local()
         if local_data:
             return local_data
 
@@ -76,12 +76,12 @@ class WordcloudCache(BaseCache):
         参数:
             oss_url: OSS中词云图的URL
         """
-        self.update_local_cache(oss_url)
+        await self.update_local_cache(oss_url)
         await self.update_redis_cache(oss_url)
 
     async def delete(self) -> None:
         """删除所有级别的词云图缓存"""
-        self.clear_local_cache()
+        await self.clear_local_cache()
         try:
             await self._redis.delete(self.REDIS_KEY_PREFIX)
             Logger.info(Constants.WORDCLOUD_CACHE_DELETED)

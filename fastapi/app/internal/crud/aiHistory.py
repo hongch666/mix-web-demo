@@ -9,13 +9,15 @@ from sqlalchemy.orm import Session
 class AiHistoryMapper:
     """AI 历史记录 Mapper"""
 
-    def create_ai_history(self, ai_history: AiHistory, db: Session) -> AiHistory:
+    async def _create_ai_history_sync(
+        self, ai_history: AiHistory, db: Session
+    ) -> AiHistory:
         db.add(ai_history)
         db.commit()
         db.refresh(ai_history)
         return ai_history
 
-    def get_all_ai_history_by_userid(
+    async def _get_all_ai_history_by_userid_sync(
         self, db: Session, user_id: int, limit: Optional[int]
     ) -> List[AiHistory]:
         if limit is None:
@@ -33,12 +35,29 @@ class AiHistoryMapper:
             )
         return db.execute(statement).scalars().all()
 
-    def delete_ai_history_by_userid(self, db: Session, user_id: int) -> None:
+    async def _delete_ai_history_by_userid_sync(
+        self, db: Session, user_id: int
+    ) -> None:
         statement = select(AiHistory).where(AiHistory.user_id == user_id)
         histories = db.execute(statement).scalars().all()
         for history in histories:
             db.delete(history)
         db.commit()
+
+    async def create_ai_history_async(
+        self, ai_history: AiHistory, db: Session
+    ) -> AiHistory:
+        return await self._create_ai_history_sync(ai_history, db)
+
+    async def get_all_ai_history_by_userid_async(
+        self, db: Session, user_id: int, limit: Optional[int]
+    ) -> List[AiHistory]:
+        return await self._get_all_ai_history_by_userid_sync(db, user_id, limit)
+
+    async def delete_ai_history_by_userid_async(
+        self, db: Session, user_id: int
+    ) -> None:
+        await self._delete_ai_history_by_userid_sync(db, user_id)
 
 
 @lru_cache()

@@ -73,7 +73,7 @@ class RAGTools:
         )
         self.logger.info(Constants.VECTOR_STORE_INITIALIZATION_SUCCESS)
 
-    def add_articles_to_vector_store(
+    async def add_articles_to_vector_store(
         self,
         article_ids: List[int],
         titles: List[str],
@@ -177,7 +177,7 @@ class RAGTools:
 
         return result
 
-    def search_similar_articles(self, query: str, k: int = 5) -> str:
+    async def search_similar_articles(self, query: str, k: int = 5) -> str:
         """
         搜索相似文章
 
@@ -237,7 +237,7 @@ class RAGTools:
             self.logger.error(error_msg)
             return error_msg
 
-    def get_article_context(self, query: str, k: int = 3) -> List[Document]:
+    async def get_article_context(self, query: str, k: int = 3) -> List[Document]:
         """
         获取文章上下文（供Chain使用）
 
@@ -278,15 +278,20 @@ class RAGTools:
         Returns:
             Tool对象列表
         """
+
+        async def _search_tool(query: str) -> str:
+            return await self.search_similar_articles(query, k=self.top_k)
+
         return [
             Tool(
                 name=Constants.RAG_TOOL_NAME,
                 description=Constants.RAG_TOOL_DESC,
-                func=lambda query: self.search_similar_articles(query, k=self.top_k),
+                func=None,
+                coroutine=_search_tool,
             )
         ]
 
-    def get_retriever(self, k: int = 3) -> Any:
+    async def get_retriever(self, k: int = 3) -> Any:
         """
         获取LangChain检索器
 

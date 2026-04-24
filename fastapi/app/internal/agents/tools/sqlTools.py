@@ -40,7 +40,7 @@ class SQLTools:
             user_id_context.set(user_id)
             self.logger.info(f"设置SQL工具用户ID: {user_id}")
 
-    def get_user_id(self) -> Optional[int]:
+    async def get_user_id(self) -> Optional[int]:
         """获取当前用户ID"""
         return user_id_context.get()
 
@@ -96,7 +96,7 @@ class SQLTools:
 
         return True, ""
 
-    def is_dangerous_nl_request(self, question: str) -> bool:
+    async def is_dangerous_nl_request(self, question: str) -> bool:
         """判断自然语言是否在引导生成数据库写操作SQL"""
         normalized_question = re.sub(r"\s+", " ", (question or "")).strip().lower()
         if not normalized_question:
@@ -107,7 +107,7 @@ class SQLTools:
                 return True
         return False
 
-    def get_table_schema(self, table_name: str = "") -> str:
+    async def get_table_schema(self, table_name: str = "") -> str:
         """
         获取数据库表结构信息
 
@@ -170,7 +170,7 @@ class SQLTools:
             self.logger.error(error_msg)
             return error_msg
 
-    def execute_query(self, query: str) -> str:
+    async def execute_query(self, query: str) -> str:
         """
         执行SQL查询并返回结果
 
@@ -186,7 +186,7 @@ class SQLTools:
                 return error_message
 
             # 获取当前用户ID
-            current_user_id = self.get_user_id()
+            current_user_id = await self.get_user_id()
 
             # 如果涉及个人数据查询且有用户ID，添加用户ID过滤
             if current_user_id:
@@ -247,6 +247,12 @@ class SQLTools:
             self.logger.error(error_msg)
             return error_msg
 
+    async def get_table_schema_async(self, table_name: str = "") -> str:
+        return await self.get_table_schema(table_name)
+
+    async def execute_query_async(self, query: str) -> str:
+        return await self.execute_query(query)
+
     def get_langchain_tools(self) -> List[Tool]:
         """
         获取LangChain Tool对象列表
@@ -258,12 +264,14 @@ class SQLTools:
             Tool(
                 name=Constants.SQL_TABLE_TOOL_NAME,
                 description=Constants.SQL_TABLE_TOOL_DESC,
-                func=self.get_table_schema,
+                func=None,
+                coroutine=self.get_table_schema_async,
             ),
             Tool(
                 name=Constants.SQL_QUERY_TOOL_NAME,
                 description=Constants.SQL_QUERY_TOOL_DESC,
-                func=self.execute_query,
+                func=None,
+                coroutine=self.execute_query_async,
             ),
         ]
 

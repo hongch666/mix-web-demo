@@ -42,7 +42,7 @@ class GenerateService:
         self.gemini_service: Optional[GeminiService] = gemini_service
         self.qwen_service: Optional[QwenService] = qwen_service
 
-    def extract_tags(self, text: str, topK: int = 5) -> str:
+    async def extract_tags(self, text: str, topK: int = 5) -> str:
         """
         提取文本中的关键词作为tags
         :param text: 文章内容
@@ -64,22 +64,20 @@ class GenerateService:
         from app.internal.models import Comments
 
         # 1. 判断是否需要生成AI评论
-        ai_comments_count = await asyncio.to_thread(
-            self.comments_mapper.get_ai_comments_num_by_article_id_mapper,
-            article_id,
-            db,
+        ai_comments_count = (
+            await self.comments_mapper.get_ai_comments_num_by_article_id_mapper_async(
+                article_id, db
+            )
         )
         if ai_comments_count > 0:
             Logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
-            await asyncio.to_thread(
-                self.comments_mapper.delete_ai_comments_by_article_id_mapper,
-                article_id,
-                db,
+            await self.comments_mapper.delete_ai_comments_by_article_id_mapper_async(
+                article_id, db
             )
         # 2. 调用大模型生成AI评论
         # 2.1 获取文章标题,tags和内容
-        article = await asyncio.to_thread(
-            self.article_mapper.get_article_by_id_mapper, article_id, db
+        article = await self.article_mapper.get_article_by_id_mapper_async(
+            article_id, db
         )
         if not article:
             raise BusinessException(Constants.ARTICLE_NOT_EXISTS_ERROR)
@@ -195,15 +193,9 @@ class GenerateService:
             update_time=datetime.now(),
         )
         # 4. 保存AI评论到数据库
-        await asyncio.to_thread(
-            self.comments_mapper.create_comment_mapper, doubao_ai_comment, db
-        )
-        await asyncio.to_thread(
-            self.comments_mapper.create_comment_mapper, gemini_ai_comment, db
-        )
-        await asyncio.to_thread(
-            self.comments_mapper.create_comment_mapper, qwen_ai_comment, db
-        )
+        await self.comments_mapper.create_comment_mapper_async(doubao_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(qwen_ai_comment, db)
         Logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
 
     # 定义工具函数解析大模型返回结果
@@ -254,22 +246,20 @@ class GenerateService:
         from app.internal.models import Comments
 
         # 1. 判断是否需要生成AI评论
-        ai_comments_count = await asyncio.to_thread(
-            self.comments_mapper.get_ai_comments_num_by_article_id_mapper,
-            article_id,
-            db,
+        ai_comments_count = (
+            await self.comments_mapper.get_ai_comments_num_by_article_id_mapper_async(
+                article_id, db
+            )
         )
         if ai_comments_count > 0:
             Logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
-            await asyncio.to_thread(
-                self.comments_mapper.delete_ai_comments_by_article_id_mapper,
-                article_id,
-                db,
+            await self.comments_mapper.delete_ai_comments_by_article_id_mapper_async(
+                article_id, db
             )
 
         # 2. 获取文章信息
-        article = await asyncio.to_thread(
-            self.article_mapper.get_article_by_id_mapper, article_id, db
+        article = await self.article_mapper.get_article_by_id_mapper_async(
+            article_id, db
         )
         if not article:
             Logger.error(f"文章不存在: {article_id}")
@@ -287,10 +277,8 @@ class GenerateService:
         )
 
         if sub_category_id:
-            category_ref = await asyncio.to_thread(
-                category_ref_mapper.get_category_reference_by_sub_category_id_mapper,
-                sub_category_id,
-                db,
+            category_ref = await category_ref_mapper.get_category_reference_by_sub_category_id_mapper_async(
+                sub_category_id, db
             )
 
             if category_ref:
@@ -499,15 +487,9 @@ class GenerateService:
         )
 
         # 9. 保存AI评论到数据库
-        await asyncio.to_thread(
-            self.comments_mapper.create_comment_mapper, doubao_ai_comment, db
-        )
-        await asyncio.to_thread(
-            self.comments_mapper.create_comment_mapper, gemini_ai_comment, db
-        )
-        await asyncio.to_thread(
-            self.comments_mapper.create_comment_mapper, qwen_ai_comment, db
-        )
+        await self.comments_mapper.create_comment_mapper_async(doubao_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(qwen_ai_comment, db)
         Logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
 
     async def generate_authority_article_with_ai_summaries(

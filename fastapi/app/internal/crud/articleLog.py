@@ -1,4 +1,3 @@
-import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List
 
@@ -56,8 +55,8 @@ class ArticleLogMapper:
             db_generator = get_db()
             db = await anext(db_generator)
             try:
-                articles_dict = await asyncio.to_thread(
-                    article_mapper.get_articles_by_ids_mapper, article_ids, db
+                articles_dict = await article_mapper.get_articles_by_ids_mapper_async(
+                    article_ids, db
                 )
             finally:
                 await db_generator.aclose()

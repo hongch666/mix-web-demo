@@ -13,21 +13,21 @@ from . import get_article_mapper
 class LikeMapper:
     """点赞 Mapper"""
 
-    def get_total_likes_mapper(self, db: Session) -> int:
+    async def _get_total_likes_mapper_sync(self, db: Session) -> int:
         """获取所有文章的总点赞数"""
         statement = select(func.count(Like.id))
         return db.execute(statement).scalar_one()
 
-    def get_average_likes_mapper(self, db: Session) -> float:
+    async def _get_average_likes_mapper_sync(self, db: Session) -> float:
         """获取每篇文章的平均点赞数"""
         article_mapper = get_article_mapper()
-        total_articles = article_mapper.get_total_articles_mapper(db)
+        total_articles = await article_mapper._get_total_articles_mapper_sync(db)
         if total_articles == 0:
             return 0
-        total_likes = self.get_total_likes_mapper(db)
+        total_likes = await self._get_total_likes_mapper_sync(db)
         return round(total_likes / total_articles, 2)
 
-    def get_monthly_like_trend_mapper(
+    async def _get_monthly_like_trend_mapper_sync(
         self, db: Session, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月点赞的趋势"""
@@ -70,6 +70,17 @@ class LikeMapper:
             f"用户 {user_id} 本月点赞趋势: 总数={total}, 天数={len(daily_trends)}"
         )
         return {"total": total, "daily_trends": daily_trends}
+
+    async def get_total_likes_mapper_async(self, db: Session) -> int:
+        return await self._get_total_likes_mapper_sync(db)
+
+    async def get_average_likes_mapper_async(self, db: Session) -> float:
+        return await self._get_average_likes_mapper_sync(db)
+
+    async def get_monthly_like_trend_mapper_async(
+        self, db: Session, user_id: int
+    ) -> Dict[str, Any]:
+        return await self._get_monthly_like_trend_mapper_sync(db, user_id)
 
 
 @lru_cache()

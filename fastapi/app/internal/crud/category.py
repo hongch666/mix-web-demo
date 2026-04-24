@@ -9,11 +9,11 @@ from sqlalchemy.orm import Session
 class CategoryMapper:
     """分类 Mapper"""
 
-    def get_all_categories_mapper(self, db: Session) -> List[Category]:
+    async def _get_all_categories_mapper_sync(self, db: Session) -> List[Category]:
         statement = select(Category).distinct()
         return db.execute(statement).scalars().all()
 
-    def get_subcategories_with_parent_mapper(
+    async def _get_subcategories_with_parent_mapper_sync(
         self, db: Session
     ) -> List[Dict[str, object]]:
         """
@@ -25,9 +25,11 @@ class CategoryMapper:
         result: List[Dict[str, object]] = []
         for sub in subcategories:
             # 获取对应的父分类
-            parent = db.execute(
-                select(Category).where(Category.id == sub.category_id)
-            ).scalars().first()
+            parent = (
+                db.execute(select(Category).where(Category.id == sub.category_id))
+                .scalars()
+                .first()
+            )
             result.append(
                 {
                     "id": sub.id,
@@ -44,6 +46,14 @@ class CategoryMapper:
             )
 
         return result
+
+    async def get_all_categories_mapper_async(self, db: Session) -> List[Category]:
+        return await self._get_all_categories_mapper_sync(db)
+
+    async def get_subcategories_with_parent_mapper_async(
+        self, db: Session
+    ) -> List[Dict[str, object]]:
+        return await self._get_subcategories_with_parent_mapper_sync(db)
 
 
 @lru_cache()

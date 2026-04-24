@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 class CategoryReferenceMapper:
     """权威参考文本 Mapper - 直接从数据库查询"""
 
-    def get_category_reference_by_sub_category_id_mapper(
+    async def _get_category_reference_by_sub_category_id_mapper_sync(
         self, sub_category_id: int, db: Session
     ) -> Optional[Dict[str, Any]]:
         """
@@ -36,6 +36,13 @@ class CategoryReferenceMapper:
         else:
             Logger.info(f"子分类 {sub_category_id} 无权威参考文本")
             return None
+
+    async def get_category_reference_by_sub_category_id_mapper_async(
+        self, sub_category_id: int, db: Session
+    ) -> Optional[Dict[str, Any]]:
+        return await self._get_category_reference_by_sub_category_id_mapper_sync(
+            sub_category_id, db
+        )
 
 
 @lru_cache()

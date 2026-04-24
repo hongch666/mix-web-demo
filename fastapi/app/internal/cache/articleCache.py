@@ -40,7 +40,7 @@ class ArticleCache(VersionedCache):
             return None
 
         # 1. 先查本地缓存
-        local_data = self.get_from_local()
+        local_data = await self.get_from_local()
         if local_data:
             return local_data
 
@@ -63,7 +63,7 @@ class ArticleCache(VersionedCache):
         3. 版本号
         """
         # 更新两级缓存
-        self.update_local_cache(data)
+        await self.update_local_cache(data)
         await self.update_redis_cache(data)
 
         # 更新版本号

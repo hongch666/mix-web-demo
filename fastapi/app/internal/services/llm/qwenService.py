@@ -202,11 +202,12 @@ class QwenService(BaseAiService):
             intent = "general_chat"
             permission_info = ""
             if self.intent_router and db and user_id:
-                intent, has_permission, permission_msg = await asyncio.to_thread(
-                    self.intent_router.route_with_permission_check,
-                    message,
-                    user_id,
-                    db,
+                (
+                    intent,
+                    has_permission,
+                    permission_msg,
+                ) = await self.intent_router.route_with_permission_check_async(
+                    message, user_id, db
                 )
                 Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
@@ -216,7 +217,7 @@ class QwenService(BaseAiService):
                     return permission_msg or Constants.NO_PERMISSION_ERROR
 
             elif self.intent_router:
-                intent = await asyncio.to_thread(self.intent_router.route, message)
+                intent = await self.intent_router.route_async(message)
                 Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
@@ -331,11 +332,12 @@ class QwenService(BaseAiService):
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
             if self.intent_router and db and user_id:
-                intent, has_permission, permission_msg = await asyncio.to_thread(
-                    self.intent_router.route_with_permission_check,
-                    message,
-                    user_id,
-                    db,
+                (
+                    intent,
+                    has_permission,
+                    permission_msg,
+                ) = await self.intent_router.route_with_permission_check_async(
+                    message, user_id, db
                 )
                 Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
@@ -354,7 +356,7 @@ class QwenService(BaseAiService):
                     return
 
             elif self.intent_router:
-                intent = await asyncio.to_thread(self.intent_router.route, message)
+                intent = await self.intent_router.route_async(message)
                 Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史

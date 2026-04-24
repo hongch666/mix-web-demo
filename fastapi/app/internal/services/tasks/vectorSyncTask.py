@@ -242,10 +242,10 @@ def _export_article_vectors_to_postgres(
         Logger.info(Constants.START_SYNC_TO_POSTGRES_MESSAGE)
 
         # 1. 获取所有文章
-        if hasattr(article_mapper, "get_all_articles"):
-            articles = article_mapper.get_all_articles(mysql_db)
-        elif hasattr(article_mapper, "get_all_articles_mapper"):
-            articles = article_mapper.get_all_articles_mapper(mysql_db)
+        if hasattr(article_mapper, "get_all_articles_mapper_async"):
+            articles = asyncio.run(
+                article_mapper.get_all_articles_mapper_async(mysql_db)
+            )
         else:
             Logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
             return
@@ -322,11 +322,13 @@ def _export_article_vectors_to_postgres(
                             Logger.warning(f"删除旧向量失败，将覆盖: {e}")
 
                     # 使用RAG工具添加到向量存储
-                    result = rag_tools.add_articles_to_vector_store(
-                        article_ids=article_ids,
-                        titles=titles,
-                        contents=contents,
-                        metadata_list=metadata_list,
+                    result = asyncio.run(
+                        rag_tools.add_articles_to_vector_store(
+                            article_ids=article_ids,
+                            titles=titles,
+                            contents=contents,
+                            metadata_list=metadata_list,
+                        )
                     )
 
                     # 检查结果是否成功（如果返回字符串包含"失败"则视为失败）
@@ -419,10 +421,10 @@ def _initialize_article_content_hash_cache(
         Logger.info(Constants.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
 
         # 1. 获取所有文章
-        if hasattr(article_mapper, "get_all_articles"):
-            articles = article_mapper.get_all_articles(mysql_db)
-        elif hasattr(article_mapper, "get_all_articles_mapper"):
-            articles = article_mapper.get_all_articles_mapper(mysql_db)
+        if hasattr(article_mapper, "get_all_articles_mapper_async"):
+            articles = asyncio.run(
+                article_mapper.get_all_articles_mapper_async(mysql_db)
+            )
         else:
             Logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
             return

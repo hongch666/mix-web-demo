@@ -1,3 +1,4 @@
+import asyncio
 import time
 from threading import Condition, Lock
 from typing import Any, List, Optional
@@ -124,6 +125,15 @@ class ClickhouseConnectionPool:
         self._connections.clear()
         self._active_connections = 0
         Logger.info(Constants.CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE)
+
+    async def get_connection_async(self) -> Any:
+        return await asyncio.to_thread(self.get_connection)
+
+    async def return_connection_async(self, conn: Any) -> None:
+        await asyncio.to_thread(self.return_connection, conn)
+
+    async def close_all_async(self) -> None:
+        await asyncio.to_thread(self.close_all)
 
 
 # 全局单例

@@ -5,8 +5,8 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.orm import Session
 
-from .userPermissionManager import UserPermissionManager
 from .tools.sqlTools import get_sql_tools
+from .userPermissionManager import UserPermissionManager
 
 IntentType = Literal["database_query", "article_search", "log_analysis", "general_chat"]
 
@@ -62,77 +62,58 @@ class IntentRouter:
         self.user_id = user_id
         self.db = db
 
-    def route(self, question: str) -> IntentType:
-        """
-        路由用户问题
-
-        Args:
-            question: 用户问题
-
-        Returns:
-            意图类型：database_query、article_search、log_analysis 或 general_chat
-        """
+    async def route_async(self, question: str) -> IntentType:
+        """异步路由用户问题"""
         try:
-            result = self.chain.invoke({"question": question}).strip().lower()
+            result = await self.chain.ainvoke({"question": question})
+            result_text = str(result).strip().lower()
 
-            # 标准化结果
-            if "database" in result or "数据库" in result:
+            if "database" in result_text or "数据库" in result_text:
                 intent = "database_query"
-            elif "article" in result or "文章" in result or "search" in result:
+            elif (
+                "article" in result_text
+                or "文章" in result_text
+                or "search" in result_text
+            ):
                 intent = "article_search"
-            elif "log" in result or "日志" in result or "活动" in result:
+            elif "log" in result_text or "日志" in result_text or "活动" in result_text:
                 intent = "log_analysis"
-            elif "general" in result or "chat" in result or "闲聊" in result:
+            elif (
+                "general" in result_text
+                or "chat" in result_text
+                or "闲聊" in result_text
+            ):
                 intent = "general_chat"
             else:
-                # 默认使用文章搜索
                 intent = "article_search"
 
             self.logger.info(f"意图识别结果: {question} -> {intent}")
             return intent
-
         except Exception as e:
             self.logger.error(f"意图识别失败: {e}, 默认使用article_search")
             return "article_search"
 
-    def route_with_permission_check(
+    async def route_with_permission_check_async(
         self, question: str, user_id: Optional[int] = None, db: Optional[Session] = None
     ) -> Tuple[IntentType, bool, str]:
-        """
-        路由用户问题并检查权限
+        """异步路由用户问题并检查权限"""
+        intent = await self.route_async(question)
 
-        Args:
-            question: 用户问题
-            user_id: 用户ID（可选，如果提供则进行权限检查）
-            db: 数据库会话（可选，如果提供则进行权限检查）
-
-        Returns:
-            (意图类型, 是否有权限, 错误信息)
-            - 意图类型：database_query、article_search、log_analysis 或 general_chat
-            - 是否有权限：True 如果用户有权限执行此操作
-            - 错误信息：如果没有权限，包含错误信息；否则为空字符串
-        """
-        # 获取意图
-        intent = self.route(question)
-
-        # 如果提供了用户上下文，更新到实例中
         if user_id is not None and db is not None:
             self.user_id = user_id
             self.db = db
 
-        # 如果没有用户上下文，只允许文章搜索和闲聊
         if not self.user_id or not self.db:
             if intent in ["database_query", "log_analysis"]:
                 return intent, False, Constants.INTENT_ROUTER_NO_PERMISSION_ERROR
             return intent, True, ""
 
-        # 检查权限
         perm_manager = UserPermissionManager(self.user_mapper)
 
         if intent == "database_query":
             try:
                 sql_tools = get_sql_tools()
-                if sql_tools.is_dangerous_nl_request(question):
+                if await sql_tools.is_dangerous_nl_request(question):
                     self.logger.warning(f"拦截疑似写操作SQL请求: {question}")
                     return (
                         intent,
@@ -142,21 +123,19 @@ class IntentRouter:
             except Exception as e:
                 self.logger.warning(f"写操作意图检测失败，继续执行权限校验: {e}")
 
-            has_permission, msg = perm_manager.can_access_sql_tools(
+            has_permission, msg = await perm_manager.can_access_sql_tools_async(
                 self.user_id, self.db, question
             )
             if not has_permission:
                 return intent, False, msg
             return intent, True, ""
 
-        elif intent == "log_analysis":
-            has_permission, msg = perm_manager.can_access_mongodb_logs(
+        if intent == "log_analysis":
+            has_permission, msg = await perm_manager.can_access_mongodb_logs_async(
                 self.user_id, self.db, question
             )
             if not has_permission:
                 return intent, False, msg
             return intent, True, ""
 
-        else:
-            # article_search 和 general_chat 对所有用户开放
-            return intent, True, ""
+        return intent, True, ""

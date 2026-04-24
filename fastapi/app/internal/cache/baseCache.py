@@ -39,7 +39,7 @@ class BaseCache(ABC):
         """字符串表示"""
         return f"{self.__class__.__name__}()"
 
-    def is_local_cache_valid(self) -> bool:
+    async def is_local_cache_valid(self) -> bool:
         """检查本地缓存是否有效"""
         if not self._local_cache:
             return False
@@ -51,9 +51,9 @@ class BaseCache(ABC):
 
         return True
 
-    def get_from_local(self) -> Optional[Any]:
+    async def get_from_local(self) -> Optional[Any]:
         """从本地缓存获取"""
-        if self.is_local_cache_valid():
+        if await self.is_local_cache_valid():
             cache_age = time.time() - self._local_cache_time
             Logger.info(f"[L1缓存] 命中，缓存年龄: {cache_age:.1f}s")
             return self._local_cache
@@ -76,7 +76,7 @@ class BaseCache(ABC):
             Logger.error(f"[L2缓存] Redis 读取失败: {e}")
             return None
 
-    def update_local_cache(self, data: Any) -> None:
+    async def update_local_cache(self, data: Any) -> None:
         """更新本地缓存"""
         self._local_cache = data
         self._local_cache_time = time.time()
@@ -90,7 +90,7 @@ class BaseCache(ABC):
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 写入失败: {e}")
 
-    def clear_local_cache(self) -> None:
+    async def clear_local_cache(self) -> None:
         """清除本地缓存"""
         self._local_cache = None
         self._local_cache_time = 0
@@ -106,7 +106,7 @@ class BaseCache(ABC):
 
     async def clear_all(self) -> None:
         """清除所有缓存"""
-        self.clear_local_cache()
+        await self.clear_local_cache()
         await self.clear_redis_cache()
 
     @abstractmethod
