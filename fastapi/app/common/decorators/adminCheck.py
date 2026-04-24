@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 from functools import wraps
 from typing import Any, Callable, Optional
@@ -64,12 +65,15 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
 
         try:
             if db:
-                _check_permission(db)
+                await asyncio.to_thread(_check_permission, db)
                 return await func(*args, **kwargs)
 
-            with get_db_sync() as current_db:
-                _check_permission(current_db)
-                return await func(*args, **kwargs)
+            def _check_with_new_db() -> None:
+                with get_db_sync() as current_db:
+                    _check_permission(current_db)
+
+            await asyncio.to_thread(_check_with_new_db)
+            return await func(*args, **kwargs)
 
         except BusinessException:
             raise

@@ -489,3 +489,27 @@ def initialize_article_content_hash_cache(
                 mysql_db.close()
         except Exception:
             pass
+
+
+async def export_article_vectors_to_postgres_async(
+    article_mapper: Optional[Any] = None,
+    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    enable_incremental_sync: bool = True,
+) -> None:
+    await asyncio.to_thread(
+        export_article_vectors_to_postgres,
+        article_mapper,
+        mysql_db_factory,
+        enable_incremental_sync,
+    )
+
+
+async def initialize_article_content_hash_cache_async(
+    article_mapper: Optional[Any] = None,
+    mysql_db_factory: Optional[Callable[[], Session]] = None,
+) -> None:
+    await asyncio.to_thread(
+        initialize_article_content_hash_cache,
+        article_mapper,
+        mysql_db_factory,
+    )

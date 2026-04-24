@@ -10,10 +10,12 @@ from .llm.doubaoService import DoubaoService, get_doubao_service
 from .llm.geminiService import GeminiService, get_gemini_service
 from .llm.qwenService import QwenService, get_qwen_service
 from .scheduler import start_scheduler
-from .tasks.analyzeCacheTask import update_analyze_caches
+from .tasks.analyzeCacheTask import update_analyze_caches, update_analyze_caches_async
 from .tasks.vectorSyncTask import (
     export_article_vectors_to_postgres,
+    export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache,
+    initialize_article_content_hash_cache_async,
 )
 from .user.userService import UserService, get_user_service
 
@@ -38,8 +40,11 @@ __all__: List[str] = [
     "get_agent_prompt",
     "initialize_ai_tools",
     "update_analyze_caches",
+    "update_analyze_caches_async",
     "export_article_vectors_to_postgres",
+    "export_article_vectors_to_postgres_async",
     "initialize_article_content_hash_cache",
+    "initialize_article_content_hash_cache_async",
     "start_scheduler",
     "call_remote_service",
 ]

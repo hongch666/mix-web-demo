@@ -5,7 +5,6 @@ from app.core.base import success
 from app.core.db import get_db
 from app.internal.services import UserService, get_user_service
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Depends, Request
 
@@ -30,8 +29,8 @@ async def get_new_followers(
 ) -> Dict[str, Any]:
     """获取新增粉丝数统计"""
 
-    result: Dict[str, Any] = await run_in_threadpool(
-        userService.get_new_followers_service, db, user_id, period
+    result: Dict[str, Any] = await userService.get_new_followers_service(
+        db, user_id, period
     )
     return success(result)
 
@@ -47,8 +46,8 @@ async def get_article_view_distribution(
 ) -> Dict[str, Any]:
     """获取文章浏览分布"""
 
-    result: Dict[str, Any] = await run_in_threadpool(
-        userService.get_article_view_distribution_service, user_id
+    result: Dict[str, Any] = await userService.get_article_view_distribution_service(
+        user_id
     )
     return success(result)
 
@@ -67,8 +66,8 @@ async def get_author_follow_statistics(
 ) -> Dict[str, Any]:
     """获取关注作者统计"""
 
-    result: Dict[str, Any] = await run_in_threadpool(
-        userService.get_author_follow_statistics_service, db, user_id
+    result: Dict[str, Any] = await userService.get_author_follow_statistics_service(
+        db, user_id
     )
     return success(result)
 
@@ -87,8 +86,8 @@ async def get_monthly_comment_trend(
 ) -> Dict[str, Any]:
     """获取本月评论趋势"""
 
-    result: Dict[str, Any] = await run_in_threadpool(
-        userService.get_monthly_comment_trend_service, db, user_id
+    result: Dict[str, Any] = await userService.get_monthly_comment_trend_service(
+        db, user_id
     )
     return success(result)
 
@@ -107,8 +106,8 @@ async def get_monthly_like_trend(
 ) -> Any:
     """获取本月点赞趋势"""
 
-    result: Dict[str, Any] = await run_in_threadpool(
-        userService.get_monthly_like_trend_service, db, user_id
+    result: Dict[str, Any] = await userService.get_monthly_like_trend_service(
+        db, user_id
     )
     return success(result)
 
@@ -127,7 +126,7 @@ async def get_monthly_collect_trend(
 ) -> Any:
     """获取本月收藏趋势"""
 
-    result: Dict[str, Any] = await run_in_threadpool(
-        userService.get_monthly_collect_trend_service, db, user_id
+    result: Dict[str, Any] = await userService.get_monthly_collect_trend_service(
+        db, user_id
     )
     return success(result)

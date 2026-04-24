@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 from app.common.decorators import log, requireAdmin
 from app.core.base import success
 from app.internal.services import ApiLogService, get_apilog_service
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Depends, Request
 
@@ -25,9 +24,9 @@ async def get_api_average_speed(
 ) -> Any:
     """获取所有接口的平均响应速度"""
 
-    result: List[Dict[str, Any]] = await run_in_threadpool(
-        apilogService.get_api_average_response_time_service
-    )
+    result: List[
+        Dict[str, Any]
+    ] = await apilogService.get_api_average_response_time_service()
     return success(result)
 
 
@@ -39,7 +38,5 @@ async def get_called_count_apis(
 ) -> Any:
     """获取接口调用次数"""
 
-    result: List[Dict[str, Any]] = await run_in_threadpool(
-        apilogService.get_called_count_apis_service
-    )
+    result: List[Dict[str, Any]] = await apilogService.get_called_count_apis_service()
     return success(result)

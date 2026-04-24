@@ -1,3 +1,4 @@
+import asyncio
 from functools import lru_cache
 from typing import Any, AsyncGenerator, Optional
 
@@ -202,8 +203,11 @@ class DoubaoService(BaseAiService):
             intent = "general_chat"
             permission_info = ""
             if self.intent_router and db and user_id:
-                intent, has_permission, permission_msg = (
-                    self.intent_router.route_with_permission_check(message, user_id, db)
+                intent, has_permission, permission_msg = await asyncio.to_thread(
+                    self.intent_router.route_with_permission_check,
+                    message,
+                    user_id,
+                    db,
                 )
                 Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
@@ -213,13 +217,13 @@ class DoubaoService(BaseAiService):
                     return permission_msg or Constants.NO_PERMISSION_ERROR
 
             elif self.intent_router:
-                intent = self.intent_router.route(message)
+                intent = await asyncio.to_thread(self.intent_router.route, message)
                 Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
             chat_history = []
             if db and user_id:
-                chat_history = self._load_chat_history(user_id, db)
+                chat_history = await self._load_chat_history(user_id, db)
 
             # 3. 根据意图选择处理方式
             if intent == "general_chat":
@@ -274,13 +278,11 @@ class DoubaoService(BaseAiService):
             if not getattr(self, "llm", None):
                 yield {"type": "error", "content": Constants.INITIALIZATION_ERROR}
                 return
-
-            # 如果Agent未初始化，降级为基础流式对话
             if not self.agent_executor:
                 # 加载聊天历史
                 chat_history = []
                 if db and user_id:
-                    chat_history = self._load_chat_history(user_id, db)
+                    chat_history = await self._load_chat_history(user_id, db)
 
                 # 构建消息
                 history_messages: list[Any] = []
@@ -309,8 +311,11 @@ class DoubaoService(BaseAiService):
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
             if self.intent_router and db and user_id:
-                intent, has_permission, permission_msg = (
-                    self.intent_router.route_with_permission_check(message, user_id, db)
+                intent, has_permission, permission_msg = await asyncio.to_thread(
+                    self.intent_router.route_with_permission_check,
+                    message,
+                    user_id,
+                    db,
                 )
                 Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
@@ -329,13 +334,13 @@ class DoubaoService(BaseAiService):
                     return
 
             elif self.intent_router:
-                intent = self.intent_router.route(message)
+                intent = await asyncio.to_thread(self.intent_router.route, message)
                 Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
             chat_history = []
             if db and user_id:
-                chat_history = self._load_chat_history(user_id, db)
+                chat_history = await self._load_chat_history(user_id, db)
 
             # 3. 根据意图选择处理方式
             if intent == "general_chat":

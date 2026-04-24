@@ -11,12 +11,11 @@ from app.internal.cache import (
 )
 from app.internal.services import (
     call_remote_service,
-    export_article_vectors_to_postgres,
-    initialize_article_content_hash_cache,
-    update_analyze_caches,
+    export_article_vectors_to_postgres_async,
+    initialize_article_content_hash_cache_async,
+    update_analyze_caches_async,
 )
 from fastapi.responses import JSONResponse
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Request
 
@@ -80,7 +79,7 @@ async def testNestJS(request: Request) -> JSONResponse:
 async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
     """手动触发更新分析接口缓存任务接口"""
 
-    await run_in_threadpool(update_analyze_caches)
+    await update_analyze_caches_async()
     return success()
 
 
@@ -94,7 +93,7 @@ async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
 async def test_export_vector_task(request: Request) -> JSONResponse:
     """手动触发向量数据库同步任务接口"""
 
-    await run_in_threadpool(export_article_vectors_to_postgres)
+    await export_article_vectors_to_postgres_async()
     return success()
 
 
@@ -108,7 +107,7 @@ async def test_export_vector_task(request: Request) -> JSONResponse:
 async def test_init_hash_cache_task(request: Request) -> JSONResponse:
     """初始化文章内容 hash 缓存接口"""
 
-    await run_in_threadpool(initialize_article_content_hash_cache)
+    await initialize_article_content_hash_cache_async()
     return success()
 
 

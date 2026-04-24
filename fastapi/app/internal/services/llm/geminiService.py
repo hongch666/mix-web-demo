@@ -1,3 +1,4 @@
+import asyncio
 from functools import lru_cache
 from typing import Any, AsyncGenerator, Optional
 
@@ -200,8 +201,11 @@ class GeminiService(BaseAiService):
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
             if self.intent_router and db and user_id:
-                intent, has_permission, permission_msg = (
-                    self.intent_router.route_with_permission_check(message, user_id, db)
+                intent, has_permission, permission_msg = await asyncio.to_thread(
+                    self.intent_router.route_with_permission_check,
+                    message,
+                    user_id,
+                    db,
                 )
                 Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
@@ -211,13 +215,13 @@ class GeminiService(BaseAiService):
                     return permission_msg or Constants.NO_PERMISSION_ERROR
 
             elif self.intent_router:
-                intent = self.intent_router.route(message)
+                intent = await asyncio.to_thread(self.intent_router.route, message)
                 Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
             chat_history = []
             if db and user_id:
-                chat_history = self._load_chat_history(user_id, db)
+                chat_history = await self._load_chat_history(user_id, db)
 
             # 3. 根据意图选择处理方式
             if intent == "general_chat":
@@ -283,7 +287,7 @@ class GeminiService(BaseAiService):
                 # 加载聊天历史
                 chat_history = []
                 if db and user_id:
-                    chat_history = self._load_chat_history(user_id, db)
+                    chat_history = await self._load_chat_history(user_id, db)
 
                 # 构建消息
                 history_messages: list[Any] = []
@@ -339,8 +343,11 @@ class GeminiService(BaseAiService):
             # 1. 权限检查（如果有用户ID和数据库会话）
             intent = "general_chat"
             if self.intent_router and db and user_id:
-                intent, has_permission, permission_msg = (
-                    self.intent_router.route_with_permission_check(message, user_id, db)
+                intent, has_permission, permission_msg = await asyncio.to_thread(
+                    self.intent_router.route_with_permission_check,
+                    message,
+                    user_id,
+                    db,
                 )
                 Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
 
@@ -359,13 +366,13 @@ class GeminiService(BaseAiService):
                     return
 
             elif self.intent_router:
-                intent = self.intent_router.route(message)
+                intent = await asyncio.to_thread(self.intent_router.route, message)
                 Logger.info(f"识别意图: {intent}")
 
             # 2. 加载聊天历史
             chat_history = []
             if db and user_id:
-                chat_history = self._load_chat_history(user_id, db)
+                chat_history = await self._load_chat_history(user_id, db)
 
             # 3. 根据意图选择处理方式
             if intent == "general_chat":

@@ -1,3 +1,4 @@
+import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
@@ -12,32 +13,32 @@ class ApiLogService:
     def __init__(self, api_log_mapper: Optional[ApiLogMapper] = None) -> None:
         self.mapper: Optional[ApiLogMapper] = api_log_mapper
 
-    def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:
+    async def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:
         """
         获取所有接口的平均响应时间
 
         Returns:
             List[Dict]: 接口平均响应时间列表
         """
-        return self.mapper.get_api_average_response_time_mapper()
+        return await asyncio.to_thread(self.mapper.get_api_average_response_time_mapper)
 
-    def get_called_count_apis_service(self) -> List[Dict[str, Any]]:
+    async def get_called_count_apis_service(self) -> List[Dict[str, Any]]:
         """
         获取接口调用次数
 
         Returns:
             List[Dict]: 接口调用次数
         """
-        return self.mapper.get_called_count_apis_mapper()
+        return await asyncio.to_thread(self.mapper.get_called_count_apis_mapper)
 
-    def get_api_call_statistics_service(self) -> Dict[str, Any]:
+    async def get_api_call_statistics_service(self) -> Dict[str, Any]:
         """
         获取 API 调用的整体统计信息
 
         Returns:
             Dict: 统计信息
         """
-        return self.mapper.get_api_call_statistics_mapper()
+        return await asyncio.to_thread(self.mapper.get_api_call_statistics_mapper)
 
 
 @lru_cache()

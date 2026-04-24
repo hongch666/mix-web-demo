@@ -6,7 +6,6 @@ from app.core.db import get_db
 from app.internal.schemas import CreateHistoryDTO
 from app.internal.services import AiHistoryService, get_ai_history_service
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Depends, Request
 
@@ -27,7 +26,7 @@ async def create_ai_history(
 ) -> Any:
     """创建AI历史记录接口"""
 
-    await run_in_threadpool(ai_history_service.create_ai_history, data, db)
+    await ai_history_service.create_ai_history(data, db)
     return success()
 
 
@@ -43,8 +42,8 @@ async def get_all_ai_history(
 ) -> Any:
     """获取所有AI历史记录接口"""
 
-    histories: list[dict[str, Any]] = await run_in_threadpool(
-        ai_history_service.get_all_ai_history, user_id, db
+    histories: list[dict[str, Any]] = await ai_history_service.get_all_ai_history(
+        user_id, db
     )
     return success(data=histories)
 
@@ -63,5 +62,5 @@ async def delete_ai_history(
 ) -> Any:
     """删除用户所有AI历史记录接口"""
 
-    await run_in_threadpool(ai_history_service.delete_ai_history_by_userid, user_id, db)
+    await ai_history_service.delete_ai_history_by_userid(user_id, db)
     return success()

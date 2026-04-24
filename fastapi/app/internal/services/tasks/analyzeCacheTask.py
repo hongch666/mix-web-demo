@@ -1,3 +1,4 @@
+import asyncio
 import traceback
 from typing import Any, Callable, Optional
 
@@ -5,7 +6,7 @@ from app.core.base import Constants, Logger
 from sqlalchemy.orm import Session
 
 
-def update_analyze_caches(
+async def _update_analyze_caches_async(
     analyze_service: Optional[Any] = None,
     db_factory: Optional[Callable[[], Session]] = None,
 ) -> None:
@@ -38,7 +39,7 @@ def update_analyze_caches(
         # 1. 更新前10篇文章缓存
         try:
             Logger.info(Constants.UPDATE_ANALYZE_CACHES_TOP10_START_MESSAGE)
-            analyze_service.get_top10_articles_service(db)
+            await analyze_service.get_top10_articles_service(db)
             Logger.info(Constants.UPDATE_ANALYZE_CACHES_TOP10_SUCCESS_MESSAGE)
         except Exception as e:
             Logger.error(f"前10篇文章缓存更新失败: {e}")
@@ -47,7 +48,7 @@ def update_analyze_caches(
         # 2. 更新词云图缓存
         try:
             Logger.info(Constants.UPDATE_ANALYZE_CACHES_WORDCLOUD_START_MESSAGE)
-            analyze_service.get_wordcloud_service()
+            await analyze_service.get_wordcloud_service()
             Logger.info(Constants.UPDATE_ANALYZE_CACHES_WORDCLOUD_SUCCESS_MESSAGE)
         except Exception as e:
             Logger.error(f"词云图缓存更新失败: {e}")
@@ -56,7 +57,7 @@ def update_analyze_caches(
         # 3. 更新文章统计信息缓存
         try:
             Logger.info(Constants.UPDATE_ANALYZE_CACHES_STATISTICS_START_MESSAGE)
-            analyze_service.get_article_statistics_service(db)
+            await analyze_service.get_article_statistics_service(db)
             Logger.info(Constants.UPDATE_ANALYZE_CACHES_STATISTICS_SUCCESS_MESSAGE)
         except Exception as e:
             Logger.error(f"文章统计信息缓存更新失败: {e}")
@@ -67,7 +68,7 @@ def update_analyze_caches(
             Logger.info(
                 Constants.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_START_MESSAGE
             )
-            analyze_service.get_category_article_count_service(db)
+            await analyze_service.get_category_article_count_service(db)
             Logger.info(
                 Constants.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_SUCCESS_MESSAGE
             )
@@ -80,7 +81,7 @@ def update_analyze_caches(
             Logger.info(
                 Constants.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_START_MESSAGE
             )
-            analyze_service.get_monthly_publish_count_service(db)
+            await analyze_service.get_monthly_publish_count_service(db)
             Logger.info(
                 Constants.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_SUCCESS_MESSAGE
             )
@@ -100,3 +101,17 @@ def update_analyze_caches(
                 db.close()
             except Exception as close_e:
                 Logger.debug(f"关闭数据库连接失败: {close_e}")
+
+
+async def update_analyze_caches_async(
+    analyze_service: Optional[Any] = None,
+    db_factory: Optional[Callable[[], Session]] = None,
+) -> None:
+    await _update_analyze_caches_async(analyze_service, db_factory)
+
+
+def update_analyze_caches(
+    analyze_service: Optional[Any] = None,
+    db_factory: Optional[Callable[[], Session]] = None,
+) -> None:
+    asyncio.run(_update_analyze_caches_async(analyze_service, db_factory))

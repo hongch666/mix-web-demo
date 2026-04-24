@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import json
 import time
@@ -139,7 +140,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                             logger_method(time_message)
 
                             # 发送 API 日志到 RabbitMQ（使用捕获的上下文）
-                            _send_api_log_to_queue(
+                            await _send_api_log_to_queue_async(
                                 user_id,
                                 username,
                                 method,
@@ -161,7 +162,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                     logger_method(time_message)
 
                     # 发送 API 日志到 RabbitMQ
-                    _send_api_log_to_queue(
+                    await _send_api_log_to_queue_async(
                         user_id,
                         username,
                         method,
@@ -257,17 +258,19 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 logger_method(time_message)
 
                 # 发送 API 日志到 RabbitMQ
-                _send_api_log_to_queue(
-                    user_id,
-                    username,
-                    method,
-                    path,
-                    log_config.message,
-                    request,
-                    duration_ms,
-                    log_config,
-                    func,
-                    kwargs,
+                asyncio.run(
+                    _send_api_log_to_queue_async(
+                        user_id,
+                        username,
+                        method,
+                        path,
+                        log_config.message,
+                        request,
+                        duration_ms,
+                        log_config,
+                        func,
+                        kwargs,
+                    )
                 )
 
         # 根据函数是否为协程选择包装器
@@ -600,7 +603,7 @@ def _normalize_path_with_params(path: str, request: Optional[Request]) -> str:
     return normalized_path
 
 
-def _send_api_log_to_queue(
+async def _send_api_log_to_queue_async(
     user_id: Any,
     username: str,
     method: str,
@@ -677,7 +680,9 @@ def _send_api_log_to_queue(
         }
 
         # 发送到 RabbitMQ
-        success: bool = send_to_queue("api-log-queue", api_log_message, persistent=True)
+        success: bool = await asyncio.to_thread(
+            send_to_queue, "api-log-queue", api_log_message, persistent=True
+        )
         if success:
             Logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)
         else:

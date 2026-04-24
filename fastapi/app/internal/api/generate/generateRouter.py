@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from app.common.decorators import log
@@ -21,7 +22,6 @@ from app.internal.services import (
     get_qwen_service,
 )
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 
@@ -40,10 +40,7 @@ async def generate_tags(
 ) -> Any:
     """生成tags接口"""
 
-    tags: list[str] = await run_in_threadpool(
-        generateService.extract_tags,
-        data.text,
-    )
+    tags: list[str] = await asyncio.to_thread(generateService.extract_tags, data.text)
     return success(tags)
 
 

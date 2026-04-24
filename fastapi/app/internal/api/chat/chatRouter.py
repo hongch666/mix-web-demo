@@ -28,7 +28,6 @@ from app.internal.services import (
 )
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Depends, Request
 
@@ -100,7 +99,7 @@ async def send_message(
                 thinking=None,
                 ai_type=request.service.value,
             )
-            await run_in_threadpool(aiHistoryService.create_ai_history, history, db)
+            await aiHistoryService.create_ai_history(history, db)
             Logger.info(
                 f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}"
             )
@@ -227,9 +226,7 @@ async def stream_message(
                             thinking=thinking_acc if thinking_acc else None,
                             ai_type=request.service.value,
                         )
-                        await run_in_threadpool(
-                            aiHistoryService.create_ai_history, history, db
-                        )
+                        await aiHistoryService.create_ai_history(history, db)
                         Logger.info(
                             f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}"
                         )

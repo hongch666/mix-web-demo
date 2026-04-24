@@ -5,7 +5,6 @@ from app.core.base import ListResponse, success
 from app.core.db import get_db
 from app.internal.services import AnalyzeService, get_analyze_service
 from sqlalchemy.orm import Session
-from starlette.concurrency import run_in_threadpool
 
 from fastapi import APIRouter, Depends, Request
 
@@ -57,12 +56,8 @@ async def get_excel(
 ) -> Any:
     """获取文章数据Excel接口"""
 
-    file_path: str = await run_in_threadpool(
-        analyzeService.export_articles_to_excel, db
-    )
-    oss_url: str = await run_in_threadpool(
-        analyzeService.upload_excel_to_oss, file_path
-    )
+    file_path: str = await analyzeService.export_articles_to_excel(db)
+    oss_url: str = await analyzeService.upload_excel_to_oss(file_path)
     return success(oss_url)
 
 
@@ -92,9 +87,9 @@ async def get_article_count_by_category(
 ) -> Any:
     """按大分类统计文章数量"""
 
-    result: List[Dict[str, Any]] = await (
-        analyzeService.get_category_article_count_service_sf(db)
-    )
+    result: List[
+        Dict[str, Any]
+    ] = await analyzeService.get_category_article_count_service_sf(db)
     return success(ListResponse(total=len(result), list=result))
 
 
@@ -111,7 +106,7 @@ async def get_monthly_publish_count(
 ) -> Any:
     """获取月度文章发布统计"""
 
-    result: List[Dict[str, Any]] = await (
-        analyzeService.get_monthly_publish_count_service_sf(db)
-    )
+    result: List[
+        Dict[str, Any]
+    ] = await analyzeService.get_monthly_publish_count_service_sf(db)
     return success(ListResponse(total=len(result), list=result))
