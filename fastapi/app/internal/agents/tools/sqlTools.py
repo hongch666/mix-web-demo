@@ -27,7 +27,12 @@ class SQLTools:
 
         self.logger = Logger
         mysql_cfg = load_config("database")["mysql"]
-        encoded_password = quote_plus(mysql_cfg["password"])
+        password_value = mysql_cfg["password"]
+        if isinstance(password_value, bytes):
+            password_text = password_value.decode("utf-8", errors="ignore")
+        else:
+            password_text = str(password_value)
+        encoded_password = quote_plus(password_text)
         self.database_url = f"mysql+pymysql://{mysql_cfg['user']}:{encoded_password}@{mysql_cfg['host']}:{mysql_cfg['port']}/{mysql_cfg['database']}?charset=utf8mb4"
 
         self.engine = create_engine(self.database_url, pool_pre_ping=True)
