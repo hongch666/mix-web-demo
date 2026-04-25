@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.api.service.EmailVerificationService;
+import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
@@ -41,6 +42,7 @@ import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
+import com.hcsy.spring.entity.vo.ImageCaptchaVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -62,6 +64,7 @@ public class UserController {
     private final RedisUtil redisUtil;
     private final SimpleLogger logger;
     private final EmailVerificationService emailVerificationService;
+    private final ImageCaptchaService imageCaptchaService;
     private final PasswordEncryptor passwordEncryptor;
     private final UserPasswordProperties userPasswordProperties;
 
@@ -197,10 +200,23 @@ public class UserController {
         return Result.success();
     }
 
+    @GetMapping("/captcha")
+    @Operation(summary = "获取图形验证码", description = "生成图形验证码，返回验证码ID和base64图片数据，验证码缓存到Redis并在5分钟后过期")
+    @ApiLog("获取图形验证码")
+    public Result getImageCaptcha() {
+        try {
+            ImageCaptchaVO captchaVO = imageCaptchaService.createCaptcha();
+            return Result.success(captchaVO);
+        } catch (Exception e) {
+            logger.error(Constants.IMAGE_CAPTCHA_GET_FAIL + e.getMessage());
+            return Result.error(Constants.IMAGE_CAPTCHA_GET_FAIL);
+        }
+    }
+
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("用户登录")
-    public Result login(@RequestBody LoginDTO loginDTO) {
+    public Result login(@Valid @RequestBody LoginDTO loginDTO) {
         try {
             UserLoginVO loginVO = userService.login(loginDTO);
             return Result.success(loginVO);

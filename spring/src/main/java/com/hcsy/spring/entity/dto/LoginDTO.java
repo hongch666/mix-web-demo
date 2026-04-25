@@ -17,4 +17,11 @@ public class LoginDTO {
     @NotBlank(message = "用户名不能为空")
     @Size(min = 3, max = 20, message = "用户名长度必须在3到20个字符之间")
     private String name;
+
+    @NotBlank(message = "图形验证码ID不能为空")
+    private String captchaId;
+
+    @NotBlank(message = "图形验证码不能为空")
+    @Size(min = 4, max = 4, message = "图形验证码为4位")
+    private String captchaText;
 }

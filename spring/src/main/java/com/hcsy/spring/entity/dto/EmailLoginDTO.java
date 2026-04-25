@@ -18,4 +18,11 @@ public class EmailLoginDTO {
     @NotBlank(message = "验证码不能为空")
     @Size(min = 4, max = 6, message = "验证码长度必须在4到6个字符之间")
     private String verificationCode;
+
+    @NotBlank(message = "图形验证码ID不能为空")
+    private String captchaId;
+
+    @NotBlank(message = "图形验证码不能为空")
+    @Size(min = 4, max = 4, message = "图形验证码为4位")
+    private String captchaText;
 }

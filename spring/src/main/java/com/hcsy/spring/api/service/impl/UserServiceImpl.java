@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.EmailVerificationService;
+import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
@@ -41,6 +42,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final PasswordEncryptor passwordEncryptor;
     private final JwtUtil jwtUtil;
     private final EmailVerificationService emailVerificationService;
+    private final ImageCaptchaService imageCaptchaService;
 
     @Override
     public UserListVO listUsersWithFilter(long page, long size, String username) {
@@ -159,15 +161,22 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserLoginVO login(LoginDTO loginDTO) {
+        validateLoginCaptcha(loginDTO.getCaptchaId(), loginDTO.getCaptchaText());
+
         User user = findByUsername(loginDTO.getName());
         if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
             throw new BusinessException(Constants.LOGIN);
         }
-        return buildLoginVO(user);
+
+        UserLoginVO loginVO = buildLoginVO(user);
+        imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId());
+        return loginVO;
     }
 
     @Override
     public UserLoginVO emailLogin(EmailLoginDTO emailLoginDTO) {
+        validateLoginCaptcha(emailLoginDTO.getCaptchaId(), emailLoginDTO.getCaptchaText());
+
         if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
             throw new BusinessException(Constants.VERIFY_CODE);
         }
@@ -177,7 +186,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(Constants.UNDEFINED_USER_REGISTER);
         }
 
-        return buildLoginVO(user);
+        UserLoginVO loginVO = buildLoginVO(user);
+        imageCaptchaService.deleteCaptcha(emailLoginDTO.getCaptchaId());
+        return loginVO;
     }
 
     @Override
@@ -261,5 +272,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .username(user.getName())
                 .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
                 .build();
+    }
+
+    private void validateLoginCaptcha(String captchaId, String captchaText) {
+        if (!imageCaptchaService.verifyCaptcha(captchaId, captchaText)) {
+            throw new BusinessException(Constants.IMAGE_CAPTCHA_INVALID);
+        }
     }
 }

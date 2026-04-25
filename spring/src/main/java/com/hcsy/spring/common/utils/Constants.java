@@ -110,6 +110,11 @@ public class Constants {
     public static String VERIFY_CODE = "邮箱验证码无效或已过期";
 
     /**
+     * 图形验证码错误
+     */
+    public static String IMAGE_CAPTCHA_INVALID = "图形验证码错误或已过期";
+
+    /**
      * 用户不存在的注册消息
      */
     public static String UNDEFINED_USER_REGISTER = "用户不存在，请先注册";
@@ -148,6 +153,11 @@ public class Constants {
      * 发送验证码错误
      */
     public static String SEND_VERIFY_CODE = "发送验证码异常";
+
+    /**
+     * 获取图形验证码失败
+     */
+    public static String IMAGE_CAPTCHA_GET_FAIL = "获取图形验证码失败";
 
     /**
      * 邮箱格式错误
@@ -430,6 +440,36 @@ public class Constants {
      * 验证码验证异常
      */
     public static String CODE_VERIFY_EXCEPTION = "验证码验证失败: ";
+
+    /**
+     * 图形验证码已保存
+     */
+    public static String IMAGE_CAPTCHA_SAVE = "图形验证码已保存到 Redis: ";
+
+    /**
+     * 图形验证码已删除
+     */
+    public static String IMAGE_CAPTCHA_DELETE = "图形验证码已删除: ";
+
+    /**
+     * 图形验证码过期
+     */
+    public static String IMAGE_CAPTCHA_EXPIRED = "图形验证码已过期或不存在: ";
+
+    /**
+     * 图形验证码校验失败
+     */
+    public static String IMAGE_CAPTCHA_VERIFY_FAIL = "图形验证码校验失败: ";
+
+    /**
+     * 图形验证码校验成功
+     */
+    public static String IMAGE_CAPTCHA_VERIFY_SUCCESS = "图形验证码校验成功: ";
+
+    /**
+     * 图形验证码生成失败
+     */
+    public static String IMAGE_CAPTCHA_GENERATE_FAIL = "图形验证码生成失败";
 
     /**
      * 用户登录token保存消息
