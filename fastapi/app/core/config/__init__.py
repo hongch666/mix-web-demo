@@ -1,5 +1,7 @@
 from typing import Any, List, NoReturn
 
+from app.core.base import Constants
+
 from .config import load_config
 
 try:
@@ -7,7 +9,7 @@ try:
 except ModuleNotFoundError:
 
     def _missing_nacos(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError("nacos 未安装，请先安装 nacos 依赖")
+        raise ModuleNotFoundError(Constants.NACOS_NOT_INSTALLED_ERROR)
 
     get_service_instance = _missing_nacos
     register_instance = _missing_nacos

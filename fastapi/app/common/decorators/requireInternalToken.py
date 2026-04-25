@@ -86,7 +86,7 @@ def requireInternalToken(
                 raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
 
         if not inspect.iscoroutinefunction(f):
-            raise TypeError("requireInternalToken 装饰器只支持异步函数")
+            raise TypeError(Constants.REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR)
 
         return async_wrapper
 

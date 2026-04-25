@@ -153,7 +153,7 @@ class RabbitMQClient:
         """同步关闭连接"""
         try:
             asyncio.get_running_loop()
-            Logger.warning("检测到运行中的事件循环，跳过 RabbitMQ 同步关闭")
+            Logger.warning(Constants.AIO_PKA_EVENT_LOOP_ERROR)
         except RuntimeError:
             asyncio.run(self.close_async())
 

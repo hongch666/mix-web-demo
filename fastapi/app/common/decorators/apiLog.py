@@ -189,7 +189,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
         if inspect.iscoroutinefunction(func):
             return async_wrapper
 
-        raise TypeError("apiLog 装饰器只支持异步函数")
+        raise TypeError(Constants.APILOG_ASYNC_ERROR)
 
     return decorator
 

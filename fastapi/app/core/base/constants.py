@@ -513,6 +513,21 @@ class Constants:
     GET_TOP_FAIL = "获取文章浏览分布失败"
     """获取文章浏览分布失败消息"""
 
+    APILOG_ASYNC_ERROR = "apiLog 装饰器只支持异步函数"
+    """apiLog 装饰器只支持异步函数消息"""
+
+    REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR = "requireInternalToken 装饰器只支持异步函数"
+    """requireInternalToken 装饰器只支持异步函数消息"""
+
+    AIO_PKA_NOT_INSTALLED_ERROR = "aio-pika 未安装，请先执行 uv sync 或安装 aio-pika"
+    """aio-pika 未安装错误消息"""
+
+    AIO_PKA_EVENT_LOOP_ERROR = "检测到运行中的事件循环，跳过 RabbitMQ 同步关闭"
+    """检测到运行中的事件循环错误消息"""
+
+    NACOS_NOT_INSTALLED_ERROR = "nacos 未安装，请先安装 nacos 依赖"
+    """nacos 未安装错误消息"""
+
     # SQL 语句
 
     AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"

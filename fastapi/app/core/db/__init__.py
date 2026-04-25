@@ -58,17 +58,15 @@ except ModuleNotFoundError as _exc:
 
     class RabbitMQClient:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
-            raise ModuleNotFoundError(
-                "aio-pika 未安装，请先执行 uv sync 或安装 aio-pika。"
-            )
+            raise ModuleNotFoundError(Constants.AIO_PKA_NOT_INSTALLED_ERROR)
 
     _rabbitmq_client = None
 
     def get_rabbitmq_client(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError("aio-pika 未安装，请先执行 uv sync 或安装 aio-pika。")
+        raise ModuleNotFoundError(Constants.AIO_PKA_NOT_INSTALLED_ERROR)
 
     def send_to_queue_async(*args: Any, **kwargs: Any) -> NoReturn:
-        raise ModuleNotFoundError("aio-pika 未安装，请先执行 uv sync 或安装 aio-pika。")
+        raise ModuleNotFoundError(Constants.AIO_PKA_NOT_INSTALLED_ERROR)
 
 
 try:
