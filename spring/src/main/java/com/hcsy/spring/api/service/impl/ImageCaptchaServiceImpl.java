@@ -33,7 +33,7 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
     private static final int CAPTCHA_WIDTH = 130;
     private static final int CAPTCHA_HEIGHT = 40;
     private static final int CAPTCHA_LENGTH = 4;
-    private static final char[] CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
+    private static final char[] CAPTCHA_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz23456789".toCharArray();
 
     private final RedisUtil redisUtil;
     private final SimpleLogger logger;
