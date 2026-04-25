@@ -83,6 +83,7 @@ auth:
     - /users/register
     - /users/email/send
     - /users/email-login
+    - /users/captcha
     - /upload/**
 
 jwt:
@@ -125,3 +126,6 @@ rate-limit:
     # 用户邮箱登录接口限流配置
     "/users/email-login":
       message: "邮箱登录请求过于频繁，请稍后再试"
+
+    "/users/captcha":
+      message: "验证码请求过于频繁，请稍后再试"

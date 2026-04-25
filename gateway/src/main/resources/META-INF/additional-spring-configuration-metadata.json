@@ -95,6 +95,11 @@
       "name": "rate-limit.paths./users/email-login.message",
       "type": "java.lang.String",
       "description": "A description for 'rate-limit.paths./users/email-login.message'"
+    },
+    {
+      "name": "rate-limit.paths./users/captcha.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./users/captcha.message'"
     }
   ]
 }
