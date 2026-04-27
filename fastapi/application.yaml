@@ -78,6 +78,7 @@ closeai:
   base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址
   api_key: ${CLOSEAI_API_KEY:} # CloseAI API Key
   timeout: ${CLOSEAI_TIMEOUT:30} # 请求超时时间（秒）
+  agent_max_iterations: ${CLOSEAI_AGENT_MAX_ITERATIONS:5} # Agent 最大迭代轮数
   gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-5-nano} # 输入 0.05 / 输出 0.4
   gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
   deepseek_model_name: ${CLOSEAI_DEEPSEEK_MODEL:deepseek-v4-flash} # 输入 0.15 / 输出 0.3

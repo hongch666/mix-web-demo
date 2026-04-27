@@ -6,7 +6,8 @@ from urllib.parse import quote_plus
 
 from app.core.base import Constants
 from langchain_community.utilities import SQLDatabase
-from langchain_core.tools import Tool
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import Session
 
@@ -71,6 +72,36 @@ class SQLTools:
         sql = sql.strip()
         return re.sub(r"\s+", " ", sql).upper()
 
+    @staticmethod
+    def _clean_tool_input(text: str) -> str:
+        """清理工具输入中混入的多余格式文本"""
+        cleaned = (text or "").strip()
+        cleaned = re.split(r"\b(?:Observation|Thought|Final Answer)\s*:", cleaned)[0]
+        cleaned = cleaned.strip().strip('"').strip("'").strip("`")
+        return cleaned.strip()
+
+    def _normalize_known_table_names(self, query: str) -> str:
+        """把常见的复数表名自动修正为真实表名。"""
+        table_names = set(inspect(self.engine).get_table_names())
+
+        def replace_table(match: re.Match[str]) -> str:
+            keyword = match.group(1)
+            table_name = match.group(2)
+            cleaned_name = table_name.strip("`\"')(")
+            if cleaned_name not in table_names and cleaned_name.endswith("s"):
+                singular_name = cleaned_name[:-1]
+                if singular_name in table_names:
+                    return f"{keyword}{singular_name}"
+            return match.group(0)
+
+        normalized_query = re.sub(
+            r"\b(FROM\s+|JOIN\s+)([`\"']?[A-Za-z_][A-Za-z0-9_]*[`\"']?)",
+            replace_table,
+            query,
+            flags=re.IGNORECASE,
+        )
+        return normalized_query
+
     def _is_read_only_query(self, query: str) -> tuple[bool, str]:
         """校验整条SQL是否为单条只读查询"""
         normalized_sql = self._normalize_sql_for_validation(query)
@@ -123,11 +154,18 @@ class SQLTools:
             表结构的文本描述
         """
         try:
+            table_name = self._clean_tool_input(table_name)
             inspector = inspect(self.engine)
 
             if table_name:
                 # 获取指定表的结构
-                if table_name not in inspector.get_table_names():
+                table_names = inspector.get_table_names()
+                if table_name not in table_names and table_name.endswith("s"):
+                    singular_table_name = table_name[:-1]
+                    if singular_table_name in table_names:
+                        table_name = singular_table_name
+
+                if table_name not in table_names:
                     return f"表 '{table_name}' 不存在"
 
                 columns = inspector.get_columns(table_name)
@@ -186,6 +224,8 @@ class SQLTools:
             查询结果的文本描述
         """
         try:
+            query = self._clean_tool_input(query)
+            query = self._normalize_known_table_names(query)
             is_safe, error_message = self._is_read_only_query(query)
             if not is_safe:
                 return error_message
@@ -258,23 +298,32 @@ class SQLTools:
     async def execute_query_async(self, query: str) -> str:
         return self.execute_query(query)
 
-    def get_langchain_tools(self) -> List[Tool]:
+    def get_langchain_tools(self) -> List[StructuredTool]:
         """
         获取LangChain Tool对象列表
 
         Returns:
             Tool对象列表
         """
+
+        class GetTableSchemaInput(BaseModel):
+            table_name: str = Field(default="", description="表名，留空则返回所有表")
+
+        class ExecuteSqlQueryInput(BaseModel):
+            query: str = Field(description="完整的只读 SQL 查询语句")
+
         return [
-            Tool(
+            StructuredTool(
                 name=Constants.SQL_TABLE_TOOL_NAME,
                 description=Constants.SQL_TABLE_TOOL_DESC,
                 func=self.get_table_schema,
+                args_schema=GetTableSchemaInput,
             ),
-            Tool(
+            StructuredTool(
                 name=Constants.SQL_QUERY_TOOL_NAME,
                 description=Constants.SQL_QUERY_TOOL_DESC,
                 func=self.execute_query,
+                args_schema=ExecuteSqlQueryInput,
             ),
         ]
 

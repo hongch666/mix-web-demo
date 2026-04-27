@@ -8,9 +8,9 @@ from pydantic_core import PydanticCustomError
 class AIServiceType(str, Enum):
     """AI服务类型枚举"""
 
-    GPT = "gpt"
-    GEMINI = "gemini"
-    DEEPSEEK = "deepseek"
+    GPT = "GPT"
+    GEMINI = "Gemini"
+    DEEPSEEK = "DeepSeek"
 
 
 class ChatRequest(BaseModel):

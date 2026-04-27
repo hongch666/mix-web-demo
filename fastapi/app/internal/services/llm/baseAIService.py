@@ -9,9 +9,9 @@ from app.internal.agents import (
     get_rag_tools,
     get_sql_tools,
 )
-from langchain_classic.agents import AgentExecutor, create_react_agent
+from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from sqlalchemy.orm import Session
 
@@ -19,9 +19,15 @@ ChatHistoryItem = Tuple[str, str]
 IntermediateStep = Tuple[Any, Any]
 
 
-def get_agent_prompt() -> PromptTemplate:
+def get_agent_prompt() -> ChatPromptTemplate:
     """获取Agent的Prompt模板"""
-    return PromptTemplate.from_template(Constants.AGENT_PROMPT_TEMPLATE)
+    return ChatPromptTemplate.from_messages(
+        [
+            ("system", Constants.AGENT_PROMPT_TEMPLATE),
+            ("human", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ]
+    )
 
 
 def initialize_ai_tools(
@@ -277,22 +283,26 @@ class BaseAiService:
             return Constants.REQUEST_TIMEOUT_ERROR
         return f"{self.service_name}服务异常: {error_message}"
 
-    def _initialize_agent_stack(self, user_mapper: Optional[Any]) -> None:
+    def _initialize_agent_stack(
+        self, user_mapper: Optional[Any], max_iterations: int = 5
+    ) -> None:
         """初始化工具、意图路由器和 Agent。"""
         try:
             _, _, _, self.all_tools = initialize_ai_tools()
             self.intent_router = IntentRouter(self.llm, user_mapper=user_mapper)
 
             agent_prompt = get_agent_prompt()
-            self.agent = create_react_agent(
-                llm=self.llm, tools=self.all_tools, prompt=agent_prompt
+            self.agent = create_tool_calling_agent(
+                llm=self.llm,
+                tools=self.all_tools,
+                prompt=agent_prompt,
             )
             self.agent_executor = AgentExecutor(
                 agent=self.agent,
                 tools=self.all_tools,
                 verbose=True,
-                handle_parsing_errors=True,
-                max_iterations=5,
+                handle_parsing_errors=False,
+                max_iterations=max_iterations,
                 return_intermediate_steps=True,
             )
         except Exception as tool_error:
@@ -314,6 +324,7 @@ class BaseAiService:
                 or service_cfg.get("model_name")
                 or ""
             ).strip()
+            agent_max_iterations = int(service_cfg.get("agent_max_iterations", 8))
 
             if self._api_key and self._base_url and self.model_name:
                 self.llm = ChatOpenAI(
@@ -323,7 +334,9 @@ class BaseAiService:
                     temperature=self.temperature,
                     timeout=self._timeout,
                 )
-                self._initialize_agent_stack(user_mapper=user_mapper)
+                self._initialize_agent_stack(
+                    user_mapper=user_mapper, max_iterations=agent_max_iterations
+                )
                 Logger.info(self._build_initialization_success_message())
             else:
                 self._reset_runtime_state()

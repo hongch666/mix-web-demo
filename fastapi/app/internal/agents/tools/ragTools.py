@@ -1,3 +1,4 @@
+import os
 import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -26,32 +27,47 @@ class RAGTools:
         from app.core.config import load_config
 
         self.logger = Logger
+        self.enabled: bool = True
+        self._init_error_message: Optional[str] = None
 
         # 1. 初始化嵌入模型
         embedding_cfg = load_config("embedding") or {}
 
-        api_key = embedding_cfg.get("api_key")
-        embedding_model = embedding_cfg.get("embedding_model")
-        self.top_k: int = embedding_cfg.get("top_k")  # 从配置加载top_k参数
-        self.similarity_threshold: float = embedding_cfg.get(
-            "similarity_threshold"
-        )  # 相似度阈值（0-1之间）
-        self.similarity_tolerance: float = embedding_cfg.get(
-            "similarity_tolerance"
-        )  # 相似度容差（用于去重）
+        api_key = self._resolve_embedding_api_key(embedding_cfg)
+        embedding_model = str(
+            embedding_cfg.get("embedding_model") or "text-embedding-v3"
+        )
+        self.top_k = int(embedding_cfg.get("top_k") or 5)
+        self.similarity_threshold = float(
+            embedding_cfg.get("similarity_threshold") or 0.3
+        )
+        self.similarity_tolerance = float(
+            embedding_cfg.get("similarity_tolerance") or 0.01
+        )
 
         if not api_key:
-            raise BusinessException("Embedding配置不完整，客户端未初始化")
+            self.enabled = False
+            self._init_error_message = (
+                "Embedding配置不完整，请先配置 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY"
+            )
+            raise BusinessException(self._init_error_message)
 
-        self.embeddings = DashScopeEmbeddings(
-            model=embedding_model, dashscope_api_key=api_key
-        )
-        self.logger.info(f"Embedding嵌入模型初始化成功: {embedding_model}")
+        try:
+            self.embeddings = DashScopeEmbeddings(
+                model=embedding_model, dashscope_api_key=api_key
+            )
+            self.logger.info(f"Embedding嵌入模型初始化成功: {embedding_model}")
+        except Exception as error:
+            self.enabled = False
+            self._init_error_message = (
+                f"Embedding初始化失败，请检查 DashScope API Key 是否有效：{error}"
+            )
+            raise BusinessException(self._init_error_message)
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=800,  # 每个块的大小（字符数）
-            chunk_overlap=100,  # 块之间的重叠（字符数）
+            chunk_size=800,
+            chunk_overlap=100,
             length_function=len,
             separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""],
         )
@@ -71,6 +87,23 @@ class RAGTools:
             use_jsonb=True,
         )
         self.logger.info(Constants.VECTOR_STORE_INITIALIZATION_SUCCESS)
+
+    @staticmethod
+    def _resolve_embedding_api_key(embedding_cfg: Dict[str, Any]) -> str:
+        """优先从配置读取 embedding key，再回退到常见环境变量。"""
+        candidates = [
+            embedding_cfg.get("api_key"),
+            os.getenv("EMBEDDING_API_KEY"),
+            os.getenv("DASHSCOPE_API_KEY"),
+            os.getenv("DASHSCOPE_API_KEY_FOR_LLM"),
+        ]
+        for candidate in candidates:
+            if candidate and str(candidate).strip():
+                return str(candidate).strip()
+        return ""
+
+    def _build_disabled_message(self) -> str:
+        return self._init_error_message or "RAG服务未初始化，请检查 Embedding 配置"
 
     async def add_articles_to_vector_store(
         self,
@@ -188,6 +221,9 @@ class RAGTools:
             相似文章的文本描述
         """
         try:
+            if not self.enabled:
+                return self._build_disabled_message()
+
             # 如果未明确传入k值，使用配置中的top_k
             search_k = k if k != 5 else self.top_k
 
@@ -232,6 +268,15 @@ class RAGTools:
             return result_text
 
         except Exception as e:
+            error_text = str(e)
+            if (
+                "InvalidApiKey" in error_text
+                or "Invalid API-key provided" in error_text
+            ):
+                self.enabled = False
+                self._init_error_message = "Embedding API Key 无效，请检查 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY 配置"
+                self.logger.error(self._init_error_message)
+                return self._init_error_message
             error_msg = f"RAG搜索失败: {str(e)}"
             self.logger.error(error_msg)
             return error_msg
@@ -248,10 +293,12 @@ class RAGTools:
             Document对象列表
         """
         try:
+            if not self.enabled:
+                return []
+
             # 搜索更多结果以便进行智能去重
             fetch_k = max(k * 3, 10)
 
-            # 获取带相似度分数的结果
             docs_with_scores = self.vector_store.similarity_search_with_score(
                 query, k=fetch_k
             )
@@ -267,6 +314,15 @@ class RAGTools:
             )
             return dedup_docs
         except Exception as e:
+            error_text = str(e)
+            if (
+                "InvalidApiKey" in error_text
+                or "Invalid API-key provided" in error_text
+            ):
+                self.enabled = False
+                self._init_error_message = "Embedding API Key 无效，请检查 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY 配置"
+                self.logger.error(self._init_error_message)
+                return []
             self.logger.error(f"获取文章上下文失败: {e}")
             return []
 

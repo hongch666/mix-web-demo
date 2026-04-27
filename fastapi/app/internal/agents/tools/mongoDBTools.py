@@ -1,13 +1,14 @@
 import json
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
 from app.core.db import async_db
 from bson import ObjectId
-from langchain_core.tools import Tool
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
 
 
 class MongoDBTools:
@@ -30,7 +31,7 @@ class MongoDBTools:
             self.logger.error(f"获取日志集合失败: {e}")
             return None
 
-    async def list_mongodb_collections(self, _: str = "") -> str:
+    async def list_mongodb_collections(self) -> str:
         """列出 MongoDB 数据库中的所有 collection 及其基本信息"""
         try:
             collections_info: List[Dict[str, Any]] = []
@@ -60,42 +61,23 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
-    async def query_mongodb(self, query_params: Union[str, Dict[str, Any]]) -> str:
+    async def query_mongodb(
+        self,
+        collection_name: str,
+        filter_dict: Optional[Dict[str, Any]] = None,
+        limit: int = 10,
+    ) -> str:
         """通用的 MongoDB 查询工具，可以查询任意 collection"""
         try:
-            # 解析 query_params
-            try:
-                if isinstance(query_params, str):
-                    params = json.loads(query_params)
-                else:
-                    params = query_params
-            except json.JSONDecodeError:
-                return (
-                    f"错误: query_params 必须是有效的 JSON 格式，收到: {query_params}"
-                )
-
-            # 提取参数
-            collection_name = params.get("collection_name", "")
-            filter_dict = params.get("filter_dict", {})
-            limit = params.get("limit", 10)
-
             # 验证必需参数
             if not collection_name:
                 return Constants.COLLECTION_NAME_VALIDATION_ERROR
 
             # 确保 limit 是整数
-            limit_int = int(limit) if isinstance(limit, str) else limit
+            limit_int = int(limit)
 
             # 确保 filter_dict 是字典
-            if isinstance(filter_dict, str):
-                try:
-                    filter_obj = json.loads(filter_dict)
-                except json.JSONDecodeError:
-                    return (
-                        f"错误: filter_dict 必须是有效的 JSON 格式，收到: {filter_dict}"
-                    )
-            else:
-                filter_obj = filter_dict if filter_dict else {}
+            filter_obj = filter_dict if filter_dict else {}
 
             # 获取 collection
             collection = self.db[collection_name]
@@ -117,20 +99,31 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
-    def get_langchain_tools(self) -> List[Tool]:
+    def get_langchain_tools(self) -> List[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
+
+        class EmptyInput(BaseModel):
+            pass
+
+        class QueryMongoInput(BaseModel):
+            collection_name: str = Field(description="collection 的名称")
+            filter_dict: Dict[str, Any] = Field(
+                default_factory=dict, description="MongoDB 查询条件"
+            )
+            limit: int = Field(default=10, ge=1, description="返回结果数量限制")
+
         return [
-            Tool(
+            StructuredTool(
                 name=Constants.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
                 description=Constants.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
-                func=None,
                 coroutine=self.list_mongodb_collections,
+                args_schema=EmptyInput,
             ),
-            Tool(
+            StructuredTool(
                 name=Constants.MONGODB_QUERY_TOOL_NAME,
                 description=Constants.MONGODB_QUERY_TOOL_DESC,
-                func=None,
                 coroutine=self.query_mongodb,
+                args_schema=QueryMongoInput,
             ),
         ]
 

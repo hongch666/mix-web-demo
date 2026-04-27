@@ -146,6 +146,16 @@ class Constants:
     AGENT_PROCESSING_MESSAGE: str = "使用Agent处理，可同时调用SQL和RAG工具"
     """Agent处理消息"""
 
+    AGENT_PARSING_ERROR_HINT: str = (
+        "上一轮回复格式不正确，请严格按以下格式输出，并且不要输出多余内容：\n"
+        "Thought: 先思考\n"
+        "Action: 从工具列表中选择一个工具名\n"
+        "Action Input: 工具输入\n"
+        "如果已经有最终答案，再输出：\n"
+        "Final Answer: 最终回答"
+    )
+    """Agent解析失败提示"""
+
     AGENT_START_PROCESSING_MESSAGE: str = "Agent开始处理..."
     """Agent开始处理消息"""
 
@@ -779,76 +789,18 @@ class Constants:
     """基于参考文本的评价提示词"""
 
     AGENT_PROMPT_TEMPLATE: str = """
-        你是一个智能助手，可以帮助用户查询数据库信息、搜索文章内容和分析系统日志。
+        你是一个中文 AI 助手，负责查询数据库信息、搜索文章内容和分析系统日志。
 
-        你有以下工具可以使用:
-        {tools}
+        你可以直接调用绑定好的工具，不需要手写 Thought/Action/Observation 这种文本格式。
 
-        工具名称: {tool_names}
+        规则：
+        1. 需要查询数据时优先使用工具，不要凭空猜测。
+        2. 数据库统计和业务数据查询优先使用 SQL 工具，并尽量加上时间范围、用户范围、状态条件或 limit。
+        3. 查询数据库表结构时，先确认真实表名，再执行查询；例如用户表是 user，不是 users。
+        4. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
+        5. 最终回答必须使用中文，简洁明确。
 
-        使用以下格式回答问题:
-
-        Question: 用户的问题
-        Thought: 你需要思考应该做什么
-        Action: 选择一个工具，必须是 [{tool_names}] 中的一个
-        Action Input: 工具的输入参数
-        Observation: 工具执行的结果
-        ... (这个 Thought/Action/Action Input/Observation 可以重复N次)
-        Thought: 我现在知道最终答案了
-        Final Answer: 给用户的最终回答
-
-        重要提示 - 如何选择和使用工具:
-
-        1. 系统相关数据、统计数据和业务数据查询: 优先使用 SQL 工具。
-        先用 get_table_schema 查看表结构，再用 execute_sql_query 执行 SQL 查询。
-        对于数据量可能较大的表，必须主动增加时间范围、用户范围、状态条件、分页或 limit，避免一次性返回过多数据。
-        示例: "有多少篇文章"、"发布最多的作者是谁"、"文章总浏览量"
-
-        2. 文章内容/技术知识查询: 使用 search_articles 搜索相关文章
-        示例: "Python最佳实践"、"如何学习机器学习"、"深度学习教程"
-
-        3. MongoDB 日志查询: MongoDB 工具仅用于日志相关查询。
-
-        第一步: 使用 list_mongodb_collections 列出所有可用的 collection
-        - 这会告诉你有哪些日志集合可以查询（如 api_logs, error_logs 等）
-        - 以及每个 collection 中有哪些字段
-        - Action Input: (无需参数)
-
-        第二步: 使用 query_mongodb 查询特定 collection
-        Action Input 必须是 JSON 格式字符串，包含以下参数:
-        - collection_name: 必需，collection 的名称 (字符串)
-        - filter_dict: 可选，MongoDB 查询条件 (JSON对象)
-        - limit: 可选，返回结果数量限制 (整数，默认10)
-
-        Action Input 示例:
-        - 查询 api_logs 的前10条: {{"collection_name": "api_logs", "limit": 10}}
-        - 查询特定用户的 api_logs: {{"collection_name": "api_logs", "filter_dict": {{"user_id": 122}}, "limit": 20}}
-        - 查询错误日志: {{"collection_name": "error_logs", "limit": 10}}
-        - 查询文章日志: {{"collection_name": "articlelogs", "limit": 10}}
-
-        4. 工作流程建议:
-        - 如果用户问关于"日志"、"记录"、"API请求"、"错误"等：
-            1) 首先调用 list_mongodb_collections 查看有哪些 collection
-            2) 然后根据结果调用 query_mongodb 查询具体数据
-
-        - 对于系统统计、业务统计、用户统计、文章统计等场景：
-            使用 SQL 工具，并确保查询有明确限制条件，尤其是时间范围、用户范围和 limit
-
-        - 对于简单日志查询（如"最近的API请求"）：
-            直接使用 query_mongodb，传递 JSON 参数
-
-        关键特点:
-        - 你可以根据需要多次使用工具
-        - 对于组合问题，分步骤调用不同的工具
-        - 始终用中文回答用户
-        - MongoDB 的 filter_dict 支持完整的 MongoDB 查询语法，如 $gte, $lte, $regex 等
-        - 如果查询返回空结果，可以尝试修改查询条件或查询其他日志 collection
-        - Action Input 必须是有效的 JSON 字符串，不能是 Python 字典
-
-        开始!
-
-        Question: {input}
-        Thought: {agent_scratchpad}
+        当前问题：{input}
     """
     """AI 助手的Agent提示词模板"""
 
