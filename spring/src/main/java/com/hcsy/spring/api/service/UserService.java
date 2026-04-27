@@ -15,6 +15,8 @@ public interface UserService extends IService<User> {
 
     UserListVO getAllUsers(String username);
 
+    UserListVO getAllAiUsers();
+
     void saveUserAndStatus(User user);
 
     void deleteUserAndStatusById(Long id);

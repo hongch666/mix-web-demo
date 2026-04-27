@@ -41,8 +41,8 @@ import com.hcsy.spring.entity.dto.UserQueryDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
-import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.ImageCaptchaVO;
+import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -87,6 +87,14 @@ public class UserController {
     @ApiLog("获取所有用户")
     public Result getAllUsers() {
         UserListVO data = userService.getAllUsers(null);
+        return Result.success(data);
+    }
+
+    @GetMapping("/ai")
+    @Operation(summary = "获取所有AI用户", description = "获取 role 为 ai 的用户列表，不分页")
+    @ApiLog("获取所有AI用户")
+    public Result getAllAiUsers() {
+        UserListVO data = userService.getAllAiUsers();
         return Result.success(data);
     }
 

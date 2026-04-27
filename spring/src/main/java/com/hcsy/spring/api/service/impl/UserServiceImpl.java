@@ -241,6 +241,31 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    public UserListVO getAllAiUsers() {
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(User::getRole, "ai");
+        List<User> users = this.list(queryWrapper);
+
+        if (users.isEmpty()) {
+            return UserListVO.builder()
+                    .total(0L)
+                    .list(Collections.emptyList())
+                    .build();
+        }
+
+        List<UserVO> voList = users.stream().map(user -> {
+            UserVO vo = new UserVO();
+            BeanUtil.copyProperties(user, vo);
+            return vo;
+        }).toList();
+
+        return UserListVO.builder()
+                .total((long) users.size())
+                .list(voList)
+                .build();
+    }
+
+    @Override
     public void saveUserAndStatus(User user) {
         // 加密密码后再保存
         String password = user.getPassword();

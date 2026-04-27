@@ -936,24 +936,24 @@ public class Constants {
     // AI用户相关常量
 
     /**
-     * 豆包用户id
+     * DeepSeek用户id
      */
-    public static long DOUBAO_ID = 1001L;
+    public static long DEEPSEEK_ID = 1001L;
 
     /**
-     * 豆包用户名
+     * DeepSeek用户名
      */
-    public static String DOUBAO_NAME = "豆包";
+    public static String DEEPSEEK_NAME = "DeepSeek";
 
     /**
-     * 豆包邮箱
+     * DeepSeek邮箱
      */
-    public static String DOUBAO_EMAIL = "doubao@example.com";
+    public static String DEEPSEEK_EMAIL = "deepseek@example.com";
 
     /**
-     * 豆包头像链接
+     * DeepSeek头像链接
      */
-    public static String DOUBAO_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E8%B1%86%E5%8C%85.jpeg";
+    public static String DEEPSEEK_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/deepseek.png";
 
     /**
      * Gemini用户id
@@ -976,24 +976,24 @@ public class Constants {
     public static String GEMINI_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gemini.jpeg";
 
     /**
-     * Qwen用户id
+     * GPT用户id
      */
-    public static long QWEN_ID = 1003L;
+    public static long GPT_ID = 1003L;
 
     /**
-     * Qwen用户名
+     * GPT用户名
      */
-    public static String QWEN_NAME = "Qwen";
+    public static String GPT_NAME = "GPT";
 
     /**
-     * Qwen邮箱
+     * GPT邮箱
      */
-    public static String QWEN_EMAIL = "qwen@example.com";
+    public static String GPT_EMAIL = "gpt@example.com";
 
     /**
-     * Qwen头像链接
+     * GPT头像链接
      */
-    public static String QWEN_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/%E9%80%9A%E4%B9%89%E5%8D%83%E9%97%AE.jpeg";
+    public static String GPT_IMG = "https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gpt.png";
 
     /**
      * 通用隐藏密码

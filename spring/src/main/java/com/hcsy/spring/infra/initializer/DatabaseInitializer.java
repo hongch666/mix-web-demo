@@ -62,20 +62,20 @@ public class DatabaseInitializer implements ApplicationRunner {
         try {
             // 创建三个AI用户，如果不存在则插入
             insertAIUserIfNotExists(
-                    Constants.DOUBAO_ID,
-                    Constants.DOUBAO_NAME,
-                    Constants.DOUBAO_EMAIL,
-                    Constants.DOUBAO_IMG);
+                    Constants.DEEPSEEK_ID,
+                    Constants.DEEPSEEK_NAME,
+                    Constants.DEEPSEEK_EMAIL,
+                    Constants.DEEPSEEK_IMG);
             insertAIUserIfNotExists(
                     Constants.GEMINI_ID,
                     Constants.GEMINI_NAME,
                     Constants.GEMINI_EMAIL,
                     Constants.GEMINI_IMG);
             insertAIUserIfNotExists(
-                    Constants.QWEN_ID,
-                    Constants.QWEN_NAME,
-                    Constants.QWEN_EMAIL,
-                    Constants.QWEN_IMG);
+                    Constants.GPT_ID,
+                    Constants.GPT_NAME,
+                    Constants.GPT_EMAIL,
+                    Constants.GPT_IMG);
         } catch (Exception e) {
             logger.error(Constants.INIT_AI, e);
         }
