@@ -20,9 +20,9 @@ from app.internal.crud import (
 
 from fastapi import Depends
 
-from ..llm.doubaoService import DoubaoService, get_doubao_service
+from ..llm.deepseekService import DeepseekService, get_deepseek_service
 from ..llm.geminiService import GeminiService, get_gemini_service
-from ..llm.qwenService import QwenService, get_qwen_service
+from ..llm.gptService import GptService, get_gpt_service
 
 
 class GenerateService:
@@ -32,15 +32,15 @@ class GenerateService:
         self,
         comments_mapper: Optional[CommentsMapper] = None,
         article_mapper: Optional[ArticleMapper] = None,
-        doubao_service: Optional[DoubaoService] = None,
+        deepseek_service: Optional[DeepseekService] = None,
         gemini_service: Optional[GeminiService] = None,
-        qwen_service: Optional[QwenService] = None,
+        gpt_service: Optional[GptService] = None,
     ):
         self.comments_mapper: Optional[CommentsMapper] = comments_mapper
         self.article_mapper: Optional[ArticleMapper] = article_mapper
-        self.doubao_service: Optional[DoubaoService] = doubao_service
+        self.deepseek_service: Optional[DeepseekService] = deepseek_service
+        self.gpt_service: Optional[GptService] = gpt_service
         self.gemini_service: Optional[GeminiService] = gemini_service
-        self.qwen_service: Optional[QwenService] = qwen_service
 
     async def extract_tags(self, text: str, topK: int = 5) -> str:
         """
@@ -100,16 +100,16 @@ class GenerateService:
         total_start_time = time.time()
 
         # 为每个模型创建带计时的包装函数
-        async def timed_doubao_call() -> Any:
+        async def timed_deepseek_call() -> Any:
             start = time.time()
             try:
-                result = await self.doubao_service.basic_chat(prompt)
+                result = await self.deepseek_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                Logger.info(f"豆包调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"DeepSeek调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"豆包调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"DeepSeek调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         async def timed_gemini_call() -> Any:
@@ -124,23 +124,23 @@ class GenerateService:
                 Logger.error(f"Gemini调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
-        async def timed_qwen_call() -> Any:
+        async def timed_gpt_call() -> Any:
             start = time.time()
             try:
-                result = await self.qwen_service.basic_chat(prompt)
+                result = await self.gpt_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                Logger.info(f"Qwen调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"GPT调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"Qwen调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"GPT调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         # 使用 asyncio.gather 并发执行三个异步调用
         responses = await asyncio.gather(
-            timed_doubao_call(),
+            timed_deepseek_call(),
             timed_gemini_call(),
-            timed_qwen_call(),
+            timed_gpt_call(),
             return_exceptions=True,  # 即使查个调用失败，其他调用仍继续
         )
 
@@ -150,29 +150,31 @@ class GenerateService:
             f"3个大模型并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}"
         )
 
-        response_doubao, response_gemini, response_qwen = responses
+        response_deepseek, response_gemini, response_gpt = responses
 
         # 检查是否有异常返回
-        if isinstance(response_doubao, Exception):
-            Logger.error(f"豆包大模型最终失败: {response_doubao}")
-            response_doubao = Constants.DOUBAO_CALL_FAILED_ERROR
+        if isinstance(response_deepseek, Exception):
+            Logger.error(f"DeepSeek大模型最终失败: {response_deepseek}")
+            response_deepseek = Constants.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(f"Gemini大模型最终失败: {response_gemini}")
             response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
-        if isinstance(response_qwen, Exception):
-            Logger.error(f"Qwen大模型最终失败: {response_qwen}")
-            response_qwen = Constants.QWEN_CALL_FAILED_ERROR
+        if isinstance(response_gpt, Exception):
+            Logger.error(f"GPT大模型最终失败: {response_gpt}")
+            response_gpt = Constants.GPT_CALL_FAILED_ERROR
 
         # 2.4 解析大模型返回结果
-        content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
+        content_deepseek, star_deepseek = self._parse_ai_comment_response(
+            response_deepseek
+        )
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
-        content_qwen, star_qwen = self._parse_ai_comment_response(response_qwen)
+        content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
         # 3. 构建AI评论对象
-        doubao_ai_comment: Any = Comments(
+        deepseek_ai_comment: Any = Comments(
             article_id=article_id,
             user_id=1001,
-            content=content_doubao,
-            star=star_doubao,
+            content=content_deepseek,
+            star=star_deepseek,
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
@@ -184,18 +186,18 @@ class GenerateService:
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
-        qwen_ai_comment: Any = Comments(
+        gpt_ai_comment: Any = Comments(
             article_id=article_id,
             user_id=1003,
-            content=content_qwen,
-            star=star_qwen,
+            content=content_gpt,
+            star=star_gpt,
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
         # 4. 保存AI评论到数据库
-        await self.comments_mapper.create_comment_mapper_async(doubao_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db)
         await self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db)
-        await self.comments_mapper.create_comment_mapper_async(qwen_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db)
         Logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
 
     # 定义工具函数解析大模型返回结果
@@ -298,13 +300,13 @@ class GenerateService:
                     Logger.info(f"开始提取链接权威文本: {ref_value}")
 
                 # 定义三个大模型的总结函数
-                async def summarize_with_doubao(content: str) -> str:
+                async def summarize_with_deepseek(content: str) -> str:
                     try:
-                        return await self.doubao_service.summarize_content(
+                        return await self.deepseek_service.summarize_content(
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(f"豆包总结失败: {e}")
+                        Logger.error(f"DeepSeek总结失败: {e}")
                         return content[:1500]
 
                 async def summarize_with_gemini(content: str) -> str:
@@ -316,25 +318,25 @@ class GenerateService:
                         Logger.error(f"Gemini总结失败: {e}")
                         return content[:1500]
 
-                async def summarize_with_qwen(content: str) -> str:
+                async def summarize_with_gpt(content: str) -> str:
                     try:
-                        return await self.qwen_service.summarize_content(
+                        return await self.gpt_service.summarize_content(
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(f"Qwen总结失败: {e}")
+                        Logger.error(f"GPT总结失败: {e}")
                         return content[:1500]
 
                 # 并发调用三个大模型对提取的内容进行总结
                 summarize_tasks = [
                     extractor.extract_reference_content(
-                        ref_type, ref_value, 3000, summarize_with_doubao
+                        ref_type, ref_value, 3000, summarize_with_deepseek
                     ),
                     extractor.extract_reference_content(
                         ref_type, ref_value, 3000, summarize_with_gemini
                     ),
                     extractor.extract_reference_content(
-                        ref_type, ref_value, 3000, summarize_with_qwen
+                        ref_type, ref_value, 3000, summarize_with_gpt
                     ),
                 ]
 
@@ -345,11 +347,11 @@ class GenerateService:
                 # 合并三个大模型的总结结果
                 summaries = []
                 if isinstance(summary_results[0], str) and summary_results[0]:
-                    summaries.append(f"【豆包总结】\n{summary_results[0]}")
+                    summaries.append(f"【DeepSeek总结】\n{summary_results[0]}")
                 if isinstance(summary_results[1], str) and summary_results[1]:
                     summaries.append(f"【Gemini总结】\n{summary_results[1]}")
                 if isinstance(summary_results[2], str) and summary_results[2]:
-                    summaries.append(f"【Qwen总结】\n{summary_results[2]}")
+                    summaries.append(f"【GPT总结】\n{summary_results[2]}")
 
                 if summaries:
                     reference_content = "\n\n".join(summaries)
@@ -385,18 +387,20 @@ class GenerateService:
 
         total_start_time = time.time()
 
-        async def timed_doubao_ref_call() -> Any:
+        async def timed_deepseek_ref_call() -> Any:
             start = time.time()
             try:
-                result = await self.doubao_service.with_reference_chat(
+                result = await self.deepseek_service.with_reference_chat(
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                Logger.info(f"豆包参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"DeepSeek参考文本调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"豆包参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(
+                    f"DeepSeek参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}"
+                )
                 return e
 
         async def timed_gemini_ref_call() -> Any:
@@ -415,25 +419,25 @@ class GenerateService:
                 )
                 return e
 
-        async def timed_qwen_ref_call() -> Any:
+        async def timed_gpt_ref_call() -> Any:
             start = time.time()
             try:
-                result = await self.qwen_service.with_reference_chat(
+                result = await self.gpt_service.with_reference_chat(
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                Logger.info(f"Qwen参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(f"GPT参考文本调用完成，耗时: {elapsed:.2f}秒")
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"Qwen参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(f"GPT参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
                 return e
 
         # 并发执行三个调用
         responses = await asyncio.gather(
-            timed_doubao_ref_call(),
+            timed_deepseek_ref_call(),
             timed_gemini_ref_call(),
-            timed_qwen_ref_call(),
+            timed_gpt_ref_call(),
             return_exceptions=True,
         )
 
@@ -442,30 +446,32 @@ class GenerateService:
             f"3个大模型参考文本并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}"
         )
 
-        response_doubao, response_gemini, response_qwen = responses
+        response_deepseek, response_gemini, response_gpt = responses
 
         # 检查异常返回
-        if isinstance(response_doubao, Exception):
-            Logger.error(f"豆包参考文本最终失败: {response_doubao}")
-            response_doubao = Constants.DOUBAO_CALL_FAILED_ERROR
+        if isinstance(response_deepseek, Exception):
+            Logger.error(f"DeepSeek参考文本最终失败: {response_deepseek}")
+            response_deepseek = Constants.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(f"Gemini参考文本最终失败: {response_gemini}")
             response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
-        if isinstance(response_qwen, Exception):
-            Logger.error(f"Qwen参考文本最终失败: {response_qwen}")
-            response_qwen = Constants.QWEN_CALL_FAILED_ERROR
+        if isinstance(response_gpt, Exception):
+            Logger.error(f"GPT参考文本最终失败: {response_gpt}")
+            response_gpt = Constants.GPT_CALL_FAILED_ERROR
 
         # 7. 解析大模型返回结果
-        content_doubao, star_doubao = self._parse_ai_comment_response(response_doubao)
+        content_deepseek, star_deepseek = self._parse_ai_comment_response(
+            response_deepseek
+        )
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
-        content_qwen, star_qwen = self._parse_ai_comment_response(response_qwen)
+        content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
 
         # 8. 构建AI评论对象
-        doubao_ai_comment: Any = Comments(
+        deepseek_ai_comment: Any = Comments(
             article_id=article_id,
             user_id=1001,
-            content=content_doubao,
-            star=star_doubao,
+            content=content_deepseek,
+            star=star_deepseek,
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
@@ -477,19 +483,19 @@ class GenerateService:
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
-        qwen_ai_comment: Any = Comments(
+        gpt_ai_comment: Any = Comments(
             article_id=article_id,
             user_id=1003,
-            content=content_qwen,
-            star=star_qwen,
+            content=content_gpt,
+            star=star_gpt,
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
 
         # 9. 保存AI评论到数据库
-        await self.comments_mapper.create_comment_mapper_async(doubao_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db)
         await self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db)
-        await self.comments_mapper.create_comment_mapper_async(qwen_ai_comment, db)
+        await self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db)
         Logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
 
     async def generate_authority_article_with_ai_summaries(
@@ -541,20 +547,20 @@ class GenerateService:
             Logger.info(Constants.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
 
-            async def timed_doubao_summarize() -> Optional[str]:
+            async def timed_deepseek_summarize() -> Optional[str]:
                 start = time.time()
                 try:
-                    result = await self.doubao_service.summarize_content(
+                    result = await self.deepseek_service.summarize_content(
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        f"豆包总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
+                        f"DeepSeek总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(f"豆包总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(f"DeepSeek总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:
@@ -573,27 +579,27 @@ class GenerateService:
                     Logger.error(f"Gemini总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
 
-            async def timed_qwen_summarize() -> Optional[str]:
+            async def timed_gpt_summarize() -> Optional[str]:
                 start = time.time()
                 try:
-                    result = await self.qwen_service.summarize_content(
+                    result = await self.gpt_service.summarize_content(
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        f"Qwen总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
+                        f"GPT总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(f"Qwen总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(f"GPT总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
                     return None
 
             # 并发执行三个总结任务
             summaries = await asyncio.gather(
-                timed_doubao_summarize(),
+                timed_deepseek_summarize(),
                 timed_gemini_summarize(),
-                timed_qwen_summarize(),
+                timed_gpt_summarize(),
                 return_exceptions=False,
             )
 
@@ -608,7 +614,7 @@ class GenerateService:
                 "raw_content_length": len(raw_content),
                 "raw_content_preview": raw_content[:500] if raw_content else "",
                 "summaries": {
-                    "doubao": {
+                    "deepseek": {
                         "content": summaries[0],
                         "length": len(summaries[0]) if summaries[0] else 0,
                     },
@@ -616,7 +622,7 @@ class GenerateService:
                         "content": summaries[1],
                         "length": len(summaries[1]) if summaries[1] else 0,
                     },
-                    "qwen": {
+                    "gpt": {
                         "content": summaries[2],
                         "length": len(summaries[2]) if summaries[2] else 0,
                     },
@@ -636,10 +642,14 @@ class GenerateService:
 def get_generate_service(
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
-    doubao_service: DoubaoService = Depends(get_doubao_service),
+    deepseek_service: DeepseekService = Depends(get_deepseek_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
-    qwen_service: QwenService = Depends(get_qwen_service),
+    gpt_service: GptService = Depends(get_gpt_service),
 ) -> GenerateService:
     return GenerateService(
-        comments_mapper, article_mapper, doubao_service, gemini_service, qwen_service
+        comments_mapper,
+        article_mapper,
+        deepseek_service,
+        gemini_service,
+        gpt_service,
     )

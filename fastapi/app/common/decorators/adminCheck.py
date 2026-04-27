@@ -13,7 +13,7 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     管理员权限检查装饰器
 
-    检查当前用户是否是管理员，如果不是则拦截请求并抛出异常。
+    检查当前用户是否是管理员，如果不是则拦截请求并抛出异常
 
     使用方式:
         @router.get("/admin-only")

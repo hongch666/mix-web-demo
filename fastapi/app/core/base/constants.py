@@ -105,11 +105,11 @@ class Constants:
     )
     """月度文章统计使用DB数据源消息"""
 
-    DOUBAO_AGENT_INITIALIZATION_SUCCESS: str = "豆包Agent服务初始化完成"
-    """豆包Agent初始化成功"""
+    DEEPSEEK_AGENT_INITIALIZATION_SUCCESS: str = "DeepSeek Agent服务初始化完成"
+    """DeepSeek Agent初始化成功"""
 
-    DOUBAO_CONFIGURATION_INCOMPLETE_ERROR: str = "豆包配置不完整，客户端未初始化"
-    """豆包配置不完整错误消息"""
+    DEEPSEEK_CONFIGURATION_INCOMPLETE_ERROR: str = "DeepSeek配置不完整，客户端未初始化"
+    """DeepSeek配置不完整错误消息"""
 
     INITIALIZATION_ERROR: str = "聊天服务未配置或初始化失败"
     """初始化错误消息"""
@@ -167,9 +167,7 @@ class Constants:
     GEMINI_INVALID_API_KEY_ERROR: str = "API密钥无效。请检查Gemini API密钥配置。"
     """Gemini密钥无效消息"""
 
-    GEMINI_QUOTA_EXCEEDED_ERROR: str = (
-        "Gemini API 配额已用完。建议切换到豆包或通义千问服务。"
-    )
+    GEMINI_QUOTA_EXCEEDED_ERROR: str = "Gemini API 配额已用完。请稍后重试。"
     """Gemini配额用尽消息"""
 
     GEMINI_RATE_LIMIT_EXCEEDED_ERROR: str = "Gemini API调用频率超限。请稍后重试。"
@@ -178,31 +176,29 @@ class Constants:
     REQUEST_TIMEOUT_ERROR: str = "请求超时，请稍后重试。"
     """请求超时错误消息"""
 
-    QWEN_AGENT_INITIALIZATION_SUCCESS: str = "Qwen Agent服务初始化完成"
-    """Qwen Agent初始化成功"""
+    GPT_AGENT_INITIALIZATION_SUCCESS: str = "GPT Agent服务初始化完成"
+    """GPT Agent初始化成功"""
 
-    QWEN_CONFIGURATION_INCOMPLETE_ERROR: str = "Qwen配置不完整，客户端未初始化"
-    """Qwen配置不完整错误消息"""
+    GPT_CONFIGURATION_INCOMPLETE_ERROR: str = "GPT配置不完整，客户端未初始化"
+    """GPT配置不完整错误消息"""
 
-    QWEN_INVALID_API_KEY_ERROR: str = "API密钥无效。请检查Qwen API密钥配置。"
-    """Qwen密钥无效消息"""
+    GPT_INVALID_API_KEY_ERROR: str = "API密钥无效。请检查GPT API密钥配置。"
+    """GPT密钥无效消息"""
 
-    QWEN_QUOTA_EXCEEDED_ERROR: str = (
-        "Qwen API 配额已用完。建议切换到豆包或通义千问服务。"
-    )
-    """Qwen配额用尽消息"""
+    GPT_QUOTA_EXCEEDED_ERROR: str = "GPT API 配额已用完。请稍后重试。"
+    """GPT配额用尽消息"""
 
-    QWEN_RATE_LIMIT_EXCEEDED_ERROR: str = "Qwen API调用频率超限。请稍后重试。"
-    """Qwen调用频率超限消息"""
+    GPT_RATE_LIMIT_EXCEEDED_ERROR: str = "GPT API调用频率超限。请稍后重试。"
+    """GPT调用频率超限消息"""
 
-    DOUBAO_CALL_FAILED_ERROR: str = "豆包调用失败"
-    """豆包调用失败消息"""
+    DEEPSEEK_CALL_FAILED_ERROR: str = "DeepSeek调用失败"
+    """DeepSeek调用失败消息"""
 
     GEMINI_CALL_FAILED_ERROR: str = "Gemini调用失败"
     """Gemini调用失败消息"""
 
-    QWEN_CALL_FAILED_ERROR: str = "Qwen调用失败"
-    """Qwen调用失败消息"""
+    GPT_CALL_FAILED_ERROR: str = "GPT调用失败"
+    """GPT调用失败消息"""
 
     CATEGORY_NO_AUTHORITATIVE_REFERENCE_TEXT_ERROR: str = (
         "该分类暂无权威参考文本，请根据您的专业知识进行评价。"

@@ -6,9 +6,9 @@ from .apiLog.apiLogService import ApiLogService, get_apilog_service
 from .external.client import call_remote_service
 from .generate.generateService import GenerateService, get_generate_service
 from .llm.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
-from .llm.doubaoService import DoubaoService, get_doubao_service
+from .llm.deepseekService import DeepseekService, get_deepseek_service
 from .llm.geminiService import GeminiService, get_gemini_service
-from .llm.qwenService import QwenService, get_qwen_service
+from .llm.gptService import GptService, get_gpt_service
 from .scheduler import start_scheduler
 from .tasks.analyzeCacheTask import update_analyze_caches_async
 from .tasks.vectorSyncTask import (
@@ -29,12 +29,12 @@ __all__: List[str] = [
     "ApiLogService",
     "get_apilog_service",
     "BaseAiService",
-    "DoubaoService",
     "GeminiService",
-    "QwenService",
+    "GptService",
+    "DeepseekService",
+    "get_gpt_service",
     "get_gemini_service",
-    "get_qwen_service",
-    "get_doubao_service",
+    "get_deepseek_service",
     "get_agent_prompt",
     "initialize_ai_tools",
     "update_analyze_caches_async",

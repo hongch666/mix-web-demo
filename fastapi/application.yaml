@@ -74,23 +74,16 @@ files:
   excel_path: ${FILES_EXCEL_PATH:../static/excel}
 logs:
   path: ${LOGS_PATH:../logs/fastapi}
-gemini:
-  model_name: ${GEMINI_MODEL:gemini-2.0-flash} # 第三方代理 Gemini 模型
-  base_url: ${GEMINI_BASE_URL:https://api.openai-proxy.org/v1} # 第三方代理 API 地址
-  api_key: ${GEMINI_API_KEY:} # Gemini API Key
-  timeout: ${GEMINI_TIMEOUT:30} # 请求超时时间（秒）
-qwen:
-  model_name: ${QWEN_MODEL:qwen-flash} # 可选: qwen-plus, qwen-turbo, qwen-max 等
-  base_url: ${QWEN_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
-  api_key: ${QWEN_API_KEY:} # Qwen API Key
-  timeout: ${QWEN_TIMEOUT:30} # 请求超时时间（秒）
-doubao:
-  model: ${DOUBAO_MODEL:doubao-1-5-lite-32k-250115} # 豆包模型名称
-  base_url: ${DOUBAO_BASE_URL:https://ark.cn-beijing.volces.com/api/v3} # 豆包API地址
-  api_key: ${DOUBAO_API_KEY:} # 豆包 API Key
-  timeout: ${DOUBAO_TIMEOUT:60} # 请求超时时间（秒）
+closeai:
+  base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址
+  api_key: ${CLOSEAI_API_KEY:} # CloseAI API Key
+  timeout: ${CLOSEAI_TIMEOUT:30} # 请求超时时间（秒）
+  gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-5-nano} # 输入 0.05 / 输出 0.4
+  gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
+  deepseek_model_name: ${CLOSEAI_DEEPSEEK_MODEL:deepseek-v4-flash} # 输入 0.15 / 输出 0.3
 embedding:
-  embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 通义千问嵌入模型（可选: text-embedding-v2, text-embedding-v1）
+  api_key: ${EMBEDDING_API_KEY:} # 嵌入模型 API Key
+  embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 嵌入模型名称
   top_k: ${EMBEDDING_TOP_K:5} # RAG检索返回的文档数量
   dimension: ${EMBEDDING_DIMENSION:1536} # 嵌入维度（text-embedding-v3默认1536维）
   similarity_threshold: ${EMBEDDING_SIMILARITY_THRESHOLD:0.3} # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）

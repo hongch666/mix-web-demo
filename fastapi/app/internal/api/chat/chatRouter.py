@@ -18,13 +18,13 @@ from app.internal.schemas import (
 )
 from app.internal.services import (
     AiHistoryService,
-    DoubaoService,
+    DeepseekService,
     GeminiService,
-    QwenService,
+    GptService,
     get_ai_history_service,
-    get_doubao_service,
+    get_deepseek_service,
     get_gemini_service,
-    get_qwen_service,
+    get_gpt_service,
 )
 from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
@@ -46,9 +46,9 @@ async def send_message(
     http_request: Request,
     request: ChatRequest,
     db: Session = Depends(get_db),
+    gptService: GptService = Depends(get_gpt_service),
     geminiService: GeminiService = Depends(get_gemini_service),
-    qwenService: QwenService = Depends(get_qwen_service),
-    doubaoService: DoubaoService = Depends(get_doubao_service),
+    deepseekService: DeepseekService = Depends(get_deepseek_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service),
 ) -> JSONResponse:
     """普通发送聊天消息"""
@@ -59,18 +59,19 @@ async def send_message(
 
     try:
         # 根据请求的服务类型选择对应的AI服务
-        if request.service == AIServiceType.GEMINI:
+        if request.service == AIServiceType.GPT:
+            Logger.info(f"使用GPT服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await gptService.simple_chat(
+                message=request.message, user_id=actual_user_id, db=db
+            )
+        elif request.service == AIServiceType.GEMINI:
             Logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
             response_message: str = await geminiService.simple_chat(
                 message=request.message, user_id=actual_user_id, db=db
             )
-        elif request.service == AIServiceType.QWEN:
-            response_message: str = await qwenService.simple_chat(
-                message=request.message, user_id=actual_user_id, db=db
-            )
-        else:  # 默认使用豆包服务
-            Logger.info(f"使用豆包服务处理用户 {actual_user_id} 的请求")
-            response_message: str = await doubaoService.simple_chat(
+        else:
+            Logger.info(f"使用DeepSeek服务处理用户 {actual_user_id} 的请求")
+            response_message: str = await deepseekService.simple_chat(
                 message=request.message, user_id=actual_user_id, db=db
             )
 
@@ -133,9 +134,9 @@ async def send_message(
 async def stream_message(
     http_request: Request,
     request: ChatRequest,
+    gptService: GptService = Depends(get_gpt_service),
     geminiService: GeminiService = Depends(get_gemini_service),
-    qwenService: QwenService = Depends(get_qwen_service),
-    doubaoService: DoubaoService = Depends(get_doubao_service),
+    deepseekService: DeepseekService = Depends(get_deepseek_service),
     aiHistoryService: AiHistoryService = Depends(get_ai_history_service),
 ) -> StreamingResponse:
     """流式发送聊天消息"""
@@ -157,21 +158,23 @@ async def stream_message(
             db = await anext(db_generator)
             try:
                 # 根据请求的服务类型选择对应的AI服务
-                if request.service == AIServiceType.GEMINI:
+                if request.service == AIServiceType.GPT:
+                    Logger.info(f"使用GPT流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator: AsyncGenerator[Any, None] = (
+                        gptService.stream_chat(
+                            message=request.message, user_id=actual_user_id, db=db
+                        )
+                    )
+                elif request.service == AIServiceType.GEMINI:
                     Logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
                     stream_generator: AsyncGenerator[Any, None] = (
                         geminiService.stream_chat(
                             message=request.message, user_id=actual_user_id, db=db
                         )
                     )
-                elif request.service == AIServiceType.QWEN:
-                    Logger.info(f"使用Qwen流式服务处理用户 {actual_user_id} 的请求")
-                    stream_generator = qwenService.stream_chat(
-                        message=request.message, user_id=actual_user_id, db=db
-                    )
-                else:  # 默认使用豆包服务
-                    Logger.info(f"使用豆包流式服务处理用户 {actual_user_id} 的请求")
-                    stream_generator = doubaoService.stream_chat(
+                else:
+                    Logger.info(f"使用DeepSeek流式服务处理用户 {actual_user_id} 的请求")
+                    stream_generator = deepseekService.stream_chat(
                         message=request.message, user_id=actual_user_id, db=db
                     )
 

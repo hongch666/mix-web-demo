@@ -27,11 +27,10 @@ class RAGTools:
 
         self.logger = Logger
 
-        # 1. 初始化嵌入模型（Qwen）
-        qwen_cfg = load_config("qwen") or {}
+        # 1. 初始化嵌入模型
         embedding_cfg = load_config("embedding") or {}
 
-        api_key = qwen_cfg.get("api_key")
+        api_key = embedding_cfg.get("api_key")
         embedding_model = embedding_cfg.get("embedding_model")
         self.top_k: int = embedding_cfg.get("top_k")  # 从配置加载top_k参数
         self.similarity_threshold: float = embedding_cfg.get(
@@ -42,12 +41,12 @@ class RAGTools:
         )  # 相似度容差（用于去重）
 
         if not api_key:
-            raise BusinessException(Constants.QWEN_INVALID_API_KEY_ERROR)
+            raise BusinessException("Embedding配置不完整，客户端未初始化")
 
         self.embeddings = DashScopeEmbeddings(
             model=embedding_model, dashscope_api_key=api_key
         )
-        self.logger.info(f"Qwen嵌入模型初始化成功: {embedding_model}")
+        self.logger.info(f"Embedding嵌入模型初始化成功: {embedding_model}")
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(

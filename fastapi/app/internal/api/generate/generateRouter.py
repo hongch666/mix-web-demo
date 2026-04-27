@@ -11,14 +11,14 @@ from app.internal.crud import (
 )
 from app.internal.schemas import GenerateDTO
 from app.internal.services import (
-    DoubaoService,
+    DeepseekService,
     GeminiService,
     GenerateService,
-    QwenService,
-    get_doubao_service,
+    GptService,
+    get_deepseek_service,
     get_gemini_service,
     get_generate_service,
-    get_qwen_service,
+    get_gpt_service,
 )
 from sqlalchemy.orm import Session
 
@@ -56,9 +56,9 @@ async def create_article_ai_comment(
     db: Session = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
-    doubao_service: DoubaoService = Depends(get_doubao_service),
+    deepseek_service: DeepseekService = Depends(get_deepseek_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
-    qwen_service: QwenService = Depends(get_qwen_service),
+    gpt_service: GptService = Depends(get_gpt_service),
 ) -> Any:
     """文章创建AI评论接口"""
 
@@ -66,9 +66,9 @@ async def create_article_ai_comment(
     generate_service = GenerateService(
         comments_mapper=comments_mapper,
         article_mapper=article_mapper,
-        doubao_service=doubao_service,
+        deepseek_service=deepseek_service,
         gemini_service=gemini_service,
-        qwen_service=qwen_service,
+        gpt_service=gpt_service,
     )
     # 添加后台任务
     background_tasks.add_task(generate_service.generate_ai_comments, article_id, db)
@@ -90,9 +90,9 @@ async def create_article_ai_comment_with_reference(
     db: Session = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
-    doubao_service: DoubaoService = Depends(get_doubao_service),
+    deepseek_service: DeepseekService = Depends(get_deepseek_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
-    qwen_service: QwenService = Depends(get_qwen_service),
+    gpt_service: GptService = Depends(get_gpt_service),
 ) -> Any:
     """文章创建基于权威参考文本的AI评论接口"""
 
@@ -100,9 +100,9 @@ async def create_article_ai_comment_with_reference(
     generate_service = GenerateService(
         comments_mapper=comments_mapper,
         article_mapper=article_mapper,
-        doubao_service=doubao_service,
+        deepseek_service=deepseek_service,
         gemini_service=gemini_service,
-        qwen_service=qwen_service,
+        gpt_service=gpt_service,
     )
     # 添加后台任务
     background_tasks.add_task(

@@ -13,8 +13,8 @@ from fastapi import Depends
 from .baseAIService import BaseAiService
 
 
-class GeminiService(BaseAiService):
-    """Gemini 模型服务"""
+class DeepseekService(BaseAiService):
+    """DeepSeek 模型服务"""
 
     def __init__(
         self,
@@ -23,17 +23,17 @@ class GeminiService(BaseAiService):
     ) -> None:
         super().__init__(
             ai_history_mapper,
-            service_name="Gemini",
+            service_name="DeepSeek",
             config_section="closeai",
-            model_config_key="gemini_model_name",
+            model_config_key="deepseek_model_name",
             user_mapper=user_mapper,
         )
 
 
 @lru_cache()
-def get_gemini_service(
+def get_deepseek_service(
     ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
     user_mapper: UserMapper = Depends(get_user_mapper),
-) -> GeminiService:
-    """获取 Gemini 服务单例实例"""
-    return GeminiService(ai_history_mapper, user_mapper)
+) -> DeepseekService:
+    """获取 DeepSeek 服务单例实例"""
+    return DeepseekService(ai_history_mapper, user_mapper)
