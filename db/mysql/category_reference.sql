@@ -5,5 +5,5 @@ CREATE TABLE IF NOT EXISTS `category_reference` (
     link VARCHAR(255) COMMENT '权威参考文本链接',
     pdf VARCHAR(255) COMMENT '权威参考文本PDF链接（OSS）',
     UNIQUE KEY uk_sub_category (sub_category_id),
-    FOREIGN KEY (sub_category_id) REFERENCES sub_category(id) ON DELETE CASCADE
-) COMMENT='分类权威参考文本表';
+    FOREIGN KEY (sub_category_id) REFERENCES sub_category (id) ON DELETE CASCADE
+) COMMENT = '分类权威参考文本表';
