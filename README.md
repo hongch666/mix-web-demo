@@ -67,7 +67,7 @@
 11. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
 12. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
 13. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
-14. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **豆包/Gemini/Qwen** 进行多模型选择
+14. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **GPT/Gemini/DeepSeek** 进行多模型选择
 
 ## 设计图
 
@@ -101,7 +101,6 @@
 
 ## 第三方服务
 
-- [火山引擎](https://www.volcengine.com/)
 - [阿里云百炼平台](https://bailian.console.aliyun.com/)
 - [Close AI](https://platform.closeai-asia.com/dashboard)
 - [阿里云 OSS](https://oss.console.aliyun.com/overview)
@@ -342,8 +341,8 @@ RABBITMQ_PASSWORD=你的密码          # RabbitMQ 密码
 | Redis         | `~/redis_data`                                 |
 | MongoDB       | `~/mongo_data`                                 |
 | ClickHouse    | `~/clickhouse/data`, `~/clickhouse/logs`       |
-| ElasticSearch | Docker Volume: `es-data`, `es-plugins`         |
-| RabbitMQ      | Docker Volume: `mq-plugins`                    |
+| ElasticSearch | Docker Volume:`es-data`, `es-plugins`          |
+| RabbitMQ      | Docker Volume:`mq-plugins`                     |
 
 ### 注意事项
 
@@ -1416,8 +1415,9 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### AI 说明
 
-1. Gemini 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
-2. FastAPI 模块的豆包服务、 Gemini 服务和通义千问服务的 api_key 应写在 `.env`中
+1. GPT/Gemini/DeepSeek 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
+2. 嵌入模型使用的是[阿里云百炼平台](https://bailian.console.aliyun.com/)的嵌入模型
+3. 上述的 API_KEY 应写在 `.env`中
 
 ### 用户聊天相关说明
 
