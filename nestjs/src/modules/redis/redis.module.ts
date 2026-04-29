@@ -21,6 +21,7 @@ export class RedisModule {
         return new Redis({
           host: redisConfig.host as string,
           port: redisConfig.port as number,
+          username: (redisConfig.username as string) || undefined,
           password: (redisConfig.password as string) || undefined,
           db: (redisConfig.db as number) || 0,
         });

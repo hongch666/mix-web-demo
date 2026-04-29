@@ -37,6 +37,7 @@ rabbitmq:
 redis:
   host: ${REDIS_HOST:127.0.0.1}
   port: ${REDIS_PORT:6379}
+  username: ${REDIS_USERNAME:}
   password: ${REDIS_PASSWORD:}
   db: ${REDIS_DB:0}
 files:
