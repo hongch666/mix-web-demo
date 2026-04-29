@@ -2,6 +2,7 @@ import traceback
 from typing import Any, Callable, Optional
 
 from app.core.base import Constants, Logger
+from app.core.db import get_redis_client
 from sqlalchemy.orm import Session
 
 
@@ -106,4 +107,23 @@ async def update_analyze_caches_async(
     analyze_service: Optional[Any] = None,
     db_factory: Optional[Callable[[], Session]] = None,
 ) -> None:
-    await _update_analyze_caches_async(analyze_service, db_factory)
+    """更新分析接口缓存，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
+    lock_key: str = Constants.LOCK_TASK_ANALYZE_CACHE
+    lock_expire: int = Constants.LOCK_TASK_ANALYZE_CACHE_EXPIRE
+
+    # 尝试获取分布式锁
+    redis_client = get_redis_client()
+    lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
+    if lock_value is None:
+        Logger.info(Constants.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE % lock_key)
+        return
+    Logger.info(Constants.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE % lock_key)
+
+    try:
+        await _update_analyze_caches_async(analyze_service, db_factory)
+    finally:
+        released: bool = await redis_client.unlock(lock_key, lock_value)
+        if released:
+            Logger.info(Constants.REDIS_LOCK_RELEASE_SUCCESS_MESSAGE % lock_key)
+        else:
+            Logger.info(Constants.REDIS_LOCK_RELEASE_FAIL_MESSAGE % lock_key)

@@ -819,3 +819,35 @@ class Constants:
 
     REDIS_NOT_INSTALLED_ERROR: str = "redis 未安装，请先执行 `uv sync` 或安装 `redis`。"
     """redis 未安装错误消息"""
+
+    # Redis 分布式锁相关常量
+
+    REDIS_LOCK_ACQUIRE_ERROR_PREFIX: str = "[Redis] 获取分布式锁失败 key="
+    """获取分布式锁错误前缀消息"""
+
+    REDIS_LOCK_RELEASE_ERROR_PREFIX: str = "[Redis] 释放分布式锁失败 key="
+    """释放分布式锁错误前缀消息"""
+
+    LOCK_TASK_VECTOR_SYNC: str = "lock:task:vector:sync"
+    """向量同步任务分布式锁的 key"""
+
+    LOCK_TASK_VECTOR_SYNC_EXPIRE: int = 86400
+    """向量同步任务分布式锁的过期时间（秒），与任务执行间隔一致（24小时）"""
+
+    LOCK_TASK_ANALYZE_CACHE: str = "lock:task:analyze:cache"
+    """分析缓存更新任务分布式锁的 key"""
+
+    LOCK_TASK_ANALYZE_CACHE_EXPIRE: int = 600
+    """分析缓存更新任务分布式锁的过期时间（秒），与任务执行间隔一致（10分钟）"""
+
+    REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE: str = "[分布式锁] 获取锁成功，key: %s"
+    """获取分布式锁成功消息"""
+
+    REDIS_LOCK_ACQUIRE_FAIL_MESSAGE: str = "[分布式锁] 获取锁失败，跳过本次执行，key: %s"
+    """获取分布式锁失败消息"""
+
+    REDIS_LOCK_RELEASE_SUCCESS_MESSAGE: str = "[分布式锁] 释放锁成功，key: %s"
+    """释放分布式锁成功消息"""
+
+    REDIS_LOCK_RELEASE_FAIL_MESSAGE: str = "[分布式锁] 释放锁失败，key: %s"
+    """释放分布式锁失败消息"""

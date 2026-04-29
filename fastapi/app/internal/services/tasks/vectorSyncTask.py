@@ -498,12 +498,33 @@ async def export_article_vectors_to_postgres_async(
     mysql_db_factory: Optional[Callable[[], Session]] = None,
     enable_incremental_sync: bool = True,
 ) -> None:
-    await asyncio.to_thread(
-        _export_article_vectors_to_postgres,
-        article_mapper,
-        mysql_db_factory,
-        enable_incremental_sync,
-    )
+    """同步文章向量到 PostgreSQL，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
+    lock_key: str = Constants.LOCK_TASK_VECTOR_SYNC
+    lock_expire: int = Constants.LOCK_TASK_VECTOR_SYNC_EXPIRE
+
+    # 尝试获取分布式锁
+    from app.core.db import get_redis_client
+
+    redis_client = get_redis_client()
+    lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
+    if lock_value is None:
+        Logger.info(Constants.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE % lock_key)
+        return
+    Logger.info(Constants.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE % lock_key)
+
+    try:
+        await asyncio.to_thread(
+            _export_article_vectors_to_postgres,
+            article_mapper,
+            mysql_db_factory,
+            enable_incremental_sync,
+        )
+    finally:
+        released: bool = await redis_client.unlock(lock_key, lock_value)
+        if released:
+            Logger.info(Constants.REDIS_LOCK_RELEASE_SUCCESS_MESSAGE % lock_key)
+        else:
+            Logger.info(Constants.REDIS_LOCK_RELEASE_FAIL_MESSAGE % lock_key)
 
 
 async def initialize_article_content_hash_cache_async(

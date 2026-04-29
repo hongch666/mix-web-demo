@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from threading import Lock
@@ -204,6 +205,59 @@ class RedisClient:
             return True
         except Exception as e:
             Logger.error(f"{Constants.REDIS_FLUSHDB_FAILED_MESSAGE_PREFIX}{e}")
+            return False
+
+    # 分布式锁相关方法
+
+    async def try_lock(self, lock_key: str, expire_seconds: int) -> Optional[str]:
+        """
+        尝试获取分布式锁，使用 SET NX EX 原子操作
+
+        Args:
+            lock_key: 锁的 Redis key
+            expire_seconds: 锁的过期时间（秒），应大于任务执行时间，防止死锁
+
+        Returns:
+            锁的唯一标识（UUID），获取失败返回 None（Redis 不可用时返回空字符串表示直接执行）
+        """
+        try:
+            client = await self._ensure_client()
+            if not client:
+                # Redis 未配置，返回空字符串表示单实例模式可直接执行
+                return ""
+            lock_value = str(uuid.uuid4())
+            result = await client.set(lock_key, lock_value, ex=expire_seconds, nx=True)
+            return lock_value if result else None
+        except Exception as e:
+            Logger.error(f"{Constants.REDIS_LOCK_ACQUIRE_ERROR_PREFIX}{lock_key}: {e}")
+            return None
+
+    async def unlock(self, lock_key: str, lock_value: str) -> bool:
+        """
+        释放分布式锁（原子操作，使用 Lua 脚本保证只有锁持有者才能解锁）
+
+        Args:
+            lock_key: 锁的 Redis key
+            lock_value: 加锁时返回的唯一标识
+
+        Returns:
+            是否成功释放
+        """
+        try:
+            client = await self._ensure_client()
+            if not client:
+                return True
+            unlock_script = """
+            if redis.call("get", KEYS[1]) == ARGV[1] then
+                return redis.call("del", KEYS[1])
+            else
+                return 0
+            end
+            """
+            result = await client.eval(unlock_script, 1, lock_key, lock_value)
+            return result == 1
+        except Exception as e:
+            Logger.error(f"{Constants.REDIS_LOCK_RELEASE_ERROR_PREFIX}{lock_key}: {e}")
             return False
 
 
