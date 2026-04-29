@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -503,10 +504,13 @@ func initRedis(c config.Config) *redis.Client {
 		return nil
 	}
 
+	db, _ := strconv.Atoi(redisConf.DB)
+
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", redisConf.Host, redisConf.Port),
+		Username: redisConf.Username,
 		Password: redisConf.Password,
-		DB:       redisConf.DB,
+		DB:       db,
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -517,6 +521,6 @@ func initRedis(c config.Config) *redis.Client {
 		panic(err)
 	}
 
-	logx.Infof(utils.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, redisConf.DB)
+	logx.Infof(utils.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, db)
 	return client
 }
