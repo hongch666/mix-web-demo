@@ -24,7 +24,7 @@ func NewChatGetAllUnreadCountsLogic(ctx context.Context, svcCtx *svc.ServiceCont
 	return &ChatGetAllUnreadCountsLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

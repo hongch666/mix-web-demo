@@ -23,7 +23,7 @@ func NewChatJoinQueueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 	return &ChatJoinQueueLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

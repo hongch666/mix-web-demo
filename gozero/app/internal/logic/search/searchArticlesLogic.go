@@ -29,7 +29,7 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 	return &SearchArticlesLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

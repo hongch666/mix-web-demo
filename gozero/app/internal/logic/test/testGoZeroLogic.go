@@ -22,7 +22,7 @@ func NewTestGoZeroLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestGo
 	return &TestGoZeroLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

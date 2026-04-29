@@ -26,7 +26,7 @@ func NewTestNestJSLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestNe
 	return &TestNestJSLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

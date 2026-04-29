@@ -22,7 +22,7 @@ func NewChatLeaveQueueLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ch
 	return &ChatLeaveQueueLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

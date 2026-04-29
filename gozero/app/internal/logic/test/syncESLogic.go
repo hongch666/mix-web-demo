@@ -24,7 +24,7 @@ func NewSyncESLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SyncESLogi
 	return &SyncESLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 
@@ -33,7 +33,7 @@ func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err 
 	l.Info(utils.TASK_SYNC_ES_STARTED_MESSAGE)
 
 	// 调用实际的ES同步逻辑
-	if err = logic.SyncArticlesToES(l.svcCtx); err != nil {
+	if err = logic.SyncArticlesToES(l.ctx, l.svcCtx); err != nil {
 		l.Error(fmt.Sprintf("%s: %v", utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
 		return nil, err
 	}

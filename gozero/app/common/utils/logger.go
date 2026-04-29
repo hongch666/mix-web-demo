@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 // ZeroLogger 基于 go-zero logx 的日志工具，支持文件记录
 type ZeroLogger struct {
 	logPath string
+	ctx     context.Context
 }
 
 // NewZeroLogger 创建新的日志实例
@@ -33,9 +35,21 @@ func NewZeroLogger(logPath string) (*ZeroLogger, error) {
 
 	logger := &ZeroLogger{
 		logPath: logPath,
+		ctx:     context.Background(),
 	}
 
 	return logger, nil
+}
+
+// WithContext 返回一个包含上下文的新日志实例（共享同一日志文件路径）
+func (z *ZeroLogger) WithContext(ctx context.Context) *ZeroLogger {
+	if ctx == nil {
+		return z
+	}
+	return &ZeroLogger{
+		logPath: z.logPath,
+		ctx:     ctx,
+	}
 }
 
 // writeToFile 写入日志到文件
@@ -63,24 +77,24 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 
 // Info 记录信息级别日志
 func (z *ZeroLogger) Info(msg string) {
-	logx.Info(msg)
+	logx.WithContext(z.ctx).Info(msg)
 	z.writeToFile(msg, "INFO")
 }
 
 // Error 记录错误级别日志
 func (z *ZeroLogger) Error(msg string) {
-	logx.Error(msg)
+	logx.WithContext(z.ctx).Error(msg)
 	z.writeToFile(msg, "ERROR")
 }
 
 // Warning 记录警告级别日志
 func (z *ZeroLogger) Warning(msg string) {
-	logx.Info("[WARN] " + msg)
+	logx.WithContext(z.ctx).Info("[WARN] " + msg)
 	z.writeToFile(msg, "WARN")
 }
 
 // Debug 记录调试级别日志
 func (z *ZeroLogger) Debug(msg string) {
-	logx.Debug(msg)
+	logx.WithContext(z.ctx).Debug(msg)
 	z.writeToFile(msg, "DEBUG")
 }

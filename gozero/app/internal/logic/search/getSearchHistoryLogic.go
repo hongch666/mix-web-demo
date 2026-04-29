@@ -24,7 +24,7 @@ func NewGetSearchHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &GetSearchHistoryLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

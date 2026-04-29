@@ -22,7 +22,7 @@ func NewChatWebsocketLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 	return &ChatWebsocketLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

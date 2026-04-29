@@ -29,8 +29,7 @@ type esSyncStats struct {
 }
 
 // SyncArticlesToES 增量同步文章到 ElasticSearch
-func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
-	ctx := context.Background()
+func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 
 	if svcCtx.ESClient == nil {
 		if svcCtx.Logger != nil {
@@ -123,7 +122,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 		stats.Updated += batchUpdated
 
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Info(fmt.Sprintf("第 %d 批同步完成，新增 %d 条，更新 %d 条", batchIdx, batchAdded, batchUpdated))
+			svcCtx.Logger.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
 		}
 
 		time.Sleep(200 * time.Millisecond)
@@ -143,7 +142,7 @@ func SyncArticlesToES(svcCtx *svc.ServiceContext) error {
 	}
 
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf("ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条", stats.Added, stats.Updated, stats.Deleted))
+		svcCtx.Logger.Info(fmt.Sprintf(utils.ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE, stats.Added, stats.Updated, stats.Deleted))
 	}
 
 	if stats.Added == 0 && stats.Updated == 0 && stats.Deleted == 0 && svcCtx.Logger != nil {

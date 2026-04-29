@@ -400,6 +400,12 @@ const (
 	// 配置信息描述
 	CONFIG_DESCRIPTION = "配置文件路径，默认为 etc/application.yaml"
 
+	// 同步ES批次完成消息
+	ES_SYNC_BATCH_COMPLETED_MESSAGE = "第 %d 批同步完成，新增 %d 条，更新 %d 条"
+
+	// ES增量同步完成消息
+	ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE = "ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条"
+
 	// WebSocket 用户连接状态相关
 
 	// 用户已连接消息

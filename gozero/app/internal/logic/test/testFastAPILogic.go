@@ -26,7 +26,7 @@ func NewTestFastAPILogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestF
 	return &TestFastAPILogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

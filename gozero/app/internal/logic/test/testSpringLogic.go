@@ -26,7 +26,7 @@ func NewTestSpringLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestSp
 	return &TestSpringLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

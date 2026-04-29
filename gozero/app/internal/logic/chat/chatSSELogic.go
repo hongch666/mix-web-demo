@@ -22,7 +22,7 @@ func NewChatSSELogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatSSELo
 	return &ChatSSELogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 

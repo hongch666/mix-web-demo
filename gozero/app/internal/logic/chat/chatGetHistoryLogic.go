@@ -24,7 +24,7 @@ func NewChatGetHistoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Ch
 	return &ChatGetHistoryLogic{
 		ctx:        ctx,
 		svcCtx:     svcCtx,
-		ZeroLogger: svcCtx.Logger,
+		ZeroLogger: svcCtx.Logger.WithContext(ctx),
 	}
 }
 
