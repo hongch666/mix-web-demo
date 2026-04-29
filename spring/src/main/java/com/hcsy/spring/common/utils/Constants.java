@@ -1117,4 +1117,36 @@ public class Constants {
      * .env文件加载失败错误信息
      */
     public static String DOTENV_LOAD_FAIL = "[DotenvLoader] 加载.env文件失败: ";
+
+    // 分布式锁相关常量
+
+    /**
+     * Token清理任务分布式锁的 key
+     */
+    public static String LOCK_TASK_TOKEN_CLEANUP = "lock:task:token:cleanup";
+
+    /**
+     * Token清理任务分布式锁的过期时间（秒）
+     */
+    public static long LOCK_TASK_TOKEN_CLEANUP_EXPIRE = 3600L;
+
+    /**
+     * 获取分布式锁成功消息
+     */
+    public static String LOCK_ACQUIRE_SUCCESS = "获取分布式锁成功，key: %s";
+
+    /**
+     * 获取分布式锁失败消息（其他实例正在执行）
+     */
+    public static String LOCK_ACQUIRE_FAIL = "获取分布式锁失败，跳过本次执行，key: %s";
+
+    /**
+     * 释放分布式锁成功消息
+     */
+    public static String LOCK_RELEASE_SUCCESS = "释放分布式锁成功，key: %s";
+
+    /**
+     * 释放分布式锁失败消息（锁已过期或被其他实例持有）
+     */
+    public static String LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
 }
