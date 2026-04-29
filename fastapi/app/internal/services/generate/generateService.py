@@ -35,7 +35,7 @@ class GenerateService:
         deepseek_service: Optional[DeepseekService] = None,
         gemini_service: Optional[GeminiService] = None,
         gpt_service: Optional[GptService] = None,
-    ):
+    ) -> None:
         self.comments_mapper: Optional[CommentsMapper] = comments_mapper
         self.article_mapper: Optional[ArticleMapper] = article_mapper
         self.deepseek_service: Optional[DeepseekService] = deepseek_service

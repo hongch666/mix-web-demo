@@ -23,7 +23,7 @@ class AiHistoryService:
         self,
         ai_history_mapper: Optional[AiHistoryMapper] = None,
         user_mapper: Optional[UserMapper] = None,
-    ):
+    ) -> None:
         self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
         self.user_mapper: Optional[UserMapper] = user_mapper
         # 用于短时间去重的缓存

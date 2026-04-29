@@ -4,10 +4,13 @@ import time
 from datetime import datetime
 from typing import Any, Callable, List, Optional
 
+import redis.asyncio as redis
 from app.core.base import Constants, Logger
 from app.core.config import load_config
+from app.core.db import SessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
+from app.internal.cache import get_redis_client
 from sqlalchemy.orm import Session
 
 # Redis 键名
@@ -18,14 +21,10 @@ _ARTICLE_CONTENT_HASH_PREFIX: str = "article_content_hash:"
 def _get_redis_client() -> Optional[Any]:
     """获取 Redis 客户端"""
     try:
-        from app.internal.cache import get_redis_client
-
         return get_redis_client()
     except ImportError:
         # 备用方案：使用 redis 库直接连接
         try:
-            import redis.asyncio as redis
-
             cfg = load_config("database")["redis"]
             return redis.Redis(
                 host=cfg.get("host"),
@@ -408,7 +407,6 @@ def _initialize_article_content_hash_cache(
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:
-        from app.core.db.mysql import SessionLocal
 
         def mysql_db_factory() -> Session:
             return SessionLocal()

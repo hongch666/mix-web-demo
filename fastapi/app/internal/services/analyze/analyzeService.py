@@ -62,7 +62,7 @@ class AnalyzeService:
         publish_time_cache: Optional[PublishTimeCache] = None,
         statistics_cache: Optional[StatisticsCache] = None,
         wordcloud_cache: Optional[WordcloudCache] = None,
-    ):
+    ) -> None:
         self.articleMapper: Optional[ArticleMapper] = articleMapper
         self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
         self.userMapper: Optional[UserMapper] = userMapper
@@ -602,7 +602,6 @@ class AnalyzeService:
 
         返回: 所有大分类及其文章总数（从多到少排序）
         """
-        category_data = None
         ch_conn = None
         data_source = None
         start = time.time()
@@ -706,7 +705,6 @@ class AnalyzeService:
         3. 按月份排序
         4. 使用缓存优化性能
         """
-        publish_data = None
         ch_conn = None
         data_source = None
         start = time.time()

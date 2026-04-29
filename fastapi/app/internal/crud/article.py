@@ -1,4 +1,5 @@
 import time
+import traceback
 from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Any, AsyncGenerator, Dict, List, Optional
@@ -101,15 +102,11 @@ class ArticleMapper:
             return result
         except AttributeError as ae:
             Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
-            import traceback
-
             Logger.error(f"详细错误: {traceback.format_exc()}")
             # 降级到 DB
             return await self._get_top10_articles_db_mapper_sync(Session(engine))
         except Exception as e:
             Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
-            import traceback
-
             Logger.debug(f"详细异常: {traceback.format_exc()}")
             # 降级到 DB
             return await self._get_top10_articles_db_mapper_sync(Session(engine))
@@ -356,8 +353,6 @@ class ArticleMapper:
             return result
         except AttributeError as ae:
             Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
-            import traceback
-
             Logger.error(f"详细错误: {traceback.format_exc()}")
             # 降级到 DB
             return await self._get_category_article_count_db_mapper_sync(
@@ -365,8 +360,6 @@ class ArticleMapper:
             )
         except Exception as e:
             Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
-            import traceback
-
             Logger.debug(f"详细异常: {traceback.format_exc()}")
             # 降级到 DB
             return await self._get_category_article_count_db_mapper_sync(
@@ -475,15 +468,11 @@ class ArticleMapper:
             return result
         except AttributeError as ae:
             Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
-            import traceback
-
             Logger.error(f"详细错误: {traceback.format_exc()}")
             # 降级到 DB
             return await self._get_monthly_publish_count_db_mapper_sync(Session(engine))
         except Exception as e:
             Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
-            import traceback
-
             Logger.debug(f"详细异常: {traceback.format_exc()}")
             # 降级到 DB
             return await self._get_monthly_publish_count_db_mapper_sync(Session(engine))
