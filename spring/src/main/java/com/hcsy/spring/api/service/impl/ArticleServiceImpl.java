@@ -44,6 +44,39 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     }
 
     @Override
+    public IPage<ArticleWithCategoryVO> listArticlesByIdWithCategory(Page<Article> page, Integer id, boolean onlyPublished) {
+        IPage<Article> resultPage = listArticlesById(page, id, onlyPublished);
+
+        // 转换为VO对象并补充分类和用户信息
+        List<ArticleWithCategoryVO> voList = resultPage.getRecords().stream().map(article -> {
+            if (article.getSubCategoryId() == null) {
+                throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY_ID);
+            }
+
+            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+
+            // 查询作者用户名
+            User user = userService.getById(article.getUserId());
+            vo.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+
+            // 查询子分类信息
+            SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
+            vo.setSubCategoryName(subCategory.getName());
+
+            // 查询主分类信息
+            Category category = categoryMapper.selectById(subCategory.getCategoryId());
+            vo.setCategoryName(category.getName());
+
+            return vo;
+        }).toList();
+
+        // 创建新的IPage对象，包含转换后的VO列表
+        Page<ArticleWithCategoryVO> voPage = new Page<>(page.getCurrent(), page.getSize(), resultPage.getTotal());
+        voPage.setRecords(voList);
+        return voPage;
+    }
+
+    @Override
     public IPage<Article> listPublishedArticles(Page<Article> page) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(Article::getStatus, 1); // 只查已发布

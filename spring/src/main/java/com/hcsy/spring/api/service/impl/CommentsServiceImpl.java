@@ -139,8 +139,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
     @Override
     public IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay) {
-        // ✨ 使用SQL级别JOIN过滤，确保分页基于已过滤的数据
-        // 这样避免了分页不准确的问题（当前面页数中有AI评论时）
+        // 使用SQL级别JOIN过滤，确保分页基于已过滤的数据
         return this.baseMapper.selectCommentsByArticleIdWithoutAI(page, articleId, sortWay);
     }
 

@@ -1,6 +1,5 @@
 package com.hcsy.spring.api.controller;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -18,22 +17,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.hcsy.spring.api.mapper.CategoryMapper;
-import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.Result;
-import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.entity.po.Category;
-import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 
@@ -51,8 +45,6 @@ public class ArticleController {
 
     private final ArticleService articleService;
     private final UserService userService;
-    private final CategoryMapper categoryMapper;
-    private final SubCategoryMapper subCategoryMapper;
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
@@ -89,39 +81,17 @@ public class ArticleController {
     @GetMapping("user/{id}")
     @Operation(summary = "获取用户文章", description = "返回用户文章，可指定是否只查询已发布的文章")
     @ApiLog("获取用户文章")
-    public Result getPublishedArticles(
+    public Result getArticlesByUserId(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @PathVariable Integer id,
             @RequestParam(defaultValue = "0") int published) {
         Page<Article> articlePage = new Page<>(page, size);
-        IPage<Article> resultPage = articleService.listArticlesById(articlePage, id, published == 1);
+        IPage<ArticleWithCategoryVO> voPage = articleService.listArticlesByIdWithCategory(articlePage, id, published == 1);
 
-        List<Article> records = resultPage.getRecords();
-        List<ArticleWithCategoryVO> voList = new ArrayList<>();
-        for (Article article : records) {
-            if (article.getSubCategoryId() == null) {
-                return Result.error(Constants.UNDEFINED_SUB_CATEGORY_ID);
-            }
-
-            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-
-            // 查询作者用户名
-            Long userId = UserContext.getUserId();
-            User user = userService.getById(userId);
-            vo.setUsername(user != null ? user.getName() : "");
-            // 查询子分类信息
-            SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
-            vo.setSubCategoryName(subCategory.getName());
-            // 查询主分类信息
-            Category category = categoryMapper.selectById(subCategory.getCategoryId());
-            vo.setCategoryName(category.getName());
-
-            voList.add(vo);
-        }
         Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
-        data.put("list", voList);
+        data.put("total", voPage.getTotal());
+        data.put("list", voPage.getRecords());
         return Result.success(data);
     }
 

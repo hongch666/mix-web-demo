@@ -34,6 +34,8 @@ public interface ArticleService extends IService<Article> {
 
     IPage<com.hcsy.spring.entity.vo.ArticleWithCategoryVO> listUnpublishedArticlesWithCategory(Page<Article> page);
 
+    IPage<com.hcsy.spring.entity.vo.ArticleWithCategoryVO> listArticlesByIdWithCategory(Page<Article> page, Integer id, boolean onlyPublished);
+
     Article findByArticleTitle(String articleTitle);
 
     List<Article> listAllArticlesByTitle(String articleTitle);
