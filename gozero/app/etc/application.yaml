@@ -49,6 +49,12 @@ mq:
   port: ${RABBITMQ_PORT:5672}
   vhost: ${RABBITMQ_VHOST:/}
 
+redis:
+  host: ${REDIS_HOST:127.0.0.1}
+  port: ${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:}
+  db: ${REDIS_DB:0}
+
 logs:
   path: ${LOGS_PATH:./logs/gozero}
 

@@ -1,6 +1,6 @@
 module app
 
-go 1.23.5
+go 1.24
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
@@ -80,6 +80,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
+	github.com/redis/go-redis/v9 v9.19.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
@@ -96,7 +97,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect

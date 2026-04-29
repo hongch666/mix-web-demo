@@ -34,6 +34,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/olivere/elastic/v7"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
@@ -53,6 +54,7 @@ type ServiceContext struct {
 	RabbitMQConn    *amqp.Connection
 	RabbitMQChannel *amqp.Channel
 	MongoClient     *mongo.Client
+	RedisClient     *redis.Client
 	NamingClient    naming_client.INamingClient
 
 	AiHistoryModel         aiHistory.AiHistoryModel
@@ -93,6 +95,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	esClient := initES(c)
 	rabbitConn, rabbitChannel := initRabbitMQ(c)
 	mongoClient := initMongoDB(c)
+	redisClient := initRedis(c)
 	namingClient := initNacos(c)
 
 	var (
@@ -157,6 +160,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		RabbitMQConn:           rabbitConn,
 		RabbitMQChannel:        rabbitChannel,
 		MongoClient:            mongoClient,
+		RedisClient:            redisClient,
 		NamingClient:           namingClient,
 		AiHistoryModel:         aiHistoryModel,
 		ArticlesModel:          articlesModel,
@@ -491,4 +495,28 @@ func trimSlashPrefix(v string) string {
 		return v[1:]
 	}
 	return v
+}
+
+func initRedis(c config.Config) *redis.Client {
+	redisConf := c.Redis
+	if redisConf.Host == "" || redisConf.Port == 0 {
+		return nil
+	}
+
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", redisConf.Host, redisConf.Port),
+		Password: redisConf.Password,
+		DB:       redisConf.DB,
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+		logx.Errorf(utils.REDIS_INIT_FAIL, err)
+		panic(err)
+	}
+
+	logx.Infof(utils.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, redisConf.DB)
+	return client
 }

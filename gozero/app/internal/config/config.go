@@ -14,6 +14,7 @@ type Config struct {
 
 	Database DatabaseConfig `json:"database"`
 	MQ       MQConfig       `json:"mq"`
+	Redis    RedisConfig    `json:"redis"`
 
 	Logs   LogsConfig   `json:"logs"`
 	Search SearchConfig `json:"search"`
@@ -62,6 +63,13 @@ type DatabaseConfig struct {
 	Mysql   MysqlConfig   `json:"mysql"`
 	ES      ESConfig      `json:"es"`
 	MongoDB MongoDBConfig `json:"mongodb"`
+}
+
+type RedisConfig struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Password string `json:"password"`
+	DB       int    `json:"db"`
 }
 
 type MQConfig struct {

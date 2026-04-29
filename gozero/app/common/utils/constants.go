@@ -627,6 +627,38 @@ const (
 	// 获取Swagger失败消息
 	GET_SWAGGER_FAIL = "获取 Swagger 文档失败"
 
+	// Redis 分布式锁相关常量
+
+	// Redis 初始化失败信息
+	REDIS_INIT_FAIL = "初始化 Redis 客户端失败: %v"
+
+	// Redis 连接成功信息
+	REDIS_CONNECT_SUCCESS = "Redis 连接成功: %s:%d (DB: %d)"
+
+	// ES同步任务分布式锁的 key
+	LOCK_TASK_ES_SYNC = "lock:task:es:sync"
+
+	// ES同步任务分布式锁的过期时间（秒）
+	LOCK_TASK_ES_SYNC_EXPIRE int64 = 3600
+
+	// 获取分布式锁成功消息
+	REDIS_LOCK_ACQUIRE_SUCCESS = "[分布式锁] 获取锁成功，key: %s"
+
+	// 获取分布式锁失败消息（其他实例正在执行）
+	REDIS_LOCK_ACQUIRE_FAIL = "[分布式锁] 获取锁失败，跳过本次执行，key: %s"
+
+	// 获取分布式锁错误消息
+	REDIS_LOCK_ACQUIRE_ERROR = "获取分布式锁错误: %v"
+
+	// 释放分布式锁成功消息
+	REDIS_LOCK_RELEASE_SUCCESS = "[分布式锁] 释放锁成功，key: %s"
+
+	// 释放分布式锁失败消息（锁已过期或被其他实例持有）
+	REDIS_LOCK_RELEASE_FAIL = "[分布式锁] 释放锁失败，key: %s"
+
+	// 释放分布式锁错误消息
+	REDIS_LOCK_RELEASE_ERROR = "释放分布式锁错误: %v"
+
 	// Swagger 静态HTML
 	SWAGGER_HTML = `<!DOCTYPE html>
 		<html>
