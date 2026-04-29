@@ -34,6 +34,11 @@ rabbitmq:
   username: ${RABBITMQ_USERNAME:}
   password: ${RABBITMQ_PASSWORD:}
   vhost: ${RABBITMQ_VHOST:test}
+redis:
+  host: ${REDIS_HOST:127.0.0.1}
+  port: ${REDIS_PORT:6379}
+  password: ${REDIS_PASSWORD:}
+  db: ${REDIS_DB:0}
 files:
   word: ${FILES_WORD_PATH:../static/word}
   upload: ${FILES_UPLOAD_PATH:../static/upload}

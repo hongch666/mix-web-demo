@@ -37,6 +37,7 @@
     "docx-templates": "^4.14.1",
     "fastify": "^5.8.4",
     "html-to-text": "^9.0.5",
+    "ioredis": "^5.10.1",
     "js-yaml": "^4.1.1",
     "jsonwebtoken": "^9.0.3",
     "marked": "^4.3.0",
@@ -47,7 +48,8 @@
     "puppeteer": "^24.28.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.28"
+    "typeorm": "^0.3.28",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -57,10 +59,12 @@
     "@nestjs/testing": "^11.0.1",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
+    "@types/ioredis": "^4.28.10",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.10.7",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

@@ -277,4 +277,43 @@ export class Constants {
    * 未找到文件部分错误消息
    */
   static readonly FILE_PART_NOT_FOUND = '未找到文件部分';
+
+  // Redis 相关常量
+
+  /**
+   * Redis 客户端注入 token
+   */
+  static readonly REDIS_CLIENT = 'REDIS_CLIENT';
+
+  // Redis 分布式锁相关常量
+
+  /**
+   * API日志清理任务分布式锁的 key
+   */
+  static readonly LOCK_TASK_API_LOG_CLEANUP = 'lock:task:api:log:cleanup';
+
+  /**
+   * API日志清理任务分布式锁的过期时间（秒）
+   */
+  static readonly LOCK_TASK_API_LOG_CLEANUP_EXPIRE = 3600;
+
+  /**
+   * 获取分布式锁成功消息
+   */
+  static readonly REDIS_LOCK_ACQUIRE_SUCCESS = '获取分布式锁成功，key: %s';
+
+  /**
+   * 获取分布式锁失败消息（其他实例正在执行）
+   */
+  static readonly REDIS_LOCK_ACQUIRE_FAIL = '获取分布式锁失败，跳过本次执行，key: %s';
+
+  /**
+   * 释放分布式锁成功消息
+   */
+  static readonly REDIS_LOCK_RELEASE_SUCCESS = '释放分布式锁成功，key: %s';
+
+  /**
+   * 释放分布式锁失败消息（锁已过期或被其他实例持有）
+   */
+  static readonly REDIS_LOCK_RELEASE_FAIL = '释放分布式锁失败，key: %s';
 }

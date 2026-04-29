@@ -13,6 +13,7 @@ import yamlConfig from '../common/config/yamlConfig.service';
 import { InternalTokenUtil } from '../common/utils/internalToken.util';
 import { ClsMiddleware } from '../framework/middleware/cls.middleware';
 import { ModulesModule } from '../modules/modules.module';
+import { RedisModule } from '../modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { ModulesModule } from '../modules/modules.module';
       middleware: { mount: true },
     }),
     ScheduleModule.forRoot(),
+    RedisModule.forRoot(),
     ApiModule,
     ModulesModule,
   ],
