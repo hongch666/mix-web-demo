@@ -81,8 +81,22 @@ func (z *ZeroLogger) Info(msg string) {
 	z.writeToFile(msg, "INFO")
 }
 
+// Infof 记录格式化信息级别日志
+func (z *ZeroLogger) Infof(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	logx.WithContext(z.ctx).Info(msg)
+	z.writeToFile(msg, "INFO")
+}
+
 // Error 记录错误级别日志
 func (z *ZeroLogger) Error(msg string) {
+	logx.WithContext(z.ctx).Error(msg)
+	z.writeToFile(msg, "ERROR")
+}
+
+// Errorf 记录格式化错误级别日志
+func (z *ZeroLogger) Errorf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
 	logx.WithContext(z.ctx).Error(msg)
 	z.writeToFile(msg, "ERROR")
 }
@@ -93,8 +107,22 @@ func (z *ZeroLogger) Warning(msg string) {
 	z.writeToFile(msg, "WARN")
 }
 
+// Warningf 记录格式化警告级别日志
+func (z *ZeroLogger) Warningf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	logx.WithContext(z.ctx).Info("[WARN] " + msg)
+	z.writeToFile(msg, "WARN")
+}
+
 // Debug 记录调试级别日志
 func (z *ZeroLogger) Debug(msg string) {
+	logx.WithContext(z.ctx).Debug(msg)
+	z.writeToFile(msg, "DEBUG")
+}
+
+// Debugf 记录格式化调试级别日志
+func (z *ZeroLogger) Debugf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
 	logx.WithContext(z.ctx).Debug(msg)
 	z.writeToFile(msg, "DEBUG")
 }

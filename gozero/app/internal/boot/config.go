@@ -127,10 +127,20 @@ func LoadConfig(configFile string) config.Config {
 	// 加载 .env 文件中的环境变量
 	_ = godotenv.Load()
 
+	// 获取日志路径
+	logPath := os.Getenv("LOGS_PATH")
+
+	// 初始化日志系统
+	logger, err := utils.NewZeroLogger(logPath)
+	if err != nil {
+		logx.Errorf(utils.ZERO_LOGGER_INIT_FAIL, err)
+		panic(err)
+	}
+
 	// 读取配置文件内容
 	content, err := os.ReadFile(configFile)
 	if err != nil {
-		logx.Errorf(utils.READ_CONFIG_FILE_ERROR, configFile, err)
+		logger.Errorf(utils.READ_CONFIG_FILE_ERROR, configFile, err)
 		os.Exit(1)
 	}
 
@@ -140,7 +150,7 @@ func LoadConfig(configFile string) config.Config {
 	// 解析展开后的配置
 	var c config.Config
 	if err := conf.LoadFromYamlBytes([]byte(expandedContent), &c); err != nil {
-		logx.Errorf(utils.PARSE_CONFIG_FILE_ERROR, configFile, err)
+		logger.Errorf(utils.PARSE_CONFIG_FILE_ERROR, configFile, err)
 		os.Exit(1)
 	}
 

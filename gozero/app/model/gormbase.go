@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"app/common/utils"
+
 	"gorm.io/gorm"
 )
 
-var ErrNilDB = errors.New("gorm db is nil")
+var ErrNilDB = errors.New(utils.GORM_IS_NIL_MESSAGE)
 
 type GormCrud[T any] struct {
 	db    *gorm.DB

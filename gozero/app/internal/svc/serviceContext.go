@@ -45,7 +45,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var detectLocalIP = getLocalIPv4Address
+var (
+	detectLocalIP = getLocalIPv4Address
+	logger        *utils.ZeroLogger
+)
 
 type ServiceContext struct {
 	Config          config.Config
@@ -88,6 +91,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Errorf(utils.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)
 	}
+	logger = zLogger
 
 	utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration)
 
@@ -204,7 +208,7 @@ func initGorm(c config.Config) *gorm.DB {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		logx.Errorf(utils.GORM_INIT_FAIL, err)
+		logger.Errorf(utils.GORM_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -230,11 +234,11 @@ func initMigrate(db *gorm.DB) {
 	}
 
 	if err := db.Exec(utils.CREATE_CHAT_MESSAGES_TABLE_SQL).Error; err != nil {
-		logx.Errorf(utils.AUTO_CREATE_TABLE_FAIL, err)
+		logger.Errorf(utils.AUTO_CREATE_TABLE_FAIL, err)
 		return
 	}
 
-	logx.Info(utils.AUTO_CREATE_TABLE_SUCCESS)
+	logger.Info(utils.AUTO_CREATE_TABLE_SUCCESS)
 }
 
 func buildMysqlDsn(c config.Config) string {
@@ -286,7 +290,7 @@ func initES(c config.Config) *elastic.Client {
 
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
-		logx.Errorf(utils.ES_CLIENT_INIT_FAIL, err)
+		logger.Errorf(utils.ES_CLIENT_INIT_FAIL, err)
 		panic(err)
 	}
 	return client
@@ -306,13 +310,13 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		logx.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
+		logger.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 
 	channel, err := conn.Channel()
 	if err != nil {
-		logx.Errorf(utils.RABBITMQ_CHANNEL_INIT_FAIL, err)
+		logger.Errorf(utils.RABBITMQ_CHANNEL_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -320,7 +324,7 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 	for _, queueName := range queues {
 		_, err = channel.QueueDeclare(queueName, true, false, false, false, nil)
 		if err != nil {
-			logx.Errorf(utils.RABBITMQ_DECLARE_QUEUE_FAIL, queueName, err)
+			logger.Errorf(utils.RABBITMQ_DECLARE_QUEUE_FAIL, queueName, err)
 			panic(err)
 		}
 	}
@@ -346,11 +350,11 @@ func initMongoDB(c config.Config) *mongo.Client {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		logx.Errorf(utils.MONGODB_CONNECTION_INIT_FAIL, err)
+		logger.Errorf(utils.MONGODB_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 	if err = client.Ping(ctx, nil); err != nil {
-		logx.Errorf(utils.MONGODB_PING_FAIL, err)
+		logger.Errorf(utils.MONGODB_PING_FAIL, err)
 		panic(err)
 	}
 
@@ -395,14 +399,14 @@ func initNacos(c config.Config) naming_client.INamingClient {
 		ServerConfigs: serverConfigs,
 	})
 	if err != nil {
-		logx.Errorf(utils.NACOS_CLIENT_INIT_FAIL, err)
+		logger.Errorf(utils.NACOS_CLIENT_INIT_FAIL, err)
 		panic(err)
 	}
 
 	registerIP := resolveNacosRegisterIP(c.Host)
 	if strings.EqualFold(strings.TrimSpace(c.Mode), "dev") {
 		registerIP = "127.0.0.1"
-		logx.Info(utils.REGISTER_NACOS_DEV_MODE_MESSAGE)
+		logger.Info(utils.REGISTER_NACOS_DEV_MODE_MESSAGE)
 	}
 
 	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
@@ -418,7 +422,7 @@ func initNacos(c config.Config) naming_client.INamingClient {
 			Ephemeral:   true,
 		})
 		if err != nil {
-			logx.Errorf(utils.NACOS_REGISTER_FAIL,
+			logger.Errorf(utils.NACOS_REGISTER_FAIL,
 				nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, err)
 			panic(err)
 		}
@@ -517,10 +521,10 @@ func initRedis(c config.Config) *redis.Client {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		logx.Errorf(utils.REDIS_INIT_FAIL, err)
+		logger.Errorf(utils.REDIS_INIT_FAIL, err)
 		panic(err)
 	}
 
-	logx.Infof(utils.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, db)
+	logger.Infof(utils.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, db)
 	return client
 }

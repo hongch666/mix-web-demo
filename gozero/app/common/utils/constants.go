@@ -406,6 +406,9 @@ const (
 	// ES增量同步完成消息
 	ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE = "ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条"
 
+	// GORM为空消息
+	GORM_IS_NIL_MESSAGE = "GORM DB 对象未初始化"
+
 	// WebSocket 用户连接状态相关
 
 	// 用户已连接消息
