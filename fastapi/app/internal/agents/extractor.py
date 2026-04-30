@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Awaitable, Callable, List, Optional
 
 import requests
-from app.core.base import logger
+from app.core.base import Logger
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -50,7 +50,7 @@ class ReferenceContentExtractor:
                     separators=["\n\n", "\n", " ", ""],
                 )
             except Exception as e:
-                logger.warning(f"初始化文本分割器失败: {e}")
+                Logger.warning(f"初始化文本分割器失败: {e}")
 
     @staticmethod
     def _clean_text(text: str) -> str:
@@ -143,7 +143,7 @@ class ReferenceContentExtractor:
             if not pdf_url:
                 return ""
 
-            logger.info(f"开始下载PDF: {pdf_url}")
+            Logger.info(f"开始下载PDF: {pdf_url}")
 
             # 下载PDF到临时文件
             temp_pdf_path = f"/tmp/temp_pdf_{hash(pdf_url)}.pdf"
@@ -164,11 +164,11 @@ class ReferenceContentExtractor:
             # 提取关键要点
             key_points = cls._extract_key_points(full_text, max_length)
 
-            logger.info(f"PDF内容提取完成，长度: {len(key_points)}")
+            Logger.info(f"PDF内容提取完成，长度: {len(key_points)}")
             return key_points
 
         except Exception as e:
-            logger.error(f"PDF内容提取失败: {e}")
+            Logger.error(f"PDF内容提取失败: {e}")
             return ""
         finally:
             # 清理临时文件
@@ -185,7 +185,7 @@ class ReferenceContentExtractor:
             if not link_url:
                 return ""
 
-            logger.info(f"开始提取链接内容: {link_url}")
+            Logger.info(f"开始提取链接内容: {link_url}")
 
             # 构造浏览器请求头，避免被反爬虫机制拒绝
             headers = {
@@ -209,11 +209,11 @@ class ReferenceContentExtractor:
             # 提取关键要点
             key_points = cls._extract_key_points(full_text, max_length)
 
-            logger.info(f"链接内容提取完成，长度: {len(key_points)}")
+            Logger.info(f"链接内容提取完成，长度: {len(key_points)}")
             return key_points
 
         except Exception as e:
-            logger.error(f"链接内容提取失败: {e}")
+            Logger.error(f"链接内容提取失败: {e}")
             return ""
 
     @classmethod
@@ -235,7 +235,7 @@ class ReferenceContentExtractor:
             elif ref_type == "link":
                 raw_content = await cls.extract_link_content(ref_value, max_length)
             else:
-                logger.warning(f"不支持的参考类型: {ref_type}")
+                Logger.warning(f"不支持的参考类型: {ref_type}")
                 return ""
 
             if not raw_content:
@@ -245,18 +245,18 @@ class ReferenceContentExtractor:
             if summarize_func:
                 try:
                     summarized_content = await summarize_func(raw_content)
-                    logger.info(
+                    Logger.info(
                         f"AI总结完成，原长度: {len(raw_content)}, 总结长度: {len(summarized_content)}"
                     )
                     return summarized_content
                 except Exception as e:
-                    logger.warning(f"AI总结失败，使用原始内容: {e}")
+                    Logger.warning(f"AI总结失败，使用原始内容: {e}")
                     return raw_content
             else:
                 return raw_content
 
         except Exception as e:
-            logger.error(f"参考内容提取失败: {e}")
+            Logger.error(f"参考内容提取失败: {e}")
             return ""
 
     @classmethod
@@ -279,11 +279,11 @@ class ReferenceContentExtractor:
 
                 return key_points
             else:
-                logger.warning(f"同步模式不支持的内容类型: {content_type}")
+                Logger.warning(f"同步模式不支持的内容类型: {content_type}")
                 return ""
 
         except Exception as e:
-            logger.error(f"同步内容提取失败: {e}")
+            Logger.error(f"同步内容提取失败: {e}")
             return ""
 
     @classmethod
@@ -302,7 +302,7 @@ class ReferenceContentExtractor:
             chunks = cls.TEXT_SPLITTER.split_documents([doc])
             return [chunk.page_content for chunk in chunks]
         except Exception as e:
-            logger.warning(f"文本分割失败: {e}")
+            Logger.warning(f"文本分割失败: {e}")
             return [text] if text else []
 
 

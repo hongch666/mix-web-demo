@@ -220,7 +220,6 @@ def _export_article_vectors_to_postgres(
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:
-        from app.core.db.mysql import SessionLocal
 
         def mysql_db_factory() -> Session:
             return SessionLocal()

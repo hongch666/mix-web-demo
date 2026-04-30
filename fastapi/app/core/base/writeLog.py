@@ -1,6 +1,8 @@
 import os
 from datetime import datetime
 
+from app.core.config import load_config
+
 from .logger import logger
 
 
@@ -12,8 +14,6 @@ def write_log(message: str, level: str = "INFO") -> None:
         message: 日志消息
         level: 日志级别 (INFO, WARNING, ERROR, DEBUG)
     """
-    from app.core.config import load_config
-
     LOG_PATH: str = load_config("logs")["path"]
     if not os.path.exists(LOG_PATH):
         os.makedirs(LOG_PATH, exist_ok=True)

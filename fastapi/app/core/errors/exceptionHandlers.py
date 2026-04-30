@@ -7,7 +7,6 @@ from fastapi import Request
 
 from ..base.constants import Constants
 from ..base.response import error
-from ..base.writeLog import Logger
 from .exceptions import BusinessException
 
 
@@ -23,6 +22,9 @@ async def business_exception_handler(
     Returns:
         Response: JSON 格式的错误响应
     """
+    # 延迟导入避免循环依赖
+    from ..base.writeLog import Logger
+
     Logger.error(f"请求路径: {request.url}，业务错误: {str(exc)}")
     return JSONResponse(status_code=200, content=error(exc.message))
 
@@ -37,6 +39,9 @@ async def global_exception_handler(request: Request, exc: Exception) -> Response
     Returns:
         Response: JSON 格式的一般错误响应
     """
+    # 延迟导入避免循环依赖
+    from ..base.writeLog import Logger
+
     Logger.error(f"请求路径: {request.url}，错误信息: {str(exc)}")
     return JSONResponse(
         status_code=200, content=error(Constants.EXCEPTION_HANDLER_MESSAGE)
@@ -67,6 +72,9 @@ async def request_validation_exception_handler(
         if validation_message_parts
         else Constants.EXCEPTION_HANDLER_MESSAGE
     )
+    # 延迟导入避免循环依赖
+    from ..base.writeLog import Logger
+
     Logger.error(f"请求路径: {request.url}，校验错误: {validation_message}")
     return JSONResponse(status_code=200, content=error(validation_message))
 

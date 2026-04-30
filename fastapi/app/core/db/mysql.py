@@ -1,3 +1,4 @@
+import traceback
 from collections.abc import AsyncGenerator
 from typing import List, Optional
 from urllib.parse import quote_plus
@@ -119,6 +120,4 @@ async def create_tables_async(tables: Optional[List[str]] = None) -> None:
             Logger.warning(Constants.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
     except Exception as e:
         Logger.error(f"数据库表创建失败: {e}")
-        import traceback
-
         Logger.error(traceback.format_exc())
