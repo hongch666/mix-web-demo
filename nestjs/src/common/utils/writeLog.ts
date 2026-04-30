@@ -45,14 +45,18 @@ export class LoggerUtil {
     }
 
     // 日志文件名 (按日期)
-    const today: string = new Date().toISOString().split('T')[0] || '';
+    const now: Date = new Date();
+    const year: number = now.getFullYear();
+    const month: string = String(now.getMonth() + 1).padStart(2, '0');
+    const day: string = String(now.getDate()).padStart(2, '0');
+    const today: string = `${year}-${month}-${day}`;
     const logFile: string = path.join(this.logPath, `app_${today}.log`);
 
-    // 格式化日志消息
-    const timestamp: string = new Date()
-      .toISOString()
-      .replace('T', ' ')
-      .substring(0, 19);
+    // 格式化日志消息（使用本地时间）
+    const hours: string = String(now.getHours()).padStart(2, '0');
+    const minutes: string = String(now.getMinutes()).padStart(2, '0');
+    const seconds: string = String(now.getSeconds()).padStart(2, '0');
+    const timestamp: string = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     const logEntry: string = `${timestamp} - ${level} - ${message}\n`;
 
     // 写入文件

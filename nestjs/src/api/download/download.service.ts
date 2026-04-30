@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import * as fs from 'fs';
 import * as marked from 'marked';
 import * as path from 'path';
-import * as puppeteer from 'puppeteer';
+import { launch, Browser, Page } from 'puppeteer';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
@@ -142,12 +142,12 @@ export class DownloadService {
     );
 
     // 使用 puppeteer 生成 PDF
-    const browser: puppeteer.Browser = await puppeteer.launch({
+    const browser: Browser = await launch({
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
-    const page: puppeteer.Page = await browser.newPage();
+    const page: Page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
     // 生成 PDF
