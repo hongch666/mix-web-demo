@@ -19,11 +19,9 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class InternalTokenUtil {
     private final InternalTokenProperties internalTokenProperties;
     private final SimpleLogger logger;
@@ -35,7 +33,7 @@ public class InternalTokenUtil {
             throw new BusinessException(Constants.INTERNAL_TOKEN_NOT_NULL);
         }
         key = Keys.hmacShaKeyFor(internalTokenProperties.getSecret().getBytes(StandardCharsets.UTF_8));
-        log.info(Constants.INTERNAL_TOKEN_INIT);
+        logger.info(Constants.INTERNAL_TOKEN_INIT);
     }
 
     /**

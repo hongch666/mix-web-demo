@@ -6,15 +6,15 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.SimpleLogger;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class InitMessageInitializer implements ApplicationRunner {
 
+    private final SimpleLogger logger;
     private final Environment env;
 
     @SuppressWarnings("null")
@@ -22,8 +22,8 @@ public class InitMessageInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         String ip = Constants.INIT_IP;
         String port = env.getProperty("server.port", Constants.INIT_PORT);
-        log.info(Constants.INIT_MSG);
-        log.info(Constants.INIT_ADDR, ip, port);
-        log.info(Constants.INIT_SWAGGER_ADDR, ip, port);
+        logger.info(Constants.INIT_MSG);
+        logger.info(Constants.INIT_ADDR, ip, port);
+        logger.info(Constants.INIT_SWAGGER_ADDR, ip, port);
     }
 }

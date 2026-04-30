@@ -1042,12 +1042,12 @@ public class Constants {
     /**
      * 服务地址输出信息
      */
-    public static String INIT_ADDR = "服务地址: http://{}:{}/";
+    public static String INIT_ADDR = "服务地址: http://%s:%s/";
 
     /**
      * 服务地址输出信息
      */
-    public static String INIT_SWAGGER_ADDR = "Swagger文档地址: http://{}:{}/swagger-ui/index.html";
+    public static String INIT_SWAGGER_ADDR = "Swagger文档地址: http://%s:%s/swagger-ui/index.html";
 
     // 内部服务令牌相关常量
 
