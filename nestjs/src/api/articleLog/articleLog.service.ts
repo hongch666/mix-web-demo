@@ -82,7 +82,7 @@ export class ArticleLogService {
   async removeById(id: string) {
     const existingLog = await this.logModel.findById(id).exec();
     if (!existingLog) {
-      throw new BusinessException(Constants.ARTICLE_LOG_NOT_FOUND);
+      throw BusinessException.notFound(Constants.ARTICLE_LOG_NOT_FOUND, 'ARTICLE_LOG_NOT_FOUND');
     }
     return this.logModel.findByIdAndDelete(id).exec();
   }
@@ -99,7 +99,7 @@ export class ArticleLogService {
       (id: string) => !existingIds.includes(id),
     );
     if (notFoundIds.length > 0) {
-      throw new BusinessException(Constants.ARTICLE_LOG_PARTIAL_NOT_FOUND);
+      throw BusinessException.notFound(Constants.ARTICLE_LOG_PARTIAL_NOT_FOUND, 'ARTICLE_LOG_PARTIAL_NOT_FOUND');
     }
 
     return this.logModel.deleteMany({ _id: { $in: ids } }).exec();

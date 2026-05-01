@@ -8,6 +8,7 @@ import {
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { BusinessException } from 'src/common/exceptions/business.exception';
+import { HttpCode } from 'src/common/utils/httpCode';
 import { logger } from 'src/common/utils/writeLog';
 import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
 import { Constants } from '../common/utils/constants';
@@ -79,7 +80,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
       transform: true,
       exceptionFactory: (errors) => {
         const message = extractValidationMessage(errors);
-        return new BusinessException(message);
+        return new BusinessException(message, HttpCode.BAD_REQUEST, 'PARAM_PARSE_FAILED');
       },
     }),
   );

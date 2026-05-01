@@ -30,7 +30,7 @@ export class DownloadService {
     const article: Articles | null =
       await this.articleService.getArticleById(id);
     if (!article) {
-      throw new BusinessException(`文章 ID ${id} 未找到`);
+      throw BusinessException.notFound(`文章 ID ${id} 未找到`, 'ARTICLE_NOT_FOUND');
     }
     const htmlContent: string = marked.parse(article.content || '');
     const user: User | null = await this.userService.getUserById(
@@ -48,7 +48,7 @@ export class DownloadService {
     const filePath: string | undefined =
       this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
-      throw new BusinessException(Constants.EMPTY_FILE_PATH);
+      throw BusinessException.notFound(Constants.EMPTY_FILE_PATH, 'EMPTY_FILE_PATH');
     }
     const templatePath: string = path.join(
       process.cwd(),
@@ -85,7 +85,7 @@ export class DownloadService {
     const article: Articles | null =
       await this.articleService.getArticleById(id);
     if (!article) {
-      throw new BusinessException(`文章 ID ${id} 未找到`);
+      throw BusinessException.notFound(`文章 ID ${id} 未找到`, 'ARTICLE_NOT_FOUND');
     }
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
@@ -119,7 +119,7 @@ export class DownloadService {
     const article: Articles | null =
       await this.articleService.getArticleById(id);
     if (!article) {
-      throw new BusinessException(`文章 ID ${id} 未找到`);
+      throw BusinessException.notFound(`文章 ID ${id} 未找到`, 'ARTICLE_NOT_FOUND');
     }
 
     const user: User | null = await this.userService.getUserById(
@@ -383,7 +383,7 @@ export class DownloadService {
       return url;
     } catch (error: any) {
       logger.error(`上传阿里云OSS错误: ${error.message}`);
-      throw new BusinessException(Constants.OSS_UPLOAD_ERR);
+      throw BusinessException.internalServerError(Constants.OSS_UPLOAD_ERR, 'OSS_UPLOAD_ERROR');
     }
   }
 }

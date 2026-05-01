@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 import { OssService } from 'src/modules/oss/oss.service';
@@ -86,7 +87,7 @@ export class UploadService {
     const fileExtension = path.extname(originalFilename).toLowerCase();
 
     if (fileExtension !== '.pdf') {
-      throw new BadRequestException(Constants.ONLY_PDF_SUPPORTED);
+      throw BusinessException.unprocessableEntity(Constants.ONLY_PDF_SUPPORTED, 'ONLY_PDF_SUPPORTED');
     }
 
     // 如果提供了自定义文件名，使用自定义文件名；否则生成 UUID
@@ -132,7 +133,7 @@ export class UploadService {
   ): Promise<string> {
     // 禁用 attachFieldsToBody 后，file 本身就是流对象，有 filename、encoding、mimetype 等属性
     if (!file) {
-      throw new BadRequestException(Constants.NO_FILE_UPLOADED);
+      throw BusinessException.badRequest(Constants.NO_FILE_UPLOADED, 'NO_FILE_UPLOADED');
     }
 
     const originalFilename = file.filename || '';
@@ -142,7 +143,7 @@ export class UploadService {
         logger.error(
           `不支持的文件格式: ${ext}，允许格式: ${allowExt.join(', ')}`,
         );
-        throw new BadRequestException(`仅支持以下格式: ${allowExt.join(', ')}`);
+        throw BusinessException.badRequest(`仅支持以下格式: ${allowExt.join(', ')}`, 'BAD_REQUEST');
       }
     }
 
@@ -172,7 +173,7 @@ export class UploadService {
           logger.info(`文件已保存到临时目录: ${localPath}`);
           return localPath;
         } else {
-          throw new Error(Constants.FILE_NO_VALID_METHOD);
+          throw BusinessException.unprocessableEntity(Constants.FILE_NO_VALID_METHOD, 'FILE_NO_VALID_METHOD');
         }
       }
 
@@ -184,6 +185,9 @@ export class UploadService {
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;
     } catch (error: unknown) {
+      if (error instanceof BusinessException) {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : String(error);
       logger.error(`保存文件到临时目录失败: ${message}`);
       throw error;

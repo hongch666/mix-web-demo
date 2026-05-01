@@ -44,7 +44,7 @@ export class OssService implements OnModuleInit {
       !this.bucketName ||
       !this.endpoint
     ) {
-      throw new BusinessException(Constants.OSS_CONFIG_INCOMPLETE);
+      throw BusinessException.serviceUnavailable(Constants.OSS_CONFIG_INCOMPLETE, 'OSS_CLIENT_NOT_INITIALIZED');
     }
 
     this.accessKeyId = accessKeyId;
@@ -85,7 +85,7 @@ export class OssService implements OnModuleInit {
       logger.info(`文件存在性检查结果: ${fileExists}`);
 
       if (!fileExists) {
-        throw new Error(`本地文件不存在: ${localFile}`);
+        throw BusinessException.notFound(`本地文件不存在: ${localFile}`, 'FILE_NOT_FOUND');
       }
 
       // 获取文件大小
@@ -109,7 +109,7 @@ export class OssService implements OnModuleInit {
       logger.error(`OSS 上传失败: ${message}`);
       logger.error(`失败的 localFile: ${localFile}, ossFile: ${ossFile}`);
       logger.error(`错误堆栈: ${error instanceof Error ? error.stack : ''}`);
-      throw new BusinessException(Constants.OSS_UPLOAD_FAILED);
+      throw BusinessException.internalServerError(Constants.OSS_UPLOAD_FAILED, 'OSS_UPLOAD_ERROR');
     }
   }
 
@@ -132,7 +132,7 @@ export class OssService implements OnModuleInit {
     ossFile: string,
   ): Promise<unknown> {
     if (!this.client) {
-      throw new Error(Constants.OSS_CLIENT_NOT_INITIALIZED);
+      throw BusinessException.serviceUnavailable(Constants.OSS_CLIENT_NOT_INITIALIZED, 'OSS_CLIENT_NOT_INITIALIZED');
     }
 
     const uploadPromise = this.client.put(ossFile, localFile);
@@ -200,7 +200,7 @@ export class OssService implements OnModuleInit {
       };
     } catch (error: unknown) {
       if (timeoutController.signal.aborted) {
-        throw new Error(Constants.OSS_PUT_OPERATION_TIMEOUT);
+        throw BusinessException.gatewayTimeout(Constants.OSS_PUT_OPERATION_TIMEOUT, 'OSS_PUT_TIMEOUT');
       }
 
       throw error;

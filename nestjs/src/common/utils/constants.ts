@@ -316,4 +316,46 @@ export class Constants {
    * 释放分布式锁失败消息（锁已过期或被其他实例持有）
    */
   static readonly REDIS_LOCK_RELEASE_FAIL = '释放分布式锁失败，key: %s';
+
+  // 错误标识常量 - 与 HTTP状态码设计.md 中的 error 字段一致
+
+  // 400 Bad Request
+  static readonly PARAM_PARSE_FAILED = 'PARAM_PARSE_FAILED';
+
+  // 403 Forbidden
+  static readonly UNAUTHORIZED_USER_ERROR = 'UNAUTHORIZED_USER';
+  static readonly NO_ADMIN_PERMISSION = 'NO_ADMIN_PERMISSION';
+  static readonly INTERNAL_TOKEN_SERVICE_MISMATCH = 'INTERNAL_TOKEN_SERVICE_MISMATCH';
+
+  // 404 Not Found
+  static readonly ARTICLE_LOG_NOT_FOUND_ERROR = 'ARTICLE_LOG_NOT_FOUND';
+  static readonly ARTICLE_LOG_PARTIAL_NOT_FOUND_ERROR = 'ARTICLE_LOG_PARTIAL_NOT_FOUND';
+  static readonly API_LOG_NOT_FOUND_ERROR = 'API_LOG_NOT_FOUND';
+  static readonly API_LOG_PARTIAL_NOT_FOUND_ERROR = 'API_LOG_PARTIAL_NOT_FOUND';
+  static readonly FILE_PART_NOT_FOUND_ERROR = 'FILE_PART_NOT_FOUND';
+
+  // 401 Unauthorized
+  static readonly INTERNAL_TOKEN_MISSING_ERROR = 'INTERNAL_TOKEN_MISSING';
+  static readonly INTERNAL_TOKEN_INVALID_ERROR = 'INTERNAL_TOKEN_INVALID';
+  static readonly INTERNAL_TOKEN_EXPIRED_ERROR = 'INTERNAL_TOKEN_EXPIRED';
+
+  // 422 Unprocessable Entity
+  static readonly ONLY_PDF_SUPPORTED_ERROR = 'ONLY_PDF_SUPPORTED';
+  static readonly NO_FILE_UPLOADED_ERROR = 'NO_FILE_UPLOADED';
+  static readonly FILE_NO_VALID_METHOD_ERROR = 'FILE_NO_VALID_METHOD';
+
+  // 500 Internal Server Error
+  static readonly NESTJS_SERVER_ERROR = 'NESTJS_SERVER_ERROR';
+  static readonly OSS_UPLOAD_ERROR = 'OSS_UPLOAD_ERROR';
+
+  // 503 Service Unavailable
+  static readonly OSS_CLIENT_NOT_INITIALIZED_ERROR = 'OSS_CLIENT_NOT_INITIALIZED';
+  static readonly SERVICE_DISCOVERY_FAILED = 'SERVICE_DISCOVERY_FAILED';
+  static readonly NO_AVAILABLE_SERVICE_INSTANCE = 'NO_AVAILABLE_SERVICE_INSTANCE';
+
+  // 504 Gateway Timeout
+  static readonly OSS_PUT_TIMEOUT = 'OSS_PUT_TIMEOUT';
+
+  // 502 Bad Gateway
+  static readonly SERVICE_CALL_FAILED = 'SERVICE_CALL_FAILED';
 }

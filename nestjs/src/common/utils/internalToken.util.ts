@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import { BusinessException } from '../exceptions/business.exception';
 import { Constants } from './constants';
+import { HttpCode } from './httpCode';
 
 interface InternalTokenClaims {
   userId: number;
@@ -30,6 +31,8 @@ export class InternalTokenUtil {
     if (!this.secret) {
       throw new BusinessException(
         Constants.INTERNAL_TOKEN_SECRET_NOT_CONFIGURED,
+        HttpCode.INTERNAL_SERVER_ERROR,
+        'INTERNAL_TOKEN_SECRET_NOT_NULL',
       );
     }
   }
@@ -67,9 +70,17 @@ export class InternalTokenUtil {
       return decoded as InternalTokenClaims;
     } catch (error: unknown) {
       if (error instanceof jwt.TokenExpiredError) {
-        throw new BusinessException(Constants.INTERNAL_TOKEN_EXPIRED);
+        throw new BusinessException(
+          Constants.INTERNAL_TOKEN_EXPIRED,
+          HttpCode.UNAUTHORIZED,
+          'INTERNAL_TOKEN_EXPIRED',
+        );
       }
-      throw new BusinessException(Constants.INTERNAL_TOKEN_INVALID);
+      throw new BusinessException(
+        Constants.INTERNAL_TOKEN_INVALID,
+        HttpCode.UNAUTHORIZED,
+        'INTERNAL_TOKEN_INVALID',
+      );
     }
   }
 

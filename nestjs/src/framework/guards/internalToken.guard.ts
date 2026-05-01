@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
+import { HttpCode } from 'src/common/utils/httpCode';
 import { InternalTokenUtil } from 'src/common/utils/internalToken.util';
 import { logger } from 'src/common/utils/writeLog';
 import {
@@ -40,7 +41,11 @@ export class InternalTokenGuard implements CanActivate {
 
     if (!internalToken) {
       logger.error(Constants.INTERNAL_TOKEN_MISSING);
-      throw new BusinessException(Constants.INTERNAL_TOKEN_MISSING);
+      throw new BusinessException(
+        Constants.INTERNAL_TOKEN_MISSING,
+        HttpCode.UNAUTHORIZED,
+        'INTERNAL_TOKEN_MISSING',
+      );
     }
 
     try {
@@ -59,7 +64,11 @@ export class InternalTokenGuard implements CanActivate {
         logger.error(
           `${Constants.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${claims.serviceName}`,
         );
-        throw new BusinessException(Constants.SERVICE_NAME_MISMATCH);
+        throw new BusinessException(
+          Constants.SERVICE_NAME_MISMATCH,
+          HttpCode.FORBIDDEN,
+          'INTERNAL_TOKEN_SERVICE_MISMATCH',
+        );
       }
 
       logger.debug(
@@ -71,7 +80,11 @@ export class InternalTokenGuard implements CanActivate {
         throw error;
       }
       logger.error(`令牌验证失败: ${error.message}`);
-      throw new BusinessException(Constants.INTERNAL_TOKEN_INVALID);
+      throw new BusinessException(
+        Constants.INTERNAL_TOKEN_INVALID,
+        HttpCode.UNAUTHORIZED,
+        'INTERNAL_TOKEN_INVALID',
+      );
     }
   }
 

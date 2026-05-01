@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import yamlConfig from '../config/yamlConfig.service';
-import { BusinessException } from '../exceptions/business.exception';
 
 export class LoggerUtil {
   private static logPath: string;
@@ -26,7 +25,7 @@ export class LoggerUtil {
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      throw new BusinessException(`加载日志配置失败: ${errorMessage}`);
+      throw new Error(`加载日志配置失败: ${errorMessage}`);
     }
   }
 
@@ -65,7 +64,7 @@ export class LoggerUtil {
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      throw new BusinessException(`写入日志失败: ${errorMessage}`);
+      throw new Error(`写入日志失败: ${errorMessage}`);
     }
   }
 

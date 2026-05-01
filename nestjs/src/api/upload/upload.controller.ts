@@ -7,6 +7,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
+import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { success } from 'src/common/utils/response';
 import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
@@ -61,7 +62,7 @@ export class UploadController {
         return success(result);
       }
     }
-    throw new Error(Constants.FILE_PART_NOT_FOUND);
+    throw BusinessException.notFound(Constants.FILE_PART_NOT_FOUND, 'FILE_PART_NOT_FOUND');
   }
 
   @Post('pdf')
@@ -100,6 +101,6 @@ export class UploadController {
         return success(result);
       }
     }
-    throw new Error(Constants.FILE_PART_NOT_FOUND);
+    throw BusinessException.notFound(Constants.FILE_PART_NOT_FOUND, 'FILE_PART_NOT_FOUND');
   }
 }

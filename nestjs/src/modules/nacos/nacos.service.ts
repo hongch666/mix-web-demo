@@ -199,7 +199,7 @@ export class NacosService implements OnModuleInit {
       opts.serviceName,
     );
     if (!instances || instances.length === 0) {
-      throw new BusinessException(`服务 ${opts.serviceName} 无可用实例`);
+      throw BusinessException.serviceUnavailable(`服务 ${opts.serviceName} 无可用实例`, 'NO_AVAILABLE_SERVICE_INSTANCE');
     }
 
     // 负载均衡策略：随机
@@ -261,7 +261,7 @@ export class NacosService implements OnModuleInit {
       if (err instanceof CircuitBreakerOpenError) {
         logger.warning(`调用 ${opts.serviceName} 已触发熔断，直接返回降级结果`);
         return {
-          code: 0,
+          code: 503,
           msg: `调用 ${opts.serviceName} 已降级，请稍后再试`,
           data: null,
         };
@@ -269,7 +269,7 @@ export class NacosService implements OnModuleInit {
 
       breaker.recordFailure();
       logger.error(`调用 ${opts.serviceName} 失败: ${err instanceof Error ? err.message : String(err)}`);
-      throw new BusinessException(`调用 ${opts.serviceName} 失败，请稍后重试`);
+      throw BusinessException.badGateway(`调用 ${opts.serviceName} 失败，请稍后重试`, 'SERVICE_CALL_FAILED');
     }
   }
 }
