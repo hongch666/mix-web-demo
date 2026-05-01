@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
+import com.hcsy.gateway.common.BusinessException;
+import com.hcsy.gateway.common.Constants;
 import com.hcsy.gateway.properties.JwtProperties;
 
 import io.jsonwebtoken.Claims;
@@ -23,15 +25,13 @@ public class JwtUtil {
     private final JwtProperties jwtProperties;
     private Key key;
 
-    // 通过构造器注入（不再使用静态变量）
     public JwtUtil(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
-        this.initKey(); // 直接初始化
+        this.initKey();
     }
 
     @PostConstruct
     public void initKey() {
-        // 增加空值检查
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
             throw new IllegalStateException("JWT secret must not be null or empty");
         }
@@ -43,12 +43,12 @@ public class JwtUtil {
      */
     public String generateToken(Long userId, String username) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId); // 用户ID
-        claims.put("username", username); // 用户名
+        claims.put("userId", userId);
+        claims.put("username", username);
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(username) // 主题设为用户名
+                .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -80,9 +80,9 @@ public class JwtUtil {
                     .parseClaimsJws(token);
             return true;
         } catch (ExpiredJwtException e) {
-            throw new RuntimeException("Token已过期", e);
+            throw BusinessException.unauthorized("Token已过期", Constants.TOKEN_EXPIRED);
         } catch (JwtException | IllegalArgumentException e) {
-            throw new RuntimeException("无效的Token", e);
+            throw BusinessException.unauthorized("无效的Token", Constants.TOKEN_INVALID);
         }
     }
 

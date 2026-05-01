@@ -3,12 +3,14 @@ package com.hcsy.gateway.filter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.hcsy.gateway.common.Constants;
+import com.hcsy.gateway.common.HttpCode;
+import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.properties.RateLimitProperties;
 import com.hcsy.gateway.utils.TokenBucketRateLimiter;
 
@@ -31,7 +33,6 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // 检查限流是否启用
         if (!rateLimitProperties.isEnabled()) {
             return chain.filter(exchange);
         }
@@ -39,18 +40,14 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         String path = exchange.getRequest().getPath().value();
         String clientId = getClientIdentifier(exchange);
 
-        // 检查该路径是否需要限流
         RateLimitProperties.RateLimitPath rateLimitPath = matchRateLimitPath(path);
 
         if (rateLimitPath == null || !rateLimitPath.getEnabled()) {
-            // 该路径不需要限流
             return chain.filter(exchange);
         }
 
-        // 构造限流key: rate-limit:{path}:{clientId}
         String rateLimitKey = buildRateLimitKey(path, clientId);
 
-        // 执行限流检查
         boolean allowed = tokenBucketRateLimiter.isAllowed(
             rateLimitKey,
             rateLimitPath.getCapacity(),
@@ -58,7 +55,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         );
 
         if (!allowed) {
-            log.warn("请求被限流: path={}, clientId={}", path, clientId);
+            log.warn("[{}] 请求被限流: path={}, clientId={}", Constants.RATE_LIMIT_EXCEEDED, path, clientId);
             return rateLimitExceededResponse(exchange, rateLimitPath.getMessage());
         }
 
@@ -66,9 +63,6 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         return chain.filter(exchange);
     }
 
-    /**
-     * 匹配该路径是否需要限流
-     */
     @SuppressWarnings("null")
     private RateLimitProperties.RateLimitPath matchRateLimitPath(String path) {
         for (String pattern : rateLimitProperties.getPaths().keySet()) {
@@ -79,33 +73,22 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         return null;
     }
 
-    /**
-     * 获取客户端标识符（用于区分不同客户端的限流）
-     * 优先级: userId > IP > 默认值
-     */
     private String getClientIdentifier(ServerWebExchange exchange) {
-        // 首先尝试从请求头获取用户ID (认证过滤器放入)
         String userId = exchange.getRequest().getHeaders().getFirst("X-User-Id");
         if (userId != null) {
             return "user:" + userId;
         }
 
-        // 其次获取客户端IP
         String clientIp = getClientIp(exchange);
         if (clientIp != null) {
             return "ip:" + clientIp;
         }
 
-        // 最后使用默认值
         return "unknown";
     }
 
-    /**
-     * 获取客户端真实IP地址
-     */
     @SuppressWarnings("null")
     private String getClientIp(ServerWebExchange exchange) {
-        // 尝试多个可能的IP头
         String[] headers = {
             "X-Forwarded-For",
             "X-Real-IP",
@@ -116,7 +99,6 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         for (String header : headers) {
             String ip = exchange.getRequest().getHeaders().getFirst(header);
             if (ip != null && !ip.isEmpty()) {
-                // X-Forwarded-For 可能包含多个IP，取第一个
                 if ("X-Forwarded-For".equals(header)) {
                     ip = ip.split(",")[0];
                 }
@@ -124,7 +106,6 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
             }
         }
 
-        // 从远程地址获取IP
         if (exchange.getRequest().getRemoteAddress() != null) {
             return exchange.getRequest().getRemoteAddress().getHostName();
         }
@@ -132,39 +113,17 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         return null;
     }
 
-    /**
-     * 构造限流key
-     */
     private String buildRateLimitKey(String path, String clientId) {
-        // 去掉路径中的query参数
         String cleanPath = path.split("\\?")[0];
         return "rate-limit:" + cleanPath + ":" + clientId;
     }
 
-    /**
-     * 返回限流超出响应
-     */
-    @SuppressWarnings("null")
     private Mono<Void> rateLimitExceededResponse(ServerWebExchange exchange, String message) {
-        exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-
-        String jsonResponse = String.format(
-            "{\"code\": 429, \"message\": \"%s\", \"timestamp\": %d}",
-            message,
-            System.currentTimeMillis()
-        );
-
-        return exchange.getResponse()
-            .writeWith(Mono.fromSupplier(() ->
-                exchange.getResponse().bufferFactory().wrap(jsonResponse.getBytes())
-            ));
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(org.springframework.http.HttpStatus.TOO_MANY_REQUESTS);
+        return Result.error(HttpCode.TOO_MANY_REQUESTS, message).writeTo(response);
     }
 
-    /**
-     * 设置过滤器优先级
-     * HIGHEST_PRECEDENCE + 1: 在认证过滤器之后执行
-     */
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE + 2;

@@ -6,7 +6,6 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -14,6 +13,10 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 
+import com.hcsy.gateway.common.BusinessException;
+import com.hcsy.gateway.common.Constants;
+import com.hcsy.gateway.common.HttpCode;
+import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.config.AuthProperties;
 import com.hcsy.gateway.utils.JwtUtil;
 import com.hcsy.gateway.utils.RedisUtil;
@@ -47,13 +50,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 2. 获取并验证Token
         String token = extractToken(request);
         if (token == null) {
-            return unauthorizedResponse(exchange, "Missing authorization token");
+            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
         }
 
         try {
             // 3. 基础验证：Token签名和过期时间
             if (!jwtUtil.validateToken(token)) {
-                return unauthorizedResponse(exchange, "Invalid or expired token");
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "无效的Token", Constants.TOKEN_INVALID);
             }
 
             // 4. 从 Token 中提取用户 ID
@@ -62,13 +65,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             // 5. 核心检验：Token 是否在 Redis 列表中（检查是否被管理员踢下线）
             String tokenListKey = "user:tokens:" + userId;
             if (!redisUtil.existsInList(tokenListKey, token)) {
-                return unauthorizedResponse(exchange, "Token has been revoked or user logged out");
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
             }
 
             // 6. 检查用户状态
             String userStatus = redisUtil.get("user:status:" + userId);
             if ("0".equals(userStatus)) {
-                return unauthorizedResponse(exchange, "User is offline");
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
             }
 
             // 7. 传递用户信息和 Token 到下游服务
@@ -86,13 +89,17 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
             return chain.filter(exchange.mutate().request(mutatedRequest).build());
 
+        } catch (BusinessException ex) {
+            // JwtUtil 抛出的 BusinessException，携带具体错误标识
+            log.error("[{}] 认证失败 - 路径: {}", ex.getError(), path, ex);
+            return errorResponse(exchange, ex.getStatusCode(), ex.getMessage(), ex.getError());
         } catch (Exception ex) {
-            return unauthorizedResponse(exchange, "Token verification failed: " + ex.getMessage());
+            log.error("认证异常 - 路径: {}", path, ex);
+            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "无效的Token", Constants.TOKEN_INVALID);
         }
     }
 
     private String extractToken(ServerHttpRequest request) {
-        // 首先尝试从 Authorization header 获取
         List<String> headers = request.getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (!CollectionUtils.isEmpty(headers)) {
             @SuppressWarnings("null")
@@ -103,7 +110,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return authHeader;
         }
 
-        // 如果 Authorization header 没有，尝试从 query parameter 获取 (WebSocket 场景)
         if (request.getQueryParams() != null) {
             String tokenFromQuery = request.getQueryParams().getFirst("token");
             if (tokenFromQuery != null && !tokenFromQuery.trim().isEmpty()) {
@@ -120,21 +126,20 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 .anyMatch(pattern -> antPathMatcher.match(pattern, path));
     }
 
-    private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {
+    private Mono<Void> errorResponse(ServerWebExchange exchange, int code, String msg, String errorIdentifier) {
         ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        response.getHeaders().add("X-Error-Message", message);
-        return response.setComplete();
+        response.setStatusCode(org.springframework.http.HttpStatus.valueOf(code));
+        log.error("[{}] {}", errorIdentifier, msg);
+        return Result.error(code, msg).writeTo(response);
     }
 
     private void logAccess(Long userId, String path) {
-        // 异步记录访问日志
         Mono.fromRunnable(() -> log.info("[AUDIT] User {} accessed {} at {}", userId, path, System.currentTimeMillis()))
                 .subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
 
     @Override
     public int getOrder() {
-        return -100; // 确保在其它全局过滤器之前执行
+        return -100;
     }
 }
