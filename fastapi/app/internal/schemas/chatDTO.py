@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Optional
 
+from app.core.base import HttpCode
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
@@ -61,6 +62,6 @@ class ChatResponseData(BaseModel):
 class ChatResponse(BaseModel):
     """聊天响应模型 - 符合success()格式"""
 
-    code: int = Field(default=1, description="响应码：1成功，0失败")
+    code: int = Field(default=HttpCode.OK, description="响应码：3位HTTP状态码")
     data: Optional[ChatResponseData] = Field(default=None, description="响应数据")
     msg: str = Field(default="success", description="响应消息")

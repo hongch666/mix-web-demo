@@ -6,7 +6,7 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.config import load_config
 from app.core.db import get_db
 from app.core.errors import BusinessException
@@ -349,7 +349,11 @@ class AnalyzeService:
 
     def generate_wordcloud(self, keywords_dic: Dict[str, int]) -> None:
         if len(keywords_dic) == 0:
-            raise BusinessException(Constants.KEYWORDS_EMPTY)
+            raise BusinessException(
+                Constants.KEYWORDS_EMPTY,
+                HttpCode.BAD_REQUEST,
+                Constants.ERROR_PARAM_PARSE_FAILED,
+            )
         wc_config = load_config("wordcloud")
         FONT_PATH: str = wc_config["font_path"]
         WIDTH: int = wc_config["width"]

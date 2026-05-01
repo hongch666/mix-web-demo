@@ -6,7 +6,7 @@ from functools import lru_cache
 from typing import Any, Dict, Optional
 
 import jieba.analyse
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.crud import (
@@ -80,7 +80,11 @@ class GenerateService:
             article_id, db
         )
         if not article:
-            raise BusinessException(Constants.ARTICLE_NOT_EXISTS_ERROR)
+            raise BusinessException(
+                Constants.ARTICLE_NOT_EXISTS_ERROR,
+                HttpCode.NOT_FOUND,
+                Constants.ERROR_ARTICLE_NOT_FOUND,
+            )
         # 2.2 构建提示词
         prompt = f"""请对以下文章进行评价，并给出评分。
         要求：

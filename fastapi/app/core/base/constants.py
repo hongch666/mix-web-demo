@@ -334,6 +334,126 @@ class Constants:
     EXCEPTION_HANDLER_MESSAGE: str = "FastAPI服务器错误"
     """异常处理统一消息"""
 
+    # 错误标识常量 - 用于区分同一状态码下的不同错误场景
+
+    # 400 Bad Request
+    ERROR_PARAM_PARSE_FAILED: str = "PARAM_PARSE_FAILED"
+    """参数解析失败"""
+
+    ERROR_COLLECTION_NAME_REQUIRED: str = "COLLECTION_NAME_REQUIRED"
+    """必须提供 collection_name 参数"""
+
+    # 401 Unauthorized
+    ERROR_USER_NOT_LOGIN: str = "USER_NOT_LOGIN"
+    """用户未登录"""
+
+    ERROR_INTERNAL_TOKEN_MISSING: str = "INTERNAL_TOKEN_MISSING"
+    """缺少必需的内部服务令牌请求头"""
+
+    ERROR_INTERNAL_TOKEN_INVALID: str = "INTERNAL_TOKEN_INVALID"
+    """内部服务令牌无效"""
+
+    ERROR_INTERNAL_TOKEN_EXPIRED: str = "INTERNAL_TOKEN_EXPIRED"
+    """内部服务令牌已过期"""
+
+    # 403 Forbidden
+    ERROR_PERMISSION_CHECK_FAILED: str = "PERMISSION_CHECK_FAILED"
+    """权限检查失败"""
+
+    ERROR_NO_ADMIN_PERMISSION: str = "NO_ADMIN_PERMISSION"
+    """当前用户没有管理员权限"""
+
+    ERROR_USER_NO_ADMIN_PERMISSION: str = "USER_NO_ADMIN_PERMISSION"
+    """权限不足，仅管理员可访问"""
+
+    ERROR_INTENT_ROUTER_NO_PERMISSION: str = "INTENT_ROUTER_NO_PERMISSION"
+    """权限拒绝：此功能需要登录后才能使用"""
+
+    ERROR_INTERNAL_TOKEN_SERVICE_MISMATCH: str = "INTERNAL_TOKEN_SERVICE_MISMATCH"
+    """服务名称不匹配"""
+
+    # 404 Not Found
+    ERROR_USER_NOT_FOUND: str = "USER_NOT_FOUND"
+    """用户不存在"""
+
+    ERROR_ARTICLE_NOT_FOUND: str = "ARTICLE_NOT_FOUND"
+    """文章不存在"""
+
+    ERROR_NO_RELEVANT_ARTICLES: str = "NO_RELEVANT_ARTICLES"
+    """未找到相关文章"""
+
+    ERROR_AI_CHAT_NO_INSTANCE: str = "AI_CHAT_NO_INSTANCE"
+    """找不到可用的服务实例"""
+
+    # 429 Too Many Requests
+    ERROR_GEMINI_QUOTA_EXCEEDED: str = "GEMINI_QUOTA_EXCEEDED"
+    """Gemini API 配额已用完"""
+
+    ERROR_GEMINI_RATE_LIMIT_EXCEEDED: str = "GEMINI_RATE_LIMIT_EXCEEDED"
+    """Gemini API调用频率超限"""
+
+    ERROR_GPT_RATE_LIMIT_EXCEEDED: str = "GPT_RATE_LIMIT_EXCEEDED"
+    """GPT API调用频率超限"""
+
+    # 500 Internal Server Error
+    ERROR_FASTAPI_SERVER_ERROR: str = "FASTAPI_SERVER_ERROR"
+    """FastAPI服务器错误"""
+
+    ERROR_DEEPSEEK_CALL_FAILED: str = "DEEPSEEK_CALL_FAILED"
+    """DeepSeek调用失败"""
+
+    ERROR_GEMINI_CALL_FAILED: str = "GEMINI_CALL_FAILED"
+    """Gemini调用失败"""
+
+    # 502 Bad Gateway
+    ERROR_GPT_CALL_FAILED: str = "GPT_CALL_FAILED"
+    """GPT调用失败"""
+
+    ERROR_SERVICE_CALL_FAILED: str = "SERVICE_CALL_FAILED"
+    """服务调用失败"""
+
+    # 503 Service Unavailable
+    ERROR_RABBITMQ_CLIENT_NOT_INITIALIZED: str = "RABBITMQ_CLIENT_NOT_INITIALIZED"
+    """RabbitMQ客户端未初始化"""
+
+    ERROR_RABBITMQ_NOT_CONNECTED: str = "RABBITMQ_NOT_CONNECTED"
+    """RabbitMQ未连接"""
+
+    ERROR_RABBITMQ_CONFIG_NOT_FOUND: str = "RABBITMQ_CONFIG_NOT_FOUND"
+    """RabbitMQ配置不存在"""
+
+    ERROR_OSS_CLIENT_NOT_INITIALIZED: str = "OSS_CLIENT_NOT_INITIALIZED"
+    """OSS客户端尚未初始化"""
+
+    ERROR_DEEPSEEK_NOT_CONFIGURED: str = "DEEPSEEK_NOT_CONFIGURED"
+    """DeepSeek配置不完整，客户端未初始化"""
+
+    ERROR_GEMINI_NOT_CONFIGURED: str = "GEMINI_NOT_CONFIGURED"
+    """Gemini配置不完整，客户端未初始化"""
+
+    ERROR_GPT_NOT_CONFIGURED: str = "GPT_NOT_CONFIGURED"
+    """GPT配置不完整，客户端未初始化"""
+
+    ERROR_INITIALIZATION_ERROR: str = "INITIALIZATION_ERROR"
+    """聊天服务未配置或初始化失败"""
+
+    ERROR_SERVICE_DISCOVERY_FAILED: str = "SERVICE_DISCOVERY_FAILED"
+    """服务发现失败"""
+
+    ERROR_NO_AVAILABLE_SERVICE_INSTANCE: str = "NO_AVAILABLE_SERVICE_INSTANCE"
+    """无可用服务实例"""
+
+    # 504 Gateway Timeout
+    ERROR_REQUEST_TIMEOUT: str = "REQUEST_TIMEOUT"
+    """请求超时"""
+
+    ERROR_OSS_PUT_TIMEOUT: str = "OSS_PUT_TIMEOUT"
+    """OSS put 操作超时"""
+
+    # 500 内部令牌
+    ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL: str = "INTERNAL_TOKEN_SECRET_NOT_NULL"
+    """内部服务令牌密钥未配置"""
+
     AI_CHAT_TABLE_CREATION_MESSAGE: str = "ai_history 表创建完成"
     """表创建完成消息"""
 

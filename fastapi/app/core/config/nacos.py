@@ -5,7 +5,7 @@ import time
 from typing import Any, Dict, List
 
 import nacos
-from app.core.base import Constants
+from app.core.base import Constants, HttpCode
 from app.core.errors import BusinessException
 
 from .config import load_config
@@ -107,7 +107,11 @@ def get_service_instance(service_name: str) -> Dict[str, Any]:
     # 简单负载均衡：随机选一个
     hosts: List[Dict[str, Any]] = instances.get("hosts", [])
     if not hosts:
-        raise BusinessException(Constants.AI_CHAT_NO_INSTANCE_MESSAGE)
+        raise BusinessException(
+            Constants.AI_CHAT_NO_INSTANCE_MESSAGE,
+            HttpCode.NOT_FOUND,
+            Constants.ERROR_AI_CHAT_NO_INSTANCE,
+        )
     return random.choice(hosts)
 
 

@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 import jwt
 
 from ..base.constants import Constants
+from ..base.httpCode import HttpCode
 from ..config.config import load_config
 from ..errors.exceptions import BusinessException
 
@@ -29,7 +30,11 @@ class InternalTokenUtil:
             InternalTokenUtil._expiration = config.get("expiration")
 
             if not InternalTokenUtil._secret:
-                raise BusinessException(Constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
+                raise BusinessException(
+                    Constants.INTERNAL_TOKEN_SECRET_NOT_NULL,
+                    HttpCode.INTERNAL_SERVER_ERROR,
+                    Constants.ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL,
+                )
 
             InternalTokenUtil._initialized = True
 
@@ -62,9 +67,17 @@ class InternalTokenUtil:
             decoded = jwt.decode(token, InternalTokenUtil._secret, algorithms=["HS256"])
             return decoded
         except jwt.ExpiredSignatureError:
-            raise BusinessException(Constants.INTERNAL_TOKEN_EXPIRED)
+            raise BusinessException(
+                Constants.INTERNAL_TOKEN_EXPIRED,
+                HttpCode.UNAUTHORIZED,
+                Constants.ERROR_INTERNAL_TOKEN_EXPIRED,
+            )
         except jwt.InvalidTokenError:
-            raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
+            raise BusinessException(
+                Constants.INTERNAL_TOKEN_INVALID,
+                HttpCode.UNAUTHORIZED,
+                Constants.ERROR_INTERNAL_TOKEN_INVALID,
+            )
 
     def extract_user_id(self, token: str) -> Optional[int]:
         """

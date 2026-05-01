@@ -3,7 +3,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Optional, TypeVar
 
 from app.core.auth import InternalTokenUtil
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.errors import BusinessException
 
 from fastapi import Request
@@ -43,14 +43,22 @@ def requireInternalToken(
             request: Optional[Request] = _get_request_from_args(args, kwargs)
             if request is None:
                 Logger.error(Constants.INTERNAL_TOKEN_MISSING)
-                raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
+                raise BusinessException(
+                    Constants.INTERNAL_TOKEN_MISSING,
+                    HttpCode.UNAUTHORIZED,
+                    Constants.ERROR_INTERNAL_TOKEN_MISSING,
+                )
 
             # 获取请求头中的内部令牌
             auth_header: str = request.headers.get("X-Internal-Token", "")
 
             if not auth_header:
                 Logger.error(Constants.INTERNAL_TOKEN_MISSING)
-                raise BusinessException(Constants.INTERNAL_TOKEN_MISSING)
+                raise BusinessException(
+                    Constants.INTERNAL_TOKEN_MISSING,
+                    HttpCode.UNAUTHORIZED,
+                    Constants.ERROR_INTERNAL_TOKEN_MISSING,
+                )
 
             # 移除 "Bearer " 前缀
             token: str = auth_header
@@ -68,7 +76,11 @@ def requireInternalToken(
                 if service_name and claims.get("serviceName") != service_name:
                     error_msg: str = f"{Constants.SERVICE_NAME_MISMATCH}. 期望: {service_name}, 获得: {claims.get('serviceName')}"
                     Logger.error(error_msg)
-                    raise BusinessException(Constants.SERVICE_NAME_MISMATCH)
+                    raise BusinessException(
+                        Constants.SERVICE_NAME_MISMATCH,
+                        HttpCode.FORBIDDEN,
+                        Constants.ERROR_INTERNAL_TOKEN_SERVICE_MISMATCH,
+                    )
 
                 Logger.debug(
                     f"内部令牌验证成功 - 用户ID: {claims.get('userId')}, 服务: {claims.get('serviceName')}"
@@ -83,7 +95,11 @@ def requireInternalToken(
                 raise
             except Exception as e:
                 Logger.error(f"令牌验证失败: {str(e)}")
-                raise BusinessException(Constants.INTERNAL_TOKEN_INVALID)
+                raise BusinessException(
+                    Constants.INTERNAL_TOKEN_INVALID,
+                    HttpCode.UNAUTHORIZED,
+                    Constants.ERROR_INTERNAL_TOKEN_INVALID,
+                )
 
         if not inspect.iscoroutinefunction(f):
             raise TypeError(Constants.REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR)

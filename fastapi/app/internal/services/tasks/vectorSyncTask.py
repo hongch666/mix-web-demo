@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, Callable, List, Optional
 
 import redis.asyncio as redis
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.config import load_config
 from app.core.db import SessionLocal
 from app.core.errors import BusinessException
@@ -341,7 +341,9 @@ def _export_article_vectors_to_postgres(
                             continue
                         else:
                             raise BusinessException(
-                                f"重试 {max_retries} 次后仍然失败: {result}"
+                                f"重试 {max_retries} 次后仍然失败: {result}",
+                                HttpCode.INTERNAL_SERVER_ERROR,
+                                Constants.ERROR_FASTAPI_SERVER_ERROR,
                             )
 
                     total_synced += len(batch)

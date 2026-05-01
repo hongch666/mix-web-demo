@@ -4,11 +4,17 @@ from typing import Any, Dict, Optional
 import httpx
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.auth import InternalTokenUtil
-from app.core.base import Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.config import load_config
 from app.core.db import get_service_instance
 from app.core.errors import BusinessException
-from tenacity import AsyncRetrying, RetryCallState, retry_if_exception, stop_after_attempt, wait_exponential
+from tenacity import (
+    AsyncRetrying,
+    RetryCallState,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 
 class CircuitBreakerOpenError(Exception):
@@ -134,11 +140,17 @@ async def _request_remote_service(
     return response.json()
 
 
-def _build_remote_service_error(service_name: str, error: Exception) -> BusinessException:
+def _build_remote_service_error(
+    service_name: str, error: Exception
+) -> BusinessException:
     """统一映射远程调用错误。"""
     if isinstance(error, CircuitBreakerOpenError):
         Logger.warning(f"调用 {service_name} 已触发熔断，直接降级返回")
-        return BusinessException(f"调用远程服务 {service_name} 已降级，请稍后再试")
+        return BusinessException(
+            f"调用远程服务 {service_name} 已降级，请稍后再试",
+            HttpCode.SERVICE_UNAVAILABLE,
+            "SERVICE_CALL_FAILED",
+        )
     if isinstance(error, httpx.HTTPStatusError):
         status_code: int = error.response.status_code
         Logger.error(
@@ -151,7 +163,11 @@ def _build_remote_service_error(service_name: str, error: Exception) -> Business
     else:
         Logger.error(f"调用 {service_name} 失败: {error}")
 
-    return BusinessException(f"调用远程服务 {service_name} 失败，请稍后重试")
+    return BusinessException(
+        f"调用远程服务 {service_name} 失败，请稍后重试",
+        HttpCode.BAD_GATEWAY,
+        Constants.ERROR_SERVICE_CALL_FAILED,
+    )
 
 
 async def call_remote_service(
@@ -202,4 +218,8 @@ async def call_remote_service(
                 breaker.record_failure()
             raise _build_remote_service_error(service_name, e)
 
-    raise BusinessException(f"调用远程服务 {service_name} 失败，请稍后重试")
+    raise BusinessException(
+        f"调用远程服务 {service_name} 失败，请稍后重试",
+        HttpCode.BAD_GATEWAY,
+        Constants.ERROR_SERVICE_CALL_FAILED,
+    )

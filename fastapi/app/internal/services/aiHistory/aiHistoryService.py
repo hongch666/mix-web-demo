@@ -3,7 +3,7 @@ import time
 from functools import lru_cache
 from typing import Any, Dict, Optional
 
-from app.core.base import Constants
+from app.core.base import Constants, HttpCode
 from app.core.errors import BusinessException
 from app.internal.crud import (
     AiHistoryMapper,
@@ -73,7 +73,11 @@ class AiHistoryService:
         # 检查用户是否存在
         user = await self.user_mapper.get_user_by_id_async(user_id, db)
         if not user:
-            raise BusinessException(Constants.USER_NOT_EXISTS_ERROR)
+            raise BusinessException(
+                Constants.USER_NOT_EXISTS_ERROR,
+                HttpCode.NOT_FOUND,
+                Constants.ERROR_USER_NOT_FOUND,
+            )
 
         await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
 

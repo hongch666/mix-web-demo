@@ -5,7 +5,7 @@ from functools import wraps
 from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Union
 
 from app.common.middleware import get_current_user_id, get_current_username
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.db import send_to_queue_async
 from app.core.errors import BusinessException
 from fastapi.responses import StreamingResponse
@@ -183,7 +183,11 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                     f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"
                 )
                 logger_method(time_message)
-                raise BusinessException(Constants.RABBITMQ_NOT_AVAILABLE)
+                raise BusinessException(
+                    Constants.RABBITMQ_NOT_AVAILABLE,
+                    HttpCode.SERVICE_UNAVAILABLE,
+                    Constants.ERROR_RABBITMQ_CLIENT_NOT_INITIALIZED,
+                )
 
         # 根据函数是否为协程选择包装器
         if inspect.iscoroutinefunction(func):

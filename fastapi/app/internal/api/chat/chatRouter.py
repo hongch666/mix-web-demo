@@ -6,7 +6,7 @@ from typing import Any, AsyncGenerator, Dict
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
-from app.core.base import Logger, success
+from app.core.base import HttpCode, Logger, success
 from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.models import AiHistory
@@ -88,7 +88,9 @@ async def send_message(
             or "错误" in response_message
             or "失败" in response_message
         ):
-            return ChatResponse(code=0, data=None, msg=response_message)
+            return ChatResponse(
+                code=HttpCode.INTERNAL_SERVER_ERROR, data=None, msg=response_message
+            )
 
         # 保存AI历史记录
         try:
@@ -121,7 +123,11 @@ async def send_message(
         raise
     except Exception as e:
         Logger.error(f"聊天接口异常: {str(e)}", exc_info=True)
-        return ChatResponse(code=0, data=None, msg=f"聊天服务异常: {str(e)}")
+        return ChatResponse(
+            code=HttpCode.INTERNAL_SERVER_ERROR,
+            data=None,
+            msg=f"聊天服务异常: {str(e)}",
+        )
 
 
 @router.post(
@@ -244,7 +250,11 @@ async def stream_message(
             raise
         except Exception as e:
             Logger.error(f"流式聊天接口异常: {str(e)}")
-            data = {"code": 0, "data": None, "msg": f"流式聊天服务异常: {str(e)}"}
+            data = {
+                "code": HttpCode.INTERNAL_SERVER_ERROR,
+                "data": None,
+                "msg": f"流式聊天服务异常: {str(e)}",
+            }
             yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

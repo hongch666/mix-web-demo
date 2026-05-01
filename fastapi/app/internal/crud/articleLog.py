@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Dict, List
 
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.db import async_db as mongo_db
 from app.core.db import get_db
 from app.core.errors import BusinessException
@@ -83,7 +83,11 @@ class ArticleLogMapper:
             return {"total_views": total_views, "articles": articles}
         except Exception as e:
             Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
-            raise BusinessException(Constants.GET_TOP_FAIL)
+            raise BusinessException(
+                Constants.GET_TOP_FAIL,
+                HttpCode.INTERNAL_SERVER_ERROR,
+                Constants.ERROR_FASTAPI_SERVER_ERROR,
+            )
 
 
 @lru_cache()

@@ -2,7 +2,7 @@ from functools import wraps
 from typing import Any, Callable, Optional
 
 from app.common.middleware import get_current_user_id
-from app.core.base import Constants, Logger
+from app.core.base import Constants, HttpCode, Logger
 from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.crud import get_user_mapper
@@ -34,7 +34,11 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
         # 检查用户是否登录
         if not user_id:
             Logger.warning(Constants.USER_NOT_LOGGED_IN_MESSAGE)
-            raise BusinessException(Constants.USER_NOT_LOGGED_IN_MESSAGE)
+            raise BusinessException(
+                Constants.USER_NOT_LOGGED_IN_MESSAGE,
+                HttpCode.UNAUTHORIZED,
+                Constants.ERROR_USER_NOT_LOGIN,
+            )
 
         # 获取数据库会话
         db: Optional[Session] = kwargs.get("db")
@@ -52,7 +56,11 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     Logger.warning(
                         f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
                     )
-                    raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
+                    raise BusinessException(
+                        Constants.USER_NO_ADMIN_PERMISSION_MESSAGE,
+                        HttpCode.FORBIDDEN,
+                        Constants.ERROR_USER_NO_ADMIN_PERMISSION,
+                    )
                 Logger.info(f"管理员 {user_id} 访问受保护的接口")
                 return await func(*args, **kwargs)
             db_generator = get_db()
@@ -66,7 +74,11 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     Logger.warning(
                         f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
                     )
-                    raise BusinessException(Constants.USER_NO_ADMIN_PERMISSION_MESSAGE)
+                    raise BusinessException(
+                        Constants.USER_NO_ADMIN_PERMISSION_MESSAGE,
+                        HttpCode.FORBIDDEN,
+                        Constants.ERROR_USER_NO_ADMIN_PERMISSION,
+                    )
                 Logger.info(f"管理员 {user_id} 访问受保护的接口")
                 return await func(*args, **kwargs)
             finally:
@@ -76,6 +88,10 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
             raise
         except Exception as e:
             Logger.error(f"检查管理员权限时出错: {e}")
-            raise BusinessException(Constants.PERMISSION_CHECK_FAILED_MESSAGE)
+            raise BusinessException(
+                Constants.PERMISSION_CHECK_FAILED_MESSAGE,
+                HttpCode.FORBIDDEN,
+                Constants.ERROR_PERMISSION_CHECK_FAILED,
+            )
 
     return async_wrapper

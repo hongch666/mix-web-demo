@@ -3,7 +3,7 @@ import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core.base import Constants
+from app.core.base import Constants, HttpCode
 from app.core.errors import BusinessException
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
@@ -50,7 +50,11 @@ class RAGTools:
             self._init_error_message = (
                 "Embedding配置不完整，请先配置 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY"
             )
-            raise BusinessException(self._init_error_message)
+            raise BusinessException(
+                self._init_error_message,
+                HttpCode.SERVICE_UNAVAILABLE,
+                Constants.ERROR_INITIALIZATION_ERROR,
+            )
 
         try:
             self.embeddings = DashScopeEmbeddings(
@@ -62,7 +66,11 @@ class RAGTools:
             self._init_error_message = (
                 f"Embedding初始化失败，请检查 DashScope API Key 是否有效：{error}"
             )
-            raise BusinessException(self._init_error_message)
+            raise BusinessException(
+                self._init_error_message,
+                HttpCode.SERVICE_UNAVAILABLE,
+                Constants.ERROR_INITIALIZATION_ERROR,
+            )
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(
