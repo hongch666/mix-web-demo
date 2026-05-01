@@ -17,6 +17,7 @@ import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
@@ -175,7 +176,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     public void deleteComment(Long id) {
         Comments existing = this.getById(id);
         if (existing == null) {
-            throw new BusinessException(Constants.COMMENT_ID + id);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_ID + id);
         }
         this.removeById(id);
     }
@@ -197,7 +198,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (this.listByIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_COMMENTS);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_COMMENTS);
         }
 
         this.removeByIds(ids);

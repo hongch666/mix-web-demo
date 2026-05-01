@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -46,7 +47,7 @@ public class DefaultHeaderInterceptor implements RequestInterceptor {
         } catch (Exception e) {
             // 令牌生成失败，记录日志但不影响正常请求
             logger.error(Constants.TOKEN_GEN_FAIL + e.getMessage());
-            throw new BusinessException(Constants.TOKEN_GEN_FAIL);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_GEN_FAIL);
         }
     }
 }

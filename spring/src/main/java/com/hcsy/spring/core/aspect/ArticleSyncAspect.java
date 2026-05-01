@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -81,7 +82,7 @@ public class ArticleSyncAspect {
             } catch (Throwable e) {
                 logger.error(Constants.TRANSACTION_ROLLBACK + e.getMessage());
                 status.setRollbackOnly(); // 显式回滚
-                throw new BusinessException(Constants.TRANSACTION_ROLLBACK);
+                throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.TRANSACTION_ROLLBACK);
             }
         });
     }
@@ -133,7 +134,7 @@ public class ArticleSyncAspect {
             }
             default:
                 logger.error(Constants.UNKNOWN_OPERATION + action);
-                throw new BusinessException(Constants.UNKNOWN_OPERATION);
+                throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.UNKNOWN_OPERATION);
         }
 
         // 公共处理逻辑

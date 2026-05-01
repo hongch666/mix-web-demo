@@ -21,6 +21,7 @@ import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
@@ -54,7 +55,7 @@ public class ArticleController {
         // 获取用户id
         User user = userService.findByUsername(dto.getUsername());
         if (user == null) {
-            return Result.error(Constants.UNDEFINED_USER);
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
         }
         article.setUserId(user.getId());
         article.setViews(0);
@@ -101,7 +102,7 @@ public class ArticleController {
     public Result getArticleById(@PathVariable Long id) {
         Article article = articleService.getById(id);
         if (article == null) {
-            return Result.error(Constants.UNDEFINED_ARTICLE);
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
         }
         ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
         // 查询作者用户名
@@ -126,8 +127,7 @@ public class ArticleController {
         // 获取用户id
         User userFromUsername = userService.findByUsername(dto.getUsername());
         if (userFromUsername == null) {
-            return Result.error(Constants.UNDEFINED_USER);
-        }
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);        }
 
         Article article = BeanUtil.copyProperties(dto, Article.class);
         article.setUserId(userFromUsername.getId());
@@ -191,7 +191,7 @@ public class ArticleController {
     public Result addViewArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
         }
         articleService.addViewArticle(id);
         return Result.success();

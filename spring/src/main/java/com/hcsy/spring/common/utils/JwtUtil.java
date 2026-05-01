@@ -33,7 +33,7 @@ public class JwtUtil {
     public void initKey() {
         // 增加空值检查
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
-            throw new BusinessException(Constants.JWT_NOT_NULL);
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.JWT_NOT_NULL);
         }
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
         log.info(Constants.JWT_INIT);
@@ -85,10 +85,10 @@ public class JwtUtil {
             return true;
         } catch (ExpiredJwtException e) {
             logger.warning(Constants.TOKEN_EXPIRED);
-            throw new BusinessException(Constants.TOKEN_EXPIRED);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_EXPIRED);
         } catch (JwtException | IllegalArgumentException e) {
             logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
-            throw new BusinessException(Constants.UNUSED_TOKEN);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.UNUSED_TOKEN);
         }
     }
 

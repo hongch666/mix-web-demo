@@ -16,6 +16,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
@@ -44,7 +45,7 @@ public class ArticleLikeController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error(Constants.LIKE_FAIL);
+            return Result.error(HttpCode.CONFLICT, Constants.LIKE_FAIL);
         }
     }
 
@@ -58,7 +59,7 @@ public class ArticleLikeController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error(Constants.UNLIKE_FAIL);
+            return Result.error(HttpCode.CONFLICT, Constants.UNLIKE_FAIL);
         }
     }
 

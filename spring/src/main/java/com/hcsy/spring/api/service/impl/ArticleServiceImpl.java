@@ -18,6 +18,7 @@ import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
@@ -50,7 +51,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 转换为VO对象并补充分类和用户信息
         List<ArticleWithCategoryVO> voList = resultPage.getRecords().stream().map(article -> {
             if (article.getSubCategoryId() == null) {
-                throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY_ID);
+                throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY_ID);
             }
 
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
@@ -128,7 +129,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public boolean deleteArticle(Long id) {
         Article existing = articleMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLE_ID + id);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_ID + id);
         }
         articleMapper.deleteById(id);
         return true;
@@ -153,7 +154,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         List<Article> existingList = articleMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLES);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLES);
         }
 
         articleMapper.deleteBatchIds(ids);
@@ -167,7 +168,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
         if (dbArticle == null) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
         }
 
         // 执行发布
@@ -177,7 +178,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw new BusinessException(Constants.PUBLISH_ARTICLE);
+            throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.PUBLISH_ARTICLE);
         }
     }
 
@@ -188,10 +189,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 查询文章所属用户ID
         Article dbArticle = articleMapper.selectById(id);
         if (dbArticle == null) {
-            throw new BusinessException(Constants.UNDEFINED_ARTICLE);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
         }
         if (dbArticle.getStatus() != 1) {
-            throw new BusinessException(Constants.UNPUBLISH_ADD_VIEW);
+            throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.UNPUBLISH_ADD_VIEW);
         }
         // 获取当前的文章的修改日期
         LocalDateTime updateAt = dbArticle.getUpdateAt();
@@ -203,7 +204,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw new BusinessException(Constants.ADD_VIEW_ARTICLE);
+            throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.ADD_VIEW_ARTICLE);
         }
     }
 

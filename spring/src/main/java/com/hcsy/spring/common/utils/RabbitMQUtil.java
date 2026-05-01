@@ -31,7 +31,7 @@ public class RabbitMQUtil {
             logger.info(Constants.MSG_SEND_SUCCESS, queueName, jsonMessage);
         } catch (Exception e) {
             logger.error(Constants.MSG_SEND_FAIL + e.getMessage());
-            throw new BusinessException(Constants.MSG_SEND_FAIL + queueName);
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.MSG_SEND_FAIL + queueName);
         }
     }
 
@@ -45,7 +45,7 @@ public class RabbitMQUtil {
             logger.info(Constants.EXCHANGE_SEND_SUCCESS, exchange, routingKey, jsonMessage);
         } catch (Exception e) {
             logger.error(Constants.EXCHANGE_SEND_FAIL + e.getMessage());
-            throw new BusinessException(Constants.EXCHANGE_SEND_FAIL + exchange);
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.EXCHANGE_SEND_FAIL + exchange);
         }
     }
 
@@ -57,7 +57,7 @@ public class RabbitMQUtil {
             return objectMapper.readValue(jsonMessage, targetClass);
         } catch (Exception e) {
             logger.error(Constants.TRANSFORM_MSG_FAIL, e.getMessage(), e);
-            throw new BusinessException(Constants.TRANSFORM_MSG_FAIL);
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.TRANSFORM_MSG_FAIL);
         }
     }
 }

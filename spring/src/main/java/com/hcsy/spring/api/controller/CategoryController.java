@@ -19,6 +19,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequirePermission;
@@ -179,7 +180,7 @@ public class CategoryController {
     public Result getCategoryById(@PathVariable Long id) {
         CategoryVO vo = categoryService.getCategoryById(id);
         if (vo == null) {
-            return Result.error(Constants.UNDEFINED_CATEGORY);
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORY);
         }
         return Result.success(vo);
     }

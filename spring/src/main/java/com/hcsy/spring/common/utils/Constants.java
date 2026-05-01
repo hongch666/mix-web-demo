@@ -1101,7 +1101,50 @@ public class Constants {
      */
     public static String INTERNAL_TOKEN_VALIDATE_METHOD = "内部服务令牌验证成功，方法: ";
 
-    // dotenv 加载器相关常量
+    /**
+     * FastAPI服务调用降级提示
+     */
+    public static String FASTAPI_CALL_DEGRADED = "FastAPI 服务调用触发降级: ";
+
+    /**
+     * FastAPI服务不可用降级提示
+     */
+    public static String FASTAPI_SERVICE_UNAVAILABLE = "FastAPI 服务暂时不可用，已触发降级";
+
+    /**
+     * 向量同步服务不可用降级提示
+     */
+    public static String VECTOR_SYNC_SERVICE_UNAVAILABLE = "向量同步服务暂时不可用，已触发降级";
+
+    /**
+     * 分析缓存清理服务不可用降级提示
+     */
+    public static String ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE = "分析缓存清理服务暂时不可用，已触发降级";
+
+    /**
+     * GoZero服务调用降级提示
+     */
+    public static String GOZERO_SERVICE_UNAVAILABLE = "GoZero 服务调用触发降级: ";
+
+    /**
+     * GoZero服务不可用降级提示
+     */
+    public static String GOZERO_SERVICE_UNAVAILABLE_DEGRADE = "GoZero 服务暂时不可用，已触发降级";
+
+    /**
+     * ES服务不可以降级提示
+     */
+    public static String ES_SERVICE_UNAVAILABLE = "ES 同步服务暂时不可用，已触发降级";
+
+    /**
+     * NestJS服务调用降级提示
+     */
+    public static String NESTJS_SERVICE_UNAVAILABLE = "NestJS 服务调用触发降级: ";
+
+    /**
+     * NestJS服务不可用降级提示
+     */
+    public static String NESTJS_SERVICE_UNAVAILABLE_DEGRADE = "NestJS 服务暂时不可用，已触发降级";
 
     /**
      * .env文件不存在提示信息

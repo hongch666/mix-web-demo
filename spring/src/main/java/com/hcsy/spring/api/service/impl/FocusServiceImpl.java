@@ -17,6 +17,7 @@ import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.FocusService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
@@ -83,7 +84,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
                     User user = userMapper.selectById(focus.getFocusId());
 
                     if (user == null) {
-                        throw new BusinessException(Constants.UNDEFINED_USER);
+                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
                     }
                     FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                     vo.setFocusedTime(focus.getCreatedTime());
@@ -112,7 +113,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
                     User user = userMapper.selectById(focus.getUserId());
 
                     if (user == null) {
-                        throw new BusinessException(Constants.UNDEFINED_USER);
+                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
                     }
                     FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                     vo.setFocusedTime(focus.getCreatedTime());

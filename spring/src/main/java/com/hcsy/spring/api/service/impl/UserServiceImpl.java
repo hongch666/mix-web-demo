@@ -19,6 +19,7 @@ import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
@@ -109,7 +110,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void deleteUserAndStatusById(Long id) {
         User existing = userMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(Constants.UNDEFINED_USER);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
         }
         userMapper.deleteById(id);
         redisUtil.delete("user:status:" + id);
@@ -132,7 +133,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         List<User> existingList = userMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_USERS);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USERS);
         }
 
         userMapper.deleteBatchIds(ids);
@@ -165,7 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         User user = findByUsername(loginDTO.getName());
         if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
-            throw new BusinessException(Constants.LOGIN);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.LOGIN);
         }
 
         UserLoginVO loginVO = buildLoginVO(user);
@@ -178,12 +179,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         validateLoginCaptcha(emailLoginDTO.getCaptchaId(), emailLoginDTO.getCaptchaText());
 
         if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
-            throw new BusinessException(Constants.VERIFY_CODE);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
         }
 
         User user = findByEmail(emailLoginDTO.getEmail());
         if (user == null) {
-            throw new BusinessException(Constants.UNDEFINED_USER_REGISTER);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER_REGISTER);
         }
 
         UserLoginVO loginVO = buildLoginVO(user);
@@ -195,11 +196,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void registerUser(UserRegisterDTO registerDTO) {
         User existingUser = findByEmail(registerDTO.getEmail());
         if (existingUser != null) {
-            throw new BusinessException(Constants.EMAIL_REGISTER);
+            throw new BusinessException(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
         }
 
         if (!emailVerificationService.verifyCode(registerDTO.getEmail(), registerDTO.getVerificationCode())) {
-            throw new BusinessException(Constants.VERIFY_CODE);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
         }
 
         User user = BeanUtil.copyProperties(registerDTO, User.class);
@@ -301,7 +302,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private void validateLoginCaptcha(String captchaId, String captchaText) {
         if (!imageCaptchaService.verifyCaptcha(captchaId, captchaText)) {
-            throw new BusinessException(Constants.IMAGE_CAPTCHA_INVALID);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.IMAGE_CAPTCHA_INVALID);
         }
     }
 }

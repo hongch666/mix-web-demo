@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -26,7 +27,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public Result handleBusinessException(BusinessException ex) {
         logger.error(Constants.BUSINESS_EXCEPTION + ex.getMessage(), ex);
-        return Result.error(ex.getErrorMessage());
+        return Result.error(ex.getHttpStatus(), ex.getErrorMessage());
     }
 
     /**
@@ -37,7 +38,7 @@ public class GlobalExceptionHandler {
     public Result handleValidationException(Exception ex) {
         String message = extractValidationMessage(ex);
         logger.error(Constants.SYSTEM_EXCEPTION + message, ex);
-        return Result.error(message);
+        return Result.error(HttpCode.BAD_REQUEST, message);
     }
 
     /**
@@ -46,7 +47,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Result handleException(Exception ex) {
         logger.error(Constants.SYSTEM_EXCEPTION + ex.getMessage(), ex);
-        return Result.error(Constants.SYSTEM_EXCEPTION_BACK);
+        return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.SYSTEM_EXCEPTION_BACK);
     }
 
     private String extractValidationMessage(Exception ex) {

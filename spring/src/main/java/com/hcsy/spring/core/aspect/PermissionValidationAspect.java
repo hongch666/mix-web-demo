@@ -19,6 +19,7 @@ import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.RequirePermission;
@@ -69,11 +70,11 @@ public class PermissionValidationAspect {
             if (requirePermission.allowSelf()) {
                 // 允许个人操作自己的数据
                 if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                    throw new BusinessException(Constants.NO_PERMISION);
+                    throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
                 }
             } else {
                 // 不允许操作自己，仅管理员能执行（权限已在步骤2检查）
-                throw new BusinessException(Constants.NO_PERMISION);
+                throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
             }
 
             return joinPoint.proceed();
@@ -233,13 +234,13 @@ public class PermissionValidationAspect {
                             Long commentId = Long.parseLong(idStr);
                             Comments comment = commentsService.getById(commentId);
                             if (comment == null) {
-                                throw new BusinessException(Constants.COMMENT_ID + commentId);
+                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_ID + commentId);
                             }
                             if (comment.getUserId() == null) {
-                                throw new BusinessException(Constants.COMMENT_NO_USER + commentId);
+                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_NO_USER + commentId);
                             }
                             if (commentUserId != null && !commentUserId.equals(comment.getUserId())) {
-                                throw new BusinessException(Constants.COMMENT_MULTI_USER);
+                                throw new BusinessException(HttpCode.BAD_REQUEST, Constants.COMMENT_MULTI_USER);
                             }
                             commentUserId = comment.getUserId();
                         }
@@ -253,13 +254,13 @@ public class PermissionValidationAspect {
                             Long articleId = Long.parseLong(idStr);
                             Article article = articleService.getById(articleId);
                             if (article == null) {
-                                throw new BusinessException(Constants.ARTICLE_ID + articleId);
+                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.ARTICLE_ID + articleId);
                             }
                             if (article.getUserId() == null) {
-                                throw new BusinessException(Constants.ARTICLE_NO_USER + articleId);
+                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.ARTICLE_NO_USER + articleId);
                             }
                             if (commentUserId != null && !commentUserId.equals(article.getUserId())) {
-                                throw new BusinessException(Constants.ARTICLE_MULTI_USER);
+                                throw new BusinessException(HttpCode.BAD_REQUEST, Constants.ARTICLE_MULTI_USER);
                             }
                             commentUserId = article.getUserId();
                         }

@@ -10,6 +10,7 @@ import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.CategoryReferenceService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.entity.dto.CategoryReferenceCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryReferenceUpdateDTO;
 import com.hcsy.spring.entity.po.CategoryReference;
@@ -33,30 +34,30 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         // 校验子分类是否存在
         SubCategory subCategory = subCategoryMapper.selectById(dto.getSubCategoryId());
         if (subCategory == null) {
-            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY);
         }
 
         // 校验一个子分类只能有一个参考文本
         CategoryReference existing = categoryReferenceMapper.selectOne(
                 new QueryWrapper<CategoryReference>().eq("sub_category_id", dto.getSubCategoryId()));
         if (existing != null) {
-            throw new BusinessException(Constants.REFERENCE_EXIST);
+            throw new BusinessException(HttpCode.CONFLICT, Constants.REFERENCE_EXIST);
         }
 
         // 验证PDF链接后缀
         if ("pdf".equals(dto.getType())) {
             if (dto.getPdf() == null || dto.getPdf().isEmpty()) {
-                throw new BusinessException(Constants.PDF_EMPTY);
+                throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.PDF_EMPTY);
             }
             if (!dto.getPdf().toLowerCase().endsWith(".pdf")) {
-                throw new BusinessException(Constants.PDF_TAIL);
+                throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.PDF_TAIL);
             }
         }
 
         // 验证link链接
         if ("link".equals(dto.getType())) {
             if (dto.getLink() == null || dto.getLink().isEmpty()) {
-                throw new BusinessException(Constants.LINK_EMPTY);
+                throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.LINK_EMPTY);
             }
         }
 
@@ -80,30 +81,30 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         // 校验子分类是否存在
         SubCategory subCategory = subCategoryMapper.selectById(dto.getSubCategoryId());
         if (subCategory == null) {
-            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY);
         }
 
         // 根据子分类ID查询参考文本
         CategoryReference reference = categoryReferenceMapper.selectOne(
                 new QueryWrapper<CategoryReference>().eq("sub_category_id", dto.getSubCategoryId()));
         if (reference == null) {
-            throw new BusinessException(Constants.REFERENCE_EXIST);
+            throw new BusinessException(HttpCode.CONFLICT, Constants.REFERENCE_EXIST);
         }
 
         // 验证PDF链接后缀
         if ("pdf".equals(dto.getType())) {
             if (dto.getPdf() == null || dto.getPdf().isEmpty()) {
-                throw new BusinessException(Constants.PDF_EMPTY);
+                throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.PDF_EMPTY);
             }
             if (!dto.getPdf().toLowerCase().endsWith(".pdf")) {
-                throw new BusinessException(Constants.PDF_TAIL);
+                throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.PDF_TAIL);
             }
         }
 
         // 验证link链接
         if ("link".equals(dto.getType())) {
             if (dto.getLink() == null || dto.getLink().isEmpty()) {
-                throw new BusinessException(Constants.LINK_EMPTY);
+                throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.LINK_EMPTY);
             }
         }
 
@@ -129,7 +130,7 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         if (reference != null) {
             categoryReferenceMapper.deleteById(reference.getId());
         } else {
-            throw new BusinessException(Constants.REFERENCE_EXIST);
+            throw new BusinessException(HttpCode.CONFLICT, Constants.REFERENCE_EXIST);
         }
     }
 

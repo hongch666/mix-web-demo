@@ -9,6 +9,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
@@ -43,7 +44,7 @@ public class InternalTokenAspect {
 
         if (internalToken == null || internalToken.isEmpty()) {
             logger.error(Constants.INTERNAL_TOKEN_MISSING);
-            throw new BusinessException(Constants.INTERNAL_TOKEN_MISSING);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.INTERNAL_TOKEN_MISSING);
         }
 
         try {
@@ -57,7 +58,7 @@ public class InternalTokenAspect {
                 if (!requiredServiceName.equals(tokenServiceName)) {
                     logger.error(Constants.SERVICE_NAME_MISMATCH + ". 期望: " + requiredServiceName + ", 获得: "
                             + tokenServiceName);
-                    throw new BusinessException(Constants.SERVICE_NAME_MISMATCH);
+                    throw new BusinessException(HttpCode.FORBIDDEN, Constants.SERVICE_NAME_MISMATCH);
                 }
             }
 
@@ -69,7 +70,7 @@ public class InternalTokenAspect {
             throw e;
         } catch (Exception e) {
             logger.error(Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
-            throw new BusinessException(Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
         }
     }
 
@@ -90,7 +91,7 @@ public class InternalTokenAspect {
     private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
-            throw new BusinessException(Constants.CANNOT_GET_HTTP_REQUEST);
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.CANNOT_GET_HTTP_REQUEST);
         }
         return attributes.getRequest();
     }

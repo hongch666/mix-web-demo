@@ -18,6 +18,7 @@ import com.hcsy.spring.api.service.CategoryCacheService;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -72,7 +73,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public void deleteCategory(Long id) {
         Category existing = categoryMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(Constants.UNDEFINED_CATEGORY);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORY);
         }
         // 先删子分类
         subCategoryMapper.delete(new QueryWrapper<SubCategory>().eq("category_id", id));
@@ -100,7 +101,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (categoryMapper.selectBatchIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_CATEGORIES);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORIES);
         }
 
         // 不通过Mapper的删除, 通过service的删除, 可以批量删除分类对应的子分类
@@ -147,7 +148,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     public void deleteSubCategory(Long id) {
         SubCategory existing = subCategoryMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORY);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY);
         }
         subCategoryMapper.deleteById(id);
     }
@@ -172,7 +173,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (subCategoryMapper.selectBatchIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(Constants.UNDEFINED_SUB_CATEGORIES);
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORIES);
         }
 
         subCategoryMapper.deleteBatchIds(ids);

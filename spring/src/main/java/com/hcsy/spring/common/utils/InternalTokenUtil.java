@@ -32,7 +32,7 @@ public class InternalTokenUtil {
     @PostConstruct
     public void initKey() {
         if (internalTokenProperties.getSecret() == null || internalTokenProperties.getSecret().isEmpty()) {
-            throw new BusinessException(Constants.INTERNAL_TOKEN_NOT_NULL);
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.INTERNAL_TOKEN_NOT_NULL);
         }
         key = Keys.hmacShaKeyFor(internalTokenProperties.getSecret().getBytes(StandardCharsets.UTF_8));
         log.info(Constants.INTERNAL_TOKEN_INIT);
@@ -71,10 +71,10 @@ public class InternalTokenUtil {
             return true;
         } catch (ExpiredJwtException e) {
             logger.warning(Constants.INTERNAL_TOKEN_EXPIRED);
-            throw new BusinessException(Constants.INTERNAL_TOKEN_EXPIRED);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.INTERNAL_TOKEN_EXPIRED);
         } catch (JwtException | IllegalArgumentException e) {
             logger.warning(Constants.INTERNAL_TOKEN_INVALID + e.getMessage());
-            throw new BusinessException(Constants.INTERNAL_TOKEN_INVALID);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.INTERNAL_TOKEN_INVALID);
         }
     }
 

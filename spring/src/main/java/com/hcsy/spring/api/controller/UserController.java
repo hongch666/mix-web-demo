@@ -25,6 +25,7 @@ import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
@@ -152,7 +153,7 @@ public class UserController {
     public Result getUserById(@PathVariable Long id) {
         User user = userService.getById(id);
         if (user == null) {
-            return Result.error(Constants.UNDEFINED_USER);
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
         }
 
         // 转换为 UserVO
@@ -178,7 +179,7 @@ public class UserController {
         // 获取原用户信息
         User existingUser = userService.getById(userDto.getId());
         if (existingUser == null) {
-            return Result.error(Constants.UNDEFINED_USER);
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
         }
 
         User user = BeanUtil.copyProperties(userDto, User.class);
@@ -217,7 +218,7 @@ public class UserController {
             return Result.success(captchaVO);
         } catch (Exception e) {
             logger.error(Constants.IMAGE_CAPTCHA_GET_FAIL + e.getMessage());
-            return Result.error(Constants.IMAGE_CAPTCHA_GET_FAIL);
+            return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.IMAGE_CAPTCHA_GET_FAIL);
         }
     }
 
@@ -229,10 +230,10 @@ public class UserController {
             UserLoginVO loginVO = userService.login(loginDTO);
             return Result.success(loginVO);
         } catch (BusinessException e) {
-            return Result.error(e.getErrorMessage());
+            return Result.error(e.getHttpStatus(), e.getErrorMessage());
         } catch (Exception e) {
             logger.error(Constants.LOGIN + e.getMessage());
-            return Result.error(Constants.LOGIN);
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.LOGIN);
         }
     }
 
@@ -244,10 +245,10 @@ public class UserController {
             UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
             return Result.success(loginVO);
         } catch (BusinessException e) {
-            return Result.error(e.getErrorMessage());
+            return Result.error(e.getHttpStatus(), e.getErrorMessage());
         } catch (Exception e) {
             logger.error(Constants.EMAIL_LOGIN + e.getMessage());
-            return Result.error(Constants.EMAIL_LOGIN);
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.EMAIL_LOGIN);
         }
     }
 
@@ -263,7 +264,7 @@ public class UserController {
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.LOGOUT + e.getMessage());
-            return Result.error(Constants.LOGOUT);
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.LOGOUT);
         }
     }
 
@@ -280,7 +281,7 @@ public class UserController {
             // 验证用户是否存在
             User user = userService.getById(userId);
             if (user == null) {
-                return Result.error(Constants.UNDEFINED_USER);
+                return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
             }
 
             // 执行下线操作
@@ -288,7 +289,7 @@ public class UserController {
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.FORCE_LOGOUT + e.getMessage());
-            return Result.error(Constants.FORCE_LOGOUT);
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.FORCE_LOGOUT);
         }
     }
 
@@ -302,7 +303,7 @@ public class UserController {
             Long userId = UserContext.getUserId();
 
             if (token == null || userId == null) {
-                return Result.error(Constants.GET_USER_TOKEN_ID);
+                return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
             }
 
             int removed = tokenService.removeOtherTokens(userId, token);
@@ -316,7 +317,7 @@ public class UserController {
             return Result.success(vo);
         } catch (Exception e) {
             logger.error(Constants.KICK_FAIL + e.getMessage());
-            return Result.error(Constants.KICK_FAIL);
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.KICK_FAIL);
         }
     }
 
@@ -331,10 +332,10 @@ public class UserController {
             userService.registerUser(registerDto);
             return Result.success();
         } catch (BusinessException e) {
-            return Result.error(e.getErrorMessage());
+            return Result.error(e.getHttpStatus(), e.getErrorMessage());
         } catch (Exception e) {
             logger.error(Constants.EMAIL_REGISTER + e.getMessage());
-            return Result.error(Constants.EMAIL_REGISTER);
+            return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
         }
     }
 
@@ -346,7 +347,7 @@ public class UserController {
         try {
             // 1. 验证邮箱格式
             if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                return Result.error(Constants.EMAIL);
+                return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.EMAIL);
             }
 
             // 2. 根据类型验证邮箱状态
@@ -355,15 +356,15 @@ public class UserController {
             if ("register".equals(type)) {
                 // 注册场景：邮箱不能已被注册
                 if (existingUser != null) {
-                    return Result.error(Constants.EMAIL_REGISTER);
+                    return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
                 }
             } else if ("login".equals(type) || "reset".equals(type)) {
                 // 登录场景/重置密码场景：邮箱必须已被注册
                 if (existingUser == null) {
-                    return Result.error(Constants.EMAIL_UNREGISTER);
+                    return Result.error(HttpCode.NOT_FOUND, Constants.EMAIL_UNREGISTER);
                 }
             } else {
-                return Result.error(Constants.VERIFY_CODE_UNSUPPORT);
+                return Result.error(HttpCode.BAD_REQUEST, Constants.VERIFY_CODE_UNSUPPORT);
             }
 
             // 3. 发送验证码
@@ -372,7 +373,7 @@ public class UserController {
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.SEND_VERIFY_CODE + e.getMessage());
-            return Result.error(Constants.SEND_VERIFY_CODE);
+            return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.SEND_VERIFY_CODE);
         }
     }
 
@@ -384,13 +385,13 @@ public class UserController {
             // 1. 验证邮箱验证码
             if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
                     resetPasswordDTO.getVerificationCode())) {
-                return Result.error(Constants.VERIFY_CODE);
+                return Result.error(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
             }
 
             // 2. 查询用户是否存在
             User user = userService.findByEmail(resetPasswordDTO.getEmail());
             if (user == null) {
-                return Result.error(Constants.UNDEFINED_USER);
+                return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
             }
 
             // 3. 加密新密码后更新
@@ -400,7 +401,7 @@ public class UserController {
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.PASSWORD_RESET + e.getMessage());
-            return Result.error(Constants.PASSWORD_RESET);
+            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_RESET);
         }
     }
 
@@ -414,7 +415,7 @@ public class UserController {
             List<User> allUsers = userService.list();
 
             if (allUsers == null || allUsers.isEmpty()) {
-                return Result.error(Constants.PASSWORD_NO_USER);
+                return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_NO_USER);
             }
 
             final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
@@ -424,7 +425,7 @@ public class UserController {
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.PASSWORD_RESET_ALL + e.getMessage());
-            return Result.error(Constants.PASSWORD_RESET_ALL);
+            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_RESET_ALL);
         }
     }
 
@@ -438,7 +439,7 @@ public class UserController {
             // 查询用户是否存在
             User user = userService.getById(userId);
             if (user == null) {
-                return Result.error(Constants.UNDEFINED_USER);
+                return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
             }
 
             final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
@@ -448,7 +449,7 @@ public class UserController {
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.PASSWORD_RESET_USER + e.getMessage());
-            return Result.error(Constants.PASSWORD_RESET_USER);
+            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_RESET_USER);
         }
     }
 }
