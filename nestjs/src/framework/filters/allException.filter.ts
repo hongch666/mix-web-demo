@@ -49,6 +49,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
       `[${request.method}] ${request.url} - [${errorIdentifier}] ${exception instanceof BusinessException ? message : exception?.message || Constants.ERROR_DEFAULT_MSG} - ${exception.stack}`,
     );
 
-    response.status(httpStatus).send(error(httpStatus, message, errorIdentifier));
+    response.status(httpStatus).send(error(httpStatus, message));
   }
 }
