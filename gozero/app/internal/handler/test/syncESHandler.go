@@ -6,6 +6,7 @@ package test
 import (
 	"net/http"
 
+	
 	"app/common/utils"
 	"app/internal/logic/test"
 	"app/internal/middleware"
@@ -20,14 +21,14 @@ func SyncESHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var req types.SyncESReq
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, err.Error())
+			utils.Error(w, utils.HttpBadRequest, err.Error())
 			return
 		}
 
 		l := test.NewSyncESLogic(r.Context(), svcCtx)
 		resp, err := l.SyncES(&req)
 		if err != nil {
-			utils.Error(w, err.Error())
+			utils.HandleError(w, err)
 		} else {
 			utils.Success(w, resp)
 		}

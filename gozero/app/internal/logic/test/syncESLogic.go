@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"app/common/exceptions"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/task/logic"
@@ -35,7 +36,7 @@ func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err 
 	// 调用实际的ES同步逻辑
 	if err = logic.SyncArticlesToES(l.ctx, l.svcCtx); err != nil {
 		l.Error(fmt.Sprintf("%s: %v", utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
-		return nil, err
+		return nil, exceptions.NewInternalServerError(utils.TASK_SYNC_ES_FAILED_MESSAGE, err.Error())
 	}
 
 	l.Info(utils.TASK_SYNC_ES_COMPLETED_MESSAGE)

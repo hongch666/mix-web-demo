@@ -39,7 +39,7 @@ func (l *TestNestJSLogic) TestNestJS() (resp *types.TestNestJSResp, err error) {
 	result, err := sd.CallService(l.ctx, "nestjs", "/api_nestjs/nestjs", opts)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
-		panic(exceptions.NewBusinessError(utils.PARSE_ERR, err.Error()))
+		panic(exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error()))
 	}
 
 	resultData := result.Data.(string)

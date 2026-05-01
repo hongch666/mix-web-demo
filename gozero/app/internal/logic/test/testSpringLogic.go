@@ -39,7 +39,7 @@ func (l *TestSpringLogic) TestSpring() (resp *types.TestSpringResp, err error) {
 	result, err := sd.CallService(l.ctx, "spring", "/api_spring/spring", opts)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
-		panic(exceptions.NewBusinessError(utils.PARSE_ERR, err.Error()))
+		panic(exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error()))
 	}
 
 	resultData := result.Data.(string)

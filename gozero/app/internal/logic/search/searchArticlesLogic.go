@@ -78,7 +78,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.SEARCH_EXECUTION_ERROR+": %v", err))
-		panic(exceptions.NewBusinessError(utils.SEARCH_EXECUTION_ERROR, err.Error()))
+		panic(exceptions.NewInternalServerError(utils.SEARCH_EXECUTION_ERROR, err.Error()))
 	}
 
 	// 转换为ArticleEsItem

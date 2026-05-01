@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"app/common/hub"
+	
 	"app/common/utils"
 	"app/internal/middleware"
 	"app/internal/svc"
@@ -25,7 +26,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 
 		if userID == "" {
 			svcCtx.Logger.Error(utils.USER_ID_LESS)
-			utils.Error(w, utils.USER_ID_LESS)
+			utils.Error(w, utils.HttpBadRequest, utils.USER_ID_LESS)
 			return
 		}
 

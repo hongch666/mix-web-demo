@@ -210,7 +210,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	if result.Code != 1 {
+	if result.Code < 200 || result.Code >= 300 {
 		errorMsg := fmt.Sprintf(utils.SERVICE_CALL_FAILED, result.Msg)
 		return Result{}, errors.New(errorMsg)
 	}

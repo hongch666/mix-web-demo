@@ -17,7 +17,7 @@ func TestSpringHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l := test.NewTestSpringLogic(r.Context(), svcCtx)
 		resp, err := l.TestSpring()
 		if err != nil {
-			utils.Error(w, err.Error())
+			utils.HandleError(w, err)
 		} else {
 			utils.Success(w, resp.Data)
 		}

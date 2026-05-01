@@ -18,7 +18,7 @@ func TestFastAPIHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l := test.NewTestFastAPILogic(r.Context(), svcCtx)
 		resp, err := l.TestFastAPI()
 		if err != nil {
-			utils.Error(w, err.Error())
+			utils.HandleError(w, err)
 		} else {
 			utils.Success(w, resp.Data)
 		}

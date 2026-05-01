@@ -30,7 +30,7 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 		authHeader := r.Header.Get(InternalTokenHeader)
 		if authHeader == "" {
 			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
-			utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
+			utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_MISSING)
 			return
 		}
 
@@ -42,7 +42,7 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 
 		if tokenString == "" {
 			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EMPTY_LOG, r.URL.Path))
-			utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
+			utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_MISSING)
 			return
 		}
 
@@ -51,14 +51,14 @@ func (m *InternalServiceMiddleware) Handle(next http.HandlerFunc) http.HandlerFu
 		claims, err := tokenUtil.ValidateInternalToken(tokenString)
 		if err != nil {
 			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
-			utils.Error(w, utils.INTERNAL_TOKEN_INVALID)
+			utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_INVALID)
 			return
 		}
 
 		// 检查令牌是否过期
 		if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
 			m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EXPIRED_LOG, r.URL.Path))
-			utils.Error(w, utils.INTERNAL_TOKEN_EXPIRED)
+			utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_EXPIRED)
 			return
 		}
 
@@ -77,7 +77,7 @@ func NewInternalTokenMiddleware(log *utils.ZeroLogger, serviceName string) func(
 			authHeader := r.Header.Get(InternalTokenHeader)
 			if authHeader == "" {
 				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
-				utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
+				utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_MISSING)
 				return
 			}
 
@@ -89,7 +89,7 @@ func NewInternalTokenMiddleware(log *utils.ZeroLogger, serviceName string) func(
 
 			if tokenString == "" {
 				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EMPTY_LOG, r.URL.Path))
-				utils.Error(w, utils.INTERNAL_TOKEN_MISSING)
+				utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_MISSING)
 				return
 			}
 
@@ -98,21 +98,21 @@ func NewInternalTokenMiddleware(log *utils.ZeroLogger, serviceName string) func(
 			claims, err := tokenUtil.ValidateInternalToken(tokenString)
 			if err != nil {
 				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
-				utils.Error(w, utils.INTERNAL_TOKEN_INVALID)
+				utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_INVALID)
 				return
 			}
 
 			// 检查令牌是否过期
 			if claims.ExpiresAt != nil && claims.ExpiresAt.Before(time.Now()) {
 				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_EXPIRED_LOG, r.URL.Path))
-				utils.Error(w, utils.INTERNAL_TOKEN_EXPIRED)
+				utils.Error(w, utils.HttpUnauthorized, utils.INTERNAL_TOKEN_EXPIRED)
 				return
 			}
 
 			// 验证服务名称（如果指定了）
 			if serviceName != "" && claims.ServiceName != serviceName {
 				m.Error(fmt.Sprintf(utils.INTERNAL_TOKEN_SERVICE_MISMATCH_LOG, serviceName, claims.ServiceName, r.URL.Path))
-				utils.Error(w, utils.SERVICE_NAME_MISMATCH)
+				utils.Error(w, utils.HttpForbidden, utils.SERVICE_NAME_MISMATCH)
 				return
 			}
 

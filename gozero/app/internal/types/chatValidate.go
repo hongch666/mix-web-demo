@@ -1,11 +1,11 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
+	"app/common/exceptions"
 	"app/common/utils"
 )
 
@@ -21,7 +21,7 @@ func (r *ChatSendMessageReq) Validate() error {
 
 	r.Content = strings.TrimSpace(r.Content)
 	if r.Content == "" {
-		return errors.New(utils.CHAT_CONTENT_EMPTY_ERROR)
+		return exceptions.NewBadRequestErrorSame(utils.CHAT_CONTENT_EMPTY_ERROR)
 	}
 
 	return nil
@@ -38,11 +38,11 @@ func (r *ChatGetHistoryReq) Validate() error {
 	}
 
 	if r.Page <= 0 {
-		return errors.New(utils.CHAT_HISTORY_PAGE_GREATER_THAN_ZERO_ERROR)
+		return exceptions.NewBadRequestErrorSame(utils.CHAT_HISTORY_PAGE_GREATER_THAN_ZERO_ERROR)
 	}
 
 	if r.Size <= 0 {
-		return errors.New(utils.CHAT_HISTORY_SIZE_GREATER_THAN_ZERO_ERROR)
+		return exceptions.NewBadRequestErrorSame(utils.CHAT_HISTORY_SIZE_GREATER_THAN_ZERO_ERROR)
 	}
 
 	return nil
@@ -91,16 +91,16 @@ func (r *ChatLeaveQueueReq) Validate() error {
 func validatePositiveID(value string, fieldName string) error {
 	trimmedValue := strings.TrimSpace(value)
 	if trimmedValue == "" {
-		return errors.New(fmt.Sprintf(utils.FIELD_EMPTY_ERROR, fieldName))
+		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(utils.FIELD_EMPTY_ERROR, fieldName))
 	}
 
 	parsedValue, err := strconv.ParseInt(trimmedValue, 10, 64)
 	if err != nil {
-		return errors.New(fmt.Sprintf(utils.FIELD_POSITIVE_INT_ERROR, fieldName))
+		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(utils.FIELD_POSITIVE_INT_ERROR, fieldName))
 	}
 
 	if parsedValue <= 0 {
-		return errors.New(fmt.Sprintf(utils.FIELD_GREATER_THAN_ZERO_ERROR, fieldName))
+		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(utils.FIELD_GREATER_THAN_ZERO_ERROR, fieldName))
 	}
 
 	return nil

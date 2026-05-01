@@ -43,7 +43,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 
 	if err := l.svcCtx.ChatMessagesModel.CreateChatMessage(l.ctx, message); err != nil {
 		l.Error(fmt.Sprintf(utils.CREATE_MESSAGE_ERROR+": %v", err))
-		panic(exceptions.NewBusinessError(utils.CREATE_MESSAGE_ERROR, err.Error()))
+		panic(exceptions.NewInternalServerError(utils.CREATE_MESSAGE_ERROR, err.Error()))
 	}
 
 	l.Info(utils.CHAT_MESSAGE_SEND_SUCCESS)

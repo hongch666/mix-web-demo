@@ -18,7 +18,7 @@ func TestNestJSHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l := test.NewTestNestJSLogic(r.Context(), svcCtx)
 		resp, err := l.TestNestJS()
 		if err != nil {
-			utils.Error(w, err.Error())
+			utils.HandleError(w, err)
 		} else {
 			utils.Success(w, resp.Data)
 		}

@@ -18,7 +18,7 @@ func TestGoZeroHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		l := test.NewTestGoZeroLogic(r.Context(), svcCtx)
 		resp, err := l.TestGoZero()
 		if err != nil {
-			utils.Error(w, err.Error())
+			utils.HandleError(w, err)
 		} else {
 			utils.Success(w, resp.Data)
 		}
