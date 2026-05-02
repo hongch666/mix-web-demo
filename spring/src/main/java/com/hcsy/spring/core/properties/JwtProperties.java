@@ -8,7 +8,8 @@ import org.springframework.context.annotation.Configuration;
 public class JwtProperties {
 
     private String secret;
-    private long expiration;
+    private long accessExpiration;
+    private long refreshExpiration;
 
     public String getSecret() {
         return secret;
@@ -18,11 +19,19 @@ public class JwtProperties {
         this.secret = secret;
     }
 
-    public long getExpiration() {
-        return expiration;
+    public long getAccessExpiration() {
+        return accessExpiration;
     }
 
-    public void setExpiration(long expiration) {
-        this.expiration = expiration;
+    public void setAccessExpiration(long accessExpiration) {
+        this.accessExpiration = accessExpiration;
+    }
+
+    public long getRefreshExpiration() {
+        return refreshExpiration;
+    }
+
+    public void setRefreshExpiration(long refreshExpiration) {
+        this.refreshExpiration = refreshExpiration;
     }
 }

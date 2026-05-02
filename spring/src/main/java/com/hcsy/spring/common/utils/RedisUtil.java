@@ -2,6 +2,7 @@ package com.hcsy.spring.common.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -120,5 +121,56 @@ public class RedisUtil {
     @SuppressWarnings("null")
     public Set<String> getKeys(String pattern) {
         return redisTemplate.keys(pattern);
+    }
+
+    // ========== Hash 操作 ==========
+
+    @SuppressWarnings("null")
+    public void putHash(String key, String hashKey, String value) {
+        redisTemplate.opsForHash().put(key, hashKey, value);
+    }
+
+    @SuppressWarnings("null")
+    public String getHash(String key, String hashKey) {
+        Object value = redisTemplate.opsForHash().get(key, hashKey);
+        return value != null ? value.toString() : null;
+    }
+
+    @SuppressWarnings("null")
+    public Map<Object, Object> getHashEntries(String key) {
+        return redisTemplate.opsForHash().entries(key);
+    }
+
+    @SuppressWarnings("null")
+    public void deleteHash(String key, String... hashKeys) {
+        redisTemplate.opsForHash().delete(key, (Object[]) hashKeys);
+    }
+
+    @SuppressWarnings("null")
+    public boolean exists(String key) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    // ========== Set 操作 ==========
+
+    @SuppressWarnings("null")
+    public void addToSet(String key, String value) {
+        redisTemplate.opsForSet().add(key, value);
+    }
+
+    @SuppressWarnings("null")
+    public void removeFromSet(String key, String value) {
+        redisTemplate.opsForSet().remove(key, value);
+    }
+
+    @SuppressWarnings("null")
+    public Set<String> getSet(String key) {
+        return redisTemplate.opsForSet().members(key);
+    }
+
+    @SuppressWarnings("null")
+    public long getSetSize(String key) {
+        Long size = redisTemplate.opsForSet().size(key);
+        return size != null ? size : 0;
     }
 }

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class KickOtherDevicesVO {
 
-    private Long userId; // 用户ID
-    private Integer removedTokenCount; // 被清除的 token 数量
-    private Long onlineDeviceCount; // 剩余在线设备数
+    private Long userId;
+    private Integer removedSessionCount;
+    private Long onlineDeviceCount;
 }

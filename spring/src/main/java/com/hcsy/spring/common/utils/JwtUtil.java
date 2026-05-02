@@ -5,6 +5,7 @@ import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
@@ -31,7 +32,6 @@ public class JwtUtil {
 
     @PostConstruct
     public void initKey() {
-        // 增加空值检查
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
             throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.JWT_NOT_NULL);
         }
@@ -40,52 +40,84 @@ public class JwtUtil {
     }
 
     /**
-     * 生成包含用户ID和用户名的JWT
+     * 生成 access token
      */
-    public String generateToken(Long userId, String username) {
+    public String generateAccessToken(Long userId, String username, String sessionId) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId); // 用户ID
-        claims.put("username", username); // 用户名
+        claims.put("userId", userId);
+        claims.put("username", username);
+        claims.put("sessionId", sessionId);
+        claims.put("tokenType", "access");
 
-        return Jwts
-            .builder()
+        return Jwts.builder()
             .setClaims(claims)
-            .setSubject(username) // 主题设为用户名
+            .setSubject(username)
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
+            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessExpiration()))
             .signWith(key, SignatureAlgorithm.HS256)
             .compact();
     }
 
     /**
-     * 从Token中提取用户名
+     * 生成 refresh token
      */
+    public String generateRefreshToken(Long userId, String username, String sessionId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("username", username);
+        claims.put("sessionId", sessionId);
+        claims.put("tokenType", "refresh");
+
+        return Jwts.builder()
+            .setClaims(claims)
+            .setSubject(username)
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
+            .signWith(key, SignatureAlgorithm.HS256)
+            .compact();
+    }
+
+    /**
+     * 生成 sessionId
+     */
+    public String generateSessionId() {
+        return UUID.randomUUID().toString();
+    }
+
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    /**
-     * 从Token中提取用户ID
-     */
     public Long extractUserId(String token) {
         return getClaims(token).get("userId", Long.class);
     }
 
+    public String extractSessionId(String token) {
+        return getClaims(token).get("sessionId", String.class);
+    }
+
+    public String extractTokenType(String token) {
+        return getClaims(token).get("tokenType", String.class);
+    }
+
     /**
-     * 验证Token有效性
+     * 校验 access token：签名、过期时间、tokenType
      */
-    public boolean validateToken(String token) {
+    public boolean validateAccessToken(String token) {
         try {
-            Jwts
-                .parserBuilder()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token);
+            Claims claims = getClaims(token);
+            String tokenType = claims.get("tokenType", String.class);
+            if (!"access".equals(tokenType)) {
+                logger.warning(Constants.TOKEN_TYPE_INVALID);
+                throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_TYPE_INVALID);
+            }
             logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
             logger.warning(Constants.TOKEN_EXPIRED);
             throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_EXPIRED);
+        } catch (BusinessException e) {
+            throw e;
         } catch (JwtException | IllegalArgumentException e) {
             logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
             throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.UNUSED_TOKEN);
@@ -93,22 +125,71 @@ public class JwtUtil {
     }
 
     /**
-     * 私有方法：解析Token获取Claims
+     * 校验 refresh token：签名、过期时间、tokenType
      */
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = getClaims(token);
+            String tokenType = claims.get("tokenType", String.class);
+            if (!"refresh".equals(tokenType)) {
+                logger.warning(Constants.TOKEN_TYPE_INVALID);
+                throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_TYPE_INVALID);
+            }
+            logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
+            return true;
+        } catch (ExpiredJwtException e) {
+            logger.warning(Constants.TOKEN_EXPIRED);
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_EXPIRED);
+        } catch (BusinessException e) {
+            throw e;
+        } catch (JwtException | IllegalArgumentException e) {
+            logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.UNUSED_TOKEN);
+        }
+    }
+
     private Claims getClaims(String token) {
-        return Jwts
-            .parserBuilder()
+        return Jwts.parserBuilder()
             .setSigningKey(key)
             .build()
             .parseClaimsJws(token)
             .getBody();
     }
 
-    /**
-     * 获取Token剩余有效期（毫秒）
-     */
+    public long getAccessExpiration() {
+        return jwtProperties.getAccessExpiration();
+    }
+
+    public long getRefreshExpiration() {
+        return jwtProperties.getRefreshExpiration();
+    }
+
+    public long getAccessExpirationSeconds() {
+        return jwtProperties.getAccessExpiration() / 1000;
+    }
+
+    public long getRefreshExpirationSeconds() {
+        return jwtProperties.getRefreshExpiration() / 1000;
+    }
+
     public long getRemainingTime(String token) {
         Date expiration = getClaims(token).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();
+    }
+
+    /**
+     * 获取 access token 剩余秒数
+     */
+    public long getAccessRemainingSeconds(String token) {
+        long remainingMs = getRemainingTime(token);
+        return remainingMs > 0 ? remainingMs / 1000 : 0;
+    }
+
+    /**
+     * 获取 refresh token 剩余秒数
+     */
+    public long getRefreshRemainingSeconds(String token) {
+        long remainingMs = getRemainingTime(token);
+        return remainingMs > 0 ? remainingMs / 1000 : 0;
     }
 }

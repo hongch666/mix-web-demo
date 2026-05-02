@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserLoginVO {
+public class TokenRefreshVO {
     private String accessToken;
     private String refreshToken;
     private String tokenType;
@@ -18,5 +18,4 @@ public class UserLoginVO {
     private Long userId;
     private String username;
     private String sessionId;
-    private Long onlineDeviceCount;
 }

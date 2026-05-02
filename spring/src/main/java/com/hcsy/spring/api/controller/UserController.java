@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +35,7 @@ import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.RefreshTokenDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserQueryDTO;
@@ -44,6 +44,7 @@ import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ImageCaptchaVO;
 import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
+import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -252,19 +253,35 @@ public class UserController {
         }
     }
 
-    @PostMapping("/logout/{id}")
-    @Operation(summary = "用户登出", description = "用户登出，将 Token 从 Redis 移除")
+    @PostMapping("/logout")
+    @Operation(summary = "用户登出", description = "用户登出，从当前 access token 解析 session 并清除")
     @ApiLog("用户登出")
-    public Result logout(@PathVariable Long id, @RequestHeader("Authorization") String authHeader) {
+    public Result logout() {
         try {
-            // 从请求头中提取 Token（通常格式为 "Bearer token"）
-            String token = authHeader.replace("Bearer ", "");
-            // 从 Redis 移除 Token
-            tokenService.removeToken(id, token);
+            String accessToken = UserContext.getToken();
+            if (accessToken == null) {
+                return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
+            }
+            tokenService.removeSessionByAccessToken(accessToken);
             return Result.success();
         } catch (Exception e) {
             logger.error(Constants.LOGOUT + e.getMessage());
             return Result.error(HttpCode.UNAUTHORIZED, Constants.LOGOUT);
+        }
+    }
+
+    @PostMapping("/token/refresh")
+    @Operation(summary = "刷新 Token", description = "使用 refresh token 刷新 access token 和 refresh token，支持 token 轮换")
+    @ApiLog("刷新 Token")
+    public Result refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
+        try {
+            TokenRefreshVO tokenRefreshVO = tokenService.refreshToken(refreshTokenDTO.getRefreshToken());
+            return Result.success(tokenRefreshVO);
+        } catch (BusinessException e) {
+            return Result.error(e.getHttpStatus(), e.getErrorMessage());
+        } catch (Exception e) {
+            logger.error(Constants.REFRESH_TOKEN_INVALID + e.getMessage());
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.REFRESH_TOKEN_INVALID);
         }
     }
 
@@ -294,11 +311,10 @@ public class UserController {
     }
 
     @PostMapping("/kick-other-devices")
-    @Operation(summary = "踢出其他设备", description = "清除当前用户除本次请求携带的 token 之外的所有 token（保留当前 token）")
+    @Operation(summary = "踢出其他设备", description = "清除当前用户除本次请求携带的 access token 之外的所有 session（保留当前设备）")
     @ApiLog("踢出其他设备")
     public Result kickOtherDevices() {
         try {
-            // 从 ThreadLocal 中获取当前用户的 token 和 userId
             String token = UserContext.getToken();
             Long userId = UserContext.getUserId();
 
@@ -306,12 +322,12 @@ public class UserController {
                 return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
             }
 
-            int removed = tokenService.removeOtherTokens(userId, token);
+            int removed = tokenService.removeOtherSessions(userId, token);
             long remaining = tokenService.getUserOnlineDeviceCount(userId);
 
             KickOtherDevicesVO vo = KickOtherDevicesVO.builder()
                     .userId(userId)
-                    .removedTokenCount(removed)
+                    .removedSessionCount(removed)
                     .onlineDeviceCount(remaining)
                     .build();
             return Result.success(vo);

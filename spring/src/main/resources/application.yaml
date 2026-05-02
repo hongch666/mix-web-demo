@@ -77,7 +77,8 @@ logging:
     path: ${LOGGING_PATH:../logs/spring}
 jwt:
   secret: ${JWT_SECRET:}
-  expiration: ${JWT_EXPIRATION:86400000} # 毫秒数（1 天）
+  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000} # 毫秒数（默认1小时）
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 毫秒数（默认7天）
 internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000} # 毫秒数（60秒）

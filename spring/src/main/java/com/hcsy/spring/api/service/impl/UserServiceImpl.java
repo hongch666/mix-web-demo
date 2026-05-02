@@ -20,7 +20,6 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
-import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
@@ -41,7 +40,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisUtil redisUtil;
     private final TokenService tokenService;
     private final PasswordEncryptor passwordEncryptor;
-    private final JwtUtil jwtUtil;
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
 
@@ -169,7 +167,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.LOGIN);
         }
 
-        UserLoginVO loginVO = buildLoginVO(user);
+        UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
         imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId());
         return loginVO;
     }
@@ -187,7 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER_REGISTER);
         }
 
-        UserLoginVO loginVO = buildLoginVO(user);
+        UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
         imageCaptchaService.deleteCaptcha(emailLoginDTO.getCaptchaId());
         return loginVO;
     }
@@ -286,18 +284,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(User::getEmail, email);
         return this.getOne(queryWrapper);
-    }
-
-    private UserLoginVO buildLoginVO(User user) {
-        String token = jwtUtil.generateToken(user.getId(), user.getName());
-        tokenService.saveToken(user.getId(), token);
-
-        return UserLoginVO.builder()
-                .token(token)
-                .userId(user.getId())
-                .username(user.getName())
-                .onlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()))
-                .build();
     }
 
     private void validateLoginCaptcha(String captchaId, String captchaText) {

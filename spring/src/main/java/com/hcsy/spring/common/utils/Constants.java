@@ -847,6 +847,76 @@ public class Constants {
     public static String UNUSED_TOKEN = "无效的Token";
 
     /**
+     * Token 类型错误消息
+     */
+    public static String TOKEN_TYPE_INVALID = "Token类型错误，请使用正确的Token";
+
+    /**
+     * Refresh Token 无效或已过期消息
+     */
+    public static String REFRESH_TOKEN_INVALID = "Refresh Token 无效或已过期";
+
+    /**
+     * Refresh Token 刷新成功消息
+     */
+    public static String REFRESH_TOKEN_SUCCESS = "Token 刷新成功";
+
+    /**
+     * 会话不存在消息
+     */
+    public static String SESSION_NOT_FOUND = "登录会话不存在，请重新登录";
+
+    /**
+     * 创建登录会话日志
+     */
+    public static String LOGIN_SESSION_CREATED = "用户 %d 登录，创建会话 %s";
+
+    /**
+     * 移除登录会话日志
+     */
+    public static String LOGIN_SESSION_REMOVED = "用户 %d 登出，移除会话 %s";
+
+    /**
+     * 移除会话离线消息
+     */
+    public static String REMOVE_SESSION_LOGOUT = "用户 %d 没有其他登录会话，状态已设为离线";
+
+    /**
+     * 移除会话消息
+     */
+    public static String REMOVE_SESSION = "用户 %d 登出，还有 %d 个登录会话";
+
+    /**
+     * Token在Redis中不存在消息
+     */
+    public static String TOKEN_ACCESS_REDIS = "用户 %d 的 Access Token 不在 Redis 中，可能已被踢下线";
+
+    /**
+     * 管理员清理会话日志
+     */
+    public static String ADMIN_SESSION_CLEAN = "管理员已将用户 %d 下线，共清除 %d 个登录会话";
+
+    /**
+     * 定时任务无清理数据
+     */
+    public static String TASK_NO_CLEAN_SESSION = "定时任务：没有需要清理的 Session";
+
+    /**
+     * 清理过期 refresh token
+     */
+    public static String REMOVE_EXPIRED_REFRESH = "移除过期的 Refresh Token 关联的 Session: ";
+
+    /**
+     * Session清理日志
+     */
+    public static String SESSION_CLEAN_LOG = "用户 %s 清理了 %d 个 Session";
+
+    /**
+     * 总共清理Session统计
+     */
+    public static String TOTAL_SESSION_CLEAN = "定时任务：清理完成，扫描 %d 个用户，共清除 %d 个过期 Session";
+
+    /**
      * 日志配置初始化消息
      */
     public static String LOG_INIT = "日志配置初始化完成，路径: {}";

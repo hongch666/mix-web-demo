@@ -1,10 +1,10 @@
 package com.hcsy.spring.common.utils;
 
 public class UserContext {
-    // 使用 InheritableThreadLocal 支持父子线程传递
     private static final InheritableThreadLocal<Long> userIdHolder = new InheritableThreadLocal<>();
     private static final InheritableThreadLocal<String> usernameHolder = new InheritableThreadLocal<>();
     private static final InheritableThreadLocal<String> tokenHolder = new InheritableThreadLocal<>();
+    private static final InheritableThreadLocal<String> sessionIdHolder = new InheritableThreadLocal<>();
 
     public static void setUserId(Long userId) {
         userIdHolder.set(userId);
@@ -30,9 +30,18 @@ public class UserContext {
         return tokenHolder.get();
     }
 
+    public static void setSessionId(String sessionId) {
+        sessionIdHolder.set(sessionId);
+    }
+
+    public static String getSessionId() {
+        return sessionIdHolder.get();
+    }
+
     public static void clear() {
         userIdHolder.remove();
         usernameHolder.remove();
         tokenHolder.remove();
+        sessionIdHolder.remove();
     }
 }
