@@ -3,12 +3,17 @@
     {
       "name": "jwt.secret",
       "type": "java.lang.String",
-      "description": "A description for 'jwt.secret'"
+      "description": "JWT 签名密钥"
     },
     {
-      "name": "jwt.expiration",
+      "name": "jwt.access-expiration",
       "type": "java.lang.String",
-      "description": "A description for 'jwt.expiration'"
+      "description": "Access Token 过期时间（毫秒），默认 15 分钟"
+    },
+    {
+      "name": "jwt.refresh-expiration",
+      "type": "java.lang.String",
+      "description": "Refresh Token 过期时间（毫秒），默认 7 天"
     },
     {
       "name": "auth.exclude-paths",
@@ -100,6 +105,11 @@
       "name": "rate-limit.paths./users/captcha.message",
       "type": "java.lang.String",
       "description": "A description for 'rate-limit.paths./users/captcha.message'"
+    },
+    {
+      "name": "rate-limit.paths./users/token/refresh.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./users/token/refresh.message'"
     }
   ]
 }

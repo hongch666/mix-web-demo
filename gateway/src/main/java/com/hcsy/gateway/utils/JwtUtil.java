@@ -3,8 +3,6 @@ package com.hcsy.gateway.utils;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -16,7 +14,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 
@@ -38,57 +35,42 @@ public class JwtUtil {
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    /**
-     * 生成包含用户ID和用户名的JWT
-     */
-    public String generateToken(Long userId, String username) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId);
-        claims.put("username", username);
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpiration()))
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    /**
-     * 从Token中提取用户名
-     */
     public String extractUsername(String token) {
         return getClaims(token).getSubject();
     }
 
-    /**
-     * 从Token中提取用户ID
-     */
     public Long extractUserId(String token) {
         return getClaims(token).get("userId", Long.class);
     }
 
+    public String extractSessionId(String token) {
+        return getClaims(token).get("sessionId", String.class);
+    }
+
+    public String extractTokenType(String token) {
+        return getClaims(token).get("tokenType", String.class);
+    }
+
     /**
-     * 验证Token有效性
+     * 校验 access token：签名、过期时间、tokenType=access
      */
-    public boolean validateToken(String token) {
+    public boolean validateAccessToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token);
+            Claims claims = getClaims(token);
+            String tokenType = claims.get("tokenType", String.class);
+            if (!"access".equals(tokenType)) {
+                throw BusinessException.unauthorized("Token类型错误", Constants.TOKEN_TYPE_INVALID);
+            }
             return true;
         } catch (ExpiredJwtException e) {
             throw BusinessException.unauthorized("Token已过期", Constants.TOKEN_EXPIRED);
+        } catch (BusinessException e) {
+            throw e;
         } catch (JwtException | IllegalArgumentException e) {
             throw BusinessException.unauthorized("无效的Token", Constants.TOKEN_INVALID);
         }
     }
 
-    /**
-     * 私有方法：解析Token获取Claims
-     */
     private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
@@ -97,9 +79,6 @@ public class JwtUtil {
                 .getBody();
     }
 
-    /**
-     * 获取Token剩余有效期（毫秒）
-     */
     public long getRemainingTime(String token) {
         Date expiration = getClaims(token).getExpiration();
         return expiration.getTime() - System.currentTimeMillis();

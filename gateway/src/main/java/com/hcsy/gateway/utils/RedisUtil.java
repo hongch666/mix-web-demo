@@ -116,4 +116,17 @@ public class RedisUtil {
     public boolean exists(String key) {
         return Boolean.TRUE.equals(redisTemplate.hasKey(key));
     }
+
+    // ========== Hash 操作 ==========
+
+    @SuppressWarnings("null")
+    public void putHash(String key, String hashKey, String value) {
+        redisTemplate.opsForHash().put(key, hashKey, value);
+    }
+
+    @SuppressWarnings("null")
+    public String getHash(String key, String hashKey) {
+        Object value = redisTemplate.opsForHash().get(key, hashKey);
+        return value != null ? value.toString() : null;
+    }
 }

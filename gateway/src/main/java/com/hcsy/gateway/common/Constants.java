@@ -7,6 +7,7 @@ public class Constants {
     // ===== 401 Unauthorized =====
     public static final String TOKEN_EXPIRED = "TOKEN_EXPIRED";
     public static final String TOKEN_INVALID = "TOKEN_INVALID";
+    public static final String TOKEN_TYPE_INVALID = "TOKEN_TYPE_INVALID";
     public static final String USER_NOT_LOGIN = "USER_NOT_LOGIN";
 
     // ===== 403 Forbidden =====

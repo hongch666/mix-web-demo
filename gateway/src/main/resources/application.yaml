@@ -84,11 +84,13 @@ auth:
     - /users/email/send
     - /users/email-login
     - /users/captcha
+    - /users/token/refresh
     - /upload/**
 
 jwt:
   secret: ${JWT_SECRET:}
-  expiration: ${JWT_EXPIRATION:86400000}
+  access-expiration: ${JWT_ACCESS_EXPIRATION:3600000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
 # 限流配置
 rate-limit:
@@ -118,6 +120,10 @@ rate-limit:
     # 用户登录接口限流配置
     "/users/login":
       message: "登录请求过于频繁，请稍后再试"
+
+    # Token 刷新接口限流配置（白名单接口，需要额外保护）
+    "/users/token/refresh":
+      message: "Token 刷新请求过于频繁，请稍后再试"
 
     # 用户注册接口限流配置
     "/users/register":
