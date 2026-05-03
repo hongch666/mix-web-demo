@@ -278,6 +278,44 @@ export class Constants {
    */
   static readonly FILE_PART_NOT_FOUND = '未找到文件部分';
 
+  // 邮件相关常量
+
+  /**
+   * 邮箱验证码标题
+   */
+  static readonly EMAIL_VERIFICATION_CODE_SUBJECT = '邮箱验证码';
+
+  /**
+   * 注册验证码标题
+   */
+  static readonly EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT = '注册验证码';
+
+  /**
+   * 登录验证码标题
+   */
+  static readonly EMAIL_VERIFICATION_CODE_LOGIN_SUBJECT = '登录验证码';
+
+  /**
+   * 重置密码验证码标题
+   */
+  static readonly EMAIL_VERIFICATION_CODE_RESET_SUBJECT = '重置密码验证码';
+
+  /**
+   * 邮件服务配置不完整错误消息
+   */
+  static readonly MAIL_SERVICE_CONFIG_INCOMPLETE =
+    '邮件 SMTP 配置不完整，邮件服务不可用';
+
+  /**
+   * 邮件服务未正确配置错误消息
+   */
+  static readonly MAIL_SERVICE_CONFIG_INCORRECT =
+    '邮件服务未正确配置，请检查 SMTP 配置';
+
+  /**
+   * 验证码邮件发送失败错误消息
+   */
+  static readonly EMAIL_VERIFICATION_CODE_SEND_FAILED = '验证码邮件发送失败';
   // Redis 相关常量
 
   /**
@@ -305,7 +343,8 @@ export class Constants {
   /**
    * 获取分布式锁失败消息（其他实例正在执行）
    */
-  static readonly REDIS_LOCK_ACQUIRE_FAIL = '获取分布式锁失败，跳过本次执行，key: %s';
+  static readonly REDIS_LOCK_ACQUIRE_FAIL =
+    '获取分布式锁失败，跳过本次执行，key: %s';
 
   /**
    * 释放分布式锁成功消息
@@ -317,7 +356,7 @@ export class Constants {
    */
   static readonly REDIS_LOCK_RELEASE_FAIL = '释放分布式锁失败，key: %s';
 
-  // 错误标识常量 - 与 HTTP状态码设计.md 中的 error 字段一致
+  // 错误标识常量
 
   // 400 Bad Request
   static readonly PARAM_PARSE_FAILED = 'PARAM_PARSE_FAILED';
@@ -325,11 +364,13 @@ export class Constants {
   // 403 Forbidden
   static readonly UNAUTHORIZED_USER_ERROR = 'UNAUTHORIZED_USER';
   static readonly NO_ADMIN_PERMISSION = 'NO_ADMIN_PERMISSION';
-  static readonly INTERNAL_TOKEN_SERVICE_MISMATCH = 'INTERNAL_TOKEN_SERVICE_MISMATCH';
+  static readonly INTERNAL_TOKEN_SERVICE_MISMATCH =
+    'INTERNAL_TOKEN_SERVICE_MISMATCH';
 
   // 404 Not Found
   static readonly ARTICLE_LOG_NOT_FOUND_ERROR = 'ARTICLE_LOG_NOT_FOUND';
-  static readonly ARTICLE_LOG_PARTIAL_NOT_FOUND_ERROR = 'ARTICLE_LOG_PARTIAL_NOT_FOUND';
+  static readonly ARTICLE_LOG_PARTIAL_NOT_FOUND_ERROR =
+    'ARTICLE_LOG_PARTIAL_NOT_FOUND';
   static readonly API_LOG_NOT_FOUND_ERROR = 'API_LOG_NOT_FOUND';
   static readonly API_LOG_PARTIAL_NOT_FOUND_ERROR = 'API_LOG_PARTIAL_NOT_FOUND';
   static readonly FILE_PART_NOT_FOUND_ERROR = 'FILE_PART_NOT_FOUND';
@@ -349,9 +390,11 @@ export class Constants {
   static readonly OSS_UPLOAD_ERROR = 'OSS_UPLOAD_ERROR';
 
   // 503 Service Unavailable
-  static readonly OSS_CLIENT_NOT_INITIALIZED_ERROR = 'OSS_CLIENT_NOT_INITIALIZED';
+  static readonly OSS_CLIENT_NOT_INITIALIZED_ERROR =
+    'OSS_CLIENT_NOT_INITIALIZED';
   static readonly SERVICE_DISCOVERY_FAILED = 'SERVICE_DISCOVERY_FAILED';
-  static readonly NO_AVAILABLE_SERVICE_INSTANCE = 'NO_AVAILABLE_SERVICE_INSTANCE';
+  static readonly NO_AVAILABLE_SERVICE_INSTANCE =
+    'NO_AVAILABLE_SERVICE_INSTANCE';
 
   // 504 Gateway Timeout
   static readonly OSS_PUT_TIMEOUT = 'OSS_PUT_TIMEOUT';

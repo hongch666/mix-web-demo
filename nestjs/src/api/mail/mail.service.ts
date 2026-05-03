@@ -1,0 +1,83 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
+import { Constants } from 'src/common/utils/constants';
+import { InternalEmailCodeSendDto } from './dto/mail.dto';
+import { buildEmailContent } from './templates/mail.template';
+
+@Injectable()
+export class MailService {
+  private readonly logger = new Logger(MailService.name);
+  private transporter!: nodemailer.Transporter;
+
+  constructor(private readonly configService: ConfigService) {
+    const host = this.configService.get<string>('mail.host');
+    const port = this.configService.get<string>('mail.port');
+    const secureVal = this.configService.get<string>('mail.secure');
+    const username = this.configService.get<string>('mail.username');
+    const password = this.configService.get<string>('mail.password');
+
+    if (!username || !password) {
+      this.logger.warn(Constants.MAIL_SERVICE_CONFIG_INCOMPLETE);
+      return;
+    }
+
+    this.transporter = nodemailer.createTransport({
+      host,
+      port: Number(port),
+      secure: secureVal === 'true' || secureVal === '1',
+      auth: {
+        user: username,
+        pass: password,
+      },
+    });
+  }
+
+  async sendVerificationCode(dto: InternalEmailCodeSendDto): Promise<void> {
+    const { email, code, type, expireMinutes = 10 } = dto;
+
+    // 脱敏记录日志，不打印完整验证码
+    const maskedEmail = email.replace(/(.{3}).+(.{2}@)/, '$1***$2');
+    this.logger.log(`发送验证码邮件到: ${maskedEmail}, 场景: ${type}`);
+
+    if (!this.transporter) {
+      throw new Error(Constants.MAIL_SERVICE_CONFIG_INCORRECT);
+    }
+
+    const from =
+      this.configService.get<string>('mail.from') ||
+      this.configService.get<string>('mail.username');
+
+    // 异步发送邮件，不阻塞调用方（Spring 内调的超时限制）
+    // 发送结果通过日志记录，不影响主流程
+    this.transporter
+      .sendMail({
+        from: `"MixWeb" <${from}>`,
+        to: email,
+        subject: this.getSubject(type),
+        html: buildEmailContent(code, type, expireMinutes),
+      })
+      .then(() => {
+        this.logger.log(`验证码邮件已成功发送到: ${maskedEmail}`);
+      })
+      .catch((error) => {
+        this.logger.error(
+          `验证码邮件发送失败: ${maskedEmail}`,
+          error instanceof Error ? error.message : String(error),
+        );
+      });
+  }
+
+  private getSubject(type: string): string {
+    switch (type) {
+      case 'register':
+        return Constants.EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT;
+      case 'login':
+        return Constants.EMAIL_VERIFICATION_CODE_LOGIN_SUBJECT;
+      case 'reset':
+        return Constants.EMAIL_VERIFICATION_CODE_RESET_SUBJECT;
+      default:
+        return Constants.EMAIL_VERIFICATION_CODE_SUBJECT;
+    }
+  }
+}

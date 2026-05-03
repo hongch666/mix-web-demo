@@ -45,6 +45,14 @@ files:
   upload: ${FILES_UPLOAD_PATH:../static/upload}
 logs:
   path: ${LOGS_PATH:../logs/nestjs}
+mail:
+  host: ${MAIL_HOST:smtp.qq.com}
+  port: ${MAIL_PORT:465}
+  secure: ${MAIL_SECURE:true}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  from: ${MAIL_FROM:}
+  timeout: ${MAIL_TIMEOUT:5000}
 oss:
   bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
   endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
