@@ -51,17 +51,6 @@ spring:
     username: ${RABBITMQ_USERNAME:}
     password: ${RABBITMQ_PASSWORD:}
     virtual-host: ${RABBITMQ_VHOST:test}
-  mail:
-    host: ${MAIL_HOST:smtp.qq.com}
-    port: ${MAIL_PORT:465}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          ssl:
-            enable: true
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml # 指定 Mapper XML 文件位置

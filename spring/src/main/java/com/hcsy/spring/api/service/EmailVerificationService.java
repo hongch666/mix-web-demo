@@ -9,9 +9,9 @@ public interface EmailVerificationService {
      * 发送邮箱验证码
      *
      * @param email 目标邮箱
-     * @return 是否发送成功
+     * @param type  验证码场景（register/login/reset）
      */
-    void sendVerificationCode(String email);
+    void sendVerificationCode(String email, String type);
 
     /**
      * 验证邮箱验证码

@@ -384,7 +384,7 @@ public class UserController {
             }
 
             // 3. 发送验证码
-            emailVerificationService.sendVerificationCode(email);
+            emailVerificationService.sendVerificationCode(email, type);
 
             return Result.success();
         } catch (Exception e) {
