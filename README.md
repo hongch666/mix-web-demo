@@ -16,6 +16,8 @@
 
 - [描述](#描述)
 - [功能说明](#功能说明)
+- [组件说明](#组件说明)
+- [登录相关](#登录相关)
 - [设计图](#设计图)
 - [技术栈](#技术栈)
 - [第三方服务](#第三方服务)
@@ -68,6 +70,161 @@
 12. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
 13. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
 14. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL 和 MongoDB，支持 **GPT/Gemini/DeepSeek** 进行多模型选择
+15. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
+
+## 组件说明
+
+### Spring 服务（端口 8081）
+
+| 项目     | 说明                                                                                      |
+| -------- | ----------------------------------------------------------------------------------------- |
+| 框架     | SpringBoot 3.x + MyBatisPlus                                                              |
+| 数据库   | MySQL（demo 库，user/article/category/comment 等核心表）                                  |
+| 缓存     | Redis                                                                                     |
+| 消息队列 | RabbitMQ                                                                                  |
+| 注册中心 | Nacos                                                                                     |
+| 构建工具 | Maven / Gradle                                                                            |
+| 主要功能 | 用户认证（密码登录/邮箱登录/Token 管理）、文章 CRUD、分类管理、评论点赞收藏关注、权限校验 |
+| 代码位置 | `spring/`                                                                                 |
+
+### GoZero 服务（端口 8082）
+
+| 项目     | 说明                                              |
+| -------- | ------------------------------------------------- |
+| 框架     | GoZero                                            |
+| 数据库   | MySQL（同步 Spring 数据）                         |
+| 搜索引擎 | Elasticsearch（文章搜索）                         |
+| 实时通信 | WebSocket（用户聊天）/ SSE（消息通知）            |
+| 注册中心 | Nacos                                             |
+| 构建工具 | Go Modules                                        |
+| 主要功能 | 文章搜索引擎、ES 数据同步、用户实时聊天、消息通知 |
+| 代码位置 | `gozero/`                                         |
+
+### NestJS 服务（端口 8083）
+
+| 项目     | 说明                                                                           |
+| -------- | ------------------------------------------------------------------------------ |
+| 框架     | NestJS + Fastify                                                               |
+| 数据库   | MySQL（TypeORM 用户/文章/下载）、MongoDB（Mongoose 文章日志/API 日志）         |
+| 缓存     | Redis（ioredis）                                                               |
+| 消息队列 | RabbitMQ                                                                       |
+| 注册中心 | Nacos                                                                          |
+| 运行时   | Node.js / Bun                                                                  |
+| 主要功能 | 文章/API 操作日志、Word/PDF 下载、文件上传（OSS）、GitHub OAuth 登录、定时任务 |
+| 代码位置 | `nestjs/`                                                                      |
+
+### FastAPI 服务（端口 8084）
+
+| 项目     | 说明                                                                                              |
+| -------- | ------------------------------------------------------------------------------------------------- |
+| 框架     | FastAPI + SQLAlchemy                                                                              |
+| 数据库   | MySQL（数据同步）、ClickHouse（数据分析）、PostgreSQL + pgvector（RAG 向量存储）                  |
+| 消息队列 | RabbitMQ                                                                                          |
+| 注册中心 | Nacos                                                                                             |
+| 运行时   | Python 3.12+                                                                                      |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、AI Agent（SQL/MongoDB/向量搜索）、多模型（GPT/Gemini/DeepSeek） |
+| 代码位置 | `fastapi/`                                                                                        |
+
+### SpringCloud Gateway 网关（端口 8080）
+
+| 项目       | 说明                                                                           |
+| ---------- | ------------------------------------------------------------------------------ |
+| 框架       | SpringCloud Gateway                                                            |
+| 注册中心   | Nacos（服务发现 + 负载均衡）                                                   |
+| 缓存       | Redis                                                                          |
+| 主要功能   | 统一入口、JWT 认证鉴权、路径路由、API 限流（Redis Token Bucket）、用户信息透传 |
+| 网关白名单 | 登录/注册/验证码/GitHub OAuth 等无需认证的路径                                 |
+| 代码位置   | `gateway/`                                                                     |
+
+## 登录相关
+
+### GitHub OAuth 登录流程
+
+```
+前端点击 "GitHub 登录" 按钮
+  -> GET /github/authorize?redirect=/profile          (NestJS)
+  -> 浏览器跳转 GitHub 授权页
+  -> 用户授权后 GitHub 回调 GET /github/callback      (NestJS)
+  -> NestJS 获取 GitHub 用户信息，创建或关联本地用户
+  -> NestJS 通过 Nacos 调用 Spring POST /users/github/token-ticket
+  -> Spring 生成一次性 ticket，存入 Redis（TTL 60秒）
+  -> NestJS 重定向到前端 /oauth/github/success?ticket=xxx
+  -> 前端 POST /users/github/token                    (Spring)
+  -> Spring 验证 ticket 后返回 JWT（access + refresh token）
+  -> 前端保存 token，登录完成
+```
+
+网关负责路由：
+
+- `/github/**` -> NestJS（GitHub OAuth 流程）
+- `/users/github/token` -> Spring（token 换取）
+
+### 用户名密码登录流程
+
+```
+前端输入用户名和密码
+  -> POST /users/login
+     Content-Type: application/json
+     Body: { "username": "hcsy", "password": "123456" }
+  -> Spring 校验用户名和密码（bcrypt 匹配）
+  -> 校验通过后，调用 TokenService 生成 JWT（access token + refresh token）
+  -> 将 session 信息写入 Redis（user:access / user:session）
+  -> 返回 UserLoginVO（含 accessToken / refreshToken / userId / username / sessionId）
+  -> 前端保存 token，后续请求在 Authorization 头携带 Bearer token
+```
+
+Body 参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| username | string | 是 | 用户名 |
+| password | string | 是 | 密码 |
+
+返回结构与 GitHub 登录的 token 换取接口一致。
+
+### 邮箱验证码登录流程
+
+```
+前置：用户需要先有已验证的邮箱（注册时填写或后续绑定）
+  -> GET /users/email/send?email=xxx@example.com&type=login（发送验证码）
+  -> Spring 校验邮箱是否存在，存在则发送验证码到该邮箱
+
+前端输入邮箱和验证码
+  -> POST /users/email-login
+     Content-Type: application/json
+     Body: { "email": "xxx@example.com", "verificationCode": "123456" }
+  -> Spring 校验验证码是否正确且未过期
+  -> 校验通过后，调用 TokenService 生成 JWT
+  -> 返回 UserLoginVO（结构同上）
+  -> 前端保存 token
+```
+
+发送验证码接口：
+
+```
+GET /users/email/send?email=xxx@example.com&type=login
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| email | string | 是 | 注册时填写的邮箱 |
+| type | string | 否 | 固定传 `login` |
+
+邮箱验证码登录接口：
+
+```
+POST /users/email-login
+Content-Type: application/json
+```
+
+Body 参数：
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| email | string | 是 | 邮箱地址 |
+| verificationCode | string | 是 | 收到的 6 位验证码 |
+
+> 验证码有效期默认为 5 分钟，发送间隔为 60 秒。
 
 ## 设计图
 
@@ -104,6 +261,7 @@
 - [阿里云百炼平台](https://bailian.console.aliyun.com/)
 - [Close AI](https://platform.closeai-asia.com/dashboard)
 - [阿里云 OSS](https://oss.console.aliyun.com/overview)
+- [GitHub OAuth](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps)（GitHub 第三方登录/注册）
 
 ## 环境要求
 
