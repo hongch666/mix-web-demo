@@ -20,7 +20,7 @@ export class User {
   password!: string;
 
   @ApiProperty({ description: '邮箱', example: 'hcsy@example.com' })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   email!: string | null;
 
   @ApiProperty({ description: '角色', example: 'user' })
@@ -32,7 +32,7 @@ export class User {
     example: 'https://example.com/avatar.jpg',
     nullable: true,
   })
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   img!: string | null;
 
   @ApiProperty({ description: '签名', example: '我是程序员', nullable: true })
