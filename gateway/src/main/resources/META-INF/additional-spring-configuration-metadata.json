@@ -110,6 +110,21 @@
       "name": "rate-limit.paths./users/token/refresh.message",
       "type": "java.lang.String",
       "description": "A description for 'rate-limit.paths./users/token/refresh.message'"
+    },
+    {
+      "name": "rate-limit.paths./github/authorize.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./github/authorize.message'"
+    },
+    {
+      "name": "rate-limit.paths./github/callback.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./github/callback.message'"
+    },
+    {
+      "name": "rate-limit.paths./users/github/token-ticket.message",
+      "type": "java.lang.String",
+      "description": "A description for 'rate-limit.paths./users/github/token-ticket.message'"
     }
   ]
 }

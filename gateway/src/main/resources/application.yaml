@@ -71,7 +71,7 @@ spring:
         - id: nestjs
           uri: lb://nestjs
           predicates:
-            - Path=/api_nestjs/**,/article-logs/**,/api-logs/**,/download/**,/upload/**
+            - Path=/api_nestjs/**,/article-logs/**,/api-logs/**,/download/**,/upload/**,/github/**,/email/**
 
         - id: fastapi
           uri: lb://fastapi
@@ -86,6 +86,9 @@ auth:
     - /users/captcha
     - /users/token/refresh
     - /upload/**
+    - /github/authorize
+    - /github/callback
+    - /users/github/token
 
 jwt:
   secret: ${JWT_SECRET:}
@@ -133,5 +136,18 @@ rate-limit:
     "/users/email-login":
       message: "邮箱登录请求过于频繁，请稍后再试"
 
+    # 验证码接口限流配置
     "/users/captcha":
       message: "验证码请求过于频繁，请稍后再试"
+
+    # GitHub 获取授权地址接口限流配置
+    "/github/authorize":
+      message: "GitHub 获取授权地址请求过于频繁，请稍后再试"
+
+    # GitHub 回调接口限流配置
+    "/github/callback":
+      message: "GitHub 回调请求过于频繁，请稍后再试"
+
+    # GitHub 登录票据生成接口限流配置
+    "/users/github/token-ticket":
+      message: "GitHub 登录票据生成请求过于频繁，请稍后再试"
