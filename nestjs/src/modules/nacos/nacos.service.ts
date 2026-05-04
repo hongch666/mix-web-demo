@@ -223,10 +223,14 @@ export class NacosService implements OnModuleInit {
     // 默认请求头
     const userId: number = this.cls.get<number>('userId') || 0;
     const userName: string =
-      this.cls.get<string>('username') || Constants.UNKNOWN_USER;
+      this.cls.get<string>('username') || '';
+    // 将非 ASCII 字符替换为安全字符（RFC 7230 要求 header 值为 ASCII）
+    const safeUserName: string = userName
+      .replace(/[^\x20-\x7E]/g, '')
+      .trim() || 'system';
     const defaultHeaders: Record<string, string> = {
       'X-User-Id': String(userId || 0),
-      'X-Username': userName,
+      'X-Username': safeUserName,
     };
 
     // 生成并添加内部服务令牌 (没有用户ID时用-1代表系统调用)

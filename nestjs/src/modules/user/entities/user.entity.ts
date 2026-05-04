@@ -13,7 +13,7 @@ export class User {
 
   @ApiProperty({ description: '年龄', example: 30, nullable: true })
   @Column({ type: 'int', nullable: true })
-  age!: number;
+  age!: number | null;
 
   @ApiProperty({ description: '密码', example: 'password123' })
   @Column()
@@ -21,7 +21,7 @@ export class User {
 
   @ApiProperty({ description: '邮箱', example: 'hcsy@example.com' })
   @Column({ nullable: true })
-  email!: string;
+  email!: string | null;
 
   @ApiProperty({ description: '角色', example: 'user' })
   @Column()
@@ -33,9 +33,55 @@ export class User {
     nullable: true,
   })
   @Column({ nullable: true })
-  img!: string;
+  img!: string | null;
 
   @ApiProperty({ description: '签名', example: '我是程序员', nullable: true })
   @Column({ type: 'varchar', length: 255, nullable: true })
-  signature!: string;
+  signature!: string | null;
+
+  @ApiProperty({
+    description: 'GitHub用户ID',
+    example: '123456',
+    nullable: true,
+  })
+  @Column({ name: 'github_id', type: 'bigint', nullable: true, unique: true })
+  githubId!: string | null;
+
+  @ApiProperty({
+    description: 'GitHub登录名',
+    example: 'octocat',
+    nullable: true,
+  })
+  @Column({
+    name: 'github_login',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  githubLogin!: string | null;
+
+  @ApiProperty({
+    description: 'GitHub主页地址',
+    example: 'https://github.com/octocat',
+    nullable: true,
+  })
+  @Column({ name: 'github_url', type: 'varchar', length: 255, nullable: true })
+  githubUrl!: string | null;
+
+  @ApiProperty({ description: '注册来源', example: 'github' })
+  @Column({
+    name: 'auth_provider',
+    type: 'varchar',
+    length: 50,
+    default: 'local',
+  })
+  authProvider!: string;
+
+  @ApiProperty({
+    description: '最近登录时间',
+    example: '2026-05-04T12:00:00.000Z',
+    nullable: true,
+  })
+  @Column({ name: 'last_login_at', type: 'datetime', nullable: true })
+  lastLoginAt!: Date | null;
 }

@@ -18,6 +18,7 @@
         "ali-oss": "^6.9.0",
         "amqplib": "^0.10.8",
         "axios": "^1.13.6",
+        "bcrypt": "^6.0.0",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.2",
         "dayjs": "^1.11.13",
@@ -47,6 +48,7 @@
         "@nestjs/testing": "^11.0.1",
         "@swc/cli": "^0.6.0",
         "@swc/core": "^1.10.7",
+        "@types/bcrypt": "^6.0.0",
         "@types/ioredis": "^4.28.10",
         "@types/jest": "^30.0.0",
         "@types/js-yaml": "^4.0.9",
@@ -449,6 +451,8 @@
 
     "@types/babel__traverse": ["@types/babel__traverse@7.20.7", "https://registry.npmmirror.com/@types/babel__traverse/-/babel__traverse-7.20.7.tgz", { "dependencies": { "@babel/types": "^7.20.7" } }, "sha512-dkO5fhS7+/oos4ciWxyEyjWe48zmG6wbCheo/G2ZnHx4fs3EU6YC6UM8rk56gAjNJ9P3MTH2jo5jb92/K6wbng=="],
 
+    "@types/bcrypt": ["@types/bcrypt@6.0.0", "", { "dependencies": { "@types/node": "*" } }, "sha512-/oJGukuH3D2+D+3H4JWLaAsJ/ji86dhRidzZ/Od7H/i8g+aCmvkeCc6Ni/f9uxGLSQVCRZkX2/lqEFG2BvWtlQ=="],
+
     "@types/eslint": ["@types/eslint@9.6.1", "https://registry.npmmirror.com/@types/eslint/-/eslint-9.6.1.tgz", { "dependencies": { "@types/estree": "*", "@types/json-schema": "*" } }, "sha512-FXx2pKgId/WyYo2jXw63kk7/+TY7u7AziEJxJAnSFzHlqTAS3Ync6SvgYAN/k4/PQpnnVuzoMuVnByKK2qp0ag=="],
 
     "@types/eslint-scope": ["@types/eslint-scope@3.7.7", "https://registry.npmmirror.com/@types/eslint-scope/-/eslint-scope-3.7.7.tgz", { "dependencies": { "@types/eslint": "*", "@types/estree": "*" } }, "sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg=="],
@@ -674,6 +678,8 @@
     "base64-js": ["base64-js@1.5.1", "https://registry.npmmirror.com/base64-js/-/base64-js-1.5.1.tgz", {}, "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="],
 
     "basic-ftp": ["basic-ftp@5.0.5", "", {}, "sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg=="],
+
+    "bcrypt": ["bcrypt@6.0.0", "", { "dependencies": { "node-addon-api": "^8.3.0", "node-gyp-build": "^4.8.4" } }, "sha512-cU8v/EGSrnH+HnxV2z0J7/blxH8gq7Xh2JFT6Aroax7UohdmiJJlxApMxtKfuI7z68NvvVcmR78k2LbT6efhRg=="],
 
     "bin-version": ["bin-version@6.0.0", "https://registry.npmmirror.com/bin-version/-/bin-version-6.0.0.tgz", { "dependencies": { "execa": "^5.0.0", "find-versions": "^5.0.0" } }, "sha512-nk5wEsP4RiKjG+vF+uG8lFsEn4d7Y6FVDamzzftSunXOoOcOOkzcWdKVlGgFFwlUQCj63SgnUkLLGF8v7lufhw=="],
 
@@ -1459,7 +1465,11 @@
 
     "node-abort-controller": ["node-abort-controller@3.1.1", "https://registry.npmmirror.com/node-abort-controller/-/node-abort-controller-3.1.1.tgz", {}, "sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ=="],
 
+    "node-addon-api": ["node-addon-api@8.7.0", "", {}, "sha512-9MdFxmkKaOYVTV+XVRG8ArDwwQ77XIgIPyKASB1k3JPq3M8fGQQQE3YpMOrKm6g//Ktx8ivZr8xo1Qmtqub+GA=="],
+
     "node-emoji": ["node-emoji@1.11.0", "https://registry.npmmirror.com/node-emoji/-/node-emoji-1.11.0.tgz", { "dependencies": { "lodash": "^4.17.21" } }, "sha512-wo2DpQkQp7Sjm2A0cq+sN7EHKO6Sl0ctXeBdFZrL9T9+UywORbufTcTZxom8YqpLQt/FqNMUkOpkZrJVYSKD3A=="],
+
+    "node-gyp-build": ["node-gyp-build@4.8.4", "", { "bin": { "node-gyp-build": "bin.js", "node-gyp-build-optional": "optional.js", "node-gyp-build-test": "build-test.js" } }, "sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ=="],
 
     "node-hex": ["node-hex@1.0.1", "https://registry.npmmirror.com/node-hex/-/node-hex-1.0.1.tgz", {}, "sha512-iwpZdvW6Umz12ICmu9IYPRxg0tOLGmU3Tq2tKetejCj3oZd7b2nUXwP3a7QA5M9glWy8wlPS1G3RwM/CdsUbdQ=="],
 

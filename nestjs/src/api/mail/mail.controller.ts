@@ -6,7 +6,7 @@ import { InternalEmailCodeSendDto } from './dto/mail.dto';
 import { MailService } from './mail.service';
 
 @Controller('email')
-@ApiTags('内部邮件模块')
+@ApiTags('邮件模块')
 export class MailController {
   constructor(private readonly mailService: MailService) {}
 
@@ -14,7 +14,7 @@ export class MailController {
   @RequireInternalToken('spring')
   @ApiOperation({
     summary: '发送邮箱验证码',
-    description: '内部接口，由 Spring 调用，通过 SMTP 发送验证码邮件',
+    description: '通过 SMTP 发送验证码邮件',
   })
   async sendEmailCode(
     @Body() dto: InternalEmailCodeSendDto,

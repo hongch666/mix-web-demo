@@ -3,6 +3,7 @@
  */
 export class HttpCode {
   static readonly OK = 200;
+  static readonly FOUND = 302;
   static readonly BAD_REQUEST = 400;
   static readonly UNAUTHORIZED = 401;
   static readonly FORBIDDEN = 403;

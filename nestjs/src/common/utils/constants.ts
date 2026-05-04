@@ -142,6 +142,77 @@ export class Constants {
   static readonly UNKNOWN_USER = '未知用户';
 
   /**
+   * GitHub 登录处理失败前缀
+   */
+  static readonly GITHUB_LOGIN_PROCESS_FAILED_PREFIX = 'GitHub 登录处理失败: ';
+
+  /**
+   * GitHub 登录 Redis 未配置消息
+   */
+  static readonly GITHUB_REDIS_UNAVAILABLE =
+    'Redis 未配置，无法发起 GitHub 登录';
+
+  /**
+   * GitHub 授权参数缺失消息
+   */
+  static readonly GITHUB_AUTH_PARAMS_MISSING = 'GitHub 授权参数缺失';
+
+  /**
+   * GitHub 授权已取消或失败消息
+   */
+  static readonly GITHUB_AUTH_CANCELLED_OR_FAILED = 'GitHub 授权已取消或失败';
+
+  /**
+   * GitHub OAuth 配置不完整前缀
+   */
+  static readonly GITHUB_OAUTH_CONFIG_INCOMPLETE_PREFIX =
+    'GitHub OAuth 配置不完整，缺少 ';
+
+  /**
+   * GitHub 登录状态 Redis 未配置消息
+   */
+  static readonly GITHUB_REDIS_STATE_UNAVAILABLE =
+    'Redis 未配置，无法处理 GitHub 登录状态';
+
+  /**
+   * GitHub 授权状态已过期消息
+   */
+  static readonly GITHUB_STATE_EXPIRED = 'GitHub 授权状态已过期，请重新登录';
+
+  /**
+   * GitHub 授权状态解析失败消息
+   */
+  static readonly GITHUB_STATE_PARSE_FAILED =
+    'GitHub 授权状态解析失败，请重新登录';
+
+  /**
+   * GitHub 访问令牌获取失败消息
+   */
+  static readonly GITHUB_ACCESS_TOKEN_FAILED = 'GitHub 访问令牌获取失败';
+
+  /**
+   * GitHub 用户资料获取失败消息
+   */
+  static readonly GITHUB_USER_PROFILE_FAILED = 'GitHub 用户资料获取失败';
+
+  /**
+   * GitHub 用户资料不完整消息
+   */
+  static readonly GITHUB_USER_PROFILE_INVALID = 'GitHub 用户资料不完整';
+
+  /**
+   * Spring 未正确返回 GitHub 登录票据消息
+   */
+  static readonly GITHUB_SPRING_TOKEN_TICKET_FAILED =
+    'Spring 未正确返回 GitHub 登录票据';
+
+  /**
+   * Spring 未返回 GitHub 登录票据消息
+   */
+  static readonly GITHUB_SPRING_TOKEN_TICKET_MISSING =
+    'Spring 未返回 GitHub 登录票据';
+
+  /**
    * Swagger 标题
    */
   static readonly SWAGGER_TITLE = 'NestJS部分的Swagger文档';

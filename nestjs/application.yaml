@@ -58,3 +58,16 @@ oss:
   endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
   access_key_id: ${OSS_ACCESS_KEY_ID:}
   access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
+github:
+  oauth:
+    clientId: ${GITHUB_OAUTH_CLIENT_ID:}
+    clientSecret: ${GITHUB_OAUTH_CLIENT_SECRET:}
+    redirectUri: ${GITHUB_OAUTH_REDIRECT_URI:http://127.0.0.1:8080/api_nestjs/github/callback}
+    scope: ${GITHUB_OAUTH_SCOPE:read:user user:email}
+    authorizeUrl: ${GITHUB_OAUTH_AUTHORIZE_URL:https://github.com/login/oauth/authorize}
+    accessTokenUrl: ${GITHUB_OAUTH_ACCESS_TOKEN_URL:https://github.com/login/oauth/access_token}
+    userApiUrl: ${GITHUB_OAUTH_USER_API_URL:https://api.github.com/user}
+    emailsApiUrl: ${GITHUB_OAUTH_EMAILS_API_URL:https://api.github.com/user/emails}
+    apiVersion: ${GITHUB_OAUTH_API_VERSION:2026-03-10}
+    frontendSuccessUrl: ${GITHUB_OAUTH_FRONTEND_SUCCESS_URL:http://127.0.0.1:5173/oauth/github/success}
+    frontendFailureUrl: ${GITHUB_OAUTH_FRONTEND_FAILURE_URL:http://127.0.0.1:5173/login}
