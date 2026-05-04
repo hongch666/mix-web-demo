@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import * as fs from 'fs';
 import * as marked from 'marked';
 import * as path from 'path';
-import { launch, Browser, Page } from 'puppeteer';
+import { Browser, launch, Page } from 'puppeteer';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
@@ -30,7 +30,10 @@ export class DownloadService {
     const article: Articles | null =
       await this.articleService.getArticleById(id);
     if (!article) {
-      throw BusinessException.notFound(`文章 ID ${id} 未找到`, 'ARTICLE_NOT_FOUND');
+      throw BusinessException.notFound(
+        `文章 ID ${id} 未找到`,
+        'ARTICLE_NOT_FOUND',
+      );
     }
     const htmlContent: string = marked.parse(article.content || '');
     const user: User | null = await this.userService.getUserById(
@@ -48,7 +51,10 @@ export class DownloadService {
     const filePath: string | undefined =
       this.configService.get<string>('files.word'); // 获取配置中的模板路径
     if (!filePath) {
-      throw BusinessException.notFound(Constants.EMPTY_FILE_PATH, 'EMPTY_FILE_PATH');
+      throw BusinessException.notFound(
+        Constants.EMPTY_FILE_PATH,
+        'EMPTY_FILE_PATH',
+      );
     }
     const templatePath: string = path.join(
       process.cwd(),
@@ -85,7 +91,10 @@ export class DownloadService {
     const article: Articles | null =
       await this.articleService.getArticleById(id);
     if (!article) {
-      throw BusinessException.notFound(`文章 ID ${id} 未找到`, 'ARTICLE_NOT_FOUND');
+      throw BusinessException.notFound(
+        `文章 ID ${id} 未找到`,
+        'ARTICLE_NOT_FOUND',
+      );
     }
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
@@ -98,8 +107,10 @@ export class DownloadService {
     markdown += `\n---\n`;
     markdown += article.content || '';
     // 保存到本地临时文件
-    const filePath: string =
-      this.configService.get<string>('files.word') || 'static';
+    const filePath: string = this.configService.get<string>('files.word')!;
+    if (!filePath) {
+      throw BusinessException.internalServerError(Constants.WORD_FILE_PATH_NOT_CONFIGURED);
+    }
     const saveDir: string = path.join(process.cwd(), filePath);
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
@@ -119,7 +130,10 @@ export class DownloadService {
     const article: Articles | null =
       await this.articleService.getArticleById(id);
     if (!article) {
-      throw BusinessException.notFound(`文章 ID ${id} 未找到`, 'ARTICLE_NOT_FOUND');
+      throw BusinessException.notFound(
+        `文章 ID ${id} 未找到`,
+        'ARTICLE_NOT_FOUND',
+      );
     }
 
     const user: User | null = await this.userService.getUserById(
@@ -127,8 +141,10 @@ export class DownloadService {
     );
 
     // 获取文件保存路径
-    const filePath: string =
-      this.configService.get<string>('files.word') || 'static';
+    const filePath: string = this.configService.get<string>('files.word')!;
+    if (!filePath) {
+      throw BusinessException.internalServerError(Constants.WORD_FILE_PATH_NOT_CONFIGURED);
+    }
     const saveDir: string = path.join(process.cwd(), filePath);
     if (!fs.existsSync(saveDir)) {
       fs.mkdirSync(saveDir, { recursive: true });
@@ -358,18 +374,18 @@ export class DownloadService {
       <body>
         <div class="container">
           <div class="title">${article.title}</div>
-          
+
           <div class="meta-info">
             <div>作者: ${user?.name || '未知'}</div>
             <div>创作时间: ${createTime}</div>
           </div>
-          
+
           ${article.tags ? `<div class="tags">标签: ${article.tags}</div>` : ''}
-          
+
           <div class="divider"></div>
-          
+
           <div class="content">${htmlContent}</div>
-          
+
         </div>
       </body>
       </html>
@@ -383,7 +399,10 @@ export class DownloadService {
       return url;
     } catch (error: any) {
       logger.error(`上传阿里云OSS错误: ${error.message}`);
-      throw BusinessException.internalServerError(Constants.OSS_UPLOAD_ERR, 'OSS_UPLOAD_ERROR');
+      throw BusinessException.internalServerError(
+        Constants.OSS_UPLOAD_ERR,
+        'OSS_UPLOAD_ERROR',
+      );
     }
   }
 }

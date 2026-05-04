@@ -137,6 +137,21 @@ export class Constants {
     'SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1';
 
   /**
+   * Nacos 服务地址未配置
+   */
+  static readonly NACOS_HOST_NOT_CONFIGURED = 'Nacos 服务地址未配置';
+
+  /**
+   * Nacos 服务端口未配置
+   */
+  static readonly NACOS_PORT_NOT_CONFIGURED = 'Nacos 服务端口未配置';
+
+  /**
+   * 服务运行模式未配置
+   */
+  static readonly SERVER_MODE_NOT_CONFIGURED = '服务运行模式未配置';
+
+  /**
    * 未知用户名
    */
   static readonly UNKNOWN_USER = '未知用户';
@@ -343,6 +358,11 @@ export class Constants {
    */
   static readonly FILE_NO_VALID_METHOD =
     '文件对象既没有 file 属性也没有 toBuffer 方法';
+
+  /**
+   * Word 文件保存路径未配置
+   */
+  static readonly WORD_FILE_PATH_NOT_CONFIGURED = 'Word 文件保存路径未配置';
 
   /**
    * 未找到文件部分错误消息

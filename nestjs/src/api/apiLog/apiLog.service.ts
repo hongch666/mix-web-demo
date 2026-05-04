@@ -82,7 +82,7 @@ export class ApiLogService {
   async removeById(id: string): Promise<void> {
     const existingLog = await this.apiLogModel.findById(id).exec();
     if (!existingLog) {
-      throw BusinessException.notFound(Constants.API_LOG_NOT_FOUND, 'API_LOG_NOT_FOUND');
+      throw BusinessException.notFound(Constants.API_LOG_NOT_FOUND);
     }
     this.apiLogModel.findByIdAndDelete(id).exec();
   }
@@ -101,7 +101,7 @@ export class ApiLogService {
     // 找出不存在的ID
     const notFoundIds = ids.filter((id) => !existingIds.includes(id));
     if (notFoundIds.length > 0) {
-      throw BusinessException.notFound(Constants.API_LOG_PARTIAL_NOT_FOUND, 'API_LOG_PARTIAL_NOT_FOUND');
+      throw BusinessException.notFound(Constants.API_LOG_PARTIAL_NOT_FOUND);
     }
 
     this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();

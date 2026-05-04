@@ -77,17 +77,25 @@ export class NacosService implements OnModuleInit {
     silentLogger.debug = (): void => {};
     silentLogger.warn = (): void => {};
 
-    const nacosHost: string =
-      this.configService.get<string>('nacos.host') || '127.0.0.1';
-    const nacosPort: string =
-      this.configService.get<string>('nacos.port') || '8848';
+    const nacosHost: string = this.configService.get<string>('nacos.host')!;
+    if (!nacosHost) {
+      throw BusinessException.internalServerError(Constants.NACOS_HOST_NOT_CONFIGURED);
+    }
+    const nacosPort: string = this.configService.get<string>('nacos.port')!;
+    if (!nacosPort) {
+      throw BusinessException.internalServerError(Constants.NACOS_PORT_NOT_CONFIGURED);
+    }
     const nacosServerList: string = this.resolveNacosServerList(
       nacosHost,
       nacosPort,
     );
-    const serverMode: string =
-      this.configService.get<string>('server.mode')?.trim().toLowerCase() ||
-      'dev';
+    const serverMode: string = this.configService
+      .get<string>('server.mode')!
+      .trim()
+      .toLowerCase();
+    if (!serverMode) {
+      throw BusinessException.internalServerError(Constants.SERVER_MODE_NOT_CONFIGURED);
+    }
 
     this.client = new NacosNamingClient({
       logger: silentLogger,
@@ -182,7 +190,8 @@ export class NacosService implements OnModuleInit {
   }
 
   private getBreaker(serviceName: string): SimpleCircuitBreaker {
-    const existing: SimpleCircuitBreaker | undefined = this.breakers.get(serviceName);
+    const existing: SimpleCircuitBreaker | undefined =
+      this.breakers.get(serviceName);
     if (existing) {
       return existing;
     }
@@ -199,7 +208,10 @@ export class NacosService implements OnModuleInit {
       opts.serviceName,
     );
     if (!instances || instances.length === 0) {
-      throw BusinessException.serviceUnavailable(`服务 ${opts.serviceName} 无可用实例`, 'NO_AVAILABLE_SERVICE_INSTANCE');
+      throw BusinessException.serviceUnavailable(
+        `服务 ${opts.serviceName} 无可用实例`,
+        'NO_AVAILABLE_SERVICE_INSTANCE',
+      );
     }
 
     // 负载均衡策略：随机
@@ -222,12 +234,10 @@ export class NacosService implements OnModuleInit {
 
     // 默认请求头
     const userId: number = this.cls.get<number>('userId') || 0;
-    const userName: string =
-      this.cls.get<string>('username') || '';
+    const userName: string = this.cls.get<string>('username') || '';
     // 将非 ASCII 字符替换为安全字符（RFC 7230 要求 header 值为 ASCII）
-    const safeUserName: string = userName
-      .replace(/[^\x20-\x7E]/g, '')
-      .trim() || 'system';
+    const safeUserName: string =
+      userName.replace(/[^\x20-\x7E]/g, '').trim() || 'system';
     const defaultHeaders: Record<string, string> = {
       'X-User-Id': String(userId || 0),
       'X-Username': safeUserName,
@@ -272,8 +282,13 @@ export class NacosService implements OnModuleInit {
       }
 
       breaker.recordFailure();
-      logger.error(`调用 ${opts.serviceName} 失败: ${err instanceof Error ? err.message : String(err)}`);
-      throw BusinessException.badGateway(`调用 ${opts.serviceName} 失败，请稍后重试`, 'SERVICE_CALL_FAILED');
+      logger.error(
+        `调用 ${opts.serviceName} 失败: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      throw BusinessException.badGateway(
+        `调用 ${opts.serviceName} 失败，请稍后重试`,
+        'SERVICE_CALL_FAILED',
+      );
     }
   }
 }

@@ -168,31 +168,17 @@ export class GithubService {
       clientId: this.readGithubConfigString(oauth.clientId),
       clientSecret: this.readGithubConfigString(oauth.clientSecret),
       redirectUri: this.readGithubConfigString(oauth.redirectUri),
-      scope: this.readGithubConfigString(oauth.scope, 'read:user user:email'),
-      authorizeUrl: this.readGithubConfigString(
-        oauth.authorizeUrl,
-        'https://github.com/login/oauth/authorize',
-      ),
-      accessTokenUrl: this.readGithubConfigString(
-        oauth.accessTokenUrl,
-        'https://github.com/login/oauth/access_token',
-      ),
-      userApiUrl: this.readGithubConfigString(
-        oauth.userApiUrl,
-        'https://api.github.com/user',
-      ),
-      emailsApiUrl: this.readGithubConfigString(
-        oauth.emailsApiUrl,
-        'https://api.github.com/user/emails',
-      ),
-      apiVersion: this.readGithubConfigString(oauth.apiVersion, '2026-03-10'),
+      scope: this.readGithubConfigString(oauth.scope),
+      authorizeUrl: this.readGithubConfigString(oauth.authorizeUrl),
+      accessTokenUrl: this.readGithubConfigString(oauth.accessTokenUrl),
+      userApiUrl: this.readGithubConfigString(oauth.userApiUrl),
+      emailsApiUrl: this.readGithubConfigString(oauth.emailsApiUrl),
+      apiVersion: this.readGithubConfigString(oauth.apiVersion),
       frontendSuccessUrl: this.readGithubConfigString(
         oauth.frontendSuccessUrl,
-        'http://127.0.0.1:5173/oauth/github/success',
       ),
       frontendFailureUrl: this.readGithubConfigString(
         oauth.frontendFailureUrl,
-        'http://127.0.0.1:5173/login',
       ),
     };
   }
@@ -218,10 +204,12 @@ export class GithubService {
       { value: this.githubConfig.clientId, name: 'clientId' },
       { value: this.githubConfig.clientSecret, name: 'clientSecret' },
       { value: this.githubConfig.redirectUri, name: 'redirectUri' },
+      { value: this.githubConfig.scope, name: 'scope' },
       { value: this.githubConfig.authorizeUrl, name: 'authorizeUrl' },
       { value: this.githubConfig.accessTokenUrl, name: 'accessTokenUrl' },
       { value: this.githubConfig.userApiUrl, name: 'userApiUrl' },
       { value: this.githubConfig.emailsApiUrl, name: 'emailsApiUrl' },
+      { value: this.githubConfig.apiVersion, name: 'apiVersion' },
       {
         value: this.githubConfig.frontendSuccessUrl,
         name: 'frontendSuccessUrl',

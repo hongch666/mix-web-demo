@@ -53,19 +53,19 @@ export class LogConsumerService implements OnModuleInit {
     // 验证必填字段
     if (!msg.action) {
       logger.error(`ArticleLog 消息缺少 action 字段: ${JSON.stringify(msg)}`);
-      throw BusinessException.unprocessableEntity(Constants.ARTICLE_LESS_ACTION, 'ARTICLE_LESS_ACTION');
+      throw BusinessException.unprocessableEntity(Constants.ARTICLE_LESS_ACTION);
     }
 
     if (!msg.content) {
       logger.error(`ArticleLog 消息缺少 content 字段: ${JSON.stringify(msg)}`);
-      throw BusinessException.unprocessableEntity(Constants.ARTICLE_LESS_CONTNET, 'ARTICLE_LESS_CONTENT');
+      throw BusinessException.unprocessableEntity(Constants.ARTICLE_LESS_CONTNET);
     }
 
     // 验证 action 是否是有效的枚举值
     const validActions = Object.values(ArticleAction);
     if (!validActions.includes(msg.action)) {
       logger.error(`ArticleLog 消息包含无效的 action 值: ${msg.action}`);
-      throw BusinessException.unprocessableEntity(`无效的操作类型: ${msg.action}`, 'INVALID_ACTION');
+      throw BusinessException.unprocessableEntity(`无效的操作类型: ${msg.action}`);
     }
 
     // 解析 content 为对象（如果是 JSON 字符串）

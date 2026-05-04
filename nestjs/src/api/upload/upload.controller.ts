@@ -62,7 +62,7 @@ export class UploadController {
         return success(result);
       }
     }
-    throw BusinessException.notFound(Constants.FILE_PART_NOT_FOUND, 'FILE_PART_NOT_FOUND');
+    throw BusinessException.notFound(Constants.FILE_PART_NOT_FOUND);
   }
 
   @Post('pdf')
@@ -101,6 +101,6 @@ export class UploadController {
         return success(result);
       }
     }
-    throw BusinessException.notFound(Constants.FILE_PART_NOT_FOUND, 'FILE_PART_NOT_FOUND');
+    throw BusinessException.notFound(Constants.FILE_PART_NOT_FOUND);
   }
 }

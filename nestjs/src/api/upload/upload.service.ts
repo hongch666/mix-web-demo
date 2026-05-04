@@ -87,7 +87,7 @@ export class UploadService {
     const fileExtension = path.extname(originalFilename).toLowerCase();
 
     if (fileExtension !== '.pdf') {
-      throw BusinessException.unprocessableEntity(Constants.ONLY_PDF_SUPPORTED, 'ONLY_PDF_SUPPORTED');
+      throw BusinessException.unprocessableEntity(Constants.ONLY_PDF_SUPPORTED);
     }
 
     // 如果提供了自定义文件名，使用自定义文件名；否则生成 UUID
@@ -133,7 +133,7 @@ export class UploadService {
   ): Promise<string> {
     // 禁用 attachFieldsToBody 后，file 本身就是流对象，有 filename、encoding、mimetype 等属性
     if (!file) {
-      throw BusinessException.badRequest(Constants.NO_FILE_UPLOADED, 'NO_FILE_UPLOADED');
+      throw BusinessException.badRequest(Constants.NO_FILE_UPLOADED);
     }
 
     const originalFilename = file.filename || '';
@@ -143,7 +143,7 @@ export class UploadService {
         logger.error(
           `不支持的文件格式: ${ext}，允许格式: ${allowExt.join(', ')}`,
         );
-        throw BusinessException.badRequest(`仅支持以下格式: ${allowExt.join(', ')}`, 'BAD_REQUEST');
+        throw BusinessException.badRequest(`仅支持以下格式: ${allowExt.join(', ')}`);
       }
     }
 
@@ -173,7 +173,7 @@ export class UploadService {
           logger.info(`文件已保存到临时目录: ${localPath}`);
           return localPath;
         } else {
-          throw BusinessException.unprocessableEntity(Constants.FILE_NO_VALID_METHOD, 'FILE_NO_VALID_METHOD');
+          throw BusinessException.unprocessableEntity(Constants.FILE_NO_VALID_METHOD);
         }
       }
 
