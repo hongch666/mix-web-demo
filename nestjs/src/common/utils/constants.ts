@@ -447,6 +447,19 @@ export class Constants {
    */
   static readonly REDIS_LOCK_RELEASE_FAIL = '释放分布式锁失败，key: %s';
 
+  // Redis Lua 脚本
+
+  /**
+   * 解锁 Lua 脚本：只有当锁的值与预期值一致时才删除，保证只有锁持有者才能解锁
+   */
+  static readonly UNLOCK_SCRIPT = `
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("del", KEYS[1])
+    else
+      return 0
+    end
+  `;
+
   // 错误标识常量
 
   // 400 Bad Request
