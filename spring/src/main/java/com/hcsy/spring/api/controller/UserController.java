@@ -31,9 +31,12 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
+import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
+import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.RefreshTokenDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
@@ -110,6 +113,7 @@ public class UserController {
     public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
         User user = BeanUtil.copyProperties(userDto, User.class);
         user.setRole("user");
+        user.setAuthProvider("local");
         if (user.getPassword() == null || user.getPassword().isBlank()) {
             user.setPassword(userPasswordProperties.getDefaultPassword());
         } else {
@@ -184,6 +188,11 @@ public class UserController {
         }
 
         User user = BeanUtil.copyProperties(userDto, User.class);
+        user.setGithubId(existingUser.getGithubId());
+        user.setGithubLogin(existingUser.getGithubLogin());
+        user.setGithubUrl(existingUser.getGithubUrl());
+        user.setAuthProvider(existingUser.getAuthProvider());
+        user.setLastLoginAt(existingUser.getLastLoginAt());
 
         if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
             user.setPassword(existingUser.getPassword());
@@ -250,6 +259,32 @@ public class UserController {
         } catch (Exception e) {
             logger.error(Constants.EMAIL_LOGIN + e.getMessage());
             return Result.error(HttpCode.UNAUTHORIZED, Constants.EMAIL_LOGIN);
+        }
+    }
+
+    @PostMapping("/github/token-ticket")
+    @Operation(summary = "生成 GitHub 登录票据", description = "在 GitHub 回调成功后生成本站登录票据")
+    @RequireInternalToken
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", key = "'all-users'")
+    })
+    @ApiLog("生成 GitHub 登录票据")
+    public Result createGithubTokenTicket(@Valid @RequestBody GithubTokenTicketCreateDTO dto) {
+        return Result.success(userService.createGithubTokenTicket(dto));
+    }
+
+    @PostMapping("/github/token")
+    @Operation(summary = "获取 GitHub 登录 Token", description = "前端使用一次性 ticket 换取本站登录 token，成功后立即删除 ticket")
+    @ApiLog("获取 GitHub 登录 Token")
+    public Result exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
+        try {
+            UserLoginVO loginVO = userService.exchangeGithubTokenTicket(dto);
+            return Result.success(loginVO);
+        } catch (BusinessException e) {
+            return Result.error(e.getHttpStatus(), e.getErrorMessage());
+        } catch (Exception e) {
+            logger.error(Constants.GITHUB_LOGIN_TICKET_EXCHANGE_FAILED_PREFIX + e.getMessage());
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.GITHUB_TOKEN_TICKET_EXPIRED_PUBLIC);
         }
     }
 

@@ -1,10 +1,12 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
@@ -23,9 +26,12 @@ import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
+import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
+import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -36,12 +42,16 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+    private static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
+    private static final String GITHUB_TOKEN_TICKET_PREFIX = "oauth:github:token:";
+
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
     private final TokenService tokenService;
     private final PasswordEncryptor passwordEncryptor;
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public UserListVO listUsersWithFilter(long page, long size, String username) {
@@ -163,11 +173,20 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         validateLoginCaptcha(loginDTO.getCaptchaId(), loginDTO.getCaptchaText());
 
         User user = findByUsername(loginDTO.getName());
-        if (user == null || !passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
+        if (user == null) {
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.LOGIN);
+        }
+        if ("github".equalsIgnoreCase(user.getAuthProvider())
+                && Constants.HIDE_PASSWORD.equals(user.getPassword())) {
+            throw new BusinessException(HttpCode.UNAUTHORIZED,
+                    Constants.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED);
+        }
+        if (!passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
             throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.LOGIN);
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
+        markLastLoginTime(user);
         imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId());
         return loginVO;
     }
@@ -186,8 +205,63 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
+        markLastLoginTime(user);
         imageCaptchaService.deleteCaptcha(emailLoginDTO.getCaptchaId());
         return loginVO;
+    }
+
+    @Override
+    public GithubTokenTicketVO createGithubTokenTicket(GithubTokenTicketCreateDTO dto) {
+        User user = getById(dto.getUserId());
+        if (user == null) {
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+        }
+
+        UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
+        String ticket = UUID.randomUUID().toString().replace("-", "");
+
+        try {
+            redisUtil.set(
+                    buildGithubTicketKey(ticket),
+                    objectMapper.writeValueAsString(loginVO),
+                    GITHUB_TOKEN_TICKET_TTL_SECONDS);
+        } catch (Exception e) {
+            try {
+                tokenService.removeSessionByAccessToken(loginVO.getAccessToken());
+            } catch (Exception cleanupError) {
+                // 清理失败不影响主异常返回，避免掩盖真实错误
+            }
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR,
+                    Constants.GITHUB_LOGIN_TICKET_CACHE_FAILED, e);
+        }
+
+        return GithubTokenTicketVO.builder()
+                .ticket(ticket)
+                .expiresIn(GITHUB_TOKEN_TICKET_TTL_SECONDS)
+                .build();
+    }
+
+    @Override
+    public UserLoginVO exchangeGithubTokenTicket(GithubTokenExchangeDTO dto) {
+        String ticket = dto.getTicket() == null ? null : dto.getTicket().trim();
+        if (ticket == null || ticket.isEmpty()) {
+            throw new BusinessException(HttpCode.BAD_REQUEST, Constants.GITHUB_TOKEN_TICKET_EMPTY);
+        }
+
+        String ticketKey = buildGithubTicketKey(ticket);
+        String storedValue = redisUtil.get(ticketKey);
+        if (storedValue == null) {
+            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.GITHUB_TOKEN_TICKET_EXPIRED);
+        }
+
+        redisUtil.delete(ticketKey);
+
+        try {
+            return objectMapper.readValue(storedValue, UserLoginVO.class);
+        } catch (Exception e) {
+            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR,
+                    Constants.GITHUB_TOKEN_TICKET_PARSE_FAILED, e);
+        }
     }
 
     @Override
@@ -203,6 +277,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         User user = BeanUtil.copyProperties(registerDTO, User.class);
         user.setRole("user");
+        user.setAuthProvider("local");
         user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
         saveUserAndStatus(user);
 
@@ -267,6 +342,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void saveUserAndStatus(User user) {
         // 加密密码后再保存
+        if (user.getAuthProvider() == null || user.getAuthProvider().isBlank()) {
+            user.setAuthProvider("local");
+        }
         String password = user.getPassword();
         if (password != null && !password.isEmpty()) {
             // 检查是否已经被加密过（bcrypt hash 格式为 $2a$, $2b$, $2x$, $2y$ 开头）
@@ -290,5 +368,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!imageCaptchaService.verifyCaptcha(captchaId, captchaText)) {
             throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.IMAGE_CAPTCHA_INVALID);
         }
+    }
+
+    private void markLastLoginTime(User user) {
+        user.setLastLoginAt(LocalDateTime.now());
+        this.updateById(user);
+    }
+
+    private String buildGithubTicketKey(String ticket) {
+        return GITHUB_TOKEN_TICKET_PREFIX + ticket;
     }
 }

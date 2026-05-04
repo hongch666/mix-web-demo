@@ -102,13 +102,20 @@ public class DatabaseInitializer implements ApplicationRunner {
 
     private static final String CREATE_USER_SQL = "CREATE TABLE user (\n" +
             "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',\n" +
+            "    github_id BIGINT COMMENT 'GitHub用户ID',\n" +
+            "    github_login VARCHAR(255) COMMENT 'GitHub登录名',\n" +
+            "    github_url VARCHAR(255) COMMENT 'GitHub主页地址',\n" +
             "    name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',\n" +
             "    password VARCHAR(255) NOT NULL COMMENT '密码',\n" +
             "    email VARCHAR(255) UNIQUE COMMENT '邮箱',\n" +
             "    age INT COMMENT '年龄',\n" +
             "    role VARCHAR(255) NOT NULL COMMENT '用户权限',\n" +
             "    img VARCHAR(255) COMMENT '用户头像',\n" +
-            "    signature VARCHAR(255) COMMENT '个性签名'\n" +
+            "    signature VARCHAR(255) COMMENT '个性签名',\n" +
+            "    auth_provider VARCHAR(50) NOT NULL DEFAULT 'local' COMMENT '注册来源：local/github',\n" +
+            "    last_login_at DATETIME COMMENT '最近登录时间',\n" +
+            "    UNIQUE KEY uk_user_github_id (github_id),\n" +
+            "    INDEX idx_user_auth_provider (auth_provider)\n" +
             ") COMMENT='用户表'";
 
     private static final String CREATE_ARTICLES_SQL = "CREATE TABLE articles (\n" +

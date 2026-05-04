@@ -124,6 +124,62 @@ public class Constants {
      */
     public static String EMAIL_LOGIN = "邮箱验证码登录失败";
 
+        /**
+         * GitHub 账号密码登录被阻止消息
+         */
+        public static final String GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED =
+            "该账号通过 GitHub 登录创建，请使用 GitHub 登录或先设置密码";
+
+        /**
+         * GitHub 登录票据缓存失败消息
+         */
+        public static final String GITHUB_LOGIN_TICKET_CACHE_FAILED =
+            "缓存 GitHub 登录票据失败";
+
+        /**
+         * GitHub 登录票据兑换失败前缀
+         */
+        public static final String GITHUB_LOGIN_TICKET_EXCHANGE_FAILED_PREFIX =
+            "GitHub 登录票据兑换失败: ";
+
+        /**
+         * GitHub 登录票据为空消息
+         */
+        public static final String GITHUB_TOKEN_TICKET_EMPTY = "GitHub 登录票据不能为空";
+
+        /**
+         * GitHub 登录票据已过期消息
+         */
+        public static final String GITHUB_TOKEN_TICKET_EXPIRED =
+            "GitHub 登录票据已过期，请重新登录";
+
+        /**
+         * GitHub 登录票据解析失败消息
+         */
+        public static final String GITHUB_TOKEN_TICKET_PARSE_FAILED =
+            "解析 GitHub 登录票据失败";
+
+        /**
+         * GitHub 登录票据已过期的公开提示
+         */
+        public static final String GITHUB_TOKEN_TICKET_EXPIRED_PUBLIC =
+            "GitHub登录票据已过期";
+
+            /**
+             * GitHub 登录票据创建接口用户ID不能为空消息
+             */
+            public static final String GITHUB_TOKEN_TICKET_USER_ID_REQUIRED = "用户ID不能为空";
+
+            /**
+             * GitHub 登录票据创建接口用户名不能为空消息
+             */
+            public static final String GITHUB_TOKEN_TICKET_USERNAME_REQUIRED = "用户名不能为空";
+
+            /**
+             * GitHub 登录票据兑换接口票据不能为空消息
+             */
+            public static final String GITHUB_TOKEN_EXCHANGE_TICKET_REQUIRED = "票据不能为空";
+
     /**
      * 登出错误
      */

@@ -5,11 +5,16 @@
     <!-- 结果映射 -->
     <resultMap id="BaseResultMap" type="com.hcsy.spring.entity.po.User">
         <id column="id" property="id" />
+        <result column="github_id" property="githubId" />
+        <result column="github_login" property="githubLogin" />
+        <result column="github_url" property="githubUrl" />
         <result column="name" property="name" />
         <result column="age" property="age" />
         <result column="email" property="email" />
         <result column="password" property="password" />
         <result column="role" property="role" />
+        <result column="auth_provider" property="authProvider" />
+        <result column="last_login_at" property="lastLoginAt" />
         <result column="login_status" property="loginStatus" />
     </resultMap>
 

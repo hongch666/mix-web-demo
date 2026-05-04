@@ -1,5 +1,7 @@
 package com.hcsy.spring.entity.vo;
 
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -11,6 +13,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class UserVO {
     private Long id;
+    private Long githubId;
+    private String githubLogin;
+    private String githubUrl;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private String name;
@@ -19,6 +24,8 @@ public class UserVO {
     private String role;
     private String img;
     private String signature;
+    private String authProvider;
+    private LocalDateTime lastLoginAt;
     // 分页查询时返回这两个字段
     private Integer loginStatus; // 登录状态，1表示在线，0表示离线
     private Long onlineDeviceCount; // 在线设备数
