@@ -9,22 +9,22 @@ tmux has-session -t $SESSION 2>/dev/null && tmux kill-session -t $SESSION
 # 创建新会话和初始 pane（Spring）
 tmux new-session -d -s $SESSION -n services -c "$WORKDIR"
 SPRING_PANE=$(tmux display-message -p -t $SESSION:services.0 '#{pane_id}')
-tmux send-keys -t "$SPRING_PANE" "cd spring && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting Spring Boot...' && gradle bootRun --continuous" C-m
+tmux send-keys -t "$SPRING_PANE" "cd spring && if [ -f .env ]; then set -a && . ./.env && set +a; fi && echo 'Starting Spring Boot...' && gradle bootRun --continuous" C-m
 
 # 水平分屏（右上：NestJS）
 tmux split-window -h -t "$SPRING_PANE" -c "$WORKDIR"
 NEST_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$NEST_PANE" "cd nestjs && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting NestJS...' && npm run bun:dev" C-m
+tmux send-keys -t "$NEST_PANE" "cd nestjs && if [ -f .env ]; then set -a && . ./.env && set +a; fi && echo 'Starting NestJS...' && npm run bun:dev" C-m
 
 # 垂直分屏（左下：GoZero）
 tmux split-window -v -t "$SPRING_PANE" -c "$WORKDIR"
 GOZERO_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$GOZERO_PANE" "cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting GoZero...' && fresh" C-m
+tmux send-keys -t "$GOZERO_PANE" "cd gozero/app && if [ -f .env ]; then set -a && . ./.env && set +a; fi && echo 'Starting GoZero...' && fresh" C-m
 
 # 垂直分屏（右下：FastAPI）
 tmux split-window -v -t "$NEST_PANE" -c "$WORKDIR"
 FASTAPI_PANE=$(tmux display-message -p '#{pane_id}')
-tmux send-keys -t "$FASTAPI_PANE" "cd fastapi && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && uv run python main.py" C-m
+tmux send-keys -t "$FASTAPI_PANE" "cd fastapi && if [ -f .env ]; then set -a && . ./.env && set +a; fi && uv run python main.py" C-m
 
 # 重新调整为平铺布局
 tmux select-layout -t $SESSION:services tiled
@@ -37,7 +37,7 @@ tmux select-pane -t "$FASTAPI_PANE" -T "4. FastAPI"
 
 # 创建 Gateway 在新窗口
 tmux new-window -t $SESSION -n gateway -c "$WORKDIR"
-tmux send-keys -t $SESSION:gateway "cd gateway && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && echo 'Starting Gateway...' && gradle bootRun --continuous" C-m
+tmux send-keys -t $SESSION:gateway "cd gateway && if [ -f .env ]; then set -a && . ./.env && set +a; fi && echo 'Starting Gateway...' && gradle bootRun --continuous" C-m
 
 # 切回主服务窗口并聚焦 Spring
 tmux select-window -t $SESSION:services

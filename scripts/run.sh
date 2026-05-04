@@ -78,7 +78,7 @@ validate_option() {
     local option=$1
     local value=$2
     local valid_values=$3
-    
+
     if [[ ! "$valid_values" =~ (^|,)$value(,|$) ]]; then
         echo "错误: 无效的 $option 值: $value"
         echo "有效值: $valid_values"
@@ -96,7 +96,7 @@ if [ "$INTERACTIVE_MODE" = true ]; then
     echo "    多服务启动 - 交互式配置选择"
     echo "======================================="
     echo ""
-    
+
     # Java 构建工具选择
     echo "【1】请选择 Java 构建工具 (Spring & Gateway):"
     echo "    1) gradle (推荐，更快) [默认]"
@@ -108,9 +108,9 @@ if [ "$INTERACTIVE_MODE" = true ]; then
         2) JAVA_BUILD="maven" ;;
         *) echo "无效选择，使用默认值: gradle"; JAVA_BUILD="gradle" ;;
     esac
-    
+
     echo ""
-    
+
     # Node.js 运行时选择
     echo "【2】请选择 Node.js 运行时 (NestJS):"
     echo "    1) bun (推荐，更快) [默认]"
@@ -122,9 +122,9 @@ if [ "$INTERACTIVE_MODE" = true ]; then
         2) NODE_RUNTIME="npm" ;;
         *) echo "无效选择，使用默认值: bun"; NODE_RUNTIME="bun" ;;
     esac
-    
+
     echo ""
-    
+
     # Python 运行时选择
     echo "【3】请选择 Python 运行时 (FastAPI):"
     echo "    1) uv (推荐，更快) [默认]"
@@ -136,7 +136,7 @@ if [ "$INTERACTIVE_MODE" = true ]; then
         2) PYTHON_RUNTIME="python" ;;
         *) echo "无效选择，使用默认值: uv"; PYTHON_RUNTIME="uv" ;;
     esac
-    
+
     echo ""
 fi
 
@@ -185,7 +185,7 @@ tmux send-keys -t $SESSION:2 \
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"
 tmux send-keys -t $SESSION:3 \
-"cd nestjs && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && $node_cmd" C-m
+"cd nestjs && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $node_cmd" C-m
 
 # window 4: fastapi
 tmux new-window -t $SESSION:4 -n fastapi -c "$WORKDIR"
