@@ -125,6 +125,12 @@
       "name": "rate-limit.paths./users/github/token-ticket.message",
       "type": "java.lang.String",
       "description": "A description for 'rate-limit.paths./users/github/token-ticket.message'"
+    },
+    {
+      "name": "auth.block-paths",
+      "type": "java.util.List",
+      "items": { "type": "java.lang.String" },
+      "description": "网关拦截路径列表（返回 403）"
     }
   ]
 }
