@@ -12,4 +12,5 @@ import lombok.Data;
 @ConfigurationProperties(prefix = "auth")
 public class AuthProperties {
     private List<String> excludePaths;
+    private List<String> blockPaths;
 }
