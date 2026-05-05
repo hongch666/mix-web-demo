@@ -1,9 +1,9 @@
 declare module 'docx-templates' {
   export interface CreateReportOptions {
     template: Buffer;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     cmdDelimiter?: [string, string];
-    additionalJsContext?: Record<string, any>;
+    additionalJsContext?: Record<string, unknown>;
     processLineBreaks?: boolean;
     noSandbox?: boolean;
   }

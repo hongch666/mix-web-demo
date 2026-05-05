@@ -8,14 +8,14 @@ declare module 'marked' {
     langPrefix?: string;
     mangle?: boolean;
     pedantic?: boolean;
-    renderer?: any;
+    renderer?: unknown;
     sanitize?: boolean;
     sanitizer?: (html: string) => string;
     silent?: boolean;
     smartLists?: boolean;
     smartypants?: boolean;
-    tokenizer?: any;
-    walkTokens?: (token: any) => void;
+    tokenizer?: unknown;
+    walkTokens?: (token: unknown) => void;
   }
 
   export function parse(markdown: string, options?: MarkedOptions): string;

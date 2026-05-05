@@ -21,7 +21,7 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试NestJS服务')
-  async getNestjs(): Promise<ApiResponse<any>> {
+  async getNestjs(): Promise<ApiResponse<string>> {
     return success(Constants.TEST_WELCOME);
   }
 
@@ -31,8 +31,8 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试Spring服务')
-  async getSpring(): Promise<ApiResponse<any>> {
-    const res: any = await this.nacosService.call({
+  async getSpring(): Promise<ApiResponse<unknown>> {
+    const res: Record<string, unknown> = await this.nacosService.call({
       serviceName: 'spring',
       method: 'GET',
       path: '/api_spring/spring',
@@ -46,8 +46,8 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试GoZero服务')
-  async getGin(): Promise<ApiResponse<any>> {
-    const res: any = await this.nacosService.call({
+  async getGin(): Promise<ApiResponse<unknown>> {
+    const res: Record<string, unknown> = await this.nacosService.call({
       serviceName: 'gozero',
       method: 'GET',
       path: '/api_gozero/gozero',
@@ -61,8 +61,8 @@ export class TestController {
     description: '输出欢迎信息',
   })
   @ApiLog('测试FastAPI服务')
-  async getFastAPI(): Promise<ApiResponse<any>> {
-    const res: any = await this.nacosService.call({
+  async getFastAPI(): Promise<ApiResponse<unknown>> {
+    const res: Record<string, unknown> = await this.nacosService.call({
       serviceName: 'fastapi',
       method: 'GET',
       path: '/api_fastapi/fastapi',
@@ -77,7 +77,7 @@ export class TestController {
   })
   @RequireInternalToken()
   @ApiLog('手动执行清理API日志任务')
-  async executeCleanupOldApiLogsTask(): Promise<ApiResponse<any>> {
+  async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
     await this.taskService.cleanupOldApiLogs();
     return success(null);
   }

@@ -32,8 +32,8 @@ export class ApiLogController {
   @RequireAdmin()
   async findByFilter(
     @Query() query: QueryApiLogDto,
-  ): Promise<ApiResponse<any>> {
-    const data = await this.apiLogService.findByFilter(query);
+  ): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.apiLogService.findByFilter(query);
     return success(data);
   }
 
@@ -48,7 +48,7 @@ export class ApiLogController {
   @ApiLog('创建API日志')
   @RequireAdmin()
   @RequireInternalToken()
-  async create(@Body() dto: CreateApiLogDto): Promise<ApiResponse<any>> {
+  async create(@Body() dto: CreateApiLogDto): Promise<ApiResponse<null>> {
     await this.apiLogService.create(dto);
     return success(null);
   }
@@ -63,7 +63,7 @@ export class ApiLogController {
   })
   @ApiLog('删除API日志')
   @RequireAdmin()
-  async remove(@Param('id') id: string): Promise<ApiResponse<any>> {
+  async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
     await this.apiLogService.removeById(id);
     return success(null);
   }
@@ -78,10 +78,10 @@ export class ApiLogController {
   })
   @ApiLog('批量删除API日志')
   @RequireAdmin()
-  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<any>> {
-    const idArr = ids
+  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<null>> {
+    const idArr: string[] = ids
       .split(',')
-      .map((id) => id.trim())
+      .map((id: string) => id.trim())
       .filter(Boolean);
     await this.apiLogService.removeByIds(idArr);
     return success(null);

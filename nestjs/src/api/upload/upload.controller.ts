@@ -9,11 +9,11 @@ import {
 import type { FastifyRequest } from 'fastify';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
-import { success } from 'src/common/utils/response';
+import { ApiResponse, success } from 'src/common/utils/response';
 import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
 import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
-import { UploadDto } from './dto/upload.dto';
-import { UploadService } from './upload.service';
+import { UploadDto, UploadResult } from './dto/upload.dto';
+import { MultipartUploadFile, UploadService } from './upload.service';
 
 @Controller('upload')
 @ApiTags('文件上传')
@@ -27,7 +27,7 @@ export class UploadController {
   })
   @RequireInternalToken()
   @ApiLog('上传文件到 OSS')
-  async uploadFile(@Body() dto: UploadDto) {
+  async uploadFile(@Body() dto: UploadDto): Promise<ApiResponse<string>> {
     const url: string = await this.uploadService.uploadFile(
       dto.local_file,
       dto.oss_file,
@@ -54,11 +54,15 @@ export class UploadController {
     description: '通过 multipart/form-data 上传图片到 OSS',
   })
   @ApiLog('上传图片到 OSS')
-  async uploadImage(@Req() req: FastifyRequest) {
-    const parts = (req as any).parts();
+  async uploadImage(
+    @Req() req: FastifyRequest,
+  ): Promise<ApiResponse<UploadResult>> {
+    const parts = req.parts();
     for await (const part of parts) {
-      if (part.filename) {
-        const result = await this.uploadService.uploadImage(part);
+      if ('filename' in part && part.filename) {
+        const result: UploadResult = await this.uploadService.uploadImage(
+          part as MultipartUploadFile,
+        );
         return success(result);
       }
     }
@@ -93,11 +97,14 @@ export class UploadController {
   async uploadPdf(
     @Req() req: FastifyRequest,
     @Query('custom_filename') customFilename?: string,
-  ) {
-    const parts = (req as any).parts();
+  ): Promise<ApiResponse<UploadResult>> {
+    const parts = req.parts();
     for await (const part of parts) {
-      if (part.filename) {
-        const result = await this.uploadService.uploadPdf(part, customFilename);
+      if ('filename' in part && part.filename) {
+        const result: UploadResult = await this.uploadService.uploadPdf(
+          part as MultipartUploadFile,
+          customFilename,
+        );
         return success(result);
       }
     }

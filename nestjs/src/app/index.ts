@@ -4,15 +4,18 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import {
   FastifyAdapter,
-  NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import type { OpenAPIObject } from '@nestjs/swagger';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { HttpCode } from 'src/common/utils/httpCode';
 import { logger } from 'src/common/utils/writeLog';
 import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
 import { Constants } from '../common/utils/constants';
 import { AppModule } from './app.module';
+
+type FastifyRegisterPlugin = Parameters<NestFastifyApplication['register']>[0];
 
 function extractValidationMessage(errors: unknown[]): string {
   const messages: string[] = [];
@@ -46,7 +49,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
     await NestFactory.create<NestFastifyApplication>(AppModule, fastifyAdapter);
 
   // 支持 multipart/form-data 文件上传
-  await app.register(multipart as any, {
+  await app.register(multipart as unknown as FastifyRegisterPlugin, {
     attachFieldsToBody: false,
     limits: {
       fileSize: 20 * 1024 * 1024, // 最大 20MB，可根据需要调整
@@ -80,7 +83,11 @@ export async function createApp(): Promise<NestFastifyApplication> {
       transform: true,
       exceptionFactory: (errors) => {
         const message = extractValidationMessage(errors);
-        return new BusinessException(message, HttpCode.BAD_REQUEST, 'PARAM_PARSE_FAILED');
+        return new BusinessException(
+          message,
+          HttpCode.BAD_REQUEST,
+          'PARAM_PARSE_FAILED',
+        );
       },
     }),
   );

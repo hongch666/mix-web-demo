@@ -14,6 +14,14 @@ import { UploadResult } from './dto/upload.dto';
 
 const pump = promisify(pipeline);
 
+export interface MultipartUploadFile {
+  filename?: string;
+  readable?: boolean;
+  pipe?: unknown;
+  file?: Readable;
+  toBuffer?: () => Promise<Buffer>;
+}
+
 @Injectable()
 export class UploadService {
   constructor(
@@ -31,22 +39,22 @@ export class UploadService {
   /**
    * 上传图片到 OSS
    */
-  async uploadImage(file: any): Promise<UploadResult> {
+  async uploadImage(file: MultipartUploadFile): Promise<UploadResult> {
     logger.info(`uploadImage 开始，文件信息: filename=${file?.filename}`);
     logger.info(
       `文件对象类型: ${typeof file}, 是否有 readable: ${file?.readable}, 是否有 pipe: ${typeof file?.pipe}`,
     );
     logger.info(`文件对象键: ${Object.keys(file || {}).join(', ')}`);
 
-    const originalFilename = file.filename || 'image';
-    const fileExtension =
+    const originalFilename: string = file.filename || 'image';
+    const fileExtension: string =
       path.extname(originalFilename).toLowerCase() || '.jpg';
-    const uniqueFilename = `${crypto.randomUUID()}${fileExtension}`;
+    const uniqueFilename: string = `${crypto.randomUUID()}${fileExtension}`;
     logger.info(`生成唯一文件名: ${uniqueFilename}`);
 
     // 保存到本地临时目录
     logger.info(Constants.FILE_SAVE_TEMP_START);
-    const localPath = await this.saveFileToTemp(file, uniqueFilename, [
+    const localPath: string = await this.saveFileToTemp(file, uniqueFilename, [
       '.png',
       '.jpg',
       '.jpeg',
@@ -58,10 +66,13 @@ export class UploadService {
     try {
       // 上传到 OSS
       logger.info(Constants.FILE_UPLOAD_OSS_START);
-      const ossPath = `pic/${uniqueFilename}`;
+      const ossPath: string = `pic/${uniqueFilename}`;
       logger.info(`OSS 目标路径: ${ossPath}`);
 
-      const ossUrl = await this.ossService.uploadFile(localPath, ossPath);
+      const ossUrl: string = await this.ossService.uploadFile(
+        localPath,
+        ossPath,
+      );
       logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
       return {
@@ -80,11 +91,14 @@ export class UploadService {
   /**
    * 上传 PDF 到 OSS
    */
-  async uploadPdf(file: any, customFilename?: string): Promise<UploadResult> {
+  async uploadPdf(
+    file: MultipartUploadFile,
+    customFilename?: string,
+  ): Promise<UploadResult> {
     logger.info(`uploadPdf 开始，文件信息: filename=${file?.filename}`);
 
-    const originalFilename = file.filename || 'document.pdf';
-    const fileExtension = path.extname(originalFilename).toLowerCase();
+    const originalFilename: string = file.filename || 'document.pdf';
+    const fileExtension: string = path.extname(originalFilename).toLowerCase();
 
     if (fileExtension !== '.pdf') {
       throw BusinessException.unprocessableEntity(Constants.ONLY_PDF_SUPPORTED);
@@ -101,16 +115,19 @@ export class UploadService {
 
     // 保存到本地临时目录
     logger.info(Constants.FILE_SAVE_TEMP_START);
-    const localPath = await this.saveFileToTemp(file, uniqueFilename);
+    const localPath: string = await this.saveFileToTemp(file, uniqueFilename);
     logger.info(`文件已保存到临时目录: ${localPath}`);
 
     try {
       // 上传到 OSS
       logger.info(Constants.FILE_UPLOAD_OSS_START);
-      const ossPath = `pdf/${uniqueFilename}`;
+      const ossPath: string = `pdf/${uniqueFilename}`;
       logger.info(`OSS 目标路径: ${ossPath}`);
 
-      const ossUrl = await this.ossService.uploadFile(localPath, ossPath);
+      const ossUrl: string = await this.ossService.uploadFile(
+        localPath,
+        ossPath,
+      );
       logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
       return {
@@ -127,7 +144,7 @@ export class UploadService {
   }
 
   private async saveFileToTemp(
-    file: any,
+    file: MultipartUploadFile,
     filename: string,
     allowExt?: string[],
   ): Promise<string> {
@@ -136,9 +153,9 @@ export class UploadService {
       throw BusinessException.badRequest(Constants.NO_FILE_UPLOADED);
     }
 
-    const originalFilename = file.filename || '';
+    const originalFilename: string = file.filename || '';
     if (allowExt && allowExt.length > 0) {
-      const ext = path.extname(originalFilename).toLowerCase() || '';
+      const ext: string = path.extname(originalFilename).toLowerCase() || '';
       if (!allowExt.includes(ext)) {
         logger.error(
           `不支持的文件格式: ${ext}，允许格式: ${allowExt.join(', ')}`,
@@ -168,7 +185,7 @@ export class UploadService {
         // 如果没有 file.file 属性，尝试使用 toBuffer() 方法
         if (typeof file.toBuffer === 'function') {
           logger.info(Constants.USING_TO_BUFFER_METHOD);
-          const buffer = await file.toBuffer();
+          const buffer: Buffer = await file.toBuffer();
           await fs.promises.writeFile(localPath, buffer);
           logger.info(`文件已保存到临时目录: ${localPath}`);
           return localPath;
@@ -181,7 +198,7 @@ export class UploadService {
       logger.info(
         `使用 file.file 作为流, 类型: ${typeof file.file}, 是否有 pipe: ${typeof file.file?.pipe}`,
       );
-      await pump(file.file as Readable, fs.createWriteStream(localPath));
+      await pump(file.file, fs.createWriteStream(localPath));
       logger.info(`文件已保存到临时目录: ${localPath}`);
       return localPath;
     } catch (error: unknown) {

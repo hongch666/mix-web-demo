@@ -39,7 +39,7 @@ export class DownloadService {
     const user: User | null = await this.userService.getUserById(
       article.user_id,
     );
-    const data: Record<string, any> = {
+    const data: Record<string, unknown> = {
       title: article.title,
       // 传递htmlContent给word模板
       content: htmlContent,
@@ -397,8 +397,9 @@ export class DownloadService {
     try {
       const url: string = await this.ossService.uploadFile(filePath, ossPath);
       return url;
-    } catch (error: any) {
-      logger.error(`上传阿里云OSS错误: ${error.message}`);
+    } catch (error: unknown) {
+      const message: string = error instanceof Error ? error.message : String(error);
+      logger.error(`上传阿里云OSS错误: ${message}`);
       throw BusinessException.internalServerError(
         Constants.OSS_UPLOAD_ERR,
         'OSS_UPLOAD_ERROR',

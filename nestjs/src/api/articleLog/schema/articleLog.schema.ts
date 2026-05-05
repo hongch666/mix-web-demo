@@ -19,7 +19,7 @@ export class ArticleLog {
 
   // 操作内容（任意 JSON 对象）
   @Prop({ type: Object, required: true })
-  content!: Record<string, any>;
+  content!: Record<string, unknown>;
 
   // 操作说明（可选）
   @Prop()

@@ -19,8 +19,12 @@ export const REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY =
  *   return success(data);
  * }
  */
-export const RequireInternalToken = (serviceName?: string) => {
-  const decorators: any[] = [SetMetadata(REQUIRE_INTERNAL_TOKEN_KEY, true)];
+export const RequireInternalToken = (
+  serviceName?: string,
+): MethodDecorator & ClassDecorator => {
+  const decorators: Array<MethodDecorator | ClassDecorator> = [
+    SetMetadata(REQUIRE_INTERNAL_TOKEN_KEY, true),
+  ];
 
   if (serviceName) {
     decorators.unshift(

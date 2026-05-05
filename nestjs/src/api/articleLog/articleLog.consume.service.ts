@@ -49,7 +49,7 @@ export class LogConsumerService implements OnModuleInit {
     );
   }
 
-  private async handleMessage(msg: ArticleLogMessage) {
+  private async handleMessage(msg: ArticleLogMessage): Promise<void> {
     // 验证必填字段
     if (!msg.action) {
       logger.error(`ArticleLog 消息缺少 action 字段: ${JSON.stringify(msg)}`);
@@ -62,17 +62,17 @@ export class LogConsumerService implements OnModuleInit {
     }
 
     // 验证 action 是否是有效的枚举值
-    const validActions = Object.values(ArticleAction);
+    const validActions: ArticleAction[] = Object.values(ArticleAction);
     if (!validActions.includes(msg.action)) {
       logger.error(`ArticleLog 消息包含无效的 action 值: ${msg.action}`);
       throw BusinessException.unprocessableEntity(`无效的操作类型: ${msg.action}`);
     }
 
     // 解析 content 为对象（如果是 JSON 字符串）
-    let contentObj: Record<string, any>;
+    let contentObj: Record<string, unknown>;
     if (typeof msg.content === 'string') {
       try {
-        contentObj = JSON.parse(msg.content) as Record<string, any>;
+        contentObj = JSON.parse(msg.content) as Record<string, unknown>;
       } catch {
         contentObj = { value: msg.content };
       }

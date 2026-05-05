@@ -5,7 +5,9 @@ declare module 'qs' {
     skipNulls?: boolean;
     encode?: boolean;
     encoder?: (str: string) => string;
-    filter?: Array<string | number> | ((prefix: string, value: any) => any);
+    filter?:
+      | Array<string | number>
+      | ((prefix: string, value: unknown) => unknown);
     arrayFormat?: 'indices' | 'brackets' | 'repeat' | 'comma';
     indices?: boolean;
     sort?: (a: string, b: string) => number;
@@ -37,8 +39,8 @@ declare module 'qs' {
     interpretNumericEntities?: boolean;
   }
 
-  export function stringify(obj: any, options?: IStringifyOptions): string;
-  export function parse(str: string, options?: IParseOptions): any;
+  export function stringify(obj: unknown, options?: IStringifyOptions): string;
+  export function parse(str: string, options?: IParseOptions): unknown;
 
   const qs: {
     stringify: typeof stringify;

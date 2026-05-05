@@ -2,8 +2,10 @@ import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
+import type { MongooseModuleOptions } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { InternalTokenGuard } from 'src/framework/guards/internalToken.guard';
 import { RequireAdminGuard } from 'src/framework/guards/requireAdmin.guard';
@@ -15,15 +17,33 @@ import { ClsMiddleware } from '../framework/middleware/cls.middleware';
 import { ModulesModule } from '../modules/modules.module';
 import { RedisModule } from '../modules/redis/redis.module';
 
+interface DatabaseConfig {
+  type: 'mysql';
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+  database: string;
+  logging: boolean;
+}
+
+interface MongoDbConfig {
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+  dbName: string;
+}
+
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService): any => {
-        const db: Record<string, unknown> = configService.get(
+      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
+        const db: DatabaseConfig = configService.get<DatabaseConfig>(
           'database',
-        ) as Record<string, unknown>;
+        )!;
         return {
           type: db.type,
           host: db.host,
@@ -43,15 +63,13 @@ import { RedisModule } from '../modules/redis/redis.module';
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService): Promise<any> => {
-        const mongodb: Record<string, unknown> = configService.get(
+      useFactory: async (
+        configService: ConfigService,
+      ): Promise<MongooseModuleOptions> => {
+        const mongodb: MongoDbConfig = configService.get<MongoDbConfig>(
           'mongodb',
-        ) as Record<string, unknown>;
-        const host: string = mongodb.host as string;
-        const port: number = mongodb.port as number;
-        const username: string = mongodb.username as string;
-        const password: string = mongodb.password as string;
-        const dbName: string = mongodb.dbName as string;
+        )!;
+        const { host, port, username, password, dbName } = mongodb;
 
         // 根据是否有用户名和密码构建 URI
         let uri: string;

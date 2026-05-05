@@ -17,6 +17,30 @@ dayjs.extend(isLeapYear);
 
 const TIMEZONE = 'Asia/Shanghai';
 
+interface MongoIndexInfo {
+  name?: string;
+}
+
+interface ApiLogListItem {
+  _id: unknown;
+  userId: number;
+  username: string;
+  apiDescription: string;
+  apiPath: string;
+  apiMethod: string;
+  queryParams: Record<string, unknown>;
+  pathParams: Record<string, unknown>;
+  requestBody: Record<string, unknown>;
+  responseTime: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ApiLogPageResult {
+  total: number;
+  list: ApiLogListItem[];
+}
+
 @Injectable()
 export class ApiLogService {
   constructor(
@@ -31,8 +55,9 @@ export class ApiLogService {
    * 如果索引不存在则自动创建
    */
   private async ensureIndexes(): Promise<void> {
-    const collection: any = this.apiLogModel.collection;
-    const existingIndexes: any = await collection.getIndexes();
+    const collection = this.apiLogModel.collection;
+    const existingIndexes: Record<string, MongoIndexInfo> =
+      (await collection.getIndexes()) as Record<string, MongoIndexInfo>;
 
     // 定义需要的索引
     const requiredIndexes: Array<{
@@ -57,7 +82,7 @@ export class ApiLogService {
     // 检查并创建缺失的索引
     for (const indexConfig of requiredIndexes) {
       const indexExists: boolean = Object.values(existingIndexes).some(
-        (index: any) => index.name === indexConfig.options.name,
+        (index: MongoIndexInfo) => index.name === indexConfig.options.name,
       );
 
       if (!indexExists) {
@@ -111,7 +136,7 @@ export class ApiLogService {
    * 根据条件查询日志（分页）
    * @param query 查询条件
    */
-  async findByFilter(query: QueryApiLogDto): Promise<any> {
+  async findByFilter(query: QueryApiLogDto): Promise<ApiLogPageResult> {
     const {
       userId,
       username,
@@ -124,7 +149,7 @@ export class ApiLogService {
       size = '10',
     } = query;
 
-    const filters: Record<string, any> = {};
+    const filters: Record<string, unknown> = {};
 
     if (userId) filters.userId = Number(userId);
     if (username) filters.username = { $regex: username, $options: 'i' };
@@ -134,18 +159,22 @@ export class ApiLogService {
     if (apiMethod) filters.apiMethod = apiMethod;
 
     if (startTime || endTime) {
-      filters.createdAt = {};
+      const createdAtFilter: Record<string, Date> = {};
       if (startTime)
-        filters.createdAt.$gte = dayjs(
+        createdAtFilter.$gte = dayjs(
           startTime,
           'YYYY-MM-DD HH:mm:ss',
         ).toDate();
       if (endTime)
-        filters.createdAt.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
+        createdAtFilter.$lte = dayjs(
+          endTime,
+          'YYYY-MM-DD HH:mm:ss',
+        ).toDate();
+      filters.createdAt = createdAtFilter;
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(size);
-    const take = parseInt(size);
+    const skip: number = (parseInt(page) - 1) * parseInt(size);
+    const take: number = parseInt(size);
 
     const [total, list] = await Promise.all([
       this.apiLogModel.countDocuments(filters),
@@ -158,7 +187,7 @@ export class ApiLogService {
     ]);
 
     // 格式化返回数据
-    const resultList = list.map((log) => ({
+    const resultList: ApiLogListItem[] = list.map((log: ApiLogDocument) => ({
       _id: log._id,
       userId: log.userId,
       username: log.username,

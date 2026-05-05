@@ -26,7 +26,7 @@ export enum ArticleAction {
 // RabbitMQ 消息接口定义
 export interface ArticleLogMessage {
   action: ArticleAction;
-  content: string | Record<string, any>;
+  content: string | Record<string, unknown>;
   msg?: string;
   user_id: number;
   article_id: number;
@@ -56,7 +56,7 @@ export class CreateArticleLogDto {
     type: Object,
     example: { field: "title", oldValue: "旧标题", newValue: "新标题" },
   })
-  content!: Record<string, any>;
+  content!: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: "操作说明", example: "修改了文章标题" })
   @IsOptional()

@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
 import { NacosNamingClient } from 'nacos';
+import type { NacosInstance } from 'nacos';
 import { ClsService } from 'nestjs-cls';
 import * as os from 'os';
 import qs from 'qs';
@@ -137,7 +138,7 @@ export class NacosService implements OnModuleInit {
         metadata: {
           version: '1.0.0',
         },
-      } as any,
+      },
     );
 
     logger.info(Constants.REGISTER_NACOS);
@@ -180,12 +181,9 @@ export class NacosService implements OnModuleInit {
 
   async getServiceInstances(
     serviceName: string,
-  ): Promise<Record<string, unknown>[]> {
-    const instances: Record<string, unknown>[] =
-      (await this.client.getAllInstances(serviceName)) as Record<
-        string,
-        unknown
-      >[];
+  ): Promise<NacosInstance[]> {
+    const instances: NacosInstance[] =
+      await this.client.getAllInstances(serviceName);
     return instances;
   }
 
@@ -204,7 +202,7 @@ export class NacosService implements OnModuleInit {
   async call(opts: CallOptions): Promise<Record<string, unknown>> {
     const breaker = this.getBreaker(opts.serviceName);
 
-    const instances: Record<string, unknown>[] = await this.getServiceInstances(
+    const instances: NacosInstance[] = await this.getServiceInstances(
       opts.serviceName,
     );
     if (!instances || instances.length === 0) {
@@ -215,7 +213,7 @@ export class NacosService implements OnModuleInit {
     }
 
     // 负载均衡策略：随机
-    const instance: Record<string, unknown> =
+    const instance: NacosInstance =
       instances[Math.floor(Math.random() * instances.length)]!;
 
     // 替换 pathParams
@@ -230,7 +228,7 @@ export class NacosService implements OnModuleInit {
     const queryString: string = opts.queryParams
       ? `?${qs.stringify(opts.queryParams)}`
       : '';
-    const url: string = `http://${instance.ip as string}:${instance.port as number}${path}${queryString}`;
+    const url: string = `http://${instance.ip}:${instance.port}${path}${queryString}`;
 
     // 默认请求头
     const userId: number = this.cls.get<number>('userId') || 0;

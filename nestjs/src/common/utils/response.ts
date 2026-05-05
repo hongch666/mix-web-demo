@@ -1,6 +1,6 @@
 import { HttpCode } from './httpCode';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number; // 3 位 HTTP 状态码，与 HTTP 响应状态码一致
   msg: string; // 提示信息
   data?: T; // 成功时返回数据

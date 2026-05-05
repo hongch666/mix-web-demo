@@ -1,7 +1,7 @@
 declare module 'html-to-text' {
   export interface HtmlToTextOptions {
     wordwrap?: number | boolean | null;
-    tables?: boolean | any[];
+    tables?: boolean | unknown[];
     ignoreHref?: boolean;
     ignoreImage?: boolean;
     preserveNewlines?: boolean;

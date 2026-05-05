@@ -30,7 +30,7 @@ export class ArticleLogController {
   @ApiLog('新增文章日志')
   @RequireAdmin()
   @RequireInternalToken()
-  async create(@Body() dto: CreateArticleLogDto): Promise<ApiResponse<any>> {
+  async create(@Body() dto: CreateArticleLogDto): Promise<ApiResponse<null>> {
     await this.logService.create(dto);
     return success(null);
   }
@@ -44,8 +44,8 @@ export class ArticleLogController {
   @RequireAdmin()
   async findByFilter(
     @Query() query: QueryArticleLogDto,
-  ): Promise<ApiResponse<any>> {
-    const data: any = await this.logService.findByFilter(query);
+  ): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.logService.findByFilter(query);
     return success(data);
   }
   @Delete(':id')
@@ -55,7 +55,7 @@ export class ArticleLogController {
   })
   @ApiLog('删除文章日志')
   @RequireAdmin()
-  async remove(@Param('id') id: string): Promise<ApiResponse<any>> {
+  async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
     await this.logService.removeById(id);
     return success(null);
   }
@@ -67,7 +67,7 @@ export class ArticleLogController {
   })
   @ApiLog('批量删除文章日志')
   @RequireAdmin()
-  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<any>> {
+  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<null>> {
     const idArr: string[] = ids
       .split(',')
       .map((id: string) => id.trim())

@@ -36,7 +36,9 @@ export class InternalTokenGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<Record<string, unknown>>();
     const internalToken = this.extractInternalToken(request);
 
     if (!internalToken) {
@@ -75,11 +77,12 @@ export class InternalTokenGuard implements CanActivate {
         `内部令牌验证成功 - 用户ID: ${claims.userId}, 服务: ${claims.serviceName}`,
       );
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof BusinessException) {
         throw error;
       }
-      logger.error(`令牌验证失败: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(`令牌验证失败: ${message}`);
       throw new BusinessException(
         Constants.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,

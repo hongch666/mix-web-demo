@@ -11,11 +11,16 @@ export class MailService {
   private transporter!: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    const host = this.configService.get<string>('mail.host');
-    const port = this.configService.get<string>('mail.port');
-    const secureVal = this.configService.get<string>('mail.secure');
-    const username = this.configService.get<string>('mail.username');
-    const password = this.configService.get<string>('mail.password');
+    const host: string | undefined =
+      this.configService.get<string>('mail.host');
+    const port: string | undefined =
+      this.configService.get<string>('mail.port');
+    const secureVal: string | undefined =
+      this.configService.get<string>('mail.secure');
+    const username: string | undefined =
+      this.configService.get<string>('mail.username');
+    const password: string | undefined =
+      this.configService.get<string>('mail.password');
 
     if (!username || !password) {
       this.logger.warn(Constants.MAIL_SERVICE_CONFIG_INCOMPLETE);
@@ -37,14 +42,14 @@ export class MailService {
     const { email, code, type, expireMinutes = 10 } = dto;
 
     // 脱敏记录日志，不打印完整验证码
-    const maskedEmail = email.replace(/(.{3}).+(.{2}@)/, '$1***$2');
+    const maskedEmail: string = email.replace(/(.{3}).+(.{2}@)/, '$1***$2');
     this.logger.log(`发送验证码邮件到: ${maskedEmail}, 场景: ${type}`);
 
     if (!this.transporter) {
       throw new Error(Constants.MAIL_SERVICE_CONFIG_INCORRECT);
     }
 
-    const from =
+    const from: string | undefined =
       this.configService.get<string>('mail.from') ||
       this.configService.get<string>('mail.username');
 
@@ -56,10 +61,10 @@ export class MailService {
         subject: this.getSubject(type),
         html: buildEmailContent(code, type, expireMinutes),
       })
-      .then(() => {
+      .then((): void => {
         this.logger.log(`验证码邮件已成功发送到: ${maskedEmail}`);
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         this.logger.error(
           `验证码邮件发送失败: ${maskedEmail}`,
           error instanceof Error ? error.message : String(error),

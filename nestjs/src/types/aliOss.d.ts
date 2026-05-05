@@ -11,7 +11,7 @@ declare module 'ali-oss' {
   export interface PutResult {
     name: string;
     url: string;
-    res: any;
+    res: unknown;
   }
 
   export default class OSS {

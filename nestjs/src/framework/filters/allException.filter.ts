@@ -11,9 +11,13 @@ import { HttpCode } from 'src/common/utils/httpCode';
 import { error } from 'src/common/utils/response';
 import { logger } from 'src/common/utils/writeLog';
 
+interface HttpExceptionResponse {
+  message?: string | string[];
+}
+
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  catch(exception: any, host: ArgumentsHost): void {
+  catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response: FastifyReply = ctx.getResponse<FastifyReply>();
     const request: FastifyRequest = ctx.getRequest<FastifyRequest>();
@@ -27,8 +31,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const res: string | object = exception.getResponse();
       if (typeof res === 'string') {
         message = res;
-      } else if (typeof res === 'object' && (res as any).message) {
-        message = (res as any).message;
+      } else {
+        const exceptionResponse = res as HttpExceptionResponse;
+        if (typeof exceptionResponse.message === 'string') {
+          message = exceptionResponse.message;
+        } else if (Array.isArray(exceptionResponse.message)) {
+          message = exceptionResponse.message.join('; ');
+        }
       }
       httpStatus = exception.getStatus();
       errorIdentifier = exception.getErrorIdentifier();
@@ -44,9 +53,15 @@ export class AllExceptionsFilter implements ExceptionFilter {
       errorIdentifier = 'NESTJS_SERVER_ERROR';
     }
 
+    const exceptionMessage =
+      exception instanceof Error
+        ? exception.message
+        : Constants.ERROR_DEFAULT_MSG;
+    const exceptionStack = exception instanceof Error ? exception.stack : '';
+
     // 打印错误日志（所有异常都记录详细信息）
     logger.error(
-      `[${request.method}] ${request.url} - [${errorIdentifier}] ${exception instanceof BusinessException ? message : exception?.message || Constants.ERROR_DEFAULT_MSG} - ${exception.stack}`,
+      `[${request.method}] ${request.url} - [${errorIdentifier}] ${exception instanceof BusinessException ? message : exceptionMessage} - ${exceptionStack}`,
     );
 
     response.status(httpStatus).send(error(httpStatus, message));

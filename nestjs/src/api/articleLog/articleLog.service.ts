@@ -19,6 +19,28 @@ dayjs.extend(isLeapYear);
 
 const TIMEZONE = 'Asia/Shanghai';
 
+interface MongoIndexInfo {
+  name?: string;
+}
+
+interface ArticleLogListItem {
+  _id: unknown;
+  userId: number;
+  username: string;
+  articleId: number;
+  articleTitle: string;
+  action: string;
+  content: Record<string, unknown>;
+  msg?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ArticleLogPageResult {
+  total: number;
+  list: ArticleLogListItem[];
+}
+
 @Injectable()
 export class ArticleLogService {
   constructor(
@@ -35,8 +57,9 @@ export class ArticleLogService {
    * 如果索引不存在则自动创建
    */
   private async ensureIndexes(): Promise<void> {
-    const collection: any = this.logModel.collection;
-    const existingIndexes: any = await collection.getIndexes();
+    const collection = this.logModel.collection;
+    const existingIndexes: Record<string, MongoIndexInfo> =
+      (await collection.getIndexes()) as Record<string, MongoIndexInfo>;
 
     // 定义需要的索引
     const requiredIndexes: Array<{
@@ -65,7 +88,7 @@ export class ArticleLogService {
     // 检查并创建缺失的索引
     for (const indexConfig of requiredIndexes) {
       const indexExists: boolean = Object.values(existingIndexes).some(
-        (index: any) => index.name === indexConfig.options.name,
+        (index: MongoIndexInfo) => index.name === indexConfig.options.name,
       );
 
       if (!indexExists) {
@@ -79,8 +102,10 @@ export class ArticleLogService {
     this.logModel.create(dto);
   }
 
-  async removeById(id: string) {
-    const existingLog = await this.logModel.findById(id).exec();
+  async removeById(id: string): Promise<ArticleLogDocument | null> {
+    const existingLog: ArticleLogDocument | null = await this.logModel
+      .findById(id)
+      .exec();
     if (!existingLog) {
       throw BusinessException.notFound(Constants.ARTICLE_LOG_NOT_FOUND);
     }
@@ -89,10 +114,12 @@ export class ArticleLogService {
 
   async removeByIds(ids: string[]): Promise<DeleteResult> {
     // 先检查所有记录是否存在
-    const existingLogs: any[] = await this.logModel
+    const existingLogs: ArticleLogDocument[] = await this.logModel
       .find({ _id: { $in: ids } })
       .exec();
-    const existingIds: string[] = existingLogs.map((log: any) => log.id);
+    const existingIds: string[] = existingLogs.map(
+      (log: ArticleLogDocument) => log.id,
+    );
 
     // 找出不存在的ID
     const notFoundIds: string[] = ids.filter(
@@ -105,7 +132,7 @@ export class ArticleLogService {
     return this.logModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 
-  async findByFilter(query: QueryArticleLogDto) {
+  async findByFilter(query: QueryArticleLogDto): Promise<ArticleLogPageResult> {
     const {
       userId,
       articleId,
@@ -118,7 +145,7 @@ export class ArticleLogService {
       size = '10',
     } = query;
 
-    const filters: Record<string, any> = {};
+    const filters: Record<string, unknown> = {};
     if (userId) filters.userId = Number(userId);
     if (articleId) filters.articleId = Number(articleId);
     if (action) filters.action = action;
@@ -149,18 +176,22 @@ export class ArticleLogService {
     }
 
     if (startTime || endTime) {
-      filters.createdAt = {};
+      const createdAtFilter: Record<string, Date> = {};
       if (startTime)
-        filters.createdAt.$gte = dayjs(
+        createdAtFilter.$gte = dayjs(
           startTime,
           'YYYY-MM-DD HH:mm:ss',
         ).toDate();
       if (endTime)
-        filters.createdAt.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
+        createdAtFilter.$lte = dayjs(
+          endTime,
+          'YYYY-MM-DD HH:mm:ss',
+        ).toDate();
+      filters.createdAt = createdAtFilter;
     }
 
-    const pageNum = parseInt(page);
-    const take = parseInt(size);
+    const pageNum: number = parseInt(page);
+    const take: number = parseInt(size);
 
     const [total, list] = await Promise.all([
       this.logModel.countDocuments(filters),
@@ -181,8 +212,8 @@ export class ArticleLogService {
             .exec(),
     ]);
     // 只返回指定字段
-    const resultList = await Promise.all(
-      list.map(async (log) => ({
+    const resultList: ArticleLogListItem[] = await Promise.all(
+      list.map(async (log: ArticleLogDocument): Promise<ArticleLogListItem> => ({
         _id: log._id,
         userId: log.userId,
         username: (await this.userService.getUserById(log.userId))?.name || '',

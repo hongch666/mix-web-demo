@@ -25,9 +25,9 @@ export interface ApiLogMessage {
   api_description: string;
   api_path: string;
   api_method: ApiMethod;
-  query_params?: Record<string, any>;
-  path_params?: Record<string, any>;
-  request_body?: Record<string, any>;
+  query_params?: Record<string, unknown>;
+  path_params?: Record<string, unknown>;
+  request_body?: Record<string, unknown>;
   response_time: number;
 }
 
@@ -66,15 +66,15 @@ export class CreateApiLogDto {
     example: { page: 1, size: 10 },
   })
   @IsOptional()
-  queryParams?: Record<string, any>;
+  queryParams?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: "路径参数", example: { id: "1" } })
   @IsOptional()
-  pathParams?: Record<string, any>;
+  pathParams?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: "请求体", example: { name: "test" } })
   @IsOptional()
-  requestBody?: Record<string, any>;
+  requestBody?: Record<string, unknown>;
 
   @ApiProperty({ description: "响应时间（毫秒）", example: 100 })
   @IsNumber({}, { message: "响应时间必须是数字" })

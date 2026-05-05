@@ -7,6 +7,7 @@ import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 import { NacosService } from 'src/modules/nacos/nacos.service';
 import { RedisService } from 'src/modules/redis/redis.service';
+import type { User } from 'src/modules/user/entities/user.entity';
 import { UserService } from 'src/modules/user/user.service';
 import {
   GithubAuthorizeQueryDto,
@@ -141,7 +142,7 @@ export class GithubService {
         await this.fetchGithubProfile(accessToken);
       const githubEmail: string | null =
         githubProfile.email || (await this.fetchPrimaryEmail(accessToken));
-      const user = await this.userService.findOrCreateGithubUser({
+      const user: User = await this.userService.findOrCreateGithubUser({
         githubId: String(githubProfile.id),
         githubLogin: githubProfile.login,
         githubName: githubProfile.name?.trim() || githubProfile.login,
@@ -221,7 +222,8 @@ export class GithubService {
       },
     ];
 
-    const missingField = requiredFields.find(({ value }) => !value);
+    const missingField: { value: string; name: string } | undefined =
+      requiredFields.find(({ value }) => !value);
     if (missingField) {
       throw BusinessException.internalServerError(
         `${Constants.GITHUB_OAUTH_CONFIG_INCOMPLETE_PREFIX}${missingField.name}`,
@@ -271,7 +273,7 @@ export class GithubService {
         },
       );
 
-    const data = response.data;
+    const data: GithubAccessTokenResponse = response.data;
     if (
       response.status < 200 ||
       response.status >= 300 ||
@@ -307,7 +309,7 @@ export class GithubService {
       );
     }
 
-    const data = response.data;
+    const data: GithubUserResponse = response.data;
     if (!data.id || !data.login) {
       throw BusinessException.badGateway(
         Constants.GITHUB_USER_PROFILE_INVALID,
@@ -334,8 +336,8 @@ export class GithubService {
       return null;
     }
 
-    const data = response.data;
-    const primaryEmail = data.find(
+    const data: GithubEmailResponse[] = response.data;
+    const primaryEmail: GithubEmailResponse | undefined = data.find(
       (item: GithubEmailResponse) => item.primary && item.verified,
     );
     return primaryEmail?.email ?? null;
@@ -368,8 +370,10 @@ export class GithubService {
       );
     }
 
-    const data = response.data as Record<string, unknown> | undefined;
-    const ticket = data?.ticket as string | undefined;
+    const data: Record<string, unknown> | undefined = response.data as
+      | Record<string, unknown>
+      | undefined;
+    const ticket: string | undefined = data?.ticket as string | undefined;
     if (!ticket) {
       throw BusinessException.badGateway(
         Constants.GITHUB_SPRING_TOKEN_TICKET_MISSING,

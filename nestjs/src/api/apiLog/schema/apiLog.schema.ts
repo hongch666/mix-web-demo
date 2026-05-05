@@ -27,15 +27,15 @@ export class ApiLog {
 
   // 查询参数（任意 JSON 对象）
   @Prop({ type: Object })
-  queryParams!: Record<string, any>;
+  queryParams!: Record<string, unknown>;
 
   // 路径参数（任意 JSON 对象）
   @Prop({ type: Object })
-  pathParams!: Record<string, any>;
+  pathParams!: Record<string, unknown>;
 
   // 请求体（任意 JSON 对象）
   @Prop({ type: Object })
-  requestBody!: Record<string, any>;
+  requestBody!: Record<string, unknown>;
 
   // 接口响应时间
   @Prop({ type: Number, required: true })

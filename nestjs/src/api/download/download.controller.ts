@@ -16,8 +16,8 @@ export class DownloadController {
   })
   @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
   @ApiLog('下载文章Word')
-  async downloadWord(@Param('id') id: number): Promise<ApiResponse<any>> {
-    const url = await this.downloadService.exportToWordAndSave(id);
+  async downloadWord(@Param('id') id: number): Promise<ApiResponse<string>> {
+    const url: string = await this.downloadService.exportToWordAndSave(id);
     return success(url);
   }
 
@@ -28,8 +28,10 @@ export class DownloadController {
   })
   @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
   @ApiLog('下载文章Markdown')
-  async downloadMarkdown(@Param('id') id: number): Promise<ApiResponse<any>> {
-    const url = await this.downloadService.exportMarkdownAndUpload(Number(id));
+  async downloadMarkdown(@Param('id') id: number): Promise<ApiResponse<string>> {
+    const url: string = await this.downloadService.exportMarkdownAndUpload(
+      Number(id),
+    );
     return success(url);
   }
 
@@ -40,8 +42,8 @@ export class DownloadController {
   })
   @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
   @ApiLog('下载文章PDF')
-  async downloadPdf(@Param('id') id: number): Promise<ApiResponse<any>> {
-    const url = await this.downloadService.exportToPdfAndSave(id);
+  async downloadPdf(@Param('id') id: number): Promise<ApiResponse<string>> {
+    const url: string = await this.downloadService.exportToPdfAndSave(id);
     return success(url);
   }
 }
