@@ -22,13 +22,11 @@ import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
-import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
@@ -45,6 +43,7 @@ import com.hcsy.spring.entity.dto.UserQueryDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.ImageCaptchaVO;
 import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
@@ -67,7 +66,6 @@ public class UserController {
     private final UserService userService;
     private final TokenService tokenService;
     private final RedisUtil redisUtil;
-    private final SimpleLogger logger;
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
     private final PasswordEncryptor passwordEncryptor;
@@ -223,43 +221,24 @@ public class UserController {
     @Operation(summary = "获取图形验证码", description = "生成图形验证码，返回验证码ID和base64图片数据，验证码缓存到Redis并在5分钟后过期")
     @ApiLog("获取图形验证码")
     public Result getImageCaptcha() {
-        try {
-            ImageCaptchaVO captchaVO = imageCaptchaService.createCaptcha();
-            return Result.success(captchaVO);
-        } catch (Exception e) {
-            logger.error(Constants.IMAGE_CAPTCHA_GET_FAIL + e.getMessage());
-            return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.IMAGE_CAPTCHA_GET_FAIL);
-        }
+        ImageCaptchaVO captchaVO = imageCaptchaService.createCaptcha();
+        return Result.success(captchaVO);
     }
 
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("用户登录")
     public Result login(@Valid @RequestBody LoginDTO loginDTO) {
-        try {
-            UserLoginVO loginVO = userService.login(loginDTO);
-            return Result.success(loginVO);
-        } catch (BusinessException e) {
-            return Result.error(e.getHttpStatus(), e.getErrorMessage());
-        } catch (Exception e) {
-            logger.error(Constants.LOGIN + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.LOGIN);
-        }
+        UserLoginVO loginVO = userService.login(loginDTO);
+        return Result.success(loginVO);
     }
 
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("邮箱验证码登录")
     public Result emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
-        try {
-            UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
-            return Result.success(loginVO);
-        } catch (BusinessException e) {
-            return Result.error(e.getHttpStatus(), e.getErrorMessage());
-        } catch (Exception e) {
-            logger.error(Constants.EMAIL_LOGIN + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.EMAIL_LOGIN);
-        }
+        UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
+        return Result.success(loginVO);
     }
 
     @PostMapping("/github/token-ticket")
@@ -270,54 +249,36 @@ public class UserController {
     })
     @ApiLog("生成 GitHub 登录票据")
     public Result createGithubTokenTicket(@Valid @RequestBody GithubTokenTicketCreateDTO dto) {
-        return Result.success(userService.createGithubTokenTicket(dto));
+        GithubTokenTicketVO ticketVO = userService.createGithubTokenTicket(dto);
+        return Result.success(ticketVO);
     }
 
     @PostMapping("/github/token")
     @Operation(summary = "获取 GitHub 登录 Token", description = "前端使用一次性 ticket 换取本站登录 token，成功后立即删除 ticket")
     @ApiLog("获取 GitHub 登录 Token")
     public Result exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
-        try {
-            UserLoginVO loginVO = userService.exchangeGithubTokenTicket(dto);
-            return Result.success(loginVO);
-        } catch (BusinessException e) {
-            return Result.error(e.getHttpStatus(), e.getErrorMessage());
-        } catch (Exception e) {
-            logger.error(Constants.GITHUB_LOGIN_TICKET_EXCHANGE_FAILED_PREFIX + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.GITHUB_TOKEN_TICKET_EXPIRED_PUBLIC);
-        }
+        UserLoginVO loginVO = userService.exchangeGithubTokenTicket(dto);
+        return Result.success(loginVO);
     }
 
     @PostMapping("/logout")
     @Operation(summary = "用户登出", description = "用户登出，从当前 access token 解析 session 并清除")
     @ApiLog("用户登出")
     public Result logout() {
-        try {
-            String accessToken = UserContext.getToken();
-            if (accessToken == null) {
-                return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
-            }
-            tokenService.removeSessionByAccessToken(accessToken);
-            return Result.success();
-        } catch (Exception e) {
-            logger.error(Constants.LOGOUT + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.LOGOUT);
+        String accessToken = UserContext.getToken();
+        if (accessToken == null) {
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
         }
+        tokenService.removeSessionByAccessToken(accessToken);
+        return Result.success();
     }
 
     @PostMapping("/token/refresh")
     @Operation(summary = "刷新 Token", description = "使用 refresh token 刷新 access token 和 refresh token，支持 token 轮换")
     @ApiLog("刷新 Token")
     public Result refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
-        try {
-            TokenRefreshVO tokenRefreshVO = tokenService.refreshToken(refreshTokenDTO.getRefreshToken());
-            return Result.success(tokenRefreshVO);
-        } catch (BusinessException e) {
-            return Result.error(e.getHttpStatus(), e.getErrorMessage());
-        } catch (Exception e) {
-            logger.error(Constants.REFRESH_TOKEN_INVALID + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.REFRESH_TOKEN_INVALID);
-        }
+        TokenRefreshVO tokenRefreshVO = tokenService.refreshToken(refreshTokenDTO.getRefreshToken());
+        return Result.success(tokenRefreshVO);
     }
 
     /**
@@ -329,47 +290,37 @@ public class UserController {
             "userId" })
     @ApiLog("手动下线用户")
     public Result forceLogoutUser(@PathVariable Long userId) {
-        try {
-            // 验证用户是否存在
-            User user = userService.getById(userId);
-            if (user == null) {
-                return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
-            }
-
-            // 执行下线操作
-            tokenService.forceLogoutUser(userId);
-            return Result.success();
-        } catch (Exception e) {
-            logger.error(Constants.FORCE_LOGOUT + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.FORCE_LOGOUT);
+        // 验证用户是否存在
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
         }
+
+        // 执行下线操作
+        tokenService.forceLogoutUser(userId);
+        return Result.success();
     }
 
     @PostMapping("/kick-other-devices")
     @Operation(summary = "踢出其他设备", description = "清除当前用户除本次请求携带的 access token 之外的所有 session（保留当前设备）")
     @ApiLog("踢出其他设备")
     public Result kickOtherDevices() {
-        try {
-            String token = UserContext.getToken();
-            Long userId = UserContext.getUserId();
+        String token = UserContext.getToken();
+        Long userId = UserContext.getUserId();
 
-            if (token == null || userId == null) {
-                return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
-            }
-
-            int removed = tokenService.removeOtherSessions(userId, token);
-            long remaining = tokenService.getUserOnlineDeviceCount(userId);
-
-            KickOtherDevicesVO vo = KickOtherDevicesVO.builder()
-                    .userId(userId)
-                    .removedSessionCount(removed)
-                    .onlineDeviceCount(remaining)
-                    .build();
-            return Result.success(vo);
-        } catch (Exception e) {
-            logger.error(Constants.KICK_FAIL + e.getMessage());
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.KICK_FAIL);
+        if (token == null || userId == null) {
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
         }
+
+        int removed = tokenService.removeOtherSessions(userId, token);
+        long remaining = tokenService.getUserOnlineDeviceCount(userId);
+
+        KickOtherDevicesVO vo = KickOtherDevicesVO.builder()
+                .userId(userId)
+                .removedSessionCount(removed)
+                .onlineDeviceCount(remaining)
+                .build();
+        return Result.success(vo);
     }
 
     @PostMapping("/register")
@@ -379,15 +330,8 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     public Result registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
-        try {
-            userService.registerUser(registerDto);
-            return Result.success();
-        } catch (BusinessException e) {
-            return Result.error(e.getHttpStatus(), e.getErrorMessage());
-        } catch (Exception e) {
-            logger.error(Constants.EMAIL_REGISTER + e.getMessage());
-            return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
-        }
+        userService.registerUser(registerDto);
+        return Result.success();
     }
 
     @PostMapping("/email/send")
@@ -395,65 +339,55 @@ public class UserController {
     @ApiLog("发送邮箱验证码")
     public Result sendVerificationCode(@RequestParam String email,
             @RequestParam(defaultValue = "register") String type) {
-        try {
-            // 1. 验证邮箱格式
-            if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.EMAIL);
-            }
-
-            // 2. 根据类型验证邮箱状态
-            User existingUser = userService.findByEmail(email);
-
-            if ("register".equals(type)) {
-                // 注册场景：邮箱不能已被注册
-                if (existingUser != null) {
-                    return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
-                }
-            } else if ("login".equals(type) || "reset".equals(type)) {
-                // 登录场景/重置密码场景：邮箱必须已被注册
-                if (existingUser == null) {
-                    return Result.error(HttpCode.NOT_FOUND, Constants.EMAIL_UNREGISTER);
-                }
-            } else {
-                return Result.error(HttpCode.BAD_REQUEST, Constants.VERIFY_CODE_UNSUPPORT);
-            }
-
-            // 3. 发送验证码
-            emailVerificationService.sendVerificationCode(email, type);
-
-            return Result.success();
-        } catch (Exception e) {
-            logger.error(Constants.SEND_VERIFY_CODE + e.getMessage());
-            return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.SEND_VERIFY_CODE);
+        // 1. 验证邮箱格式
+        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.EMAIL);
         }
+
+        // 2. 根据类型验证邮箱状态
+        User existingUser = userService.findByEmail(email);
+
+        if ("register".equals(type)) {
+            // 注册场景：邮箱不能已被注册
+            if (existingUser != null) {
+                return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
+            }
+        } else if ("login".equals(type) || "reset".equals(type)) {
+            // 登录场景/重置密码场景：邮箱必须已被注册
+            if (existingUser == null) {
+                return Result.error(HttpCode.NOT_FOUND, Constants.EMAIL_UNREGISTER);
+            }
+        } else {
+            return Result.error(HttpCode.BAD_REQUEST, Constants.VERIFY_CODE_UNSUPPORT);
+        }
+
+        // 3. 发送验证码
+        emailVerificationService.sendVerificationCode(email, type);
+
+        return Result.success();
     }
 
     @PostMapping("/reset-password")
     @Operation(summary = "通过邮箱验证码重置密码", description = "用户通过邮箱验证码验证身份后重置密码")
     @ApiLog("重置密码")
     public Result resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
-        try {
-            // 1. 验证邮箱验证码
-            if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
-                    resetPasswordDTO.getVerificationCode())) {
-                return Result.error(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
-            }
-
-            // 2. 查询用户是否存在
-            User user = userService.findByEmail(resetPasswordDTO.getEmail());
-            if (user == null) {
-                return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
-            }
-
-            // 3. 加密新密码后更新
-            user.setPassword(passwordEncryptor.encryptPassword(resetPasswordDTO.getNewPassword()));
-            userService.updateById(user);
-
-            return Result.success();
-        } catch (Exception e) {
-            logger.error(Constants.PASSWORD_RESET + e.getMessage());
-            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_RESET);
+        // 1. 验证邮箱验证码
+        if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
+                resetPasswordDTO.getVerificationCode())) {
+            return Result.error(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
         }
+
+        // 2. 查询用户是否存在
+        User user = userService.findByEmail(resetPasswordDTO.getEmail());
+        if (user == null) {
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+        }
+
+        // 3. 加密新密码后更新
+        user.setPassword(passwordEncryptor.encryptPassword(resetPasswordDTO.getNewPassword()));
+        userService.updateById(user);
+
+        return Result.success();
     }
 
     @PostMapping("/admin/reset-all-passwords")
@@ -461,23 +395,18 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
     @ApiLog("重置所有用户密码")
     public Result resetAllPasswords() {
-        try {
-            // 获取所有用户
-            List<User> allUsers = userService.list();
+        // 获取所有用户
+        List<User> allUsers = userService.list();
 
-            if (allUsers == null || allUsers.isEmpty()) {
-                return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_NO_USER);
-            }
-
-            final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
-            allUsers.forEach(user -> user.setPassword(resetPassword));
-            userService.updateBatchById(allUsers);
-
-            return Result.success();
-        } catch (Exception e) {
-            logger.error(Constants.PASSWORD_RESET_ALL + e.getMessage());
-            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_RESET_ALL);
+        if (allUsers == null || allUsers.isEmpty()) {
+            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_NO_USER);
         }
+
+        final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
+        allUsers.forEach(user -> user.setPassword(resetPassword));
+        userService.updateBatchById(allUsers);
+
+        return Result.success();
     }
 
     @PostMapping("/admin/reset-password/{userId}")
@@ -486,21 +415,16 @@ public class UserController {
             "userId" })
     @ApiLog("重置指定用户密码")
     public Result resetUserPassword(@PathVariable Long userId) {
-        try {
-            // 查询用户是否存在
-            User user = userService.getById(userId);
-            if (user == null) {
-                return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
-            }
-
-            final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
-            user.setPassword(resetPassword);
-            userService.updateById(user);
-
-            return Result.success();
-        } catch (Exception e) {
-            logger.error(Constants.PASSWORD_RESET_USER + e.getMessage());
-            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_RESET_USER);
+        // 查询用户是否存在
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
         }
+
+        final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
+        user.setPassword(resetPassword);
+        userService.updateById(user);
+
+        return Result.success();
     }
 }

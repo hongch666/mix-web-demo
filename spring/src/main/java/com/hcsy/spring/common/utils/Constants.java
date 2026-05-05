@@ -120,75 +120,48 @@ public class Constants {
     public static String UNDEFINED_USER_REGISTER = "用户不存在，请先注册";
 
     /**
-     * 邮箱登录错误
+     * GitHub 账号密码登录被阻止消息
      */
-    public static String EMAIL_LOGIN = "邮箱验证码登录失败";
-
-        /**
-         * GitHub 账号密码登录被阻止消息
-         */
-        public static final String GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED =
+    public static final String GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED =
             "该账号通过 GitHub 登录创建，请使用 GitHub 登录或先设置密码";
 
-        /**
-         * GitHub 登录票据缓存失败消息
-         */
-        public static final String GITHUB_LOGIN_TICKET_CACHE_FAILED =
+    /**
+     * GitHub 登录票据缓存失败消息
+     */
+    public static final String GITHUB_LOGIN_TICKET_CACHE_FAILED =
             "缓存 GitHub 登录票据失败";
 
-        /**
-         * GitHub 登录票据兑换失败前缀
-         */
-        public static final String GITHUB_LOGIN_TICKET_EXCHANGE_FAILED_PREFIX =
-            "GitHub 登录票据兑换失败: ";
+    /**
+     * GitHub 登录票据为空消息
+     */
+    public static final String GITHUB_TOKEN_TICKET_EMPTY = "GitHub 登录票据不能为空";
 
-        /**
-         * GitHub 登录票据为空消息
-         */
-        public static final String GITHUB_TOKEN_TICKET_EMPTY = "GitHub 登录票据不能为空";
-
-        /**
-         * GitHub 登录票据已过期消息
-         */
-        public static final String GITHUB_TOKEN_TICKET_EXPIRED =
+    /**
+     * GitHub 登录票据已过期消息
+     */
+    public static final String GITHUB_TOKEN_TICKET_EXPIRED =
             "GitHub 登录票据已过期，请重新登录";
 
-        /**
-         * GitHub 登录票据解析失败消息
-         */
-        public static final String GITHUB_TOKEN_TICKET_PARSE_FAILED =
+    /**
+     * GitHub 登录票据解析失败消息
+     */
+    public static final String GITHUB_TOKEN_TICKET_PARSE_FAILED =
             "解析 GitHub 登录票据失败";
 
-        /**
-         * GitHub 登录票据已过期的公开提示
-         */
-        public static final String GITHUB_TOKEN_TICKET_EXPIRED_PUBLIC =
-            "GitHub登录票据已过期";
-
-            /**
-             * GitHub 登录票据创建接口用户ID不能为空消息
-             */
-            public static final String GITHUB_TOKEN_TICKET_USER_ID_REQUIRED = "用户ID不能为空";
-
-            /**
-             * GitHub 登录票据创建接口用户名不能为空消息
-             */
-            public static final String GITHUB_TOKEN_TICKET_USERNAME_REQUIRED = "用户名不能为空";
-
-            /**
-             * GitHub 登录票据兑换接口票据不能为空消息
-             */
-            public static final String GITHUB_TOKEN_EXCHANGE_TICKET_REQUIRED = "票据不能为空";
+    /**
+     * GitHub 登录票据创建接口用户ID不能为空消息
+     */
+    public static final String GITHUB_TOKEN_TICKET_USER_ID_REQUIRED = "用户ID不能为空";
 
     /**
-     * 登出错误
+     * GitHub 登录票据创建接口用户名不能为空消息
      */
-    public static String LOGOUT = "登出失败";
+    public static final String GITHUB_TOKEN_TICKET_USERNAME_REQUIRED = "用户名不能为空";
 
     /**
-     * 手动下线用户错误
+     * GitHub 登录票据兑换接口票据不能为空消息
      */
-    public static String FORCE_LOGOUT = "手动下线用户失败";
+    public static final String GITHUB_TOKEN_EXCHANGE_TICKET_REQUIRED = "票据不能为空";
 
     /**
      * 邮箱注册过的错误
@@ -206,39 +179,14 @@ public class Constants {
     public static String VERIFY_CODE_UNSUPPORT = "不支持的类型，请使用 register、login 或 reset";
 
     /**
-     * 发送验证码错误
-     */
-    public static String SEND_VERIFY_CODE = "发送验证码异常";
-
-    /**
-     * 获取图形验证码失败
-     */
-    public static String IMAGE_CAPTCHA_GET_FAIL = "获取图形验证码失败";
-
-    /**
      * 邮箱格式错误
      */
     public static String EMAIL = "邮箱格式不正确";
 
     /**
-     * 密码重置错误
-     */
-    public static String PASSWORD_RESET = "重置密码失败";
-
-    /**
-     * 所有密码重置错误
-     */
-    public static String PASSWORD_RESET_ALL = "重置所有用户密码失败";
-
-    /**
      * 重置密码无用户
      */
     public static String PASSWORD_NO_USER = "没有用户可重置";
-
-    /**
-     * 用户密码重置错误
-     */
-    public static String PASSWORD_RESET_USER = "重置用户密码失败";
 
     /**
      * 文章不存在的id返回
@@ -1011,11 +959,6 @@ public class Constants {
      * 无法获取用户Token和id消息
      */
     public static String GET_USER_TOKEN_ID = "无法获取用户信息，请确保已登录";
-
-    /**
-     * 踢出其他设备失败消息
-     */
-    public static String KICK_FAIL = "踢出其他设备失败";
 
     /**
      * 令牌生成失败消息
