@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import axios, { AxiosResponse } from 'axios';
 import { randomUUID } from 'crypto';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
@@ -252,22 +253,31 @@ export class GithubService {
   }
 
   private async exchangeCodeForAccessToken(code: string): Promise<string> {
-    const response: Response = await fetch(this.githubConfig.accessTokenUrl, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: this.githubConfig.clientId,
-        client_secret: this.githubConfig.clientSecret,
-        code,
-        redirect_uri: this.githubConfig.redirectUri,
-      }),
-    });
+    const response: AxiosResponse<GithubAccessTokenResponse> =
+      await axios.post<GithubAccessTokenResponse>(
+        this.githubConfig.accessTokenUrl,
+        {
+          client_id: this.githubConfig.clientId,
+          client_secret: this.githubConfig.clientSecret,
+          code,
+          redirect_uri: this.githubConfig.redirectUri,
+        },
+        {
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          validateStatus: () => true,
+        },
+      );
 
-    const data = (await response.json()) as GithubAccessTokenResponse;
-    if (!response.ok || data.error || !data.access_token) {
+    const data = response.data;
+    if (
+      response.status < 200 ||
+      response.status >= 300 ||
+      data.error ||
+      !data.access_token
+    ) {
       throw BusinessException.badGateway(
         data.error_description || Constants.GITHUB_ACCESS_TOKEN_FAILED,
         'GITHUB_ACCESS_TOKEN_FAILED',
@@ -280,23 +290,24 @@ export class GithubService {
   private async fetchGithubProfile(
     accessToken: string,
   ): Promise<GithubUserResponse> {
-    const response: Response = await fetch(this.githubConfig.userApiUrl, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${accessToken}`,
-        'X-GitHub-Api-Version': this.githubConfig.apiVersion,
-      },
-    });
+    const response: AxiosResponse<GithubUserResponse> =
+      await axios.get<GithubUserResponse>(this.githubConfig.userApiUrl, {
+        headers: {
+          Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${accessToken}`,
+          'X-GitHub-Api-Version': this.githubConfig.apiVersion,
+        },
+        validateStatus: () => true,
+      });
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       throw BusinessException.badGateway(
         Constants.GITHUB_USER_PROFILE_FAILED,
         'GITHUB_USER_PROFILE_FAILED',
       );
     }
 
-    const data = (await response.json()) as GithubUserResponse;
+    const data = response.data;
     if (!data.id || !data.login) {
       throw BusinessException.badGateway(
         Constants.GITHUB_USER_PROFILE_INVALID,
@@ -308,20 +319,22 @@ export class GithubService {
   }
 
   private async fetchPrimaryEmail(accessToken: string): Promise<string | null> {
-    const response: Response = await fetch(this.githubConfig.emailsApiUrl, {
-      method: 'GET',
+    const response: AxiosResponse<GithubEmailResponse[]> = await axios.get<
+      GithubEmailResponse[]
+    >(this.githubConfig.emailsApiUrl, {
       headers: {
         Accept: 'application/vnd.github+json',
         Authorization: `Bearer ${accessToken}`,
         'X-GitHub-Api-Version': this.githubConfig.apiVersion,
       },
+      validateStatus: () => true,
     });
 
-    if (!response.ok) {
+    if (response.status < 200 || response.status >= 300) {
       return null;
     }
 
-    const data = (await response.json()) as GithubEmailResponse[];
+    const data = response.data;
     const primaryEmail = data.find(
       (item: GithubEmailResponse) => item.primary && item.verified,
     );

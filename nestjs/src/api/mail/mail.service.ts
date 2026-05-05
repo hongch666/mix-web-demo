@@ -48,8 +48,7 @@ export class MailService {
       this.configService.get<string>('mail.from') ||
       this.configService.get<string>('mail.username');
 
-    // 异步发送邮件，不阻塞调用方（Spring 内调的超时限制）
-    // 发送结果通过日志记录，不影响主流程
+    // 异步发送邮件，不阻塞调用方，发送结果通过日志记录，不影响主流程
     this.transporter
       .sendMail({
         from: `"MixWeb" <${from}>`,
