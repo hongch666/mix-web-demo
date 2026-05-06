@@ -36,6 +36,11 @@ public class FastAPIClientFallbackFactory implements FallbackFactory<FastAPIClie
             public Result clearAnalyzeCaches() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE);
             }
+
+            @Override
+            public Result syncNeo4j() {
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.NEO4J_SYNC_SERVICE_UNAVAILABLE);
+            }
         };
     }
 }

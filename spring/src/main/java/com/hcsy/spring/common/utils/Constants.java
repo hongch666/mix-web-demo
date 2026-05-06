@@ -334,6 +334,36 @@ public class Constants {
     public static String SYNC_VECTOR_FAILED = "Vector 同步失败";
 
     /**
+     * Neo4j同步耗时消息
+     */
+    public static String SYNC_NEO4J_DURATION = "Neo4j 同步成功，耗时: %dms";
+
+    /**
+     * Neo4j同步失败消息
+     */
+    public static String SYNC_NEO4J_SUCCESS = "Neo4j 同步完成";
+
+    /**
+     * Neo4j同步重试消息
+     */
+    public static String SYNC_NEO4J_RETRY = "Neo4j 同步失败，第 %d 次重试，错误: %s";
+
+    /**
+     * Neo4j同步重试最大次数消息
+     */
+    public static String SYNC_NEO4J_MAX_RETRY = "Neo4j 同步失败，已达到最大重试次数: %s";
+
+    /**
+     * Neo4j同步重试被中断消息
+     */
+    public static String SYNC_NEO4J_RETRY_INTERRUPTED = "Neo4j 同步重试被中断";
+
+    /**
+     * Neo4j同步失败消息
+     */
+    public static String SYNC_NEO4J_FAILED = "Neo4j 同步失败";
+
+    /**
      * 缓存清理耗时消息
      */
     public static String CACHE_CLEAR_DURATION = "缓存清理成功，耗时: %dms";
@@ -1189,6 +1219,11 @@ public class Constants {
      * 分析缓存清理服务不可用降级提示
      */
     public static String ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE = "分析缓存清理服务暂时不可用，已触发降级";
+
+    /**
+     * Neo4j同步服务不可用降级提示
+     */
+    public static String NEO4J_SYNC_SERVICE_UNAVAILABLE = "Neo4j同步服务暂时不可用，已触发降级";
 
     /**
      * GoZero服务调用降级提示

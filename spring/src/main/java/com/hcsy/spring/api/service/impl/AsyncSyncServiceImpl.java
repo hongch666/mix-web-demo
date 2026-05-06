@@ -32,7 +32,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     private static final long RETRY_DELAY_MS = 1000;
 
     /**
-     * 并行异步同步 ES、Vector 和缓存清理
+     * 并行异步同步 ES、Vector、Neo4j 和缓存清理
      * 使用 CompletableFuture 实现并行执行和超时控制
      *
      * @param userId   触发同步的用户ID
@@ -49,22 +49,31 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         try {
             logger.info(user + Constants.SYNC);
 
+            // 使用 CompletableFuture 并行执行ES同步
             CompletableFuture<Void> esFuture = CompletableFuture.runAsync(
                 () -> syncESWithRetry(MAX_RETRY_TIMES),
                 CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
             );
 
+            // 使用 CompletableFuture 并行执行Vector同步
             CompletableFuture<Void> vectorFuture = CompletableFuture.runAsync(
                 () -> syncVectorWithRetry(MAX_RETRY_TIMES),
                 CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
             );
 
+            // 使用 CompletableFuture 并行执行Neo4j同步
+            CompletableFuture<Void> neo4jFuture = CompletableFuture.runAsync(
+                () -> syncNeo4jWithRetry(MAX_RETRY_TIMES),
+                CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
+            );
+
+            // 使用 CompletableFuture 并行执行缓存清理
             CompletableFuture<Void> cacheFuture = CompletableFuture.runAsync(
                 () -> clearCacheWithRetry(MAX_RETRY_TIMES),
                 CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
             );
 
-            CompletableFuture.allOf(esFuture, vectorFuture, cacheFuture)
+            CompletableFuture.allOf(esFuture, vectorFuture, neo4jFuture, cacheFuture)
                 .get(SYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             long duration = System.currentTimeMillis() - startTime;
@@ -137,6 +146,36 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 } else {
                     logger.error(Constants.SYNC_VECTOR_MAX_RETRY, e.getMessage(), e);
                     throw new RuntimeException(Constants.SYNC_VECTOR_FAILED, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * 带重试机制的 Neo4j 同步
+     */
+    private void syncNeo4jWithRetry(int maxRetries) {
+        int retryCount = 0;
+        while (retryCount <= maxRetries) {
+            try {
+                long startTime = System.currentTimeMillis();
+                fastAPIClient.syncNeo4j();
+                long duration = System.currentTimeMillis() - startTime;
+                logger.info(Constants.SYNC_NEO4J_DURATION, duration);
+                logger.info(Constants.SYNC_NEO4J_SUCCESS);
+                return;
+            } catch (Exception e) {
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                    logger.warning(Constants.SYNC_NEO4J_RETRY, retryCount, e.getMessage());
+                    try {                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(Constants.SYNC_NEO4J_RETRY_INTERRUPTED, ie);
+                    }
+                } else {
+                    logger.error(Constants.SYNC_NEO4J_MAX_RETRY, e.getMessage(), e);
+                    throw new RuntimeException(Constants.SYNC_NEO4J_FAILED, e);
                 }
             }
         }

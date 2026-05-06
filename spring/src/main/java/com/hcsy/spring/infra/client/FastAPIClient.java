@@ -17,4 +17,7 @@ public interface FastAPIClient {
 
     @PostMapping("/api_fastapi/task/clear-analyze-caches")
     Result clearAnalyzeCaches();
+
+    @PostMapping("/api_fastapi/task/sync-neo4j")
+    Result syncNeo4j();
 }
