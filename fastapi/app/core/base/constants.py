@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 
 class Constants:
@@ -696,6 +696,12 @@ class Constants:
     LOCK_TASK_NEO4J_SYNC_EXPIRE: int = 3600
     """Neo4j 知识图谱同步任务分布式锁的过期时间（秒）"""
 
+    NEO4J_SYNC_START_MESSAGE: str = "[知识图谱] 开始全量同步 MySQL 到 Neo4j"
+    """Neo4j 知识图谱全量同步开始消息"""
+
+    NEO4J_TASK_START_MESSAGE: str = "[知识图谱任务] 开始执行 MySQL 到 Neo4j 全量同步"
+    """Neo4j 知识图谱定时任务开始消息"""
+
     REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE: str = "[分布式锁] 获取锁成功，key: %s"
     """获取分布式锁成功消息"""
 
@@ -797,6 +803,82 @@ class Constants:
     ]
     """自然语言中明确的只读查询模式"""
 
+    # Cypher 语句
+
+    INTENT_TO_CYPHER: Dict[str, str] = {
+        "article_detail": """
+            MATCH (a:Article {id: $id})
+            OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User)
+            OPTIONAL MATCH (a)-[:BELONGS_TO]->(s:SubCategory)
+            OPTIONAL MATCH (s)-[:BELONGS_TO_CATEGORY]->(c:Category)
+            OPTIONAL MATCH (a)-[:TAGGED_AS]->(t:Tag)
+            RETURN a.id AS id, a.title AS title, a.views AS views,
+                u.name AS author, s.name AS subCategory, c.name AS category,
+                collect(DISTINCT t.name) AS tags
+        """,
+        "category_articles": """
+            MATCH (s:SubCategory {name: $name})<-[:BELONGS_TO]-(a:Article)
+            OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User)
+            RETURN a.id AS id, a.title AS title, a.views AS views,
+                a.createAt AS createAt, u.name AS author
+            ORDER BY a.views DESC LIMIT $limit
+        """,
+        "user_articles": """
+            MATCH (a:Article)-[:PUBLISHED_BY]->(u:User {name: $name})
+            RETURN a.id AS id, a.title AS title, a.views AS views, a.createAt AS createAt
+            ORDER BY a.createAt DESC LIMIT $limit
+        """,
+        "similar_articles_same_category": """
+            MATCH (a:Article {id: $articleId})-[:BELONGS_TO]->(s:SubCategory)
+            MATCH (other:Article)-[:BELONGS_TO]->(s)
+            WHERE other.id <> a.id
+            OPTIONAL MATCH (other)-[:PUBLISHED_BY]->(u:User)
+            RETURN other.id AS id, other.title AS title, other.views AS views,
+                u.name AS author
+            ORDER BY other.views DESC LIMIT $limit
+        """,
+        "user_interest_chain": """
+            MATCH (u:User {id: $userId})-[:FOLLOWS]->(:User)-[:LIKES]->(a:Article)
+            OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(author:User)
+            RETURN a.id AS id, a.title AS title, a.views AS views, author.name AS author
+            ORDER BY a.views DESC LIMIT $limit
+        """,
+        "top_viewed_articles": """
+            MATCH (a:Article)
+            RETURN a.id AS id, a.title AS title, a.views AS views
+            ORDER BY a.views DESC LIMIT $limit
+        """,
+        "tag_graph": """
+            MATCH (t:Tag)<-[:TAGGED_AS]-(a:Article)
+            RETURN t.name AS tag, count(a) AS articleCount
+            ORDER BY articleCount DESC LIMIT $limit
+        """,
+        "user_recommendation": """
+            MATCH (u:User {id: $userId})-[:LIKES|COLLECTS]->(interest:Article)
+            MATCH (interest)-[:TAGGED_AS]->(t:Tag)
+            MATCH (a:Article)-[:TAGGED_AS]->(t)
+            WHERE a.id <> interest.id
+            AND NOT EXISTS { (u)-[:LIKES|COLLECTS]->(a) }
+            OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(author:User)
+            RETURN a.id AS id, a.title AS title, author.name AS author,
+                collect(DISTINCT t.name) AS matchTags,
+                count(DISTINCT t) AS relevance
+            ORDER BY relevance DESC, a.views DESC LIMIT $limit
+        """,
+    }
+
+    BLOCKED_KEYWORDS: List[str] = [
+        "CREATE",
+        "MERGE",
+        "SET",
+        "DELETE",
+        "DETACH",
+        "REMOVE",
+        "DROP",
+        "LOAD CSV",
+        "CALL APOC",
+    ]
+
     # Agent 相关提示词/描述/消息
 
     ROUTER_INTENT_PROMPT: str = """
@@ -863,6 +945,35 @@ class Constants:
 
     NEO4J_SERVICE_UNAVAILABLE_MESSAGE: str = "Neo4j 知识图谱服务暂不可用"
     """Neo4j 服务不可用消息"""
+
+    NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE: str = "Neo4j 连接参数未初始化，无法创建驱动"
+    """Neo4j 连接参数未初始化消息"""
+
+    NEO4J_LOOP_NOT_RUNNING_MESSAGE: str = (
+        "当前没有运行中的事件循环，无法创建 Neo4j 异步驱动"
+    )
+    """Neo4j 事件循环缺失消息"""
+
+    NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE: str = "Neo4j 驱动未初始化，无法创建会话"
+    """Neo4j 驱动未初始化消息"""
+
+    NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE: str = "Neo4j 当前事件循环驱动已关闭"
+    """Neo4j 当前事件循环驱动关闭消息"""
+
+    NEO4J_DRIVER_CLOSED_MESSAGE: str = "Neo4j 驱动已关闭"
+    """Neo4j 驱动关闭消息"""
+
+    NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE: str = "Neo4j 查询工具初始化成功"
+    """Neo4j 查询工具初始化成功消息"""
+
+    NEO4J_NO_RESULT_MESSAGE: str = "未找到相关知识图谱结果"
+    """Neo4j 查询无结果消息"""
+
+    NEO4J_QUERY_EMPTY_MESSAGE: str = "查询未返回结果"
+    """Neo4j 自定义查询无结果消息"""
+
+    NEO4J_CUSTOM_CYPHER_INPUT_DESC: str = "只读 Cypher 查询语句"
+    """Neo4j 自定义 Cypher 输入描述"""
 
     NEO4J_READ_ONLY_LIMIT_MESSAGE: str = (
         "安全限制：Neo4j 工具只允许执行单条只读 Cypher 查询。"

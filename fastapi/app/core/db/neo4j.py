@@ -2,7 +2,7 @@ import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-from app.core.base import Logger
+from app.core.base import Constants, Logger
 from app.core.config import load_config
 from neo4j import AsyncGraphDatabase, AsyncSession
 
@@ -36,13 +36,13 @@ class Neo4jClient:
     def _get_driver(self) -> Optional[Any]:
         """获取当前事件循环对应的 Neo4j 驱动"""
         if not self.uri:
-            self.logger.warning("Neo4j 连接参数未初始化，无法创建驱动")
+            self.logger.warning(Constants.NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE)
             return None
 
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            self.logger.warning("当前没有运行中的事件循环，无法创建 Neo4j 异步驱动")
+            self.logger.warning(Constants.NEO4J_LOOP_NOT_RUNNING_MESSAGE)
             return None
 
         loop_id = id(loop)
@@ -61,7 +61,7 @@ class Neo4jClient:
         """获取 Neo4j 异步会话"""
         driver = self._get_driver()
         if driver is None:
-            self.logger.warning("Neo4j 驱动未初始化，无法创建会话")
+            self.logger.warning(Constants.NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE)
             return None
         return driver.session()
 
@@ -110,13 +110,13 @@ class Neo4jClient:
             driver = self._drivers.pop(current_loop_id, None)
             if driver is not None:
                 await driver.close()
-                self.logger.info("Neo4j 当前事件循环驱动已关闭")
+                self.logger.info(Constants.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)
             return
 
         for driver in list(self._drivers.values()):
             await driver.close()
         self._drivers.clear()
-        self.logger.info("Neo4j 驱动已关闭")
+        self.logger.info(Constants.NEO4J_DRIVER_CLOSED_MESSAGE)
 
 
 @lru_cache

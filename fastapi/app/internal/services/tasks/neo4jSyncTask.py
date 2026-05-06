@@ -275,7 +275,7 @@ class KnowledgeGraphSyncService:
 
     async def sync_all(self) -> Dict[str, int]:
         """全量同步 MySQL 数据到 Neo4j"""
-        self.logger.info("[知识图谱] 开始全量同步 MySQL 到 Neo4j")
+        self.logger.info(Constants.NEO4J_SYNC_START_MESSAGE)
         await self._ensure_schema()
 
         result: Dict[str, int] = {}
@@ -393,7 +393,7 @@ def _save_sync_time(sync_time: datetime) -> None:
 def _sync_mysql_to_neo4j() -> Dict[str, int]:
     """同步线程入口：全量同步 MySQL 数据到 Neo4j"""
     sync_start_time = datetime.now()
-    Logger.info("[知识图谱任务] 开始执行 MySQL 到 Neo4j 全量同步")
+    Logger.info(Constants.NEO4J_TASK_START_MESSAGE)
 
     try:
         sync_service = get_knowledge_graph_sync_service()
