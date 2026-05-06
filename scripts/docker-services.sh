@@ -18,6 +18,7 @@ MONGO_PASSWORD=${MONGO_PASSWORD:-123456}
 REDIS_PASSWORD=${REDIS_PASSWORD:-123456}
 CLICKHOUSE_USER=${CLICKHOUSE_USER:-hcsy}
 CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD:-123456}
+NEO4J_PASSWORD=${NEO4J_PASSWORD:-12345678}
 
 # 颜色输出
 RED='\033[0;31m'
@@ -117,6 +118,7 @@ prepare_directories() {
     mkdir -p ~/redis_data
     mkdir -p ~/mongo_data
     mkdir -p ~/clickhouse/data ~/clickhouse/logs
+    mkdir -p ~/neo4j/data ~/neo4j/logs ~/neo4j/conf ~/neo4j/import
 
     log_info "数据目录准备完成"
 }
@@ -343,12 +345,39 @@ create_clickhouse() {
     log_info "ClickHouse 容器创建成功 (端口 8123, 9002)"
 }
 
+# Neo4j 容器
+create_neo4j() {
+    log_info "创建 Neo4j 容器..."
+
+    if check_port 7687 "Neo4j"; then
+        return 0
+    fi
+    if check_port 7474 "Neo4j Browser"; then
+        return 0
+    fi
+
+    docker run -d \
+        --name neo4j \
+        --restart always \
+        --network hcsy \
+        -p 7474:7474 \
+        -p 7687:7687 \
+        -v "$HOME/neo4j/data":/data \
+        -v "$HOME/neo4j/logs":/logs \
+        -v "$HOME/neo4j/conf":/conf \
+        -v "$HOME/neo4j/import":/import \
+        -e NEO4J_AUTH="neo4j/$NEO4J_PASSWORD" \
+        neo4j
+
+    log_info "Neo4j 容器创建成功 (端口 7474, 7687)"
+}
+
 # 显示所有容器状态
 show_status() {
     echo ""
     log_info "容器状态:"
     echo ""
-    docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' | grep -E "mysql|pgvector|redis|mongodb|es|nacos|mq|clickhouse" || echo "没有相关容器运行"
+    docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Status}}' | grep -E "mysql|pgvector|redis|mongodb|es|nacos|mq|clickhouse|neo4j" || echo "没有相关容器运行"
     echo ""
 }
 
@@ -356,7 +385,7 @@ show_status() {
 stop_all() {
     log_warn "停止所有容器..."
 
-    for container in mysql pgvector-db redis mongodb es nacos mq clickhouse; do
+    for container in mysql pgvector-db redis mongodb es nacos mq clickhouse neo4j; do
         if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
             log_info "停止 $container..."
             docker stop "$container" 2>/dev/null || true
@@ -376,7 +405,7 @@ delete_all() {
         return 0
     fi
 
-    for container in mysql pgvector-db redis mongodb es nacos mq clickhouse; do
+    for container in mysql pgvector-db redis mongodb es nacos mq clickhouse neo4j; do
         if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
             log_info "删除 $container..."
             docker stop "$container" 2>/dev/null || true
@@ -393,7 +422,7 @@ show_logs() {
 
     if [ -z "$service" ]; then
         log_error "请指定服务名称"
-        echo "可用服务: mysql, postgresql, redis, mongodb, elasticsearch, nacos, rabbitmq"
+        echo "可用服务: mysql, postgresql, redis, mongodb, elasticsearch, nacos, rabbitmq, neo4j"
         return 1
     fi
 
@@ -421,6 +450,9 @@ show_logs() {
             ;;
         rabbitmq|mq)
             docker logs -f mq
+            ;;
+        neo4j)
+            docker logs -f neo4j
             ;;
         *)
             log_error "未知的服务: $service"
@@ -452,12 +484,14 @@ Docker 容器管理脚本
   - elasticsearch ElasticSearch 搜索引擎 (端口 9200)
   - nacos         Nacos 服务发现 (端口 8848)
   - rabbitmq      RabbitMQ 消息队列 (端口 5672)
+  - neo4j         Neo4j 知识图谱数据库 (端口 7474, 7687)
 
 示例:
   ./scripts/docker-services.sh up               # 创建所有容器
   ./scripts/docker-services.sh status           # 显示容器状态
   ./scripts/docker-services.sh logs mysql       # 查看 MySQL 日志
   ./scripts/docker-services.sh logs rabbitmq    # 查看 RabbitMQ 日志
+  ./scripts/docker-services.sh logs neo4j       # 查看 Neo4j 日志
   ./scripts/docker-services.sh stop             # 停止所有容器
 
 EOF
@@ -516,6 +550,7 @@ main() {
             create_elasticsearch
             create_nacos
             create_rabbitmq
+            create_neo4j
             echo ""
 
             # 显示状态
@@ -532,6 +567,7 @@ main() {
             echo "  ElasticSearch: http://localhost:9200"
             echo "  Nacos:         http://localhost:8848"
             echo "  RabbitMQ:      http://localhost:15672 ($RABBITMQ_USER/$RABBITMQ_PASSWORD)"
+            echo "  Neo4j:         http://localhost:7474 (neo4j/$NEO4J_PASSWORD), Bolt: localhost:7687"
             echo ""
             ;;
         *)
