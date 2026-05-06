@@ -55,7 +55,7 @@ class RedisClient:
         return pool_params
 
     async def _ensure_client(self) -> Optional[Any]:
-        """确保当前事件循环对应的 Redis 客户端可用。"""
+        """确保当前事件循环对应的 Redis 客户端可用"""
         if self._redis_config is None:
             return None
 

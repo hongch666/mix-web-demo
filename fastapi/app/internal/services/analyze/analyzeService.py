@@ -375,7 +375,7 @@ class AnalyzeService:
         Logger.info(Constants.WORDCLOUD_GENERATION_SUCCESS)
 
     async def upload_file(self, file_path: str, oss_path: str) -> str:
-        """远程调用 NestJS 上传文件到 OSS。"""
+        """远程调用 NestJS 上传文件到 OSS"""
 
         try:
             result: Dict[str, Any] = await call_remote_service(

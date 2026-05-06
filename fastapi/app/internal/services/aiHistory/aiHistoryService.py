@@ -83,7 +83,7 @@ class AiHistoryService:
 
     @staticmethod
     def _serialize_ai_history(ai_history: AiHistory) -> Dict[str, Any]:
-        """将 ORM 对象转换为可序列化的响应字典。"""
+        """将 ORM 对象转换为可序列化的响应字典"""
         fmt = "%Y-%m-%d %H:%M:%S"
         return {
             "id": ai_history.id,
@@ -102,7 +102,7 @@ class AiHistoryService:
 
     @staticmethod
     def _normalize_ai_history_data(ai_history: Any) -> Dict[str, Any]:
-        """统一兼容 ORM 实体、Pydantic 模型和字典对象。"""
+        """统一兼容 ORM 实体、Pydantic 模型和字典对象"""
         if isinstance(ai_history, AiHistory):
             return {
                 "user_id": ai_history.user_id,

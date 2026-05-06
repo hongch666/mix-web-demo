@@ -586,6 +586,11 @@ class Constants:
     )
     """调度器分析接口缓存更新任务消息"""
 
+    SCHEDULER_NEO4J_SYNC_MESSAGE: str = (
+        "  - Neo4j 知识图谱同步任务：每 6 小时执行一次（启动时立即执行）"
+    )
+    """调度器 Neo4j 知识图谱同步任务消息"""
+
     NO_ARTICLES_DATA_MESSAGE: str = "没有文章数据"
     """没有文章数据消息"""
 
@@ -684,6 +689,12 @@ class Constants:
 
     LOCK_TASK_ANALYZE_CACHE_EXPIRE: int = 600
     """分析缓存更新任务分布式锁的过期时间（秒），与任务执行间隔一致（10分钟）"""
+
+    LOCK_TASK_NEO4J_SYNC: str = "lock:task:neo4j:sync"
+    """Neo4j 知识图谱同步任务分布式锁的 key"""
+
+    LOCK_TASK_NEO4J_SYNC_EXPIRE: int = 3600
+    """Neo4j 知识图谱同步任务分布式锁的过期时间（秒）"""
 
     REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE: str = "[分布式锁] 获取锁成功，key: %s"
     """获取分布式锁成功消息"""
@@ -819,13 +830,21 @@ class Constants:
             * "API请求记录"
             * "今天有哪些错误"
 
-        4. **general_chat** - 简单问候、闲聊、不需要查询数据的问题
+        4. **knowledge_query** - 需要查询知识图谱、实体关系、图结构推荐时选择
+        - 关键词：知识图谱、图谱、关系、关联、相似文章、同分类推荐、标签排行、关注链推荐等
+        - 示例：
+            * "根据知识图谱推荐我可能喜欢的文章"
+            * "这篇文章同分类下还有哪些热门文章"
+            * "标签最多关联了哪些文章"
+            * "用户关注的人点赞过哪些文章"
+
+        5. **general_chat** - 简单问候、闲聊、不需要查询数据的问题
         - 示例：
             * "你好"
             * "今天天气怎么样"
             * "你能做什么"
 
-        请只返回以下四个选项之一：database_query、article_search、log_analysis、general_chat
+        请只返回以下五个选项之一：database_query、article_search、log_analysis、knowledge_query、general_chat
     """
     """意图识别路由器提示词模板"""
 
@@ -841,6 +860,34 @@ class Constants:
         使用场景: 用户询问具体的技术问题、寻找相关文章、需要文章内容支持时使用。
     """
     """RAG工具描述"""
+
+    NEO4J_SERVICE_UNAVAILABLE_MESSAGE: str = "Neo4j 知识图谱服务暂不可用"
+    """Neo4j 服务不可用消息"""
+
+    NEO4J_READ_ONLY_LIMIT_MESSAGE: str = (
+        "安全限制：Neo4j 工具只允许执行单条只读 Cypher 查询。"
+    )
+    """Neo4j 只读查询限制消息"""
+
+    NEO4J_PREDEFINED_QUERY_TOOL_NAME: str = "execute_knowledge_graph_query"
+    """Neo4j 预定义查询工具名称"""
+
+    NEO4J_PREDEFINED_QUERY_TOOL_DESC: str = """
+        执行预定义的 Neo4j 知识图谱查询。
+        适用于文章详情、分类热门文章、作者文章、同分类相似文章、关注链推荐、热门文章、标签排行和个性化推荐。
+        参数包含 query_name 和 params。优先使用预定义查询，limit 最大 50。
+    """
+    """Neo4j 预定义查询工具描述"""
+
+    NEO4J_CUSTOM_CYPHER_TOOL_NAME: str = "execute_custom_cypher_query"
+    """Neo4j 自定义 Cypher 查询工具名称"""
+
+    NEO4J_CUSTOM_CYPHER_TOOL_DESC: str = """
+        执行自定义只读 Cypher 查询。
+        图谱包含 User、Article、Category、SubCategory、Tag 节点，以及 PUBLISHED_BY、BELONGS_TO、BELONGS_TO_CATEGORY、TAGGED_AS、LIKES、COLLECTS、COMMENTED_ON、FOLLOWS 关系。
+        仅允许 MATCH、OPTIONAL MATCH、WITH、RETURN 或 CALL db.* 类型的只读查询。
+    """
+    """Neo4j 自定义 Cypher 查询工具描述"""
 
     SQL_TOOL_LIMIT: str = "安全限制：只允许执行SELECT查询语句"
     """SQL工具限制消息"""
@@ -954,7 +1001,7 @@ class Constants:
     """基于参考文本的评价提示词"""
 
     AGENT_PROMPT_TEMPLATE: str = """
-        你是一个中文 AI 助手，负责查询数据库信息、搜索文章内容和分析系统日志。
+        你是一个中文 AI 助手，负责查询数据库信息、搜索文章内容、分析系统日志和使用知识图谱分析实体关系。
 
         你可以直接调用绑定好的工具，不需要手写 Thought/Action/Observation 这种文本格式。
 
@@ -962,8 +1009,9 @@ class Constants:
         1. 需要查询数据时优先使用工具，不要凭空猜测。
         2. 数据库统计和业务数据查询优先使用 SQL 工具，并尽量加上时间范围、用户范围、状态条件或 limit。
         3. 查询数据库表结构时，先确认真实表名，再执行查询；例如用户表是 user，不是 users。
-        4. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
-        5. 最终回答必须使用中文，简洁明确。
+        4. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
+        5. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
+        6. 最终回答必须使用中文，简洁明确。
 
         当前问题：{input}
     """

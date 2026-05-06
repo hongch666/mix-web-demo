@@ -773,6 +773,7 @@ dependencies = [
     { name = "langchain-text-splitters" },
     { name = "motor" },
     { name = "nacos-sdk-python" },
+    { name = "neo4j" },
     { name = "openpyxl" },
     { name = "pandas" },
     { name = "pgvector" },
@@ -810,6 +811,7 @@ requires-dist = [
     { name = "langchain-text-splitters", specifier = "==1.0.0" },
     { name = "motor", specifier = "==3.7.1" },
     { name = "nacos-sdk-python", specifier = "==2.0.8" },
+    { name = "neo4j", specifier = ">=5.28.0" },
     { name = "openpyxl", specifier = ">=3.1.0" },
     { name = "pandas", specifier = "==2.3.1" },
     { name = "pgvector", specifier = "==0.4.1" },
@@ -1660,6 +1662,18 @@ dependencies = [
 sdist = { url = "https://mirrors.aliyun.com/pypi/packages/49/29/4b06bfd18dd6d2a5853e67f96af7e61fba70930afda86b9f67356de8de9e/nacos-sdk-python-2.0.8.tar.gz", hash = "sha256:a1b7643f42c67f37949965e29d32f61704c539df9dc8e0ed7ebed073d43be776" }
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/9a/0d/c0a3d6ea4935c10e5563f54002ae88c368ac15a44f3cc779b6865d7d5d8d/nacos_sdk_python-2.0.8-py3-none-any.whl", hash = "sha256:342dde5bcf5f6493f7cd0edefacaf84e389b80d497ed34e5b3efeb088540924d" },
+]
+
+[[package]]
+name = "neo4j"
+version = "6.2.0"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple" }
+dependencies = [
+    { name = "pytz" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/ce/f4/aaa4ac19adae4b01bc742b63afd2672a77e7351566f02721e713e4b863ee/neo4j-6.2.0.tar.gz", hash = "sha256:e1e246b65b572bd8ea97f9e0e721b7d40a5ce53e53d0007c29aef63e4f9124d9" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/e6/cf/1c3795866cefaac6e648d4e98c373cafd97810f6e317c307371007ab4abb/neo4j-6.2.0-py3-none-any.whl", hash = "sha256:b87abdd13a5cc2e3bd51026926c2f20ac38fa3febe98c340520dce19e97388d0" },
 ]
 
 [[package]]

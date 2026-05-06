@@ -18,11 +18,11 @@ from tenacity import (
 
 
 class CircuitBreakerOpenError(Exception):
-    """熔断器处于打开状态。"""
+    """熔断器处于打开状态"""
 
 
 class SimpleCircuitBreaker:
-    """轻量级熔断器，避免下游持续故障时请求雪崩。"""
+    """轻量级熔断器，避免下游持续故障时请求雪崩"""
 
     def __init__(
         self,
@@ -61,7 +61,7 @@ def _get_service_breaker(service_name: str) -> SimpleCircuitBreaker:
 
 
 def _build_default_headers() -> Dict[str, str]:
-    """构建基础用户上下文请求头。"""
+    """构建基础用户上下文请求头"""
     user_id: str = get_current_user_id() or ""
     username: str = get_current_username() or ""
     return {
@@ -71,7 +71,7 @@ def _build_default_headers() -> Dict[str, str]:
 
 
 def _build_internal_token_header(user_id: str) -> Dict[str, str]:
-    """构建内部服务令牌请求头。"""
+    """构建内部服务令牌请求头"""
     try:
         internal_token_util: InternalTokenUtil = InternalTokenUtil()
         user_id_num: int = int(user_id) if user_id else -1
@@ -88,7 +88,7 @@ def _build_internal_token_header(user_id: str) -> Dict[str, str]:
 
 
 def _merge_headers(headers: Optional[Dict[str, str]]) -> Dict[str, str]:
-    """合并默认请求头与调用方自定义请求头。"""
+    """合并默认请求头与调用方自定义请求头"""
     default_headers: Dict[str, str] = _build_default_headers()
     default_headers.update(_build_internal_token_header(default_headers["X-User-Id"]))
     merged_headers: Dict[str, str] = {**default_headers, **(headers or {})}
@@ -96,13 +96,13 @@ def _merge_headers(headers: Optional[Dict[str, str]]) -> Dict[str, str]:
 
 
 def _resolve_service_url(service_name: str, path: str) -> str:
-    """通过服务发现生成远程调用 URL。"""
+    """通过服务发现生成远程调用 URL"""
     instance: Dict[str, Any] = get_service_instance(service_name)
     return f"http://{instance['ip']}:{instance['port']}{path}"
 
 
 def _should_retry_remote_call(error: Exception) -> bool:
-    """仅对瞬时性错误重试，避免无意义放大故障。"""
+    """仅对瞬时性错误重试，避免无意义放大故障"""
     if isinstance(error, httpx.RequestError):
         return True
     if isinstance(error, httpx.HTTPStatusError):
@@ -111,7 +111,7 @@ def _should_retry_remote_call(error: Exception) -> bool:
 
 
 def _before_retry_log(retry_state: RetryCallState) -> None:
-    """输出 tenacity 重试日志。"""
+    """输出 tenacity 重试日志"""
     error: Optional[BaseException] = retry_state.outcome.exception()
     Logger.warning(
         f"调用远程服务失败，准备第 {retry_state.attempt_number + 1} 次重试: {error}"
@@ -127,7 +127,7 @@ async def _request_remote_service(
     data: Optional[Dict[str, Any]],
     json: Optional[Dict[str, Any]],
 ) -> Any:
-    """执行一次真正的异步远程请求。"""
+    """执行一次真正的异步远程请求"""
     response: httpx.Response = await client.request(
         method=method,
         url=url,
@@ -143,7 +143,7 @@ async def _request_remote_service(
 def _build_remote_service_error(
     service_name: str, error: Exception
 ) -> BusinessException:
-    """统一映射远程调用错误。"""
+    """统一映射远程调用错误"""
     if isinstance(error, CircuitBreakerOpenError):
         Logger.warning(f"调用 {service_name} 已触发熔断，直接降级返回")
         return BusinessException(

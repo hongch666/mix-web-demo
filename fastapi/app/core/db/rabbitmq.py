@@ -87,7 +87,7 @@ class RabbitMQClient:
     async def send_message_async(
         self, queue_name: str, message: Any, persistent: bool = True
     ) -> bool:
-        """异步发送消息到指定队列。"""
+        """异步发送消息到指定队列"""
         max_retries: int = 3
         for attempt in range(max_retries):
             try:
@@ -184,7 +184,7 @@ def get_rabbitmq_client() -> Optional[RabbitMQClient]:
 async def send_to_queue_async(
     queue_name: str, message: Any, persistent: bool = True
 ) -> bool:
-    """异步发送消息到队列。"""
+    """异步发送消息到队列"""
     try:
         client = get_rabbitmq_client()
         if client is None:

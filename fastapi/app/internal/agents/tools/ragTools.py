@@ -98,7 +98,7 @@ class RAGTools:
 
     @staticmethod
     def _resolve_embedding_api_key(embedding_cfg: Dict[str, Any]) -> str:
-        """优先从配置读取 embedding key，再回退到常见环境变量。"""
+        """优先从配置读取 embedding key，再回退到常见环境变量"""
         candidates = [
             embedding_cfg.get("api_key"),
             os.getenv("EMBEDDING_API_KEY"),

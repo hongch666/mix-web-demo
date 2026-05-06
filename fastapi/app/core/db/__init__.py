@@ -30,6 +30,7 @@ from .mysql import (
     get_db,
     get_db_async,
 )
+from .neo4j import Neo4jClient, get_neo4j_client
 
 try:
     from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
@@ -105,4 +106,6 @@ __all__: List[str] = [
     "get_clickhouse_connection_pool",
     "RedisClient",
     "get_redis_client",
+    "Neo4jClient",
+    "get_neo4j_client",
 ]

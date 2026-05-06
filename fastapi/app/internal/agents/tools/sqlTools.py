@@ -81,7 +81,7 @@ class SQLTools:
         return cleaned.strip()
 
     def _normalize_known_table_names(self, query: str) -> str:
-        """把常见的复数表名自动修正为真实表名。"""
+        """把常见的复数表名自动修正为真实表名"""
         table_names = set(inspect(self.engine).get_table_names())
 
         def replace_table(match: re.Match[str]) -> str:

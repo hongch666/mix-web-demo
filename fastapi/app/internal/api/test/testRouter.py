@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from app.common.decorators import log, requireInternalToken
-from app.core.base import Constants, Logger, success
+from app.core.base import Constants, success
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,
@@ -13,6 +13,7 @@ from app.internal.services import (
     call_remote_service,
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
+    sync_mysql_to_neo4j_async,
     update_analyze_caches_async,
 )
 from fastapi.responses import JSONResponse
@@ -25,7 +26,7 @@ router: APIRouter = APIRouter(
 )
 
 
-# 测试
+# 测试FastAPI服务
 @router.get("/fastapi", summary="测试FastAPI服务", description="测试FastAPI服务")
 @log("测试FastAPI服务")
 async def testFastapi(request: Request) -> JSONResponse:
@@ -69,6 +70,7 @@ async def testNestJS(request: Request) -> JSONResponse:
     return success(result["data"])
 
 
+# 手动触发更新分析接口缓存定时任务接口
 @router.post(
     "/task/update-analyze-caches",
     summary="更新分析接口缓存",
@@ -83,6 +85,7 @@ async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
     return success()
 
 
+# 手动触发向量数据库同步任务接口
 @router.post(
     "/task/vector",
     summary="手动触发向量数据库同步任务",
@@ -97,6 +100,7 @@ async def test_export_vector_task(request: Request) -> JSONResponse:
     return success()
 
 
+# 手动触发初始化文章内容 hash 缓存任务接口
 @router.post(
     "/task/init-hash-cache",
     summary="初始化文章内容 hash 缓存",
@@ -111,6 +115,7 @@ async def test_init_hash_cache_task(request: Request) -> JSONResponse:
     return success()
 
 
+# 手动触发清除分析相关缓存任务接口
 @router.post(
     "/task/clear-analyze-caches",
     summary="清除分析相关缓存",
@@ -121,52 +126,34 @@ async def test_init_hash_cache_task(request: Request) -> JSONResponse:
 async def clear_analyze_caches_task(request: Request) -> JSONResponse:
     """清除所有分析相关缓存接口"""
 
-    # 获取所有分析相关的缓存对象
-    async def clear_caches() -> None:
-        caches_info = []
+    article_cache = get_article_cache()
+    await article_cache.clear_all()
 
-        # 清除 Top10 文章缓存
-        try:
-            article_cache = get_article_cache()
-            await article_cache.clear_all()
-            caches_info.append("Top10 文章缓存")
-        except Exception as e:
-            Logger.warning(f"清除 Top10 文章缓存失败: {e}")
+    category_cache = get_category_cache()
+    await category_cache.clear_all()
 
-        # 清除 分类统计缓存
-        try:
-            category_cache = get_category_cache()
-            await category_cache.clear_all()
-            caches_info.append("分类统计缓存")
-        except Exception as e:
-            Logger.warning(f"清除分类统计缓存失败: {e}")
+    publish_time_cache = get_publish_time_cache()
+    await publish_time_cache.clear_all()
 
-        # 清除 月度发布统计缓存
-        try:
-            publish_time_cache = get_publish_time_cache()
-            await publish_time_cache.clear_all()
-            caches_info.append("月度发布统计缓存")
-        except Exception as e:
-            Logger.warning(f"清除月度发布统计缓存失败: {e}")
+    statistics_cache = get_statistics_cache()
+    await statistics_cache.clear_all()
 
-        # 清除 统计信息缓存
-        try:
-            statistics_cache = get_statistics_cache()
-            await statistics_cache.clear_all()
-            caches_info.append("统计信息缓存")
-        except Exception as e:
-            Logger.warning(f"清除统计信息缓存失败: {e}")
+    wordcloud_cache = get_wordcloud_cache()
+    await wordcloud_cache.delete()
 
-        # 清除 词云缓存
-        try:
-            wordcloud_cache = get_wordcloud_cache()
-            await wordcloud_cache.delete()
-            caches_info.append("词云缓存")
-        except Exception as e:
-            Logger.warning(f"清除词云缓存失败: {e}")
+    return success()
 
-        if caches_info:
-            Logger.info(f"成功清除以下缓存: {', '.join(caches_info)}")
 
-    await clear_caches()
+# 手动触发同步 MySQL 到 Neo4j 知识图谱任务接口
+@router.post(
+    "/task/sync-neo4j",
+    summary="手动触发同步 MySQL 到 Neo4j 知识图谱任务",
+    description="手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务",
+)
+@requireInternalToken
+@log("手动触发同步 MySQL 到 Neo4j 知识图谱任务")
+async def test_sync_neo4j_task(request: Request) -> JSONResponse:
+    """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口"""
+
+    await sync_mysql_to_neo4j_async()
     return success()

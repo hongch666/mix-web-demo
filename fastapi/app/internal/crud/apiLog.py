@@ -87,7 +87,7 @@ class ApiLogMapper:
         return await cursor.to_list(length=None)
 
     async def get_api_call_statistics_mapper(self) -> Dict[str, Any]:
-        """获取 API 调用的整体统计信息。"""
+        """获取 API 调用的整体统计信息"""
 
         pipeline = [
             {

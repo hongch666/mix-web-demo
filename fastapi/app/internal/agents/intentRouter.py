@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session
 from .tools.sqlTools import get_sql_tools
 from .userPermissionManager import UserPermissionManager
 
-IntentType = Literal["database_query", "article_search", "log_analysis", "general_chat"]
+IntentType = Literal[
+    "database_query",
+    "article_search",
+    "log_analysis",
+    "knowledge_query",
+    "general_chat",
+]
 
 
 class IntentRouter:
@@ -79,6 +85,14 @@ class IntentRouter:
             elif "log" in result_text or "日志" in result_text or "活动" in result_text:
                 intent = "log_analysis"
             elif (
+                "knowledge" in result_text
+                or "知识" in result_text
+                or "图谱" in result_text
+                or "推荐" in result_text
+                or "关系" in result_text
+            ):
+                intent = "knowledge_query"
+            elif (
                 "general" in result_text
                 or "chat" in result_text
                 or "闲聊" in result_text
@@ -128,6 +142,9 @@ class IntentRouter:
             )
             if not has_permission:
                 return intent, False, msg
+            return intent, True, ""
+
+        if intent == "knowledge_query":
             return intent, True, ""
 
         if intent == "log_analysis":

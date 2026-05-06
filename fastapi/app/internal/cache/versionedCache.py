@@ -24,7 +24,7 @@ class VersionedCache(BaseCache):
         self._cache_version: Optional[str] = None
 
     async def get_cache_version(self, ch_conn: Any) -> Optional[str]:
-        """基于 ClickHouse 表内容生成稳定版本号。"""
+        """基于 ClickHouse 表内容生成稳定版本号"""
         try:
             if ch_conn is None:
                 return None
@@ -42,16 +42,14 @@ class VersionedCache(BaseCache):
                 return None
 
             total_rows, max_update_ts, max_id = result[0]
-            version_str = (
-                f"{ch_db}.{ch_table}:{int(total_rows)}:{int(max_update_ts)}:{int(max_id)}"
-            )
+            version_str = f"{ch_db}.{ch_table}:{int(total_rows)}:{int(max_update_ts)}:{int(max_id)}"
             return hashlib.md5(version_str.encode()).hexdigest()[:8]
         except Exception as e:
             Logger.debug(f"获取版本号失败: {type(e).__name__}: {e}")
             return None
 
     async def _persist_version(self, version: str) -> None:
-        """同步更新本地版本号，并尽量写入 Redis。"""
+        """同步更新本地版本号，并尽量写入 Redis"""
         self._cache_version = version
         await self._redis.set(self.REDIS_VERSION_KEY, version, ex=self._redis_ttl)
 

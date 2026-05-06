@@ -8,6 +8,7 @@ from apscheduler.schedulers.base import BaseScheduler
 from sqlalchemy.orm import Session
 
 from .tasks.analyzeCacheTask import update_analyze_caches_async
+from .tasks.neo4jSyncTask import sync_mysql_to_neo4j_async
 from .tasks.vectorSyncTask import export_article_vectors_to_postgres_async
 
 
@@ -53,8 +54,13 @@ def start_scheduler(
         next_run_time=datetime.now(),  # 立即执行
     )
 
+    # 任务3：同步 MySQL 到 Neo4j 知识图谱
+    neo4j_sync_job_func = partial(sync_mysql_to_neo4j_async)
+    scheduler.add_job(neo4j_sync_job_func, "interval", hours=24, id="sync_neo4j")
+
     scheduler.start()
     Logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
     Logger.info(Constants.SCHEDULER_VECTOR_SYNC_MESSAGE)
     Logger.info(Constants.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
+    Logger.info(Constants.SCHEDULER_NEO4J_SYNC_MESSAGE)
     return scheduler

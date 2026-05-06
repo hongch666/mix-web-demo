@@ -38,7 +38,7 @@ def _get_redis_client() -> Optional[Any]:
 
 
 def _run_redis_coro(coro: Any) -> Any:
-    """在同步任务中执行 Redis 协程。"""
+    """在同步任务中执行 Redis 协程"""
     try:
         asyncio.get_running_loop()
     except RuntimeError:

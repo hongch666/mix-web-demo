@@ -6,6 +6,7 @@ from app.core.config import load_config
 from app.internal.agents import (
     IntentRouter,
     get_mongodb_tools,
+    get_neo4j_tools,
     get_rag_tools,
     get_sql_tools,
 )
@@ -67,6 +68,15 @@ def initialize_ai_tools(
         Logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
     except Exception as e:
         Logger.warning(f"加载 RAG 工具失败: {e}")
+
+    # 获取 Neo4j 知识图谱工具
+    try:
+        neo4j_tools_instance = get_neo4j_tools()
+        neo4j_tools: List[Any] = neo4j_tools_instance.get_langchain_tools()
+        all_tools.extend(neo4j_tools)
+        Logger.info(f"已加载 Neo4j 知识图谱工具: {len(neo4j_tools)} 个")
+    except Exception as e:
+        Logger.warning(f"加载 Neo4j 知识图谱工具失败: {e}")
 
     # 获取 MongoDB 日志工具
     if include_logs:
@@ -228,7 +238,7 @@ class BaseAiService:
         return context
 
     def _normalize_user_id(self, user_id: Any) -> Optional[int]:
-        """将用户ID统一转换为整数，避免不同调用链传入字符串。"""
+        """将用户ID统一转换为整数，避免不同调用链传入字符串"""
         if user_id is None:
             return None
 
@@ -242,7 +252,7 @@ class BaseAiService:
             return None
 
     def _reset_runtime_state(self) -> None:
-        """重置运行时状态，方便配置初始化失败后的降级。"""
+        """重置运行时状态，方便配置初始化失败后的降级"""
         self.llm = None
         self.agent = None
         self.agent_executor = None
@@ -271,7 +281,7 @@ class BaseAiService:
         return f"{self.service_name}调用失败"
 
     def _resolve_service_error_message(self, error_message: str) -> str:
-        """把底层模型错误映射成可读的中文提示。"""
+        """把底层模型错误映射成可读的中文提示"""
         lower_error = error_message.lower()
         if "invalid" in lower_error and "key" in lower_error:
             return self._build_invalid_api_key_error_message()
@@ -286,7 +296,7 @@ class BaseAiService:
     def _initialize_agent_stack(
         self, user_mapper: Optional[Any], max_iterations: int = 5
     ) -> None:
-        """初始化工具、意图路由器和 Agent。"""
+        """初始化工具、意图路由器和 Agent"""
         try:
             _, _, _, self.all_tools = initialize_ai_tools()
             self.intent_router = IntentRouter(self.llm, user_mapper=user_mapper)
@@ -312,7 +322,7 @@ class BaseAiService:
             self.intent_router = None
 
     def _initialize_llm_service(self, user_mapper: Optional[Any] = None) -> None:
-        """从配置中初始化 CloseAI 客户端和 Agent 能力。"""
+        """从配置中初始化 CloseAI 客户端和 Agent 能力"""
         try:
             service_cfg: Dict[str, Any] = load_config(self.config_section) or {}
             self._api_key = str(service_cfg.get("api_key") or "").strip()
@@ -368,7 +378,7 @@ class BaseAiService:
             return f"对话服务异常: {str(error)}"
 
     async def with_reference_chat(self, message: str, reference_content: str) -> str:
-        """基于参考文本进行评价和打分。"""
+        """基于参考文本进行评价和打分"""
         try:
             Logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
 
