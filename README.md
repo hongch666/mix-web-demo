@@ -437,7 +437,7 @@ default = true
 
 ## Docker 基础中间件容器部署
 
-项目提供了基础依赖容器部署脚本，用于快速创建和管理 MySQL、PostgreSQL、Redis、MongoDB、ElasticSearch、Nacos 和 RabbitMQ 等服务，供下方微服务部署使用。
+项目提供了基础依赖容器部署脚本，用于快速创建和管理 MySQL、PostgreSQL、Redis、MongoDB、ElasticSearch、Nacos、RabbitMQ 和 Neo4j 等服务，供下方微服务部署使用。
 
 ### 基础容器部署命令
 
@@ -517,6 +517,7 @@ NEO4J_PASSWORD=你的Neo4j密码        # Neo4j 密码
 - **ClickHouse**: 端口 9002 映射到容器内 9000（避免与其他服务冲突），需设置 `ulimit nofile=262144`
 - **Nacos**: 自动生成 `nacos/custom.env` 配置文件，MySQL 密码与 `DB_PASSWORD` 同步
 - **权限问题**: 如果遇到权限错误，可能需要使用 `sudo` 或将用户加入 docker 组
+- **Neo4j**: 默认用户为 `neo4j`，默认密码为 `12345678`，Browser 地址为 `http://localhost:7474`，Bolt 地址为 `bolt://localhost:7687`
 - 如果有额外创建的组件，按照个人的配置改动配置文件
 
 ## 编译和运行项目
@@ -1083,7 +1084,7 @@ docker restart mix-spring-container
 - nestjs
 - fastapi
 
-第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
+第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
 应用容器镜像将由 `./mix docker build` 生成：
 
