@@ -690,8 +690,20 @@ class Constants:
     NEO4J_SYNC_START_MESSAGE: str = "[知识图谱] 开始全量同步 MySQL 到 Neo4j"
     """Neo4j 知识图谱全量同步开始消息"""
 
+    NEO4J_INCREMENTAL_SYNC_START_MESSAGE: str = "[知识图谱] 开始增量同步 MySQL 到 Neo4j"
+    """Neo4j 知识图谱增量同步开始消息"""
+
     NEO4J_TASK_START_MESSAGE: str = "[知识图谱任务] 开始执行 MySQL 到 Neo4j 全量同步"
     """Neo4j 知识图谱定时任务开始消息"""
+
+    NEO4J_TASK_FINISH_MESSAGE: str = "[知识图谱任务] MySQL 到 Neo4j 同步完成: %s"
+    """Neo4j 知识图谱定时任务完成消息"""
+
+    NEO4J_GRAPH_EMPTY_FULL_SYNC_MESSAGE: str = "Neo4j 当前无图谱数据，切换为全量同步"
+    """Neo4j 空图谱全量同步消息"""
+
+    NEO4J_NO_INCREMENTAL_DATA_MESSAGE: str = "没有检测到需要同步的 Neo4j 增量数据"
+    """Neo4j 无增量数据消息"""
 
     REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE: str = "[分布式锁] 获取锁成功，key: %s"
     """获取分布式锁成功消息"""
@@ -727,6 +739,50 @@ class Constants:
         ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     """
     """SQL创建AI聊天表常量"""
+
+    NEO4J_SQL_SELECT_USERS: str = (
+        "SELECT id, name, email, role, img, signature, last_login_at FROM user"
+    )
+    """Neo4j 同步查询用户 SQL"""
+
+    NEO4J_SQL_SELECT_CATEGORIES: str = "SELECT id, name, update_time FROM category"
+    """Neo4j 同步查询主分类 SQL"""
+
+    NEO4J_SQL_SELECT_SUB_CATEGORIES: str = (
+        "SELECT id, name, category_id, update_time FROM sub_category"
+    )
+    """Neo4j 同步查询子分类 SQL"""
+
+    NEO4J_SQL_SELECT_ARTICLES: str = (
+        "SELECT id, title, tags, status, views, user_id, sub_category_id, "
+        "create_at, update_at, content FROM articles"
+    )
+    """Neo4j 同步查询文章 SQL"""
+
+    NEO4J_SQL_SELECT_LIKES: str = (
+        "SELECT user_id, article_id, created_time FROM likes"
+    )
+    """Neo4j 同步查询点赞 SQL"""
+
+    NEO4J_SQL_SELECT_COLLECTS: str = (
+        "SELECT user_id, article_id, created_time FROM collects"
+    )
+    """Neo4j 同步查询收藏 SQL"""
+
+    NEO4J_SQL_SELECT_COMMENTS: str = (
+        "SELECT id, user_id, article_id, create_time FROM comments"
+    )
+    """Neo4j 同步查询评论 SQL"""
+
+    NEO4J_SQL_SELECT_FOCUS: str = (
+        "SELECT user_id, focus_id, created_time FROM focus"
+    )
+    """Neo4j 同步查询关注关系 SQL"""
+
+    NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT: str = (
+        "%s WHERE %s >= '%s' ORDER BY %s ASC"
+    )
+    """Neo4j 同步增量 SQL 拼接格式"""
 
     SQL_QUERY_PREFIX: str = "SELECT"
     """SQL查询前缀"""
@@ -795,6 +851,132 @@ class Constants:
     """自然语言中明确的只读查询模式"""
 
     # Cypher 语句
+
+    NEO4J_CREATE_CONSTRAINTS: List[str] = [
+        "CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
+        "CREATE CONSTRAINT category_id_unique IF NOT EXISTS FOR (c:Category) REQUIRE c.id IS UNIQUE",
+        "CREATE CONSTRAINT sub_category_id_unique IF NOT EXISTS FOR (s:SubCategory) REQUIRE s.id IS UNIQUE",
+        "CREATE CONSTRAINT article_id_unique IF NOT EXISTS FOR (a:Article) REQUIRE a.id IS UNIQUE",
+        "CREATE CONSTRAINT tag_name_unique IF NOT EXISTS FOR (t:Tag) REQUIRE t.name IS UNIQUE",
+    ]
+    """Neo4j 约束创建语句列表"""
+
+    NEO4J_MERGE_USERS_CYPHER: str = """
+        UNWIND $rows AS row
+        MERGE (u:User {id: row.id})
+        SET u.name = row.name,
+            u.email = row.email,
+            u.role = row.role,
+            u.img = row.img,
+            u.signature = row.signature,
+            u.updatedAt = row.updatedAt
+    """
+    """Neo4j 合并用户节点 Cypher"""
+
+    NEO4J_MERGE_CATEGORIES_CYPHER: str = """
+        UNWIND $rows AS row
+        MERGE (c:Category {id: row.id})
+        SET c.name = row.name,
+            c.updatedAt = row.updatedAt
+    """
+    """Neo4j 合并主分类节点 Cypher"""
+
+    NEO4J_MERGE_SUB_CATEGORIES_CYPHER: str = """
+        UNWIND $rows AS row
+        MERGE (s:SubCategory {id: row.id})
+        SET s.name = row.name,
+            s.categoryId = row.categoryId,
+            s.updatedAt = row.updatedAt
+    """
+    """Neo4j 合并子分类节点 Cypher"""
+
+    NEO4J_MERGE_ARTICLES_CYPHER: str = """
+        UNWIND $rows AS row
+        MERGE (a:Article {id: row.id})
+        SET a.title = row.title,
+            a.tags = row.tags,
+            a.status = row.status,
+            a.views = row.views,
+            a.createAt = row.createAt,
+            a.updateAt = row.updateAt,
+            a.contentHash = row.contentHash,
+            a.updatedAt = row.updatedAt
+    """
+    """Neo4j 合并文章节点 Cypher"""
+
+    NEO4J_MERGE_TAGS_CYPHER: str = """
+        UNWIND $rows AS row
+        MERGE (t:Tag {name: row.name})
+    """
+    """Neo4j 合并标签节点 Cypher"""
+
+    NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (s:SubCategory {id: row.subCategoryId})
+        MATCH (c:Category {id: row.categoryId})
+        MERGE (s)-[:BELONGS_TO_CATEGORY]->(c)
+    """
+    """Neo4j 合并子分类到主分类关系 Cypher"""
+
+    NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})
+        MATCH (s:SubCategory {id: row.subCategoryId})
+        MERGE (a)-[:BELONGS_TO]->(s)
+    """
+    """Neo4j 合并文章到子分类关系 Cypher"""
+
+    NEO4J_MERGE_PUBLISHED_BY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})
+        MATCH (u:User {id: row.userId})
+        MERGE (a)-[:PUBLISHED_BY]->(u)
+    """
+    """Neo4j 合并文章作者关系 Cypher"""
+
+    NEO4J_MERGE_TAGGED_AS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})
+        MATCH (t:Tag {name: row.tagName})
+        MERGE (a)-[:TAGGED_AS]->(t)
+    """
+    """Neo4j 合并文章标签关系 Cypher"""
+
+    NEO4J_MERGE_LIKES_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})
+        MATCH (a:Article {id: row.articleId})
+        MERGE (u)-[r:LIKES]->(a)
+        SET r.createdAt = row.createdAt
+    """
+    """Neo4j 合并点赞关系 Cypher"""
+
+    NEO4J_MERGE_COLLECTS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})
+        MATCH (a:Article {id: row.articleId})
+        MERGE (u)-[r:COLLECTS]->(a)
+        SET r.createdAt = row.createdAt
+    """
+    """Neo4j 合并收藏关系 Cypher"""
+
+    NEO4J_MERGE_COMMENTED_ON_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})
+        MATCH (a:Article {id: row.articleId})
+        MERGE (u)-[r:COMMENTED_ON {commentId: row.commentId}]->(a)
+        SET r.createdAt = row.createdAt
+    """
+    """Neo4j 合并评论关系 Cypher"""
+
+    NEO4J_MERGE_FOLLOWS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u1:User {id: row.followerId})
+        MATCH (u2:User {id: row.followedId})
+        MERGE (u1)-[r:FOLLOWS]->(u2)
+        SET r.createdAt = row.createdAt
+    """
+    """Neo4j 合并关注关系 Cypher"""
 
     INTENT_TO_CYPHER: Dict[str, str] = {
         "article_detail": """
@@ -869,6 +1051,9 @@ class Constants:
         "LOAD CSV",
         "CALL APOC",
     ]
+
+    NEO4J_GRAPH_COUNT_CYPHER: str = "MATCH (n) RETURN count(n) AS total LIMIT 1"
+    """Neo4j 图谱节点数量查询 Cypher"""
 
     # Agent 相关提示词/描述/消息
 
