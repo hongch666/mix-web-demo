@@ -5,8 +5,8 @@ import httpx
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.auth import InternalTokenUtil
 from app.core.base import Constants, HttpCode, Logger
+from app.core.client.nacos import get_service_instance
 from app.core.config import load_config
-from app.core.db import get_service_instance
 from app.core.errors import BusinessException
 from tenacity import (
     AsyncRetrying,

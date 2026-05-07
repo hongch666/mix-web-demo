@@ -20,9 +20,9 @@ from app.internal.crud import (
 
 from fastapi import Depends
 
-from ..llm.deepseekService import DeepseekService, get_deepseek_service
-from ..llm.geminiService import GeminiService, get_gemini_service
-from ..llm.gptService import GptService, get_gpt_service
+from ..llm.extend.deepseekService import DeepseekService, get_deepseek_service
+from ..llm.extend.geminiService import GeminiService, get_gemini_service
+from ..llm.extend.gptService import GptService, get_gpt_service
 
 
 class GenerateService:

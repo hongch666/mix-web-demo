@@ -3,19 +3,18 @@ from typing import List
 from .aiHistory.aiHistoryService import AiHistoryService, get_ai_history_service
 from .analyze.analyzeService import AnalyzeService, get_analyze_service
 from .apiLog.apiLogService import ApiLogService, get_apilog_service
-from .external.client import call_remote_service
 from .generate.generateService import GenerateService, get_generate_service
 from .llm.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
-from .llm.deepseekService import DeepseekService, get_deepseek_service
-from .llm.geminiService import GeminiService, get_gemini_service
-from .llm.gptService import GptService, get_gpt_service
-from .scheduler import start_scheduler
-from .tasks.analyzeCacheTask import update_analyze_caches_async
-from .tasks.neo4jSyncTask import sync_mysql_to_neo4j_async
-from .tasks.vectorSyncTask import (
+from .llm.extend.deepseekService import DeepseekService, get_deepseek_service
+from .llm.extend.geminiService import GeminiService, get_gemini_service
+from .llm.extend.gptService import GptService, get_gpt_service
+from .tasks.logic.analyzeCacheTask import update_analyze_caches_async
+from .tasks.logic.neo4jSyncTask import sync_mysql_to_neo4j_async
+from .tasks.logic.vectorSyncTask import (
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
 )
+from .tasks.scheduler import start_scheduler
 from .user.userService import UserService, get_user_service
 
 __all__: List[str] = [
@@ -43,5 +42,4 @@ __all__: List[str] = [
     "export_article_vectors_to_postgres_async",
     "initialize_article_content_hash_cache_async",
     "start_scheduler",
-    "call_remote_service",
 ]

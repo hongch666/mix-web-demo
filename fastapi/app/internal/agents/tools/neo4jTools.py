@@ -4,6 +4,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants, Logger
+from app.core.db import get_neo4j_client
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
@@ -18,8 +19,6 @@ class Neo4jQueryTools:
 
     def _init_client(self) -> None:
         try:
-            from app.core.db import get_neo4j_client
-
             self.client = get_neo4j_client()
             self.logger.info(Constants.NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE)
         except Exception as e:

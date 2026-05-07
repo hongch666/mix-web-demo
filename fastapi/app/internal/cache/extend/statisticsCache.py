@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 
 from app.core.base import Constants, Logger
 
-from .baseCache import BaseCache
+from ..baseCache import BaseCache
 
 # 全局单例实例
 _statistics_cache_instance = None

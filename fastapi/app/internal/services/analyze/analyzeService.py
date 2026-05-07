@@ -7,6 +7,7 @@ from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.core.base import Constants, HttpCode, Logger
+from app.core.client import call_remote_service
 from app.core.config import load_config
 from app.core.db import get_db
 from app.core.errors import BusinessException
@@ -42,8 +43,6 @@ from sqlalchemy.orm import Session
 from wordcloud import WordCloud
 
 from fastapi import Depends
-
-from ..external.client import call_remote_service
 
 
 class AnalyzeService:

@@ -652,25 +652,14 @@ class Constants:
     )
     """requireInternalToken 装饰器只支持异步函数消息"""
 
-    AIO_PKA_NOT_INSTALLED_ERROR: str = (
-        "aio-pika 未安装，请先执行 uv sync 或安装 aio-pika"
-    )
-    """aio-pika 未安装错误消息"""
-
     AIO_PKA_EVENT_LOOP_ERROR: str = "检测到运行中的事件循环，跳过 RabbitMQ 同步关闭"
     """检测到运行中的事件循环错误消息"""
-
-    NACOS_NOT_INSTALLED_ERROR: str = "nacos 未安装，请先安装 nacos 依赖"
-    """nacos 未安装错误消息"""
 
     NACOS_REGISTER_SUCCESS: str = "Nacos 服务注册成功"
     """Nacos 服务注册成功消息"""
 
     NACOS_INITIALIZATION_FAILED: str = "nacos 初始化不可用"
     """Nacos 初始化失败错误消息"""
-
-    REDIS_NOT_INSTALLED_ERROR: str = "redis 未安装，请先执行 `uv sync` 或安装 `redis`。"
-    """redis 未安装错误消息"""
 
     REDIS_LOCK_ACQUIRE_ERROR_PREFIX: str = "[Redis] 获取分布式锁失败 key="
     """获取分布式锁错误前缀消息"""

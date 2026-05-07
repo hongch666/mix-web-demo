@@ -4,9 +4,7 @@ import time
 from datetime import datetime
 from typing import Any, Callable, List, Optional
 
-import redis.asyncio as redis
 from app.core.base import Constants, HttpCode, Logger
-from app.core.config import load_config
 from app.core.db import SessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
@@ -20,21 +18,7 @@ _ARTICLE_CONTENT_HASH_PREFIX: str = "article_content_hash:"
 
 def _get_redis_client() -> Optional[Any]:
     """获取 Redis 客户端"""
-    try:
-        return get_redis_client()
-    except ImportError:
-        # 备用方案：使用 redis 库直接连接
-        try:
-            cfg = load_config("database")["redis"]
-            return redis.Redis(
-                host=cfg.get("host"),
-                port=cfg.get("port"),
-                db=cfg.get("db"),
-                decode_responses=True,
-            )
-        except Exception as e:
-            Logger.error(f"无法连接到 Redis: {e}")
-            return None
+    return get_redis_client()
 
 
 def _run_redis_coro(coro: Any) -> Any:
@@ -224,12 +208,7 @@ def _export_article_vectors_to_postgres(
         def mysql_db_factory() -> Session:
             return SessionLocal()
 
-    # 导入RAG工具
-    try:
-        rag_tools = get_rag_tools()
-    except ImportError as e:
-        Logger.error(f"RAG工具未找到: {e}")
-        return
+    rag_tools = get_rag_tools()
 
     mysql_db: Optional[Session] = None
     sync_start_time: datetime = datetime.now()

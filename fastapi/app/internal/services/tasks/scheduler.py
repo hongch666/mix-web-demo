@@ -7,9 +7,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlalchemy.orm import Session
 
-from .tasks.analyzeCacheTask import update_analyze_caches_async
-from .tasks.neo4jSyncTask import sync_mysql_to_neo4j_async
-from .tasks.vectorSyncTask import export_article_vectors_to_postgres_async
+from .logic.analyzeCacheTask import update_analyze_caches_async
+from .logic.neo4jSyncTask import sync_mysql_to_neo4j_async
+from .logic.vectorSyncTask import export_article_vectors_to_postgres_async
 
 
 def start_scheduler(

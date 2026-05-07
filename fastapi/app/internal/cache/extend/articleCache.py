@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants, Logger
 
-from .versionedCache import VersionedCache
+from ..versionedCache import VersionedCache
 
 # 全局单例实例
 _article_cache_instance = None

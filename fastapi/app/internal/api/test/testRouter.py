@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from app.common.decorators import log, requireInternalToken
 from app.core.base import Constants, success
+from app.core.client import call_remote_service
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,
@@ -10,7 +11,6 @@ from app.internal.cache import (
     get_wordcloud_cache,
 )
 from app.internal.services import (
-    call_remote_service,
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
     sync_mysql_to_neo4j_async,

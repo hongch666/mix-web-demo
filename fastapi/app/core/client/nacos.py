@@ -8,7 +8,7 @@ import nacos
 from app.core.base import Constants, HttpCode
 from app.core.errors import BusinessException
 
-from .config import load_config
+from ..config.config import load_config
 
 # Nacos 配置
 nacos_config: Dict[str, Any] = load_config("nacos")

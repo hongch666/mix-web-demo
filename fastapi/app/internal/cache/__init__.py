@@ -2,13 +2,13 @@ from typing import List
 
 from app.core.db import get_redis_client
 
-from .articleCache import ArticleCache, get_article_cache
 from .baseCache import BaseCache
-from .categoryCache import CategoryCache, get_category_cache
-from .publishTimeCache import PublishTimeCache, get_publish_time_cache
-from .statisticsCache import StatisticsCache, get_statistics_cache
+from .extend.articleCache import ArticleCache, get_article_cache
+from .extend.categoryCache import CategoryCache, get_category_cache
+from .extend.publishTimeCache import PublishTimeCache, get_publish_time_cache
+from .extend.statisticsCache import StatisticsCache, get_statistics_cache
+from .extend.wordcloudCache import WordcloudCache, get_wordcloud_cache
 from .versionedCache import VersionedCache
-from .wordcloudCache import WordcloudCache, get_wordcloud_cache
 
 __all__: List[str] = [
     "BaseCache",

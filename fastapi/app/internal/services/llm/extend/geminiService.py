@@ -10,11 +10,11 @@ from app.internal.crud import (
 
 from fastapi import Depends
 
-from .baseAIService import BaseAiService
+from ..baseAIService import BaseAiService
 
 
-class GptService(BaseAiService):
-    """GPT 模型服务"""
+class GeminiService(BaseAiService):
+    """Gemini 模型服务"""
 
     def __init__(
         self,
@@ -23,17 +23,17 @@ class GptService(BaseAiService):
     ) -> None:
         super().__init__(
             ai_history_mapper,
-            service_name="GPT",
+            service_name="Gemini",
             config_section="closeai",
-            model_config_key="gpt_model_name",
+            model_config_key="gemini_model_name",
             user_mapper=user_mapper,
         )
 
 
 @lru_cache()
-def get_gpt_service(
+def get_gemini_service(
     ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
     user_mapper: UserMapper = Depends(get_user_mapper),
-) -> GptService:
-    """获取 GPT 服务单例实例"""
-    return GptService(ai_history_mapper, user_mapper)
+) -> GeminiService:
+    """获取 Gemini 服务单例实例"""
+    return GeminiService(ai_history_mapper, user_mapper)
