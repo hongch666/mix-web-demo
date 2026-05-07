@@ -36,7 +36,7 @@ def start_scheduler(
         mysql_db_factory=mysql_db_factory or db_factory,
         enable_incremental_sync=True,  # 启用增量同步
     )
-    # 每1天执行一次
+    # 每24小时执行一次
     scheduler.add_job(sync_vector_job_func, "interval", hours=24, id="sync_vectors")
 
     # 任务2：更新分析接口缓存
@@ -56,6 +56,7 @@ def start_scheduler(
 
     # 任务3：同步 MySQL 到 Neo4j 知识图谱
     neo4j_sync_job_func = partial(sync_mysql_to_neo4j_async)
+    # 每24小时执行一次
     scheduler.add_job(neo4j_sync_job_func, "interval", hours=24, id="sync_neo4j")
 
     scheduler.start()

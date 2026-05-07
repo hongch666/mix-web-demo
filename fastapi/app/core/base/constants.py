@@ -580,7 +580,7 @@ class Constants:
     SCHEDULER_STARTED_MESSAGE: str = "定时任务调度器已启动："
     """调度器启动消息"""
 
-    SCHEDULER_VECTOR_SYNC_MESSAGE: str = "  - 向量同步任务：每 1 天执行一次"
+    SCHEDULER_VECTOR_SYNC_MESSAGE: str = "  - 向量同步任务：每 24 小时执行一次"
     """调度器向量同步任务消息"""
 
     SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE: str = (
@@ -589,7 +589,7 @@ class Constants:
     """调度器分析接口缓存更新任务消息"""
 
     SCHEDULER_NEO4J_SYNC_MESSAGE: str = (
-        "  - Neo4j 知识图谱同步任务：每 6 小时执行一次（启动时立即执行）"
+        "  - Neo4j 知识图谱同步任务：每 24 小时执行一次（启动时立即执行）"
     )
     """调度器 Neo4j 知识图谱同步任务消息"""
 
@@ -759,9 +759,7 @@ class Constants:
     )
     """Neo4j 同步查询文章 SQL"""
 
-    NEO4J_SQL_SELECT_LIKES: str = (
-        "SELECT user_id, article_id, created_time FROM likes"
-    )
+    NEO4J_SQL_SELECT_LIKES: str = "SELECT user_id, article_id, created_time FROM likes"
     """Neo4j 同步查询点赞 SQL"""
 
     NEO4J_SQL_SELECT_COLLECTS: str = (
@@ -774,14 +772,10 @@ class Constants:
     )
     """Neo4j 同步查询评论 SQL"""
 
-    NEO4J_SQL_SELECT_FOCUS: str = (
-        "SELECT user_id, focus_id, created_time FROM focus"
-    )
+    NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
     """Neo4j 同步查询关注关系 SQL"""
 
-    NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT: str = (
-        "%s WHERE %s >= '%s' ORDER BY %s ASC"
-    )
+    NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT: str = "%s WHERE %s >= '%s' ORDER BY %s ASC"
     """Neo4j 同步增量 SQL 拼接格式"""
 
     SQL_QUERY_PREFIX: str = "SELECT"
