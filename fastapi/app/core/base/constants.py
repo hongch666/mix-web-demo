@@ -143,7 +143,9 @@ class Constants:
     )
     """流式聊天思考过程系统消息"""
 
-    AGENT_PROCESSING_MESSAGE: str = "使用Agent处理，可同时调用SQL和RAG工具"
+    AGENT_PROCESSING_MESSAGE: str = (
+        "使用Agent处理，可同时调用SQL、RAG和Neo4j知识图谱工具"
+    )
     """Agent处理消息"""
 
     AGENT_PARSING_ERROR_HINT: str = (
@@ -932,6 +934,14 @@ class Constants:
     """
     """RAG工具描述"""
 
+    EMBEDDING_CONFIG_INCOMPLETE_MESSAGE: str = (
+        "Embedding配置不完整，请先配置 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY"
+    )
+    """Embedding配置不完整消息"""
+
+    RAG_SERVICE_NOT_INITIALIZED_MESSAGE: str = "RAG服务未初始化，请检查 Embedding 配置"
+    """RAG服务未初始化消息"""
+
     NEO4J_SERVICE_UNAVAILABLE_MESSAGE: str = "Neo4j 知识图谱服务暂不可用"
     """Neo4j 服务不可用消息"""
 
@@ -961,8 +971,55 @@ class Constants:
     NEO4J_QUERY_EMPTY_MESSAGE: str = "查询未返回结果"
     """Neo4j 自定义查询无结果消息"""
 
+    NEO4J_QUERY_NAME_INPUT_DESC: str = "预定义查询名称，可选值: "
+    """Neo4j 预定义查询名称输入描述"""
+
+    NEO4J_QUERY_PARAMS_INPUT_DESC: str = (
+        '查询参数，例如 {"id": 1, "name": "人工智能", "limit": 10}'
+    )
+    """Neo4j 查询参数输入描述"""
+
     NEO4J_CUSTOM_CYPHER_INPUT_DESC: str = "只读 Cypher 查询语句"
     """Neo4j 自定义 Cypher 输入描述"""
+
+    NEO4J_LABEL_USER: str = "用户"
+    """Neo4j 同步用户标签文案"""
+
+    NEO4J_LABEL_CATEGORY: str = "主分类"
+    """Neo4j 同步主分类标签文案"""
+
+    NEO4J_LABEL_SUB_CATEGORY: str = "子分类"
+    """Neo4j 同步子分类标签文案"""
+
+    NEO4J_LABEL_ARTICLE: str = "文章"
+    """Neo4j 同步文章标签文案"""
+
+    NEO4J_LABEL_TAG: str = "标签"
+    """Neo4j 同步标签文案"""
+
+    NEO4J_LABEL_SUB_CATEGORY_RELATION: str = "子分类-主分类关系"
+    """Neo4j 同步子分类主分类关系文案"""
+
+    NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION: str = "文章-子分类关系"
+    """Neo4j 同步文章子分类关系文案"""
+
+    NEO4J_LABEL_ARTICLE_AUTHOR_RELATION: str = "文章-作者关系"
+    """Neo4j 同步文章作者关系文案"""
+
+    NEO4J_LABEL_ARTICLE_TAG_RELATION: str = "文章-标签关系"
+    """Neo4j 同步文章标签关系文案"""
+
+    NEO4J_LABEL_LIKE_RELATION: str = "点赞关系"
+    """Neo4j 同步点赞关系文案"""
+
+    NEO4J_LABEL_COLLECT_RELATION: str = "收藏关系"
+    """Neo4j 同步收藏关系文案"""
+
+    NEO4J_LABEL_COMMENT_RELATION: str = "评论关系"
+    """Neo4j 同步评论关系文案"""
+
+    NEO4J_LABEL_FOLLOW_RELATION: str = "关注关系"
+    """Neo4j 同步关注关系文案"""
 
     NEO4J_READ_ONLY_LIMIT_MESSAGE: str = (
         "安全限制：Neo4j 工具只允许执行单条只读 Cypher 查询。"
@@ -1020,6 +1077,9 @@ class Constants:
     SQL_TABLE_TOOL_NAME: str = "get_table_schema"
     """SQL获取表结构工具名称"""
 
+    SQL_TABLE_INPUT_DESC: str = "表名，留空则返回所有表"
+    """SQL 表结构工具输入描述"""
+
     SQL_TABLE_TOOL_DESC: str = """
         获取MySQL数据库表结构信息。
         如果提供表名参数，返回该表的详细结构（列名、类型、主键、索引等）。
@@ -1031,6 +1091,9 @@ class Constants:
 
     SQL_QUERY_TOOL_NAME: str = "execute_sql_query"
     """SQL查询工具名称"""
+
+    SQL_QUERY_INPUT_DESC: str = "完整的只读 SQL 查询语句"
+    """SQL 查询工具输入描述"""
 
     SQL_QUERY_TOOL_DESC: str = """
         执行只读SQL查询并返回结果。
@@ -1057,6 +1120,15 @@ class Constants:
 
     MONGODB_QUERY_TOOL_NAME: str = "query_mongodb"
     """MongoDB 通用查询工具名称"""
+
+    MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"
+    """MongoDB collection 名称输入描述"""
+
+    MONGODB_FILTER_INPUT_DESC: str = "MongoDB 查询条件"
+    """MongoDB 查询条件输入描述"""
+
+    MONGODB_LIMIT_INPUT_DESC: str = "返回结果数量限制"
+    """MongoDB 查询条数限制输入描述"""
 
     MONGODB_QUERY_TOOL_DESC: str = """
         MongoDB 日志查询工具，仅用于查询日志相关 collection。

@@ -106,11 +106,18 @@ class MongoDBTools:
             pass
 
         class QueryMongoInput(BaseModel):
-            collection_name: str = Field(description="collection 的名称")
-            filter_dict: Dict[str, Any] = Field(
-                default_factory=dict, description="MongoDB 查询条件"
+            collection_name: str = Field(
+                description=Constants.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
-            limit: int = Field(default=10, ge=1, description="返回结果数量限制")
+            filter_dict: Dict[str, Any] = Field(
+                default_factory=dict,
+                description=Constants.MONGODB_FILTER_INPUT_DESC,
+            )
+            limit: int = Field(
+                default=10,
+                ge=1,
+                description=Constants.MONGODB_LIMIT_INPUT_DESC,
+            )
 
         return [
             StructuredTool(

@@ -307,10 +307,13 @@ class SQLTools:
         """
 
         class GetTableSchemaInput(BaseModel):
-            table_name: str = Field(default="", description="表名，留空则返回所有表")
+            table_name: str = Field(
+                default="",
+                description=Constants.SQL_TABLE_INPUT_DESC,
+            )
 
         class ExecuteSqlQueryInput(BaseModel):
-            query: str = Field(description="完整的只读 SQL 查询语句")
+            query: str = Field(description=Constants.SQL_QUERY_INPUT_DESC)
 
         return [
             StructuredTool(

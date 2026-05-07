@@ -97,12 +97,12 @@ class Neo4jQueryTools:
 
         class PredefinedQueryInput(BaseModel):
             query_name: str = Field(
-                description="预定义查询名称，可选值: "
+                description=Constants.NEO4J_QUERY_NAME_INPUT_DESC
                 + ", ".join(Constants.INTENT_TO_CYPHER)
             )
             params: Dict[str, Any] = Field(
                 default_factory=dict,
-                description='查询参数，例如 {"id": 1, "name": "人工智能", "limit": 10}',
+                description=Constants.NEO4J_QUERY_PARAMS_INPUT_DESC,
             )
 
         class CustomCypherInput(BaseModel):

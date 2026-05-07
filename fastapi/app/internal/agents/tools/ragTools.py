@@ -31,25 +31,17 @@ class RAGTools:
         self._init_error_message: Optional[str] = None
 
         # 1. 初始化嵌入模型
-        embedding_cfg = load_config("embedding") or {}
+        embedding_cfg = load_config("embedding")
 
         api_key = self._resolve_embedding_api_key(embedding_cfg)
-        embedding_model = str(
-            embedding_cfg.get("embedding_model") or "text-embedding-v3"
-        )
-        self.top_k = int(embedding_cfg.get("top_k") or 5)
-        self.similarity_threshold = float(
-            embedding_cfg.get("similarity_threshold") or 0.3
-        )
-        self.similarity_tolerance = float(
-            embedding_cfg.get("similarity_tolerance") or 0.01
-        )
+        embedding_model = str(embedding_cfg.get("embedding_model"))
+        self.top_k = int(embedding_cfg.get("top_k"))
+        self.similarity_threshold = float(embedding_cfg.get("similarity_threshold"))
+        self.similarity_tolerance = float(embedding_cfg.get("similarity_tolerance"))
 
         if not api_key:
             self.enabled = False
-            self._init_error_message = (
-                "Embedding配置不完整，请先配置 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY"
-            )
+            self._init_error_message = Constants.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
             raise BusinessException(
                 self._init_error_message,
                 HttpCode.SERVICE_UNAVAILABLE,
@@ -111,7 +103,7 @@ class RAGTools:
         return ""
 
     def _build_disabled_message(self) -> str:
-        return self._init_error_message or "RAG服务未初始化，请检查 Embedding 配置"
+        return self._init_error_message or Constants.RAG_SERVICE_NOT_INITIALIZED_MESSAGE
 
     async def add_articles_to_vector_store(
         self,
@@ -282,7 +274,7 @@ class RAGTools:
                 or "Invalid API-key provided" in error_text
             ):
                 self.enabled = False
-                self._init_error_message = "Embedding API Key 无效，请检查 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY 配置"
+                self._init_error_message = Constants.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
                 self.logger.error(self._init_error_message)
                 return self._init_error_message
             error_msg = f"RAG搜索失败: {str(e)}"
@@ -328,7 +320,7 @@ class RAGTools:
                 or "Invalid API-key provided" in error_text
             ):
                 self.enabled = False
-                self._init_error_message = "Embedding API Key 无效，请检查 EMBEDDING_API_KEY 或 DASHSCOPE_API_KEY 配置"
+                self._init_error_message = Constants.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
                 self.logger.error(self._init_error_message)
                 return []
             self.logger.error(f"获取文章上下文失败: {e}")

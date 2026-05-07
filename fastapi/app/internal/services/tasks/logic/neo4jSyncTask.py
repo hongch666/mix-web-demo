@@ -281,21 +281,25 @@ class KnowledgeGraphSyncService:
         result: Dict[str, int] = {}
 
         users = self._fetch_all_users()
-        result["users"] = await self._batch_write(users, self.MERGE_USERS, "用户")
+        result["users"] = await self._batch_write(
+            users, self.MERGE_USERS, Constants.NEO4J_LABEL_USER
+        )
 
         categories = self._fetch_all_categories()
         result["categories"] = await self._batch_write(
-            categories, self.MERGE_CATEGORIES, "主分类"
+            categories, self.MERGE_CATEGORIES, Constants.NEO4J_LABEL_CATEGORY
         )
 
         sub_categories = self._fetch_all_sub_categories()
         result["sub_categories"] = await self._batch_write(
-            sub_categories, self.MERGE_SUB_CATEGORIES, "子分类"
+            sub_categories,
+            self.MERGE_SUB_CATEGORIES,
+            Constants.NEO4J_LABEL_SUB_CATEGORY,
         )
 
         articles = self._fetch_all_articles()
         result["articles"] = await self._batch_write(
-            articles, self.MERGE_ARTICLES, "文章"
+            articles, self.MERGE_ARTICLES, Constants.NEO4J_LABEL_ARTICLE
         )
 
         tag_names: Set[str] = set()
@@ -308,7 +312,9 @@ class KnowledgeGraphSyncService:
                     {"articleId": article["id"], "tagName": tag_name}
                 )
         tags = [{"name": tag_name} for tag_name in sorted(tag_names)]
-        result["tags"] = await self._batch_write(tags, self.MERGE_TAGS, "标签")
+        result["tags"] = await self._batch_write(
+            tags, self.MERGE_TAGS, Constants.NEO4J_LABEL_TAG
+        )
 
         sub_category_relations = [
             {"subCategoryId": item["id"], "categoryId": item["categoryId"]}
@@ -318,7 +324,7 @@ class KnowledgeGraphSyncService:
         result["sub_category_belongs_to_category"] = await self._batch_write(
             sub_category_relations,
             self.MERGE_SUB_CATEGORY_BELONGS_TO_CATEGORY,
-            "子分类-主分类关系",
+            Constants.NEO4J_LABEL_SUB_CATEGORY_RELATION,
         )
 
         article_sub_relations = [
@@ -327,7 +333,9 @@ class KnowledgeGraphSyncService:
             if item.get("subCategoryId") is not None
         ]
         result["belongs_to"] = await self._batch_write(
-            article_sub_relations, self.MERGE_ARTICLE_BELONGS_TO, "文章-子分类关系"
+            article_sub_relations,
+            self.MERGE_ARTICLE_BELONGS_TO,
+            Constants.NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION,
         )
 
         article_user_relations = [
@@ -336,29 +344,35 @@ class KnowledgeGraphSyncService:
             if item.get("userId") is not None
         ]
         result["published_by"] = await self._batch_write(
-            article_user_relations, self.MERGE_PUBLISHED_BY, "文章-作者关系"
+            article_user_relations,
+            self.MERGE_PUBLISHED_BY,
+            Constants.NEO4J_LABEL_ARTICLE_AUTHOR_RELATION,
         )
 
         result["tagged_as"] = await self._batch_write(
-            article_tag_relations, self.MERGE_TAGGED_AS, "文章-标签关系"
+            article_tag_relations,
+            self.MERGE_TAGGED_AS,
+            Constants.NEO4J_LABEL_ARTICLE_TAG_RELATION,
         )
 
         likes = self._fetch_all_likes()
-        result["likes"] = await self._batch_write(likes, self.MERGE_LIKES, "点赞关系")
+        result["likes"] = await self._batch_write(
+            likes, self.MERGE_LIKES, Constants.NEO4J_LABEL_LIKE_RELATION
+        )
 
         collects = self._fetch_all_collects()
         result["collects"] = await self._batch_write(
-            collects, self.MERGE_COLLECTS, "收藏关系"
+            collects, self.MERGE_COLLECTS, Constants.NEO4J_LABEL_COLLECT_RELATION
         )
 
         comments = self._fetch_all_comments()
         result["commented_on"] = await self._batch_write(
-            comments, self.MERGE_COMMENTED_ON, "评论关系"
+            comments, self.MERGE_COMMENTED_ON, Constants.NEO4J_LABEL_COMMENT_RELATION
         )
 
         focus = self._fetch_all_focus()
         result["follows"] = await self._batch_write(
-            focus, self.MERGE_FOLLOWS, "关注关系"
+            focus, self.MERGE_FOLLOWS, Constants.NEO4J_LABEL_FOLLOW_RELATION
         )
 
         self.logger.info(f"[知识图谱] 全量同步完成: {result}")
