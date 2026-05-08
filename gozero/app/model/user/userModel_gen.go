@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"app/model"
 
@@ -48,6 +49,8 @@ type (
 		Role      string         `db:"role"`      // 用户权限
 		Img       sql.NullString `db:"img"`       // 用户头像
 		Signature sql.NullString `db:"signature"` // 个性签名
+		CreateAt  time.Time      `db:"create_at"` // 创建时间
+		UpdateAt  time.Time      `db:"update_at"` // 更新时间
 	}
 )
 
