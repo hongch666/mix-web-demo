@@ -9,7 +9,6 @@ from app.core.db import SessionLocal, get_redis_client
 from app.core.db.neo4j import get_neo4j_client
 from sqlalchemy import text
 
-
 _NEO4J_SYNC_TIME_KEY: str = "neo4j_sync:last_sync_time"
 
 
@@ -59,7 +58,7 @@ class KnowledgeGraphSyncService:
         rows = self._fetch_rows(
             self._build_incremental_sql(
                 Constants.NEO4J_SQL_SELECT_USERS,
-                "last_login_at",
+                "update_at",
                 last_sync_time,
             )
         )
@@ -71,7 +70,8 @@ class KnowledgeGraphSyncService:
                 "role": row[3] or "user",
                 "img": row[4] or "",
                 "signature": row[5] or "",
-                "updatedAt": self._format_datetime(row[6]),
+                "createdAt": self._format_datetime(row[6]),
+                "updatedAt": self._format_datetime(row[7]),
             }
             for row in rows
         ]

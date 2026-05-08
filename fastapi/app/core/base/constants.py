@@ -741,7 +741,7 @@ class Constants:
     """SQL创建AI聊天表常量"""
 
     NEO4J_SQL_SELECT_USERS: str = (
-        "SELECT id, name, email, role, img, signature, last_login_at FROM user"
+        "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"
     )
     """Neo4j 同步查询用户 SQL"""
 
@@ -863,6 +863,7 @@ class Constants:
             u.role = row.role,
             u.img = row.img,
             u.signature = row.signature,
+            u.createdAt = row.createdAt,
             u.updatedAt = row.updatedAt
     """
     """Neo4j 合并用户节点 Cypher"""

@@ -1,5 +1,5 @@
 from app.core.db import Base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, DateTime, Integer, String
 
 
 class User(Base):
@@ -14,3 +14,5 @@ class User(Base):
     role = Column(String(50), nullable=True)
     img = Column(String(512), nullable=True)
     signature = Column(String(512), nullable=True)
+    create_at = Column(DateTime, nullable=True)
+    update_at = Column(DateTime, nullable=True)
