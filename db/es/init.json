@@ -1,0 +1,41 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "id": { "type": "integer" },
+      "title": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "search_analyzer": "ik_smart"
+      },
+      "content": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "search_analyzer": "ik_smart"
+      },
+      "userId": { "type": "integer" },
+      "username": { "type": "keyword" },
+      "category_name": { "type": "keyword" },
+      "sub_category_name": { "type": "keyword" },
+      "tags": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "search_analyzer": "ik_smart"
+      },
+      "status": { "type": "integer" },
+      "views": { "type": "integer" },
+      "likeCount": { "type": "integer" },
+      "collectCount": { "type": "integer" },
+      "authorFollowCount": { "type": "integer" },
+      "create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
+      "update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
+      "ai_score": { "type": "float" },
+      "user_score": { "type": "float" },
+      "ai_comment_count": { "type": "integer" },
+      "user_comment_count": { "type": "integer" }
+    }
+  }
+}
