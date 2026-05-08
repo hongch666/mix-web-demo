@@ -1287,6 +1287,46 @@ public class Constants {
         public static final String NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE = "批量删除评论后同步 Neo4j";
 
         /**
+         * Neo4j 分类新增同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_CATEGORY_CREATE = "新增分类后同步 Neo4j";
+
+        /**
+         * Neo4j 分类修改同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_CATEGORY_UPDATE = "修改分类后同步 Neo4j";
+
+        /**
+         * Neo4j 分类删除同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_CATEGORY_DELETE = "删除分类后同步 Neo4j";
+
+        /**
+         * Neo4j 分类批量删除同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE = "批量删除分类后同步 Neo4j";
+
+        /**
+         * Neo4j 子分类新增同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_SUBCATEGORY_CREATE = "新增子分类后同步 Neo4j";
+
+        /**
+         * Neo4j 子分类修改同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE = "修改子分类后同步 Neo4j";
+
+        /**
+         * Neo4j 子分类删除同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_SUBCATEGORY_DELETE = "删除子分类后同步 Neo4j";
+
+        /**
+         * Neo4j 子分类批量删除同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE = "批量删除子分类后同步 Neo4j";
+
+        /**
          * GoZero服务调用降级提示
          */
         public static String GOZERO_SERVICE_UNAVAILABLE = "GoZero 服务调用触发降级: ";

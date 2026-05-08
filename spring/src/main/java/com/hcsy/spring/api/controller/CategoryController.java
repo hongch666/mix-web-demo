@@ -22,6 +22,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
@@ -49,6 +50,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_CREATE)
     @ApiLog("新增分类")
     public Result addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
         categoryService.addCategory(dto);
@@ -63,6 +65,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
     @ApiLog("修改分类")
     public Result updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
         categoryService.updateCategory(dto);
@@ -77,6 +80,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_DELETE)
     @ApiLog("删除分类")
     public Result deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
@@ -91,6 +95,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "ids" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
     @ApiLog("批量删除分类")
     public Result deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -110,6 +115,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
     @ApiLog("新增子分类")
     public Result addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
         categoryService.addSubCategory(dto);
@@ -124,6 +130,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
     @ApiLog("修改子分类")
     public Result updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
         categoryService.updateSubCategory(dto);
@@ -138,6 +145,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
     @ApiLog("删除子分类")
     public Result deleteSubCategory(@PathVariable Long id) {
         categoryService.deleteSubCategory(id);
@@ -152,6 +160,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "ids" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
     @ApiLog("批量删除子分类")
     public Result deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
