@@ -8,7 +8,8 @@ from app.core.base import Constants, Logger
 from app.core.client import start_nacos
 from app.core.config import load_config
 from app.core.db import SessionLocal, create_tables_async
-from app.internal.services import AnalyzeService, start_scheduler
+from app.internal.services import AnalyzeService
+from app.internal.tasks import start_scheduler
 from fastapi import FastAPI
 
 # 加载服务器配置

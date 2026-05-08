@@ -8,13 +8,6 @@ from .llm.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_to
 from .llm.extend.deepseekService import DeepseekService, get_deepseek_service
 from .llm.extend.geminiService import GeminiService, get_gemini_service
 from .llm.extend.gptService import GptService, get_gpt_service
-from .tasks.logic.analyzeCacheTask import update_analyze_caches_async
-from .tasks.logic.neo4jSyncTask import sync_mysql_to_neo4j_async
-from .tasks.logic.vectorSyncTask import (
-    export_article_vectors_to_postgres_async,
-    initialize_article_content_hash_cache_async,
-)
-from .tasks.scheduler import start_scheduler
 from .user.userService import UserService, get_user_service
 
 __all__: List[str] = [
@@ -37,9 +30,4 @@ __all__: List[str] = [
     "get_deepseek_service",
     "get_agent_prompt",
     "initialize_ai_tools",
-    "update_analyze_caches_async",
-    "sync_mysql_to_neo4j_async",
-    "export_article_vectors_to_postgres_async",
-    "initialize_article_content_hash_cache_async",
-    "start_scheduler",
 ]
