@@ -4,9 +4,11 @@ import urllib.request
 from functools import lru_cache
 from typing import Awaitable, Callable, List, Optional
 
+import httpx
 import requests
 from app.core.base import Logger
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
@@ -199,9 +201,10 @@ class ReferenceContentExtractor:
             }
 
             # 发送 HTTP 请求，返回报错时不抛异常
-            response = requests.get(link_url, timeout=10, headers=headers)
-            response.raise_for_status()
-            html_content = response.text
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.get(link_url, headers=headers)
+                response.raise_for_status()
+                html_content = response.text
 
             # 清理文本
             full_text = cls._clean_text(html_content)
@@ -296,8 +299,6 @@ class ReferenceContentExtractor:
 
         try:
             # 创建文档对象
-            from langchain_core.documents import Document
-
             doc = Document(page_content=text)
             chunks = cls.TEXT_SPLITTER.split_documents([doc])
             return [chunk.page_content for chunk in chunks]

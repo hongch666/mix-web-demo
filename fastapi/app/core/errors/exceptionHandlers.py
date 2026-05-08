@@ -8,6 +8,7 @@ from fastapi import Request
 from ..base.constants import Constants
 from ..base.httpCode import HttpCode
 from ..base.response import error
+from ..base.writeLog import Logger
 from .exceptions import BusinessException
 
 
@@ -23,11 +24,8 @@ async def business_exception_handler(
     Returns:
         Response: JSON 格式的错误响应，使用实际的 HTTP 状态码
     """
-    from ..base.writeLog import Logger
 
-    Logger.error(
-        f"请求路径: {request.url}，业务错误: [{exc.error}] {str(exc)}"
-    )
+    Logger.error(f"请求路径: {request.url}，业务错误: [{exc.error}] {str(exc)}")
     return JSONResponse(
         status_code=exc.status_code,
         content=error(

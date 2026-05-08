@@ -3,7 +3,8 @@ import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core.base import Constants, HttpCode
+from app.core.base import Constants, HttpCode, Logger
+from app.core.config import load_config
 from app.core.errors import BusinessException
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
@@ -22,9 +23,6 @@ class RAGTools:
 
     def __init__(self) -> None:
         """初始化RAG组件"""
-        # 延迟导入避免循环依赖
-        from app.core.base import Logger
-        from app.core.config import load_config
 
         self.logger = Logger
         self.enabled: bool = True

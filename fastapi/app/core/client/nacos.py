@@ -5,7 +5,7 @@ import time
 from typing import Any, Dict, List
 
 import nacos
-from app.core.base import Constants, HttpCode
+from app.core.base import Constants, HttpCode, Logger
 from app.core.errors import BusinessException
 
 from ..config.config import load_config
@@ -48,8 +48,6 @@ def _get_registration_ip(ip: str) -> str:
     - 其他模式下，ip 为空、127.0.0.1 或 0.0.0.0 时获取真实 IP 地址
     - 否则直接使用传入的 IP
     """
-    # 延迟导入避免循环依赖
-    from app.core.base import Logger
 
     if SERVER_MODE == "dev":
         Logger.info(Constants.NACOS_REGISTER_DEV_MODE_MESSAGE)
@@ -72,8 +70,6 @@ def _get_registration_ip(ip: str) -> str:
 
 
 def register_instance(ip: str = IP, port: int = PORT) -> None:
-    # 延迟导入避免循环依赖
-    from app.core.base import Logger
 
     # 获取实际用于注册的 IP 地址
     registration_ip = _get_registration_ip(ip)
@@ -120,9 +116,6 @@ def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
     registration_ip = _get_registration_ip(ip)
 
     def keep_heartbeat() -> None:
-        # 延迟导入避免循环依赖
-        from app.core.base import Logger
-
         while True:
             try:
                 client.send_heartbeat(

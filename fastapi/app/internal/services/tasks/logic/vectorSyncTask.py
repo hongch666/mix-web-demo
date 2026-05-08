@@ -9,6 +9,7 @@ from app.core.db import SessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
 from app.internal.cache import get_redis_client
+from app.internal.crud import get_article_mapper
 from sqlalchemy.orm import Session
 
 # Redis 键名
@@ -197,10 +198,7 @@ def _export_article_vectors_to_postgres(
         mysql_db_factory: MySQL 数据库会话工厂
         enable_incremental_sync: 是否启用增量同步（仅同步有变更的文章）
     """
-    # 延迟导入，避免循环依赖
     if article_mapper is None:
-        from app.internal.crud import get_article_mapper
-
         article_mapper = get_article_mapper()
 
     if mysql_db_factory is None:

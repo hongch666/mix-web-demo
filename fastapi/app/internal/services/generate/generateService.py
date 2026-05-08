@@ -17,6 +17,7 @@ from app.internal.crud import (
     get_category_reference_mapper,
     get_comments_mapper,
 )
+from app.internal.models import Comments
 
 from fastapi import Depends
 
@@ -60,8 +61,6 @@ class GenerateService:
         return ",".join(tags)
 
     async def generate_ai_comments(self, article_id: int, db: Any) -> None:
-        # 延迟导入避免循环依赖
-        from app.internal.models import Comments
 
         # 1. 判断是否需要生成AI评论
         ai_comments_count = (

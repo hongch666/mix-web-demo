@@ -1,6 +1,6 @@
 from typing import Any, Literal, Optional, Tuple
 
-from app.core.base import Constants
+from app.core.base import Constants, Logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.orm import Session
@@ -36,8 +36,6 @@ class IntentRouter:
             user_id: 当前用户ID（用于权限检查）
             user_mapper: 用户 Mapper 实例（用于权限检查）
         """
-        # 延迟导入避免循环依赖
-        from app.core.base import Logger
 
         self.logger = Logger
 
