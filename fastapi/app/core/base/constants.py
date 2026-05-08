@@ -768,7 +768,7 @@ class Constants:
     """Neo4j 同步查询收藏 SQL"""
 
     NEO4J_SQL_SELECT_COMMENTS: str = (
-        "SELECT id, user_id, article_id, create_time FROM comments"
+        "SELECT id, user_id, article_id, create_time, update_time FROM comments"
     )
     """Neo4j 同步查询评论 SQL"""
 

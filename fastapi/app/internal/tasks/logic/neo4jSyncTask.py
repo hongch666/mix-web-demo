@@ -186,7 +186,7 @@ class KnowledgeGraphSyncService:
         rows = self._fetch_rows(
             self._build_incremental_sql(
                 Constants.NEO4J_SQL_SELECT_COMMENTS,
-                "create_time",
+                "update_time",
                 last_sync_time,
             )
         )
