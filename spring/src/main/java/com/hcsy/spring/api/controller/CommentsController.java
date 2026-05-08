@@ -26,6 +26,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
@@ -54,6 +55,7 @@ public class CommentsController {
     // 新增评论
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_CREATE)
     @ApiLog("新增评论")
     public Result createComment(@Valid @RequestBody CommentCreateDTO commentCreateDTO) {
         Comments comment = BeanUtil.toBean(commentCreateDTO, Comments.class);
@@ -77,13 +79,9 @@ public class CommentsController {
     // 修改评论
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
-    @RequirePermission(
-        roles = { "admin" },
-        allowSelf = true,
-        businessType = "comment",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_UPDATE)
     @ApiLog("修改评论")
     public Result updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
         Comments comment = BeanUtil.toBean(commentUpdateDTO, Comments.class);
@@ -106,13 +104,9 @@ public class CommentsController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除评论", description = "根据id删除评论")
-    @RequirePermission(
-        roles = { "admin" },
-        allowSelf = true,
-        businessType = "comment",
-        paramSource = "path_single",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "id" })
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_DELETE)
     @ApiLog("删除评论")
     public Result deleteComment(@PathVariable Long id) {
         commentsService.deleteComment(id);
@@ -121,13 +115,9 @@ public class CommentsController {
 
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
-    @RequirePermission(
-        roles = { "admin" },
-        allowSelf = true,
-        businessType = "comment",
-        paramSource = "path_single",
-        paramNames = { "ids" }
-    )
+    @RequirePermission(roles = {
+            "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "ids" })
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE)
     @ApiLog("批量删除评论")
     public Result deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -158,12 +148,8 @@ public class CommentsController {
 
     @GetMapping()
     @Operation(summary = "获取普通评论信息", description = "分页获取普通评论信息列表，并支持用户名和文章标题模糊查询")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "comment",
-        paramSource = "query",
-        paramNames = { "page", "size", "username", "articleTitle" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
+            "size", "username", "articleTitle" })
     @ApiLog("获取普通评论信息")
     public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
@@ -188,12 +174,8 @@ public class CommentsController {
 
     @GetMapping("/ai")
     @Operation(summary = "获取AI评论信息", description = "分页获取AI评论信息列表，并支持AI类型和文章标题模糊查询")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "comment",
-        paramSource = "query",
-        paramNames = { "page", "size", "aiType", "articleTitle" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
+            "size", "aiType", "articleTitle" })
     @ApiLog("获取AI评论信息")
     public Result listAIComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());

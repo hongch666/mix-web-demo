@@ -29,6 +29,7 @@ import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
@@ -177,6 +178,7 @@ public class UserController {
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_UPDATE)
     @ApiLog("修改用户")
     public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         // 获取原用户信息

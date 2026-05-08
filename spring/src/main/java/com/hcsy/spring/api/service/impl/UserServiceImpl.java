@@ -25,6 +25,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
@@ -115,6 +116,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_DELETE)
     public void deleteUserAndStatusById(Long id) {
         User existing = userMapper.selectById(id);
         if (existing == null) {
@@ -126,6 +128,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_BATCH_DELETE)
     public void deleteUsersAndStatusByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty())
             return;
@@ -340,6 +343,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_SAVE)
     public void saveUserAndStatus(User user) {
         // 加密密码后再保存
         if (user.getAuthProvider() == null || user.getAuthProvider().isBlank()) {
