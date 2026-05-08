@@ -1204,42 +1204,39 @@ docker system prune -af
 - `db/mysql/`：MySQL 建表脚本，按表拆分为独立文件
 - `db/postgresql/`：PostgreSQL 初始化脚本，主要用于扩展启用
 - `db/clickhouse/`：ClickHouse 初始化脚本，主要用于映射库和物化视图
+- `db/mongodb/`：MongoDB 初始化脚本，主要用于集合和索引创建
+- `db/es/`：Elasticsearch 初始化脚本，主要用于索引和映射创建
 - `db/neo4j/`：Neo4j 初始化脚本，主要用于创建唯一约束
-
-建议执行顺序如下：
-
-1. 先执行 `db/mysql/` 下的建表脚本
-2. 再执行 `db/postgresql/` 下的扩展脚本
-3. 最后执行 `db/clickhouse/` 下的同步脚本
-4. Neo4j 可执行 `db/neo4j/init.cypher` 创建约束，也可由 FastAPI 同步任务自动创建
 
 如果后续新增数据库初始化内容，也请继续放到 `db/` 下对应的数据库目录中，便于统一维护和查找
 
 ### MySQL 表创建
 
-系统服务会自动创建，也可以先执行 `db/mysql/` 下的SQL脚步创建基础表结构
+系统服务会自动创建，也可以先执行 `db/mysql/` 下的SQL脚步创建数据库和基础表结构
 
 ### PostgreSQL 表创建
 
-LangChain 会自动创建，但需要先执行 `db/postgresql/extensions.sql` 启用 `pgvector` 扩展
+LangChain 会自动创建，但需要先执行 `db/postgresql/extensions.sql` 启用 `pgvector` 扩展，并且执行 `db/postgresql/init.sql`创建对应数据库
 
 ### MongoDB 表创建
 
-数据库为 `demo`，集合为 `articlelogs`和 `apilogs`，系统会自动创建
+数据库为 `demo`，集合为 `articlelogs` 和 `apilogs`，系统会自动创建；如需手动初始化，可执行 `db/mongodb/init.js`
 
 ### ElasticSearch 索引创建
 
-无需创建，系统同步数据时会自动创建，需要启动后触发 ElasticSearch 同步
+索引名为 `articles`，系统同步数据时会自动创建；如需手动初始化，可执行 `db/es/init.json`
 
 ### ClickHouse 创建
 
-需要先执行 `db/clickhouse/articles_sync.sql`，其中包含 MySQL 映射库、本地表和物化视图的创建语句，MySQL 映射库需要修改为实际的 MySQL 连接信息
+需要先执行 `db/clickhouse/init.sql`，其中包含 MySQL 映射库、本地表和物化视图的创建语句，MySQL 映射库需要修改为实际的 MySQL 连接信息
 
 ### Neo4j 初始化
 
-Neo4j 用于知识图谱，默认数据库无需额外指定。FastAPI 通过 Bolt 协议连接 Neo4j，同步任务会自动创建约束并将 MySQL 业务数据同步为图结构。
+Neo4j 用于知识图谱，默认数据库无需额外指定
 
-可在 Neo4j Browser 中手动执行初始化脚本，也可以在首次执行同步任务时自动创建约束。
+FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为图结构。
+
+可在 Neo4j Browser 中手动执行初始化脚本 `init.cypher`，也可以在首次执行同步任务时自动创建约束
 
 ## 环境变量配置文件
 
