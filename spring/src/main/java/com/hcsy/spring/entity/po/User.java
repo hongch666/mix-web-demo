@@ -24,6 +24,8 @@ public class User {
     private String signature;
     private String authProvider;
     private LocalDateTime lastLoginAt;
+    private LocalDateTime createAt;
+    private LocalDateTime updateAt;
     // 非数据库字段
     private transient Integer loginStatus; // 登录状态，1表示在线，0表示离线
 }

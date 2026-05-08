@@ -98,7 +98,7 @@ public class DatabaseInitializer implements ApplicationRunner {
 
     private static final String CHECK_USER_SQL = "SELECT COUNT(*) FROM user WHERE id = ?";
 
-    private static final String INSERT_AI_SQL = "INSERT INTO user (id, name, password, email, role, img) VALUES (?, ?, ?, ?, 'ai', ?)";
+    private static final String INSERT_AI_SQL = "INSERT INTO user (id, name, password, email, role, img, create_at, update_at) VALUES (?, ?, ?, ?, 'ai', ?, NOW(), NOW())";
 
     private static final String CREATE_USER_SQL = "CREATE TABLE user (\n" +
             "    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',\n" +
@@ -114,6 +114,8 @@ public class DatabaseInitializer implements ApplicationRunner {
             "    signature VARCHAR(255) COMMENT '个性签名',\n" +
             "    auth_provider VARCHAR(50) NOT NULL DEFAULT 'local' COMMENT '注册来源：local/github',\n" +
             "    last_login_at DATETIME COMMENT '最近登录时间',\n" +
+            "    create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',\n" +
+            "    update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',\n" +
             "    UNIQUE KEY uk_user_github_id (github_id),\n" +
             "    INDEX idx_user_auth_provider (auth_provider)\n" +
             ") COMMENT='用户表'";
