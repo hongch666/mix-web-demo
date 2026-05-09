@@ -57,7 +57,7 @@ spring:
         - id: gozero
           uri: lb://gozero
           predicates:
-            - Path=/api_gozero/**,/search/**,/user-chat/**,/static/**
+            - Path=/api_gozero/**,/search/**,/user-chat/**
 
         - id: nestjs
           uri: lb://nestjs
