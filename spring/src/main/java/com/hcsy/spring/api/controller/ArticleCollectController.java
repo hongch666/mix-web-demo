@@ -19,6 +19,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
@@ -39,6 +40,7 @@ public class ArticleCollectController {
 
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COLLECT)
     @ApiLog("添加收藏")
     public Result addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         boolean success = articleCollectService.addCollect(dto.getArticleId(), dto.getUserId());
@@ -51,6 +53,7 @@ public class ArticleCollectController {
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNCOLLECT)
     @ApiLog("取消收藏")
     public Result removeCollect(
             @Parameter(description = "文章ID", required = true) @RequestParam(required = true) Long articleId,

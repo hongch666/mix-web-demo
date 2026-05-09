@@ -1327,6 +1327,66 @@ public class Constants {
         public static final String NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE = "批量删除子分类后同步 Neo4j";
 
         /**
+         * Neo4j 文章新增同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_ARTICLE_CREATE = "新增文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章编辑同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_ARTICLE_UPDATE = "编辑文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章删除同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_ARTICLE_DELETE = "删除文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章批量删除同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE = "批量删除文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章发布同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_ARTICLE_PUBLISH = "发布文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章浏览同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_ARTICLE_VIEW = "浏览文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章点赞同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_LIKE = "点赞文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章取消点赞同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_UNLIKE = "取消点赞文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章收藏同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_COLLECT = "收藏文章后同步 Neo4j";
+
+        /**
+         * Neo4j 文章取消收藏同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_UNCOLLECT = "取消收藏文章后同步 Neo4j";
+
+        /**
+         * Neo4j 用户关注同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_FOCUS = "关注用户后同步 Neo4j";
+
+        /**
+         * Neo4j 用户取消关注同步描述
+         */
+        public static final String NEO4J_SYNC_DESC_UNFOCUS = "取消关注用户后同步 Neo4j";
+
+        /**
          * GoZero服务调用降级提示
          */
         public static String GOZERO_SERVICE_UNAVAILABLE = "GoZero 服务调用触发降级: ";

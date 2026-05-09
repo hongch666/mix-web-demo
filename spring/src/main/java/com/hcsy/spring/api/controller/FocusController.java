@@ -19,6 +19,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.vo.FocusUserVO;
@@ -39,6 +40,7 @@ public class FocusController {
 
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_FOCUS)
     @ApiLog("新增关注")
     public Result addFocus(@Valid @RequestBody FocusDTO dto) {
         boolean success = focusService.addFocus(dto.getUserId(), dto.getFocusId());
@@ -51,6 +53,7 @@ public class FocusController {
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNFOCUS)
     @ApiLog("取消关注")
     public Result removeFocus(
             @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId,

@@ -19,6 +19,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
@@ -39,6 +40,7 @@ public class ArticleLikeController {
 
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_LIKE)
     @ApiLog("添加点赞")
     public Result addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         boolean success = articleLikeService.addLike(dto.getArticleId(), dto.getUserId());
@@ -51,6 +53,7 @@ public class ArticleLikeController {
 
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNLIKE)
     @ApiLog("取消点赞")
     public Result removeLike(
             @Parameter(description = "文章ID", required = true) @RequestParam(required = true) Long articleId,

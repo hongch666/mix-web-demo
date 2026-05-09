@@ -24,6 +24,7 @@ import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
@@ -49,6 +50,7 @@ public class ArticleController {
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_CREATE)
     @ApiLog("创建文章")
     public Result createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         Article article = BeanUtil.copyProperties(dto, Article.class);
@@ -122,6 +124,7 @@ public class ArticleController {
         paramSource = "body",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
     @ApiLog("更新文章")
     public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         // 获取用户id
@@ -144,6 +147,7 @@ public class ArticleController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_DELETE)
     @ApiLog("删除文章")
     public Result deleteArticle(@PathVariable Long id) {
         articleService.deleteArticle(id);
@@ -158,6 +162,7 @@ public class ArticleController {
         paramSource = "path_single",
         paramNames = { "ids" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
     @ApiLog("批量删除文章")
     public Result deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -179,6 +184,7 @@ public class ArticleController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
     @ApiLog("发布文章")
     public Result publishArticle(@PathVariable Long id) {
         articleService.publishArticle(id);
@@ -187,6 +193,7 @@ public class ArticleController {
 
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_VIEW)
     @ApiLog("增加文章阅读量")
     public Result addViewArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
