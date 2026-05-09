@@ -68,8 +68,42 @@ spring:
           uri: lb://fastapi
           predicates:
             - Path=/api_fastapi/**,/analyze/**,/generate/**,/chat/**,/ai_history/**
+
+        # ---- Swagger 文档代理路由 ----
+        - id: swagger-spring
+          uri: lb://spring
+          predicates:
+            - Path=/swagger/spring.json
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: swagger-gozero
+          uri: lb://gozero
+          predicates:
+            - Path=/swagger/gozero.json
+          filters:
+            - SetPath=/swagger/doc.json
+
+        - id: swagger-nestjs
+          uri: lb://nestjs
+          predicates:
+            - Path=/swagger/nestjs.json
+          filters:
+            - SetPath=/api-docs-json
+
+        - id: swagger-fastapi
+          uri: lb://fastapi
+          predicates:
+            - Path=/swagger/fastapi.json
+          filters:
+            - SetPath=/openapi.json
 auth:
   exclude-paths:
+    - /swagger-ui/**
+    - /swagger/spring.json
+    - /swagger/gozero.json
+    - /swagger/nestjs.json
+    - /swagger/fastapi.json
     - /users/login
     - /users/register
     - /users/email/send
