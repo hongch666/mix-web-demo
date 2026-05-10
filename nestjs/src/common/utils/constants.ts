@@ -240,7 +240,7 @@ export class Constants {
   /**
    * Swagger 版本
    */
-  static readonly SWAGGER_VERSION = '1.0';
+  static readonly SWAGGER_VERSION = '1.0.0';
 
   /**
    * Swagger 文档路径
