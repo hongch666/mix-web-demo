@@ -1,189 +1,237 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>mix-web-demo API 文档</title>
-  <link rel="stylesheet" type="text/css" href="/swagger-ui/swagger-ui.css">
-  <style>
-    /* 顶部导航栏 */
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: sans-serif; }
-    .swagger-navbar {
-      background-color: #1b1b2f;
-      color: #fff;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .swagger-navbar .brand {
-      font-size: 18px;
-      font-weight: bold;
-      margin-right: 20px;
-      white-space: nowrap;
-    }
-    .swagger-navbar .tab {
-      background: transparent;
-      color: rgba(255,255,255,0.7);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 4px;
-      padding: 6px 14px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.2s;
-    }
-    .swagger-navbar .tab:hover { color: #fff; border-color: #fff; }
-    .swagger-navbar .tab.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
-    .swagger-navbar .tab .dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 6px;
-    }
-    .swagger-navbar .tab .dot.loading { background: #f59e0b; }
-    .swagger-navbar .tab .dot.ok { background: #22c55e; }
-    .swagger-navbar .tab .dot.err { background: #ef4444; }
-    .swagger-navbar .token-area {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .swagger-navbar .token-area label {
-      font-size: 13px;
-      color: rgba(255,255,255,0.7);
-      white-space: nowrap;
-    }
-    .swagger-navbar .token-area input {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.2);
-      border-radius: 4px;
-      padding: 5px 10px;
-      color: #fff;
-      font-size: 13px;
-      width: 360px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .swagger-navbar .token-area input:focus { border-color: #3b82f6; }
-    .swagger-navbar .token-area input::placeholder { color: rgba(255,255,255,0.35); }
-    .swagger-navbar .token-area .token-status {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
-    }
-    .swagger-navbar .token-area .token-status.empty { background: #6b7280; }
-    .swagger-navbar .token-area .token-status.set { background: #22c55e; }
-    #swagger-ui { min-height: calc(100vh - 50px); }
-  </style>
-</head>
-<body>
-  <!-- 自定义顶部 Tab 导航 -->
-  <div class="swagger-navbar">
-    <span class="brand">mix-web-demo API 文档</span>
-    <button class="tab active" data-url="/swagger/spring.json" data-name="Spring 服务">
-      <span class="dot ok"></span>Spring 服务
-    </button>
-    <button class="tab" data-url="/swagger/gozero.json" data-name="GoZero 服务">
-      <span class="dot ok"></span>GoZero 服务
-    </button>
-    <button class="tab" data-url="/swagger/nestjs.json" data-name="NestJS 服务">
-      <span class="dot ok"></span>NestJS 服务
-    </button>
-    <button class="tab" data-url="/swagger/fastapi.json" data-name="FastAPI 服务">
-      <span class="dot ok"></span>FastAPI 服务
-    </button>
-    <div class="token-area">
-      <label>Token</label>
-      <input type="text" id="tokenInput" placeholder="输入 Bearer Token 后回车生效" />
-      <span class="token-status empty" id="tokenStatus"></span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mix-web-demo API 文档</title>
+    <link rel="stylesheet" type="text/css" href="/swagger-ui/swagger-ui.css" />
+    <style>
+      /* 顶部导航栏 */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: sans-serif;
+      }
+      .swagger-navbar {
+        background-color: #1b1b2f;
+        color: #fff;
+        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .swagger-navbar .brand {
+        font-size: 18px;
+        font-weight: bold;
+        margin-right: 20px;
+        white-space: nowrap;
+      }
+      .swagger-navbar .tab {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        padding: 6px 14px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      .swagger-navbar .tab:hover {
+        color: #fff;
+        border-color: #fff;
+      }
+      .swagger-navbar .tab.active {
+        background: #3b82f6;
+        color: #fff;
+        border-color: #3b82f6;
+      }
+      .swagger-navbar .tab .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .swagger-navbar .tab .dot.loading {
+        background: #f59e0b;
+      }
+      .swagger-navbar .tab .dot.ok {
+        background: #22c55e;
+      }
+      .swagger-navbar .tab .dot.err {
+        background: #ef4444;
+      }
+      .swagger-navbar .token-area {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swagger-navbar .token-area label {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.7);
+        white-space: nowrap;
+      }
+      .swagger-navbar .token-area input {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        padding: 5px 10px;
+        color: #fff;
+        font-size: 13px;
+        width: 360px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .swagger-navbar .token-area input:focus {
+        border-color: #3b82f6;
+      }
+      .swagger-navbar .token-area input::placeholder {
+        color: rgba(255, 255, 255, 0.35);
+      }
+      .swagger-navbar .token-area .token-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+      }
+      .swagger-navbar .token-area .token-status.empty {
+        background: #6b7280;
+      }
+      .swagger-navbar .token-area .token-status.set {
+        background: #22c55e;
+      }
+      #swagger-ui {
+        min-height: calc(100vh - 50px);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 自定义顶部 Tab 导航 -->
+    <div class="swagger-navbar">
+      <span class="brand">mix-web-demo API 文档</span>
+      <button
+        class="tab active"
+        data-url="/swagger/spring.json"
+        data-name="Spring 服务">
+        <span class="dot ok"></span>Spring 服务
+      </button>
+      <button
+        class="tab"
+        data-url="/swagger/gozero.json"
+        data-name="GoZero 服务">
+        <span class="dot ok"></span>GoZero 服务
+      </button>
+      <button
+        class="tab"
+        data-url="/swagger/nestjs.json"
+        data-name="NestJS 服务">
+        <span class="dot ok"></span>NestJS 服务
+      </button>
+      <button
+        class="tab"
+        data-url="/swagger/fastapi.json"
+        data-name="FastAPI 服务">
+        <span class="dot ok"></span>FastAPI 服务
+      </button>
+      <div class="token-area">
+        <label>Token</label>
+        <input
+          type="text"
+          id="tokenInput"
+          placeholder="输入 Token 后回车生效" />
+        <span class="token-status empty" id="tokenStatus"></span>
+      </div>
     </div>
-  </div>
-  <div id="swagger-ui"></div>
+    <div id="swagger-ui"></div>
 
-  <script src="/swagger-ui/swagger-ui-bundle.js" charset="UTF-8"></script>
-  <script src="/swagger-ui/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
-  <script>
-    (function () {
-      var currentUI = null;
-      var tabs = document.querySelectorAll('.tab');
-      var container = document.getElementById('swagger-ui');
-      var tokenInput = document.getElementById('tokenInput');
-      var tokenStatus = document.getElementById('tokenStatus');
-      var currentToken = '';
+    <script src="/swagger-ui/swagger-ui-bundle.js" charset="UTF-8"></script>
+    <script
+      src="/swagger-ui/swagger-ui-standalone-preset.js"
+      charset="UTF-8"></script>
+    <script>
+      (function () {
+        var currentUI = null;
+        var tabs = document.querySelectorAll(".tab");
+        var container = document.getElementById("swagger-ui");
+        var tokenInput = document.getElementById("tokenInput");
+        var tokenStatus = document.getElementById("tokenStatus");
+        var currentToken = "";
 
-      // 加载/刷新 Swagger UI
-      function loadSpec(url) {
-        container.innerHTML = '<div style="padding: 40px; text-align: center; color: #666; font-size: 16px;">加载中...</div>';
+        // 加载/刷新 Swagger UI
+        function loadSpec(url) {
+          container.innerHTML =
+            '<div style="padding: 40px; text-align: center; color: #666; font-size: 16px;">加载中...</div>';
 
-        if (currentUI) {
-          try { currentUI.destroy(); } catch (e) {}
-          currentUI = null;
+          if (currentUI) {
+            try {
+              currentUI.destroy();
+            } catch (e) {}
+            currentUI = null;
+          }
+
+          currentUI = SwaggerUIBundle({
+            url: url,
+            dom_id: "#swagger-ui",
+            deepLinking: true,
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+            plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+            layout: "StandaloneLayout",
+            validatorUrl: null,
+            requestInterceptor: function (req) {
+              if (currentToken) {
+                req.headers["Authorization"] = "Bearer " + currentToken;
+              }
+              return req;
+            },
+          });
         }
 
-        currentUI = SwaggerUIBundle({
-          url: url,
-          dom_id: '#swagger-ui',
-          deepLinking: true,
-          presets: [
-            SwaggerUIBundle.presets.apis,
-            SwaggerUIStandalonePreset,
-          ],
-          plugins: [
-            SwaggerUIBundle.plugins.DownloadUrl,
-          ],
-          layout: "StandaloneLayout",
-          validatorUrl: null,
-          requestInterceptor: function (req) {
-            if (currentToken) {
-              req.headers['Authorization'] = 'Bearer ' + currentToken;
-            }
-            return req;
-          },
-        });
-      }
-
-      // 更新 token 状态显示
-      function updateTokenStatus() {
-        if (currentToken) {
-          tokenStatus.className = 'token-status set';
-        } else {
-          tokenStatus.className = 'token-status empty';
-        }
-      }
-
-      // Token 输入完成（回车键触发）
-      tokenInput.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.keyCode === 13) {
-          currentToken = tokenInput.value.trim();
-          updateTokenStatus();
-
-          // 如果有当前 UI，重新加载让它带上新 token
-          var activeTab = document.querySelector('.tab.active');
-          if (activeTab) {
-            loadSpec(activeTab.getAttribute('data-url'));
+        // 更新 token 状态显示
+        function updateTokenStatus() {
+          if (currentToken) {
+            tokenStatus.className = "token-status set";
+          } else {
+            tokenStatus.className = "token-status empty";
           }
         }
-      });
 
-      // 点击 Tab 切换
-      tabs.forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          tabs.forEach(function (t) { t.classList.remove('active'); });
-          tab.classList.add('active');
-          loadSpec(tab.getAttribute('data-url'));
+        // Token 输入完成（回车键触发）
+        tokenInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.keyCode === 13) {
+            currentToken = tokenInput.value.trim();
+            updateTokenStatus();
+
+            // 如果有当前 UI，重新加载让它带上新 token
+            var activeTab = document.querySelector(".tab.active");
+            if (activeTab) {
+              loadSpec(activeTab.getAttribute("data-url"));
+            }
+          }
         });
-      });
 
-      // 自动加载默认激活的 Tab
-      var defaultTab = document.querySelector('.tab.active');
-      if (defaultTab) {
-        loadSpec(defaultTab.getAttribute('data-url'));
-      }
-    })();
-  </script>
-</body>
+        // 点击 Tab 切换
+        tabs.forEach(function (tab) {
+          tab.addEventListener("click", function () {
+            tabs.forEach(function (t) {
+              t.classList.remove("active");
+            });
+            tab.classList.add("active");
+            loadSpec(tab.getAttribute("data-url"));
+          });
+        });
+
+        // 自动加载默认激活的 Tab
+        var defaultTab = document.querySelector(".tab.active");
+        if (defaultTab) {
+          loadSpec(defaultTab.getAttribute("data-url"));
+        }
+      })();
+    </script>
+  </body>
 </html>
