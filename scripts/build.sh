@@ -326,6 +326,9 @@ build_gozero() {
     mkdir -p "$GOZERO_DIST/etc"
     cp etc/application.yaml "$GOZERO_DIST/etc/"
     
+    # 复制 Swagger 文档（运行时通过相对路径 docs/main.json 读取）
+    cp -r docs "$GOZERO_DIST/"
+    
     # 复制 .env 文件
     if [ -f ".env" ]; then
         cp .env "$GOZERO_DIST/"
