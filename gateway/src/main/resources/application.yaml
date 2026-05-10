@@ -76,6 +76,11 @@ spring:
             - Path=/swagger/spring.json
           filters:
             - SetPath=/v3/api-docs
+            - name: ModifyResponseBody
+              args:
+                inClass: java.lang.String
+                outClass: java.lang.String
+                rewriteFunction: "#{@swaggerRewriteFunction}"
 
         - id: swagger-gozero
           uri: lb://gozero
