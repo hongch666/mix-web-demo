@@ -6,48 +6,63 @@
     <title>mix-web-demo API 文档</title>
     <link rel="stylesheet" type="text/css" href="/swagger-ui/swagger-ui.css" />
     <style>
-      /* 顶部导航栏 */
+      /* ============== 全局重置 ============== */
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
       body {
-        font-family: sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #f5f7fa;
       }
+
+      /* ============== 顶部导航栏 ============== */
       .swagger-navbar {
-        background-color: #1b1b2f;
-        color: #fff;
-        padding: 10px 20px;
+        background: #fff;
+        color: #1e293b;
+        padding: 12px 24px;
         display: flex;
         align-items: center;
         gap: 8px;
         flex-wrap: wrap;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        border-bottom: 1px solid #eef0f4;
       }
       .swagger-navbar .brand {
         font-size: 18px;
-        font-weight: bold;
+        font-weight: 700;
         margin-right: 20px;
         white-space: nowrap;
+        letter-spacing: 0.5px;
+        color: #1e293b;
       }
       .swagger-navbar .tab {
-        background: transparent;
-        color: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        padding: 6px 14px;
+        background: #f3f4f6;
+        color: #64748b;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 7px 16px;
         cursor: pointer;
-        font-size: 14px;
-        transition: all 0.2s;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.25s ease;
       }
       .swagger-navbar .tab:hover {
-        color: #fff;
-        border-color: #fff;
+        color: #374151;
+        border-color: #d1d5db;
+        background: #e5e7eb;
       }
       .swagger-navbar .tab.active {
         background: #3b82f6;
         color: #fff;
         border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
       }
       .swagger-navbar .tab .dot {
         display: inline-block;
@@ -55,6 +70,7 @@
         height: 8px;
         border-radius: 50%;
         margin-right: 6px;
+        vertical-align: middle;
       }
       .swagger-navbar .tab .dot.loading {
         background: #f59e0b;
@@ -69,29 +85,33 @@
         margin-left: auto;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
       }
       .swagger-navbar .token-area label {
         font-size: 13px;
-        color: rgba(255, 255, 255, 0.7);
+        font-weight: 500;
+        color: #6b7280;
         white-space: nowrap;
       }
       .swagger-navbar .token-area input {
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        padding: 5px 10px;
-        color: #fff;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 6px 12px;
+        color: #1e293b;
         font-size: 13px;
-        width: 360px;
+        width: 320px;
         outline: none;
-        transition: border-color 0.2s;
+        transition:
+          border-color 0.2s,
+          background 0.2s;
       }
       .swagger-navbar .token-area input:focus {
         border-color: #3b82f6;
+        background: #fff;
       }
       .swagger-navbar .token-area input::placeholder {
-        color: rgba(255, 255, 255, 0.35);
+        color: #9ca3af;
       }
       .swagger-navbar .token-area .token-status {
         width: 8px;
@@ -99,22 +119,589 @@
         border-radius: 50%;
         display: inline-block;
         flex-shrink: 0;
+        transition: background 0.3s;
       }
       .swagger-navbar .token-area .token-status.empty {
-        background: #6b7280;
+        background: #d1d5db;
       }
       .swagger-navbar .token-area .token-status.set {
         background: #22c55e;
+        box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
       }
       #swagger-ui {
-        min-height: calc(100vh - 50px);
+        min-height: calc(100vh - 56px);
+        padding: 0;
+      }
+
+      /* ============== Swagger UI 内部样式覆盖 ============== */
+
+      /* —— 顶层 logo 区域隐藏 —— */
+      .swagger-ui .topbar {
+        display: none !important;
+      }
+
+      /* —— 隐藏 Schemes / Servers 选择器 —— */
+      .swagger-ui .scheme-container {
+        display: none !important;
+      }
+
+      /* —— 信息区域（info）—— */
+      .swagger-ui .info {
+        margin: 30px 30px 20px !important;
+        background: #fff;
+        border-radius: 12px;
+        padding: 28px 32px !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      }
+      .swagger-ui .info .title {
+        font-size: 26px !important;
+        font-weight: 700 !important;
+        color: #1a1a2e !important;
+        font-family: inherit !important;
+      }
+      .swagger-ui .info .description {
+        color: #555 !important;
+        font-size: 14px !important;
+        margin-top: 8px !important;
+      }
+      .swagger-ui .info .version {
+        color: #888 !important;
+        font-size: 13px !important;
+      }
+      /* 隐藏 Base URL 和 spec 链接 */
+      .swagger-ui .info .base-url,
+      .swagger-ui .info a[href*=".json"] {
+        display: none !important;
+      }
+
+      /* —— 接口列表容器 —— */
+      .swagger-ui .wrapper {
+        max-width: none !important;
+        padding: 0 30px !important;
+      }
+
+      /* —— 按标签分组整体容器 —— */
+      .swagger-ui .opblock-tag-section {
+        background: #fff !important;
+        border-radius: 12px !important;
+        border: 1px solid #eef0f4 !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05) !important;
+        margin: 12px 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* —— 模块标题栏（Tag Header） —— */
+      .swagger-ui .opblock-tag {
+        background: #f8fafc !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 14px 20px !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid #eef0f4 !important;
+        font-size: 16px !important;
+        font-weight: 700 !important;
+        color: #1e293b !important;
+        font-family: inherit !important;
+        cursor: pointer !important;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .swagger-ui .opblock-tag:hover {
+        background: #f1f5f9 !important;
+        box-shadow: none !important;
+      }
+      .swagger-ui .opblock-tag small {
+        font-size: 13px !important;
+        color: #64748b !important;
+        font-weight: 400 !important;
+        margin-left: 12px !important;
+      }
+      .swagger-ui .opblock-tag .info-btn {
+        border-color: #d1d5db !important;
+      }
+
+      /* —— 模块标题旁的小竖条装饰（统一为深蓝灰色） —— */
+      .swagger-ui .opblock-tag::before {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 18px;
+        border-radius: 2px;
+        background: #4f46e5;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+
+      /* —— 单个接口卡片（在模块容器内部） —— */
+      .swagger-ui .opblock {
+        border-radius: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-bottom: 1px solid #f3f4f6 !important;
+        transition: background 0.15s;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock:last-of-type {
+        border-bottom: none !important;
+      }
+      .swagger-ui .opblock:hover {
+        background: #f8fafc !important;
+        box-shadow: none !important;
+      }
+      .swagger-ui .opblock.is-open {
+        background: #fafbfc !important;
+        box-shadow: none !important;
+      }
+
+      /* —— 头部摘要行 —— */
+      .swagger-ui .opblock .opblock-summary {
+        padding: 10px 16px !important;
+      }
+      .swagger-ui .opblock-summary-method {
+        border-radius: 4px !important;
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        padding: 4px 10px !important;
+        min-width: 60px !important;
+        text-align: center !important;
+        text-shadow: none !important;
+      }
+      .swagger-ui .opblock-summary-path {
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        color: #1f2937 !important;
+        font-family:
+          "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace !important;
+      }
+      .swagger-ui .opblock-summary-path a {
+        color: #1f2937 !important;
+      }
+      .swagger-ui .opblock-summary-description {
+        font-size: 13px !important;
+        color: #6b7280 !important;
+        font-family: inherit !important;
+      }
+
+      /* —— HTTP 方法颜色微调 —— */
+      .swagger-ui .opblock.opblock-get {
+        border-left: 4px solid #3b82f6 !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-get .opblock-summary-method {
+        background: #3b82f6 !important;
+        color: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-post {
+        border-left: 4px solid #22c55e !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-post .opblock-summary-method {
+        background: #22c55e !important;
+        color: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-put {
+        border-left: 4px solid #f59e0b !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-put .opblock-summary-method {
+        background: #f59e0b !important;
+        color: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-delete {
+        border-left: 4px solid #ef4444 !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+        background: #ef4444 !important;
+        color: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-patch {
+        border-left: 4px solid #8b5cf6 !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+        background: #8b5cf6 !important;
+        color: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-head {
+        border-left: 4px solid #6b7280 !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-head .opblock-summary-method {
+        background: #6b7280 !important;
+        color: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-options {
+        border-left: 4px solid #06b6d4 !important;
+        background: #fff !important;
+      }
+      .swagger-ui .opblock.opblock-options .opblock-summary-method {
+        background: #06b6d4 !important;
+        color: #fff !important;
+      }
+
+      /* —— 展开区域 —— */
+      .swagger-ui .opblock-body {
+        padding: 0 16px 16px !important;
+      }
+      .swagger-ui .opblock-section-header {
+        background: #f9fafb !important;
+        border-radius: 6px !important;
+        padding: 10px 14px !important;
+        border: 1px solid #eef0f4 !important;
+        min-height: auto !important;
+      }
+      .swagger-ui .opblock-section-header h4 {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: #374151 !important;
+        font-family: inherit !important;
+      }
+      .swagger-ui .opblock-section-header .btn {
+        background: #f3f4f6 !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 4px !important;
+        padding: 4px 10px !important;
+        font-size: 12px !important;
+      }
+
+      /* —— 参数表格 —— */
+      .swagger-ui table thead tr td,
+      .swagger-ui table thead tr th {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        color: #6b7280 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        border-bottom: 2px solid #e5e7eb !important;
+        padding: 8px 12px !important;
+      }
+      .swagger-ui table tbody tr td {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        border-bottom: 1px solid #f3f4f6 !important;
+      }
+      .swagger-ui .parameter__name {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: #1f2937 !important;
+        font-family: inherit !important;
+      }
+      .swagger-ui .parameter__type {
+        font-size: 12px !important;
+        color: #6b7280 !important;
+      }
+      .swagger-ui .parameter__extension,
+      .swagger-ui .parameter__in {
+        font-size: 11px !important;
+        color: #9ca3af !important;
+      }
+      .swagger-ui .model {
+        font-size: 13px !important;
+      }
+
+      /* —— 模型/Schema 区域 —— */
+      .swagger-ui section.models {
+        border: 1px solid #e5e7eb !important;
+        border-radius: 10px !important;
+        margin: 16px 0 !important;
+        background: #fff !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+      }
+      .swagger-ui section.models.is-open h4 {
+        border-bottom: 1px solid #e5e7eb !important;
+        padding: 14px 20px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        font-family: inherit !important;
+      }
+      .swagger-ui section.models .model-container {
+        background: #f9fafb !important;
+        border-radius: 6px !important;
+        margin: 8px 12px !important;
+        border: 1px solid #eef0f4 !important;
+      }
+      .swagger-ui .model-box {
+        background: transparent !important;
+      }
+      .swagger-ui .model-title {
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        font-family: inherit !important;
+      }
+
+      /* —— 响应示例 —— */
+      .swagger-ui .responses-inner h4,
+      .swagger-ui .responses-inner h5 {
+        font-family: inherit !important;
+        font-weight: 600 !important;
+      }
+      .swagger-ui .response-col_status {
+        font-weight: 600 !important;
+        font-size: 14px !important;
+      }
+      .swagger-ui .response-col_description {
+        font-size: 13px !important;
+      }
+      .swagger-ui .responses-inner .response-col_links {
+        font-size: 12px !important;
+      }
+      .swagger-ui .highlight-code {
+        border-radius: 6px !important;
+      }
+
+      /* —— 按钮样式 —— */
+      .swagger-ui .btn {
+        border-radius: 5px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        font-family: inherit !important;
+        transition: all 0.2s;
+      }
+      .swagger-ui .btn.execute {
+        background: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+        color: #fff !important;
+        padding: 6px 20px !important;
+      }
+      .swagger-ui .btn.execute:hover {
+        background: #2563eb !important;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4) !important;
+      }
+      .swagger-ui .btn-clear {
+        color: #6b7280 !important;
+        border-color: #d1d5db !important;
+      }
+      .swagger-ui .btn-done {
+        color: #374151 !important;
+        border-color: #d1d5db !important;
+      }
+
+      /* —— 请求示例区域 —— */
+      .swagger-ui .curl-command {
+        border-radius: 6px !important;
+        background: #1e293b !important;
+      }
+      .swagger-ui .curl-command .title {
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        font-family: inherit !important;
+      }
+      .swagger-ui .curl-command pre {
+        font-size: 12px !important;
+      }
+
+      /* —— 微调响应界面 —— */
+      .swagger-ui .responses-wrapper {
+        border-radius: 6px !important;
+      }
+      .swagger-ui .response-controls {
+        padding: 8px 0 !important;
+      }
+
+      /* —— 滚动条 —— */
+      .swagger-ui ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .swagger-ui ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .swagger-ui ::-webkit-scrollbar-thumb {
+        background: #c4cbd5;
+        border-radius: 3px;
+      }
+      .swagger-ui ::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+      }
+
+      /* —— 应用主布局 (侧边栏 + 内容区) —— */
+      .app-layout {
+        display: flex;
+        min-height: calc(100vh - 56px);
+      }
+
+      /* —— 左侧侧边栏 —— */
+      .sidebar {
+        width: 240px;
+        flex-shrink: 0;
+        background: #f9fafb;
+        border-right: 1px solid #eef0f4;
+        overflow-y: auto;
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        padding: 20px 12px;
+        z-index: 10;
+        display: none;
+      }
+      .sidebar.visible {
+        display: block;
+      }
+      .sidebar .sidebar-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 0 8px 14px 8px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 8px;
+      }
+      .sidebar .tag-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 10px 12px;
+        margin: 2px 0;
+        font-size: 13px;
+        color: #374151;
+        cursor: pointer;
+        border: 1px solid transparent;
+        background: transparent;
+        text-align: left;
+        transition: all 0.2s ease;
+        font-family: inherit;
+        border-radius: 8px;
+        line-height: 1.4;
+        gap: 8px;
+      }
+      .sidebar .tag-item:hover {
+        background: #fff;
+        border-color: #e5e7eb;
+        color: #1f2937;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      }
+      .sidebar .tag-item.active {
+        background: #fff;
+        border-color: #e0e7ff;
+        color: #4f46e5;
+        font-weight: 600;
+        box-shadow: 0 1px 4px rgba(79, 70, 229, 0.08);
+      }
+      .sidebar .tag-item .tag-indicator {
+        width: 3px;
+        height: 16px;
+        border-radius: 2px;
+        background: transparent;
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .sidebar .tag-item.active .tag-indicator {
+        background: #4f46e5;
+      }
+      .sidebar .tag-item .tag-label {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .sidebar .tag-item .tag-count {
+        flex-shrink: 0;
+        background: #e5e7eb;
+        color: #6b7280;
+        font-size: 11px;
+        padding: 0 8px;
+        border-radius: 10px;
+        line-height: 20px;
+        font-weight: 500;
+        min-width: 20px;
+        text-align: center;
+      }
+      .sidebar .tag-item.active .tag-count {
+        background: #eef2ff;
+        color: #4f46e5;
+      }
+
+      /* 侧边栏与内容区之间的装饰分隔 */
+      .sidebar::after {
+        content: "";
+        position: absolute;
+        right: -1px;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: linear-gradient(
+          180deg,
+          transparent 0%,
+          #e5e7eb 8%,
+          #e5e7eb 92%,
+          transparent 100%
+        );
+      }
+
+      /* —— 主内容区 —— */
+      .main-content {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+      }
+
+      /* 侧边栏可见时，模块容器的整体间距 */
+      .sidebar.visible + .main-content .swagger-ui .opblock-tag-section {
+        margin: 12px 24px !important;
+      }
+
+      /* 侧边栏可见时，wrapper 两侧间距 */
+      .sidebar.visible + .main-content .swagger-ui .wrapper {
+        padding: 0 !important;
+      }
+
+      /* 侧边栏可见时，Info 区域也保持统一间距 */
+      .sidebar.visible + .main-content .swagger-ui .info {
+        margin: 20px 24px 16px !important;
+      }
+
+      /* 侧边栏项悬浮时，对应的 opblock-tag 轻微高亮 */
+      .sidebar.visible + .main-content .swagger-ui .opblock-tag {
+        margin: 0 !important;
+      }
+      .sidebar.visible + .main-content .swagger-ui .opblock {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+      }
+
+      /* —— 移动端适配 —— */
+      @media (max-width: 768px) {
+        .swagger-navbar {
+          padding: 10px 12px;
+        }
+        .swagger-navbar .brand {
+          font-size: 15px;
+          margin-right: 8px;
+          width: 100%;
+        }
+        .swagger-navbar .token-area {
+          margin-left: 0;
+          width: 100%;
+        }
+        .swagger-navbar .token-area input {
+          width: 100%;
+        }
+        .sidebar {
+          display: none !important;
+        }
+        .swagger-ui .info {
+          margin: 16px 12px !important;
+          padding: 20px !important;
+        }
+        .swagger-ui .wrapper {
+          padding: 0 12px !important;
+        }
+        .sidebar-visible + .main-content .swagger-ui .info {
+          margin-left: 12px !important;
+          margin-right: 12px !important;
+        }
       }
     </style>
   </head>
   <body>
     <!-- 自定义顶部 Tab 导航 -->
     <div class="swagger-navbar">
-      <span class="brand">mix-web-demo API 文档</span>
+      <span class="brand">Swagger 文档</span>
       <button
         class="tab active"
         data-url="/swagger/spring.json"
@@ -148,7 +735,15 @@
         <span class="token-status empty" id="tokenStatus"></span>
       </div>
     </div>
-    <div id="swagger-ui"></div>
+    <div class="app-layout">
+      <nav class="sidebar" id="sidebar">
+        <div class="sidebar-title">模块列表</div>
+        <div id="sidebarTagList"></div>
+      </nav>
+      <div class="main-content">
+        <div id="swagger-ui"></div>
+      </div>
+    </div>
 
     <script src="/swagger-ui/swagger-ui-bundle.js" charset="UTF-8"></script>
     <script
@@ -156,17 +751,182 @@
       charset="UTF-8"></script>
     <script>
       (function () {
+        // 禁止浏览器自动恢复上次的滚动位置
+        if ("scrollRestoration" in history) {
+          history.scrollRestoration = "manual";
+        }
         var currentUI = null;
         var tabs = document.querySelectorAll(".tab");
         var container = document.getElementById("swagger-ui");
         var tokenInput = document.getElementById("tokenInput");
         var tokenStatus = document.getElementById("tokenStatus");
+        var sidebar = document.getElementById("sidebar");
+        var sidebarTagList = document.getElementById("sidebarTagList");
         var currentToken = "";
+        var scrollTimer = null;
+
+        // 从 paths 中收集所有 unique tag（备用）
+        function collectTagsFromPaths(paths) {
+          var tagSet = {};
+          Object.keys(paths).forEach(function (path) {
+            var methods = paths[path];
+            Object.keys(methods).forEach(function (method) {
+              if (typeof methods[method] === "object") {
+                var opTags = methods[method].tags || [];
+                opTags.forEach(function (t) {
+                  tagSet[t] = (tagSet[t] || 0) + 1;
+                });
+              }
+            });
+          });
+          return Object.keys(tagSet).map(function (name) {
+            return { name: name, count: tagSet[name] };
+          });
+        }
+
+        // 构建侧边栏导航
+        function buildSidebar(json) {
+          sidebarTagList.innerHTML = "";
+          var tags = [];
+
+          if (json && json.paths) {
+            if (json.tags && Array.isArray(json.tags) && json.tags.length > 0) {
+              // 优先使用 spec 中的 tags（如 Spring 会在顶层包含 tags 列表）
+              tags = json.tags;
+            }
+            // 如果顶层 tags 为空或不存在，从 paths 中提取
+            if (tags.length === 0) {
+              tags = collectTagsFromPaths(json.paths);
+            }
+          }
+
+          if (tags.length === 0) {
+            sidebar.classList.remove("visible");
+            return;
+          }
+
+          sidebar.classList.add("visible");
+          tags.forEach(function (tag) {
+            var tagName = typeof tag === "string" ? tag : tag.name;
+            if (!tagName) return;
+
+            // 计算该 tag 下的接口数量
+            var count = typeof tag === "string" ? 0 : tag.count || 0;
+            if (count === 0 && json && json.paths) {
+              // 如果 count 未提供，遍历 paths 统计
+              Object.keys(json.paths).forEach(function (path) {
+                var methods = json.paths[path];
+                Object.keys(methods).forEach(function (method) {
+                  if (typeof methods[method] === "object") {
+                    var opTags = methods[method].tags || [];
+                    opTags.forEach(function (t) {
+                      if (t === tagName) count++;
+                    });
+                  }
+                });
+              });
+            }
+
+            var btn = document.createElement("button");
+            btn.className = "tag-item";
+            btn.setAttribute("data-tag", tagName);
+
+            var indicator = document.createElement("span");
+            indicator.className = "tag-indicator";
+            btn.appendChild(indicator);
+
+            var label = document.createElement("span");
+            label.className = "tag-label";
+            label.textContent = tagName;
+            btn.appendChild(label);
+
+            if (count > 0) {
+              var badge = document.createElement("span");
+              badge.className = "tag-count";
+              badge.textContent = count;
+              btn.appendChild(badge);
+            }
+
+            btn.addEventListener("click", function () {
+              // 清除所有 active
+              document.querySelectorAll(".tag-item").forEach(function (el) {
+                el.classList.remove("active");
+              });
+              btn.classList.add("active");
+              scrollToTag(tagName);
+            });
+            sidebarTagList.appendChild(btn);
+          });
+
+          // 默认选中第一个
+          var first = sidebarTagList.querySelector(".tag-item");
+          if (first) first.classList.add("active");
+        }
+
+        // 滚动到指定 tag 区域
+        function scrollToTag(tagName) {
+          // Swagger UI 渲染后，tag 对应的元素是 .opblock-tag，其 ID 通常是 tag 名的 slug
+          // 尝试多种匹配
+          var escaped = tagName.replace(/[^\w\u4e00-\u9fff]/g, "_");
+          var el =
+            document.getElementById("operations-tag-" + escaped) ||
+            document.querySelector(
+              '.opblock-tag[data-tag="' + CSS.escape(tagName) + '"]',
+            ) ||
+            document.querySelector(
+              '.opblock-tag[id$="-' + CSS.escape(tagName) + '"]',
+            );
+
+          if (el) {
+            var top = el.getBoundingClientRect().top + window.pageYOffset - 80;
+            window.scrollTo({ top: top, behavior: "smooth" });
+          }
+        }
+
+        // 监听滚动更新侧边栏高亮
+        function setupScrollSpy() {
+          if (scrollTimer) clearInterval(scrollTimer);
+          scrollTimer = setInterval(function () {
+            var tags = document.querySelectorAll(".opblock-tag");
+            if (tags.length === 0) return;
+
+            var scrollY = window.pageYOffset + 100;
+            var currentTag = null;
+
+            tags.forEach(function (tag) {
+              var tagId = tag.id;
+              if (!tagId) return;
+              var offset = tag.offsetTop;
+              if (offset <= scrollY) {
+                currentTag = tagId;
+              }
+            });
+
+            if (currentTag) {
+              // 从 tag id 中提取 tag name
+              // operations-tag-xxx 格式
+              var tagName = currentTag.replace("operations-tag-", "");
+              document.querySelectorAll(".tag-item").forEach(function (el) {
+                var dataTag = el.getAttribute("data-tag");
+                var dataTagEscaped =
+                  dataTag ? dataTag.replace(/[^\w\u4e00-\u9fff]/g, "_") : "";
+                if (dataTagEscaped === tagName) {
+                  el.classList.add("active");
+                } else {
+                  el.classList.remove("active");
+                }
+              });
+            }
+          }, 300);
+        }
 
         // 加载/刷新 Swagger UI
         function loadSpec(url) {
+          window.scrollTo(0, 0);
           container.innerHTML =
             '<div style="padding: 40px; text-align: center; color: #666; font-size: 16px;">加载中...</div>';
+          sidebar.classList.remove("visible");
+          sidebarTagList.innerHTML = "";
 
           if (currentUI) {
             try {
@@ -174,6 +934,19 @@
             } catch (e) {}
             currentUI = null;
           }
+
+          // 先获取 spec JSON 提取 tags
+          fetch(url)
+            .then(function (res) {
+              if (!res.ok) throw new Error("HTTP " + res.status);
+              return res.json();
+            })
+            .then(function (json) {
+              buildSidebar(json);
+            })
+            .catch(function () {
+              sidebar.classList.remove("visible");
+            });
 
           currentUI = SwaggerUIBundle({
             url: url,
@@ -188,6 +961,14 @@
                 req.headers["Authorization"] = "Bearer " + currentToken;
               }
               return req;
+            },
+            onComplete: function () {
+              // Swagger UI 渲染完成后，绑定滚动监听
+              setupScrollSpy();
+              // 覆盖 deepLinking 可能触发的自动滚动，确保页面在最顶部
+              setTimeout(function () {
+                window.scrollTo(0, 0);
+              }, 100);
             },
           });
         }
