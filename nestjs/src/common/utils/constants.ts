@@ -253,6 +253,19 @@ export class Constants {
   static readonly SWAGGER_PATH = 'api-docs';
 
   /**
+   * Swagger 标签描述
+   */
+  static readonly SWAGGER_TAGS: [string, string][] = [
+    ['API日志模块', 'API日志模块相关接口，包含日志查询、统计等功能'],
+    ['文章日志模块', '文章操作日志相关接口'],
+    ['测试模块', '测试相关接口'],
+    ['文件上传', '文件上传相关接口'],
+    ['下载模块', '文件下载相关接口'],
+    ['GitHub 登录模块', 'GitHub 授权与操作相关接口'],
+    ['邮件模块', '邮件发送相关接口'],
+  ];
+
+  /**
    * test 欢迎信息
    */
   static readonly TEST_WELCOME = 'Hello,I am Nest.js!';

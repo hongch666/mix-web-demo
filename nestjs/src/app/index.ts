@@ -2,12 +2,10 @@ import multipart from '@fastify/multipart';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-} from '@nestjs/platform-fastify';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { OpenAPIObject } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { HttpCode } from 'src/common/utils/httpCode';
 import { logger } from 'src/common/utils/writeLog';
@@ -67,11 +65,17 @@ export async function createApp(): Promise<NestFastifyApplication> {
   );
 
   // Swagger 配置
-  const config: Omit<OpenAPIObject, 'paths'> = new DocumentBuilder()
+  const swaggerBuilder = new DocumentBuilder()
     .setTitle(Constants.SWAGGER_TITLE)
     .setDescription(Constants.SWAGGER_DESCRIPTION)
-    .setVersion(Constants.SWAGGER_VERSION)
-    .build();
+    .setVersion(Constants.SWAGGER_VERSION);
+
+  // 注册 Swagger 标签描述
+  Constants.SWAGGER_TAGS.forEach(([name, description]) => {
+    swaggerBuilder.addTag(name, description);
+  });
+
+  const config: Omit<OpenAPIObject, 'paths'> = swaggerBuilder.build();
   const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(Constants.SWAGGER_PATH, app, document);
 
