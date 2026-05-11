@@ -81,4 +81,16 @@ export class TestController {
     await this.taskService.cleanupOldApiLogs();
     return success(null);
   }
+
+  @Post('execute/articlelog')
+  @ApiOperation({
+    summary: '手动执行清理文章日志任务',
+    description: '手动触发清理超过1个月的文章日志任务',
+  })
+  @RequireInternalToken()
+  @ApiLog('手动执行清理文章日志任务')
+  async executeCleanupOldArticleLogsTask(): Promise<ApiResponse<null>> {
+    await this.taskService.cleanupOldArticleLogs();
+    return success(null);
+  }
 }

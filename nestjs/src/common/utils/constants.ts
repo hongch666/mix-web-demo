@@ -75,6 +75,11 @@ export class Constants {
   static readonly TASK_CLEAN = '开始清理超过1个月的 API 日志';
 
   /**
+   * 清理文章日志定时任务消息
+   */
+  static readonly TASK_ARTICLE_CLEAN = '开始清理超过1个月的文章日志';
+
+  /**
    * 服务器错误消息
    */
   static readonly ERROR_DEFAULT_MSG = 'NestJS服务器错误';
@@ -425,6 +430,17 @@ export class Constants {
    * API日志清理任务分布式锁的过期时间（秒）
    */
   static readonly LOCK_TASK_API_LOG_CLEANUP_EXPIRE = 3600;
+
+  /**
+   * 文章日志清理任务分布式锁的 key
+   */
+  static readonly LOCK_TASK_ARTICLE_LOG_CLEANUP =
+    'lock:task:article:log:cleanup';
+
+  /**
+   * 文章日志清理任务分布式锁的过期时间（秒）
+   */
+  static readonly LOCK_TASK_ARTICLE_LOG_CLEANUP_EXPIRE = 3600;
 
   /**
    * 获取分布式锁成功消息
