@@ -23,15 +23,15 @@ def add_chinese_tags_to_dict(swagger_data):
     # 中文标签映射
     tag_mapping = {
         "chat": {
-            "name": "聊天",
+            "name": "聊天模块",
             "description": "聊天功能相关API，包括消息发送、历史查询、队列管理等",
         },
         "search": {
-            "name": "文章",
+            "name": "文章模块",
             "description": "文章搜索功能相关API，支持多条件搜索、历史记录等",
         },
         "test": {
-            "name": "测试",
+            "name": "测试模块",
             "description": "服务测试相关API，用于验证各个微服务是否正常运行",
         },
     }
