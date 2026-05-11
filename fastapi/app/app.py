@@ -16,6 +16,7 @@ def create_app() -> FastAPI:
         title=Constants.SWAGGER_TITLE,
         description=Constants.SWAGGER_DESCRIPTION,
         version=Constants.SWAGGER_VERSION,
+        openapi_tags=Constants.OPENAPI_TAGS,
         lifespan=lifespan,
     )
 

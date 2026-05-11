@@ -31,7 +31,10 @@ from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, Request
 
-router: APIRouter = APIRouter(prefix="/chat", tags=["AI聊天接口"])
+router: APIRouter = APIRouter(
+    prefix="/chat",
+    tags=["AI聊天接口"],
+)
 
 
 @router.post(
@@ -149,10 +152,8 @@ async def stream_message(
             # 根据请求的服务类型选择对应的AI服务
             if request.service == AIServiceType.GPT:
                 Logger.info(f"使用GPT流式服务处理用户 {actual_user_id} 的请求")
-                stream_generator: AsyncGenerator[Any, None] = (
-                    gptService.stream_chat(
-                        message=request.message, user_id=actual_user_id, db=db
-                    )
+                stream_generator: AsyncGenerator[Any, None] = gptService.stream_chat(
+                    message=request.message, user_id=actual_user_id, db=db
                 )
             elif request.service == AIServiceType.GEMINI:
                 Logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
