@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze/user",
-    tags=["用户个人数据分析接口"],
+    tags=["用户个人数据分析模块"],
 )
 
 

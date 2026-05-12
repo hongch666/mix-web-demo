@@ -33,7 +33,7 @@ from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/chat",
-    tags=["AI聊天接口"],
+    tags=["AI聊天模块"],
 )
 
 

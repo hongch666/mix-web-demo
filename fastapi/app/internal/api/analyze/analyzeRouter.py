@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze",
-    tags=["文章分析接口"],
+    tags=["文章分析模块"],
 )
 
 

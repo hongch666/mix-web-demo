@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze/api",
-    tags=["API日志分析接口"],
+    tags=["API日志分析模块"],
 )
 
 

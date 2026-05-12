@@ -26,7 +26,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/generate",
-    tags=["生成相关接口"],
+    tags=["生成模块"],
 )
 
 

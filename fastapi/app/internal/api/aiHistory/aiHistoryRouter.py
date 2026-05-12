@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, Request
 
 router: APIRouter = APIRouter(
     prefix="/ai_history",
-    tags=["AI历史相关接口"],
+    tags=["AI历史模块"],
 )
 
 

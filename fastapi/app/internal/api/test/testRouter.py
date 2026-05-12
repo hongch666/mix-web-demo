@@ -22,7 +22,7 @@ from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/api_fastapi",
-    tags=["测试接口"],
+    tags=["测试模块"],
 )
 
 
