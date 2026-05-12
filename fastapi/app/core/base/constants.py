@@ -1650,5 +1650,9 @@ class Constants:
             "name": "生成模块",
             "description": "生成相关API，包括生成tags、为文章创建AI评论、为文章创建基于权威参考文本的AI评论等",
         },
+        {
+            "name": "知识图谱模块",
+            "description": "知识图谱相关API，包括图谱搜索、图谱增强等功能",
+        },
     ]
     """OpenAPI 标签描述，用于在 Swagger 文档中展示各模块描述信息"""
