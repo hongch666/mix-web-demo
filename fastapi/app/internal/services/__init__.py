@@ -4,6 +4,7 @@ from .aiHistory.aiHistoryService import AiHistoryService, get_ai_history_service
 from .analyze.analyzeService import AnalyzeService, get_analyze_service
 from .apiLog.apiLogService import ApiLogService, get_apilog_service
 from .generate.generateService import GenerateService, get_generate_service
+from .graphSearch.graphSearchService import GraphSearchService, get_graph_search_service
 from .llm.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
 from .llm.extend.deepseekService import DeepseekService, get_deepseek_service
 from .llm.extend.geminiService import GeminiService, get_gemini_service
@@ -21,6 +22,8 @@ __all__: List[str] = [
     "get_ai_history_service",
     "ApiLogService",
     "get_apilog_service",
+    "GraphSearchService",
+    "get_graph_search_service",
     "BaseAiService",
     "GeminiService",
     "GptService",

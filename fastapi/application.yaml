@@ -93,6 +93,12 @@ neo4j:
   uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
   user: ${NEO4J_USER:neo4j}
   password: ${NEO4J_PASSWORD:}
+graph_search:
+  tag_interest_weight: ${GRAPH_SEARCH_TAG_INTEREST_WEIGHT:0.35}
+  followed_author_weight: ${GRAPH_SEARCH_FOLLOWED_AUTHOR_WEIGHT:0.25}
+  same_sub_category_weight: ${GRAPH_SEARCH_SAME_SUB_CATEGORY_WEIGHT:0.20}
+  candidate_similarity_weight: ${GRAPH_SEARCH_CANDIDATE_SIMILARITY_WEIGHT:0.20}
+  keyword_tag_weight: ${GRAPH_SEARCH_KEYWORD_TAG_WEIGHT:0.20}
 permission:
   personal_info_keywords:
     - "我的"

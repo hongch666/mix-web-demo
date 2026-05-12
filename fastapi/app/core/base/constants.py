@@ -1520,6 +1520,105 @@ class Constants:
     ROLE_USER: str = "user"
     """用户权限名称"""
 
+    # 图谱搜索增强 - Cypher 语句
+
+    GRAPH_SEARCH_TAG_INTEREST_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[:LIKES|COLLECTS]->(:Article)-[:TAGGED_AS]->(t:Tag)
+        WITH t.name AS tagName, count(*) AS weight
+        MATCH (a:Article)-[:TAGGED_AS]->(t2:Tag {name: tagName})
+        WHERE a.id IN $articleIds
+        RETURN a.id AS articleId,
+               collect(DISTINCT tagName) AS matchedTags,
+               sum(weight) AS rawScore
+    """
+    """图谱搜索增强: 用户兴趣标签查询"""
+
+    GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[:FOLLOWS]->(author:User)<-[:PUBLISHED_BY]-(a:Article)
+        WHERE a.id IN $articleIds
+        RETURN a.id AS articleId,
+               collect(DISTINCT author.name) AS names,
+               count(DISTINCT author) AS rawScore
+    """
+    """图谱搜索增强: 关注作者查询"""
+
+    GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[:LIKES|COLLECTS|COMMENTED_ON]->(:Article)-[:BELONGS_TO]->(s:SubCategory)
+        WITH s.id AS subCategoryId, s.name AS subCategoryName, count(*) AS weight
+        MATCH (a:Article)-[:BELONGS_TO]->(:SubCategory {id: subCategoryId})
+        WHERE a.id IN $articleIds
+        RETURN a.id AS articleId,
+               collect(DISTINCT subCategoryName) AS names,
+               sum(weight) AS rawScore
+    """
+    """图谱搜索增强: 同子分类查询"""
+
+    GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER: str = """
+        MATCH (a:Article)-[:TAGGED_AS]->(t:Tag)<-[:TAGGED_AS]-(other:Article)
+        WHERE a.id IN $articleIds
+          AND other.id IN $articleIds
+          AND a.id <> other.id
+        RETURN a.id AS articleId,
+               collect(DISTINCT t.name) AS names,
+               count(DISTINCT t) AS rawScore
+    """
+    """图谱搜索增强: 候选间相似标签查询"""
+
+    GRAPH_SEARCH_KEYWORD_TAG_CYPHER: str = """
+        MATCH (a:Article)-[:TAGGED_AS]->(t:Tag)
+        WHERE a.id IN $articleIds
+          AND $keyword <> ''
+          AND toLower(t.name) CONTAINS toLower($keyword)
+        RETURN a.id AS articleId,
+               collect(DISTINCT t.name) AS names,
+               count(DISTINCT t) AS rawScore
+    """
+    """图谱搜索增强: 关键词标签命中查询"""
+
+    # 图谱搜索增强 - 关系原因
+
+    GRAPH_SEARCH_REASON_INTEREST: str = "命中兴趣标签"
+    """图谱搜索增强: 兴趣标签关系原因"""
+
+    GRAPH_SEARCH_REASON_FOLLOWED: str = "来自你关注的作者"
+    """图谱搜索增强: 关注作者关系原因"""
+
+    GRAPH_SEARCH_REASON_SUB_CATEGORY: str = "属于你常看的分类"
+    """图谱搜索增强: 同分类关系原因"""
+
+    GRAPH_SEARCH_REASON_CANDIDATE: str = "与当前搜索结果中的多篇文章标签相关"
+    """图谱搜索增强: 候选相似关系原因"""
+
+    GRAPH_SEARCH_REASON_KEYWORD: str = "命中图谱标签"
+    """图谱搜索增强: 关键词标签关系原因"""
+
+    # 图谱搜索增强 - 路径描述
+
+    GRAPH_SEARCH_PATH_INTEREST: str = "User-LIKES-Article-TAGGED_AS-Tag"
+    """图谱搜索增强: 兴趣标签路径"""
+
+    GRAPH_SEARCH_PATH_FOLLOWED: str = "User-FOLLOWS-User-PUBLISHED_BY-Article"
+    """图谱搜索增强: 关注作者路径"""
+
+    GRAPH_SEARCH_PATH_SUB_CATEGORY: str = (
+        "User-LIKES|COLLECTS|COMMENTED_ON-Article-BELONGS_TO-SubCategory"
+    )
+    """图谱搜索增强: 同分类路径"""
+
+    GRAPH_SEARCH_PATH_CANDIDATE: str = "Article-TAGGED_AS-Tag-TAGGED_AS-Article"
+    """图谱搜索增强: 候选相似路径"""
+
+    GRAPH_SEARCH_PATH_KEYWORD: str = "Article-TAGGED_AS-Tag"
+    """图谱搜索增强: 关键词标签路径"""
+
+    # 图谱搜索增强 - 日志消息
+
+    GRAPH_SEARCH_QUERY_EXCEPTION_LOG: str = "图谱信号查询异常: {}"
+    """图谱搜索增强: 信号查询异常日志"""
+
+    GRAPH_SEARCH_NEO4J_EXCEPTION_LOG: str = "Neo4j 查询异常: {}"
+    """图谱搜索增强: Neo4j 查询异常日志"""
+
     # Swagger 标签描述
 
     OPENAPI_TAGS = [
