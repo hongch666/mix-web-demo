@@ -358,6 +358,18 @@ const (
 	// 搜索历史获取失败消息
 	SEARCH_HISTORY_FAIL = "获取搜索历史失败"
 
+	// 搜索模式参数无效错误
+	SEARCH_MODE_INVALID_ERROR = "搜索模式参数无效，仅支持 keyword/hybrid/graph"
+
+	// 图谱增强服务调用失败消息
+	GRAPH_ENHANCE_CALL_FAILED = "图谱增强服务调用失败: %w"
+
+	// 图谱增强响应格式异常消息
+	GRAPH_ENHANCE_RESPONSE_FORMAT_ERROR = "图谱增强响应格式异常"
+
+	// 图谱增强降级日志消息
+	GRAPH_ENHANCE_DEGRADE_LOG = "图谱增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
+
 	// 缺少用户ID消息
 	USER_ID_LESS = "缺少用户ID"
 

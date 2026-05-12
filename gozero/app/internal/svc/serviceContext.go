@@ -14,6 +14,7 @@ import (
 
 	"app/common/hub"
 	"app/common/utils"
+	"app/internal/client"
 	"app/internal/config"
 	"app/internal/middleware"
 	"app/model/aiHistory"
@@ -76,6 +77,8 @@ type ServiceContext struct {
 
 	ChatHub *hub.ChatHub
 	SSEHub  *hub.SSEHubManager
+
+	GraphSearchClient *client.GraphSearchClient
 
 	Logger *utils.ZeroLogger
 
@@ -157,6 +160,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		FocusModel:    focusModel,
 	})
 
+	graphSearchClient := client.NewGraphSearchClient(namingClient)
+
 	return &ServiceContext{
 		Config:                 c,
 		MySQLConn:              mysqlConn,
@@ -179,6 +184,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SubCategoryModel:       subCategoryModel,
 		UserModel:              userModel,
 		SearchModel:            searchModel,
+		GraphSearchClient:      graphSearchClient,
 		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
 		SSEHub: func() *hub.SSEHubManager {
 			hub := hub.GetSSEHub()

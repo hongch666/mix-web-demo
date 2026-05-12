@@ -4,25 +4,45 @@
 package types
 
 type ArticleEsItem struct {
-	Id                int64   `json:"id"`
-	Title             string  `json:"title"`
-	Content           string  `json:"content"`
-	UserId            int64   `json:"userId"`
-	Username          string  `json:"username"`
-	Tags              string  `json:"tags"`
-	Status            int     `json:"status"`
-	Views             int     `json:"views"`
-	LikeCount         int     `json:"likeCount"`
-	CollectCount      int     `json:"collectCount"`
-	AuthorFollowCount int     `json:"authorFollowCount"`
-	CategoryName      string  `json:"category_name"`
-	SubCategoryName   string  `json:"sub_category_name"`
-	CreateAt          string  `json:"create_at"`
-	UpdateAt          string  `json:"update_at"`
-	AiScore           float64 `json:"ai_score"`
-	UserScore         float64 `json:"user_score"`
-	AiCommentCount    int     `json:"ai_comment_count"`
-	UserCommentCount  int     `json:"user_comment_count"`
+	Id                int64           `json:"id"`
+	Title             string          `json:"title"`
+	Content           string          `json:"content"`
+	UserId            int64           `json:"userId"`
+	Username          string          `json:"username"`
+	Tags              string          `json:"tags"`
+	Status            int             `json:"status"`
+	Views             int             `json:"views"`
+	LikeCount         int             `json:"likeCount"`
+	CollectCount      int             `json:"collectCount"`
+	AuthorFollowCount int             `json:"authorFollowCount"`
+	CategoryName      string          `json:"category_name"`
+	SubCategoryName   string          `json:"sub_category_name"`
+	CreateAt          string          `json:"create_at"`
+	UpdateAt          string          `json:"update_at"`
+	AiScore           float64         `json:"ai_score"`
+	UserScore         float64         `json:"user_score"`
+	AiCommentCount    int             `json:"ai_comment_count"`
+	UserCommentCount  int             `json:"user_comment_count"`
+	EsScore           float64         `json:"esScore"`
+	GraphScore        float64         `json:"graphScore"`
+	FinalScore        float64         `json:"finalScore"`
+	Reason            string          `json:"reason"`
+	Relations         []GraphRelation `json:"relations"`
+	ScoreDetails      ScoreDetails    `json:"scoreDetails"`
+}
+
+type GraphRelation struct {
+	Type   string  `json:"type"`
+	Name   string  `json:"name"`
+	Score  float64 `json:"score"`
+	Reason string  `json:"reason"`
+}
+
+type ScoreDetails struct {
+	EsScore       float64 `json:"esScore"`
+	GraphScore    float64 `json:"graphScore"`
+	BusinessScore float64 `json:"businessScore"`
+	RecencyScore  float64 `json:"recencyScore"`
 }
 
 type ChatGetAllUnreadCountsReq struct {
@@ -126,6 +146,9 @@ type SearchArticlesReq struct {
 	EndDate         *string `form:"endDate,optional"`
 	Page            int     `form:"page,optional,default=1"`
 	Size            int     `form:"size,optional,default=10"`
+	Mode            *string `form:"mode,optional"`
+	EnableGraph     *bool   `form:"enableGraph,optional"`
+	Explain         *bool   `form:"explain,optional"`
 }
 
 type SearchArticlesResp struct {

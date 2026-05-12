@@ -73,3 +73,9 @@ search:
   max_collects_normalized: ${SEARCH_MAX_COLLECTS_NORMALIZED:1000.0}
   max_follows_normalized: ${SEARCH_MAX_FOLLOWS_NORMALIZED:5000.0}
   recency_decay_days: ${SEARCH_RECENCY_DECAY_DAYS:30}
+  graph_enabled: ${SEARCH_GRAPH_ENABLED:true}
+  graph_timeout_ms: ${SEARCH_GRAPH_TIMEOUT_MS:800}
+  graph_candidate_limit: ${SEARCH_GRAPH_CANDIDATE_LIMIT:50}
+  graph_score_weight: ${SEARCH_GRAPH_SCORE_WEIGHT:0.20}
+  graph_fallback_enabled: ${SEARCH_GRAPH_FALLBACK_ENABLED:true}
+  hybrid_min_es_weight: ${SEARCH_HYBRID_MIN_ES_WEIGHT:0.55}

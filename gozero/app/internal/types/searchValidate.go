@@ -40,6 +40,11 @@ func (r *SearchArticlesReq) Validate() error {
 		}
 	}
 
+	// 校验图谱搜索模式
+	if err := validateSearchMode(r.Mode, r.EnableGraph); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -77,4 +82,35 @@ func validateSearchArticlesTime(value *string, fieldName string) error {
 	}
 
 	return nil
+}
+
+// validateSearchMode 校验搜索模式参数
+func validateSearchMode(mode *string, enableGraph *bool) error {
+	// enableGraph=false 时忽略 mode 参数
+	if enableGraph != nil && !*enableGraph {
+		return nil
+	}
+
+	if mode == nil || strings.TrimSpace(*mode) == "" {
+		return nil
+	}
+
+	normalizedMode := strings.ToLower(strings.TrimSpace(*mode))
+	switch normalizedMode {
+	case "keyword", "hybrid", "graph":
+		return nil
+	default:
+		return exceptions.NewBadRequestErrorSame(utils.SEARCH_MODE_INVALID_ERROR)
+	}
+}
+
+// NormalizeSearchMode 规范化搜索模式
+func NormalizeSearchMode(req *SearchArticlesReq) string {
+	if req.EnableGraph != nil && !*req.EnableGraph {
+		return "keyword"
+	}
+	if req.Mode == nil || strings.TrimSpace(*req.Mode) == "" {
+		return "hybrid"
+	}
+	return strings.ToLower(strings.TrimSpace(*req.Mode))
 }

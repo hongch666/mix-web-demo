@@ -48,6 +48,7 @@ type ArticleES struct {
 	UserScore         float64 `json:"user_score"`
 	AICommentCount    int     `json:"ai_comment_count"`
 	UserCommentCount  int     `json:"user_comment_count"`
+	ESScore           float64 `json:"-"` // ES 原始评分（不序列化到 JSON）
 }
 
 type SearchLog struct {

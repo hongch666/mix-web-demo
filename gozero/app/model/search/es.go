@@ -125,6 +125,11 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			return nil, 0, err
 		}
 
+		// 记录 ES 原始评分
+		if hit.Score != nil {
+			article.ESScore = *hit.Score
+		}
+
 		if hit.Highlight != nil {
 			if hs, ok := hit.Highlight["title"]; ok && len(hs) > 0 {
 				article.Title = strings.Join(hs, " ")

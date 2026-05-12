@@ -7,10 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"app/common/exceptions"
 	"app/common/keys"
 	"app/common/utils"
+	"app/internal/client"
 	"app/internal/svc"
 	"app/internal/types"
 	"app/model/search"
@@ -74,7 +76,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		Size:            size,
 	}
 
-	// 执行搜索
+	// 执行ES搜索
 	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.SEARCH_EXECUTION_ERROR+": %v", err))
@@ -104,6 +106,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			UserScore:         article.UserScore,
 			AiCommentCount:    article.AICommentCount,
 			UserCommentCount:  article.UserCommentCount,
+			EsScore:           article.ESScore,
 		}
 	}
 
@@ -112,6 +115,14 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	resp = &types.SearchArticlesResp{
 		Total: total,
 		List:  items,
+	}
+
+	// 判断是否需要图谱增强
+	mode := types.NormalizeSearchMode(req)
+	graphEnabled := l.svcCtx.Config.Search.GraphEnabled
+
+	if mode != "keyword" && graphEnabled && len(items) > 0 {
+		resp.List = l.enhanceWithGraph(items, keyword, categoryName, subCategoryName, currentUserID, mode)
 	}
 
 	// 如果指定了搜索关键字，记录搜索信息
@@ -152,6 +163,85 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	}
 
 	return
+}
+
+// enhanceWithGraph 调用图谱增强并融合重排
+func (l *SearchArticlesLogic) enhanceWithGraph(
+	items []types.ArticleEsItem,
+	keyword string,
+	categoryName string,
+	subCategoryName string,
+	userID int64,
+	mode string,
+) []types.ArticleEsItem {
+	// 提取文章ID列表
+	articleIDs := make([]int64, 0, len(items))
+	for _, item := range items {
+		articleIDs = append(articleIDs, item.Id)
+	}
+
+	// 从 tags 字符串提取标签
+	tagList := extractTagsFromItems(items)
+
+	// 构建图谱增强请求
+	graphReq := &client.GraphEnhanceRequest{
+		UserID:          userID,
+		Keyword:         keyword,
+		ArticleIDs:      articleIDs,
+		CategoryName:    categoryName,
+		SubCategoryName: subCategoryName,
+		Tags:            tagList,
+		Limit:           len(articleIDs),
+		Mode:            mode,
+	}
+
+	// 调用图谱增强
+	graphResp, err := l.svcCtx.GraphSearchClient.Enhance(l.ctx, graphReq)
+	if err != nil {
+		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(articleIDs), err)
+
+		if !l.svcCtx.Config.Search.GraphFallbackEnabled {
+			return items
+		}
+		// 降级时清除图谱相关字段
+		return items
+	}
+
+	// 融合重排
+	hasKeyword := keyword != ""
+	isLoggedIn := userID > 0
+
+	fusionCfg := FusionConfig{
+		GraphScoreWeight:  l.svcCtx.Config.Search.GraphScoreWeight,
+		HybridMinESWeight: l.svcCtx.Config.Search.HybridMinESWeight,
+		IsLoggedIn:        isLoggedIn,
+		HasKeyword:        hasKeyword,
+	}
+
+	return MergeAndRerank(items, graphResp.Items, fusionCfg)
+}
+
+// extractTagsFromItems 从文章列表中提取所有标签
+func extractTagsFromItems(items []types.ArticleEsItem) []string {
+	tagSet := make(map[string]struct{})
+	for _, item := range items {
+		if item.Tags == "" {
+			continue
+		}
+		for _, tag := range strings.Split(item.Tags, ",") {
+			tag = strings.TrimSpace(tag)
+			if tag != "" {
+				tagSet[tag] = struct{}{}
+			}
+		}
+	}
+
+	tags := make([]string, 0, len(tagSet))
+	for tag := range tagSet {
+		tags = append(tags, tag)
+	}
+	return tags
 }
 
 func getCurrentUserFromContext(ctx context.Context) (int64, string) {

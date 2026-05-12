@@ -104,4 +104,10 @@ type SearchConfig struct {
 	MaxCollectsNormalized float64 `json:"max_collects_normalized"`
 	MaxFollowsNormalized  float64 `json:"max_follows_normalized"`
 	RecencyDecayDays      int64   `json:"recency_decay_days"`
+	GraphEnabled          bool    `json:"graph_enabled"`
+	GraphTimeoutMs        int64   `json:"graph_timeout_ms"`
+	GraphCandidateLimit   int     `json:"graph_candidate_limit"`
+	GraphScoreWeight      float64 `json:"graph_score_weight"`
+	GraphFallbackEnabled  bool    `json:"graph_fallback_enabled"`
+	HybridMinESWeight     float64 `json:"hybrid_min_es_weight"`
 }
