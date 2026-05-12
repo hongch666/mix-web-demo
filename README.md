@@ -1605,6 +1605,12 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 - **意图路由工具 (intentRouter.py)**: 用于自动识别用户意图并路由到不同的处理模块
 - **用户权限管理 (userPermissionManager.py)**: 管理和校验用户权限，实现细粒度访问控制
 
+### Github 登录前置条件
+
+1. 需要通过[Github官方OAuth Apps](https://github.com/settings/developers)注册对应OAuth Apps
+2. 配置回调地址和前端地址为当前项目的地址(可使用localhost作为开发环境的地址)
+3. 获取Client ID和Client secrets并配置到环境变量
+
 ### 词云图说明
 
 1. 词云图的字体应进行配置对应字体的路径
