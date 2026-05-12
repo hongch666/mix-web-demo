@@ -705,6 +705,11 @@ class Constants:
     NEO4J_NO_INCREMENTAL_DATA_MESSAGE: str = "没有检测到需要同步的 Neo4j 增量数据"
     """Neo4j 无增量数据消息"""
 
+    NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE: str = (
+        "[知识图谱] 开始清理 Neo4j 中已删除的 MySQL 数据"
+    )
+    """Neo4j 删除同步清理开始消息"""
+
     REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE: str = "[分布式锁] 获取锁成功，key: %s"
     """获取分布式锁成功消息"""
 
@@ -973,6 +978,105 @@ class Constants:
     """
     """Neo4j 合并关注关系 Cypher"""
 
+    NEO4J_CLEANUP_PUBLISHED_BY_CYPHER: str = """
+        MATCH (a:Article)-[r:PUBLISHED_BY]->(u:User)
+        WITH r, toString(a.id) + ':' + toString(u.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效文章作者关系 Cypher"""
+
+    NEO4J_CLEANUP_ARTICLE_SUB_CATEGORY_CYPHER: str = """
+        MATCH (a:Article)-[r:BELONGS_TO]->(s:SubCategory)
+        WITH r, toString(a.id) + ':' + toString(s.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效文章子分类关系 Cypher"""
+
+    NEO4J_CLEANUP_SUB_CATEGORY_CATEGORY_CYPHER: str = """
+        MATCH (s:SubCategory)-[r:BELONGS_TO_CATEGORY]->(c:Category)
+        WITH r, toString(s.id) + ':' + toString(c.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效子分类主分类关系 Cypher"""
+
+    NEO4J_CLEANUP_TAGGED_AS_CYPHER: str = """
+        MATCH (a:Article)-[r:TAGGED_AS]->(t:Tag)
+        WITH r, toString(a.id) + ':' + t.name AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效文章标签关系 Cypher"""
+
+    NEO4J_CLEANUP_LIKES_CYPHER: str = """
+        MATCH (u:User)-[r:LIKES]->(a:Article)
+        WITH r, toString(u.id) + ':' + toString(a.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效点赞关系 Cypher"""
+
+    NEO4J_CLEANUP_COLLECTS_CYPHER: str = """
+        MATCH (u:User)-[r:COLLECTS]->(a:Article)
+        WITH r, toString(u.id) + ':' + toString(a.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效收藏关系 Cypher"""
+
+    NEO4J_CLEANUP_COMMENTED_ON_CYPHER: str = """
+        MATCH (u:User)-[r:COMMENTED_ON]->(a:Article)
+        WITH r, toString(r.commentId) + ':' + toString(u.id) + ':' + toString(a.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效评论关系 Cypher"""
+
+    NEO4J_CLEANUP_FOLLOWS_CYPHER: str = """
+        MATCH (u1:User)-[r:FOLLOWS]->(u2:User)
+        WITH r, toString(u1.id) + ':' + toString(u2.id) AS relationKey
+        WHERE NOT (relationKey IN $keys)
+        DELETE r
+    """
+    """Neo4j 清理失效关注关系 Cypher"""
+
+    NEO4J_CLEANUP_ARTICLES_CYPHER: str = """
+        MATCH (a:Article)
+        WHERE NOT (a.id IN $ids)
+        DETACH DELETE a
+    """
+    """Neo4j 清理失效文章节点 Cypher"""
+
+    NEO4J_CLEANUP_USERS_CYPHER: str = """
+        MATCH (u:User)
+        WHERE NOT (u.id IN $ids)
+        DETACH DELETE u
+    """
+    """Neo4j 清理失效用户节点 Cypher"""
+
+    NEO4J_CLEANUP_SUB_CATEGORIES_CYPHER: str = """
+        MATCH (s:SubCategory)
+        WHERE NOT (s.id IN $ids)
+        DETACH DELETE s
+    """
+    """Neo4j 清理失效子分类节点 Cypher"""
+
+    NEO4J_CLEANUP_CATEGORIES_CYPHER: str = """
+        MATCH (c:Category)
+        WHERE NOT (c.id IN $ids)
+        DETACH DELETE c
+    """
+    """Neo4j 清理失效主分类节点 Cypher"""
+
+    NEO4J_CLEANUP_TAGS_CYPHER: str = """
+        MATCH (t:Tag)
+        WHERE NOT (t.name IN $names)
+        DETACH DELETE t
+    """
+    """Neo4j 清理失效标签节点 Cypher"""
+
     INTENT_TO_CYPHER: Dict[str, str] = {
         "article_detail": """
             MATCH (a:Article {id: $id})
@@ -1200,6 +1304,45 @@ class Constants:
 
     NEO4J_LABEL_FOLLOW_RELATION: str = "关注关系"
     """Neo4j 同步关注关系文案"""
+
+    NEO4J_CLEANUP_LABEL_PUBLISHED_BY_RELATION: str = "失效文章作者关系"
+    """Neo4j 清理文章作者关系文案"""
+
+    NEO4J_CLEANUP_LABEL_ARTICLE_SUB_CATEGORY_RELATION: str = "失效文章子分类关系"
+    """Neo4j 清理文章子分类关系文案"""
+
+    NEO4J_CLEANUP_LABEL_SUB_CATEGORY_CATEGORY_RELATION: str = "失效子分类主分类关系"
+    """Neo4j 清理子分类主分类关系文案"""
+
+    NEO4J_CLEANUP_LABEL_TAGGED_AS_RELATION: str = "失效文章标签关系"
+    """Neo4j 清理文章标签关系文案"""
+
+    NEO4J_CLEANUP_LABEL_LIKE_RELATION: str = "失效点赞关系"
+    """Neo4j 清理点赞关系文案"""
+
+    NEO4J_CLEANUP_LABEL_COLLECT_RELATION: str = "失效收藏关系"
+    """Neo4j 清理收藏关系文案"""
+
+    NEO4J_CLEANUP_LABEL_COMMENT_RELATION: str = "失效评论关系"
+    """Neo4j 清理评论关系文案"""
+
+    NEO4J_CLEANUP_LABEL_FOLLOW_RELATION: str = "失效关注关系"
+    """Neo4j 清理关注关系文案"""
+
+    NEO4J_CLEANUP_LABEL_ARTICLE: str = "失效文章节点"
+    """Neo4j 清理文章节点文案"""
+
+    NEO4J_CLEANUP_LABEL_USER: str = "失效用户节点"
+    """Neo4j 清理用户节点文案"""
+
+    NEO4J_CLEANUP_LABEL_SUB_CATEGORY: str = "失效子分类节点"
+    """Neo4j 清理子分类节点文案"""
+
+    NEO4J_CLEANUP_LABEL_CATEGORY: str = "失效主分类节点"
+    """Neo4j 清理主分类节点文案"""
+
+    NEO4J_CLEANUP_LABEL_TAG: str = "失效标签节点"
+    """Neo4j 清理标签节点文案"""
 
     NEO4J_READ_ONLY_LIMIT_MESSAGE: str = (
         "安全限制：Neo4j 工具只允许执行单条只读 Cypher 查询。"

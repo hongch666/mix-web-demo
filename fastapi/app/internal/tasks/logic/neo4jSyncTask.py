@@ -32,6 +32,31 @@ class KnowledgeGraphSyncService:
         raw_text = f"{title or ''}||{content or ''}||{tags or ''}"
         return hashlib.md5(raw_text.encode()).hexdigest()
 
+    @staticmethod
+    def _build_relation_key(*parts: Any) -> str:
+        return ":".join(str(part) for part in parts)
+
+    @staticmethod
+    def _extract_deleted_count(summary: Any) -> int:
+        counters = getattr(summary, "counters", None)
+        if counters is None:
+            return 0
+        return int(getattr(counters, "nodes_deleted", 0) or 0) + int(
+            getattr(counters, "relationships_deleted", 0) or 0
+        )
+
+    @staticmethod
+    def _build_article_tag_relations(
+        articles: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        relations: List[Dict[str, Any]] = []
+        for article in articles:
+            article_id = article.get("id")
+            tags = str(article.get("tags") or "")
+            for tag_name in [item.strip() for item in tags.split(",") if item.strip()]:
+                relations.append({"articleId": article_id, "tagName": tag_name})
+        return relations
+
     def _fetch_rows(self, sql: str) -> List[Any]:
         with SessionLocal() as session:
             return list(session.execute(text(sql)).fetchall())
@@ -242,6 +267,14 @@ class KnowledgeGraphSyncService:
             self.logger.info(f"[知识图谱] 已同步 {label}: {total}/{len(rows)}")
         return total
 
+    async def _cleanup_write(
+        self, cypher: str, params: Dict[str, Any], label: str
+    ) -> int:
+        summary = await self.client.run_write_query(cypher, params)
+        deleted_count = self._extract_deleted_count(summary)
+        self.logger.info(f"[知识图谱] 已清理 {label}: {deleted_count}")
+        return deleted_count
+
     async def _has_graph_data(self) -> bool:
         records = await self.client.run_query(Constants.NEO4J_GRAPH_COUNT_CYPHER)
         if not records:
@@ -251,6 +284,173 @@ class KnowledgeGraphSyncService:
             return int(total) > 0
         except (TypeError, ValueError):
             return False
+
+    async def _cleanup_deleted_graph_data(
+        self,
+        users: Optional[List[Dict[str, Any]]] = None,
+        categories: Optional[List[Dict[str, Any]]] = None,
+        sub_categories: Optional[List[Dict[str, Any]]] = None,
+        articles: Optional[List[Dict[str, Any]]] = None,
+        likes: Optional[List[Dict[str, Any]]] = None,
+        collects: Optional[List[Dict[str, Any]]] = None,
+        comments: Optional[List[Dict[str, Any]]] = None,
+        focus: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, int]:
+        """按 MySQL 当前完整快照删除 Neo4j 中已经不存在的节点和关系"""
+        self.logger.info(Constants.NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE)
+
+        users = users if users is not None else self._fetch_all_users()
+        categories = (
+            categories if categories is not None else self._fetch_all_categories()
+        )
+        sub_categories = (
+            sub_categories
+            if sub_categories is not None
+            else self._fetch_all_sub_categories()
+        )
+        articles = articles if articles is not None else self._fetch_all_articles()
+        likes = likes if likes is not None else self._fetch_all_likes()
+        collects = collects if collects is not None else self._fetch_all_collects()
+        comments = comments if comments is not None else self._fetch_all_comments()
+        focus = focus if focus is not None else self._fetch_all_focus()
+        article_tag_relations = self._build_article_tag_relations(articles)
+
+        cleanup_result: Dict[str, int] = {}
+
+        cleanup_result["published_by"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_PUBLISHED_BY_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["id"], item["userId"])
+                    for item in articles
+                    if item.get("userId") is not None
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_PUBLISHED_BY_RELATION,
+        )
+
+        cleanup_result["article_sub_category"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_ARTICLE_SUB_CATEGORY_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["id"], item["subCategoryId"])
+                    for item in articles
+                    if item.get("subCategoryId") is not None
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_ARTICLE_SUB_CATEGORY_RELATION,
+        )
+
+        cleanup_result["sub_category_category"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_SUB_CATEGORY_CATEGORY_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["id"], item["categoryId"])
+                    for item in sub_categories
+                    if item.get("categoryId") is not None
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_SUB_CATEGORY_CATEGORY_RELATION,
+        )
+
+        cleanup_result["tagged_as"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_TAGGED_AS_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["articleId"], item["tagName"])
+                    for item in article_tag_relations
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_TAGGED_AS_RELATION,
+        )
+
+        cleanup_result["likes"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_LIKES_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["userId"], item["articleId"])
+                    for item in likes
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_LIKE_RELATION,
+        )
+
+        cleanup_result["collects"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_COLLECTS_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["userId"], item["articleId"])
+                    for item in collects
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_COLLECT_RELATION,
+        )
+
+        cleanup_result["commented_on"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_COMMENTED_ON_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(
+                        item["commentId"], item["userId"], item["articleId"]
+                    )
+                    for item in comments
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_COMMENT_RELATION,
+        )
+
+        cleanup_result["follows"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_FOLLOWS_CYPHER,
+            {
+                "keys": [
+                    self._build_relation_key(item["followerId"], item["followedId"])
+                    for item in focus
+                ]
+            },
+            Constants.NEO4J_CLEANUP_LABEL_FOLLOW_RELATION,
+        )
+
+        cleanup_result["articles"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_ARTICLES_CYPHER,
+            {"ids": [item["id"] for item in articles]},
+            Constants.NEO4J_CLEANUP_LABEL_ARTICLE,
+        )
+
+        cleanup_result["users"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_USERS_CYPHER,
+            {"ids": [item["id"] for item in users]},
+            Constants.NEO4J_CLEANUP_LABEL_USER,
+        )
+
+        cleanup_result["sub_categories"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_SUB_CATEGORIES_CYPHER,
+            {"ids": [item["id"] for item in sub_categories]},
+            Constants.NEO4J_CLEANUP_LABEL_SUB_CATEGORY,
+        )
+
+        cleanup_result["categories"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_CATEGORIES_CYPHER,
+            {"ids": [item["id"] for item in categories]},
+            Constants.NEO4J_CLEANUP_LABEL_CATEGORY,
+        )
+
+        cleanup_result["tags"] = await self._cleanup_write(
+            Constants.NEO4J_CLEANUP_TAGS_CYPHER,
+            {
+                "names": sorted(
+                    {
+                        item["tagName"]
+                        for item in article_tag_relations
+                        if item.get("tagName")
+                    }
+                )
+            },
+            Constants.NEO4J_CLEANUP_LABEL_TAG,
+        )
+
+        cleanup_result["total"] = sum(cleanup_result.values())
+        self.logger.info(f"[知识图谱] 删除同步清理完成: {cleanup_result}")
+        return cleanup_result
 
     async def sync_all(self) -> Dict[str, int]:
         """全量同步 MySQL 数据到 Neo4j"""
@@ -364,6 +564,20 @@ class KnowledgeGraphSyncService:
             focus,
             Constants.NEO4J_MERGE_FOLLOWS_CYPHER,
             Constants.NEO4J_LABEL_FOLLOW_RELATION,
+        )
+
+        cleanup_result = await self._cleanup_deleted_graph_data(
+            users=users,
+            categories=categories,
+            sub_categories=sub_categories,
+            articles=articles,
+            likes=likes,
+            collects=collects,
+            comments=comments,
+            focus=focus,
+        )
+        result.update(
+            {f"cleanup_{key}": value for key, value in cleanup_result.items()}
         )
 
         self.logger.info(f"[知识图谱] 全量同步完成: {result}")
@@ -493,6 +707,11 @@ class KnowledgeGraphSyncService:
             focus,
             Constants.NEO4J_MERGE_FOLLOWS_CYPHER,
             Constants.NEO4J_LABEL_FOLLOW_RELATION,
+        )
+
+        cleanup_result = await self._cleanup_deleted_graph_data()
+        result.update(
+            {f"cleanup_{key}": value for key, value in cleanup_result.items()}
         )
 
         if not any(result.values()):
