@@ -62,7 +62,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/users")
 @RequiredArgsConstructor
 @CacheConfig(cacheNames = "user")
-@Tag(name = "用户模块", description = "用户相关接口")
+@Tag(name = "用户模块", description = "用户管理功能相关API，包括用户注册、登录、信息管理、验证码等")
 public class UserController {
     private final UserService userService;
     private final TokenService tokenService;

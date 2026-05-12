@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/collects")
 @RequiredArgsConstructor
-@Tag(name = "文章收藏模块", description = "文章收藏相关接口")
+@Tag(name = "文章收藏模块", description = "文章收藏功能相关API，包括收藏、取消收藏、收藏列表查询、收藏统计等")
 public class ArticleCollectController {
 
     private final ArticleCollectService articleCollectService;

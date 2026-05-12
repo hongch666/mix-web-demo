@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api_spring")
 @RequiredArgsConstructor
-@Tag(name = "测试模块", description = "测试相关接口")
+@Tag(name = "测试模块", description = "服务测试相关API，用于验证各个微服务是否正常运行")
 public class TestController {
     private final GoZeroClient goZeroClient;
     private final NestjsClient nestjsClient;

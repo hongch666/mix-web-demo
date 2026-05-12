@@ -37,7 +37,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/category")
 @RequiredArgsConstructor
-@Tag(name = "分类模块", description = "分类相关接口")
+@Tag(name = "分类模块", description = "文章分类管理相关API，包括分类增删改查、子分类管理、层级查询等")
 public class CategoryController {
 
     private final CategoryService categoryService;

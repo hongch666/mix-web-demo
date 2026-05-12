@@ -46,7 +46,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/comments")
 @RequiredArgsConstructor
-@Tag(name = "评论模块", description = "评论相关接口")
+@Tag(name = "评论模块", description = "文章评论功能相关API，包括评论发布、回复、删除、评论列表查询等")
 public class CommentsController {
     private final CommentsService commentsService;
     private final ArticleService articleService;

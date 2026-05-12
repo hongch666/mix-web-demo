@@ -42,7 +42,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/articles")
 @RequiredArgsConstructor
-@Tag(name = "文章模块", description = "文章相关接口")
+@Tag(name = "文章模块", description = "文章管理功能相关API，包括文章增删改查、搜索排序等")
 public class ArticleController {
 
     private final ArticleService articleService;

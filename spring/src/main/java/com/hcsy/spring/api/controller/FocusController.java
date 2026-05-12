@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/focus")
 @RequiredArgsConstructor
-@Tag(name = "用户关注模块", description = "用户关注相关接口")
+@Tag(name = "用户关注模块", description = "用户关注功能相关API，包括关注、取消关注、关注列表、粉丝列表、关注统计等")
 public class FocusController {
 
     private final FocusService focusService;

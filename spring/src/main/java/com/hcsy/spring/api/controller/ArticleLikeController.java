@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/likes")
 @RequiredArgsConstructor
-@Tag(name = "文章点赞模块", description = "文章点赞相关接口")
+@Tag(name = "文章点赞模块", description = "文章点赞功能相关API，包括文章点赞、取消点赞、点赞状态查询、点赞统计等")
 public class ArticleLikeController {
 
     private final ArticleLikeService articleLikeService;

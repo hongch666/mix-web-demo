@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/category/reference")
 @RequiredArgsConstructor
-@Tag(name = "权威参考文本模块", description = "分类权威参考文本相关接口")
+@Tag(name = "权威参考文本模块", description = "分类权威参考文本相关API，包括参考文本增删改查等")
 public class CategoryReferenceController {
 
     private final CategoryReferenceService categoryReferenceService;
