@@ -1381,32 +1381,32 @@ class Constants:
 
     OPENAPI_TAGS = [
         {
-            "name": "AI历史相关接口",
-            "description": "AI历史相关接口，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等接口",
+            "name": "AI历史模块",
+            "description": "AI历史相关API，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等",
         },
         {
-            "name": "用户个人数据分析接口",
-            "description": "用户个人数据分析相关接口，包括获取新增粉丝数统计、获取文章浏览分布、获取关注作者统计、获取本月评论/点赞/收藏趋势等接口",
+            "name": "用户个人数据分析模块",
+            "description": "用户个人数据分析相关API，包括获取新增粉丝数统计、获取文章浏览分布、获取关注作者统计、获取本月评论/点赞/收藏趋势等",
         },
         {
-            "name": "文章分析接口",
-            "description": "文章分析相关接口，包括获取前10篇文章、生成词云图、获取文章统计信息等接口",
+            "name": "文章分析模块",
+            "description": "文章分析相关API，包括获取前10篇文章、生成词云图、获取文章统计信息等",
         },
         {
-            "name": "API日志分析接口",
-            "description": "API日志分析相关接口，包括获取所有接口的平均响应速度、获取接口调用次数等接口",
+            "name": "API日志分析模块",
+            "description": "API日志分析相关API，包括获取所有接口的平均响应速度、获取接口调用次数等",
         },
         {
-            "name": "测试接口",
-            "description": "测试接口，包括测试FastAPI服务、测试Spring服务、测试GoZero服务、测试NestJS服务等接口",
+            "name": "测试模块",
+            "description": "服务测试相关API，包括测试FastAPI服务、测试Spring服务、测试GoZero服务、测试NestJS服务等",
         },
         {
-            "name": "AI聊天接口",
-            "description": "AI聊天相关接口，包括普通聊天和流式聊天",
+            "name": "AI聊天模块",
+            "description": "AI聊天相关API，包括普通聊天和流式聊天",
         },
         {
-            "name": "生成相关接口",
-            "description": "生成相关接口，包括生成tags、为文章创建AI评论、为文章创建基于权威参考文本的AI评论等接口",
+            "name": "生成模块",
+            "description": "生成相关API，包括生成tags、为文章创建AI评论、为文章创建基于权威参考文本的AI评论等",
         },
     ]
     """OpenAPI 标签描述，用于在 Swagger 文档中展示各模块描述信息"""
