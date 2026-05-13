@@ -1619,6 +1619,17 @@ class Constants:
     GRAPH_SEARCH_NEO4J_EXCEPTION_LOG: str = "Neo4j 查询异常: {}"
     """图谱搜索增强: Neo4j 查询异常日志"""
 
+    # 向量搜索增强 - 语义原因
+
+    VECTOR_SEARCH_REASON_HIGH: str = "语义内容与搜索词高度相关"
+    """向量搜索增强: 高相关原因"""
+
+    VECTOR_SEARCH_REASON_MEDIUM: str = "语义内容与搜索词较相关"
+    """向量搜索增强: 较相关原因"""
+
+    VECTOR_SEARCH_REASON_LOW: str = "语义内容与搜索词存在相关性"
+    """向量搜索增强: 低相关原因"""
+
     # Swagger 标签描述
 
     OPENAPI_TAGS = [
@@ -1653,6 +1664,10 @@ class Constants:
         {
             "name": "知识图谱模块",
             "description": "知识图谱相关API，包括图谱搜索、图谱增强等功能",
+        },
+        {
+            "name": "向量搜索模块",
+            "description": "向量搜索相关API，包括根据 ES 候选文章进行语义分、语义原因和匹配片段增强",
         },
     ]
     """OpenAPI 标签描述，用于在 Swagger 文档中展示各模块描述信息"""

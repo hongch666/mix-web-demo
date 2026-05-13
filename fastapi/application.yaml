@@ -99,6 +99,13 @@ graph_search:
   same_sub_category_weight: ${GRAPH_SEARCH_SAME_SUB_CATEGORY_WEIGHT:0.20}
   candidate_similarity_weight: ${GRAPH_SEARCH_CANDIDATE_SIMILARITY_WEIGHT:0.20}
   keyword_tag_weight: ${GRAPH_SEARCH_KEYWORD_TAG_WEIGHT:0.20}
+vector_search:
+  enabled: ${VECTOR_SEARCH_ENABLED:true}
+  candidate_limit: ${VECTOR_SEARCH_CANDIDATE_LIMIT:50}
+  fetch_multiplier: ${VECTOR_SEARCH_FETCH_MULTIPLIER:4}
+  max_matched_chunks: ${VECTOR_SEARCH_MAX_MATCHED_CHUNKS:2}
+  min_score: ${VECTOR_SEARCH_MIN_SCORE:0.3}
+  score_mode: ${VECTOR_SEARCH_SCORE_MODE:similarity}
 permission:
   personal_info_keywords:
     - "我的"

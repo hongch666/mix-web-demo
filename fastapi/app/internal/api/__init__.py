@@ -10,6 +10,7 @@ from .generate.generateRouter import router as generateRouter
 from .graphSearch.graphSearchRouter import router as graphSearchRouter
 from .test.testRouter import router as testRouter
 from .user.userRouter import router as userRouter
+from .vectorSearch.vectorSearchRouter import router as vectorSearchRouter
 
 # 所有路由列表
 routers: List[APIRouter] = [
@@ -21,6 +22,7 @@ routers: List[APIRouter] = [
     aiHistoryRouter,
     userRouter,
     graphSearchRouter,
+    vectorSearchRouter,
 ]
 
 __all__: List[str] = [
@@ -33,4 +35,5 @@ __all__: List[str] = [
     "apiLogRouter",
     "testRouter",
     "graphSearchRouter",
+    "vectorSearchRouter",
 ]
