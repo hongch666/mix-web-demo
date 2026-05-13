@@ -336,8 +336,8 @@ func clearExplainFields(items []types.ArticleEsItem) {
 	for i := range items {
 		items[i].Reason = ""
 		items[i].SemanticReason = ""
-		items[i].Relations = nil
-		items[i].MatchedChunks = nil
+		items[i].Relations = make([]types.GraphRelation, 0)
+		items[i].MatchedChunks = make([]types.VectorMatchedChunk, 0)
 	}
 }
 

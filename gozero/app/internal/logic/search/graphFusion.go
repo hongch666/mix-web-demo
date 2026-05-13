@@ -218,6 +218,12 @@ func FillDefaultScores(articles []types.ArticleEsItem) {
 		if articles[i].FinalScore == 0 {
 			articles[i].FinalScore = roundTo4(normalizedEsScore)
 		}
+		if articles[i].Relations == nil {
+			articles[i].Relations = make([]types.GraphRelation, 0)
+		}
+		if articles[i].MatchedChunks == nil {
+			articles[i].MatchedChunks = make([]types.VectorMatchedChunk, 0)
+		}
 		articles[i].ScoreDetails = types.ScoreDetails{
 			EsScore:       roundTo4(normalizedEsScore),
 			VectorScore:   roundTo4(articles[i].VectorScore),
