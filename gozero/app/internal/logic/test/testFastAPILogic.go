@@ -1,14 +1,8 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.9.2
-
 package test
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
-	"app/common/client"
 	"app/common/exceptions"
 	"app/common/utils"
 	"app/internal/svc"
@@ -31,20 +25,18 @@ func NewTestFastAPILogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestF
 }
 
 func (l *TestFastAPILogic) TestFastAPI() (resp *types.TestFastAPIResp, err error) {
-	// 通过Nacos服务发现调用FastAPI服务
-	opts := client.RequestOptions{
-		Method: http.MethodGet,
-	}
-	sd := client.NewServiceDiscovery(l.svcCtx.NamingClient)
-	result, err := sd.CallService(l.ctx, "fastapi", "/api_fastapi/fastapi", opts)
+	result, err := l.svcCtx.FastapiClient.Test(l.ctx)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.PARSE_ERR+": %v", err))
+		l.Error(utils.PARSE_ERR + ": " + err.Error())
 		panic(exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error()))
 	}
 
-	resultData := result.Data.(string)
+	data, ok := result.Data.(string)
+	if !ok {
+		data = ""
+	}
 	resp = &types.TestFastAPIResp{
-		Data: resultData,
+		Data: data,
 	}
 
 	return

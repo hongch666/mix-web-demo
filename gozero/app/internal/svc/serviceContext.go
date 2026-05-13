@@ -14,7 +14,9 @@ import (
 
 	"app/common/hub"
 	"app/common/utils"
-	"app/internal/client"
+	"app/internal/client/fastapiClient"
+	"app/internal/client/nestjsClient"
+	"app/internal/client/springClient"
 	"app/internal/config"
 	"app/internal/middleware"
 	"app/model/aiHistory"
@@ -78,8 +80,9 @@ type ServiceContext struct {
 	ChatHub *hub.ChatHub
 	SSEHub  *hub.SSEHubManager
 
-	GraphSearchClient  *client.GraphSearchClient
-	VectorSearchClient *client.VectorSearchClient
+	FastapiClient *fastapiClient.FastapiClient
+	SpringClient  *springClient.SpringClient
+	NestjsClient  *nestjsClient.NestjsClient
 
 	Logger *utils.ZeroLogger
 
@@ -161,8 +164,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		FocusModel:    focusModel,
 	})
 
-	graphSearchClient := client.NewGraphSearchClient(namingClient)
-	vectorSearchClient := client.NewVectorSearchClient(namingClient)
+	fastapiClient := fastapiClient.NewFastapiClient(namingClient)
+	springClient := springClient.NewSpringClient(namingClient)
+	nestjsClient := nestjsClient.NewNestjsClient(namingClient)
 
 	return &ServiceContext{
 		Config:                 c,
@@ -186,8 +190,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SubCategoryModel:       subCategoryModel,
 		UserModel:              userModel,
 		SearchModel:            searchModel,
-		GraphSearchClient:      graphSearchClient,
-		VectorSearchClient:     vectorSearchClient,
+		FastapiClient:           fastapiClient,
+		SpringClient:            springClient,
+		NestjsClient:            nestjsClient,
 		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
 		SSEHub: func() *hub.SSEHubManager {
 			hub := hub.GetSSEHub()

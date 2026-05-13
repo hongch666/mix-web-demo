@@ -379,6 +379,12 @@ const (
 	// 向量增强降级日志消息
 	VECTOR_ENHANCE_DEGRADE_LOG = "向量增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
 
+	// Spring 服务调用失败消息
+	SPRING_CALL_FAILED = "调用 Spring 服务失败: %w"
+
+	// NestJS 服务调用失败消息
+	NESTJS_CALL_FAILED = "调用 NestJS 服务失败: %w"
+
 	// 缺少用户ID消息
 	USER_ID_LESS = "缺少用户ID"
 

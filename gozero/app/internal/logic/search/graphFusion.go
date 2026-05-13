@@ -3,7 +3,7 @@ package search
 import (
 	"sort"
 
-	"app/internal/client"
+	"app/internal/client/fastapiClient"
 	"app/internal/types"
 )
 
@@ -15,8 +15,8 @@ type fusionItem struct {
 	finalScore     float64
 	reason         string
 	semanticReason string
-	relations      []client.GraphRelation
-	matchedChunks  []client.VectorMatchedChunk
+	relations      []fastapiClient.GraphRelation
+	matchedChunks  []fastapiClient.VectorMatchedChunk
 }
 
 type FusionConfig struct {
@@ -96,8 +96,8 @@ func NewFusionEngine(cfg FusionConfig) *FusionEngine {
 // 只对当前页候选进行重排，不改变 total
 func MergeAndRerank(
 	articles []types.ArticleEsItem,
-	vectorItems []client.VectorEnhanceItem,
-	graphItems []client.GraphEnhanceItem,
+	vectorItems []fastapiClient.VectorEnhanceItem,
+	graphItems []fastapiClient.GraphEnhanceItem,
 	cfg FusionConfig,
 ) []types.ArticleEsItem {
 	if len(vectorItems) == 0 && len(graphItems) == 0 {
@@ -105,14 +105,14 @@ func MergeAndRerank(
 		return articles
 	}
 
-	vectorMap := make(map[int64]*client.VectorEnhanceItem, len(vectorItems))
+	vectorMap := make(map[int64]*fastapiClient.VectorEnhanceItem, len(vectorItems))
 	for i := range vectorItems {
 		item := &vectorItems[i]
 		vectorMap[item.ArticleID] = item
 	}
 
 	// 构建 articleId -> graphItem 的映射
-	graphMap := make(map[int64]*client.GraphEnhanceItem, len(graphItems))
+	graphMap := make(map[int64]*fastapiClient.GraphEnhanceItem, len(graphItems))
 	for i := range graphItems {
 		item := &graphItems[i]
 		graphMap[item.ArticleID] = item

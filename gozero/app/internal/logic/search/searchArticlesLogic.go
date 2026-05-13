@@ -13,7 +13,7 @@ import (
 	"app/common/exceptions"
 	"app/common/keys"
 	"app/common/utils"
-	"app/internal/client"
+	"app/internal/client/fastapiClient"
 	"app/internal/svc"
 	"app/internal/types"
 	"app/model/search"
@@ -125,8 +125,8 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	if len(items) > 0 {
 		articleIDs := extractArticleIDsFromItems(items)
 		tagList := extractTagsFromItems(items)
-		vectorItems := make([]client.VectorEnhanceItem, 0)
-		graphItems := make([]client.GraphEnhanceItem, 0)
+		vectorItems := make([]fastapiClient.VectorEnhanceItem, 0)
+		graphItems := make([]fastapiClient.GraphEnhanceItem, 0)
 
 		if vectorEnabled {
 			vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
@@ -204,13 +204,13 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 	subCategoryName string,
 	userID int64,
 	mode string,
-) []client.VectorEnhanceItem {
+) []fastapiClient.VectorEnhanceItem {
 	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.VectorCandidateLimit)
 	if len(limitedIDs) == 0 || keyword == "" {
-		return []client.VectorEnhanceItem{}
+		return []fastapiClient.VectorEnhanceItem{}
 	}
 
-	vectorReq := &client.VectorEnhanceRequest{
+	vectorReq := &fastapiClient.VectorEnhanceRequest{
 		UserID:          userID,
 		Keyword:         keyword,
 		ArticleIDs:      limitedIDs,
@@ -229,14 +229,20 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 		defer cancel()
 	}
 
-	vectorResp, err := l.svcCtx.VectorSearchClient.Enhance(ctx, vectorReq)
+	result, err := l.svcCtx.FastapiClient.EnhanceVector(ctx, vectorReq)
 	if err != nil {
 		l.Warningf(utils.VECTOR_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
-		return []client.VectorEnhanceItem{}
+		return []fastapiClient.VectorEnhanceItem{}
 	}
 
-	return vectorResp.Items
+	items, err := parseVectorEnhanceResult(result.Data)
+	if err != nil {
+		l.Warningf(utils.VECTOR_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []fastapiClient.VectorEnhanceItem{}
+	}
+	return items
 }
 
 // fetchGraphEnhance 调用图谱增强
@@ -248,13 +254,13 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 	subCategoryName string,
 	userID int64,
 	mode string,
-) []client.GraphEnhanceItem {
+) []fastapiClient.GraphEnhanceItem {
 	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.GraphCandidateLimit)
 	if len(limitedIDs) == 0 {
-		return []client.GraphEnhanceItem{}
+		return []fastapiClient.GraphEnhanceItem{}
 	}
 
-	graphReq := &client.GraphEnhanceRequest{
+	graphReq := &fastapiClient.GraphEnhanceRequest{
 		UserID:          userID,
 		Keyword:         keyword,
 		ArticleIDs:      limitedIDs,
@@ -272,14 +278,20 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 		defer cancel()
 	}
 
-	graphResp, err := l.svcCtx.GraphSearchClient.Enhance(ctx, graphReq)
+	graphResult, err := l.svcCtx.FastapiClient.EnhanceGraph(ctx, graphReq)
 	if err != nil {
 		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
-		return []client.GraphEnhanceItem{}
+		return []fastapiClient.GraphEnhanceItem{}
 	}
 
-	return graphResp.Items
+	items, err := parseGraphEnhanceResult(graphResult.Data)
+	if err != nil {
+		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []fastapiClient.GraphEnhanceItem{}
+	}
+	return items
 }
 
 // extractArticleIDsFromItems 从文章列表中提取文章ID
