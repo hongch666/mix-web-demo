@@ -4,14 +4,18 @@ import { Constants } from 'src/common/utils/constants';
 import { ApiResponse, success } from 'src/common/utils/response';
 import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
 import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
-import { NacosService } from 'src/modules/nacos/nacos.service';
+import { FastapiClientService } from 'src/modules/client/fastapiClient.service';
+import { GoZeroClientService } from 'src/modules/client/gozeroClient.service';
+import { SpringClientService } from 'src/modules/client/springClient.service';
 import { TaskService } from 'src/modules/task/task.service';
 
 @Controller('api_nestjs')
 @ApiTags('测试模块')
 export class TestController {
   constructor(
-    private readonly nacosService: NacosService,
+    private readonly springClientService: SpringClientService,
+    private readonly gozeroClientService: GoZeroClientService,
+    private readonly fastapiClientService: FastapiClientService,
     private readonly taskService: TaskService,
   ) {}
 
@@ -32,11 +36,7 @@ export class TestController {
   })
   @ApiLog('测试Spring服务')
   async getSpring(): Promise<ApiResponse<unknown>> {
-    const res: Record<string, unknown> = await this.nacosService.call({
-      serviceName: 'spring',
-      method: 'GET',
-      path: '/api_spring/spring',
-    });
+    const res: Record<string, unknown> = await this.springClientService.test();
     return success(res.data);
   }
 
@@ -47,11 +47,7 @@ export class TestController {
   })
   @ApiLog('测试GoZero服务')
   async getGin(): Promise<ApiResponse<unknown>> {
-    const res: Record<string, unknown> = await this.nacosService.call({
-      serviceName: 'gozero',
-      method: 'GET',
-      path: '/api_gozero/gozero',
-    });
+    const res: Record<string, unknown> = await this.gozeroClientService.test();
     return success(res.data);
   }
 
@@ -62,11 +58,7 @@ export class TestController {
   })
   @ApiLog('测试FastAPI服务')
   async getFastAPI(): Promise<ApiResponse<unknown>> {
-    const res: Record<string, unknown> = await this.nacosService.call({
-      serviceName: 'fastapi',
-      method: 'GET',
-      path: '/api_fastapi/fastapi',
-    });
+    const res: Record<string, unknown> = await this.fastapiClientService.test();
     return success(res.data);
   }
 

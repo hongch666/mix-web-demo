@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { NacosModule } from 'src/modules/nacos/nacos.module';
+import { ClientModule } from 'src/modules/client/client.module';
 import { TaskModule } from 'src/modules/task/task.module';
 import { TestController } from './test.controller';
 
 @Module({
-  imports: [NacosModule, TaskModule],
+  imports: [ClientModule, TaskModule],
   controllers: [TestController],
   providers: [],
 })

@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
-import { NacosService } from 'src/modules/nacos/nacos.service';
+import { SpringClientService } from 'src/modules/client/springClient.service';
 import { RedisService } from 'src/modules/redis/redis.service';
 import type { User } from 'src/modules/user/entities/user.entity';
 import { UserService } from 'src/modules/user/user.service';
@@ -71,7 +71,7 @@ export class GithubService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly userService: UserService,
-    private readonly nacosService: NacosService,
+    private readonly springClientService: SpringClientService,
   ) {
     this.githubConfig = this.buildGithubConfig();
   }
@@ -347,21 +347,8 @@ export class GithubService {
     userId: number,
     username: string,
   ): Promise<string> {
-    // GitHub login name 始终是 ASCII 安全，用其覆盖默认的 X-Username 头
-    const safeUsername: string = username.replace(/[^\x20-\x7E]/g, '').trim();
     const response: { data?: unknown; code?: number } =
-      await this.nacosService.call({
-        serviceName: 'spring',
-        method: 'POST',
-        path: '/users/github/token-ticket',
-        body: {
-          userId,
-          username,
-        },
-        headers: {
-          'X-Username': safeUsername,
-        },
-      });
+      await this.springClientService.createTokenTicket(userId, username);
 
     if (response.code !== 200) {
       throw BusinessException.badGateway(
