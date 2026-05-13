@@ -62,7 +62,7 @@
 4. 基于 SpringBoot 和 AOP 技术权限校验实现用户端和管理端
 5. 基于 SpringCloud Gateway 和 JWT 实现 API 网关的统一认证和权限控制
 6. 基于 Redis Token Bucket 算法在网关层实现 API 限流和防刷功能
-7. 基于 GoZero 和 ElasticSearch 进行搜索引擎式文章搜索
+7. 基于 GoZero 聚合 ElasticSearch、pgvector 向量检索和 Neo4j 图谱增强，实现关键词、语义和关系融合的文章搜索
 8. 基于 GoZero 和 GORM/sqlx 实现文章相关数据获取和同步（双 ORM 并存）
 9. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 10. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
@@ -1677,16 +1677,24 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### 搜索算法公式说明
 
-1. GoZero 服务基于 ElasticSearch 实现的文章搜索采用综合评分算法，综合考虑多个维度的因素。
-2. 综合评分公式
+搜索入口由 GoZero 统一提供，默认搜索模式为 `hybrid`。当前搜索链路分为两层：
+
+1. ElasticSearch 负责关键词召回、过滤、高亮和基础业务排序。
+2. GoZero 在 ES 候选结果上按需调用 FastAPI 向量增强和 Neo4j 图谱增强，再进行最终融合重排。
+
+#### 1. ES 候选综合评分
+
+GoZero 调用 ES 搜索时，ES 内部 `script_score` 会综合关键词相关性、内容质量、热度、作者影响力和新鲜度。
+
+ES 候选综合评分公式如下：
 
 $$
-\text{Score} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
+\text{ESRawScore} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
 $$
 
-3. 其中：
+其中：
 
-- $S_{es} = \frac{1}{1 + e^{-x}}$（Sigmoid 归一化的 ElasticSearch 相关性分数，0-1 范围）
+- $S_{es} = \frac{1}{1 + e^{-x}}$（Sigmoid 归一化的 ElasticSearch 关键词相关性分数，0-1 范围）
 - $S_{ai} = \frac{\text{AI评分}}{10.0}$（0-1 范围，AI 评分范围为 0-10）
 - $S_{user} = \frac{\text{用户评分}}{10.0}$（0-1 范围，用户评分范围为 0-10）
 - $S_{views} = \min\left(\frac{\text{阅读量}}{\text{maxViewsNormalized}}, 1.0\right)$（阅读量归一化，0-1 范围）
@@ -1695,36 +1703,89 @@ $$
 - $S_{follow} = \min\left(\frac{\text{作者关注数}}{\text{maxFollowsNormalized}}, 1.0\right)$（作者粉丝数归一化，0-1 范围）
 - $S_{recency}$：文章新鲜度分数（基于创建时间）
 
-4. 新鲜度计算公式
-
-- 文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
+文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
 
 $$
 S_{\text{recency}} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
 $$
 
-- 其中：
-  - $\Delta t$：文章创建时间与当前时间的差值（单位：天）
-  - $\sigma$：时间衰减周期（默认 30 天）
+其中：
 
-- 高斯衰减函数具有以下特性：
-  - 当 $\Delta t = 0$（刚发布）时，$S_{\text{recency}} = 1.0$（新鲜度最高）
-  - 当 $\Delta t = 30$ 天时，$S_{\text{recency}} \approx 0.606$（衰减至约 60.6%）
-  - 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
+- $\Delta t$：文章创建时间与当前时间的差值（单位：天）
+- $\sigma$：时间衰减周期，默认由 `SEARCH_RECENCY_DECAY_DAYS=30` 配置
 
-- 权重配置说明
+高斯衰减函数具有以下特性：
 
-  | 默认权重分配（可在 GoZero 部分的 `.env` 中配置）： | 因素     | 权重                                          | 说明 |
-  | -------------------------------------------------- | -------- | --------------------------------------------- | ---- |
-  | ES 基础分数                                        | 0.25     | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |      |
-  | AI 评分                                            | 0.15     | 系统 AI 模型的内容质量评估（0-10 范围）       |      |
-  | 用户评分                                           | 0.10     | 用户对文章的综合评价（0-10 范围）             |      |
-  | 阅读量                                             | 0.08     | 文章的浏览热度                                |      |
-  | 点赞量                                             | 0.08     | 用户的认可度                                  |      |
-  | 收藏量                                             | 0.08     | 用户的收藏价值指数                            |      |
-  | 作者关注数                                         | 0.04     | 作者的影响力                                  |      |
-  | **文章新鲜度**                                     | **0.22** | **核心权重，近期发布的内容获得更高排名**      |      |
-  - 权重总和为 1.0，确保评分结果的可比性和公平性。
+- 当 $\Delta t = 0$（刚发布）时，$S_{\text{recency}} = 1.0$（新鲜度最高）
+- 当 $\Delta t = 30$ 天时，$S_{\text{recency}} \approx 0.606$（衰减至约 60.6%）
+- 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
+
+ES 内部权重配置说明：
+
+| 因素 | 默认权重 | 配置项 | 说明 |
+| --- | --- | --- | --- |
+| ES 基础分数 | 0.25 | `SEARCH_ES_SCORE_WEIGHT` | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
+| AI 评分 | 0.15 | `SEARCH_AI_RATING_WEIGHT` | 系统 AI 模型的内容质量评估（0-10 范围） |
+| 用户评分 | 0.10 | `SEARCH_USER_RATING_WEIGHT` | 用户对文章的综合评价（0-10 范围） |
+| 阅读量 | 0.08 | `SEARCH_VIEWS_WEIGHT` | 文章的浏览热度 |
+| 点赞量 | 0.08 | `SEARCH_LIKES_WEIGHT` | 用户的认可度 |
+| 收藏量 | 0.08 | `SEARCH_COLLECTS_WEIGHT` | 用户的收藏价值指数 |
+| 作者关注数 | 0.04 | `SEARCH_AUTHOR_FOLLOW_WEIGHT` | 作者的影响力 |
+| 文章新鲜度 | 0.22 | `SEARCH_RECENCY_WEIGHT` | 近期发布的内容获得更高排名 |
+
+ES 内部权重总和为 1.0，确保评分结果的可比性和公平性。
+
+#### 2. 向量与图谱增强后的最终融合评分
+
+ES 返回当前页候选文章后，GoZero 会对当前页候选进行二阶段增强：
+
+- 向量增强：调用 FastAPI `/vector-search/enhance`，基于 PostgreSQL + pgvector + LangChain 计算候选文章与搜索词的语义相似度，返回 `vectorScore`、`semanticReason`、`matchedChunks`。
+- 图谱增强：调用 FastAPI `/graph-search/enhance`，基于 Neo4j 的用户兴趣、关注作者、同分类、候选标签相似、关键词标签命中等信号返回 `graphScore`、`reason`、`relations`。
+- 融合重排：GoZero 只对 ES 当前页候选重排，不改变 `total`。
+
+融合前先对 ES 原始分做当前候选集归一化：
+
+$$
+S_{esNorm} = \frac{\text{ESRawScore}}{\max(\text{ESRawScore in current candidates})}
+$$
+
+最终融合公式：
+
+$$
+\text{FinalScore} = W_{es} \cdot S_{esNorm} + W_{vector} \cdot S_{vector} + W_{graph} \cdot S_{graph}
+$$
+
+其中：
+
+- $S_{vector}$：向量语义相似度分，范围 0-1；未命中时为 0。
+- $S_{graph}$：图谱增强分，范围 0-1；未命中时为 0。
+- $W_{es} + W_{vector} + W_{graph} = 1$。
+- $W_{es}$ 不低于 `SEARCH_HYBRID_MIN_ES_WEIGHT`，默认 0.55，保证 ES 关键词和业务排序仍是主排序来源。
+
+默认权重：
+
+| 融合信号 | 默认权重 | 配置项 | 说明 |
+| --- | --- | --- | --- |
+| ES 归一化分 | 0.55 | `SEARCH_HYBRID_MIN_ES_WEIGHT` | 关键词相关性、业务热度、新鲜度等综合排序基础 |
+| 向量语义分 | 0.25 | `SEARCH_VECTOR_SCORE_WEIGHT` | 同义词、长句、自然语言问题的语义匹配 |
+| 图谱增强分 | 0.20 | `SEARCH_GRAPH_SCORE_WEIGHT` | 用户兴趣、关注关系、标签和分类关系 |
+
+动态调整规则：
+
+- `mode=keyword`：只使用 ES，`W_{es}=1.0`，不调用向量和图谱增强。
+- 未登录用户：关闭图谱权重；有关键词时向量权重可提升到 0.30，ES 保持主导。
+- 已登录且有关键词：默认使用 `ES 0.55 + Vector 0.25 + Graph 0.20`。
+- 已登录且空关键词：不启用向量增强，主要由 ES 业务排序和图谱增强承担推荐。
+- `enableVector=false`：强制关闭向量增强。
+- `enableGraph=false`：强制关闭图谱增强。
+- `explain=false`：保留分数字段，但清空 `semanticReason`、`matchedChunks`、`reason`、`relations` 等解释字段。
+
+降级规则：
+
+- ES 查询失败：搜索请求失败，不使用向量或图谱单独兜底，避免改变主搜索语义。
+- 向量增强失败：记录 warning，保留 ES + Graph 或纯 ES 结果。
+- 图谱增强失败：记录 warning，保留 ES + Vector 或纯 ES 结果。
+- 向量和图谱都无结果或都失败：返回 ES 当前页原始排序，并补齐 `esScore` 和 `finalScore`。
 
 ## 许可证
 
