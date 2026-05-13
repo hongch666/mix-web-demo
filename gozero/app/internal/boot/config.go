@@ -69,6 +69,8 @@ func expandLineEnv(line string) string {
 			if strings.ToLower(fieldName) != "port" &&
 				strings.ToLower(fieldName) != "expiration" &&
 				strings.ToLower(fieldName) != "recency_decay_days" &&
+				strings.ToLower(fieldName) != "vector_timeout_ms" &&
+				strings.ToLower(fieldName) != "vector_candidate_limit" &&
 				strings.ToLower(fieldName) != "graph_timeout_ms" &&
 				strings.ToLower(fieldName) != "graph_candidate_limit" &&
 				!strings.HasSuffix(strings.ToLower(fieldName), "_weight") &&

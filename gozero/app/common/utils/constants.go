@@ -370,6 +370,15 @@ const (
 	// 图谱增强降级日志消息
 	GRAPH_ENHANCE_DEGRADE_LOG = "图谱增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
 
+	// 向量增强服务调用失败消息
+	VECTOR_ENHANCE_CALL_FAILED = "向量增强服务调用失败: %w"
+
+	// 向量增强响应格式异常消息
+	VECTOR_ENHANCE_RESPONSE_FORMAT_ERROR = "向量增强响应格式异常"
+
+	// 向量增强降级日志消息
+	VECTOR_ENHANCE_DEGRADE_LOG = "向量增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
+
 	// 缺少用户ID消息
 	USER_ID_LESS = "缺少用户ID"
 

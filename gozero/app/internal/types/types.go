@@ -4,45 +4,34 @@
 package types
 
 type ArticleEsItem struct {
-	Id                int64           `json:"id"`
-	Title             string          `json:"title"`
-	Content           string          `json:"content"`
-	UserId            int64           `json:"userId"`
-	Username          string          `json:"username"`
-	Tags              string          `json:"tags"`
-	Status            int             `json:"status"`
-	Views             int             `json:"views"`
-	LikeCount         int             `json:"likeCount"`
-	CollectCount      int             `json:"collectCount"`
-	AuthorFollowCount int             `json:"authorFollowCount"`
-	CategoryName      string          `json:"category_name"`
-	SubCategoryName   string          `json:"sub_category_name"`
-	CreateAt          string          `json:"create_at"`
-	UpdateAt          string          `json:"update_at"`
-	AiScore           float64         `json:"ai_score"`
-	UserScore         float64         `json:"user_score"`
-	AiCommentCount    int             `json:"ai_comment_count"`
-	UserCommentCount  int             `json:"user_comment_count"`
-	EsScore           float64         `json:"esScore"`
-	GraphScore        float64         `json:"graphScore"`
-	FinalScore        float64         `json:"finalScore"`
-	Reason            string          `json:"reason"`
-	Relations         []GraphRelation `json:"relations"`
-	ScoreDetails      ScoreDetails    `json:"scoreDetails"`
-}
-
-type GraphRelation struct {
-	Type   string  `json:"type"`
-	Name   string  `json:"name"`
-	Score  float64 `json:"score"`
-	Reason string  `json:"reason"`
-}
-
-type ScoreDetails struct {
-	EsScore       float64 `json:"esScore"`
-	GraphScore    float64 `json:"graphScore"`
-	BusinessScore float64 `json:"businessScore"`
-	RecencyScore  float64 `json:"recencyScore"`
+	Id                int64                `json:"id"`
+	Title             string               `json:"title"`
+	Content           string               `json:"content"`
+	UserId            int64                `json:"userId"`
+	Username          string               `json:"username"`
+	Tags              string               `json:"tags"`
+	Status            int                  `json:"status"`
+	Views             int                  `json:"views"`
+	LikeCount         int                  `json:"likeCount"`
+	CollectCount      int                  `json:"collectCount"`
+	AuthorFollowCount int                  `json:"authorFollowCount"`
+	CategoryName      string               `json:"category_name"`
+	SubCategoryName   string               `json:"sub_category_name"`
+	CreateAt          string               `json:"create_at"`
+	UpdateAt          string               `json:"update_at"`
+	AiScore           float64              `json:"ai_score"`
+	UserScore         float64              `json:"user_score"`
+	AiCommentCount    int                  `json:"ai_comment_count"`
+	UserCommentCount  int                  `json:"user_comment_count"`
+	EsScore           float64              `json:"esScore"`
+	VectorScore       float64              `json:"vectorScore"`
+	GraphScore        float64              `json:"graphScore"`
+	FinalScore        float64              `json:"finalScore"`
+	Reason            string               `json:"reason"`
+	SemanticReason    string               `json:"semanticReason"`
+	Relations         []GraphRelation      `json:"relations"`
+	MatchedChunks     []VectorMatchedChunk `json:"matchedChunks"`
+	ScoreDetails      ScoreDetails         `json:"scoreDetails"`
 }
 
 type ChatGetAllUnreadCountsReq struct {
@@ -110,7 +99,8 @@ type ChatSSEConnectReq struct {
 	UserId *string `form:"userId,optional"`
 }
 
-type ChatSSEConnectResp struct{}
+type ChatSSEConnectResp struct {
+}
 
 type ChatSendMessageReq struct {
 	SenderId   string `json:"senderId"`
@@ -126,7 +116,8 @@ type ChatWsConnectReq struct {
 	UserId *string `form:"userId,optional"`
 }
 
-type ChatWsConnectResp struct{}
+type ChatWsConnectResp struct {
+}
 
 type GetSearchHistoryReq struct {
 	UserId string `path:"userId"`
@@ -134,6 +125,21 @@ type GetSearchHistoryReq struct {
 
 type GetSearchHistoryResp struct {
 	Keywords []string `json:"keywords"`
+}
+
+type GraphRelation struct {
+	Type   string  `json:"type"`
+	Name   string  `json:"name"`
+	Score  float64 `json:"score"`
+	Reason string  `json:"reason"`
+}
+
+type ScoreDetails struct {
+	EsScore       float64 `json:"esScore"`
+	VectorScore   float64 `json:"vectorScore"`
+	GraphScore    float64 `json:"graphScore"`
+	BusinessScore float64 `json:"businessScore"`
+	RecencyScore  float64 `json:"recencyScore"`
 }
 
 type SearchArticlesReq struct {
@@ -147,6 +153,7 @@ type SearchArticlesReq struct {
 	Page            int     `form:"page,optional,default=1"`
 	Size            int     `form:"size,optional,default=10"`
 	Mode            *string `form:"mode,optional"`
+	EnableVector    *bool   `form:"enableVector,optional"`
 	EnableGraph     *bool   `form:"enableGraph,optional"`
 	Explain         *bool   `form:"explain,optional"`
 }
@@ -156,9 +163,11 @@ type SearchArticlesResp struct {
 	List  []ArticleEsItem `json:"list"`
 }
 
-type SyncESReq struct{}
+type SyncESReq struct {
+}
 
-type SyncESResp struct{}
+type SyncESResp struct {
+}
 
 type TestFastAPIResp struct {
 	Data string `json:"data"`
@@ -174,4 +183,12 @@ type TestNestJSResp struct {
 
 type TestSpringResp struct {
 	Data string `json:"data"`
+}
+
+type VectorMatchedChunk struct {
+	ArticleId  int64   `json:"articleId"`
+	Title      string  `json:"title"`
+	ChunkIndex int     `json:"chunkIndex"`
+	Score      float64 `json:"score"`
+	Content    string  `json:"content"`
 }

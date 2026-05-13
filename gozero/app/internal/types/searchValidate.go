@@ -40,8 +40,8 @@ func (r *SearchArticlesReq) Validate() error {
 		}
 	}
 
-	// 校验图谱搜索模式
-	if err := validateSearchMode(r.Mode, r.EnableGraph); err != nil {
+	// 校验搜索模式
+	if err := validateSearchMode(r.Mode); err != nil {
 		return err
 	}
 
@@ -85,12 +85,7 @@ func validateSearchArticlesTime(value *string, fieldName string) error {
 }
 
 // validateSearchMode 校验搜索模式参数
-func validateSearchMode(mode *string, enableGraph *bool) error {
-	// enableGraph=false 时忽略 mode 参数
-	if enableGraph != nil && !*enableGraph {
-		return nil
-	}
-
+func validateSearchMode(mode *string) error {
 	if mode == nil || strings.TrimSpace(*mode) == "" {
 		return nil
 	}
@@ -106,11 +101,38 @@ func validateSearchMode(mode *string, enableGraph *bool) error {
 
 // NormalizeSearchMode 规范化搜索模式
 func NormalizeSearchMode(req *SearchArticlesReq) string {
-	if req.EnableGraph != nil && !*req.EnableGraph {
-		return "keyword"
-	}
 	if req.Mode == nil || strings.TrimSpace(*req.Mode) == "" {
 		return "hybrid"
 	}
 	return strings.ToLower(strings.TrimSpace(*req.Mode))
+}
+
+// IsVectorEnhanceEnabled 判断本次搜索是否启用向量增强
+func IsVectorEnhanceEnabled(req *SearchArticlesReq, keyword string, configEnabled bool) bool {
+	if !configEnabled || NormalizeSearchMode(req) == "keyword" || strings.TrimSpace(keyword) == "" {
+		return false
+	}
+	if req.EnableVector != nil {
+		return *req.EnableVector
+	}
+	return true
+}
+
+// IsGraphEnhanceEnabled 判断本次搜索是否启用图谱增强
+func IsGraphEnhanceEnabled(req *SearchArticlesReq, configEnabled bool) bool {
+	if !configEnabled || NormalizeSearchMode(req) == "keyword" {
+		return false
+	}
+	if req.EnableGraph != nil {
+		return *req.EnableGraph
+	}
+	return true
+}
+
+// IsExplainEnabled 判断是否返回搜索解释字段
+func IsExplainEnabled(req *SearchArticlesReq) bool {
+	if req.Explain != nil {
+		return *req.Explain
+	}
+	return true
 }

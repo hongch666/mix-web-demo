@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"app/common/exceptions"
 	"app/common/keys"
@@ -117,12 +118,41 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		List:  items,
 	}
 
-	// 判断是否需要图谱增强
 	mode := types.NormalizeSearchMode(req)
-	graphEnabled := l.svcCtx.Config.Search.GraphEnabled
+	vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword, l.svcCtx.Config.Search.VectorEnabled)
+	graphEnabled := types.IsGraphEnhanceEnabled(req, l.svcCtx.Config.Search.GraphEnabled)
 
-	if mode != "keyword" && graphEnabled && len(items) > 0 {
-		resp.List = l.enhanceWithGraph(items, keyword, categoryName, subCategoryName, currentUserID, mode)
+	if len(items) > 0 {
+		articleIDs := extractArticleIDsFromItems(items)
+		tagList := extractTagsFromItems(items)
+		vectorItems := make([]client.VectorEnhanceItem, 0)
+		graphItems := make([]client.GraphEnhanceItem, 0)
+
+		if vectorEnabled {
+			vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+		}
+
+		if graphEnabled {
+			graphItems = l.fetchGraphEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+		}
+
+		if vectorEnabled || graphEnabled {
+			resp.List = MergeAndRerank(items, vectorItems, graphItems, FusionConfig{
+				VectorScoreWeight: l.svcCtx.Config.Search.VectorScoreWeight,
+				GraphScoreWeight:  l.svcCtx.Config.Search.GraphScoreWeight,
+				HybridMinESWeight: l.svcCtx.Config.Search.HybridMinESWeight,
+				IsLoggedIn:        currentUserID > 0,
+				HasKeyword:        keyword != "",
+				VectorEnabled:     len(vectorItems) > 0,
+				GraphEnabled:      len(graphItems) > 0,
+			})
+		} else {
+			FillDefaultScores(resp.List)
+		}
+	}
+
+	if !types.IsExplainEnabled(req) {
+		clearExplainFields(resp.List)
 	}
 
 	// 如果指定了搜索关键字，记录搜索信息
@@ -165,61 +195,100 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	return
 }
 
-// enhanceWithGraph 调用图谱增强并融合重排
-func (l *SearchArticlesLogic) enhanceWithGraph(
-	items []types.ArticleEsItem,
+// fetchVectorEnhance 调用向量增强
+func (l *SearchArticlesLogic) fetchVectorEnhance(
+	articleIDs []int64,
+	tagList []string,
 	keyword string,
 	categoryName string,
 	subCategoryName string,
 	userID int64,
 	mode string,
-) []types.ArticleEsItem {
-	// 提取文章ID列表
+) []client.VectorEnhanceItem {
+	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.VectorCandidateLimit)
+	if len(limitedIDs) == 0 || keyword == "" {
+		return []client.VectorEnhanceItem{}
+	}
+
+	vectorReq := &client.VectorEnhanceRequest{
+		UserID:          userID,
+		Keyword:         keyword,
+		ArticleIDs:      limitedIDs,
+		CategoryName:    categoryName,
+		SubCategoryName: subCategoryName,
+		Tags:            tagList,
+		Limit:           len(limitedIDs),
+		TopK:            len(limitedIDs),
+		Mode:            mode,
+	}
+
+	ctx := l.ctx
+	if l.svcCtx.Config.Search.VectorTimeoutMs > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(l.svcCtx.Config.Search.VectorTimeoutMs)*time.Millisecond)
+		defer cancel()
+	}
+
+	vectorResp, err := l.svcCtx.VectorSearchClient.Enhance(ctx, vectorReq)
+	if err != nil {
+		l.Warningf(utils.VECTOR_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []client.VectorEnhanceItem{}
+	}
+
+	return vectorResp.Items
+}
+
+// fetchGraphEnhance 调用图谱增强
+func (l *SearchArticlesLogic) fetchGraphEnhance(
+	articleIDs []int64,
+	tagList []string,
+	keyword string,
+	categoryName string,
+	subCategoryName string,
+	userID int64,
+	mode string,
+) []client.GraphEnhanceItem {
+	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.GraphCandidateLimit)
+	if len(limitedIDs) == 0 {
+		return []client.GraphEnhanceItem{}
+	}
+
+	graphReq := &client.GraphEnhanceRequest{
+		UserID:          userID,
+		Keyword:         keyword,
+		ArticleIDs:      limitedIDs,
+		CategoryName:    categoryName,
+		SubCategoryName: subCategoryName,
+		Tags:            tagList,
+		Limit:           len(limitedIDs),
+		Mode:            mode,
+	}
+
+	ctx := l.ctx
+	if l.svcCtx.Config.Search.GraphTimeoutMs > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(l.svcCtx.Config.Search.GraphTimeoutMs)*time.Millisecond)
+		defer cancel()
+	}
+
+	graphResp, err := l.svcCtx.GraphSearchClient.Enhance(ctx, graphReq)
+	if err != nil {
+		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []client.GraphEnhanceItem{}
+	}
+
+	return graphResp.Items
+}
+
+// extractArticleIDsFromItems 从文章列表中提取文章ID
+func extractArticleIDsFromItems(items []types.ArticleEsItem) []int64 {
 	articleIDs := make([]int64, 0, len(items))
 	for _, item := range items {
 		articleIDs = append(articleIDs, item.Id)
 	}
-
-	// 从 tags 字符串提取标签
-	tagList := extractTagsFromItems(items)
-
-	// 构建图谱增强请求
-	graphReq := &client.GraphEnhanceRequest{
-		UserID:          userID,
-		Keyword:         keyword,
-		ArticleIDs:      articleIDs,
-		CategoryName:    categoryName,
-		SubCategoryName: subCategoryName,
-		Tags:            tagList,
-		Limit:           len(articleIDs),
-		Mode:            mode,
-	}
-
-	// 调用图谱增强
-	graphResp, err := l.svcCtx.GraphSearchClient.Enhance(l.ctx, graphReq)
-	if err != nil {
-		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
-			keyword, userID, len(articleIDs), err)
-
-		if !l.svcCtx.Config.Search.GraphFallbackEnabled {
-			return items
-		}
-		// 降级时清除图谱相关字段
-		return items
-	}
-
-	// 融合重排
-	hasKeyword := keyword != ""
-	isLoggedIn := userID > 0
-
-	fusionCfg := FusionConfig{
-		GraphScoreWeight:  l.svcCtx.Config.Search.GraphScoreWeight,
-		HybridMinESWeight: l.svcCtx.Config.Search.HybridMinESWeight,
-		IsLoggedIn:        isLoggedIn,
-		HasKeyword:        hasKeyword,
-	}
-
-	return MergeAndRerank(items, graphResp.Items, fusionCfg)
+	return articleIDs
 }
 
 // extractTagsFromItems 从文章列表中提取所有标签
@@ -242,6 +311,22 @@ func extractTagsFromItems(items []types.ArticleEsItem) []string {
 		tags = append(tags, tag)
 	}
 	return tags
+}
+
+func limitArticleIDs(articleIDs []int64, limit int) []int64 {
+	if limit <= 0 || limit > len(articleIDs) {
+		limit = len(articleIDs)
+	}
+	return articleIDs[:limit]
+}
+
+func clearExplainFields(items []types.ArticleEsItem) {
+	for i := range items {
+		items[i].Reason = ""
+		items[i].SemanticReason = ""
+		items[i].Relations = nil
+		items[i].MatchedChunks = nil
+	}
 }
 
 func getCurrentUserFromContext(ctx context.Context) (int64, string) {

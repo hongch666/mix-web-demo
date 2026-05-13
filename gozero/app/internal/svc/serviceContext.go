@@ -78,7 +78,8 @@ type ServiceContext struct {
 	ChatHub *hub.ChatHub
 	SSEHub  *hub.SSEHubManager
 
-	GraphSearchClient *client.GraphSearchClient
+	GraphSearchClient  *client.GraphSearchClient
+	VectorSearchClient *client.VectorSearchClient
 
 	Logger *utils.ZeroLogger
 
@@ -161,6 +162,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	})
 
 	graphSearchClient := client.NewGraphSearchClient(namingClient)
+	vectorSearchClient := client.NewVectorSearchClient(namingClient)
 
 	return &ServiceContext{
 		Config:                 c,
@@ -185,6 +187,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		UserModel:              userModel,
 		SearchModel:            searchModel,
 		GraphSearchClient:      graphSearchClient,
+		VectorSearchClient:     vectorSearchClient,
 		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
 		SSEHub: func() *hub.SSEHubManager {
 			hub := hub.GetSSEHub()
