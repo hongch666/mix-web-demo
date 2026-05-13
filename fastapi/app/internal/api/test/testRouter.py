@@ -2,7 +2,6 @@ from typing import Any, Dict
 
 from app.common.decorators import log, requireInternalToken
 from app.core.base import Constants, success
-from app.core.client import call_remote_service
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,
@@ -10,6 +9,7 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
+from app.internal.clients import GoZeroClient, NestjsClient, SpringClient
 from app.internal.tasks import (
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
@@ -24,6 +24,11 @@ router: APIRouter = APIRouter(
     prefix="/api_fastapi",
     tags=["测试模块"],
 )
+
+# 初始化客户端实例
+spring_client: SpringClient = SpringClient()
+gozero_client: GoZeroClient = GoZeroClient()
+nestjs_client: NestjsClient = NestjsClient()
 
 
 # 测试FastAPI服务
@@ -40,10 +45,8 @@ async def testFastapi(request: Request) -> JSONResponse:
 async def testSpring(request: Request) -> JSONResponse:
     """测试Spring服务接口"""
 
-    result: Dict[str, Any] = await call_remote_service(
-        service_name="spring", path="/api_spring/spring", method="GET", retries=2
-    )
-    return success(result["data"])
+    result: Dict[str, Any] = await spring_client.test()
+    return success(result.get("data"))
 
 
 # 测试GoZero服务
@@ -52,10 +55,8 @@ async def testSpring(request: Request) -> JSONResponse:
 async def testGoZero(request: Request) -> JSONResponse:
     """测试GoZero服务接口"""
 
-    result: Dict[str, Any] = await call_remote_service(
-        service_name="gozero", path="/api_gozero/gozero", method="GET", retries=2
-    )
-    return success(result["data"])
+    result: Dict[str, Any] = await gozero_client.test()
+    return success(result.get("data"))
 
 
 # 测试NestJS服务
@@ -64,10 +65,8 @@ async def testGoZero(request: Request) -> JSONResponse:
 async def testNestJS(request: Request) -> JSONResponse:
     """测试NestJS服务接口"""
 
-    result: Dict[str, Any] = await call_remote_service(
-        service_name="nestjs", path="/api_nestjs/nestjs", method="GET", retries=2
-    )
-    return success(result["data"])
+    result: Dict[str, Any] = await nestjs_client.test()
+    return success(result.get("data"))
 
 
 # 手动触发更新分析接口缓存定时任务接口

@@ -7,10 +7,10 @@ from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.core.base import Constants, HttpCode, Logger
-from app.core.client import call_remote_service
 from app.core.config import load_config
 from app.core.db import get_db
 from app.core.errors import BusinessException
+from app.internal.clients import NestjsClient
 from app.internal.cache import (
     ArticleCache,
     CategoryCache,
@@ -76,6 +76,8 @@ class AnalyzeService:
         self._wordcloud_cache: Optional[WordcloudCache] = wordcloud_cache
         self._singleflight_locks: Dict[str, asyncio.Lock] = {}
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
+        # 初始化远程服务客户端
+        self._nestjs_client: NestjsClient = NestjsClient()
 
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
@@ -377,16 +379,7 @@ class AnalyzeService:
         """远程调用 NestJS 上传文件到 OSS"""
 
         try:
-            result: Dict[str, Any] = await call_remote_service(
-                service_name="nestjs",
-                path="/upload",
-                method="POST",
-                json={
-                    "local_file": file_path,
-                    "oss_file": oss_path,
-                },
-                retries=3,
-            )
+            result: Dict[str, Any] = await self._nestjs_client.upload_file(file_path, oss_path)
             oss_url: str = str(result.get("data", ""))
             Logger.info(f"文件上传成功，OSS地址: {oss_url}")
             Logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
