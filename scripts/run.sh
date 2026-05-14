@@ -175,12 +175,12 @@ fi
 tmux new-session -d -s $SESSION -n spring -c "$WORKDIR"
 tmux move-window -s $SESSION:0 -t $SESSION:1
 tmux send-keys -t $SESSION:1 \
-"cd spring && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && $java_cmd" C-m
+"cd spring && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $java_cmd" C-m
 
 # window 2: gozero
 tmux new-window -t $SESSION:2 -n gozero -c "$WORKDIR"
 tmux send-keys -t $SESSION:2 \
-"cd gozero/app && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && fresh" C-m
+"cd gozero/app && if [ -f .env ]; then set -a && . ./.env && set +a; fi && fresh" C-m
 
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"
@@ -190,12 +190,12 @@ tmux send-keys -t $SESSION:3 \
 # window 4: fastapi
 tmux new-window -t $SESSION:4 -n fastapi -c "$WORKDIR"
 tmux send-keys -t $SESSION:4 \
-"cd fastapi && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && $python_cmd" C-m
+"cd fastapi && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $python_cmd" C-m
 
 # window 5: gateway
 tmux new-window -t $SESSION:5 -n gateway -c "$WORKDIR"
 tmux send-keys -t $SESSION:5 \
-"cd gateway && [ -f .env ] && export \$(cat .env | grep -v '^#' | xargs) && $java_cmd" C-m
+"cd gateway && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $java_cmd" C-m
 
 # 选择 spring 窗口并附加
 tmux select-window -t $SESSION:1

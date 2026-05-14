@@ -7,7 +7,9 @@
 
 # 加载环境变量
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 获取脚本所在目录的父目录（项目根目录）

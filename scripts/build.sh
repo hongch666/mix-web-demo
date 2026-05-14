@@ -7,7 +7,9 @@ set -e  # 遇到错误立即退出
 
 # 加载环境变量
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 颜色输出
@@ -88,9 +90,11 @@ LOG_DIR="../logs/spring"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
-# 加载 .env 文件并导出到环境变量
+# 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 将环境变量转换为 Java 系统属性
@@ -170,9 +174,11 @@ LOG_DIR="../logs/gateway"
 mkdir -p "$LOG_DIR"
 LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
-# 加载 .env 文件并导出到环境变量
+# 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 将环境变量转换为 Java 系统属性
@@ -243,7 +249,9 @@ LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
 # 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 激活虚拟环境
@@ -266,7 +274,9 @@ LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
 # 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 激活虚拟环境
@@ -343,7 +353,9 @@ LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
 # 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 nohup ./gozero >> "$LOG_FILE" 2>&1 &
@@ -424,7 +436,9 @@ LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
 # 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 # 优先使用 bun 启动
@@ -446,7 +460,9 @@ LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
 
 # 加载 .env 文件
 if [ -f ".env" ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    . ./.env
+    set +a
 fi
 
 nohup node dist/main.js >> "$LOG_FILE" 2>&1 &
