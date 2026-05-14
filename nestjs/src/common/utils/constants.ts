@@ -233,6 +233,13 @@ export class Constants {
     "Spring 未返回 GitHub 登录票据";
 
   /**
+   * 通用未知错误
+   */
+  static readonly UNKNOWN_ERROR = "未知错误";
+
+  // Swagger 相关常量
+
+  /**
    * Swagger 标题
    */
   static readonly SWAGGER_TITLE = "NestJS部分的Swagger文档";

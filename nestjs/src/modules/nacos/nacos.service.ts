@@ -8,6 +8,7 @@ import * as os from 'os';
 import qs from 'qs';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
+import { HttpCode } from 'src/common/utils/httpCode';
 import { InternalTokenUtil } from 'src/common/utils/internalToken.util';
 import { logger } from '../../common/utils/writeLog';
 
@@ -267,13 +268,25 @@ export class NacosService implements OnModuleInit {
         timeout: 3000,
       });
 
+      // 校验业务响应码
+      const responseData: Record<string, unknown> = response.data;
+      if (responseData.code !== HttpCode.OK) {
+        const errorMsg: string = (responseData.msg as string) || Constants.UNKNOWN_ERROR;
+        const logMessage: string = `服务 ${opts.serviceName} 返回业务错误: code=${String(responseData.code)}, msg=${errorMsg}`;
+        logger.error(logMessage);
+        throw BusinessException.badGateway(
+          `调用 ${opts.serviceName} 失败: ${errorMsg}`,
+          Constants.SERVICE_CALL_FAILED,
+        );
+      }
+
       breaker.recordSuccess();
-      return response.data;
+      return responseData;
     } catch (err) {
       if (err instanceof CircuitBreakerOpenError) {
         logger.warning(`调用 ${opts.serviceName} 已触发熔断，直接返回降级结果`);
         return {
-          code: 503,
+          code: HttpCode.SERVICE_UNAVAILABLE,
           msg: `调用 ${opts.serviceName} 已降级，请稍后再试`,
           data: null,
         };
