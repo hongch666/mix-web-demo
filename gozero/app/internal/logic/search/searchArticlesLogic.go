@@ -236,7 +236,7 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 		return []fastapiClient.VectorEnhanceItem{}
 	}
 
-	items, err := parseVectorEnhanceResult(result.Data)
+	items, err := fastapiClient.ParseVectorEnhanceResult(result.Data)
 	if err != nil {
 		l.Warningf(utils.VECTOR_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
@@ -285,7 +285,7 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 		return []fastapiClient.GraphEnhanceItem{}
 	}
 
-	items, err := parseGraphEnhanceResult(graphResult.Data)
+	items, err := fastapiClient.ParseGraphEnhanceResult(graphResult.Data)
 	if err != nil {
 		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)

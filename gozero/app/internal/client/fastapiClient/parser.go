@@ -1,22 +1,18 @@
-package search
+package fastapiClient
 
-import (
-	"app/internal/client/fastapiClient"
-)
-
-// parseVectorEnhanceResult 从完整响应中解析向量增强结果
-func parseVectorEnhanceResult(data any) ([]fastapiClient.VectorEnhanceItem, error) {
+// ParseVectorEnhanceResult 从完整响应 data 字段中解析向量增强结果
+func ParseVectorEnhanceResult(data any) ([]VectorEnhanceItem, error) {
 	dataMap, ok := data.(map[string]any)
 	if !ok {
-		return []fastapiClient.VectorEnhanceItem{}, nil
+		return []VectorEnhanceItem{}, nil
 	}
 
 	itemsRaw, ok := dataMap["items"].([]any)
 	if !ok {
-		return []fastapiClient.VectorEnhanceItem{}, nil
+		return []VectorEnhanceItem{}, nil
 	}
 
-	items := make([]fastapiClient.VectorEnhanceItem, 0, len(itemsRaw))
+	items := make([]VectorEnhanceItem, 0, len(itemsRaw))
 	for _, itemRaw := range itemsRaw {
 		itemMap, ok := itemRaw.(map[string]any)
 		if !ok {
@@ -27,7 +23,7 @@ func parseVectorEnhanceResult(data any) ([]fastapiClient.VectorEnhanceItem, erro
 		vectorScore, _ := toFloat64(itemMap["vectorScore"])
 		reason, _ := toString(itemMap["reason"])
 
-		items = append(items, fastapiClient.VectorEnhanceItem{
+		items = append(items, VectorEnhanceItem{
 			ArticleID:     articleID,
 			VectorScore:   vectorScore,
 			Reason:        reason,
@@ -38,19 +34,19 @@ func parseVectorEnhanceResult(data any) ([]fastapiClient.VectorEnhanceItem, erro
 	return items, nil
 }
 
-// parseGraphEnhanceResult 从完整响应中解析图谱增强结果
-func parseGraphEnhanceResult(data any) ([]fastapiClient.GraphEnhanceItem, error) {
+// ParseGraphEnhanceResult 从完整响应 data 字段中解析图谱增强结果
+func ParseGraphEnhanceResult(data any) ([]GraphEnhanceItem, error) {
 	dataMap, ok := data.(map[string]any)
 	if !ok {
-		return []fastapiClient.GraphEnhanceItem{}, nil
+		return []GraphEnhanceItem{}, nil
 	}
 
 	itemsRaw, ok := dataMap["items"].([]any)
 	if !ok {
-		return []fastapiClient.GraphEnhanceItem{}, nil
+		return []GraphEnhanceItem{}, nil
 	}
 
-	items := make([]fastapiClient.GraphEnhanceItem, 0, len(itemsRaw))
+	items := make([]GraphEnhanceItem, 0, len(itemsRaw))
 	for _, itemRaw := range itemsRaw {
 		itemMap, ok := itemRaw.(map[string]any)
 		if !ok {
@@ -65,7 +61,7 @@ func parseGraphEnhanceResult(data any) ([]fastapiClient.GraphEnhanceItem, error)
 		matchedTags := parseStringSlice(itemMap["matchedTags"])
 		matchedPaths := parseStringSlice(itemMap["matchedPaths"])
 
-		items = append(items, fastapiClient.GraphEnhanceItem{
+		items = append(items, GraphEnhanceItem{
 			ArticleID:    articleID,
 			GraphScore:   graphScore,
 			Reason:       reason,
@@ -110,13 +106,13 @@ func toString(v any) (string, bool) {
 	return s, ok
 }
 
-func parseRelations(v any) []fastapiClient.GraphRelation {
+func parseRelations(v any) []GraphRelation {
 	rawList, ok := v.([]any)
 	if !ok {
-		return []fastapiClient.GraphRelation{}
+		return []GraphRelation{}
 	}
 
-	relations := make([]fastapiClient.GraphRelation, 0, len(rawList))
+	relations := make([]GraphRelation, 0, len(rawList))
 	for _, raw := range rawList {
 		m, ok := raw.(map[string]any)
 		if !ok {
@@ -126,7 +122,7 @@ func parseRelations(v any) []fastapiClient.GraphRelation {
 		name, _ := toString(m["name"])
 		score, _ := toFloat64(m["score"])
 		reason, _ := toString(m["reason"])
-		relations = append(relations, fastapiClient.GraphRelation{
+		relations = append(relations, GraphRelation{
 			Type:   relType,
 			Name:   name,
 			Score:  score,
@@ -150,13 +146,13 @@ func parseStringSlice(v any) []string {
 	return result
 }
 
-func parseVectorMatchedChunks(v any) []fastapiClient.VectorMatchedChunk {
+func parseVectorMatchedChunks(v any) []VectorMatchedChunk {
 	rawList, ok := v.([]any)
 	if !ok {
-		return []fastapiClient.VectorMatchedChunk{}
+		return []VectorMatchedChunk{}
 	}
 
-	chunks := make([]fastapiClient.VectorMatchedChunk, 0, len(rawList))
+	chunks := make([]VectorMatchedChunk, 0, len(rawList))
 	for _, raw := range rawList {
 		m, ok := raw.(map[string]any)
 		if !ok {
@@ -167,7 +163,7 @@ func parseVectorMatchedChunks(v any) []fastapiClient.VectorMatchedChunk {
 		chunkIndex64, _ := toInt64(m["chunkIndex"])
 		score, _ := toFloat64(m["score"])
 		content, _ := toString(m["content"])
-		chunks = append(chunks, fastapiClient.VectorMatchedChunk{
+		chunks = append(chunks, VectorMatchedChunk{
 			ArticleID:  articleID,
 			Title:      title,
 			ChunkIndex: int(chunkIndex64),
