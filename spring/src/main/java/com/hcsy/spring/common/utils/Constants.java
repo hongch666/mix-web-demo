@@ -1482,4 +1482,31 @@ public class Constants {
          * 释放分布式锁失败消息（锁已过期或被其他实例持有）
          */
         public static String LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
+
+        // ==================== Feign 客户端 ====================
+
+        /**
+         * Feign 调用返回业务错误日志格式
+         */
+        public static String FEIGN_BUSINESS_ERROR_LOG = "Feign 调用返回业务错误: code=%d, msg=%s";
+
+        /**
+         * Feign 调用业务失败消息前缀
+         */
+        public static String FEIGN_CALL_FAIL = "业务调用失败: ";
+
+        /**
+         * Feign 响应解析异常日志
+         */
+        public static String FEIGN_PARSE_WARNING = "Feign 响应解析异常，将使用默认解码器: ";
+
+        /**
+         * Feign 响应反序列化失败日志和异常消息
+         */
+        public static String FEIGN_DESERIALIZE_FAIL = "Feign 响应反序列化失败: ";
+
+        /**
+         * Feign 响应为空时返回 null 的未知错误消息
+         */
+        public static String FEIGN_UNKNOWN_ERROR = "未知错误";
 }
