@@ -21,6 +21,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/zeromicro/go-zero/core/breaker"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 const (
@@ -201,7 +202,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+	if resp.StatusCode < utils.HttpOK || resp.StatusCode >= utils.HttpMultipleChoices {
 		errorMsg := fmt.Sprintf(utils.UNEXPECTED_STATUS_CODE, resp.StatusCode, string(body1))
 		return Result{}, errors.New(errorMsg)
 	}
@@ -210,7 +211,8 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	if result.Code < 200 || result.Code >= 300 {
+	if result.Code < utils.HttpOK || result.Code >= utils.HttpMultipleChoices {
+		logx.Errorf(utils.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
 		errorMsg := fmt.Sprintf(utils.SERVICE_CALL_FAILED, result.Msg)
 		return Result{}, errors.New(errorMsg)
 	}

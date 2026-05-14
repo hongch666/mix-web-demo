@@ -187,6 +187,9 @@ const (
 	// 服务调用失败信息
 	SERVICE_CALL_FAILED = "服务调用失败: %s"
 
+	// 服务返回业务错误日志格式
+	SERVICE_BUSINESS_ERROR_LOG = "服务 %s 返回业务错误: code=%d, msg=%s"
+
 	// 记录耗时消息
 	RECORD_DURATION_MESSAGE = "%s %s 使用了%dms"
 
