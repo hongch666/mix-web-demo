@@ -106,7 +106,7 @@ def _should_retry_remote_call(error: Exception) -> bool:
     if isinstance(error, httpx.RequestError):
         return True
     if isinstance(error, httpx.HTTPStatusError):
-        return error.response.status_code >= 500 or error.response.status_code == 429
+        return error.response.status_code >= HttpCode.INTERNAL_SERVER_ERROR or error.response.status_code == HttpCode.TOO_MANY_REQUESTS
     return False
 
 
@@ -211,6 +211,15 @@ async def call_remote_service(
                         data=data,
                         json=json,
                     )
+                    # 校验业务响应码
+                    if isinstance(result, dict) and result.get("code") != HttpCode.OK:
+                        error_msg: str = result.get("msg", Constants.UNKNOWN_ERROR)
+                        Logger.error(f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}")
+                        raise BusinessException(
+                            f"调用远程服务 {service_name} 失败: {error_msg}",
+                            HttpCode.BAD_GATEWAY,
+                            Constants.ERROR_SERVICE_CALL_FAILED,
+                        )
                     breaker.record_success()
                     return result
         except Exception as e:

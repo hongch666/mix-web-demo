@@ -414,6 +414,9 @@ class Constants:
     ERROR_SERVICE_CALL_FAILED: str = "SERVICE_CALL_FAILED"
     """服务调用失败"""
 
+    UNKNOWN_ERROR: str = "未知错误"
+    """未知错误"""
+
     # 503 Service Unavailable
     ERROR_RABBITMQ_CLIENT_NOT_INITIALIZED: str = "RABBITMQ_CLIENT_NOT_INITIALIZED"
     """RabbitMQ客户端未初始化"""
