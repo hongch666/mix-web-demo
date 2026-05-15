@@ -724,8 +724,23 @@ pytest tests/core/auth/test_internal_token.py
 ./mix seq -i
 
 # ===== GoZero 代码生成 =====
+# 生成 GoZero API 代码（默认使用 gozero/template/goctl 模板）
 ./mix goctl-api
+
+# 生成 API 代码并同步生成 Swagger/OpenAPI
+./mix goctl-api -s
+
+# ORM 默认是 dry-run，只打印将要执行的 goctl 命令
 ./mix goctl-orm
+
+# 真正生成 ORM 代码
+./mix goctl-orm -s
+
+# 真正生成 ORM，并为新表生成项目 GormCrud 风格 custom model
+./mix goctl-orm -s --gorm
+
+# 只生成指定 SQL 文件
+./mix goctl-orm -s --gorm -pattern user.sql
 
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
@@ -849,6 +864,10 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 ./scripts/goctl-api-init.sh
 ./scripts/goctl-orm-init.sh
 
+# 参数会透传给 gozero/script/goctl 下的实际生成脚本
+./scripts/goctl-api-init.sh -s
+./scripts/goctl-orm-init.sh -s --gorm -pattern user.sql
+
 # 停止所有服务或指定服务
 ./scripts/dist-control.sh stop               # 停止所有
 ./scripts/dist-control.sh stop fastapi       # 停止指定
@@ -913,8 +932,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `docker-push-images.sh`     | scripts/   | 将已构建的 Docker 镜像推送到远程仓库       | Linux/macOS |
 | `setup.sh`                  | scripts/   | 环境初始化和依赖安装                       | Linux/macOS |
 | `swag-init.sh`              | scripts/   | 生成 GoZero Swagger 文档                   | Linux/macOS |
-| `goctl-api-init.sh`         | scripts/   | 生成 GoZero API 代码                       | Linux/macOS |
-| `goctl-orm-init.sh`         | scripts/   | 生成 GoZero ORM 代码                       | Linux/macOS |
+| `goctl-api-init.sh`         | scripts/   | 生成 GoZero API 代码，参数透传给 `genApi.sh` | Linux/macOS |
+| `goctl-orm-init.sh`         | scripts/   | 生成 GoZero ORM 代码，参数透传给 `genOrm.sh` | Linux/macOS |
 | `run.ps1`                   | scripts/   | PowerShell 脚本，启动所有服务              | Windows     |
 
 ### 服务名称
@@ -1583,6 +1602,66 @@ app/internal/clients/nestjsClient.py                         # NestJS 客户端
 - 类名使用 PascalCase `<TargetService>Client`
 
 ## 其他说明
+
+### GoZero 代码生成
+
+GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数透传到 `scripts/goctl-api-init.sh` 或 `scripts/goctl-orm-init.sh`，再由这两个脚本调用 `gozero/script/goctl` 下的实际生成脚本。
+
+调用链如下：
+
+```bash
+./mix goctl-api [args...]
+# -> scripts/goctl-api-init.sh [args...]
+# -> gozero/script/goctl/genApi.sh [args...]
+
+./mix goctl-orm [args...]
+# -> scripts/goctl-orm-init.sh [args...]
+# -> gozero/script/goctl/genOrm.sh [args...]
+```
+
+项目内置 goctl 模板目录为 `gozero/template/goctl`，API 和 ORM 生成脚本默认都会使用该模板目录，不依赖开发机全局 goctl 模板。
+
+常用命令：
+
+```bash
+# 生成 API 代码
+./mix goctl-api
+
+# 生成 API 代码，并同步生成 Swagger/OpenAPI
+./mix goctl-api -s
+
+# ORM dry-run，只打印将要执行的 goctl 命令
+./mix goctl-orm
+
+# 真正生成 ORM 代码
+./mix goctl-orm -s
+
+# 真正生成 ORM，并为新表生成项目 GormCrud 风格 custom model
+./mix goctl-orm -s --gorm
+
+# 只生成某一个 SQL
+./mix goctl-orm -s --gorm -pattern user.sql
+
+# 指定 SQL 目录、输出目录或模板目录
+./mix goctl-orm -s --gorm -srcDir gozero/script/sql -outDir ./gozero/app/model
+./mix goctl-api --template gozero/template/goctl
+./mix goctl-orm -s --template gozero/template/goctl
+```
+
+参数说明：
+
+| 命令 | 参数 | 说明 |
+| ---- | ---- | ---- |
+| `goctl-api` | `-s` | 生成 API 代码后，同时生成 Swagger/OpenAPI |
+| `goctl-api` | `--template <path>` | 指定 goctl 模板目录，默认 `gozero/template/goctl` |
+| `goctl-orm` | `-s` | 执行生成；不加时只 dry-run 打印命令 |
+| `goctl-orm` | `--gorm` | 为新表生成项目 `GormCrud` 风格 custom model，已有业务 model 不覆盖 |
+| `goctl-orm` | `-srcDir <path>` | 指定 SQL 文件目录，默认 `gozero/script/sql` |
+| `goctl-orm` | `-outDir <path>` | 指定 model 输出目录，默认 `./gozero/app/model` |
+| `goctl-orm` | `-pattern <glob>` | 指定 SQL 匹配规则，默认 `*.sql` |
+| `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认 `gozero/template/goctl` |
+
+ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql` 会生成到 `gozero/app/model/subCategory`。`--gorm` 主要用于新表初始化：它会把 goctl 默认 custom model 外壳替换成项目当前使用的 `GormCrud` 外壳，同时保留 `*_gen.go` 中由 goctl 生成的结构体和基础 SQLX 代码。
 
 ### FastAPI Agent 工具说明
 
