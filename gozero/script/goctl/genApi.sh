@@ -2,16 +2,22 @@
 
 # script should be execute in current `script` directory.
 
-# Usage: ./genApi.sh [-s]
+# Usage: ./genApi.sh [-s] [--template <path>]
 #   -s : also run swagger generation and convert to OpenAPI3
+#   --template <path> : goctl template home, defaults to gozero/template/goctl
 
 generate_swagger=false
+template_home=""
 
 while [[ $# -gt 0 ]]; do
 	case $1 in
 		-s)
 			generate_swagger=true
 			shift
+			;;
+		--template)
+			template_home="$2"
+			shift 2
 			;;
 		*)
 			echo "Unknown option: $1"
@@ -31,6 +37,10 @@ app_dir="$PWD/app"
 main_go_file="$app_dir/main.go"
 etc_dir="$app_dir/etc"
 backup_dir="$(mktemp -d)"
+if [ -z "$template_home" ]; then
+	template_home="$PWD/template/goctl"
+fi
+template_home="$(cd "$template_home" && pwd)"
 
 # Ensure temporary backup directory cleanup
 cleanup() {
@@ -59,12 +69,17 @@ goctl api format -dir .
 
 # generate go-zero code
 echo "Generating go-zero code..."
-goctl api go -api main.api -dir ../app --style=goZero
+goctl api go -api main.api -dir ../app --style=goZero --home "$template_home"
 
-# Remove generated app.go (we use main.go as entry)
+# Remove or promote generated app.go (we use main.go as entry)
 if [ -f "$app_dir/app.go" ]; then
-	rm "$app_dir/app.go"
-	echo "Removed generated app.go"
+	if [ -f "$backup_dir/main.go" ]; then
+		rm "$app_dir/app.go"
+		echo "Removed generated app.go"
+	else
+		mv "$app_dir/app.go" "$main_go_file"
+		echo "Moved generated app.go to main.go"
+	fi
 fi
 
 # Restore main.go

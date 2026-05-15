@@ -1,17 +1,25 @@
 # script should be execute in current `script` directory.
 
-# Usage: ./genApi.ps1 [-s]
+# Usage: ./genApi.ps1 [-s] [-template <path>]
 #   -s : also run swagger generation and convert to OpenAPI3
 
 param(
-	[switch]$s
+	[switch]$s,
+	[string]$template = ""
 )
 
 # Save the original location
 $originalLocation = Get-Location
 
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$gozeroRoot = Resolve-Path (Join-Path $scriptDir "../..")
+if ([string]::IsNullOrWhiteSpace($template)) {
+	$template = Join-Path $gozeroRoot "template/goctl"
+}
+$templateHome = (Resolve-Path $template).Path
+
 # Change to the target directory
-Set-Location -Path (Resolve-Path "../../api")
+Set-Location -Path (Join-Path $gozeroRoot "api")
 
 # format api files
 goctl api format -dir .
@@ -40,13 +48,18 @@ if (Test-Path $etcDir) {
 }
 
 # generate go-zero code
-goctl api go -api main.api -dir ../app --style=goZero
+goctl api go -api main.api -dir ../app --style=goZero --home $templateHome
 
-# Remove generated app.go (we use main.go as entry)
+# Remove or promote generated app.go (we use main.go as entry)
 $appGoFile = Join-Path $appDir "app.go"
 if (Test-Path $appGoFile) {
-	Remove-Item $appGoFile -Force | Out-Null
-	Write-Host "Removed generated app.go"
+	if (Test-Path (Join-Path $backupDir "main.go")) {
+		Remove-Item $appGoFile -Force | Out-Null
+		Write-Host "Removed generated app.go"
+	} else {
+		Move-Item $appGoFile $mainGoFile -Force | Out-Null
+		Write-Host "Moved generated app.go to main.go"
+	}
 }
 
 # Restore main.go and etc directory
