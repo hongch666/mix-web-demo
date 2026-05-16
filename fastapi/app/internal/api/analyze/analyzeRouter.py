@@ -2,9 +2,7 @@ from typing import Any, Dict, List
 
 from app.common.decorators import log, requireAdmin
 from app.core.base import ListResponse, success
-from app.core.db import get_db
 from app.internal.services import AnalyzeService, get_analyze_service
-from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, Depends, Request
 
@@ -18,14 +16,11 @@ router: APIRouter = APIRouter(
 @log("获取前10篇文章")
 async def get_top10_articles(
     request: Request,
-    db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取前10篇文章接口"""
 
-    articles: List[Dict[str, Any]] = await analyzeService.get_top10_articles_service_sf(
-        db
-    )
+    articles: List[Dict[str, Any]] = await analyzeService.get_top10_articles_service_sf()
     return success(ListResponse(total=len(articles), list=articles))
 
 
@@ -51,12 +46,11 @@ async def get_wordcloud(
 @log("获取文章数据Excel")
 async def get_excel(
     request: Request,
-    db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取文章数据Excel接口"""
 
-    file_path: str = await analyzeService.export_articles_to_excel(db)
+    file_path: str = await analyzeService.export_articles_to_excel()
     oss_url: str = await analyzeService.upload_excel_to_oss(file_path)
     return success(oss_url)
 
@@ -65,12 +59,11 @@ async def get_excel(
 @log("获取文章统计信息")
 async def get_article_statistics(
     request: Request,
-    db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取文章统计信息"""
 
-    result: Dict[str, Any] = await analyzeService.get_article_statistics_service_sf(db)
+    result: Dict[str, Any] = await analyzeService.get_article_statistics_service_sf()
     return success(result)
 
 
@@ -82,14 +75,13 @@ async def get_article_statistics(
 @log("按分类统计文章数量")
 async def get_article_count_by_category(
     request: Request,
-    db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """按大分类统计文章数量"""
 
     result: List[
         Dict[str, Any]
-    ] = await analyzeService.get_category_article_count_service_sf(db)
+    ] = await analyzeService.get_category_article_count_service_sf()
     return success(ListResponse(total=len(result), list=result))
 
 
@@ -101,12 +93,11 @@ async def get_article_count_by_category(
 @log("获取月度文章发布统计")
 async def get_monthly_publish_count(
     request: Request,
-    db: Session = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取月度文章发布统计"""
 
     result: List[
         Dict[str, Any]
-    ] = await analyzeService.get_monthly_publish_count_service_sf(db)
+    ] = await analyzeService.get_monthly_publish_count_service_sf()
     return success(ListResponse(total=len(result), list=result))

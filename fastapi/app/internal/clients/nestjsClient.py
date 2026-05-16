@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from app.core.client import call_remote_service
 
@@ -29,3 +29,37 @@ class NestjsClient:
             },
             retries=3,
         )
+
+    async def get_api_average_speed(self) -> List[Dict[str, Any]]:
+        result = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/api-logs/average-speed",
+            method="GET",
+        )
+        return result.get("data", [])
+
+    async def get_called_count_apis(self) -> List[Dict[str, Any]]:
+        result = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/api-logs/called-count",
+            method="GET",
+        )
+        return result.get("data", [])
+
+    async def get_search_keywords(self) -> List[str]:
+        result = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/article-logs/search-keywords",
+            method="GET",
+        )
+        data: Dict[str, Any] = result.get("data", {})
+        return data.get("keywords", [])
+
+    async def get_view_distribution(self, user_id: int) -> Dict[str, Any]:
+        result = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/article-logs/view-distribution",
+            method="GET",
+            params={"userId": user_id},
+        )
+        return result.get("data", {})

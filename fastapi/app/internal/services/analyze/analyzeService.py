@@ -8,9 +8,8 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.core.base import Constants, HttpCode, Logger
 from app.core.config import load_config
-from app.core.db import get_db
 from app.core.errors import BusinessException
-from app.internal.clients import NestjsClient
+from app.internal.clients import NestjsClient, SpringClient
 from app.internal.cache import (
     ArticleCache,
     CategoryCache,
@@ -24,25 +23,12 @@ from app.internal.cache import (
     get_wordcloud_cache,
 )
 from app.internal.crud import (
-    ArticleLogMapper,
     ArticleMapper,
-    CategoryMapper,
-    CollectMapper,
-    LikeMapper,
-    UserMapper,
     get_article_mapper,
-    get_articlelog_mapper,
-    get_category_mapper,
-    get_collect_mapper,
-    get_like_mapper,
-    get_user_mapper,
 )
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
-from sqlalchemy.orm import Session
 from wordcloud import WordCloud
-
-from fastapi import Depends
 
 
 class AnalyzeService:
@@ -51,11 +37,6 @@ class AnalyzeService:
     def __init__(
         self,
         articleMapper: Optional[ArticleMapper] = None,
-        articleLogMapper: Optional[ArticleLogMapper] = None,
-        userMapper: Optional[UserMapper] = None,
-        categoryMapper: Optional[CategoryMapper] = None,
-        likeMapper: Optional[LikeMapper] = None,
-        collectMapper: Optional[CollectMapper] = None,
         article_cache: Optional[ArticleCache] = None,
         category_cache: Optional[CategoryCache] = None,
         publish_time_cache: Optional[PublishTimeCache] = None,
@@ -63,11 +44,6 @@ class AnalyzeService:
         wordcloud_cache: Optional[WordcloudCache] = None,
     ) -> None:
         self.articleMapper: Optional[ArticleMapper] = articleMapper
-        self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
-        self.userMapper: Optional[UserMapper] = userMapper
-        self.categoryMapper: Optional[CategoryMapper] = categoryMapper
-        self.likeMapper: Optional[LikeMapper] = likeMapper
-        self.collectMapper: Optional[CollectMapper] = collectMapper
         # 注入缓存对象
         self._article_cache: Optional[ArticleCache] = article_cache
         self._category_cache: Optional[CategoryCache] = category_cache
@@ -78,6 +54,7 @@ class AnalyzeService:
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
         # 初始化远程服务客户端
         self._nestjs_client: NestjsClient = NestjsClient()
+        self._spring_client: SpringClient = SpringClient()
 
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
@@ -161,7 +138,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_top10_articles_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> List[Dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:top10",
@@ -177,7 +154,7 @@ class AnalyzeService:
         )
 
     async def get_article_statistics_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> Dict[str, Any]:
         return await self._run_with_singleflight(
             "analyze:statistics",
@@ -186,7 +163,7 @@ class AnalyzeService:
         )
 
     async def get_category_article_count_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> List[Dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:category_article_count",
@@ -195,7 +172,7 @@ class AnalyzeService:
         )
 
     async def get_monthly_publish_count_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> List[Dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:monthly_publish_count",
@@ -208,11 +185,6 @@ class AnalyzeService:
         """为调度器创建 AnalyzeService 实例（手动注入所有依赖）"""
         return cls(
             articleMapper=get_article_mapper(),
-            articleLogMapper=get_articlelog_mapper(),
-            userMapper=get_user_mapper(),
-            categoryMapper=get_category_mapper(),
-            likeMapper=get_like_mapper(),
-            collectMapper=get_collect_mapper(),
             article_cache=get_article_cache(),
             category_cache=get_category_cache(),
             publish_time_cache=get_publish_time_cache(),
@@ -221,7 +193,7 @@ class AnalyzeService:
         )
 
     async def get_top10_articles_service(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> List[Dict[str, Any]]:
         """
         获取 Top10 文章服务
@@ -261,28 +233,11 @@ class AnalyzeService:
                 )
 
             if not articles or len(articles) == 0:
-                articles = await self.articleMapper.get_top10_articles_db_mapper_async(
-                    db
-                )
-                data_source = "DB"
-                Logger.info(Constants.TOP10_DB_SOURCE)
+                articles = await self._spring_client.get_top_articles(10)
+                data_source = "Spring"
+                Logger.info("Top10 缓存回源已切换为 Spring 服务")
 
             if articles and isinstance(articles[0], dict):
-                user_ids = [
-                    article.get("user_id")
-                    for article in articles
-                    if article.get("user_id")
-                ]
-                if user_ids:
-                    users = await self.userMapper.get_users_by_ids_mapper_async(
-                        user_ids, db
-                    )
-                    user_id_to_name = {user.id: user.name for user in users}
-                    for article in articles:
-                        article["username"] = user_id_to_name.get(
-                            article.get("user_id")
-                        )
-
                 for article in articles:
                     if article.get("create_at") and hasattr(
                         article["create_at"], "isoformat"
@@ -295,18 +250,13 @@ class AnalyzeService:
 
                 result = articles
             else:
-                user_ids = [article.user_id for article in articles]
-                users = await self.userMapper.get_users_by_ids_mapper_async(
-                    user_ids, db
-                )
-                user_id_to_name = {user.id: user.name for user in users}
                 result = [
                     {
                         "id": article.id,
                         "title": article.title,
                         "content": article.content,
                         "user_id": article.user_id,
-                        "username": user_id_to_name.get(article.user_id),
+                        "username": getattr(article, "username", None),
                         "tags": article.tags,
                         "status": article.status,
                         "create_at": article.create_at.isoformat()
@@ -337,9 +287,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_keywords_dic(self) -> Dict[str, int]:
-        all_keywords: List[
-            str
-        ] = await self.articleLogMapper.get_search_keywords_articlelog_mapper()
+        all_keywords: List[str] = await self._nestjs_client.get_search_keywords()
         keywords_dic: Dict[str, int] = {}
         for keyword in all_keywords:
             if keyword in keywords_dic:
@@ -442,7 +390,7 @@ class AnalyzeService:
 
         return oss_url
 
-    async def export_articles_to_excel(self, db: Session = Depends(get_db)) -> str:
+    async def export_articles_to_excel(self, db: Any = None) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
         file_path = os.path.normpath(
             os.path.join(
@@ -473,31 +421,34 @@ class AnalyzeService:
         worksheet.append(headers)
 
         total_rows = 0
-        rows = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
-        for item in rows:
-            worksheet.append(
-                [
-                    item.get("id"),
-                    item.get("title"),
-                    item.get("content"),
-                    item.get("username"),
-                    item.get("tags"),
-                    item.get("status"),
-                    item.get("create_at").isoformat()
-                    if item.get("create_at")
-                    else None,
-                    item.get("update_at").isoformat()
-                    if item.get("update_at")
-                    else None,
-                    item.get("views"),
-                    item.get("sub_category_name"),
-                    item.get("category_name"),
-                    item.get("like_count"),
-                    item.get("collect_count"),
-                    item.get("author_follow_count"),
-                ]
-            )
-            total_rows += 1
+        cursor = 0
+        while True:
+            page = await self._spring_client.get_export_rows(cursor=cursor, size=500)
+            rows = page.get("list", [])
+            for item in rows:
+                worksheet.append(
+                    [
+                        item.get("id"),
+                        item.get("title"),
+                        item.get("content"),
+                        item.get("username"),
+                        item.get("tags"),
+                        item.get("status"),
+                        item.get("create_at") or item.get("createAt"),
+                        item.get("update_at") or item.get("updateAt"),
+                        item.get("views"),
+                        item.get("sub_category_name") or item.get("subCategoryName"),
+                        item.get("category_name") or item.get("categoryName"),
+                        item.get("likeCount") or item.get("like_count"),
+                        item.get("collectCount") or item.get("collect_count"),
+                        item.get("authorFollowCount")
+                        or item.get("author_follow_count"),
+                    ]
+                )
+                total_rows += 1
+            if not page.get("hasMore"):
+                break
+            cursor = int(page.get("nextCursor") or cursor)
 
         workbook.save(file_path)
         Logger.info(f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录")
@@ -512,7 +463,7 @@ class AnalyzeService:
         return oss_url
 
     async def get_article_statistics_service(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> Dict[str, Any]:
         """
         获取文章统计信息服务
@@ -546,28 +497,18 @@ class AnalyzeService:
         except Exception as cache_e:
             Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
-        # ========== 步骤2: 缓存未命中，查询DB ==========
+        # ========== 步骤2: 缓存未命中，调用 Spring 回源 ==========
         Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
-        total_views = await self.articleMapper.get_total_views_mapper_async(db)
-        total_articles = await self.articleMapper.get_total_articles_mapper_async(db)
-        active_authors = await self.articleMapper.get_active_authors_mapper_async(db)
-        average_views = await self.articleMapper.get_average_views_mapper_async(db)
-        total_likes = await self.likeMapper.get_total_likes_mapper_async(db)
-        average_likes = await self.likeMapper.get_average_likes_mapper_async(db)
-        total_collects = await self.collectMapper.get_total_collects_mapper_async(db)
-        average_collects = await self.collectMapper.get_average_collects_mapper_async(
-            db
-        )
-
+        remote_statistics = await self._spring_client.get_article_statistics()
         statistics = {
-            "total_views": total_views,
-            "total_articles": total_articles,
-            "active_authors": active_authors,
-            "average_views": average_views,
-            "total_likes": total_likes,
-            "average_likes": average_likes,
-            "total_collects": total_collects,
-            "average_collects": average_collects,
+            "total_views": remote_statistics.get("totalViews", 0),
+            "total_articles": remote_statistics.get("totalArticles", 0),
+            "active_authors": remote_statistics.get("activeAuthors", 0),
+            "average_views": remote_statistics.get("averageViews", 0),
+            "total_likes": remote_statistics.get("totalLikes", 0),
+            "average_likes": remote_statistics.get("averageLikes", 0),
+            "total_collects": remote_statistics.get("totalCollects", 0),
+            "average_collects": remote_statistics.get("averageCollects", 0),
         }
 
         # ========== 步骤3: 更新缓存 ==========
@@ -584,7 +525,7 @@ class AnalyzeService:
         return statistics
 
     async def get_category_article_count_service(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> List[Dict[str, Any]]:
         """
         获取按大分类统计的文章数量服务
@@ -631,40 +572,25 @@ class AnalyzeService:
                 local_data_source = "DB"
 
             if not local_category_data:
-                local_category_data = (
-                    await self.articleMapper.get_category_article_count_db_mapper_async(
-                        db
-                    )
-                )
-                local_data_source = "DB"
-                Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
-
-            all_categories = await self.categoryMapper.get_all_categories_mapper_async(
-                db
-            )
-            subcategories = (
-                await self.categoryMapper.get_subcategories_with_parent_mapper_async(db)
-            )
-            sub_cat_map = {sc["id"]: sc for sc in subcategories}
-
-            parent_category_count = {}
-            for category in all_categories:
-                parent_category_count[category.id] = {
-                    "category_id": category.id,
-                    "category_name": category.name,
-                    "article_count": 0,
-                }
-
-            for item in local_category_data:
-                sub_cat_id = item["sub_category_id"]
-                sub_cat_info = sub_cat_map.get(sub_cat_id, {})
-
-                parent_id = sub_cat_info.get("category_id")
-                if parent_id and parent_id in parent_category_count:
-                    parent_category_count[parent_id]["article_count"] += item["count"]
-
-            result = list(parent_category_count.values())
-            result.sort(key=lambda x: x["article_count"], reverse=True)
+                remote_data = await self._spring_client.get_category_article_count()
+                result = [
+                    {
+                        "category_id": item.get("categoryId"),
+                        "category_name": item.get("categoryName"),
+                        "article_count": item.get("articleCount", 0),
+                    }
+                    for item in remote_data
+                ]
+                local_data_source = "Spring"
+            else:
+                result = [
+                    {
+                        "category_id": item.get("category_id"),
+                        "category_name": item.get("category_name"),
+                        "article_count": item.get("count", 0),
+                    }
+                    for item in local_category_data
+                ]
 
             non_zero_count = len([c for c in result if c["article_count"] > 0])
             Logger.info(
@@ -690,7 +616,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_monthly_publish_count_service(
-        self, db: Session = Depends(get_db)
+        self, db: Any = None
     ) -> List[Dict[str, Any]]:
         """
         获取按月份统计的文章发布数量服务
@@ -733,13 +659,9 @@ class AnalyzeService:
                 )
 
             if not local_publish_data:
-                local_publish_data = (
-                    await self.articleMapper.get_monthly_publish_count_db_mapper_async(
-                        db
-                    )
-                )
-                local_data_source = "DB"
-                Logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
+                local_publish_data = await self._spring_client.get_monthly_publish_count(6)
+                local_data_source = "Spring"
+                Logger.info("月度发布统计缓存回源已切换为 Spring 服务")
 
             now = datetime.now()
             expected_months = []
@@ -748,7 +670,8 @@ class AnalyzeService:
                 expected_months.append(month_date.strftime("%Y-%m"))
 
             data_dict = {
-                item["year_month"]: item["count"] for item in local_publish_data
+                item.get("year_month") or item.get("yearMonth"): item.get("count", 0)
+                for item in local_publish_data
             }
 
             result = []
@@ -779,29 +702,12 @@ class AnalyzeService:
 
 
 @lru_cache()
-def get_analyze_service(
-    articleMapper: ArticleMapper = Depends(get_article_mapper),
-    articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper),
-    userMapper: UserMapper = Depends(get_user_mapper),
-    categoryMapper: CategoryMapper = Depends(get_category_mapper),
-    likeMapper: LikeMapper = Depends(get_like_mapper),
-    collectMapper: CollectMapper = Depends(get_collect_mapper),
-    article_cache: ArticleCache = Depends(get_article_cache),
-    category_cache: CategoryCache = Depends(get_category_cache),
-    publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache),
-    statistics_cache: StatisticsCache = Depends(get_statistics_cache),
-    wordcloud_cache: WordcloudCache = Depends(get_wordcloud_cache),
-) -> AnalyzeService:
+def get_analyze_service() -> AnalyzeService:
     return AnalyzeService(
-        articleMapper,
-        articleLogMapper,
-        userMapper,
-        categoryMapper,
-        likeMapper,
-        collectMapper,
-        article_cache,
-        category_cache,
-        publish_time_cache,
-        statistics_cache,
-        wordcloud_cache,
+        articleMapper=get_article_mapper(),
+        article_cache=get_article_cache(),
+        category_cache=get_category_cache(),
+        publish_time_cache=get_publish_time_cache(),
+        statistics_cache=get_statistics_cache(),
+        wordcloud_cache=get_wordcloud_cache(),
     )

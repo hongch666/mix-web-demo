@@ -2,13 +2,6 @@ from typing import Any
 
 from app.common.decorators import log
 from app.core.base import Constants, success
-from app.core.db import get_db
-from app.internal.crud import (
-    ArticleMapper,
-    CommentsMapper,
-    get_article_mapper,
-    get_comments_mapper,
-)
 from app.internal.schemas import GenerateDTO
 from app.internal.services import (
     DeepseekService,
@@ -20,7 +13,6 @@ from app.internal.services import (
     get_generate_service,
     get_gpt_service,
 )
-from sqlalchemy.orm import Session
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request
 
@@ -53,9 +45,6 @@ async def create_article_ai_comment(
     request: Request,
     article_id: int,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
-    article_mapper: ArticleMapper = Depends(get_article_mapper),
     deepseek_service: DeepseekService = Depends(get_deepseek_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
     gpt_service: GptService = Depends(get_gpt_service),
@@ -64,14 +53,12 @@ async def create_article_ai_comment(
 
     # 创建完整的 GenerateService 实例
     generate_service = GenerateService(
-        comments_mapper=comments_mapper,
-        article_mapper=article_mapper,
         deepseek_service=deepseek_service,
         gemini_service=gemini_service,
         gpt_service=gpt_service,
     )
     # 添加后台任务
-    background_tasks.add_task(generate_service.generate_ai_comments, article_id, db)
+    background_tasks.add_task(generate_service.generate_ai_comments, article_id)
     return success(
         data={"message": Constants.AI_COMMENT_TASK_SUBMITTED, "article_id": article_id}
     )
@@ -87,9 +74,6 @@ async def create_article_ai_comment_with_reference(
     request: Request,
     article_id: int,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
-    article_mapper: ArticleMapper = Depends(get_article_mapper),
     deepseek_service: DeepseekService = Depends(get_deepseek_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
     gpt_service: GptService = Depends(get_gpt_service),
@@ -98,15 +82,13 @@ async def create_article_ai_comment_with_reference(
 
     # 创建完整的 GenerateService 实例
     generate_service = GenerateService(
-        comments_mapper=comments_mapper,
-        article_mapper=article_mapper,
         deepseek_service=deepseek_service,
         gemini_service=gemini_service,
         gpt_service=gpt_service,
     )
     # 添加后台任务
     background_tasks.add_task(
-        generate_service.generate_ai_comments_with_reference, article_id, db
+        generate_service.generate_ai_comments_with_reference, article_id
     )
     return success(
         data={
