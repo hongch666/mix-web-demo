@@ -29,6 +29,7 @@ import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
+import com.hcsy.spring.entity.dto.IdsQueryDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
@@ -113,6 +114,82 @@ public class ArticleController {
         vo.setUsername(username);
 
         return Result.success(vo);
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "批量查询文章", description = "按文章ID批量查询文章基础信息")
+    @RequireInternalToken
+    @ApiLog("批量查询文章")
+    public Result getArticlesByIds(@Valid @RequestBody IdsQueryDTO dto) {
+        return Result.success(articleService.listByIds(dto.getIds()));
+    }
+
+    @GetMapping("/search-docs")
+    @Operation(summary = "分页获取搜索索引文档", description = "供 GoZero 同步 ElasticSearch 使用")
+    @RequireInternalToken
+    @ApiLog("分页获取搜索索引文档")
+    public Result getSearchDocs(
+            @RequestParam(defaultValue = "0") Long cursor,
+            @RequestParam(defaultValue = "500") Integer size) {
+        return Result.success(articleService.listSearchDocs(cursor, size));
+    }
+
+    @PostMapping("/search-stats")
+    @Operation(summary = "批量获取文章搜索统计", description = "供 GoZero 搜索结果刷新实时统计使用")
+    @RequireInternalToken
+    @ApiLog("批量获取文章搜索统计")
+    public Result getSearchStats(@Valid @RequestBody IdsQueryDTO dto) {
+        return Result.success(articleService.getSearchStats(dto.getIds()));
+    }
+
+    @GetMapping("/analyze/top")
+    @Operation(summary = "阅读量最高文章", description = "供 FastAPI 分析缓存回源使用")
+    @RequireInternalToken
+    @ApiLog("阅读量最高文章")
+    public Result getTopArticles(@RequestParam(defaultValue = "10") Integer limit) {
+        return Result.success(articleService.listTopArticles(limit));
+    }
+
+    @GetMapping("/analyze/statistics")
+    @Operation(summary = "文章统计数据", description = "供 FastAPI 分析缓存回源使用")
+    @RequireInternalToken
+    @ApiLog("文章统计数据")
+    public Result getAnalyzeStatistics() {
+        return Result.success(articleService.getAnalyzeStatistics());
+    }
+
+    @GetMapping("/analyze/category-article-count")
+    @Operation(summary = "分类文章数量统计", description = "供 FastAPI 分析缓存回源使用")
+    @RequireInternalToken
+    @ApiLog("分类文章数量统计")
+    public Result getCategoryArticleCount() {
+        return Result.success(articleService.countArticlesByCategory());
+    }
+
+    @GetMapping("/analyze/monthly-publish-count")
+    @Operation(summary = "月度发布数量统计", description = "供 FastAPI 分析缓存回源使用")
+    @RequireInternalToken
+    @ApiLog("月度发布数量统计")
+    public Result getMonthlyPublishCount(@RequestParam(defaultValue = "6") Integer months) {
+        return Result.success(articleService.countMonthlyPublishedArticles(months));
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "分页获取文章导出数据", description = "供 FastAPI Excel 导出使用")
+    @RequireInternalToken
+    @ApiLog("分页获取文章导出数据")
+    public Result getExportRows(
+            @RequestParam(defaultValue = "0") Long cursor,
+            @RequestParam(defaultValue = "500") Integer size) {
+        return Result.success(articleService.listExportRows(cursor, size));
+    }
+
+    @GetMapping("/ai-comment-context/{id}")
+    @Operation(summary = "获取 AI 评论上下文", description = "供 FastAPI 生成 AI 评论使用")
+    @RequireInternalToken
+    @ApiLog("获取 AI 评论上下文")
+    public Result getAiCommentContext(@PathVariable Long id) {
+        return Result.success(articleService.getAiCommentContext(id));
     }
 
     @PutMapping

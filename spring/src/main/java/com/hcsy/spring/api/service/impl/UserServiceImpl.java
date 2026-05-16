@@ -29,10 +29,12 @@ import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
+import com.hcsy.spring.entity.dto.GithubUserUpsertDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
+import com.hcsy.spring.entity.vo.GithubUserUpsertVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
@@ -288,6 +290,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @Transactional
+    public GithubUserUpsertVO upsertGithubUser(GithubUserUpsertDTO dto) {
+        Long githubId = Long.valueOf(dto.getGithubId());
+        User existingUser = userMapper.selectOne(
+                Wrappers.<User>lambdaQuery().eq(User::getGithubId, githubId));
+        String availableEmail = resolveAvailableEmail(dto.getEmail(), existingUser == null ? null : existingUser.getId());
+
+        if (existingUser != null) {
+            existingUser.setGithubLogin(dto.getGithubLogin());
+            existingUser.setGithubUrl(dto.getGithubUrl());
+            existingUser.setImg(dto.getAvatarUrl());
+            existingUser.setEmail(availableEmail == null ? existingUser.getEmail() : availableEmail);
+            existingUser.setAuthProvider("github");
+            existingUser.setLastLoginAt(LocalDateTime.now());
+            userMapper.updateById(existingUser);
+            return new GithubUserUpsertVO(existingUser.getId(), existingUser.getName(), existingUser.getRole());
+        }
+
+        User user = new User();
+        user.setGithubId(githubId);
+        user.setGithubLogin(dto.getGithubLogin());
+        user.setGithubUrl(dto.getGithubUrl());
+        user.setName(buildUniqueGithubUsername(dto));
+        user.setPassword(passwordEncryptor.encryptPassword("123456"));
+        user.setEmail(availableEmail);
+        user.setRole("user");
+        user.setImg(dto.getAvatarUrl());
+        user.setAge(18);
+        user.setAuthProvider("github");
+        user.setLastLoginAt(LocalDateTime.now());
+        userMapper.insert(user);
+        redisUtil.set("user:status:" + user.getId(), "0");
+        return new GithubUserUpsertVO(user.getId(), user.getName(), user.getRole());
+    }
+
+    @Override
     public UserListVO getAllUsers(String username) {
         // 查询所有符合条件的用户
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
@@ -366,6 +404,47 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(User::getEmail, email);
         return this.getOne(queryWrapper);
+    }
+
+    private String buildUniqueGithubUsername(GithubUserUpsertDTO dto) {
+        String preferredName = firstNotBlank(dto.getGithubName(), dto.getGithubLogin(), "github_" + dto.getGithubId());
+        if (findByUsername(preferredName) == null) {
+            return preferredName;
+        }
+
+        String fallbackBase = "github_" + firstNotBlank(dto.getGithubLogin(), "user") + "_" + dto.getGithubId();
+        if (findByUsername(fallbackBase) == null) {
+            return fallbackBase;
+        }
+
+        int suffix = 1;
+        while (true) {
+            String candidate = fallbackBase + "_" + suffix;
+            if (findByUsername(candidate) == null) {
+                return candidate;
+            }
+            suffix++;
+        }
+    }
+
+    private String resolveAvailableEmail(String email, Long currentUserId) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        User existingUser = findByEmail(email);
+        if (existingUser != null && !existingUser.getId().equals(currentUserId)) {
+            return null;
+        }
+        return email;
+    }
+
+    private String firstNotBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return "";
     }
 
     private void validateLoginCaptcha(String captchaId, String captchaText) {

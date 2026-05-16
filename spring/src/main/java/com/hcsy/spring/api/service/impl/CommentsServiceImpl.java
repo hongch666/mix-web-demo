@@ -18,6 +18,8 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.entity.dto.AiCommentItemDTO;
+import com.hcsy.spring.entity.dto.AiCommentReplaceDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
@@ -202,5 +204,28 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         }
 
         this.removeByIds(ids);
+    }
+
+    @Override
+    @Transactional
+    public void replaceAiComments(AiCommentReplaceDTO dto) {
+        List<Long> userIds = dto.getComments().stream().map(AiCommentItemDTO::getUserId).toList();
+        if (!userIds.isEmpty()) {
+            remove(Wrappers.<Comments>lambdaQuery()
+                    .eq(Comments::getArticleId, dto.getArticleId())
+                    .in(Comments::getUserId, userIds));
+        }
+
+        List<Comments> comments = dto.getComments().stream().map(item -> {
+            Comments comment = new Comments();
+            comment.setArticleId(dto.getArticleId());
+            comment.setUserId(item.getUserId());
+            comment.setContent(item.getContent());
+            comment.setStar(item.getStar());
+            comment.setCreateTime(java.time.LocalDateTime.now());
+            comment.setUpdateTime(java.time.LocalDateTime.now());
+            return comment;
+        }).toList();
+        saveBatch(comments);
     }
 }

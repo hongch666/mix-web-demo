@@ -1,11 +1,20 @@
 package com.hcsy.spring.api.service;
 
 import java.util.List;
+import java.util.Map;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.vo.ArticleSearchDocVO;
+import com.hcsy.spring.entity.vo.ArticleStatisticsAnalyzeVO;
+import com.hcsy.spring.entity.vo.ArticleStatisticVO;
+import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.AiCommentContextVO;
+import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
+import com.hcsy.spring.entity.vo.CursorPageVO;
+import com.hcsy.spring.entity.vo.MonthlyCountVO;
 
 public interface ArticleService extends IService<Article> {
     List<Article> listPublishedArticles();
@@ -39,5 +48,23 @@ public interface ArticleService extends IService<Article> {
     Article findByArticleTitle(String articleTitle);
 
     List<Article> listAllArticlesByTitle(String articleTitle);
+
+    List<ArticleWithCategoryVO> listByIds(List<Long> ids);
+
+    CursorPageVO<ArticleSearchDocVO> listSearchDocs(Long cursor, Integer size);
+
+    Map<Long, ArticleStatisticVO> getSearchStats(List<Long> ids);
+
+    List<ArticleSearchDocVO> listTopArticles(Integer limit);
+
+    ArticleStatisticsAnalyzeVO getAnalyzeStatistics();
+
+    List<CategoryArticleCountVO> countArticlesByCategory();
+
+    List<MonthlyCountVO> countMonthlyPublishedArticles(Integer months);
+
+    CursorPageVO<ArticleSearchDocVO> listExportRows(Long cursor, Integer size);
+
+    AiCommentContextVO getAiCommentContext(Long id);
 
 }

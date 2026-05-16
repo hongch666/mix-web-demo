@@ -5,6 +5,7 @@ import java.util.List;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.hcsy.spring.entity.dto.AiCommentReplaceDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.po.Comments;
 
@@ -22,4 +23,6 @@ public interface CommentsService extends IService<Comments> {
     void deleteComment(Long id);
 
     void deleteComments(List<Long> ids);
+
+    void replaceAiComments(AiCommentReplaceDTO dto);
 }

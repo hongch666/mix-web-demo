@@ -27,7 +27,9 @@ import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.entity.dto.AiCommentReplaceDTO;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
@@ -73,6 +75,15 @@ public class CommentsController {
         comment.setUserId(user.getId());
         commentsService.save(comment);
 
+        return Result.success();
+    }
+
+    @PostMapping("/ai/replace")
+    @Operation(summary = "替换文章 AI 评论", description = "删除文章旧 AI 评论并写入新 AI 评论")
+    @RequireInternalToken
+    @ApiLog("替换文章 AI 评论")
+    public Result replaceAiComments(@Valid @RequestBody AiCommentReplaceDTO dto) {
+        commentsService.replaceAiComments(dto);
         return Result.success();
     }
 

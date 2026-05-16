@@ -1,7 +1,14 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,18 +20,34 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.ArticleMapper;
 import com.hcsy.spring.api.mapper.CategoryMapper;
+import com.hcsy.spring.api.mapper.ArticleCollectMapper;
+import com.hcsy.spring.api.mapper.ArticleLikeMapper;
+import com.hcsy.spring.api.mapper.CommentsMapper;
+import com.hcsy.spring.api.mapper.FocusMapper;
 import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.api.service.CategoryReferenceService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.po.ArticleCollect;
+import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.po.Category;
+import com.hcsy.spring.entity.po.Comments;
+import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.ArticleSearchDocVO;
+import com.hcsy.spring.entity.vo.ArticleStatisticsAnalyzeVO;
+import com.hcsy.spring.entity.vo.ArticleStatisticVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.AiCommentContextVO;
+import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
+import com.hcsy.spring.entity.vo.CursorPageVO;
+import com.hcsy.spring.entity.vo.MonthlyCountVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +59,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final UserService userService;
     private final CategoryMapper categoryMapper;
     private final SubCategoryMapper subCategoryMapper;
+    private final ArticleLikeMapper articleLikeMapper;
+    private final ArticleCollectMapper articleCollectMapper;
+    private final CommentsMapper commentsMapper;
+    private final FocusMapper focusMapper;
+    private final CategoryReferenceService categoryReferenceService;
 
     @Override
     public List<Article> listPublishedArticles() {
@@ -266,6 +294,204 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public List<Article> listAllArticlesByTitle(String articleTitle) {
         return articleMapper.selectList(
                 new LambdaQueryWrapper<Article>().like(Article::getTitle, articleTitle));
+    }
+
+    @Override
+    public List<ArticleWithCategoryVO> listByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return articleMapper.selectBatchIds(ids).stream()
+                .map(this::toArticleWithCategoryVO)
+                .toList();
+    }
+
+    @Override
+    public CursorPageVO<ArticleSearchDocVO> listSearchDocs(Long cursor, Integer size) {
+        int pageSize = Math.min(Math.max(size == null ? 500 : size, 1), 1000);
+        List<Article> articles = articleMapper.selectList(
+                Wrappers.<Article>lambdaQuery()
+                        .eq(Article::getStatus, 1)
+                        .gt(cursor != null && cursor > 0, Article::getId, cursor)
+                        .orderByAsc(Article::getId)
+                        .last("LIMIT " + (pageSize + 1)));
+
+        boolean hasMore = articles.size() > pageSize;
+        List<Article> currentPage = hasMore ? articles.subList(0, pageSize) : articles;
+        List<Long> articleIds = currentPage.stream().map(Article::getId).toList();
+        Map<Long, ArticleStatisticVO> statMap = getSearchStats(articleIds);
+        List<ArticleSearchDocVO> docs = currentPage.stream()
+                .map(article -> toSearchDoc(article, statMap.get(article.getId())))
+                .toList();
+        Long nextCursor = docs.isEmpty() ? (cursor == null ? 0L : cursor) : docs.get(docs.size() - 1).getId();
+        return new CursorPageVO<>(nextCursor, hasMore, docs);
+    }
+
+    @Override
+    public Map<Long, ArticleStatisticVO> getSearchStats(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Article> articles = articleMapper.selectBatchIds(ids);
+        Map<Long, Long> userIdMap = articles.stream().collect(Collectors.toMap(Article::getId, Article::getUserId));
+        Map<Long, Integer> viewsMap = articles.stream().collect(Collectors.toMap(Article::getId, article -> article.getViews() == null ? 0 : article.getViews()));
+        Map<Long, Long> likeCountMap = articleLikeMapper.selectList(Wrappers.<ArticleLike>lambdaQuery().in(ArticleLike::getArticleId, ids))
+                .stream().collect(Collectors.groupingBy(ArticleLike::getArticleId, Collectors.counting()));
+        Map<Long, Long> collectCountMap = articleCollectMapper.selectList(Wrappers.<ArticleCollect>lambdaQuery().in(ArticleCollect::getArticleId, ids))
+                .stream().collect(Collectors.groupingBy(ArticleCollect::getArticleId, Collectors.counting()));
+        List<Long> userIds = userIdMap.values().stream().distinct().toList();
+        Map<Long, Long> followCountMap = userIds.isEmpty() ? Collections.emptyMap()
+                : focusMapper.selectList(Wrappers.<Focus>lambdaQuery().in(Focus::getFocusId, userIds))
+                        .stream().collect(Collectors.groupingBy(Focus::getFocusId, Collectors.counting()));
+
+        return ids.stream().collect(Collectors.toMap(Function.identity(), id -> {
+            ArticleStatisticVO stat = new ArticleStatisticVO();
+            stat.setArticleId(id);
+            stat.setViews(viewsMap.getOrDefault(id, 0));
+            stat.setLikeCount(likeCountMap.getOrDefault(id, 0L).intValue());
+            stat.setCollectCount(collectCountMap.getOrDefault(id, 0L).intValue());
+            stat.setAuthorFollowCount(followCountMap.getOrDefault(userIdMap.get(id), 0L).intValue());
+            return stat;
+        }));
+    }
+
+    @Override
+    public List<ArticleSearchDocVO> listTopArticles(Integer limit) {
+        int safeLimit = Math.min(Math.max(limit == null ? 10 : limit, 1), 100);
+        List<Article> articles = articleMapper.selectList(
+                Wrappers.<Article>lambdaQuery()
+                        .eq(Article::getStatus, 1)
+                        .orderByDesc(Article::getViews)
+                        .last("LIMIT " + safeLimit));
+        Map<Long, ArticleStatisticVO> statMap = getSearchStats(articles.stream().map(Article::getId).toList());
+        return articles.stream().map(article -> toSearchDoc(article, statMap.get(article.getId()))).toList();
+    }
+
+    @Override
+    public ArticleStatisticsAnalyzeVO getAnalyzeStatistics() {
+        List<Article> publishedArticles = articleMapper.selectList(
+                Wrappers.<Article>lambdaQuery().eq(Article::getStatus, 1));
+        List<Long> articleIds = publishedArticles.stream().map(Article::getId).toList();
+        ArticleStatisticsAnalyzeVO vo = new ArticleStatisticsAnalyzeVO();
+        long totalArticles = publishedArticles.size();
+        long totalViews = publishedArticles.stream().mapToLong(article -> article.getViews() == null ? 0 : article.getViews()).sum();
+        long activeAuthors = publishedArticles.stream().map(Article::getUserId).distinct().count();
+        long totalLikes = articleIds.isEmpty() ? 0L : articleLikeMapper.selectCount(Wrappers.<ArticleLike>lambdaQuery().in(ArticleLike::getArticleId, articleIds));
+        long totalCollects = articleIds.isEmpty() ? 0L : articleCollectMapper.selectCount(Wrappers.<ArticleCollect>lambdaQuery().in(ArticleCollect::getArticleId, articleIds));
+        vo.setTotalArticles(totalArticles);
+        vo.setTotalViews(totalViews);
+        vo.setActiveAuthors(activeAuthors);
+        vo.setAverageViews(totalArticles == 0 ? 0.0D : (double) totalViews / totalArticles);
+        vo.setTotalLikes(totalLikes);
+        vo.setAverageLikes(totalArticles == 0 ? 0.0D : (double) totalLikes / totalArticles);
+        vo.setTotalCollects(totalCollects);
+        vo.setAverageCollects(totalArticles == 0 ? 0.0D : (double) totalCollects / totalArticles);
+        return vo;
+    }
+
+    @Override
+    public List<CategoryArticleCountVO> countArticlesByCategory() {
+        List<Category> categories = categoryMapper.selectList(Wrappers.lambdaQuery(Category.class));
+        List<SubCategory> subCategories = subCategoryMapper.selectList(Wrappers.lambdaQuery(SubCategory.class));
+        Map<Long, Long> subToCategory = subCategories.stream()
+                .collect(Collectors.toMap(SubCategory::getId, SubCategory::getCategoryId));
+        Map<Long, Long> countMap = articleMapper.selectList(Wrappers.<Article>lambdaQuery().eq(Article::getStatus, 1))
+                .stream()
+                .filter(article -> article.getSubCategoryId() != null)
+                .collect(Collectors.groupingBy(article -> subToCategory.get(article.getSubCategoryId().longValue()), Collectors.counting()));
+        return categories.stream()
+                .map(category -> new CategoryArticleCountVO(category.getId(), category.getName(), countMap.getOrDefault(category.getId(), 0L)))
+                .sorted((left, right) -> Long.compare(right.getArticleCount(), left.getArticleCount()))
+                .toList();
+    }
+
+    @Override
+    public List<MonthlyCountVO> countMonthlyPublishedArticles(Integer months) {
+        int safeMonths = Math.min(Math.max(months == null ? 6 : months, 1), 24);
+        YearMonth now = YearMonth.now();
+        Map<String, Long> countMap = articleMapper.selectList(Wrappers.<Article>lambdaQuery().eq(Article::getStatus, 1))
+                .stream()
+                .filter(article -> article.getCreateAt() != null)
+                .collect(Collectors.groupingBy(article -> YearMonth.from(article.getCreateAt()).format(DateTimeFormatter.ofPattern("yyyy-MM")), Collectors.counting()));
+        Map<String, Long> ordered = new LinkedHashMap<>();
+        for (int i = safeMonths - 1; i >= 0; i--) {
+            String month = now.minusMonths(i).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            ordered.put(month, countMap.getOrDefault(month, 0L));
+        }
+        return ordered.entrySet().stream().map(entry -> new MonthlyCountVO(entry.getKey(), entry.getValue())).toList();
+    }
+
+    @Override
+    public CursorPageVO<ArticleSearchDocVO> listExportRows(Long cursor, Integer size) {
+        return listSearchDocs(cursor, size);
+    }
+
+    @Override
+    public AiCommentContextVO getAiCommentContext(Long id) {
+        Article article = articleMapper.selectById(id);
+        if (article == null) {
+            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
+        }
+        AiCommentContextVO vo = BeanUtil.copyProperties(article, AiCommentContextVO.class);
+        if (article.getSubCategoryId() != null) {
+            vo.setSubCategoryId(article.getSubCategoryId().longValue());
+            vo.setCategoryReference(categoryReferenceService.getCategoryReferenceBySubCategoryId(article.getSubCategoryId().longValue()));
+        }
+        return vo;
+    }
+
+    private ArticleWithCategoryVO toArticleWithCategoryVO(Article article) {
+        ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+        User user = userService.getById(article.getUserId());
+        vo.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+        fillCategory(vo, article.getSubCategoryId());
+        return vo;
+    }
+
+    private ArticleSearchDocVO toSearchDoc(Article article, ArticleStatisticVO stat) {
+        ArticleWithCategoryVO categoryVO = toArticleWithCategoryVO(article);
+        ArticleSearchDocVO doc = BeanUtil.copyProperties(categoryVO, ArticleSearchDocVO.class);
+        ArticleStatisticVO safeStat = stat == null ? new ArticleStatisticVO() : stat;
+        doc.setViews(safeStat.getViews() == null ? 0 : safeStat.getViews());
+        doc.setLikeCount(safeStat.getLikeCount() == null ? 0 : safeStat.getLikeCount());
+        doc.setCollectCount(safeStat.getCollectCount() == null ? 0 : safeStat.getCollectCount());
+        doc.setAuthorFollowCount(safeStat.getAuthorFollowCount() == null ? 0 : safeStat.getAuthorFollowCount());
+
+        List<Comments> comments = commentsMapper.selectList(Wrappers.<Comments>lambdaQuery().eq(Comments::getArticleId, article.getId()));
+        List<Long> userIds = comments.stream().map(Comments::getUserId).distinct().toList();
+        Map<Long, String> roleMap = userIds.isEmpty() ? Collections.emptyMap()
+                : userService.listByIds(userIds).stream().collect(Collectors.toMap(User::getId, User::getRole));
+        List<Comments> aiComments = comments.stream().filter(comment -> "ai".equalsIgnoreCase(roleMap.get(comment.getUserId()))).toList();
+        List<Comments> userComments = comments.stream().filter(comment -> !"ai".equalsIgnoreCase(roleMap.get(comment.getUserId()))).toList();
+        doc.setAiCommentCount(aiComments.size());
+        doc.setUserCommentCount(userComments.size());
+        doc.setAiScore(averageStar(aiComments));
+        doc.setUserScore(averageStar(userComments));
+        return doc;
+    }
+
+    private Double averageStar(List<Comments> comments) {
+        return comments.stream()
+                .filter(comment -> comment.getStar() != null)
+                .mapToDouble(Comments::getStar)
+                .average()
+                .orElse(0.0D);
+    }
+
+    private void fillCategory(ArticleWithCategoryVO vo, Integer subCategoryId) {
+        if (subCategoryId == null) {
+            return;
+        }
+        SubCategory subCategory = subCategoryMapper.selectById(subCategoryId);
+        if (subCategory == null) {
+            return;
+        }
+        vo.setSubCategoryName(subCategory.getName());
+        Category category = categoryMapper.selectById(subCategory.getCategoryId());
+        if (category != null) {
+            vo.setCategoryId(category.getId());
+            vo.setCategoryName(category.getName());
+        }
     }
 
 }

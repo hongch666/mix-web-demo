@@ -36,6 +36,8 @@ import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
+import com.hcsy.spring.entity.dto.GithubUserUpsertDTO;
+import com.hcsy.spring.entity.dto.IdsQueryDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.RefreshTokenDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
@@ -45,11 +47,13 @@ import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
+import com.hcsy.spring.entity.vo.GithubUserUpsertVO;
 import com.hcsy.spring.entity.vo.ImageCaptchaVO;
 import com.hcsy.spring.entity.vo.KickOtherDevicesVO;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
+import com.hcsy.spring.entity.vo.UserRoleVO;
 import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -169,6 +173,42 @@ public class UserController {
         userVO.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(id));
 
         return Result.success(userVO);
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "批量查询用户", description = "按用户ID批量查询用户基础信息")
+    @RequireInternalToken
+    @ApiLog("批量查询用户")
+    public Result getUsersByIds(@Valid @RequestBody IdsQueryDTO dto) {
+        List<UserVO> users = userService.listByIds(dto.getIds()).stream()
+                .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+                .toList();
+        return Result.success(users);
+    }
+
+    @GetMapping("/role/{id}")
+    @Operation(summary = "查询用户角色", description = "按用户ID查询角色和管理员状态")
+    @RequireInternalToken
+    @ApiLog("查询用户角色")
+    public Result getUserRole(@PathVariable Long id) {
+        User user = userService.getById(id);
+        if (user == null) {
+            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+        }
+        String role = user.getRole();
+        return Result.success(new UserRoleVO(id, role, "admin".equalsIgnoreCase(role)));
+    }
+
+    @PostMapping("/github/upsert")
+    @Operation(summary = "创建或更新 GitHub 用户", description = "由 GitHub OAuth 编排服务调用，用户数据归属 Spring")
+    @RequireInternalToken
+    @Caching(evict = {
+            @CacheEvict(value = "userPage", key = "'all-users'")
+    })
+    @ApiLog("创建或更新 GitHub 用户")
+    public Result upsertGithubUser(@Valid @RequestBody GithubUserUpsertDTO dto) {
+        GithubUserUpsertVO user = userService.upsertGithubUser(dto);
+        return Result.success(user);
     }
 
     @PutMapping

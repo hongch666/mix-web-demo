@@ -6,10 +6,12 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
+import com.hcsy.spring.entity.dto.GithubUserUpsertDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
+import com.hcsy.spring.entity.vo.GithubUserUpsertVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 
@@ -41,5 +43,7 @@ public interface UserService extends IService<User> {
     UserLoginVO exchangeGithubTokenTicket(GithubTokenExchangeDTO dto);
 
     void registerUser(UserRegisterDTO registerDTO);
+
+    GithubUserUpsertVO upsertGithubUser(GithubUserUpsertDTO dto);
 
 }
