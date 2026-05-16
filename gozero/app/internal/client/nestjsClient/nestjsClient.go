@@ -2,6 +2,8 @@ package nestjsClient
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"app/common/client"
 
@@ -28,4 +30,23 @@ func (c *NestjsClient) Test(ctx context.Context) (client.Result, error) {
 	return sd.CallService(ctx, c.serviceName, "/api_nestjs/nestjs", client.RequestOptions{
 		Method: "GET",
 	})
+}
+
+func (c *NestjsClient) GetSearchHistory(ctx context.Context, userID int64) ([]string, error) {
+	sd := client.NewServiceDiscovery(c.namingClient)
+	result, err := sd.CallService(ctx, c.serviceName, fmt.Sprintf("/article-logs/search-history/%d", userID), client.RequestOptions{
+		Method: "GET",
+	})
+	if err != nil {
+		return nil, err
+	}
+	payload, err := json.Marshal(result.Data)
+	if err != nil {
+		return nil, err
+	}
+	var history SearchHistoryResponse
+	if err := json.Unmarshal(payload, &history); err != nil {
+		return nil, err
+	}
+	return history.Keywords, nil
 }

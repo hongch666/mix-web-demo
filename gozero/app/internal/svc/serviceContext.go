@@ -19,18 +19,8 @@ import (
 	"app/internal/client/springClient"
 	"app/internal/config"
 	"app/internal/middleware"
-	"app/model/aiHistory"
-	"app/model/articles"
-	"app/model/category"
-	"app/model/categoryReference"
 	"app/model/chatMessages"
-	"app/model/collects"
-	"app/model/comments"
-	"app/model/focus"
-	"app/model/likes"
 	"app/model/search"
-	"app/model/subCategory"
-	"app/model/user"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -42,8 +32,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -60,22 +48,11 @@ type ServiceContext struct {
 	ESClient        *elastic.Client
 	RabbitMQConn    *amqp.Connection
 	RabbitMQChannel *amqp.Channel
-	MongoClient     *mongo.Client
 	RedisClient     *redis.Client
 	NamingClient    naming_client.INamingClient
 
-	AiHistoryModel         aiHistory.AiHistoryModel
-	ArticlesModel          articles.ArticlesModel
-	CategoryModel          category.CategoryModel
-	CategoryReferenceModel categoryReference.CategoryReferenceModel
-	ChatMessagesModel      chatMessages.ChatMessagesModel
-	CollectsModel          collects.CollectsModel
-	CommentsModel          comments.CommentsModel
-	FocusModel             focus.FocusModel
-	LikesModel             likes.LikesModel
-	SubCategoryModel       subCategory.SubCategoryModel
-	UserModel              user.UserModel
-	SearchModel            search.SearchModel
+	ChatMessagesModel chatMessages.ChatMessagesModel
+	SearchModel       search.SearchModel
 
 	ChatHub *hub.ChatHub
 	SSEHub  *hub.SSEHubManager
@@ -106,43 +83,23 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	db := initGorm(c)
 	esClient := initES(c)
 	rabbitConn, rabbitChannel := initRabbitMQ(c)
-	mongoClient := initMongoDB(c)
 	redisClient := initRedis(c)
 	namingClient := initNacos(c)
 
 	var (
-		aiHistoryModel         aiHistory.AiHistoryModel
-		articlesModel          articles.ArticlesModel
-		categoryModel          category.CategoryModel
-		categoryReferenceModel categoryReference.CategoryReferenceModel
-		chatMessagesModel      chatMessages.ChatMessagesModel
-		collectsModel          collects.CollectsModel
-		commentsModel          comments.CommentsModel
-		focusModel             focus.FocusModel
-		likesModel             likes.LikesModel
-		subCategoryModel       subCategory.SubCategoryModel
-		userModel              user.UserModel
-		searchModel            search.SearchModel
+		chatMessagesModel chatMessages.ChatMessagesModel
+		searchModel       search.SearchModel
 	)
 
 	if db != nil {
-		aiHistoryModel = aiHistory.NewAiHistoryModel(db)
-		articlesModel = articles.NewArticlesModel(db)
-		categoryModel = category.NewCategoryModel(db)
-		categoryReferenceModel = categoryReference.NewCategoryReferenceModel(db)
 		chatMessagesModel = chatMessages.NewChatMessagesModel(db)
-		collectsModel = collects.NewCollectsModel(db)
-		commentsModel = comments.NewCommentsModel(db)
-		focusModel = focus.NewFocusModel(db)
-		likesModel = likes.NewLikesModel(db)
-		subCategoryModel = subCategory.NewSubCategoryModel(db)
-		userModel = user.NewUserModel(db)
 	}
 
+	fastapiClient := fastapiClient.NewFastapiClient(namingClient)
+	springClientClient := springClient.NewSpringClient(namingClient)
+	nestjsClient := nestjsClient.NewNestjsClient(namingClient)
 	searchModel = search.NewSearchModel(search.SearchModelDeps{
-		ESClient:      esClient,
-		MongoClient:   mongoClient,
-		MongoDatabase: c.Database.MongoDB.Database,
+		ESClient: esClient,
 		Config: search.SearchModelConfig{
 			ESScoreWeight:         c.Search.ESScoreWeight,
 			AIRatingWeight:        c.Search.AIRatingWeight,
@@ -158,42 +115,24 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			MaxFollowsNormalized:  c.Search.MaxFollowsNormalized,
 			RecencyDecayDays:      c.Search.RecencyDecayDays,
 		},
-		ArticlesModel: articlesModel,
-		LikesModel:    likesModel,
-		CollectsModel: collectsModel,
-		FocusModel:    focusModel,
+		StatsProvider: springClient.NewSearchStatsProvider(springClientClient),
 	})
 
-	fastapiClient := fastapiClient.NewFastapiClient(namingClient)
-	springClient := springClient.NewSpringClient(namingClient)
-	nestjsClient := nestjsClient.NewNestjsClient(namingClient)
-
 	return &ServiceContext{
-		Config:                 c,
-		MySQLConn:              mysqlConn,
-		DB:                     db,
-		ESClient:               esClient,
-		RabbitMQConn:           rabbitConn,
-		RabbitMQChannel:        rabbitChannel,
-		MongoClient:            mongoClient,
-		RedisClient:            redisClient,
-		NamingClient:           namingClient,
-		AiHistoryModel:         aiHistoryModel,
-		ArticlesModel:          articlesModel,
-		CategoryModel:          categoryModel,
-		CategoryReferenceModel: categoryReferenceModel,
-		ChatMessagesModel:      chatMessagesModel,
-		CollectsModel:          collectsModel,
-		CommentsModel:          commentsModel,
-		FocusModel:             focusModel,
-		LikesModel:             likesModel,
-		SubCategoryModel:       subCategoryModel,
-		UserModel:              userModel,
-		SearchModel:            searchModel,
-		FastapiClient:           fastapiClient,
-		SpringClient:            springClient,
-		NestjsClient:            nestjsClient,
-		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
+		Config:            c,
+		MySQLConn:         mysqlConn,
+		DB:                db,
+		ESClient:          esClient,
+		RabbitMQConn:      rabbitConn,
+		RabbitMQChannel:   rabbitChannel,
+		RedisClient:       redisClient,
+		NamingClient:      namingClient,
+		ChatMessagesModel: chatMessagesModel,
+		SearchModel:       searchModel,
+		FastapiClient:     fastapiClient,
+		SpringClient:      springClientClient,
+		NestjsClient:      nestjsClient,
+		ChatHub:           &hub.ChatHub{ZeroLogger: zLogger},
 		SSEHub: func() *hub.SSEHubManager {
 			hub := hub.GetSSEHub()
 			hub.ZeroLogger = zLogger
@@ -344,35 +283,6 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 	}
 
 	return conn, channel
-}
-
-func initMongoDB(c config.Config) *mongo.Client {
-	mongoConf := c.Database.MongoDB
-	if mongoConf.Host == "" || mongoConf.Port == 0 {
-		return nil
-	}
-
-	var mongoURI string
-	if mongoConf.Username != "" && mongoConf.Password != "" {
-		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%d", mongoConf.Username, mongoConf.Password, mongoConf.Host, mongoConf.Port)
-	} else {
-		mongoURI = fmt.Sprintf("mongodb://%s:%d", mongoConf.Host, mongoConf.Port)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		logger.Errorf(utils.MONGODB_CONNECTION_INIT_FAIL, err)
-		panic(err)
-	}
-	if err = client.Ping(ctx, nil); err != nil {
-		logger.Errorf(utils.MONGODB_PING_FAIL, err)
-		panic(err)
-	}
-
-	return client
 }
 
 type esLoggerAdapter struct{}

@@ -35,13 +35,6 @@ database:
     username: ${DB_ES_USERNAME:}
     password: ${DB_ES_PASSWORD:}
     sniff: ${DB_ES_SNIFF:false}
-  mongodb:
-    host: ${DB_MONGODB_HOST:127.0.0.1}
-    port: ${DB_MONGODB_PORT:27017}
-    username: ${DB_MONGODB_USERNAME:}
-    password: ${DB_MONGODB_PASSWORD:}
-    database: ${DB_MONGODB_DATABASE:demo}
-
 mq:
   username: ${RABBITMQ_USERNAME:}
   password: ${RABBITMQ_PASSWORD:}

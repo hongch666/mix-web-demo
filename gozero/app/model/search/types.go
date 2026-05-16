@@ -3,16 +3,12 @@ package search
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/olivere/elastic/v7"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
 	ErrNilESClient     = errors.New("es client is nil")
-	ErrNilMongoClient  = errors.New("mongo client is nil")
-	ErrEmptyMongoDB    = errors.New("mongo database is empty")
 	ErrSearchHitsEmpty = errors.New("es search hits is nil")
 )
 
@@ -51,17 +47,6 @@ type ArticleES struct {
 	ESScore           float64 `json:"-"` // ES 原始评分（不序列化到 JSON）
 }
 
-type SearchLog struct {
-	ID        string         `bson:"_id,omitempty"`
-	UserID    int64          `bson:"userId"`
-	ArticleID *int64         `bson:"articleId,omitempty"`
-	Action    string         `bson:"action"`
-	Content   map[string]any `bson:"content"`
-	Msg       string         `bson:"msg"`
-	CreatedAt time.Time      `bson:"createdAt"`
-	UpdatedAt time.Time      `bson:"updatedAt"`
-}
-
 type SearchContent struct {
 	Keyword         string  `json:"Keyword"`
 	UserID          *int64  `json:"UserID"`
@@ -90,60 +75,37 @@ type SearchModelConfig struct {
 	RecencyDecayDays      int64
 }
 
-type ArticleViewCounter interface {
-	GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error)
-}
-
-type LikeCounter interface {
-	GetLikeCountsByArticleIDs(ctx context.Context, articleIDs []int64) (map[int64]int64, error)
-}
-
-type CollectCounter interface {
-	GetCollectCountsByArticleIDs(ctx context.Context, articleIDs []int64) (map[int64]int64, error)
-}
-
-type FollowCounter interface {
-	GetFollowCountsByUserIDs(ctx context.Context, userIDs []int64) (map[int64]int64, error)
+type ArticleStatsProvider interface {
+	GetSearchStats(ctx context.Context, articleIDs []int64) (map[int64]ArticleStats, error)
 }
 
 type SearchModelDeps struct {
 	ESClient      *elastic.Client
-	MongoClient   *mongo.Client
-	MongoDatabase string
 	Config        SearchModelConfig
-
-	ArticlesModel ArticleViewCounter
-	LikesModel    LikeCounter
-	CollectsModel CollectCounter
-	FocusModel    FollowCounter
+	StatsProvider ArticleStatsProvider
 }
 
 type SearchModel interface {
 	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO) ([]ArticleES, int, error)
-	GetSearchHistory(ctx context.Context, userID int64) ([]string, error)
 }
 
 type searchModel struct {
 	esClient      *elastic.Client
-	mongoClient   *mongo.Client
-	mongoDatabase string
 	config        SearchModelConfig
-
-	articlesModel ArticleViewCounter
-	likesModel    LikeCounter
-	collectsModel CollectCounter
-	focusModel    FollowCounter
+	statsProvider ArticleStatsProvider
 }
 
 func NewSearchModel(deps SearchModelDeps) SearchModel {
 	return &searchModel{
 		esClient:      deps.ESClient,
-		mongoClient:   deps.MongoClient,
-		mongoDatabase: deps.MongoDatabase,
 		config:        deps.Config,
-		articlesModel: deps.ArticlesModel,
-		likesModel:    deps.LikesModel,
-		collectsModel: deps.CollectsModel,
-		focusModel:    deps.FocusModel,
+		statsProvider: deps.StatsProvider,
 	}
+}
+
+type ArticleStats struct {
+	Views             int
+	LikeCount         int
+	CollectCount      int
+	AuthorFollowCount int
 }

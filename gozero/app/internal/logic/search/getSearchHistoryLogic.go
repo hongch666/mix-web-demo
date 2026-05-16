@@ -40,8 +40,8 @@ func (l *GetSearchHistoryLogic) GetSearchHistory(req *types.GetSearchHistoryReq)
 		panic(exceptions.NewBadRequestError(utils.PARAM_ERR, err.Error()))
 	}
 
-	// 获取搜索历史
-	keywords, err := l.svcCtx.SearchModel.GetSearchHistory(l.ctx, userID)
+	// 搜索历史归属 NestJS MongoDB 日志服务，这里通过服务调用获取
+	keywords, err := l.svcCtx.NestjsClient.GetSearchHistory(l.ctx, userID)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.SEARCH_HISTORY_FAIL+": %v", err))
 		panic(exceptions.NewInternalServerError(utils.SEARCH_HISTORY_FAIL, err.Error()))

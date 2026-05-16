@@ -4,3 +4,7 @@ package nestjsClient
 type TestResponse struct {
 	Data string `json:"data"`
 }
+
+type SearchHistoryResponse struct {
+	Keywords []string `json:"keywords"`
+}

@@ -146,44 +146,17 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 		articleIDs = append(articleIDs, article.ID)
 	}
 
-	if len(articles) > 0 && m.articlesModel != nil && m.likesModel != nil && m.collectsModel != nil && m.focusModel != nil {
-		viewsMap, err := m.articlesModel.GetArticleViewsByIDs(ctx, articleIDs)
+	if len(articles) > 0 && m.statsProvider != nil {
+		stats, err := m.statsProvider.GetSearchStats(ctx, articleIDs)
 		if err != nil {
 			return nil, 0, err
 		}
-
-		likeCounts, err := m.likesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		collectCounts, err := m.collectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		authorUserIDs := make([]int64, 0, len(articles))
-		for _, article := range articles {
-			authorUserIDs = append(authorUserIDs, article.UserID)
-		}
-
-		authorFollowCounts, err := m.focusModel.GetFollowCountsByUserIDs(ctx, authorUserIDs)
-		if err != nil {
-			return nil, 0, err
-		}
-
 		for i := range articles {
-			if views, ok := viewsMap[articles[i].ID]; ok {
-				articles[i].Views = int(views)
-			}
-			if likes, ok := likeCounts[articles[i].ID]; ok {
-				articles[i].LikeCount = int(likes)
-			}
-			if collects, ok := collectCounts[articles[i].ID]; ok {
-				articles[i].CollectCount = int(collects)
-			}
-			if followCount, ok := authorFollowCounts[articles[i].UserID]; ok {
-				articles[i].AuthorFollowCount = int(followCount)
+			if stat, ok := stats[articles[i].ID]; ok {
+				articles[i].Views = stat.Views
+				articles[i].LikeCount = stat.LikeCount
+				articles[i].CollectCount = stat.CollectCount
+				articles[i].AuthorFollowCount = stat.AuthorFollowCount
 			}
 		}
 	}

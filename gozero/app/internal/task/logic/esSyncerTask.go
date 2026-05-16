@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"app/common/utils"
+	"app/internal/client/springClient"
 	"app/internal/svc"
-	"app/model/articles"
 	"app/model/search"
 
 	"github.com/olivere/elastic/v7"
@@ -20,6 +20,7 @@ import (
 const (
 	esArticlesIndexName = "articles"
 	esSyncBatchSize     = 500
+	esDateTimeLayout    = "2006-01-02 15:04:05"
 )
 
 type esSyncStats struct {
@@ -56,25 +57,20 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		return err
 	}
 
-	// 这些 map 是本次同步过程中的简单本地缓存，同一批次或后续批次中如果重复遇到同一个作者/分类，就不用再反复查数据库
-	userMap := make(map[int64]string)
-	categoryMap := make(map[int64]string)
-	subCategoryMap := make(map[int64]string)
 	stats := esSyncStats{}
 	batchIdx := 0
+	cursor := int64(0)
 
-	// 第二步：按批读取数据库中当前“已发布”的文章，避免一次性把整表读入内存
-	err = svcCtx.ArticlesModel.IteratePublishedArticles(ctx, esSyncBatchSize, func(batch []articles.Articles) error {
-		if len(batch) == 0 {
-			return nil
-		}
-
-		batchIdx++
-		// 把当前批次的数据库文章补齐成完整的 ES 文档结构
-		docs, err := buildArticleESBatch(ctx, svcCtx, batch, userMap, categoryMap, subCategoryMap)
+	for {
+		page, err := svcCtx.SpringClient.GetArticleSearchDocs(ctx, cursor, esSyncBatchSize)
 		if err != nil {
-			return err
+			return logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
+		if page == nil || len(page.List) == 0 {
+			break
+		}
+		batchIdx++
+		docs := buildArticleESBatch(page.List)
 
 		bulkRequest := svcCtx.ESClient.Bulk()
 		batchAdded := 0
@@ -125,11 +121,11 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			svcCtx.Logger.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
 		}
 
+		cursor = page.NextCursor
+		if !page.HasMore {
+			break
+		}
 		time.Sleep(200 * time.Millisecond)
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 
 	// 第三步：如果遍历完 DB 后，existingDocs 里还有剩余 id，说明这些文档只存在于 ES，当前数据库里已经没有对应的“已发布文章”了
@@ -153,129 +149,56 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 }
 
 func buildArticleESBatch(
-	ctx context.Context,
-	svcCtx *svc.ServiceContext,
-	articleBatch []articles.Articles,
-	userMap map[int64]string,
-	categoryMap map[int64]string,
-	subCategoryMap map[int64]string,
-) ([]search.ArticleES, error) {
-	// 先收集本批次涉及到的主键集合，便于后续批量查询统计信息
-	userIDs := make([]int64, 0, len(articleBatch))
-	subCategoryIDs := make([]int64, 0, len(articleBatch))
-	articleIDs := make([]int64, 0, len(articleBatch))
-
-	for _, article := range articleBatch {
-		userIDs = append(userIDs, article.UserId)
-		subCategoryIDs = append(subCategoryIDs, article.SubCategoryId)
-		articleIDs = append(articleIDs, article.Id)
-	}
-
-	for _, uid := range userIDs {
-		if _, ok := userMap[uid]; ok {
-			continue
-		}
-		// 用户名是 ES 文档的一部分，这里按需查一次并放入缓存
-		user, err := svcCtx.UserModel.FindOne(ctx, uid)
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_USER_ERROR, uid, err))
-			}
-			continue
-		}
-		userMap[uid] = user.Name
-	}
-
-	for _, subCategoryID := range subCategoryIDs {
-		if _, ok := subCategoryMap[subCategoryID]; ok {
-			continue
-		}
-
-		// 子分类名和父分类名同样是 ES 文档里的检索字段，因此在同步时补齐
-		subCategory, err := svcCtx.SubCategoryModel.FindOne(ctx, subCategoryID)
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_SUBCATEGORY_ERROR, subCategoryID, err))
-			}
-			continue
-		}
-		subCategoryMap[subCategoryID] = subCategory.Name
-
-		if _, ok := categoryMap[subCategoryID]; ok {
-			continue
-		}
-		category, err := svcCtx.CategoryModel.FindOne(ctx, int64(subCategory.CategoryId))
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_CATEGORY_ERROR, subCategory.CategoryId, err))
-			}
-			continue
-		}
-		categoryMap[subCategoryID] = category.Name
-	}
-
-	// 下面这些统计信息会影响搜索排序或文档展示，因此统一按批拉取
-	commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.CREATE_MESSAGE_ERROR, err)
-	}
-	likeCounts, err := svcCtx.LikesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.LIKE_QUERY_ERROR, err)
-	}
-	collectCounts, err := svcCtx.CollectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.COLLECT_QUERY_ERROR, err)
-	}
-	authorFollowCounts, err := svcCtx.FocusModel.GetFollowCountsByUserIDs(ctx, userIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.FOCUS_QUERY_ERROR, err)
-	}
-
+	articleBatch []springClient.ArticleSearchDoc,
+) []search.ArticleES {
 	docs := make([]search.ArticleES, 0, len(articleBatch))
 	for _, article := range articleBatch {
-		scores := commentScores[article.Id]
-
-		// 评论分数拆分为 AI 评分和用户评分两个维度，分别写入 ES
-		aiScore := 0.0
-		aiCount := 0
-		if aiScoreData, ok := scores["ai"]; ok {
-			aiScore = aiScoreData.AverageScore
-			aiCount = int(aiScoreData.Count)
-		}
-
-		userScore := 0.0
-		userCount := 0
-		if userScoreData, ok := scores["user"]; ok {
-			userScore = userScoreData.AverageScore
-			userCount = int(userScoreData.Count)
-		}
-
-		// 组装出最终写入 ES 的完整文档
 		docs = append(docs, search.ArticleES{
-			ID:                article.Id,
+			ID:                article.ID,
 			Title:             article.Title,
 			Content:           article.Content,
-			UserID:            article.UserId,
-			Username:          userMap[article.UserId],
+			UserID:            article.UserID,
+			Username:          article.Username,
 			Tags:              article.Tags,
-			Status:            int(article.Status),
-			Views:             int(article.Views),
-			LikeCount:         int(likeCounts[article.Id]),
-			CollectCount:      int(collectCounts[article.Id]),
-			AuthorFollowCount: int(authorFollowCounts[article.UserId]),
-			CategoryName:      categoryMap[article.SubCategoryId],
-			SubCategoryName:   subCategoryMap[article.SubCategoryId],
-			CreateAt:          article.CreateAt.Format("2006-01-02 15:04:05"),
-			UpdateAt:          article.UpdateAt.Format("2006-01-02 15:04:05"),
-			AIScore:           aiScore,
-			UserScore:         userScore,
-			AICommentCount:    aiCount,
-			UserCommentCount:  userCount,
+			Status:            article.Status,
+			Views:             article.Views,
+			LikeCount:         article.LikeCount,
+			CollectCount:      article.CollectCount,
+			AuthorFollowCount: article.AuthorFollowCount,
+			CategoryName:      article.CategoryName,
+			SubCategoryName:   article.SubCategoryName,
+			CreateAt:          normalizeESDateTime(article.CreateAt),
+			UpdateAt:          normalizeESDateTime(article.UpdateAt),
+			AIScore:           article.AIScore,
+			UserScore:         article.UserScore,
+			AICommentCount:    article.AICommentCount,
+			UserCommentCount:  article.UserCommentCount,
 		})
 	}
 
-	return docs, nil
+	return docs
+}
+
+func normalizeESDateTime(value string) string {
+	if value == "" {
+		return value
+	}
+
+	layouts := []string{
+		esDateTimeLayout,
+		"2006-01-02T15:04:05",
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05.000",
+		"2006-01-02T15:04:05.000000",
+	}
+	for _, layout := range layouts {
+		if parsed, err := time.ParseInLocation(layout, value, time.Local); err == nil {
+			return parsed.Format(esDateTimeLayout)
+		}
+	}
+
+	return value
 }
 
 func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (map[int64]string, error) {

@@ -130,12 +130,6 @@ const (
 	// 声明 RabbitMQ 队列失败信息
 	RABBITMQ_DECLARE_QUEUE_FAIL = "声明 RabbitMQ 队列失败, queue=%s, err=%v"
 
-	// 初始化 MongoDB 连接失败信息
-	MONGODB_CONNECTION_INIT_FAIL = "初始化 MongoDB 连接失败: %v"
-
-	// MongoDB 心跳检测失败信息
-	MONGODB_PING_FAIL = "MongoDB 心跳检测失败: %v"
-
 	// 初始化 Nacos 客户端失败信息
 	NACOS_CLIENT_INIT_FAIL = "初始化 Nacos 客户端失败: %v"
 
