@@ -27,7 +27,6 @@
     "@nestjs/platform-fastify": "^11.1.17",
     "@nestjs/schedule": "^6.0.0",
     "@nestjs/swagger": "^11.2.0",
-    "@nestjs/typeorm": "^11.0.0",
     "ali-oss": "^6.9.0",
     "amqplib": "^0.10.8",
     "axios": "^1.13.6",
@@ -43,14 +42,12 @@
     "jsonwebtoken": "^9.0.3",
     "marked": "^4.3.0",
     "mongoose": "^8.15.1",
-    "mysql2": "^3.14.1",
     "nacos": "^2.6.0",
     "nestjs-cls": "^6.0.1",
     "nodemailer": "^8.0.7",
     "puppeteer": "^24.28.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.28",
     "uuid": "^14.0.0"
   },
   "devDependencies": {

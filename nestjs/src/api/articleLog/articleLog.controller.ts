@@ -48,6 +48,44 @@ export class ArticleLogController {
     const data: unknown = await this.logService.findByFilter(query);
     return success(data);
   }
+
+  @Get('search-history/:userId')
+  @ApiOperation({
+    summary: '查询用户搜索历史',
+    description: '供 GoZero 搜索模块获取用户搜索历史',
+  })
+  @RequireInternalToken()
+  async getSearchHistory(
+    @Param('userId') userId: string,
+  ): Promise<ApiResponse<unknown>> {
+    const data = await this.logService.getSearchHistory(Number(userId));
+    return success(data);
+  }
+
+  @Get('search-keywords')
+  @ApiOperation({
+    summary: '查询搜索关键词',
+    description: '供 FastAPI 词云分析使用',
+  })
+  @RequireInternalToken()
+  async getSearchKeywords(): Promise<ApiResponse<unknown>> {
+    const data = await this.logService.getSearchKeywords();
+    return success(data);
+  }
+
+  @Get('view-distribution')
+  @ApiOperation({
+    summary: '查询用户浏览分布',
+    description: '供 FastAPI 用户分析使用',
+  })
+  @RequireInternalToken()
+  async getViewDistribution(
+    @Query('userId') userId: string,
+  ): Promise<ApiResponse<unknown>> {
+    const data = await this.logService.getViewDistribution(Number(userId));
+    return success(data);
+  }
+
   @Delete(':id')
   @ApiOperation({
     summary: '删除文章日志',

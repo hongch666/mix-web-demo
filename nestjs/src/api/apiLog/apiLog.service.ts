@@ -208,4 +208,58 @@ export class ApiLogService {
 
     return { total, list: resultList };
   }
+
+  async getAverageSpeed(): Promise<Array<Record<string, unknown>>> {
+    return await this.apiLogModel.aggregate([
+      {
+        $group: {
+          _id: {
+            api_path: '$apiPath',
+            api_method: '$apiMethod',
+            api_description: '$apiDescription',
+          },
+          avg_response_time: { $avg: '$responseTime' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          api_path: '$_id.api_path',
+          api_method: '$_id.api_method',
+          api_description: '$_id.api_description',
+          avg_response_time: { $round: ['$avg_response_time', 2] },
+          count: 1,
+        },
+      },
+      { $sort: { avg_response_time: -1 } },
+    ]);
+  }
+
+  async getCalledCount(): Promise<Array<Record<string, unknown>>> {
+    return await this.apiLogModel.aggregate([
+      {
+        $group: {
+          _id: {
+            api_path: '$apiPath',
+            api_method: '$apiMethod',
+            api_description: '$apiDescription',
+          },
+          call_count: { $sum: 1 },
+          avg_response_time: { $avg: '$responseTime' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          api_path: '$_id.api_path',
+          api_method: '$_id.api_method',
+          api_description: '$_id.api_description',
+          call_count: 1,
+          avg_response_time: { $round: ['$avg_response_time', 2] },
+        },
+      },
+      { $sort: { call_count: -1 } },
+    ]);
+  }
 }

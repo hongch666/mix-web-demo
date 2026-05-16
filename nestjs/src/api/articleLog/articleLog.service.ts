@@ -8,8 +8,11 @@ import { DeleteResult, Model } from 'mongoose';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
-import { ArticleService } from 'src/modules/article/article.service';
-import { UserService } from '../../modules/user/user.service';
+import {
+  ArticleService,
+  RemoteArticle,
+} from 'src/modules/article/article.service';
+import { RemoteUser, UserService } from '../../modules/user/user.service';
 import { CreateArticleLogDto, QueryArticleLogDto } from './dto/articleLog.dto';
 import { ArticleLog, ArticleLogDocument } from './schema/articleLog.schema';
 
@@ -178,15 +181,9 @@ export class ArticleLogService {
     if (startTime || endTime) {
       const createdAtFilter: Record<string, Date> = {};
       if (startTime)
-        createdAtFilter.$gte = dayjs(
-          startTime,
-          'YYYY-MM-DD HH:mm:ss',
-        ).toDate();
+        createdAtFilter.$gte = dayjs(startTime, 'YYYY-MM-DD HH:mm:ss').toDate();
       if (endTime)
-        createdAtFilter.$lte = dayjs(
-          endTime,
-          'YYYY-MM-DD HH:mm:ss',
-        ).toDate();
+        createdAtFilter.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
       filters.createdAt = createdAtFilter;
     }
 
@@ -211,27 +208,124 @@ export class ArticleLogService {
             .limit(take)
             .exec(),
     ]);
-    // 只返回指定字段
-    const resultList: ArticleLogListItem[] = await Promise.all(
-      list.map(async (log: ArticleLogDocument): Promise<ArticleLogListItem> => ({
-        _id: log._id,
-        userId: log.userId,
-        username: (await this.userService.getUserById(log.userId))?.name || '',
-        articleId: log.articleId,
-        articleTitle:
-          (await this.articleService.getArticleById(log.articleId))?.title ||
-          '',
-        action: log.action,
-        content: log.content,
-        msg: log.msg,
-        createdAt: log.createdAt
-          ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
-          : undefined,
-        updatedAt: log.updatedAt
-          ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
-          : undefined,
-      })),
+    const userIds = list.map((log: ArticleLogDocument) => Number(log.userId));
+    const articleIds = list.map((log: ArticleLogDocument) =>
+      Number(log.articleId),
+    );
+    const [userMap, articleMap] = await Promise.all([
+      this.userService.getUsersByIds(userIds),
+      this.articleService.getArticlesByIds(articleIds),
+    ]);
+
+    // 只返回指定字段，历史日志关联数据不存在时做降级展示
+    const resultList: ArticleLogListItem[] = list.map(
+      (log: ArticleLogDocument): ArticleLogListItem => {
+        const user: RemoteUser | undefined = userMap.get(Number(log.userId));
+        const article: RemoteArticle | undefined = articleMap.get(
+          Number(log.articleId),
+        );
+        return {
+          _id: log._id,
+          userId: log.userId,
+          username: user?.name || Constants.UNKNOWN_USER,
+          articleId: log.articleId,
+          articleTitle: article?.title || Constants.UNKNOWN_ARTICLE,
+          action: log.action,
+          content: log.content,
+          msg: log.msg,
+          createdAt: log.createdAt
+            ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+            : undefined,
+          updatedAt: log.updatedAt
+            ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+            : undefined,
+        };
+      },
     );
     return { total, list: resultList };
+  }
+
+  async getSearchHistory(userId: number): Promise<{ keywords: string[] }> {
+    const rows: Array<{ keyword?: string }> = await this.logModel.aggregate([
+      {
+        $match: {
+          userId,
+          action: 'search',
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $addFields: {
+          keyword: '$content.Keyword',
+        },
+      },
+      {
+        $match: {
+          keyword: {
+            $exists: true,
+            $nin: [null, ''],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$keyword',
+          createdAt: { $first: '$createdAt' },
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $limit: 10,
+      },
+      {
+        $project: {
+          _id: 0,
+          keyword: '$_id',
+        },
+      },
+    ]);
+    return {
+      keywords: rows.map((item) => item.keyword).filter(Boolean) as string[],
+    };
+  }
+
+  async getSearchKeywords(): Promise<{ keywords: string[] }> {
+    const rows: Array<{ keyword?: string }> = await this.logModel.aggregate([
+      { $match: { action: 'search' } },
+      { $project: { keyword: '$content.Keyword' } },
+      { $match: { keyword: { $ne: '', $exists: true } } },
+      { $group: { _id: '$keyword' } },
+      { $sort: { _id: 1 } },
+      { $project: { _id: 0, keyword: '$_id' } },
+    ]);
+    return {
+      keywords: rows.map((item) => item.keyword).filter(Boolean) as string[],
+    };
+  }
+
+  async getViewDistribution(userId: number): Promise<Record<string, unknown>> {
+    const rows: Array<{ articleId?: number; views?: number }> =
+      await this.logModel.aggregate([
+        { $match: { userId, action: 'view' } },
+        { $group: { _id: '$articleId', views: { $sum: 1 } } },
+        { $match: { _id: { $ne: null } } },
+        { $sort: { views: -1 } },
+        { $project: { _id: 0, articleId: '$_id', views: 1 } },
+      ]);
+    return {
+      total_views: rows.reduce(
+        (total, item) => total + Number(item.views || 0),
+        0,
+      ),
+      articles: rows,
+    };
   }
 }

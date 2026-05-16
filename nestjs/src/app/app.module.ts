@@ -4,8 +4,6 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import type { MongooseModuleOptions } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { InternalTokenGuard } from 'src/framework/guards/internalToken.guard';
 import { RequireAdminGuard } from 'src/framework/guards/requireAdmin.guard';
@@ -17,16 +15,6 @@ import { ClsMiddleware } from '../framework/middleware/cls.middleware';
 import { ModulesModule } from '../modules/modules.module';
 import { RedisModule } from '../modules/redis/redis.module';
 
-interface DatabaseConfig {
-  type: 'mysql';
-  host: string;
-  port: number;
-  username: string;
-  password: string;
-  database: string;
-  logging: boolean;
-}
-
 interface MongoDbConfig {
   host: string;
   port: number;
@@ -37,26 +25,6 @@ interface MongoDbConfig {
 
 @Module({
   imports: [
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
-        const db: DatabaseConfig = configService.get<DatabaseConfig>(
-          'database',
-        )!;
-        return {
-          type: db.type,
-          host: db.host,
-          port: db.port,
-          username: db.username,
-          password: db.password,
-          database: db.database,
-          synchronize: false,
-          logging: db.logging,
-          autoLoadEntities: true,
-        };
-      },
-    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [yamlConfig],

@@ -37,6 +37,28 @@ export class ApiLogController {
     return success(data);
   }
 
+  @Get('average-speed')
+  @ApiOperation({
+    summary: '获取接口平均响应速度',
+    description: '供 FastAPI 分析模块调用',
+  })
+  @RequireInternalToken()
+  async getAverageSpeed(): Promise<ApiResponse<unknown>> {
+    const data = await this.apiLogService.getAverageSpeed();
+    return success(data);
+  }
+
+  @Get('called-count')
+  @ApiOperation({
+    summary: '获取接口调用次数',
+    description: '供 FastAPI 分析模块调用',
+  })
+  @RequireInternalToken()
+  async getCalledCount(): Promise<ApiResponse<unknown>> {
+    const data = await this.apiLogService.getCalledCount();
+    return success(data);
+  }
+
   /**
    * 创建API日志
    */

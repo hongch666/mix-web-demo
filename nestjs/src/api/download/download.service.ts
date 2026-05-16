@@ -8,11 +8,9 @@ import { Browser, launch, Page } from 'puppeteer';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
-import { ArticleService } from 'src/modules/article/article.service';
-import { Articles } from 'src/modules/article/entities/article.entity';
+import { ArticleService, RemoteArticle } from 'src/modules/article/article.service';
 import { OssService } from 'src/modules/oss/oss.service';
-import { User } from 'src/modules/user/entities/user.entity';
-import { UserService } from 'src/modules/user/user.service';
+import { RemoteUser, UserService } from 'src/modules/user/user.service';
 import { WordService } from 'src/modules/word/word.service';
 
 @Injectable()
@@ -27,7 +25,7 @@ export class DownloadService {
 
   // 生成word并保存到指定位置
   async exportToWordAndSave(id: number): Promise<string> {
-    const article: Articles | null =
+    const article: RemoteArticle | null =
       await this.articleService.getArticleById(id);
     if (!article) {
       throw BusinessException.notFound(
@@ -36,8 +34,8 @@ export class DownloadService {
       );
     }
     const htmlContent: string = marked.parse(article.content || '');
-    const user: User | null = await this.userService.getUserById(
-      article.user_id,
+    const user: RemoteUser | null = await this.userService.getUserById(
+      article.userId ?? 0,
     );
     const data: Record<string, unknown> = {
       title: article.title,
@@ -45,8 +43,8 @@ export class DownloadService {
       content: htmlContent,
       tags: article.tags,
       username: user?.name || Constants.UNKNOWN_USER,
-      create_at: dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss'),
-      update_at: dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss'),
+      create_at: dayjs(article.createAt).format('YYYY-MM-DD HH:mm:ss'),
+      update_at: dayjs(article.updateAt).format('YYYY-MM-DD HH:mm:ss'),
     };
     const filePath: string | undefined =
       this.configService.get<string>('files.word'); // 获取配置中的模板路径
@@ -88,7 +86,7 @@ export class DownloadService {
 
   // 生成markdown文件并上传到OSS，返回下载链接
   async exportMarkdownAndUpload(id: number): Promise<string> {
-    const article: Articles | null =
+    const article: RemoteArticle | null =
       await this.articleService.getArticleById(id);
     if (!article) {
       throw BusinessException.notFound(
@@ -99,11 +97,11 @@ export class DownloadService {
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const user: User | null = await this.userService.getUserById(
-      article.user_id,
+    const user: RemoteUser | null = await this.userService.getUserById(
+      article.userId ?? 0,
     );
     markdown += `\n**作者：** ${user?.name || '未知'}\n`;
-    markdown += `\n**创作时间：** ${dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
+    markdown += `\n**创作时间：** ${dayjs(article.createAt).format('YYYY-MM-DD HH:mm:ss')}\n`;
     markdown += `\n---\n`;
     markdown += article.content || '';
     // 保存到本地临时文件
@@ -127,7 +125,7 @@ export class DownloadService {
 
   // 生成PDF文件并保存到指定位置
   async exportToPdfAndSave(id: number): Promise<string> {
-    const article: Articles | null =
+    const article: RemoteArticle | null =
       await this.articleService.getArticleById(id);
     if (!article) {
       throw BusinessException.notFound(
@@ -136,8 +134,8 @@ export class DownloadService {
       );
     }
 
-    const user: User | null = await this.userService.getUserById(
-      article.user_id,
+    const user: RemoteUser | null = await this.userService.getUserById(
+      article.userId ?? 0,
     );
 
     // 获取文件保存路径
@@ -154,7 +152,7 @@ export class DownloadService {
     // 创建 HTML 内容
     const htmlContent: string = this.generatePdfHtml(
       article,
-      user || ({ name: '未知' } as User),
+      user || ({ name: '未知' } as RemoteUser),
     );
 
     // 使用 puppeteer 生成 PDF
@@ -193,8 +191,8 @@ export class DownloadService {
   }
 
   // 生成 PDF 的 HTML 内容
-  private generatePdfHtml(article: Articles, user: User): string {
-    const createTime: string = dayjs(article.create_at).format(
+  private generatePdfHtml(article: RemoteArticle, user: RemoteUser): string {
+    const createTime: string = dayjs(article.createAt).format(
       'YYYY-MM-DD HH:mm:ss',
     );
 

@@ -7,8 +7,7 @@ import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
 import { SpringClientService } from 'src/modules/client/springClient.service';
 import { RedisService } from 'src/modules/redis/redis.service';
-import type { User } from 'src/modules/user/entities/user.entity';
-import { UserService } from 'src/modules/user/user.service';
+import { RemoteUser, UserService } from 'src/modules/user/user.service';
 import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,
@@ -142,7 +141,7 @@ export class GithubService {
         await this.fetchGithubProfile(accessToken);
       const githubEmail: string | null =
         githubProfile.email || (await this.fetchPrimaryEmail(accessToken));
-      const user: User = await this.userService.findOrCreateGithubUser({
+      const user: RemoteUser = await this.userService.findOrCreateGithubUser({
         githubId: String(githubProfile.id),
         githubLogin: githubProfile.login,
         githubName: githubProfile.name?.trim() || githubProfile.login,

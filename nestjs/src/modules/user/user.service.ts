@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcrypt';
-import { Like, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { SpringClientService } from 'src/modules/client/springClient.service';
 
 export interface GithubUserProfile {
   githubId: string;
@@ -14,140 +10,67 @@ export interface GithubUserProfile {
   email: string | null;
 }
 
+export interface RemoteUser {
+  id: number;
+  name: string;
+  role?: string;
+  img?: string;
+  githubLogin?: string;
+}
+
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly springClientService: SpringClientService) {}
 
-  private readonly saltRounds = 10;
-
-  // 查询用户
-  async getUserById(id: number): Promise<User | null> {
-    return this.userRepository.findOne({ where: { id } });
+  async getUserById(id: number): Promise<RemoteUser | null> {
+    const response = await this.springClientService.getUserById(id);
+    return (response.data as RemoteUser | null) ?? null;
   }
 
-  // 根据用户名模糊搜索用户
-  async getUsersByName(name: string): Promise<User[]> {
-    return this.userRepository.find({
-      where: [{ name: Like(`%${name}%`) }, { githubLogin: Like(`%${name}%`) }],
-    });
-  }
-
-  // 根据 GitHub ID 查询用户
-  async getUserByGithubId(githubId: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { githubId } });
-  }
-
-  // 创建或更新 GitHub 用户
-  async findOrCreateGithubUser(profile: GithubUserProfile): Promise<User> {
-    const existingUser: User | null = await this.getUserByGithubId(
-      profile.githubId,
+  async getUsersByIds(ids: number[]): Promise<Map<number, RemoteUser>> {
+    const validIds = Array.from(
+      new Set(ids.filter((id) => Number.isFinite(id) && id > 0)),
     );
-    const availableEmail: string | null = await this.resolveAvailableEmail(
-      profile.email,
-      existingUser?.id,
-    );
-
-    if (existingUser) {
-      existingUser.githubLogin = profile.githubLogin;
-      existingUser.githubUrl = profile.githubUrl;
-      existingUser.img = profile.avatarUrl;
-      existingUser.email = availableEmail ?? existingUser.email;
-      existingUser.authProvider = 'github';
-      existingUser.lastLoginAt = new Date();
-      return this.userRepository.save(existingUser);
+    if (validIds.length === 0) {
+      return new Map();
     }
+    const response = await this.springClientService.getUsersByIds(validIds);
+    const users = (response.data as RemoteUser[] | null) ?? [];
+    return new Map(users.map((user) => [user.id, user]));
+  }
 
-    // 首次登录注册：使用默认密码的 bcrypt 加密值
-    const rawDefaultPassword: string = this.configService.get<string>(
-      'USER_DEFAULT_PASSWORD',
-    )!;
-    const encryptedPassword: string = await bcrypt.hash(
-      rawDefaultPassword,
-      this.saltRounds,
-    );
+  async getUsersByName(name: string): Promise<RemoteUser[]> {
+    const response = await this.springClientService.searchUsers(name);
+    const data = response.data as { list?: RemoteUser[] } | undefined;
+    return data?.list ?? [];
+  }
 
-    const user: User = this.userRepository.create({
+  async findOrCreateGithubUser(
+    profile: GithubUserProfile,
+  ): Promise<RemoteUser> {
+    const response = await this.springClientService.upsertGithubUser({
       githubId: profile.githubId,
       githubLogin: profile.githubLogin,
+      githubName: profile.githubName,
       githubUrl: profile.githubUrl,
-      name: await this.buildUniqueGithubUsername(profile),
-      password: encryptedPassword,
-      email: availableEmail,
-      role: 'user',
-      img: profile.avatarUrl,
-      age: 18,
-      authProvider: 'github',
-      lastLoginAt: new Date(),
+      avatarUrl: profile.avatarUrl,
+      email: profile.email,
     });
-
-    return this.userRepository.save(user);
+    const data = response.data as {
+      userId: number;
+      username: string;
+      role: string;
+    };
+    return {
+      id: data.userId,
+      name: data.username,
+      role: data.role,
+    };
   }
 
-  // 判断用户是否是管理员
   async isAdminUser(userId: number): Promise<boolean> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      return false;
-    }
-    // 根据role字段判断是否是管理员，支持'admin'、'ADMIN'等多种格式
-    return (user.role ?? '').toLowerCase() === 'admin';
-  }
-
-  private async buildUniqueGithubUsername(
-    profile: GithubUserProfile,
-  ): Promise<string> {
-    const preferredName: string =
-      profile.githubName?.trim() ||
-      profile.githubLogin.trim() ||
-      `github_${profile.githubId}`;
-
-    const preferredExists: User | null = await this.userRepository.findOne({
-      where: { name: preferredName },
-    });
-    if (!preferredExists) {
-      return preferredName;
-    }
-
-    const fallbackBase: string = `github_${profile.githubLogin || 'user'}_${profile.githubId}`;
-    const fallbackExists: User | null = await this.userRepository.findOne({
-      where: { name: fallbackBase },
-    });
-    if (!fallbackExists) {
-      return fallbackBase;
-    }
-
-    let suffix = 1;
-    while (true) {
-      const candidate = `${fallbackBase}_${suffix}`;
-      const existing: User | null = await this.userRepository.findOne({
-        where: { name: candidate },
-      });
-      if (!existing) {
-        return candidate;
-      }
-      suffix += 1;
-    }
-  }
-
-  private async resolveAvailableEmail(
-    email: string | null,
-    currentUserId?: number,
-  ): Promise<string | null> {
-    if (!email) {
-      return null;
-    }
-
-    const existingUser: User | null = await this.userRepository.findOne({
-      where: { email },
-    });
-    if (existingUser && existingUser.id !== currentUserId) {
-      return null;
-    }
-
-    return email;
+    const response = await this.springClientService.getUserRole(userId);
+    const data = response.data as { admin?: boolean } | undefined;
+    return Boolean(data?.admin);
   }
 }
