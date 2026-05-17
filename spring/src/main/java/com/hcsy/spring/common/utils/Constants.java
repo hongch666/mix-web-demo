@@ -260,6 +260,71 @@ public class Constants {
         public static String SYNC_VECTOR_FAIL = "Vector 同步失败: ";
 
         /**
+         * Agent 内部查询模块标签
+         */
+        public static final String AGENT_API_TAG = "Agent内部查询模块";
+
+        /**
+         * Agent 内部查询模块描述
+         */
+        public static final String AGENT_API_TAG_DESC = "供 FastAPI Agent 调用的内部只读查询接口";
+
+        /**
+         * Agent 获取 Spring 表结构摘要
+         */
+        public static final String AGENT_TABLES_SUMMARY = "获取核心业务库表结构";
+
+        /**
+         * Agent 获取 Spring 表结构描述
+         */
+        public static final String AGENT_TABLES_DESC = "供 FastAPI Agent 查询 Spring 数据源表结构";
+
+        /**
+         * Agent 获取 Spring 表结构日志
+         */
+        public static final String AGENT_TABLES_LOG = "Agent获取Spring表结构";
+
+        /**
+         * Agent 执行 Spring SQL 摘要
+         */
+        public static final String AGENT_QUERY_SUMMARY = "执行核心业务库只读 SQL";
+
+        /**
+         * Agent 执行 Spring SQL 描述
+         */
+        public static final String AGENT_QUERY_DESC = "供 FastAPI Agent 执行 Spring 数据源只读查询";
+
+        /**
+         * Agent 执行 Spring SQL 日志
+         */
+        public static final String AGENT_QUERY_LOG = "Agent执行Spring SQL";
+
+        /**
+         * Agent SQL 不能为空
+         */
+        public static final String AGENT_SQL_REQUIRED = "SQL不能为空";
+
+        /**
+         * Agent 仅允许单条只读 SQL
+         */
+        public static final String AGENT_SQL_SINGLE_READONLY = "只允许执行单条只读SQL";
+
+        /**
+         * Agent 仅支持只读 SQL
+         */
+        public static final String AGENT_SQL_READONLY_ONLY = "仅支持只读SQL";
+
+        /**
+         * Agent SQL 必须明确指向 Spring 职责表
+         */
+        public static final String AGENT_SQL_TABLE_SCOPE_REQUIRED = "SQL必须明确指向Spring职责表";
+
+        /**
+         * Agent SQL 包含非 Spring 职责表前缀
+         */
+        public static final String AGENT_SQL_TABLE_SCOPE_INVALID_PREFIX = "SQL包含非Spring职责表: ";
+
+        /**
          * 所有同步成功
          */
         public static String SYNC_ALL_SUCCESS = "所有同步任务执行完毕";
