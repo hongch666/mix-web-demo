@@ -1,0 +1,58 @@
+syntax = "v2"
+
+@server (
+	group:      agent
+	tags:       agent
+	prefix:     /agent
+	middleware: UserContextMiddleware,RecoveryMiddleware,InternalServiceMiddleware
+)
+service App {
+	@doc (
+		summary:     "获取 GoZero Agent 表结构"
+		description: "供 FastAPI Agent 查询 GoZero 数据源表结构"
+	)
+	@handler AgentTablesHandler
+	get /tables (AgentTablesReq) returns (AgentTablesResp)
+
+	@doc (
+		summary:     "执行 GoZero Agent SQL"
+		description: "供 FastAPI Agent 执行 GoZero 数据源只读 SQL"
+	)
+	@handler AgentQueryHandler
+	post /query (AgentQueryReq) returns (AgentQueryResp)
+}
+
+type (
+	AgentTablesReq {
+		Name string `form:"name,optional"`
+	}
+	AgentColumnItem {
+		Name     string `json:"name"`
+		Type     string `json:"type"`
+		Nullable bool   `json:"nullable"`
+		Default  string `json:"default,optional"`
+	}
+	AgentIndexItem {
+		Name    string   `json:"name"`
+		Columns []string `json:"columns"`
+	}
+	AgentTableItem {
+		TableName  string            `json:"table_name"`
+		Columns    []AgentColumnItem `json:"columns"`
+		PrimaryKey []string          `json:"primary_key"`
+		Indexes    []AgentIndexItem  `json:"indexes"`
+	}
+	AgentTablesResp {
+		Tables []AgentTableItem `json:"tables"`
+	}
+	AgentQueryReq {
+		SQL    string `json:"sql"`
+		UserID int64  `json:"user_id,optional"`
+	}
+	AgentQueryResp {
+		Columns   []string   `json:"columns"`
+		Rows      [][]string `json:"rows"`
+		TotalRows int        `json:"total_rows"`
+	}
+)
+

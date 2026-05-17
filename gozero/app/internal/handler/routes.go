@@ -6,6 +6,7 @@ package handler
 import (
 	"net/http"
 
+	agent "app/internal/handler/agent"
 	chat "app/internal/handler/chat"
 	search "app/internal/handler/search"
 	test "app/internal/handler/test"
@@ -138,6 +139,27 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/api_gozero"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware, serverCtx.InternalServiceMiddleware},
+			[]rest.Route{
+				{
+					// Agent 获取 GoZero 数据源表结构
+					Method:  http.MethodGet,
+					Path:    "/tables",
+					Handler: agent.AgentTablesHandler(serverCtx),
+				},
+				{
+					// Agent 执行 GoZero 数据源只读 SQL
+					Method:  http.MethodPost,
+					Path:    "/query",
+					Handler: agent.AgentQueryHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/agent"),
 	)
 
 	server.AddRoutes(

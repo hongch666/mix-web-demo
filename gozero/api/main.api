@@ -9,6 +9,7 @@ info (
 )
 
 import (
+	"./agent/agent.api"
 	"./chat/chat.api"
 	"./chat/stream.api"
 	"./search/search.api"

@@ -22,6 +22,10 @@ def add_chinese_tags_to_dict(swagger_data):
 
     # 中文标签映射
     tag_mapping = {
+        "agent": {
+            "name": "Agent模块",
+            "description": "Agent内部调用相关API，包括数据源表结构查询和只读SQL查询等",
+        },
         "chat": {
             "name": "聊天模块",
             "description": "聊天功能相关API，包括消息发送、历史查询、队列管理等",

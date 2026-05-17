@@ -34,6 +34,44 @@ type ArticleEsItem struct {
 	ScoreDetails      ScoreDetails         `json:"scoreDetails"`
 }
 
+type AgentColumnItem struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Nullable bool   `json:"nullable"`
+	Default  string `json:"default,optional"`
+}
+
+type AgentIndexItem struct {
+	Name    string   `json:"name"`
+	Columns []string `json:"columns"`
+}
+
+type AgentQueryReq struct {
+	SQL    string `json:"sql"`
+	UserID int64  `json:"user_id,optional"`
+}
+
+type AgentQueryResp struct {
+	Columns   []string   `json:"columns"`
+	Rows      [][]string `json:"rows"`
+	TotalRows int        `json:"total_rows"`
+}
+
+type AgentTableItem struct {
+	TableName  string            `json:"table_name"`
+	Columns    []AgentColumnItem `json:"columns"`
+	PrimaryKey []string          `json:"primary_key"`
+	Indexes    []AgentIndexItem  `json:"indexes"`
+}
+
+type AgentTablesReq struct {
+	Name string `form:"name,optional"`
+}
+
+type AgentTablesResp struct {
+	Tables []AgentTableItem `json:"tables"`
+}
+
 type ChatGetAllUnreadCountsReq struct {
 	UserId string `json:"userId"`
 }

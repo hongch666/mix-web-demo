@@ -719,4 +719,31 @@ const (
 		</body>
 		</html>
 	`
+
+	// Agent 获取 GoZero 表结构成功响应键
+	AGENT_TABLES_RESPONSE_KEY = "tables"
+
+	// Agent 执行 GoZero SQL 列名响应键
+	AGENT_QUERY_COLUMNS_KEY = "columns"
+
+	// Agent 执行 GoZero SQL 行数据响应键
+	AGENT_QUERY_ROWS_KEY = "rows"
+
+	// Agent 执行 GoZero SQL 总行数响应键
+	AGENT_QUERY_TOTAL_ROWS_KEY = "total_rows"
+
+	// Agent SQL 为空消息
+	AGENT_SQL_EMPTY = "SQL不能为空"
+
+	// Agent 仅允许单条只读 SQL
+	AGENT_SQL_SINGLE_READONLY = "只允许执行单条只读SQL"
+
+	// Agent 仅支持只读 SQL
+	AGENT_SQL_READONLY_ONLY = "仅支持只读SQL"
+
+	// Agent SQL 必须明确指向 GoZero 职责表
+	AGENT_SQL_TABLE_SCOPE_REQUIRED = "SQL必须明确指向GoZero职责表"
+
+	// Agent SQL 包含非 GoZero 职责表前缀
+	AGENT_SQL_TABLE_SCOPE_INVALID_PREFIX = "SQL包含非GoZero职责表: %s"
 )
