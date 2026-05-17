@@ -268,6 +268,7 @@ export class Constants {
    * Swagger 标签描述
    */
   static readonly SWAGGER_TAGS: [string, string][] = [
+    ['Agent日志查询模块', 'Agent内部调用相关API，包括日志集合查询和日志文档查询等'],
     ['API日志模块', 'API日志相关API，包括日志查询、统计等功能'],
     ['文章日志模块', '文章操作日志相关API，包括日志记录、查询、清理等'],
     ['测试模块', '服务测试相关API，用于验证各个微服务是否正常运行'],
@@ -401,6 +402,63 @@ export class Constants {
    * 未找到文件部分错误消息
    */
   static readonly FILE_PART_NOT_FOUND = '未找到文件部分';
+
+  /**
+   * Agent 日志模块标签
+   */
+  static readonly AGENT_LOG_API_TAG = 'Agent日志查询模块';
+
+  /**
+   * Agent 日志集合列表摘要
+   */
+  static readonly AGENT_LOG_COLLECTIONS_SUMMARY = '列出日志集合';
+
+  /**
+   * Agent 日志集合列表描述
+   */
+  static readonly AGENT_LOG_COLLECTIONS_DESCRIPTION =
+    '供 FastAPI Agent 查询日志集合及样本字段';
+
+  /**
+   * Agent 日志查询摘要
+   */
+  static readonly AGENT_LOG_QUERY_SUMMARY = '查询日志集合';
+
+  /**
+   * Agent 日志查询描述
+   */
+  static readonly AGENT_LOG_QUERY_DESCRIPTION =
+    '供 FastAPI Agent 按条件查询日志文档';
+
+  /**
+   * Agent 日志集合名称描述
+   */
+  static readonly AGENT_LOG_COLLECTION_DESC = '日志集合名称';
+
+  /**
+   * Agent 日志过滤条件描述
+   */
+  static readonly AGENT_LOG_FILTER_DESC = '查询过滤条件';
+
+  /**
+   * Agent 日志返回条数描述
+   */
+  static readonly AGENT_LOG_LIMIT_DESC = '返回条数';
+
+  /**
+   * Agent 日志排序条件描述
+   */
+  static readonly AGENT_LOG_SORT_DESC = '排序条件';
+
+  /**
+   * Agent 不允许查询的日志集合
+   */
+  static readonly AGENT_LOG_COLLECTION_FORBIDDEN = '不允许查询该日志集合';
+
+  /**
+   * Agent 不允许使用的查询运算符前缀
+   */
+  static readonly AGENT_LOG_OPERATOR_FORBIDDEN_PREFIX = '不允许使用查询运算符 ';
 
   // 邮件相关常量
 
