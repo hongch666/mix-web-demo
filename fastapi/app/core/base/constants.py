@@ -136,8 +136,8 @@ class Constants:
 
     STREAMING_CHAT_THINKING_SYSTEM_MESSAGE: str = (
         "你是一个中文AI思考型助手，用于提供文章和博客推荐、日志分析以及系统数据查询的思考内容。"
-        "其中 MongoDB 工具仅用于日志相关查询，例如 API 请求日志、错误日志和操作日志；"
-        "系统相关数据、统计数据和业务数据必须优先使用 SQL 工具查询。"
+        "其中 MongoDB 工具通过 NestJS 内部接口远程查询日志数据，例如 API 请求日志、文章访问日志和操作日志；"
+        "系统相关数据、统计数据和业务数据必须优先使用 SQL 工具查询，SQL 工具会按表归属路由到对应服务。"
         "当查询的数据量可能较大时，必须主动加上时间范围、用户范围、状态条件或 limit 等限制，避免一次性返回过多数据。"
         "回答文本应该展示调用工具和分析的思考过程。"
     )
@@ -1400,6 +1400,68 @@ class Constants:
     SQL_QUERY_NO_RES: str = "查询成功，但没有返回结果"
     """SQL查询成功无结果消息"""
 
+    SQL_MULTI_SOURCE_INITIALIZED_MESSAGE: str = (
+        "SQL工具初始化成功，本地仅允许查询 ai_history 表"
+    )
+    """多数据源 SQL 工具初始化成功消息"""
+
+    SQL_SET_USER_ID_MESSAGE: str = "设置SQL工具用户ID: {user_id}"
+    """设置 SQL 工具用户 ID 消息"""
+
+    SQL_LOCAL_TABLE_SCOPE_ERROR: str = "本地数据源仅支持 ai_history 表"
+    """FastAPI 本地 SQL 表范围错误消息"""
+
+    SQL_TABLE_NOT_FOUND_MESSAGE: str = "表 '{table_name}' 不存在"
+    """SQL 表不存在消息"""
+
+    SQL_SCHEMA_EMPTY_MESSAGE: str = "未获取到任何数据源表结构"
+    """SQL 表结构为空消息"""
+
+    SQL_SOURCE_TABLES_SUMMARY_MESSAGE: str = "数据源 {source_name} 包含 {count} 个表:"
+    """SQL 数据源表数量摘要消息"""
+
+    SQL_TABLE_SUMMARY_MESSAGE: str = "表名: {table_name} | 列数: {count} | 列名: {columns}"
+    """SQL 表摘要消息"""
+
+    SQL_TABLE_SCHEMA_TITLE_MESSAGE: str = "[{source_name}] 表名: {table_name}"
+    """SQL 表结构标题消息"""
+
+    SQL_COLUMN_INFO_TITLE: str = "列信息:"
+    """SQL 列信息标题"""
+
+    SQL_COLUMN_NULLABLE: str = "可为空"
+    """SQL 列可为空文案"""
+
+    SQL_COLUMN_NOT_NULLABLE: str = "不可为空"
+    """SQL 列不可为空文案"""
+
+    SQL_COLUMN_DEFAULT_MESSAGE: str = " 默认值: {default}"
+    """SQL 列默认值文案"""
+
+    SQL_PRIMARY_KEY_MESSAGE: str = "主键: {columns}"
+    """SQL 主键文案"""
+
+    SQL_INDEX_TITLE: str = "索引:"
+    """SQL 索引标题"""
+
+    SQL_ALL_SOURCES_FAILED_MESSAGE: str = "所有数据源查询均失败:\n"
+    """SQL 所有数据源失败消息"""
+
+    SQL_SOURCE_ERROR_MESSAGE: str = "[{source}] 状态码 {status}: {error}"
+    """SQL 数据源错误消息"""
+
+    SQL_QUERY_EMPTY_WITH_SOURCE_MESSAGE: str = "查询成功（来源: {source_name}），但没有返回结果"
+    """SQL 指定来源查询无结果消息"""
+
+    SQL_QUERY_RESULT_MESSAGE: str = "查询返回 {total} 行数据（来源: {source_name}）"
+    """SQL 查询结果消息"""
+
+    SQL_QUERY_RESULT_LIMIT_MESSAGE: str = " (仅显示前 {max_rows} 行)"
+    """SQL 查询结果截断提示"""
+
+    SQL_ASYNC_TOOL_REQUIRED_MESSAGE: str = "当前运行环境已在事件循环中，请使用异步工具调用。"
+    """SQL 同步包装器事件循环提示"""
+
     SQL_TABLE_TOOL_NAME: str = "get_table_schema"
     """SQL获取表结构工具名称"""
 
@@ -1407,10 +1469,10 @@ class Constants:
     """SQL 表结构工具输入描述"""
 
     SQL_TABLE_TOOL_DESC: str = """
-        获取MySQL数据库表结构信息。
+        获取可查询数据表结构信息。FastAPI 本地仅提供 ai_history；Spring 提供文章、用户、分类、互动等核心业务表；GoZero 提供 chat_messages。
         如果提供表名参数，返回该表的详细结构（列名、类型、主键、索引等）。
         如果不提供参数，返回所有表的列表和基本信息。
-        参数格式: 表名(字符串)，如 'articles' 或 'users'，留空获取所有表。
+        参数格式: 表名(字符串)，如 'articles'、'user'、'ai_history' 或 'chat_messages'，留空获取所有表。
         使用场景: 需要了解数据库结构、查询某表有哪些字段时使用。
     """
     """SQL获取表结构工具描述"""
@@ -1422,7 +1484,8 @@ class Constants:
     """SQL 查询工具输入描述"""
 
     SQL_QUERY_TOOL_DESC: str = """
-        执行只读SQL查询并返回结果。
+        执行只读 SQL 查询并返回结果。工具会根据表归属将查询路由到 FastAPI 本地、Spring 或 GoZero。
+        FastAPI 本地仅允许查询 ai_history；Spring 允许查询核心业务表；GoZero 允许查询 chat_messages。
         只允许单条只读语句，例如 SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN。
         不允许 INSERT/UPDATE/DELETE/DDL/锁表/多语句 等任何修改或高风险操作。
         返回最多20行数据，以表格形式展示。
@@ -1437,7 +1500,7 @@ class Constants:
     """MongoDB 列表查询工具名称"""
 
     MONGODB_LIST_COLLECTIONS_TOOL_DESC: str = """
-        列出 MongoDB 日志数据库中的所有 collection 及其基本信息。
+        通过 NestJS 内部接口列出可查询日志集合及其基本信息。
         返回每个 collection 的记录数和样本字段，帮助确认可查询的数据集合。
         参数格式: 无参数。
         使用场景: 用户需要先了解日志库里有哪些 collection 以及大致字段结构时使用。
@@ -1447,23 +1510,71 @@ class Constants:
     MONGODB_QUERY_TOOL_NAME: str = "query_mongodb"
     """MongoDB 通用查询工具名称"""
 
-    MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"
+    MONGODB_COLLECTION_NAME_INPUT_DESC: str = "日志 collection 名称"
     """MongoDB collection 名称输入描述"""
 
-    MONGODB_FILTER_INPUT_DESC: str = "MongoDB 查询条件"
+    MONGODB_FILTER_INPUT_DESC: str = "日志查询条件"
     """MongoDB 查询条件输入描述"""
 
     MONGODB_LIMIT_INPUT_DESC: str = "返回结果数量限制"
     """MongoDB 查询条数限制输入描述"""
 
+    MONGODB_SORT_INPUT_DESC: str = "排序条件，例如 {'createdAt': -1}"
+    """MongoDB 排序条件输入描述"""
+
     MONGODB_QUERY_TOOL_DESC: str = """
-        MongoDB 日志查询工具，仅用于查询日志相关 collection。
-        参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
-        参数示例: {"collection_name": "api_logs", "limit": 10}
-        使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
+        MongoDB 日志查询工具，仅用于查询日志相关 collection，底层通过 NestJS 内部接口远程执行。
+        参数支持 collection、filter_dict、limit、sort 四个字段。
+        参数示例: {"collection": "apilogs", "limit": 10}
+        使用场景: 已明确 collection 后，按条件查询 API 日志、文章访问日志等数据时使用。
         如果日志量可能较大，必须加上时间范围、用户范围、状态条件或 limit。
     """
     """MongoDB 通用查询工具描述"""
+
+    SEARCH_LOG_KEYWORDS_TOOL_NAME: str = "search_log_keywords"
+    """搜索关键词日志工具名称"""
+
+    SEARCH_LOG_KEYWORDS_TOOL_DESC: str = "通过 NestJS 内部接口查询文章搜索关键词日志统计。"
+    """搜索关键词日志工具描述"""
+
+    USER_VIEW_DISTRIBUTION_TOOL_NAME: str = "user_view_distribution"
+    """用户浏览分布工具名称"""
+
+    USER_VIEW_DISTRIBUTION_TOOL_DESC: str = "通过 NestJS 内部接口查询指定用户的文章浏览分布。"
+    """用户浏览分布工具描述"""
+
+    API_AVERAGE_SPEED_TOOL_NAME: str = "api_average_speed"
+    """API 平均响应速度工具名称"""
+
+    API_AVERAGE_SPEED_TOOL_DESC: str = "通过 NestJS 内部接口查询 API 平均响应速度统计。"
+    """API 平均响应速度工具描述"""
+
+    API_CALLED_COUNT_TOOL_NAME: str = "api_called_count"
+    """API 调用次数工具名称"""
+
+    API_CALLED_COUNT_TOOL_DESC: str = "通过 NestJS 内部接口查询 API 调用次数统计。"
+
+    MONGODB_TOOL_COLLECTION_FETCH_ERROR: str = "获取日志集合失败"
+    """MongoDB 日志集合获取失败消息"""
+
+    MONGODB_TOOL_QUERY_ERROR: str = "日志查询失败"
+    """MongoDB 日志查询失败消息"""
+
+    SEARCH_LOG_KEYWORDS_ERROR: str = "查询搜索关键词失败"
+    """查询搜索关键词失败消息"""
+
+    USER_VIEW_DISTRIBUTION_ERROR: str = "查询用户浏览分布失败"
+    """查询用户浏览分布失败消息"""
+
+    API_AVERAGE_SPEED_ERROR: str = "查询API平均响应速度失败"
+    """查询API平均响应速度失败消息"""
+
+    API_CALLED_COUNT_ERROR: str = "查询API调用次数失败"
+    """查询API调用次数失败消息"""
+
+    USER_ID_INPUT_DESC: str = "用户ID"
+    """用户ID输入描述"""
+    """API 调用次数工具描述"""
 
     CONTENT_SUMMARIZE_PROMPT: str = """
         请对以下内容进行精要总结，提取关键信息和核心观点：
@@ -1508,7 +1619,7 @@ class Constants:
         2. 数据库统计和业务数据查询优先使用 SQL 工具，并尽量加上时间范围、用户范围、状态条件或 limit。
         3. 查询数据库表结构时，先确认真实表名，再执行查询；例如用户表是 user，不是 users。
         4. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
-        5. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
+        5. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称，日志数据通过 NestJS 内部接口远程查询。
         6. 最终回答必须使用中文，简洁明确。
 
         当前问题：{input}

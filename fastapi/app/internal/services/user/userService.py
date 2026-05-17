@@ -4,19 +4,18 @@ from typing import Any, Dict, List, Optional
 
 from app.core.base import Logger
 from app.internal.crud import (
-    ArticleLogMapper,
     ArticleMapper,
     CollectMapper,
     CommentsMapper,
     FocusMapper,
     LikeMapper,
     get_article_mapper,
-    get_articlelog_mapper,
     get_collect_mapper,
     get_comments_mapper,
     get_focus_mapper,
     get_like_mapper,
 )
+from app.internal.clients import NestjsClient
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm import Session
 
@@ -33,14 +32,14 @@ class UserService:
         collectMapper: Optional[CollectMapper] = None,
         articleMapper: Optional[ArticleMapper] = None,
         commentsMapper: Optional[CommentsMapper] = None,
-        articleLogMapper: Optional[ArticleLogMapper] = None,
+        nestjsClient: Optional[NestjsClient] = None,
     ) -> None:
         self.focusMapper: Optional[FocusMapper] = focusMapper
         self.likeMapper: Optional[LikeMapper] = likeMapper
         self.collectMapper: Optional[CollectMapper] = collectMapper
         self.articleMapper: Optional[ArticleMapper] = articleMapper
         self.commentsMapper: Optional[CommentsMapper] = commentsMapper
-        self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
+        self.nestjsClient: NestjsClient = nestjsClient or NestjsClient()
 
     async def get_new_followers_service(
         self, db: Session, user_id: int, period: str = "day"
@@ -113,9 +112,7 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户的文章浏览分布"""
         try:
-            return await self.articleLogMapper.get_user_view_distribution_mapper(
-                user_id
-            )
+            return await self.nestjsClient.get_view_distribution(user_id)
         except Exception as e:
             Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             return {"total_views": 0, "articles": []}
@@ -197,7 +194,6 @@ def get_user_service(
     collectMapper: CollectMapper = Depends(get_collect_mapper),
     articleMapper: ArticleMapper = Depends(get_article_mapper),
     commentsMapper: CommentsMapper = Depends(get_comments_mapper),
-    articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper),
 ) -> UserService:
     """获取 UserService 单例实例"""
     return UserService(
@@ -206,5 +202,4 @@ def get_user_service(
         collectMapper,
         articleMapper,
         commentsMapper,
-        articleLogMapper,
     )

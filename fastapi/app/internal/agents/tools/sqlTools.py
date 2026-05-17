@@ -1,58 +1,55 @@
+import asyncio
 import contextvars
 import re
+import time
 from functools import lru_cache
-from typing import List, Optional
-from urllib.parse import quote_plus
+from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants
-from langchain_community.utilities import SQLDatabase
+from app.core.db import engine
+from app.internal.clients import GoZeroClient, SpringClient
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
-# 用户ID上下文变量
 user_id_context: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(
     "user_id", default=None
 )
 
+AI_HISTORY_TABLES: set[str] = {"ai_history"}
+LOCAL_SOURCE = "fastapi_local"
+SPRING_SOURCE = "spring"
+GOZERO_SOURCE = "gozero"
+SCHEMA_CACHE_TTL = 300
+_TABLE_SCHEMA_CACHE: Dict[str, tuple[float, str]] = {}
+
 
 class SQLTools:
-    """SQL数据库工具类"""
+    """多数据源 SQL 查询工具"""
 
     def __init__(self) -> None:
-        """初始化数据库连接"""
-        # 延迟导入避免循环依赖
         from app.core.base import Logger
-        from app.core.config import load_config
 
         self.logger = Logger
-        mysql_cfg = load_config("database")["mysql"]
-        password_value = mysql_cfg["password"]
-        if isinstance(password_value, bytes):
-            password_text = password_value.decode("utf-8", errors="ignore")
-        else:
-            password_text = str(password_value)
-        encoded_password = quote_plus(password_text)
-        self.database_url = f"mysql+pymysql://{mysql_cfg['user']}:{encoded_password}@{mysql_cfg['host']}:{mysql_cfg['port']}/{mysql_cfg['database']}?charset=utf8mb4"
-
-        self.engine = create_engine(self.database_url, pool_pre_ping=True)
-        self.db = SQLDatabase(self.engine)
-        self.logger.info(Constants.SQL_TOOL_INITIALIZATION_SUCCESS)
+        self.engine = engine
+        self.spring_client = SpringClient()
+        self.gozero_client = GoZeroClient()
+        self.logger.info(Constants.SQL_MULTI_SOURCE_INITIALIZED_MESSAGE)
 
     def set_user_id(self, user_id: Optional[int]) -> None:
-        """设置当前用户ID"""
         if user_id:
             user_id_context.set(user_id)
-            self.logger.info(f"设置SQL工具用户ID: {user_id}")
+            self.logger.info(
+                Constants.SQL_SET_USER_ID_MESSAGE.format(user_id=user_id)
+            )
 
     def get_user_id(self) -> Optional[int]:
-        """获取当前用户ID"""
         return user_id_context.get()
 
     @staticmethod
     def _strip_sql_comments(sql: str) -> str:
-        """移除SQL注释，降低注释绕过风险"""
         sql = re.sub(r"/\*.*?\*/", " ", sql, flags=re.DOTALL)
         sql = re.sub(r"(?m)--[^\n]*$", " ", sql)
         sql = re.sub(r"(?m)#[^\n]*$", " ", sql)
@@ -60,55 +57,56 @@ class SQLTools:
 
     @staticmethod
     def _strip_sql_strings(sql: str) -> str:
-        """移除字符串字面量，避免误判字符串中的关键字"""
         sql = re.sub(r"'([^'\\\\]|\\\\.)*'", "''", sql)
         sql = re.sub(r'"([^"\\\\]|\\\\.)*"', '""', sql)
         return sql
 
     def _normalize_sql_for_validation(self, query: str) -> str:
-        """标准化SQL文本用于安全校验"""
         sql = self._strip_sql_comments(query or "")
         sql = self._strip_sql_strings(sql)
-        sql = sql.strip()
-        return re.sub(r"\s+", " ", sql).upper()
+        return re.sub(r"\s+", " ", sql.strip()).upper()
 
     @staticmethod
     def _clean_tool_input(text: str) -> str:
-        """清理工具输入中混入的多余格式文本"""
         cleaned = (text or "").strip()
         cleaned = re.split(r"\b(?:Observation|Thought|Final Answer)\s*:", cleaned)[0]
         cleaned = cleaned.strip().strip('"').strip("'").strip("`")
         return cleaned.strip()
 
-    def _normalize_known_table_names(self, query: str) -> str:
-        """把常见的复数表名自动修正为真实表名"""
-        table_names = set(inspect(self.engine).get_table_names())
+    @staticmethod
+    def _extract_table_names(sql: str) -> List[str]:
+        matches = re.findall(
+            r"\b(?:FROM|JOIN|UPDATE|INTO|TABLE|DESC|DESCRIBE)\s+[`'\"]?([A-Za-z_][A-Za-z0-9_]*)[`'\"]?",
+            sql,
+            re.IGNORECASE,
+        )
+        return list({SQLTools._normalize_table_name(table) for table in matches})
 
+    @staticmethod
+    def _normalize_table_name(table_name: str) -> str:
+        cleaned = table_name.strip().strip("`\"'").lower()
+        if cleaned == "users":
+            return "user"
+        return cleaned
+
+    def _normalize_known_table_names(self, query: str) -> str:
         def replace_table(match: re.Match[str]) -> str:
             keyword = match.group(1)
-            table_name = match.group(2)
-            cleaned_name = table_name.strip("`\"')(")
-            if cleaned_name not in table_names and cleaned_name.endswith("s"):
-                singular_name = cleaned_name[:-1]
-                if singular_name in table_names:
-                    return f"{keyword}{singular_name}"
-            return match.group(0)
+            table_name = self._normalize_table_name(match.group(2))
+            return f"{keyword}{table_name}"
 
-        normalized_query = re.sub(
+        return re.sub(
             r"\b(FROM\s+|JOIN\s+)([`\"']?[A-Za-z_][A-Za-z0-9_]*[`\"']?)",
             replace_table,
             query,
             flags=re.IGNORECASE,
         )
-        return normalized_query
 
     def _is_read_only_query(self, query: str) -> tuple[bool, str]:
-        """校验整条SQL是否为单条只读查询"""
         normalized_sql = self._normalize_sql_for_validation(query)
         if not normalized_sql:
             return False, Constants.SQL_TOOL_LIMIT
 
-        # 只允许单条语句，允许末尾保留一个分号
         sql_without_trailing_semicolon = normalized_sql.rstrip(";").strip()
         if not sql_without_trailing_semicolon:
             return False, Constants.SQL_TOOL_LIMIT
@@ -121,8 +119,7 @@ class SQLTools:
         ):
             return False, Constants.SQL_TOOL_LIMIT
 
-        dangerous_keywords = Constants.SQL_DANGEROUS_KEYWORDS
-        for keyword in dangerous_keywords:
+        for keyword in Constants.SQL_DANGEROUS_KEYWORDS:
             if re.search(rf"\b{re.escape(keyword)}\b", sql_without_trailing_semicolon):
                 return False, Constants.SQL_QUERY_WRITE_OPERATION_ERROR
 
@@ -133,184 +130,55 @@ class SQLTools:
         return True, ""
 
     def is_dangerous_nl_request(self, question: str) -> bool:
-        """判断自然语言是否在引导生成数据库写操作SQL"""
         normalized_question = re.sub(r"\s+", " ", (question or "")).strip().lower()
         if not normalized_question:
             return False
-
-        for pattern in Constants.DANGEROUS_SQL_REQUEST_PATTERNS:
-            if re.search(pattern, normalized_question, flags=re.IGNORECASE):
-                return True
-        return False
-
-    def get_table_schema(self, table_name: str = "") -> str:
-        """
-        获取数据库表结构信息
-
-        Args:
-            table_name: 表名，如果为空则返回所有表的结构
-
-        Returns:
-            表结构的文本描述
-        """
-        try:
-            table_name = self._clean_tool_input(table_name)
-            inspector = inspect(self.engine)
-
-            if table_name:
-                # 获取指定表的结构
-                table_names = inspector.get_table_names()
-                if table_name not in table_names and table_name.endswith("s"):
-                    singular_table_name = table_name[:-1]
-                    if singular_table_name in table_names:
-                        table_name = singular_table_name
-
-                if table_name not in table_names:
-                    return f"表 '{table_name}' 不存在"
-
-                columns = inspector.get_columns(table_name)
-                pk = inspector.get_pk_constraint(table_name)
-                indexes = inspector.get_indexes(table_name)
-
-                schema_info = f"表名: {table_name}\n"
-                schema_info += "列信息:\n"
-                for col in columns:
-                    schema_info += f"  - {col['name']}: {col['type']}"
-                    if col["nullable"]:
-                        schema_info += " (可为空)"
-                    if col["default"]:
-                        schema_info += f" 默认值: {col['default']}"
-                    schema_info += "\n"
-
-                if pk and pk.get("constrained_columns"):
-                    schema_info += f"主键: {', '.join(pk['constrained_columns'])}\n"
-
-                if indexes:
-                    schema_info += "索引:\n"
-                    for idx in indexes:
-                        schema_info += (
-                            f"  - {idx['name']}: {', '.join(idx['column_names'])}\n"
-                        )
-
-                return schema_info
-            else:
-                # 获取所有表的基本信息
-                tables = inspector.get_table_names()
-                schema_info = f"数据库包含 {len(tables)} 个表:\n\n"
-
-                for table in tables:
-                    columns = inspector.get_columns(table)
-                    schema_info += f"表名: {table}\n"
-                    schema_info += f"  列数: {len(columns)}\n"
-                    schema_info += (
-                        f"  列名: {', '.join([col['name'] for col in columns])}\n\n"
-                    )
-
-                return schema_info
-
-        except Exception as e:
-            error_msg = f"获取表结构失败: {str(e)}"
-            self.logger.error(error_msg)
-            return error_msg
-
-    def execute_query(self, query: str) -> str:
-        """
-        执行SQL查询并返回结果
-
-        Args:
-            query: SQL查询语句
-
-        Returns:
-            查询结果的文本描述
-        """
-        try:
-            query = self._clean_tool_input(query)
-            query = self._normalize_known_table_names(query)
-            is_safe, error_message = self._is_read_only_query(query)
-            if not is_safe:
-                return error_message
-
-            # 获取当前用户ID
-            current_user_id = self.get_user_id()
-
-            # 如果涉及个人数据查询且有用户ID，添加用户ID过滤
-            if current_user_id:
-                # 检查查询是否涉及用户相关表
-                personal_tables = Constants.USER_RELATED_TABLE
-                query_lower = query.lower()
-
-                # 如果查询涉及个人表，自动添加用户ID过滤
-                for table in personal_tables:
-                    if table in query_lower:
-                        # 检查是否已经有user_id的WHERE条件
-                        if (
-                            "where" not in query_lower
-                            or f"{table}.user_id" not in query_lower
-                        ):
-                            # 在FROM/JOIN之后添加WHERE条件
-                            self.logger.info(
-                                f"[SQL工具] 为用户 {current_user_id} 的查询添加用户ID过滤"
-                            )
-                            # 这里可以进一步增强查询，但为了安全起见，我们只在日志中记录
-                        break
-
-            # 执行查询
-            with Session(self.engine) as session:
-                result = session.execute(text(query))
-                rows = result.fetchall()
-                columns = result.keys()
-
-                if not rows:
-                    return Constants.SQL_QUERY_NO_RES
-
-                # 限制返回行数 - 增加到500行以支持更完整的思考过程
-                max_rows = 500
-                limited_rows = rows[:max_rows]
-
-                # 格式化结果
-                result_text = f"查询返回 {len(rows)} 行数据"
-                if len(rows) > max_rows:
-                    result_text += f" (仅显示前 {max_rows} 行)"
-                result_text += ":\n\n"
-
-                # 添加列名
-                result_text += " | ".join(columns) + "\n"
-                result_text += "-" * (len(columns) * 15) + "\n"
-
-                # 添加数据行
-                for row in limited_rows:
-                    row_data = [
-                        str(value) if value is not None else "NULL" for value in row
-                    ]
-                    result_text += " | ".join(row_data) + "\n"
-
-                self.logger.info(f"SQL查询成功，返回 {len(rows)} 行")
-                return result_text
-
-        except Exception as e:
-            error_msg = f"SQL查询失败: {str(e)}"
-            self.logger.error(error_msg)
-            return error_msg
+        return any(
+            re.search(pattern, normalized_question, flags=re.IGNORECASE)
+            for pattern in Constants.DANGEROUS_SQL_REQUEST_PATTERNS
+        )
 
     async def get_table_schema_async(self, table_name: str = "") -> str:
-        return self.get_table_schema(table_name)
+        table_name = self._normalize_table_name(self._clean_tool_input(table_name))
+        cached = self._get_cached_schema(table_name)
+        if cached:
+            return cached
+
+        results = await asyncio.gather(
+            self._fetch_local_schema(table_name),
+            self._fetch_remote_schema(SPRING_SOURCE, table_name),
+            self._fetch_remote_schema(GOZERO_SOURCE, table_name),
+            return_exceptions=True,
+        )
+        schema_text = self._merge_schema_results(table_name, results)
+        self._set_cached_schema(table_name, schema_text)
+        return schema_text
 
     async def execute_query_async(self, query: str) -> str:
-        return self.execute_query(query)
+        query = self._clean_tool_input(query)
+        query = self._normalize_known_table_names(query)
+        is_safe, error_message = self._is_read_only_query(query)
+        if not is_safe:
+            return error_message
+
+        current_user_id = self.get_user_id()
+        results = await asyncio.gather(
+            self._execute_local_query(query),
+            self._execute_remote_query(SPRING_SOURCE, query, current_user_id),
+            self._execute_remote_query(GOZERO_SOURCE, query, current_user_id),
+            return_exceptions=True,
+        )
+        return self._select_and_format_query_result(results)
+
+    def get_table_schema(self, table_name: str = "") -> str:
+        return self._run_async_tool(self.get_table_schema_async(table_name))
+
+    def execute_query(self, query: str) -> str:
+        return self._run_async_tool(self.execute_query_async(query))
 
     def get_langchain_tools(self) -> List[StructuredTool]:
-        """
-        获取LangChain Tool对象列表
-
-        Returns:
-            Tool对象列表
-        """
-
         class GetTableSchemaInput(BaseModel):
-            table_name: str = Field(
-                default="",
-                description=Constants.SQL_TABLE_INPUT_DESC,
-            )
+            table_name: str = Field(default="", description=Constants.SQL_TABLE_INPUT_DESC)
 
         class ExecuteSqlQueryInput(BaseModel):
             query: str = Field(description=Constants.SQL_QUERY_INPUT_DESC)
@@ -319,19 +187,296 @@ class SQLTools:
             StructuredTool(
                 name=Constants.SQL_TABLE_TOOL_NAME,
                 description=Constants.SQL_TABLE_TOOL_DESC,
+                coroutine=self.get_table_schema_async,
                 func=self.get_table_schema,
                 args_schema=GetTableSchemaInput,
             ),
             StructuredTool(
                 name=Constants.SQL_QUERY_TOOL_NAME,
                 description=Constants.SQL_QUERY_TOOL_DESC,
+                coroutine=self.execute_query_async,
                 func=self.execute_query,
                 args_schema=ExecuteSqlQueryInput,
             ),
         ]
 
+    async def _fetch_local_schema(self, table_name: str) -> Dict[str, Any]:
+        def load_schema() -> Dict[str, Any]:
+            inspector = inspect(self.engine)
+            tables = [table for table in inspector.get_table_names() if table in AI_HISTORY_TABLES]
+            if table_name:
+                tables = [table for table in tables if table == table_name]
+            table_infos: List[Dict[str, Any]] = []
+            for table in tables:
+                table_infos.append(
+                    {
+                        "table_name": table,
+                        "columns": [
+                            {
+                                "name": column["name"],
+                                "type": str(column["type"]),
+                                "nullable": column.get("nullable", True),
+                                "default": column.get("default"),
+                            }
+                            for column in inspector.get_columns(table)
+                        ],
+                        "primary_key": inspector.get_pk_constraint(table).get(
+                            "constrained_columns", []
+                        ),
+                        "indexes": [
+                            {
+                                "name": index.get("name"),
+                                "columns": index.get("column_names", []),
+                            }
+                            for index in inspector.get_indexes(table)
+                        ],
+                    }
+                )
+            return {"source": LOCAL_SOURCE, "status": 200, "tables": table_infos}
+
+        try:
+            return await run_in_threadpool(load_schema)
+        except Exception as e:
+            return {"source": LOCAL_SOURCE, "status": 500, "error": str(e), "tables": []}
+
+    async def _fetch_remote_schema(self, source: str, table_name: str) -> Dict[str, Any]:
+        try:
+            client = self.spring_client if source == SPRING_SOURCE else self.gozero_client
+            data = await client.get_table_schema(table_name)
+            return {
+                "source": source,
+                "status": 200,
+                "tables": data.get("tables", []),
+            }
+        except Exception as e:
+            return {"source": source, "status": 502, "error": str(e), "tables": []}
+
+    async def _execute_local_query(self, query: str) -> Dict[str, Any]:
+        tables = self._extract_table_names(query)
+        if not self._is_local_query_allowed(query, tables):
+            return {
+                "source": LOCAL_SOURCE,
+                "status": 403,
+                "error": Constants.SQL_LOCAL_TABLE_SCOPE_ERROR,
+            }
+
+        def run_query() -> Dict[str, Any]:
+            with Session(self.engine) as session:
+                result = session.execute(text(self._append_limit_if_needed(query)))
+                rows = result.fetchall()
+                columns = list(result.keys())
+                return {
+                    "source": LOCAL_SOURCE,
+                    "status": 200,
+                    "columns": columns,
+                    "rows": [
+                        [str(value) if value is not None else None for value in row]
+                        for row in rows[:500]
+                    ],
+                    "total": len(rows),
+                    "error": None,
+                }
+
+        try:
+            return await run_in_threadpool(run_query)
+        except Exception as e:
+            return {"source": LOCAL_SOURCE, "status": 500, "error": str(e)}
+
+    async def _execute_remote_query(
+        self, source: str, query: str, user_id: Optional[int]
+    ) -> Dict[str, Any]:
+        try:
+            client = self.spring_client if source == SPRING_SOURCE else self.gozero_client
+            data = await client.execute_sql_query(query, user_id)
+            return {
+                "source": source,
+                "status": 200,
+                "columns": data.get("columns", []),
+                "rows": data.get("rows", []),
+                "total": data.get("total_rows", 0),
+                "error": None,
+            }
+        except Exception as e:
+            return {"source": source, "status": 502, "error": str(e)}
+
+    def _merge_schema_results(self, table_name: str, results: List[Any]) -> str:
+        valid_results = [
+            result for result in results if isinstance(result, dict) and result.get("status") == 200
+        ]
+        if table_name:
+            tables = []
+            for result in valid_results:
+                for table in result.get("tables", []):
+                    if table.get("table_name") == table_name:
+                        tables.append((result.get("source"), table))
+            if not tables:
+                return Constants.SQL_TABLE_NOT_FOUND_MESSAGE.format(
+                    table_name=table_name
+                )
+            return "\n\n".join(
+                self._format_table_schema(source or "unknown", table) for source, table in tables
+            )
+
+        sections = []
+        for result in valid_results:
+            source = result.get("source", "unknown")
+            tables = result.get("tables", [])
+            source_name = self._source_label(source)
+            lines = [
+                Constants.SQL_SOURCE_TABLES_SUMMARY_MESSAGE.format(
+                    source_name=source_name, count=len(tables)
+                )
+            ]
+            for table in tables:
+                columns = table.get("columns", [])
+                column_names = ", ".join(str(column.get("name")) for column in columns)
+                lines.append(
+                    Constants.SQL_TABLE_SUMMARY_MESSAGE.format(
+                        table_name=table.get("table_name"),
+                        count=len(columns),
+                        columns=column_names,
+                    )
+                )
+            sections.append("\n".join(lines))
+        return "\n\n".join(sections) if sections else Constants.SQL_SCHEMA_EMPTY_MESSAGE
+
+    def _format_table_schema(self, source: str, table: Dict[str, Any]) -> str:
+        lines = [
+            Constants.SQL_TABLE_SCHEMA_TITLE_MESSAGE.format(
+                source_name=self._source_label(source),
+                table_name=table.get("table_name"),
+            ),
+            Constants.SQL_COLUMN_INFO_TITLE,
+        ]
+        for column in table.get("columns", []):
+            nullable = (
+                Constants.SQL_COLUMN_NULLABLE
+                if column.get("nullable")
+                else Constants.SQL_COLUMN_NOT_NULLABLE
+            )
+            line = f"  - {column.get('name')}: {column.get('type')} ({nullable})"
+            if column.get("default") is not None:
+                line += Constants.SQL_COLUMN_DEFAULT_MESSAGE.format(
+                    default=column.get("default")
+                )
+            lines.append(line)
+        primary_key = table.get("primary_key") or []
+        if primary_key:
+            lines.append(
+                Constants.SQL_PRIMARY_KEY_MESSAGE.format(
+                    columns=", ".join(primary_key)
+                )
+            )
+        indexes = table.get("indexes") or []
+        if indexes:
+            lines.append(Constants.SQL_INDEX_TITLE)
+            for index in indexes:
+                lines.append(
+                    f"  - {index.get('name')}: {', '.join(index.get('columns') or [])}"
+                )
+        return "\n".join(lines)
+
+    def _select_and_format_query_result(self, results: List[Any]) -> str:
+        dict_results = [result for result in results if isinstance(result, dict)]
+        success_results = [
+            result for result in dict_results if result.get("status") == 200
+        ]
+        if not success_results:
+            errors = [
+                Constants.SQL_SOURCE_ERROR_MESSAGE.format(
+                    source=result.get("source", "unknown"),
+                    status=result.get("status"),
+                    error=result.get("error"),
+                )
+                for result in dict_results
+            ]
+            exception_errors = [str(result) for result in results if isinstance(result, Exception)]
+            return Constants.SQL_ALL_SOURCES_FAILED_MESSAGE + "\n".join(
+                errors + exception_errors
+            )
+
+        selected = next(
+            (result for result in success_results if result.get("rows")),
+            success_results[0],
+        )
+        source = selected.get("source", "unknown")
+        rows = selected.get("rows", [])
+        columns = selected.get("columns", [])
+        total = int(selected.get("total") or len(rows))
+        if total == 0:
+            return Constants.SQL_QUERY_EMPTY_WITH_SOURCE_MESSAGE.format(
+                source_name=self._source_label(source)
+            )
+
+        max_rows = 500
+        limited_rows = rows[:max_rows]
+        result_text = Constants.SQL_QUERY_RESULT_MESSAGE.format(
+            total=total, source_name=self._source_label(source)
+        )
+        if total > max_rows:
+            result_text += Constants.SQL_QUERY_RESULT_LIMIT_MESSAGE.format(
+                max_rows=max_rows
+            )
+        result_text += ":\n\n"
+        result_text += " | ".join(str(column) for column in columns) + "\n"
+        result_text += "-" * (len(columns) * 15) + "\n"
+        for row in limited_rows:
+            result_text += " | ".join(
+                str(value) if value is not None else "NULL" for value in row
+            )
+            result_text += "\n"
+        return result_text
+
+    @staticmethod
+    def _append_limit_if_needed(query: str) -> str:
+        normalized = query.strip().rstrip(";")
+        if re.match(r"^\s*(SELECT|WITH)\b", normalized, flags=re.IGNORECASE) and not re.search(
+            r"\bLIMIT\b", normalized, flags=re.IGNORECASE
+        ):
+            return f"{normalized} LIMIT 500"
+        return normalized
+
+    @staticmethod
+    def _is_local_query_allowed(query: str, tables: List[str]) -> bool:
+        if tables:
+            return all(table in AI_HISTORY_TABLES for table in tables)
+
+        normalized = query.strip().upper()
+        return normalized.startswith(("SELECT", "WITH", "EXPLAIN SELECT", "EXPLAIN WITH"))
+
+    @staticmethod
+    def _source_label(source: str) -> str:
+        return {
+            LOCAL_SOURCE: "FastAPI(ai_history)",
+            SPRING_SOURCE: "Spring(核心业务库)",
+            GOZERO_SOURCE: "GoZero(chat_messages)",
+        }.get(source, source)
+
+    @staticmethod
+    def _get_cached_schema(table_name: str) -> Optional[str]:
+        key = f"schema:{table_name}" if table_name else "schema:all"
+        cached = _TABLE_SCHEMA_CACHE.get(key)
+        if not cached:
+            return None
+        timestamp, value = cached
+        if time.monotonic() - timestamp < SCHEMA_CACHE_TTL:
+            return value
+        return None
+
+    @staticmethod
+    def _set_cached_schema(table_name: str, value: str) -> None:
+        key = f"schema:{table_name}" if table_name else "schema:all"
+        _TABLE_SCHEMA_CACHE[key] = (time.monotonic(), value)
+
+    @staticmethod
+    def _run_async_tool(coro: Any) -> str:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(coro)
+        return Constants.SQL_ASYNC_TOOL_REQUIRED_MESSAGE
+
 
 @lru_cache
 def get_sql_tools() -> SQLTools:
-    """获取SQL工具实例"""
     return SQLTools()

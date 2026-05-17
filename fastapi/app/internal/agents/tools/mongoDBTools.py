@@ -1,12 +1,9 @@
 import json
-from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants, Logger
-from app.core.config import load_config
-from app.core.db import async_db
-from bson import ObjectId
+from app.internal.clients import NestjsClient
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
@@ -15,98 +12,70 @@ class MongoDBTools:
     """MongoDB 日志查询工具集"""
 
     def __init__(self) -> None:
-        """初始化 MongoDB 日志工具"""
-        self.db = async_db
+        self.client = NestjsClient()
         self.logger = Logger
-        # 获取日志集合名称（默认为 api_logs）
-        self.logs_collection_name: str = (
-            load_config("database").get("mongodb", {}).get("logs_collection")
-        )
-
-    async def get_logs_collection(self) -> Optional[Any]:
-        """获取日志集合"""
-        try:
-            return self.db[self.logs_collection_name]
-        except Exception as e:
-            self.logger.error(f"获取日志集合失败: {e}")
-            return None
 
     async def list_mongodb_collections(self) -> str:
-        """列出 MongoDB 数据库中的所有 collection 及其基本信息"""
         try:
-            collections_info: List[Dict[str, Any]] = []
-            for collection_name in await self.db.list_collection_names():
-                try:
-                    collection = self.db[collection_name]
-                    doc_count = await collection.count_documents({})
-
-                    # 获取一个样本文档以了解结构
-                    sample_doc = await collection.find_one()
-                    sample_keys = list(sample_doc.keys()) if sample_doc else []
-
-                    collections_info.append(
-                        {
-                            "name": collection_name,
-                            "document_count": doc_count,
-                            "sample_fields": sample_keys[:10],  # 只显示前10个字段
-                        }
-                    )
-                except Exception as e:
-                    self.logger.warning(f"无法获取 {collection_name} 的信息: {e}")
-                    collections_info.append({"name": collection_name, "error": str(e)})
-
-            return json.dumps(collections_info, ensure_ascii=False, indent=2)
+            data = await self.client.list_log_collections()
+            return self._format_results(data.get("collections", []))
         except Exception as e:
-            error_msg = f"获取 collection 列表失败: {str(e)}"
+            error_msg = f"{Constants.MONGODB_TOOL_COLLECTION_FETCH_ERROR}: {str(e)}"
             self.logger.error(error_msg)
             return error_msg
 
     async def query_mongodb(
         self,
-        collection_name: str,
+        collection: str,
         filter_dict: Optional[Dict[str, Any]] = None,
         limit: int = 10,
+        sort: Optional[Dict[str, int]] = None,
     ) -> str:
-        """通用的 MongoDB 查询工具，可以查询任意 collection"""
         try:
-            # 验证必需参数
-            if not collection_name:
+            if not collection:
                 return Constants.COLLECTION_NAME_VALIDATION_ERROR
-
-            # 确保 limit 是整数
-            limit_int = int(limit)
-
-            # 确保 filter_dict 是字典
-            filter_obj = filter_dict if filter_dict else {}
-
-            # 获取 collection
-            collection = self.db[collection_name]
-
-            # 执行查询
-            cursor = collection.find(filter_obj).limit(limit_int)
-            docs = await cursor.to_list(length=limit_int if limit_int > 0 else None)
-            results: List[Dict[str, Any]] = [
-                self._convert_datetime_to_string(doc) for doc in docs
-            ]
-
-            self.logger.info(
-                f"查询 {collection_name}: 条件={filter_obj}, 返回 {len(results)} 条记录"
+            data = await self.client.query_log(
+                collection=collection,
+                filter_dict=filter_dict or {},
+                limit=limit,
+                sort=sort or {"createdAt": -1},
             )
-            return json.dumps(results, ensure_ascii=False, indent=2)
-
+            return self._format_results(data)
         except Exception as e:
-            error_msg = f"MongoDB 查询失败: {str(e)}"
+            error_msg = f"{Constants.MONGODB_TOOL_QUERY_ERROR}: {str(e)}"
             self.logger.error(error_msg)
             return error_msg
 
-    def get_langchain_tools(self) -> List[StructuredTool]:
-        """获取 LangChain Tool 对象列表"""
+    async def search_log_keywords(self) -> str:
+        try:
+            return self._format_results(await self.client.get_search_keywords())
+        except Exception as e:
+            return f"{Constants.SEARCH_LOG_KEYWORDS_ERROR}: {str(e)}"
 
+    async def user_view_distribution(self, user_id: int) -> str:
+        try:
+            return self._format_results(await self.client.get_view_distribution(user_id))
+        except Exception as e:
+            return f"{Constants.USER_VIEW_DISTRIBUTION_ERROR}: {str(e)}"
+
+    async def api_average_speed(self) -> str:
+        try:
+            return self._format_results(await self.client.get_api_average_speed())
+        except Exception as e:
+            return f"{Constants.API_AVERAGE_SPEED_ERROR}: {str(e)}"
+
+    async def api_called_count(self) -> str:
+        try:
+            return self._format_results(await self.client.get_called_count_apis())
+        except Exception as e:
+            return f"{Constants.API_CALLED_COUNT_ERROR}: {str(e)}"
+
+    def get_langchain_tools(self) -> List[StructuredTool]:
         class EmptyInput(BaseModel):
             pass
 
-        class QueryMongoInput(BaseModel):
-            collection_name: str = Field(
+        class QueryMongoDBInput(BaseModel):
+            collection: str = Field(
                 description=Constants.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
             filter_dict: Dict[str, Any] = Field(
@@ -116,8 +85,16 @@ class MongoDBTools:
             limit: int = Field(
                 default=10,
                 ge=1,
+                le=100,
                 description=Constants.MONGODB_LIMIT_INPUT_DESC,
             )
+            sort: Dict[str, int] = Field(
+                default_factory=lambda: {"createdAt": -1},
+                description=Constants.MONGODB_SORT_INPUT_DESC,
+            )
+
+        class UserViewDistributionInput(BaseModel):
+            user_id: int = Field(description=Constants.USER_ID_INPUT_DESC)
 
         return [
             StructuredTool(
@@ -130,43 +107,35 @@ class MongoDBTools:
                 name=Constants.MONGODB_QUERY_TOOL_NAME,
                 description=Constants.MONGODB_QUERY_TOOL_DESC,
                 coroutine=self.query_mongodb,
-                args_schema=QueryMongoInput,
+                args_schema=QueryMongoDBInput,
+            ),
+            StructuredTool(
+                name=Constants.SEARCH_LOG_KEYWORDS_TOOL_NAME,
+                description=Constants.SEARCH_LOG_KEYWORDS_TOOL_DESC,
+                coroutine=self.search_log_keywords,
+                args_schema=EmptyInput,
+            ),
+            StructuredTool(
+                name=Constants.USER_VIEW_DISTRIBUTION_TOOL_NAME,
+                description=Constants.USER_VIEW_DISTRIBUTION_TOOL_DESC,
+                coroutine=self.user_view_distribution,
+                args_schema=UserViewDistributionInput,
+            ),
+            StructuredTool(
+                name=Constants.API_AVERAGE_SPEED_TOOL_NAME,
+                description=Constants.API_AVERAGE_SPEED_TOOL_DESC,
+                coroutine=self.api_average_speed,
+                args_schema=EmptyInput,
+            ),
+            StructuredTool(
+                name=Constants.API_CALLED_COUNT_TOOL_NAME,
+                description=Constants.API_CALLED_COUNT_TOOL_DESC,
+                coroutine=self.api_called_count,
+                args_schema=EmptyInput,
             ),
         ]
 
-    def _convert_datetime_to_string(self, obj: Any) -> Any:
-        """递归转换所有 datetime 对象为 ISO 格式字符串"""
-
-        if isinstance(obj, dict):
-            # 处理字典中的所有值
-            result: Dict[str, Any] = {}
-            for key, value in obj.items():
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                elif isinstance(value, datetime):
-                    result[key] = value.isoformat()
-                elif isinstance(value, dict):
-                    result[key] = self._convert_datetime_to_string(value)
-                elif isinstance(value, list):
-                    result[key] = self._convert_datetime_to_string(value)
-                else:
-                    result[key] = value
-            return result
-        elif isinstance(obj, list):
-            # 处理列表中的所有元素
-            return [self._convert_datetime_to_string(item) for item in obj]
-        elif isinstance(obj, datetime):
-            # 直接转换 datetime
-            return obj.isoformat()
-        elif isinstance(obj, ObjectId):
-            # 转换 ObjectId
-            return str(obj)
-        else:
-            # 返回原值
-            return obj
-
     def _format_results(self, results: Any) -> str:
-        """将结果格式化为字符串"""
         try:
             return json.dumps(results, ensure_ascii=False, indent=2)
         except Exception:
@@ -175,5 +144,4 @@ class MongoDBTools:
 
 @lru_cache
 def get_mongodb_tools() -> MongoDBTools:
-    """获取 MongoDB 日志工具实例"""
     return MongoDBTools()

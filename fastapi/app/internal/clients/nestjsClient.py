@@ -63,3 +63,35 @@ class NestjsClient:
             params={"userId": user_id},
         )
         return result.get("data", {})
+
+    async def list_log_collections(self) -> Dict[str, Any]:
+        result = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/agent/log-collections",
+            method="GET",
+            retries=1,
+            timeout=5,
+        )
+        return result.get("data", {})
+
+    async def query_log(
+        self,
+        collection: str,
+        filter_dict: Dict[str, Any] | None = None,
+        limit: int = 10,
+        sort: Dict[str, int] | None = None,
+    ) -> Dict[str, Any]:
+        result = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/agent/log-query",
+            method="POST",
+            json={
+                "collection": collection,
+                "filter": filter_dict or {},
+                "limit": limit,
+                "sort": sort or {"createdAt": -1},
+            },
+            retries=1,
+            timeout=5,
+        )
+        return result.get("data", {})

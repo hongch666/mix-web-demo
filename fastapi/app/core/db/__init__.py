@@ -1,6 +1,5 @@
 from typing import List
 
-from .mongodb import async_client, async_db
 from .mysql import (
     AsyncSessionLocal,
     Base,
@@ -23,8 +22,6 @@ from .redis import RedisClient, get_redis_client
 
 
 __all__: List[str] = [
-    "async_client",
-    "async_db",
     "get_db",
     "get_db_async",
     "create_tables_async",

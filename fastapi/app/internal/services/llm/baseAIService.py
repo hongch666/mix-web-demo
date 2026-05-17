@@ -43,11 +43,11 @@ def initialize_ai_tools(
         include_logs: 是否包含 MongoDB 日志工具
 
     Returns:
-        tuple: (sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools)
+        tuple: (sql_tools_instance, rag_tools_instance, log_tools_instance, all_tools)
     """
     sql_tools_instance: Optional[Any] = None
     rag_tools_instance: Optional[Any] = None
-    mongodb_tools_instance: Optional[Any] = None
+    log_tools_instance: Optional[Any] = None
     all_tools: List[Any] = []
 
     # 获取 SQL 工具
@@ -81,15 +81,15 @@ def initialize_ai_tools(
     # 获取 MongoDB 日志工具
     if include_logs:
         try:
-            mongodb_tools_instance = get_mongodb_tools()
-            mongodb_tools: List[Any] = mongodb_tools_instance.get_langchain_tools()
-            all_tools.extend(mongodb_tools)
-            Logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
+            log_tools_instance = get_mongodb_tools()
+            log_tools: List[Any] = log_tools_instance.get_langchain_tools()
+            all_tools.extend(log_tools)
+            Logger.info(f"已加载 MongoDB 日志工具: {len(log_tools)} 个")
         except Exception as e:
             Logger.warning(f"加载 MongoDB 日志工具失败: {e}")
 
     Logger.info(f"总共加载了 {len(all_tools)} 个工具")
-    return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
+    return sql_tools_instance, rag_tools_instance, log_tools_instance, all_tools
 
 
 class BaseAiService:

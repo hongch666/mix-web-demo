@@ -13,7 +13,6 @@ dependencies = [
   "sqlalchemy>=2.0.20",
   "pymysql==1.1.1",
   "aiomysql==0.2.0",
-  "motor==3.7.1",
   "redis==5.0.1",
   "aio-pika==9.5.5",
   "wordcloud==1.9.4",
