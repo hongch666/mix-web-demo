@@ -22,7 +22,7 @@ from app.internal.services import (
 )
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
 
 router: APIRouter = APIRouter(
     prefix="/generate",
@@ -51,8 +51,8 @@ async def generate_tags(
 @log("文章创建AI评论")
 async def create_article_ai_comment(
     request: Request,
-    article_id: int,
     background_tasks: BackgroundTasks,
+    articleId: int = Path(alias="article_id"),
     db: Session = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
@@ -71,9 +71,9 @@ async def create_article_ai_comment(
         gpt_service=gpt_service,
     )
     # 添加后台任务
-    background_tasks.add_task(generate_service.generate_ai_comments, article_id, db)
+    background_tasks.add_task(generate_service.generate_ai_comments, articleId, db)
     return success(
-        data={"message": Constants.AI_COMMENT_TASK_SUBMITTED, "article_id": article_id}
+        data={"message": Constants.AI_COMMENT_TASK_SUBMITTED, "article_id": articleId}
     )
 
 
@@ -85,8 +85,8 @@ async def create_article_ai_comment(
 @log("文章创建基于权威参考文本的AI评论")
 async def create_article_ai_comment_with_reference(
     request: Request,
-    article_id: int,
     background_tasks: BackgroundTasks,
+    articleId: int = Path(alias="article_id"),
     db: Session = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
@@ -106,11 +106,11 @@ async def create_article_ai_comment_with_reference(
     )
     # 添加后台任务
     background_tasks.add_task(
-        generate_service.generate_ai_comments_with_reference, article_id, db
+        generate_service.generate_ai_comments_with_reference, articleId, db
     )
     return success(
         data={
             "message": Constants.AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED,
-            "article_id": article_id,
+            "article_id": articleId,
         }
     )

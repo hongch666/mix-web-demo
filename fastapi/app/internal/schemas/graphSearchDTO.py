@@ -4,14 +4,18 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from .alias import Alias
+
 
 class GraphSearchEnhanceReq(BaseModel):
     """图谱搜索增强请求"""
-    userId: Optional[int] = None
+    model_config = {"populate_by_name": True}
+
+    userId: Optional[int] = Alias("userId", default=None)
     keyword: str = ""
-    articleIds: List[int] = Field(default_factory=list)
-    categoryName: str = ""
-    subCategoryName: str = ""
+    articleIds: List[int] = Alias("articleIds", default_factory=list)
+    categoryName: str = Alias("categoryName", default="")
+    subCategoryName: str = Alias("subCategoryName", default="")
     tags: List[str] = Field(default_factory=list)
     limit: int = 50
     mode: str = "hybrid"
@@ -27,12 +31,14 @@ class GraphRelationDTO(BaseModel):
 
 class GraphSearchEnhanceItemDTO(BaseModel):
     """图谱增强单项结果"""
-    articleId: int
-    graphScore: float
+    model_config = {"populate_by_name": True}
+
+    articleId: int = Alias("articleId")
+    graphScore: float = Alias("graphScore")
     reason: str
     relations: List[GraphRelationDTO] = Field(default_factory=list)
-    matchedTags: List[str] = Field(default_factory=list)
-    matchedPaths: List[str] = Field(default_factory=list)
+    matchedTags: List[str] = Alias("matchedTags", default_factory=list)
+    matchedPaths: List[str] = Alias("matchedPaths", default_factory=list)
 
 
 class GraphSearchEnhanceResp(BaseModel):

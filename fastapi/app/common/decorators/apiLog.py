@@ -370,7 +370,9 @@ def _serialize_param(param: Any) -> str:
             # 检查是否是 Pydantic 模型
             elif hasattr(param, "model_dump"):
                 # Pydantic v2
-                return json.dumps(param.model_dump(), ensure_ascii=False, default=str)
+                return json.dumps(
+                    param.model_dump(by_alias=True), ensure_ascii=False, default=str
+                )
             elif hasattr(param, "dict"):
                 # Pydantic v1
                 return json.dumps(param.dict(), ensure_ascii=False, default=str)
@@ -450,7 +452,7 @@ def _extract_request_body_for_queue(
             # 直接提取 Pydantic 模型的内容，不转为字符串
             if hasattr(value, "model_dump"):
                 # Pydantic v2
-                request_body_dict.update(value.model_dump())
+                request_body_dict.update(value.model_dump(by_alias=True))
             elif hasattr(value, "dict"):
                 # Pydantic v1
                 request_body_dict.update(value.dict())
@@ -582,17 +584,17 @@ async def _send_api_log_to_queue_async(
         # 确保 username 不为空
         final_username: str = username if username else "匿名用户"
 
-        # 构建 API 日志消息（统一格式：snake_case）
+        # 构建 API 日志消息（统一格式：camelCase）
         api_log_message: Dict[str, Any] = {
-            "user_id": final_user_id,
+            "userId": final_user_id,
             "username": final_username,
-            "api_description": description,
-            "api_path": normalized_path,
-            "api_method": method,
-            "query_params": query_params,
-            "path_params": path_params,
-            "request_body": _serialize_for_json(request_body),
-            "response_time": response_time_ms,
+            "apiDescription": description,
+            "apiPath": normalized_path,
+            "apiMethod": method,
+            "queryParams": query_params,
+            "pathParams": path_params,
+            "requestBody": _serialize_for_json(request_body),
+            "responseTime": response_time_ms,
         }
 
         # 发送到 RabbitMQ

@@ -1,12 +1,15 @@
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
+from .alias import Alias
+
 
 class CreateHistoryDTO(BaseModel):
     """创建历史记录 DTO"""
+    model_config = {"populate_by_name": True}
 
-    user_id: int = Field(
-        ...,
+    userId: int = Alias(
+        "userId",
         description="用户ID",
     )
     ask: str = Field(
@@ -21,12 +24,12 @@ class CreateHistoryDTO(BaseModel):
         default=None,
         description="AI思考过程，可选",
     )
-    ai_type: str = Field(
-        ...,
+    aiType: str = Alias(
+        "aiType",
         description="AI类型（例：gpt、gemini、deepseek等）",
     )
 
-    @field_validator("user_id")
+    @field_validator("userId")
     @classmethod
     def validate_user_id(cls, value: int) -> int:
         if value <= 0:
@@ -47,7 +50,7 @@ class CreateHistoryDTO(BaseModel):
             raise PydanticCustomError("reply_error", "AI回复内容不能为空")
         return value
 
-    @field_validator("ai_type")
+    @field_validator("aiType")
     @classmethod
     def validate_ai_type(cls, value: str) -> str:
         if not value.strip():

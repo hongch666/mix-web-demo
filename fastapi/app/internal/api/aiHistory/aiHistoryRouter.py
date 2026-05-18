@@ -7,7 +7,7 @@ from app.internal.schemas import CreateHistoryDTO
 from app.internal.services import AiHistoryService, get_ai_history_service
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/ai_history",
@@ -36,14 +36,14 @@ async def create_ai_history(
 @log("获取所有AI历史记录")
 async def get_all_ai_history(
     request: Request,
-    user_id: int,
+    userId: int = Query(alias="user_id"),
     db: Session = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """获取所有AI历史记录接口"""
 
     histories: list[dict[str, Any]] = await ai_history_service.get_all_ai_history(
-        user_id, db
+        userId, db
     )
     return success(data=histories)
 
@@ -56,11 +56,11 @@ async def get_all_ai_history(
 @log("删除用户所有AI历史记录")
 async def delete_ai_history(
     request: Request,
-    user_id: int,
+    userId: int = Path(alias="user_id"),
     db: Session = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """删除用户所有AI历史记录接口"""
 
-    await ai_history_service.delete_ai_history_by_userid(user_id, db)
+    await ai_history_service.delete_ai_history_by_userid(userId, db)
     return success()

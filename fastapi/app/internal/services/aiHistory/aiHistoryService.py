@@ -113,7 +113,7 @@ class AiHistoryService:
             }
 
         if hasattr(ai_history, "model_dump"):
-            return ai_history.model_dump()
+            return ai_history.model_dump(by_alias=True)
 
         if hasattr(ai_history, "dict"):
             return ai_history.dict()

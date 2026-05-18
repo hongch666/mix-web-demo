@@ -57,7 +57,7 @@ async def send_message(
     """普通发送聊天消息"""
 
     user_id: str = get_current_user_id() or ""
-    # 使用实际用户ID替代请求中的user_id
+    # 使用实际用户ID替代请求中的 user_id
     actual_user_id: str = user_id or "1"
 
     # 根据请求的服务类型选择对应的AI服务
@@ -79,7 +79,7 @@ async def send_message(
 
     # 生成会话ID（如果没有提供）
     conversation_id: str = (
-        request.conversation_id
+        request.conversationId
         or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     )
     chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
@@ -110,9 +110,9 @@ async def send_message(
     # 成功响应 - 按照success格式
     response_data: ChatResponseData = ChatResponseData(
         message=response_message,
-        conversation_id=conversation_id,
-        chat_id=chat_id,
-        user_id=actual_user_id,
+        conversationId=conversation_id,
+        chatId=chat_id,
+        userId=actual_user_id,
         timestamp=int(time.time()),
     )
     return success(response_data)
@@ -138,7 +138,7 @@ async def stream_message(
     user_id: str = get_current_user_id() or ""
     actual_user_id: str = user_id or "1"
     conversation_id: str = (
-        request.conversation_id
+        request.conversationId
         or f"{actual_user_id}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     )
     chat_id: str = f"chat_{uuid.uuid4().hex[:12]}"
