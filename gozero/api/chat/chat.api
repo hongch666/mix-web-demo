@@ -59,16 +59,16 @@ service App {
 
 type (
 	ChatSendMessageReq {
-		SenderId   string `json:"senderId"`
-		ReceiverId string `json:"receiverId"`
+		SenderId   string `json:"sender_id"`
+		ReceiverId string `json:"receiver_id"`
 		Content    string `json:"content"`
 	}
 	ChatSendMessageResp {
-		MessageId uint64 `json:"messageId"`
+		MessageId uint64 `json:"message_id"`
 	}
 	ChatGetHistoryReq {
-		UserId  string `json:"userId"`
-		OtherId string `json:"otherId"`
+		UserId  string `json:"user_id"`
+		OtherId string `json:"other_id"`
 		Page    int    `json:"page,optional"`
 		Size    int    `json:"size,optional"`
 	}
@@ -78,42 +78,41 @@ type (
 	}
 	ChatMessageItem {
 		Id         uint64 `json:"id"`
-		SenderId   string `json:"senderId"`
-		ReceiverId string `json:"receiverId"`
+		SenderId   string `json:"sender_id"`
+		ReceiverId string `json:"receiver_id"`
 		Content    string `json:"content"`
-		IsRead     int8   `json:"isRead"`
-		CreatedAt  string `json:"createdAt"`
+		IsRead     int8   `json:"is_read"`
+		CreatedAt  string `json:"created_at"`
 	}
 	ChatGetQueueStatusResp {
-		OnlineUsers []string `json:"onlineUsers"`
+		OnlineUsers []string `json:"online_users"`
 		Count       int      `json:"count"`
 	}
 	ChatJoinQueueReq {
-		UserId string `json:"userId"`
+		UserId string `json:"user_id"`
 	}
 	ChatJoinQueueResp {
-		UserId string `json:"userId"`
+		UserId string `json:"user_id"`
 		Status string `json:"status"`
 	}
 	ChatLeaveQueueReq {
-		UserId string `json:"userId"`
+		UserId string `json:"user_id"`
 	}
 	ChatLeaveQueueResp {
-		UserId string `json:"userId"`
+		UserId string `json:"user_id"`
 		Status string `json:"status"`
 	}
 	ChatGetUnreadCountReq {
-		UserId  string `json:"userId"`
-		OtherId string `json:"otherId"`
+		UserId  string `json:"user_id"`
+		OtherId string `json:"other_id"`
 	}
 	ChatGetUnreadCountResp {
-		UnreadCount int64 `json:"unreadCount"`
+		UnreadCount int64 `json:"unread_count"`
 	}
 	ChatGetAllUnreadCountsReq {
-		UserId string `json:"userId"`
+		UserId string `json:"user_id"`
 	}
 	ChatGetAllUnreadCountsResp {
 		Data map[string]int64 `json:"data"`
 	}
 )
-

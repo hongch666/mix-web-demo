@@ -211,16 +211,16 @@ func formatLogMessage(method, path, description string, userID int64, username s
 func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitChannel *amqp.Channel, userID int64, username, method, path, description string,
 	queryParams map[string]any, requestBody any, responseTimeMs int64,
 ) {
-	// 构建 API 日志消息（统一格式：snake_case）
+	// 构建 API 日志消息（统一格式：camelCase）
 	apiLogMessage := map[string]any{
-		"user_id":         userID,
-		"username":        username,
-		"api_description": description,
-		"api_path":        path,
-		"api_method":      method,
-		"query_params":    queryParams,
-		"request_body":    requestBody,
-		"response_time":   responseTimeMs,
+		"userId":         userID,
+		"username":       username,
+		"apiDescription": description,
+		"apiPath":        path,
+		"apiMethod":      method,
+		"queryParams":    queryParams,
+		"requestBody":    requestBody,
+		"responseTime":   responseTimeMs,
 	}
 
 	// 序列化为 JSON

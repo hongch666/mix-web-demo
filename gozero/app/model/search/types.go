@@ -18,12 +18,12 @@ var (
 
 type ArticleSearchDTO struct {
 	Keyword         string  `form:"keyword"`
-	UserID          *uint64 `form:"userId"`
+	UserID          *uint64 `form:"user_id"`
 	Username        string  `form:"username"`
 	CategoryName    string  `form:"category_name"`
 	SubCategoryName string  `form:"sub_category_name"`
-	StartDate       *string `form:"startDate"`
-	EndDate         *string `form:"endDate"`
+	StartDate       *string `form:"start_date"`
+	EndDate         *string `form:"end_date"`
 	Page            int     `form:"page,default=1"`
 	Size            int     `form:"size,default=10"`
 }
@@ -32,14 +32,14 @@ type ArticleES struct {
 	ID                int64   `json:"id"`
 	Title             string  `json:"title"`
 	Content           string  `json:"content"`
-	UserID            int64   `json:"userId"`
+	UserID            int64   `json:"user_id"`
 	Username          string  `json:"username"`
 	Tags              string  `json:"tags"`
 	Status            int     `json:"status"`
 	Views             int     `json:"views"`
-	LikeCount         int     `json:"likeCount"`
-	CollectCount      int     `json:"collectCount"`
-	AuthorFollowCount int     `json:"authorFollowCount"`
+	LikeCount         int     `json:"like_count"`
+	CollectCount      int     `json:"collect_count"`
+	AuthorFollowCount int     `json:"author_follow_count"`
 	CategoryName      string  `json:"category_name"`
 	SubCategoryName   string  `json:"sub_category_name"`
 	CreateAt          string  `json:"create_at"`
@@ -53,13 +53,13 @@ type ArticleES struct {
 
 type SearchLog struct {
 	ID        string         `bson:"_id,omitempty"`
-	UserID    int64          `bson:"userId"`
-	ArticleID *int64         `bson:"articleId,omitempty"`
+	UserID    int64          `bson:"user_id"`
+	ArticleID *int64         `bson:"article_id,omitempty"`
 	Action    string         `bson:"action"`
 	Content   map[string]any `bson:"content"`
 	Msg       string         `bson:"msg"`
-	CreatedAt time.Time      `bson:"createdAt"`
-	UpdatedAt time.Time      `bson:"updatedAt"`
+	CreatedAt time.Time      `bson:"created_at"`
+	UpdatedAt time.Time      `bson:"updated_at"`
 }
 
 type SearchContent struct {

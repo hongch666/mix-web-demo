@@ -165,7 +165,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		// 发送搜索信息到消息队列中进行异步处理
 		msg := map[string]any{
 			"action":  "search",
-			"user_id": logUserID,
+			"userId":  logUserID,
 			"content": searchDTO,
 			"msg":     utils.SEARCH_MSG,
 		}

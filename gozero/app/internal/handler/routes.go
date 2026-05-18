@@ -99,7 +99,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				{
 					// 获取用户搜索历史
 					Method:  http.MethodGet,
-					Path:    "/history/:userId",
+					Path:    "/history/:user_id",
 					Handler: search.GetSearchHistoryHandler(serverCtx),
 				},
 			}...,

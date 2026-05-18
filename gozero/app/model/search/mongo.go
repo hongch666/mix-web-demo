@@ -20,13 +20,13 @@ func (m *searchModel) GetSearchHistory(ctx context.Context, userID int64) ([]str
 	pipeline := []bson.M{
 		{
 			"$match": bson.M{
-				"userId": userID,
-				"action": "search",
+				"user_id": userID,
+				"action":  "search",
 			},
 		},
 		{
 			"$sort": bson.M{
-				"createdAt": -1,
+				"created_at": -1,
 			},
 		},
 		{
@@ -44,13 +44,13 @@ func (m *searchModel) GetSearchHistory(ctx context.Context, userID int64) ([]str
 		},
 		{
 			"$group": bson.M{
-				"_id":       "$keyword",
-				"createdAt": bson.M{"$first": "$createdAt"},
+				"_id":        "$keyword",
+				"created_at": bson.M{"$first": "$created_at"},
 			},
 		},
 		{
 			"$sort": bson.M{
-				"createdAt": -1,
+				"created_at": -1,
 			},
 		},
 		{
@@ -58,9 +58,9 @@ func (m *searchModel) GetSearchHistory(ctx context.Context, userID int64) ([]str
 		},
 		{
 			"$project": bson.M{
-				"_id":       0,
-				"keyword":   "$_id",
-				"createdAt": 1,
+				"_id":        0,
+				"keyword":    "$_id",
+				"created_at": 1,
 			},
 		},
 	}
@@ -75,7 +75,7 @@ func (m *searchModel) GetSearchHistory(ctx context.Context, userID int64) ([]str
 	for cursor.Next(ctx) {
 		var result struct {
 			Keyword   string    `bson:"keyword"`
-			CreatedAt time.Time `bson:"createdAt"`
+			CreatedAt time.Time `bson:"created_at"`
 		}
 		if err = cursor.Decode(&result); err != nil {
 			continue

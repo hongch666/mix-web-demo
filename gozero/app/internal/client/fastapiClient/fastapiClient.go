@@ -35,14 +35,14 @@ func (c *FastapiClient) EnhanceGraph(ctx context.Context, req *GraphEnhanceReque
 	return sd.CallService(ctx, c.serviceName, "/graph-search/enhance", client.RequestOptions{
 		Method: "POST",
 		BodyData: map[string]any{
-			"userId":          req.UserID,
-			"keyword":         req.Keyword,
-			"articleIds":      req.ArticleIDs,
-			"categoryName":    req.CategoryName,
-			"subCategoryName": req.SubCategoryName,
-			"tags":            req.Tags,
-			"limit":           req.Limit,
-			"mode":            req.Mode,
+			"user_id":           req.UserID,
+			"keyword":           req.Keyword,
+			"article_ids":       req.ArticleIDs,
+			"category_name":     req.CategoryName,
+			"sub_category_name": req.SubCategoryName,
+			"tags":              req.Tags,
+			"limit":             req.Limit,
+			"mode":              req.Mode,
 		},
 	})
 }
@@ -57,15 +57,15 @@ func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceReq
 	return sd.CallService(ctx, c.serviceName, "/vector-search/enhance", client.RequestOptions{
 		Method: "POST",
 		BodyData: map[string]any{
-			"userId":          req.UserID,
-			"keyword":         req.Keyword,
-			"articleIds":      req.ArticleIDs,
-			"categoryName":    req.CategoryName,
-			"subCategoryName": req.SubCategoryName,
-			"tags":            req.Tags,
-			"limit":           req.Limit,
-			"topK":            req.TopK,
-			"mode":            req.Mode,
+			"user_id":           req.UserID,
+			"keyword":           req.Keyword,
+			"article_ids":       req.ArticleIDs,
+			"category_name":     req.CategoryName,
+			"sub_category_name": req.SubCategoryName,
+			"tags":              req.Tags,
+			"limit":             req.Limit,
+			"top_k":             req.TopK,
+			"mode":              req.Mode,
 		},
 	})
 }

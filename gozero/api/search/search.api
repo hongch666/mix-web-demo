@@ -19,23 +19,23 @@ service App {
 		description: "获取指定用户最近10条搜索关键词列表"
 	)
 	@handler GetSearchHistoryHandler
-	get /history/:userId (GetSearchHistoryReq) returns (GetSearchHistoryResp)
+	get /history/:user_id (GetSearchHistoryReq) returns (GetSearchHistoryResp)
 }
 
 type (
 	SearchArticlesReq {
 		Keyword         *string `form:"keyword,optional"`
-		UserId          *uint64 `form:"userId,optional"`
+		UserId          *uint64 `form:"user_id,optional"`
 		Username        *string `form:"username,optional"`
 		CategoryName    *string `form:"category_name,optional"`
 		SubCategoryName *string `form:"sub_category_name,optional"`
-		StartDate       *string `form:"startDate,optional"`
-		EndDate         *string `form:"endDate,optional"`
+		StartDate       *string `form:"start_date,optional"`
+		EndDate         *string `form:"end_date,optional"`
 		Page            int     `form:"page,optional,default=1"`
 		Size            int     `form:"size,optional,default=10"`
 		Mode            *string `form:"mode,optional"`
-		EnableVector    *bool   `form:"enableVector,optional"`
-		EnableGraph     *bool   `form:"enableGraph,optional"`
+		EnableVector    *bool   `form:"enable_vector,optional"`
+		EnableGraph     *bool   `form:"enable_graph,optional"`
 		Explain         *bool   `form:"explain,optional"`
 	}
 	SearchArticlesResp {
@@ -46,14 +46,14 @@ type (
 		Id                int64                `json:"id"`
 		Title             string               `json:"title"`
 		Content           string               `json:"content"`
-		UserId            int64                `json:"userId"`
+		UserId            int64                `json:"user_id"`
 		Username          string               `json:"username"`
 		Tags              string               `json:"tags"`
 		Status            int                  `json:"status"`
 		Views             int                  `json:"views"`
-		LikeCount         int                  `json:"likeCount"`
-		CollectCount      int                  `json:"collectCount"`
-		AuthorFollowCount int                  `json:"authorFollowCount"`
+		LikeCount         int                  `json:"like_count"`
+		CollectCount      int                  `json:"collect_count"`
+		AuthorFollowCount int                  `json:"author_follow_count"`
 		CategoryName      string               `json:"category_name"`
 		SubCategoryName   string               `json:"sub_category_name"`
 		CreateAt          string               `json:"create_at"`
@@ -62,20 +62,20 @@ type (
 		UserScore         float64              `json:"user_score"`
 		AiCommentCount    int                  `json:"ai_comment_count"`
 		UserCommentCount  int                  `json:"user_comment_count"`
-		EsScore           float64              `json:"esScore"`
-		VectorScore       float64              `json:"vectorScore"`
-		GraphScore        float64              `json:"graphScore"`
-		FinalScore        float64              `json:"finalScore"`
+		EsScore           float64              `json:"es_score"`
+		VectorScore       float64              `json:"vector_score"`
+		GraphScore        float64              `json:"graph_score"`
+		FinalScore        float64              `json:"final_score"`
 		Reason            string               `json:"reason"`
-		SemanticReason    string               `json:"semanticReason"`
+		SemanticReason    string               `json:"semantic_reason"`
 		Relations         []GraphRelation      `json:"relations"`
-		MatchedChunks     []VectorMatchedChunk `json:"matchedChunks"`
-		ScoreDetails      ScoreDetails         `json:"scoreDetails"`
+		MatchedChunks     []VectorMatchedChunk `json:"matched_chunks"`
+		ScoreDetails      ScoreDetails         `json:"score_details"`
 	}
 	VectorMatchedChunk {
-		ArticleId  int64   `json:"articleId"`
+		ArticleId  int64   `json:"article_id"`
 		Title      string  `json:"title"`
-		ChunkIndex int     `json:"chunkIndex"`
+		ChunkIndex int     `json:"chunk_index"`
 		Score      float64 `json:"score"`
 		Content    string  `json:"content"`
 	}
@@ -86,20 +86,19 @@ type (
 		Reason string  `json:"reason"`
 	}
 	ScoreDetails {
-		EsScore       float64 `json:"esScore"`
-		VectorScore   float64 `json:"vectorScore"`
-		GraphScore    float64 `json:"graphScore"`
-		BusinessScore float64 `json:"businessScore"`
-		RecencyScore  float64 `json:"recencyScore"`
+		EsScore       float64 `json:"es_score"`
+		VectorScore   float64 `json:"vector_score"`
+		GraphScore    float64 `json:"graph_score"`
+		BusinessScore float64 `json:"business_score"`
+		RecencyScore  float64 `json:"recency_score"`
 	}
 )
 
 type (
 	GetSearchHistoryReq {
-		UserId string `path:"userId"`
+		UserId string `path:"user_id"`
 	}
 	GetSearchHistoryResp {
 		Keywords []string `json:"keywords"`
 	}
 )
-
