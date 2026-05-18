@@ -56,8 +56,8 @@ public class ArticleCollectController {
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNCOLLECT)
     @ApiLog("取消收藏")
     public Result removeCollect(
-            @Parameter(description = "文章ID", required = true) @RequestParam(required = true) Long articleId,
-            @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId) {
+            @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
+            @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
         boolean success = articleCollectService.removeCollect(articleId, userId);
         if (success) {
             return Result.success();
@@ -66,11 +66,11 @@ public class ArticleCollectController {
         }
     }
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有收藏", description = "分页查询某个用户的所有收藏记录（包含文章详情）")
     @ApiLog("查询用户收藏")
     public Result listUserCollects(
-            @Parameter(description = "用户ID", required = true) @PathVariable Long userId,
+            @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
         Page<ArticleCollect> pageRequest = new Page<>(page, size);
@@ -86,19 +86,19 @@ public class ArticleCollectController {
     @Operation(summary = "检查用户是否收藏", description = "查询用户是否收藏过某篇文章")
     @ApiLog("检查收藏状态")
     public Result isCollected(
-            @Parameter(description = "文章ID", required = true) @RequestParam(required = true) Long articleId,
-            @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId) {
+            @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
+            @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
         boolean collected = articleCollectService.isCollected(articleId, userId);
         Map<String, Object> data = new HashMap<>();
         data.put("collected", collected);
         return Result.success(data);
     }
 
-    @GetMapping("/count/{articleId}")
+    @GetMapping("/count/{article_id}")
     @Operation(summary = "获取文章的收藏数", description = "获取某篇文章的总收藏数")
     @ApiLog("获取收藏数")
     public Result getCollectCount(
-            @Parameter(description = "文章ID", required = true) @PathVariable Long articleId) {
+            @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
         Long count = articleCollectService.getCollectCountByArticleId(articleId);
         Map<String, Object> data = new HashMap<>();
         data.put("collectCount", count);

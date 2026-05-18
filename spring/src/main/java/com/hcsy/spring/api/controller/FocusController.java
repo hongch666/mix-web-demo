@@ -56,8 +56,8 @@ public class FocusController {
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNFOCUS)
     @ApiLog("取消关注")
     public Result removeFocus(
-            @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId,
-            @Parameter(description = "关注用户ID", required = true) @RequestParam(required = true) Long focusId) {
+            @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
+            @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
         boolean success = focusService.removeFocus(userId, focusId);
         if (success) {
             return Result.success();
@@ -70,19 +70,19 @@ public class FocusController {
     @Operation(summary = "检查关注状态", description = "查询用户是否关注了某个用户")
     @ApiLog("检查关注状态")
     public Result isFocused(
-            @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId,
-            @Parameter(description = "关注用户ID", required = true) @RequestParam(required = true) Long focusId) {
+            @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
+            @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
         boolean focused = focusService.isFocused(userId, focusId);
         Map<String, Object> data = new HashMap<>();
         data.put("focused", focused);
         return Result.success(data);
     }
 
-    @GetMapping("/authors/{userId}")
+    @GetMapping("/authors/{user_id}")
     @Operation(summary = "查询用户的所有关注作者", description = "分页查询某个用户关注的所有作者信息")
     @ApiLog("查询用户关注")
     public Result listUserFocuses(
-            @Parameter(description = "用户ID", required = true) @PathVariable Long userId,
+            @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
         Page<Focus> pageRequest = new Page<>(page, size);
@@ -94,11 +94,11 @@ public class FocusController {
         return Result.success(data);
     }
 
-    @GetMapping("/followers/{userId}")
+    @GetMapping("/followers/{user_id}")
     @Operation(summary = "查询用户的所有粉丝", description = "分页查询某个用户的所有粉丝信息")
     @ApiLog("查询用户粉丝")
     public Result listUserFollowers(
-            @Parameter(description = "用户ID", required = true) @PathVariable Long userId,
+            @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
         Page<Focus> pageRequest = new Page<>(page, size);
@@ -110,22 +110,22 @@ public class FocusController {
         return Result.success(data);
     }
 
-    @GetMapping("/count/focus/{userId}")
+    @GetMapping("/count/focus/{user_id}")
     @Operation(summary = "获取用户的关注数", description = "查询用户关注的人数")
     @ApiLog("查询关注数")
     public Result getFocusCount(
-            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+            @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
         Long count = focusService.getFocusCountByUserId(userId);
         Map<String, Object> data = new HashMap<>();
         data.put("count", count);
         return Result.success(data);
     }
 
-    @GetMapping("/count/follower/{userId}")
+    @GetMapping("/count/follower/{user_id}")
     @Operation(summary = "获取用户的粉丝数", description = "查询用户的粉丝数量")
     @ApiLog("查询粉丝数")
     public Result getFollowerCount(
-            @Parameter(description = "用户ID", required = true) @PathVariable Long userId) {
+            @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
         Long count = focusService.getFollowerCountByUserId(userId);
         Map<String, Object> data = new HashMap<>();
         data.put("count", count);

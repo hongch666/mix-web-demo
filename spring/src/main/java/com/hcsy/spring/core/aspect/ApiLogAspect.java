@@ -423,17 +423,17 @@ public class ApiLogAspect {
                 requestBody = extractRequestBody(pjp, excludeSet);
             }
 
-            // 构建消息对象（snake_case 格式匹配队列契约）
+            // 构建消息对象（camelCase 格式匹配队列契约）
             Map<String, Object> apiLogMessage = new LinkedHashMap<>();
-            apiLogMessage.put("user_id", userId);
+            apiLogMessage.put("userId", userId);
             apiLogMessage.put("username", username);
-            apiLogMessage.put("api_description", description);
-            apiLogMessage.put("api_path", requestPath);
-            apiLogMessage.put("api_method", httpMethod);
-            apiLogMessage.put("query_params", queryParams);
-            apiLogMessage.put("path_params", pathParams);
-            apiLogMessage.put("request_body", requestBody);
-            apiLogMessage.put("response_time", responseTime);
+            apiLogMessage.put("apiDescription", description);
+            apiLogMessage.put("apiPath", requestPath);
+            apiLogMessage.put("apiMethod", httpMethod);
+            apiLogMessage.put("queryParams", queryParams);
+            apiLogMessage.put("pathParams", pathParams);
+            apiLogMessage.put("requestBody", requestBody);
+            apiLogMessage.put("responseTime", responseTime);
 
             // 发送到消息队列
             rabbitMQUtil.sendMessage("api-log-queue", apiLogMessage);

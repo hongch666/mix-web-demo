@@ -286,12 +286,12 @@ public class UserController {
     /**
      * 管理员手动下线用户
      */
-    @PostMapping("/force-logout/{userId}")
+    @PostMapping("/force-logout/{user_id}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-            "userId" })
+            "user_id" })
     @ApiLog("手动下线用户")
-    public Result forceLogoutUser(@PathVariable Long userId) {
+    public Result forceLogoutUser(@PathVariable("user_id") Long userId) {
         // 验证用户是否存在
         User user = userService.getById(userId);
         if (user == null) {
@@ -411,12 +411,12 @@ public class UserController {
         return Result.success();
     }
 
-    @PostMapping("/admin/reset-password/{userId}")
+    @PostMapping("/admin/reset-password/{user_id}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为配置中的重置密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-            "userId" })
+            "user_id" })
     @ApiLog("重置指定用户密码")
-    public Result resetUserPassword(@PathVariable Long userId) {
+    public Result resetUserPassword(@PathVariable("user_id") Long userId) {
         // 查询用户是否存在
         User user = userService.getById(userId);
         if (user == null) {

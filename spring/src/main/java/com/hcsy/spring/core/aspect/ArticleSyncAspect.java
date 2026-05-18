@@ -99,7 +99,7 @@ public class ArticleSyncAspect {
                 content.put("id", article.getId());
                 content.put("title", article.getTitle());
                 content.put("tags", article.getTags());
-                msg.put("article_id", article.getId());
+                msg.put("articleId", article.getId());
                 msg.put("msg", description);
                 break;
             }
@@ -108,12 +108,12 @@ public class ArticleSyncAspect {
                     @SuppressWarnings("unchecked")
                     List<Long> ids = (List<Long>) paramValues[0];
                     content.put("ids", ids);
-                    msg.put("article_ids", ids);
+                    msg.put("articleIds", ids);
                     msg.put("msg", description + ids.size() + "篇文章");
                 } else {
                     Long id = (Long) paramValues[0];
                     content.put("id", id);
-                    msg.put("article_id", id);
+                    msg.put("articleId", id);
                     msg.put("msg", description);
                 }
                 break;
@@ -128,7 +128,7 @@ public class ArticleSyncAspect {
             case "unfocus": {
                 Long id = (Long) paramValues[0];
                 content.put("id", id);
-                msg.put("article_id", id);
+                msg.put("articleId", id);
                 msg.put("msg", description);
                 break;
             }
@@ -139,6 +139,6 @@ public class ArticleSyncAspect {
 
         // 公共处理逻辑
         msg.put("content", content);
-        msg.put("user_id", userId);
+        msg.put("userId", userId);
     }
 }

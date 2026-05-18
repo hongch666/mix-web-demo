@@ -56,8 +56,8 @@ public class ArticleLikeController {
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNLIKE)
     @ApiLog("取消点赞")
     public Result removeLike(
-            @Parameter(description = "文章ID", required = true) @RequestParam(required = true) Long articleId,
-            @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId) {
+            @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
+            @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
         boolean success = articleLikeService.removeLike(articleId, userId);
         if (success) {
             return Result.success();
@@ -66,11 +66,11 @@ public class ArticleLikeController {
         }
     }
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有点赞", description = "分页查询某个用户的所有点赞记录（包含文章详情）")
     @ApiLog("查询用户点赞")
     public Result listUserLikes(
-            @Parameter(description = "用户ID", required = true) @PathVariable Long userId,
+            @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
         Page<ArticleLike> pageRequest = new Page<>(page, size);
@@ -86,19 +86,19 @@ public class ArticleLikeController {
     @Operation(summary = "检查用户是否点赞", description = "查询用户是否点赞过某篇文章")
     @ApiLog("检查点赞状态")
     public Result isLiked(
-            @Parameter(description = "文章ID", required = true) @RequestParam(required = true) Long articleId,
-            @Parameter(description = "用户ID", required = true) @RequestParam(required = true) Long userId) {
+            @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
+            @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
         boolean liked = articleLikeService.isLiked(articleId, userId);
         Map<String, Object> data = new HashMap<>();
         data.put("liked", liked);
         return Result.success(data);
     }
 
-    @GetMapping("/count/{articleId}")
+    @GetMapping("/count/{article_id}")
     @Operation(summary = "获取文章的点赞数", description = "获取某篇文章的总点赞数")
     @ApiLog("获取点赞数")
     public Result getLikeCount(
-            @Parameter(description = "文章ID", required = true) @PathVariable Long articleId) {
+            @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
         Long count = articleLikeService.getLikeCountByArticleId(articleId);
         Map<String, Object> data = new HashMap<>();
         data.put("likeCount", count);

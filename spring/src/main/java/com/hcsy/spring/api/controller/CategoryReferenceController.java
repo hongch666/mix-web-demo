@@ -59,7 +59,7 @@ public class CategoryReferenceController {
     }
 
     @Operation(summary = "删除权威参考文本")
-    @DeleteMapping("/sub/{subCategoryId}")
+    @DeleteMapping("/sub/{sub_category_id}")
     @RequirePermission(
         roles = { "admin" },
         businessType = "categoryReference",
@@ -67,15 +67,15 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("删除权威参考文本")
-    public Result deleteCategoryReference(@PathVariable Long subCategoryId) {
+    public Result deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
         categoryReferenceService.deleteCategoryReference(subCategoryId);
         return Result.success();
     }
 
     @Operation(summary = "根据子分类ID获取权威参考文本")
-    @GetMapping("/sub/{subCategoryId}")
+    @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")
-    public Result getCategoryReferenceBySubCategoryId(@PathVariable Long subCategoryId) {
+    public Result getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
         CategoryReferenceVO vo = categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId);
         if (vo == null) {
             return Result.success(null);
