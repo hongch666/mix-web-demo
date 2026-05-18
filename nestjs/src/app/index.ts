@@ -1,7 +1,8 @@
 import multipart from '@fastify/multipart';
-import { ValidationPipe } from '@nestjs/common';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { OpenAPIObject } from '@nestjs/swagger';
@@ -81,10 +82,13 @@ export async function createApp(): Promise<NestFastifyApplication> {
 
   // 注册全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
+  // 全局启用字段序列化
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
   // 全局启用校验管道
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
+      transformOptions: { enableImplicitConversion: true },
       exceptionFactory: (errors) => {
         const message = extractValidationMessage(errors);
         return new BusinessException(

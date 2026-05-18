@@ -10,6 +10,11 @@ import {
   CreateArticleLogDto,
 } from './dto/articleLog.dto';
 
+type RawArticleLogMessage = Partial<ArticleLogMessage> & {
+  user_id?: number;
+  article_id?: number;
+};
+
 @Injectable()
 export class LogConsumerService implements OnModuleInit {
   constructor(
@@ -24,20 +29,26 @@ export class LogConsumerService implements OnModuleInit {
       async (msg): Promise<void> => {
         try {
           // 处理两种消息格式：1.对象, 2.JSON 字符串
-          let logData: ArticleLogMessage;
+          let logData: RawArticleLogMessage;
 
           if (typeof msg === 'string') {
             // 如果是字符串，尝试解析为 JSON
-            logData = JSON.parse(msg) as ArticleLogMessage;
+            logData = JSON.parse(msg) as RawArticleLogMessage;
             logger.info(`接收到 Spring 发送的 ArticleLog 消息: ${String(msg)}`);
           } else {
             // 如果已是对象，直接使用
-            logData = msg as ArticleLogMessage;
+            logData = msg as RawArticleLogMessage;
             logger.info(`接收到 ArticleLog 消息: ${JSON.stringify(logData)}`);
           }
 
           // 处理消息
-          await this.handleMessage(logData);
+          await this.handleMessage({
+            action: logData.action!,
+            content: logData.content!,
+            msg: logData.msg,
+            userId: logData.userId ?? logData.user_id ?? -1,
+            articleId: logData.articleId ?? logData.article_id ?? -1,
+          });
 
           logger.info(Constants.ARTICLE_HANDLER);
         } catch (error) {
@@ -81,8 +92,8 @@ export class LogConsumerService implements OnModuleInit {
     }
 
     const dto: CreateArticleLogDto = {
-      articleId: msg.article_id ? msg.article_id : -1,
-      userId: msg.user_id ? msg.user_id : -1,
+      articleId: msg.articleId ? msg.articleId : -1,
+      userId: msg.userId ? msg.userId : -1,
       action: msg.action,
       msg: msg.msg ? msg.msg : undefined,
       content: contentObj,

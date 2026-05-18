@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ExposeName } from "src/common/utils/snake-case.serializer";
 import {
   IsEnum,
   IsNotEmpty,
@@ -28,17 +29,19 @@ export interface ArticleLogMessage {
   action: ArticleAction;
   content: string | Record<string, unknown>;
   msg?: string;
-  user_id: number;
-  article_id: number;
+  userId: number;
+  articleId: number;
 }
 
 export class CreateArticleLogDto {
   @ApiProperty({ description: "用户ID", example: "1" })
+  @ExposeName()
   @IsNumber({}, { message: "用户ID必须是数字" })
   @IsNotEmpty({ message: "用户ID不能为空" })
   userId!: number;
 
   @ApiProperty({ description: "文章ID", example: "1" })
+  @ExposeName()
   @IsNumber({}, { message: "文章ID必须是数字" })
   @IsNotEmpty({ message: "文章ID不能为空" })
   articleId!: number;
@@ -66,11 +69,13 @@ export class CreateArticleLogDto {
 
 export class QueryArticleLogDto {
   @ApiPropertyOptional({ description: "用户ID" })
+  @ExposeName()
   @IsOptional()
   @IsNumberString({}, { message: "用户ID必须是数字字符串" })
   userId?: string;
 
   @ApiPropertyOptional({ description: "文章ID" })
+  @ExposeName()
   @IsOptional()
   @IsNumberString({}, { message: "文章ID必须是数字字符串" })
   articleId?: string;
@@ -81,6 +86,7 @@ export class QueryArticleLogDto {
   username?: string;
 
   @ApiPropertyOptional({ description: "文章标题（模糊搜索）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "文章标题必须是字符串" })
   articleTitle?: string;
@@ -107,11 +113,13 @@ export class QueryArticleLogDto {
   action?: ArticleAction;
 
   @ApiPropertyOptional({ description: "开始时间（格式：yyyy-MM-dd HH:mm:ss）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "开始时间必须是字符串" })
   startTime?: string;
 
   @ApiPropertyOptional({ description: "结束时间（格式：yyyy-MM-dd HH:mm:ss）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "结束时间必须是字符串" })
   endTime?: string;

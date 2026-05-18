@@ -8,6 +8,7 @@ import {
   Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { ExposeName } from 'src/common/utils/snake-case.serializer';
 
 export class InternalEmailCodeSendDto {
   @ApiProperty({ description: '收件邮箱', example: 'user@example.com' })
@@ -36,6 +37,7 @@ export class InternalEmailCodeSendDto {
     example: 10,
     required: false,
   })
+  @ExposeName()
   @IsOptional()
   @IsInt({ message: '过期时间必须是整数' })
   @Min(1, { message: '过期时间不能小于 1 分钟' })

@@ -38,6 +38,7 @@ interface GithubAccessTokenResponse {
   scope?: string;
   token_type?: string;
   error?: string;
+  errorDescription?: string;
   error_description?: string;
 }
 
@@ -281,7 +282,9 @@ export class GithubService {
       !data.access_token
     ) {
       throw BusinessException.badGateway(
-        data.error_description || Constants.GITHUB_ACCESS_TOKEN_FAILED,
+        data.errorDescription ||
+          data.error_description ||
+          Constants.GITHUB_ACCESS_TOKEN_FAILED,
         'GITHUB_ACCESS_TOKEN_FAILED',
       );
     }

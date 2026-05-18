@@ -169,15 +169,15 @@ export class ApiLogInterceptor implements NestInterceptor {
 
       // 构建消息对象
       const apiLogMessage: Record<string, unknown> = {
-        user_id: userId,
+        userId: userId,
         username: username,
-        api_description: description,
-        api_path: path,
-        api_method: method,
-        query_params: queryParams,
-        path_params: pathParams,
-        request_body: isMultipart ? '[文件上传]' : requestBody,
-        response_time: responseTime,
+        apiDescription: description,
+        apiPath: path,
+        apiMethod: method,
+        queryParams: queryParams,
+        pathParams: pathParams,
+        requestBody: isMultipart ? '[文件上传]' : requestBody,
+        responseTime: responseTime,
       };
 
       // 发送到消息队列

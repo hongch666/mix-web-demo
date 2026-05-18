@@ -29,8 +29,8 @@ export class UploadController {
   @ApiLog('上传文件到 OSS')
   async uploadFile(@Body() dto: UploadDto): Promise<ApiResponse<string>> {
     const url: string = await this.uploadService.uploadFile(
-      dto.local_file,
-      dto.oss_file,
+      dto.localFile,
+      dto.ossFile,
     );
     return success(url);
   }

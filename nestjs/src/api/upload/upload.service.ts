@@ -76,9 +76,9 @@ export class UploadService {
       logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
       return {
-        original_filename: originalFilename,
-        oss_filename: uniqueFilename,
-        oss_url: ossUrl,
+        originalFilename,
+        ossFilename: uniqueFilename,
+        ossUrl,
       };
     } finally {
       // 删除本地临时文件
@@ -131,9 +131,9 @@ export class UploadService {
       logger.info(`OSS 上传完成，URL: ${ossUrl}`);
 
       return {
-        original_filename: originalFilename,
-        oss_filename: uniqueFilename,
-        oss_url: ossUrl,
+        originalFilename,
+        ossFilename: uniqueFilename,
+        ossUrl,
       };
     } finally {
       // 删除本地临时文件

@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ExposeName } from 'src/common/utils/snake-case.serializer';
 import { IsOptional, IsString } from 'class-validator';
 
 export class GithubAuthorizeQueryDto {
@@ -40,7 +41,8 @@ export class GithubCallbackQueryDto {
     description: 'GitHub 错误描述',
     example: 'The user denied the request',
   })
+  @ExposeName()
   @IsOptional()
   @IsString()
-  error_description?: string;
+  errorDescription?: string;
 }

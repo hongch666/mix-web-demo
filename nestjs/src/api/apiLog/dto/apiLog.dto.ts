@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ExposeName } from "src/common/utils/snake-case.serializer";
 import {
   IsEnum,
   IsNotEmpty,
@@ -20,19 +21,20 @@ export enum ApiMethod {
 
 // RabbitMQ 消息接口定义
 export interface ApiLogMessage {
-  user_id: number;
+  userId: number;
   username: string;
-  api_description: string;
-  api_path: string;
-  api_method: ApiMethod;
-  query_params?: Record<string, unknown>;
-  path_params?: Record<string, unknown>;
-  request_body?: Record<string, unknown>;
-  response_time: number;
+  apiDescription: string;
+  apiPath: string;
+  apiMethod: ApiMethod;
+  queryParams?: Record<string, unknown>;
+  pathParams?: Record<string, unknown>;
+  requestBody?: Record<string, unknown> | string | null;
+  responseTime: number;
 }
 
 export class CreateApiLogDto {
   @ApiProperty({ description: "用户ID", example: 1 })
+  @ExposeName()
   @IsNumber({}, { message: "用户ID必须是数字" })
   @IsNotEmpty({ message: "用户ID不能为空" })
   userId!: number;
@@ -43,11 +45,13 @@ export class CreateApiLogDto {
   username!: string;
 
   @ApiProperty({ description: "API描述", example: "获取用户信息" })
+  @ExposeName()
   @IsString({ message: "API描述必须是字符串" })
   @IsNotEmpty({ message: "API描述不能为空" })
   apiDescription!: string;
 
   @ApiProperty({ description: "API路径", example: "/api/users/1" })
+  @ExposeName()
   @IsString({ message: "API路径必须是字符串" })
   @IsNotEmpty({ message: "API路径不能为空" })
   apiPath!: string;
@@ -57,6 +61,7 @@ export class CreateApiLogDto {
     enum: Object.values(ApiMethod),
     example: ApiMethod.GET,
   })
+  @ExposeName()
   @IsEnum(ApiMethod, { message: "API方法必须是有效的枚举值" })
   @IsNotEmpty({ message: "API方法不能为空" })
   apiMethod!: ApiMethod;
@@ -65,18 +70,22 @@ export class CreateApiLogDto {
     description: "查询参数",
     example: { page: 1, size: 10 },
   })
+  @ExposeName()
   @IsOptional()
   queryParams?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: "路径参数", example: { id: "1" } })
+  @ExposeName()
   @IsOptional()
   pathParams?: Record<string, unknown>;
 
   @ApiPropertyOptional({ description: "请求体", example: { name: "test" } })
+  @ExposeName()
   @IsOptional()
   requestBody?: Record<string, unknown>;
 
   @ApiProperty({ description: "响应时间（毫秒）", example: 100 })
+  @ExposeName()
   @IsNumber({}, { message: "响应时间必须是数字" })
   @IsNotEmpty({ message: "响应时间不能为空" })
   responseTime!: number;
@@ -84,6 +93,7 @@ export class CreateApiLogDto {
 
 export class QueryApiLogDto {
   @ApiPropertyOptional({ description: "用户ID" })
+  @ExposeName()
   @IsOptional()
   @IsNumberString({}, { message: "用户ID必须是数字字符串" })
   userId?: string;
@@ -94,11 +104,13 @@ export class QueryApiLogDto {
   username?: string;
 
   @ApiPropertyOptional({ description: "API描述（模糊搜索）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "API描述必须是字符串" })
   apiDescription?: string;
 
   @ApiPropertyOptional({ description: "API路径（模糊搜索）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "API路径必须是字符串" })
   apiPath?: string;
@@ -107,16 +119,19 @@ export class QueryApiLogDto {
     description: "API方法",
     enum: Object.values(ApiMethod),
   })
+  @ExposeName()
   @IsOptional()
   @IsEnum(ApiMethod, { message: "API方法必须是有效的枚举值" })
   apiMethod?: ApiMethod;
 
   @ApiPropertyOptional({ description: "开始时间（格式：yyyy-MM-dd HH:mm:ss）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "开始时间必须是字符串" })
   startTime?: string;
 
   @ApiPropertyOptional({ description: "结束时间（格式：yyyy-MM-dd HH:mm:ss）" })
+  @ExposeName()
   @IsOptional()
   @IsString({ message: "结束时间必须是字符串" })
   endTime?: string;
