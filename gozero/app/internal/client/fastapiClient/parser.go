@@ -19,15 +19,15 @@ func ParseVectorEnhanceResult(data any) ([]VectorEnhanceItem, error) {
 			continue
 		}
 
-		articleID, _ := toInt64(itemMap["articleId"])
-		vectorScore, _ := toFloat64(itemMap["vectorScore"])
+		articleID, _ := toInt64(getMapValue(itemMap, "article_id", "articleId"))
+		vectorScore, _ := toFloat64(getMapValue(itemMap, "vector_score", "vectorScore"))
 		reason, _ := toString(itemMap["reason"])
 
 		items = append(items, VectorEnhanceItem{
 			ArticleID:     articleID,
 			VectorScore:   vectorScore,
 			Reason:        reason,
-			MatchedChunks: parseVectorMatchedChunks(itemMap["matchedChunks"]),
+			MatchedChunks: parseVectorMatchedChunks(getMapValue(itemMap, "matched_chunks", "matchedChunks")),
 		})
 	}
 
@@ -53,13 +53,13 @@ func ParseGraphEnhanceResult(data any) ([]GraphEnhanceItem, error) {
 			continue
 		}
 
-		articleID, _ := toInt64(itemMap["articleId"])
-		graphScore, _ := toFloat64(itemMap["graphScore"])
+		articleID, _ := toInt64(getMapValue(itemMap, "article_id", "articleId"))
+		graphScore, _ := toFloat64(getMapValue(itemMap, "graph_score", "graphScore"))
 		reason, _ := toString(itemMap["reason"])
 
 		relations := parseRelations(itemMap["relations"])
-		matchedTags := parseStringSlice(itemMap["matchedTags"])
-		matchedPaths := parseStringSlice(itemMap["matchedPaths"])
+		matchedTags := parseStringSlice(getMapValue(itemMap, "matched_tags", "matchedTags"))
+		matchedPaths := parseStringSlice(getMapValue(itemMap, "matched_paths", "matchedPaths"))
 
 		items = append(items, GraphEnhanceItem{
 			ArticleID:    articleID,
@@ -75,6 +75,15 @@ func ParseGraphEnhanceResult(data any) ([]GraphEnhanceItem, error) {
 }
 
 // 类型转换辅助函数
+func getMapValue(m map[string]any, keys ...string) any {
+	for _, key := range keys {
+		if value, ok := m[key]; ok {
+			return value
+		}
+	}
+	return nil
+}
+
 func toInt64(v any) (int64, bool) {
 	switch val := v.(type) {
 	case float64:
@@ -158,9 +167,9 @@ func parseVectorMatchedChunks(v any) []VectorMatchedChunk {
 		if !ok {
 			continue
 		}
-		articleID, _ := toInt64(m["articleId"])
+		articleID, _ := toInt64(getMapValue(m, "article_id", "articleId"))
 		title, _ := toString(m["title"])
-		chunkIndex64, _ := toInt64(m["chunkIndex"])
+		chunkIndex64, _ := toInt64(getMapValue(m, "chunk_index", "chunkIndex"))
 		score, _ := toFloat64(m["score"])
 		content, _ := toString(m["content"])
 		chunks = append(chunks, VectorMatchedChunk{
