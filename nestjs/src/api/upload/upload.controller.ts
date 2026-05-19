@@ -96,7 +96,7 @@ export class UploadController {
   @ApiLog('上传 PDF 到 OSS')
   async uploadPdf(
     @Req() req: FastifyRequest,
-    @Query('custom_filename') customFilename?: string,
+    @Query('customFilename') customFilename?: string,
   ): Promise<ApiResponse<UploadResult>> {
     const parts = req.parts();
     for await (const part of parts) {

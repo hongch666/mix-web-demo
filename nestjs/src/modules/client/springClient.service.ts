@@ -23,7 +23,7 @@ export class SpringClientService {
       method: 'POST',
       path: '/users/github/token-ticket',
       body: {
-        userId,
+        user_id: userId,
         username,
       },
       headers: {

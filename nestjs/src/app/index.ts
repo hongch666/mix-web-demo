@@ -1,8 +1,7 @@
 import multipart from '@fastify/multipart';
-import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { Reflector } from '@nestjs/core';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import type { OpenAPIObject } from '@nestjs/swagger';
@@ -11,6 +10,7 @@ import { BusinessException } from 'src/common/exceptions/business.exception';
 import { HttpCode } from 'src/common/utils/httpCode';
 import { logger } from 'src/common/utils/writeLog';
 import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
+import { FieldNamingInterceptor } from 'src/framework/interceptors/fieldNaming.interceptor';
 import { Constants } from '../common/utils/constants';
 import { AppModule } from './app.module';
 
@@ -82,8 +82,8 @@ export async function createApp(): Promise<NestFastifyApplication> {
 
   // 注册全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
-  // 全局启用字段序列化
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  // 全局转换对外字段命名：请求下划线转内部驼峰，响应内部驼峰转下划线
+  app.useGlobalInterceptors(new FieldNamingInterceptor());
   // 全局启用校验管道
   app.useGlobalPipes(
     new ValidationPipe({
