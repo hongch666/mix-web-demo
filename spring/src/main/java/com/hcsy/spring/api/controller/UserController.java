@@ -33,6 +33,7 @@ import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
+import com.hcsy.spring.entity.dto.EmailCodeSendDTO;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
@@ -339,22 +340,37 @@ public class UserController {
     @PostMapping("/email/send")
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
     @ApiLog("发送邮箱验证码")
-    public Result sendVerificationCode(@RequestParam String email,
-            @RequestParam(defaultValue = "register") String type) {
+    public Result sendVerificationCode(@RequestParam(required = false) String email,
+            @RequestParam(required = false) String type,
+            @RequestBody(required = false) EmailCodeSendDTO body) {
+        String finalEmail = email;
+        String finalType = type;
+        if (body != null) {
+            if (finalEmail == null || finalEmail.isBlank()) {
+                finalEmail = body.getEmail();
+            }
+            if (finalType == null || finalType.isBlank()) {
+                finalType = body.getType();
+            }
+        }
+        if (finalType == null || finalType.isBlank()) {
+            finalType = "register";
+        }
+
         // 1. 验证邮箱格式
-        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+        if (finalEmail == null || !finalEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.EMAIL);
         }
 
         // 2. 根据类型验证邮箱状态
-        User existingUser = userService.findByEmail(email);
+        User existingUser = userService.findByEmail(finalEmail);
 
-        if ("register".equals(type)) {
+        if ("register".equals(finalType)) {
             // 注册场景：邮箱不能已被注册
             if (existingUser != null) {
                 return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
             }
-        } else if ("login".equals(type) || "reset".equals(type)) {
+        } else if ("login".equals(finalType) || "reset".equals(finalType)) {
             // 登录场景/重置密码场景：邮箱必须已被注册
             if (existingUser == null) {
                 return Result.error(HttpCode.NOT_FOUND, Constants.EMAIL_UNREGISTER);
@@ -364,7 +380,7 @@ public class UserController {
         }
 
         // 3. 发送验证码
-        emailVerificationService.sendVerificationCode(email, type);
+        emailVerificationService.sendVerificationCode(finalEmail, finalType);
 
         return Result.success();
     }
