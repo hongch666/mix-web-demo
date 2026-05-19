@@ -383,7 +383,7 @@ export class GithubService {
 
   private buildFailureRedirectUrl(): string {
     const failureUrl = new URL(this.githubConfig.frontendFailureUrl);
-    failureUrl.searchParams.set('oauthError', 'github');
+    failureUrl.searchParams.set('oauth_error', 'github');
     return failureUrl.toString();
   }
 
