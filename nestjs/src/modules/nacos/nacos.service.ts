@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { Method } from 'axios';
-import { NacosNamingClient } from 'nacos';
 import type { NacosInstance } from 'nacos';
+import { NacosNamingClient } from 'nacos';
 import { ClsService } from 'nestjs-cls';
 import * as os from 'os';
 import qs from 'qs';
@@ -23,7 +23,7 @@ interface CallOptions {
 }
 
 class CircuitBreakerOpenError extends Error {
-  constructor(message = '熔断器已打开') {
+  constructor(message = Constants.CIRCUIT_BREAKER_OPEN) {
     super(message);
     this.name = 'CircuitBreakerOpenError';
   }
@@ -81,11 +81,15 @@ export class NacosService implements OnModuleInit {
 
     const nacosHost: string = this.configService.get<string>('nacos.host')!;
     if (!nacosHost) {
-      throw BusinessException.internalServerError(Constants.NACOS_HOST_NOT_CONFIGURED);
+      throw BusinessException.internalServerError(
+        Constants.NACOS_HOST_NOT_CONFIGURED,
+      );
     }
     const nacosPort: string = this.configService.get<string>('nacos.port')!;
     if (!nacosPort) {
-      throw BusinessException.internalServerError(Constants.NACOS_PORT_NOT_CONFIGURED);
+      throw BusinessException.internalServerError(
+        Constants.NACOS_PORT_NOT_CONFIGURED,
+      );
     }
     const nacosServerList: string = this.resolveNacosServerList(
       nacosHost,
@@ -96,7 +100,9 @@ export class NacosService implements OnModuleInit {
       .trim()
       .toLowerCase();
     if (!serverMode) {
-      throw BusinessException.internalServerError(Constants.SERVER_MODE_NOT_CONFIGURED);
+      throw BusinessException.internalServerError(
+        Constants.SERVER_MODE_NOT_CONFIGURED,
+      );
     }
 
     this.client = new NacosNamingClient({
@@ -180,9 +186,7 @@ export class NacosService implements OnModuleInit {
     return `${trimmedHost}:${trimmedPort}`;
   }
 
-  async getServiceInstances(
-    serviceName: string,
-  ): Promise<NacosInstance[]> {
+  async getServiceInstances(serviceName: string): Promise<NacosInstance[]> {
     const instances: NacosInstance[] =
       await this.client.getAllInstances(serviceName);
     return instances;
@@ -271,7 +275,8 @@ export class NacosService implements OnModuleInit {
       // 校验业务响应码
       const responseData: Record<string, unknown> = response.data;
       if (responseData.code !== HttpCode.OK) {
-        const errorMsg: string = (responseData.msg as string) || Constants.UNKNOWN_ERROR;
+        const errorMsg: string =
+          (responseData.msg as string) || Constants.UNKNOWN_ERROR;
         const logMessage: string = `服务 ${opts.serviceName} 返回业务错误: code=${String(responseData.code)}, msg=${errorMsg}`;
         logger.error(logMessage);
         throw BusinessException.badGateway(
