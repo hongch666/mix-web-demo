@@ -37,7 +37,7 @@ class SimpleCircuitBreaker:
     def allow_request(self) -> None:
         now: float = time.monotonic()
         if self.open_until > now:
-            raise CircuitBreakerOpenError("熔断器已打开，跳过远程调用")
+            raise CircuitBreakerOpenError(Constants.CIRCUIT_BREAKER_OPEN)
 
     def record_success(self) -> None:
         self.failure_count = 0
@@ -106,7 +106,10 @@ def _should_retry_remote_call(error: Exception) -> bool:
     if isinstance(error, httpx.RequestError):
         return True
     if isinstance(error, httpx.HTTPStatusError):
-        return error.response.status_code >= HttpCode.INTERNAL_SERVER_ERROR or error.response.status_code == HttpCode.TOO_MANY_REQUESTS
+        return (
+            error.response.status_code >= HttpCode.INTERNAL_SERVER_ERROR
+            or error.response.status_code == HttpCode.TOO_MANY_REQUESTS
+        )
     return False
 
 
@@ -214,7 +217,9 @@ async def call_remote_service(
                     # 校验业务响应码
                     if isinstance(result, dict) and result.get("code") != HttpCode.OK:
                         error_msg: str = result.get("msg", Constants.UNKNOWN_ERROR)
-                        Logger.error(f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}")
+                        Logger.error(
+                            f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}"
+                        )
                         raise BusinessException(
                             f"调用远程服务 {service_name} 失败: {error_msg}",
                             HttpCode.BAD_GATEWAY,

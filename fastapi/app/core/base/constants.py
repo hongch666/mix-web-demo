@@ -727,6 +727,9 @@ class Constants:
     REDIS_LOCK_RELEASE_FAIL_MESSAGE: str = "[分布式锁] 释放锁失败，key: %s"
     """释放分布式锁失败消息"""
 
+    CIRCUIT_BREAKER_OPEN: str = "熔断器已打开，跳过远程调用"
+    """熔断器打开消息"""
+
     # SQL 语句
 
     AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
