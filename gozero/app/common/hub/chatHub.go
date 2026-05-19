@@ -272,7 +272,7 @@ func (c *Client) WritePump() {
 	for message := range c.Send {
 		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
 			if c.ZeroLogger != nil {
-				c.Error(fmt.Sprintf("WebSocket 写消息失败: %v", err))
+				c.Error(fmt.Sprintf(utils.WS_WRITE_MESSAGE_FAIL, err))
 			}
 			break
 		}

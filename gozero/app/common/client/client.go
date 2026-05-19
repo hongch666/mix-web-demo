@@ -91,7 +91,7 @@ func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string,
 		result, err = sd.callWithRetry(ctx, serviceName, path, opts)
 		return err
 	}, func(err error) error {
-		return fmt.Errorf("下游服务 %s 暂不可用，已触发熔断降级: %w", serviceName, err)
+		return fmt.Errorf(utils.DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE, serviceName, err)
 	}, func(err error) bool {
 		return err == nil
 	})

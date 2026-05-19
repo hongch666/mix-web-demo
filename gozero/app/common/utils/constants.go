@@ -439,6 +439,12 @@ const (
 	// GORM为空消息
 	GORM_IS_NIL_MESSAGE = "GORM DB 对象未初始化"
 
+	// 下游服务不可用消息
+	DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE = "下游服务 %s 暂不可用，已触发熔断降级: %w"
+
+	// WebSocket 写消息失败信息
+	WS_WRITE_MESSAGE_FAIL = "WebSocket 写消息失败: %v"
+
 	// WebSocket 用户连接状态相关
 
 	// 用户已连接消息
