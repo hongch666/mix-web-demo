@@ -1,9 +1,7 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +30,7 @@ import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,10 +74,7 @@ public class ArticleController {
         Page<Article> articlePage = new Page<>(page, size);
         IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
-        return Result.success(data);
+        return Result.success(new PageVO<>(resultPage.getTotal(), resultPage.getRecords()));
     }
 
     @GetMapping("user/{id}")
@@ -92,10 +88,7 @@ public class ArticleController {
         Page<Article> articlePage = new Page<>(page, size);
         IPage<ArticleWithCategoryVO> voPage = articleService.listArticlesByIdWithCategory(articlePage, id, published == 1);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", voPage.getTotal());
-        data.put("list", voPage.getRecords());
-        return Result.success(data);
+        return Result.success(new PageVO<>(voPage.getTotal(), voPage.getRecords()));
     }
 
     @GetMapping("/{id}")
@@ -213,10 +206,7 @@ public class ArticleController {
         Page<Article> articlePage = new Page<>(page, size);
         IPage<ArticleWithCategoryVO> resultPage = articleService.listUnpublishedArticlesWithCategory(articlePage);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
-        data.put("list", resultPage.getRecords());
-        return Result.success(data);
+        return Result.success(new PageVO<>(resultPage.getTotal(), resultPage.getRecords()));
     }
 
 }

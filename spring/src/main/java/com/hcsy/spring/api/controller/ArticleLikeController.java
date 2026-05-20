@@ -1,8 +1,5 @@
 package com.hcsy.spring.api.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +20,9 @@ import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.entity.vo.LikeCheckVO;
+import com.hcsy.spring.entity.vo.LikeCountVO;
+import com.hcsy.spring.entity.vo.PageVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -76,10 +76,7 @@ public class ArticleLikeController {
         Page<ArticleLike> pageRequest = new Page<>(page, size);
         IPage<ArticleLikeVO> result = articleLikeService.listUserLikes(userId, pageRequest);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", result.getTotal());
-        data.put("list", result.getRecords());
-        return Result.success(data);
+        return Result.success(new PageVO<>(result.getTotal(), result.getRecords()));
     }
 
     @GetMapping("/check")
@@ -89,9 +86,7 @@ public class ArticleLikeController {
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
         boolean liked = articleLikeService.isLiked(articleId, userId);
-        Map<String, Object> data = new HashMap<>();
-        data.put("liked", liked);
-        return Result.success(data);
+        return Result.success(new LikeCheckVO(liked));
     }
 
     @GetMapping("/count/{article_id}")
@@ -100,8 +95,6 @@ public class ArticleLikeController {
     public Result getLikeCount(
             @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
         Long count = articleLikeService.getLikeCountByArticleId(articleId);
-        Map<String, Object> data = new HashMap<>();
-        data.put("likeCount", count);
-        return Result.success(data);
+        return Result.success(new LikeCountVO(count));
     }
 }

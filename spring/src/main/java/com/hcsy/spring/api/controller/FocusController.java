@@ -1,8 +1,5 @@
 package com.hcsy.spring.api.controller;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,7 +19,10 @@ import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.po.Focus;
+import com.hcsy.spring.entity.vo.CountVO;
+import com.hcsy.spring.entity.vo.FocusCheckVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
+import com.hcsy.spring.entity.vo.PageVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -73,9 +73,7 @@ public class FocusController {
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
             @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
         boolean focused = focusService.isFocused(userId, focusId);
-        Map<String, Object> data = new HashMap<>();
-        data.put("focused", focused);
-        return Result.success(data);
+        return Result.success(new FocusCheckVO(focused));
     }
 
     @GetMapping("/authors/{user_id}")
@@ -88,10 +86,7 @@ public class FocusController {
         Page<Focus> pageRequest = new Page<>(page, size);
         IPage<FocusUserVO> result = focusService.listUserFocuses(userId, pageRequest);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", result.getTotal());
-        data.put("list", result.getRecords());
-        return Result.success(data);
+        return Result.success(new PageVO<>(result.getTotal(), result.getRecords()));
     }
 
     @GetMapping("/followers/{user_id}")
@@ -104,10 +99,7 @@ public class FocusController {
         Page<Focus> pageRequest = new Page<>(page, size);
         IPage<FocusUserVO> result = focusService.listUserFollowers(userId, pageRequest);
 
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", result.getTotal());
-        data.put("list", result.getRecords());
-        return Result.success(data);
+        return Result.success(new PageVO<>(result.getTotal(), result.getRecords()));
     }
 
     @GetMapping("/count/focus/{user_id}")
@@ -116,9 +108,7 @@ public class FocusController {
     public Result getFocusCount(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
         Long count = focusService.getFocusCountByUserId(userId);
-        Map<String, Object> data = new HashMap<>();
-        data.put("count", count);
-        return Result.success(data);
+        return Result.success(new CountVO(count));
     }
 
     @GetMapping("/count/follower/{user_id}")
@@ -127,8 +117,6 @@ public class FocusController {
     public Result getFollowerCount(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
         Long count = focusService.getFollowerCountByUserId(userId);
-        Map<String, Object> data = new HashMap<>();
-        data.put("count", count);
-        return Result.success(data);
+        return Result.success(new CountVO(count));
     }
 }

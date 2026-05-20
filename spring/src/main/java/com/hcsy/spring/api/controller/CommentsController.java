@@ -2,9 +2,7 @@ package com.hcsy.spring.api.controller;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +34,7 @@ import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.AICommentsVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
+import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -157,8 +156,6 @@ public class CommentsController {
     public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listCommentsWithFilter(commentsPage, queryDTO);
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
         // 构建评论视图对象，包含用户名和文章标题
         List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
@@ -171,8 +168,7 @@ public class CommentsController {
             commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
-        data.put("list", commentVOs);
-        return Result.success(data);
+        return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
     }
 
     @GetMapping("/ai")
@@ -183,8 +179,6 @@ public class CommentsController {
     public Result listAIComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listAICommentsWithFilter(commentsPage, queryDTO);
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
         // 构建AI评论视图对象，包含AI类型和文章标题
         List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
@@ -197,8 +191,7 @@ public class CommentsController {
             commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
-        data.put("list", commentVOs);
-        return Result.success(data);
+        return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
     }
 
     // 根据用户id分页获取评论
@@ -211,8 +204,6 @@ public class CommentsController {
             @RequestParam(defaultValue = "1", required = false) int page) {
         Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByUserId(commentsPage, id);
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
         // 构建评论视图对象，包含用户名和文章标题
         List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
@@ -225,8 +216,7 @@ public class CommentsController {
             commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
-        data.put("list", commentVOs);
-        return Result.success(data);
+        return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
     }
 
     // 根据文章id分页获取评论
@@ -244,8 +234,6 @@ public class CommentsController {
         }
         Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id, sortWay);
-        Map<String, Object> data = new HashMap<>();
-        data.put("total", resultPage.getTotal());
         // 构建评论视图对象，包含用户名和文章标题
         List<CommentsVO> commentVOs = resultPage.getRecords().stream().map(comment -> {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
@@ -258,8 +246,7 @@ public class CommentsController {
             commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
-        data.put("list", commentVOs);
-        return Result.success(data);
+        return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
     }
 
     // 根据文章id获取AI评论
