@@ -134,6 +134,9 @@ public class CommentsController {
     @ApiLog("根据id查询评论")
     public Result getCommentsById(@PathVariable Long id) {
         Comments comments = commentsService.getById(id);
+        if (comments == null) {
+            return Result.error(HttpCode.NOT_FOUND, Constants.COMMENT_ID + id);
+        }
         // 修改返回结果，包含用户名和文章标题
         CommentsVO commentsVO = BeanUtil.copyProperties(comments, CommentsVO.class);
         // 查询用户名
@@ -270,9 +273,9 @@ public class CommentsController {
         for (Comments comment : aiComments) {
             AICommentsVO aiCommentsVO = BeanUtil.copyProperties(comment, AICommentsVO.class);
             Long userId = comment.getUserId();
-            String aiType = userService.getById(userId).getName();
-            aiCommentsVO.setAiType(aiType);
-            aiCommentsVO.setPic(userService.getById(userId).getImg());
+            User user = userService.getById(userId);
+            aiCommentsVO.setAiType(user != null ? user.getName() : Constants.DEFAULT_AI);
+            aiCommentsVO.setPic(user != null ? user.getImg() : null);
             data.add(aiCommentsVO);
         }
         return Result.success(data);
