@@ -149,7 +149,7 @@ public class CommentsController {
     @GetMapping()
     @Operation(summary = "获取普通评论信息", description = "分页获取普通评论信息列表，并支持用户名和文章标题模糊查询")
     @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
-            "size", "username", "articleTitle" })
+            "size", "username", "article_title" })
     @ApiLog("获取普通评论信息")
     public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
@@ -175,7 +175,7 @@ public class CommentsController {
     @GetMapping("/ai")
     @Operation(summary = "获取AI评论信息", description = "分页获取AI评论信息列表，并支持AI类型和文章标题模糊查询")
     @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
-            "size", "aiType", "articleTitle" })
+            "size", "ai_type", "article_title" })
     @ApiLog("获取AI评论信息")
     public Result listAIComments(@ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
