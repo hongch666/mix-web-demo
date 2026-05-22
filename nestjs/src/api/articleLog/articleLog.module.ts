@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ArticleModule } from 'src/modules/article/article.module';
-import { RabbitMQModule } from 'src/modules/mq/mq.module';
+import { AppRabbitMQModule } from 'src/modules/mq/mq.module';
 import { NacosModule } from 'src/modules/nacos/nacos.module';
 import { UserModule } from '../../modules/user/user.module';
 import { LogConsumerService } from './articleLog.consume.service';
@@ -14,7 +14,7 @@ import { ArticleLog, ArticleLogSchema } from './schema/articleLog.schema';
     MongooseModule.forFeature([
       { name: ArticleLog.name, schema: ArticleLogSchema },
     ]),
-    RabbitMQModule,
+    AppRabbitMQModule,
     UserModule,
     ArticleModule,
     NacosModule,

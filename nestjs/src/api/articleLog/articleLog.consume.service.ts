@@ -1,8 +1,8 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
-import { RabbitMQService } from 'src/modules/mq/mq.service';
 import { ArticleLogService } from './articleLog.service';
 import {
   ArticleAction,
@@ -16,48 +16,44 @@ type RawArticleLogMessage = Partial<ArticleLogMessage> & {
 };
 
 @Injectable()
-export class LogConsumerService implements OnModuleInit {
-  constructor(
-    private readonly rabbitMQService: RabbitMQService,
-    private readonly articleLogService: ArticleLogService,
-  ) {}
+export class LogConsumerService {
+  constructor(private readonly articleLogService: ArticleLogService) {}
 
-  async onModuleInit() {
-    logger.info(Constants.ARTICLE_RABBITMQ_START);
-    await this.rabbitMQService.consume(
-      'article-log-queue',
-      async (msg): Promise<void> => {
-        try {
-          // 处理两种消息格式：1.对象, 2.JSON 字符串
-          let logData: RawArticleLogMessage;
+  @RabbitSubscribe({
+    queue: 'article-log-queue',
+  })
+  async handleArticleLog(msg: unknown): Promise<void> {
+    try {
+      logger.info(Constants.ARTICLE_RABBITMQ_START);
 
-          if (typeof msg === 'string') {
-            // 如果是字符串，尝试解析为 JSON
-            logData = JSON.parse(msg) as RawArticleLogMessage;
-            logger.info(`接收到 Spring 发送的 ArticleLog 消息: ${String(msg)}`);
-          } else {
-            // 如果已是对象，直接使用
-            logData = msg as RawArticleLogMessage;
-            logger.info(`接收到 ArticleLog 消息: ${JSON.stringify(logData)}`);
-          }
+      // 处理两种消息格式：1.对象, 2.JSON 字符串
+      let logData: RawArticleLogMessage;
 
-          // 处理消息
-          await this.handleMessage({
-            action: logData.action!,
-            content: logData.content!,
-            msg: logData.msg,
-            userId: logData.userId ?? logData.user_id ?? -1,
-            articleId: logData.articleId ?? logData.article_id ?? -1,
-          });
+      if (typeof msg === 'string') {
+        // 如果是字符串，尝试解析为 JSON
+        logData = JSON.parse(msg) as RawArticleLogMessage;
+        logger.info(`接收到 Spring 发送的 ArticleLog 消息: ${String(msg)}`);
+      } else {
+        // 如果已是对象，直接使用
+        logData = msg as RawArticleLogMessage;
+        logger.info(`接收到 ArticleLog 消息: ${JSON.stringify(logData)}`);
+      }
 
-          logger.info(Constants.ARTICLE_HANDLER);
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          logger.error(`处理 ArticleLog 消息失败: ${errorMessage}`);
-        }
-      },
-    );
+      // 处理消息
+      await this.handleMessage({
+        action: logData.action!,
+        content: logData.content!,
+        msg: logData.msg,
+        userId: logData.userId ?? logData.user_id ?? -1,
+        articleId: logData.articleId ?? logData.article_id ?? -1,
+      });
+
+      logger.info(Constants.ARTICLE_HANDLER);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error(`处理 ArticleLog 消息失败: ${errorMessage}`);
+    }
   }
 
   private async handleMessage(msg: ArticleLogMessage): Promise<void> {

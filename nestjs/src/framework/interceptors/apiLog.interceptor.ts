@@ -4,13 +4,13 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import { Reflector } from '@nestjs/core';
 import { ClsService } from 'nestjs-cls';
 import { Observable } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
-import { RabbitMQService } from '../../modules/mq/mq.service';
 import { API_LOG_KEY, ApiLogOptions } from '../decorators/apiLog.decorator';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class ApiLogInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     private readonly cls: ClsService,
-    private readonly rabbitMQService: RabbitMQService,
+    private readonly amqpConnection: AmqpConnection,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -181,7 +181,7 @@ export class ApiLogInterceptor implements NestInterceptor {
       };
 
       // 发送到消息队列
-      await this.rabbitMQService.sendToQueue('api-log-queue', apiLogMessage);
+      this.amqpConnection.publish('', 'api-log-queue', apiLogMessage);
 
       logger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
     } catch (error: unknown) {
