@@ -124,11 +124,11 @@ const (
 	// 初始化 RabbitMQ 连接失败信息
 	RABBITMQ_CONNECTION_INIT_FAIL = "初始化 RabbitMQ 连接失败: %v"
 
-	// 初始化 RabbitMQ 通道失败信息
-	RABBITMQ_CHANNEL_INIT_FAIL = "初始化 RabbitMQ 通道失败: %v"
+	// RabbitMQ 连接成功信息
+	RABBITMQ_CONNECT_SUCCESS = "RabbitMQ 连接成功"
 
-	// 声明 RabbitMQ 队列失败信息
-	RABBITMQ_DECLARE_QUEUE_FAIL = "声明 RabbitMQ 队列失败, queue=%s, err=%v"
+	// RabbitMQ 发布者未初始化消息
+	RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE = "RabbitMQ 发布者未初始化"
 
 	// 初始化 MongoDB 连接失败信息
 	MONGODB_CONNECTION_INIT_FAIL = "初始化 MongoDB 连接失败: %v"
@@ -210,9 +210,6 @@ const (
 
 	// 发送API日志时RabbitMQ未初始化消息
 	SEND_API_LOG_RABBITMQ_NOT_INITIALIZED_MESSAGE = "RabbitMQ 未初始化，无法发送 API 日志"
-
-	// RabbitMQ 通道未初始化消息
-	RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE = "RabbitMQ 通道未初始化"
 
 	// ES 客户端未初始化消息
 	ES_CLIENT_NOT_INITIALIZED_MESSAGE = "ES 客户端未初始化，跳过 ES 同步"

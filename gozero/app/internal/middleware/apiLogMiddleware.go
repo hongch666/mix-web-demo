@@ -14,20 +14,20 @@ import (
 	"app/common/keys"
 	"app/common/utils"
 
-	amqp "github.com/rabbitmq/amqp091-go"
+	rabbitmq "github.com/wagslane/go-rabbitmq"
 )
 
 type ApiLogMiddleware struct {
-	description   string
-	rabbitChannel *amqp.Channel
+	description      string
+	rabbitPublisher *rabbitmq.Publisher
 	*utils.ZeroLogger
 }
 
-func NewApiLogMiddleware(description string, rabbitChannel *amqp.Channel, log *utils.ZeroLogger) *ApiLogMiddleware {
+func NewApiLogMiddleware(description string, rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
-		description:   description,
-		rabbitChannel: rabbitChannel,
-		ZeroLogger:    log,
+		description:      description,
+		rabbitPublisher: rabbitPublisher,
+		ZeroLogger:       log,
 	}
 }
 
@@ -92,7 +92,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 发送 API 日志到队列（异步，不阻塞主流程）
 		if m.ZeroLogger != nil {
 			utils.SafeGo(m.ZeroLogger, "sendApiLogToQueue", func() {
-				sendApiLogToQueue(r.Context(), m.ZeroLogger, m.rabbitChannel, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
+				sendApiLogToQueue(r.Context(), m.ZeroLogger, m.rabbitPublisher, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
 			})
 		}
 	}
@@ -208,7 +208,7 @@ func formatLogMessage(method, path, description string, userID int64, username s
 }
 
 // sendApiLogToQueue 发送 API 日志到队列（异步处理）
-func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitChannel *amqp.Channel, userID int64, username, method, path, description string,
+func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publisher, userID int64, username, method, path, description string,
 	queryParams map[string]any, requestBody any, responseTimeMs int64,
 ) {
 	// 构建 API 日志消息（统一格式：camelCase）
@@ -233,7 +233,7 @@ func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitChannel
 	}
 
 	// 发送到 RabbitMQ
-	if rabbitChannel == nil {
+	if rabbitPublisher == nil {
 		if lgr != nil {
 			lgr.Error(utils.RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE)
 		}
@@ -241,17 +241,11 @@ func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitChannel
 	}
 
 	// 发布消息到队列
-	err = rabbitChannel.PublishWithContext(
-		ctx,
-		"",              // 默认 exchange
-		"api-log-queue", // routing key（队列名）
-		false,           // mandatory
-		false,           // immediate
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        messageJSON,
-			Timestamp:   time.Now(),
-		},
+	err = rabbitPublisher.Publish(
+		messageJSON,
+		[]string{"api-log-queue"},
+		rabbitmq.WithPublishOptionsContentType("application/json"),
+		rabbitmq.WithPublishOptionsTimestamp(time.Now()),
 	)
 
 	if err != nil {
@@ -263,14 +257,14 @@ func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitChannel
 
 // WithApiLog 为 handler 添加 API 日志中间件
 // WithApiLog 中间件工厂函数
-func WithApiLog(rabbitChannel *amqp.Channel, log *utils.ZeroLogger, description string) func(http.HandlerFunc) http.HandlerFunc {
+func WithApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, description string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(handler http.HandlerFunc) http.HandlerFunc {
-		return NewApiLogMiddleware(description, rabbitChannel, log).Handle(handler)
+		return NewApiLogMiddleware(description, rabbitPublisher, log).Handle(handler)
 	}
 }
 
 // ApplyApiLog 直接应用 API 日志中间件到 handler
-// 用法: return middleware.ApplyApiLog(rabbitChannel, logger, handler, "操作描述")
-func ApplyApiLog(rabbitChannel *amqp.Channel, log *utils.ZeroLogger, handler http.HandlerFunc, description string) http.HandlerFunc {
-	return WithApiLog(rabbitChannel, log, description)(handler)
+// 用法: return middleware.ApplyApiLog(rabbitPublisher, logger, handler, "操作描述")
+func ApplyApiLog(rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger, handler http.HandlerFunc, description string) http.HandlerFunc {
+	return WithApiLog(rabbitPublisher, log, description)(handler)
 }

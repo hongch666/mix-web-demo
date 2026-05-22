@@ -38,5 +38,5 @@ func ChatGetHistoryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, handler, "获取聊天历史")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "获取聊天历史")
 }

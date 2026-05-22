@@ -8,8 +8,9 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.5
 	github.com/olivere/elastic/v7 v7.0.32
-	github.com/rabbitmq/amqp091-go v1.9.0
+	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/wagslane/go-rabbitmq v0.15.0
 	github.com/zeromicro/go-zero v1.10.0
 	go.mongodb.org/mongo-driver v1.17.9
 	gorm.io/driver/mysql v1.6.0

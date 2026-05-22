@@ -23,5 +23,5 @@ func TestNestJSHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp.Data)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, handler, "测试NestJS服务")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "测试NestJS服务")
 }

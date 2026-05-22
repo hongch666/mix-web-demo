@@ -37,7 +37,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/olivere/elastic/v7"
-	amqp "github.com/rabbitmq/amqp091-go"
+	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
@@ -58,8 +58,7 @@ type ServiceContext struct {
 	MySQLConn       sqlx.SqlConn
 	DB              *gorm.DB
 	ESClient        *elastic.Client
-	RabbitMQConn    *amqp.Connection
-	RabbitMQChannel *amqp.Channel
+	RabbitMQPublisher *rabbitmq.Publisher
 	MongoClient     *mongo.Client
 	RedisClient     *redis.Client
 	NamingClient    naming_client.INamingClient
@@ -105,7 +104,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	mysqlConn := initSqlx(c)
 	db := initGorm(c)
 	esClient := initES(c)
-	rabbitConn, rabbitChannel := initRabbitMQ(c)
+	rabbitPublisher := initRabbitMQ(c)
 	mongoClient := initMongoDB(c)
 	redisClient := initRedis(c)
 	namingClient := initNacos(c)
@@ -173,8 +172,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MySQLConn:              mysqlConn,
 		DB:                     db,
 		ESClient:               esClient,
-		RabbitMQConn:           rabbitConn,
-		RabbitMQChannel:        rabbitChannel,
+		RabbitMQPublisher:      rabbitPublisher,
 		MongoClient:            mongoClient,
 		RedisClient:            redisClient,
 		NamingClient:           namingClient,
@@ -310,10 +308,10 @@ func initES(c config.Config) *elastic.Client {
 	return client
 }
 
-func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
+func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
 	mqConf := c.MQ
 	if mqConf.Host == "" || mqConf.Port == 0 {
-		return nil, nil
+		return nil
 	}
 
 	vhost := mqConf.Vhost
@@ -322,28 +320,25 @@ func initRabbitMQ(c config.Config) (*amqp.Connection, *amqp.Channel) {
 	}
 	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", mqConf.Username, mqConf.Password, mqConf.Host, mqConf.Port, trimSlashPrefix(vhost))
 
-	conn, err := amqp.Dial(url)
+	conn, err := rabbitmq.NewConn(url)
 	if err != nil {
 		logger.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 
-	channel, err := conn.Channel()
+	publisher, err := rabbitmq.NewPublisher(
+		conn,
+		rabbitmq.WithPublisherOptionsLogging,
+		rabbitmq.WithPublisherOptionsExchangeDeclare,
+	)
 	if err != nil {
-		logger.Errorf(utils.RABBITMQ_CHANNEL_INIT_FAIL, err)
+		logger.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 
-	queues := []string{"api-log-queue", "article-log-queue"}
-	for _, queueName := range queues {
-		_, err = channel.QueueDeclare(queueName, true, false, false, false, nil)
-		if err != nil {
-			logger.Errorf(utils.RABBITMQ_DECLARE_QUEUE_FAIL, queueName, err)
-			panic(err)
-		}
-	}
+	logger.Info(utils.RABBITMQ_CONNECT_SUCCESS)
 
-	return conn, channel
+	return publisher
 }
 
 func initMongoDB(c config.Config) *mongo.Client {

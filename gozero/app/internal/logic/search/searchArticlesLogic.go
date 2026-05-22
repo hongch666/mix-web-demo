@@ -18,7 +18,7 @@ import (
 	"app/internal/types"
 	"app/model/search"
 
-	amqp "github.com/rabbitmq/amqp091-go"
+	rabbitmq "github.com/wagslane/go-rabbitmq"
 )
 
 type SearchArticlesLogic struct {
@@ -174,16 +174,11 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			l.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
 		} else {
 			// 通过RabbitMQ发送消息
-			if l.svcCtx.RabbitMQChannel != nil {
-				err = l.svcCtx.RabbitMQChannel.Publish(
-					"",                  // exchange
-					"article-log-queue", // routing key
-					false,               // mandatory
-					false,               // immediate
-					amqp.Publishing{
-						ContentType: "application/json",
-						Body:        jsonBytes,
-					},
+			if l.svcCtx.RabbitMQPublisher != nil {
+				err = l.svcCtx.RabbitMQPublisher.Publish(
+					jsonBytes,
+					[]string{"article-log-queue"},
+					rabbitmq.WithPublishOptionsContentType("application/json"),
 				)
 				if err != nil {
 					l.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))

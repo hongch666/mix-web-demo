@@ -23,7 +23,7 @@ var upgrader = websocket.Upgrader{
 
 // WebSocket连接
 func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
-	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user_id")
 		if userID == "" {
 			// 尝试从Header获取（网关传递的用户信息）

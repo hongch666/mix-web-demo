@@ -38,5 +38,5 @@ func ChatSendMessageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, handler, "发送消息")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "发送消息")
 }

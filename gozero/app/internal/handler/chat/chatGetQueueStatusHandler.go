@@ -23,5 +23,5 @@ func ChatGetQueueStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, handler, "获取队列状态")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "获取队列状态")
 }

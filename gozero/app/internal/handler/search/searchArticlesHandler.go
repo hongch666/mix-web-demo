@@ -38,5 +38,5 @@ func SearchArticlesHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQChannel, svcCtx.Logger, handler, "搜索文章")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "搜索文章")
 }
