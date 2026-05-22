@@ -329,7 +329,6 @@ func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
 	publisher, err := rabbitmq.NewPublisher(
 		conn,
 		rabbitmq.WithPublisherOptionsLogging,
-		rabbitmq.WithPublisherOptionsExchangeDeclare,
 	)
 	if err != nil {
 		logger.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
