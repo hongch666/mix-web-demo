@@ -6,6 +6,7 @@ import type { MongooseModuleOptions } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { ClsModule } from 'nestjs-cls';
 import { InternalTokenGuard } from 'src/framework/guards/internalToken.guard';
 import { RequireAdminGuard } from 'src/framework/guards/requireAdmin.guard';
@@ -93,6 +94,36 @@ interface MongoDbConfig {
     }),
     ScheduleModule.forRoot(),
     RedisModule.forRoot(),
+    RabbitMQModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const host: string = configService.get<string>('rabbitmq.host')!;
+        const port: number = configService.get<number>('rabbitmq.port')!;
+        const username: string = configService.get<string>('rabbitmq.username')!;
+        const password: string = configService.get<string>('rabbitmq.password')!;
+        const vhost: string = configService.get<string>('rabbitmq.vhost')!;
+        const uri: string = `amqp://${username}:${password}@${host}:${port}${vhost === '/' ? '' : `/${vhost}`}`;
+
+        return {
+          uri,
+          exchanges: [],
+          defaultRpcTimeout: 10000,
+          defaultExchangeType: 'direct',
+          connectionInitOptions: { timeout: 10000 },
+          queues: [
+            {
+              name: 'api-log-queue',
+              options: { durable: true },
+            },
+            {
+              name: 'article-log-queue',
+              options: { durable: true },
+            },
+          ],
+        };
+      },
+    }),
     ApiModule,
     ModulesModule,
   ],

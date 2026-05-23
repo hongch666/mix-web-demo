@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AppRabbitMQModule } from 'src/modules/mq/mq.module';
 import { NacosModule } from 'src/modules/nacos/nacos.module';
 import { ApiLogConsumerService } from './apiLog.consume.service';
 import { ApiLogController } from './apiLog.controller';
@@ -10,7 +9,6 @@ import { ApiLog, ApiLogSchema } from './schema/apiLog.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: ApiLog.name, schema: ApiLogSchema }]),
-    AppRabbitMQModule,
     NacosModule,
   ],
   providers: [ApiLogService, ApiLogConsumerService],
