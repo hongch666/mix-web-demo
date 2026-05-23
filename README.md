@@ -724,7 +724,7 @@ pytest tests/core/auth/test_internal_token.py
 ./mix seq -i
 
 # ===== GoZero 代码生成 =====
-# 生成 GoZero API 代码（默认使用 gozero/template/goctl 模板）
+# 生成 GoZero API 代码（默认使用 gozero/template 模板）
 ./mix goctl-api
 
 # 生成 API 代码并同步生成 Swagger/OpenAPI
@@ -1630,7 +1630,7 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 # -> gozero/script/goctl/genOrm.sh [args...]
 ```
 
-项目内置 goctl 模板目录为 `gozero/template/goctl`，API 和 ORM 生成脚本默认都会使用该模板目录，不依赖开发机全局 goctl 模板。
+项目内置 goctl 模板目录为 `gozero/template`，API 和 ORM 生成脚本默认都会使用该模板目录，不依赖开发机全局 goctl 模板。
 
 常用命令：
 
@@ -1655,8 +1655,8 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 
 # 指定 SQL 目录、输出目录或模板目录
 ./mix goctl-orm -s --gorm -srcDir gozero/script/sql -outDir ./gozero/app/model
-./mix goctl-api --template gozero/template/goctl
-./mix goctl-orm -s --template gozero/template/goctl
+./mix goctl-api --template gozero/template
+./mix goctl-orm -s --template gozero/template
 ```
 
 参数说明：
@@ -1664,13 +1664,13 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 | 命令        | 参数                | 说明                                                               |
 | ----------- | ------------------- | ------------------------------------------------------------------ |
 | `goctl-api` | `-s`                | 生成 API 代码后，同时生成 Swagger/OpenAPI                          |
-| `goctl-api` | `--template <path>` | 指定 goctl 模板目录，默认 `gozero/template/goctl`                  |
+| `goctl-api` | `--template <path>` | 指定 goctl 模板目录，默认 `gozero/template`                  |
 | `goctl-orm` | `-s`                | 执行生成；不加时只 dry-run 打印命令                                |
 | `goctl-orm` | `--gorm`            | 为新表生成项目 `GormCrud` 风格 custom model，已有业务 model 不覆盖 |
 | `goctl-orm` | `-srcDir <path>`    | 指定 SQL 文件目录，默认 `gozero/script/sql`                        |
 | `goctl-orm` | `-outDir <path>`    | 指定 model 输出目录，默认 `./gozero/app/model`                     |
 | `goctl-orm` | `-pattern <glob>`   | 指定 SQL 匹配规则，默认 `*.sql`                                    |
-| `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认 `gozero/template/goctl`                  |
+| `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认 `gozero/template`                  |
 
 ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql` 会生成到 `gozero/app/model/subCategory`。`--gorm` 主要用于新表初始化：它会把 goctl 默认 custom model 外壳替换成项目当前使用的 `GormCrud` 外壳，同时保留 `*_gen.go` 中由 goctl 生成的结构体和基础 SQLX 代码。
 
