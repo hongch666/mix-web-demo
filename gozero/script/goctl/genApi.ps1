@@ -14,7 +14,7 @@ $originalLocation = Get-Location
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $gozeroRoot = Resolve-Path (Join-Path $scriptDir "../..")
 if ([string]::IsNullOrWhiteSpace($template)) {
-	$template = Join-Path $gozeroRoot "template/goctl"
+	$template = Join-Path $gozeroRoot "template"
 }
 $templateHome = (Resolve-Path $template).Path
 

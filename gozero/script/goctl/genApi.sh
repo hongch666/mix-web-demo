@@ -4,7 +4,7 @@
 
 # Usage: ./genApi.sh [-s] [--template <path>]
 #   -s : also run swagger generation and convert to OpenAPI3
-#   --template <path> : goctl template home, defaults to gozero/template/goctl
+#   --template <path> : goctl template home, defaults to gozero/template
 
 generate_swagger=false
 template_home=""
@@ -38,7 +38,7 @@ main_go_file="$app_dir/main.go"
 etc_dir="$app_dir/etc"
 backup_dir="$(mktemp -d)"
 if [ -z "$template_home" ]; then
-	template_home="$PWD/template/goctl"
+	template_home="$PWD/template"
 fi
 template_home="$(cd "$template_home" && pwd)"
 

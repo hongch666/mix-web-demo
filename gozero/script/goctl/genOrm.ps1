@@ -129,7 +129,7 @@ $repoRoot = Resolve-Path (Join-Path $scriptDir "../../..")
 # Change to the repository root
 Set-Location -Path $repoRoot
 if ([string]::IsNullOrWhiteSpace($template)) {
-	$template = Join-Path $repoRoot "gozero/template/goctl"
+	$template = Join-Path $repoRoot "gozero/template"
 }
 $templateHome = (Resolve-Path $template).Path
 

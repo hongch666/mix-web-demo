@@ -5,7 +5,7 @@
 # Usage: ./genOrm.sh [-s] [--gorm] [-srcDir <path>] [-outDir <path>] [-pattern <glob>] [--template <path>]
 #   -s : actually execute the generated goctl commands; otherwise the script runs in dry-run mode and prints commands.
 #   --gorm : generate the project GormCrud custom model shell for new model files.
-#   --template <path> : goctl template home, defaults to gozero/template/goctl
+#   --template <path> : goctl template home, defaults to gozero/template
 
 execute=false
 generate_gorm=false
@@ -159,7 +159,7 @@ script_dir=$(dirname "$(readlink -f "$0")")
 repo_root=$(cd "$script_dir/../../.." && pwd)
 cd "$repo_root" || exit 1
 if [ -z "$template_home" ]; then
-	template_home="$repo_root/gozero/template/goctl"
+	template_home="$repo_root/gozero/template"
 fi
 template_home="$(cd "$template_home" && pwd)"
 
