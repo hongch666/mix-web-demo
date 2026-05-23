@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.base import Constants, Logger
 from app.core.client import start_nacos
 from app.core.config import load_config
-from app.core.db import SessionLocal, create_tables_async
+from app.core.db import SessionLocal, create_tables_async, get_rabbitmq_client
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
 from fastapi import FastAPI
@@ -24,6 +24,13 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     start_nacos(ip=IP, port=PORT)
     Logger.info(Constants.NACOS_REGISTER_SUCCESS)
 
+    # 初始化 RabbitMQ 连接（RobustConnection 后续自动处理重连）
+    rabbitmq_client = get_rabbitmq_client()
+    if rabbitmq_client:
+        await rabbitmq_client.connect()
+    else:
+        Logger.warning(Constants.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
+
     analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
 
     def db_factory() -> Session:
@@ -37,3 +44,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     Logger.info(f"ReDoc文档地址: http://{IP}:{PORT}/redoc")
 
     yield
+
+    # 应用关闭时清理 RabbitMQ 连接
+    if rabbitmq_client:
+        await rabbitmq_client.close_async()
+        Logger.info(Constants.RABBITMQ_CONNECTION_CLOSED_MESSAGE)

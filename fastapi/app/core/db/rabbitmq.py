@@ -8,154 +8,134 @@ from app.core.config import load_config
 
 
 class RabbitMQClient:
-    """RabbitMQ 客户端"""
+    """RabbitMQ 客户端
+    """
 
     def __init__(self) -> None:
-        """初始化 RabbitMQ 客户端"""
-        self.connection: Optional[Any] = None
-        self.channel: Optional[Any] = None
-        self._is_connected: bool = False
-        self._reconnect_delay: float = 1.0
-        self._max_reconnect_delay: float = 30.0
-        self._connection_lock: Optional[asyncio.Lock] = None
+        self.connection: Optional[aio_pika.RobustConnection] = None
+        self.channel: Optional[aio_pika.RobustChannel] = None
 
-    async def _get_connection_lock(self) -> asyncio.Lock:
-        if self._connection_lock is None:
-            self._connection_lock = asyncio.Lock()
-        return self._connection_lock
+    def _build_url(self) -> Optional[str]:
+        """构建 AMQP 连接 URL"""
+        config = load_config("rabbitmq")
+        if not config:
+            Logger.warning(Constants.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
+            return None
 
-    async def _connect_async(self) -> None:
-        """建立 RabbitMQ 连接"""
-        if self._is_connected and self.connection and self.channel:
-            if not getattr(self.connection, "is_closed", True) and not getattr(
-                self.channel, "is_closed", True
-            ):
-                return
+        host = str(config.get("host", "127.0.0.1"))
+        port = int(config.get("port", 5672))
+        username = str(config.get("username", "guest"))
+        password = str(config.get("password", "guest"))
+        vhost = str(config.get("vhost", "/"))
 
-        connection_lock = await self._get_connection_lock()
-        async with connection_lock:
-            if self._is_connected and self.connection and self.channel:
-                if not getattr(self.connection, "is_closed", True) and not getattr(
-                    self.channel, "is_closed", True
-                ):
-                    return
+        return f"amqp://{username}:{password}@{host}:{port}/{vhost.lstrip('/')}"
 
-            rabbitmq_config = load_config("rabbitmq")
-            if not rabbitmq_config:
-                Logger.warning(Constants.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
-                return
+    async def connect(self) -> bool:
+        """初始化连接，RobustConnection 后续自动处理重连"""
+        if self.connection and not self.connection.is_closed:
+            return True
 
-            host = str(rabbitmq_config.get("host", "127.0.0.1"))
-            port = int(rabbitmq_config.get("port", 5672))
-            username = str(rabbitmq_config.get("username", "guest"))
-            password = str(rabbitmq_config.get("password", "guest"))
-            vhost = str(rabbitmq_config.get("vhost", "/"))
+        url = self._build_url()
+        if not url:
+            return False
 
-            try:
-                self.connection = await aio_pika.connect_robust(
-                    host=host,
-                    port=port,
-                    login=username,
-                    password=password,
-                    virtualhost=vhost,
-                    heartbeat=60,
-                    connection_attempts=3,
-                    retry_delay=1.0,
-                    timeout=10,
-                )
-                self.channel = await self.connection.channel()
-                self._is_connected = True
-                self._reconnect_delay = 1.0
-                Logger.info(f"RabbitMQ 连接成功: {host}:{port}")
-            except Exception as e:
-                self._is_connected = False
-                self.connection = None
-                self.channel = None
-                Logger.warning(f"RabbitMQ 连接失败: {e}")
-
-    async def _close_async(self) -> None:
         try:
-            if self.channel and not getattr(self.channel, "is_closed", True):
-                await self.channel.close()
-            if self.connection and not getattr(self.connection, "is_closed", True):
-                await self.connection.close()
-        finally:
-            self.connection = None
-            self.channel = None
-            self._is_connected = False
+            # connect_robust 返回 RobustConnection，具备自动重连能力
+            self.connection = await aio_pika.connect_robust(
+                url,
+                heartbeat=60,
+                connection_attempts=3,
+                retry_delay=1.0,
+                timeout=10,
+            )
+            self.channel = await self.connection.channel()
+
+            # 注册重连回调：重连后自动重新获取 channel
+            self.connection.reconnect_callbacks.add(self._on_reconnect)
+
+            Logger.info("RabbitMQ 连接成功（自动重连已启用）")
+            return True
+        except Exception as e:
+            Logger.warning(f"RabbitMQ 连接失败: {e}")
+            return False
+
+    async def _on_reconnect(self, _: Any) -> None:
+        """重连后的回调：重新获取 channel"""
+        try:
+            self.channel = await self.connection.channel()
+            Logger.info("RabbitMQ 重连成功，channel 已恢复")
+        except Exception as e:
+            Logger.warning(f"RabbitMQ 重连后恢复 channel 失败: {e}")
 
     async def send_message_async(
         self, queue_name: str, message: Any, persistent: bool = True
     ) -> bool:
-        """异步发送消息到指定队列"""
-        max_retries: int = 3
-        for attempt in range(max_retries):
-            try:
-                await self._connect_async()
+        """异步发送消息到队列
 
-                if not self._is_connected or self.channel is None:
-                    Logger.error(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
-                    return False
+        依赖 RobustConnection 自动处理断连恢复，此处只做发送和错误记录。
+        """
+        try:
+            if self.channel is None or self.connection is None or self.connection.is_closed:
+                Logger.warning(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
+                return False
 
-                await self.channel.declare_queue(queue_name, durable=True)
+            # 声明队列（幂等操作），确保重连后队列存在
+            await self.channel.declare_queue(queue_name, durable=True)
 
-                if isinstance(message, dict):
-                    message_body = json.dumps(message, ensure_ascii=False)
-                else:
-                    message_body = str(message)
+            # 序列化消息
+            if isinstance(message, dict):
+                message_body = json.dumps(message, ensure_ascii=False)
+            else:
+                message_body = str(message)
 
-                delivery_mode = (
-                    aio_pika.DeliveryMode.PERSISTENT
-                    if persistent
-                    else aio_pika.DeliveryMode.NOT_PERSISTENT
-                )
-                rabbitmq_message = aio_pika.Message(
+            delivery_mode = (
+                aio_pika.DeliveryMode.PERSISTENT
+                if persistent
+                else aio_pika.DeliveryMode.NOT_PERSISTENT
+            )
+
+            await self.channel.default_exchange.publish(
+                aio_pika.Message(
                     body=message_body.encode("utf-8"),
                     delivery_mode=delivery_mode,
                     content_type="application/json",
-                )
-                await self.channel.default_exchange.publish(
-                    rabbitmq_message, routing_key=queue_name
-                )
+                ),
+                routing_key=queue_name,
+            )
 
-                Logger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
-                return True
+            Logger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
+            return True
 
-            except Exception as e:
-                Logger.warning(
-                    f"发送消息到队列 [{queue_name}] 失败（第 {attempt + 1} 次尝试）: {e}"
-                )
-                self._is_connected = False
-                await self._close_async()
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(
-                        min(self._reconnect_delay, self._max_reconnect_delay)
-                    )
-                    self._reconnect_delay = min(
-                        self._reconnect_delay * 2, self._max_reconnect_delay
-                    )
-                    continue
-
-                Logger.error(f"发送消息到队列 [{queue_name}] 失败：达到最大重试次数")
-                return False
-
-        return False
+        except Exception as e:
+            Logger.warning(f"发送消息到队列 [{queue_name}] 失败: {e}")
+            return False
 
     async def close_async(self) -> None:
         """关闭连接"""
         try:
-            await self._close_async()
-            Logger.info(Constants.RABBITMQ_CONNECTION_CLOSED_MESSAGE)
+            if self.channel and not self.channel.is_closed:
+                await self.channel.close()
+            if self.connection and not self.connection.is_closed:
+                await self.connection.close()
         except Exception as e:
             Logger.error(f"关闭 RabbitMQ 连接失败: {e}")
+        finally:
+            self.channel = None
+            self.connection = None
 
     def close(self) -> None:
-        """同步关闭连接"""
+        """同步关闭连接（由 __del__ 调用）"""
         try:
-            asyncio.get_running_loop()
-            Logger.warning(Constants.AIO_PKA_EVENT_LOOP_ERROR)
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                Logger.warning(Constants.AIO_PKA_EVENT_LOOP_ERROR)
+                return
         except RuntimeError:
+            pass
+        try:
             asyncio.run(self.close_async())
+        except Exception:
+            pass
 
     def __del__(self) -> None:
         """析构函数，确保连接关闭"""
