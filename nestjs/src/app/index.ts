@@ -8,6 +8,7 @@ import type { OpenAPIObject } from '@nestjs/swagger';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { HttpCode } from 'src/common/utils/httpCode';
+import { applySwaggerSnakeCase } from 'src/common/utils/swaggerSnakeCase';
 import { logger } from 'src/common/utils/writeLog';
 import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
 import { FieldNamingInterceptor } from 'src/framework/interceptors/fieldNaming.interceptor';
@@ -77,7 +78,9 @@ export async function createApp(): Promise<NestFastifyApplication> {
   });
 
   const config: Omit<OpenAPIObject, 'paths'> = swaggerBuilder.build();
-  const document: OpenAPIObject = SwaggerModule.createDocument(app, config);
+  const document: OpenAPIObject = applySwaggerSnakeCase(
+    SwaggerModule.createDocument(app, config),
+  );
   SwaggerModule.setup(Constants.SWAGGER_PATH, app, document);
 
   // 注册全局异常过滤器
