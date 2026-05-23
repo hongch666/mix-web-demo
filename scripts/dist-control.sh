@@ -58,15 +58,26 @@ print_status() {
     echo -e "${BLUE}[STATUS]${NC} $1"
 }
 
-# 检查端口是否被占用，返回占用该端口的 PID
+# 检查端口是否被服务进程监听，返回匹配的 PID
 check_port_in_use() {
     local port=$1
-    local pid=$(lsof -t -i:$port 2>/dev/null | head -1)
-    if [ -n "$pid" ]; then
-        echo "$pid"
-    else
+    local pattern=$2
+    local pid=$(lsof -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -1)
+
+    if [ -z "$pid" ]; then
         echo ""
+        return
     fi
+
+    if [ -n "$pattern" ]; then
+        local command_line=$(ps -p "$pid" -o args= 2>/dev/null)
+        if ! echo "$command_line" | grep -Eq "$pattern"; then
+            echo ""
+            return
+        fi
+    fi
+
+    echo "$pid"
 }
 
 # 通过进程名模式查找进程
@@ -86,17 +97,17 @@ check_service_status() {
     local service_dir="$DIST_DIR/$service"
     local port="${SERVICE_PORTS[$service]}"
     local pattern="${SERVICE_PATTERNS[$service]}"
-    
+
     if [ ! -d "$service_dir" ]; then
         echo "not_found"
         return
     fi
-    
+
     cd "$service_dir"
-    
+
     local pid=""
     local source=""
-    
+
     # 方法1: 检查 PID 文件
     if [ -f "${service}.pid" ]; then
         local file_pid=$(cat "${service}.pid")
@@ -105,16 +116,16 @@ check_service_status() {
             source="pid_file"
         fi
     fi
-    
+
     # 方法2: 如果 PID 文件无效，通过端口检测
     if [ -z "$pid" ] && [ -n "$port" ]; then
-        local port_pid=$(check_port_in_use "$port")
+        local port_pid=$(check_port_in_use "$port" "$pattern")
         if [ -n "$port_pid" ]; then
             pid=$port_pid
             source="port"
         fi
     fi
-    
+
     # 方法3: 如果端口也没找到，通过进程模式匹配
     if [ -z "$pid" ] && [ -n "$pattern" ]; then
         local pattern_pid=$(find_process_by_pattern "$pattern")
@@ -123,7 +134,7 @@ check_service_status() {
             source="pattern"
         fi
     fi
-    
+
     if [ -n "$pid" ]; then
         echo "running:$pid:$source"
     else
@@ -135,26 +146,26 @@ check_service_status() {
 start_service() {
     local service=$1
     local service_dir="$DIST_DIR/$service"
-    
+
     if [ ! -d "$service_dir" ]; then
         print_error "服务目录不存在: $service_dir"
         return 1
     fi
-    
+
     local status=$(check_service_status "$service")
     if [[ $status == running:* ]]; then
         local pid=$(echo "$status" | cut -d: -f2)
         print_warn "$service 服务已在运行中 (PID: $pid)"
         return 0
     fi
-    
+
     print_info "启动 $service 服务..."
     cd "$service_dir"
-    
+
     if [ -f "start.sh" ]; then
         bash start.sh
         sleep 2
-        
+
         # 验证启动
         status=$(check_service_status "$service")
         if [[ $status == running:* ]]; then
@@ -174,42 +185,42 @@ start_service() {
 stop_service() {
     local service=$1
     local service_dir="$DIST_DIR/$service"
-    
+
     if [ ! -d "$service_dir" ]; then
         print_error "服务目录不存在: $service_dir"
         return 1
     fi
-    
+
     local status=$(check_service_status "$service")
     if [[ $status == "stopped" ]]; then
         print_warn "$service 服务未运行"
         return 0
     fi
-    
+
     # 提取真实的 PID
     local pid=$(echo "$status" | cut -d: -f2)
     local source=$(echo "$status" | cut -d: -f3)
-    
+
     print_info "停止 $service 服务 (PID: $pid, 检测方式: $source)..."
     cd "$service_dir"
-    
+
     # 直接使用检测到的 PID 来停止进程
     if [ -n "$pid" ]; then
         kill $pid 2>/dev/null || true
         sleep 1
-        
+
         # 如果进程还在，强制杀死
         if ps -p $pid > /dev/null 2>&1; then
             print_warn "进程未响应，强制终止..."
             kill -9 $pid 2>/dev/null || true
         fi
-        
+
         # 清理 PID 文件
         rm -f "${service}.pid"
     fi
-    
+
     sleep 1
-    
+
     # 验证停止
     status=$(check_service_status "$service")
     if [[ $status == "stopped" ]]; then
@@ -231,22 +242,22 @@ restart_service() {
 # 显示服务状态
 show_status() {
     local services=("$@")
-    
+
     if [ ${#services[@]} -eq 0 ]; then
         # 默认显示所有服务
         services=("spring" "gateway" "fastapi" "gozero" "nestjs")
     fi
-    
+
     print_info "=========================================="
     print_info "微服务运行状态"
     print_info "=========================================="
-    
+
     printf "%-15s %-15s %-10s %-10s\n" "服务名称" "状态" "PID" "检测方式"
     echo "---------------------------------------------------"
-    
+
     for service in "${services[@]}"; do
         local status=$(check_service_status "$service")
-        
+
         case "$status" in
             running:*)
                 local pid=$(echo "$status" | cut -d: -f2)
@@ -267,7 +278,7 @@ show_status() {
                 ;;
         esac
     done
-    
+
     echo "==================================================="
 }
 
@@ -275,20 +286,20 @@ show_status() {
 view_logs() {
     local service=$1
     local logs_dir="$DIST_DIR/logs/$service"
-    
+
     if [ ! -d "$logs_dir" ]; then
         print_error "日志目录不存在: $logs_dir"
         return 1
     fi
-    
+
     # 获取最新的日志文件 (app_YYYY-MM-DD.log 格式)
     local latest_log=$(ls -t "$logs_dir"/app_*.log 2>/dev/null | head -1)
-    
+
     if [ -z "$latest_log" ]; then
         print_warn "未找到日志文件"
         return 1
     fi
-    
+
     print_info "显示 $service 服务日志（最后100行）："
     print_info "日志文件: $latest_log"
     echo "-------------------------------------------"
@@ -332,17 +343,17 @@ main() {
         show_usage
         exit 1
     fi
-    
+
     local command=$1
     shift
-    
+
     local services=("$@")
-    
+
     # 如果没有指定服务，默认操作所有服务
     if [ ${#services[@]} -eq 0 ]; then
         services=("spring" "gateway" "fastapi" "gozero" "nestjs")
     fi
-    
+
     case "$command" in
         start)
             for service in "${services[@]}"; do
