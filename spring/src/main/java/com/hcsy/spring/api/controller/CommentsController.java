@@ -37,6 +37,7 @@ import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -153,7 +154,7 @@ public class CommentsController {
     @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
             "size", "username", "article_title" })
     @ApiLog("获取普通评论信息")
-    public Result listComments(@ModelAttribute CommentsQueryDTO queryDTO) {
+    public Result listComments(@ParameterObject @ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listCommentsWithFilter(commentsPage, queryDTO);
         // 构建评论视图对象，包含用户名和文章标题
@@ -176,7 +177,7 @@ public class CommentsController {
     @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
             "size", "ai_type", "article_title" })
     @ApiLog("获取AI评论信息")
-    public Result listAIComments(@ModelAttribute CommentsQueryDTO queryDTO) {
+    public Result listAIComments(@ParameterObject @ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listAICommentsWithFilter(commentsPage, queryDTO);
         // 构建AI评论视图对象，包含AI类型和文章标题

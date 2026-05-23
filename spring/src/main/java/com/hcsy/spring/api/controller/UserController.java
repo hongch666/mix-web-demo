@@ -54,6 +54,7 @@ import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
+import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -78,7 +79,7 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "query", paramNames = { "page", "size",
             "username" })
     @ApiLog("获取用户信息")
-    public Result listUsers(@ModelAttribute UserQueryDTO queryDTO) {
+    public Result listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
         UserListVO data = userService.listUsersWithFilter(
                 queryDTO.getPage(),
                 queryDTO.getSize(),
