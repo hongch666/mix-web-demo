@@ -33,19 +33,19 @@ func registerSwaggerRoute(server *rest.Server) {
 		},
 	})
 
-	// /swagger/doc.yaml 从文件系统返回 Swagger YAML 数据
+	// /swagger/doc.json 从文件系统返回 Swagger JSON 数据
 	server.AddRoute(rest.Route{
 		Method: http.MethodGet,
-		Path:   "/swagger/doc.yaml",
+		Path:   "/swagger/doc.json",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			// 尝试读取goctl生成的main.yaml文件
-			swaggerPath := filepath.Join("docs", "main.yaml")
+			// 尝试读取goctl生成的main.json文件
+			swaggerPath := filepath.Join("docs", "main.json")
 			doc, err := os.ReadFile(swaggerPath)
 			if err != nil {
 				http.Error(w, utils.GET_SWAGGER_FAIL, http.StatusInternalServerError)
 				return
 			}
-			w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write(doc)
 		},

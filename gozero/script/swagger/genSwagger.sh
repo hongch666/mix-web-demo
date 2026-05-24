@@ -44,9 +44,17 @@ if [ -f "../app/docs/main.json" ] && [ -f "../app/docs/main.yaml" ]; then
     # 清理api目录下可能残留的文件
     rm -f main.json main.yaml
     
-    echo ""
-    echo "可选: 转换为OpenAPI3格式"
-    echo "运行: npm install -g swagger2openapi && swagger2openapi -o ../app/docs/main-openapi3.yaml -p ../app/docs/main.json"
+    # 转换为 OpenAPI 3.0 JSON 格式，直接覆盖 main.json
+    if command -v swagger2openapi &> /dev/null; then
+        echo "正在转换为 OpenAPI 3.0 格式..."
+        swagger2openapi -o "../app/docs/main.json" -p "../app/docs/main.json"
+        if [ -f "../app/docs/main.json" ]; then
+            echo "已更新为 OpenAPI 3.0 格式：./app/docs/main.json"
+        fi
+    else
+        echo "提示: 如需转换为 OpenAPI 3.0 格式，请先安装 swagger2openapi"
+        echo "运行: npm install -g swagger2openapi"
+    fi
 else
     echo "Swagger文档生成失败"
     exit 1
