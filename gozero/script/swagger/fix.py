@@ -27,7 +27,7 @@ def add_chinese_tags_to_dict(swagger_data):
             "description": "聊天功能相关API，包括消息发送、历史查询、队列管理等",
         },
         "search": {
-            "name": "文章模块",
+            "name": "搜索模块",
             "description": "文章搜索功能相关API，支持多条件搜索、历史记录等",
         },
         "test": {

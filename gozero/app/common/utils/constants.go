@@ -717,7 +717,7 @@ const (
 			<script>
 				window.onload = function() {
 					SwaggerUIBundle({
-						url: '/swagger/doc.json',
+						url: '/swagger/doc.yaml',
 						dom_id: '#swagger-ui',
 						presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
 						layout: 'StandaloneLayout',
