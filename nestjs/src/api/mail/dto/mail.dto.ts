@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
   IsIn,
@@ -7,8 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-import { ExposeName } from 'src/common/utils/snake-case.serializer';
+import { ExposeName } from 'src/framework/serializer/snakeCase.serializer';
 
 export class InternalEmailCodeSendDto {
   @ApiProperty({ description: '收件邮箱', example: 'user@example.com' })

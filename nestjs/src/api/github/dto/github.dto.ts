@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { ExposeName } from 'src/common/utils/snake-case.serializer';
 import { IsOptional, IsString } from 'class-validator';
+import { ExposeName } from 'src/framework/serializer/snakeCase.serializer';
 
 export class GithubAuthorizeQueryDto {
   @ApiPropertyOptional({

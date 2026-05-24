@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString } from 'class-validator';
-import { ExposeName } from 'src/common/utils/snake-case.serializer';
+import { ExposeName } from 'src/framework/serializer/snakeCase.serializer';
 
 export interface UploadResult {
   originalFilename: string;
