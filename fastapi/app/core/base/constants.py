@@ -235,6 +235,9 @@ class Constants:
     SWAGGER_VERSION: str = "1.0.0"
     """Swagger 文档版本"""
 
+    OPENAPI_VERSION: str = "3.0.0"
+    """OpenAPI版本"""
+
     STARTUP_MESSAGE: str = "FastAPI应用已启动"
     """启动消息"""
 

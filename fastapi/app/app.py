@@ -1,3 +1,5 @@
+from fastapi.openapi.utils import get_openapi
+
 from app.common.middleware import middlewares
 from app.core.base import Constants
 from app.core.errors import exception_handlers
@@ -19,6 +21,22 @@ def create_app() -> FastAPI:
         openapi_tags=Constants.OPENAPI_TAGS,
         lifespan=lifespan,
     )
+
+    # 覆写 openapi 方法以设置 OpenAPI 版本
+    def custom_openapi():
+        if app.openapi_schema:
+            return app.openapi_schema
+        openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            openapi_version=Constants.OPENAPI_VERSION,
+            description=app.description,
+            routes=app.routes,
+        )
+        app.openapi_schema = openapi_schema
+        return app.openapi_schema
+
+    app.openapi = custom_openapi
 
     # 添加中间件
     for middleware in middlewares:
