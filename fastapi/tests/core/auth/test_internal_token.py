@@ -2,7 +2,7 @@ import os
 from typing import Generator
 
 import pytest
-from app.core.auth.internalToken import InternalTokenUtil
+from app.core.auth import InternalTokenUtil
 
 
 @pytest.fixture(autouse=True)

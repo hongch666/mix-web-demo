@@ -4,8 +4,9 @@ from app.common.middleware import middlewares
 from app.core.base import Constants
 from app.core.errors import exception_handlers
 from app.internal.api import routers
-from app.lifespan import lifespan
 from fastapi import FastAPI
+
+from .lifespan import lifespan
 
 
 def create_app() -> FastAPI:
