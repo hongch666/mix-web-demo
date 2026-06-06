@@ -1,5 +1,6 @@
 from typing import List
 
+from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
 from .mongodb import async_client, async_db
 from .mysql import (
     AsyncSessionLocal,
@@ -12,7 +13,7 @@ from .mysql import (
     get_db_async,
 )
 from .neo4j import Neo4jClient, get_neo4j_client
-from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
+from .postgresql import get_pgvector_connection_string, get_postgres_config
 from .rabbitmq import (
     RabbitMQClient,
     _rabbitmq_client,
@@ -20,7 +21,6 @@ from .rabbitmq import (
     send_to_queue_async,
 )
 from .redis import RedisClient, get_redis_client
-
 
 __all__: List[str] = [
     "async_client",
@@ -41,6 +41,8 @@ __all__: List[str] = [
     "get_clickhouse_connection_pool",
     "RedisClient",
     "get_redis_client",
+    "get_pgvector_connection_string",
+    "get_postgres_config",
     "Neo4jClient",
     "get_neo4j_client",
 ]

@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from app.core.base import Constants, HttpCode, Logger
 from app.core.config import load_config
+from app.core.db import get_pgvector_connection_string
 from app.core.errors import BusinessException
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
@@ -72,11 +73,7 @@ class RAGTools:
         self.logger.info(Constants.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
 
         # 3. 初始化PostgreSQL向量存储
-        postgres_cfg = load_config("database")["postgres"]
-        connection_string = (
-            f"postgresql+psycopg2://{postgres_cfg['user']}:{postgres_cfg['password']}"
-            f"@{postgres_cfg['host']}:{postgres_cfg['port']}/{postgres_cfg['database']}"
-        )
+        connection_string = get_pgvector_connection_string()
 
         self.vector_store = PGVector(
             embedding_function=self.embeddings,
