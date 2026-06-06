@@ -25,7 +25,6 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
-import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
@@ -68,7 +67,6 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
     private final UserService userService;
     private final TokenService tokenService;
-    private final RedisUtil redisUtil;
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
     private final PasswordEncryptor passwordEncryptor;
@@ -165,9 +163,8 @@ public class UserController {
         // 转换为 UserVO
         UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
 
-        // 从 Redis 查询登录状态和在线设备数
-        String status = redisUtil.get("user:status:" + id);
-        userVO.setLoginStatus("1".equals(status) ? 1 : 0);
+        // 从 Service 查询登录状态和在线设备数
+        userVO.setLoginStatus(userService.getUserLoginStatus(id));
         userVO.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(id));
 
         return Result.success(userVO);
@@ -216,8 +213,7 @@ public class UserController {
     })
     @ApiLog("修改用户状态")
     public Result updateUserStatus(@PathVariable Long id, @RequestParam String status) {
-        String key = "user:status:" + id;
-        redisUtil.set(key, status); // 设置为永久保存
+        userService.updateUserStatus(id, status);
         return Result.success();
     }
 

@@ -368,6 +368,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return this.getOne(queryWrapper);
     }
 
+    @Override
+    public int getUserLoginStatus(Long userId) {
+        String status = redisUtil.get("user:status:" + userId);
+        return "1".equals(status) ? 1 : 0;
+    }
+
+    @Override
+    public void updateUserStatus(Long userId, String status) {
+        redisUtil.set("user:status:" + userId, status);
+    }
+
     private void validateLoginCaptcha(String captchaId, String captchaText) {
         if (!imageCaptchaService.verifyCaptcha(captchaId, captchaText)) {
             throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.IMAGE_CAPTCHA_INVALID);

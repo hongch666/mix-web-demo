@@ -42,4 +42,20 @@ public interface UserService extends IService<User> {
 
     void registerUser(UserRegisterDTO registerDTO);
 
+    /**
+     * 获取用户登录状态（从Redis）
+     *
+     * @param userId 用户ID
+     * @return 1-在线，0-离线
+     */
+    int getUserLoginStatus(Long userId);
+
+    /**
+     * 更新用户登录状态（写入Redis）
+     *
+     * @param userId 用户ID
+     * @param status 1-在线，0-离线
+     */
+    void updateUserStatus(Long userId, String status);
+
 }
