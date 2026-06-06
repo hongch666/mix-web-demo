@@ -61,8 +61,8 @@ public class PermissionValidationAspect {
                 }
             }
 
-            // 3. 获取目标资源ID
-            Long targetResourceId = getTargetResourceId(joinPoint, requirePermission);
+            // 3. 获取目标资源ID（传入当前用户ID用于批量验证）
+            Long targetResourceId = getTargetResourceId(joinPoint, requirePermission, currentUserId);
             logger.info(Constants.TARGET_SOURCE,
                     currentUserId, requirePermission.businessType(), requirePermission.paramSource(), targetResourceId);
 
@@ -91,7 +91,8 @@ public class PermissionValidationAspect {
     /**
      * 获取目标资源ID，支持多种参数来源
      */
-    private Long getTargetResourceId(ProceedingJoinPoint joinPoint, RequirePermission requirePermission) {
+    private Long getTargetResourceId(ProceedingJoinPoint joinPoint, RequirePermission requirePermission,
+            Long currentUserId) {
         String paramSource = requirePermission.paramSource();
         String[] paramNames = requirePermission.paramNames();
 
@@ -100,8 +101,8 @@ public class PermissionValidationAspect {
                 // 路径单个参数：如 /users/{id}
                 return getPathSingleParam(joinPoint, paramNames[0]);
             } else if ("path_multi".equals(paramSource)) {
-                // 路径多个参数：如 /articles/{articleId}/comments/{commentId}
-                return getPathMultiParams(joinPoint, paramNames, requirePermission.businessType());
+                // 路径多个参数：如 /comments/batch/{ids}，传入当前用户ID进行所有权验证
+                return getPathMultiParams(joinPoint, paramNames, requirePermission.businessType(), currentUserId);
             } else if ("body".equals(paramSource)) {
                 // 请求体参数
                 return getBodyParam(joinPoint, paramNames[0], requirePermission.businessType());
@@ -193,7 +194,8 @@ public class PermissionValidationAspect {
     /**
      * 获取路径多个参数，处理特殊场景如 /comments/batch/{ids}
      */
-    private Long getPathMultiParams(ProceedingJoinPoint joinPoint, String[] paramNames, String businessType) {
+    private Long getPathMultiParams(ProceedingJoinPoint joinPoint, String[] paramNames, String businessType,
+            Long currentUserId) {
         try {
             Object[] args = joinPoint.getArgs();
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
@@ -225,7 +227,7 @@ public class PermissionValidationAspect {
             if (batchIdsStr != null && batchIdsStr.contains(",")) {
                 // 批量删除的情况
                 String[] ids = batchIdsStr.split(",");
-                Long commentUserId = null;
+                Long ownerUserId = null;
 
                 if ("comment".equals(businessType)) {
                     for (String idStr : ids) {
@@ -239,14 +241,17 @@ public class PermissionValidationAspect {
                             if (comment.getUserId() == null) {
                                 throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_NO_USER + commentId);
                             }
-                            if (commentUserId != null && !commentUserId.equals(comment.getUserId())) {
+                            if (ownerUserId != null && !ownerUserId.equals(comment.getUserId())) {
                                 throw new BusinessException(HttpCode.BAD_REQUEST, Constants.COMMENT_MULTI_USER);
                             }
-                            commentUserId = comment.getUserId();
+                            ownerUserId = comment.getUserId();
                         }
                     }
-                    logger.info(Constants.FUNCTION_COMMENT, commentUserId);
-                    return commentUserId;
+                    // 验证当前用户是这些评论的所有者
+                    if (!currentUserId.equals(ownerUserId)) {
+                        throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
+                    }
+                    logger.info(Constants.FUNCTION_COMMENT, ownerUserId);
                 } else if ("article".equals(businessType)) {
                     for (String idStr : ids) {
                         idStr = idStr.trim();
@@ -259,15 +264,20 @@ public class PermissionValidationAspect {
                             if (article.getUserId() == null) {
                                 throw new BusinessException(HttpCode.NOT_FOUND, Constants.ARTICLE_NO_USER + articleId);
                             }
-                            if (commentUserId != null && !commentUserId.equals(article.getUserId())) {
+                            if (ownerUserId != null && !ownerUserId.equals(article.getUserId())) {
                                 throw new BusinessException(HttpCode.BAD_REQUEST, Constants.ARTICLE_MULTI_USER);
                             }
-                            commentUserId = article.getUserId();
+                            ownerUserId = article.getUserId();
                         }
                     }
-                    logger.info(Constants.FUNCTION_ARTICLE, commentUserId);
-                    return commentUserId;
+                    // 验证当前用户是这些文章的所有者
+                    if (!currentUserId.equals(ownerUserId)) {
+                        throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
+                    }
+                    logger.info(Constants.FUNCTION_ARTICLE, ownerUserId);
                 }
+                // 返回当前用户ID，校验 checkOwnership 时直接通过
+                return currentUserId;
             }
 
         } catch (Exception e) {
@@ -380,13 +390,21 @@ public class PermissionValidationAspect {
             // 用户只能操作自己
             return currentUserId.equals(targetResourceId);
         } else if ("article".equals(businessType)) {
-            // 检查文章所有者
+            // 批量操作已在 getPathMultiParams 中完成所有权验证
+            if (currentUserId.equals(targetResourceId)) {
+                return true;
+            }
+            // 单条操作：检查文章所有者
             Article article = articleService.getById(targetResourceId);
             if (article != null) {
                 return currentUserId.equals(article.getUserId());
             }
         } else if ("comment".equals(businessType)) {
-            // 检查评论所有者
+            // 批量操作已在 getPathMultiParams 中完成所有权验证
+            if (currentUserId.equals(targetResourceId)) {
+                return true;
+            }
+            // 单条操作：检查评论所有者
             Comments comment = commentsService.getById(targetResourceId);
             if (comment != null) {
                 return currentUserId.equals(comment.getUserId());
