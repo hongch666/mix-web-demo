@@ -22,6 +22,12 @@ const (
 	// WebSocket 消息发送失败信息
 	WS_SEND_FAIL = "用户 %s 不在线，消息 %d 已保存为未读"
 
+	// WebSocket 消息序列化错误信息
+	WS_SERIALIZE_MESSAGE_ERROR = "序列化WebSocket消息失败: %v"
+
+	// 消息发送失败错误信息
+	MESSAGE_SEND_ERROR = "消息发送失败"
+
 	// 标记已读失败信息
 	MARK_READ_FAIL = "标记消息 %d 为已读失败"
 

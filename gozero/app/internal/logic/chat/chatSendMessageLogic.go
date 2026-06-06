@@ -58,7 +58,12 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	messageBytes, _ := json.Marshal(wsMessage)
+	messageBytes, err := json.Marshal(wsMessage)
+	if err != nil {
+		l.Error(fmt.Sprintf(utils.WS_SERIALIZE_MESSAGE_ERROR, err))
+		panic(exceptions.NewInternalServerError(utils.MESSAGE_SEND_ERROR, err.Error()))
+	}
+
 	if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {
 		// 发送成功，消息已读
 		l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.SenderId, req.ReceiverId)
