@@ -248,3 +248,8 @@ CLAUDE.md
 .codebuddy
 
 .codex
+
+### Root Node.js (workspace only)
+/package.json
+/package-lock.json
+/node_modules/
