@@ -104,9 +104,9 @@ public class TokenBucketRateLimiter {
                 }
             }
         } catch (Exception e) {
-            log.error("限流器执行出错: key={}", key, e);
-            // 降级处理：执行异常时允许请求通过
-            return true;
+            log.error("限流器执行出错: key={}, Redis异常，拒绝请求", key, e);
+            // 降级处理：Redis异常时拒绝请求，防止限流失效
+            return false;
         }
 
         return false;
