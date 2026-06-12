@@ -22,6 +22,7 @@ export class OssService implements OnModuleInit {
   private endpoint!: string;
   private accessKeyId!: string;
   private accessKeySecret!: string;
+  private putTimeout: number = 120000; // 默认 120 秒，通过 config 覆盖
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -49,6 +50,12 @@ export class OssService implements OnModuleInit {
 
     this.accessKeyId = accessKeyId;
     this.accessKeySecret = accessKeySecret;
+
+    // 读取上传超时配置（秒转换为毫秒）
+    const putTimeoutSec: number = Number(
+      (config['put_timeout'] as string) || (config['putTimeout'] as string) || '120',
+    );
+    this.putTimeout = Math.max(putTimeoutSec, 10) * 1000; // 最少 10 秒
 
     if (this.isBunRuntime()) {
       logger.info(Constants.OSS_BUN_RUNTIME_COMPAT_MESSAGE);
@@ -92,7 +99,7 @@ export class OssService implements OnModuleInit {
       const stats = fs.statSync(localFile);
       logger.info(`本地文件大小: ${stats.size} bytes`);
 
-      // 添加超时控制（30秒）
+      // 添加超时控制
       logger.info(Constants.OSS_PUT_OPERATION_START);
       const result = this.isBunRuntime()
         ? await this.uploadFileWithBun(localFile, ossFile)
@@ -139,7 +146,7 @@ export class OssService implements OnModuleInit {
     const timeoutPromise = new Promise((_, reject) =>
       setTimeout(
         () => reject(new Error(Constants.OSS_PUT_OPERATION_TIMEOUT)),
-        30000,
+        this.putTimeout,
       ),
     );
 
@@ -168,7 +175,7 @@ export class OssService implements OnModuleInit {
       .update(stringToSign)
       .digest('base64');
     const timeoutController = new AbortController();
-    const timeoutId = setTimeout(() => timeoutController.abort(), 30000);
+    const timeoutId = setTimeout(() => timeoutController.abort(), this.putTimeout);
 
     try {
       const response: Response = await fetch(requestUrl, {

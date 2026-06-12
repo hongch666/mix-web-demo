@@ -58,6 +58,7 @@ oss:
   endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
   access_key_id: ${OSS_ACCESS_KEY_ID:}
   access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
+  put_timeout: ${OSS_PUT_TIMEOUT:120} # 上传超时时间（秒）
 github:
   oauth:
     clientId: ${GITHUB_OAUTH_CLIENT_ID:}

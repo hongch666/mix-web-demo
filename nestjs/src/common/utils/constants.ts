@@ -327,7 +327,7 @@ export class Constants {
   /**
    * OSS 上传超时消息
    */
-  static readonly OSS_PUT_OPERATION_TIMEOUT = 'OSS put 操作超时（30秒）';
+  static readonly OSS_PUT_OPERATION_TIMEOUT = 'OSS put 操作超时';
 
   /**
    * OSS 返回非成功状态码前缀
