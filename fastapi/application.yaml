@@ -29,8 +29,8 @@ database:
     pool_recycle: ${DB_MYSQL_POOL_RECYCLE:3600} # 连接回收时间（秒）
     pool_pre_ping: ${DB_MYSQL_POOL_PRE_PING:True} # 每次取连接前进行ping检查
     pool_timeout: ${DB_MYSQL_POOL_TIMEOUT:30} # 获取连接的超时时间（秒）
-    read_timeout: ${DB_MYSQL_READ_TIMEOUT:10} # pymysql读超时（秒）
-    write_timeout: ${DB_MYSQL_WRITE_TIMEOUT:10} # pymysql写超时（秒）
+    read_timeout: ${DB_MYSQL_READ_TIMEOUT:120} # pymysql读超时（秒），增大以支持大批量导出查询
+    write_timeout: ${DB_MYSQL_WRITE_TIMEOUT:120} # pymysql写超时（秒），增大以支持大批量导出查询
     autocommit: ${DB_MYSQL_AUTOCOMMIT:False} # 自动提交事务
     echo: ${DB_MYSQL_ECHO:False} # 是否打印SQL语句到日志
   postgres:

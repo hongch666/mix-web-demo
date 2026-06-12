@@ -31,8 +31,8 @@ MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
 POOL_RECYCLE: int = int(mysql_config.get("pool_recycle", 3600))
 POOL_PRE_PING: bool = mysql_config.get("pool_pre_ping", True)
 POOL_TIMEOUT: int = int(mysql_config.get("pool_timeout", 30))
-READ_TIMEOUT: int = int(mysql_config.get("read_timeout", 10))
-WRITE_TIMEOUT: int = int(mysql_config.get("write_timeout", 10))
+READ_TIMEOUT: int = int(mysql_config.get("read_timeout", 120))
+WRITE_TIMEOUT: int = int(mysql_config.get("write_timeout", 120))
 AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
 ECHO: bool = SERVER_MODE == "dev"
 

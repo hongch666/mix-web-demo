@@ -184,9 +184,9 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 )
                 logger_method(time_message)
                 raise BusinessException(
-                    Constants.RABBITMQ_NOT_AVAILABLE,
+                    f"请求处理异常: {str(e)}",
                     HttpCode.SERVICE_UNAVAILABLE,
-                    Constants.ERROR_RABBITMQ_CLIENT_NOT_INITIALIZED,
+                    f"REQUEST_ERROR: {str(e)[:200]}",
                 )
 
         # 根据函数是否为协程选择包装器

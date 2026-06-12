@@ -173,44 +173,25 @@ class ArticleMapper:
         return result
 
     async def _iter_articles_for_excel_export_mapper_sync(
-        self, db: Session, batch_size: int = 500
+        self, db: Session, batch_size: int = 200
     ) -> AsyncGenerator[List[Dict[str, Any]], None]:
-        """分批获取导出Excel所需文章数据，避免5表JOIN结果一次性堆积在内存中"""
-        if batch_size <= 0:
-            batch_size = 500
+        """分批获取导出Excel所需文章数据，避免大结果集一次性堆积在内存中
 
-        like_count_subquery = (
-            select(
-                Like.article_id.label("article_id"),
-                func.count(Like.id).label("like_count"),
-            )
-            .group_by(Like.article_id)
-            .subquery()
-        )
-        collect_count_subquery = (
-            select(
-                Collect.article_id.label("article_id"),
-                func.count(Collect.id).label("collect_count"),
-            )
-            .group_by(Collect.article_id)
-            .subquery()
-        )
-        follow_count_subquery = (
-            select(
-                Focus.focus_id.label("author_id"),
-                func.count(Focus.id).label("author_follow_count"),
-            )
-            .group_by(Focus.focus_id)
-            .subquery()
-        )
+        优化策略：先查询文章基础信息（仅LEFT JOIN分类/用户小表），
+        再单独查询点赞/收藏/关注数，避免整表 GROUP BY 子查询。
+        """
+        if batch_size <= 0:
+            batch_size = 200
 
         last_id = 0
         while True:
-            statement = (
+            # 第1步：查询文章基础信息（只做简单的 FK 关联）
+            base_statement = (
                 select(
                     Article.id.label("id"),
                     Article.title.label("title"),
                     Article.content.label("content"),
+                    Article.user_id.label("user_id"),
                     User.name.label("username"),
                     Article.tags.label("tags"),
                     Article.status.label("status"),
@@ -219,41 +200,65 @@ class ArticleMapper:
                     Article.views.label("views"),
                     SubCategory.name.label("sub_category_name"),
                     Category.name.label("category_name"),
-                    func.coalesce(like_count_subquery.c.like_count, 0).label(
-                        "like_count"
-                    ),
-                    func.coalesce(collect_count_subquery.c.collect_count, 0).label(
-                        "collect_count"
-                    ),
-                    func.coalesce(follow_count_subquery.c.author_follow_count, 0).label(
-                        "author_follow_count"
-                    ),
                 )
                 .select_from(Article)
                 .outerjoin(User, User.id == Article.user_id)
                 .outerjoin(SubCategory, SubCategory.id == Article.sub_category_id)
                 .outerjoin(Category, Category.id == SubCategory.category_id)
-                .outerjoin(
-                    like_count_subquery, like_count_subquery.c.article_id == Article.id
-                )
-                .outerjoin(
-                    collect_count_subquery,
-                    collect_count_subquery.c.article_id == Article.id,
-                )
-                .outerjoin(
-                    follow_count_subquery,
-                    follow_count_subquery.c.author_id == Article.user_id,
-                )
                 .where(Article.id > last_id)
                 .order_by(Article.id.asc())
                 .limit(batch_size)
             )
-            rows = db.execute(statement).all()
-            if not rows:
+            base_rows = db.execute(base_statement).all()
+            if not base_rows:
                 break
 
+            # 收集当前批次的文章ID和用户ID
+            article_ids = [row.id for row in base_rows]
+            user_ids = [row.user_id for row in base_rows if row.user_id is not None]
+
+            # 第2步：批量查询点赞数
+            like_statement = (
+                select(
+                    Like.article_id.label("article_id"),
+                    func.count(Like.id).label("like_count"),
+                )
+                .where(Like.article_id.in_(article_ids))
+                .group_by(Like.article_id)
+            )
+            like_rows = db.execute(like_statement).all()
+            like_map = {row.article_id: row.like_count for row in like_rows}
+
+            # 第3步：批量查询收藏数
+            collect_statement = (
+                select(
+                    Collect.article_id.label("article_id"),
+                    func.count(Collect.id).label("collect_count"),
+                )
+                .where(Collect.article_id.in_(article_ids))
+                .group_by(Collect.article_id)
+            )
+            collect_rows = db.execute(collect_statement).all()
+            collect_map = {row.article_id: row.collect_count for row in collect_rows}
+
+            # 第4步：批量查询作者关注数（按作者分别统计）
+            follow_map: Dict[int, int] = {}
+            if user_ids:
+                # 去重 user_ids 减少查询范围
+                unique_user_ids = list(set(user_ids))
+                follow_statement = (
+                    select(
+                        Focus.focus_id.label("author_id"),
+                        func.count(Focus.id).label("author_follow_count"),
+                    )
+                    .where(Focus.focus_id.in_(unique_user_ids))
+                    .group_by(Focus.focus_id)
+                )
+                follow_rows = db.execute(follow_statement).all()
+                follow_map = {row.author_id: row.author_follow_count for row in follow_rows}
+
             result: List[Dict[str, Any]] = []
-            for row in rows:
+            for row in base_rows:
                 result.append(
                     {
                         "id": row.id,
@@ -267,14 +272,14 @@ class ArticleMapper:
                         "views": row.views,
                         "sub_category_name": row.sub_category_name,
                         "category_name": row.category_name,
-                        "like_count": row.like_count,
-                        "collect_count": row.collect_count,
-                        "author_follow_count": row.author_follow_count,
+                        "like_count": like_map.get(row.id, 0),
+                        "collect_count": collect_map.get(row.id, 0),
+                        "author_follow_count": follow_map.get(row.user_id, 0) if row.user_id else 0,
                     }
                 )
 
             yield result
-            last_id = rows[-1].id
+            last_id = base_rows[-1].id
 
     async def _get_article_by_id_mapper_sync(
         self, article_id: int, db: Session
