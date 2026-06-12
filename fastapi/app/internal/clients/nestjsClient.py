@@ -28,4 +28,5 @@ class NestjsClient:
                 "oss_file": oss_path,
             },
             retries=3,
+            timeout=300,
         )
