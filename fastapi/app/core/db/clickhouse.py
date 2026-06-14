@@ -60,10 +60,7 @@ class ClickhouseConnectionPool:
         ch_username = str(clickhouse_config.get("username", "default"))
         # 确保密码始终是字符串类型
         ch_password = str(clickhouse_config.get("password", ""))
-        if ch_password and ch_password.isdigit():
-            # 如果密码全是数字，保持原样；如果是 "0" 或其他特殊值则转为空
-            pass
-        elif not ch_password or ch_password == "None":
+        if not ch_password or ch_password == "None":
             ch_password = ""
 
         Logger.info(f"[ClickHouse连接池] 创建新连接 (第{conn_index}个)")
