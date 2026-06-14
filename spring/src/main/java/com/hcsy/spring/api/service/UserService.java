@@ -58,4 +58,36 @@ public interface UserService extends IService<User> {
      */
     void updateUserStatus(Long userId, String status);
 
+    /**
+     * 查询所有非 AI 用户的 ID 列表
+     * 通过 SQL 直接返回 ID，避免内存中 stream 操作
+     *
+     * @return 非 AI 用户的 ID 列表
+     */
+    List<Long> getNormalUserIds();
+
+    /**
+     * 查询所有 AI 用户的 ID 列表
+     * 通过 SQL 直接返回 ID，避免内存中 stream 操作
+     *
+     * @return AI 用户的 ID 列表
+     */
+    List<Long> getAiUserIds();
+
+    /**
+     * 统计非 AI 用户总数
+     * 通过 SQL COUNT 统计，避免内存中 list.size() 操作
+     *
+     * @return 非 AI 用户总数
+     */
+    long countNormalUsers();
+
+    /**
+     * 统计 AI 用户总数
+     * 通过 SQL COUNT 统计，避免内存中 list.size() 操作
+     *
+     * @return AI 用户总数
+     */
+    long countAiUsers();
+
 }

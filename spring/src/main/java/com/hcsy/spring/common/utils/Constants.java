@@ -1422,21 +1422,6 @@ public class Constants {
         public static String NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG = "邮件服务暂时不可用，请稍后再试";
 
         /**
-         * NestJS 邮件发送失败
-         */
-        public static String NESTJS_EMAIL_SEND_FAIL = "NestJS 邮件发送失败: ";
-
-        /**
-         * NestJS 邮件返回非成功状态
-         */
-        public static String NESTJS_EMAIL_RESPONSE_FAIL = "NestJS 邮件发送返回非成功状态: ";
-
-        /**
-         * 验证码邮件发送失败提示
-         */
-        public static String NESTJS_EMAIL_SEND_FAILED_MSG = "验证码邮件发送失败";
-
-        /**
          * .env文件不存在提示信息
          */
         public static String DOTENV_FILE_NOT_EXIST = "[DotenvLoader] .env文件不存在，跳过加载";

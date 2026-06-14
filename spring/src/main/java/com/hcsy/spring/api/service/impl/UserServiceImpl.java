@@ -289,6 +289,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public UserListVO getAllUsers(String username) {
+        // 先通过 SQL COUNT 获取总数，避免内存中 list.size()
+        long total = userMapper.countUsersByUsername(username);
+
+        if (total == 0) {
+            return UserListVO.builder()
+                    .total(0L)
+                    .list(Collections.emptyList())
+                    .build();
+        }
+
         // 查询所有符合条件的用户
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.ne(User::getRole, "ai"); // 排除 role 为 ai 的用户
@@ -296,13 +306,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             queryWrapper.like(User::getName, username);
         }
         List<User> users = this.list(queryWrapper);
-
-        if (users.isEmpty()) {
-            return UserListVO.builder()
-                    .total(0L)
-                    .list(Collections.emptyList())
-                    .build();
-        }
 
         // 转换为 UserVO（不包含登录状态和设备数）
         List<UserVO> voList = users.stream().map(user -> {
@@ -312,23 +315,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }).toList();
 
         return UserListVO.builder()
-                .total((long) users.size())
+                .total(total)
                 .list(voList)
                 .build();
     }
 
     @Override
     public UserListVO getAllAiUsers() {
-        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(User::getRole, "ai");
-        List<User> users = this.list(queryWrapper);
+        // 先通过 SQL COUNT 获取总数，避免内存中 list.size()
+        long total = userMapper.countAiUsers();
 
-        if (users.isEmpty()) {
+        if (total == 0) {
             return UserListVO.builder()
                     .total(0L)
                     .list(Collections.emptyList())
                     .build();
         }
+
+        LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.eq(User::getRole, "ai");
+        List<User> users = this.list(queryWrapper);
 
         List<UserVO> voList = users.stream().map(user -> {
             UserVO vo = new UserVO();
@@ -337,9 +343,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }).toList();
 
         return UserListVO.builder()
-                .total((long) users.size())
+                .total(total)
                 .list(voList)
                 .build();
+    }
+
+    @Override
+    public List<Long> getNormalUserIds() {
+        return userMapper.selectNormalUserIds();
+    }
+
+    @Override
+    public List<Long> getAiUserIds() {
+        return userMapper.selectAiUserIds();
+    }
+
+    @Override
+    public long countNormalUsers() {
+        return userMapper.countNormalUsers();
+    }
+
+    @Override
+    public long countAiUsers() {
+        return userMapper.countAiUsers();
     }
 
     @Override

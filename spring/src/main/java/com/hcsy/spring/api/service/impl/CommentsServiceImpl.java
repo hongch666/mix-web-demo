@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.CommentsMapper;
@@ -60,9 +59,8 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             }
         }
 
-        // 只查询普通用户（非AI用户）的评论
-        List<Long> normalUserIds = userService.list(
-                Wrappers.lambdaQuery(User.class).ne(User::getRole, "ai")).stream().map(User::getId).toList();
+        // 只查询普通用户（非AI用户）的评论，通过 SQL 直接获取 ID 列表
+        List<Long> normalUserIds = userService.getNormalUserIds();
 
         if (normalUserIds.isEmpty()) {
             return new Page<>(page.getCurrent(), page.getSize(), 0);
@@ -100,9 +98,8 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
             }
         }
 
-        // 查询所有 AI 用户 ID
-        List<Long> aiUserIds = userService.list(
-                Wrappers.lambdaQuery(User.class).eq(User::getRole, "ai")).stream().map(User::getId).toList();
+        // 查询所有 AI 用户 ID，通过 SQL 直接获取 ID 列表
+        List<Long> aiUserIds = userService.getAiUserIds();
 
         if (aiUserIds.isEmpty()) {
             return new Page<>(page.getCurrent(), page.getSize(), 0);
@@ -132,7 +129,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
     @Override
     public IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId) {
-        LambdaQueryWrapper<Comments> queryWrapper = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<Comments> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Comments::getUserId, userId);
         IPage<Comments> commentsPage = this.page(page, queryWrapper);
         return commentsPage;
@@ -146,16 +143,8 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
     @Override
     public List<Comments> listAICommentsByArticleId(Long articleId) {
-        // 查询所有 AI 用户的 ID 列表
-        LambdaQueryWrapper<User> userQueryWrapper = Wrappers.lambdaQuery();
-        userQueryWrapper.eq(User::getRole, "ai")
-                .select(User::getId); // 只查询ID字段以提高性能
-        List<User> aiUsers = userService.list(userQueryWrapper);
-
-        // 提取 AI 用户 ID
-        List<Long> aiUserIds = aiUsers.stream()
-                .map(User::getId)
-                .toList();
+        // 通过 SQL 直接获取 AI 用户 ID 列表，避免内存中 stream 操作
+        List<Long> aiUserIds = userService.getAiUserIds();
 
         // 如果没有 AI 用户，直接返回空列表
         if (aiUserIds.isEmpty()) {
@@ -163,7 +152,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         }
 
         // 查询当前文章对应的 AI 用户评论列表
-        LambdaQueryWrapper<Comments> commentsQueryWrapper = Wrappers.lambdaQuery();
+        LambdaQueryWrapper<Comments> commentsQueryWrapper = new LambdaQueryWrapper<>();
         commentsQueryWrapper.eq(Comments::getArticleId, articleId)
                 .in(Comments::getUserId, aiUserIds)
                 .orderByDesc(Comments::getCreateTime);

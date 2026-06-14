@@ -51,4 +51,24 @@
         </where>
     </select>
 
+    <!-- 查询所有非 AI 用户的 ID 列表 -->
+    <select id="selectNormalUserIds" resultType="long">
+        SELECT id FROM user WHERE role != 'ai'
+    </select>
+
+    <!-- 查询所有 AI 用户的 ID 列表 -->
+    <select id="selectAiUserIds" resultType="long">
+        SELECT id FROM user WHERE role = 'ai'
+    </select>
+
+    <!-- 统计非 AI 用户总数 -->
+    <select id="countNormalUsers" resultType="long">
+        SELECT COUNT(*) FROM user WHERE role != 'ai'
+    </select>
+
+    <!-- 统计 AI 用户总数 -->
+    <select id="countAiUsers" resultType="long">
+        SELECT COUNT(*) FROM user WHERE role = 'ai'
+    </select>
+
 </mapper>

@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.RedisUtil;
-import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.dto.InternalEmailCodeSendDTO;
 import com.hcsy.spring.infra.client.NestjsClient;
@@ -54,30 +53,12 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         logger.info(Constants.CODE_SAVE + email);
 
         // 调用 NestJS 发送邮件
-        try {
-            Result result = nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(
-                    email,
-                    code,
-                    type,
-                    10));
-            if (result.getCode() != 200) {
-                throw new RuntimeException(Constants.NESTJS_EMAIL_RESPONSE_FAIL + result.getMsg());
-            }
-            logger.info(Constants.CODE_SUCCESS + email);
-        } catch (Exception e) {
-            logger.error(Constants.NESTJS_EMAIL_SEND_FAIL + e.getMessage(), e);
-            handleSendFailure(email);
-            throw new RuntimeException(Constants.NESTJS_EMAIL_SEND_FAILED_MSG);
-        }
-    }
-
-    /**
-     * 处理发送失败，删除 Redis 中的验证码
-     */
-    private void handleSendFailure(String email) {
-        String key = VERIFICATION_CODE_PREFIX + email;
-        redisUtil.delete(key);
-        logger.debug(Constants.CODE_DELETE + email);
+        nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(
+                email,
+                code,
+                type,
+                10));
+        logger.info(Constants.CODE_SUCCESS + email);
     }
 
     /**

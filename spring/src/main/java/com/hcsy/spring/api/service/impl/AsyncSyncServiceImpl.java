@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -104,11 +105,11 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                         Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException(Constants.SYNC_ES_RETRY_INTERRUPTED, ie);
+                        throw new BusinessException(Constants.SYNC_ES_RETRY_INTERRUPTED, ie);
                     }
                 } else {
                     logger.error(Constants.SYNC_ES_MAX_RETRY, e.getMessage(), e);
-                    throw new RuntimeException(Constants.SYNC_ES_FAILED, e);
+                    throw new BusinessException(Constants.SYNC_ES_FAILED, e);
                 }
             }
         }

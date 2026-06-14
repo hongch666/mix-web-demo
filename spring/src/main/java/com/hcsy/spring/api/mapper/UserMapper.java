@@ -36,4 +36,36 @@ public interface UserMapper extends BaseMapper<User> {
      * @return 用户总数
      */
     long countUsersByUsername(@Param("username") String username);
+
+    /**
+     * 查询所有非 AI 用户的 ID 列表
+     * 替代内存中 stream().map(User::getId) 操作
+     *
+     * @return 非 AI 用户的 ID 列表
+     */
+    List<Long> selectNormalUserIds();
+
+    /**
+     * 查询所有 AI 用户的 ID 列表
+     * 替代内存中 stream().map(User::getId) 操作
+     *
+     * @return AI 用户的 ID 列表
+     */
+    List<Long> selectAiUserIds();
+
+    /**
+     * 统计非 AI 用户总数
+     * 替代内存中 users.size() 操作
+     *
+     * @return 非 AI 用户总数
+     */
+    long countNormalUsers();
+
+    /**
+     * 统计 AI 用户总数
+     * 替代内存中 users.size() 操作
+     *
+     * @return AI 用户总数
+     */
+    long countAiUsers();
 }
