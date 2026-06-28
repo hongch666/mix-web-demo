@@ -4,9 +4,9 @@ server:
   port: ${SERVER_PORT:8081}
   tomcat:
     threads:
-      max: ${TOMCAT_THREADS_MAX:25}
-    accept-count: ${TOMCAT_ACCEPT_COUNT:25}
-    max-connections: ${TOMCAT_MAX_CONNECTIONS:100}
+      max: 25
+    accept-count: 25
+    max-connections: 100
 spring:
   application:
     name: spring
@@ -19,21 +19,21 @@ spring:
       client:
         config:
           default:
-            connectTimeout: ${FEIGN_CONNECT_TIMEOUT:2000}
-            readTimeout: ${FEIGN_READ_TIMEOUT:3000}
+            connectTimeout: 2000
+            readTimeout: 3000
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_MAX:20}
-      minimum-idle: ${DB_POOL_MIN_IDLE:5}
-      connection-timeout: ${DB_POOL_TIMEOUT:30000}
-      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:600000}
-      max-lifetime: ${DB_POOL_MAX_LIFETIME:1800000}
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
       auto-commit: true
-      leak-detection-threshold: ${DB_POOL_LEAK_DETECTION_THRESHOLD:60000}
+      leak-detection-threshold: 60000
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -43,10 +43,10 @@ spring:
       password: ${REDIS_PASSWORD:} # 可选：Redis 密码
       lettuce:
         pool:
-          max-active: ${REDIS_POOL_MAX_ACTIVE:10}
-          max-idle: ${REDIS_POOL_MAX_IDLE:5}
-          min-idle: ${REDIS_POOL_MIN_IDLE:1}
-      timeout: ${REDIS_TIMEOUT:3000}
+          max-active: 10
+          max-idle: 5
+          min-idle: 1
+      timeout: 3000
   rabbitmq:
     host: ${RABBITMQ_HOST:127.0.0.1}
     port: ${RABBITMQ_PORT:5672}
