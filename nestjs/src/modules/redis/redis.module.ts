@@ -14,7 +14,7 @@ export class RedisModule {
     const redisClientProvider: Provider = {
       provide: Constants.REDIS_CLIENT,
       useFactory: (configService: ConfigService): Redis | null => {
-        const redisConfig = configService.get('redis') as Record<string, unknown>;
+        const redisConfig = configService.get('database.redis') as Record<string, unknown>;
         if (!redisConfig || !redisConfig.host || !redisConfig.port) {
           return null;
         }

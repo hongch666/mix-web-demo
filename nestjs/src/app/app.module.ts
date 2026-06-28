@@ -43,7 +43,7 @@ interface MongoDbConfig {
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
         const db: DatabaseConfig = configService.get<DatabaseConfig>(
-          'database',
+          'database.mysql',
         )!;
         return {
           type: db.type,
@@ -68,7 +68,7 @@ interface MongoDbConfig {
         configService: ConfigService,
       ): Promise<MongooseModuleOptions> => {
         const mongodb: MongoDbConfig = configService.get<MongoDbConfig>(
-          'mongodb',
+          'database.mongodb',
         )!;
         const { host, port, username, password, dbName } = mongodb;
 

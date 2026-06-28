@@ -3,48 +3,52 @@ server:
   mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8083}
   serviceName: ${SERVER_SERVICE_NAME:nestjs}
-internal-token:
-  secret: ${INTERNAL_TOKEN_SECRET:}
-  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
+
 nacos:
   host: ${NACOS_SERVER:127.0.0.1}
   port: ${NACOS_PORT:8848}
   namespace: ${NACOS_NAMESPACE:public}
   clusterName: ${NACOS_CLUSTER_NAME:DEFAULT}
+
 database:
-  type: ${DB_TYPE:mysql}
-  host: ${DB_HOST:localhost}
-  port: ${DB_PORT:3306}
-  username: ${DB_USERNAME:}
-  password: ${DB_PASSWORD:}
-  database: ${DB_DATABASE:demo}
-  synchronize: ${DB_SYNCHRONIZE:false}
-  logging: ${DB_LOGGING:false}
-  entities:
-    - src/**/*.entity.js
-mongodb:
-  host: ${DB_MONGODB_HOST:localhost}
-  port: ${DB_MONGODB_PORT:27017}
-  username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
-  password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
-  dbName: ${DB_MONGODB_DATABASE:demo}
+  mysql:
+    type: ${DB_TYPE:mysql}
+    host: ${DB_HOST:localhost}
+    port: ${DB_PORT:3306}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    database: ${DB_DATABASE:demo}
+    synchronize: ${DB_SYNCHRONIZE:false}
+    logging: ${DB_LOGGING:false}
+    entities:
+      - src/**/*.entity.js
+  mongodb:
+    host: ${DB_MONGODB_HOST:localhost}
+    port: ${DB_MONGODB_PORT:27017}
+    username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
+    password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
+    dbName: ${DB_MONGODB_DATABASE:demo}
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    username: ${REDIS_USERNAME:}
+    password: ${REDIS_PASSWORD:}
+    db: ${REDIS_DB:0}
+
 rabbitmq:
   host: ${RABBITMQ_HOST:localhost}
   port: ${RABBITMQ_PORT:5672}
   username: ${RABBITMQ_USERNAME:}
   password: ${RABBITMQ_PASSWORD:}
   vhost: ${RABBITMQ_VHOST:test}
-redis:
-  host: ${REDIS_HOST:127.0.0.1}
-  port: ${REDIS_PORT:6379}
-  username: ${REDIS_USERNAME:}
-  password: ${REDIS_PASSWORD:}
-  db: ${REDIS_DB:0}
+
 files:
   word: ${FILES_WORD_PATH:../static/word}
   upload: ${FILES_UPLOAD_PATH:../static/upload}
+
 logs:
   path: ${LOGS_PATH:../logs/nestjs}
+
 mail:
   host: ${MAIL_HOST:smtp.qq.com}
   port: ${MAIL_PORT:465}
@@ -53,12 +57,14 @@ mail:
   password: ${MAIL_PASSWORD:}
   from: ${MAIL_FROM:}
   timeout: ${MAIL_TIMEOUT:5000}
+
 oss:
   bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
   endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
   access_key_id: ${OSS_ACCESS_KEY_ID:}
   access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
   put_timeout: ${OSS_PUT_TIMEOUT:120} # 上传超时时间（秒）
+
 github:
   oauth:
     clientId: ${GITHUB_OAUTH_CLIENT_ID:}
@@ -72,3 +78,7 @@ github:
     apiVersion: ${GITHUB_OAUTH_API_VERSION:2026-03-10}
     frontendSuccessUrl: ${GITHUB_OAUTH_FRONTEND_SUCCESS_URL:http://127.0.0.1:5173/oauth/github/success}
     frontendFailureUrl: ${GITHUB_OAUTH_FRONTEND_FAILURE_URL:http://127.0.0.1:5173/login}
+
+internal-token:
+  secret: ${INTERNAL_TOKEN_SECRET:}
+  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
