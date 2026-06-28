@@ -511,7 +511,7 @@ func trimSlashPrefix(v string) string {
 }
 
 func initRedis(c config.Config) *redis.Client {
-	redisConf := c.Redis
+	redisConf := c.Database.Redis
 	if redisConf.Host == "" || redisConf.Port == 0 {
 		return nil
 	}
