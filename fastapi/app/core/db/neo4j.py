@@ -22,7 +22,7 @@ class Neo4jClient:
     def _initialize_config(self) -> None:
         """根据配置初始化 Neo4j 连接参数"""
         try:
-            neo4j_cfg = load_config("neo4j") or {}
+            neo4j_cfg = (load_config("database") or {}).get("neo4j") or {}
             self.uri = str(neo4j_cfg.get("uri") or "bolt://127.0.0.1:7687")
             self.user = str(neo4j_cfg.get("user") or "neo4j")
             self.password = str(neo4j_cfg.get("password") or "").strip()

@@ -3,20 +3,13 @@ server:
   mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8084}
   reload: ${SERVER_RELOAD:True}
-internal_token:
-  secret: ${INTERNAL_TOKEN_SECRET:}
-  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
+
 nacos:
   server_addresses: ${NACOS_SERVER:127.0.0.1:8848}
   namespace: ${NACOS_NAMESPACE:public}
   service_name: ${NACOS_SERVICE_NAME:fastapi}
   group_name: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
-rabbitmq:
-  host: ${RABBITMQ_HOST:127.0.0.1}
-  port: ${RABBITMQ_PORT:5672}
-  username: ${RABBITMQ_USERNAME:}
-  password: ${RABBITMQ_PASSWORD:}
-  vhost: ${RABBITMQ_VHOST:test}
+
 database:
   mysql:
     host: ${DB_MYSQL_HOST:localhost} # 数据库主机
@@ -24,25 +17,25 @@ database:
     database: ${DB_MYSQL_DATABASE:demo} # 数据库名称
     user: ${DB_MYSQL_USER:} # 数据库用户
     password: ${DB_MYSQL_PASSWORD:} # 数据库密码
-    pool_size: ${DB_MYSQL_POOL_SIZE:30} # 基础连接池大小
-    max_overflow: ${DB_MYSQL_MAX_OVERFLOW:80} # 最多额外创建的连接数
-    pool_recycle: ${DB_MYSQL_POOL_RECYCLE:3600} # 连接回收时间（秒）
-    pool_pre_ping: ${DB_MYSQL_POOL_PRE_PING:True} # 每次取连接前进行ping检查
-    pool_timeout: ${DB_MYSQL_POOL_TIMEOUT:30} # 获取连接的超时时间（秒）
-    read_timeout: ${DB_MYSQL_READ_TIMEOUT:120} # pymysql读超时（秒），增大以支持大批量导出查询
-    write_timeout: ${DB_MYSQL_WRITE_TIMEOUT:120} # pymysql写超时（秒），增大以支持大批量导出查询
-    autocommit: ${DB_MYSQL_AUTOCOMMIT:False} # 自动提交事务
-    echo: ${DB_MYSQL_ECHO:False} # 是否打印SQL语句到日志
+    pool_size: 30 # 基础连接池大小
+    max_overflow: 80 # 最多额外创建的连接数
+    pool_recycle: 3600 # 连接回收时间（秒）
+    pool_pre_ping: True # 每次取连接前进行ping检查
+    pool_timeout: 30 # 获取连接的超时时间（秒）
+    read_timeout: 120 # pymysql读超时（秒），增大以支持大批量导出查询
+    write_timeout: 120 # pymysql写超时（秒），增大以支持大批量导出查询
+    autocommit: False # 自动提交事务
+    echo: False # 是否打印SQL语句到日志
   postgres:
     host: ${DB_POSTGRES_HOST:localhost}
     port: ${DB_POSTGRES_PORT:5432}
     database: ${DB_POSTGRES_DATABASE:demo}
     user: ${DB_POSTGRES_USER:}
     password: ${DB_POSTGRES_PASSWORD:}
-    pool_pre_ping: ${DB_POSTGRES_POOL_PRE_PING:True}
-    pool_size: ${DB_POSTGRES_POOL_SIZE:10}
-    max_overflow: ${DB_POSTGRES_MAX_OVERFLOW:20}
-    echo: ${DB_POSTGRES_ECHO:False}
+    pool_pre_ping: True
+    pool_size: 10
+    max_overflow: 20
+    echo: False
   mongodb:
     host: ${DB_MONGODB_HOST:localhost}
     port: ${DB_MONGODB_PORT:27017}
@@ -62,61 +55,77 @@ database:
     username: ${DB_REDIS_USERNAME:} # 可选：Redis 用户名
     password: ${DB_REDIS_PASSWORD:} # 可选：Redis 密码
     db: ${DB_REDIS_DB:6}
-    decode_responses: ${DB_REDIS_DECODE_RESPONSES:True}
-    max_connections: ${DB_REDIS_MAX_CONNECTIONS:10}
+    decode_responses: True
+    max_connections: 10
+  neo4j:
+    uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
+    user: ${NEO4J_USER:neo4j}
+    password: ${NEO4J_PASSWORD:}
+
+rabbitmq:
+  host: ${RABBITMQ_HOST:127.0.0.1}
+  port: ${RABBITMQ_PORT:5672}
+  username: ${RABBITMQ_USERNAME:}
+  password: ${RABBITMQ_PASSWORD:}
+  vhost: ${RABBITMQ_VHOST:test}
+
 wordcloud:
   font_path: ${WORDCLOUD_FONT_PATH:/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc}
-  width: ${WORDCLOUD_WIDTH:800}
-  height: ${WORDCLOUD_HEIGHT:400}
-  background_color: ${WORDCLOUD_BG_COLOR:white}
+  width: 800
+  height: 400
+  background_color: white
+
 files:
   pic_path: ${FILES_PIC_PATH:../static/pic}
   excel_path: ${FILES_EXCEL_PATH:../static/excel}
+
 logs:
   path: ${LOGS_PATH:../logs/fastapi}
-closeai:
-  base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址
-  api_key: ${CLOSEAI_API_KEY:} # CloseAI API Key
-  timeout: ${CLOSEAI_TIMEOUT:30} # 请求超时时间（秒）
-  agent_max_iterations: ${CLOSEAI_AGENT_MAX_ITERATIONS:5} # Agent 最大迭代轮数
-  gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-5-nano} # 输入 0.05 / 输出 0.4
-  gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
-  deepseek_model_name: ${CLOSEAI_DEEPSEEK_MODEL:deepseek-v4-flash} # 输入 0.15 / 输出 0.3
-embedding:
-  api_key: ${EMBEDDING_API_KEY:} # 嵌入模型 API Key
-  embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 嵌入模型名称
-  top_k: ${EMBEDDING_TOP_K:5} # RAG检索返回的文档数量
-  dimension: ${EMBEDDING_DIMENSION:1536} # 嵌入维度（text-embedding-v3默认1536维）
-  similarity_threshold: ${EMBEDDING_SIMILARITY_THRESHOLD:0.3} # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
-  similarity_tolerance: ${EMBEDDING_SIMILARITY_TOLERANCE:0.01} # 相似度容差（用于去重，相似度差异在此范围内视为相近）
-neo4j:
-  uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
-  user: ${NEO4J_USER:neo4j}
-  password: ${NEO4J_PASSWORD:}
-graph_search:
-  tag_interest_weight: ${GRAPH_SEARCH_TAG_INTEREST_WEIGHT:0.35}
-  followed_author_weight: ${GRAPH_SEARCH_FOLLOWED_AUTHOR_WEIGHT:0.25}
-  same_sub_category_weight: ${GRAPH_SEARCH_SAME_SUB_CATEGORY_WEIGHT:0.20}
-  candidate_similarity_weight: ${GRAPH_SEARCH_CANDIDATE_SIMILARITY_WEIGHT:0.20}
-  keyword_tag_weight: ${GRAPH_SEARCH_KEYWORD_TAG_WEIGHT:0.20}
-vector_search:
-  enabled: ${VECTOR_SEARCH_ENABLED:true}
-  candidate_limit: ${VECTOR_SEARCH_CANDIDATE_LIMIT:50}
-  fetch_multiplier: ${VECTOR_SEARCH_FETCH_MULTIPLIER:4}
-  max_matched_chunks: ${VECTOR_SEARCH_MAX_MATCHED_CHUNKS:2}
-  min_score: ${VECTOR_SEARCH_MIN_SCORE:0.3}
-  score_mode: ${VECTOR_SEARCH_SCORE_MODE:similarity}
-permission:
-  personal_info_keywords:
-    - "我的"
-    - "个人"
-    - "自己的"
-    - "本人的"
-    - "我"
-    - "自己"
-    - "点赞"
-    - "收藏"
-    - "喜欢"
-    - "评论"
-    - "互动"
-    - "关注"
+
+internal_token:
+  secret: ${INTERNAL_TOKEN_SECRET:}
+  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
+
+agent:
+  closeai:
+    base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址
+    api_key: ${CLOSEAI_API_KEY:} # CloseAI API Key
+    gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-5-nano} # 输入 0.05 / 输出 0.4
+    gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
+    deepseek_model_name: ${CLOSEAI_DEEPSEEK_MODEL:deepseek-v4-flash} # 输入 0.15 / 输出 0.3
+    timeout: 30 # 请求超时时间（秒）
+    agent_max_iterations: 5 # Agent 最大迭代轮数
+  embedding:
+    api_key: ${EMBEDDING_API_KEY:} # 嵌入模型 API Key
+    embedding_model: text-embedding-v3 # 嵌入模型名称
+    top_k: 5 # RAG检索返回的文档数量
+    dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
+    similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
+    similarity_tolerance: 0.01 # 相似度容差（用于去重，相似度差异在此范围内视为相近）
+  graph_search:
+    tag_interest_weight: 0.35
+    followed_author_weight: 0.25
+    same_sub_category_weight: 0.20
+    candidate_similarity_weight: 0.20
+    keyword_tag_weight: 0.20
+  vector_search:
+    enabled: true
+    candidate_limit: 50
+    fetch_multiplier: 4
+    max_matched_chunks: 2
+    min_score: 0.3
+    score_mode: similarity
+  permission:
+    personal_info_keywords:
+      - "我的"
+      - "个人"
+      - "自己的"
+      - "本人的"
+      - "我"
+      - "自己"
+      - "点赞"
+      - "收藏"
+      - "喜欢"
+      - "评论"
+      - "互动"
+      - "关注"

@@ -30,7 +30,7 @@ class RAGTools:
         self._init_error_message: Optional[str] = None
 
         # 1. 初始化嵌入模型
-        embedding_cfg = load_config("embedding")
+        embedding_cfg = (load_config("agent") or {}).get("embedding", {})
 
         api_key = self._resolve_embedding_api_key(embedding_cfg)
         embedding_model = str(embedding_cfg.get("embedding_model"))

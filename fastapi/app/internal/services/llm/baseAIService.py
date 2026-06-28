@@ -324,7 +324,7 @@ class BaseAiService:
     def _initialize_llm_service(self, user_mapper: Optional[Any] = None) -> None:
         """从配置中初始化 CloseAI 客户端和 Agent 能力"""
         try:
-            service_cfg: Dict[str, Any] = load_config(self.config_section) or {}
+            service_cfg: Dict[str, Any] = (load_config("agent") or {}).get(self.config_section) or {}
             self._api_key = str(service_cfg.get("api_key") or "").strip()
             self._base_url = str(service_cfg.get("base_url") or "").strip()
             timeout_value = service_cfg.get("timeout", self._timeout)

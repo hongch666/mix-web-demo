@@ -14,7 +14,7 @@ class UserPermissionManager:
     def PERSONAL_INFO_KEYWORDS(self) -> List[str]:
         """动态从配置文件加载个人信息查询关键字"""
         try:
-            keywords = load_config("permission", "personal_info_keywords")
+            keywords = (load_config("agent") or {}).get("permission", {}).get("personal_info_keywords", [])
             if keywords:
                 return keywords
         except Exception as e:

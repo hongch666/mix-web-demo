@@ -180,7 +180,7 @@ def _to_bool(value: Any, default: bool) -> bool:
 @lru_cache
 def get_vector_search_service() -> VectorSearchService:
     """获取 VectorSearchService 单例（从配置读取参数）"""
-    vector_search_cfg = load_config("vector_search") or {}
+    vector_search_cfg = (load_config("agent") or {}).get("vector_search", {})
     return VectorSearchService(
         enabled=_to_bool(vector_search_cfg.get("enabled"), True),
         candidate_limit=int(vector_search_cfg.get("candidate_limit", 50)),

@@ -360,7 +360,7 @@ class GraphSearchService:
 @lru_cache
 def get_graph_search_service() -> GraphSearchService:
     """获取 GraphSearchService 单例（从配置读取权重）"""
-    graph_search_cfg = load_config("graph_search") or {}
+    graph_search_cfg = (load_config("agent") or {}).get("graph_search", {})
     return GraphSearchService(
         tag_interest_weight=float(
             graph_search_cfg.get("tag_interest_weight", 0.35)
