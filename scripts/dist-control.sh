@@ -41,6 +41,10 @@ declare -A SERVICE_PATTERNS=(
     ["nestjs"]="nestjs.*main.js|node.*nestjs"
 )
 
+# 已知的良性端口占用进程（SSH隧道、Docker代理等），status 展示时忽略
+# 注意：这些进程虽然不会引起 status 告警，但端口确实被占用，start 时仍会拒绝启动
+FOREIGN_IGNORE_PATTERNS="sshd|ssh |docker-proxy"
+
 # 打印带颜色的消息
 print_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -59,6 +63,7 @@ print_status() {
 }
 
 # 检查端口是否被服务进程监听，返回匹配的 PID
+# 返回值格式: "pid" (匹配成功) / "foreign:pid" (端口被占用但不匹配预期进程) / "" (端口空闲)
 check_port_in_use() {
     local port=$1
     local pattern=$2
@@ -72,7 +77,7 @@ check_port_in_use() {
     if [ -n "$pattern" ]; then
         local command_line=$(ps -p "$pid" -o args= 2>/dev/null)
         if ! echo "$command_line" | grep -Eq "$pattern"; then
-            echo ""
+            echo "foreign:$pid"
             return
         fi
     fi
@@ -119,9 +124,21 @@ check_service_status() {
 
     # 方法2: 如果 PID 文件无效，通过端口检测
     if [ -z "$pid" ] && [ -n "$port" ]; then
-        local port_pid=$(check_port_in_use "$port" "$pattern")
-        if [ -n "$port_pid" ]; then
-            pid=$port_pid
+        local port_result=$(check_port_in_use "$port" "$pattern")
+        if [ -n "$port_result" ]; then
+            # 检查是否被非本项目进程占用
+            if [[ "$port_result" == foreign:* ]]; then
+                local foreign_pid=$(echo "$port_result" | cut -d: -f2)
+                local foreign_cmd=$(ps -p "$foreign_pid" -o args= 2>/dev/null)
+                # 如果是指定的良性进程（SSH隧道等），忽略，仍返回 stopped
+                if echo "$foreign_cmd" | grep -Eq "$FOREIGN_IGNORE_PATTERNS"; then
+                    echo "stopped"
+                    return
+                fi
+                echo "port_conflict:$foreign_pid"
+                return
+            fi
+            pid=$port_result
             source="port"
         fi
     fi
@@ -158,9 +175,29 @@ start_service() {
         print_warn "$service 服务已在运行中 (PID: $pid)"
         return 0
     fi
+    if [[ $status == port_conflict:* ]]; then
+        local pid=$(echo "$status" | cut -d: -f2)
+        local port="${SERVICE_PORTS[$service]}"
+        local cmd=$(ps -p "$pid" -o args= 2>/dev/null | head -c 100)
+        print_error "端口 $port 已被其他进程占用 (PID: $pid)"
+        print_error "进程命令: $cmd"
+        print_error "请先停止该进程后再启动 $service 服务"
+        return 1
+    fi
 
     print_info "启动 $service 服务..."
     cd "$service_dir"
+
+    # 启动前再次确认端口未被占用（包括SSH隧道等良性进程也会占用端口）
+    local port="${SERVICE_PORTS[$service]}"
+    local raw_port_pid=$(lsof -t -iTCP:"$port" -sTCP:LISTEN 2>/dev/null | head -1)
+    if [ -n "$raw_port_pid" ]; then
+        local raw_cmd=$(ps -p "$raw_port_pid" -o args= 2>/dev/null | head -c 100)
+        print_error "端口 $port 已被占用 (PID: $raw_port_pid)"
+        print_error "进程命令: $raw_cmd"
+        print_error "请先停止该进程后再启动 $service 服务"
+        return 1
+    fi
 
     if [ -f "start.sh" ]; then
         bash start.sh
@@ -272,6 +309,10 @@ show_status() {
                 ;;
             stopped)
                 printf "%-15s ${RED}%-15s${NC} %-10s %-10s\n" "$service" "已停止" "-" "-"
+                ;;
+            port_conflict:*)
+                local pid=$(echo "$status" | cut -d: -f2)
+                printf "%-15s ${YELLOW}%-15s${NC} %-10s %-10s\n" "$service" "端口冲突" "$pid" "非本项目进程"
                 ;;
             not_found)
                 printf "%-15s ${YELLOW}%-15s${NC} %-10s %-10s\n" "$service" "未安装" "-" "-"
