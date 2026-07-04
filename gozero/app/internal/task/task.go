@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"app/common/utils"
 	"app/internal/svc"
@@ -19,7 +20,8 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 
 	// 每天同步一次 ES
 	_, err := TaskScheduler.AddFunc("* * */1 * *", func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
 		logger := svcCtx.Logger.WithContext(ctx)
 		lockKey := utils.LOCK_TASK_ES_SYNC
 

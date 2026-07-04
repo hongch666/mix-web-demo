@@ -33,7 +33,7 @@ func (l *ChatGetAllUnreadCountsLogic) ChatGetAllUnreadCounts(req *types.ChatGetA
 	unreadCounts, err := l.svcCtx.ChatMessagesModel.GetAllUnreadCounts(l.ctx, req.UserId)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.GET_ALL_UNREAD_COUNTS_ERROR+": %v", err))
-		panic(exceptions.NewInternalServerError(utils.GET_ALL_UNREAD_COUNTS_ERROR, err.Error()))
+		return nil, exceptions.NewInternalServerError(utils.GET_ALL_UNREAD_COUNTS_ERROR, err.Error())
 	}
 
 	l.Info(utils.GET_ALL_UNREAD_COUNTS_SUCCESS)

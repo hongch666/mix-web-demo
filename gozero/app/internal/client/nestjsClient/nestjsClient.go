@@ -12,6 +12,7 @@ import (
 type NestjsClient struct {
 	serviceName  string
 	namingClient naming_client.INamingClient
+	serviceDisc  *client.ServiceDiscovery
 }
 
 // NewNestjsClient 创建 NestJS 客户端
@@ -19,13 +20,13 @@ func NewNestjsClient(nc naming_client.INamingClient) *NestjsClient {
 	return &NestjsClient{
 		serviceName:  "nestjs",
 		namingClient: nc,
+		serviceDisc:  client.NewServiceDiscovery(nc),
 	}
 }
 
 // Test 测试 NestJS 服务连通性，返回完整响应结果
 func (c *NestjsClient) Test(ctx context.Context) (client.Result, error) {
-	sd := client.NewServiceDiscovery(c.namingClient)
-	return sd.CallService(ctx, c.serviceName, "/api_nestjs/nestjs", client.RequestOptions{
+	return c.serviceDisc.CallService(ctx, c.serviceName, "/api_nestjs/nestjs", client.RequestOptions{
 		Method: "GET",
 	})
 }

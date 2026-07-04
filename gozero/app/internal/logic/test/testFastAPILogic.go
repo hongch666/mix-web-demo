@@ -28,7 +28,7 @@ func (l *TestFastAPILogic) TestFastAPI() (resp *types.TestFastAPIResp, err error
 	result, err := l.svcCtx.FastapiClient.Test(l.ctx)
 	if err != nil {
 		l.Error(utils.PARSE_ERR + ": " + err.Error())
-		panic(exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error()))
+		return nil, exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error())
 	}
 
 	data, ok := result.Data.(string)

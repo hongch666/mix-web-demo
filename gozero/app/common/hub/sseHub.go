@@ -3,7 +3,10 @@ package hub
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"sync"
+	"time"
 
 	"app/common/utils"
 )
@@ -148,6 +151,85 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 				if hub.ZeroLogger != nil {
 					hub.Warning(utils.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
 				}
+			}
+		}
+	}
+}
+
+// HandleConnection 处理 SSE 连接的完整生命周期
+// 包括：注册客户端、发送初始化消息、事件循环（心跳+消息分发）
+// Handler 层只需调用此方法，无需关心 SSE 协议细节
+func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Request, userID string) {
+	// 设置SSE响应头
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	connectionID := NewConnectionID("sse")
+	sendCh := make(chan any, 256)
+	closeCh := make(chan bool)
+
+	// 注册客户端
+	hub.RegisterClient(userID, connectionID, sendCh, closeCh)
+	// 传入 connectionID 作为身份标识，防止旧连接的 defer 误关闭新连接
+	defer hub.UnregisterClient(userID, connectionID)
+
+	// 发送初始化连接消息
+	initMessage := &SSEMessageNotification{
+		Type:         "connected",
+		UserID:       userID,
+		UnreadCounts: make(map[string]int64),
+	}
+	sseMessage := FormatSSEMessage(initMessage)
+	_, _ = io.WriteString(w, sseMessage)
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	// 创建心跳定时器
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	// 事件循环
+	for {
+		select {
+		case <-r.Context().Done():
+			// 客户端主动断开连接
+			return
+		case <-closeCh:
+			return
+		case <-ticker.C:
+			// 发送心跳消息
+			heartbeat := utils.SSE_HEARTBEAT
+			_, err := io.WriteString(w, heartbeat)
+			if err != nil {
+				if hub.ZeroLogger != nil {
+					hub.Error(utils.SSE_HEARTBEAT_WRITE_FAIL + err.Error())
+				}
+				return
+			}
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		case notification := <-sendCh:
+			// 发送SSE格式的消息
+			sseMessage := FormatSSEMessage(notification)
+			// 如果格式化后消息为空,跳过此次发送
+			if sseMessage == "" {
+				if hub.ZeroLogger != nil {
+					hub.Warning(utils.EMPTY_SSE)
+				}
+				continue
+			}
+			_, err := io.WriteString(w, sseMessage)
+			if err != nil {
+				if hub.ZeroLogger != nil {
+					hub.Error(utils.SSE_WRITE_FAIL + err.Error())
+				}
+				return
+			}
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
 			}
 		}
 	}

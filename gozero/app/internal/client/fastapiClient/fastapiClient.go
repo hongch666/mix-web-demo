@@ -15,6 +15,7 @@ import (
 type FastapiClient struct {
 	serviceName  string
 	namingClient naming_client.INamingClient
+	serviceDisc  *client.ServiceDiscovery
 }
 
 // NewFastapiClient 创建 FastAPI 客户端
@@ -22,6 +23,7 @@ func NewFastapiClient(nc naming_client.INamingClient) *FastapiClient {
 	return &FastapiClient{
 		serviceName:  "fastapi",
 		namingClient: nc,
+		serviceDisc:  client.NewServiceDiscovery(nc),
 	}
 }
 
@@ -31,7 +33,7 @@ func (c *FastapiClient) EnhanceGraph(ctx context.Context, req *GraphEnhanceReque
 		return client.Result{}, fmt.Errorf(utils.GRAPH_ENHANCE_CALL_FAILED, errors.New("文章ID列表为空"))
 	}
 
-	sd := client.NewServiceDiscovery(c.namingClient)
+	sd := c.serviceDisc
 	return sd.CallService(ctx, c.serviceName, "/graph-search/enhance", client.RequestOptions{
 		Method: "POST",
 		BodyData: map[string]any{
@@ -53,7 +55,7 @@ func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceReq
 		return client.Result{}, fmt.Errorf(utils.VECTOR_ENHANCE_CALL_FAILED, errors.New("文章ID列表为空或关键词为空"))
 	}
 
-	sd := client.NewServiceDiscovery(c.namingClient)
+	sd := c.serviceDisc
 	return sd.CallService(ctx, c.serviceName, "/vector-search/enhance", client.RequestOptions{
 		Method: "POST",
 		BodyData: map[string]any{
@@ -72,7 +74,7 @@ func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceReq
 
 // Test 测试 FastAPI 服务连通性，返回完整响应结果
 func (c *FastapiClient) Test(ctx context.Context) (client.Result, error) {
-	sd := client.NewServiceDiscovery(c.namingClient)
+	sd := c.serviceDisc
 	return sd.CallService(ctx, c.serviceName, "/api_fastapi/fastapi", client.RequestOptions{
 		Method: "GET",
 	})

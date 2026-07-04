@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -12,8 +14,11 @@ import (
 
 // ZeroLogger 基于 go-zero logx 的日志工具，支持文件记录
 type ZeroLogger struct {
-	logPath string
-	ctx     context.Context
+	logPath     string
+	ctx         context.Context
+	fileMu      sync.Mutex // 保护文件句柄的并发访问
+	currentFile *os.File   // 当前打开的日志文件句柄
+	currentDate string     // 当前日志文件对应的日期，用于按天切换
 }
 
 // NewZeroLogger 创建新的日志实例
@@ -52,9 +57,8 @@ func (z *ZeroLogger) WithContext(ctx context.Context) *ZeroLogger {
 	}
 }
 
-// writeToFile 写入日志到文件
+// writeToFile 写入日志到文件（复用文件句柄，按天切换，使用缓冲写入提升性能）
 func (z *ZeroLogger) writeToFile(message string, level string) {
-	// 日志文件名 (按日期)
 	today := time.Now().Format("2006-01-02")
 	logFile := filepath.Join(z.logPath, fmt.Sprintf("app_%s.log", today))
 
@@ -62,17 +66,29 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	logEntry := fmt.Sprintf("%s - %s - %s\n", timestamp, level, message)
 
-	// 写入文件
-	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
-	if err != nil {
-		logx.Error(fmt.Sprintf(LOGGER_OPEN_FILE_ERROR, err))
-		return
-	}
-	defer file.Close()
+	z.fileMu.Lock()
+	defer z.fileMu.Unlock()
 
-	if _, err := file.WriteString(logEntry); err != nil {
+	// 日期变化或文件未打开时，切换到新文件
+	if z.currentFile == nil || z.currentDate != today {
+		if z.currentFile != nil {
+			z.currentFile.Close()
+		}
+		file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
+		if err != nil {
+			logx.Error(fmt.Sprintf(LOGGER_OPEN_FILE_ERROR, err))
+			return
+		}
+		z.currentFile = file
+		z.currentDate = today
+	}
+
+	// 使用缓冲写入减少系统调用
+	writer := bufio.NewWriter(z.currentFile)
+	if _, err := writer.WriteString(logEntry); err != nil {
 		logx.Error(fmt.Sprintf(LOGGER_WRITE_FILE_ERROR, err))
 	}
+	writer.Flush()
 }
 
 // Info 记录信息级别日志
@@ -103,14 +119,14 @@ func (z *ZeroLogger) Errorf(format string, args ...interface{}) {
 
 // Warning 记录警告级别日志
 func (z *ZeroLogger) Warning(msg string) {
-	logx.WithContext(z.ctx).Info("[WARN] " + msg)
+	logx.WithContext(z.ctx).Slow("[WARN] " + msg)
 	z.writeToFile(msg, "WARN")
 }
 
 // Warningf 记录格式化警告级别日志
 func (z *ZeroLogger) Warningf(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
-	logx.WithContext(z.ctx).Info("[WARN] " + msg)
+	logx.WithContext(z.ctx).Slow("[WARN] " + msg)
 	z.writeToFile(msg, "WARN")
 }
 

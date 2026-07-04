@@ -43,7 +43,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 
 	if err := l.svcCtx.ChatMessagesModel.CreateChatMessage(l.ctx, message); err != nil {
 		l.Error(fmt.Sprintf(utils.CREATE_MESSAGE_ERROR+": %v", err))
-		panic(exceptions.NewInternalServerError(utils.CREATE_MESSAGE_ERROR, err.Error()))
+		return nil, exceptions.NewInternalServerError(utils.CREATE_MESSAGE_ERROR, err.Error())
 	}
 
 	l.Info(utils.CHAT_MESSAGE_SEND_SUCCESS)
@@ -61,7 +61,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 	messageBytes, err := json.Marshal(wsMessage)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.WS_SERIALIZE_MESSAGE_ERROR, err))
-		panic(exceptions.NewInternalServerError(utils.MESSAGE_SEND_ERROR, err.Error()))
+		return nil, exceptions.NewInternalServerError(utils.MESSAGE_SEND_ERROR, err.Error())
 	}
 
 	if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {

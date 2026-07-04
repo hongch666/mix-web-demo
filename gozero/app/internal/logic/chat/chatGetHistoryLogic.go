@@ -45,7 +45,7 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 	messages, total, err := l.svcCtx.ChatMessagesModel.GetChatHistory(l.ctx, req.UserId, req.OtherId, offset, size)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.GET_HISTORY_MESSAGE_ERROR+": %v", err))
-		panic(exceptions.NewInternalServerError(utils.GET_HISTORY_MESSAGE_ERROR, err.Error()))
+		return nil, exceptions.NewInternalServerError(utils.GET_HISTORY_MESSAGE_ERROR, err.Error())
 	}
 
 	// 标记消息为已读

@@ -37,14 +37,14 @@ func (l *GetSearchHistoryLogic) GetSearchHistory(req *types.GetSearchHistoryReq)
 	_, err = fmt.Sscanf(userIDStr, "%d", &userID)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.PARAM_ERR+": %v", err))
-		panic(exceptions.NewBadRequestError(utils.PARAM_ERR, err.Error()))
+		return nil, exceptions.NewBadRequestError(utils.PARAM_ERR, err.Error())
 	}
 
 	// 获取搜索历史
 	keywords, err := l.svcCtx.SearchModel.GetSearchHistory(l.ctx, userID)
 	if err != nil {
 		l.Error(fmt.Sprintf(utils.SEARCH_HISTORY_FAIL+": %v", err))
-		panic(exceptions.NewInternalServerError(utils.SEARCH_HISTORY_FAIL, err.Error()))
+		return nil, exceptions.NewInternalServerError(utils.SEARCH_HISTORY_FAIL, err.Error())
 	}
 
 	if keywords == nil {

@@ -4,11 +4,7 @@
 package chat
 
 import (
-	"io"
 	"net/http"
-	"time"
-
-	"app/common/hub"
 
 	"app/common/utils"
 	"app/internal/middleware"
@@ -30,72 +26,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		// 设置SSE响应头
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-
-		connectionID := hub.NewConnectionID("sse")
-		sendCh := make(chan any, 256)
-		closeCh := make(chan bool)
-
-		// 注册客户端
-		svcCtx.SSEHub.RegisterClient(userID, connectionID, sendCh, closeCh)
-		// 传入 connectionID 作为身份标识，防止旧连接的 defer 误关闭新连接
-		defer svcCtx.SSEHub.UnregisterClient(userID, connectionID)
-
-		// 发送初始化连接消息
-		initMessage := &hub.SSEMessageNotification{
-			Type:         "connected",
-			UserID:       userID,
-			UnreadCounts: make(map[string]int64),
-		}
-		sseMessage := hub.FormatSSEMessage(initMessage)
-		_, _ = io.WriteString(w, sseMessage)
-		if f, ok := w.(http.Flusher); ok {
-			f.Flush()
-		}
-
-		// 创建心跳定时器
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-
-		// 响应流
-		for {
-			select {
-			case <-r.Context().Done():
-				// 客户端主动断开连接
-				return
-			case <-closeCh:
-				return
-			case <-ticker.C:
-				// 发送心跳消息
-				heartbeat := utils.SSE_HEARTBEAT
-				_, err := io.WriteString(w, heartbeat)
-				if err != nil {
-					svcCtx.Logger.Error(utils.SSE_HEARTBEAT_WRITE_FAIL + err.Error())
-					return
-				}
-				if f, ok := w.(http.Flusher); ok {
-					f.Flush()
-				}
-			case notification := <-sendCh:
-				// 发送SSE格式的消息
-				sseMessage := hub.FormatSSEMessage(notification)
-				// 如果格式化后消息为空,跳过此次发送
-				if sseMessage == "" {
-					svcCtx.Logger.Warning(utils.EMPTY_SSE)
-					continue
-				}
-				_, err := io.WriteString(w, sseMessage)
-				if err != nil {
-					svcCtx.Logger.Error(utils.SSE_WRITE_FAIL + err.Error())
-					return
-				}
-				if f, ok := w.(http.Flusher); ok {
-					f.Flush()
-				}
-			}
-		}
+		// 委托给 SSEHub 处理连接的完整生命周期
+		svcCtx.SSEHub.HandleConnection(w, r, userID)
 	}, "SSE连接")
 }

@@ -28,7 +28,7 @@ func (l *TestSpringLogic) TestSpring() (resp *types.TestSpringResp, err error) {
 	result, err := l.svcCtx.SpringClient.Test(l.ctx)
 	if err != nil {
 		l.Error(utils.PARSE_ERR + ": " + err.Error())
-		panic(exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error()))
+		return nil, exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error())
 	}
 
 	data, ok := result.Data.(string)
