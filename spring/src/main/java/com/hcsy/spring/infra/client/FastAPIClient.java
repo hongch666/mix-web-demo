@@ -10,14 +10,14 @@ import com.hcsy.spring.infra.client.fallback.FastAPIClientFallbackFactory;
 @FeignClient(name = "fastapi", fallbackFactory = FastAPIClientFallbackFactory.class)
 public interface FastAPIClient {
     @GetMapping("/api_fastapi/fastapi")
-    Result testFastAPI();
+    Result<?> testFastAPI();
 
     @PostMapping("/api_fastapi/task/vector")
-    Result syncVector();
+    Result<?> syncVector();
 
     @PostMapping("/api_fastapi/task/clear-analyze-caches")
-    Result clearAnalyzeCaches();
+    Result<?> clearAnalyzeCaches();
 
     @PostMapping("/api_fastapi/task/sync-neo4j")
-    Result syncNeo4j();
+    Result<?> syncNeo4j();
 }

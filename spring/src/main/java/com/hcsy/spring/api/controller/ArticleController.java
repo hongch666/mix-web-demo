@@ -51,7 +51,7 @@ public class ArticleController {
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_CREATE)
     @ApiLog("创建文章")
-    public Result createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
+    public Result<Void> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         Article article = BeanUtil.copyProperties(dto, Article.class);
         // 获取用户id
         User user = userService.findByUsername(dto.getUsername());
@@ -68,7 +68,7 @@ public class ArticleController {
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     @RequireInternalToken
     @ApiLog("获取已发布文章列表")
-    public Result getPublishedArticles(
+    public Result<PageVO<Article>> getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         Page<Article> articlePage = new Page<>(page, size);
@@ -80,7 +80,7 @@ public class ArticleController {
     @GetMapping("user/{id}")
     @Operation(summary = "获取用户文章", description = "返回用户文章，可指定是否只查询已发布的文章")
     @ApiLog("获取用户文章")
-    public Result getArticlesByUserId(
+    public Result<PageVO<ArticleWithCategoryVO>> getArticlesByUserId(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @PathVariable Integer id,
@@ -94,7 +94,7 @@ public class ArticleController {
     @GetMapping("/{id}")
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
     @ApiLog("获取文章详情")
-    public Result getArticleById(@PathVariable Long id) {
+    public Result<ArticleWithCategoryVO> getArticleById(@PathVariable Long id) {
         Article article = articleService.getById(id);
         if (article == null) {
             return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
@@ -119,7 +119,7 @@ public class ArticleController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
     @ApiLog("更新文章")
-    public Result updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
+    public Result<Void> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         // 获取用户id
         User userFromUsername = userService.findByUsername(dto.getUsername());
         if (userFromUsername == null) {
@@ -142,7 +142,7 @@ public class ArticleController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_DELETE)
     @ApiLog("删除文章")
-    public Result deleteArticle(@PathVariable Long id) {
+    public Result<Void> deleteArticle(@PathVariable Long id) {
         articleService.deleteArticle(id);
         return Result.success();
     }
@@ -157,7 +157,7 @@ public class ArticleController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
     @ApiLog("批量删除文章")
-    public Result deleteArticles(@PathVariable String ids) {
+    public Result<Void> deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -179,7 +179,7 @@ public class ArticleController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
     @ApiLog("发布文章")
-    public Result publishArticle(@PathVariable Long id) {
+    public Result<Void> publishArticle(@PathVariable Long id) {
         articleService.publishArticle(id);
         return Result.success();
     }
@@ -188,10 +188,10 @@ public class ArticleController {
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_VIEW)
     @ApiLog("增加文章阅读量")
-    public Result addViewArticle(@PathVariable Long id) {
+    public Result<Void> addViewArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE).build();
         }
         articleService.addViewArticle(id);
         return Result.success();
@@ -200,7 +200,7 @@ public class ArticleController {
     @GetMapping("/unpublished/list")
     @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
     @ApiLog("获取未发布文章列表")
-    public Result getUnpublishedArticles(
+    public Result<PageVO<ArticleWithCategoryVO>> getUnpublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         Page<Article> articlePage = new Page<>(page, size);

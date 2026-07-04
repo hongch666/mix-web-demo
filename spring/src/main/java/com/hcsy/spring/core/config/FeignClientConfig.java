@@ -32,6 +32,7 @@ public class FeignClientConfig {
     @Bean
     public Decoder feignDecoder() {
         return new Decoder() {
+            @SuppressWarnings("rawtypes")
             @Override
             public Object decode(Response response, Type type) throws IOException, FeignException {
                 // 读取完整响应体

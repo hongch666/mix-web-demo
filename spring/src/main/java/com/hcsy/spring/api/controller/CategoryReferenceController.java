@@ -39,7 +39,7 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("创建权威参考文本")
-    public Result addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
+    public Result<Void> addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
         categoryReferenceService.addCategoryReference(dto);
         return Result.success();
     }
@@ -53,7 +53,7 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("修改权威参考文本")
-    public Result updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
+    public Result<Void> updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
         categoryReferenceService.updateCategoryReference(dto);
         return Result.success();
     }
@@ -67,7 +67,7 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("删除权威参考文本")
-    public Result deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
+    public Result<Void> deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
         categoryReferenceService.deleteCategoryReference(subCategoryId);
         return Result.success();
     }
@@ -75,7 +75,7 @@ public class CategoryReferenceController {
     @Operation(summary = "根据子分类ID获取权威参考文本")
     @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")
-    public Result getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
+    public Result<CategoryReferenceVO> getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
         CategoryReferenceVO vo = categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId);
         if (vo == null) {
             return Result.success(null);

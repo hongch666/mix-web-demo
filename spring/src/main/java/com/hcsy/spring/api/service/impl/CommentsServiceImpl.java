@@ -165,7 +165,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     public void deleteComment(Long id) {
         Comments existing = this.getById(id);
         if (existing == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_ID + id);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.COMMENT_ID + id).build();
         }
         this.removeById(id);
     }
@@ -187,7 +187,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
 
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         if (this.listByIds(distinctIds).size() != distinctIds.size()) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_COMMENTS);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_COMMENTS).build();
         }
 
         this.removeByIds(ids);

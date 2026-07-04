@@ -82,7 +82,7 @@ public class ArticleSyncAspect {
             } catch (Throwable e) {
                 logger.error(Constants.TRANSACTION_ROLLBACK + e.getMessage());
                 status.setRollbackOnly(); // 显式回滚
-                throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.TRANSACTION_ROLLBACK);
+                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.TRANSACTION_ROLLBACK).build();
             }
         });
     }
@@ -134,7 +134,7 @@ public class ArticleSyncAspect {
             }
             default:
                 logger.error(Constants.UNKNOWN_OPERATION + action);
-                throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.UNKNOWN_OPERATION);
+                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.UNKNOWN_OPERATION).build();
         }
 
         // 公共处理逻辑

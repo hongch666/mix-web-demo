@@ -31,28 +31,28 @@ public class TestController {
     @GetMapping("/spring")
     @Operation(summary = "Spring自己的测试", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")
-    public Result getHello() {
+    public Result<String> getHello() {
         return Result.success(Constants.TEST);
     }
 
     @GetMapping("/gozero")
     @Operation(summary = "调用GoZero的测试", description = "输出欢迎信息")
     @ApiLog("测试GoZero服务")
-    public Result getGoZero() {
+    public Result<?> getGoZero() {
         return goZeroClient.testGoZero();
     }
 
     @GetMapping("/nestjs")
     @Operation(summary = "调用NestJS的测试", description = "输出欢迎信息")
     @ApiLog("测试NestJS服务")
-    public Result getNestjs() {
+    public Result<?> getNestjs() {
         return nestjsClient.testNestjs();
     }
 
     @GetMapping("/fastapi")
     @Operation(summary = "调用FastAPI的测试", description = "输出欢迎信息")
     @ApiLog("测试FastAPI服务")
-    public Result getFastAPI() {
+    public Result<?> getFastAPI() {
         return fastAPIClient.testFastAPI();
     }
 
@@ -60,7 +60,7 @@ public class TestController {
     @Operation(summary = "手动执行清理过期Token", description = "手动触发清理过期Token任务")
     @RequireInternalToken
     @ApiLog("手动执行清理过期Token任务")
-    public Result executeTokenCleanup() {
+    public Result<Void> executeTokenCleanup() {
         tokenCleanupTask.cleanupExpiredTokens();
         return Result.success();
     }

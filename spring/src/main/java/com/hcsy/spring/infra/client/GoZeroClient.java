@@ -10,8 +10,8 @@ import com.hcsy.spring.infra.client.fallback.GoZeroClientFallbackFactory;
 @FeignClient(name = "gozero", fallbackFactory = GoZeroClientFallbackFactory.class)
 public interface GoZeroClient {
     @GetMapping("/api_gozero/gozero")
-    Result testGoZero();
+    Result<?> testGoZero();
 
     @PostMapping("/api_gozero/syncer")
-    Result syncES();
+    Result<?> syncES();
 }

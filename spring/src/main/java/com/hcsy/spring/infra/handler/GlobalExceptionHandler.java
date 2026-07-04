@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
      * 处理业务异常
      */
     @ExceptionHandler(BusinessException.class)
-    public Result handleBusinessException(BusinessException ex) {
+    public Result<?> handleBusinessException(BusinessException ex) {
         logger.error(Constants.BUSINESS_EXCEPTION + ex.getMessage(), ex);
         return Result.error(ex.getHttpStatus(), ex.getErrorMessage());
     }
@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class,
             ConstraintViolationException.class })
-    public Result handleValidationException(Exception ex) {
+    public Result<?> handleValidationException(Exception ex) {
         String message = extractValidationMessage(ex);
         logger.error(Constants.SYSTEM_EXCEPTION + message, ex);
         return Result.error(HttpCode.BAD_REQUEST, message);
@@ -45,7 +45,7 @@ public class GlobalExceptionHandler {
      * 处理其他异常
      */
     @ExceptionHandler(Exception.class)
-    public Result handleException(Exception ex) {
+    public Result<?> handleException(Exception ex) {
         logger.error(Constants.SYSTEM_EXCEPTION + ex.getMessage(), ex);
         return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.SYSTEM_EXCEPTION_BACK);
     }

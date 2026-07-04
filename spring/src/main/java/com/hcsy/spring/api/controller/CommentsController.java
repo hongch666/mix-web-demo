@@ -57,7 +57,7 @@ public class CommentsController {
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_CREATE)
     @ApiLog("新增评论")
-    public Result createComment(@Valid @RequestBody CommentCreateDTO commentCreateDTO) {
+    public Result<Void> createComment(@Valid @RequestBody CommentCreateDTO commentCreateDTO) {
         Comments comment = BeanUtil.toBean(commentCreateDTO, Comments.class);
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentCreateDTO.getArticleTitle());
@@ -83,7 +83,7 @@ public class CommentsController {
             "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_UPDATE)
     @ApiLog("修改评论")
-    public Result updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
+    public Result<Void> updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
         Comments comment = BeanUtil.toBean(commentUpdateDTO, Comments.class);
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentUpdateDTO.getArticleTitle());
@@ -108,7 +108,7 @@ public class CommentsController {
             "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "id" })
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_DELETE)
     @ApiLog("删除评论")
-    public Result deleteComment(@PathVariable Long id) {
+    public Result<Void> deleteComment(@PathVariable Long id) {
         commentsService.deleteComment(id);
         return Result.success();
     }
@@ -119,7 +119,7 @@ public class CommentsController {
             "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "ids" })
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE)
     @ApiLog("批量删除评论")
-    public Result deleteComments(@PathVariable String ids) {
+    public Result<Void> deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -132,7 +132,7 @@ public class CommentsController {
     @GetMapping("/{id}")
     @Operation(summary = "根据id查询评论", description = "根据id查询评论")
     @ApiLog("根据id查询评论")
-    public Result getCommentsById(@PathVariable Long id) {
+    public Result<CommentsVO> getCommentsById(@PathVariable Long id) {
         Comments comments = commentsService.getById(id);
         if (comments == null) {
             return Result.error(HttpCode.NOT_FOUND, Constants.COMMENT_ID + id);
@@ -154,7 +154,7 @@ public class CommentsController {
     @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
             "size", "username", "article_title" })
     @ApiLog("获取普通评论信息")
-    public Result listComments(@ParameterObject @ModelAttribute CommentsQueryDTO queryDTO) {
+    public Result<PageVO<CommentsVO>> listComments(@ParameterObject @ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listCommentsWithFilter(commentsPage, queryDTO);
         // 构建评论视图对象，包含用户名和文章标题
@@ -177,7 +177,7 @@ public class CommentsController {
     @RequirePermission(roles = { "admin" }, businessType = "comment", paramSource = "query", paramNames = { "page",
             "size", "ai_type", "article_title" })
     @ApiLog("获取AI评论信息")
-    public Result listAIComments(@ParameterObject @ModelAttribute CommentsQueryDTO queryDTO) {
+    public Result<PageVO<CommentsVO>> listAIComments(@ParameterObject @ModelAttribute CommentsQueryDTO queryDTO) {
         Page<Comments> commentsPage = new Page<>(queryDTO.getPage(), queryDTO.getSize());
         IPage<Comments> resultPage = commentsService.listAICommentsWithFilter(commentsPage, queryDTO);
         // 构建AI评论视图对象，包含AI类型和文章标题
@@ -199,7 +199,7 @@ public class CommentsController {
     @GetMapping("/user/{id}")
     @Operation(summary = "根据用户id分页获取评论", description = "根据用户id分页获取评论")
     @ApiLog("根据用户id分页获取评论")
-    public Result listCommentsByUserId(
+    public Result<PageVO<CommentsVO>> listCommentsByUserId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(defaultValue = "1", required = false) int page) {
@@ -224,7 +224,7 @@ public class CommentsController {
     @GetMapping("/article/{id}")
     @Operation(summary = "根据文章id分页获取评论", description = "根据文章id分页获取评论")
     @ApiLog("根据文章id分页获取评论")
-    public Result listCommentsByArticleId(
+    public Result<PageVO<CommentsVO>> listCommentsByArticleId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "create_time", required = false) String sortWay,
             @RequestParam(defaultValue = "10", required = false) int size,
@@ -254,7 +254,7 @@ public class CommentsController {
     @GetMapping("/article/ai/{id}")
     @Operation(summary = "根据文章id获取AI评论", description = "根据文章id获取AI评论")
     @ApiLog("根据文章id获取AI评论")
-    public Result listAICommentsByArticleId(@PathVariable Long id) {
+    public Result<List<AICommentsVO>> listAICommentsByArticleId(@PathVariable Long id) {
         List<Comments> aiComments = commentsService.listAICommentsByArticleId(id);
         // 构建AI评论视图对象，包含评论内容、星级评分和AI类型
         List<AICommentsVO> data = new ArrayList<>();

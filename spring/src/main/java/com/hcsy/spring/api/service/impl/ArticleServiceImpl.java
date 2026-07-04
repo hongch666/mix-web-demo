@@ -1,7 +1,12 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,9 +17,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hcsy.spring.api.mapper.ArticleMapper;
-import com.hcsy.spring.api.mapper.CategoryMapper;
-import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.api.service.CategoryService;
+import com.hcsy.spring.api.service.SubCategoryService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
@@ -32,10 +37,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> implements ArticleService {
-    private final ArticleMapper articleMapper;
     private final UserService userService;
-    private final CategoryMapper categoryMapper;
-    private final SubCategoryMapper subCategoryMapper;
+    private final CategoryService categoryService;
+    private final SubCategoryService subCategoryService;
 
     @Override
     public List<Article> listPublishedArticles() {
@@ -48,25 +52,37 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public IPage<ArticleWithCategoryVO> listArticlesByIdWithCategory(Page<Article> page, Integer id, boolean onlyPublished) {
         IPage<Article> resultPage = listArticlesById(page, id, onlyPublished);
 
+        List<Article> records = resultPage.getRecords();
+        if (records.isEmpty()) {
+            Page<ArticleWithCategoryVO> emptyPage = new Page<>(page.getCurrent(), page.getSize(), 0);
+            emptyPage.setRecords(Collections.emptyList());
+            return emptyPage;
+        }
+
+        // 批量查询关联数据，避免 N+1 问题
+        Map<Long, User> userMap = batchQueryUsers(records);
+        Map<Long, SubCategory> subCategoryMap = batchQuerySubCategories(records);
+        Map<Long, Category> categoryMap = batchQueryCategories(subCategoryMap.values());
+
         // 转换为VO对象并补充分类和用户信息
-        List<ArticleWithCategoryVO> voList = resultPage.getRecords().stream().map(article -> {
+        List<ArticleWithCategoryVO> voList = records.stream().map(article -> {
             if (article.getSubCategoryId() == null) {
-                throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY_ID);
+                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY_ID).build();
             }
 
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
 
-            // 查询作者用户名
-            User user = userService.getById(article.getUserId());
+            User user = userMap.get(article.getUserId());
             vo.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
 
-            // 查询子分类信息
-            SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
-            vo.setSubCategoryName(subCategory.getName());
-
-            // 查询主分类信息
-            Category category = categoryMapper.selectById(subCategory.getCategoryId());
-            vo.setCategoryName(category.getName());
+            SubCategory subCategory = subCategoryMap.get(article.getSubCategoryId().longValue());
+            if (subCategory != null) {
+                vo.setSubCategoryName(subCategory.getName());
+                Category category = categoryMap.get(subCategory.getCategoryId());
+                if (category != null) {
+                    vo.setCategoryName(category.getName());
+                }
+            }
 
             return vo;
         }).toList();
@@ -111,7 +127,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Transactional
     @ArticleSync(action = "add", description = "创建了1篇文章")
     public boolean saveArticle(Article article) {
-        articleMapper.insert(article);
+        this.baseMapper.insert(article);
         return true;
     }
 
@@ -119,7 +135,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Transactional
     @ArticleSync(action = "edit", description = "编辑了1篇文章")
     public boolean updateArticle(Article article) {
-        articleMapper.updateById(article);
+        this.baseMapper.updateById(article);
         return true;
     }
 
@@ -127,11 +143,11 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @Transactional
     @ArticleSync(action = "delete", description = "删除了1篇文章")
     public boolean deleteArticle(Long id) {
-        Article existing = articleMapper.selectById(id);
+        Article existing = this.baseMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_ID + id);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_ID + id).build();
         }
-        articleMapper.deleteById(id);
+        this.baseMapper.deleteById(id);
         return true;
     }
 
@@ -152,12 +168,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             return true;
         }
 
-        List<Article> existingList = articleMapper.selectBatchIds(distinctIds);
+        List<Article> existingList = this.baseMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLES);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLES).build();
         }
 
-        articleMapper.deleteBatchIds(ids);
+        this.baseMapper.deleteBatchIds(ids);
         return true;
     }
 
@@ -166,9 +182,9 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @ArticleSync(action = "publish", description = "发布了1篇文章")
     public void publishArticle(Long id) {
         // 查询文章所属用户ID
-        Article dbArticle = articleMapper.selectById(id);
+        Article dbArticle = this.baseMapper.selectById(id);
         if (dbArticle == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE).build();
         }
 
         // 执行发布
@@ -178,7 +194,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.PUBLISH_ARTICLE);
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PUBLISH_ARTICLE).build();
         }
     }
 
@@ -187,12 +203,12 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     @ArticleSync(action = "view", description = "浏览了1篇文章")
     public void addViewArticle(Long id) {
         // 查询文章所属用户ID
-        Article dbArticle = articleMapper.selectById(id);
+        Article dbArticle = this.baseMapper.selectById(id);
         if (dbArticle == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE).build();
         }
         if (dbArticle.getStatus() != 1) {
-            throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.UNPUBLISH_ADD_VIEW);
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.UNPUBLISH_ADD_VIEW).build();
         }
         // 获取当前的文章的修改日期
         LocalDateTime updateAt = dbArticle.getUpdateAt();
@@ -204,42 +220,51 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw new BusinessException(HttpCode.UNPROCESSABLE_ENTITY, Constants.ADD_VIEW_ARTICLE);
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.ADD_VIEW_ARTICLE).build();
         }
     }
 
     @Override
     public List<Article> listUnpublishedArticles() {
-        return articleMapper.selectList(
+        return this.baseMapper.selectList(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
     }
 
     @Override
     public IPage<Article> listUnpublishedArticles(Page<Article> page) {
-        return articleMapper.selectPage(page,
+        return this.baseMapper.selectPage(page,
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
     }
 
     @Override
     public IPage<ArticleWithCategoryVO> listUnpublishedArticlesWithCategory(Page<Article> page) {
-        IPage<Article> resultPage = articleMapper.selectPage(page,
+        IPage<Article> resultPage = this.baseMapper.selectPage(page,
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
 
+        List<Article> records = resultPage.getRecords();
+        if (records.isEmpty()) {
+            Page<ArticleWithCategoryVO> emptyPage = new Page<>(page.getCurrent(), page.getSize(), 0);
+            emptyPage.setRecords(Collections.emptyList());
+            return emptyPage;
+        }
+
+        // 批量查询关联数据，避免 N+1 问题
+        Map<Long, User> userMap = batchQueryUsers(records);
+        Map<Long, SubCategory> subCategoryMap = batchQuerySubCategories(records);
+        Map<Long, Category> categoryMap = batchQueryCategories(subCategoryMap.values());
+
         // 转换为VO对象并补充分类信息
-        List<ArticleWithCategoryVO> voList = resultPage.getRecords().stream().map(article -> {
+        List<ArticleWithCategoryVO> voList = records.stream().map(article -> {
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
 
-            // 查询作者用户名
-            User user = userService.getById(article.getUserId());
+            User user = userMap.get(article.getUserId());
             vo.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
 
-            // 查询子分类和主分类信息
             if (article.getSubCategoryId() != null) {
-                SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
+                SubCategory subCategory = subCategoryMap.get(article.getSubCategoryId().longValue());
                 if (subCategory != null) {
                     vo.setSubCategoryName(subCategory.getName());
-                    // 查询主分类信息
-                    Category category = categoryMapper.selectById(subCategory.getCategoryId());
+                    Category category = categoryMap.get(subCategory.getCategoryId());
                     if (category != null) {
                         vo.setCategoryId(category.getId());
                         vo.setCategoryName(category.getName());
@@ -258,14 +283,60 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public Article findByArticleTitle(String articleTitle) {
-        return articleMapper.selectOne(
+        return this.baseMapper.selectOne(
                 new LambdaQueryWrapper<Article>().eq(Article::getTitle, articleTitle));
     }
 
     @Override
     public List<Article> listAllArticlesByTitle(String articleTitle) {
-        return articleMapper.selectList(
+        return this.baseMapper.selectList(
                 new LambdaQueryWrapper<Article>().like(Article::getTitle, articleTitle));
+    }
+
+    /**
+     * 批量查询文章列表中的用户信息，返回 userId -> User 映射
+     */
+    private Map<Long, User> batchQueryUsers(List<Article> articles) {
+        Set<Long> userIds = articles.stream()
+                .map(Article::getUserId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return userService.listByIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, Function.identity()));
+    }
+
+    /**
+     * 批量查询文章列表中的子分类信息，返回 subCategoryId -> SubCategory 映射
+     */
+    private Map<Long, SubCategory> batchQuerySubCategories(List<Article> articles) {
+        Set<Long> subCategoryIds = articles.stream()
+                .map(Article::getSubCategoryId)
+                .filter(id -> id != null)
+                .map(Integer::longValue)
+                .collect(Collectors.toSet());
+        if (subCategoryIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return subCategoryService.listByIds(subCategoryIds).stream()
+                .collect(Collectors.toMap(SubCategory::getId, Function.identity()));
+    }
+
+    /**
+     * 根据子分类集合批量查询主分类信息，返回 categoryId -> Category 映射
+     */
+    private Map<Long, Category> batchQueryCategories(java.util.Collection<SubCategory> subCategories) {
+        Set<Long> categoryIds = subCategories.stream()
+                .map(SubCategory::getCategoryId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        if (categoryIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return categoryService.listByIds(categoryIds).stream()
+                .collect(Collectors.toMap(Category::getId, Function.identity()));
     }
 
 }

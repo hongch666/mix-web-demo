@@ -7,7 +7,10 @@ import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.ResetPasswordDTO;
+import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
+import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.UserListVO;
@@ -41,6 +44,39 @@ public interface UserService extends IService<User> {
     UserLoginVO exchangeGithubTokenTicket(GithubTokenExchangeDTO dto);
 
     void registerUser(UserRegisterDTO registerDTO);
+
+    /**
+     * 创建新用户（含密码加密、默认值设置等业务逻辑）
+     *
+     * @param userDto 用户创建DTO
+     */
+    void createUser(UserCreateDTO userDto);
+
+    /**
+     * 修改用户信息（含密码加密、保留原用户字段等业务逻辑）
+     *
+     * @param userDto 用户修改DTO
+     */
+    void updateUserInfo(UserUpdateDTO userDto);
+
+    /**
+     * 通过邮箱验证码重置密码
+     *
+     * @param resetPasswordDTO 重置密码DTO
+     */
+    void resetPassword(ResetPasswordDTO resetPasswordDTO);
+
+    /**
+     * 管理员重置所有用户密码为配置中的重置密码
+     */
+    void resetAllPasswords();
+
+    /**
+     * 管理员重置指定用户密码为配置中的重置密码
+     *
+     * @param userId 用户ID
+     */
+    void resetUserPassword(Long userId);
 
     /**
      * 获取用户登录状态（从Redis）

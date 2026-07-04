@@ -11,6 +11,7 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.JwtUtil;
+import com.hcsy.spring.common.utils.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
@@ -60,7 +61,7 @@ public class TokenServiceImpl implements TokenService {
         redisUtil.expire(sessionsKey, refreshTtl);
 
         // 6. 标记用户在线
-        redisUtil.set("user:status:" + userId, "1");
+        redisUtil.set(RedisKeys.userStatus(userId), "1");
 
         // 7. 获取在线设备数
         long deviceCount = getUserOnlineDeviceCount(userId);
@@ -92,23 +93,23 @@ public class TokenServiceImpl implements TokenService {
         String refreshKey = "user:refresh:" + refreshToken;
         String storedValue = redisUtil.get(refreshKey);
         if (storedValue == null) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.REFRESH_TOKEN_INVALID);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.REFRESH_TOKEN_INVALID).build();
         }
 
         String expectedValue = userId + ":" + sessionId;
         if (!expectedValue.equals(storedValue)) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.REFRESH_TOKEN_INVALID);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.REFRESH_TOKEN_INVALID).build();
         }
 
         // 3. 校验 session hash 存在且 refresh token 一致
         String sessionKey = "user:session:" + userId + ":" + sessionId;
         if (!redisUtil.exists(sessionKey)) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.SESSION_NOT_FOUND);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.SESSION_NOT_FOUND).build();
         }
 
         String storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken");
         if (!refreshToken.equals(storedRefreshToken)) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.REFRESH_TOKEN_INVALID);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.REFRESH_TOKEN_INVALID).build();
         }
 
         String username = redisUtil.getHash(sessionKey, "username");
@@ -143,7 +144,7 @@ public class TokenServiceImpl implements TokenService {
         redisUtil.expire(sessionsKey, refreshTtl);
 
         // 10. 确保用户在线
-        redisUtil.set("user:status:" + userId, "1");
+        redisUtil.set(RedisKeys.userStatus(userId), "1");
 
         logger.info(Constants.REFRESH_TOKEN_SUCCESS);
 
@@ -204,7 +205,7 @@ public class TokenServiceImpl implements TokenService {
         // 5. 检查是否还有 session
         long remainingSessions = redisUtil.getSetSize(sessionsKey);
         if (remainingSessions == 0) {
-            redisUtil.set("user:status:" + userId, "0");
+            redisUtil.set(RedisKeys.userStatus(userId), "0");
             redisUtil.delete(sessionsKey);
             logger.info(Constants.REMOVE_SESSION_LOGOUT, userId);
         } else {
@@ -264,7 +265,7 @@ public class TokenServiceImpl implements TokenService {
         }
 
         // 额外确保状态为离线
-        redisUtil.set("user:status:" + userId, "0");
+        redisUtil.set(RedisKeys.userStatus(userId), "0");
 
         logger.info(Constants.ADMIN_SESSION_CLEAN, userId, sessionIds != null ? sessionIds.size() : 0);
     }
@@ -290,7 +291,7 @@ public class TokenServiceImpl implements TokenService {
         // 确保当前 session 的 user:status 正确
         long remaining = redisUtil.getSetSize(sessionsKey);
         if (remaining > 0) {
-            redisUtil.set("user:status:" + userId, "1");
+            redisUtil.set(RedisKeys.userStatus(userId), "1");
             redisUtil.expire(sessionsKey, jwtUtil.getRefreshExpirationSeconds());
         }
 
@@ -316,7 +317,7 @@ public class TokenServiceImpl implements TokenService {
                 int cleanedForUser = 0;
 
                 if (sessionIds == null || sessionIds.isEmpty()) {
-                    redisUtil.set("user:status:" + userId, "0");
+                    redisUtil.set(RedisKeys.userStatus(userId), "0");
                     redisUtil.delete(key);
                     continue;
                 }
@@ -375,10 +376,10 @@ public class TokenServiceImpl implements TokenService {
                 // 更新状态
                 long remainingSessions = redisUtil.getSetSize(key);
                 if (remainingSessions == 0) {
-                    redisUtil.set("user:status:" + userId, "0");
+                    redisUtil.set(RedisKeys.userStatus(userId), "0");
                     redisUtil.delete(key);
                 } else {
-                    redisUtil.set("user:status:" + userId, "1");
+                    redisUtil.set(RedisKeys.userStatus(userId), "1");
                 }
 
                 if (cleanedForUser > 0) {

@@ -23,12 +23,12 @@ public class GoZeroClientFallbackFactory implements FallbackFactory<GoZeroClient
 
         return new GoZeroClient() {
             @Override
-            public Result testGoZero() {
+            public Result<?> testGoZero() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.GOZERO_SERVICE_UNAVAILABLE_DEGRADE);
             }
 
             @Override
-            public Result syncES() {
+            public Result<?> syncES() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.ES_SERVICE_UNAVAILABLE);
             }
         };

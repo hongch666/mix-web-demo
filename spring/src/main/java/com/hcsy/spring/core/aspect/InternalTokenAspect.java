@@ -44,7 +44,7 @@ public class InternalTokenAspect {
 
         if (internalToken == null || internalToken.isEmpty()) {
             logger.error(Constants.INTERNAL_TOKEN_MISSING);
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.INTERNAL_TOKEN_MISSING);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.INTERNAL_TOKEN_MISSING).build();
         }
 
         try {
@@ -58,7 +58,7 @@ public class InternalTokenAspect {
                 if (!requiredServiceName.equals(tokenServiceName)) {
                     logger.error(Constants.SERVICE_NAME_MISMATCH + ". 期望: " + requiredServiceName + ", 获得: "
                             + tokenServiceName);
-                    throw new BusinessException(HttpCode.FORBIDDEN, Constants.SERVICE_NAME_MISMATCH);
+                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.SERVICE_NAME_MISMATCH).build();
                 }
             }
 
@@ -70,7 +70,7 @@ public class InternalTokenAspect {
             throw e;
         } catch (Exception e) {
             logger.error(Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage()).build();
         }
     }
 
@@ -91,7 +91,7 @@ public class InternalTokenAspect {
     private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
-            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.CANNOT_GET_HTTP_REQUEST);
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.CANNOT_GET_HTTP_REQUEST).build();
         }
         return attributes.getRequest();
     }

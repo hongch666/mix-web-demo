@@ -24,14 +24,12 @@ import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
-import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
-import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailCodeSendDTO;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -69,15 +67,13 @@ public class UserController {
     private final TokenService tokenService;
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
-    private final PasswordEncryptor passwordEncryptor;
-    private final UserPasswordProperties userPasswordProperties;
 
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "query", paramNames = { "page", "size",
             "username" })
     @ApiLog("获取用户信息")
-    public Result listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
+    public Result<UserListVO> listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
         UserListVO data = userService.listUsersWithFilter(
                 queryDTO.getPage(),
                 queryDTO.getSize(),
@@ -89,7 +85,7 @@ public class UserController {
     @Operation(summary = "获取所有用户", description = "获取所有用户列表（不分页），结果会被缓存")
     @Cacheable(value = "userPage", key = "'all-users'")
     @ApiLog("获取所有用户")
-    public Result getAllUsers() {
+    public Result<UserListVO> getAllUsers() {
         UserListVO data = userService.getAllUsers(null);
         return Result.success(data);
     }
@@ -97,7 +93,7 @@ public class UserController {
     @GetMapping("/ai")
     @Operation(summary = "获取所有AI用户", description = "获取 role 为 ai 的用户列表，不分页")
     @ApiLog("获取所有AI用户")
-    public Result getAllAiUsers() {
+    public Result<UserListVO> getAllAiUsers() {
         UserListVO data = userService.getAllAiUsers();
         return Result.success(data);
     }
@@ -109,16 +105,8 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("新增用户")
-    public Result addUser(@Valid @RequestBody UserCreateDTO userDto) {
-        User user = BeanUtil.copyProperties(userDto, User.class);
-        user.setRole("user");
-        user.setAuthProvider("local");
-        if (user.getPassword() == null || user.getPassword().isBlank()) {
-            user.setPassword(userPasswordProperties.getDefaultPassword());
-        } else {
-            user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
-        }
-        userService.saveUserAndStatus(user);
+    public Result<Void> addUser(@Valid @RequestBody UserCreateDTO userDto) {
+        userService.createUser(userDto);
         return Result.success();
     }
 
@@ -129,7 +117,7 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("删除用户")
-    public Result deleteUser(@PathVariable Long id) {
+    public Result<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUserAndStatusById(id);
         return Result.success();
     }
@@ -141,7 +129,7 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("批量删除用户")
-    public Result deleteUsers(@PathVariable String ids) {
+    public Result<Void> deleteUsers(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -154,7 +142,7 @@ public class UserController {
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户，返回用户信息及其登录状态和设备数")
     @ApiLog("查询用户")
-    public Result getUserById(@PathVariable Long id) {
+    public Result<UserVO> getUserById(@PathVariable Long id) {
         User user = userService.getById(id);
         if (user == null) {
             return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
@@ -179,28 +167,8 @@ public class UserController {
     })
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_UPDATE)
     @ApiLog("修改用户")
-    public Result updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
-        // 获取原用户信息
-        User existingUser = userService.getById(userDto.getId());
-        if (existingUser == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
-        }
-
-        User user = BeanUtil.copyProperties(userDto, User.class);
-        user.setGithubId(existingUser.getGithubId());
-        user.setGithubLogin(existingUser.getGithubLogin());
-        user.setGithubUrl(existingUser.getGithubUrl());
-        user.setAuthProvider(existingUser.getAuthProvider());
-        user.setLastLoginAt(existingUser.getLastLoginAt());
-
-        if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
-            user.setPassword(existingUser.getPassword());
-        } else {
-            // 新密码需要加密
-            user.setPassword(passwordEncryptor.encryptPassword(userDto.getPassword()));
-        }
-
-        userService.updateById(user);
+    public Result<Void> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
+        userService.updateUserInfo(userDto);
         return Result.success();
     }
 
@@ -212,7 +180,7 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("修改用户状态")
-    public Result updateUserStatus(@PathVariable Long id, @RequestParam String status) {
+    public Result<Void> updateUserStatus(@PathVariable Long id, @RequestParam String status) {
         userService.updateUserStatus(id, status);
         return Result.success();
     }
@@ -220,7 +188,7 @@ public class UserController {
     @GetMapping("/captcha")
     @Operation(summary = "获取图形验证码", description = "生成图形验证码，返回验证码ID和base64图片数据，验证码缓存到Redis并在5分钟后过期")
     @ApiLog("获取图形验证码")
-    public Result getImageCaptcha() {
+    public Result<ImageCaptchaVO> getImageCaptcha() {
         ImageCaptchaVO captchaVO = imageCaptchaService.createCaptcha();
         return Result.success(captchaVO);
     }
@@ -228,7 +196,7 @@ public class UserController {
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("用户登录")
-    public Result login(@Valid @RequestBody LoginDTO loginDTO) {
+    public Result<UserLoginVO> login(@Valid @RequestBody LoginDTO loginDTO) {
         UserLoginVO loginVO = userService.login(loginDTO);
         return Result.success(loginVO);
     }
@@ -236,7 +204,7 @@ public class UserController {
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("邮箱验证码登录")
-    public Result emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
+    public Result<UserLoginVO> emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
         UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
         return Result.success(loginVO);
     }
@@ -248,7 +216,7 @@ public class UserController {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
     @ApiLog("生成 GitHub 登录票据")
-    public Result createGithubTokenTicket(@Valid @RequestBody GithubTokenTicketCreateDTO dto) {
+    public Result<GithubTokenTicketVO> createGithubTokenTicket(@Valid @RequestBody GithubTokenTicketCreateDTO dto) {
         GithubTokenTicketVO ticketVO = userService.createGithubTokenTicket(dto);
         return Result.success(ticketVO);
     }
@@ -256,7 +224,7 @@ public class UserController {
     @PostMapping("/github/token")
     @Operation(summary = "获取 GitHub 登录 Token", description = "前端使用一次性 ticket 换取本站登录 token，成功后立即删除 ticket")
     @ApiLog("获取 GitHub 登录 Token")
-    public Result exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
+    public Result<UserLoginVO> exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
         UserLoginVO loginVO = userService.exchangeGithubTokenTicket(dto);
         return Result.success(loginVO);
     }
@@ -264,7 +232,7 @@ public class UserController {
     @PostMapping("/logout")
     @Operation(summary = "用户登出", description = "用户登出，从当前 access token 解析 session 并清除")
     @ApiLog("用户登出")
-    public Result logout() {
+    public Result<Void> logout() {
         String accessToken = UserContext.getToken();
         if (accessToken == null) {
             return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
@@ -276,7 +244,7 @@ public class UserController {
     @PostMapping("/token/refresh")
     @Operation(summary = "刷新 Token", description = "使用 refresh token 刷新 access token 和 refresh token，支持 token 轮换")
     @ApiLog("刷新 Token")
-    public Result refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
+    public Result<TokenRefreshVO> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
         TokenRefreshVO tokenRefreshVO = tokenService.refreshToken(refreshTokenDTO.getRefreshToken());
         return Result.success(tokenRefreshVO);
     }
@@ -289,7 +257,7 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
             "user_id" })
     @ApiLog("手动下线用户")
-    public Result forceLogoutUser(@PathVariable("user_id") Long userId) {
+    public Result<Void> forceLogoutUser(@PathVariable("user_id") Long userId) {
         // 验证用户是否存在
         User user = userService.getById(userId);
         if (user == null) {
@@ -304,7 +272,7 @@ public class UserController {
     @PostMapping("/kick-other-devices")
     @Operation(summary = "踢出其他设备", description = "清除当前用户除本次请求携带的 access token 之外的所有 session（保留当前设备）")
     @ApiLog("踢出其他设备")
-    public Result kickOtherDevices() {
+    public Result<KickOtherDevicesVO> kickOtherDevices() {
         String token = UserContext.getToken();
         Long userId = UserContext.getUserId();
 
@@ -329,7 +297,7 @@ public class UserController {
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
-    public Result registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
+    public Result<Void> registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
         userService.registerUser(registerDto);
         return Result.success();
     }
@@ -337,7 +305,7 @@ public class UserController {
     @PostMapping("/email/send")
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
     @ApiLog("发送邮箱验证码")
-    public Result sendVerificationCode(@RequestParam(required = false) String email,
+    public Result<Void> sendVerificationCode(@RequestParam(required = false) String email,
             @RequestParam(required = false) String type,
             @RequestBody(required = false) EmailCodeSendDTO body) {
         String finalEmail = email;
@@ -385,23 +353,8 @@ public class UserController {
     @PostMapping("/reset-password")
     @Operation(summary = "通过邮箱验证码重置密码", description = "用户通过邮箱验证码验证身份后重置密码")
     @ApiLog("重置密码")
-    public Result resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
-        // 1. 验证邮箱验证码
-        if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
-                resetPasswordDTO.getVerificationCode())) {
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
-        }
-
-        // 2. 查询用户是否存在
-        User user = userService.findByEmail(resetPasswordDTO.getEmail());
-        if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
-        }
-
-        // 3. 加密新密码后更新
-        user.setPassword(passwordEncryptor.encryptPassword(resetPasswordDTO.getNewPassword()));
-        userService.updateById(user);
-
+    public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+        userService.resetPassword(resetPasswordDTO);
         return Result.success();
     }
 
@@ -409,18 +362,8 @@ public class UserController {
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为配置中的重置密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
     @ApiLog("重置所有用户密码")
-    public Result resetAllPasswords() {
-        // 获取所有用户
-        List<User> allUsers = userService.list();
-
-        if (allUsers == null || allUsers.isEmpty()) {
-            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.PASSWORD_NO_USER);
-        }
-
-        final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
-        allUsers.forEach(user -> user.setPassword(resetPassword));
-        userService.updateBatchById(allUsers);
-
+    public Result<Void> resetAllPasswords() {
+        userService.resetAllPasswords();
         return Result.success();
     }
 
@@ -429,17 +372,8 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
             "user_id" })
     @ApiLog("重置指定用户密码")
-    public Result resetUserPassword(@PathVariable("user_id") Long userId) {
-        // 查询用户是否存在
-        User user = userService.getById(userId);
-        if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
-        }
-
-        final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
-        user.setPassword(resetPassword);
-        userService.updateById(user);
-
+    public Result<Void> resetUserPassword(@PathVariable("user_id") Long userId) {
+        userService.resetUserPassword(userId);
         return Result.success();
     }
 }

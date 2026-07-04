@@ -23,22 +23,22 @@ public class FastAPIClientFallbackFactory implements FallbackFactory<FastAPIClie
 
         return new FastAPIClient() {
             @Override
-            public Result testFastAPI() {
+            public Result<?> testFastAPI() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.FASTAPI_SERVICE_UNAVAILABLE);
             }
 
             @Override
-            public Result syncVector() {
+            public Result<?> syncVector() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.VECTOR_SYNC_SERVICE_UNAVAILABLE);
             }
 
             @Override
-            public Result clearAnalyzeCaches() {
+            public Result<?> clearAnalyzeCaches() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE);
             }
 
             @Override
-            public Result syncNeo4j() {
+            public Result<?> syncNeo4j() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.NEO4J_SYNC_SERVICE_UNAVAILABLE);
             }
         };

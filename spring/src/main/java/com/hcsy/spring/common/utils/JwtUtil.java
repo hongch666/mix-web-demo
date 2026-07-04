@@ -33,7 +33,7 @@ public class JwtUtil {
     @PostConstruct
     public void initKey() {
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
-            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR, Constants.JWT_NOT_NULL);
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.JWT_NOT_NULL).build();
         }
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
         log.info(Constants.JWT_INIT);
@@ -109,18 +109,18 @@ public class JwtUtil {
             String tokenType = claims.get("tokenType", String.class);
             if (!"access".equals(tokenType)) {
                 logger.warning(Constants.TOKEN_TYPE_INVALID);
-                throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_TYPE_INVALID);
+                throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_TYPE_INVALID).build();
             }
             logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
             logger.warning(Constants.TOKEN_EXPIRED);
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_EXPIRED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_EXPIRED).build();
         } catch (BusinessException e) {
             throw e;
         } catch (JwtException | IllegalArgumentException e) {
             logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.UNUSED_TOKEN);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.UNUSED_TOKEN).build();
         }
     }
 
@@ -133,18 +133,18 @@ public class JwtUtil {
             String tokenType = claims.get("tokenType", String.class);
             if (!"refresh".equals(tokenType)) {
                 logger.warning(Constants.TOKEN_TYPE_INVALID);
-                throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_TYPE_INVALID);
+                throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_TYPE_INVALID).build();
             }
             logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
             logger.warning(Constants.TOKEN_EXPIRED);
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_EXPIRED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_EXPIRED).build();
         } catch (BusinessException e) {
             throw e;
         } catch (JwtException | IllegalArgumentException e) {
             logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.UNUSED_TOKEN);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.UNUSED_TOKEN).build();
         }
     }
 

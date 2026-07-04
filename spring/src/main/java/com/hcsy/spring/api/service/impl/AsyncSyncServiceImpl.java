@@ -105,11 +105,11 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                         Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new BusinessException(Constants.SYNC_ES_RETRY_INTERRUPTED, ie);
+                        throw BusinessException.builder().errorCode(Constants.SYNC_ES_RETRY_INTERRUPTED).cause(ie).build();
                     }
                 } else {
                     logger.error(Constants.SYNC_ES_MAX_RETRY, e.getMessage(), e);
-                    throw new BusinessException(Constants.SYNC_ES_FAILED, e);
+                    throw BusinessException.builder().errorCode(Constants.SYNC_ES_FAILED).cause(e).build();
                 }
             }
         }

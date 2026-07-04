@@ -24,12 +24,12 @@ public class NestjsClientFallbackFactory implements FallbackFactory<NestjsClient
 
         return new NestjsClient() {
             @Override
-            public Result testNestjs() {
+            public Result<?> testNestjs() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.NESTJS_SERVICE_UNAVAILABLE_DEGRADE);
             }
 
             @Override
-            public Result sendEmailCode(InternalEmailCodeSendDTO dto) {
+            public Result<?> sendEmailCode(InternalEmailCodeSendDTO dto) {
                 logger.error(Constants.NESTJS_EMAIL_SERVICE_UNAVAILABLE + cause.getMessage(), cause);
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG);
             }

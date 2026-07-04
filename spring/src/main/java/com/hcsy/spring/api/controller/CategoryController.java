@@ -52,7 +52,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_CREATE)
     @ApiLog("新增分类")
-    public Result addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
+    public Result<Void> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
         categoryService.addCategory(dto);
         return Result.success();
     }
@@ -67,7 +67,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
     @ApiLog("修改分类")
-    public Result updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
+    public Result<Void> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
         categoryService.updateCategory(dto);
         return Result.success();
     }
@@ -82,7 +82,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_DELETE)
     @ApiLog("删除分类")
-    public Result deleteCategory(@PathVariable Long id) {
+    public Result<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return Result.success();
     }
@@ -97,7 +97,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
     @ApiLog("批量删除分类")
-    public Result deleteCategories(@PathVariable String ids) {
+    public Result<Void> deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -117,7 +117,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
     @ApiLog("新增子分类")
-    public Result addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
+    public Result<Void> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
         categoryService.addSubCategory(dto);
         return Result.success();
     }
@@ -132,7 +132,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
     @ApiLog("修改子分类")
-    public Result updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
+    public Result<Void> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
         categoryService.updateSubCategory(dto);
         return Result.success();
     }
@@ -147,7 +147,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
     @ApiLog("删除子分类")
-    public Result deleteSubCategory(@PathVariable Long id) {
+    public Result<Void> deleteSubCategory(@PathVariable Long id) {
         categoryService.deleteSubCategory(id);
         return Result.success();
     }
@@ -162,7 +162,7 @@ public class CategoryController {
     )
     @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
     @ApiLog("批量删除子分类")
-    public Result deleteSubCategories(@PathVariable String ids) {
+    public Result<Void> deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -175,7 +175,7 @@ public class CategoryController {
     @Operation(summary = "分页查询分类（含子分类信息）")
     @GetMapping("/list")
     @ApiLog("分页查询分类")
-    public Result pageCategory(@RequestParam(defaultValue = "1") int page,
+    public Result<Map<String, Object>> pageCategory(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
         IPage<CategoryVO> resultPage = categoryService.pageCategory(new Page<>(page, size));
         return Result.success(Map.of(
@@ -186,7 +186,7 @@ public class CategoryController {
     @Operation(summary = "根据ID查询分类（含子分类信息）")
     @GetMapping("/{id}")
     @ApiLog("根据ID查询分类")
-    public Result getCategoryById(@PathVariable Long id) {
+    public Result<CategoryVO> getCategoryById(@PathVariable Long id) {
         CategoryVO vo = categoryService.getCategoryById(id);
         if (vo == null) {
             return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORY);

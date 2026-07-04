@@ -28,7 +28,7 @@ public class AsyncNeo4jSyncServiceImpl implements AsyncNeo4jSyncService {
         logger.info(Constants.NEO4J_SYNC_TASK_START_MESSAGE, methodName, description);
 
         try {
-            Result response = fastAPIClient.syncNeo4j();
+            Result<?> response = fastAPIClient.syncNeo4j();
             if (response == null) {
                 logger.warning(Constants.NEO4J_SYNC_CALL_EMPTY_MESSAGE, methodName, description);
                 return;

@@ -47,7 +47,7 @@ public class DefaultHeaderInterceptor implements RequestInterceptor {
         } catch (Exception e) {
             // 令牌生成失败，记录日志但不影响正常请求
             logger.error(Constants.TOKEN_GEN_FAIL + e.getMessage());
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.TOKEN_GEN_FAIL);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_GEN_FAIL).build();
         }
     }
 }

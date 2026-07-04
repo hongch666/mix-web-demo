@@ -93,7 +93,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
                 collect -> {
                     Article article = articleMapper.selectById(collect.getArticleId());
                     if (article == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_ID + collect.getArticleId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_ID + collect.getArticleId()).build();
                     }
                     ArticleCollectVO vo = BeanUtil.copyProperties(article, ArticleCollectVO.class);
                     vo.setArticleCreateAt(article.getCreateAt());
@@ -105,30 +105,30 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
 
                     // 获取作者信息
                     if (article.getUserId() == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_ID_AUTHOR_ID + article.getId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_ID_AUTHOR_ID + article.getId()).build();
                     }
                     User author = userMapper.selectById(article.getUserId());
                     if (author == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_AUTHOR_ID + article.getUserId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_AUTHOR_ID + article.getUserId()).build();
                     }
                     vo.setAuthorName(author.getName());
 
                     // 获取分类信息
                     if (article.getSubCategoryId() == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY_ID_AUTHOR_ID + article.getId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY_ID_AUTHOR_ID + article.getId()).build();
                     }
                     SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
                     if (subCategory == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_SUB_CATEGORY_AUTHOR_ID + article.getSubCategoryId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY_AUTHOR_ID + article.getSubCategoryId()).build();
                     }
                     vo.setSubCategoryName(subCategory.getName());
                     // 获取父分类
                     if (subCategory.getCategoryId() == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORY_ID_AUTHOR_ID + subCategory.getId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_CATEGORY_ID_AUTHOR_ID + subCategory.getId()).build();
                     }
                     Category category = categoryMapper.selectById(subCategory.getCategoryId());
                     if (category == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORY_AUTHOR_ID + subCategory.getCategoryId());
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_CATEGORY_AUTHOR_ID + subCategory.getCategoryId()).build();
                     }
                     vo.setCategoryName(category.getName());
 

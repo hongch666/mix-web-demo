@@ -70,11 +70,11 @@ public class PermissionValidationAspect {
             if (requirePermission.allowSelf()) {
                 // 允许个人操作自己的数据
                 if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                    throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
+                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
                 }
             } else {
                 // 不允许操作自己，仅管理员能执行（权限已在步骤2检查）
-                throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
+                throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
             }
 
             return joinPoint.proceed();
@@ -236,20 +236,20 @@ public class PermissionValidationAspect {
                             Long commentId = Long.parseLong(idStr);
                             Comments comment = commentsService.getById(commentId);
                             if (comment == null) {
-                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_ID + commentId);
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.COMMENT_ID + commentId).build();
                             }
                             if (comment.getUserId() == null) {
-                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.COMMENT_NO_USER + commentId);
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.COMMENT_NO_USER + commentId).build();
                             }
                             if (ownerUserId != null && !ownerUserId.equals(comment.getUserId())) {
-                                throw new BusinessException(HttpCode.BAD_REQUEST, Constants.COMMENT_MULTI_USER);
+                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Constants.COMMENT_MULTI_USER).build();
                             }
                             ownerUserId = comment.getUserId();
                         }
                     }
                     // 验证当前用户是这些评论的所有者
                     if (!currentUserId.equals(ownerUserId)) {
-                        throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
+                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
                     }
                     logger.info(Constants.FUNCTION_COMMENT, ownerUserId);
                 } else if ("article".equals(businessType)) {
@@ -259,20 +259,20 @@ public class PermissionValidationAspect {
                             Long articleId = Long.parseLong(idStr);
                             Article article = articleService.getById(articleId);
                             if (article == null) {
-                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.ARTICLE_ID + articleId);
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.ARTICLE_ID + articleId).build();
                             }
                             if (article.getUserId() == null) {
-                                throw new BusinessException(HttpCode.NOT_FOUND, Constants.ARTICLE_NO_USER + articleId);
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.ARTICLE_NO_USER + articleId).build();
                             }
                             if (ownerUserId != null && !ownerUserId.equals(article.getUserId())) {
-                                throw new BusinessException(HttpCode.BAD_REQUEST, Constants.ARTICLE_MULTI_USER);
+                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Constants.ARTICLE_MULTI_USER).build();
                             }
                             ownerUserId = article.getUserId();
                         }
                     }
                     // 验证当前用户是这些文章的所有者
                     if (!currentUserId.equals(ownerUserId)) {
-                        throw new BusinessException(HttpCode.FORBIDDEN, Constants.NO_PERMISION);
+                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
                     }
                     logger.info(Constants.FUNCTION_ARTICLE, ownerUserId);
                 }

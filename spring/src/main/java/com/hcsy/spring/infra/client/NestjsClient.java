@@ -13,8 +13,8 @@ import com.hcsy.spring.infra.client.fallback.NestjsClientFallbackFactory;
 public interface NestjsClient {
 
     @GetMapping("/api_nestjs/nestjs")
-    Result testNestjs();
+    Result<?> testNestjs();
 
     @PostMapping("/email/send-code")
-    Result sendEmailCode(@RequestBody InternalEmailCodeSendDTO dto);
+    Result<?> sendEmailCode(@RequestBody InternalEmailCodeSendDTO dto);
 }

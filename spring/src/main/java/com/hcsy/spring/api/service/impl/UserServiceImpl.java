@@ -24,13 +24,18 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Constants;
 import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
+import com.hcsy.spring.common.utils.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
+import com.hcsy.spring.entity.dto.ResetPasswordDTO;
+import com.hcsy.spring.entity.dto.UserCreateDTO;
 import com.hcsy.spring.entity.dto.UserRegisterDTO;
+import com.hcsy.spring.entity.dto.UserUpdateDTO;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.UserListVO;
@@ -50,6 +55,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisUtil redisUtil;
     private final TokenService tokenService;
     private final PasswordEncryptor passwordEncryptor;
+    private final UserPasswordProperties userPasswordProperties;
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
     private final ObjectMapper objectMapper;
@@ -77,7 +83,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Map<Long, Integer> loginStatusMap = new HashMap<>();
         List<String> statusKeys = new ArrayList<>(userIds.size());
         for (User user : userIds) {
-            statusKeys.add("user:status:" + user.getId());
+            statusKeys.add(RedisKeys.userStatus(user.getId()));
         }
         List<String> statuses = redisUtil.batchGet(statusKeys);
         for (int i = 0; i < userIds.size(); i++) {
@@ -120,10 +126,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void deleteUserAndStatusById(Long id) {
         User existing = userMapper.selectById(id);
         if (existing == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
         }
         userMapper.deleteById(id);
-        redisUtil.delete("user:status:" + id);
+        redisUtil.delete(RedisKeys.userStatus(id));
     }
 
     @Override
@@ -144,12 +150,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         List<User> existingList = userMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USERS);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USERS).build();
         }
 
         userMapper.deleteBatchIds(ids);
         for (Long id : ids) {
-            redisUtil.delete("user:status:" + id);
+            redisUtil.delete(RedisKeys.userStatus(id));
         }
     }
 
@@ -177,15 +183,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         User user = findByUsername(loginDTO.getName());
         if (user == null) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.LOGIN);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.LOGIN).build();
         }
         if ("github".equalsIgnoreCase(user.getAuthProvider())
                 && Constants.HIDE_PASSWORD.equals(user.getPassword())) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED,
-                    Constants.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED).build();
         }
         if (!passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.LOGIN);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.LOGIN).build();
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
@@ -199,12 +204,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         validateLoginCaptcha(emailLoginDTO.getCaptchaId(), emailLoginDTO.getCaptchaText());
 
         if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.VERIFY_CODE).build();
         }
 
         User user = findByEmail(emailLoginDTO.getEmail());
         if (user == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER_REGISTER);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER_REGISTER).build();
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
@@ -217,7 +222,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public GithubTokenTicketVO createGithubTokenTicket(GithubTokenTicketCreateDTO dto) {
         User user = getById(dto.getUserId());
         if (user == null) {
-            throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
@@ -234,8 +239,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             } catch (Exception cleanupError) {
                 // 清理失败不影响主异常返回，避免掩盖真实错误
             }
-            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR,
-                    Constants.GITHUB_LOGIN_TICKET_CACHE_FAILED, e);
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.GITHUB_LOGIN_TICKET_CACHE_FAILED).cause(e).build();
         }
 
         return GithubTokenTicketVO.builder()
@@ -248,13 +252,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserLoginVO exchangeGithubTokenTicket(GithubTokenExchangeDTO dto) {
         String ticket = dto.getTicket() == null ? null : dto.getTicket().trim();
         if (ticket == null || ticket.isEmpty()) {
-            throw new BusinessException(HttpCode.BAD_REQUEST, Constants.GITHUB_TOKEN_TICKET_EMPTY);
+            throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Constants.GITHUB_TOKEN_TICKET_EMPTY).build();
         }
 
         String ticketKey = buildGithubTicketKey(ticket);
         String storedValue = redisUtil.get(ticketKey);
         if (storedValue == null) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.GITHUB_TOKEN_TICKET_EXPIRED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.GITHUB_TOKEN_TICKET_EXPIRED).build();
         }
 
         redisUtil.delete(ticketKey);
@@ -262,8 +266,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         try {
             return objectMapper.readValue(storedValue, UserLoginVO.class);
         } catch (Exception e) {
-            throw new BusinessException(HttpCode.INTERNAL_SERVER_ERROR,
-                    Constants.GITHUB_TOKEN_TICKET_PARSE_FAILED, e);
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.GITHUB_TOKEN_TICKET_PARSE_FAILED).cause(e).build();
         }
     }
 
@@ -271,11 +274,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void registerUser(UserRegisterDTO registerDTO) {
         User existingUser = findByEmail(registerDTO.getEmail());
         if (existingUser != null) {
-            throw new BusinessException(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
+            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Constants.EMAIL_REGISTER).build();
         }
 
         if (!emailVerificationService.verifyCode(registerDTO.getEmail(), registerDTO.getVerificationCode())) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.VERIFY_CODE);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.VERIFY_CODE).build();
         }
 
         User user = BeanUtil.copyProperties(registerDTO, User.class);
@@ -384,7 +387,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             }
         }
         this.save(user);
-        redisUtil.set("user:status:" + user.getId(), "0");
+        redisUtil.set(RedisKeys.userStatus(user.getId()), "0");
     }
 
     @Override
@@ -396,18 +399,101 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public int getUserLoginStatus(Long userId) {
-        String status = redisUtil.get("user:status:" + userId);
+        String status = redisUtil.get(RedisKeys.userStatus(userId));
         return "1".equals(status) ? 1 : 0;
     }
 
     @Override
     public void updateUserStatus(Long userId, String status) {
-        redisUtil.set("user:status:" + userId, status);
+        redisUtil.set(RedisKeys.userStatus(userId), status);
+    }
+
+    @Override
+    @Transactional
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_SAVE)
+    public void createUser(UserCreateDTO userDto) {
+        User user = BeanUtil.copyProperties(userDto, User.class);
+        user.setRole("user");
+        user.setAuthProvider("local");
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            user.setPassword(userPasswordProperties.getDefaultPassword());
+        } else {
+            user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
+        }
+        saveUserAndStatus(user);
+    }
+
+    @Override
+    @Transactional
+    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_UPDATE)
+    public void updateUserInfo(UserUpdateDTO userDto) {
+        User existingUser = getById(userDto.getId());
+        if (existingUser == null) {
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+        }
+
+        User user = BeanUtil.copyProperties(userDto, User.class);
+        user.setGithubId(existingUser.getGithubId());
+        user.setGithubLogin(existingUser.getGithubLogin());
+        user.setGithubUrl(existingUser.getGithubUrl());
+        user.setAuthProvider(existingUser.getAuthProvider());
+        user.setLastLoginAt(existingUser.getLastLoginAt());
+
+        if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
+            user.setPassword(existingUser.getPassword());
+        } else {
+            user.setPassword(passwordEncryptor.encryptPassword(userDto.getPassword()));
+        }
+
+        updateById(user);
+    }
+
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordDTO resetPasswordDTO) {
+        if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
+                resetPasswordDTO.getVerificationCode())) {
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.VERIFY_CODE).build();
+        }
+
+        User user = findByEmail(resetPasswordDTO.getEmail());
+        if (user == null) {
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+        }
+
+        user.setPassword(passwordEncryptor.encryptPassword(resetPasswordDTO.getNewPassword()));
+        updateById(user);
+    }
+
+    @Override
+    @Transactional
+    public void resetAllPasswords() {
+        List<User> allUsers = list();
+        if (allUsers == null || allUsers.isEmpty()) {
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PASSWORD_NO_USER).build();
+        }
+
+        final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
+        allUsers.forEach(user -> user.setPassword(resetPassword));
+        updateBatchById(allUsers);
+    }
+
+    @Override
+    @Transactional
+    public void resetUserPassword(Long userId) {
+        User user = getById(userId);
+        if (user == null) {
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+        }
+
+        final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
+        user.setPassword(resetPassword);
+        updateById(user);
     }
 
     private void validateLoginCaptcha(String captchaId, String captchaText) {
         if (!imageCaptchaService.verifyCaptcha(captchaId, captchaText)) {
-            throw new BusinessException(HttpCode.UNAUTHORIZED, Constants.IMAGE_CAPTCHA_INVALID);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.IMAGE_CAPTCHA_INVALID).build();
         }
     }
 

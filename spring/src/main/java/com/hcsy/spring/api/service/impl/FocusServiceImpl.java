@@ -84,7 +84,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
                     User user = userMapper.selectById(focus.getFocusId());
 
                     if (user == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
                     }
                     FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                     vo.setFocusedTime(focus.getCreatedTime());
@@ -113,7 +113,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
                     User user = userMapper.selectById(focus.getUserId());
 
                     if (user == null) {
-                        throw new BusinessException(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
                     }
                     FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
                     vo.setFocusedTime(focus.getCreatedTime());
