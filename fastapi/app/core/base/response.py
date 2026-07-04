@@ -1,13 +1,25 @@
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-from fastapi.encoders import jsonable_encoder
+from pydantic import BaseModel
 
 from .httpCode import HttpCode
 
 
-def success(
-    data: Optional[Any] = None, msg: str = "success"
-) -> Dict[str, Any]:
+class ApiResponse(BaseModel):
+    """统一响应模型
+
+    Attributes:
+        code: 响应码, 与 HTTP 状态码一致
+        data: 返回数据, 默认为 None
+        msg: 响应消息
+    """
+
+    code: int
+    data: Optional[Any] = None
+    msg: str = "success"
+
+
+def success(data: Optional[Any] = None, msg: str = "success") -> ApiResponse:
     """返回成功响应
 
     Args:
@@ -15,16 +27,16 @@ def success(
         msg: 返回消息, 默认为 'success'
 
     Returns:
-        包含 code, data, msg 的字典
+        ApiResponse 实例, code 为 200
     """
-    return jsonable_encoder({"code": HttpCode.OK, "data": data, "msg": msg})
+    return ApiResponse(code=HttpCode.OK, data=data, msg=msg)
 
 
 def error(
     code: int = HttpCode.INTERNAL_SERVER_ERROR,
     msg: str = "error",
     data: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> ApiResponse:
     """返回错误响应
 
     Args:
@@ -33,6 +45,6 @@ def error(
         data: 附加数据, 默认为 None
 
     Returns:
-        包含 code, data, msg 的字典
+        ApiResponse 实例
     """
-    return jsonable_encoder({"code": code, "data": data, "msg": msg})
+    return ApiResponse(code=code, data=data, msg=msg)
