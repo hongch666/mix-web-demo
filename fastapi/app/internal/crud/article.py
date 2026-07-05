@@ -80,7 +80,7 @@ class ArticleMapper:
         # 查询 ClickHouse
         Logger.info(Constants.TOP10_CLICKHOUSE_QUERY)
         query_start: float = time.time()
-        ch_table = load_config("database")["clickhouse"]["table"]
+        ch_table: str = load_config("database")["clickhouse"]["table"]
         query = (
             f"SELECT {', '.join(columns)} FROM {ch_table} ORDER BY views DESC LIMIT 10"
         )
@@ -148,7 +148,7 @@ class ArticleMapper:
         if batch_size <= 0:
             batch_size = 500
 
-        last_id = 0
+        last_id: int = 0
         while True:
             statement = (
                 select(Article)
@@ -214,8 +214,8 @@ class ArticleMapper:
                 break
 
             # 收集当前批次的文章ID和用户ID
-            article_ids = [row.id for row in base_rows]
-            user_ids = [row.user_id for row in base_rows if row.user_id is not None]
+            article_ids: List[int] = [row.id for row in base_rows]
+            user_ids: List[int] = [row.user_id for row in base_rows if row.user_id is not None]
 
             # 第2步：批量查询点赞数
             like_statement = (
@@ -227,7 +227,7 @@ class ArticleMapper:
                 .group_by(Like.article_id)
             )
             like_rows = db.execute(like_statement).all()
-            like_map = {row.article_id: row.like_count for row in like_rows}
+            like_map: Dict[int, int] = {row.article_id: row.like_count for row in like_rows}
 
             # 第3步：批量查询收藏数
             collect_statement = (
@@ -239,13 +239,13 @@ class ArticleMapper:
                 .group_by(Collect.article_id)
             )
             collect_rows = db.execute(collect_statement).all()
-            collect_map = {row.article_id: row.collect_count for row in collect_rows}
+            collect_map: Dict[int, int] = {row.article_id: row.collect_count for row in collect_rows}
 
             # 第4步：批量查询作者关注数（按作者分别统计）
             follow_map: Dict[int, int] = {}
             if user_ids:
                 # 去重 user_ids 减少查询范围
-                unique_user_ids = list(set(user_ids))
+                unique_user_ids: List[int] = list(set(user_ids))
                 follow_statement = (
                     select(
                         Focus.focus_id.label("author_id"),
@@ -315,7 +315,7 @@ class ArticleMapper:
     async def _get_average_views_mapper_sync(self, db: Session) -> float:
         """获取平均阅读次数"""
         statement = select(func.coalesce(func.avg(Article.views), 0))
-        average_views = db.execute(statement).scalar_one()
+        average_views: float = db.execute(statement).scalar_one()
         return round(float(average_views), 2)
 
     async def _get_category_article_count_clickhouse_mapper_sync(
@@ -324,17 +324,17 @@ class ArticleMapper:
         """
         从ClickHouse获取按父分类排序的文章数量
         """
-        start = time.time()
-        ch_conn = self._clickhouse_pool.get_connection()
+        start: float = time.time()
+        ch_conn: Any = self._clickhouse_pool.get_connection()
 
         Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
-        query_start = time.time()
-        ch_table = load_config("database")["clickhouse"]["table"]
+        query_start: float = time.time()
+        ch_table: str = load_config("database")["clickhouse"]["table"]
         query = f"SELECT sub_category_id, count() as count FROM {ch_table} WHERE status = 1 GROUP BY sub_category_id ORDER BY count DESC"
 
         try:
-            results = ch_conn.execute(query)
-            query_time = time.time() - query_start
+            results: Any = ch_conn.execute(query)
+            query_time: float = time.time() - query_start
 
             # 安全转换为字典列表
             result: List[Dict[str, Any]] = []
@@ -350,7 +350,7 @@ class ArticleMapper:
                     Logger.debug(f"行转换失败: {e}，跳过此行")
                     continue
 
-            total_time = time.time() - start
+            total_time: float = time.time() - start
             Logger.info(
                 f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类"
             )
@@ -398,7 +398,7 @@ class ArticleMapper:
         """
         从DB获取按父分类排序的文章数量
         """
-        count_expr = func.count(Article.id)
+        count_expr: Any = func.count(Article.id)
         statement = (
             select(
                 Article.sub_category_id.label("sub_category_id"),
@@ -429,12 +429,12 @@ class ArticleMapper:
         从ClickHouse获取最近24个月的文章发布数量统计（包含零值月份）
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
         """
-        start = time.time()
-        ch_conn = self._clickhouse_pool.get_connection()
+        start: float = time.time()
+        ch_conn: Any = self._clickhouse_pool.get_connection()
 
         Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_QUERY)
-        query_start = time.time()
-        ch_table = load_config("database")["clickhouse"]["table"]
+        query_start: float = time.time()
+        ch_table: str = load_config("database")["clickhouse"]["table"]
 
         # 使用 ClickHouse 的日期函数
         query = f"""
@@ -448,8 +448,8 @@ class ArticleMapper:
         """
 
         try:
-            results = ch_conn.execute(query)
-            query_time = time.time() - query_start
+            results: Any = ch_conn.execute(query)
+            query_time: float = time.time() - query_start
 
             # 安全转换为字典列表
             result: List[Dict[str, Any]] = []
@@ -465,7 +465,7 @@ class ArticleMapper:
                     Logger.debug(f"行转换失败: {e}，跳过此行")
                     continue
 
-            total_time = time.time() - start
+            total_time: float = time.time() - start
             Logger.info(
                 f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份"
             )
@@ -509,9 +509,9 @@ class ArticleMapper:
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
         """
 
-        months_ago = datetime.now() - timedelta(days=730)
-        year_month = func.date_format(Article.create_at, "%Y-%m")
-        count_expr = func.count(Article.id)
+        months_ago: datetime = datetime.now() - timedelta(days=730)
+        year_month: Any = func.date_format(Article.create_at, "%Y-%m")
+        count_expr: Any = func.count(Article.id)
         statement = (
             select(
                 year_month.label("year_month"),

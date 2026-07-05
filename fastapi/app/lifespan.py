@@ -1,13 +1,13 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from sqlalchemy.orm import Session
 
 from app.core.base import Constants, Logger
 from app.core.client import start_nacos
 from app.core.config import load_config
-from app.core.db import SessionLocal, create_tables_async, get_rabbitmq_client
+from app.core.db import RabbitMQClient, SessionLocal, create_tables_async, get_rabbitmq_client
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
 from fastapi import FastAPI
@@ -25,7 +25,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     Logger.info(Constants.NACOS_REGISTER_SUCCESS)
 
     # 初始化 RabbitMQ 连接（RobustConnection 后续自动处理重连）
-    rabbitmq_client = get_rabbitmq_client()
+    rabbitmq_client: Optional[RabbitMQClient] = get_rabbitmq_client()
     if rabbitmq_client:
         await rabbitmq_client.connect()
     else:

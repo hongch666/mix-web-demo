@@ -14,7 +14,7 @@ class UserPermissionManager:
     def PERSONAL_INFO_KEYWORDS(self) -> List[str]:
         """动态从配置文件加载个人信息查询关键字"""
         try:
-            keywords = (load_config("agent") or {}).get("permission", {}).get("personal_info_keywords", [])
+            keywords: List[str] = (load_config("agent") or {}).get("permission", {}).get("personal_info_keywords", [])
             if keywords:
                 return keywords
         except Exception as e:
@@ -41,7 +41,7 @@ class UserPermissionManager:
                 )
                 return Constants.ROLE_USER
 
-            role = await self.user_mapper.get_user_role_async(user_id, db)
+            role: Optional[str] = await self.user_mapper.get_user_role_async(user_id, db)
             role = role or Constants.ROLE_USER
             Logger.info(f"用户 {user_id} 的角色: {role}")
             return role
@@ -50,7 +50,7 @@ class UserPermissionManager:
             return Constants.ROLE_USER
 
     async def is_admin_async(self, user_id: int, db: Session) -> bool:
-        role = await self.get_user_role_async(user_id, db)
+        role: Optional[str] = await self.get_user_role_async(user_id, db)
         return role == Constants.ROLE_ADMIN
 
     async def is_personal_info_query(self, question: str) -> bool:
@@ -67,7 +67,7 @@ class UserPermissionManager:
             return False
 
         # 转换为小写便于匹配
-        question_lower = question.lower()
+        question_lower: str = question.lower()
 
         # 检查是否包含个人信息查询的关键字
         for keyword in self.PERSONAL_INFO_KEYWORDS:
@@ -94,7 +94,7 @@ class UserPermissionManager:
     ) -> Tuple[bool, str]:
         """异步检查用户是否有权使用指定工具"""
         if not user_id:
-            tool_name = "数据库查询" if tool_type == "sql" else "日志查询"
+            tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
             return (
                 False,
                 f"权限拒绝：请先登录才能访问{tool_name}功能。您当前可以使用文章搜索和闲聊功能。",
@@ -104,13 +104,13 @@ class UserPermissionManager:
             Logger.info(f"用户 {user_id} 查询个人信息，允许访问 {tool_type} 工具")
             return True, ""
 
-        role = await self.get_user_role_async(user_id, db)
+        role: Optional[str] = await self.get_user_role_async(user_id, db)
         if role == Constants.ROLE_ADMIN:
             Logger.info(f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具")
             return True, ""
 
-        tool_name = "数据库查询" if tool_type == "sql" else "日志查询"
-        reason = f"权限拒绝：您的账户权限不足，无法访问{tool_name}功能。仅管理员账户可以使用此功能。如需查询个人信息（如'我的点赞文章'），请在问题中包含相关关键词。"
+        tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
+        reason: str = f"权限拒绝：您的账户权限不足，无法访问{tool_name}功能。仅管理员账户可以使用此功能。如需查询个人信息（如'我的点赞文章'），请在问题中包含相关关键词。"
         Logger.warning(
             f"用户 {user_id} (角色: {role}) 尝试访问 {tool_type} 工具被拒绝：{question}"
         )

@@ -1,7 +1,7 @@
 import hashlib
 import time
 from functools import lru_cache
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants, HttpCode
 from app.core.errors import BusinessException
@@ -30,19 +30,19 @@ class AiHistoryService:
         self._request_cache: Dict[str, float] = {}
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
-        data = self._normalize_ai_history_data(ai_history)
-        thinking = data.get("thinking")
+        data: Dict[str, Any] = self._normalize_ai_history_data(ai_history)
+        thinking: Optional[Any] = data.get("thinking")
         if thinking == "":
             thinking = None
 
         # 方案1：基于内容和用户ID生成唯一键进行去重（5秒内相同请求只处理一次）
-        request_key = hashlib.md5(
+        request_key: str = hashlib.md5(
             f"{data['user_id']}:{data['ask']}:{data['reply']}".encode()
         ).hexdigest()
 
-        current_time = time.time()
+        current_time: float = time.time()
         if request_key in self._request_cache:
-            last_time = self._request_cache[request_key]
+            last_time: float = self._request_cache[request_key]
             if current_time - last_time < 5:  # 5秒内的重复请求
                 return {"status": "duplicate", "message": Constants.REQUEST_PROCESSING}
 
@@ -53,7 +53,7 @@ class AiHistoryService:
             k: v for k, v in self._request_cache.items() if current_time - v < 10
         }
 
-        history = AiHistory(
+        history: AiHistory = AiHistory(
             user_id=data["user_id"],
             ask=data["ask"],
             reply=data["reply"],
@@ -64,7 +64,7 @@ class AiHistoryService:
         return await self.ai_history_mapper.create_ai_history_async(history, db)
 
     async def get_all_ai_history(self, user_id: int, db: Any) -> list[Dict[str, Any]]:
-        data = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
+        data: List[Dict[str, Any]] = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
             db, user_id, None
         )
         return [self._serialize_ai_history(item) for item in data]

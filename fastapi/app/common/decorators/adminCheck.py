@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from functools import wraps
 from typing import Any, Callable, Optional
 
@@ -5,7 +6,7 @@ from app.common.middleware import get_current_user_id
 from app.core.base import Constants, HttpCode, Logger
 from app.core.db import get_db
 from app.core.errors import BusinessException
-from app.internal.crud import get_user_mapper
+from app.internal.crud import UserMapper, get_user_mapper
 from sqlalchemy.orm import Session
 
 
@@ -50,7 +51,7 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
 
         try:
             if db:
-                user_mapper = get_user_mapper()
+                user_mapper: UserMapper = get_user_mapper()
                 user_role: str = await user_mapper.get_user_role_async(int(user_id), db)
                 if user_role != Constants.ROLE_ADMIN:
                     Logger.warning(
@@ -63,11 +64,11 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     )
                 Logger.info(f"管理员 {user_id} 访问受保护的接口")
                 return await func(*args, **kwargs)
-            db_generator = get_db()
-            current_db = await anext(db_generator)
+            db_generator: AsyncGenerator[Session, None] = get_db()
+            current_db: Session = await anext(db_generator)
             try:
-                user_mapper = get_user_mapper()
-                user_role = await user_mapper.get_user_role_async(
+                user_mapper: UserMapper = get_user_mapper()
+                user_role: str = await user_mapper.get_user_role_async(
                     int(user_id), current_db
                 )
                 if user_role != Constants.ROLE_ADMIN:

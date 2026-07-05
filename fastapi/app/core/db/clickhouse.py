@@ -1,7 +1,7 @@
 import asyncio
 import time
 from threading import Condition, Lock
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
@@ -30,7 +30,7 @@ class ClickhouseConnectionPool:
         """从池中获取连接"""
         with self._condition:
             if self._connections:
-                conn = self._connections.pop()
+                conn: Any = self._connections.pop()
                 Logger.info(
                     f"[ClickHouse连接池] 从池中获取复用连接，池内剩余: {len(self._connections)}个"
                 )
@@ -39,27 +39,27 @@ class ClickhouseConnectionPool:
             if self._active_connections < self._max_connections:
                 self._active_connections += 1
                 self._conn_count += 1
-                conn_index = self._conn_count
+                conn_index: int = self._conn_count
             else:
                 Logger.warning(
                     f"[ClickHouse连接池] 连接池已耗尽，等待可用连接 (活跃连接: {self._active_connections}/{self._max_connections})"
                 )
                 while not self._connections:
                     self._condition.wait()
-                conn = self._connections.pop()
+                conn: Any = self._connections.pop()
                 Logger.info(
                     f"[ClickHouse连接池] 等待后获取复用连接，池内剩余: {len(self._connections)}个"
                 )
                 return conn
 
         # 如果池为空，创建新连接
-        clickhouse_config = load_config("database")["clickhouse"]
-        ch_host = str(clickhouse_config["host"])
-        ch_port = int(clickhouse_config["port"])
-        ch_database = str(clickhouse_config["database"])
-        ch_username = str(clickhouse_config.get("username", "default"))
+        clickhouse_config: Dict[str, Any] = load_config("database")["clickhouse"]
+        ch_host: str = str(clickhouse_config["host"])
+        ch_port: int = int(clickhouse_config["port"])
+        ch_database: str = str(clickhouse_config["database"])
+        ch_username: str = str(clickhouse_config.get("username", "default"))
         # 确保密码始终是字符串类型
-        ch_password = str(clickhouse_config.get("password", ""))
+        ch_password: str = str(clickhouse_config.get("password", ""))
         if not ch_password or ch_password == "None":
             ch_password = ""
 
@@ -67,10 +67,10 @@ class ClickhouseConnectionPool:
         Logger.info(
             f"[ClickHouse连接池] 连接配置 - Host: {ch_host}, Port: {ch_port}, DB: {ch_database}, User: {ch_username}"
         )
-        conn_start = time.time()
+        conn_start: float = time.time()
 
         try:
-            conn = Client(
+            conn: Any = Client(
                 host=ch_host,
                 port=ch_port,
                 database=ch_database,
@@ -79,7 +79,7 @@ class ClickhouseConnectionPool:
                 settings={"use_numpy": False},
                 client_name="fastapi-app",
             )
-            conn_time = time.time() - conn_start
+            conn_time: float = time.time() - conn_start
             Logger.info(f"[ClickHouse连接池] 连接建立耗时 {conn_time:.3f}s")
             return conn
         except Exception as e:

@@ -81,7 +81,7 @@ class AnalyzeService:
 
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
-            lock = self._singleflight_locks.get(key)
+            lock: Optional[asyncio.Lock] = self._singleflight_locks.get(key)
             if lock is None:
                 lock = asyncio.Lock()
                 self._singleflight_locks[key] = lock
@@ -94,13 +94,13 @@ class AnalyzeService:
         loader: Callable[[], Awaitable[Any]],
     ) -> Any:
         """使用 asyncio.Lock 合并同 key 的并发缓存回源请求，避免缓存雪崩时同时打到数据库。"""
-        cached_result = await cache_getter()
+        cached_result: Any = await cache_getter()
         if cached_result is not None:
             return cached_result
 
-        lock = await self._get_singleflight_lock(key)
+        lock: asyncio.Lock = await self._get_singleflight_lock(key)
         async with lock:
-            cached_result = await cache_getter()
+            cached_result: Any = await cache_getter()
             if cached_result is not None:
                 Logger.info(f"[singleflight] key={key} 命中回填缓存，复用首个请求结果")
                 return cached_result
@@ -109,7 +109,7 @@ class AnalyzeService:
             return await loader()
 
     async def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
-        ch_conn = None
+        ch_conn: Optional[Any] = None
         try:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._article_cache.get(ch_conn)
@@ -137,7 +137,7 @@ class AnalyzeService:
     async def _get_category_article_count_cached(
         self,
     ) -> Optional[List[Dict[str, Any]]]:
-        ch_conn = None
+        ch_conn: Optional[Any] = None
         try:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._category_cache.get(ch_conn)
@@ -149,7 +149,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def _get_monthly_publish_count_cached(self) -> Optional[List[Dict[str, Any]]]:
-        ch_conn = None
+        ch_conn: Optional[Any] = None
         try:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._publish_time_cache.get(ch_conn)
@@ -232,15 +232,15 @@ class AnalyzeService:
         3. 查询成功后更新缓存
         """
         articles: Optional[List[Any]] = None
-        ch_conn = None
-        data_source = None
-        start = time.time()
+        ch_conn: Optional[Any] = None
+        data_source: Optional[str] = None
+        start: float = time.time()
         try:
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result = await self._article_cache.get(ch_conn)
+                cached_result: Optional[List[Dict[str, Any]]] = await self._article_cache.get(ch_conn)
                 if cached_result:
-                    total_time = time.time() - start
+                    total_time: float = time.time() - start
                     Logger.info(
                         f"get_top10_articles_service: [缓存命中] 耗时 {total_time:.3f}s"
                     )
@@ -268,16 +268,16 @@ class AnalyzeService:
                 Logger.info(Constants.TOP10_DB_SOURCE)
 
             if articles and isinstance(articles[0], dict):
-                user_ids = [
+                user_ids: List[int] = [
                     article.get("user_id")
                     for article in articles
                     if article.get("user_id")
                 ]
                 if user_ids:
-                    users = await self.userMapper.get_users_by_ids_mapper_async(
+                    users: List[Any] = await self.userMapper.get_users_by_ids_mapper_async(
                         user_ids, db
                     )
-                    user_id_to_name = {user.id: user.name for user in users}
+                    user_id_to_name: Dict[int, str] = {user.id: user.name for user in users}
                     for article in articles:
                         article["username"] = user_id_to_name.get(
                             article.get("user_id")
@@ -293,13 +293,13 @@ class AnalyzeService:
                     ):
                         article["update_at"] = article["update_at"].isoformat()
 
-                result = articles
+                result: List[Dict[str, Any]] = articles
             else:
-                user_ids = [article.user_id for article in articles]
-                users = await self.userMapper.get_users_by_ids_mapper_async(
+                user_ids: List[int] = [article.user_id for article in articles]
+                users: List[Any] = await self.userMapper.get_users_by_ids_mapper_async(
                     user_ids, db
                 )
-                user_id_to_name = {user.id: user.name for user in users}
+                user_id_to_name: Dict[int, str] = {user.id: user.name for user in users}
                 result = [
                     {
                         "id": article.id,
@@ -324,7 +324,7 @@ class AnalyzeService:
             if ch_conn and result:
                 try:
                     await self._article_cache.set(result, ch_conn)
-                    total_time = time.time() - start
+                    total_time: float = time.time() - start
                     Logger.info(
                         f"get_top10_articles_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
                     )
@@ -355,12 +355,12 @@ class AnalyzeService:
                 HttpCode.BAD_REQUEST,
                 Constants.ERROR_PARAM_PARSE_FAILED,
             )
-        wc_config = load_config("wordcloud")
+        wc_config: Dict[str, Any] = load_config("wordcloud")
         FONT_PATH: str = wc_config["font_path"]
         WIDTH: int = wc_config["width"]
         HEIGHT: int = wc_config["height"]
         BACKGROUND_COLOR: str = wc_config["background_color"]
-        wc = WordCloud(
+        wc: WordCloud = WordCloud(
             font_path=FONT_PATH,
             width=WIDTH,
             height=HEIGHT,
@@ -409,13 +409,13 @@ class AnalyzeService:
         2. 缓存未命中时，生成词云图并上传到OSS
         3. 将OSS URL缓存到两级缓存（L1本地5分钟 + L2 Redis 24小时）
         """
-        start = time.time()
+        start: float = time.time()
 
         # ========== 步骤1: 尝试从缓存获取（二级缓存） ==========
         try:
-            cached_url = await self._wordcloud_cache.get()
+            cached_url: Optional[str] = await self._wordcloud_cache.get()
             if cached_url:
-                elapsed = time.time() - start
+                elapsed: float = time.time() - start
                 Logger.info(f"get_wordcloud_service: [缓存命中] 耗时 {elapsed:.3f}s")
                 return cached_url
         except Exception as cache_e:
@@ -424,16 +424,16 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
         Logger.info(Constants.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
-        keywords_dic = await self.get_keywords_dic()
+        keywords_dic: Dict[str, int] = await self.get_keywords_dic()
         # 生成词云图
         self.generate_wordcloud(keywords_dic)
         # 上传到OSS
-        oss_url = await self.upload_wordcloud_to_oss()
+        oss_url: str = await self.upload_wordcloud_to_oss()
 
         # ========== 步骤3: 缓存到两级缓存 ==========
         try:
             await self._wordcloud_cache.set(oss_url)
-            elapsed = time.time() - start
+            elapsed: float = time.time() - start
             Logger.info(
                 f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {elapsed:.3f}s"
             )
@@ -444,7 +444,7 @@ class AnalyzeService:
 
     async def export_articles_to_excel(self, db: Session = Depends(get_db)) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
-        file_path = os.path.normpath(
+        file_path: str = os.path.normpath(
             os.path.join(
                 os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME
             )
@@ -468,12 +468,12 @@ class AnalyzeService:
         ]
 
         workbook = Workbook(write_only=True)
-        worksheet = workbook.create_sheet(title="Sheet1")
+        worksheet: Any = workbook.create_sheet(title="Sheet1")
         worksheet.append([Constants.EXPORT_ARTICLES_EXCEL_TIP])
         worksheet.append(headers)
 
-        total_rows = 0
-        rows = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
+        total_rows: int = 0
+        rows: List[Dict[str, Any]] = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
         for item in rows:
             worksheet.append(
                 [
@@ -533,12 +533,12 @@ class AnalyzeService:
         - total_collects: 总收藏数（新增，直接DB查询）
         - average_collects: 文章平均收藏数（新增，直接DB查询）
         """
-        start = time.time()
+        start: float = time.time()
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            cached_result = await self._statistics_cache.get()
+            cached_result: Optional[Dict[str, Any]] = await self._statistics_cache.get()
             if cached_result:
-                total_time = time.time() - start
+                total_time: float = time.time() - start
                 Logger.info(
                     f"get_article_statistics_service: [缓存命中] 耗时 {total_time:.3f}s"
                 )
@@ -548,18 +548,18 @@ class AnalyzeService:
 
         # ========== 步骤2: 缓存未命中，查询DB ==========
         Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
-        total_views = await self.articleMapper.get_total_views_mapper_async(db)
-        total_articles = await self.articleMapper.get_total_articles_mapper_async(db)
-        active_authors = await self.articleMapper.get_active_authors_mapper_async(db)
-        average_views = await self.articleMapper.get_average_views_mapper_async(db)
-        total_likes = await self.likeMapper.get_total_likes_mapper_async(db)
-        average_likes = await self.likeMapper.get_average_likes_mapper_async(db)
-        total_collects = await self.collectMapper.get_total_collects_mapper_async(db)
-        average_collects = await self.collectMapper.get_average_collects_mapper_async(
+        total_views: int = await self.articleMapper.get_total_views_mapper_async(db)
+        total_articles: int = await self.articleMapper.get_total_articles_mapper_async(db)
+        active_authors: int = await self.articleMapper.get_active_authors_mapper_async(db)
+        average_views: float = await self.articleMapper.get_average_views_mapper_async(db)
+        total_likes: int = await self.likeMapper.get_total_likes_mapper_async(db)
+        average_likes: float = await self.likeMapper.get_average_likes_mapper_async(db)
+        total_collects: int = await self.collectMapper.get_total_collects_mapper_async(db)
+        average_collects: float = await self.collectMapper.get_average_collects_mapper_async(
             db
         )
 
-        statistics = {
+        statistics: Dict[str, Any] = {
             "total_views": total_views,
             "total_articles": total_articles,
             "active_authors": active_authors,
@@ -573,7 +573,7 @@ class AnalyzeService:
         # ========== 步骤3: 更新缓存 ==========
         try:
             await self._statistics_cache.set(statistics)
-            total_time = time.time() - start
+            total_time: float = time.time() - start
             Logger.info(
                 f"get_article_statistics_service: DB 数据已更新缓存，总耗时 {total_time:.3f}s"
             )
@@ -598,16 +598,16 @@ class AnalyzeService:
 
         返回: 所有大分类及其文章总数（从多到少排序）
         """
-        ch_conn = None
-        data_source = None
-        start = time.time()
+        ch_conn: Optional[Any] = None
+        data_source: Optional[str] = None
+        start: float = time.time()
         try:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result = await self._category_cache.get(ch_conn)
+                cached_result: Optional[List[Dict[str, Any]]] = await self._category_cache.get(ch_conn)
                 if cached_result:
-                    total_time = time.time() - start
+                    total_time: float = time.time() - start
                     Logger.info(
                         f"get_category_article_count_service: [缓存命中] 耗时 {total_time:.3f}s"
                     )
@@ -617,8 +617,8 @@ class AnalyzeService:
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
-            local_category_data = None
-            local_data_source = "DB"
+            local_category_data: Optional[List[Dict[str, Any]]] = None
+            local_data_source: str = "DB"
 
             try:
                 local_category_data = await self.articleMapper.get_category_article_count_clickhouse_mapper_async()
@@ -639,15 +639,15 @@ class AnalyzeService:
                 local_data_source = "DB"
                 Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
 
-            all_categories = await self.categoryMapper.get_all_categories_mapper_async(
+            all_categories: List[Any] = await self.categoryMapper.get_all_categories_mapper_async(
                 db
             )
-            subcategories = (
+            subcategories: List[Dict[str, Any]] = (
                 await self.categoryMapper.get_subcategories_with_parent_mapper_async(db)
             )
-            sub_cat_map = {sc["id"]: sc for sc in subcategories}
+            sub_cat_map: Dict[int, Dict[str, Any]] = {sc["id"]: sc for sc in subcategories}
 
-            parent_category_count = {}
+            parent_category_count: Dict[int, Dict[str, Any]] = {}
             for category in all_categories:
                 parent_category_count[category.id] = {
                     "category_id": category.id,
@@ -663,15 +663,15 @@ class AnalyzeService:
                 if parent_id and parent_id in parent_category_count:
                     parent_category_count[parent_id]["article_count"] += item["count"]
 
-            result = list(parent_category_count.values())
+            result: List[Dict[str, Any]] = list(parent_category_count.values())
             result.sort(key=lambda x: x["article_count"], reverse=True)
 
-            non_zero_count = len([c for c in result if c["article_count"] > 0])
+            non_zero_count: int = len([c for c in result if c["article_count"] > 0])
             Logger.info(
                 f"get_category_article_count_service: 获取 {len(result)} 个大分类，有文章的分类数: {non_zero_count}"
             )
 
-            data_source = local_data_source
+            data_source: str = local_data_source
 
             # ========== 步骤7: 更新缓存 ==========
             if ch_conn and result:
@@ -701,16 +701,16 @@ class AnalyzeService:
         3. 按月份排序
         4. 使用缓存优化性能
         """
-        ch_conn = None
-        data_source = None
-        start = time.time()
+        ch_conn: Optional[Any] = None
+        data_source: Optional[str] = None
+        start: float = time.time()
         try:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result = await self._publish_time_cache.get(ch_conn)
+                cached_result: Optional[List[Dict[str, Any]]] = await self._publish_time_cache.get(ch_conn)
                 if cached_result:
-                    total_time = time.time() - start
+                    total_time: float = time.time() - start
                     Logger.info(
                         f"get_monthly_publish_count_service: [缓存命中] 耗时 {total_time:.3f}s"
                     )
@@ -720,8 +720,8 @@ class AnalyzeService:
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
-            local_publish_data = None
-            local_data_source = "DB"
+            local_publish_data: Optional[List[Dict[str, Any]]] = None
+            local_data_source: str = "DB"
 
             try:
                 local_publish_data = await self.articleMapper.get_monthly_publish_count_clickhouse_mapper_async()
@@ -741,17 +741,17 @@ class AnalyzeService:
                 local_data_source = "DB"
                 Logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
 
-            now = datetime.now()
-            expected_months = []
+            now: datetime = datetime.now()
+            expected_months: List[str] = []
             for i in range(5, -1, -1):
                 month_date = now - relativedelta(months=i)
                 expected_months.append(month_date.strftime("%Y-%m"))
 
-            data_dict = {
+            data_dict: Dict[str, int] = {
                 item["year_month"]: item["count"] for item in local_publish_data
             }
 
-            result = []
+            result: List[Dict[str, Any]] = []
             for month in expected_months:
                 result.append({"year_month": month, "count": data_dict.get(month, 0)})
 
@@ -759,13 +759,13 @@ class AnalyzeService:
             Logger.info(
                 f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}"
             )
-            data_source = local_data_source
+            data_source: str = local_data_source
 
             # ========== 步骤5: 更新缓存 ==========
             if ch_conn and result:
                 try:
                     await self._publish_time_cache.set(result, ch_conn)
-                    total_time = time.time() - start
+                    total_time: float = time.time() - start
                     Logger.info(
                         f"get_monthly_publish_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
                     )

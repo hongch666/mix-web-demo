@@ -1,20 +1,25 @@
 import traceback
 from collections.abc import AsyncGenerator
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
-from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import Session as SASession
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 Base = declarative_base()
 
-server_config = load_config("server")
-mysql_config = load_config("database")["mysql"]
+server_config: Dict[str, Any] = load_config("server")
+mysql_config: Dict[str, Any] = load_config("database")["mysql"]
 SERVER_MODE: str = str(server_config.get("mode", "dev")).strip().lower()
 HOST: str = mysql_config["host"]
 PORT: int = mysql_config["port"]
@@ -37,7 +42,7 @@ AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
 ECHO: bool = SERVER_MODE == "dev"
 
 # 配置连接池参数以支持高并发访问
-engine = create_engine(
+engine: Engine = create_engine(
     DATABASE_URL,
     echo=ECHO,
     poolclass=QueuePool,
@@ -53,7 +58,7 @@ engine = create_engine(
     },
 )
 
-async_engine = create_async_engine(
+async_engine: AsyncEngine = create_async_engine(
     ASYNC_DATABASE_URL,
     echo=ECHO,
     pool_pre_ping=POOL_PRE_PING,
@@ -107,7 +112,7 @@ async def create_tables_async(tables: Optional[List[str]] = None) -> None:
                     Constants.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK,
                     (DATABASE,),
                 )
-                table_exists = result.fetchone() is not None
+                table_exists: bool = result.fetchone() is not None
 
                 if not table_exists:
                     await connection.exec_driver_sql(

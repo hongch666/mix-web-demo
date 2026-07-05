@@ -22,7 +22,7 @@ class Neo4jClient:
     def _initialize_config(self) -> None:
         """根据配置初始化 Neo4j 连接参数"""
         try:
-            neo4j_cfg = (load_config("database") or {}).get("neo4j") or {}
+            neo4j_cfg: Dict[str, Any] = (load_config("database") or {}).get("neo4j") or {}
             self.uri = str(neo4j_cfg.get("uri") or "bolt://127.0.0.1:7687")
             self.user = str(neo4j_cfg.get("user") or "neo4j")
             self.password = str(neo4j_cfg.get("password") or "").strip()
@@ -45,8 +45,8 @@ class Neo4jClient:
             self.logger.warning(Constants.NEO4J_LOOP_NOT_RUNNING_MESSAGE)
             return None
 
-        loop_id = id(loop)
-        driver = self._drivers.get(loop_id)
+        loop_id: int = id(loop)
+        driver: Optional[Any] = self._drivers.get(loop_id)
         if driver is None:
             driver = AsyncGraphDatabase.driver(
                 self.uri,
@@ -59,7 +59,7 @@ class Neo4jClient:
 
     async def get_session(self) -> Optional[AsyncSession]:
         """获取 Neo4j 异步会话"""
-        driver = self._get_driver()
+        driver: Optional[Any] = self._get_driver()
         if driver is None:
             self.logger.warning(Constants.NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE)
             return None
@@ -69,12 +69,12 @@ class Neo4jClient:
         self, cypher: str, params: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """执行只读 Cypher 查询"""
-        session = await self.get_session()
+        session: Optional[AsyncSession] = await self.get_session()
         if session is None:
             return []
 
         try:
-            result = await session.run(cypher, params or {})
+            result: Any = await session.run(cypher, params or {})
             return await result.data()
         except Exception as e:
             self.logger.error(f"Cypher 查询失败: {e}\nCypher: {cypher}\nParams: {params}")
@@ -86,12 +86,12 @@ class Neo4jClient:
         self, cypher: str, params: Optional[Dict[str, Any]] = None
     ) -> Optional[Any]:
         """执行写入类 Cypher 语句"""
-        session = await self.get_session()
+        session: Optional[AsyncSession] = await self.get_session()
         if session is None:
             return None
 
         try:
-            result = await session.run(cypher, params or {})
+            result: Any = await session.run(cypher, params or {})
             return await result.consume()
         except Exception as e:
             self.logger.error(f"Cypher 写操作失败: {e}\nCypher: {cypher}\nParams: {params}")
@@ -102,12 +102,12 @@ class Neo4jClient:
     async def close(self) -> None:
         """关闭 Neo4j 驱动连接"""
         try:
-            current_loop_id = id(asyncio.get_running_loop())
+            current_loop_id: Optional[int] = id(asyncio.get_running_loop())
         except RuntimeError:
             current_loop_id = None
 
         if current_loop_id is not None:
-            driver = self._drivers.pop(current_loop_id, None)
+            driver: Optional[Any] = self._drivers.pop(current_loop_id, None)
             if driver is not None:
                 await driver.close()
                 self.logger.info(Constants.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)

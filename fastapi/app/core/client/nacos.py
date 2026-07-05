@@ -56,9 +56,9 @@ def _get_registration_ip(ip: str) -> str:
     if not ip or ip == "127.0.0.1" or ip == "0.0.0.0":
         # 自动解析真实 IP
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.connect(("8.8.8.8", 80))
-            real_ip = sock.getsockname()[0]
+            real_ip: str = sock.getsockname()[0]
             sock.close()
             Logger.info(f"自动解析本地 IP: {real_ip}")
             return real_ip
@@ -72,7 +72,7 @@ def _get_registration_ip(ip: str) -> str:
 def register_instance(ip: str = IP, port: int = PORT) -> None:
 
     # 获取实际用于注册的 IP 地址
-    registration_ip = _get_registration_ip(ip)
+    registration_ip: str = _get_registration_ip(ip)
 
     last_error: Exception | None = None
     for attempt in range(1, REGISTER_RETRIES + 1):
@@ -113,7 +113,7 @@ def get_service_instance(service_name: str) -> Dict[str, Any]:
 
 def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
     register_instance(ip=ip, port=port)
-    registration_ip = _get_registration_ip(ip)
+    registration_ip: str = _get_registration_ip(ip)
 
     def keep_heartbeat() -> None:
         while True:

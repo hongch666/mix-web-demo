@@ -52,11 +52,11 @@ def _compute_article_hash(article: Any) -> str:
 def _get_article_content_hash(article_id: int) -> Optional[str]:
     """从 Redis 获取文章内容 hash"""
     try:
-        redis_client = _get_redis_client()
+        redis_client: Optional[Any] = _get_redis_client()
         if redis_client is None:
             return None
 
-        hash_value = _run_redis_coro(
+        hash_value: Optional[str] = _run_redis_coro(
             redis_client.get(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}")
         )
         return hash_value
@@ -68,7 +68,7 @@ def _get_article_content_hash(article_id: int) -> Optional[str]:
 def _save_article_content_hash(article_id: int, hash_value: str) -> None:
     """将文章内容 hash 永久保存到 Redis（不设置TTL）"""
     try:
-        redis_client = _get_redis_client()
+        redis_client: Optional[Any] = _get_redis_client()
         if redis_client is None:
             Logger.warning(f"Redis 连接失败，无法保存文章 {article_id} 的 hash")
             return
@@ -85,12 +85,14 @@ def _save_article_content_hash(article_id: int, hash_value: str) -> None:
 def _get_last_sync_time() -> Optional[datetime]:
     """从 Redis 获取上次同步时间"""
     try:
-        redis_client = _get_redis_client()
+        redis_client: Optional[Any] = _get_redis_client()
         if redis_client is None:
             Logger.warning(Constants.REDIS_CONNECTION_FAILED_MESSAGE)
             return None
 
-        timestamp_str = _run_redis_coro(redis_client.get(_VECTOR_SYNC_TIME_KEY))
+        timestamp_str: Optional[str] = _run_redis_coro(
+            redis_client.get(_VECTOR_SYNC_TIME_KEY)
+        )
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
@@ -102,7 +104,7 @@ def _get_last_sync_time() -> Optional[datetime]:
 def _save_sync_time(sync_time: datetime) -> None:
     """将同步时间永久保存到 Redis（不设置TTL）"""
     try:
-        redis_client = _get_redis_client()
+        redis_client: Optional[Any] = _get_redis_client()
         if redis_client is None:
             Logger.error(Constants.REDIS_CONNECTION_SAVE_FAILED_MESSAGE)
             return
@@ -128,7 +130,9 @@ def _get_changed_articles(
         内容有变化的已发布文章列表
     """
     # 先筛选已发布的文章
-    published_articles = [a for a in articles if getattr(a, "status", 0) == 1]
+    published_articles: List[Any] = [
+        a for a in articles if getattr(a, "status", 0) == 1
+    ]
 
     if last_sync_time is None:
         # 首次同步，返回所有已发布文章
@@ -137,25 +141,25 @@ def _get_changed_articles(
         for article in published_articles:
             article_id = getattr(article, "id", 0)
             if article_id:
-                current_hash = _compute_article_hash(article)
+                current_hash: str = _compute_article_hash(article)
                 if current_hash:
                     _save_article_content_hash(article_id, current_hash)
         return published_articles
 
-    changed_articles = []
+    changed_articles: List[Any] = []
     for article in published_articles:
         article_id = getattr(article, "id", 0)
         if not article_id:
             continue
 
         # 计算当前内容的 hash
-        current_hash = _compute_article_hash(article)
+        current_hash: str = _compute_article_hash(article)
         if not current_hash:
             Logger.warning(f"无法计算文章 {article_id} 的 hash")
             continue
 
         # 从 Redis 获取上次保存的 hash
-        cached_hash = _get_article_content_hash(article_id)
+        cached_hash: Optional[str] = _get_article_content_hash(article_id)
         Logger.info(
             f"文章 {article_id}: 缓存hash={cached_hash}, 当前hash={current_hash}"
         )
@@ -206,7 +210,7 @@ def _export_article_vectors_to_postgres(
         def mysql_db_factory() -> Session:
             return SessionLocal()
 
-    rag_tools = get_rag_tools()
+    rag_tools: Any = get_rag_tools()
 
     mysql_db: Optional[Session] = None
     sync_start_time: datetime = datetime.now()
@@ -218,7 +222,7 @@ def _export_article_vectors_to_postgres(
 
         # 1. 获取所有文章
         if hasattr(article_mapper, "get_all_articles_mapper_async"):
-            articles = asyncio.run(
+            articles: List[Any] = asyncio.run(
                 article_mapper.get_all_articles_mapper_async(mysql_db)
             )
         else:
@@ -231,23 +235,27 @@ def _export_article_vectors_to_postgres(
 
         # 2. 增量同步：筛选出变更的文章
         if enable_incremental_sync:
-            last_sync_time = _get_last_sync_time()
-            changed_articles = _get_changed_articles(articles, last_sync_time)
+            last_sync_time: Optional[datetime] = _get_last_sync_time()
+            changed_articles: List[Any] = _get_changed_articles(
+                articles, last_sync_time
+            )
 
             if not changed_articles:
                 Logger.info(Constants.NO_CHANGED_ARTICLES_MESSAGE)
                 return
 
             Logger.info(f"增量同步模式：检测到 {len(changed_articles)} 篇文章有变更")
-            sync_articles = changed_articles
+            sync_articles: List[Any] = changed_articles
         else:
             # 全量同步模式
-            published_articles = [a for a in articles if getattr(a, "status", 0) == 1]
+            published_articles: List[Any] = [
+                a for a in articles if getattr(a, "status", 0) == 1
+            ]
             if not published_articles:
                 Logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
                 return
             Logger.info(f"全量同步模式：找到 {len(published_articles)} 篇已发布文章")
-            sync_articles = published_articles
+            sync_articles: List[Any] = published_articles
 
         # 3. 批量处理文章
         batch_size: int = 10  # 每批处理 10 篇文章
@@ -297,7 +305,7 @@ def _export_article_vectors_to_postgres(
                             Logger.warning(f"删除旧向量失败，将覆盖: {e}")
 
                     # 使用RAG工具添加到向量存储
-                    result = asyncio.run(
+                    result: Any = asyncio.run(
                         rag_tools.add_articles_to_vector_store(
                             article_ids=article_ids,
                             titles=titles,
@@ -307,7 +315,7 @@ def _export_article_vectors_to_postgres(
                     )
 
                     # 检查结果是否成功（如果返回字符串包含"失败"则视为失败）
-                    result_str = str(result)
+                    result_str: str = str(result)
                     if "失败" in result_str or "error" in result_str.lower():
                         retry_count += 1
                         if retry_count < max_retries:
@@ -398,7 +406,7 @@ def _initialize_article_content_hash_cache(
 
         # 1. 获取所有文章
         if hasattr(article_mapper, "get_all_articles_mapper_async"):
-            articles = asyncio.run(
+            articles: List[Any] = asyncio.run(
                 article_mapper.get_all_articles_mapper_async(mysql_db)
             )
         else:
@@ -410,7 +418,9 @@ def _initialize_article_content_hash_cache(
             return
 
         # 2. 筛选已发布的文章
-        published_articles = [a for a in articles if getattr(a, "status", 0) == 1]
+        published_articles: List[Any] = [
+            a for a in articles if getattr(a, "status", 0) == 1
+        ]
 
         if not published_articles:
             Logger.info(Constants.NO_PUBLISHED_ARTICLES_MESSAGE)
@@ -430,14 +440,14 @@ def _initialize_article_content_hash_cache(
                 continue
 
             # 检查是否已存在 hash 缓存
-            existing_hash = _get_article_content_hash(article_id)
+            existing_hash: Optional[str] = _get_article_content_hash(article_id)
             if existing_hash is not None:
                 # hash 已存在，跳过
                 total_skipped += 1
                 continue
 
             # 计算当前内容的 hash
-            current_hash = _compute_article_hash(article)
+            current_hash: str = _compute_article_hash(article)
             if not current_hash:
                 Logger.warning(f"无法计算文章 {article_id} 的 hash")
                 continue
@@ -481,7 +491,7 @@ async def export_article_vectors_to_postgres_async(
     # 尝试获取分布式锁
     from app.core.db import get_redis_client
 
-    redis_client = get_redis_client()
+    redis_client: Any = get_redis_client()
     lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
     if lock_value is None:
         Logger.info(Constants.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE % lock_key)

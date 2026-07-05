@@ -4,8 +4,10 @@ import uvicorn
 from app import create_app
 from app.core.config import load_config
 
+from fastapi import FastAPI
+
 # 初始化 FastAPI 应用
-app = create_app()
+app: FastAPI = create_app()
 
 if __name__ == "__main__":
     # 获取 FastAPI 服务的端口和 IP 配置

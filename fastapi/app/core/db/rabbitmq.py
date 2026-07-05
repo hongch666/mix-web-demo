@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import aio_pika
 from app.core.base import Constants, Logger
@@ -17,16 +17,16 @@ class RabbitMQClient:
 
     def _build_url(self) -> Optional[str]:
         """构建 AMQP 连接 URL"""
-        config = load_config("rabbitmq")
+        config: Dict[str, Any] = load_config("rabbitmq")
         if not config:
             Logger.warning(Constants.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
             return None
 
-        host = str(config.get("host", "127.0.0.1"))
-        port = int(config.get("port", 5672))
-        username = str(config.get("username", "guest"))
-        password = str(config.get("password", "guest"))
-        vhost = str(config.get("vhost", "/"))
+        host: str = str(config.get("host", "127.0.0.1"))
+        port: int = int(config.get("port", 5672))
+        username: str = str(config.get("username", "guest"))
+        password: str = str(config.get("password", "guest"))
+        vhost: str = str(config.get("vhost", "/"))
 
         return f"amqp://{username}:{password}@{host}:{port}/{vhost.lstrip('/')}"
 
@@ -35,7 +35,7 @@ class RabbitMQClient:
         if self.connection and not self.connection.is_closed:
             return True
 
-        url = self._build_url()
+        url: Optional[str] = self._build_url()
         if not url:
             return False
 
@@ -84,11 +84,11 @@ class RabbitMQClient:
 
             # 序列化消息
             if isinstance(message, dict):
-                message_body = json.dumps(message, ensure_ascii=False)
+                message_body: str = json.dumps(message, ensure_ascii=False)
             else:
-                message_body = str(message)
+                message_body: str = str(message)
 
-            delivery_mode = (
+            delivery_mode: aio_pika.DeliveryMode = (
                 aio_pika.DeliveryMode.PERSISTENT
                 if persistent
                 else aio_pika.DeliveryMode.NOT_PERSISTENT
@@ -126,7 +126,7 @@ class RabbitMQClient:
     def close(self) -> None:
         """同步关闭连接（由 __del__ 调用）"""
         try:
-            loop = asyncio.get_running_loop()
+            loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
             if loop.is_running():
                 Logger.warning(Constants.AIO_PKA_EVENT_LOOP_ERROR)
                 return
@@ -166,7 +166,7 @@ async def send_to_queue_async(
 ) -> bool:
     """异步发送消息到队列"""
     try:
-        client = get_rabbitmq_client()
+        client: Optional[RabbitMQClient] = get_rabbitmq_client()
         if client is None:
             Logger.warning(Constants.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
             return False

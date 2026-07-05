@@ -152,8 +152,8 @@ class ReferenceContentExtractor:
             urllib.request.urlretrieve(pdf_url, temp_pdf_path)
 
             # 使用PyPDFLoader加载PDF
-            loader = PyPDFLoader(temp_pdf_path)
-            documents = loader.load()
+            loader: PyPDFLoader = PyPDFLoader(temp_pdf_path)
+            documents: List[Document] = loader.load()
 
             # 提取文本内容
             full_text: str = ""
@@ -164,7 +164,7 @@ class ReferenceContentExtractor:
             full_text = cls._clean_text(full_text)
 
             # 提取关键要点
-            key_points = cls._extract_key_points(full_text, max_length)
+            key_points: str = cls._extract_key_points(full_text, max_length)
 
             Logger.info(f"PDF内容提取完成，长度: {len(key_points)}")
             return key_points
@@ -202,15 +202,15 @@ class ReferenceContentExtractor:
 
             # 发送 HTTP 请求，返回报错时不抛异常
             async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(link_url, headers=headers)
+                response: httpx.Response = await client.get(link_url, headers=headers)
                 response.raise_for_status()
-                html_content = response.text
+                html_content: str = response.text
 
             # 清理文本
-            full_text = cls._clean_text(html_content)
+            full_text: str = cls._clean_text(html_content)
 
             # 提取关键要点
-            key_points = cls._extract_key_points(full_text, max_length)
+            key_points: str = cls._extract_key_points(full_text, max_length)
 
             Logger.info(f"链接内容提取完成，长度: {len(key_points)}")
             return key_points
@@ -233,6 +233,7 @@ class ReferenceContentExtractor:
                 return ""
 
             # 根据类型提取内容
+            raw_content: str = ""
             if ref_type == "pdf":
                 raw_content = await cls.extract_pdf_content(ref_value, max_length)
             elif ref_type == "link":
@@ -247,7 +248,7 @@ class ReferenceContentExtractor:
             # 如果提供了总结函数，使用AI进行总结
             if summarize_func:
                 try:
-                    summarized_content = await summarize_func(raw_content)
+                    summarized_content: str = await summarize_func(raw_content)
                     Logger.info(
                         f"AI总结完成，原长度: {len(raw_content)}, 总结长度: {len(summarized_content)}"
                     )
@@ -270,15 +271,15 @@ class ReferenceContentExtractor:
         try:
             if content_type == "link":
                 # 同步HTTP请求
-                response = requests.get(url, timeout=10)
+                response: requests.Response = requests.get(url, timeout=10)
                 response.raise_for_status()
-                html_content = response.text
+                html_content: str = response.text
 
                 # 清理文本
-                text = cls._clean_text(html_content)
+                text: str = cls._clean_text(html_content)
 
                 # 提取关键要点
-                key_points = cls._extract_key_points(text, max_length)
+                key_points: str = cls._extract_key_points(text, max_length)
 
                 return key_points
             else:
@@ -299,8 +300,8 @@ class ReferenceContentExtractor:
 
         try:
             # 创建文档对象
-            doc = Document(page_content=text)
-            chunks = cls.TEXT_SPLITTER.split_documents([doc])
+            doc: Document = Document(page_content=text)
+            chunks: List[Document] = cls.TEXT_SPLITTER.split_documents([doc])
             return [chunk.page_content for chunk in chunks]
         except Exception as e:
             Logger.warning(f"文本分割失败: {e}")

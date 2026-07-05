@@ -31,7 +31,7 @@ def load_config(section: Optional[str] = None, key: Optional[str] = None) -> Any
     加载 application.yaml 配置文件并解析环境变量
     """
     config_path: Optional[Path] = None
-    current_file = Path(__file__).resolve()
+    current_file: Path = Path(__file__).resolve()
     candidates = [
         current_file.parents[3] / "application.yaml",  # fastapi/application.yaml
         current_file.parents[2]

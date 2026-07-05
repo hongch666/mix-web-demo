@@ -5,7 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from sqlalchemy.orm import Session
 
-from .tools.sqlTools import get_sql_tools
+from .tools.sqlTools import SQLTools, get_sql_tools
 from .userPermissionManager import UserPermissionManager
 
 IntentType = Literal[
@@ -69,8 +69,8 @@ class IntentRouter:
     async def route_async(self, question: str) -> IntentType:
         """异步路由用户问题"""
         try:
-            result = await self.chain.ainvoke({"question": question})
-            result_text = str(result).strip().lower()
+            result: Any = await self.chain.ainvoke({"question": question})
+            result_text: str = str(result).strip().lower()
 
             if "database" in result_text or "数据库" in result_text:
                 intent = "database_query"
@@ -120,11 +120,11 @@ class IntentRouter:
                 return intent, False, Constants.INTENT_ROUTER_NO_PERMISSION_ERROR
             return intent, True, ""
 
-        perm_manager = UserPermissionManager(self.user_mapper)
+        perm_manager: UserPermissionManager = UserPermissionManager(self.user_mapper)
 
         if intent == "database_query":
             try:
-                sql_tools = get_sql_tools()
+                sql_tools: SQLTools = get_sql_tools()
                 if sql_tools.is_dangerous_nl_request(question):
                     self.logger.warning(f"拦截疑似写操作SQL请求: {question}")
                     return (
