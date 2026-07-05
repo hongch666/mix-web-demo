@@ -1,22 +1,22 @@
+import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import { MongooseModule } from '@nestjs/mongoose';
 import type { MongooseModuleOptions } from '@nestjs/mongoose';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClsModule } from 'nestjs-cls';
 import { InternalTokenGuard } from 'src/framework/guards/internalToken.guard';
 import { RequireAdminGuard } from 'src/framework/guards/requireAdmin.guard';
 import { ApiLogInterceptor } from 'src/framework/interceptors/apiLog.interceptor';
-import { ApiModule } from '../api/api.module';
+import { ModulesModule } from 'src/module/common/modules.module';
+import { RedisModule } from 'src/module/common/redis/redis.module';
 import yamlConfig from '../common/config/yamlConfig.service';
 import { InternalTokenUtil } from '../common/utils/internalToken.util';
 import { ClsMiddleware } from '../framework/middleware/cls.middleware';
-import { ModulesModule } from '../modules/modules.module';
-import { RedisModule } from '../modules/redis/redis.module';
+import { ApiModule } from '../module/system/api.module';
 
 interface DatabaseConfig {
   type: 'mysql';
@@ -42,9 +42,8 @@ interface MongoDbConfig {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
-        const db: DatabaseConfig = configService.get<DatabaseConfig>(
-          'database.mysql',
-        )!;
+        const db: DatabaseConfig =
+          configService.get<DatabaseConfig>('database.mysql')!;
         return {
           type: db.type,
           host: db.host,
@@ -67,9 +66,8 @@ interface MongoDbConfig {
       useFactory: async (
         configService: ConfigService,
       ): Promise<MongooseModuleOptions> => {
-        const mongodb: MongoDbConfig = configService.get<MongoDbConfig>(
-          'database.mongodb',
-        )!;
+        const mongodb: MongoDbConfig =
+          configService.get<MongoDbConfig>('database.mongodb')!;
         const { host, port, username, password, dbName } = mongodb;
 
         // 根据是否有用户名和密码构建 URI
@@ -100,8 +98,10 @@ interface MongoDbConfig {
       useFactory: (configService: ConfigService) => {
         const host: string = configService.get<string>('rabbitmq.host')!;
         const port: number = configService.get<number>('rabbitmq.port')!;
-        const username: string = configService.get<string>('rabbitmq.username')!;
-        const password: string = configService.get<string>('rabbitmq.password')!;
+        const username: string =
+          configService.get<string>('rabbitmq.username')!;
+        const password: string =
+          configService.get<string>('rabbitmq.password')!;
         const vhost: string = configService.get<string>('rabbitmq.vhost')!;
         const uri: string = `amqp://${username}:${password}@${host}:${port}${vhost === '/' ? '' : `/${vhost}`}`;
 

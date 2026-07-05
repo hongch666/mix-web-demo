@@ -4,7 +4,7 @@ import { ClsService } from 'nestjs-cls';
 import { BusinessException } from 'src/common/exceptions/business.exception';
 import { Constants } from 'src/common/utils/constants';
 import { HttpCode } from 'src/common/utils/httpCode';
-import { UserService } from '../../modules/user/user.service';
+import { UserService } from 'src/module/common/user/user.service';
 import { REQUIRE_ADMIN_KEY } from '../decorators/requireAdmin.decorator';
 
 @Injectable()
