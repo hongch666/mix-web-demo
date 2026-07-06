@@ -1,25 +1,25 @@
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
-import { MiddlewareConsumer, Module, RequestMethod } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
-import type { MongooseModuleOptions } from '@nestjs/mongoose';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ScheduleModule } from '@nestjs/schedule';
-import type { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClsModule } from 'nestjs-cls';
-import { InternalTokenGuard } from 'src/framework/guards/internalToken.guard';
-import { RequireAdminGuard } from 'src/framework/guards/requireAdmin.guard';
-import { ApiLogInterceptor } from 'src/framework/interceptors/apiLog.interceptor';
-import { ModulesModule } from 'src/module/common/modules.module';
-import { RedisModule } from 'src/module/common/redis/redis.module';
-import yamlConfig from '../common/config/yamlConfig.service';
-import { InternalTokenUtil } from '../common/utils/internalToken.util';
-import { ClsMiddleware } from '../framework/middleware/cls.middleware';
-import { ApiModule } from '../module/system/api.module';
+import { RabbitMQModule } from "@golevelup/nestjs-rabbitmq";
+import { MiddlewareConsumer, Module, RequestMethod } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import type { MongooseModuleOptions } from "@nestjs/mongoose";
+import { MongooseModule } from "@nestjs/mongoose";
+import { ScheduleModule } from "@nestjs/schedule";
+import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { ClsModule } from "nestjs-cls";
+import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
+import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
+import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
+import { CommonModule } from "src/module/common/common.module";
+import { RedisModule } from "src/module/common/redis/redis.module";
+import { SystemModule } from "src/module/system/system.module";
+import yamlConfig from "../common/config/yamlConfig.service";
+import { InternalTokenUtil } from "../common/utils/internalToken.util";
+import { ClsMiddleware } from "../framework/middleware/cls.middleware";
 
 interface DatabaseConfig {
-  type: 'mysql';
+  type: "mysql";
   host: string;
   port: number;
   username: string;
@@ -43,7 +43,7 @@ interface MongoDbConfig {
       inject: [ConfigService],
       useFactory: (configService: ConfigService): TypeOrmModuleOptions => {
         const db: DatabaseConfig =
-          configService.get<DatabaseConfig>('database.mysql')!;
+          configService.get<DatabaseConfig>("database.mysql")!;
         return {
           type: db.type,
           host: db.host,
@@ -67,7 +67,7 @@ interface MongoDbConfig {
         configService: ConfigService,
       ): Promise<MongooseModuleOptions> => {
         const mongodb: MongoDbConfig =
-          configService.get<MongoDbConfig>('database.mongodb')!;
+          configService.get<MongoDbConfig>("database.mongodb")!;
         const { host, port, username, password, dbName } = mongodb;
 
         // 根据是否有用户名和密码构建 URI
@@ -96,36 +96,36 @@ interface MongoDbConfig {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const host: string = configService.get<string>('rabbitmq.host')!;
-        const port: number = configService.get<number>('rabbitmq.port')!;
+        const host: string = configService.get<string>("rabbitmq.host")!;
+        const port: number = configService.get<number>("rabbitmq.port")!;
         const username: string =
-          configService.get<string>('rabbitmq.username')!;
+          configService.get<string>("rabbitmq.username")!;
         const password: string =
-          configService.get<string>('rabbitmq.password')!;
-        const vhost: string = configService.get<string>('rabbitmq.vhost')!;
-        const uri: string = `amqp://${username}:${password}@${host}:${port}${vhost === '/' ? '' : `/${vhost}`}`;
+          configService.get<string>("rabbitmq.password")!;
+        const vhost: string = configService.get<string>("rabbitmq.vhost")!;
+        const uri: string = `amqp://${username}:${password}@${host}:${port}${vhost === "/" ? "" : `/${vhost}`}`;
 
         return {
           uri,
           exchanges: [],
           defaultRpcTimeout: 10000,
-          defaultExchangeType: 'direct',
+          defaultExchangeType: "direct",
           connectionInitOptions: { timeout: 10000 },
           queues: [
             {
-              name: 'api-log-queue',
+              name: "api-log-queue",
               options: { durable: true },
             },
             {
-              name: 'article-log-queue',
+              name: "article-log-queue",
               options: { durable: true },
             },
           ],
         };
       },
     }),
-    ApiModule,
-    ModulesModule,
+    CommonModule,
+    SystemModule,
   ],
   controllers: [],
   providers: [
@@ -148,6 +148,6 @@ export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(ClsMiddleware)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
+      .forRoutes({ path: "*", method: RequestMethod.ALL });
   }
 }
