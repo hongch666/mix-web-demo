@@ -12,7 +12,7 @@ export class Articles {
   title!: string;
 
   @ApiProperty({ description: '内容', example: '这是文章内容' })
-  @Column('longtext')
+  @Column({ type: 'longtext' })
   content!: string;
 
   @ApiProperty({ description: '用户ID', example: 1001 })

@@ -1,22 +1,10 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import {
-  ApiLog,
-  ApiLogSchema,
-} from 'src/module/system/apiLog/schema/apiLog.schema';
-import {
-  ArticleLog,
-  ArticleLogSchema,
-} from 'src/module/system/articleLog/schema/articleLog.schema';
+import { ApiLogModule } from 'src/module/system/apiLog/apiLog.module';
+import { ArticleLogModule } from 'src/module/system/articleLog/articleLog.module';
 import { TaskService } from './task.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: ArticleLog.name, schema: ArticleLogSchema },
-      { name: ApiLog.name, schema: ApiLogSchema },
-    ]),
-  ],
+  imports: [ArticleLogModule, ApiLogModule],
   providers: [TaskService],
   exports: [TaskService],
 })

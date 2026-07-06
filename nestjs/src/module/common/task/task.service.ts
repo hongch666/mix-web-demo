@@ -1,26 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { Cron } from '@nestjs/schedule';
-import { Model } from 'mongoose';
 import { Constants } from 'src/common/utils/constants';
 import { logger } from 'src/common/utils/writeLog';
-import {
-  ApiLog,
-  ApiLogDocument,
-} from 'src/module/system/apiLog/schema/apiLog.schema';
-import {
-  ArticleLog,
-  ArticleLogDocument,
-} from 'src/module/system/articleLog/schema/articleLog.schema';
+import { ApiLogService } from 'src/module/system/apiLog/apiLog.service';
+import { ArticleLogService } from 'src/module/system/articleLog/articleLog.service';
 import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class TaskService {
   constructor(
-    @InjectModel(ApiLog.name)
-    private readonly apiLogModel: Model<ApiLogDocument>,
-    @InjectModel(ArticleLog.name)
-    private readonly articleLogModel: Model<ArticleLogDocument>,
+    private readonly apiLogService: ApiLogService,
+    private readonly articleLogService: ArticleLogService,
     private readonly redisService: RedisService,
   ) {}
 
@@ -51,15 +41,12 @@ export class TaskService {
       const oneMonthAgo: Date = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-      // 删除超过1个月的日志
-      const result = await this.apiLogModel
-        .deleteMany({
-          createdAt: { $lt: oneMonthAgo },
-        })
-        .exec();
+      // 通过 ApiLogService 清理日志（不再直接操作 Model，消除跨层引用）
+      const deletedCount: number =
+        await this.apiLogService.cleanupOldLogs(oneMonthAgo);
 
       logger.info(
-        `API 日志清理完成，删除了 ${result.deletedCount} 条超过1个月的日志`,
+        `API 日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`,
       );
     } catch (error: unknown) {
       const errorMessage: string =
@@ -104,15 +91,12 @@ export class TaskService {
       const oneMonthAgo: Date = new Date();
       oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-      // 删除超过1个月的文章日志
-      const result = await this.articleLogModel
-        .deleteMany({
-          createdAt: { $lt: oneMonthAgo },
-        })
-        .exec();
+      // 通过 ArticleLogService 清理日志（不再直接操作 Model，消除跨层引用）
+      const deletedCount: number =
+        await this.articleLogService.cleanupOldLogs(oneMonthAgo);
 
       logger.info(
-        `文章日志清理完成，删除了 ${result.deletedCount} 条超过1个月的日志`,
+        `文章日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`,
       );
     } catch (error: unknown) {
       const errorMessage: string =

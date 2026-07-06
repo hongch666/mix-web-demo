@@ -205,30 +205,63 @@ export class ArticleLogService {
             .limit(take)
             .exec(),
     ]);
-    // 只返回指定字段
-    const resultList: ArticleLogListItem[] = await Promise.all(
-      list.map(
-        async (log: ArticleLogDocument): Promise<ArticleLogListItem> => ({
-          _id: log._id,
-          userId: log.userId,
-          username:
-            (await this.userService.getUserById(log.userId))?.name || '',
-          articleId: log.articleId,
-          articleTitle:
-            (await this.articleService.getArticleById(log.articleId))?.title ||
-            '',
-          action: log.action,
-          content: log.content,
-          msg: log.msg,
-          createdAt: log.createdAt
-            ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
-            : undefined,
-          updatedAt: log.updatedAt
-            ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
-            : undefined,
-        }),
-      ),
+    // 收集所有不重复的 userId 和 articleId，批量查询（消除 N+1）
+    const userIds: number[] = [
+      ...new Set(list.map((log: ArticleLogDocument) => log.userId)),
+    ];
+    const articleIds: number[] = [
+      ...new Set(list.map((log: ArticleLogDocument) => log.articleId)),
+    ];
+
+    const [users, articles] = await Promise.all([
+      userIds.length > 0
+        ? this.userService.getUserByIds(userIds)
+        : Promise.resolve([]),
+      articleIds.length > 0
+        ? this.articleService.getArticleByIds(articleIds)
+        : Promise.resolve([]),
+    ]);
+
+    // 构建 userId → username 和 articleId → title 的映射表
+    const userMap: Map<number, string> = new Map(
+      users.map((user) => [user.id, user.name]),
+    );
+    const articleMap: Map<number, string> = new Map(
+      articles.map((article) => [article.id, article.title]),
+    );
+
+    // 组装结果列表（内存映射，不再逐条查库）
+    const resultList: ArticleLogListItem[] = list.map(
+      (log: ArticleLogDocument): ArticleLogListItem => ({
+        _id: log._id,
+        userId: log.userId,
+        username: userMap.get(log.userId) || '',
+        articleId: log.articleId,
+        articleTitle: articleMap.get(log.articleId) || '',
+        action: log.action,
+        content: log.content,
+        msg: log.msg,
+        createdAt: log.createdAt
+          ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+          : undefined,
+        updatedAt: log.updatedAt
+          ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+          : undefined,
+      }),
     );
     return { total, list: resultList };
+  }
+
+  /**
+   * 删除指定日期之前的过期日志
+   * 供 TaskModule 定时任务调用，避免 common 层直接操作 system 层 schema
+   * @param before 删除此日期之前的日志
+   * @returns 删除的日志数量
+   */
+  async cleanupOldLogs(before: Date): Promise<number> {
+    const result = await this.logModel
+      .deleteMany({ createdAt: { $lt: before } })
+      .exec();
+    return result.deletedCount;
   }
 }

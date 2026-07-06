@@ -208,4 +208,17 @@ export class ApiLogService {
 
     return { total, list: resultList };
   }
+
+  /**
+   * 删除指定日期之前的过期日志
+   * 供 TaskModule 定时任务调用，避免 common 层直接操作 system 层 schema
+   * @param before 删除此日期之前的日志
+   * @returns 删除的日志数量
+   */
+  async cleanupOldLogs(before: Date): Promise<number> {
+    const result = await this.apiLogModel
+      .deleteMany({ createdAt: { $lt: before } })
+      .exec();
+    return result.deletedCount;
+  }
 }

@@ -29,6 +29,16 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  // 批量查询用户（用于解决 N+1 查询问题）
+  async getUserByIds(ids: number[]): Promise<User[]> {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+    return this.userRepository.find({
+      where: ids.map((id) => ({ id })),
+    });
+  }
+
   // 根据用户名模糊搜索用户
   async getUsersByName(name: string): Promise<User[]> {
     return this.userRepository.find({
