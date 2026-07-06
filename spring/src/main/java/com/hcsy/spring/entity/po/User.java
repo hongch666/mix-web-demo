@@ -2,6 +2,7 @@ package com.hcsy.spring.entity.po;
 
 import java.time.LocalDateTime;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -26,4 +27,8 @@ public class User {
     private LocalDateTime lastLoginAt;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
+
+    // selectUsersWithLoginStatus 动态生成的列，数据库表中不存在
+    @TableField(exist = false)
+    private Integer loginStatus;
 }
