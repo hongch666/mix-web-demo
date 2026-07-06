@@ -69,15 +69,15 @@ github:
   oauth:
     clientId: ${GITHUB_OAUTH_CLIENT_ID:}
     clientSecret: ${GITHUB_OAUTH_CLIENT_SECRET:}
-    redirectUri: http://localhost:8080/github/callback
+    redirectUri: ${GITHUB_OAUTH_REDIRECT_URI:http://localhost:8080/github/callback}
     scope: "read:user user:email"
     authorizeUrl: https://github.com/login/oauth/authorize
     accessTokenUrl: https://github.com/login/oauth/access_token
     userApiUrl: https://api.github.com/user
     emailsApiUrl: https://api.github.com/user/emails
     apiVersion: "2026-03-10"
-    frontendSuccessUrl: http://localhost:5173
-    frontendFailureUrl: http://localhost:5173/login
+    frontendSuccessUrl: ${GITHUB_OAUTH_FRONTEND_SUCCESS_URL:http://localhost:5173}
+    frontendFailureUrl: ${GITHUB_OAUTH_FRONTEND_FAILURE_URL:http://localhost:5173/login}
 
 internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
