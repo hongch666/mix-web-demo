@@ -14,6 +14,20 @@ services:
       GOZERO_HOST: gozero
     networks:
       - hcsy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   spring:
     image: mix-spring:latest
@@ -35,6 +49,20 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1.5G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api_spring/spring"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   gozero:
     image: mix-gozero:latest
@@ -59,6 +87,20 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/api_gozero/gozero"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   nestjs:
     image: mix-nestjs:latest
@@ -83,6 +125,20 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/api_nestjs/nestjs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   fastapi:
     image: mix-fastapi:latest
@@ -109,6 +165,20 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1.5G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/api_fastapi/fastapi"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
   hcsy:
