@@ -34,8 +34,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcsy.spring.api.service.AsyncApiLogService;
 import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
@@ -55,7 +55,7 @@ public class ApiLogAspect {
 
     private final SimpleLogger logger;
     private final ObjectMapper objectMapper;
-    private final RabbitMQUtil rabbitMQUtil;
+    private final AsyncApiLogService asyncApiLogService;
 
     /**
      * 环绕切面：在执行带有 @ApiLog 注解的方法前记录日志，并在执行后输出耗时
@@ -435,12 +435,8 @@ public class ApiLogAspect {
             apiLogMessage.put("requestBody", requestBody);
             apiLogMessage.put("responseTime", responseTime);
 
-            // 发送到消息队列
-            rabbitMQUtil.sendMessage("api-log-queue", apiLogMessage);
-
-            logger.info(String.format(
-                    Constants.RabbitMQ_SEND_SUCCESS,
-                    objectMapper.writeValueAsString(apiLogMessage)));
+            // 异步发送到消息队列（不阻塞业务接口响应）
+            asyncApiLogService.sendAsync(apiLogMessage);
 
         } catch (Exception e) {
             logger.error(Constants.RabbitMQ_SEND_FAIL + e.getMessage(), e);
