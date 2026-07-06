@@ -4,7 +4,7 @@ from app.common.decorators import log, requireAdmin
 from app.core.base import ListResponse, success
 from app.core.db import get_db
 from app.internal.services import AnalyzeService, get_analyze_service
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
 
@@ -18,7 +18,7 @@ router: APIRouter = APIRouter(
 @log("获取前10篇文章")
 async def get_top10_articles(
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取前10篇文章接口"""
@@ -51,7 +51,7 @@ async def get_wordcloud(
 @log("获取文章数据Excel")
 async def get_excel(
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取文章数据Excel接口"""
@@ -65,7 +65,7 @@ async def get_excel(
 @log("获取文章统计信息")
 async def get_article_statistics(
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取文章统计信息"""
@@ -82,7 +82,7 @@ async def get_article_statistics(
 @log("按分类统计文章数量")
 async def get_article_count_by_category(
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """按大分类统计文章数量"""
@@ -101,7 +101,7 @@ async def get_article_count_by_category(
 @log("获取月度文章发布统计")
 async def get_monthly_publish_count(
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     analyzeService: AnalyzeService = Depends(get_analyze_service),
 ) -> Any:
     """获取月度文章发布统计"""

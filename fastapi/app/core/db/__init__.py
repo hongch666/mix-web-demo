@@ -10,7 +10,7 @@ from .mysql import (
     create_tables_async,
     engine,
     get_db,
-    get_db_async,
+    get_db_sync,
 )
 from .neo4j import Neo4jClient, get_neo4j_client
 from .postgresql import get_pgvector_connection_string, get_postgres_config
@@ -26,7 +26,7 @@ __all__: List[str] = [
     "async_client",
     "async_db",
     "get_db",
-    "get_db_async",
+    "get_db_sync",
     "create_tables_async",
     "engine",
     "async_engine",

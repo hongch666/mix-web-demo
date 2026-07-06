@@ -3,30 +3,30 @@ from typing import Dict, List
 
 from app.internal.models import Category, SubCategory
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class CategoryMapper:
     """分类 Mapper"""
 
-    async def _get_all_categories_mapper_sync(self, db: Session) -> List[Category]:
+    async def _get_all_categories_mapper_sync(self, db: AsyncSession) -> List[Category]:
         statement = select(Category).distinct()
-        return db.execute(statement).scalars().all()
+        return (await db.execute(statement)).scalars().all()
 
     async def _get_subcategories_with_parent_mapper_sync(
-        self, db: Session
+        self, db: AsyncSession
     ) -> List[Dict[str, object]]:
         """
         获取所有子分类及其对应的父分类名称
         返回: [{"id": 1, "name": "Python", "category_name": "编程语言", ...}, ...]
         """
-        subcategories = db.execute(select(SubCategory)).scalars().all()
+        subcategories = (await db.execute(select(SubCategory))).scalars().all()
 
         result: List[Dict[str, object]] = []
         for sub in subcategories:
             # 获取对应的父分类
             parent = (
-                db.execute(select(Category).where(Category.id == sub.category_id))
+                await db.execute(select(Category).where(Category.id == sub.category_id))
                 .scalars()
                 .first()
             )
@@ -47,11 +47,11 @@ class CategoryMapper:
 
         return result
 
-    async def get_all_categories_mapper_async(self, db: Session) -> List[Category]:
+    async def get_all_categories_mapper_async(self, db: AsyncSession) -> List[Category]:
         return await self._get_all_categories_mapper_sync(db)
 
     async def get_subcategories_with_parent_mapper_async(
-        self, db: Session
+        self, db: AsyncSession
     ) -> List[Dict[str, object]]:
         return await self._get_subcategories_with_parent_mapper_sync(db)
 

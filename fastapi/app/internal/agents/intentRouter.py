@@ -3,6 +3,7 @@ from typing import Any, Literal, Optional, Tuple
 from app.core.base import Constants, Logger
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from .tools.sqlTools import SQLTools, get_sql_tools
@@ -17,8 +18,23 @@ IntentType = Literal[
 ]
 
 
+class StructuredIntent(BaseModel):
+    """结构化意图识别结果（优先使用，避免脆弱文本匹配）"""
+
+    type: IntentType = Field(description="识别出的用户意图类型")
+    confidence: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="意图识别的置信度",
+    )
+
+
 class IntentRouter:
-    """意图识别路由器，支持权限检查"""
+    """意图识别路由器，支持权限检查
+
+    优先使用 with_structured_output 结构化输出，不可用时降级为文本匹配。
+    """
 
     def __init__(
         self,
@@ -52,8 +68,17 @@ class IntentRouter:
             ]
         )
 
-        # 创建链
+        # 文本匹配降级链（始终创建，作为降级方案）
         self.chain = self.intent_prompt | self.llm | StrOutputParser()
+
+        # 优先使用结构化输出，不可用时降级为文本匹配
+        try:
+            self.structured_chain = self.intent_prompt | self.llm.with_structured_output(StructuredIntent)
+            self._use_structured_output = True
+            self.logger.info("意图路由器初始化成功：使用 with_structured_output 结构化模式")
+        except Exception as e:
+            self._use_structured_output = False
+            self.logger.warning(f"with_structured_output 不可用，降级为文本匹配模式: {e}")
 
     def set_user_context(self, user_id: int, db: Session) -> None:
         """
@@ -67,43 +92,67 @@ class IntentRouter:
         self.db = db
 
     async def route_async(self, question: str) -> IntentType:
-        """异步路由用户问题"""
+        """异步路由用户问题（优先使用结构化输出，降级为文本匹配）"""
         try:
-            result: Any = await self.chain.ainvoke({"question": question})
-            result_text: str = str(result).strip().lower()
-
-            if "database" in result_text or "数据库" in result_text:
-                intent = "database_query"
-            elif (
-                "article" in result_text
-                or "文章" in result_text
-                or "search" in result_text
-            ):
-                intent = "article_search"
-            elif "log" in result_text or "日志" in result_text or "活动" in result_text:
-                intent = "log_analysis"
-            elif (
-                "knowledge" in result_text
-                or "知识" in result_text
-                or "图谱" in result_text
-                or "推荐" in result_text
-                or "关系" in result_text
-            ):
-                intent = "knowledge_query"
-            elif (
-                "general" in result_text
-                or "chat" in result_text
-                or "闲聊" in result_text
-            ):
-                intent = "general_chat"
+            if self._use_structured_output:
+                return await self._route_structured(question)
             else:
-                intent = "article_search"
-
-            self.logger.info(f"意图识别结果: {question} -> {intent}")
-            return intent
+                return await self._route_text_match(question)
         except Exception as e:
-            self.logger.error(f"意图识别失败: {e}, 默认使用article_search")
+            self.logger.error(f"意图识别失败: {e}, 默认使用 article_search")
             return "article_search"
+
+    async def _route_structured(self, question: str) -> IntentType:
+        """通过 with_structured_output 链识别意图"""
+        try:
+            result: StructuredIntent = await self.structured_chain.ainvoke(
+                {"question": question}
+            )
+            self.logger.info(
+                f"意图识别结果(结构化): {question} -> {result.type} (置信度: {result.confidence:.2f})"
+            )
+            return result.type
+        except Exception as e:
+            # 结构化输出失败，降级为文本匹配
+            self.logger.warning(
+                f"结构化意图识别失败，降级为文本匹配: {e}"
+            )
+            return await self._route_text_match(question)
+
+    async def _route_text_match(self, question: str) -> IntentType:
+        """通过文本匹配识别意图（降级方案）"""
+        result: Any = await self.chain.ainvoke({"question": question})
+        result_text: str = str(result).strip().lower()
+
+        if "database" in result_text or "数据库" in result_text:
+            intent: IntentType = "database_query"
+        elif (
+            "article" in result_text
+            or "文章" in result_text
+            or "search" in result_text
+        ):
+            intent = "article_search"
+        elif "log" in result_text or "日志" in result_text or "活动" in result_text:
+            intent = "log_analysis"
+        elif (
+            "knowledge" in result_text
+            or "知识" in result_text
+            or "图谱" in result_text
+            or "推荐" in result_text
+            or "关系" in result_text
+        ):
+            intent = "knowledge_query"
+        elif (
+            "general" in result_text
+            or "chat" in result_text
+            or "闲聊" in result_text
+        ):
+            intent = "general_chat"
+        else:
+            intent = "article_search"
+
+        self.logger.info(f"意图识别结果(文本匹配): {question} -> {intent}")
+        return intent
 
     async def route_with_permission_check_async(
         self, question: str, user_id: Optional[int] = None, db: Optional[Session] = None

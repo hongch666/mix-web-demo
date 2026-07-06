@@ -39,7 +39,7 @@ from app.internal.crud import (
 )
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from wordcloud import WordCloud
 
 from fastapi import Depends
@@ -161,7 +161,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_top10_articles_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> List[Dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:top10",
@@ -177,7 +177,7 @@ class AnalyzeService:
         )
 
     async def get_article_statistics_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> Dict[str, Any]:
         return await self._run_with_singleflight(
             "analyze:statistics",
@@ -186,7 +186,7 @@ class AnalyzeService:
         )
 
     async def get_category_article_count_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> List[Dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:category_article_count",
@@ -195,7 +195,7 @@ class AnalyzeService:
         )
 
     async def get_monthly_publish_count_service_sf(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> List[Dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:monthly_publish_count",
@@ -221,7 +221,7 @@ class AnalyzeService:
         )
 
     async def get_top10_articles_service(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> List[Dict[str, Any]]:
         """
         获取 Top10 文章服务
@@ -442,7 +442,7 @@ class AnalyzeService:
 
         return oss_url
 
-    async def export_articles_to_excel(self, db: Session = Depends(get_db)) -> str:
+    async def export_articles_to_excel(self, db: AsyncSession = Depends(get_db)) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
         file_path: str = os.path.normpath(
             os.path.join(
@@ -512,7 +512,7 @@ class AnalyzeService:
         return oss_url
 
     async def get_article_statistics_service(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> Dict[str, Any]:
         """
         获取文章统计信息服务
@@ -584,7 +584,7 @@ class AnalyzeService:
         return statistics
 
     async def get_category_article_count_service(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> List[Dict[str, Any]]:
         """
         获取按大分类统计的文章数量服务
@@ -690,7 +690,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_monthly_publish_count_service(
-        self, db: Session = Depends(get_db)
+        self, db: AsyncSession = Depends(get_db)
     ) -> List[Dict[str, Any]]:
         """
         获取按月份统计的文章发布数量服务

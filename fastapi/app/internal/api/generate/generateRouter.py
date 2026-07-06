@@ -20,7 +20,7 @@ from app.internal.services import (
     get_generate_service,
     get_gpt_service,
 )
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
 
@@ -53,7 +53,7 @@ async def create_article_ai_comment(
     request: Request,
     background_tasks: BackgroundTasks,
     articleId: int = Path(alias="article_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
     deepseek_service: DeepseekService = Depends(get_deepseek_service),
@@ -87,7 +87,7 @@ async def create_article_ai_comment_with_reference(
     request: Request,
     background_tasks: BackgroundTasks,
     articleId: int = Path(alias="article_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     comments_mapper: CommentsMapper = Depends(get_comments_mapper),
     article_mapper: ArticleMapper = Depends(get_article_mapper),
     deepseek_service: DeepseekService = Depends(get_deepseek_service),

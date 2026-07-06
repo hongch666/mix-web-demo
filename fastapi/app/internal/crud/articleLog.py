@@ -6,7 +6,7 @@ from app.core.base import Constants, HttpCode, Logger
 from app.core.db import async_db as mongo_db
 from app.core.db import get_db
 from app.core.errors import BusinessException
-from sqlalchemy.orm import Session as SASession
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .article import ArticleMapper, get_article_mapper
 
@@ -54,8 +54,8 @@ class ArticleLogMapper:
             article_mapper: ArticleMapper = get_article_mapper()
 
             # 批量获取所有文章信息（只需一次查询）
-            db_generator: AsyncGenerator[SASession, None] = get_db()
-            db: SASession = await anext(db_generator)
+            db_generator: AsyncGenerator[AsyncSession, None] = get_db()
+            db: AsyncSession = await anext(db_generator)
             try:
                 articles_dict: Dict[
                     int, Any

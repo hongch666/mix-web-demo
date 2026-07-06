@@ -27,7 +27,7 @@ from app.internal.services import (
     get_gpt_service,
 )
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request
 
@@ -48,7 +48,7 @@ router: APIRouter = APIRouter(
 async def send_message(
     http_request: Request,
     request: ChatRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     gptService: GptService = Depends(get_gpt_service),
     geminiService: GeminiService = Depends(get_gemini_service),
     deepseekService: DeepseekService = Depends(get_deepseek_service),
@@ -203,7 +203,7 @@ async def stream_message(
                 )
                 # 使用 ensure_ascii=False 保证 UTF-8 编码，avoid_json_tricks 保证完整性
                 json_str: str = json.dumps(
-                    data, ensure_ascii=False, separators=(",", ":")
+                    data.model_dump(), ensure_ascii=False, separators=(",", ":")
                 )
                 Logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
                 yield f"data: {json_str}\n\n"
@@ -237,7 +237,7 @@ async def stream_message(
                 )
                 yield (
                     "data: "
-                    + json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+                    + json.dumps(data.model_dump(), ensure_ascii=False, separators=(",", ":"))
                     + "\n\n"
                 )
 

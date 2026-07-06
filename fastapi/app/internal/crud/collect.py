@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from app.core.base import Logger
 from app.internal.models import Collect
 from sqlalchemy import Date, cast, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import get_article_mapper
 
@@ -13,13 +13,13 @@ from . import get_article_mapper
 class CollectMapper:
     """收藏 Mapper"""
 
-    async def _get_total_collects_mapper_sync(self, db: Session) -> int:
+    async def _get_total_collects_mapper_sync(self, db: AsyncSession) -> int:
         """获取所有文章的总收藏数"""
 
         statement = select(func.count(Collect.id))
-        return db.execute(statement).scalar_one()
+        return (await db.execute(statement)).scalar_one()
 
-    async def _get_average_collects_mapper_sync(self, db: Session) -> float:
+    async def _get_average_collects_mapper_sync(self, db: AsyncSession) -> float:
         """获取每篇文章的平均收藏数"""
 
         article_mapper = get_article_mapper()
@@ -30,7 +30,7 @@ class CollectMapper:
         return round(total_collects / total_articles, 2)
 
     async def _get_monthly_collect_trend_mapper_sync(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月收藏的趋势"""
 
@@ -59,7 +59,7 @@ class CollectMapper:
             .order_by(cast(Collect.created_time, Date))
         )
 
-        results = db.execute(statement).all()
+        results = (await db.execute(statement)).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0
@@ -74,14 +74,14 @@ class CollectMapper:
         )
         return {"total": total, "daily_trends": daily_trends}
 
-    async def get_total_collects_mapper_async(self, db: Session) -> int:
+    async def get_total_collects_mapper_async(self, db: AsyncSession) -> int:
         return await self._get_total_collects_mapper_sync(db)
 
-    async def get_average_collects_mapper_async(self, db: Session) -> float:
+    async def get_average_collects_mapper_async(self, db: AsyncSession) -> float:
         return await self._get_average_collects_mapper_sync(db)
 
     async def get_monthly_collect_trend_mapper_async(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         return await self._get_monthly_collect_trend_mapper_sync(db, user_id)
 

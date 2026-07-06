@@ -5,7 +5,7 @@ from app.core.base import success
 from app.core.db import get_db
 from app.internal.schemas import CreateHistoryDTO
 from app.internal.services import AiHistoryService, get_ai_history_service
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 
@@ -21,7 +21,7 @@ router: APIRouter = APIRouter(
 async def create_ai_history(
     request: Request,
     data: CreateHistoryDTO,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """创建AI历史记录接口"""
@@ -37,7 +37,7 @@ async def create_ai_history(
 async def get_all_ai_history(
     request: Request,
     userId: int = Query(alias="user_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """获取所有AI历史记录接口"""
@@ -57,7 +57,7 @@ async def get_all_ai_history(
 async def delete_ai_history(
     request: Request,
     userId: int = Path(alias="user_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     ai_history_service: AiHistoryService = Depends(get_ai_history_service),
 ) -> Any:
     """删除用户所有AI历史记录接口"""

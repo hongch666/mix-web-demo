@@ -16,6 +16,20 @@ from tenacity import (
     wait_exponential,
 )
 
+# 共享 httpx 客户端实例（由 lifespan 初始化，复用连接池降低延迟）
+_shared_http_client: Optional[httpx.AsyncClient] = None
+
+
+def set_shared_http_client(client: httpx.AsyncClient) -> None:
+    """由 lifespan 设置共享的 httpx 客户端"""
+    global _shared_http_client
+    _shared_http_client = client
+
+
+def get_shared_http_client() -> Optional[httpx.AsyncClient]:
+    """获取共享的 httpx 客户端"""
+    return _shared_http_client
+
 
 class CircuitBreakerOpenError(Exception):
     """熔断器处于打开状态"""
@@ -186,51 +200,82 @@ async def call_remote_service(
 ) -> Any:
     """
     通过 Nacos 服务发现并调用远程服务
+
+    优先使用 lifespan 中创建的共享 httpx.AsyncClient（长连接池复用），
+    不可用时才创建临时客户端。
     """
     merged_headers: Dict[str, str] = _merge_headers(headers)
     breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
 
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        try:
-            breaker.allow_request()
-            async for attempt in AsyncRetrying(
-                stop=stop_after_attempt(retries),
-                wait=wait_exponential(multiplier=0.2, min=0.2, max=2),
-                retry=retry_if_exception(_should_retry_remote_call),
-                before_sleep=_before_retry_log,
-                reraise=True,
-            ):
-                with attempt:
-                    url: str = _resolve_service_url(service_name, path)
-                    Logger.info(
-                        f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt.retry_state.attempt_number} 次尝试）"
+    # 优先使用共享长连接池，不可用时创建临时客户端
+    shared_client: Optional[httpx.AsyncClient] = get_shared_http_client()
+    if shared_client is not None:
+        return await _call_with_client(
+            shared_client, service_name, path, method, merged_headers,
+            params, data, json, retries, breaker, timeout,
+        )
+    else:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            return await _call_with_client(
+                client, service_name, path, method, merged_headers,
+                params, data, json, retries, breaker, timeout,
+            )
+
+
+async def _call_with_client(
+    client: httpx.AsyncClient,
+    service_name: str,
+    path: str,
+    method: str,
+    headers: Dict[str, str],
+    params: Optional[Dict[str, Any]],
+    data: Optional[Dict[str, Any]],
+    json: Optional[Dict[str, Any]],
+    retries: int,
+    breaker: SimpleCircuitBreaker,
+    timeout: int,
+) -> Any:
+    """使用指定客户端执行远程调用（含熔断和重试）"""
+    try:
+        breaker.allow_request()
+        async for attempt in AsyncRetrying(
+            stop=stop_after_attempt(retries),
+            wait=wait_exponential(multiplier=0.2, min=0.2, max=2),
+            retry=retry_if_exception(_should_retry_remote_call),
+            before_sleep=_before_retry_log,
+            reraise=True,
+        ):
+            with attempt:
+                url: str = _resolve_service_url(service_name, path)
+                Logger.info(
+                    f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt.retry_state.attempt_number} 次尝试）"
+                )
+                result: Any = await _request_remote_service(
+                    client=client,
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    params=params,
+                    data=data,
+                    json=json,
+                )
+                # 校验业务响应码
+                if isinstance(result, dict) and result.get("code") != HttpCode.OK:
+                    error_msg: str = result.get("msg", Constants.UNKNOWN_ERROR)
+                    Logger.error(
+                        f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}"
                     )
-                    result: Any = await _request_remote_service(
-                        client=client,
-                        method=method,
-                        url=url,
-                        headers=merged_headers,
-                        params=params,
-                        data=data,
-                        json=json,
+                    raise BusinessException(
+                        f"调用远程服务 {service_name} 失败: {error_msg}",
+                        HttpCode.BAD_GATEWAY,
+                        Constants.ERROR_SERVICE_CALL_FAILED,
                     )
-                    # 校验业务响应码
-                    if isinstance(result, dict) and result.get("code") != HttpCode.OK:
-                        error_msg: str = result.get("msg", Constants.UNKNOWN_ERROR)
-                        Logger.error(
-                            f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}"
-                        )
-                        raise BusinessException(
-                            f"调用远程服务 {service_name} 失败: {error_msg}",
-                            HttpCode.BAD_GATEWAY,
-                            Constants.ERROR_SERVICE_CALL_FAILED,
-                        )
-                    breaker.record_success()
-                    return result
-        except Exception as e:
-            if not isinstance(e, CircuitBreakerOpenError):
-                breaker.record_failure()
-            raise _build_remote_service_error(service_name, e)
+                breaker.record_success()
+                return result
+    except Exception as e:
+        if not isinstance(e, CircuitBreakerOpenError):
+            breaker.record_failure()
+        raise _build_remote_service_error(service_name, e)
 
     raise BusinessException(
         f"调用远程服务 {service_name} 失败，请稍后重试",

@@ -5,6 +5,7 @@ from urllib.parse import quote_plus
 
 from app.core.base import Constants, Logger
 from app.core.config import load_config
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -87,14 +88,29 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
-async def get_db() -> AsyncGenerator[SASession, None]:
-    with SessionLocal() as session:
-        yield session
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """获取数据库异步会话（aiomysql 驱动，不阻塞 asyncio 事件循环）
 
-
-async def get_db_async() -> AsyncGenerator[AsyncSession, None]:
+    使用 AsyncSessionLocal + aiomysql 异步驱动，所有数据库操作均通过
+    await 执行，完全释放 asyncio 事件循环。
+    """
     async with AsyncSessionLocal() as session:
         yield session
+
+
+async def get_db_sync() -> AsyncGenerator[SASession, None]:
+    """获取数据库同步会话（通过线程池桥接，避免阻塞 asyncio 事件循环）
+
+    使用 pymysql 同步驱动，通过 run_in_threadpool 将 session 的
+    创建和关闭操作放到独立线程池执行。
+
+    建议逐步迁移到 get_db()（AsyncSession + aiomysql）以获得最佳性能。
+    """
+    session: SASession = await run_in_threadpool(SessionLocal)
+    try:
+        yield session
+    finally:
+        await run_in_threadpool(session.close)
 
 
 async def create_tables_async(tables: Optional[List[str]] = None) -> None:

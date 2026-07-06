@@ -4,7 +4,7 @@ from app.common.decorators import log
 from app.core.base import success
 from app.core.db import get_db
 from app.internal.services import UserService, get_user_service
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Query, Request
 
@@ -24,9 +24,9 @@ async def get_new_followers(
     request: Request,
     userId: int = Query(alias="user_id"),
     period: str = "day",
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     userService: UserService = Depends(get_user_service),
-) -> Dict[str, Any]:
+) -> Any:
     """获取新增粉丝数统计"""
 
     result: Dict[str, Any] = await userService.get_new_followers_service(
@@ -45,7 +45,7 @@ async def get_article_view_distribution(
     request: Request,
     userId: int = Query(alias="user_id"),
     userService: UserService = Depends(get_user_service),
-) -> Dict[str, Any]:
+) -> Any:
     """获取文章浏览分布"""
 
     result: Dict[str, Any] = await userService.get_article_view_distribution_service(
@@ -63,9 +63,9 @@ async def get_article_view_distribution(
 async def get_author_follow_statistics(
     request: Request,
     userId: int = Query(alias="user_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     userService: UserService = Depends(get_user_service),
-) -> Dict[str, Any]:
+) -> Any:
     """获取关注作者统计"""
 
     result: Dict[str, Any] = await userService.get_author_follow_statistics_service(
@@ -83,9 +83,9 @@ async def get_author_follow_statistics(
 async def get_monthly_comment_trend(
     request: Request,
     userId: int = Query(alias="user_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     userService: UserService = Depends(get_user_service),
-) -> Dict[str, Any]:
+) -> Any:
     """获取本月评论趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_comment_trend_service(
@@ -103,7 +103,7 @@ async def get_monthly_comment_trend(
 async def get_monthly_like_trend(
     request: Request,
     userId: int = Query(alias="user_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     userService: UserService = Depends(get_user_service),
 ) -> Any:
     """获取本月点赞趋势"""
@@ -123,7 +123,7 @@ async def get_monthly_like_trend(
 async def get_monthly_collect_trend(
     request: Request,
     userId: int = Query(alias="user_id"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     userService: UserService = Depends(get_user_service),
 ) -> Any:
     """获取本月收藏趋势"""

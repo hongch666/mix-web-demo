@@ -97,7 +97,7 @@ agent:
     agent_max_iterations: 5 # Agent 最大迭代轮数
   embedding:
     api_key: ${EMBEDDING_API_KEY:} # 嵌入模型 API Key
-    embedding_model: text-embedding-v3 # 嵌入模型名称
+    embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 嵌入模型名称
     top_k: 5 # RAG检索返回的文档数量
     dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
     similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）

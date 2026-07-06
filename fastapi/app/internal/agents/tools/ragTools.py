@@ -1,4 +1,5 @@
 import os
+import re
 import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
@@ -11,6 +12,8 @@ from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
 from langchain_core.tools import Tool
+from langchain_community.cache import InMemoryCache
+from langchain_core.globals import set_llm_cache
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 抑制 PGVector 弃用警告
@@ -18,9 +21,40 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 DocScore = Tuple[Document, float]
 
+# Prompt 注入防御模式（用于过滤 RAG 检索内容中的恶意文本）
+_INJECTION_PATTERNS: List[str] = [
+    r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions?",
+    r"you\s+are\s+(now\s+)?DAN",
+    r"from\s+now\s+on\s+you\s+are",
+    r"\[SYSTEM\]",
+    r"output\s+(your|all)\s+(system\s+)?prompt",
+    r"reveal\s+(your|the)\s+(instructions?|api.?key)",
+    r"pretend\s+(you\s+are|to\s+be)",
+    r"act\s+as\s+if\s+you\s+are",
+]
+
+
+def sanitize_retrieved_content(text: str) -> str:
+    """过滤 RAG 检索内容中的 Prompt 注入文本
+
+    Args:
+        text: 原始检索内容
+
+    Returns:
+        过滤后的内容，恶意片段替换为 [已过滤]
+    """
+    for pattern in _INJECTION_PATTERNS:
+        if re.search(pattern, text, re.IGNORECASE):
+            Logger.warning(f"检测到疑似 Prompt 注入内容，已过滤")
+            text = re.sub(pattern, "[已过滤]", text, flags=re.IGNORECASE)
+    return text
+
 
 class RAGTools:
-    """RAG工具类 - 基于LangChain实现"""
+    """RAG工具类 - 基于LangChain实现
+
+    支持 HyDE 检索增强、Prompt 注入防御、元数据过滤、Embedding 缓存。
+    """
 
     def __init__(self) -> None:
         """初始化RAG组件"""
@@ -28,6 +62,13 @@ class RAGTools:
         self.logger = Logger
         self.enabled: bool = True
         self._init_error_message: Optional[str] = None
+
+        # 0. 启用 Embedding 缓存（避免重复计算相同文本的向量）
+        try:
+            set_llm_cache(InMemoryCache())
+            self.logger.info("Embedding 缓存已启用")
+        except Exception as cache_error:
+            self.logger.warning(f"Embedding 缓存启用失败: {cache_error}")
 
         # 1. 初始化嵌入模型
         embedding_cfg = (load_config("agent") or {}).get("embedding", {})
@@ -62,6 +103,25 @@ class RAGTools:
                 HttpCode.SERVICE_UNAVAILABLE,
                 Constants.ERROR_INITIALIZATION_ERROR,
             )
+
+        # 1.5 初始化 HyDE LLM（复用已配置的模型，用于生成假设性文档增强检索精度）
+        self.hyde_llm: Optional[Any] = None
+        agent_cfg: Dict[str, Any] = (load_config("agent") or {}).get("closeai", {})
+        if agent_cfg.get("api_key") and agent_cfg.get("base_url"):
+            try:
+                from langchain_openai import ChatOpenAI
+
+                self.hyde_llm = ChatOpenAI(
+                    model=agent_cfg.get("model_name", "gpt-3.5-turbo"),
+                    api_key=agent_cfg["api_key"],
+                    base_url=agent_cfg["base_url"],
+                    temperature=0.3,
+                    max_tokens=300,
+                    timeout=10,
+                )
+                self.logger.info("HyDE LLM 初始化成功（假设性文档生成增强已启用）")
+            except Exception as hyde_error:
+                self.logger.warning(f"HyDE LLM 初始化失败，将使用纯 query 检索: {hyde_error}")
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -125,8 +185,9 @@ class RAGTools:
             for i, (article_id, title, content) in enumerate(
                 zip(article_ids, titles, contents)
             ):
-                # 合并标题和内容
+                # 合并标题和内容，入库前过滤恶意注入文本
                 full_text = f"# {title}\n\n{content}"
+                full_text = sanitize_retrieved_content(full_text)
 
                 # 切分文本
                 chunks = self.text_splitter.split_text(full_text)
@@ -204,13 +265,23 @@ class RAGTools:
 
         return result
 
-    async def search_similar_articles(self, query: str, k: int = 5) -> str:
+    async def search_similar_articles(
+        self,
+        query: str,
+        k: int = 5,
+        use_hyde: bool = True,
+        tags_filter: Optional[List[str]] = None,
+        user_id_filter: Optional[int] = None,
+    ) -> str:
         """
         搜索相似文章
 
         Args:
             query: 查询文本
             k: 返回结果数量（默认使用配置中的top_k，如果传入则使用传入值）
+            use_hyde: 是否启用 HyDE 假设性文档检索增强
+            tags_filter: 按标签过滤（可选）
+            user_id_filter: 按作者ID过滤（可选）
 
         Returns:
             相似文章的文本描述
@@ -221,15 +292,43 @@ class RAGTools:
 
             # 如果未明确传入k值，使用配置中的top_k
             search_k = k if k != 5 else self.top_k
+            fetch_k = max(search_k * 6, 30)
 
-            # 搜索更多结果以便进行智能去重
-            fetch_k = max(search_k * 3, 15)
+            # HyDE: 用 LLM 生成假设性回答替代原始短查询，提升检索精度
+            search_query: str = query
+            if use_hyde and self.hyde_llm is not None:
+                try:
+                    hyde_prompt = f"请用一段话回答以下问题，使用专业语言：\n\n{query}"
+                    hypothetical_doc = await self.hyde_llm.ainvoke(hyde_prompt)
+                    search_query = (
+                        hypothetical_doc.content
+                        if hasattr(hypothetical_doc, "content")
+                        else str(hypothetical_doc)
+                    )
+                    self.logger.info(f"HyDE 假设性文档生成成功（原始查询: {len(query)} 字 → HyDE: {len(search_query)} 字）")
+                except Exception as hyde_error:
+                    self.logger.warning(f"HyDE 生成失败，降级为原查询: {hyde_error}")
+                    search_query = query
 
-            # 使用向量存储进行相似度搜索
-            docs = self.vector_store.similarity_search_with_score(query, k=fetch_k)
+            # 构建元数据过滤器（pgvector JSONB 过滤）
+            pgvector_filter: Optional[Dict[str, Any]] = None
+            if tags_filter or user_id_filter is not None:
+                conditions: List[Dict[str, Any]] = []
+                if tags_filter:
+                    conditions.append({"tags": {"$in": tags_filter}})
+                if user_id_filter is not None:
+                    conditions.append({"user_id": user_id_filter})
+                pgvector_filter = (
+                    {"$and": conditions} if len(conditions) > 1 else conditions[0]
+                )
+
+            # 使用向量存储进行相似度搜索（含元数据过滤）
+            docs = self.vector_store.similarity_search_with_score(
+                search_query, k=fetch_k, filter=pgvector_filter
+            )
 
             # 根据相似度阈值过滤结果
-            filtered_docs = [
+            filtered_docs: List[DocScore] = [
                 (doc, score)
                 for doc, score in docs
                 if score >= self.similarity_threshold
@@ -241,7 +340,7 @@ class RAGTools:
             # 对相似文章进行智能去重处理
             dedup_docs = self._deduplicate_articles(filtered_docs, search_k)
 
-            # 格式化结果
+            # 格式化结果（检索后过滤恶意注入文本）
             result_text = f"找到 {len(dedup_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"
 
             for i, (doc, score) in enumerate(dedup_docs, 1):
@@ -249,6 +348,9 @@ class RAGTools:
                 title = doc.metadata.get("title", "无标题")
                 chunk_index = doc.metadata.get("chunk_index", 0)
                 content = doc.page_content
+
+                # 检索后过滤恶意注入文本
+                content = sanitize_retrieved_content(content)
 
                 result_text += f"{i}. 文章ID: {article_id}, 标题: {title}\n"
                 result_text += f"   相似度分数: {score:.4f}\n"

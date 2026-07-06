@@ -7,7 +7,7 @@ from app.core.base import Constants, HttpCode, Logger
 from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.crud import UserMapper, get_user_mapper
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -19,7 +19,7 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
     使用方式:
         @router.get("/admin-only")
         @requireAdmin
-        async def admin_only_endpoint(db: Session = Depends(get_db)):
+        async def admin_only_endpoint(db: AsyncSession = Depends(get_db)):
             # 只有管理员才能执行这个函数
             pass
 
@@ -42,10 +42,10 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
             )
 
         # 获取数据库会话
-        db: Optional[Session] = kwargs.get("db")
+        db: Optional[AsyncSession] = kwargs.get("db")
         if not db:
             for arg in args:
-                if isinstance(arg, Session):
+                if isinstance(arg, AsyncSession):
                     db = arg
                     break
 
@@ -64,8 +64,8 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     )
                 Logger.info(f"管理员 {user_id} 访问受保护的接口")
                 return await func(*args, **kwargs)
-            db_generator: AsyncGenerator[Session, None] = get_db()
-            current_db: Session = await anext(db_generator)
+            db_generator: AsyncGenerator[AsyncSession, None] = get_db()
+            current_db: AsyncSession = await anext(db_generator)
             try:
                 user_mapper: UserMapper = get_user_mapper()
                 user_role: str = await user_mapper.get_user_role_async(

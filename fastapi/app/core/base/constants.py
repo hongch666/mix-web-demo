@@ -489,6 +489,10 @@ class Constants:
     """无法创建队列消息"""
 
     RABBITMQ_CONNECTION_CLOSED_MESSAGE: str = "RabbitMQ 连接已关闭"
+
+    # httpx 连接池常量
+    HTTP_CLIENT_POOL_INITIALIZED: str = "httpx 共享连接池已初始化"
+    HTTP_CLIENT_POOL_CLOSED: str = "httpx 共享连接池已关闭"
     """RabbitMQ连接关闭消息"""
 
     REDIS_DATABASE_CLEARED_MESSAGE: str = "Redis数据库已清空"

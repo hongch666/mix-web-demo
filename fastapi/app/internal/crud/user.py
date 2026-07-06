@@ -4,14 +4,14 @@ from typing import Any, List, Optional
 from app.core.base import Constants
 from app.internal.models import User
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UserMapper:
     """用户数据访问层 - 数据库查询封装"""
 
     async def _get_users_by_ids_mapper_sync(
-        self, user_ids: List[int], db: Session
+        self, user_ids: List[int], db: AsyncSession
     ) -> List[User]:
         """根据用户ID列表获取用户列表
 
@@ -23,9 +23,9 @@ class UserMapper:
             用户对象列表
         """
         statement = select(User).where(User.id.in_(user_ids))
-        return db.execute(statement).scalars().all()
+        return (await db.execute(statement)).scalars().all()
 
-    async def _get_user_by_id_sync(self, user_id: int, db: Session) -> Optional[User]:
+    async def _get_user_by_id_sync(self, user_id: int, db: AsyncSession) -> Optional[User]:
         """根据用户ID获取用户信息
 
         Args:
@@ -36,9 +36,9 @@ class UserMapper:
             用户对象或None
         """
         statement = select(User).where(User.id == user_id)
-        return db.execute(statement).scalars().first()
+        return (await db.execute(statement)).scalars().first()
 
-    async def _get_user_role_sync(self, user_id: int, db: Session) -> str:
+    async def _get_user_role_sync(self, user_id: int, db: AsyncSession) -> str:
         """获取用户角色
 
         Args:
@@ -56,14 +56,14 @@ class UserMapper:
         return role if role else Constants.ROLE_USER
 
     async def get_users_by_ids_mapper_async(
-        self, user_ids: List[int], db: Session
+        self, user_ids: List[int], db: AsyncSession
     ) -> List[User]:
         return await self._get_users_by_ids_mapper_sync(user_ids, db)
 
-    async def get_user_by_id_async(self, user_id: int, db: Session) -> Optional[User]:
+    async def get_user_by_id_async(self, user_id: int, db: AsyncSession) -> Optional[User]:
         return await self._get_user_by_id_sync(user_id, db)
 
-    async def get_user_role_async(self, user_id: int, db: Session) -> str:
+    async def get_user_role_async(self, user_id: int, db: AsyncSession) -> str:
         return await self._get_user_role_sync(user_id, db)
 
 

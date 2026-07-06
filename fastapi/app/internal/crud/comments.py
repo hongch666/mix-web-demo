@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List
@@ -6,7 +5,7 @@ from typing import Any, Dict, List
 from app.core.base import Logger
 from app.internal.models import Comments, User
 from sqlalchemy import Date, cast, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 sa_func = func
 
@@ -14,12 +13,12 @@ sa_func = func
 class CommentsMapper:
     """评论 Mapper"""
 
-    def _get_ai_comments_num_by_article_id_mapper_sync(
-        self, article_id: int, db: Session
+    async def _get_ai_comments_num_by_article_id_mapper_sync(
+        self, article_id: int, db: AsyncSession
     ) -> int:
         # 第一步: 查询所有 role 为 "ai" 的用户ID
         ai_user_statement = select(User.id).where(User.role == "ai")
-        ai_user_ids = db.execute(ai_user_statement).scalars().all()
+        ai_user_ids = (await db.execute(ai_user_statement)).scalars().all()
 
         # 如果没有AI用户,直接返回0
         if not ai_user_ids:
@@ -29,34 +28,34 @@ class CommentsMapper:
         comments_statement = select(Comments).where(
             Comments.article_id == article_id, Comments.user_id.in_(ai_user_ids)
         )
-        ai_comments = db.execute(comments_statement).scalars().all()
+        ai_comments = (await db.execute(comments_statement)).scalars().all()
 
         return len(ai_comments)
 
-    def _create_comment_mapper_sync(self, comment: Comments, db: Session) -> Comments:
+    async def _create_comment_mapper_sync(self, comment: Comments, db: AsyncSession) -> Comments:
         db.add(comment)
-        db.commit()
-        db.refresh(comment)
+        await db.commit()
+        await db.refresh(comment)
         return comment
 
-    def _delete_ai_comments_by_article_id_mapper_sync(
-        self, article_id: int, db: Session
+    async def _delete_ai_comments_by_article_id_mapper_sync(
+        self, article_id: int, db: AsyncSession
     ) -> None:
         # 查询所有 role 为 "ai" 的用户ID
         ai_user_statement = select(User.id).where(User.role == "ai")
-        ai_user_ids = db.execute(ai_user_statement).scalars().all()
+        ai_user_ids = (await db.execute(ai_user_statement)).scalars().all()
         comments_statement = select(Comments).where(
             Comments.article_id == article_id, Comments.user_id.in_(ai_user_ids)
         )
-        comments_to_delete = db.execute(comments_statement).scalars().all()
+        comments_to_delete = (await db.execute(comments_statement)).scalars().all()
 
         for comment in comments_to_delete:
-            db.delete(comment)
+            await db.delete(comment)
 
-        db.commit()
+        await db.commit()
 
-    def _get_monthly_comment_trend_mapper_sync(
-        self, db: Session, user_id: int
+    async def _get_monthly_comment_trend_mapper_sync(
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月评论的趋势"""
 
@@ -85,7 +84,7 @@ class CommentsMapper:
             .order_by(cast(Comments.create_time, Date))
         )
 
-        results = db.execute(statement).all()
+        results = (await db.execute(statement)).all()
 
         daily_trends: List[Dict[str, Any]] = []
         total: int = 0
@@ -101,30 +100,24 @@ class CommentsMapper:
         return {"total": total, "daily_trends": daily_trends}
 
     async def get_ai_comments_num_by_article_id_mapper_async(
-        self, article_id: int, db: Session
+        self, article_id: int, db: AsyncSession
     ) -> int:
-        return await asyncio.to_thread(
-            self._get_ai_comments_num_by_article_id_mapper_sync, article_id, db
-        )
+        return await self._get_ai_comments_num_by_article_id_mapper_sync(article_id, db)
 
     async def create_comment_mapper_async(
-        self, comment: Comments, db: Session
+        self, comment: Comments, db: AsyncSession
     ) -> Comments:
-        return await asyncio.to_thread(self._create_comment_mapper_sync, comment, db)
+        return await self._create_comment_mapper_sync(comment, db)
 
     async def delete_ai_comments_by_article_id_mapper_async(
-        self, article_id: int, db: Session
+        self, article_id: int, db: AsyncSession
     ) -> None:
-        await asyncio.to_thread(
-            self._delete_ai_comments_by_article_id_mapper_sync, article_id, db
-        )
+        await self._delete_ai_comments_by_article_id_mapper_sync(article_id, db)
 
     async def get_monthly_comment_trend_mapper_async(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
-        return await asyncio.to_thread(
-            self._get_monthly_comment_trend_mapper_sync, db, user_id
-        )
+        return await self._get_monthly_comment_trend_mapper_sync(db, user_id)
 
 
 @lru_cache()

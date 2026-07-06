@@ -4,14 +4,14 @@ from typing import Any, Dict, Optional
 from app.core.base import Logger
 from app.internal.models import CategoryReference
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class CategoryReferenceMapper:
     """权威参考文本 Mapper - 直接从数据库查询"""
 
     async def _get_category_reference_by_sub_category_id_mapper_sync(
-        self, sub_category_id: int, db: Session
+        self, sub_category_id: int, db: AsyncSession
     ) -> Optional[Dict[str, Any]]:
         """
         根据子分类ID获取权威参考文本
@@ -22,7 +22,7 @@ class CategoryReferenceMapper:
         statement = select(CategoryReference).where(
             CategoryReference.sub_category_id == sub_category_id
         )
-        category_ref = db.execute(statement).scalars().first()
+        category_ref = (await db.execute(statement)).scalars().first()
 
         if category_ref:
             Logger.info(f"成功获取参考文本: type={category_ref.type}")
@@ -38,7 +38,7 @@ class CategoryReferenceMapper:
             return None
 
     async def get_category_reference_by_sub_category_id_mapper_async(
-        self, sub_category_id: int, db: Session
+        self, sub_category_id: int, db: AsyncSession
     ) -> Optional[Dict[str, Any]]:
         return await self._get_category_reference_by_sub_category_id_mapper_sync(
             sub_category_id, db
