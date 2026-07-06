@@ -706,32 +706,4 @@ const (
 
 	// 释放分布式锁错误消息
 	REDIS_LOCK_RELEASE_ERROR = "释放分布式锁错误: %v"
-
-	// Swagger 静态HTML
-	SWAGGER_HTML = `<!DOCTYPE html>
-		<html>
-		<head>
-			<title>GoZero API 文档</title>
-			<meta charset="UTF-8">
-			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<link rel="stylesheet" href="/swagger/swagger-ui.css">
-		</head>
-		<body>
-			<div id="swagger-ui"></div>
-			<script src="/swagger/swagger-ui-bundle.js"></script>
-			<script src="/swagger/swagger-ui-standalone-preset.js"></script>
-			<script>
-				window.onload = function() {
-					SwaggerUIBundle({
-						url: '/swagger/doc.json',
-						dom_id: '#swagger-ui',
-						presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-						layout: 'StandaloneLayout',
-						deepLinking: true
-					})
-				}
-			</script>
-		</body>
-		</html>
-	`
 )

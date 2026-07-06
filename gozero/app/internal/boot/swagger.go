@@ -2,16 +2,15 @@ package boot
 
 import (
 	"net/http"
-	"os"
-	"path/filepath"
 
-	"app/common/utils"
+	"app/docs"
 
 	swaggerFiles "github.com/swaggo/files"
 	"github.com/zeromicro/go-zero/rest"
 )
 
 // registerSwaggerRoute 注册 Swagger 文档路由
+// 所有静态资源通过 go:embed 编译进二进制，无需运行时磁盘读取
 func registerSwaggerRoute(server *rest.Server) {
 	// /swagger 重定向到 /swagger/index.html
 	server.AddRoute(rest.Route{
@@ -22,32 +21,35 @@ func registerSwaggerRoute(server *rest.Server) {
 		},
 	})
 
-	// /swagger/index.html 返回自定义 HTML，引用本地静态资源
+	// /swagger/index.html — 通过 go:embed 编译期内嵌，不再从 string 常量读取
 	server.AddRoute(rest.Route{
 		Method: http.MethodGet,
 		Path:   "/swagger/index.html",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
+			content, err := docs.StaticFiles.ReadFile("swagger.html")
+			if err != nil {
+				http.Error(w, "获取 Swagger 页面失败", http.StatusInternalServerError)
+				return
+			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(utils.SWAGGER_HTML))
+			_, _ = w.Write(content)
 		},
 	})
 
-	// /swagger/doc.json 从文件系统返回 Swagger JSON 数据
+	// /swagger/doc.json — 通过 go:embed 编译期内嵌，不再 os.ReadFile("docs/main.json")
 	server.AddRoute(rest.Route{
 		Method: http.MethodGet,
 		Path:   "/swagger/doc.json",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			// 尝试读取goctl生成的main.json文件
-			swaggerPath := filepath.Join("docs", "main.json")
-			doc, err := os.ReadFile(swaggerPath)
+			content, err := docs.StaticFiles.ReadFile("main.json")
 			if err != nil {
-				http.Error(w, utils.GET_SWAGGER_FAIL, http.StatusInternalServerError)
+				http.Error(w, "获取 Swagger 文档失败", http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(doc)
+			_, _ = w.Write(content)
 		},
 	})
 
