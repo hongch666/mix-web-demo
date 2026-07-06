@@ -4,7 +4,7 @@ SESSION="multi-services"
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # 默认配置
-DEFAULT_JAVA_BUILD="gradle"  # gradle 或 maven
+DEFAULT_JAVA_BUILD="maven"  # gradle 或 maven
 DEFAULT_NODE_RUNTIME="bun"   # bun 或 npm
 DEFAULT_PYTHON_RUNTIME="uv"  # uv 或 python
 
@@ -99,14 +99,14 @@ if [ "$INTERACTIVE_MODE" = true ]; then
 
     # Java 构建工具选择
     echo "【1】请选择 Java 构建工具 (Spring & Gateway):"
-    echo "    1) gradle (推荐，更快) [默认]"
-    echo "    2) maven"
-    read -p "请输入选择 [1]: " java_choice
-    java_choice=${java_choice:-1}
+    echo "    1) gradle"
+    echo "    2) maven (默认)"
+    read -p "请输入选择 [2]: " java_choice
+    java_choice=${java_choice:-2}
     case $java_choice in
         1) JAVA_BUILD="gradle" ;;
         2) JAVA_BUILD="maven" ;;
-        *) echo "无效选择，使用默认值: gradle"; JAVA_BUILD="gradle" ;;
+        *) echo "无效选择，使用默认值: maven"; JAVA_BUILD="maven" ;;
     esac
 
     echo ""
