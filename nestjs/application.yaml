@@ -75,7 +75,7 @@ github:
     accessTokenUrl: https://github.com/login/oauth/access_token
     userApiUrl: https://api.github.com/user
     emailsApiUrl: https://api.github.com/user/emails
-    apiVersion: 2026-03-10
+    apiVersion: "2026-03-10"
     frontendSuccessUrl: http://localhost:5173
     frontendFailureUrl: http://localhost:5173/login
 
