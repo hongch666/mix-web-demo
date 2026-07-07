@@ -59,6 +59,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return articleLikeMapper.insert(like) > 0;
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional
     @ArticleSync(action = "unlike", description = "取消点赞了1篇文章")
@@ -70,6 +71,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return articleLikeMapper.delete(queryWrapper) > 0;
     }
 
+    @SuppressWarnings("null")
     @Override
     public boolean isLiked(Long articleId, Long userId) {
         LambdaQueryWrapper<ArticleLike> queryWrapper = Wrappers.lambdaQuery();
@@ -79,6 +81,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return articleLikeMapper.selectOne(queryWrapper) != null;
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<ArticleLikeVO> listUserLikes(Long userId, Page<ArticleLike> page) {
         LambdaQueryWrapper<ArticleLike> queryWrapper = Wrappers.lambdaQuery();
@@ -143,6 +146,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return voPage;
     }
 
+    @SuppressWarnings("null")
     @Override
     public Long getLikeCountByArticleId(Long articleId) {
         LambdaQueryWrapper<ArticleLike> queryWrapper = Wrappers.lambdaQuery();

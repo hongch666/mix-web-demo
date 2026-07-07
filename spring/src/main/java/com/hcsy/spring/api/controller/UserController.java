@@ -3,6 +3,7 @@ package com.hcsy.spring.api.controller;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -51,7 +52,6 @@ import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
-import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -122,6 +122,7 @@ public class UserController {
         return Result.success();
     }
 
+    @SuppressWarnings("null")
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })

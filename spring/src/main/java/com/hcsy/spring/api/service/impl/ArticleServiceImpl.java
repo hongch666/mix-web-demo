@@ -41,6 +41,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final CategoryService categoryService;
     private final SubCategoryService subCategoryService;
 
+    @SuppressWarnings("null")
     @Override
     public List<Article> listPublishedArticles() {
         return lambdaQuery()
@@ -93,6 +94,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return voPage;
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Article> listPublishedArticles(Page<Article> page) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
@@ -102,6 +104,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return this.page(page, queryWrapper);
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
@@ -111,6 +114,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return this.page(page, queryWrapper);
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Article> listArticlesById(Page<Article> page, Integer id, boolean onlyPublished) {
         LambdaQueryWrapper<Article> queryWrapper = Wrappers.lambdaQuery();
@@ -224,12 +228,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
     }
 
+    @SuppressWarnings("null")
     @Override
     public List<Article> listUnpublishedArticles() {
         return this.baseMapper.selectList(
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Article> listUnpublishedArticles(Page<Article> page) {
         return this.baseMapper.selectPage(page,
@@ -238,6 +244,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
     @Override
     public IPage<ArticleWithCategoryVO> listUnpublishedArticlesWithCategory(Page<Article> page) {
+        @SuppressWarnings("null")
         IPage<Article> resultPage = this.baseMapper.selectPage(page,
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
 
@@ -281,12 +288,14 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return voPage;
     }
 
+    @SuppressWarnings("null")
     @Override
     public Article findByArticleTitle(String articleTitle) {
         return this.baseMapper.selectOne(
                 new LambdaQueryWrapper<Article>().eq(Article::getTitle, articleTitle));
     }
 
+    @SuppressWarnings("null")
     @Override
     public List<Article> listAllArticlesByTitle(String articleTitle) {
         return this.baseMapper.selectList(
@@ -296,6 +305,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     /**
      * 批量查询文章列表中的用户信息，返回 userId -> User 映射
      */
+    @SuppressWarnings("null")
     private Map<Long, User> batchQueryUsers(List<Article> articles) {
         Set<Long> userIds = articles.stream()
                 .map(Article::getUserId)
@@ -311,6 +321,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     /**
      * 批量查询文章列表中的子分类信息，返回 subCategoryId -> SubCategory 映射
      */
+    @SuppressWarnings("null")
     private Map<Long, SubCategory> batchQuerySubCategories(List<Article> articles) {
         Set<Long> subCategoryIds = articles.stream()
                 .map(Article::getSubCategoryId)
@@ -327,6 +338,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     /**
      * 根据子分类集合批量查询主分类信息，返回 categoryId -> Category 映射
      */
+    @SuppressWarnings("null")
     private Map<Long, Category> batchQueryCategories(java.util.Collection<SubCategory> subCategories) {
         Set<Long> categoryIds = subCategories.stream()
                 .map(SubCategory::getCategoryId)

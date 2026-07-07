@@ -147,6 +147,7 @@ public class ArticleController {
         return Result.success();
     }
 
+    @SuppressWarnings("null")
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
     @RequirePermission(

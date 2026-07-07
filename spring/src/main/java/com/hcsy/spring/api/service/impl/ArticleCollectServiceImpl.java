@@ -60,6 +60,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return articleCollectMapper.insert(collect) > 0;
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional
     @ArticleSync(action = "uncollect", description = "取消收藏了1篇文章")
@@ -71,6 +72,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return articleCollectMapper.delete(queryWrapper) > 0;
     }
 
+    @SuppressWarnings("null")
     @Override
     public boolean isCollected(Long articleId, Long userId) {
         LambdaQueryWrapper<ArticleCollect> queryWrapper = Wrappers.lambdaQuery();
@@ -80,6 +82,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return articleCollectMapper.selectOne(queryWrapper) != null;
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<ArticleCollectVO> listUserCollects(Long userId, Page<ArticleCollect> page) {
         LambdaQueryWrapper<ArticleCollect> queryWrapper = Wrappers.lambdaQuery();
@@ -143,6 +146,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return voPage;
     }
 
+    @SuppressWarnings("null")
     @Override
     public Long getCollectCountByArticleId(Long articleId) {
         LambdaQueryWrapper<ArticleCollect> queryWrapper = Wrappers.lambdaQuery();

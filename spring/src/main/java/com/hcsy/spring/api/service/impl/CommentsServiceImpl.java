@@ -30,6 +30,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     private final ArticleService articleService;
     private final UserService userService;
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Comments> listCommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
         // 准备查询条件
@@ -80,6 +81,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Comments> listAICommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
         // 准备查询条件
@@ -127,6 +129,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId) {
         LambdaQueryWrapper<Comments> queryWrapper = new LambdaQueryWrapper<>();
@@ -141,6 +144,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsByArticleIdWithoutAI(page, articleId, sortWay);
     }
 
+    @SuppressWarnings("null")
     @Override
     public List<Comments> listAICommentsByArticleId(Long articleId) {
         // 通过 SQL 直接获取 AI 用户 ID 列表，避免内存中 stream 操作

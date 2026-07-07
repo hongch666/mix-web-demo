@@ -60,6 +60,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final ImageCaptchaService imageCaptchaService;
     private final ObjectMapper objectMapper;
 
+    @SuppressWarnings("null")
     @Override
     public UserListVO listUsersWithFilter(long page, long size, String username) {
         // 1. 先获取所有符合条件的用户ID（轻量查询）
@@ -159,6 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
     }
 
+    @SuppressWarnings("null")
     @Override
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
@@ -168,6 +170,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userMapper.selectOne(queryWrapper);
     }
 
+    @SuppressWarnings("null")
     @Override
     public List<User> listAllUserByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
@@ -290,6 +293,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         emailVerificationService.markEmailAsVerified(registerDTO.getEmail());
     }
 
+    @SuppressWarnings("null")
     @Override
     public UserListVO getAllUsers(String username) {
         // 先通过 SQL COUNT 获取总数，避免内存中 list.size()
@@ -323,6 +327,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
     }
 
+    @SuppressWarnings("null")
     @Override
     public UserListVO getAllAiUsers() {
         // 先通过 SQL COUNT 获取总数，避免内存中 list.size()
@@ -390,6 +395,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         redisUtil.set(RedisKeys.userStatus(user.getId()), "0");
     }
 
+    @SuppressWarnings("null")
     @Override
     public User findByEmail(String email) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();

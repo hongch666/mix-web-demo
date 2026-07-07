@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -37,7 +38,6 @@ import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
-import org.springdoc.core.annotations.ParameterObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -113,6 +113,7 @@ public class CommentsController {
         return Result.success();
     }
 
+    @SuppressWarnings("null")
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = {

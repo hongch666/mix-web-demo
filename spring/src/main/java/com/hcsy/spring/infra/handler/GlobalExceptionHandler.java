@@ -50,6 +50,7 @@ public class GlobalExceptionHandler {
         return Result.error(HttpCode.INTERNAL_SERVER_ERROR, Constants.SYSTEM_EXCEPTION_BACK);
     }
 
+    @SuppressWarnings("null")
     private String extractValidationMessage(Exception ex) {
         if (ex instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
             FieldError fieldError = methodArgumentNotValidException.getBindingResult().getFieldError();

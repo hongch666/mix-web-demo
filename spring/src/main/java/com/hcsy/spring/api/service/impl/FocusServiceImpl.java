@@ -50,6 +50,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.insert(focus) > 0;
     }
 
+    @SuppressWarnings("null")
     @Override
     @Transactional
     @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
@@ -61,6 +62,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.delete(queryWrapper) > 0;
     }
 
+    @SuppressWarnings("null")
     @Override
     public boolean isFocused(Long userId, Long focusId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
@@ -70,6 +72,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.selectOne(queryWrapper) != null;
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<FocusUserVO> listUserFocuses(Long userId, Page<Focus> page) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
@@ -99,6 +102,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return resultPage;
     }
 
+    @SuppressWarnings("null")
     @Override
     public IPage<FocusUserVO> listUserFollowers(Long userId, Page<Focus> page) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
@@ -128,6 +132,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return resultPage;
     }
 
+    @SuppressWarnings("null")
     @Override
     public Long getFocusCountByUserId(Long userId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
@@ -136,6 +141,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.selectCount(queryWrapper);
     }
 
+    @SuppressWarnings("null")
     @Override
     public Long getFollowerCountByUserId(Long userId) {
         LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
