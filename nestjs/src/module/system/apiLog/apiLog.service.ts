@@ -79,16 +79,22 @@ export class ApiLogService {
       },
     ];
 
-    // 检查并创建缺失的索引
-    for (const indexConfig of requiredIndexes) {
-      const indexExists: boolean = Object.values(existingIndexes).some(
-        (index: MongoIndexInfo) => index.name === indexConfig.options.name,
+    // 检查并创建缺失的索引（并行批量创建，避免启动期串行等待）
+    const missingIndexes = requiredIndexes.filter(
+      (indexConfig) =>
+        !Object.values(existingIndexes).some(
+          (index: MongoIndexInfo) => index.name === indexConfig.options.name,
+        ),
+    );
+    if (missingIndexes.length > 0) {
+      await Promise.all(
+        missingIndexes.map((indexConfig) =>
+          collection.createIndex(indexConfig.spec, indexConfig.options),
+        ),
       );
-
-      if (!indexExists) {
-        await collection.createIndex(indexConfig.spec, indexConfig.options);
+      missingIndexes.forEach((indexConfig) => {
         logger.info(`ApiLog 索引已创建: ${indexConfig.options.name}`);
-      }
+      });
     }
   }
 

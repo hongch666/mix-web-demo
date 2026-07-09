@@ -53,13 +53,11 @@ export class UserService {
 
   // 创建或更新 GitHub 用户
   async findOrCreateGithubUser(profile: GithubUserProfile): Promise<User> {
-    const existingUser: User | null = await this.getUserByGithubId(
-      profile.githubId,
-    );
-    const availableEmail: string | null = await this.resolveAvailableEmail(
-      profile.email,
-      existingUser?.id,
-    );
+    // getUserByGithubId 与 resolveAvailableEmail 为独立 DB 查询，并行降低延迟
+    const [existingUser, availableEmail] = await Promise.all([
+      this.getUserByGithubId(profile.githubId),
+      this.resolveAvailableEmail(profile.email, undefined),
+    ]);
 
     if (existingUser) {
       existingUser.githubLogin = profile.githubLogin;

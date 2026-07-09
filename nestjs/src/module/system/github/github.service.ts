@@ -139,10 +139,16 @@ export class GithubService {
       const accessToken: string = await this.exchangeCodeForAccessToken(
         query.code,
       );
-      const githubProfile: GithubUserResponse =
-        await this.fetchGithubProfile(accessToken);
+      // profile 与 emails 为两个完全独立的 GitHub API 调用，Promise.all 并行降低延迟
+      const [githubProfile, githubEmailFallback]: [
+        GithubUserResponse,
+        string | null,
+      ] = await Promise.all([
+        this.fetchGithubProfile(accessToken),
+        this.fetchPrimaryEmail(accessToken),
+      ]);
       const githubEmail: string | null =
-        githubProfile.email || (await this.fetchPrimaryEmail(accessToken));
+        githubProfile.email || githubEmailFallback;
       const user: User = await this.userService.findOrCreateGithubUser({
         githubId: String(githubProfile.id),
         githubLogin: githubProfile.login,

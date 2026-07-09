@@ -85,16 +85,22 @@ export class ArticleLogService {
       },
     ];
 
-    // 检查并创建缺失的索引
-    for (const indexConfig of requiredIndexes) {
-      const indexExists: boolean = Object.values(existingIndexes).some(
-        (index: MongoIndexInfo) => index.name === indexConfig.options.name,
+    // 检查并创建缺失的索引（并行批量创建，避免启动期串行等待）
+    const missingIndexes = requiredIndexes.filter(
+      (indexConfig) =>
+        !Object.values(existingIndexes).some(
+          (index: MongoIndexInfo) => index.name === indexConfig.options.name,
+        ),
+    );
+    if (missingIndexes.length > 0) {
+      await Promise.all(
+        missingIndexes.map((indexConfig) =>
+          collection.createIndex(indexConfig.spec, indexConfig.options),
+        ),
       );
-
-      if (!indexExists) {
-        await collection.createIndex(indexConfig.spec, indexConfig.options);
+      missingIndexes.forEach((indexConfig) => {
         logger.info(`索引已创建: ${indexConfig.options.name}`);
-      }
+      });
     }
   }
 
@@ -150,28 +156,31 @@ export class ArticleLogService {
     if (articleId) filters.articleId = Number(articleId);
     if (action) filters.action = action;
 
-    // 根据用户名搜索，先查找匹配的用户ID
-    if (username) {
-      const users = await this.userService.getUsersByName(username);
-      const userIds = users.map((user) => user.id);
-      if (userIds.length > 0) {
-        filters.userId = { $in: userIds };
-      } else {
-        // 如果没有找到匹配的用户，返回空结果
-        return { total: 0, list: [] };
-      }
-    }
+    // 根据用户名和文章标题并行查找匹配的用户ID和文章ID（两次查询独立，Promise.all 降低延迟）
+    if (username || articleTitle) {
+      const [users, articles] = await Promise.all([
+        username
+          ? this.userService.getUsersByName(username)
+          : Promise.resolve([]),
+        articleTitle
+          ? this.articleService.getArticlesByTitle(articleTitle)
+          : Promise.resolve([]),
+      ]);
 
-    // 根据文章标题搜索，先查找匹配的文章ID
-    if (articleTitle) {
-      const articles =
-        await this.articleService.getArticlesByTitle(articleTitle);
-      const articleIds = articles.map((article) => article.id);
-      if (articleIds.length > 0) {
+      if (username) {
+        const userIds = users.map((user) => user.id);
+        if (userIds.length === 0) {
+          return { total: 0, list: [] };
+        }
+        filters.userId = { $in: userIds };
+      }
+
+      if (articleTitle) {
+        const articleIds = articles.map((article) => article.id);
+        if (articleIds.length === 0) {
+          return { total: 0, list: [] };
+        }
         filters.articleId = { $in: articleIds };
-      } else {
-        // 如果没有找到匹配的文章，返回空结果
-        return { total: 0, list: [] };
       }
     }
 
