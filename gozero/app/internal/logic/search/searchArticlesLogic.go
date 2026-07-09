@@ -19,6 +19,8 @@ import (
 	"app/model/search"
 
 	rabbitmq "github.com/wagslane/go-rabbitmq"
+
+	"github.com/zeromicro/go-zero/core/mr"
 )
 
 type SearchArticlesLogic struct {
@@ -128,12 +130,24 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		vectorItems := make([]fastapiClient.VectorEnhanceItem, 0)
 		graphItems := make([]fastapiClient.GraphEnhanceItem, 0)
 
+		// 向量增强与图谱增强是两次相互独立的远程调用，用 mr.Finish 并发执行，
+		// 将搜索尾延迟由两者耗时之和降为两者之大者。两个 fetch 均在内部吞掉错误
+		// 并降级为空切片、返回 nil，因此 mr.Finish 不会触发快速失败，可安全并发。
+		var enhanceTasks []func() error
 		if vectorEnabled {
-			vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+			enhanceTasks = append(enhanceTasks, func() error {
+				vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+				return nil
+			})
 		}
-
 		if graphEnabled {
-			graphItems = l.fetchGraphEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+			enhanceTasks = append(enhanceTasks, func() error {
+				graphItems = l.fetchGraphEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+				return nil
+			})
+		}
+		if len(enhanceTasks) > 0 {
+			_ = mr.Finish(enhanceTasks...)
 		}
 
 		if vectorEnabled || graphEnabled {
