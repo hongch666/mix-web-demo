@@ -23,7 +23,7 @@ public class AsyncNeo4jSyncServiceImpl implements AsyncNeo4jSyncService {
     private final SimpleLogger logger;
 
     @Override
-    @Async("asyncExecutor")
+    @Async("syncTaskExecutor")
     public void syncNeo4jAsync(String methodName, String description) {
         logger.info(Constants.NEO4J_SYNC_TASK_START_MESSAGE, methodName, description);
 

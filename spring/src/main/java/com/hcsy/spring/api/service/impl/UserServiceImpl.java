@@ -7,6 +7,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+
+import jakarta.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,7 @@ import com.hcsy.spring.common.utils.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
@@ -59,6 +65,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
     private final ObjectMapper objectMapper;
+    private final SimpleLogger logger;
+
+    @Resource(name = "userQueryExecutor")
+    private Executor userQueryExecutor;
 
     @SuppressWarnings("null")
     @Override
@@ -102,12 +112,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 offset,
                 size);
 
-        // 4. 转换为 UserVO，设置登录状态和在线设备数
+        // 4. 转换为 UserVO，设置登录状态和在线设备数（并行批量查询减少 N+1 延迟）
         List<UserVO> userVOs = new java.util.ArrayList<>();
+        ConcurrentHashMap<Long, Long> deviceCountMap = new ConcurrentHashMap<>();
+
+        // 并行查询所有用户的在线设备数
+        List<CompletableFuture<Void>> deviceCountTasks = new ArrayList<>();
+        for (User user : users) {
+            Long userId = user.getId();
+            deviceCountTasks.add(CompletableFuture.runAsync(() -> {
+                deviceCountMap.put(userId, tokenService.getUserOnlineDeviceCount(userId));
+            }, userQueryExecutor));
+        }
+        try {
+            CompletableFuture.allOf(deviceCountTasks.toArray(new CompletableFuture[0])).get();
+        } catch (Exception e) {
+            // 并行查询失败时降级为串行兜底，保证可用性
+            logger.warning("并行查询在线设备数失败，降级为串行", e.getMessage());
+            for (User user : users) {
+                deviceCountMap.put(user.getId(), tokenService.getUserOnlineDeviceCount(user.getId()));
+            }
+        }
+
         for (User user : users) {
             UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
             vo.setLoginStatus(loginStatusMap.getOrDefault(user.getId(), 0));
-            vo.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()));
+            vo.setOnlineDeviceCount(deviceCountMap.getOrDefault(user.getId(), 0L));
             userVOs.add(vo);
         }
 

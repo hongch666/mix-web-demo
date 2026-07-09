@@ -1,10 +1,13 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import jakarta.annotation.Resource;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.exceptions.BusinessException;
@@ -28,6 +31,9 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     private final FastAPIClient fastAPIClient;
     private final SimpleLogger logger;
 
+    @Resource(name = "syncTaskExecutor")
+    private Executor syncTaskExecutor;
+
     private static final int SYNC_TIMEOUT_SECONDS = 30;
     private static final int MAX_RETRY_TIMES = 3;
     private static final long RETRY_DELAY_MS = 1000;
@@ -40,7 +46,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
      * @param username 触发同步的用户名
      */
     @Override
-    @Async("asyncExecutor")
+    @Async("syncTaskExecutor")
     public void syncAllAsync(Long userId, String username) {
         long startTime = System.currentTimeMillis();
         String user = (username != null ? username : Constants.DEFAULT_USER) +
@@ -50,22 +56,22 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         try {
             logger.info(user + Constants.SYNC);
 
-            // 使用 CompletableFuture 并行执行ES同步
+            // 使用 CompletableFuture + syncTaskExecutor 并行执行ES同步
             CompletableFuture<Void> esFuture = CompletableFuture.runAsync(
                 () -> syncESWithRetry(MAX_RETRY_TIMES),
-                CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
+                syncTaskExecutor
             );
 
-            // 使用 CompletableFuture 并行执行Vector同步
+            // 使用 CompletableFuture + syncTaskExecutor 并行执行Vector同步
             CompletableFuture<Void> vectorFuture = CompletableFuture.runAsync(
                 () -> syncVectorWithRetry(MAX_RETRY_TIMES),
-                CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
+                syncTaskExecutor
             );
 
-            // 使用 CompletableFuture 并行执行缓存清理
+            // 使用 CompletableFuture + syncTaskExecutor 并行执行缓存清理
             CompletableFuture<Void> cacheFuture = CompletableFuture.runAsync(
                 () -> clearCacheWithRetry(MAX_RETRY_TIMES),
-                CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS)
+                syncTaskExecutor
             );
 
             CompletableFuture.allOf(esFuture, vectorFuture, cacheFuture)
