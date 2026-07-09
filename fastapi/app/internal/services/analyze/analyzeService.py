@@ -546,17 +546,26 @@ class AnalyzeService:
         except Exception as cache_e:
             Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
-        # ========== 步骤2: 缓存未命中，查询DB ==========
+        # ========== 步骤2: 缓存未命中，并发查询DB（8个独立统计指标，asyncio.gather 并行降低延迟） ==========
         Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
-        total_views: int = await self.articleMapper.get_total_views_mapper_async(db)
-        total_articles: int = await self.articleMapper.get_total_articles_mapper_async(db)
-        active_authors: int = await self.articleMapper.get_active_authors_mapper_async(db)
-        average_views: float = await self.articleMapper.get_average_views_mapper_async(db)
-        total_likes: int = await self.likeMapper.get_total_likes_mapper_async(db)
-        average_likes: float = await self.likeMapper.get_average_likes_mapper_async(db)
-        total_collects: int = await self.collectMapper.get_total_collects_mapper_async(db)
-        average_collects: float = await self.collectMapper.get_average_collects_mapper_async(
-            db
+        (
+            total_views,
+            total_articles,
+            active_authors,
+            average_views,
+            total_likes,
+            average_likes,
+            total_collects,
+            average_collects,
+        ) = await asyncio.gather(
+            self.articleMapper.get_total_views_mapper_async(db),
+            self.articleMapper.get_total_articles_mapper_async(db),
+            self.articleMapper.get_active_authors_mapper_async(db),
+            self.articleMapper.get_average_views_mapper_async(db),
+            self.likeMapper.get_total_likes_mapper_async(db),
+            self.likeMapper.get_average_likes_mapper_async(db),
+            self.collectMapper.get_total_collects_mapper_async(db),
+            self.collectMapper.get_average_collects_mapper_async(db),
         )
 
         statistics: Dict[str, Any] = {
@@ -639,11 +648,12 @@ class AnalyzeService:
                 local_data_source = "DB"
                 Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
 
-            all_categories: List[Any] = await self.categoryMapper.get_all_categories_mapper_async(
-                db
-            )
-            subcategories: List[Dict[str, Any]] = (
-                await self.categoryMapper.get_subcategories_with_parent_mapper_async(db)
+            # 两个分类查询相互独立，gather 并行降低延迟
+            all_categories: List[Any]
+            subcategories: List[Dict[str, Any]]
+            all_categories, subcategories = await asyncio.gather(
+                self.categoryMapper.get_all_categories_mapper_async(db),
+                self.categoryMapper.get_subcategories_with_parent_mapper_async(db),
             )
             sub_cat_map: Dict[int, Dict[str, Any]] = {sc["id"]: sc for sc in subcategories}
 

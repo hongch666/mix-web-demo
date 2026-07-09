@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
@@ -53,38 +54,45 @@ class UserService:
             timeline: List[Dict[str, Any]] = []
 
             if period == "day":
-                for i in range(6, -1, -1):
-                    date: datetime = datetime.now() - timedelta(days=i)
+                # 7个独立时间窗口查询改为 asyncio.gather 并行
+                async def _one_day(days_ago: int) -> Dict[str, Any]:
+                    date: datetime = datetime.now() - timedelta(days=days_ago)
                     start_date: datetime = date.replace(
                         hour=0, minute=0, second=0, microsecond=0
                     )
                     end_date: datetime = date.replace(
                         hour=23, minute=59, second=59, microsecond=999999
                     )
-                    count: int = (
-                        await self.focusMapper.get_followers_in_period_mapper_async(
-                            db, user_id, start_date, end_date
-                        )
+                    count: int = await self.focusMapper.get_followers_in_period_mapper_async(
+                        db, user_id, start_date, end_date
                     )
-                    timeline.append({"date": date.strftime("%Y-%m-%d"), "count": count})
+                    return {"date": date.strftime("%Y-%m-%d"), "count": count}
+
+                timeline = await asyncio.gather(
+                    *[_one_day(i) for i in range(6, -1, -1)]
+                )
             elif period == "month":
-                for i in range(5, -1, -1):
-                    date = datetime.now() - relativedelta(months=i)
+                # 6个独立月份窗口查询改为 asyncio.gather 并行
+                async def _one_month(months_ago: int) -> Dict[str, Any]:
+                    date = datetime.now() - relativedelta(months=months_ago)
                     start_date = date.replace(
                         day=1, hour=0, minute=0, second=0, microsecond=0
                     )
                     end_date = (date.replace(day=1) + relativedelta(months=1)).replace(
                         hour=0, minute=0, second=0, microsecond=0
                     ) - timedelta(seconds=1)
-                    count: int = (
-                        await self.focusMapper.get_followers_in_period_mapper_async(
-                            db, user_id, start_date, end_date
-                        )
+                    count: int = await self.focusMapper.get_followers_in_period_mapper_async(
+                        db, user_id, start_date, end_date
                     )
-                    timeline.append({"month": date.strftime("%Y-%m"), "count": count})
+                    return {"month": date.strftime("%Y-%m"), "count": count}
+
+                timeline = await asyncio.gather(
+                    *[_one_month(i) for i in range(5, -1, -1)]
+                )
             elif period == "year":
-                for i in range(2, -1, -1):
-                    date = datetime.now() - relativedelta(years=i)
+                # 3个独立年份窗口查询改为 asyncio.gather 并行
+                async def _one_year(years_ago: int) -> Dict[str, Any]:
+                    date = datetime.now() - relativedelta(years=years_ago)
                     start_date = date.replace(
                         month=1, day=1, hour=0, minute=0, second=0, microsecond=0
                     )
@@ -96,12 +104,14 @@ class UserService:
                         second=59,
                         microsecond=999999,
                     )
-                    count: int = (
-                        await self.focusMapper.get_followers_in_period_mapper_async(
-                            db, user_id, start_date, end_date
-                        )
+                    count: int = await self.focusMapper.get_followers_in_period_mapper_async(
+                        db, user_id, start_date, end_date
                     )
-                    timeline.append({"year": date.strftime("%Y"), "count": count})
+                    return {"year": date.strftime("%Y"), "count": count}
+
+                timeline = await asyncio.gather(
+                    *[_one_year(i) for i in range(2, -1, -1)]
+                )
 
             return {"period": period, "timeline": timeline}
         except Exception as e:
@@ -125,28 +135,25 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户关注作者的统计"""
         try:
-            total_authors = await self.focusMapper.get_total_follows_mapper_async(
-                db, user_id
-            )
-
-            daily_follows = []
-            for i in range(6, -1, -1):
-                date = datetime.now() - timedelta(days=i)
+            # 总数查询与7天循环查询相互独立，gather 并行降低延迟
+            async def _one_day_follow(days_ago: int) -> Dict[str, Any]:
+                date = datetime.now() - timedelta(days=days_ago)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = date.replace(
                     hour=23, minute=59, second=59, microsecond=999999
                 )
-
                 count = 0
                 results = await self.focusMapper.get_daily_follows_mapper_async(
                     db, user_id, start_date, end_date
                 )
                 if results and len(results) > 0:
                     count = results[0][1]
+                return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
-                daily_follows.append(
-                    {"date": date.strftime("%Y-%m-%d"), "count": count}
-                )
+            total_authors, *daily_follows = await asyncio.gather(
+                self.focusMapper.get_total_follows_mapper_async(db, user_id),
+                *[_one_day_follow(i) for i in range(6, -1, -1)],
+            )
 
             return {"total_authors": total_authors, "daily_follows": daily_follows}
         except Exception as e:

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any, Dict
 
 from app.common.decorators import log, requireInternalToken
@@ -125,20 +126,14 @@ async def test_init_hash_cache_task(request: Request) -> JSONResponse:
 async def clear_analyze_caches_task(request: Request) -> JSONResponse:
     """清除所有分析相关缓存接口"""
 
-    article_cache = get_article_cache()
-    await article_cache.clear_all()
-
-    category_cache = get_category_cache()
-    await category_cache.clear_all()
-
-    publish_time_cache = get_publish_time_cache()
-    await publish_time_cache.clear_all()
-
-    statistics_cache = get_statistics_cache()
-    await statistics_cache.clear_all()
-
-    wordcloud_cache = get_wordcloud_cache()
-    await wordcloud_cache.delete()
+    # 5个缓存清除操作相互独立，gather 并行降低延迟
+    await asyncio.gather(
+        get_article_cache().clear_all(),
+        get_category_cache().clear_all(),
+        get_publish_time_cache().clear_all(),
+        get_statistics_cache().clear_all(),
+        get_wordcloud_cache().delete(),
+    )
 
     return success()
 

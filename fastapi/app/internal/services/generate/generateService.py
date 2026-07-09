@@ -197,10 +197,12 @@ class GenerateService:
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
-        # 4. 保存AI评论到数据库
-        await self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db)
-        await self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db)
-        await self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db)
+        # 4. 保存AI评论到数据库（三条插入相互独立，gather 并行）
+        await asyncio.gather(
+            self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db),
+            self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db),
+            self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db),
+        )
         Logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
 
     # 定义工具函数解析大模型返回结果
@@ -495,10 +497,12 @@ class GenerateService:
             update_time=datetime.now(),
         )
 
-        # 9. 保存AI评论到数据库
-        await self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db)
-        await self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db)
-        await self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db)
+        # 9. 保存AI评论到数据库（三条插入相互独立，gather 并行）
+        await asyncio.gather(
+            self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db),
+            self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db),
+            self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db),
+        )
         Logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
 
     async def generate_authority_article_with_ai_summaries(
