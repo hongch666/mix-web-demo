@@ -26,9 +26,13 @@ public class Constants {
     // ===== 503 Service Unavailable =====
     public static final String SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE";
     public static final String NO_AVAILABLE_SERVICE_INSTANCE = "NO_AVAILABLE_SERVICE_INSTANCE";
+    public static final String REDIS_UNAVAILABLE = "REDIS_UNAVAILABLE";
 
     // ===== 504 Gateway Timeout =====
     public static final String REQUEST_TIMEOUT = "REQUEST_TIMEOUT";
+
+    // ===== 500 Internal Server Error（认证流程中非预期异常） =====
+    public static final String AUTH_UNEXPECTED_ERROR = "AUTH_UNEXPECTED_ERROR";
 
     // ===== 内部服务令牌错误 =====
     public static final String INTERNAL_TOKEN_MISSING = "INTERNAL_TOKEN_MISSING";

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -105,9 +106,14 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         } catch (BusinessException ex) {
             log.error("[{}] 认证失败 - 路径: {}", ex.getError(), path, ex);
             return errorResponse(exchange, ex.getStatusCode(), ex.getMessage(), ex.getError());
+        } catch (DataAccessException ex) {
+            // Redis 不可用（连接断开、超时、重启中等），不应判定为用户未登录
+            log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", Constants.REDIS_UNAVAILABLE, path, ex);
+            return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试", Constants.REDIS_UNAVAILABLE);
         } catch (Exception ex) {
-            log.error("认证异常 - 路径: {}", path, ex);
-            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "无效的Token", Constants.TOKEN_INVALID);
+            // 认证流程中出现的其他非预期异常，不应返回 401 误导前端退出登录
+            log.error("[{}] 认证流程非预期异常 - 路径: {}", Constants.AUTH_UNEXPECTED_ERROR, path, ex);
+            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, "服务器内部错误，请稍后重试", Constants.AUTH_UNEXPECTED_ERROR);
         }
     }
 
