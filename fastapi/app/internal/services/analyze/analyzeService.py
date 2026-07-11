@@ -546,27 +546,16 @@ class AnalyzeService:
         except Exception as cache_e:
             Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
-        # ========== 步骤2: 缓存未命中，并发查询DB（8个独立统计指标，asyncio.gather 并行降低延迟） ==========
+        # ========== 步骤2: 缓存未命中，串行查询DB（同一 AsyncSession 不支持并发操作） ==========
         Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
-        (
-            total_views,
-            total_articles,
-            active_authors,
-            average_views,
-            total_likes,
-            average_likes,
-            total_collects,
-            average_collects,
-        ) = await asyncio.gather(
-            self.articleMapper.get_total_views_mapper_async(db),
-            self.articleMapper.get_total_articles_mapper_async(db),
-            self.articleMapper.get_active_authors_mapper_async(db),
-            self.articleMapper.get_average_views_mapper_async(db),
-            self.likeMapper.get_total_likes_mapper_async(db),
-            self.likeMapper.get_average_likes_mapper_async(db),
-            self.collectMapper.get_total_collects_mapper_async(db),
-            self.collectMapper.get_average_collects_mapper_async(db),
-        )
+        total_views = await self.articleMapper.get_total_views_mapper_async(db)
+        total_articles = await self.articleMapper.get_total_articles_mapper_async(db)
+        active_authors = await self.articleMapper.get_active_authors_mapper_async(db)
+        average_views = await self.articleMapper.get_average_views_mapper_async(db)
+        total_likes = await self.likeMapper.get_total_likes_mapper_async(db)
+        average_likes = await self.likeMapper.get_average_likes_mapper_async(db)
+        total_collects = await self.collectMapper.get_total_collects_mapper_async(db)
+        average_collects = await self.collectMapper.get_average_collects_mapper_async(db)
 
         statistics: Dict[str, Any] = {
             "total_views": total_views,
@@ -648,12 +637,12 @@ class AnalyzeService:
                 local_data_source = "DB"
                 Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
 
-            # 两个分类查询相互独立，gather 并行降低延迟
-            all_categories: List[Any]
-            subcategories: List[Dict[str, Any]]
-            all_categories, subcategories = await asyncio.gather(
-                self.categoryMapper.get_all_categories_mapper_async(db),
-                self.categoryMapper.get_subcategories_with_parent_mapper_async(db),
+            # 两个分类查询在同一 AsyncSession 上串行执行，避免并发错误
+            all_categories: List[Any] = await self.categoryMapper.get_all_categories_mapper_async(
+                db
+            )
+            subcategories: List[Dict[str, Any]] = await self.categoryMapper.get_subcategories_with_parent_mapper_async(
+                db
             )
             sub_cat_map: Dict[int, Dict[str, Any]] = {sc["id"]: sc for sc in subcategories}
 

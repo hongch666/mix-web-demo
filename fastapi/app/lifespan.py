@@ -3,12 +3,12 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 
 import httpx
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Constants, Logger
 from app.core.client import start_nacos, set_shared_http_client
 from app.core.config import load_config
-from app.core.db import RabbitMQClient, SessionLocal, create_tables_async, get_rabbitmq_client
+from app.core.db import AsyncSessionLocal, RabbitMQClient, create_tables_async, get_rabbitmq_client
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
 from fastapi import FastAPI
@@ -34,8 +34,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
 
-    def db_factory() -> Session:
-        return SessionLocal()
+    def db_factory() -> AsyncSession:
+        return AsyncSessionLocal()
 
     start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
 

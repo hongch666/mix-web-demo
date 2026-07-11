@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional
 from app.core.base import Constants, Logger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .logic.analyzeCacheTask import update_analyze_caches_async
 from .logic.neo4jSyncTask import sync_mysql_to_neo4j_async
@@ -15,8 +15,8 @@ from .logic.vectorSyncTask import export_article_vectors_to_postgres_async
 def start_scheduler(
     article_mapper: Optional[Any] = None,
     user_mapper: Optional[Any] = None,
-    db_factory: Optional[Callable[[], Session]] = None,
-    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    db_factory: Optional[Callable[[], AsyncSession]] = None,
+    mysql_db_factory: Optional[Callable[[], AsyncSession]] = None,
     analyze_service: Optional[Any] = None,
 ) -> BaseScheduler:
     """
@@ -24,7 +24,7 @@ def start_scheduler(
     例如：
       start_scheduler(
           article_mapper=get_article_mapper(),
-                    db_factory=lambda: SessionLocal()
+          db_factory=lambda: AsyncSessionLocal()
       )
     """
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
@@ -33,7 +33,7 @@ def start_scheduler(
     sync_vector_job_func = partial(
         export_article_vectors_to_postgres_async,
         article_mapper=article_mapper,
-        mysql_db_factory=mysql_db_factory or db_factory,
+        mysql_db_factory=mysql_db_factory,
         enable_incremental_sync=True,  # 启用增量同步
     )
     # 每24小时执行一次
@@ -43,7 +43,7 @@ def start_scheduler(
     analyze_cache_job_func = partial(
         update_analyze_caches_async,
         analyze_service=analyze_service,
-        db_factory=db_factory or mysql_db_factory,
+        db_factory=db_factory,
     )
     # 每10分钟执行一次，启动时立即执行一次
     scheduler.add_job(

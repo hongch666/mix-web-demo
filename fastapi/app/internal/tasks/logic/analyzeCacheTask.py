@@ -3,12 +3,12 @@ from typing import Any, Callable, Optional
 
 from app.core.base import Constants, Logger
 from app.core.db import get_redis_client
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def _update_analyze_caches_async(
     analyze_service: Optional[Any] = None,
-    db_factory: Optional[Callable[[], Session]] = None,
+    db_factory: Optional[Callable[[], AsyncSession]] = None,
 ) -> None:
     """
     更新分析接口的所有缓存
@@ -28,7 +28,7 @@ async def _update_analyze_caches_async(
         Logger.warning(Constants.UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE)
         return
 
-    db: Optional[Session] = None
+    db: Optional[AsyncSession] = None
     try:
         # 获取数据库连接
         if db_factory:
@@ -96,16 +96,16 @@ async def _update_analyze_caches_async(
         Logger.debug(traceback.format_exc())
     finally:
         # 关闭数据库连接
-        if db and hasattr(db, "close"):
+        if db:
             try:
-                db.close()
+                await db.close()
             except Exception as close_e:
                 Logger.debug(f"关闭数据库连接失败: {close_e}")
 
 
 async def update_analyze_caches_async(
     analyze_service: Optional[Any] = None,
-    db_factory: Optional[Callable[[], Session]] = None,
+    db_factory: Optional[Callable[[], AsyncSession]] = None,
 ) -> None:
     """更新分析接口缓存，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
     lock_key: str = Constants.LOCK_TASK_ANALYZE_CACHE

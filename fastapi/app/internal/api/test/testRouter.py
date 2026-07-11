@@ -19,7 +19,7 @@ from app.internal.tasks import (
 )
 from fastapi.responses import JSONResponse
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, BackgroundTasks, Request
 
 router: APIRouter = APIRouter(
     prefix="/api_fastapi",
@@ -78,10 +78,12 @@ async def testNestJS(request: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("手动触发更新分析接口缓存任务")
-async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
+async def test_update_analyze_caches_task(
+    request: Request, background_tasks: BackgroundTasks
+) -> JSONResponse:
     """手动触发更新分析接口缓存任务接口"""
 
-    await update_analyze_caches_async()
+    background_tasks.add_task(update_analyze_caches_async)
     return success()
 
 
@@ -93,10 +95,12 @@ async def test_update_analyze_caches_task(request: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("手动触发向量数据库同步任务")
-async def test_export_vector_task(request: Request) -> JSONResponse:
+async def test_export_vector_task(
+    request: Request, background_tasks: BackgroundTasks
+) -> JSONResponse:
     """手动触发向量数据库同步任务接口"""
 
-    await export_article_vectors_to_postgres_async()
+    background_tasks.add_task(export_article_vectors_to_postgres_async)
     return success()
 
 
@@ -123,18 +127,22 @@ async def test_init_hash_cache_task(request: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("清除分析相关缓存")
-async def clear_analyze_caches_task(request: Request) -> JSONResponse:
+async def clear_analyze_caches_task(
+    request: Request, background_tasks: BackgroundTasks
+) -> JSONResponse:
     """清除所有分析相关缓存接口"""
 
-    # 5个缓存清除操作相互独立，gather 并行降低延迟
-    await asyncio.gather(
-        get_article_cache().clear_all(),
-        get_category_cache().clear_all(),
-        get_publish_time_cache().clear_all(),
-        get_statistics_cache().clear_all(),
-        get_wordcloud_cache().delete(),
-    )
+    async def _clear_caches() -> None:
+        # 5个缓存清除操作相互独立，gather 并行降低延迟
+        await asyncio.gather(
+            get_article_cache().clear_all(),
+            get_category_cache().clear_all(),
+            get_publish_time_cache().clear_all(),
+            get_statistics_cache().clear_all(),
+            get_wordcloud_cache().delete(),
+        )
 
+    background_tasks.add_task(_clear_caches)
     return success()
 
 
@@ -146,8 +154,10 @@ async def clear_analyze_caches_task(request: Request) -> JSONResponse:
 )
 @requireInternalToken
 @log("手动触发同步 MySQL 到 Neo4j 知识图谱任务")
-async def test_sync_neo4j_task(request: Request) -> JSONResponse:
+async def test_sync_neo4j_task(
+    request: Request, background_tasks: BackgroundTasks
+) -> JSONResponse:
     """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口"""
 
-    await sync_mysql_to_neo4j_async()
+    background_tasks.add_task(sync_mysql_to_neo4j_async)
     return success()

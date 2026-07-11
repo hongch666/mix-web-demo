@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 import time
 from datetime import datetime
-from typing import Any, Callable, List, Optional
+from typing import Any, List, Optional
 
 from app.core.base import Constants, HttpCode, Logger
 from app.core.db import SessionLocal
@@ -10,7 +10,9 @@ from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
 from app.internal.cache import get_redis_client
 from app.internal.crud import get_article_mapper
-from sqlalchemy.orm import Session
+from app.internal.models import Article
+from sqlalchemy import select
+
 
 # Redis 键名
 _VECTOR_SYNC_TIME_KEY: str = "vector_sync:last_sync_time"
@@ -190,7 +192,7 @@ def _get_changed_articles(
 
 def _export_article_vectors_to_postgres(
     article_mapper: Optional[Any] = None,
-    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    mysql_db_factory: Optional[Any] = None,
     enable_incremental_sync: bool = True,
 ) -> None:
     """
@@ -199,34 +201,25 @@ def _export_article_vectors_to_postgres(
 
     Args:
         article_mapper: ArticleMapper 实例
-        mysql_db_factory: MySQL 数据库会话工厂
+        mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
         enable_incremental_sync: 是否启用增量同步（仅同步有变更的文章）
     """
     if article_mapper is None:
         article_mapper = get_article_mapper()
 
-    if mysql_db_factory is None:
-
-        def mysql_db_factory() -> Session:
-            return SessionLocal()
-
     rag_tools: Any = get_rag_tools()
 
-    mysql_db: Optional[Session] = None
     sync_start_time: datetime = datetime.now()
 
     try:
-        mysql_db = mysql_db_factory()
-
         Logger.info(Constants.START_SYNC_TO_POSTGRES_MESSAGE)
 
-        # 1. 获取所有文章
-        if hasattr(article_mapper, "get_all_articles_mapper_async"):
-            articles: List[Any] = asyncio.run(
-                article_mapper.get_all_articles_mapper_async(mysql_db)
-            )
-        else:
-            Logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
+        # 1. 获取所有文章（同步会话，避免在 asyncio.to_thread 里创建新 event loop 访问 AsyncSession）
+        try:
+            with SessionLocal() as db:
+                articles: List[Any] = db.execute(select(Article)).scalars().all()
+        except Exception as e:
+            Logger.error(f"同步向量任务获取文章列表失败: {e}")
             return
 
         if not articles:
@@ -364,18 +357,11 @@ def _export_article_vectors_to_postgres(
 
     except Exception as e:
         Logger.error(f"同步文章向量任务失败: {e}")
-    finally:
-        # 关闭数据库会话
-        try:
-            if mysql_db is not None and hasattr(mysql_db, "close"):
-                mysql_db.close()
-        except Exception:
-            pass
 
 
 def _initialize_article_content_hash_cache(
     article_mapper: Optional[Any] = None,
-    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    mysql_db_factory: Optional[Any] = None,
 ) -> None:
     """
     为所有已发布的文章初始化内容 hash 缓存。
@@ -384,7 +370,7 @@ def _initialize_article_content_hash_cache(
 
     Args:
         article_mapper: ArticleMapper 实例
-        mysql_db_factory: MySQL 数据库会话工厂
+        mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
     """
     # 延迟导入，避免循环依赖
     if article_mapper is None:
@@ -392,25 +378,15 @@ def _initialize_article_content_hash_cache(
 
         article_mapper = get_article_mapper()
 
-    if mysql_db_factory is None:
-
-        def mysql_db_factory() -> Session:
-            return SessionLocal()
-
-    mysql_db: Optional[Session] = None
-
     try:
-        mysql_db = mysql_db_factory()
-
         Logger.info(Constants.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
 
-        # 1. 获取所有文章
-        if hasattr(article_mapper, "get_all_articles_mapper_async"):
-            articles: List[Any] = asyncio.run(
-                article_mapper.get_all_articles_mapper_async(mysql_db)
-            )
-        else:
-            Logger.error(Constants.ARTICLE_MAPPER_METHOD_MISSING_ERROR)
+        # 1. 获取所有文章（同步会话）
+        try:
+            with SessionLocal() as db:
+                articles: List[Any] = db.execute(select(Article)).scalars().all()
+        except Exception as e:
+            Logger.error(f"初始化 hash 缓存获取文章列表失败: {e}")
             return
 
         if not articles:
@@ -470,18 +446,11 @@ def _initialize_article_content_hash_cache(
 
     except Exception as e:
         Logger.error(f"初始化文章 hash 缓存失败: {e}")
-    finally:
-        # 关闭数据库会话
-        try:
-            if mysql_db is not None and hasattr(mysql_db, "close"):
-                mysql_db.close()
-        except Exception:
-            pass
 
 
 async def export_article_vectors_to_postgres_async(
     article_mapper: Optional[Any] = None,
-    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    mysql_db_factory: Optional[Any] = None,
     enable_incremental_sync: bool = True,
 ) -> None:
     """同步文章向量到 PostgreSQL，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
@@ -515,7 +484,7 @@ async def export_article_vectors_to_postgres_async(
 
 async def initialize_article_content_hash_cache_async(
     article_mapper: Optional[Any] = None,
-    mysql_db_factory: Optional[Callable[[], Session]] = None,
+    mysql_db_factory: Optional[Any] = None,
 ) -> None:
     await asyncio.to_thread(
         _initialize_article_content_hash_cache,

@@ -27,9 +27,7 @@ class CategoryMapper:
             # 获取对应的父分类
             parent = (
                 await db.execute(select(Category).where(Category.id == sub.category_id))
-                .scalars()
-                .first()
-            )
+            ).scalars().first()
             result.append(
                 {
                     "id": sub.id,
