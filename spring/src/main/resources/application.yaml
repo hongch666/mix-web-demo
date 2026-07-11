@@ -21,6 +21,9 @@ spring:
           default:
             connectTimeout: 2000
             readTimeout: 3000
+          fastapi:
+            connectTimeout: 5000
+            readTimeout: 30000
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME:}
@@ -116,6 +119,6 @@ resilience4j:
       gozero:
         timeoutDuration: 3s
       fastapi:
-        timeoutDuration: 3s
+        timeoutDuration: 30s
       nestjs:
         timeoutDuration: 3s

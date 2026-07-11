@@ -34,7 +34,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     @Resource(name = "syncTaskExecutor")
     private Executor syncTaskExecutor;
 
-    private static final int SYNC_TIMEOUT_SECONDS = 30;
+    private static final int SYNC_TIMEOUT_SECONDS = 300;
     private static final int MAX_RETRY_TIMES = 3;
     private static final long RETRY_DELAY_MS = 1000;
 
