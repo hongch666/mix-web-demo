@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 import jieba.analyse
 from app.core.base import Constants, HttpCode, Logger
+from app.core.db import AsyncSessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.crud import (
@@ -197,11 +198,15 @@ class GenerateService:
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
-        # 4. 保存AI评论到数据库（三条插入相互独立，gather 并行）
+        # 4. 保存AI评论到数据库（独立 Session 并行插入，互不干扰）
+        async def _insert_comment(comment: Comments) -> None:
+            async with AsyncSessionLocal() as session:
+                await self.comments_mapper.create_comment_mapper_async(comment, session)
+
         await asyncio.gather(
-            self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db),
-            self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db),
-            self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db),
+            _insert_comment(deepseek_ai_comment),
+            _insert_comment(gemini_ai_comment),
+            _insert_comment(gpt_ai_comment),
         )
         Logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
 
@@ -497,11 +502,15 @@ class GenerateService:
             update_time=datetime.now(),
         )
 
-        # 9. 保存AI评论到数据库（三条插入相互独立，gather 并行）
+        # 9. 保存AI评论到数据库（独立 Session 并行插入，互不干扰）
+        async def _insert_comment_ref(comment: Comments) -> None:
+            async with AsyncSessionLocal() as session:
+                await self.comments_mapper.create_comment_mapper_async(comment, session)
+
         await asyncio.gather(
-            self.comments_mapper.create_comment_mapper_async(deepseek_ai_comment, db),
-            self.comments_mapper.create_comment_mapper_async(gemini_ai_comment, db),
-            self.comments_mapper.create_comment_mapper_async(gpt_ai_comment, db),
+            _insert_comment_ref(deepseek_ai_comment),
+            _insert_comment_ref(gemini_ai_comment),
+            _insert_comment_ref(gpt_ai_comment),
         )
         Logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
 
