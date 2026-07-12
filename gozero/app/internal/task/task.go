@@ -18,7 +18,7 @@ var TaskScheduler *cron.Cron
 func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 	TaskScheduler = cron.New()
 
-	// 每天同步一次 ES
+	// 每小时同步一次 ES
 	_, err := TaskScheduler.AddFunc("* * */1 * *", func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
