@@ -31,7 +31,7 @@ async def business_exception_handler(
         content=error(
             code=exc.status_code,
             msg=exc.message,
-        ),
+        ).model_dump(),
     )
 
 
@@ -53,7 +53,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> Response
         content=error(
             code=HttpCode.INTERNAL_SERVER_ERROR,
             msg=Constants.EXCEPTION_HANDLER_MESSAGE,
-        ),
+        ).model_dump(),
     )
 
 
@@ -89,7 +89,7 @@ async def request_validation_exception_handler(
         content=error(
             code=HttpCode.BAD_REQUEST,
             msg=validation_message,
-        ),
+        ).model_dump(),
     )
 
 

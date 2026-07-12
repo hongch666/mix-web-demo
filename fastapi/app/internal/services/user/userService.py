@@ -4,6 +4,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from app.core.base import Logger
+from app.core.db import AsyncSessionLocal
 from app.internal.crud import (
     ArticleLogMapper,
     ArticleMapper,
@@ -19,7 +20,7 @@ from app.internal.crud import (
     get_like_mapper,
 )
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import Depends
 
@@ -44,7 +45,7 @@ class UserService:
         self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
 
     async def get_new_followers_service(
-        self, db: Session, user_id: int, period: str = "day"
+        self, db: AsyncSession, user_id: int, period: str = "day"
     ) -> Dict[str, Any]:
         """
         获取新增粉丝数统计
@@ -55,6 +56,7 @@ class UserService:
 
             if period == "day":
                 # 7个独立时间窗口查询改为 asyncio.gather 并行
+                # 每个协程使用独立的 AsyncSession，避免同一个 session 并发操作
                 async def _one_day(days_ago: int) -> Dict[str, Any]:
                     date: datetime = datetime.now() - timedelta(days=days_ago)
                     start_date: datetime = date.replace(
@@ -63,9 +65,10 @@ class UserService:
                     end_date: datetime = date.replace(
                         hour=23, minute=59, second=59, microsecond=999999
                     )
-                    count: int = await self.focusMapper.get_followers_in_period_mapper_async(
-                        db, user_id, start_date, end_date
-                    )
+                    async with AsyncSessionLocal() as session:
+                        count: int = await self.focusMapper.get_followers_in_period_mapper_async(
+                            session, user_id, start_date, end_date
+                        )
                     return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
                 timeline = await asyncio.gather(
@@ -81,9 +84,10 @@ class UserService:
                     end_date = (date.replace(day=1) + relativedelta(months=1)).replace(
                         hour=0, minute=0, second=0, microsecond=0
                     ) - timedelta(seconds=1)
-                    count: int = await self.focusMapper.get_followers_in_period_mapper_async(
-                        db, user_id, start_date, end_date
-                    )
+                    async with AsyncSessionLocal() as session:
+                        count: int = await self.focusMapper.get_followers_in_period_mapper_async(
+                            session, user_id, start_date, end_date
+                        )
                     return {"month": date.strftime("%Y-%m"), "count": count}
 
                 timeline = await asyncio.gather(
@@ -104,9 +108,10 @@ class UserService:
                         second=59,
                         microsecond=999999,
                     )
-                    count: int = await self.focusMapper.get_followers_in_period_mapper_async(
-                        db, user_id, start_date, end_date
-                    )
+                    async with AsyncSessionLocal() as session:
+                        count: int = await self.focusMapper.get_followers_in_period_mapper_async(
+                            session, user_id, start_date, end_date
+                        )
                     return {"year": date.strftime("%Y"), "count": count}
 
                 timeline = await asyncio.gather(
@@ -131,11 +136,12 @@ class UserService:
             return {"total_views": 0, "articles": []}
 
     async def get_author_follow_statistics_service(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         """获取用户关注作者的统计"""
         try:
             # 总数查询与7天循环查询相互独立，gather 并行降低延迟
+            # 每个协程使用独立的 AsyncSession，避免同一个 session 并发操作
             async def _one_day_follow(days_ago: int) -> Dict[str, Any]:
                 date = datetime.now() - timedelta(days=days_ago)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -143,15 +149,22 @@ class UserService:
                     hour=23, minute=59, second=59, microsecond=999999
                 )
                 count = 0
-                results = await self.focusMapper.get_daily_follows_mapper_async(
-                    db, user_id, start_date, end_date
-                )
+                async with AsyncSessionLocal() as session:
+                    results = await self.focusMapper.get_daily_follows_mapper_async(
+                        session, user_id, start_date, end_date
+                    )
                 if results and len(results) > 0:
                     count = results[0][1]
                 return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
+            async def _total_follows() -> int:
+                async with AsyncSessionLocal() as session:
+                    return await self.focusMapper.get_total_follows_mapper_async(
+                        session, user_id
+                    )
+
             total_authors, *daily_follows = await asyncio.gather(
-                self.focusMapper.get_total_follows_mapper_async(db, user_id),
+                _total_follows(),
                 *[_one_day_follow(i) for i in range(6, -1, -1)],
             )
 
@@ -161,7 +174,7 @@ class UserService:
             return {"total_authors": 0, "daily_follows": []}
 
     async def get_monthly_comment_trend_service(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月评论的趋势"""
         try:
@@ -173,7 +186,7 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_like_trend_service(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月点赞的趋势"""
         try:
@@ -185,7 +198,7 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_collect_trend_service(
-        self, db: Session, user_id: int
+        self, db: AsyncSession, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月收藏的趋势"""
         try:
