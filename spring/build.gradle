@@ -73,6 +73,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation 'cn.hutool:hutool-all:5.8.11'
+    
+    // EasyCaptcha 图形验证码
+    implementation 'com.github.whvcse:easy-captcha:1.6.2'
 
     // Mail APIs
     implementation 'jakarta.mail:jakarta.mail-api:2.1.3'
