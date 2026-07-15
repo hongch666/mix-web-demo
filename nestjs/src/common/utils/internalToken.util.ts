@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
-import { HttpCode, Messages } from "../constants";
+import { ErrorIds, HttpCode, Messages } from "../constants";
 import { BusinessException } from "../exceptions/business.exception";
 
 interface InternalTokenClaims {
@@ -31,7 +31,7 @@ export class InternalTokenUtil {
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_SECRET_NOT_CONFIGURED,
         HttpCode.INTERNAL_SERVER_ERROR,
-        "INTERNAL_TOKEN_SECRET_NOT_NULL",
+        ErrorIds.INTERNAL_TOKEN_SECRET_NOT_NULL,
       );
     }
   }
@@ -72,13 +72,13 @@ export class InternalTokenUtil {
         throw new BusinessException(
           Messages.INTERNAL_TOKEN_EXPIRED,
           HttpCode.UNAUTHORIZED,
-          "INTERNAL_TOKEN_EXPIRED",
+          ErrorIds.INTERNAL_TOKEN_EXPIRED_ERROR,
         );
       }
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,
-        "INTERNAL_TOKEN_INVALID",
+        ErrorIds.INTERNAL_TOKEN_INVALID_ERROR,
       );
     }
   }

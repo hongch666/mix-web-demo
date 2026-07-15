@@ -1,4 +1,4 @@
-declare module 'marked' {
+declare module "marked" {
   export interface MarkedOptions {
     breaks?: boolean;
     gfm?: boolean;

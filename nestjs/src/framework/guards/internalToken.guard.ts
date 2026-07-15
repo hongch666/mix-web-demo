@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { HttpCode, Messages } from "src/common/constants";
+import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
 import { logger } from "src/common/utils/writeLog";
@@ -45,7 +45,7 @@ export class InternalTokenGuard implements CanActivate {
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_MISSING,
         HttpCode.UNAUTHORIZED,
-        "INTERNAL_TOKEN_MISSING",
+        ErrorIds.INTERNAL_TOKEN_MISSING_ERROR,
       );
     }
 
@@ -68,7 +68,7 @@ export class InternalTokenGuard implements CanActivate {
         throw new BusinessException(
           Messages.SERVICE_NAME_MISMATCH,
           HttpCode.FORBIDDEN,
-          "INTERNAL_TOKEN_SERVICE_MISMATCH",
+          ErrorIds.INTERNAL_TOKEN_SERVICE_MISMATCH,
         );
       }
 
@@ -85,7 +85,7 @@ export class InternalTokenGuard implements CanActivate {
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,
-        "INTERNAL_TOKEN_INVALID",
+        ErrorIds.INTERNAL_TOKEN_INVALID_ERROR,
       );
     }
   }

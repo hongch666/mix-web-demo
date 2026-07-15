@@ -17,32 +17,23 @@ export class ErrorIds {
     "INTERNAL_TOKEN_SERVICE_MISMATCH";
 
   // ===== 404 Not Found =====
-  static readonly ARTICLE_LOG_NOT_FOUND_ERROR = "ARTICLE_LOG_NOT_FOUND";
-  static readonly ARTICLE_LOG_PARTIAL_NOT_FOUND_ERROR =
-    "ARTICLE_LOG_PARTIAL_NOT_FOUND";
-  static readonly API_LOG_NOT_FOUND_ERROR = "API_LOG_NOT_FOUND";
-  static readonly API_LOG_PARTIAL_NOT_FOUND_ERROR = "API_LOG_PARTIAL_NOT_FOUND";
-  static readonly FILE_PART_NOT_FOUND_ERROR = "FILE_PART_NOT_FOUND";
-
-  // ===== 422 Unprocessable Entity =====
-  static readonly ONLY_PDF_SUPPORTED_ERROR = "ONLY_PDF_SUPPORTED";
-  static readonly NO_FILE_UPLOADED_ERROR = "NO_FILE_UPLOADED";
-  static readonly FILE_NO_VALID_METHOD_ERROR = "FILE_NO_VALID_METHOD";
+  static readonly ARTICLE_NOT_FOUND = "ARTICLE_NOT_FOUND";
+  static readonly EMPTY_FILE_PATH = "EMPTY_FILE_PATH";
 
   // ===== 500 Internal Server Error =====
   static readonly NESTJS_SERVER_ERROR = "NESTJS_SERVER_ERROR";
   static readonly OSS_UPLOAD_ERROR = "OSS_UPLOAD_ERROR";
+  static readonly INTERNAL_TOKEN_SECRET_NOT_NULL =
+    "INTERNAL_TOKEN_SECRET_NOT_NULL";
 
   // ===== 502 Bad Gateway =====
   static readonly SERVICE_CALL_FAILED = "SERVICE_CALL_FAILED";
+  static readonly GITHUB_ACCESS_TOKEN_FAILED = "GITHUB_ACCESS_TOKEN_FAILED";
+  static readonly GITHUB_USER_PROFILE_FAILED = "GITHUB_USER_PROFILE_FAILED";
+  static readonly GITHUB_USER_PROFILE_INVALID = "GITHUB_USER_PROFILE_INVALID";
+  static readonly GITHUB_TOKEN_TICKET_FAILED = "GITHUB_TOKEN_TICKET_FAILED";
 
   // ===== 503 Service Unavailable =====
-  static readonly OSS_CLIENT_NOT_INITIALIZED_ERROR =
-    "OSS_CLIENT_NOT_INITIALIZED";
-  static readonly SERVICE_DISCOVERY_FAILED = "SERVICE_DISCOVERY_FAILED";
   static readonly NO_AVAILABLE_SERVICE_INSTANCE =
     "NO_AVAILABLE_SERVICE_INSTANCE";
-
-  // ===== 504 Gateway Timeout =====
-  static readonly OSS_PUT_TIMEOUT = "OSS_PUT_TIMEOUT";
 }

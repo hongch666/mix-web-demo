@@ -1,4 +1,4 @@
-declare module 'html-to-text' {
+declare module "html-to-text" {
   export interface HtmlToTextOptions {
     wordwrap?: number | boolean | null;
     tables?: boolean | unknown[];

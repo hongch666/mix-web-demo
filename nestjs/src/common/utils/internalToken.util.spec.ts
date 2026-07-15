@@ -1,14 +1,14 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import * as fs from "node:fs";
+import * as path from "node:path";
 
-import { ConfigService } from '@nestjs/config';
-import { Test, TestingModule } from '@nestjs/testing';
-import { InternalTokenUtil } from './internalToken.util';
+import { ConfigService } from "@nestjs/config";
+import { Test, TestingModule } from "@nestjs/testing";
+import { InternalTokenUtil } from "./internalToken.util";
 
-describe('InternalTokenUtil', () => {
+describe("InternalTokenUtil", () => {
   let internalTokenUtil: InternalTokenUtil;
 
-  const defaultInternalTokenSecret = 'abcdefghijklmnopqrstuvwxyz123456';
+  const defaultInternalTokenSecret = "abcdefghijklmnopqrstuvwxyz123456";
   const defaultInternalTokenExpiration = 60000;
 
   beforeAll(() => {
@@ -23,16 +23,16 @@ describe('InternalTokenUtil', () => {
           provide: ConfigService,
           useValue: {
             get: jest.fn((key: string) => {
-              if (key === 'internal-token.secret') {
+              if (key === "internal-token.secret") {
                 return resolveConfigValue(
-                  'INTERNAL_TOKEN_SECRET',
+                  "INTERNAL_TOKEN_SECRET",
                   defaultInternalTokenSecret,
                 );
               }
-              if (key === 'internal-token.expiration') {
+              if (key === "internal-token.expiration") {
                 return Number(
                   resolveConfigValue(
-                    'INTERNAL_TOKEN_EXPIRATION',
+                    "INTERNAL_TOKEN_EXPIRATION",
                     String(defaultInternalTokenExpiration),
                   ),
                 );
@@ -47,10 +47,10 @@ describe('InternalTokenUtil', () => {
     internalTokenUtil = module.get<InternalTokenUtil>(InternalTokenUtil);
   });
 
-  it('应该生成可用的内部Token', async () => {
+  it("应该生成可用的内部Token", async () => {
     const token = await internalTokenUtil.generateInternalToken(
       10001,
-      'nestjs',
+      "nestjs",
     );
 
     console.log(`生成的内部Token: ${token}`);
@@ -58,7 +58,7 @@ describe('InternalTokenUtil', () => {
     expect(token.length).toBeGreaterThan(0);
   });
 
-  it('应该使用环境变量中的内部Token校验通过', async () => {
+  it("应该使用环境变量中的内部Token校验通过", async () => {
     const token = process.env.INTERNAL_TOKEN_TEST_TOKEN;
 
     expect(token).toBeTruthy();
@@ -69,15 +69,15 @@ describe('InternalTokenUtil', () => {
 
     expect(claims.userId).toBeDefined();
     expect(claims.serviceName).toBeDefined();
-    expect(claims.tokenType).toBe('internal');
+    expect(claims.tokenType).toBe("internal");
   });
 });
 
 function loadDotEnv(): void {
   const candidates = [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), 'nestjs/.env'),
-    path.resolve(process.cwd(), '../.env'),
+    path.resolve(process.cwd(), ".env"),
+    path.resolve(process.cwd(), "nestjs/.env"),
+    path.resolve(process.cwd(), "../.env"),
   ];
 
   for (const candidate of candidates) {
@@ -85,25 +85,25 @@ function loadDotEnv(): void {
       continue;
     }
 
-    const content = fs.readFileSync(candidate, 'utf8');
+    const content = fs.readFileSync(candidate, "utf8");
     for (const line of content.split(/\r?\n/)) {
       const trimmedLine = line.trim();
       if (
         !trimmedLine ||
-        trimmedLine.startsWith('#') ||
-        !trimmedLine.includes('=')
+        trimmedLine.startsWith("#") ||
+        !trimmedLine.includes("=")
       ) {
         continue;
       }
 
-      const keyValueParts = trimmedLine.split('=');
+      const keyValueParts = trimmedLine.split("=");
       const rawKey = keyValueParts[0];
       if (!rawKey) {
         continue;
       }
 
       const key = rawKey.trim();
-      const value = stripQuotes(keyValueParts.slice(1).join('=').trim());
+      const value = stripQuotes(keyValueParts.slice(1).join("=").trim());
 
       if (key && process.env[key] === undefined) {
         process.env[key] = value;

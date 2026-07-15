@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { NacosService } from '../nacos/nacos.service';
+import { Injectable } from "@nestjs/common";
+import { NacosService } from "../nacos/nacos.service";
 
 @Injectable()
 export class GoZeroClientService {
@@ -7,9 +7,9 @@ export class GoZeroClientService {
 
   async test(): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: 'gozero',
-      method: 'GET',
-      path: '/api_gozero/gozero',
+      serviceName: "gozero",
+      method: "GET",
+      path: "/api_gozero/gozero",
     });
   }
 }

@@ -1,4 +1,4 @@
-declare module 'nacos' {
+declare module "nacos" {
   export interface NacosInstance {
     ip: string;
     port: number | string;
@@ -15,7 +15,10 @@ declare module 'nacos' {
     constructor(options: Record<string, unknown>);
     ready(): Promise<void>;
     getAllInstances(serviceName: string): Promise<NacosInstance[]>;
-    registerInstance(serviceName: string, instance: NacosInstance): Promise<void>;
+    registerInstance(
+      serviceName: string,
+      instance: NacosInstance,
+    ): Promise<void>;
   }
 
   export { NacosNamingClient };

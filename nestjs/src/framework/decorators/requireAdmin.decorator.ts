@@ -1,6 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata } from "@nestjs/common";
 
-export const REQUIRE_ADMIN_KEY = 'require_admin';
+export const REQUIRE_ADMIN_KEY = "require_admin";
 
 /**
  * 需要管理员权限的装饰器

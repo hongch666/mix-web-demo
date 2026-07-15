@@ -1,7 +1,7 @@
-import { Logger } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import yamlConfig from '../config/yamlConfig.service';
+import { Logger } from "@nestjs/common";
+import * as fs from "fs";
+import * as path from "path";
+import yamlConfig from "../config/yamlConfig.service";
 
 export class LoggerUtil {
   private static logPath: string;
@@ -19,7 +19,7 @@ export class LoggerUtil {
       this.logPath =
         process.env.LOG_PATH ||
         ((config?.logs as Record<string, unknown>)?.path as string) ||
-        'logs';
+        "logs";
       this.configLoaded = true;
       Logger.log(`日志配置加载成功，路径: ${this.logPath}`);
     } catch (error: unknown) {
@@ -34,7 +34,7 @@ export class LoggerUtil {
    * @param message 日志消息
    * @param level 日志级别
    */
-  static writeLog(message: string, level: string = 'INFO'): void {
+  static writeLog(message: string, level: string = "INFO"): void {
     // 确保配置已加载
     this.loadConfig();
 
@@ -46,21 +46,21 @@ export class LoggerUtil {
     // 日志文件名 (按日期)
     const now: Date = new Date();
     const year: number = now.getFullYear();
-    const month: string = String(now.getMonth() + 1).padStart(2, '0');
-    const day: string = String(now.getDate()).padStart(2, '0');
+    const month: string = String(now.getMonth() + 1).padStart(2, "0");
+    const day: string = String(now.getDate()).padStart(2, "0");
     const today: string = `${year}-${month}-${day}`;
     const logFile: string = path.join(this.logPath, `app_${today}.log`);
 
     // 格式化日志消息（使用本地时间）
-    const hours: string = String(now.getHours()).padStart(2, '0');
-    const minutes: string = String(now.getMinutes()).padStart(2, '0');
-    const seconds: string = String(now.getSeconds()).padStart(2, '0');
+    const hours: string = String(now.getHours()).padStart(2, "0");
+    const minutes: string = String(now.getMinutes()).padStart(2, "0");
+    const seconds: string = String(now.getSeconds()).padStart(2, "0");
     const timestamp: string = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     const logEntry: string = `${timestamp} - ${level} - ${message}\n`;
 
     // 写入文件
     try {
-      fs.appendFileSync(logFile, logEntry, 'utf8');
+      fs.appendFileSync(logFile, logEntry, "utf8");
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
@@ -71,22 +71,22 @@ export class LoggerUtil {
   // 便捷静态方法
   static logInfo(message: string): void {
     Logger.log(message);
-    this.writeLog(message, 'INFO');
+    this.writeLog(message, "INFO");
   }
 
   static logError(message: string): void {
     Logger.error(message);
-    this.writeLog(message, 'ERROR');
+    this.writeLog(message, "ERROR");
   }
 
   static logWarning(message: string): void {
     Logger.warn(message);
-    this.writeLog(message, 'WARNING');
+    this.writeLog(message, "WARNING");
   }
 
   static logDebug(message: string): void {
     Logger.debug(message);
-    this.writeLog(message, 'DEBUG');
+    this.writeLog(message, "DEBUG");
   }
 
   // 获取当前日志路径

@@ -6,29 +6,29 @@ import {
   Param,
   Post,
   Query,
-} from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiResponse, success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
-import { RequireAdmin } from 'src/framework/decorators/requireAdmin.decorator';
-import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
-import { ApiLogService } from './apiLog.service';
-import { CreateApiLogDto, QueryApiLogDto } from './dto/apiLog.dto';
+} from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiResponse, success } from "src/common/utils/response";
+import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
+import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+import { ApiLogService } from "./apiLog.service";
+import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
 
-@Controller('api-logs')
-@ApiTags('API日志模块')
+@Controller("api-logs")
+@ApiTags("API日志模块")
 export class ApiLogController {
   constructor(private readonly apiLogService: ApiLogService) {}
 
   /**
    * 查询API日志（分页）
    */
-  @Get('list')
+  @Get("list")
   @ApiOperation({
-    summary: '查询API日志',
-    description: '可根据用户ID、用户名、API路径等条件查询，支持分页',
+    summary: "查询API日志",
+    description: "可根据用户ID、用户名、API路径等条件查询，支持分页",
   })
-  @ApiLog('查询API日志')
+  @ApiLog("查询API日志")
   @RequireAdmin()
   async findByFilter(
     @Query() query: QueryApiLogDto,
@@ -42,10 +42,10 @@ export class ApiLogController {
    */
   @Post()
   @ApiOperation({
-    summary: '创建API日志',
-    description: '创建一条API日志记录',
+    summary: "创建API日志",
+    description: "创建一条API日志记录",
   })
-  @ApiLog('创建API日志')
+  @ApiLog("创建API日志")
   @RequireAdmin()
   @RequireInternalToken()
   async create(@Body() dto: CreateApiLogDto): Promise<ApiResponse<null>> {
@@ -56,14 +56,14 @@ export class ApiLogController {
   /**
    * 删除单条API日志
    */
-  @Delete(':id')
+  @Delete(":id")
   @ApiOperation({
-    summary: '删除API日志',
-    description: '通过日志ID删除单条日志',
+    summary: "删除API日志",
+    description: "通过日志ID删除单条日志",
   })
-  @ApiLog('删除API日志')
+  @ApiLog("删除API日志")
   @RequireAdmin()
-  async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
+  async remove(@Param("id") id: string): Promise<ApiResponse<null>> {
     await this.apiLogService.removeById(id);
     return success(null);
   }
@@ -71,16 +71,16 @@ export class ApiLogController {
   /**
    * 批量删除API日志
    */
-  @Delete('batch/:ids')
+  @Delete("batch/:ids")
   @ApiOperation({
-    summary: '批量删除API日志',
-    description: '通过日志ID路径参数批量删除，多个ID用英文逗号分隔',
+    summary: "批量删除API日志",
+    description: "通过日志ID路径参数批量删除，多个ID用英文逗号分隔",
   })
-  @ApiLog('批量删除API日志')
+  @ApiLog("批量删除API日志")
   @RequireAdmin()
-  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<null>> {
+  async removeByIds(@Param("ids") ids: string): Promise<ApiResponse<null>> {
     const idArr: string[] = ids
-      .split(',')
+      .split(",")
       .map((id: string) => id.trim())
       .filter(Boolean);
     await this.apiLogService.removeByIds(idArr);

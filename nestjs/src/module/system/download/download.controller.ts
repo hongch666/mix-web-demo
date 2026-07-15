@@ -1,48 +1,50 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { ApiResponse, success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
-import { DownloadService } from './download.service';
+import { Controller, Get, Param } from "@nestjs/common";
+import { ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiResponse, success } from "src/common/utils/response";
+import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+import { DownloadService } from "./download.service";
 
-@Controller('download')
-@ApiTags('下载模块')
+@Controller("download")
+@ApiTags("下载模块")
 export class DownloadController {
   constructor(private readonly downloadService: DownloadService) {}
 
-  @Get('word/:id')
+  @Get("word/:id")
   @ApiOperation({
-    summary: '下载文章Word',
-    description: '通过id下载对应文章Word',
+    summary: "下载文章Word",
+    description: "通过id下载对应文章Word",
   })
-  @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
-  @ApiLog('下载文章Word')
-  async downloadWord(@Param('id') id: number): Promise<ApiResponse<string>> {
+  @ApiParam({ name: "id", type: "number", description: "文章ID" })
+  @ApiLog("下载文章Word")
+  async downloadWord(@Param("id") id: number): Promise<ApiResponse<string>> {
     const url: string = await this.downloadService.exportToWordAndSave(id);
     return success(url);
   }
 
-  @Get('markdown/:id')
+  @Get("markdown/:id")
   @ApiOperation({
-    summary: '下载文章Markdown',
-    description: '通过id下载对应文章的Markdown并返回OSS链接',
+    summary: "下载文章Markdown",
+    description: "通过id下载对应文章的Markdown并返回OSS链接",
   })
-  @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
-  @ApiLog('下载文章Markdown')
-  async downloadMarkdown(@Param('id') id: number): Promise<ApiResponse<string>> {
+  @ApiParam({ name: "id", type: "number", description: "文章ID" })
+  @ApiLog("下载文章Markdown")
+  async downloadMarkdown(
+    @Param("id") id: number,
+  ): Promise<ApiResponse<string>> {
     const url: string = await this.downloadService.exportMarkdownAndUpload(
       Number(id),
     );
     return success(url);
   }
 
-  @Get('pdf/:id')
+  @Get("pdf/:id")
   @ApiOperation({
-    summary: '下载文章PDF',
-    description: '通过id下载对应文章的PDF并返回OSS链接',
+    summary: "下载文章PDF",
+    description: "通过id下载对应文章的PDF并返回OSS链接",
   })
-  @ApiParam({ name: 'id', type: 'number', description: '文章ID' })
-  @ApiLog('下载文章PDF')
-  async downloadPdf(@Param('id') id: number): Promise<ApiResponse<string>> {
+  @ApiParam({ name: "id", type: "number", description: "文章ID" })
+  @ApiLog("下载文章PDF")
+  async downloadPdf(@Param("id") id: number): Promise<ApiResponse<string>> {
     const url: string = await this.downloadService.exportToPdfAndSave(id);
     return success(url);
   }

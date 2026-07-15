@@ -1,11 +1,11 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
-import { ExposeName } from 'src/framework/serializer/snakeCase.serializer';
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsOptional, IsString } from "class-validator";
+import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
 export class GithubAuthorizeQueryDto {
   @ApiPropertyOptional({
-    description: '登录成功后回跳路径',
-    example: '/profile',
+    description: "登录成功后回跳路径",
+    example: "/profile",
   })
   @IsOptional()
   @IsString()
@@ -14,32 +14,32 @@ export class GithubAuthorizeQueryDto {
 
 export class GithubCallbackQueryDto {
   @ApiPropertyOptional({
-    description: 'GitHub 授权码',
-    example: 'abc123',
+    description: "GitHub 授权码",
+    example: "abc123",
   })
   @IsOptional()
   @IsString()
   code?: string;
 
   @ApiPropertyOptional({
-    description: 'GitHub 授权状态',
-    example: 'state123',
+    description: "GitHub 授权状态",
+    example: "state123",
   })
   @IsOptional()
   @IsString()
   state?: string;
 
   @ApiPropertyOptional({
-    description: 'GitHub 错误码',
-    example: 'access_denied',
+    description: "GitHub 错误码",
+    example: "access_denied",
   })
   @IsOptional()
   @IsString()
   error?: string;
 
   @ApiPropertyOptional({
-    description: 'GitHub 错误描述',
-    example: 'The user denied the request',
+    description: "GitHub 错误描述",
+    example: "The user denied the request",
   })
   @ExposeName()
   @IsOptional()

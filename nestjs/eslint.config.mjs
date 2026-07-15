@@ -39,7 +39,7 @@ export default tseslint.config(
       '@typescript-eslint/triple-slash-reference': 'off',
       '@typescript-eslint/unbound-method': 'off',
       'prettier/prettier': 'off',
-      'quotes': 'off',
+      quotes: ['error', 'double'],
     },
   },
 );

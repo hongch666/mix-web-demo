@@ -1,11 +1,11 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata } from "@nestjs/common";
 
-export const API_LOG_KEY = 'api_log';
+export const API_LOG_KEY = "api_log";
 
 export interface ApiLogOptions {
   message: string; // 日志消息
   includeParams?: boolean; // 是否包含参数，默认true
-  logLevel?: 'info' | 'warn' | 'error'; // 日志级别，默认info
+  logLevel?: "info" | "warn" | "error"; // 日志级别，默认info
   excludeFields?: string[]; // 排除的字段
 }
 
@@ -19,9 +19,9 @@ export interface ApiLogOptions {
 export const ApiLog = (options: ApiLogOptions | string) => {
   // 如果传入的是字符串，转换为配置对象
   const config: ApiLogOptions =
-    typeof options === 'string'
-      ? { message: options, includeParams: true, logLevel: 'info' }
-      : { includeParams: true, logLevel: 'info', ...options };
+    typeof options === "string"
+      ? { message: options, includeParams: true, logLevel: "info" }
+      : { includeParams: true, logLevel: "info", ...options };
 
   return SetMetadata(API_LOG_KEY, config);
 };

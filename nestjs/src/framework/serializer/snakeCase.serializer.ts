@@ -1,8 +1,8 @@
-import { Expose } from 'class-transformer';
+import { Expose } from "class-transformer";
 
 export function ExposeName(): PropertyDecorator {
   return (target: object, propertyKey: string | symbol) => {
-    if (typeof propertyKey !== 'string') {
+    if (typeof propertyKey !== "string") {
       Expose()(target, propertyKey);
       return;
     }

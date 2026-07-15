@@ -1,4 +1,4 @@
-declare module 'qs' {
+declare module "qs" {
   export interface IStringifyOptions {
     delimiter?: string;
     strictNullHandling?: boolean;
@@ -8,11 +8,11 @@ declare module 'qs' {
     filter?:
       | Array<string | number>
       | ((prefix: string, value: unknown) => unknown);
-    arrayFormat?: 'indices' | 'brackets' | 'repeat' | 'comma';
+    arrayFormat?: "indices" | "brackets" | "repeat" | "comma";
     indices?: boolean;
     sort?: (a: string, b: string) => number;
     serializeDate?: (date: Date) => string;
-    format?: 'RFC1738' | 'RFC3986';
+    format?: "RFC1738" | "RFC3986";
     encoder?: (str: string) => string;
     encodeValuesOnly?: boolean;
     addQueryPrefix?: boolean;

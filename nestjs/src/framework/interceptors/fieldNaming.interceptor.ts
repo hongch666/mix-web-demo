@@ -3,9 +3,9 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+} from "@nestjs/common";
+import { Observable } from "rxjs";
+import { map } from "rxjs/operators";
 
 type JsonValue =
   | string
@@ -16,7 +16,7 @@ type JsonValue =
   | { [key: string]: JsonValue };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object') {
+  if (value === null || typeof value !== "object") {
     return false;
   }
 
@@ -28,7 +28,10 @@ function toSnakeCase(key: string): string {
   return key.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
 }
 
-function convertKeys(value: unknown, converter: (key: string) => string): unknown {
+function convertKeys(
+  value: unknown,
+  converter: (key: string) => string,
+): unknown {
   if (Array.isArray(value)) {
     return value.map((item: unknown) => convertKeys(item, converter));
   }
@@ -46,9 +49,14 @@ function convertKeys(value: unknown, converter: (key: string) => string): unknow
 
 @Injectable()
 export class FieldNamingInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<JsonValue> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<JsonValue> {
     return next
       .handle()
-      .pipe(map((data: unknown) => convertKeys(data, toSnakeCase) as JsonValue));
+      .pipe(
+        map((data: unknown) => convertKeys(data, toSnakeCase) as JsonValue),
+      );
   }
 }

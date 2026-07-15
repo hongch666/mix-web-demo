@@ -5,7 +5,7 @@ import {
   HttpException,
 } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { HttpCode, Messages } from "src/common/constants";
+import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { error } from "src/common/utils/response";
 import { logger } from "src/common/utils/writeLog";
@@ -23,7 +23,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let message: string = Messages.ERROR_DEFAULT_MSG;
     let httpStatus: number = HttpCode.INTERNAL_SERVER_ERROR;
-    let errorIdentifier: string = "NESTJS_SERVER_ERROR";
+    let errorIdentifier: string = ErrorIds.NESTJS_SERVER_ERROR;
 
     if (exception instanceof BusinessException) {
       // 业务异常：使用其状态码和消息，暴露给客户端
@@ -44,12 +44,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       // 其他 HttpException 只返回通用错误信息
       message = Messages.ERROR_DEFAULT_MSG;
       httpStatus = exception.getStatus();
-      errorIdentifier = "NESTJS_SERVER_ERROR";
+      errorIdentifier = ErrorIds.NESTJS_SERVER_ERROR;
     } else if (typeof exception === "string") {
       // 其他字符串异常也只返回通用错误信息
       message = Messages.ERROR_DEFAULT_MSG;
       httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
-      errorIdentifier = "NESTJS_SERVER_ERROR";
+      errorIdentifier = ErrorIds.NESTJS_SERVER_ERROR;
     }
 
     const exceptionMessage =

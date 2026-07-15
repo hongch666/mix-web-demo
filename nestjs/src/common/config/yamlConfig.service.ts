@@ -1,6 +1,6 @@
-import { config } from 'dotenv';
-import * as fs from 'fs';
-import * as yaml from 'js-yaml';
+import { config } from "dotenv";
+import * as fs from "fs";
+import * as yaml from "js-yaml";
 
 // 加载 .env 文件
 config();
@@ -10,7 +10,7 @@ config();
  * 支持格式：${VAR_NAME:default_value} 或 ${VAR_NAME}
  */
 function resolveEnvVars(obj: unknown): unknown {
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     // 匹配 ${VAR_NAME:default_value} 或 ${VAR_NAME}
     return obj.replace(
       /\$\{([^:}]+)(?::([^}]*))?\}/g,
@@ -19,14 +19,14 @@ function resolveEnvVars(obj: unknown): unknown {
         if (value !== undefined) {
           return value;
         }
-        return defaultVal !== undefined ? defaultVal : '';
+        return defaultVal !== undefined ? defaultVal : "";
       },
     );
   }
   if (Array.isArray(obj)) {
     return obj.map((item: unknown): unknown => resolveEnvVars(item));
   }
-  if (obj !== null && typeof obj === 'object') {
+  if (obj !== null && typeof obj === "object") {
     return Object.entries(obj as Record<string, unknown>).reduce(
       (
         acc: Record<string, unknown>,
@@ -42,8 +42,8 @@ function resolveEnvVars(obj: unknown): unknown {
 }
 
 export default (): Record<string, unknown> => {
-  const YAML_CONFIG_FILENAME: string = 'application.yaml'; // 项目根目录路径
-  const fileContents: string = fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8');
+  const YAML_CONFIG_FILENAME: string = "application.yaml"; // 项目根目录路径
+  const fileContents: string = fs.readFileSync(YAML_CONFIG_FILENAME, "utf8");
   let configObj: Record<string, unknown> = yaml.load(fileContents) as Record<
     string,
     unknown

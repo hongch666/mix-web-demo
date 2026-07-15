@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import {
   IsEnum,
   IsNotEmpty,
@@ -6,22 +6,22 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
-} from 'class-validator';
-import { ExposeName } from 'src/framework/serializer/snakeCase.serializer';
+} from "class-validator";
+import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
 export enum ArticleAction {
-  ADD = 'add',
-  SEARCH = 'search',
-  EDIT = 'edit',
-  DELETE = 'delete',
-  PUBLISH = 'publish',
-  VIEW = 'view',
-  LIKE = 'like',
-  UNLIKE = 'unlike',
-  COLLECT = 'collect',
-  UNCOLLECT = 'uncollect',
-  FOCUS = 'focus',
-  UNFOCUS = 'unfocus',
+  ADD = "add",
+  SEARCH = "search",
+  EDIT = "edit",
+  DELETE = "delete",
+  PUBLISH = "publish",
+  VIEW = "view",
+  LIKE = "like",
+  UNLIKE = "unlike",
+  COLLECT = "collect",
+  UNCOLLECT = "uncollect",
+  FOCUS = "focus",
+  UNFOCUS = "unfocus",
 }
 
 // RabbitMQ 消息接口定义
@@ -34,65 +34,65 @@ export interface ArticleLogMessage {
 }
 
 export class CreateArticleLogDto {
-  @ApiProperty({ description: '用户ID', example: '1' })
+  @ApiProperty({ description: "用户ID", example: "1" })
   @ExposeName()
-  @IsNumber({}, { message: '用户ID必须是数字' })
-  @IsNotEmpty({ message: '用户ID不能为空' })
+  @IsNumber({}, { message: "用户ID必须是数字" })
+  @IsNotEmpty({ message: "用户ID不能为空" })
   userId!: number;
 
-  @ApiProperty({ description: '文章ID', example: '1' })
+  @ApiProperty({ description: "文章ID", example: "1" })
   @ExposeName()
-  @IsNumber({}, { message: '文章ID必须是数字' })
-  @IsNotEmpty({ message: '文章ID不能为空' })
+  @IsNumber({}, { message: "文章ID必须是数字" })
+  @IsNotEmpty({ message: "文章ID不能为空" })
   articleId!: number;
 
   @ApiProperty({
-    description: '操作类型',
+    description: "操作类型",
     enum: ArticleAction,
     example: ArticleAction.EDIT,
   })
-  @IsEnum(ArticleAction, { message: '操作类型必须是有效的枚举值' })
+  @IsEnum(ArticleAction, { message: "操作类型必须是有效的枚举值" })
   action!: ArticleAction;
 
   @ApiProperty({
-    description: '任意结构的操作内容（JSON）',
+    description: "任意结构的操作内容（JSON）",
     type: Object,
-    example: { field: 'title', oldValue: '旧标题', newValue: '新标题' },
+    example: { field: "title", oldValue: "旧标题", newValue: "新标题" },
   })
   content!: Record<string, unknown>;
 
-  @ApiPropertyOptional({ description: '操作说明', example: '修改了文章标题' })
+  @ApiPropertyOptional({ description: "操作说明", example: "修改了文章标题" })
   @IsOptional()
-  @IsString({ message: '操作说明必须是字符串' })
+  @IsString({ message: "操作说明必须是字符串" })
   msg?: string;
 }
 
 export class QueryArticleLogDto {
-  @ApiPropertyOptional({ description: '用户ID' })
+  @ApiPropertyOptional({ description: "用户ID" })
   @ExposeName()
   @IsOptional()
-  @IsNumberString({}, { message: '用户ID必须是数字字符串' })
+  @IsNumberString({}, { message: "用户ID必须是数字字符串" })
   userId?: string;
 
-  @ApiPropertyOptional({ description: '文章ID' })
+  @ApiPropertyOptional({ description: "文章ID" })
   @ExposeName()
   @IsOptional()
-  @IsNumberString({}, { message: '文章ID必须是数字字符串' })
+  @IsNumberString({}, { message: "文章ID必须是数字字符串" })
   articleId?: string;
 
-  @ApiPropertyOptional({ description: '用户名（模糊搜索）' })
+  @ApiPropertyOptional({ description: "用户名（模糊搜索）" })
   @IsOptional()
-  @IsString({ message: '用户名必须是字符串' })
+  @IsString({ message: "用户名必须是字符串" })
   username?: string;
 
-  @ApiPropertyOptional({ description: '文章标题（模糊搜索）' })
+  @ApiPropertyOptional({ description: "文章标题（模糊搜索）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: '文章标题必须是字符串' })
+  @IsString({ message: "文章标题必须是字符串" })
   articleTitle?: string;
 
   @ApiPropertyOptional({
-    description: '操作类型',
+    description: "操作类型",
     enum: [
       ArticleAction.ADD,
       ArticleAction.SEARCH,
@@ -109,28 +109,28 @@ export class QueryArticleLogDto {
     ],
   })
   @IsOptional()
-  @IsEnum(ArticleAction, { message: '操作类型必须是有效的枚举值' })
+  @IsEnum(ArticleAction, { message: "操作类型必须是有效的枚举值" })
   action?: ArticleAction;
 
-  @ApiPropertyOptional({ description: '开始时间（格式：yyyy-MM-dd HH:mm:ss）' })
+  @ApiPropertyOptional({ description: "开始时间（格式：yyyy-MM-dd HH:mm:ss）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: '开始时间必须是字符串' })
+  @IsString({ message: "开始时间必须是字符串" })
   startTime?: string;
 
-  @ApiPropertyOptional({ description: '结束时间（格式：yyyy-MM-dd HH:mm:ss）' })
+  @ApiPropertyOptional({ description: "结束时间（格式：yyyy-MM-dd HH:mm:ss）" })
   @ExposeName()
   @IsOptional()
-  @IsString({ message: '结束时间必须是字符串' })
+  @IsString({ message: "结束时间必须是字符串" })
   endTime?: string;
 
-  @ApiPropertyOptional({ description: '页码', example: '1' })
+  @ApiPropertyOptional({ description: "页码", example: "1" })
   @IsOptional()
-  @IsNumberString({}, { message: '页码必须是数字字符串' })
+  @IsNumberString({}, { message: "页码必须是数字字符串" })
   page?: string;
 
-  @ApiPropertyOptional({ description: '每页条数', example: '10' })
+  @ApiPropertyOptional({ description: "每页条数", example: "10" })
   @IsOptional()
-  @IsNumberString({}, { message: '每页条数必须是数字字符串' })
+  @IsNumberString({}, { message: "每页条数必须是数字字符串" })
   size?: string;
 }

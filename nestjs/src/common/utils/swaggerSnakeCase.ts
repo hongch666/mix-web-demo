@@ -4,19 +4,21 @@ import type {
   ParameterObject,
   ReferenceObject,
   SchemaObject,
-} from '@nestjs/swagger/dist/interfaces/open-api-spec.interface';
+} from "@nestjs/swagger/dist/interfaces/open-api-spec.interface";
 
 function isReferenceObject(value: unknown): value is ReferenceObject {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    '$ref' in value &&
-    typeof (value as { $ref?: unknown }).$ref === 'string'
+    "$ref" in value &&
+    typeof (value as { $ref?: unknown }).$ref === "string"
   );
 }
 
 function isSchemaObject(value: unknown): value is SchemaObject {
-  return typeof value === 'object' && value !== null && !isReferenceObject(value);
+  return (
+    typeof value === "object" && value !== null && !isReferenceObject(value)
+  );
 }
 
 function toSnakeCase(key: string): string {
@@ -28,7 +30,7 @@ function transformExample<T>(value: T): T {
     return value.map((item) => transformExample(item)) as T;
   }
 
-  if (value === null || typeof value !== 'object') {
+  if (value === null || typeof value !== "object") {
     return value;
   }
 
@@ -45,7 +47,10 @@ function transformSchema(schema?: SchemaObject | ReferenceObject): void {
   }
 
   if (schema.properties) {
-    const transformedProperties: Record<string, SchemaObject | ReferenceObject> = {};
+    const transformedProperties: Record<
+      string,
+      SchemaObject | ReferenceObject
+    > = {};
     Object.entries(schema.properties).forEach(([key, value]) => {
       transformSchema(value);
       transformedProperties[toSnakeCase(key)] = value;
@@ -69,7 +74,10 @@ function transformSchema(schema?: SchemaObject | ReferenceObject): void {
     transformSchema(schema.items);
   }
 
-  if (schema.additionalProperties && isSchemaObject(schema.additionalProperties)) {
+  if (
+    schema.additionalProperties &&
+    isSchemaObject(schema.additionalProperties)
+  ) {
     transformSchema(schema.additionalProperties);
   }
 
@@ -82,7 +90,9 @@ function transformSchema(schema?: SchemaObject | ReferenceObject): void {
   }
 }
 
-function transformParameter(parameter: ParameterObject | ReferenceObject): void {
+function transformParameter(
+  parameter: ParameterObject | ReferenceObject,
+): void {
   if (isReferenceObject(parameter)) {
     return;
   }
@@ -99,7 +109,11 @@ function transformParameter(parameter: ParameterObject | ReferenceObject): void 
 
   if (parameter.examples) {
     Object.values(parameter.examples).forEach((example) => {
-      if (typeof example === 'object' && example !== null && 'value' in example) {
+      if (
+        typeof example === "object" &&
+        example !== null &&
+        "value" in example
+      ) {
         example.value = transformExample(example.value);
       }
     });
@@ -116,7 +130,11 @@ function transformOperation(operation: OperationObject): void {
         mediaType.example = transformExample(mediaType.example);
       }
       Object.values(mediaType.examples ?? {}).forEach((example) => {
-        if (typeof example === 'object' && example !== null && 'value' in example) {
+        if (
+          typeof example === "object" &&
+          example !== null &&
+          "value" in example
+        ) {
           example.value = transformExample(example.value);
         }
       });
@@ -133,7 +151,11 @@ function transformOperation(operation: OperationObject): void {
         mediaType.example = transformExample(mediaType.example);
       }
       Object.values(mediaType.examples ?? {}).forEach((example) => {
-        if (typeof example === 'object' && example !== null && 'value' in example) {
+        if (
+          typeof example === "object" &&
+          example !== null &&
+          "value" in example
+        ) {
           example.value = transformExample(example.value);
         }
       });

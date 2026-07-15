@@ -8,6 +8,7 @@ import type { OpenAPIObject } from "@nestjs/swagger";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import {
   Defaults,
+  ErrorIds,
   HttpCode,
   Messages,
   SwaggerConfig,
@@ -100,7 +101,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
         return new BusinessException(
           message,
           HttpCode.BAD_REQUEST,
-          "PARAM_PARSE_FAILED",
+          ErrorIds.PARAM_PARSE_FAILED,
         );
       },
     }),

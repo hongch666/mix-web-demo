@@ -212,7 +212,7 @@ export class NacosService implements OnModuleInit {
     if (!instances || instances.length === 0) {
       throw BusinessException.serviceUnavailable(
         `服务 ${opts.serviceName} 无可用实例`,
-        "NO_AVAILABLE_SERVICE_INSTANCE",
+        ErrorIds.NO_AVAILABLE_SERVICE_INSTANCE,
       );
     }
 
@@ -302,7 +302,7 @@ export class NacosService implements OnModuleInit {
       );
       throw BusinessException.badGateway(
         `调用 ${opts.serviceName} 失败，请稍后重试`,
-        "SERVICE_CALL_FAILED",
+        ErrorIds.SERVICE_CALL_FAILED,
       );
     }
   }

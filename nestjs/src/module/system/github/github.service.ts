@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { AxiosResponse } from "axios";
 import { randomUUID } from "crypto";
-import { Messages } from "src/common/constants";
+import { ErrorIds, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { SpringClientService } from "src/module/common/client/springClient.service";
@@ -287,7 +287,7 @@ export class GithubService {
         data.errorDescription ||
           data.error_description ||
           Messages.GITHUB_ACCESS_TOKEN_FAILED,
-        "GITHUB_ACCESS_TOKEN_FAILED",
+        ErrorIds.GITHUB_ACCESS_TOKEN_FAILED,
       );
     }
 
@@ -310,7 +310,7 @@ export class GithubService {
     if (response.status < 200 || response.status >= 300) {
       throw BusinessException.badGateway(
         Messages.GITHUB_USER_PROFILE_FAILED,
-        "GITHUB_USER_PROFILE_FAILED",
+        ErrorIds.GITHUB_USER_PROFILE_FAILED,
       );
     }
 
@@ -318,7 +318,7 @@ export class GithubService {
     if (!data.id || !data.login) {
       throw BusinessException.badGateway(
         Messages.GITHUB_USER_PROFILE_INVALID,
-        "GITHUB_USER_PROFILE_INVALID",
+        ErrorIds.GITHUB_USER_PROFILE_INVALID,
       );
     }
 
@@ -358,7 +358,7 @@ export class GithubService {
     if (response.code !== 200) {
       throw BusinessException.badGateway(
         Messages.GITHUB_SPRING_TOKEN_TICKET_FAILED,
-        "GITHUB_TOKEN_TICKET_FAILED",
+        ErrorIds.GITHUB_TOKEN_TICKET_FAILED,
       );
     }
 
@@ -369,7 +369,7 @@ export class GithubService {
     if (!ticket) {
       throw BusinessException.badGateway(
         Messages.GITHUB_SPRING_TOKEN_TICKET_MISSING,
-        "GITHUB_TOKEN_TICKET_FAILED",
+        ErrorIds.GITHUB_TOKEN_TICKET_FAILED,
       );
     }
 

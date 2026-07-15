@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { createReport } from 'docx-templates';
-import * as fs from 'fs';
-import { htmlToText } from 'html-to-text';
-import * as path from 'path';
+import { Injectable } from "@nestjs/common";
+import { createReport } from "docx-templates";
+import * as fs from "fs";
+import { htmlToText } from "html-to-text";
+import * as path from "path";
 
 @Injectable()
 export class WordService {
@@ -18,20 +18,20 @@ export class WordService {
     // 读取模板文件
     const absTemplatePath: string = path.isAbsolute(templatePath)
       ? templatePath
-      : path.resolve(__dirname, '../../', templatePath);
+      : path.resolve(__dirname, "../../", templatePath);
     const template: Buffer = fs.readFileSync(absTemplatePath);
 
     // 这里将content转为docx可用的rawXml
     const processedData: Record<string, unknown> = {
       ...data,
       // 这里简单转为纯文本，保留html标签需用插件
-      content: htmlToText((data.content as string) || '', { wordwrap: false }),
+      content: htmlToText((data.content as string) || "", { wordwrap: false }),
     };
 
     const buffer: Buffer | unknown = await createReport({
       template,
       data: processedData,
-      cmdDelimiter: ['${', '}'],
+      cmdDelimiter: ["${", "}"],
     });
 
     return Buffer.from(buffer as Buffer);

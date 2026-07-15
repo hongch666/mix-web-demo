@@ -1,4 +1,4 @@
-declare module 'docx-templates' {
+declare module "docx-templates" {
   export interface CreateReportOptions {
     template: Buffer;
     data: Record<string, unknown>;

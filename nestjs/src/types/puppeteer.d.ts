@@ -1,6 +1,6 @@
-declare module 'puppeteer' {
+declare module "puppeteer" {
   interface LaunchOptions {
-    headless?: boolean | 'new';
+    headless?: boolean | "new";
     args?: string[];
     executablePath?: string;
     timeout?: number;

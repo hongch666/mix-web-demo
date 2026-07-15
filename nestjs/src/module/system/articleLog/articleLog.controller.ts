@@ -7,27 +7,27 @@ import {
   Param,
   Post,
   Query,
-} from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiResponse, success } from 'src/common/utils/response';
-import { ApiLog } from 'src/framework/decorators/apiLog.decorator';
-import { RequireAdmin } from 'src/framework/decorators/requireAdmin.decorator';
-import { RequireInternalToken } from 'src/framework/decorators/requireInternalToken.decorator';
-import { ArticleLogService } from './articleLog.service';
-import { CreateArticleLogDto, QueryArticleLogDto } from './dto/articleLog.dto';
+} from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiResponse, success } from "src/common/utils/response";
+import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
+import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
+import { ArticleLogService } from "./articleLog.service";
+import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
 
-@Controller('article-logs')
-@ApiTags('文章日志模块')
+@Controller("article-logs")
+@ApiTags("文章日志模块")
 export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
 
   @Post()
   @HttpCode(200)
   @ApiOperation({
-    summary: '新增文章日志',
-    description: '通过请求体创建文章日志',
+    summary: "新增文章日志",
+    description: "通过请求体创建文章日志",
   })
-  @ApiLog('新增文章日志')
+  @ApiLog("新增文章日志")
   @RequireAdmin()
   @RequireInternalToken()
   async create(@Body() dto: CreateArticleLogDto): Promise<ApiResponse<null>> {
@@ -35,12 +35,12 @@ export class ArticleLogController {
     return success(null);
   }
 
-  @Get('list')
+  @Get("list")
   @ApiOperation({
-    summary: '查询文章日志',
-    description: '可根据用户ID、文章ID、操作类型查询，支持分页',
+    summary: "查询文章日志",
+    description: "可根据用户ID、文章ID、操作类型查询，支持分页",
   })
-  @ApiLog('查询文章日志')
+  @ApiLog("查询文章日志")
   @RequireAdmin()
   async findByFilter(
     @Query() query: QueryArticleLogDto,
@@ -48,28 +48,28 @@ export class ArticleLogController {
     const data: unknown = await this.logService.findByFilter(query);
     return success(data);
   }
-  @Delete(':id')
+  @Delete(":id")
   @ApiOperation({
-    summary: '删除文章日志',
-    description: '通过文章日志 ID 删除日志',
+    summary: "删除文章日志",
+    description: "通过文章日志 ID 删除日志",
   })
-  @ApiLog('删除文章日志')
+  @ApiLog("删除文章日志")
   @RequireAdmin()
-  async remove(@Param('id') id: string): Promise<ApiResponse<null>> {
+  async remove(@Param("id") id: string): Promise<ApiResponse<null>> {
     await this.logService.removeById(id);
     return success(null);
   }
 
-  @Delete('batch/:ids')
+  @Delete("batch/:ids")
   @ApiOperation({
-    summary: '批量删除文章日志',
-    description: '通过日志ID路径参数批量删除，多个ID用英文逗号分隔',
+    summary: "批量删除文章日志",
+    description: "通过日志ID路径参数批量删除，多个ID用英文逗号分隔",
   })
-  @ApiLog('批量删除文章日志')
+  @ApiLog("批量删除文章日志")
   @RequireAdmin()
-  async removeByIds(@Param('ids') ids: string): Promise<ApiResponse<null>> {
+  async removeByIds(@Param("ids") ids: string): Promise<ApiResponse<null>> {
     const idArr: string[] = ids
-      .split(',')
+      .split(",")
       .map((id: string) => id.trim())
       .filter(Boolean);
     await this.logService.removeByIds(idArr);

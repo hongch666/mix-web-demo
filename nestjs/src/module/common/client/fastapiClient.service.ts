@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { NacosService } from '../nacos/nacos.service';
+import { Injectable } from "@nestjs/common";
+import { NacosService } from "../nacos/nacos.service";
 
 @Injectable()
 export class FastapiClientService {
@@ -7,9 +7,9 @@ export class FastapiClientService {
 
   async test(): Promise<Record<string, unknown>> {
     return await this.nacosService.call({
-      serviceName: 'fastapi',
-      method: 'GET',
-      path: '/api_fastapi/fastapi',
+      serviceName: "fastapi",
+      method: "GET",
+      path: "/api_fastapi/fastapi",
     });
   }
 }

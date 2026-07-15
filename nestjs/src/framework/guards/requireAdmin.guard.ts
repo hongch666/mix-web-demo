@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
-import { HttpCode, Messages } from "src/common/constants";
+import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { UserService } from "src/module/common/user/user.service";
 import { REQUIRE_ADMIN_KEY } from "../decorators/requireAdmin.decorator";
@@ -30,7 +30,7 @@ export class RequireAdminGuard implements CanActivate {
       throw new BusinessException(
         Messages.UNAUTHORIZED_USER,
         HttpCode.FORBIDDEN,
-        "UNAUTHORIZED_USER",
+        ErrorIds.UNAUTHORIZED_USER_ERROR,
       );
     }
 
@@ -40,7 +40,7 @@ export class RequireAdminGuard implements CanActivate {
       throw new BusinessException(
         Messages.NO_ADMIN_USER,
         HttpCode.FORBIDDEN,
-        "NO_ADMIN_PERMISSION",
+        ErrorIds.NO_ADMIN_PERMISSION,
       );
     }
 

@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import * as bcrypt from 'bcrypt';
-import { Like, Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { InjectRepository } from "@nestjs/typeorm";
+import * as bcrypt from "bcrypt";
+import { Like, Repository } from "typeorm";
+import { User } from "./entities/user.entity";
 
 export interface GithubUserProfile {
   githubId: string;
@@ -64,14 +64,14 @@ export class UserService {
       existingUser.githubUrl = profile.githubUrl;
       existingUser.img = profile.avatarUrl;
       existingUser.email = availableEmail ?? existingUser.email;
-      existingUser.authProvider = 'github';
+      existingUser.authProvider = "github";
       existingUser.lastLoginAt = new Date();
       return this.userRepository.save(existingUser);
     }
 
     // 首次登录注册：使用默认密码的 bcrypt 加密值
     const rawDefaultPassword: string = this.configService.get<string>(
-      'USER_DEFAULT_PASSWORD',
+      "USER_DEFAULT_PASSWORD",
     )!;
     const encryptedPassword: string = await bcrypt.hash(
       rawDefaultPassword,
@@ -85,10 +85,10 @@ export class UserService {
       name: await this.buildUniqueGithubUsername(profile),
       password: encryptedPassword,
       email: availableEmail,
-      role: 'user',
+      role: "user",
       img: profile.avatarUrl,
       age: 18,
-      authProvider: 'github',
+      authProvider: "github",
       lastLoginAt: new Date(),
     });
 
@@ -102,7 +102,7 @@ export class UserService {
       return false;
     }
     // 根据role字段判断是否是管理员，支持'admin'、'ADMIN'等多种格式
-    return (user.role ?? '').toLowerCase() === 'admin';
+    return (user.role ?? "").toLowerCase() === "admin";
   }
 
   private async buildUniqueGithubUsername(
@@ -120,7 +120,7 @@ export class UserService {
       return preferredName;
     }
 
-    const fallbackBase: string = `github_${profile.githubLogin || 'user'}_${profile.githubId}`;
+    const fallbackBase: string = `github_${profile.githubLogin || "user"}_${profile.githubId}`;
     const fallbackExists: User | null = await this.userRepository.findOne({
       where: { name: fallbackBase },
     });

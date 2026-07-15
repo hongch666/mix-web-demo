@@ -1,4 +1,4 @@
-declare module 'ali-oss' {
+declare module "ali-oss" {
   export interface OSSOptions {
     accessKeyId: string;
     accessKeySecret: string;

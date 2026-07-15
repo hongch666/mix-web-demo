@@ -5,7 +5,7 @@ import * as fs from "fs";
 import * as marked from "marked";
 import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
-import { Messages } from "src/common/constants";
+import { ErrorIds, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { ArticleService } from "src/module/common/article/article.service";
@@ -32,7 +32,7 @@ export class DownloadService {
     if (!article) {
       throw BusinessException.notFound(
         `文章 ID ${id} 未找到`,
-        "ARTICLE_NOT_FOUND",
+        ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
     const htmlContent: string = marked.parse(article.content || "");
@@ -53,7 +53,7 @@ export class DownloadService {
     if (!filePath) {
       throw BusinessException.notFound(
         Messages.EMPTY_FILE_PATH,
-        "EMPTY_FILE_PATH",
+        ErrorIds.EMPTY_FILE_PATH,
       );
     }
     const templatePath: string = path.join(
@@ -93,7 +93,7 @@ export class DownloadService {
     if (!article) {
       throw BusinessException.notFound(
         `文章 ID ${id} 未找到`,
-        "ARTICLE_NOT_FOUND",
+        ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
     // 拼接markdown内容
@@ -104,7 +104,7 @@ export class DownloadService {
     );
     markdown += `\n**作者：** ${user?.name || "未知"}\n`;
     markdown += `\n**创作时间：** ${dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")}\n`;
-    markdown += `\n---\n`;
+    markdown += "\n---\n";
     markdown += article.content || "";
     // 保存到本地临时文件
     const filePath: string = this.configService.get<string>("files.word")!;
@@ -134,7 +134,7 @@ export class DownloadService {
     if (!article) {
       throw BusinessException.notFound(
         `文章 ID ${id} 未找到`,
-        "ARTICLE_NOT_FOUND",
+        ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
 
@@ -407,7 +407,7 @@ export class DownloadService {
       logger.error(`上传阿里云OSS错误: ${message}`);
       throw BusinessException.internalServerError(
         Messages.OSS_UPLOAD_ERR,
-        "OSS_UPLOAD_ERROR",
+        ErrorIds.OSS_UPLOAD_ERROR,
       );
     }
   }

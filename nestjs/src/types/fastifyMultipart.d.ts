@@ -1,5 +1,5 @@
-declare module '@fastify/multipart' {
-  import { FastifyPluginCallback } from 'fastify';
+declare module "@fastify/multipart" {
+  import { FastifyPluginCallback } from "fastify";
 
   export interface MultipartFile {
     file: NodeJS.ReadableStream;
