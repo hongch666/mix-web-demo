@@ -1,7 +1,8 @@
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 
 from ..versionedCache import VersionedCache
 
@@ -35,7 +36,7 @@ class CategoryCache(VersionedCache):
         """
         # 检查版本号是否变化
         if await self.is_version_changed(ch_conn):
-            Logger.info(Constants.VERSION_CHANGED_CLEAR_CACHE)
+            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
 
@@ -50,7 +51,7 @@ class CategoryCache(VersionedCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Constants.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
+        Logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
     async def set(self, data: List[Dict[str, Any]], ch_conn: Any) -> None:

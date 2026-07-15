@@ -2,7 +2,8 @@ import asyncio
 from typing import Any, Dict
 
 from app.common.decorators import log, requireInternalToken
-from app.core.base import Constants, success
+from app.core.base import success
+from app.core.constants import Messages
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,
@@ -37,7 +38,7 @@ nestjs_client: NestjsClient = NestjsClient()
 @log("测试FastAPI服务")
 async def testFastapi(request: Request) -> JSONResponse:
     """测试FastAPI服务接口"""
-    return success(Constants.TEST_MESSAGE)
+    return success(Messages.TEST_MESSAGE)
 
 
 # 测试Spring服务

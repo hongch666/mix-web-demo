@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Optional
 
-from app.core.base import HttpCode
+from app.core.constants import HttpCode
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import PydanticCustomError
 
@@ -18,6 +18,7 @@ class AIServiceType(str, Enum):
 
 class ChatRequest(BaseModel):
     """聊天请求模型"""
+
     model_config = {"populate_by_name": True}
 
     message: str = Field(..., description="用户消息")
@@ -56,6 +57,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponseData(BaseModel):
     """聊天响应数据模型 - 内部数据结构"""
+
     model_config = {"populate_by_name": True}
 
     message: str = Field(..., description="回复消息")

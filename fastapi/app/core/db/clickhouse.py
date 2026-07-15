@@ -3,8 +3,9 @@ import time
 from threading import Condition, Lock
 from typing import Any, Dict, List, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from clickhouse_driver import Client
 
 
@@ -110,7 +111,7 @@ class ClickhouseConnectionPool:
             conn.disconnect()
         except Exception:
             pass
-        Logger.info(Constants.CLICKHOUSE_CONNECTION_POOL_FULL_MESSAGE)
+        Logger.info(Messages.CLICKHOUSE_CONNECTION_POOL_FULL_MESSAGE)
 
     def close_all(self) -> None:
         """关闭所有连接"""
@@ -121,7 +122,7 @@ class ClickhouseConnectionPool:
                 pass
         self._connections.clear()
         self._active_connections = 0
-        Logger.info(Constants.CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE)
+        Logger.info(Messages.CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE)
 
     async def get_connection_async(self) -> Any:
         return await asyncio.to_thread(self.get_connection)

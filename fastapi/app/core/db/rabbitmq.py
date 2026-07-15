@@ -3,13 +3,13 @@ import json
 from typing import Any, Dict, Optional
 
 import aio_pika
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 
 
 class RabbitMQClient:
-    """RabbitMQ 客户端
-    """
+    """RabbitMQ 客户端"""
 
     def __init__(self) -> None:
         self.connection: Optional[aio_pika.RobustConnection] = None
@@ -19,7 +19,7 @@ class RabbitMQClient:
         """构建 AMQP 连接 URL"""
         config: Dict[str, Any] = load_config("rabbitmq")
         if not config:
-            Logger.warning(Constants.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
+            Logger.warning(Messages.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
             return None
 
         host: str = str(config.get("host", "127.0.0.1"))
@@ -75,8 +75,12 @@ class RabbitMQClient:
         依赖 RobustConnection 自动处理断连恢复，此处只做发送和错误记录。
         """
         try:
-            if self.channel is None or self.connection is None or self.connection.is_closed:
-                Logger.warning(Constants.RABBITMQ_NOT_CONNECTED_MESSAGE)
+            if (
+                self.channel is None
+                or self.connection is None
+                or self.connection.is_closed
+            ):
+                Logger.warning(Messages.RABBITMQ_NOT_CONNECTED_MESSAGE)
                 return False
 
             # 声明队列（幂等操作），确保重连后队列存在
@@ -128,7 +132,7 @@ class RabbitMQClient:
         try:
             loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
             if loop.is_running():
-                Logger.warning(Constants.AIO_PKA_EVENT_LOOP_ERROR)
+                Logger.warning(Messages.AIO_PKA_EVENT_LOOP_ERROR)
                 return
         except RuntimeError:
             pass
@@ -168,7 +172,7 @@ async def send_to_queue_async(
     try:
         client: Optional[RabbitMQClient] = get_rabbitmq_client()
         if client is None:
-            Logger.warning(Constants.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
+            Logger.warning(Messages.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
             return False
         return await client.send_message_async(queue_name, message, persistent)
     except Exception as e:

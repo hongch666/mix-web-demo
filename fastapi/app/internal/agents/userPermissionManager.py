@@ -1,8 +1,9 @@
 from functools import lru_cache
 from typing import Any, List, Optional, Tuple
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from sqlalchemy.orm import Session
 
 
@@ -14,14 +15,18 @@ class UserPermissionManager:
     def PERSONAL_INFO_KEYWORDS(self) -> List[str]:
         """动态从配置文件加载个人信息查询关键字"""
         try:
-            keywords: List[str] = (load_config("agent") or {}).get("permission", {}).get("personal_info_keywords", [])
+            keywords: List[str] = (
+                (load_config("agent") or {})
+                .get("permission", {})
+                .get("personal_info_keywords", [])
+            )
             if keywords:
                 return keywords
         except Exception as e:
             Logger.warning(f"从配置文件加载关键字失败: {e}，使用默认关键字")
 
         # 默认关键字
-        return Constants.DEFAULT_KEYWORDS
+        return Messages.DEFAULT_KEYWORDS
 
     def __init__(self, user_mapper: Optional[Any] = None) -> None:
         """
@@ -39,19 +44,21 @@ class UserPermissionManager:
                 Logger.warning(
                     f"用户Mapper未初始化，无法获取用户 {user_id} 的角色，使用默认角色 'user'"
                 )
-                return Constants.ROLE_USER
+                return Messages.ROLE_USER
 
-            role: Optional[str] = await self.user_mapper.get_user_role_async(user_id, db)
-            role = role or Constants.ROLE_USER
+            role: Optional[str] = await self.user_mapper.get_user_role_async(
+                user_id, db
+            )
+            role = role or Messages.ROLE_USER
             Logger.info(f"用户 {user_id} 的角色: {role}")
             return role
         except Exception as e:
             Logger.error(f"获取用户 {user_id} 的角色失败: {e}，使用默认角色 'user'")
-            return Constants.ROLE_USER
+            return Messages.ROLE_USER
 
     async def is_admin_async(self, user_id: int, db: Session) -> bool:
         role: Optional[str] = await self.get_user_role_async(user_id, db)
-        return role == Constants.ROLE_ADMIN
+        return role == Messages.ROLE_ADMIN
 
     async def is_personal_info_query(self, question: str) -> bool:
         """
@@ -105,7 +112,7 @@ class UserPermissionManager:
             return True, ""
 
         role: Optional[str] = await self.get_user_role_async(user_id, db)
-        if role == Constants.ROLE_ADMIN:
+        if role == Messages.ROLE_ADMIN:
             Logger.info(f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具")
             return True, ""
 

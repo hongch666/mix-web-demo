@@ -6,11 +6,11 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import HttpCode, Messages
 from app.core.db import get_db
 from app.core.errors import BusinessException
-from app.internal.clients import NestjsClient
 from app.internal.cache import (
     ArticleCache,
     CategoryCache,
@@ -23,6 +23,7 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
+from app.internal.clients import NestjsClient
 from app.internal.crud import (
     ArticleLogMapper,
     ArticleMapper,
@@ -238,7 +239,9 @@ class AnalyzeService:
         try:
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result: Optional[List[Dict[str, Any]]] = await self._article_cache.get(ch_conn)
+                cached_result: Optional[
+                    List[Dict[str, Any]]
+                ] = await self._article_cache.get(ch_conn)
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
@@ -248,13 +251,13 @@ class AnalyzeService:
             except Exception as cache_e:
                 Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
-            Logger.info(Constants.TOP10_CACHE_MISS)
+            Logger.info(Messages.TOP10_CACHE_MISS)
 
             try:
                 articles = await self.articleMapper.get_top10_articles_clickhouse_mapper_async()
                 if articles and isinstance(articles[0], dict):
                     data_source = "ClickHouse"
-                    Logger.info(Constants.TOP10_CLICKHOUSE_GET)
+                    Logger.info(Messages.TOP10_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
                     f"get_top10_articles_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
@@ -265,7 +268,7 @@ class AnalyzeService:
                     db
                 )
                 data_source = "DB"
-                Logger.info(Constants.TOP10_DB_SOURCE)
+                Logger.info(Messages.TOP10_DB_SOURCE)
 
             if articles and isinstance(articles[0], dict):
                 user_ids: List[int] = [
@@ -274,10 +277,14 @@ class AnalyzeService:
                     if article.get("user_id")
                 ]
                 if user_ids:
-                    users: List[Any] = await self.userMapper.get_users_by_ids_mapper_async(
+                    users: List[
+                        Any
+                    ] = await self.userMapper.get_users_by_ids_mapper_async(
                         user_ids, db
                     )
-                    user_id_to_name: Dict[int, str] = {user.id: user.name for user in users}
+                    user_id_to_name: Dict[int, str] = {
+                        user.id: user.name for user in users
+                    }
                     for article in articles:
                         article["username"] = user_id_to_name.get(
                             article.get("user_id")
@@ -351,9 +358,9 @@ class AnalyzeService:
     def generate_wordcloud(self, keywords_dic: Dict[str, int]) -> None:
         if len(keywords_dic) == 0:
             raise BusinessException(
-                Constants.KEYWORDS_EMPTY,
+                Messages.KEYWORDS_EMPTY,
                 HttpCode.BAD_REQUEST,
-                Constants.ERROR_PARAM_PARSE_FAILED,
+                Messages.ERROR_PARAM_PARSE_FAILED,
             )
         wc_config: Dict[str, Any] = load_config("wordcloud")
         FONT_PATH: str = wc_config["font_path"]
@@ -373,13 +380,15 @@ class AnalyzeService:
                 os.path.join(os.getcwd(), FILE_PATH, "search_keywords_wordcloud.png")
             )
         )
-        Logger.info(Constants.WORDCLOUD_GENERATION_SUCCESS)
+        Logger.info(Messages.WORDCLOUD_GENERATION_SUCCESS)
 
     async def upload_file(self, file_path: str, oss_path: str) -> str:
         """远程调用 NestJS 上传文件到 OSS"""
 
         try:
-            result: Dict[str, Any] = await self._nestjs_client.upload_file(file_path, oss_path)
+            result: Dict[str, Any] = await self._nestjs_client.upload_file(
+                file_path, oss_path
+            )
             oss_url: str = str(result.get("data", ""))
             Logger.info(f"文件上传成功，OSS地址: {oss_url}")
             Logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
@@ -394,7 +403,7 @@ class AnalyzeService:
         random_filename = f"{uuid.uuid4()}.png"
         oss_url: str = await self.upload_file(
             file_path=os.path.normpath(
-                os.path.join(os.getcwd(), FILE_PATH, Constants.WORDCLOUD_FILENAME)
+                os.path.join(os.getcwd(), FILE_PATH, Messages.WORDCLOUD_FILENAME)
             ),
             oss_path=f"pic/{random_filename}",
         )
@@ -422,7 +431,7 @@ class AnalyzeService:
             Logger.debug(f"获取词云图缓存失败，将重新生成: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
-        Logger.info(Constants.WORDCLOUD_CACHE_FETCH_FAILED)
+        Logger.info(Messages.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
         keywords_dic: Dict[str, int] = await self.get_keywords_dic()
         # 生成词云图
@@ -446,7 +455,7 @@ class AnalyzeService:
         FILE_PATH: str = load_config("files")["excel_path"]
         file_path: str = os.path.normpath(
             os.path.join(
-                os.getcwd(), FILE_PATH, Constants.EXPORT_ARTICLES_EXCEL_FILENAME
+                os.getcwd(), FILE_PATH, Messages.EXPORT_ARTICLES_EXCEL_FILENAME
             )
         )
 
@@ -469,11 +478,13 @@ class AnalyzeService:
 
         workbook = Workbook(write_only=True)
         worksheet: Any = workbook.create_sheet(title="Sheet1")
-        worksheet.append([Constants.EXPORT_ARTICLES_EXCEL_TIP])
+        worksheet.append([Messages.EXPORT_ARTICLES_EXCEL_TIP])
         worksheet.append(headers)
 
         total_rows: int = 0
-        rows: List[Dict[str, Any]] = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
+        rows: List[
+            Dict[str, Any]
+        ] = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
         for item in rows:
             worksheet.append(
                 [
@@ -547,7 +558,7 @@ class AnalyzeService:
             Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
         # ========== 步骤2: 缓存未命中，串行查询DB（同一 AsyncSession 不支持并发操作） ==========
-        Logger.info(Constants.STATISTICS_CACHE_FETCH_FAILED)
+        Logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
         total_views = await self.articleMapper.get_total_views_mapper_async(db)
         total_articles = await self.articleMapper.get_total_articles_mapper_async(db)
         active_authors = await self.articleMapper.get_active_authors_mapper_async(db)
@@ -555,7 +566,9 @@ class AnalyzeService:
         total_likes = await self.likeMapper.get_total_likes_mapper_async(db)
         average_likes = await self.likeMapper.get_average_likes_mapper_async(db)
         total_collects = await self.collectMapper.get_total_collects_mapper_async(db)
-        average_collects = await self.collectMapper.get_average_collects_mapper_async(db)
+        average_collects = await self.collectMapper.get_average_collects_mapper_async(
+            db
+        )
 
         statistics: Dict[str, Any] = {
             "total_views": total_views,
@@ -603,7 +616,9 @@ class AnalyzeService:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result: Optional[List[Dict[str, Any]]] = await self._category_cache.get(ch_conn)
+                cached_result: Optional[
+                    List[Dict[str, Any]]
+                ] = await self._category_cache.get(ch_conn)
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
@@ -614,14 +629,14 @@ class AnalyzeService:
                 Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            Logger.info(Constants.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
+            Logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
             local_category_data: Optional[List[Dict[str, Any]]] = None
             local_data_source: str = "DB"
 
             try:
                 local_category_data = await self.articleMapper.get_category_article_count_clickhouse_mapper_async()
                 local_data_source = "ClickHouse"
-                Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_GET)
+                Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
                     f"get_category_article_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
@@ -635,16 +650,18 @@ class AnalyzeService:
                     )
                 )
                 local_data_source = "DB"
-                Logger.info(Constants.CATEGORY_STATISTICS_DB_SOURCE)
+                Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
 
             # 两个分类查询在同一 AsyncSession 上串行执行，避免并发错误
-            all_categories: List[Any] = await self.categoryMapper.get_all_categories_mapper_async(
-                db
-            )
-            subcategories: List[Dict[str, Any]] = await self.categoryMapper.get_subcategories_with_parent_mapper_async(
-                db
-            )
-            sub_cat_map: Dict[int, Dict[str, Any]] = {sc["id"]: sc for sc in subcategories}
+            all_categories: List[
+                Any
+            ] = await self.categoryMapper.get_all_categories_mapper_async(db)
+            subcategories: List[
+                Dict[str, Any]
+            ] = await self.categoryMapper.get_subcategories_with_parent_mapper_async(db)
+            sub_cat_map: Dict[int, Dict[str, Any]] = {
+                sc["id"]: sc for sc in subcategories
+            }
 
             parent_category_count: Dict[int, Dict[str, Any]] = {}
             for category in all_categories:
@@ -707,7 +724,9 @@ class AnalyzeService:
             # ========== 步骤1: 尝试从缓存获取 ==========
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result: Optional[List[Dict[str, Any]]] = await self._publish_time_cache.get(ch_conn)
+                cached_result: Optional[
+                    List[Dict[str, Any]]
+                ] = await self._publish_time_cache.get(ch_conn)
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
@@ -718,14 +737,14 @@ class AnalyzeService:
                 Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            Logger.info(Constants.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
+            Logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
             local_publish_data: Optional[List[Dict[str, Any]]] = None
             local_data_source: str = "DB"
 
             try:
                 local_publish_data = await self.articleMapper.get_monthly_publish_count_clickhouse_mapper_async()
                 local_data_source = "ClickHouse"
-                Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_GET)
+                Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
                     f"get_monthly_publish_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
@@ -738,7 +757,7 @@ class AnalyzeService:
                     )
                 )
                 local_data_source = "DB"
-                Logger.info(Constants.MONTHLY_STATISTICS_DB_SOURCE)
+                Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
 
             now: datetime = datetime.now()
             expected_months: List[str] = []

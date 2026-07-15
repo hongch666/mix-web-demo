@@ -2,7 +2,8 @@ from collections.abc import AsyncGenerator
 from functools import lru_cache
 from typing import Any, Dict, List
 
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
+from app.core.constants import HttpCode, Messages
 from app.core.db import async_db as mongo_db
 from app.core.db import get_db
 from app.core.errors import BusinessException
@@ -75,7 +76,7 @@ class ArticleLogMapper:
                 total_views += views
 
                 article = articles_dict.get(article_id)
-                title = article.title if article else Constants.UNKNOWN_ARTICLE
+                title = article.title if article else Messages.UNKNOWN_ARTICLE
                 articles.append(
                     {"article_id": article_id, "title": title, "views": views}
                 )
@@ -88,9 +89,9 @@ class ArticleLogMapper:
         except Exception as e:
             Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
             raise BusinessException(
-                Constants.GET_TOP_FAIL,
+                Messages.GET_TOP_FAIL,
                 HttpCode.INTERNAL_SERVER_ERROR,
-                Constants.ERROR_FASTAPI_SERVER_ERROR,
+                Messages.ERROR_FASTAPI_SERVER_ERROR,
             )
 
 

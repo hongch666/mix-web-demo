@@ -3,8 +3,9 @@ from collections.abc import AsyncGenerator
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote_plus
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.ext.asyncio import (
@@ -125,20 +126,20 @@ async def create_tables_async(tables: Optional[List[str]] = None) -> None:
         if tables and "ai_history" in tables:
             async with async_engine.begin() as connection:
                 result = await connection.exec_driver_sql(
-                    Constants.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK,
+                    Messages.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK,
                     (DATABASE,),
                 )
                 table_exists: bool = result.fetchone() is not None
 
                 if not table_exists:
                     await connection.exec_driver_sql(
-                        Constants.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
+                        Messages.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
                     )
-                    Logger.info(Constants.AI_CHAT_TABLE_CREATION_MESSAGE)
+                    Logger.info(Messages.AI_CHAT_TABLE_CREATION_MESSAGE)
                 else:
-                    Logger.info(Constants.AI_CHAT_TABLE_EXISTS_MESSAGE)
+                    Logger.info(Messages.AI_CHAT_TABLE_EXISTS_MESSAGE)
         else:
-            Logger.warning(Constants.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
+            Logger.warning(Messages.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
     except Exception as e:
         Logger.error(f"数据库表创建失败: {e}")
         Logger.error(traceback.format_exc())

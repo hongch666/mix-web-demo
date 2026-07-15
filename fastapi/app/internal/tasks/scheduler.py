@@ -2,7 +2,8 @@ from datetime import datetime
 from functools import partial
 from typing import Any, Callable, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -60,8 +61,8 @@ def start_scheduler(
     scheduler.add_job(neo4j_sync_job_func, "interval", hours=24, id="sync_neo4j")
 
     scheduler.start()
-    Logger.info(Constants.SCHEDULER_STARTED_MESSAGE)
-    Logger.info(Constants.SCHEDULER_VECTOR_SYNC_MESSAGE)
-    Logger.info(Constants.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
-    Logger.info(Constants.SCHEDULER_NEO4J_SYNC_MESSAGE)
+    Logger.info(Messages.SCHEDULER_STARTED_MESSAGE)
+    Logger.info(Messages.SCHEDULER_VECTOR_SYNC_MESSAGE)
+    Logger.info(Messages.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
+    Logger.info(Messages.SCHEDULER_NEO4J_SYNC_MESSAGE)
     return scheduler

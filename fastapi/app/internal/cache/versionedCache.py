@@ -2,8 +2,9 @@ import asyncio
 import hashlib
 from typing import Any, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 
 from .baseCache import BaseCache
 
@@ -58,7 +59,7 @@ class VersionedCache(BaseCache):
         try:
             current_version = await self.get_cache_version(ch_conn)
             if not current_version:
-                Logger.debug(Constants.SKIP_VERSION_CHECK)
+                Logger.debug(Messages.SKIP_VERSION_CHECK)
                 return False
 
             # 从 Redis 获取旧版本号（优先级最高）

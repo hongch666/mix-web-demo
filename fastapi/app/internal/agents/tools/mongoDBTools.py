@@ -3,8 +3,9 @@ from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from app.core.db import async_db
 from bson import ObjectId
 from langchain_core.tools import StructuredTool
@@ -71,7 +72,7 @@ class MongoDBTools:
         try:
             # 验证必需参数
             if not collection_name:
-                return Constants.COLLECTION_NAME_VALIDATION_ERROR
+                return Messages.COLLECTION_NAME_VALIDATION_ERROR
 
             # 确保 limit 是整数
             limit_int = int(limit)
@@ -107,28 +108,28 @@ class MongoDBTools:
 
         class QueryMongoInput(BaseModel):
             collection_name: str = Field(
-                description=Constants.MONGODB_COLLECTION_NAME_INPUT_DESC
+                description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
             filter_dict: Dict[str, Any] = Field(
                 default_factory=dict,
-                description=Constants.MONGODB_FILTER_INPUT_DESC,
+                description=Messages.MONGODB_FILTER_INPUT_DESC,
             )
             limit: int = Field(
                 default=10,
                 ge=1,
-                description=Constants.MONGODB_LIMIT_INPUT_DESC,
+                description=Messages.MONGODB_LIMIT_INPUT_DESC,
             )
 
         return [
             StructuredTool(
-                name=Constants.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
-                description=Constants.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
+                name=Messages.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
+                description=Messages.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
                 coroutine=self.list_mongodb_collections,
                 args_schema=EmptyInput,
             ),
             StructuredTool(
-                name=Constants.MONGODB_QUERY_TOOL_NAME,
-                description=Constants.MONGODB_QUERY_TOOL_DESC,
+                name=Messages.MONGODB_QUERY_TOOL_NAME,
+                description=Messages.MONGODB_QUERY_TOOL_DESC,
                 coroutine=self.query_mongodb,
                 args_schema=QueryMongoInput,
             ),

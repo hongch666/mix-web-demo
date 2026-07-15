@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import List, Optional
 from urllib.parse import quote_plus
 
-from app.core.base import Constants
+from app.core.constants import Messages
 from langchain_community.utilities import SQLDatabase
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
@@ -38,7 +38,7 @@ class SQLTools:
 
         self.engine = create_engine(self.database_url, pool_pre_ping=True)
         self.db = SQLDatabase(self.engine)
-        self.logger.info(Constants.SQL_TOOL_INITIALIZATION_SUCCESS)
+        self.logger.info(Messages.SQL_TOOL_INITIALIZATION_SUCCESS)
 
     def set_user_id(self, user_id: Optional[int]) -> None:
         """设置当前用户ID"""
@@ -106,29 +106,29 @@ class SQLTools:
         """校验整条SQL是否为单条只读查询"""
         normalized_sql = self._normalize_sql_for_validation(query)
         if not normalized_sql:
-            return False, Constants.SQL_TOOL_LIMIT
+            return False, Messages.SQL_TOOL_LIMIT
 
         # 只允许单条语句，允许末尾保留一个分号
         sql_without_trailing_semicolon = normalized_sql.rstrip(";").strip()
         if not sql_without_trailing_semicolon:
-            return False, Constants.SQL_TOOL_LIMIT
+            return False, Messages.SQL_TOOL_LIMIT
         if ";" in sql_without_trailing_semicolon:
-            return False, Constants.SQL_QUERY_MULTIPLE_STATEMENTS_ERROR
+            return False, Messages.SQL_QUERY_MULTIPLE_STATEMENTS_ERROR
 
         if not any(
             sql_without_trailing_semicolon.startswith(prefix)
-            for prefix in Constants.SQL_READONLY_ALLOWED_PREFIXES
+            for prefix in Messages.SQL_READONLY_ALLOWED_PREFIXES
         ):
-            return False, Constants.SQL_TOOL_LIMIT
+            return False, Messages.SQL_TOOL_LIMIT
 
-        dangerous_keywords = Constants.SQL_DANGEROUS_KEYWORDS
+        dangerous_keywords = Messages.SQL_DANGEROUS_KEYWORDS
         for keyword in dangerous_keywords:
             if re.search(rf"\b{re.escape(keyword)}\b", sql_without_trailing_semicolon):
-                return False, Constants.SQL_QUERY_WRITE_OPERATION_ERROR
+                return False, Messages.SQL_QUERY_WRITE_OPERATION_ERROR
 
-        for pattern in Constants.SQL_DANGEROUS_PATTERNS:
+        for pattern in Messages.SQL_DANGEROUS_PATTERNS:
             if pattern in sql_without_trailing_semicolon:
-                return False, Constants.SQL_QUERY_WRITE_OPERATION_ERROR
+                return False, Messages.SQL_QUERY_WRITE_OPERATION_ERROR
 
         return True, ""
 
@@ -138,7 +138,7 @@ class SQLTools:
         if not normalized_question:
             return False
 
-        for pattern in Constants.DANGEROUS_SQL_REQUEST_PATTERNS:
+        for pattern in Messages.DANGEROUS_SQL_REQUEST_PATTERNS:
             if re.search(pattern, normalized_question, flags=re.IGNORECASE):
                 return True
         return False
@@ -236,7 +236,7 @@ class SQLTools:
             # 如果涉及个人数据查询且有用户ID，添加用户ID过滤
             if current_user_id:
                 # 检查查询是否涉及用户相关表
-                personal_tables = Constants.USER_RELATED_TABLE
+                personal_tables = Messages.USER_RELATED_TABLE
                 query_lower = query.lower()
 
                 # 如果查询涉及个人表，自动添加用户ID过滤
@@ -261,7 +261,7 @@ class SQLTools:
                 columns = result.keys()
 
                 if not rows:
-                    return Constants.SQL_QUERY_NO_RES
+                    return Messages.SQL_QUERY_NO_RES
 
                 # 限制返回行数 - 增加到500行以支持更完整的思考过程
                 max_rows = 500
@@ -309,22 +309,22 @@ class SQLTools:
         class GetTableSchemaInput(BaseModel):
             table_name: str = Field(
                 default="",
-                description=Constants.SQL_TABLE_INPUT_DESC,
+                description=Messages.SQL_TABLE_INPUT_DESC,
             )
 
         class ExecuteSqlQueryInput(BaseModel):
-            query: str = Field(description=Constants.SQL_QUERY_INPUT_DESC)
+            query: str = Field(description=Messages.SQL_QUERY_INPUT_DESC)
 
         return [
             StructuredTool(
-                name=Constants.SQL_TABLE_TOOL_NAME,
-                description=Constants.SQL_TABLE_TOOL_DESC,
+                name=Messages.SQL_TABLE_TOOL_NAME,
+                description=Messages.SQL_TABLE_TOOL_DESC,
                 func=self.get_table_schema,
                 args_schema=GetTableSchemaInput,
             ),
             StructuredTool(
-                name=Constants.SQL_QUERY_TOOL_NAME,
-                description=Constants.SQL_QUERY_TOOL_DESC,
+                name=Messages.SQL_QUERY_TOOL_NAME,
+                description=Messages.SQL_QUERY_TOOL_DESC,
                 func=self.execute_query,
                 args_schema=ExecuteSqlQueryInput,
             ),

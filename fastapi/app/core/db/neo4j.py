@@ -2,8 +2,9 @@ import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from neo4j import AsyncGraphDatabase, AsyncSession
 
 
@@ -22,7 +23,9 @@ class Neo4jClient:
     def _initialize_config(self) -> None:
         """根据配置初始化 Neo4j 连接参数"""
         try:
-            neo4j_cfg: Dict[str, Any] = (load_config("database") or {}).get("neo4j") or {}
+            neo4j_cfg: Dict[str, Any] = (load_config("database") or {}).get(
+                "neo4j"
+            ) or {}
             self.uri = str(neo4j_cfg.get("uri") or "bolt://127.0.0.1:7687")
             self.user = str(neo4j_cfg.get("user") or "neo4j")
             self.password = str(neo4j_cfg.get("password") or "").strip()
@@ -36,13 +39,13 @@ class Neo4jClient:
     def _get_driver(self) -> Optional[Any]:
         """获取当前事件循环对应的 Neo4j 驱动"""
         if not self.uri:
-            self.logger.warning(Constants.NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE)
+            self.logger.warning(Messages.NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE)
             return None
 
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            self.logger.warning(Constants.NEO4J_LOOP_NOT_RUNNING_MESSAGE)
+            self.logger.warning(Messages.NEO4J_LOOP_NOT_RUNNING_MESSAGE)
             return None
 
         loop_id: int = id(loop)
@@ -61,7 +64,7 @@ class Neo4jClient:
         """获取 Neo4j 异步会话"""
         driver: Optional[Any] = self._get_driver()
         if driver is None:
-            self.logger.warning(Constants.NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE)
+            self.logger.warning(Messages.NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE)
             return None
         return driver.session()
 
@@ -77,7 +80,9 @@ class Neo4jClient:
             result: Any = await session.run(cypher, params or {})
             return await result.data()
         except Exception as e:
-            self.logger.error(f"Cypher 查询失败: {e}\nCypher: {cypher}\nParams: {params}")
+            self.logger.error(
+                f"Cypher 查询失败: {e}\nCypher: {cypher}\nParams: {params}"
+            )
             return []
         finally:
             await session.close()
@@ -94,7 +99,9 @@ class Neo4jClient:
             result: Any = await session.run(cypher, params or {})
             return await result.consume()
         except Exception as e:
-            self.logger.error(f"Cypher 写操作失败: {e}\nCypher: {cypher}\nParams: {params}")
+            self.logger.error(
+                f"Cypher 写操作失败: {e}\nCypher: {cypher}\nParams: {params}"
+            )
             return None
         finally:
             await session.close()
@@ -110,13 +117,13 @@ class Neo4jClient:
             driver: Optional[Any] = self._drivers.pop(current_loop_id, None)
             if driver is not None:
                 await driver.close()
-                self.logger.info(Constants.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)
+                self.logger.info(Messages.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)
             return
 
         for driver in list(self._drivers.values()):
             await driver.close()
         self._drivers.clear()
-        self.logger.info(Constants.NEO4J_DRIVER_CLOSED_MESSAGE)
+        self.logger.info(Messages.NEO4J_DRIVER_CLOSED_MESSAGE)
 
 
 @lru_cache

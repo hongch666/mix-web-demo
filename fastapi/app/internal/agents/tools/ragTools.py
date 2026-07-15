@@ -4,16 +4,17 @@ import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import HttpCode, Messages
 from app.core.db import get_pgvector_connection_string
 from app.core.errors import BusinessException
+from langchain_community.cache import InMemoryCache
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
-from langchain_core.tools import Tool
-from langchain_community.cache import InMemoryCache
 from langchain_core.globals import set_llm_cache
+from langchain_core.tools import Tool
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 抑制 PGVector 弃用警告
@@ -45,7 +46,7 @@ def sanitize_retrieved_content(text: str) -> str:
     """
     for pattern in _INJECTION_PATTERNS:
         if re.search(pattern, text, re.IGNORECASE):
-            Logger.warning(f"检测到疑似 Prompt 注入内容，已过滤")
+            Logger.warning("检测到疑似 Prompt 注入内容，已过滤")
             text = re.sub(pattern, "[已过滤]", text, flags=re.IGNORECASE)
     return text
 
@@ -81,11 +82,11 @@ class RAGTools:
 
         if not api_key:
             self.enabled = False
-            self._init_error_message = Constants.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
+            self._init_error_message = Messages.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
             raise BusinessException(
                 self._init_error_message,
                 HttpCode.SERVICE_UNAVAILABLE,
-                Constants.ERROR_INITIALIZATION_ERROR,
+                Messages.ERROR_INITIALIZATION_ERROR,
             )
 
         try:
@@ -101,7 +102,7 @@ class RAGTools:
             raise BusinessException(
                 self._init_error_message,
                 HttpCode.SERVICE_UNAVAILABLE,
-                Constants.ERROR_INITIALIZATION_ERROR,
+                Messages.ERROR_INITIALIZATION_ERROR,
             )
 
         # 1.5 初始化 HyDE LLM（复用已配置的模型，用于生成假设性文档增强检索精度）
@@ -121,7 +122,9 @@ class RAGTools:
                 )
                 self.logger.info("HyDE LLM 初始化成功（假设性文档生成增强已启用）")
             except Exception as hyde_error:
-                self.logger.warning(f"HyDE LLM 初始化失败，将使用纯 query 检索: {hyde_error}")
+                self.logger.warning(
+                    f"HyDE LLM 初始化失败，将使用纯 query 检索: {hyde_error}"
+                )
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -130,7 +133,7 @@ class RAGTools:
             length_function=len,
             separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""],
         )
-        self.logger.info(Constants.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
+        self.logger.info(Messages.TEXT_SPLITTER_INITIALIZATION_SUCCESS)
 
         # 3. 初始化PostgreSQL向量存储
         connection_string = get_pgvector_connection_string()
@@ -141,7 +144,7 @@ class RAGTools:
             connection_string=connection_string,
             use_jsonb=True,
         )
-        self.logger.info(Constants.VECTOR_STORE_INITIALIZATION_SUCCESS)
+        self.logger.info(Messages.VECTOR_STORE_INITIALIZATION_SUCCESS)
 
     @staticmethod
     def _resolve_embedding_api_key(embedding_cfg: Dict[str, Any]) -> str:
@@ -158,7 +161,7 @@ class RAGTools:
         return ""
 
     def _build_disabled_message(self) -> str:
-        return self._init_error_message or Constants.RAG_SERVICE_NOT_INITIALIZED_MESSAGE
+        return self._init_error_message or Messages.RAG_SERVICE_NOT_INITIALIZED_MESSAGE
 
     async def add_articles_to_vector_store(
         self,
@@ -305,7 +308,9 @@ class RAGTools:
                         if hasattr(hypothetical_doc, "content")
                         else str(hypothetical_doc)
                     )
-                    self.logger.info(f"HyDE 假设性文档生成成功（原始查询: {len(query)} 字 → HyDE: {len(search_query)} 字）")
+                    self.logger.info(
+                        f"HyDE 假设性文档生成成功（原始查询: {len(query)} 字 → HyDE: {len(search_query)} 字）"
+                    )
                 except Exception as hyde_error:
                     self.logger.warning(f"HyDE 生成失败，降级为原查询: {hyde_error}")
                     search_query = query
@@ -335,7 +340,7 @@ class RAGTools:
             ]
 
             if not filtered_docs:
-                return Constants.NO_RELEVANT_ARTICLES_FOUND_MESSAGE
+                return Messages.NO_RELEVANT_ARTICLES_FOUND_MESSAGE
 
             # 对相似文章进行智能去重处理
             dedup_docs = self._deduplicate_articles(filtered_docs, search_k)
@@ -371,7 +376,7 @@ class RAGTools:
                 or "Invalid API-key provided" in error_text
             ):
                 self.enabled = False
-                self._init_error_message = Constants.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
+                self._init_error_message = Messages.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
                 self.logger.error(self._init_error_message)
                 return self._init_error_message
             error_msg = f"RAG搜索失败: {str(e)}"
@@ -417,7 +422,7 @@ class RAGTools:
                 or "Invalid API-key provided" in error_text
             ):
                 self.enabled = False
-                self._init_error_message = Constants.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
+                self._init_error_message = Messages.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
                 self.logger.error(self._init_error_message)
                 return []
             self.logger.error(f"获取文章上下文失败: {e}")
@@ -436,8 +441,8 @@ class RAGTools:
 
         return [
             Tool(
-                name=Constants.RAG_TOOL_NAME,
-                description=Constants.RAG_TOOL_DESC,
+                name=Messages.RAG_TOOL_NAME,
+                description=Messages.RAG_TOOL_DESC,
                 func=None,
                 coroutine=_search_tool,
             )

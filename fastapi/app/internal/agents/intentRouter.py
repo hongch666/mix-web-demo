@@ -1,6 +1,7 @@
 from typing import Any, Literal, Optional, Tuple
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
@@ -63,7 +64,7 @@ class IntentRouter:
         # 创建意图识别提示词
         self.intent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", Constants.ROUTER_INTENT_PROMPT),
+                ("system", Messages.ROUTER_INTENT_PROMPT),
                 ("human", "用户问题：{question}"),
             ]
         )
@@ -73,12 +74,18 @@ class IntentRouter:
 
         # 优先使用结构化输出，不可用时降级为文本匹配
         try:
-            self.structured_chain = self.intent_prompt | self.llm.with_structured_output(StructuredIntent)
+            self.structured_chain = (
+                self.intent_prompt | self.llm.with_structured_output(StructuredIntent)
+            )
             self._use_structured_output = True
-            self.logger.info("意图路由器初始化成功：使用 with_structured_output 结构化模式")
+            self.logger.info(
+                "意图路由器初始化成功：使用 with_structured_output 结构化模式"
+            )
         except Exception as e:
             self._use_structured_output = False
-            self.logger.warning(f"with_structured_output 不可用，降级为文本匹配模式: {e}")
+            self.logger.warning(
+                f"with_structured_output 不可用，降级为文本匹配模式: {e}"
+            )
 
     def set_user_context(self, user_id: int, db: Session) -> None:
         """
@@ -114,9 +121,7 @@ class IntentRouter:
             return result.type
         except Exception as e:
             # 结构化输出失败，降级为文本匹配
-            self.logger.warning(
-                f"结构化意图识别失败，降级为文本匹配: {e}"
-            )
+            self.logger.warning(f"结构化意图识别失败，降级为文本匹配: {e}")
             return await self._route_text_match(question)
 
     async def _route_text_match(self, question: str) -> IntentType:
@@ -127,9 +132,7 @@ class IntentRouter:
         if "database" in result_text or "数据库" in result_text:
             intent: IntentType = "database_query"
         elif (
-            "article" in result_text
-            or "文章" in result_text
-            or "search" in result_text
+            "article" in result_text or "文章" in result_text or "search" in result_text
         ):
             intent = "article_search"
         elif "log" in result_text or "日志" in result_text or "活动" in result_text:
@@ -142,11 +145,7 @@ class IntentRouter:
             or "关系" in result_text
         ):
             intent = "knowledge_query"
-        elif (
-            "general" in result_text
-            or "chat" in result_text
-            or "闲聊" in result_text
-        ):
+        elif "general" in result_text or "chat" in result_text or "闲聊" in result_text:
             intent = "general_chat"
         else:
             intent = "article_search"
@@ -166,7 +165,7 @@ class IntentRouter:
 
         if not self.user_id or not self.db:
             if intent in ["database_query", "log_analysis"]:
-                return intent, False, Constants.INTENT_ROUTER_NO_PERMISSION_ERROR
+                return intent, False, Messages.INTENT_ROUTER_NO_PERMISSION_ERROR
             return intent, True, ""
 
         perm_manager: UserPermissionManager = UserPermissionManager(self.user_mapper)
@@ -179,7 +178,7 @@ class IntentRouter:
                     return (
                         intent,
                         False,
-                        Constants.SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE,
+                        Messages.SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE,
                     )
             except Exception as e:
                 self.logger.warning(f"写操作意图检测失败，继续执行权限校验: {e}")

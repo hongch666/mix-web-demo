@@ -1,12 +1,11 @@
 from typing import Callable, Dict, List, Type
 
+from app.core.constants import HttpCode, Messages
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 
 from fastapi import Request
 
-from ..base.constants import Constants
-from ..base.httpCode import HttpCode
 from ..base.response import error
 from ..base.writeLog import Logger
 from .exceptions import BusinessException
@@ -52,7 +51,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> Response
         status_code=HttpCode.INTERNAL_SERVER_ERROR,
         content=error(
             code=HttpCode.INTERNAL_SERVER_ERROR,
-            msg=Constants.EXCEPTION_HANDLER_MESSAGE,
+            msg=Messages.EXCEPTION_HANDLER_MESSAGE,
         ).model_dump(),
     )
 
@@ -79,7 +78,7 @@ async def request_validation_exception_handler(
     validation_message = (
         "; ".join(validation_message_parts)
         if validation_message_parts
-        else Constants.EXCEPTION_HANDLER_MESSAGE
+        else Messages.EXCEPTION_HANDLER_MESSAGE
     )
     from ..base.writeLog import Logger
 

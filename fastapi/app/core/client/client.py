@@ -4,9 +4,10 @@ from typing import Any, Dict, Optional
 import httpx
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.auth import InternalTokenUtil
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
 from app.core.client.nacos import get_service_instance
 from app.core.config import load_config
+from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from tenacity import (
     AsyncRetrying,
@@ -51,7 +52,7 @@ class SimpleCircuitBreaker:
     def allow_request(self) -> None:
         now: float = time.monotonic()
         if self.open_until > now:
-            raise CircuitBreakerOpenError(Constants.CIRCUIT_BREAKER_OPEN)
+            raise CircuitBreakerOpenError(Messages.CIRCUIT_BREAKER_OPEN)
 
     def record_success(self) -> None:
         self.failure_count = 0
@@ -183,7 +184,7 @@ def _build_remote_service_error(
     return BusinessException(
         f"调用远程服务 {service_name} 失败，请稍后重试",
         HttpCode.BAD_GATEWAY,
-        Constants.ERROR_SERVICE_CALL_FAILED,
+        Messages.ERROR_SERVICE_CALL_FAILED,
     )
 
 
@@ -211,14 +212,32 @@ async def call_remote_service(
     shared_client: Optional[httpx.AsyncClient] = get_shared_http_client()
     if shared_client is not None:
         return await _call_with_client(
-            shared_client, service_name, path, method, merged_headers,
-            params, data, json, retries, breaker, timeout,
+            shared_client,
+            service_name,
+            path,
+            method,
+            merged_headers,
+            params,
+            data,
+            json,
+            retries,
+            breaker,
+            timeout,
         )
     else:
         async with httpx.AsyncClient(timeout=timeout) as client:
             return await _call_with_client(
-                client, service_name, path, method, merged_headers,
-                params, data, json, retries, breaker, timeout,
+                client,
+                service_name,
+                path,
+                method,
+                merged_headers,
+                params,
+                data,
+                json,
+                retries,
+                breaker,
+                timeout,
             )
 
 
@@ -261,14 +280,14 @@ async def _call_with_client(
                 )
                 # 校验业务响应码
                 if isinstance(result, dict) and result.get("code") != HttpCode.OK:
-                    error_msg: str = result.get("msg", Constants.UNKNOWN_ERROR)
+                    error_msg: str = result.get("msg", Messages.UNKNOWN_ERROR)
                     Logger.error(
                         f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}"
                     )
                     raise BusinessException(
                         f"调用远程服务 {service_name} 失败: {error_msg}",
                         HttpCode.BAD_GATEWAY,
-                        Constants.ERROR_SERVICE_CALL_FAILED,
+                        Messages.ERROR_SERVICE_CALL_FAILED,
                     )
                 breaker.record_success()
                 return result
@@ -280,5 +299,5 @@ async def _call_with_client(
     raise BusinessException(
         f"调用远程服务 {service_name} 失败，请稍后重试",
         HttpCode.BAD_GATEWAY,
-        Constants.ERROR_SERVICE_CALL_FAILED,
+        Messages.ERROR_SERVICE_CALL_FAILED,
     )

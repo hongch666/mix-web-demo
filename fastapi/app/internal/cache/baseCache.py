@@ -2,7 +2,8 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 from app.core.db import get_redis_client
 
 
@@ -46,7 +47,7 @@ class BaseCache(ABC):
 
         # 检查 TTL
         if time.time() - self._local_cache_time > self._local_cache_ttl:
-            Logger.info(Constants.L1_CACHE_TTL_EXPIRED)
+            Logger.info(Messages.L1_CACHE_TTL_EXPIRED)
             return False
 
         return True
@@ -64,13 +65,13 @@ class BaseCache(ABC):
         try:
             data = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                Logger.info(Constants.L2_CACHE_HIT)
+                Logger.info(Messages.L2_CACHE_HIT)
                 # 同时更新本地缓存
                 self._local_cache = data
                 self._local_cache_time = time.time()
                 return data
 
-            Logger.info(Constants.L2_CACHE_MISS)
+            Logger.info(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 读取失败: {e}")
@@ -80,7 +81,7 @@ class BaseCache(ABC):
         """更新本地缓存"""
         self._local_cache = data
         self._local_cache_time = time.time()
-        Logger.info(Constants.L1_CACHE_UPDATED)
+        Logger.info(Messages.L1_CACHE_UPDATED)
 
     async def update_redis_cache(self, data: Any) -> None:
         """更新 Redis 缓存"""
@@ -94,13 +95,13 @@ class BaseCache(ABC):
         """清除本地缓存"""
         self._local_cache = None
         self._local_cache_time = 0
-        Logger.info(Constants.L1_CACHE_CLEARED)
+        Logger.info(Messages.L1_CACHE_CLEARED)
 
     async def clear_redis_cache(self) -> None:
         """清除 Redis 缓存"""
         try:
             await self._redis.delete(self.REDIS_KEY_PREFIX)
-            Logger.info(Constants.L2_CACHE_CLEARED)
+            Logger.info(Messages.L2_CACHE_CLEARED)
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 清除失败: {e}")
 

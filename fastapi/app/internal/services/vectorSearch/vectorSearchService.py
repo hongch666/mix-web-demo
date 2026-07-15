@@ -4,8 +4,9 @@ import asyncio
 from functools import lru_cache
 from typing import Any, Dict, List, Tuple
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from app.internal.agents import get_rag_tools
 from app.internal.schemas.vectorSearchDTO import (
     VectorMatchedChunkDTO,
@@ -35,7 +36,9 @@ class VectorSearchService:
         self.fetch_multiplier = max(fetch_multiplier, 1)
         self.max_matched_chunks = max(max_matched_chunks, 1)
         self.min_score = min_score
-        self.score_mode = score_mode if score_mode in {"similarity", "distance"} else "similarity"
+        self.score_mode = (
+            score_mode if score_mode in {"similarity", "distance"} else "similarity"
+        )
 
     async def enhance(self, req: VectorSearchEnhanceReq) -> VectorSearchEnhanceResp:
         """执行向量增强, 返回候选文章的语义分和命中片段"""
@@ -106,10 +109,14 @@ class VectorSearchService:
             )
 
         items.sort(key=lambda item: item.vectorScore, reverse=True)
-        Logger.info(f"向量搜索增强成功，候选 {len(article_ids)} 篇，命中 {len(items)} 篇")
+        Logger.info(
+            f"向量搜索增强成功，候选 {len(article_ids)} 篇，命中 {len(items)} 篇"
+        )
         return VectorSearchEnhanceResp(items=items)
 
-    def _normalize_article_ids(self, article_ids: List[int], req_limit: int) -> List[int]:
+    def _normalize_article_ids(
+        self, article_ids: List[int], req_limit: int
+    ) -> List[int]:
         limit = self.candidate_limit
         if req_limit > 0:
             limit = min(limit, req_limit)
@@ -151,10 +158,10 @@ class VectorSearchService:
 
     def _generate_reason(self, score: float) -> str:
         if score >= 0.8:
-            return Constants.VECTOR_SEARCH_REASON_HIGH
+            return Messages.VECTOR_SEARCH_REASON_HIGH
         if score >= 0.6:
-            return Constants.VECTOR_SEARCH_REASON_MEDIUM
-        return Constants.VECTOR_SEARCH_REASON_LOW
+            return Messages.VECTOR_SEARCH_REASON_MEDIUM
+        return Messages.VECTOR_SEARCH_REASON_LOW
 
     def _trim_content(self, content: str, max_length: int = 220) -> str:
         text = " ".join((content or "").split())

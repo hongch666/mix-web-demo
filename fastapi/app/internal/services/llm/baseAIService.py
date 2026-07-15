@@ -1,8 +1,9 @@
 import os
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from app.internal.agents import (
     IntentRouter,
     get_mongodb_tools,
@@ -24,7 +25,7 @@ def get_agent_prompt() -> ChatPromptTemplate:
     """获取Agent的Prompt模板"""
     return ChatPromptTemplate.from_messages(
         [
-            ("system", Constants.AGENT_PROMPT_TEMPLATE),
+            ("system", Messages.AGENT_PROMPT_TEMPLATE),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
@@ -147,7 +148,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return Constants.CONTENT_SUMMARIZE_PROMPT.format(
+        return Messages.CONTENT_SUMMARIZE_PROMPT.format(
             content=content, max_length=max_length
         )
 
@@ -163,7 +164,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return Constants.REFERENCE_BASED_EVALUATION_PROMPT.format(
+        return Messages.REFERENCE_BASED_EVALUATION_PROMPT.format(
             reference_content=reference_content, message=message
         )
 
@@ -290,7 +291,7 @@ class BaseAiService:
         if "rate" in lower_error and "limit" in lower_error:
             return self._build_rate_limit_exceeded_error_message()
         if "timeout" in lower_error:
-            return Constants.REQUEST_TIMEOUT_ERROR
+            return Messages.REQUEST_TIMEOUT_ERROR
         return f"{self.service_name}服务异常: {error_message}"
 
     def _initialize_agent_stack(
@@ -324,7 +325,9 @@ class BaseAiService:
     def _initialize_llm_service(self, user_mapper: Optional[Any] = None) -> None:
         """从配置中初始化 CloseAI 客户端和 Agent 能力"""
         try:
-            service_cfg: Dict[str, Any] = (load_config("agent") or {}).get(self.config_section) or {}
+            service_cfg: Dict[str, Any] = (load_config("agent") or {}).get(
+                self.config_section
+            ) or {}
             self._api_key = str(service_cfg.get("api_key") or "").strip()
             self._base_url = str(service_cfg.get("base_url") or "").strip()
             timeout_value = service_cfg.get("timeout", self._timeout)
@@ -361,10 +364,10 @@ class BaseAiService:
             Logger.info(f"基础对话: {message}")
 
             if not getattr(self, "llm", None):
-                return Constants.INITIALIZATION_ERROR
+                return Messages.INITIALIZATION_ERROR
 
             messages = [
-                SystemMessage(content=Constants.CHAT_SYSTEM_MESSAGE),
+                SystemMessage(content=Messages.CHAT_SYSTEM_MESSAGE),
                 HumanMessage(content=message),
             ]
             response = await self.llm.ainvoke(messages)
@@ -383,11 +386,11 @@ class BaseAiService:
             Logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
 
             if not getattr(self, "llm", None):
-                return Constants.INITIALIZATION_ERROR
+                return Messages.INITIALIZATION_ERROR
 
             prompt = self._get_reference_evaluation_prompt(message, reference_content)
             messages = [
-                SystemMessage(content=Constants.REFERENCE_CHAT_MESSAGE),
+                SystemMessage(content=Messages.REFERENCE_CHAT_MESSAGE),
                 HumanMessage(content=prompt),
             ]
 
@@ -408,11 +411,11 @@ class BaseAiService:
             )
 
             if not getattr(self, "llm", None):
-                return Constants.INITIALIZATION_ERROR
+                return Messages.INITIALIZATION_ERROR
 
             prompt = self._get_summarize_prompt(content, max_length)
             messages = [
-                SystemMessage(content=Constants.SUMMARIZE_CHAT_MESSAGE),
+                SystemMessage(content=Messages.SUMMARIZE_CHAT_MESSAGE),
                 HumanMessage(content=prompt),
             ]
 
@@ -436,7 +439,7 @@ class BaseAiService:
             Logger.info(f"用户 {user_id} 发送消息: {message}")
 
             if not getattr(self, "llm", None):
-                return Constants.INITIALIZATION_ERROR
+                return Messages.INITIALIZATION_ERROR
 
             if not self.agent_executor:
                 return await self.basic_chat(message)
@@ -454,7 +457,7 @@ class BaseAiService:
 
                 if not has_permission:
                     Logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    return permission_msg or Constants.NO_PERMISSION_ERROR
+                    return permission_msg or Messages.NO_PERMISSION_ERROR
             elif self.intent_router:
                 intent = await self.intent_router.route_async(message)
                 Logger.info(f"识别意图: {intent}")
@@ -470,14 +473,14 @@ class BaseAiService:
                     history_messages.append(AIMessage(content=ai_msg))
 
                 messages = [
-                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
+                    SystemMessage(content=Messages.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message),
                 ]
                 response = await self.llm.ainvoke(messages)
                 result = response.content
             else:
-                Logger.info(Constants.AGENT_PROCESSING_MESSAGE)
+                Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
 
                 if normalized_user_id is not None:
                     try:
@@ -496,7 +499,7 @@ class BaseAiService:
                 agent_response = await self.agent_executor.ainvoke(
                     {"input": full_input}
                 )
-                result = agent_response.get("output", Constants.MESSAGE_RETRIEVAL_ERROR)
+                result = agent_response.get("output", Messages.MESSAGE_RETRIEVAL_ERROR)
 
             Logger.info(f"{self.service_name}回复长度: {len(result)} 字符")
             return result
@@ -514,7 +517,7 @@ class BaseAiService:
             Logger.info(f"用户 {user_id} 开始流式聊天: {message}")
 
             if not getattr(self, "llm", None):
-                yield {"type": "error", "content": Constants.INITIALIZATION_ERROR}
+                yield {"type": "error", "content": Messages.INITIALIZATION_ERROR}
                 return
 
             if not self.agent_executor:
@@ -528,7 +531,7 @@ class BaseAiService:
                     history_messages.append(AIMessage(content=ai_msg))
 
                 messages = [
-                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
+                    SystemMessage(content=Messages.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message),
                 ]
@@ -566,7 +569,7 @@ class BaseAiService:
 
                 if not has_permission:
                     Logger.info(f"用户 {user_id} 无权限访问: {intent}")
-                    permission_message = permission_msg or Constants.NO_PERMISSION_ERROR
+                    permission_message = permission_msg or Messages.NO_PERMISSION_ERROR
                     thinking = f"检测到用户请求需要 {intent} 权限，但当前用户权限不足。"
                     yield {"type": "thinking", "content": thinking}
 
@@ -589,7 +592,7 @@ class BaseAiService:
                     history_messages.append(AIMessage(content=ai_msg))
 
                 messages = [
-                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
+                    SystemMessage(content=Messages.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(content=message),
                 ]
@@ -610,7 +613,7 @@ class BaseAiService:
                         "content": self._resolve_service_error_message(error_msg),
                     }
             else:
-                Logger.info(Constants.AGENT_PROCESSING_MESSAGE)
+                Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
 
                 if normalized_user_id is not None:
                     try:
@@ -626,16 +629,16 @@ class BaseAiService:
                 )
                 full_input = context + user_info + f"当前问题: {message}"
 
-                Logger.info(Constants.AGENT_START_PROCESSING_MESSAGE)
+                Logger.info(Messages.AGENT_START_PROCESSING_MESSAGE)
                 try:
                     agent_response = await self.agent_executor.ainvoke(
                         {
                             "input": full_input,
-                            "system_message": Constants.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE,
+                            "system_message": Messages.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE,
                         }
                     )
                     agent_result = agent_response.get(
-                        "output", Constants.MESSAGE_RETRIEVAL_ERROR
+                        "output", Messages.MESSAGE_RETRIEVAL_ERROR
                     )
                 except Exception as agent_error:
                     error_msg = str(agent_error)
@@ -663,7 +666,7 @@ class BaseAiService:
 
                 yield {"type": "thinking", "content": thinking_text}
 
-                Logger.info(Constants.AGENT_START_STREAMING_MESSAGE)
+                Logger.info(Messages.AGENT_START_STREAMING_MESSAGE)
 
                 history_messages = []
                 for human_msg, ai_msg in chat_history:
@@ -671,7 +674,7 @@ class BaseAiService:
                     history_messages.append(AIMessage(content=ai_msg))
 
                 stream_messages = [
-                    SystemMessage(content=Constants.GENERIC_CHAT_MESSAGE),
+                    SystemMessage(content=Messages.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(
                         content=(

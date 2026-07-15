@@ -5,7 +5,8 @@ from functools import wraps
 from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Union
 
 from app.common.middleware import get_current_user_id, get_current_username
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
+from app.core.constants import HttpCode, Messages
 from app.core.db import send_to_queue_async
 from app.core.errors import BusinessException
 from fastapi.responses import StreamingResponse
@@ -193,7 +194,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
         if inspect.iscoroutinefunction(func):
             return async_wrapper
 
-        raise TypeError(Constants.APILOG_ASYNC_ERROR)
+        raise TypeError(Messages.APILOG_ASYNC_ERROR)
 
     return decorator
 
@@ -602,9 +603,9 @@ async def _send_api_log_to_queue_async(
             "api-log-queue", api_log_message, persistent=True
         )
         if success:
-            Logger.info(Constants.API_RABBITMQ_LOGGING_SUCCESS)
+            Logger.info(Messages.API_RABBITMQ_LOGGING_SUCCESS)
         else:
-            Logger.error(Constants.API_RABBITMQ_LOGGING_FAILURE)
+            Logger.error(Messages.API_RABBITMQ_LOGGING_FAILURE)
 
     except Exception as e:
         Logger.error(f"发送 API 日志到队列时出错: {e}")

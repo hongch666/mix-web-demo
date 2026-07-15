@@ -1,7 +1,8 @@
 from functools import lru_cache
 from typing import Any, Dict, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 
 from ..baseCache import BaseCache
 
@@ -42,7 +43,7 @@ class StatisticsCache(BaseCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
+        Logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
     async def set(self, data: Dict[str, Any]) -> None:

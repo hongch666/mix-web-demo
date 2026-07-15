@@ -7,7 +7,8 @@ from typing import Any, AsyncGenerator, Dict
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
-from app.core.base import HttpCode, Logger, success
+from app.core.base import Logger, success
+from app.core.constants import HttpCode
 from app.core.db import get_db
 from app.internal.models import AiHistory
 from app.internal.schemas import (
@@ -237,7 +238,9 @@ async def stream_message(
                 )
                 yield (
                     "data: "
-                    + json.dumps(data.model_dump(), ensure_ascii=False, separators=(",", ":"))
+                    + json.dumps(
+                        data.model_dump(), ensure_ascii=False, separators=(",", ":")
+                    )
                     + "\n\n"
                 )
 

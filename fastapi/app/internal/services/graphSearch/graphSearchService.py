@@ -4,8 +4,9 @@ import asyncio
 from functools import lru_cache
 from typing import Dict, List
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from app.core.db import get_neo4j_client
 from app.internal.schemas.graphSearchDTO import (
     GraphRelationDTO,
@@ -74,7 +75,7 @@ class GraphSearchService:
         signal_results: List[Dict[int, dict]] = []
         for r in results:
             if isinstance(r, Exception):
-                Logger.warning(Constants.GRAPH_SEARCH_QUERY_EXCEPTION_LOG.format(r))
+                Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG.format(r))
                 signal_results.append({})
             else:
                 signal_results.append(r)
@@ -138,7 +139,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号1: 用户兴趣标签"""
         rows = await self._safe_query(
-            Constants.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+            Messages.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
             {
                 "userId": user_id,
                 "articleIds": article_ids,
@@ -160,12 +161,12 @@ class GraphSearchService:
                         type="tag_interest",
                         name=tag,
                         score=round(score, 4),
-                        reason=Constants.GRAPH_SEARCH_REASON_INTEREST,
+                        reason=Messages.GRAPH_SEARCH_REASON_INTEREST,
                     )
                     for tag in tags
                 ],
                 "matchedTags": tags,
-                "matchedPaths": [Constants.GRAPH_SEARCH_PATH_INTEREST],
+                "matchedPaths": [Messages.GRAPH_SEARCH_PATH_INTEREST],
             }
         return result
 
@@ -174,7 +175,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号2: 关注作者"""
         rows = await self._safe_query(
-            Constants.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
+            Messages.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
             {
                 "userId": user_id,
                 "articleIds": article_ids,
@@ -194,12 +195,12 @@ class GraphSearchService:
                         type="followed_author",
                         name=name,
                         score=self.FOLLOWED_AUTHOR_WEIGHT,
-                        reason=Constants.GRAPH_SEARCH_REASON_FOLLOWED,
+                        reason=Messages.GRAPH_SEARCH_REASON_FOLLOWED,
                     )
                     for name in names
                 ],
                 "matchedTags": [],
-                "matchedPaths": [Constants.GRAPH_SEARCH_PATH_FOLLOWED],
+                "matchedPaths": [Messages.GRAPH_SEARCH_PATH_FOLLOWED],
             }
         return result
 
@@ -208,7 +209,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号3: 同子分类"""
         rows = await self._safe_query(
-            Constants.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
+            Messages.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
             {
                 "userId": user_id,
                 "articleIds": article_ids,
@@ -230,12 +231,12 @@ class GraphSearchService:
                         type="same_sub_category",
                         name=name,
                         score=round(score, 4),
-                        reason=Constants.GRAPH_SEARCH_REASON_SUB_CATEGORY,
+                        reason=Messages.GRAPH_SEARCH_REASON_SUB_CATEGORY,
                     )
                     for name in names
                 ],
                 "matchedTags": [],
-                "matchedPaths": [Constants.GRAPH_SEARCH_PATH_SUB_CATEGORY],
+                "matchedPaths": [Messages.GRAPH_SEARCH_PATH_SUB_CATEGORY],
             }
         return result
 
@@ -244,7 +245,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号4: 候选间相似标签"""
         rows = await self._safe_query(
-            Constants.GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER,
+            Messages.GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER,
             {
                 "articleIds": article_ids,
             },
@@ -265,11 +266,11 @@ class GraphSearchService:
                         type="candidate_similarity",
                         name="候选共享标签",
                         score=round(score, 4),
-                        reason=Constants.GRAPH_SEARCH_REASON_CANDIDATE,
+                        reason=Messages.GRAPH_SEARCH_REASON_CANDIDATE,
                     )
                 ],
                 "matchedTags": names,
-                "matchedPaths": [Constants.GRAPH_SEARCH_PATH_CANDIDATE],
+                "matchedPaths": [Messages.GRAPH_SEARCH_PATH_CANDIDATE],
             }
         return result
 
@@ -281,7 +282,7 @@ class GraphSearchService:
             return {}
 
         rows = await self._safe_query(
-            Constants.GRAPH_SEARCH_KEYWORD_TAG_CYPHER,
+            Messages.GRAPH_SEARCH_KEYWORD_TAG_CYPHER,
             {
                 "articleIds": article_ids,
                 "keyword": keyword,
@@ -303,12 +304,12 @@ class GraphSearchService:
                         type="keyword_tag",
                         name=name,
                         score=round(score, 4),
-                        reason=Constants.GRAPH_SEARCH_REASON_KEYWORD,
+                        reason=Messages.GRAPH_SEARCH_REASON_KEYWORD,
                     )
                     for name in names
                 ],
                 "matchedTags": names,
-                "matchedPaths": [Constants.GRAPH_SEARCH_PATH_KEYWORD],
+                "matchedPaths": [Messages.GRAPH_SEARCH_PATH_KEYWORD],
             }
         return result
 
@@ -318,7 +319,7 @@ class GraphSearchService:
             neo4j = get_neo4j_client()
             return await neo4j.run_query(cypher, params)
         except Exception as e:
-            Logger.warning(Constants.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG.format(e))
+            Logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG.format(e))
             return []
 
     def _generate_reason(self, relations: List[GraphRelationDTO]) -> str:
@@ -328,7 +329,7 @@ class GraphSearchService:
             "tag_interest": ("与你最近点赞/收藏过的标签 {name} 相似", 2),
             "same_sub_category": ("属于你常看的分类 {name}", 3),
             "keyword_tag": ("命中图谱标签 {name}", 4),
-            "candidate_similarity": (Constants.GRAPH_SEARCH_REASON_CANDIDATE, 5),
+            "candidate_similarity": (Messages.GRAPH_SEARCH_REASON_CANDIDATE, 5),
         }
 
         # 按优先级排序, 取最高优先级
@@ -352,7 +353,7 @@ class GraphSearchService:
         # 兜底: 如果只有候选相似标签
         for rel in relations:
             if rel.type == "candidate_similarity":
-                return Constants.GRAPH_SEARCH_REASON_CANDIDATE
+                return Messages.GRAPH_SEARCH_REASON_CANDIDATE
 
         return ""
 
@@ -362,9 +363,7 @@ def get_graph_search_service() -> GraphSearchService:
     """获取 GraphSearchService 单例（从配置读取权重）"""
     graph_search_cfg = (load_config("agent") or {}).get("graph_search", {})
     return GraphSearchService(
-        tag_interest_weight=float(
-            graph_search_cfg.get("tag_interest_weight", 0.35)
-        ),
+        tag_interest_weight=float(graph_search_cfg.get("tag_interest_weight", 0.35)),
         followed_author_weight=float(
             graph_search_cfg.get("followed_author_weight", 0.25)
         ),
@@ -374,7 +373,5 @@ def get_graph_search_service() -> GraphSearchService:
         candidate_similarity_weight=float(
             graph_search_cfg.get("candidate_similarity_weight", 0.20)
         ),
-        keyword_tag_weight=float(
-            graph_search_cfg.get("keyword_tag_weight", 0.20)
-        ),
+        keyword_tag_weight=float(graph_search_cfg.get("keyword_tag_weight", 0.20)),
     )

@@ -1,8 +1,7 @@
 from typing import Any, Optional
 
+from app.core.constants import HttpCode
 from pydantic import BaseModel
-
-from .httpCode import HttpCode
 
 
 class ApiResponse(BaseModel):

@@ -2,9 +2,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import jwt
+from app.core.constants import HttpCode, Messages
 
-from ..base.constants import Constants
-from ..base.httpCode import HttpCode
 from ..config.config import load_config
 from ..errors.exceptions import BusinessException
 
@@ -31,9 +30,9 @@ class InternalTokenUtil:
 
             if not InternalTokenUtil._secret:
                 raise BusinessException(
-                    Constants.INTERNAL_TOKEN_SECRET_NOT_NULL,
+                    Messages.INTERNAL_TOKEN_SECRET_NOT_NULL,
                     HttpCode.INTERNAL_SERVER_ERROR,
-                    Constants.ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL,
+                    Messages.ERROR_INTERNAL_TOKEN_SECRET_NOT_NULL,
                 )
 
             InternalTokenUtil._initialized = True
@@ -68,15 +67,15 @@ class InternalTokenUtil:
             return decoded
         except jwt.ExpiredSignatureError:
             raise BusinessException(
-                Constants.INTERNAL_TOKEN_EXPIRED,
+                Messages.INTERNAL_TOKEN_EXPIRED,
                 HttpCode.UNAUTHORIZED,
-                Constants.ERROR_INTERNAL_TOKEN_EXPIRED,
+                Messages.ERROR_INTERNAL_TOKEN_EXPIRED,
             )
         except jwt.InvalidTokenError:
             raise BusinessException(
-                Constants.INTERNAL_TOKEN_INVALID,
+                Messages.INTERNAL_TOKEN_INVALID,
                 HttpCode.UNAUTHORIZED,
-                Constants.ERROR_INTERNAL_TOKEN_INVALID,
+                Messages.ERROR_INTERNAL_TOKEN_INVALID,
             )
 
     def extract_user_id(self, token: str) -> Optional[int]:

@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 from app.core.db import ClickhouseConnectionPool, engine, get_clickhouse_connection_pool
 from app.internal.models import (
     Article,
@@ -79,7 +80,7 @@ class ArticleMapper:
         pool_time: float = time.time() - pool_start
 
         # 查询 ClickHouse
-        Logger.info(Constants.TOP10_CLICKHOUSE_QUERY)
+        Logger.info(Messages.TOP10_CLICKHOUSE_QUERY)
         query_start: float = time.time()
         ch_table: str = load_config("database")["clickhouse"]["table"]
         query = (
@@ -126,7 +127,9 @@ class ArticleMapper:
         Logger.warning("Spark 已删除，使用 DB 替代")
         return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
 
-    async def _get_top10_articles_db_mapper_sync(self, db: AsyncSession) -> List[Article]:
+    async def _get_top10_articles_db_mapper_sync(
+        self, db: AsyncSession
+    ) -> List[Article]:
         statement = select(Article).order_by(Article.views.desc()).limit(10)
         return (await db.execute(statement)).scalars().all()
 
@@ -216,7 +219,9 @@ class ArticleMapper:
 
             # 收集当前批次的文章ID和用户ID
             article_ids: List[int] = [row.id for row in base_rows]
-            user_ids: List[int] = [row.user_id for row in base_rows if row.user_id is not None]
+            user_ids: List[int] = [
+                row.user_id for row in base_rows if row.user_id is not None
+            ]
 
             # 第2步：批量查询点赞数
             like_statement = (
@@ -228,7 +233,9 @@ class ArticleMapper:
                 .group_by(Like.article_id)
             )
             like_rows = (await db.execute(like_statement)).all()
-            like_map: Dict[int, int] = {row.article_id: row.like_count for row in like_rows}
+            like_map: Dict[int, int] = {
+                row.article_id: row.like_count for row in like_rows
+            }
 
             # 第3步：批量查询收藏数
             collect_statement = (
@@ -240,7 +247,9 @@ class ArticleMapper:
                 .group_by(Collect.article_id)
             )
             collect_rows = (await db.execute(collect_statement)).all()
-            collect_map: Dict[int, int] = {row.article_id: row.collect_count for row in collect_rows}
+            collect_map: Dict[int, int] = {
+                row.article_id: row.collect_count for row in collect_rows
+            }
 
             # 第4步：批量查询作者关注数（按作者分别统计）
             follow_map: Dict[int, int] = {}
@@ -256,7 +265,9 @@ class ArticleMapper:
                     .group_by(Focus.focus_id)
                 )
                 follow_rows = (await db.execute(follow_statement)).all()
-                follow_map = {row.author_id: row.author_follow_count for row in follow_rows}
+                follow_map = {
+                    row.author_id: row.author_follow_count for row in follow_rows
+                }
 
             result: List[Dict[str, Any]] = []
             for row in base_rows:
@@ -275,7 +286,9 @@ class ArticleMapper:
                         "category_name": row.category_name,
                         "like_count": like_map.get(row.id, 0),
                         "collect_count": collect_map.get(row.id, 0),
-                        "author_follow_count": follow_map.get(row.user_id, 0) if row.user_id else 0,
+                        "author_follow_count": follow_map.get(row.user_id, 0)
+                        if row.user_id
+                        else 0,
                     }
                 )
 
@@ -328,7 +341,7 @@ class ArticleMapper:
         start: float = time.time()
         ch_conn: Any = self._clickhouse_pool.get_connection()
 
-        Logger.info(Constants.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
+        Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
         ch_table: str = load_config("database")["clickhouse"]["table"]
         query = f"SELECT sub_category_id, count() as count FROM {ch_table} WHERE status = 1 GROUP BY sub_category_id ORDER BY count DESC"
@@ -382,7 +395,9 @@ class ArticleMapper:
         从Hive获取按父分类排序的文章数量（已弃用）
         """
         Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self._get_category_article_count_db_mapper_sync(SyncSession(engine))
+        return await self._get_category_article_count_db_mapper_sync(
+            SyncSession(engine)
+        )
 
     async def _get_category_article_count_spark_mapper_sync(
         self,
@@ -391,7 +406,9 @@ class ArticleMapper:
         从Spark获取按父分类排序的文章数量（已弃用）
         """
         Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self._get_category_article_count_db_mapper_sync(SyncSession(engine))
+        return await self._get_category_article_count_db_mapper_sync(
+            SyncSession(engine)
+        )
 
     async def _get_category_article_count_db_mapper_sync(
         self, db: AsyncSession
@@ -433,7 +450,7 @@ class ArticleMapper:
         start: float = time.time()
         ch_conn: Any = self._clickhouse_pool.get_connection()
 
-        Logger.info(Constants.MONTHLY_STATISTICS_CLICKHOUSE_QUERY)
+        Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
         ch_table: str = load_config("database")["clickhouse"]["table"]
 
@@ -476,12 +493,16 @@ class ArticleMapper:
             Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
             Logger.error(f"详细错误: {traceback.format_exc()}")
             # 降级到 DB
-            return await self._get_monthly_publish_count_db_mapper_sync(SyncSession(engine))
+            return await self._get_monthly_publish_count_db_mapper_sync(
+                SyncSession(engine)
+            )
         except Exception as e:
             Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
             Logger.debug(f"详细异常: {traceback.format_exc()}")
             # 降级到 DB
-            return await self._get_monthly_publish_count_db_mapper_sync(SyncSession(engine))
+            return await self._get_monthly_publish_count_db_mapper_sync(
+                SyncSession(engine)
+            )
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
@@ -556,7 +577,9 @@ class ArticleMapper:
     async def get_top10_articles_spark_mapper_async(self) -> List[Dict[str, Any]]:
         return await self._get_top10_articles_spark_mapper_sync()
 
-    async def get_top10_articles_db_mapper_async(self, db: AsyncSession) -> List[Article]:
+    async def get_top10_articles_db_mapper_async(
+        self, db: AsyncSession
+    ) -> List[Article]:
         return await self._get_top10_articles_db_mapper_sync(db)
 
     async def get_all_articles_mapper_async(self, db: AsyncSession) -> List[Article]:

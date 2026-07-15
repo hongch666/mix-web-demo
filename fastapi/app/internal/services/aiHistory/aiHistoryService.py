@@ -3,7 +3,7 @@ import time
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-from app.core.base import Constants, HttpCode
+from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.crud import (
     AiHistoryMapper,
@@ -44,7 +44,7 @@ class AiHistoryService:
         if request_key in self._request_cache:
             last_time: float = self._request_cache[request_key]
             if current_time - last_time < 5:  # 5秒内的重复请求
-                return {"status": "duplicate", "message": Constants.REQUEST_PROCESSING}
+                return {"status": "duplicate", "message": Messages.REQUEST_PROCESSING}
 
         self._request_cache[request_key] = current_time
 
@@ -64,7 +64,9 @@ class AiHistoryService:
         return await self.ai_history_mapper.create_ai_history_async(history, db)
 
     async def get_all_ai_history(self, user_id: int, db: Any) -> list[Dict[str, Any]]:
-        data: List[Dict[str, Any]] = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
+        data: List[
+            Dict[str, Any]
+        ] = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
             db, user_id, None
         )
         return [self._serialize_ai_history(item) for item in data]
@@ -74,9 +76,9 @@ class AiHistoryService:
         user = await self.user_mapper.get_user_by_id_async(user_id, db)
         if not user:
             raise BusinessException(
-                Constants.USER_NOT_EXISTS_ERROR,
+                Messages.USER_NOT_EXISTS_ERROR,
                 HttpCode.NOT_FOUND,
-                Constants.ERROR_USER_NOT_FOUND,
+                Messages.ERROR_USER_NOT_FOUND,
             )
 
         await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)

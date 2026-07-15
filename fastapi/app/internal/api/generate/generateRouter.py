@@ -1,7 +1,8 @@
 from typing import Any
 
 from app.common.decorators import log
-from app.core.base import Constants, success
+from app.core.base import success
+from app.core.constants import Messages
 from app.core.db import get_db
 from app.internal.crud import (
     ArticleMapper,
@@ -73,7 +74,7 @@ async def create_article_ai_comment(
     # 添加后台任务
     background_tasks.add_task(generate_service.generate_ai_comments, articleId, db)
     return success(
-        data={"message": Constants.AI_COMMENT_TASK_SUBMITTED, "article_id": articleId}
+        data={"message": Messages.AI_COMMENT_TASK_SUBMITTED, "article_id": articleId}
     )
 
 
@@ -110,7 +111,7 @@ async def create_article_ai_comment_with_reference(
     )
     return success(
         data={
-            "message": Constants.AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED,
+            "message": Messages.AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED,
             "article_id": articleId,
         }
     )

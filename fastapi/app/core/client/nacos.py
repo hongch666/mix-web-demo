@@ -5,7 +5,8 @@ import time
 from typing import Any, Dict, List
 
 import nacos
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
+from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 
 from ..config.config import load_config
@@ -50,7 +51,7 @@ def _get_registration_ip(ip: str) -> str:
     """
 
     if SERVER_MODE == "dev":
-        Logger.info(Constants.NACOS_REGISTER_DEV_MODE_MESSAGE)
+        Logger.info(Messages.NACOS_REGISTER_DEV_MODE_MESSAGE)
         return "127.0.0.1"
 
     if not ip or ip == "127.0.0.1" or ip == "0.0.0.0":
@@ -104,9 +105,9 @@ def get_service_instance(service_name: str) -> Dict[str, Any]:
     hosts: List[Dict[str, Any]] = instances.get("hosts", [])
     if not hosts:
         raise BusinessException(
-            Constants.AI_CHAT_NO_INSTANCE_MESSAGE,
+            Messages.AI_CHAT_NO_INSTANCE_MESSAGE,
             HttpCode.NOT_FOUND,
-            Constants.ERROR_AI_CHAT_NO_INSTANCE,
+            Messages.ERROR_AI_CHAT_NO_INSTANCE,
         )
     return random.choice(hosts)
 

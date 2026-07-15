@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, List, Optional
 
-from app.core.base import Constants
+from app.core.constants import Messages
 from app.internal.models import User
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,9 @@ class UserMapper:
         statement = select(User).where(User.id.in_(user_ids))
         return (await db.execute(statement)).scalars().all()
 
-    async def _get_user_by_id_sync(self, user_id: int, db: AsyncSession) -> Optional[User]:
+    async def _get_user_by_id_sync(
+        self, user_id: int, db: AsyncSession
+    ) -> Optional[User]:
         """根据用户ID获取用户信息
 
         Args:
@@ -50,17 +52,19 @@ class UserMapper:
         """
         user: Optional[User] = await self._get_user_by_id_sync(user_id, db)
         if not user:
-            return Constants.ROLE_USER  # 默认返回普通用户角色
+            return Messages.ROLE_USER  # 默认返回普通用户角色
         # 如果用户有 role 字段，返回该角色；否则默认返回 'user'
         role: Any = getattr(user, "role", None)
-        return role if role else Constants.ROLE_USER
+        return role if role else Messages.ROLE_USER
 
     async def get_users_by_ids_mapper_async(
         self, user_ids: List[int], db: AsyncSession
     ) -> List[User]:
         return await self._get_users_by_ids_mapper_sync(user_ids, db)
 
-    async def get_user_by_id_async(self, user_id: int, db: AsyncSession) -> Optional[User]:
+    async def get_user_by_id_async(
+        self, user_id: int, db: AsyncSession
+    ) -> Optional[User]:
         return await self._get_user_by_id_sync(user_id, db)
 
     async def get_user_role_async(self, user_id: int, db: AsyncSession) -> str:

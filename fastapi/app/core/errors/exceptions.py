@@ -1,4 +1,4 @@
-from ..base.httpCode import HttpCode
+from app.core.constants import HttpCode
 
 
 class BusinessException(Exception):

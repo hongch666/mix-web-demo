@@ -6,7 +6,8 @@ from functools import lru_cache
 from typing import Any, Dict, Optional
 
 import jieba.analyse
-from app.core.base import Constants, HttpCode, Logger
+from app.core.base import Logger
+from app.core.constants import HttpCode, Messages
 from app.core.db import AsyncSessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
@@ -81,9 +82,9 @@ class GenerateService:
         )
         if not article:
             raise BusinessException(
-                Constants.ARTICLE_NOT_EXISTS_ERROR,
+                Messages.ARTICLE_NOT_EXISTS_ERROR,
                 HttpCode.NOT_FOUND,
-                Constants.ERROR_ARTICLE_NOT_FOUND,
+                Messages.ERROR_ARTICLE_NOT_FOUND,
             )
         # 2.2 构建提示词
         prompt = f"""请对以下文章进行评价，并给出评分。
@@ -159,13 +160,13 @@ class GenerateService:
         # 检查是否有异常返回
         if isinstance(response_deepseek, Exception):
             Logger.error(f"DeepSeek大模型最终失败: {response_deepseek}")
-            response_deepseek = Constants.DEEPSEEK_CALL_FAILED_ERROR
+            response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(f"Gemini大模型最终失败: {response_gemini}")
-            response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
+            response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_gpt, Exception):
             Logger.error(f"GPT大模型最终失败: {response_gpt}")
-            response_gpt = Constants.GPT_CALL_FAILED_ERROR
+            response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 2.4 解析大模型返回结果
         content_deepseek, star_deepseek = self._parse_ai_comment_response(
@@ -198,6 +199,7 @@ class GenerateService:
             create_time=datetime.now(),
             update_time=datetime.now(),
         )
+
         # 4. 保存AI评论到数据库（独立 Session 并行插入，互不干扰）
         async def _insert_comment(comment: Comments) -> None:
             async with AsyncSessionLocal() as session:
@@ -381,7 +383,7 @@ class GenerateService:
             reference_content = None
         # 如果没有参考文本，使用默认参考提示
         if not reference_content:
-            reference_content = Constants.CATEGORY_NO_AUTHORITATIVE_REFERENCE_TEXT_ERROR
+            reference_content = Messages.CATEGORY_NO_AUTHORITATIVE_REFERENCE_TEXT_ERROR
 
         # 5. 构建要评价的内容
         article_content = f"""
@@ -461,13 +463,13 @@ class GenerateService:
         # 检查异常返回
         if isinstance(response_deepseek, Exception):
             Logger.error(f"DeepSeek参考文本最终失败: {response_deepseek}")
-            response_deepseek = Constants.DEEPSEEK_CALL_FAILED_ERROR
+            response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(f"Gemini参考文本最终失败: {response_gemini}")
-            response_gemini = Constants.GEMINI_CALL_FAILED_ERROR
+            response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_gpt, Exception):
             Logger.error(f"GPT参考文本最终失败: {response_gpt}")
-            response_gpt = Constants.GPT_CALL_FAILED_ERROR
+            response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 7. 解析大模型返回结果
         content_deepseek, star_deepseek = self._parse_ai_comment_response(
@@ -551,16 +553,16 @@ class GenerateService:
                 }
 
             if not raw_content:
-                Logger.warning(Constants.REFERENCE_TEXT_EXTRACTION_ERROR)
+                Logger.warning(Messages.REFERENCE_TEXT_EXTRACTION_ERROR)
                 return {
                     "status": "error",
-                    "message": Constants.REFERENCE_TEXT_EXTRACTION_ERROR,
+                    "message": Messages.REFERENCE_TEXT_EXTRACTION_ERROR,
                 }
 
             Logger.info(f"原始内容提取完成，长度: {len(raw_content)} 字符")
 
             # 2. 并发调用三个大模型进行总结
-            Logger.info(Constants.CONCURRENT_SUMMARY_MESSAGE)
+            Logger.info(Messages.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
 
             async def timed_deepseek_summarize() -> Optional[str]:
@@ -646,7 +648,7 @@ class GenerateService:
                 "total_execution_time": total_elapsed,
             }
 
-            Logger.info(Constants.CONCURRENT_CHAT_MESSAGE_SUCCESS)
+            Logger.info(Messages.CONCURRENT_CHAT_MESSAGE_SUCCESS)
             return result
 
         except Exception as e:

@@ -2,7 +2,8 @@ import time
 from functools import lru_cache
 from typing import Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 
 from ..baseCache import BaseCache
 
@@ -28,7 +29,7 @@ class WordcloudCache(BaseCache):
         try:
             data = await self._redis.get(self.REDIS_KEY_PREFIX)
             if data:
-                Logger.info(Constants.L2_CACHE_HIT)
+                Logger.info(Messages.L2_CACHE_HIT)
                 # 统一转换为字符串类型
                 url = data if isinstance(data, str) else str(data)
                 # 同时更新本地缓存
@@ -36,7 +37,7 @@ class WordcloudCache(BaseCache):
                 self._local_cache_time = time.time()
                 return url
 
-            Logger.info(Constants.L2_CACHE_MISS)
+            Logger.info(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 读取失败: {e}")
@@ -62,7 +63,7 @@ class WordcloudCache(BaseCache):
             return redis_data
 
         # 3. 两级缓存都没有
-        Logger.info(Constants.DB_CACHE_MISS_QUERY_DB_MESSAGE)
+        Logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
     async def set(self, oss_url: str) -> None:
@@ -84,7 +85,7 @@ class WordcloudCache(BaseCache):
         await self.clear_local_cache()
         try:
             await self._redis.delete(self.REDIS_KEY_PREFIX)
-            Logger.info(Constants.WORDCLOUD_CACHE_DELETED)
+            Logger.info(Messages.WORDCLOUD_CACHE_DELETED)
         except Exception as e:
             Logger.error(f"[L2缓存] Redis 清除失败: {e}")
 

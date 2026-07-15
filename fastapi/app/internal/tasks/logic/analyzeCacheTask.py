@@ -1,7 +1,8 @@
 import traceback
 from typing import Any, Callable, Optional
 
-from app.core.base import Constants, Logger
+from app.core.base import Logger
+from app.core.constants import Messages
 from app.core.db import get_redis_client
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +26,7 @@ async def _update_analyze_caches_async(
         db_factory: 获取数据库连接的工厂函数
     """
     if analyze_service is None:
-        Logger.warning(Constants.UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE)
+        Logger.warning(Messages.UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE)
         return
 
     db: Optional[AsyncSession] = None
@@ -34,31 +35,31 @@ async def _update_analyze_caches_async(
         if db_factory:
             db = db_factory()
 
-        Logger.info(Constants.UPDATE_ANALYZE_CACHES_START_MESSAGE)
+        Logger.info(Messages.UPDATE_ANALYZE_CACHES_START_MESSAGE)
 
         # 1. 更新前10篇文章缓存
         try:
-            Logger.info(Constants.UPDATE_ANALYZE_CACHES_TOP10_START_MESSAGE)
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_TOP10_START_MESSAGE)
             await analyze_service.get_top10_articles_service(db)
-            Logger.info(Constants.UPDATE_ANALYZE_CACHES_TOP10_SUCCESS_MESSAGE)
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_TOP10_SUCCESS_MESSAGE)
         except Exception as e:
             Logger.error(f"前10篇文章缓存更新失败: {e}")
             Logger.debug(traceback.format_exc())
 
         # 2. 更新词云图缓存
         try:
-            Logger.info(Constants.UPDATE_ANALYZE_CACHES_WORDCLOUD_START_MESSAGE)
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_WORDCLOUD_START_MESSAGE)
             await analyze_service.get_wordcloud_service()
-            Logger.info(Constants.UPDATE_ANALYZE_CACHES_WORDCLOUD_SUCCESS_MESSAGE)
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_WORDCLOUD_SUCCESS_MESSAGE)
         except Exception as e:
             Logger.error(f"词云图缓存更新失败: {e}")
             Logger.debug(traceback.format_exc())
 
         # 3. 更新文章统计信息缓存
         try:
-            Logger.info(Constants.UPDATE_ANALYZE_CACHES_STATISTICS_START_MESSAGE)
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_STATISTICS_START_MESSAGE)
             await analyze_service.get_article_statistics_service(db)
-            Logger.info(Constants.UPDATE_ANALYZE_CACHES_STATISTICS_SUCCESS_MESSAGE)
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_STATISTICS_SUCCESS_MESSAGE)
         except Exception as e:
             Logger.error(f"文章统计信息缓存更新失败: {e}")
             Logger.debug(traceback.format_exc())
@@ -66,11 +67,11 @@ async def _update_analyze_caches_async(
         # 4. 更新按分类统计文章数量缓存
         try:
             Logger.info(
-                Constants.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_START_MESSAGE
+                Messages.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_START_MESSAGE
             )
             await analyze_service.get_category_article_count_service(db)
             Logger.info(
-                Constants.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_SUCCESS_MESSAGE
+                Messages.UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_SUCCESS_MESSAGE
             )
         except Exception as e:
             Logger.error(f"按分类统计文章数量缓存更新失败: {e}")
@@ -78,18 +79,16 @@ async def _update_analyze_caches_async(
 
         # 5. 更新月度文章发布统计缓存
         try:
-            Logger.info(
-                Constants.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_START_MESSAGE
-            )
+            Logger.info(Messages.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_START_MESSAGE)
             await analyze_service.get_monthly_publish_count_service(db)
             Logger.info(
-                Constants.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_SUCCESS_MESSAGE
+                Messages.UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_SUCCESS_MESSAGE
             )
         except Exception as e:
             Logger.error(f"月度文章发布统计缓存更新失败: {e}")
             Logger.debug(traceback.format_exc())
 
-        Logger.info(Constants.UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE)
+        Logger.info(Messages.UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE)
 
     except Exception as e:
         Logger.error(f"update_analyze_caches 发生异常: {e}")
@@ -108,22 +107,22 @@ async def update_analyze_caches_async(
     db_factory: Optional[Callable[[], AsyncSession]] = None,
 ) -> None:
     """更新分析接口缓存，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
-    lock_key: str = Constants.LOCK_TASK_ANALYZE_CACHE
-    lock_expire: int = Constants.LOCK_TASK_ANALYZE_CACHE_EXPIRE
+    lock_key: str = Messages.LOCK_TASK_ANALYZE_CACHE
+    lock_expire: int = Messages.LOCK_TASK_ANALYZE_CACHE_EXPIRE
 
     # 尝试获取分布式锁
     redis_client = get_redis_client()
     lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
     if lock_value is None:
-        Logger.info(Constants.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE % lock_key)
+        Logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE % lock_key)
         return
-    Logger.info(Constants.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE % lock_key)
+    Logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE % lock_key)
 
     try:
         await _update_analyze_caches_async(analyze_service, db_factory)
     finally:
         released: bool = await redis_client.unlock(lock_key, lock_value)
         if released:
-            Logger.info(Constants.REDIS_LOCK_RELEASE_SUCCESS_MESSAGE % lock_key)
+            Logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS_MESSAGE % lock_key)
         else:
-            Logger.info(Constants.REDIS_LOCK_RELEASE_FAIL_MESSAGE % lock_key)
+            Logger.info(Messages.REDIS_LOCK_RELEASE_FAIL_MESSAGE % lock_key)
