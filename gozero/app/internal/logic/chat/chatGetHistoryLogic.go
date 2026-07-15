@@ -4,10 +4,10 @@
 package chat
 
 import (
-	"app/common/constants"
 	"context"
 	"fmt"
 
+	"app/common/constants"
 	"app/common/exceptions"
 	"app/common/utils"
 	"app/internal/svc"

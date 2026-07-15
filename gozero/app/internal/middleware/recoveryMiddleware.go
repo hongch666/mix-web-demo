@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"app/common/constants"
 	"net/http"
 
+	"app/common/constants"
 	"app/common/exceptions"
 	"app/common/utils"
 )
@@ -29,7 +29,7 @@ func (m *RecoveryMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 				} else {
 					// 其他异常：返回固定的500错误信息，记录详细堆栈
 					m.Error(constants.STACK_ERROR_MESSAGE)
-					utils.Error(w, utils.HttpInternalServerError, constants.UNIFIED_ERROR_RESPONSE_MESSAGE)
+					utils.Error(w, constants.HttpInternalServerError, constants.UNIFIED_ERROR_RESPONSE_MESSAGE)
 				}
 			}
 		}()

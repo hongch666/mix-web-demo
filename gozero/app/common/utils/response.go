@@ -3,13 +3,15 @@ package utils
 import (
 	"net/http"
 
+	"app/common/constants"
+
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // Success 返回成功响应
 func Success(w http.ResponseWriter, data any) {
 	httpx.WriteJson(w, http.StatusOK, map[string]any{
-		"code": HttpOK,
+		"code": constants.HttpOK,
 		"msg":  "success",
 		"data": data,
 	})
@@ -35,6 +37,6 @@ func HandleError(w http.ResponseWriter, err error) {
 	if be, ok := err.(businessError); ok {
 		Error(w, be.BusinessCode(), be.BusinessMessage())
 	} else {
-		Error(w, HttpInternalServerError, err.Error())
+		Error(w, constants.HttpInternalServerError, err.Error())
 	}
 }

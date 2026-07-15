@@ -4,7 +4,6 @@
 package svc
 
 import (
-	"app/common/constants"
 	"context"
 	"fmt"
 	"net"
@@ -13,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"app/common/constants"
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
@@ -38,8 +38,8 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/olivere/elastic/v7"
-	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/redis/go-redis/v9"
+	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
@@ -55,14 +55,14 @@ var (
 )
 
 type ServiceContext struct {
-	Config          config.Config
-	MySQLConn       sqlx.SqlConn
-	DB              *gorm.DB
-	ESClient        *elastic.Client
+	Config            config.Config
+	MySQLConn         sqlx.SqlConn
+	DB                *gorm.DB
+	ESClient          *elastic.Client
 	RabbitMQPublisher *rabbitmq.Publisher
-	MongoClient     *mongo.Client
-	RedisClient     *redis.Client
-	NamingClient    naming_client.INamingClient
+	MongoClient       *mongo.Client
+	RedisClient       *redis.Client
+	NamingClient      naming_client.INamingClient
 
 	AiHistoryModel         aiHistory.AiHistoryModel
 	ArticlesModel          articles.ArticlesModel
@@ -189,9 +189,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SubCategoryModel:       subCategoryModel,
 		UserModel:              userModel,
 		SearchModel:            searchModel,
-		FastapiClient:           fastapiClient,
-		SpringClient:            springClient,
-		NestjsClient:            nestjsClient,
+		FastapiClient:          fastapiClient,
+		SpringClient:           springClient,
+		NestjsClient:           nestjsClient,
 		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
 		SSEHub: func() *hub.SSEHubManager {
 			hub := hub.GetSSEHub()

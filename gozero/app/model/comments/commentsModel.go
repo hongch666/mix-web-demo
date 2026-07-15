@@ -1,8 +1,9 @@
 package comments
 
 import (
-	"app/model"
 	"context"
+
+	"app/model"
 
 	"gorm.io/gorm"
 )

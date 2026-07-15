@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"app/common/constants"
+
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -69,7 +70,6 @@ func (t *InternalTokenUtil) ValidateInternalToken(tokenString string) (*Internal
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(t.secret), nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

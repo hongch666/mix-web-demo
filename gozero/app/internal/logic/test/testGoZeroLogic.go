@@ -4,9 +4,9 @@
 package test
 
 import (
-	"app/common/constants"
 	"context"
 
+	"app/common/constants"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"

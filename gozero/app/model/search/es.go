@@ -1,12 +1,12 @@
 package search
 
 import (
-	"app/common/constants"
 	"context"
 	"encoding/json"
 	"strings"
 	"time"
 
+	"app/common/constants"
 
 	"github.com/olivere/elastic/v7"
 )

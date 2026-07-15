@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"app/common/constants"
 	"bufio"
 	"context"
 	"fmt"
@@ -9,6 +8,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"app/common/constants"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )

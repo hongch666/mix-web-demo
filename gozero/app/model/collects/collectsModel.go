@@ -1,8 +1,9 @@
 package collects
 
 import (
-	"app/model"
 	"context"
+
+	"app/model"
 
 	"gorm.io/gorm"
 )

@@ -6,7 +6,7 @@ package chat
 import (
 	"net/http"
 
-	
+	"app/common/constants"
 	"app/common/utils"
 	"app/internal/logic/chat"
 	"app/internal/middleware"
@@ -21,7 +21,7 @@ func ChatLeaveQueueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var req types.ChatLeaveQueueReq
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, utils.HttpBadRequest, err.Error())
+			utils.Error(w, constants.HttpBadRequest, err.Error())
 			return
 		}
 

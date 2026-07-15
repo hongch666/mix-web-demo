@@ -6,7 +6,7 @@ package search
 import (
 	"net/http"
 
-	
+	"app/common/constants"
 	"app/common/utils"
 	"app/internal/logic/search"
 	"app/internal/middleware"
@@ -21,7 +21,7 @@ func GetSearchHistoryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var req types.GetSearchHistoryReq
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, utils.HttpBadRequest, err.Error())
+			utils.Error(w, constants.HttpBadRequest, err.Error())
 			return
 		}
 

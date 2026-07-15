@@ -1,9 +1,9 @@
 package boot
 
 import (
-	"app/common/constants"
 	"flag"
 
+	"app/common/constants"
 	"app/internal/svc"
 )
 

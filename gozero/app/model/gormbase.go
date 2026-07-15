@@ -1,10 +1,10 @@
 package model
 
 import (
-	"app/common/constants"
 	"context"
 	"errors"
 
+	"app/common/constants"
 
 	"gorm.io/gorm"
 )

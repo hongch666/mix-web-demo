@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"app/common/constants"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"app/common/constants"
 	"app/common/utils"
 
 	"github.com/gorilla/websocket"

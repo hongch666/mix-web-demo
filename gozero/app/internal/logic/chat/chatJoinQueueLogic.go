@@ -4,9 +4,9 @@
 package chat
 
 import (
-	"app/common/constants"
 	"context"
 
+	"app/common/constants"
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/svc"

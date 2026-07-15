@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"app/common/constants"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -10,6 +9,7 @@ import (
 	"io"
 	"time"
 
+	"app/common/constants"
 	"app/internal/svc"
 	"app/model/articles"
 	"app/model/search"
@@ -30,7 +30,6 @@ type esSyncStats struct {
 
 // SyncArticlesToES 增量同步文章到 ElasticSearch
 func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
-
 	if svcCtx.ESClient == nil {
 		if svcCtx.Logger != nil {
 			svcCtx.Logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)

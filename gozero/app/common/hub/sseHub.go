@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"app/common/constants"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"app/common/constants"
 	"app/common/utils"
 )
 

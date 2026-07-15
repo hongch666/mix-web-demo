@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"app/common/constants"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"app/common/constants"
 	"app/common/keys"
 	"app/common/utils"
 
@@ -19,16 +19,16 @@ import (
 )
 
 type ApiLogMiddleware struct {
-	description      string
+	description     string
 	rabbitPublisher *rabbitmq.Publisher
 	*utils.ZeroLogger
 }
 
 func NewApiLogMiddleware(description string, rabbitPublisher *rabbitmq.Publisher, log *utils.ZeroLogger) *ApiLogMiddleware {
 	return &ApiLogMiddleware{
-		description:      description,
+		description:     description,
 		rabbitPublisher: rabbitPublisher,
-		ZeroLogger:       log,
+		ZeroLogger:      log,
 	}
 }
 

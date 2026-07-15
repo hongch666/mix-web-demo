@@ -1,12 +1,12 @@
 package types
 
 import (
-	"app/common/constants"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"app/common/constants"
 	"app/common/exceptions"
 )
 

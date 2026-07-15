@@ -1,7 +1,6 @@
 package client
 
 import (
-	"app/common/constants"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -15,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"app/common/constants"
 	"app/common/keys"
 	"app/common/utils"
 
@@ -203,7 +203,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	if resp.StatusCode < utils.HttpOK || resp.StatusCode >= utils.HttpMultipleChoices {
+	if resp.StatusCode < constants.HttpOK || resp.StatusCode >= constants.HttpMultipleChoices {
 		errorMsg := fmt.Sprintf(constants.UNEXPECTED_STATUS_CODE, resp.StatusCode, string(body1))
 		return Result{}, errors.New(errorMsg)
 	}
@@ -212,7 +212,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	if result.Code < utils.HttpOK || result.Code >= utils.HttpMultipleChoices {
+	if result.Code < constants.HttpOK || result.Code >= constants.HttpMultipleChoices {
 		logx.Errorf(constants.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
 		errorMsg := fmt.Sprintf(constants.SERVICE_CALL_FAILED, result.Msg)
 		return Result{}, errors.New(errorMsg)

@@ -1,12 +1,12 @@
 package fastapiClient
 
 import (
-	"app/common/constants"
 	"context"
 	"errors"
 	"fmt"
 
 	"app/common/client"
+	"app/common/constants"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 )
