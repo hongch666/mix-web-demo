@@ -19,8 +19,8 @@ import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.mapper.UserMapper;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.ArticleLike;
@@ -96,7 +96,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
                     Article article = articleMapper.selectById(like.getArticleId());
 
                     if (article == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_ID + like.getArticleId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE_ID + like.getArticleId()).build();
                     }
                     ArticleLikeVO vo = BeanUtil.copyProperties(article, ArticleLikeVO.class);
                     vo.setArticleCreateAt(article.getCreateAt());
@@ -108,30 +108,30 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
 
                     // 获取作者信息
                     if (article.getUserId() == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_ID_AUTHOR_ID + article.getId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE_ID_AUTHOR_ID + article.getId()).build();
                     }
                     User author = userMapper.selectById(article.getUserId());
                     if (author == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_AUTHOR_ID + article.getUserId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE_AUTHOR_ID + article.getUserId()).build();
                     }
                     vo.setAuthorName(author.getName());
 
                     // 获取分类信息
                     if (article.getSubCategoryId() == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY_ID_AUTHOR_ID + article.getId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_SUB_CATEGORY_ID_AUTHOR_ID + article.getId()).build();
                     }
                     SubCategory subCategory = subCategoryMapper.selectById(article.getSubCategoryId());
                     if (subCategory == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY_AUTHOR_ID + article.getSubCategoryId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_SUB_CATEGORY_AUTHOR_ID + article.getSubCategoryId()).build();
                     }
                     vo.setSubCategoryName(subCategory.getName());
                     // 获取父分类
                     if (subCategory.getCategoryId() == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_CATEGORY_ID_AUTHOR_ID + subCategory.getId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_CATEGORY_ID_AUTHOR_ID + subCategory.getId()).build();
                     }
                     Category category = categoryMapper.selectById(subCategory.getCategoryId());
                     if (category == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_CATEGORY_AUTHOR_ID + subCategory.getCategoryId()).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_CATEGORY_AUTHOR_ID + subCategory.getCategoryId()).build();
                     }
                     vo.setCategoryName(category.getName());
 

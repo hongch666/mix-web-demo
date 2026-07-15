@@ -18,8 +18,8 @@ import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.RequirePermission;
@@ -49,41 +49,41 @@ public class PermissionValidationAspect {
             Long currentUserId = UserContext.getUserId();
             if (currentUserId == null) {
                 currentUserId = -1L;
-                logger.info(Constants.UNLOGIN_DEFAULT);
+                logger.info(Messages.UNLOGIN_DEFAULT);
             }
 
             // 2. 检查管理员权限
             if (currentUserId > 0) {
                 User currentUser = userService.getById(currentUserId);
                 if (currentUser != null && Arrays.asList(requirePermission.roles()).contains(currentUser.getRole())) {
-                    logger.info(Constants.ADMIN_PASS);
+                    logger.info(Messages.ADMIN_PASS);
                     return joinPoint.proceed();
                 }
             }
 
             // 3. 获取目标资源ID（传入当前用户ID用于批量验证）
             Long targetResourceId = getTargetResourceId(joinPoint, requirePermission, currentUserId);
-            logger.info(Constants.TARGET_SOURCE,
+            logger.info(Messages.TARGET_SOURCE,
                     currentUserId, requirePermission.businessType(), requirePermission.paramSource(), targetResourceId);
 
             // 4. 根据业务类型校验权限
             if (requirePermission.allowSelf()) {
                 // 允许个人操作自己的数据
                 if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
+                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
                 }
             } else {
                 // 不允许操作自己，仅管理员能执行（权限已在步骤2检查）
-                throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
+                throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
             }
 
             return joinPoint.proceed();
 
         } catch (RuntimeException e) {
-            logger.error(Constants.PERMITION_FAIL + e.getMessage());
+            logger.error(Messages.PERMITION_FAIL + e.getMessage());
             throw e;
         } catch (Throwable e) {
-            logger.error(Constants.PERMITION_FAIL + e.getMessage());
+            logger.error(Messages.PERMITION_FAIL + e.getMessage());
             throw e;
         }
     }
@@ -108,7 +108,7 @@ public class PermissionValidationAspect {
                 return getBodyParam(joinPoint, paramNames[0], requirePermission.businessType());
             }
         } catch (Exception e) {
-            logger.error(Constants.TARGET_FAIL + e.getMessage(), e);
+            logger.error(Messages.TARGET_FAIL + e.getMessage(), e);
         }
 
         return null;
@@ -136,19 +136,19 @@ public class PermissionValidationAspect {
                             Object argValue = args[i];
                             if (argValue instanceof Long) {
                                 Long id = (Long) argValue;
-                                logger.info(Constants.FUNCTION_PATH, paramName, id);
+                                logger.info(Messages.FUNCTION_PATH, paramName, id);
                                 return id;
                             } else if (argValue instanceof String) {
                                 try {
                                     Long id = Long.parseLong((String) argValue);
-                                    logger.info(Constants.FUNCTION_PATH, paramName, id);
+                                    logger.info(Messages.FUNCTION_PATH, paramName, id);
                                     return id;
                                 } catch (NumberFormatException e) {
-                                    logger.warning(Constants.FUNCTION_PATH_FAIL + argValue);
+                                    logger.warning(Messages.FUNCTION_PATH_FAIL + argValue);
                                 }
                             } else if (argValue instanceof Integer) {
                                 Long id = ((Integer) argValue).longValue();
-                                logger.info(Constants.FUNCTION_PATH, paramName, id);
+                                logger.info(Messages.FUNCTION_PATH, paramName, id);
                                 return id;
                             }
                         }
@@ -174,18 +174,18 @@ public class PermissionValidationAspect {
                         try {
                             // 尝试将最后一个路径段转换为ID
                             Long id = Long.parseLong(parts[i]);
-                            logger.info(Constants.URL_ID, id);
+                            logger.info(Messages.URL_ID, id);
                             return id;
                         } catch (NumberFormatException e) {
                             // 如果最后一个不是数字，说明这不是ID参数，返回null
-                            logger.warning(Constants.URL_ID_FAIL, parts[i]);
+                            logger.warning(Messages.URL_ID_FAIL, parts[i]);
                             return null;
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            logger.warning(Constants.SINGLE_PATH + e.getMessage());
+            logger.warning(Messages.SINGLE_PATH + e.getMessage());
         }
 
         return null;
@@ -236,22 +236,22 @@ public class PermissionValidationAspect {
                             Long commentId = Long.parseLong(idStr);
                             Comments comment = commentsService.getById(commentId);
                             if (comment == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.COMMENT_ID + commentId).build();
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.COMMENT_ID + commentId).build();
                             }
                             if (comment.getUserId() == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.COMMENT_NO_USER + commentId).build();
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.COMMENT_NO_USER + commentId).build();
                             }
                             if (ownerUserId != null && !ownerUserId.equals(comment.getUserId())) {
-                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Constants.COMMENT_MULTI_USER).build();
+                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Messages.COMMENT_MULTI_USER).build();
                             }
                             ownerUserId = comment.getUserId();
                         }
                     }
                     // 验证当前用户是这些评论的所有者
                     if (!currentUserId.equals(ownerUserId)) {
-                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
                     }
-                    logger.info(Constants.FUNCTION_COMMENT, ownerUserId);
+                    logger.info(Messages.FUNCTION_COMMENT, ownerUserId);
                 } else if ("article".equals(businessType)) {
                     for (String idStr : ids) {
                         idStr = idStr.trim();
@@ -259,29 +259,29 @@ public class PermissionValidationAspect {
                             Long articleId = Long.parseLong(idStr);
                             Article article = articleService.getById(articleId);
                             if (article == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.ARTICLE_ID + articleId).build();
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.ARTICLE_ID + articleId).build();
                             }
                             if (article.getUserId() == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.ARTICLE_NO_USER + articleId).build();
+                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.ARTICLE_NO_USER + articleId).build();
                             }
                             if (ownerUserId != null && !ownerUserId.equals(article.getUserId())) {
-                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Constants.ARTICLE_MULTI_USER).build();
+                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Messages.ARTICLE_MULTI_USER).build();
                             }
                             ownerUserId = article.getUserId();
                         }
                     }
                     // 验证当前用户是这些文章的所有者
                     if (!currentUserId.equals(ownerUserId)) {
-                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.NO_PERMISION).build();
+                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
                     }
-                    logger.info(Constants.FUNCTION_ARTICLE, ownerUserId);
+                    logger.info(Messages.FUNCTION_ARTICLE, ownerUserId);
                 }
                 // 返回当前用户ID，校验 checkOwnership 时直接通过
                 return currentUserId;
             }
 
         } catch (Exception e) {
-            logger.warning(Constants.MULTI_PATH + e.getMessage());
+            logger.warning(Messages.MULTI_PATH + e.getMessage());
         }
 
         return null;
@@ -307,7 +307,7 @@ public class PermissionValidationAspect {
                 return extractUserIdFromObject(args[0], paramName, businessType);
             }
         } catch (Exception e) {
-            logger.warning(Constants.BODY_GET + e.getMessage());
+            logger.warning(Messages.BODY_GET + e.getMessage());
         }
 
         return null;
@@ -342,7 +342,7 @@ public class PermissionValidationAspect {
                 if (username != null) {
                     User user = userService.findByUsername(username);
                     if (user != null) {
-                        logger.info(Constants.USERNAME_ID, username, user.getId());
+                        logger.info(Messages.USERNAME_ID, username, user.getId());
                         return user.getId();
                     }
                 }
@@ -360,7 +360,7 @@ public class PermissionValidationAspect {
             }
 
         } catch (Exception e) {
-            logger.warning(Constants.OBJECT_PARAM + e.getMessage());
+            logger.warning(Messages.OBJECT_PARAM + e.getMessage());
         }
 
         return null;
@@ -382,7 +382,7 @@ public class PermissionValidationAspect {
      */
     private boolean checkOwnership(Long currentUserId, Long targetResourceId, String businessType) {
         if (targetResourceId == null) {
-            logger.warning(Constants.NO_SOURCE);
+            logger.warning(Messages.NO_SOURCE);
             return false;
         }
 
@@ -432,11 +432,11 @@ public class PermissionValidationAspect {
                 return parameterNames;
             }
 
-            logger.warning(Constants.PARAM_NAME);
+            logger.warning(Messages.PARAM_NAME);
             return new String[] {};
 
         } catch (Exception e) {
-            logger.warning(Constants.PARAM_NAME + e.getMessage());
+            logger.warning(Messages.PARAM_NAME + e.getMessage());
             return new String[] {};
         }
     }

@@ -23,8 +23,8 @@ import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
@@ -146,7 +146,7 @@ public class UserController {
     public Result<UserVO> getUserById(@PathVariable Long id) {
         User user = userService.getById(id);
         if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);
         }
 
         // 转换为 UserVO
@@ -166,7 +166,7 @@ public class UserController {
     @Caching(evict = {
             @CacheEvict(value = "userPage", key = "'all-users'")
     })
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_UPDATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
     @ApiLog("修改用户")
     public Result<Void> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         userService.updateUserInfo(userDto);
@@ -236,7 +236,7 @@ public class UserController {
     public Result<Void> logout() {
         String accessToken = UserContext.getToken();
         if (accessToken == null) {
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
+            return Result.error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID);
         }
         tokenService.removeSessionByAccessToken(accessToken);
         return Result.success();
@@ -262,7 +262,7 @@ public class UserController {
         // 验证用户是否存在
         User user = userService.getById(userId);
         if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);
         }
 
         // 执行下线操作
@@ -278,7 +278,7 @@ public class UserController {
         Long userId = UserContext.getUserId();
 
         if (token == null || userId == null) {
-            return Result.error(HttpCode.UNAUTHORIZED, Constants.GET_USER_TOKEN_ID);
+            return Result.error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID);
         }
 
         int removed = tokenService.removeOtherSessions(userId, token);
@@ -325,7 +325,7 @@ public class UserController {
 
         // 1. 验证邮箱格式
         if (finalEmail == null || !finalEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Constants.EMAIL);
+            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL);
         }
 
         // 2. 根据类型验证邮箱状态
@@ -334,15 +334,15 @@ public class UserController {
         if ("register".equals(finalType)) {
             // 注册场景：邮箱不能已被注册
             if (existingUser != null) {
-                return Result.error(HttpCode.CONFLICT, Constants.EMAIL_REGISTER);
+                return Result.error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER);
             }
         } else if ("login".equals(finalType) || "reset".equals(finalType)) {
             // 登录场景/重置密码场景：邮箱必须已被注册
             if (existingUser == null) {
-                return Result.error(HttpCode.NOT_FOUND, Constants.EMAIL_UNREGISTER);
+                return Result.error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER);
             }
         } else {
-            return Result.error(HttpCode.BAD_REQUEST, Constants.VERIFY_CODE_UNSUPPORT);
+            return Result.error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT);
         }
 
         // 3. 发送验证码

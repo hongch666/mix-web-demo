@@ -15,8 +15,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -61,7 +61,7 @@ public class ArticleSyncAspect {
                 // 5. 发送消息
                 String json = objectMapper.writeValueAsString(msg);
                 rabbitMQUtil.sendMessage("article-log-queue", msg);
-                logger.info(Constants.MQ_SEND + json);
+                logger.info(Messages.MQ_SEND + json);
 
                 // 6. 在主线程中保存用户信息，用于异步任务日志记录
                 final Long currentUserId = userId;
@@ -71,7 +71,7 @@ public class ArticleSyncAspect {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                     @Override
                     public void afterCommit() {
-                        logger.info(Constants.TRIGGER_SYNC);
+                        logger.info(Messages.TRIGGER_SYNC);
                         // 所有文章相关操作在事务提交后统一触发 ES 和 Vector 同步，
                         asyncSyncService.syncAllAsync(currentUserId, currentUsername);
                     }
@@ -80,9 +80,9 @@ public class ArticleSyncAspect {
                 return result;
 
             } catch (Throwable e) {
-                logger.error(Constants.TRANSACTION_ROLLBACK + e.getMessage());
+                logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage());
                 status.setRollbackOnly(); // 显式回滚
-                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.TRANSACTION_ROLLBACK).build();
+                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.TRANSACTION_ROLLBACK).build();
             }
         });
     }
@@ -133,8 +133,8 @@ public class ArticleSyncAspect {
                 break;
             }
             default:
-                logger.error(Constants.UNKNOWN_OPERATION + action);
-                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.UNKNOWN_OPERATION).build();
+                logger.error(Messages.UNKNOWN_OPERATION + action);
+                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.UNKNOWN_OPERATION).build();
         }
 
         // 公共处理逻辑

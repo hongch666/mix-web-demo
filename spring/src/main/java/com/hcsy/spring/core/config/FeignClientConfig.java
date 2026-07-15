@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -46,17 +46,17 @@ public class FeignClientConfig {
                     try {
                         Result result = objectMapper.readValue(body, Result.class);
                         if (result.getCode() != null && result.getCode() != HttpCode.OK) {
-                            String msg = result.getMsg() != null ? result.getMsg() : Constants.FEIGN_UNKNOWN_ERROR;
+                            String msg = result.getMsg() != null ? result.getMsg() : Messages.FEIGN_UNKNOWN_ERROR;
                             logger.error(
-                                    Constants.FEIGN_BUSINESS_ERROR_LOG,
+                                    Messages.FEIGN_BUSINESS_ERROR_LOG,
                                     result.getCode(),
                                     msg);
-                            throw new RuntimeException(Constants.FEIGN_CALL_FAIL + msg);
+                            throw new RuntimeException(Messages.FEIGN_CALL_FAIL + msg);
                         }
                     } catch (RuntimeException e) {
                         throw e;
                     } catch (Exception e) {
-                        logger.warning(Constants.FEIGN_PARSE_WARNING + e.getMessage());
+                        logger.warning(Messages.FEIGN_PARSE_WARNING + e.getMessage());
                     }
                 }
 
@@ -67,8 +67,8 @@ public class FeignClientConfig {
                 try {
                     return objectMapper.readValue(body, objectMapper.constructType(type));
                 } catch (Exception e) {
-                    logger.error(Constants.FEIGN_DESERIALIZE_FAIL + e.getMessage());
-                    throw new RuntimeException(Constants.FEIGN_DESERIALIZE_FAIL + e.getMessage());
+                    logger.error(Messages.FEIGN_DESERIALIZE_FAIL + e.getMessage());
+                    throw new RuntimeException(Messages.FEIGN_DESERIALIZE_FAIL + e.getMessage());
                 }
             }
         };

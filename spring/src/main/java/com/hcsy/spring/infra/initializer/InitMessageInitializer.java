@@ -5,7 +5,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
 import lombok.RequiredArgsConstructor;
@@ -20,10 +20,10 @@ public class InitMessageInitializer implements ApplicationRunner {
     @SuppressWarnings("null")
     @Override
     public void run(ApplicationArguments args) {
-        String ip = Constants.INIT_IP;
-        String port = env.getProperty("server.port", Constants.INIT_PORT);
-        logger.info(Constants.INIT_MSG);
-        logger.info(Constants.INIT_ADDR, ip, port);
-        logger.info(Constants.INIT_SWAGGER_ADDR, ip, port);
+        String ip = Defaults.INIT_IP;
+        String port = env.getProperty("server.port", Defaults.INIT_PORT);
+        logger.info(Defaults.INIT_MSG);
+        logger.info(Defaults.INIT_ADDR, ip, port);
+        logger.info(Defaults.INIT_SWAGGER_ADDR, ip, port);
     }
 }

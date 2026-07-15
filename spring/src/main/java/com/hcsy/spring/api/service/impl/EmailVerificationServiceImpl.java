@@ -5,7 +5,7 @@ import java.util.Random;
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.EmailVerificationService;
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.dto.InternalEmailCodeSendDTO;
@@ -50,7 +50,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         // 保存到 Redis（设置过期时间）
         String key = VERIFICATION_CODE_PREFIX + email;
         redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY);
-        logger.info(Constants.CODE_SAVE + email);
+        logger.info(Messages.CODE_SAVE + email);
 
         // 调用 NestJS 发送邮件
         nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(
@@ -58,7 +58,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
                 code,
                 type,
                 10));
-        logger.info(Constants.CODE_SUCCESS + email);
+        logger.info(Messages.CODE_SUCCESS + email);
     }
 
     /**
@@ -75,21 +75,21 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             String storedCode = redisUtil.get(key);
 
             if (storedCode == null) {
-                logger.info(Constants.CODE_EXPIRED + email);
+                logger.info(Messages.CODE_EXPIRED + email);
                 return false;
             }
 
             if (!storedCode.equals(code)) {
-                logger.info(Constants.CODE_VERIFY_FAIL + email);
+                logger.info(Messages.CODE_VERIFY_FAIL + email);
                 return false;
             }
 
             // 验证成功，删除验证码
             redisUtil.delete(key);
-            logger.info(Constants.CODE_VERIFY_SUCCESS + email);
+            logger.info(Messages.CODE_VERIFY_SUCCESS + email);
             return true;
         } catch (Exception e) {
-            logger.error(Constants.CODE_VERIFY_EXCEPTION + e.getMessage(), e);
+            logger.error(Messages.CODE_VERIFY_EXCEPTION + e.getMessage(), e);
             return false;
         }
     }

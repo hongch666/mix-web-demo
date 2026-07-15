@@ -9,8 +9,8 @@ import com.hcsy.spring.api.mapper.CategoryReferenceMapper;
 import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.CategoryReferenceService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.entity.dto.CategoryReferenceCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryReferenceUpdateDTO;
 import com.hcsy.spring.entity.po.CategoryReference;
@@ -34,30 +34,30 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         // 校验子分类是否存在
         SubCategory subCategory = subCategoryMapper.selectById(dto.getSubCategoryId());
         if (subCategory == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_SUB_CATEGORY).build();
         }
 
         // 校验一个子分类只能有一个参考文本
         CategoryReference existing = categoryReferenceMapper.selectOne(
                 new QueryWrapper<CategoryReference>().eq("sub_category_id", dto.getSubCategoryId()));
         if (existing != null) {
-            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Constants.REFERENCE_EXIST).build();
+            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Messages.REFERENCE_EXIST).build();
         }
 
         // 验证PDF链接后缀
         if ("pdf".equals(dto.getType())) {
             if (dto.getPdf() == null || dto.getPdf().isEmpty()) {
-                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PDF_EMPTY).build();
+                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.PDF_EMPTY).build();
             }
             if (!dto.getPdf().toLowerCase().endsWith(".pdf")) {
-                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PDF_TAIL).build();
+                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.PDF_TAIL).build();
             }
         }
 
         // 验证link链接
         if ("link".equals(dto.getType())) {
             if (dto.getLink() == null || dto.getLink().isEmpty()) {
-                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.LINK_EMPTY).build();
+                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.LINK_EMPTY).build();
             }
         }
 
@@ -81,30 +81,30 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         // 校验子分类是否存在
         SubCategory subCategory = subCategoryMapper.selectById(dto.getSubCategoryId());
         if (subCategory == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_SUB_CATEGORY).build();
         }
 
         // 根据子分类ID查询参考文本
         CategoryReference reference = categoryReferenceMapper.selectOne(
                 new QueryWrapper<CategoryReference>().eq("sub_category_id", dto.getSubCategoryId()));
         if (reference == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Constants.REFERENCE_EXIST).build();
+            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Messages.REFERENCE_EXIST).build();
         }
 
         // 验证PDF链接后缀
         if ("pdf".equals(dto.getType())) {
             if (dto.getPdf() == null || dto.getPdf().isEmpty()) {
-                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PDF_EMPTY).build();
+                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.PDF_EMPTY).build();
             }
             if (!dto.getPdf().toLowerCase().endsWith(".pdf")) {
-                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PDF_TAIL).build();
+                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.PDF_TAIL).build();
             }
         }
 
         // 验证link链接
         if ("link".equals(dto.getType())) {
             if (dto.getLink() == null || dto.getLink().isEmpty()) {
-                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.LINK_EMPTY).build();
+                throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.LINK_EMPTY).build();
             }
         }
 
@@ -130,7 +130,7 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         if (reference != null) {
             categoryReferenceMapper.deleteById(reference.getId());
         } else {
-            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Constants.REFERENCE_EXIST).build();
+            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Messages.REFERENCE_EXIST).build();
         }
     }
 

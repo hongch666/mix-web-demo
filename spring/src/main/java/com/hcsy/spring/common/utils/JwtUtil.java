@@ -9,6 +9,9 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.core.properties.JwtProperties;
 
@@ -33,10 +36,10 @@ public class JwtUtil {
     @PostConstruct
     public void initKey() {
         if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.JWT_NOT_NULL).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.JWT_NOT_NULL).build();
         }
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
-        log.info(Constants.JWT_INIT);
+        log.info(Messages.JWT_INIT);
     }
 
     /**
@@ -108,19 +111,19 @@ public class JwtUtil {
             Claims claims = getClaims(token);
             String tokenType = claims.get("tokenType", String.class);
             if (!"access".equals(tokenType)) {
-                logger.warning(Constants.TOKEN_TYPE_INVALID);
-                throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_TYPE_INVALID).build();
+                logger.warning(Messages.TOKEN_TYPE_INVALID);
+                throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.TOKEN_TYPE_INVALID).build();
             }
-            logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
+            logger.debug(Messages.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
-            logger.warning(Constants.TOKEN_EXPIRED);
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_EXPIRED).build();
+            logger.warning(Messages.TOKEN_EXPIRED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.TOKEN_EXPIRED).build();
         } catch (BusinessException e) {
             throw e;
         } catch (JwtException | IllegalArgumentException e) {
-            logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.UNUSED_TOKEN).build();
+            logger.warning(Messages.UNUSED_TOKEN + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.UNUSED_TOKEN).build();
         }
     }
 
@@ -132,19 +135,19 @@ public class JwtUtil {
             Claims claims = getClaims(token);
             String tokenType = claims.get("tokenType", String.class);
             if (!"refresh".equals(tokenType)) {
-                logger.warning(Constants.TOKEN_TYPE_INVALID);
-                throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_TYPE_INVALID).build();
+                logger.warning(Messages.TOKEN_TYPE_INVALID);
+                throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.TOKEN_TYPE_INVALID).build();
             }
-            logger.debug(Constants.TOKEN_VERIFY_SUCCESS);
+            logger.debug(Messages.TOKEN_VERIFY_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
-            logger.warning(Constants.TOKEN_EXPIRED);
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_EXPIRED).build();
+            logger.warning(Messages.TOKEN_EXPIRED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.TOKEN_EXPIRED).build();
         } catch (BusinessException e) {
             throw e;
         } catch (JwtException | IllegalArgumentException e) {
-            logger.warning(Constants.UNUSED_TOKEN + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.UNUSED_TOKEN).build();
+            logger.warning(Messages.UNUSED_TOKEN + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.UNUSED_TOKEN).build();
         }
     }
 

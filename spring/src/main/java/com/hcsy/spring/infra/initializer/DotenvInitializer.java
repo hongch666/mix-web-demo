@@ -6,7 +6,7 @@ import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,7 +27,7 @@ public class DotenvInitializer {
             File envFile = new File(DOT_ENV_FILE);
 
             if (!envFile.exists()) {
-                log.info(Constants.DOTENV_FILE_NOT_EXIST);
+                log.info(Messages.DOTENV_FILE_NOT_EXIST);
                 return;
             }
 
@@ -45,10 +45,10 @@ public class DotenvInitializer {
                 }
             }
 
-            log.info(Constants.DOTENV_LOAD_SUCCESS, envMap.size());
+            log.info(Messages.DOTENV_LOAD_SUCCESS, envMap.size());
 
         } catch (Exception e) {
-            log.error(Constants.DOTENV_LOAD_FAIL + e.getMessage(), e);
+            log.error(Messages.DOTENV_LOAD_FAIL + e.getMessage(), e);
         }
     }
 

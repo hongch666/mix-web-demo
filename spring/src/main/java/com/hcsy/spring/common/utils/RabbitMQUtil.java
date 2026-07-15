@@ -4,6 +4,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
 
 import lombok.RequiredArgsConstructor;
@@ -28,10 +30,10 @@ public class RabbitMQUtil {
             // 发送 JSON 字符串到队列
             rabbitTemplate.convertAndSend(queueName, jsonMessage);
 
-            logger.info(Constants.MSG_SEND_SUCCESS, queueName, jsonMessage);
+            logger.info(Messages.MSG_SEND_SUCCESS, queueName, jsonMessage);
         } catch (Exception e) {
-            logger.error(Constants.MSG_SEND_FAIL + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.MSG_SEND_FAIL + queueName).build();
+            logger.error(Messages.MSG_SEND_FAIL + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.MSG_SEND_FAIL + queueName).build();
         }
     }
 
@@ -42,10 +44,10 @@ public class RabbitMQUtil {
         try {
             String jsonMessage = objectMapper.writeValueAsString(message);
             rabbitTemplate.convertAndSend(exchange, routingKey, jsonMessage);
-            logger.info(Constants.EXCHANGE_SEND_SUCCESS, exchange, routingKey, jsonMessage);
+            logger.info(Messages.EXCHANGE_SEND_SUCCESS, exchange, routingKey, jsonMessage);
         } catch (Exception e) {
-            logger.error(Constants.EXCHANGE_SEND_FAIL + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.EXCHANGE_SEND_FAIL + exchange).build();
+            logger.error(Messages.EXCHANGE_SEND_FAIL + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.EXCHANGE_SEND_FAIL + exchange).build();
         }
     }
 
@@ -56,8 +58,8 @@ public class RabbitMQUtil {
         try {
             return objectMapper.readValue(jsonMessage, targetClass);
         } catch (Exception e) {
-            logger.error(Constants.TRANSFORM_MSG_FAIL, e.getMessage(), e);
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.TRANSFORM_MSG_FAIL).build();
+            logger.error(Messages.TRANSFORM_MSG_FAIL, e.getMessage(), e);
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.TRANSFORM_MSG_FAIL).build();
         }
     }
 }

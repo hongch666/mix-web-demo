@@ -1,4 +1,4 @@
-package com.hcsy.spring.common.utils;
+package com.hcsy.spring.common.constants;
 
 /**
  * HTTP状态码常量类

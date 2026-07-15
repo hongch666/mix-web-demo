@@ -11,7 +11,8 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
 import lombok.RequiredArgsConstructor;
@@ -41,7 +42,7 @@ public class DatabaseInitializer implements ApplicationRunner {
             // 初始化AI用户
             initializeAIUsers();
         } catch (Exception e) {
-            logger.error(Constants.CREATE_TABLE, e);
+            logger.error(Messages.CREATE_TABLE, e);
         }
     }
 
@@ -51,9 +52,9 @@ public class DatabaseInitializer implements ApplicationRunner {
         try (ResultSet rs = meta.getTables(catalog, null, tableName, new String[] { "TABLE" })) {
             if (!rs.next()) {
                 jdbc.execute(createSql);
-                logger.info(String.format(Constants.NO_TABLE_CREATE, tableName));
+                logger.info(String.format(Messages.NO_TABLE_CREATE, tableName));
             } else {
-                logger.debug(String.format(Constants.TABLE_EXIST, tableName));
+                logger.debug(String.format(Messages.TABLE_EXIST, tableName));
             }
         }
     }
@@ -62,22 +63,22 @@ public class DatabaseInitializer implements ApplicationRunner {
         try {
             // 创建三个AI用户，如果不存在则插入
             insertAIUserIfNotExists(
-                    Constants.DEEPSEEK_ID,
-                    Constants.DEEPSEEK_NAME,
-                    Constants.DEEPSEEK_EMAIL,
-                    Constants.DEEPSEEK_IMG);
+                    Defaults.DEEPSEEK_ID,
+                    Defaults.DEEPSEEK_NAME,
+                    Defaults.DEEPSEEK_EMAIL,
+                    Defaults.DEEPSEEK_IMG);
             insertAIUserIfNotExists(
-                    Constants.GEMINI_ID,
-                    Constants.GEMINI_NAME,
-                    Constants.GEMINI_EMAIL,
-                    Constants.GEMINI_IMG);
+                    Defaults.GEMINI_ID,
+                    Defaults.GEMINI_NAME,
+                    Defaults.GEMINI_EMAIL,
+                    Defaults.GEMINI_IMG);
             insertAIUserIfNotExists(
-                    Constants.GPT_ID,
-                    Constants.GPT_NAME,
-                    Constants.GPT_EMAIL,
-                    Constants.GPT_IMG);
+                    Defaults.GPT_ID,
+                    Defaults.GPT_NAME,
+                    Defaults.GPT_EMAIL,
+                    Defaults.GPT_IMG);
         } catch (Exception e) {
-            logger.error(Constants.INIT_AI, e);
+            logger.error(Messages.INIT_AI, e);
         }
     }
 
@@ -86,13 +87,13 @@ public class DatabaseInitializer implements ApplicationRunner {
             Integer count = jdbc.queryForObject(CHECK_USER_SQL, Integer.class, id);
 
             if (count == null || count == 0) {
-                jdbc.update(INSERT_AI_SQL, id, name, Constants.HIDE_PASSWORD, email, img);
-                logger.info(String.format(Constants.AI_CREATED, name, id));
+                jdbc.update(INSERT_AI_SQL, id, name, Defaults.HIDE_PASSWORD, email, img);
+                logger.info(String.format(Messages.AI_CREATED, name, id));
             } else {
-                logger.debug(String.format(Constants.AI_EXIST, id));
+                logger.debug(String.format(Messages.AI_EXIST, id));
             }
         } catch (Exception e) {
-            logger.error(String.format(Constants.AI_INSERT, id), e);
+            logger.error(String.format(Messages.AI_INSERT, id), e);
         }
     }
 

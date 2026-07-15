@@ -3,6 +3,8 @@ package com.hcsy.spring.common.utils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import com.hcsy.spring.common.constants.Defaults;
+
 /**
  * 密码加密工具类
  */
@@ -38,6 +40,6 @@ public class PasswordEncryptor {
      * @return 隐藏后的密码
      */
     public static String maskPassword() {
-        return Constants.HIDE_PASSWORD;
+        return Defaults.HIDE_PASSWORD;
     }
 }

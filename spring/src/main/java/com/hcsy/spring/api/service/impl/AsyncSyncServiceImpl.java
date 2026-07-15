@@ -11,7 +11,8 @@ import jakarta.annotation.Resource;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.infra.client.FastAPIClient;
@@ -49,12 +50,12 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     @Async("syncTaskExecutor")
     public void syncAllAsync(Long userId, String username) {
         long startTime = System.currentTimeMillis();
-        String user = (username != null ? username : Constants.DEFAULT_USER) +
+        String user = (username != null ? username : Defaults.DEFAULT_USER) +
                      ":" +
-                     (userId != null ? userId : Constants.DEFAULT_USER_ID);
+                     (userId != null ? userId : Defaults.DEFAULT_USER_ID);
 
         try {
-            logger.info(user + Constants.SYNC);
+            logger.info(user + Messages.SYNC);
 
             // 使用 CompletableFuture + syncTaskExecutor 并行执行ES同步
             CompletableFuture<Void> esFuture = CompletableFuture.runAsync(
@@ -78,15 +79,15 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 .get(SYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             long duration = System.currentTimeMillis() - startTime;
-            logger.info(Constants.SYNC_PARALLEL_SUCCESS, user, duration);
-            logger.info(Constants.SYNC_ALL_SUCCESS);
+            logger.info(Messages.SYNC_PARALLEL_SUCCESS, user, duration);
+            logger.info(Messages.SYNC_ALL_SUCCESS);
 
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            logger.error(Constants.SYNC_PARALLEL_FAIL, user, duration, e.getMessage(), e);
+            logger.error(Messages.SYNC_PARALLEL_FAIL, user, duration, e.getMessage(), e);
         } finally {
             UserContext.clear();
-            logger.debug(Constants.CLEAN_CONTEXT);
+            logger.debug(Messages.CLEAN_CONTEXT);
         }
     }
 
@@ -100,22 +101,22 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 long startTime = System.currentTimeMillis();
                 goZeroClient.syncES();
                 long duration = System.currentTimeMillis() - startTime;
-                logger.info(Constants.SYNC_ES_DURATION, duration);
-                logger.info(Constants.SYNC_ES_SUCCESS);
+                logger.info(Messages.SYNC_ES_DURATION, duration);
+                logger.info(Messages.SYNC_ES_SUCCESS);
                 return;
             } catch (Exception e) {
                 retryCount++;
                 if (retryCount <= maxRetries) {
-                    logger.warning(Constants.SYNC_ES_RETRY, retryCount, e.getMessage());
+                    logger.warning(Messages.SYNC_ES_RETRY, retryCount, e.getMessage());
                     try {
                         Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw BusinessException.builder().errorCode(Constants.SYNC_ES_RETRY_INTERRUPTED).cause(ie).build();
+                        throw BusinessException.builder().errorCode(Messages.SYNC_ES_RETRY_INTERRUPTED).cause(ie).build();
                     }
                 } else {
-                    logger.error(Constants.SYNC_ES_MAX_RETRY, e.getMessage(), e);
-                    throw BusinessException.builder().errorCode(Constants.SYNC_ES_FAILED).cause(e).build();
+                    logger.error(Messages.SYNC_ES_MAX_RETRY, e.getMessage(), e);
+                    throw BusinessException.builder().errorCode(Messages.SYNC_ES_FAILED).cause(e).build();
                 }
             }
         }
@@ -131,22 +132,22 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 long startTime = System.currentTimeMillis();
                 fastAPIClient.syncVector();
                 long duration = System.currentTimeMillis() - startTime;
-                logger.info(Constants.SYNC_VECTOR_DURATION, duration);
-                logger.info(Constants.SYNC_VECTOR_SUCCESS);
+                logger.info(Messages.SYNC_VECTOR_DURATION, duration);
+                logger.info(Messages.SYNC_VECTOR_SUCCESS);
                 return;
             } catch (Exception e) {
                 retryCount++;
                 if (retryCount <= maxRetries) {
-                    logger.warning(Constants.SYNC_VECTOR_RETRY, retryCount, e.getMessage());
+                    logger.warning(Messages.SYNC_VECTOR_RETRY, retryCount, e.getMessage());
                     try {
                         Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException(Constants.SYNC_VECTOR_RETRY_INTERRUPTED, ie);
+                        throw new RuntimeException(Messages.SYNC_VECTOR_RETRY_INTERRUPTED, ie);
                     }
                 } else {
-                    logger.error(Constants.SYNC_VECTOR_MAX_RETRY, e.getMessage(), e);
-                    throw new RuntimeException(Constants.SYNC_VECTOR_FAILED, e);
+                    logger.error(Messages.SYNC_VECTOR_MAX_RETRY, e.getMessage(), e);
+                    throw new RuntimeException(Messages.SYNC_VECTOR_FAILED, e);
                 }
             }
         }
@@ -162,22 +163,22 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 long startTime = System.currentTimeMillis();
                 fastAPIClient.clearAnalyzeCaches();
                 long duration = System.currentTimeMillis() - startTime;
-                logger.info(Constants.CACHE_CLEAR_DURATION, duration);
-                logger.info(Constants.CLEAR_CACHE_SUCCESS);
+                logger.info(Messages.CACHE_CLEAR_DURATION, duration);
+                logger.info(Messages.CLEAR_CACHE_SUCCESS);
                 return;
             } catch (Exception e) {
                 retryCount++;
                 if (retryCount <= maxRetries) {
-                    logger.warning(Constants.CACHE_CLEAR_RETRY, retryCount, e.getMessage());
+                    logger.warning(Messages.CACHE_CLEAR_RETRY, retryCount, e.getMessage());
                     try {
                         Thread.sleep(RETRY_DELAY_MS);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException(Constants.CACHE_CLEAR_RETRY_INTERRUPTED, ie);
+                        throw new RuntimeException(Messages.CACHE_CLEAR_RETRY_INTERRUPTED, ie);
                     }
                 } else {
-                    logger.error(Constants.CACHE_CLEAR_MAX_RETRY, e.getMessage(), e);
-                    throw new RuntimeException(Constants.CACHE_CLEAR_FAILED, e);
+                    logger.error(Messages.CACHE_CLEAR_MAX_RETRY, e.getMessage(), e);
+                    throw new RuntimeException(Messages.CACHE_CLEAR_FAILED, e);
                 }
             }
         }

@@ -35,7 +35,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.service.AsyncApiLogService;
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
@@ -116,7 +116,7 @@ public class ApiLogAspect {
 
         } catch (Throwable t) {
             // 若方法抛出异常，仍然向上抛出，但先记录错误日志
-            logger.error(Constants.API_EXCEPTION, t);
+            logger.error(Messages.API_EXCEPTION, t);
             throw t;
         } finally {
             // 计算并记录耗时（无论正常或异常都会执行）
@@ -141,7 +141,7 @@ public class ApiLogAspect {
                         responseTime,
                         apiLog.excludeFields());
             } catch (Exception e) {
-                logger.error(Constants.TIME_FAIL, e);
+                logger.error(Messages.TIME_FAIL, e);
             }
         }
     }
@@ -257,8 +257,8 @@ public class ApiLogAspect {
             return String.join("\n", paramInfoList);
 
         } catch (Exception e) {
-            logger.error(Constants.PARAM_EXPIRED, e);
-            return Constants.PARAM_EXPIRED;
+            logger.error(Messages.PARAM_EXPIRED, e);
+            return Messages.PARAM_EXPIRED;
         }
     }
 
@@ -329,7 +329,7 @@ public class ApiLogAspect {
             }
 
         } catch (JsonProcessingException e) {
-            logger.error(Constants.FORMAT_PARAM, e);
+            logger.error(Messages.FORMAT_PARAM, e);
             return arg.getClass().getSimpleName();
         }
     }
@@ -366,7 +366,7 @@ public class ApiLogAspect {
 
             return filteredMap;
         } catch (Exception e) {
-            logger.error(Constants.OBJECT_TO_MAP, e);
+            logger.error(Messages.OBJECT_TO_MAP, e);
             return Collections.emptyMap();
         }
     }
@@ -439,7 +439,7 @@ public class ApiLogAspect {
             asyncApiLogService.sendAsync(apiLogMessage);
 
         } catch (Exception e) {
-            logger.error(Constants.RabbitMQ_SEND_FAIL + e.getMessage(), e);
+            logger.error(Messages.RabbitMQ_SEND_FAIL + e.getMessage(), e);
             // 不要抛出异常，避免影响业务逻辑
         }
     }
@@ -465,7 +465,7 @@ public class ApiLogAspect {
                 }
             }
         } catch (Exception e) {
-            logger.error(Constants.PATH_PARAM, e);
+            logger.error(Messages.PATH_PARAM, e);
         }
         return pathParams;
     }
@@ -498,7 +498,7 @@ public class ApiLogAspect {
                 }
             }
         } catch (Exception e) {
-            logger.error(Constants.BODY_PARAM, e);
+            logger.error(Messages.BODY_PARAM, e);
         }
         return null;
     }

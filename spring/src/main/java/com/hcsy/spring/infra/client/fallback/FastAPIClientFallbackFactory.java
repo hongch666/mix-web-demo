@@ -3,8 +3,8 @@ package com.hcsy.spring.infra.client.fallback;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.infra.client.FastAPIClient;
@@ -19,27 +19,27 @@ public class FastAPIClientFallbackFactory implements FallbackFactory<FastAPIClie
 
     @Override
     public FastAPIClient create(Throwable cause) {
-        logger.error(Constants.FASTAPI_CALL_DEGRADED + cause.getMessage(), cause);
+        logger.error(Messages.FASTAPI_CALL_DEGRADED + cause.getMessage(), cause);
 
         return new FastAPIClient() {
             @Override
             public Result<?> testFastAPI() {
-                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.FASTAPI_SERVICE_UNAVAILABLE);
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.FASTAPI_SERVICE_UNAVAILABLE);
             }
 
             @Override
             public Result<?> syncVector() {
-                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.VECTOR_SYNC_SERVICE_UNAVAILABLE);
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.VECTOR_SYNC_SERVICE_UNAVAILABLE);
             }
 
             @Override
             public Result<?> clearAnalyzeCaches() {
-                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE);
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE);
             }
 
             @Override
             public Result<?> syncNeo4j() {
-                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Constants.NEO4J_SYNC_SERVICE_UNAVAILABLE);
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.NEO4J_SYNC_SERVICE_UNAVAILABLE);
             }
         };
     }

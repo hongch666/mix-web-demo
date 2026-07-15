@@ -26,10 +26,11 @@ import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Defaults;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
-import com.hcsy.spring.common.utils.RedisKeys;
+import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -153,11 +154,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_DELETE)
     public void deleteUserAndStatusById(Long id) {
         User existing = userMapper.selectById(id);
         if (existing == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
         }
         userMapper.deleteById(id);
         redisUtil.delete(RedisKeys.userStatus(id));
@@ -165,7 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_BATCH_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_BATCH_DELETE)
     public void deleteUsersAndStatusByIds(List<Long> ids) {
         if (ids == null || ids.isEmpty())
             return;
@@ -181,7 +182,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 批量删除前校验：必须全部存在（只要有一个不存在就抛异常）
         List<User> existingList = userMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USERS).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USERS).build();
         }
 
         userMapper.deleteBatchIds(ids);
@@ -216,14 +217,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         User user = findByUsername(loginDTO.getName());
         if (user == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.LOGIN).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.LOGIN).build();
         }
         if ("github".equalsIgnoreCase(user.getAuthProvider())
-                && Constants.HIDE_PASSWORD.equals(user.getPassword())) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED).build();
+                && Defaults.HIDE_PASSWORD.equals(user.getPassword())) {
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED).build();
         }
         if (!passwordEncryptor.matchPassword(loginDTO.getPassword(), user.getPassword())) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.LOGIN).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.LOGIN).build();
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
@@ -237,12 +238,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         validateLoginCaptcha(emailLoginDTO.getCaptchaId(), emailLoginDTO.getCaptchaText());
 
         if (!emailVerificationService.verifyCode(emailLoginDTO.getEmail(), emailLoginDTO.getVerificationCode())) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.VERIFY_CODE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.VERIFY_CODE).build();
         }
 
         User user = findByEmail(emailLoginDTO.getEmail());
         if (user == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER_REGISTER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER_REGISTER).build();
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
@@ -255,7 +256,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public GithubTokenTicketVO createGithubTokenTicket(GithubTokenTicketCreateDTO dto) {
         User user = getById(dto.getUserId());
         if (user == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
         }
 
         UserLoginVO loginVO = tokenService.createLoginSession(user.getId(), user.getName());
@@ -272,7 +273,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             } catch (Exception cleanupError) {
                 // 清理失败不影响主异常返回，避免掩盖真实错误
             }
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.GITHUB_LOGIN_TICKET_CACHE_FAILED).cause(e).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.GITHUB_LOGIN_TICKET_CACHE_FAILED).cause(e).build();
         }
 
         return GithubTokenTicketVO.builder()
@@ -285,13 +286,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserLoginVO exchangeGithubTokenTicket(GithubTokenExchangeDTO dto) {
         String ticket = dto.getTicket() == null ? null : dto.getTicket().trim();
         if (ticket == null || ticket.isEmpty()) {
-            throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Constants.GITHUB_TOKEN_TICKET_EMPTY).build();
+            throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Messages.GITHUB_TOKEN_TICKET_EMPTY).build();
         }
 
         String ticketKey = buildGithubTicketKey(ticket);
         String storedValue = redisUtil.get(ticketKey);
         if (storedValue == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.GITHUB_TOKEN_TICKET_EXPIRED).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.GITHUB_TOKEN_TICKET_EXPIRED).build();
         }
 
         redisUtil.delete(ticketKey);
@@ -299,7 +300,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         try {
             return objectMapper.readValue(storedValue, UserLoginVO.class);
         } catch (Exception e) {
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.GITHUB_TOKEN_TICKET_PARSE_FAILED).cause(e).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.GITHUB_TOKEN_TICKET_PARSE_FAILED).cause(e).build();
         }
     }
 
@@ -307,11 +308,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void registerUser(UserRegisterDTO registerDTO) {
         User existingUser = findByEmail(registerDTO.getEmail());
         if (existingUser != null) {
-            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Constants.EMAIL_REGISTER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.CONFLICT).errorMessage(Messages.EMAIL_REGISTER).build();
         }
 
         if (!emailVerificationService.verifyCode(registerDTO.getEmail(), registerDTO.getVerificationCode())) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.VERIFY_CODE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.VERIFY_CODE).build();
         }
 
         User user = BeanUtil.copyProperties(registerDTO, User.class);
@@ -407,7 +408,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_SAVE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_SAVE)
     public void saveUserAndStatus(User user) {
         // 加密密码后再保存
         if (user.getAuthProvider() == null || user.getAuthProvider().isBlank()) {
@@ -446,7 +447,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_SAVE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_SAVE)
     public void createUser(UserCreateDTO userDto) {
         User user = BeanUtil.copyProperties(userDto, User.class);
         user.setRole("user");
@@ -461,11 +462,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_USER_UPDATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
     public void updateUserInfo(UserUpdateDTO userDto) {
         User existingUser = getById(userDto.getId());
         if (existingUser == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
         }
 
         User user = BeanUtil.copyProperties(userDto, User.class);
@@ -489,12 +490,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void resetPassword(ResetPasswordDTO resetPasswordDTO) {
         if (!emailVerificationService.verifyCode(resetPasswordDTO.getEmail(),
                 resetPasswordDTO.getVerificationCode())) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.VERIFY_CODE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.VERIFY_CODE).build();
         }
 
         User user = findByEmail(resetPasswordDTO.getEmail());
         if (user == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
         }
 
         user.setPassword(passwordEncryptor.encryptPassword(resetPasswordDTO.getNewPassword()));
@@ -506,7 +507,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void resetAllPasswords() {
         List<User> allUsers = list();
         if (allUsers == null || allUsers.isEmpty()) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PASSWORD_NO_USER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.PASSWORD_NO_USER).build();
         }
 
         final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
@@ -519,7 +520,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public void resetUserPassword(Long userId) {
         User user = getById(userId);
         if (user == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_USER).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
         }
 
         final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
@@ -529,7 +530,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private void validateLoginCaptcha(String captchaId, String captchaText) {
         if (!imageCaptchaService.verifyCaptcha(captchaId, captchaText)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.IMAGE_CAPTCHA_INVALID).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.IMAGE_CAPTCHA_INVALID).build();
         }
     }
 

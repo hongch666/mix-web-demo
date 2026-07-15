@@ -1,5 +1,7 @@
 package com.hcsy.spring.common.utils;
 
+import com.hcsy.spring.common.constants.HttpCode;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -18,8 +18,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -49,14 +49,14 @@ public class ArticleController {
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_CREATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_CREATE)
     @ApiLog("创建文章")
     public Result<Void> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         Article article = BeanUtil.copyProperties(dto, Article.class);
         // 获取用户id
         User user = userService.findByUsername(dto.getUsername());
         if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);
         }
         article.setUserId(user.getId());
         article.setViews(0);
@@ -97,7 +97,7 @@ public class ArticleController {
     public Result<ArticleWithCategoryVO> getArticleById(@PathVariable Long id) {
         Article article = articleService.getById(id);
         if (article == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE);
         }
         ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
         // 查询作者用户名
@@ -117,13 +117,13 @@ public class ArticleController {
         paramSource = "body",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
     @ApiLog("更新文章")
     public Result<Void> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         // 获取用户id
         User userFromUsername = userService.findByUsername(dto.getUsername());
         if (userFromUsername == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER);        }
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);        }
 
         Article article = BeanUtil.copyProperties(dto, Article.class);
         article.setUserId(userFromUsername.getId());
@@ -140,7 +140,7 @@ public class ArticleController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_DELETE)
     @ApiLog("删除文章")
     public Result<Void> deleteArticle(@PathVariable Long id) {
         articleService.deleteArticle(id);
@@ -156,7 +156,7 @@ public class ArticleController {
         paramSource = "path_single",
         paramNames = { "ids" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
     @ApiLog("批量删除文章")
     public Result<Void> deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -178,7 +178,7 @@ public class ArticleController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
     @ApiLog("发布文章")
     public Result<Void> publishArticle(@PathVariable Long id) {
         articleService.publishArticle(id);
@@ -187,12 +187,12 @@ public class ArticleController {
 
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_ARTICLE_VIEW)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_VIEW)
     @ApiLog("增加文章阅读量")
     public Result<Void> addViewArticle(@PathVariable Long id) {
         Article dbArticle = articleService.getById(id);
         if (dbArticle == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE).build();
         }
         articleService.addViewArticle(id);
         return Result.success();

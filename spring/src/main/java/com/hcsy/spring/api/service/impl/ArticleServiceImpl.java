@@ -22,8 +22,9 @@ import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.api.service.SubCategoryService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Defaults;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
@@ -68,13 +69,13 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 转换为VO对象并补充分类和用户信息
         List<ArticleWithCategoryVO> voList = records.stream().map(article -> {
             if (article.getSubCategoryId() == null) {
-                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_SUB_CATEGORY_ID).build();
+                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_SUB_CATEGORY_ID).build();
             }
 
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
 
             User user = userMap.get(article.getUserId());
-            vo.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+            vo.setUsername(user != null ? user.getName() : Defaults.DEFAULT_USER);
 
             SubCategory subCategory = subCategoryMap.get(article.getSubCategoryId().longValue());
             if (subCategory != null) {
@@ -149,7 +150,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     public boolean deleteArticle(Long id) {
         Article existing = this.baseMapper.selectById(id);
         if (existing == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE_ID + id).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE_ID + id).build();
         }
         this.baseMapper.deleteById(id);
         return true;
@@ -174,7 +175,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         List<Article> existingList = this.baseMapper.selectBatchIds(distinctIds);
         if (existingList.size() != distinctIds.size()) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLES).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLES).build();
         }
 
         this.baseMapper.deleteBatchIds(ids);
@@ -188,7 +189,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 查询文章所属用户ID
         Article dbArticle = this.baseMapper.selectById(id);
         if (dbArticle == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE).build();
         }
 
         // 执行发布
@@ -198,7 +199,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.PUBLISH_ARTICLE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.PUBLISH_ARTICLE).build();
         }
     }
 
@@ -209,10 +210,10 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         // 查询文章所属用户ID
         Article dbArticle = this.baseMapper.selectById(id);
         if (dbArticle == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Constants.UNDEFINED_ARTICLE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE).build();
         }
         if (dbArticle.getStatus() != 1) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.UNPUBLISH_ADD_VIEW).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.UNPUBLISH_ADD_VIEW).build();
         }
         // 获取当前的文章的修改日期
         LocalDateTime updateAt = dbArticle.getUpdateAt();
@@ -224,7 +225,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
 
         boolean updated = updateById(article);
         if (!updated) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Constants.ADD_VIEW_ARTICLE).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(Messages.ADD_VIEW_ARTICLE).build();
         }
     }
 
@@ -265,7 +266,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
 
             User user = userMap.get(article.getUserId());
-            vo.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+            vo.setUsername(user != null ? user.getName() : Defaults.DEFAULT_USER);
 
             if (article.getSubCategoryId() != null) {
                 SubCategory subCategory = subCategoryMap.get(article.getSubCategoryId().longValue());

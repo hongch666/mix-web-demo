@@ -8,10 +8,10 @@ import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.JwtUtil;
-import com.hcsy.spring.common.utils.RedisKeys;
+import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
@@ -66,7 +66,7 @@ public class TokenServiceImpl implements TokenService {
         // 7. 获取在线设备数
         long deviceCount = getUserOnlineDeviceCount(userId);
 
-        logger.info(Constants.LOGIN_SESSION_CREATED, userId, sessionId);
+        logger.info(Messages.LOGIN_SESSION_CREATED, userId, sessionId);
 
         return UserLoginVO.builder()
                 .accessToken(accessToken)
@@ -93,23 +93,23 @@ public class TokenServiceImpl implements TokenService {
         String refreshKey = "user:refresh:" + refreshToken;
         String storedValue = redisUtil.get(refreshKey);
         if (storedValue == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.REFRESH_TOKEN_INVALID).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.REFRESH_TOKEN_INVALID).build();
         }
 
         String expectedValue = userId + ":" + sessionId;
         if (!expectedValue.equals(storedValue)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.REFRESH_TOKEN_INVALID).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.REFRESH_TOKEN_INVALID).build();
         }
 
         // 3. 校验 session hash 存在且 refresh token 一致
         String sessionKey = "user:session:" + userId + ":" + sessionId;
         if (!redisUtil.exists(sessionKey)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.SESSION_NOT_FOUND).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.SESSION_NOT_FOUND).build();
         }
 
         String storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken");
         if (!refreshToken.equals(storedRefreshToken)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.REFRESH_TOKEN_INVALID).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.REFRESH_TOKEN_INVALID).build();
         }
 
         String username = redisUtil.getHash(sessionKey, "username");
@@ -146,7 +146,7 @@ public class TokenServiceImpl implements TokenService {
         // 10. 确保用户在线
         redisUtil.set(RedisKeys.userStatus(userId), "1");
 
-        logger.info(Constants.REFRESH_TOKEN_SUCCESS);
+        logger.info(Messages.REFRESH_TOKEN_SUCCESS);
 
         return TokenRefreshVO.builder()
                 .accessToken(newAccessToken)
@@ -207,12 +207,12 @@ public class TokenServiceImpl implements TokenService {
         if (remainingSessions == 0) {
             redisUtil.set(RedisKeys.userStatus(userId), "0");
             redisUtil.delete(sessionsKey);
-            logger.info(Constants.REMOVE_SESSION_LOGOUT, userId);
+            logger.info(Messages.REMOVE_SESSION_LOGOUT, userId);
         } else {
-            logger.info(Constants.REMOVE_SESSION, userId, remainingSessions);
+            logger.info(Messages.REMOVE_SESSION, userId, remainingSessions);
         }
 
-        logger.info(Constants.LOGIN_SESSION_REMOVED, userId, sessionId);
+        logger.info(Messages.LOGIN_SESSION_REMOVED, userId, sessionId);
     }
 
     @Override
@@ -267,7 +267,7 @@ public class TokenServiceImpl implements TokenService {
         // 额外确保状态为离线
         redisUtil.set(RedisKeys.userStatus(userId), "0");
 
-        logger.info(Constants.ADMIN_SESSION_CLEAN, userId, sessionIds != null ? sessionIds.size() : 0);
+        logger.info(Messages.ADMIN_SESSION_CLEAN, userId, sessionIds != null ? sessionIds.size() : 0);
     }
 
     @Override
@@ -303,7 +303,7 @@ public class TokenServiceImpl implements TokenService {
         // 扫描所有 user:sessions:* 的 key
         Set<String> sessionKeys = redisUtil.getKeys("user:sessions:*");
         if (sessionKeys == null || sessionKeys.isEmpty()) {
-            logger.info(Constants.TASK_NO_CLEAN_SESSION);
+            logger.info(Messages.TASK_NO_CLEAN_SESSION);
             return;
         }
 
@@ -383,16 +383,16 @@ public class TokenServiceImpl implements TokenService {
                 }
 
                 if (cleanedForUser > 0) {
-                    logger.info(Constants.SESSION_CLEAN_LOG, key, cleanedForUser);
+                    logger.info(Messages.SESSION_CLEAN_LOG, key, cleanedForUser);
                 }
 
                 totalCleaned += cleanedForUser;
             } catch (Exception e) {
-                logger.error(Constants.EXPIRED_USER_FAIL + key);
+                logger.error(Messages.EXPIRED_USER_FAIL + key);
             }
         }
 
-        logger.info(Constants.TOTAL_SESSION_CLEAN, totalUsers, totalCleaned);
+        logger.info(Messages.TOTAL_SESSION_CLEAN, totalUsers, totalCleaned);
     }
 
     private void cleanSessionKeys(Long userId, String sessionId, String sessionKey) {

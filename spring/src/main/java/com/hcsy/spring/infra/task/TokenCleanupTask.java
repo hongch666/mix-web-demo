@@ -4,7 +4,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.api.service.TokenService;
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.RedisDistributedLock;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -25,25 +26,25 @@ public class TokenCleanupTask {
      */
     @Scheduled(cron = "0 0 * * * *")
     public void cleanupExpiredTokens() {
-        String lockKey = Constants.LOCK_TASK_TOKEN_CLEANUP;
-        String lockValue = distributedLock.tryLock(lockKey, Constants.LOCK_TASK_TOKEN_CLEANUP_EXPIRE);
+        String lockKey = Defaults.LOCK_TASK_TOKEN_CLEANUP;
+        String lockValue = distributedLock.tryLock(lockKey, Defaults.LOCK_TASK_TOKEN_CLEANUP_EXPIRE);
         if (lockValue == null) {
-            logger.info(String.format(Constants.LOCK_ACQUIRE_FAIL, lockKey));
+            logger.info(String.format(Messages.LOCK_ACQUIRE_FAIL, lockKey));
             return;
         }
-        logger.info(String.format(Constants.LOCK_ACQUIRE_SUCCESS, lockKey));
+        logger.info(String.format(Messages.LOCK_ACQUIRE_SUCCESS, lockKey));
         try {
-            logger.info(Constants.TASK_START);
+            logger.info(Messages.TASK_START);
             tokenService.cleanupExpiredTokens();
-            logger.info(Constants.TASK_END);
+            logger.info(Messages.TASK_END);
         } catch (Exception e) {
-            logger.error(Constants.TASK_EXCEPTION + e.getMessage());
+            logger.error(Messages.TASK_EXCEPTION + e.getMessage());
         } finally {
             boolean released = distributedLock.unlock(lockKey, lockValue);
             if (released) {
-                logger.info(String.format(Constants.LOCK_RELEASE_SUCCESS, lockKey));
+                logger.info(String.format(Messages.LOCK_RELEASE_SUCCESS, lockKey));
             } else {
-                logger.warning(String.format(Constants.LOCK_RELEASE_FAIL, lockKey));
+                logger.warning(String.format(Messages.LOCK_RELEASE_FAIL, lockKey));
             }
         }
     }

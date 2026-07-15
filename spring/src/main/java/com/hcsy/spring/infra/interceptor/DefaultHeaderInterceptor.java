@@ -3,8 +3,8 @@ package com.hcsy.spring.infra.interceptor;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
@@ -46,8 +46,8 @@ public class DefaultHeaderInterceptor implements RequestInterceptor {
             template.header(INTERNAL_TOKEN_HEADER, BEARER_PREFIX + internalToken);
         } catch (Exception e) {
             // 令牌生成失败，记录日志但不影响正常请求
-            logger.error(Constants.TOKEN_GEN_FAIL + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.TOKEN_GEN_FAIL).build();
+            logger.error(Messages.TOKEN_GEN_FAIL + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.TOKEN_GEN_FAIL).build();
         }
     }
 }

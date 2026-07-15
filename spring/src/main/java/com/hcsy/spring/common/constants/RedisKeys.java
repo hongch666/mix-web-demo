@@ -1,4 +1,4 @@
-package com.hcsy.spring.common.utils;
+package com.hcsy.spring.common.constants;
 
 /**
  * Redis Key 常量类，统一管理所有 Redis Key 的前缀和生成方法

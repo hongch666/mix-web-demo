@@ -1,6 +1,6 @@
 package com.hcsy.spring.entity.dto;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GithubTokenTicketCreateDTO {
-    @NotNull(message = Constants.GITHUB_TOKEN_TICKET_USER_ID_REQUIRED)
+    @NotNull(message = Messages.GITHUB_TOKEN_TICKET_USER_ID_REQUIRED)
     private Long userId;
 
-    @NotBlank(message = Constants.GITHUB_TOKEN_TICKET_USERNAME_REQUIRED)
+    @NotBlank(message = Messages.GITHUB_TOKEN_TICKET_USERNAME_REQUIRED)
     private String username;
 }

@@ -4,7 +4,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 
@@ -32,7 +32,7 @@ public class UserInfoInterceptor implements HandlerInterceptor {
                 UserContext.setUserId(userId);
                 UserContext.setUsername(username);
             } catch (NumberFormatException e) {
-                logger.error(Constants.USER_INTERCEPTOR + userIdStr);
+                logger.error(Messages.USER_INTERCEPTOR + userIdStr);
             }
         }
 

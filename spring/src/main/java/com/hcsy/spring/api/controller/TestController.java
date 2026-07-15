@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
@@ -32,7 +32,7 @@ public class TestController {
     @Operation(summary = "Spring自己的测试", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")
     public Result<String> getHello() {
-        return Result.success(Constants.TEST);
+        return Result.success(Defaults.TEST);
     }
 
     @GetMapping("/gozero")

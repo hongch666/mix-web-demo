@@ -8,8 +8,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
@@ -43,8 +43,8 @@ public class InternalTokenAspect {
         String internalToken = extractInternalToken(request);
 
         if (internalToken == null || internalToken.isEmpty()) {
-            logger.error(Constants.INTERNAL_TOKEN_MISSING);
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.INTERNAL_TOKEN_MISSING).build();
+            logger.error(Messages.INTERNAL_TOKEN_MISSING);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.INTERNAL_TOKEN_MISSING).build();
         }
 
         try {
@@ -56,21 +56,21 @@ public class InternalTokenAspect {
             if (requiredServiceName != null && !requiredServiceName.isEmpty()) {
                 String tokenServiceName = internalTokenUtil.extractServiceName(internalToken);
                 if (!requiredServiceName.equals(tokenServiceName)) {
-                    logger.error(Constants.SERVICE_NAME_MISMATCH + ". 期望: " + requiredServiceName + ", 获得: "
+                    logger.error(Messages.SERVICE_NAME_MISMATCH + ". 期望: " + requiredServiceName + ", 获得: "
                             + tokenServiceName);
-                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Constants.SERVICE_NAME_MISMATCH).build();
+                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.SERVICE_NAME_MISMATCH).build();
                 }
             }
 
-            logger.debug(Constants.INTERNAL_TOKEN_VALIDATE_METHOD + pjp.getSignature().getName());
+            logger.debug(Messages.INTERNAL_TOKEN_VALIDATE_METHOD + pjp.getSignature().getName());
 
             // 继续执行原方法
             return pjp.proceed();
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            logger.error(Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage()).build();
+            logger.error(Messages.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.INTERNAL_TOKEN_VALIDATION_FAIL + e.getMessage()).build();
         }
     }
 
@@ -91,7 +91,7 @@ public class InternalTokenAspect {
     private HttpServletRequest getCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.CANNOT_GET_HTTP_REQUEST).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.CANNOT_GET_HTTP_REQUEST).build();
         }
         return attributes.getRequest();
     }

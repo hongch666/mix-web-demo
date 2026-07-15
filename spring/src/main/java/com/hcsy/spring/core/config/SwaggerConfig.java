@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Defaults;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -30,12 +30,12 @@ public class SwaggerConfig {
     @Bean
     OpenAPI customOpenAPI() {
         return new OpenAPI()
-            .info(new Info()
-                .title(Constants.SWAGGER_TITLE)
-                .version(Constants.SWAGGER_VERSION)
-                .description(Constants.SWAGGER_DESC))
-            .servers(List.of(
-                new Server().url(Constants.SWAGGER_URL_PREFIX + port).description("baseURL")));
+                .info(new Info()
+                        .title(Defaults.SWAGGER_TITLE)
+                        .version(Defaults.SWAGGER_VERSION)
+                        .description(Defaults.SWAGGER_DESC))
+                .servers(List.of(
+                        new Server().url(Defaults.SWAGGER_URL_PREFIX + port).description("baseURL")));
     }
 
     @Bean
@@ -145,7 +145,8 @@ public class SwaggerConfig {
         if (schema instanceof ArraySchema arraySchema && arraySchema.getItems() != null) {
             transformSchema(arraySchema.getItems());
         }
-        if (schema instanceof MapSchema mapSchema && mapSchema.getAdditionalProperties() instanceof Schema additionalSchema) {
+        if (schema instanceof MapSchema mapSchema
+                && mapSchema.getAdditionalProperties() instanceof Schema additionalSchema) {
             transformSchema(additionalSchema);
         }
         if (schema instanceof ComposedSchema composedSchema) {

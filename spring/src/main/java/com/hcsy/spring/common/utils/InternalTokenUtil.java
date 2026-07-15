@@ -9,6 +9,8 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.core.properties.InternalTokenProperties;
 
 import io.jsonwebtoken.Claims;
@@ -32,10 +34,10 @@ public class InternalTokenUtil {
     @PostConstruct
     public void initKey() {
         if (internalTokenProperties.getSecret() == null || internalTokenProperties.getSecret().isEmpty()) {
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Constants.INTERNAL_TOKEN_NOT_NULL).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.INTERNAL_TOKEN_NOT_NULL).build();
         }
         key = Keys.hmacShaKeyFor(internalTokenProperties.getSecret().getBytes(StandardCharsets.UTF_8));
-        log.info(Constants.INTERNAL_TOKEN_INIT);
+        log.info(Messages.INTERNAL_TOKEN_INIT);
     }
 
     /**
@@ -67,14 +69,14 @@ public class InternalTokenUtil {
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token);
-            logger.debug(Constants.INTERNAL_TOKEN_VALIDATE_SUCCESS);
+            logger.debug(Messages.INTERNAL_TOKEN_VALIDATE_SUCCESS);
             return true;
         } catch (ExpiredJwtException e) {
-            logger.warning(Constants.INTERNAL_TOKEN_EXPIRED);
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.INTERNAL_TOKEN_EXPIRED).build();
+            logger.warning(Messages.INTERNAL_TOKEN_EXPIRED);
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.INTERNAL_TOKEN_EXPIRED).build();
         } catch (JwtException | IllegalArgumentException e) {
-            logger.warning(Constants.INTERNAL_TOKEN_INVALID + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Constants.INTERNAL_TOKEN_INVALID).build();
+            logger.warning(Messages.INTERNAL_TOKEN_INVALID + e.getMessage());
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.INTERNAL_TOKEN_INVALID).build();
         }
     }
 

@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.FocusService;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -40,20 +40,20 @@ public class FocusController {
 
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_FOCUS)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_FOCUS)
     @ApiLog("新增关注")
     public Result<Void> addFocus(@Valid @RequestBody FocusDTO dto) {
         boolean success = focusService.addFocus(dto.getUserId(), dto.getFocusId());
         if (success) {
             return Result.success();
         } else {
-            return Result.error(HttpCode.CONFLICT, Constants.FOCUS_FAIL);
+            return Result.error(HttpCode.CONFLICT, Messages.FOCUS_FAIL);
         }
     }
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNFOCUS)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNFOCUS)
     @ApiLog("取消关注")
     public Result<Void> removeFocus(
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
@@ -62,7 +62,7 @@ public class FocusController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error(HttpCode.CONFLICT, Constants.UNFOCUS_FAIL);
+            return Result.error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL);
         }
     }
 

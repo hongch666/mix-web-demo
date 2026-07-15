@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleLikeService;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -40,20 +40,20 @@ public class ArticleLikeController {
 
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_LIKE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_LIKE)
     @ApiLog("添加点赞")
     public Result<Void> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         boolean success = articleLikeService.addLike(dto.getArticleId(), dto.getUserId());
         if (success) {
             return Result.success();
         } else {
-            return Result.error(HttpCode.CONFLICT, Constants.LIKE_FAIL);
+            return Result.error(HttpCode.CONFLICT, Messages.LIKE_FAIL);
         }
     }
 
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNLIKE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNLIKE)
     @ApiLog("取消点赞")
     public Result<Void> removeLike(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
@@ -62,7 +62,7 @@ public class ArticleLikeController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error(HttpCode.CONFLICT, Constants.UNLIKE_FAIL);
+            return Result.error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL);
         }
     }
 

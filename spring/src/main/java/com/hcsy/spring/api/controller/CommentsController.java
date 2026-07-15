@@ -21,8 +21,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.Defaults;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -55,20 +56,20 @@ public class CommentsController {
     // 新增评论
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_CREATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_CREATE)
     @ApiLog("新增评论")
     public Result<Void> createComment(@Valid @RequestBody CommentCreateDTO commentCreateDTO) {
         Comments comment = BeanUtil.toBean(commentCreateDTO, Comments.class);
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentCreateDTO.getArticleTitle());
         if (article == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_COMMENT);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT);
         }
         comment.setArticleId(article.getId());
         // 获取对应用户id
         User user = userService.findByUsername(commentCreateDTO.getUsername());
         if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER_COMMENT);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER_COMMENT);
         }
         comment.setUserId(user.getId());
         commentsService.save(comment);
@@ -81,20 +82,20 @@ public class CommentsController {
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
     @RequirePermission(roles = {
             "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_UPDATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_UPDATE)
     @ApiLog("修改评论")
     public Result<Void> updateComment(@Valid @RequestBody CommentUpdateDTO commentUpdateDTO) {
         Comments comment = BeanUtil.toBean(commentUpdateDTO, Comments.class);
         // 获取对应文章id
         Article article = articleService.findByArticleTitle(commentUpdateDTO.getArticleTitle());
         if (article == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_ARTICLE_COMMENT);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT);
         }
         comment.setArticleId(article.getId());
         // 获取对应用户id
         User user = userService.findByUsername(commentUpdateDTO.getUsername());
         if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_USER_COMMENT);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER_COMMENT);
         }
         comment.setUserId(user.getId());
 
@@ -106,7 +107,7 @@ public class CommentsController {
     @Operation(summary = "删除评论", description = "根据id删除评论")
     @RequirePermission(roles = {
             "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "id" })
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_DELETE)
     @ApiLog("删除评论")
     public Result<Void> deleteComment(@PathVariable Long id) {
         commentsService.deleteComment(id);
@@ -118,7 +119,7 @@ public class CommentsController {
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = {
             "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "ids" })
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE)
     @ApiLog("批量删除评论")
     public Result<Void> deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -136,17 +137,17 @@ public class CommentsController {
     public Result<CommentsVO> getCommentsById(@PathVariable Long id) {
         Comments comments = commentsService.getById(id);
         if (comments == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.COMMENT_ID + id);
+            return Result.error(HttpCode.NOT_FOUND, Messages.COMMENT_ID + id);
         }
         // 修改返回结果，包含用户名和文章标题
         CommentsVO commentsVO = BeanUtil.copyProperties(comments, CommentsVO.class);
         // 查询用户名
         User user = userService.getById(comments.getUserId());
-        commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+        commentsVO.setUsername(user != null ? user.getName() : Defaults.DEFAULT_USER);
         commentsVO.setPic(user != null ? user.getImg() : null);
         // 查询文章标题
         Article article = articleService.getById(comments.getArticleId());
-        commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
+        commentsVO.setArticleTitle(article != null ? article.getTitle() : Defaults.DEFAULT_ARTICLE);
         return Result.success(commentsVO);
     }
 
@@ -163,11 +164,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询用户名
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+            commentsVO.setUsername(user != null ? user.getName() : Defaults.DEFAULT_USER);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Defaults.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
@@ -186,11 +187,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询AI类型（用户名）
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_AI);
+            commentsVO.setUsername(user != null ? user.getName() : Defaults.DEFAULT_AI);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Defaults.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
@@ -211,11 +212,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询用户名
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+            commentsVO.setUsername(user != null ? user.getName() : Defaults.DEFAULT_USER);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Defaults.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
@@ -232,7 +233,7 @@ public class CommentsController {
             @RequestParam(defaultValue = "1", required = false) int page) {
         // 获取并校验排序方式参数
         if (!sortWay.equals("create_time") && !sortWay.equals("star")) {
-            return Result.error(HttpCode.BAD_REQUEST, Constants.SORT_WAY + sortWay);
+            return Result.error(HttpCode.BAD_REQUEST, Messages.SORT_WAY + sortWay);
         }
         Page<Comments> commentsPage = new Page<>(page, size);
         IPage<Comments> resultPage = commentsService.listCommentsByArticleId(commentsPage, id, sortWay);
@@ -241,11 +242,11 @@ public class CommentsController {
             CommentsVO commentsVO = BeanUtil.copyProperties(comment, CommentsVO.class);
             // 查询用户名
             User user = userService.getById(comment.getUserId());
-            commentsVO.setUsername(user != null ? user.getName() : Constants.DEFAULT_USER);
+            commentsVO.setUsername(user != null ? user.getName() : Defaults.DEFAULT_USER);
             commentsVO.setPic(user != null ? user.getImg() : null);
             // 查询文章标题
             Article article = articleService.getById(comment.getArticleId());
-            commentsVO.setArticleTitle(article != null ? article.getTitle() : Constants.DEFAULT_ARTICLE);
+            commentsVO.setArticleTitle(article != null ? article.getTitle() : Defaults.DEFAULT_ARTICLE);
             return commentsVO;
         }).toList();
         return Result.success(new PageVO<>(resultPage.getTotal(), commentVOs));
@@ -263,7 +264,7 @@ public class CommentsController {
             AICommentsVO aiCommentsVO = BeanUtil.copyProperties(comment, AICommentsVO.class);
             Long userId = comment.getUserId();
             User user = userService.getById(userId);
-            aiCommentsVO.setAiType(user != null ? user.getName() : Constants.DEFAULT_AI);
+            aiCommentsVO.setAiType(user != null ? user.getName() : Defaults.DEFAULT_AI);
             aiCommentsVO.setPic(user != null ? user.getImg() : null);
             data.add(aiCommentsVO);
         }

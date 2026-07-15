@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleCollectService;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -40,20 +40,20 @@ public class ArticleCollectController {
 
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_COLLECT)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COLLECT)
     @ApiLog("添加收藏")
     public Result<Void> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         boolean success = articleCollectService.addCollect(dto.getArticleId(), dto.getUserId());
         if (success) {
             return Result.success();
         } else {
-            return Result.error(HttpCode.CONFLICT, Constants.COLLECT_FAIL);
+            return Result.error(HttpCode.CONFLICT, Messages.COLLECT_FAIL);
         }
     }
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_UNCOLLECT)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNCOLLECT)
     @ApiLog("取消收藏")
     public Result<Void> removeCollect(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
@@ -62,7 +62,7 @@ public class ArticleCollectController {
         if (success) {
             return Result.success();
         } else {
-            return Result.error(HttpCode.CONFLICT, Constants.UNCOLLECT_FAIL);
+            return Result.error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL);
         }
     }
 

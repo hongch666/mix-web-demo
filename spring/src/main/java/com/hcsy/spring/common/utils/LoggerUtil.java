@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import com.hcsy.spring.common.constants.Messages;
+
 import jakarta.annotation.PostConstruct;
 
 @Component
@@ -32,7 +34,7 @@ public class LoggerUtil {
         if (!logDir.exists()) {
             logDir.mkdirs();
         }
-        logger.info(Constants.LOG_INIT, staticLogPath);
+        logger.info(Messages.LOG_INIT, staticLogPath);
     }
 
     /**
@@ -70,7 +72,7 @@ public class LoggerUtil {
             }
 
         } catch (IOException e) {
-            logger.error(Constants.LOG_WRITE, e.getMessage(), e);
+            logger.error(Messages.LOG_WRITE, e.getMessage(), e);
         }
     }
 

@@ -5,7 +5,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.ImageCaptchaService;
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.ImageCaptchaVO;
@@ -40,7 +40,7 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
         String captchaText = captcha.text();
 
         redisUtil.set(key, captchaText, CAPTCHA_EXPIRY);
-        logger.info(Constants.IMAGE_CAPTCHA_SAVE + captchaId);
+        logger.info(Messages.IMAGE_CAPTCHA_SAVE + captchaId);
 
         return ImageCaptchaVO.builder()
                 .captchaId(captchaId)
@@ -52,24 +52,24 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
     public boolean verifyCaptcha(String captchaId, String captchaText) {
         String storedCaptcha = redisUtil.get(buildCaptchaKey(captchaId));
         if (storedCaptcha == null || captchaText == null) {
-            logger.info(Constants.IMAGE_CAPTCHA_EXPIRED + captchaId);
+            logger.info(Messages.IMAGE_CAPTCHA_EXPIRED + captchaId);
             return false;
         }
 
         boolean matched = storedCaptcha.equalsIgnoreCase(captchaText.trim());
         if (!matched) {
-            logger.info(Constants.IMAGE_CAPTCHA_VERIFY_FAIL + captchaId);
+            logger.info(Messages.IMAGE_CAPTCHA_VERIFY_FAIL + captchaId);
             return false;
         }
 
-        logger.info(Constants.IMAGE_CAPTCHA_VERIFY_SUCCESS + captchaId);
+        logger.info(Messages.IMAGE_CAPTCHA_VERIFY_SUCCESS + captchaId);
         return true;
     }
 
     @Override
     public void deleteCaptcha(String captchaId) {
         redisUtil.delete(buildCaptchaKey(captchaId));
-        logger.info(Constants.IMAGE_CAPTCHA_DELETE + captchaId);
+        logger.info(Messages.IMAGE_CAPTCHA_DELETE + captchaId);
     }
 
     private String buildCaptchaKey(String captchaId) {

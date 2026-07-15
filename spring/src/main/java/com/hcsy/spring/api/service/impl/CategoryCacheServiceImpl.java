@@ -14,7 +14,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.mapper.CategoryMapper;
 import com.hcsy.spring.api.mapper.SubCategoryMapper;
 import com.hcsy.spring.api.service.CategoryCacheService;
-import com.hcsy.spring.common.utils.Constants;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Category;
@@ -36,7 +36,7 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
     @Override
     @Cacheable(value = "categoryById", key = "#id", unless = "#result == null")
     public CategoryVO getCategoryById(Long id) {
-        logger.info(Constants.CATEGORY_CACHE);
+        logger.info(Messages.CATEGORY_CACHE);
         Category category = categoryMapper.selectById(id);
         if (category == null)
             return null;
@@ -55,7 +55,7 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
     @Override
     @Cacheable(value = "categoryPage", key = "T(java.lang.String).format('p_%d_s_%d', #page.current, #page.size)", unless = "#result == null")
     public PageDTO<CategoryVO> cachedPageCategory(Page<?> page) {
-        logger.info(Constants.CATEGORY_CACHE_PAGE);
+        logger.info(Messages.CATEGORY_CACHE_PAGE);
         Page<Category> categoryPage = new Page<>(page.getCurrent(), page.getSize());
         IPage<Category> resultPage = categoryMapper.selectPage(categoryPage, new QueryWrapper<>());
         List<CategoryVO> voList = new ArrayList<>();

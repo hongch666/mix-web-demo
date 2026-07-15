@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
-import com.hcsy.spring.common.utils.Constants;
-import com.hcsy.spring.common.utils.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -50,7 +50,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_CREATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_CREATE)
     @ApiLog("新增分类")
     public Result<Void> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
         categoryService.addCategory(dto);
@@ -65,7 +65,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
     @ApiLog("修改分类")
     public Result<Void> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
         categoryService.updateCategory(dto);
@@ -80,7 +80,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_DELETE)
     @ApiLog("删除分类")
     public Result<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
@@ -96,7 +96,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "ids" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
     @ApiLog("批量删除分类")
     public Result<Void> deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -116,7 +116,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
     @ApiLog("新增子分类")
     public Result<Void> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
         categoryService.addSubCategory(dto);
@@ -131,7 +131,7 @@ public class CategoryController {
         paramSource = "body",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
     @ApiLog("修改子分类")
     public Result<Void> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
         categoryService.updateSubCategory(dto);
@@ -146,7 +146,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "id" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
     @ApiLog("删除子分类")
     public Result<Void> deleteSubCategory(@PathVariable Long id) {
         categoryService.deleteSubCategory(id);
@@ -162,7 +162,7 @@ public class CategoryController {
         paramSource = "path_single",
         paramNames = { "ids" }
     )
-    @Neo4jSync(description = Constants.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
+    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
     @ApiLog("批量删除子分类")
     public Result<Void> deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -191,7 +191,7 @@ public class CategoryController {
     public Result<CategoryVO> getCategoryById(@PathVariable Long id) {
         CategoryVO vo = categoryService.getCategoryById(id);
         if (vo == null) {
-            return Result.error(HttpCode.NOT_FOUND, Constants.UNDEFINED_CATEGORY);
+            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY);
         }
         return Result.success(vo);
     }
