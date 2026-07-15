@@ -1,9 +1,8 @@
-"""
-启动/初始化消息类 — DeepSeek/Gemini/GPT 初始化日志
-"""
-
-
 class InitMessages:
+    """
+    启动/初始化消息类 — DeepSeek/Gemini/GPT 初始化日志
+    """
+
     DEEPSEEK_INIT_LOG: str = "DeepSeek 客户端初始化完成"
     GEMINI_INIT_LOG: str = "Gemini 客户端初始化完成"
     GPT_INIT_LOG: str = "GPT 客户端初始化完成"

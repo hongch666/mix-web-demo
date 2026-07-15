@@ -1,9 +1,8 @@
-"""
-消息类常量 — 日志消息、用户提示、RabbitMQ/Redis/Nacos 消息
-"""
-
-
 class Messages:
+    """
+    消息类常量 — 日志消息、用户提示、RabbitMQ/Redis/Nacos 消息
+    """
+
     # ===== 内部令牌 =====
     INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
     INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"

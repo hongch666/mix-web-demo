@@ -1,9 +1,8 @@
-"""
-LLM 提示词模板类 — Agent 的 System Prompt
-"""
-
-
 class Prompts:
+    """
+    LLM 提示词模板类 — Agent 的 System Prompt
+    """
+
     ROUTER_INTENT_PROMPT: str = """
         你是一个智能路由助手，需要判断用户的问题类型。
         分析用户问题，判断应该使用哪种方式处理：

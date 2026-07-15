@@ -1,14 +1,13 @@
-"""
-脚本类 — SQL 语句、Cypher 语句、SQL 安全规则
-"""
 from typing import List
 
 
 class Scripts:
+    """
+    脚本类 — SQL 语句、Cypher 语句、SQL 安全规则
+    """
+
     # ===== SQL 建表 =====
-    AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = (
-        "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
-    )
+    AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
     AI_CHAT_SQL_TABLE_CREATION_MESSAGE: str = """
         CREATE TABLE `ai_history` (
             `id` BIGINT NOT NULL AUTO_INCREMENT,
@@ -25,26 +24,67 @@ class Scripts:
     """
 
     # ===== Neo4j 同步 SQL =====
-    NEO4J_SQL_SELECT_USERS: str = "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"
+    NEO4J_SQL_SELECT_USERS: str = (
+        "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"
+    )
     NEO4J_SQL_SELECT_CATEGORIES: str = "SELECT id, name, update_time FROM category"
-    NEO4J_SQL_SELECT_SUB_CATEGORIES: str = "SELECT id, name, category_id, update_time FROM sub_category"
+    NEO4J_SQL_SELECT_SUB_CATEGORIES: str = (
+        "SELECT id, name, category_id, update_time FROM sub_category"
+    )
     NEO4J_SQL_SELECT_ARTICLES: str = "SELECT id, title, tags, status, views, user_id, sub_category_id, create_at, update_at, content FROM articles"
     NEO4J_SQL_SELECT_LIKES: str = "SELECT user_id, article_id, created_time FROM likes"
-    NEO4J_SQL_SELECT_COLLECTS: str = "SELECT user_id, article_id, created_time FROM collects"
-    NEO4J_SQL_SELECT_COMMENTS: str = "SELECT id, user_id, article_id, create_time, update_time FROM comments"
+    NEO4J_SQL_SELECT_COLLECTS: str = (
+        "SELECT user_id, article_id, created_time FROM collects"
+    )
+    NEO4J_SQL_SELECT_COMMENTS: str = (
+        "SELECT id, user_id, article_id, create_time, update_time FROM comments"
+    )
     NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
     NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT: str = "%s WHERE %s >= '%s' ORDER BY %s ASC"
 
     # ===== SQL 安全规则 =====
     SQL_QUERY_PREFIX: str = "SELECT"
-    SQL_READONLY_ALLOWED_PREFIXES: List[str] = ["SELECT", "WITH", "SHOW", "DESC", "DESCRIBE", "EXPLAIN"]
-    SQL_DANGEROUS_KEYWORDS: List[str] = [
-        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE", "CREATE",
-        "REPLACE", "MERGE", "CALL", "GRANT", "REVOKE", "COMMIT", "ROLLBACK",
-        "SET", "USE", "RENAME", "LOCK", "UNLOCK", "HANDLER", "LOAD",
-        "ANALYZE", "OPTIMIZE", "REPAIR", "KILL",
+    SQL_READONLY_ALLOWED_PREFIXES: List[str] = [
+        "SELECT",
+        "WITH",
+        "SHOW",
+        "DESC",
+        "DESCRIBE",
+        "EXPLAIN",
     ]
-    SQL_DANGEROUS_PATTERNS: List[str] = ["INTO OUTFILE", "INTO DUMPFILE", "FOR UPDATE", "LOCK IN SHARE MODE"]
+    SQL_DANGEROUS_KEYWORDS: List[str] = [
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "DROP",
+        "ALTER",
+        "TRUNCATE",
+        "CREATE",
+        "REPLACE",
+        "MERGE",
+        "CALL",
+        "GRANT",
+        "REVOKE",
+        "COMMIT",
+        "ROLLBACK",
+        "SET",
+        "USE",
+        "RENAME",
+        "LOCK",
+        "UNLOCK",
+        "HANDLER",
+        "LOAD",
+        "ANALYZE",
+        "OPTIMIZE",
+        "REPAIR",
+        "KILL",
+    ]
+    SQL_DANGEROUS_PATTERNS: List[str] = [
+        "INTO OUTFILE",
+        "INTO DUMPFILE",
+        "FOR UPDATE",
+        "LOCK IN SHARE MODE",
+    ]
     DANGEROUS_SQL_REQUEST_PATTERNS: List[str] = [
         r"\b(update|delete|insert|drop|alter|truncate|create|replace|merge)\b",
     ]

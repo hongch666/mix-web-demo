@@ -1,9 +1,8 @@
-"""
-配置默认值类 — TTL、权重、超时
-"""
-
-
 class Defaults:
+    """
+    配置默认值类 — TTL、权重、超时
+    """
+
     # ===== 缓存 =====
     CACHE_L1_TTL: int = 300
     CACHE_L2_TTL: int = 600

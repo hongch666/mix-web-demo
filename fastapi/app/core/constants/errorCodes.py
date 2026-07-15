@@ -1,9 +1,8 @@
-"""
-错误标识类 — 传给 BusinessException 的 error 参数
-"""
-
-
 class ErrorCodes:
+    """
+    错误标识类 — 传给 BusinessException 的 error 参数
+    """
+
     # ===== 400 Bad Request =====
     ERROR_PARAM_PARSE_FAILED: str = "PARAM_PARSE_FAILED"
     ERROR_COLLECTION_NAME_REQUIRED: str = "COLLECTION_NAME_REQUIRED"
