@@ -1,5 +1,7 @@
 package com.hcsy.spring.common.exceptions;
 
+import com.hcsy.spring.common.constants.HttpCode;
+
 /**
  * 业务异常类，用于普通的业务错误抛出异常
  * 支持直接构造和 Builder 模式两种创建方式
@@ -11,7 +13,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String errorMessage) {
         super(errorMessage);
-        this.httpStatus = 500;
+        this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         this.errorMessage = errorMessage;
     }
 
@@ -23,7 +25,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String errorCode, String errorMessage) {
         super(errorMessage);
-        this.httpStatus = 500;
+        this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
@@ -37,7 +39,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String errorMessage, Throwable cause) {
         super(errorMessage, cause);
-        this.httpStatus = 500;
+        this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         this.errorMessage = errorMessage;
     }
 
@@ -49,7 +51,7 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String errorCode, String errorMessage, Throwable cause) {
         super(errorMessage, cause);
-        this.httpStatus = 500;
+        this.httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
@@ -72,7 +74,7 @@ public class BusinessException extends RuntimeException {
      * Builder 模式，用于灵活构建 BusinessException
      */
     public static class Builder {
-        private int httpStatus = 500;
+        private int httpStatus = HttpCode.INTERNAL_SERVER_ERROR;
         private String errorCode;
         private String errorMessage;
         private Throwable cause;
