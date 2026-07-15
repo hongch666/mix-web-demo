@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 	"fmt"
 
@@ -44,13 +45,13 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 	// 获取聊天历史
 	messages, total, err := l.svcCtx.ChatMessagesModel.GetChatHistory(l.ctx, req.UserId, req.OtherId, offset, size)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.GET_HISTORY_MESSAGE_ERROR+": %v", err))
-		return nil, exceptions.NewInternalServerError(utils.GET_HISTORY_MESSAGE_ERROR, err.Error())
+		l.Error(fmt.Sprintf(constants.GET_HISTORY_MESSAGE_ERROR+": %v", err))
+		return nil, exceptions.NewInternalServerError(constants.GET_HISTORY_MESSAGE_ERROR, err.Error())
 	}
 
 	// 标记消息为已读
 	if err := l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.UserId, req.OtherId); err != nil {
-		l.Error(fmt.Sprintf(utils.MARK_READ_FAIL, err))
+		l.Error(fmt.Sprintf(constants.MARK_READ_FAIL, err))
 	}
 
 	// 转换为ChatMessageItem
@@ -66,7 +67,7 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 		}
 	}
 
-	l.Info(utils.GET_CHAT_HISTORY_SUCCESS)
+	l.Info(constants.GET_CHAT_HISTORY_SUCCESS)
 
 	resp = &types.ChatGetHistoryResp{
 		Messages: messageItems,

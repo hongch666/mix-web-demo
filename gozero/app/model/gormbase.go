@@ -1,15 +1,15 @@
 package model
 
 import (
+	"app/common/constants"
 	"context"
 	"errors"
 
-	"app/common/utils"
 
 	"gorm.io/gorm"
 )
 
-var ErrNilDB = errors.New(utils.GORM_IS_NIL_MESSAGE)
+var ErrNilDB = errors.New(constants.GORM_IS_NIL_MESSAGE)
 
 type GormCrud[T any] struct {
 	db    *gorm.DB

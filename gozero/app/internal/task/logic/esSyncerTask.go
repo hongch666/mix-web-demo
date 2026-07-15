@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"app/common/constants"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,7 +10,6 @@ import (
 	"io"
 	"time"
 
-	"app/common/utils"
 	"app/internal/svc"
 	"app/model/articles"
 	"app/model/search"
@@ -33,20 +33,20 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 
 	if svcCtx.ESClient == nil {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(utils.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
+			svcCtx.Logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 		}
-		return fmt.Errorf("%s", utils.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
+		return fmt.Errorf("%s", constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 	}
 
 	exists, err := svcCtx.ESClient.IndexExists(esArticlesIndexName).Do(ctx)
 	if err != nil {
-		return logAndWrapError(svcCtx, utils.INDEX_CHECK_ERROR_MESSAGE, err)
+		return logAndWrapError(svcCtx, constants.INDEX_CHECK_ERROR_MESSAGE, err)
 	}
 	if !exists {
-		mapping := utils.ES_INDEX_MAPPING
+		mapping := constants.ES_INDEX_MAPPING
 		_, err := svcCtx.ESClient.CreateIndex(esArticlesIndexName).BodyString(mapping).Do(ctx)
 		if err != nil {
-			return logAndWrapError(svcCtx, utils.INDEX_CREATION_ERROR_MESSAGE, err)
+			return logAndWrapError(svcCtx, constants.INDEX_CREATION_ERROR_MESSAGE, err)
 		}
 	}
 
@@ -83,7 +83,7 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			// 使用 ES 文档的完整内容计算 hash
 			docHash, err := hashArticleES(doc)
 			if err != nil {
-				return logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
+				return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
 
 			existingHash, ok := existingDocs[doc.ID]
@@ -122,7 +122,7 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		stats.Updated += batchUpdated
 
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Info(fmt.Sprintf(utils.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
+			svcCtx.Logger.Info(fmt.Sprintf(constants.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
 		}
 
 		time.Sleep(200 * time.Millisecond)
@@ -142,11 +142,11 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	}
 
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(fmt.Sprintf(utils.ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE, stats.Added, stats.Updated, stats.Deleted))
+		svcCtx.Logger.Info(fmt.Sprintf(constants.ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE, stats.Added, stats.Updated, stats.Deleted))
 	}
 
 	if stats.Added == 0 && stats.Updated == 0 && stats.Deleted == 0 && svcCtx.Logger != nil {
-		svcCtx.Logger.Info(utils.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
+		svcCtx.Logger.Info(constants.NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE)
 	}
 
 	return nil
@@ -179,7 +179,7 @@ func buildArticleESBatch(
 		user, err := svcCtx.UserModel.FindOne(ctx, uid)
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_USER_ERROR, uid, err))
+				svcCtx.Logger.Error(fmt.Sprintf(constants.QUERY_USER_ERROR, uid, err))
 			}
 			continue
 		}
@@ -195,7 +195,7 @@ func buildArticleESBatch(
 		subCategory, err := svcCtx.SubCategoryModel.FindOne(ctx, subCategoryID)
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_SUBCATEGORY_ERROR, subCategoryID, err))
+				svcCtx.Logger.Error(fmt.Sprintf(constants.QUERY_SUBCATEGORY_ERROR, subCategoryID, err))
 			}
 			continue
 		}
@@ -207,7 +207,7 @@ func buildArticleESBatch(
 		category, err := svcCtx.CategoryModel.FindOne(ctx, int64(subCategory.CategoryId))
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(utils.QUERY_CATEGORY_ERROR, subCategory.CategoryId, err))
+				svcCtx.Logger.Error(fmt.Sprintf(constants.QUERY_CATEGORY_ERROR, subCategory.CategoryId, err))
 			}
 			continue
 		}
@@ -217,19 +217,19 @@ func buildArticleESBatch(
 	// 下面这些统计信息会影响搜索排序或文档展示，因此统一按批拉取
 	commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
 	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.CREATE_MESSAGE_ERROR, err)
+		return nil, logAndWrapError(svcCtx, constants.CREATE_MESSAGE_ERROR, err)
 	}
 	likeCounts, err := svcCtx.LikesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
 	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.LIKE_QUERY_ERROR, err)
+		return nil, logAndWrapError(svcCtx, constants.LIKE_QUERY_ERROR, err)
 	}
 	collectCounts, err := svcCtx.CollectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
 	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.COLLECT_QUERY_ERROR, err)
+		return nil, logAndWrapError(svcCtx, constants.COLLECT_QUERY_ERROR, err)
 	}
 	authorFollowCounts, err := svcCtx.FocusModel.GetFollowCountsByUserIDs(ctx, userIDs)
 	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.FOCUS_QUERY_ERROR, err)
+		return nil, logAndWrapError(svcCtx, constants.FOCUS_QUERY_ERROR, err)
 	}
 
 	docs := make([]search.ArticleES, 0, len(articleBatch))
@@ -283,7 +283,7 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 
 	exists, err := svcCtx.ESClient.IndexExists(esArticlesIndexName).Do(ctx)
 	if err != nil {
-		return nil, logAndWrapError(svcCtx, utils.INDEX_CHECK_ERROR_MESSAGE, err)
+		return nil, logAndWrapError(svcCtx, constants.INDEX_CHECK_ERROR_MESSAGE, err)
 	}
 	if !exists {
 		return existingDocs, nil
@@ -297,18 +297,18 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 			break
 		}
 		if err != nil {
-			return nil, logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
+			return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 		}
 
 		for _, hit := range result.Hits.Hits {
 			var doc search.ArticleES
 			if err := json.Unmarshal(hit.Source, &doc); err != nil {
-				return nil, logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
+				return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
 			// 这里直接对 ES 中现有文档计算 hash，后面和 DB 生成的新文档做同口径比对
 			hashValue, err := hashArticleES(doc)
 			if err != nil {
-				return nil, logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
+				return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
 			existingDocs[doc.ID] = hashValue
 		}
@@ -362,7 +362,7 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 	// 统一封装 bulk 执行和失败处理，避免新增、更新、删除各写一套错误判断
 	resp, err := bulkRequest.Do(ctx)
 	if err != nil {
-		return logAndWrapError(svcCtx, utils.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 	}
 
 	if !resp.Errors {
@@ -371,13 +371,13 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 
 	for _, item := range resp.Failed() {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(fmt.Sprintf(utils.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
+			svcCtx.Logger.Error(fmt.Sprintf(constants.ES_SYNC_FAILURE_DETAILS_MESSAGE, item.Error))
 		}
 	}
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Error(utils.ES_SYNC_HAS_FAILURES_MESSAGE)
+		svcCtx.Logger.Error(constants.ES_SYNC_HAS_FAILURES_MESSAGE)
 	}
-	return fmt.Errorf("%s", utils.ES_SYNC_HAS_FAILURES_MESSAGE)
+	return fmt.Errorf("%s", constants.ES_SYNC_HAS_FAILURES_MESSAGE)
 }
 
 func hashArticleES(doc search.ArticleES) (string, error) {

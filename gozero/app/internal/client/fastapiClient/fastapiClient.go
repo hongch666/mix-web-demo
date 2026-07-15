@@ -1,12 +1,12 @@
 package fastapiClient
 
 import (
+	"app/common/constants"
 	"context"
 	"errors"
 	"fmt"
 
 	"app/common/client"
-	"app/common/utils"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 )
@@ -30,7 +30,7 @@ func NewFastapiClient(nc naming_client.INamingClient) *FastapiClient {
 // EnhanceGraph 调用 FastAPI 图谱增强接口，返回完整响应结果
 func (c *FastapiClient) EnhanceGraph(ctx context.Context, req *GraphEnhanceRequest) (client.Result, error) {
 	if len(req.ArticleIDs) == 0 {
-		return client.Result{}, fmt.Errorf(utils.GRAPH_ENHANCE_CALL_FAILED, errors.New("文章ID列表为空"))
+		return client.Result{}, fmt.Errorf(constants.GRAPH_ENHANCE_CALL_FAILED, errors.New("文章ID列表为空"))
 	}
 
 	sd := c.serviceDisc
@@ -52,7 +52,7 @@ func (c *FastapiClient) EnhanceGraph(ctx context.Context, req *GraphEnhanceReque
 // EnhanceVector 调用 FastAPI 向量增强接口，返回完整响应结果
 func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceRequest) (client.Result, error) {
 	if len(req.ArticleIDs) == 0 || req.Keyword == "" {
-		return client.Result{}, fmt.Errorf(utils.VECTOR_ENHANCE_CALL_FAILED, errors.New("文章ID列表为空或关键词为空"))
+		return client.Result{}, fmt.Errorf(constants.VECTOR_ENHANCE_CALL_FAILED, errors.New("文章ID列表为空或关键词为空"))
 	}
 
 	sd := c.serviceDisc

@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -42,11 +43,11 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 	}
 
 	if err := l.svcCtx.ChatMessagesModel.CreateChatMessage(l.ctx, message); err != nil {
-		l.Error(fmt.Sprintf(utils.CREATE_MESSAGE_ERROR+": %v", err))
-		return nil, exceptions.NewInternalServerError(utils.CREATE_MESSAGE_ERROR, err.Error())
+		l.Error(fmt.Sprintf(constants.CREATE_MESSAGE_ERROR+": %v", err))
+		return nil, exceptions.NewInternalServerError(constants.CREATE_MESSAGE_ERROR, err.Error())
 	}
 
-	l.Info(utils.CHAT_MESSAGE_SEND_SUCCESS)
+	l.Info(constants.CHAT_MESSAGE_SEND_SUCCESS)
 
 	// 2. 检查接收者的所有WebSocket连接，如果存在就统一投递
 	wsMessage := &hub.WebSocketMessage{
@@ -60,16 +61,16 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 
 	messageBytes, err := json.Marshal(wsMessage)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.WS_SERIALIZE_MESSAGE_ERROR, err))
-		return nil, exceptions.NewInternalServerError(utils.MESSAGE_SEND_ERROR, err.Error())
+		l.Error(fmt.Sprintf(constants.WS_SERIALIZE_MESSAGE_ERROR, err))
+		return nil, exceptions.NewInternalServerError(constants.MESSAGE_SEND_ERROR, err.Error())
 	}
 
 	if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {
 		// 发送成功，消息已读
 		l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.SenderId, req.ReceiverId)
-		l.Info(fmt.Sprintf(utils.WS_SEND_SUCCESS, message.Id))
+		l.Info(fmt.Sprintf(constants.WS_SEND_SUCCESS, message.Id))
 	} else {
-		l.Error(fmt.Sprintf(utils.WS_SEND_FAIL, req.ReceiverId, message.Id))
+		l.Error(fmt.Sprintf(constants.WS_SEND_FAIL, req.ReceiverId, message.Id))
 		// 触发SSE通知发送未读消息
 		utils.SafeGo(l.ZeroLogger, "notifyUnreadMessage", func() {
 			l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
@@ -88,7 +89,7 @@ func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ string, message *ch
 	// 获取该用户的所有未读消息数
 	unreadCounts, err := l.svcCtx.ChatMessagesModel.GetAllUnreadCounts(l.ctx, userID)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.GET_UNREAD_COUNT_MESSAGE_ERROR, err))
+		l.Error(fmt.Sprintf(constants.GET_UNREAD_COUNT_MESSAGE_ERROR, err))
 		return
 	}
 

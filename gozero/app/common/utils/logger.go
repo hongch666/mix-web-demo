@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"app/common/constants"
 	"bufio"
 	"context"
 	"fmt"
@@ -28,14 +29,14 @@ func NewZeroLogger(logPath string) (*ZeroLogger, error) {
 	if !filepath.IsAbs(logPath) {
 		wd, err := os.Getwd()
 		if err != nil {
-			return nil, fmt.Errorf(LOGGER_GET_WORKDIR_ERROR, err)
+			return nil, fmt.Errorf(constants.LOGGER_GET_WORKDIR_ERROR, err)
 		}
 		logPath = filepath.Join(wd, logPath)
 	}
 
 	// 确保日志目录存在
 	if err := os.MkdirAll(logPath, 0o755); err != nil {
-		return nil, fmt.Errorf(LOGGER_CREATE_DIR_ERROR, err)
+		return nil, fmt.Errorf(constants.LOGGER_CREATE_DIR_ERROR, err)
 	}
 
 	logger := &ZeroLogger{
@@ -76,7 +77,7 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 		}
 		file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
 		if err != nil {
-			logx.Error(fmt.Sprintf(LOGGER_OPEN_FILE_ERROR, err))
+			logx.Error(fmt.Sprintf(constants.LOGGER_OPEN_FILE_ERROR, err))
 			return
 		}
 		z.currentFile = file
@@ -86,7 +87,7 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 	// 使用缓冲写入减少系统调用
 	writer := bufio.NewWriter(z.currentFile)
 	if _, err := writer.WriteString(logEntry); err != nil {
-		logx.Error(fmt.Sprintf(LOGGER_WRITE_FILE_ERROR, err))
+		logx.Error(fmt.Sprintf(constants.LOGGER_WRITE_FILE_ERROR, err))
 	}
 	writer.Flush()
 }

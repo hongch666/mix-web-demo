@@ -1,12 +1,12 @@
 package search
 
 import (
+	"app/common/constants"
 	"context"
 	"encoding/json"
 	"strings"
 	"time"
 
-	"app/common/utils"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -72,20 +72,20 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	}
 	from := (page - 1) * size
 
-	scoreScript := elastic.NewScript(utils.ES_SEARCH_SCRIPT).
-		Param(utils.ES_WEIGHT_NAME, m.config.ESScoreWeight).
-		Param(utils.AI_RATING_WEIGHT_NAME, m.config.AIRatingWeight).
-		Param(utils.USER_RATING_WEIGHT_NAME, m.config.UserRatingWeight).
-		Param(utils.VIEWS_WEIGHT_NAME, m.config.ViewsWeight).
-		Param(utils.LIKES_WEIGHT_NAME, m.config.LikesWeight).
-		Param(utils.COLLECTS_WEIGHT_NAME, m.config.CollectsWeight).
-		Param(utils.AUTHOR_FOLLOW_WEIGHT_NAME, m.config.AuthorFollowWeight).
-		Param(utils.RECENCY_WEIGHT_NAME, m.config.RecencyWeight).
-		Param(utils.RECENCY_DECAY_DAYS_NAME, float64(m.config.RecencyDecayDays)*float64(m.config.RecencyDecayDays)).
-		Param(utils.MAX_VIEWS_NORMALIZED_NAME, m.config.MaxViewsNormalized).
-		Param(utils.MAX_LIKES_NORMALIZED_NAME, m.config.MaxLikesNormalized).
-		Param(utils.MAX_COLLECTS_NORMALIZED_NAME, m.config.MaxCollectsNormalized).
-		Param(utils.MAX_FOLLOWS_NORMALIZED_NAME, m.config.MaxFollowsNormalized)
+	scoreScript := elastic.NewScript(constants.ES_SEARCH_SCRIPT).
+		Param(constants.ES_WEIGHT_NAME, m.config.ESScoreWeight).
+		Param(constants.AI_RATING_WEIGHT_NAME, m.config.AIRatingWeight).
+		Param(constants.USER_RATING_WEIGHT_NAME, m.config.UserRatingWeight).
+		Param(constants.VIEWS_WEIGHT_NAME, m.config.ViewsWeight).
+		Param(constants.LIKES_WEIGHT_NAME, m.config.LikesWeight).
+		Param(constants.COLLECTS_WEIGHT_NAME, m.config.CollectsWeight).
+		Param(constants.AUTHOR_FOLLOW_WEIGHT_NAME, m.config.AuthorFollowWeight).
+		Param(constants.RECENCY_WEIGHT_NAME, m.config.RecencyWeight).
+		Param(constants.RECENCY_DECAY_DAYS_NAME, float64(m.config.RecencyDecayDays)*float64(m.config.RecencyDecayDays)).
+		Param(constants.MAX_VIEWS_NORMALIZED_NAME, m.config.MaxViewsNormalized).
+		Param(constants.MAX_LIKES_NORMALIZED_NAME, m.config.MaxLikesNormalized).
+		Param(constants.MAX_COLLECTS_NORMALIZED_NAME, m.config.MaxCollectsNormalized).
+		Param(constants.MAX_FOLLOWS_NORMALIZED_NAME, m.config.MaxFollowsNormalized)
 
 	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
 

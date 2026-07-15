@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"app/common/constants"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -86,7 +87,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 请求处理完成，记录耗时（毫秒）
 		durationMs := time.Since(start).Milliseconds()
-		timeMessage := fmt.Sprintf(utils.RECORD_DURATION_MESSAGE, method, path, durationMs)
+		timeMessage := fmt.Sprintf(constants.RECORD_DURATION_MESSAGE, method, path, durationMs)
 		m.Info(timeMessage)
 
 		// 发送 API 日志到队列（异步，不阻塞主流程）
@@ -179,9 +180,9 @@ func formatLogMessage(method, path, description string, userID int64, username s
 	// 基础信息按照指定格式
 	var message string
 	if userID > 0 {
-		message = fmt.Sprintf(utils.USER_LOG_MESSAGE, userID, username, method, path, description)
+		message = fmt.Sprintf(constants.USER_LOG_MESSAGE, userID, username, method, path, description)
 	} else {
-		message = fmt.Sprintf(utils.ANONYMOUS_USER_LOG_MESSAGE, method, path, description)
+		message = fmt.Sprintf(constants.ANONYMOUS_USER_LOG_MESSAGE, method, path, description)
 	}
 
 	// 添加参数信息
@@ -227,7 +228,7 @@ func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitPublish
 	messageJSON, err := json.Marshal(apiLogMessage)
 	if err != nil {
 		if lgr != nil {
-			lgr.Error(utils.SERIALIZE_API_LOG_FAIL_MESSAGE)
+			lgr.Error(constants.SERIALIZE_API_LOG_FAIL_MESSAGE)
 		}
 		return
 	}
@@ -235,7 +236,7 @@ func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitPublish
 	// 发送到 RabbitMQ
 	if rabbitPublisher == nil {
 		if lgr != nil {
-			lgr.Error(utils.RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE)
+			lgr.Error(constants.RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE)
 		}
 		return
 	}
@@ -249,9 +250,9 @@ func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitPublish
 	)
 
 	if err != nil {
-		lgr.Error(utils.SEND_API_LOG_FAIL_MESSAGE)
+		lgr.Error(constants.SEND_API_LOG_FAIL_MESSAGE)
 	} else {
-		lgr.Info(utils.SEND_API_LOG_SUCCESS_MESSAGE)
+		lgr.Info(constants.SEND_API_LOG_SUCCESS_MESSAGE)
 	}
 }
 

@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/utils"
@@ -30,7 +31,7 @@ func (l *ChatGetQueueStatusLogic) ChatGetQueueStatus() (resp *types.ChatGetQueue
 	// 获取队列中所有用户
 	users := l.svcCtx.ChatHub.GetAllUsersInQueue()
 
-	l.Info(utils.GET_QUEUE_STATUS_SUCCESS)
+	l.Info(constants.GET_QUEUE_STATUS_SUCCESS)
 
 	resp = &types.ChatGetQueueStatusResp{
 		OnlineUsers: users,

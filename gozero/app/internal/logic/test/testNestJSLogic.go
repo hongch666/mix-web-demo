@@ -1,6 +1,7 @@
 package test
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/exceptions"
@@ -27,8 +28,8 @@ func NewTestNestJSLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestNe
 func (l *TestNestJSLogic) TestNestJS() (resp *types.TestNestJSResp, err error) {
 	result, err := l.svcCtx.NestjsClient.Test(l.ctx)
 	if err != nil {
-		l.Error(utils.PARSE_ERR + ": " + err.Error())
-		return nil, exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error())
+		l.Error(constants.PARSE_ERR + ": " + err.Error())
+		return nil, exceptions.NewBadGatewayError(constants.PARSE_ERR, err.Error())
 	}
 
 	data, ok := result.Data.(string)

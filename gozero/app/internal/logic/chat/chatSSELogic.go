@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/utils"
@@ -28,7 +29,7 @@ func NewChatSSELogic(ctx context.Context, svcCtx *svc.ServiceContext) *ChatSSELo
 
 func (l *ChatSSELogic) ChatSSE(req *types.ChatSSEConnectReq) (resp *types.ChatSSEConnectResp, err error) {
 	// SSE实时推送实现
-	l.Info(utils.SSE_CONNECTION_ESTABLISHED_MESSAGE)
+	l.Info(constants.SSE_CONNECTION_ESTABLISHED_MESSAGE)
 
 	return
 }

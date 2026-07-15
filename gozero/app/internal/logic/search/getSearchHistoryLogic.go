@@ -4,6 +4,7 @@
 package search
 
 import (
+	"app/common/constants"
 	"context"
 	"fmt"
 
@@ -36,15 +37,15 @@ func (l *GetSearchHistoryLogic) GetSearchHistory(req *types.GetSearchHistoryReq)
 	userID := int64(0)
 	_, err = fmt.Sscanf(userIDStr, "%d", &userID)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.PARAM_ERR+": %v", err))
-		return nil, exceptions.NewBadRequestError(utils.PARAM_ERR, err.Error())
+		l.Error(fmt.Sprintf(constants.PARAM_ERR+": %v", err))
+		return nil, exceptions.NewBadRequestError(constants.PARAM_ERR, err.Error())
 	}
 
 	// 获取搜索历史
 	keywords, err := l.svcCtx.SearchModel.GetSearchHistory(l.ctx, userID)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.SEARCH_HISTORY_FAIL+": %v", err))
-		return nil, exceptions.NewInternalServerError(utils.SEARCH_HISTORY_FAIL, err.Error())
+		l.Error(fmt.Sprintf(constants.SEARCH_HISTORY_FAIL+": %v", err))
+		return nil, exceptions.NewInternalServerError(constants.SEARCH_HISTORY_FAIL, err.Error())
 	}
 
 	if keywords == nil {

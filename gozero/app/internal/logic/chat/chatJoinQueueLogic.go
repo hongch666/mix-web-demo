@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/hub"
@@ -35,7 +36,7 @@ func (l *ChatJoinQueueLogic) ChatJoinQueue(req *types.ChatJoinQueueReq) (resp *t
 
 	// 检查用户是否已经在队列中
 	if l.svcCtx.ChatHub.IsUserInQueue(req.UserId) {
-		resp.Status = utils.USER_ALREADY_IN_QUEUE
+		resp.Status = constants.USER_ALREADY_IN_QUEUE
 	} else {
 		// 创建一个虚拟的客户端（没有WebSocket连接）
 		client := &hub.Client{
@@ -44,9 +45,9 @@ func (l *ChatJoinQueueLogic) ChatJoinQueue(req *types.ChatJoinQueueReq) (resp *t
 			Send:   make(chan []byte, 256),
 		}
 		l.svcCtx.ChatHub.JoinQueue(req.UserId, client)
-		resp.Status = utils.USER_CONNECTED
+		resp.Status = constants.USER_CONNECTED
 	}
 
-	l.Info(utils.JOIN_QUEUE_SUCCESS)
+	l.Info(constants.JOIN_QUEUE_SUCCESS)
 	return
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"app/common/constants"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -37,7 +38,7 @@ func (l *RedisDistributedLock) TryLock(ctx context.Context, lockKey string, expi
 	lockValue := uuid.New().String()
 	ok, err := l.client.SetNX(ctx, lockKey, lockValue, time.Duration(expireSeconds)*time.Second).Result()
 	if err != nil {
-		return "", fmt.Errorf(REDIS_LOCK_ACQUIRE_ERROR, err)
+		return "", fmt.Errorf(constants.REDIS_LOCK_ACQUIRE_ERROR, err)
 	}
 	if !ok {
 		return "", nil
@@ -51,7 +52,7 @@ func (l *RedisDistributedLock) TryLock(ctx context.Context, lockKey string, expi
 func (l *RedisDistributedLock) Unlock(ctx context.Context, lockKey, lockValue string) (bool, error) {
 	result, err := l.client.Eval(ctx, unlockScript, []string{lockKey}, lockValue).Int64()
 	if err != nil {
-		return false, fmt.Errorf(REDIS_LOCK_RELEASE_ERROR, err)
+		return false, fmt.Errorf(constants.REDIS_LOCK_RELEASE_ERROR, err)
 	}
 	return result == 1, nil
 }

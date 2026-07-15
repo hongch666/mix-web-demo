@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"net/http"
 
 	"app/common/hub"
@@ -31,14 +32,14 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 
 		if userID == "" {
-			svcCtx.Logger.Error(utils.USER_ID_LESS)
-			utils.Error(w, utils.HttpBadRequest, utils.USER_ID_LESS)
+			svcCtx.Logger.Error(constants.USER_ID_LESS)
+			utils.Error(w, utils.HttpBadRequest, constants.USER_ID_LESS)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			svcCtx.Logger.Error(utils.WS_CONNECT_FAIL + err.Error())
+			svcCtx.Logger.Error(constants.WS_CONNECT_FAIL + err.Error())
 			return
 		}
 

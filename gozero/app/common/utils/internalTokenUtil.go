@@ -3,6 +3,7 @@ package utils
 import (
 	"time"
 
+	"app/common/constants"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -29,14 +30,14 @@ func InitInternalTokenUtil(secret string, expiration int64) {
 		expiration: expiration,
 	}
 	if tokenUtil.secret == "" {
-		panic(INTERNAL_TOKEN_SECRET_NOT_NULL)
+		panic(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
 	}
 }
 
 // GetTokenUtil 获取内部令牌工具实例
 func GetTokenUtil() *InternalTokenUtil {
 	if tokenUtil == nil {
-		panic(INTERNAL_TOKEN_SECRET_NOT_NULL)
+		panic(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
 	}
 	return tokenUtil
 }

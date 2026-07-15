@@ -1,6 +1,7 @@
 package test
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/exceptions"
@@ -27,8 +28,8 @@ func NewTestFastAPILogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestF
 func (l *TestFastAPILogic) TestFastAPI() (resp *types.TestFastAPIResp, err error) {
 	result, err := l.svcCtx.FastapiClient.Test(l.ctx)
 	if err != nil {
-		l.Error(utils.PARSE_ERR + ": " + err.Error())
-		return nil, exceptions.NewBadGatewayError(utils.PARSE_ERR, err.Error())
+		l.Error(constants.PARSE_ERR + ": " + err.Error())
+		return nil, exceptions.NewBadGatewayError(constants.PARSE_ERR, err.Error())
 	}
 
 	data, ok := result.Data.(string)

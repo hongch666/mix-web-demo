@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"app/common/constants"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -61,7 +62,7 @@ func (hub *SSEHubManager) RegisterClient(userID string, connectionID string, sen
 		CloseCh:      closeCh,
 	}
 	if hub.ZeroLogger != nil {
-		hub.Info(utils.SSE_REGISTER_SUCCESS_MESSAGE)
+		hub.Info(constants.SSE_REGISTER_SUCCESS_MESSAGE)
 	}
 }
 
@@ -85,7 +86,7 @@ func (hub *SSEHubManager) UnregisterClient(userID string, connectionID string) {
 			delete(hub.clients, userID)
 		}
 		if hub.ZeroLogger != nil {
-			hub.Info(utils.SSE_UNREGISTER_SUCCESS_MESSAGE)
+			hub.Info(constants.SSE_UNREGISTER_SUCCESS_MESSAGE)
 		}
 	}
 }
@@ -94,7 +95,7 @@ func (hub *SSEHubManager) UnregisterClient(userID string, connectionID string) {
 func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *SSEMessageNotification) {
 	if notification == nil {
 		if hub.ZeroLogger != nil {
-			hub.Warning(utils.SSE_SEND_EMPTY_WARNING_MESSAGE)
+			hub.Warning(constants.SSE_SEND_EMPTY_WARNING_MESSAGE)
 		}
 		return
 	}
@@ -105,7 +106,7 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *SS
 
 	if !ok || len(clients) == 0 {
 		if hub.ZeroLogger != nil {
-			hub.Warning(utils.SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE)
+			hub.Warning(constants.SSE_CLIENT_NOT_FOUND_WARNING_MESSAGE)
 		}
 		return
 	}
@@ -121,13 +122,13 @@ func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *SS
 			sentAny = true
 		default:
 			if hub.ZeroLogger != nil {
-				hub.Warning(utils.SSE_SEND_FAIL_WARNING_MESSAGE)
+				hub.Warning(constants.SSE_SEND_FAIL_WARNING_MESSAGE)
 			}
 		}
 	}
 
 	if sentAny && hub.ZeroLogger != nil {
-		hub.Info(utils.SSE_SEND_SUCCESS_MESSAGE)
+		hub.Info(constants.SSE_SEND_SUCCESS_MESSAGE)
 	}
 }
 
@@ -145,11 +146,11 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 			select {
 			case client.SendCh <- notification:
 				if hub.ZeroLogger != nil {
-					hub.Debug(utils.SSE_BROADCAST_SUCCESS_MESSAGE)
+					hub.Debug(constants.SSE_BROADCAST_SUCCESS_MESSAGE)
 				}
 			default:
 				if hub.ZeroLogger != nil {
-					hub.Warning(utils.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
+					hub.Warning(constants.SSE_BROADCAST_FAIL_WARNING_MESSAGE)
 				}
 			}
 		}
@@ -200,11 +201,11 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 			return
 		case <-ticker.C:
 			// 发送心跳消息
-			heartbeat := utils.SSE_HEARTBEAT
+			heartbeat := constants.SSE_HEARTBEAT
 			_, err := io.WriteString(w, heartbeat)
 			if err != nil {
 				if hub.ZeroLogger != nil {
-					hub.Error(utils.SSE_HEARTBEAT_WRITE_FAIL + err.Error())
+					hub.Error(constants.SSE_HEARTBEAT_WRITE_FAIL + err.Error())
 				}
 				return
 			}
@@ -217,14 +218,14 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 			// 如果格式化后消息为空,跳过此次发送
 			if sseMessage == "" {
 				if hub.ZeroLogger != nil {
-					hub.Warning(utils.EMPTY_SSE)
+					hub.Warning(constants.EMPTY_SSE)
 				}
 				continue
 			}
 			_, err := io.WriteString(w, sseMessage)
 			if err != nil {
 				if hub.ZeroLogger != nil {
-					hub.Error(utils.SSE_WRITE_FAIL + err.Error())
+					hub.Error(constants.SSE_WRITE_FAIL + err.Error())
 				}
 				return
 			}
@@ -239,7 +240,7 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 func FormatSSEMessage(data any) string {
 	if data == nil {
 		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
-			sseHubInstance.Warning(utils.SSE_SEND_EMPTY_MESSAGE_WARNING_MESSAGE)
+			sseHubInstance.Warning(constants.SSE_SEND_EMPTY_MESSAGE_WARNING_MESSAGE)
 		}
 		return ""
 	}
@@ -247,7 +248,7 @@ func FormatSSEMessage(data any) string {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
-			sseHubInstance.Error(utils.SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE)
+			sseHubInstance.Error(constants.SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE)
 		}
 		return ""
 	}
@@ -255,7 +256,7 @@ func FormatSSEMessage(data any) string {
 	// 检查是否为null
 	if string(jsonData) == "null" {
 		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
-			sseHubInstance.Warning(utils.SSE_SERIALIZE_MESSAGE_EMPTY)
+			sseHubInstance.Warning(constants.SSE_SERIALIZE_MESSAGE_EMPTY)
 		}
 		return ""
 	}

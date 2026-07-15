@@ -4,6 +4,7 @@
 package svc
 
 import (
+	"app/common/constants"
 	"context"
 	"fmt"
 	"net"
@@ -94,7 +95,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	// 初始化日志
 	zLogger, err := utils.NewZeroLogger(c.Logs.Path)
 	if err != nil {
-		logx.Errorf(utils.ZERO_LOGGER_INIT_FAIL, err)
+		logx.Errorf(constants.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)
 	}
 	logger = zLogger
@@ -220,7 +221,7 @@ func initGorm(c config.Config) *gorm.DB {
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		logger.Errorf(utils.GORM_INIT_FAIL, err)
+		logger.Errorf(constants.GORM_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -245,12 +246,12 @@ func initMigrate(db *gorm.DB) {
 		return
 	}
 
-	if err := db.Exec(utils.CREATE_CHAT_MESSAGES_TABLE_SQL).Error; err != nil {
-		logger.Errorf(utils.AUTO_CREATE_TABLE_FAIL, err)
+	if err := db.Exec(constants.CREATE_CHAT_MESSAGES_TABLE_SQL).Error; err != nil {
+		logger.Errorf(constants.AUTO_CREATE_TABLE_FAIL, err)
 		return
 	}
 
-	logger.Info(utils.AUTO_CREATE_TABLE_SUCCESS)
+	logger.Info(constants.AUTO_CREATE_TABLE_SUCCESS)
 }
 
 func buildMysqlDsn(c config.Config) string {
@@ -302,7 +303,7 @@ func initES(c config.Config) *elastic.Client {
 
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
-		logger.Errorf(utils.ES_CLIENT_INIT_FAIL, err)
+		logger.Errorf(constants.ES_CLIENT_INIT_FAIL, err)
 		panic(err)
 	}
 	return client
@@ -322,7 +323,7 @@ func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
 
 	conn, err := rabbitmq.NewConn(url)
 	if err != nil {
-		logger.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
+		logger.Errorf(constants.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 
@@ -331,11 +332,11 @@ func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
 		rabbitmq.WithPublisherOptionsLogging,
 	)
 	if err != nil {
-		logger.Errorf(utils.RABBITMQ_CONNECTION_INIT_FAIL, err)
+		logger.Errorf(constants.RABBITMQ_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 
-	logger.Info(utils.RABBITMQ_CONNECT_SUCCESS)
+	logger.Info(constants.RABBITMQ_CONNECT_SUCCESS)
 
 	return publisher
 }
@@ -358,11 +359,11 @@ func initMongoDB(c config.Config) *mongo.Client {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		logger.Errorf(utils.MONGODB_CONNECTION_INIT_FAIL, err)
+		logger.Errorf(constants.MONGODB_CONNECTION_INIT_FAIL, err)
 		panic(err)
 	}
 	if err = client.Ping(ctx, nil); err != nil {
-		logger.Errorf(utils.MONGODB_PING_FAIL, err)
+		logger.Errorf(constants.MONGODB_PING_FAIL, err)
 		panic(err)
 	}
 
@@ -407,14 +408,14 @@ func initNacos(c config.Config) naming_client.INamingClient {
 		ServerConfigs: serverConfigs,
 	})
 	if err != nil {
-		logger.Errorf(utils.NACOS_CLIENT_INIT_FAIL, err)
+		logger.Errorf(constants.NACOS_CLIENT_INIT_FAIL, err)
 		panic(err)
 	}
 
 	registerIP := resolveNacosRegisterIP(c.Host)
 	if strings.EqualFold(strings.TrimSpace(c.Mode), "dev") {
 		registerIP = "127.0.0.1"
-		logger.Info(utils.REGISTER_NACOS_DEV_MODE_MESSAGE)
+		logger.Info(constants.REGISTER_NACOS_DEV_MODE_MESSAGE)
 	}
 
 	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
@@ -430,7 +431,7 @@ func initNacos(c config.Config) naming_client.INamingClient {
 			Ephemeral:   true,
 		})
 		if err != nil {
-			logger.Errorf(utils.NACOS_REGISTER_FAIL,
+			logger.Errorf(constants.NACOS_REGISTER_FAIL,
 				nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, err)
 			panic(err)
 		}
@@ -500,7 +501,7 @@ func getLocalIPv4Address() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf(utils.LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR)
+	return "", fmt.Errorf(constants.LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR)
 }
 
 func trimSlashPrefix(v string) string {
@@ -529,10 +530,10 @@ func initRedis(c config.Config) *redis.Client {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		logger.Errorf(utils.REDIS_INIT_FAIL, err)
+		logger.Errorf(constants.REDIS_INIT_FAIL, err)
 		panic(err)
 	}
 
-	logger.Infof(utils.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, db)
+	logger.Infof(constants.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, db)
 	return client
 }

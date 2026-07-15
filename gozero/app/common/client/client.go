@@ -1,6 +1,7 @@
 package client
 
 import (
+	"app/common/constants"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -91,7 +92,7 @@ func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string,
 		result, err = sd.callWithRetry(ctx, serviceName, path, opts)
 		return err
 	}, func(err error) error {
-		return fmt.Errorf(utils.DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE, serviceName, err)
+		return fmt.Errorf(constants.DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE, serviceName, err)
 	}, func(err error) bool {
 		return err == nil
 	})
@@ -203,7 +204,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 	}
 
 	if resp.StatusCode < utils.HttpOK || resp.StatusCode >= utils.HttpMultipleChoices {
-		errorMsg := fmt.Sprintf(utils.UNEXPECTED_STATUS_CODE, resp.StatusCode, string(body1))
+		errorMsg := fmt.Sprintf(constants.UNEXPECTED_STATUS_CODE, resp.StatusCode, string(body1))
 		return Result{}, errors.New(errorMsg)
 	}
 
@@ -212,8 +213,8 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 	}
 
 	if result.Code < utils.HttpOK || result.Code >= utils.HttpMultipleChoices {
-		logx.Errorf(utils.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
-		errorMsg := fmt.Sprintf(utils.SERVICE_CALL_FAILED, result.Msg)
+		logx.Errorf(constants.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
+		errorMsg := fmt.Sprintf(constants.SERVICE_CALL_FAILED, result.Msg)
 		return Result{}, errors.New(errorMsg)
 	}
 
@@ -285,10 +286,10 @@ func (sd *ServiceDiscovery) getServiceInstances(serviceName string) ([]model.Ins
 		HealthyOnly: true,
 	})
 	if err != nil {
-		return nil, errors.New(utils.SERVICE_DISCOVERY_ERROR)
+		return nil, errors.New(constants.SERVICE_DISCOVERY_ERROR)
 	}
 	if len(instances) == 0 {
-		return nil, errors.New(utils.NO_AVAILABLE_SERVICE_INSTANCE)
+		return nil, errors.New(constants.NO_AVAILABLE_SERVICE_INSTANCE)
 	}
 
 	// 更新缓存

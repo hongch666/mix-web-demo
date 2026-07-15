@@ -4,6 +4,7 @@
 package search
 
 import (
+	"app/common/constants"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -82,8 +83,8 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	// 执行ES搜索
 	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.SEARCH_EXECUTION_ERROR+": %v", err))
-		return nil, exceptions.NewInternalServerError(utils.SEARCH_EXECUTION_ERROR, err.Error())
+		l.Error(fmt.Sprintf(constants.SEARCH_EXECUTION_ERROR+": %v", err))
+		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
 	}
 
 	// 转换为ArticleEsItem
@@ -113,7 +114,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		}
 	}
 
-	l.Info(utils.ARTICLE_SEARCH_SUCCESS)
+	l.Info(constants.ARTICLE_SEARCH_SUCCESS)
 
 	resp = &types.SearchArticlesResp{
 		Total: total,
@@ -181,11 +182,11 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			"action":  "search",
 			"userId":  logUserID,
 			"content": searchDTO,
-			"msg":     utils.SEARCH_MSG,
+			"msg":     constants.SEARCH_MSG,
 		}
 		jsonBytes, err := json.Marshal(msg)
 		if err != nil {
-			l.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
+			l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
 		} else {
 			// 通过RabbitMQ发送消息
 			if l.svcCtx.RabbitMQPublisher != nil {
@@ -195,7 +196,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 					rabbitmq.WithPublishOptionsContentType("application/json"),
 				)
 				if err != nil {
-					l.Error(fmt.Sprintf(utils.SEARCH_ERR+": %v", err))
+					l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
 				}
 			}
 		}
@@ -240,14 +241,14 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 
 	result, err := l.svcCtx.FastapiClient.EnhanceVector(ctx, vectorReq)
 	if err != nil {
-		l.Warningf(utils.VECTOR_ENHANCE_DEGRADE_LOG,
+		l.Warningf(constants.VECTOR_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
 		return []fastapiClient.VectorEnhanceItem{}
 	}
 
 	items, err := fastapiClient.ParseVectorEnhanceResult(result.Data)
 	if err != nil {
-		l.Warningf(utils.VECTOR_ENHANCE_DEGRADE_LOG,
+		l.Warningf(constants.VECTOR_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
 		return []fastapiClient.VectorEnhanceItem{}
 	}
@@ -289,14 +290,14 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 
 	graphResult, err := l.svcCtx.FastapiClient.EnhanceGraph(ctx, graphReq)
 	if err != nil {
-		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
+		l.Warningf(constants.GRAPH_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
 		return []fastapiClient.GraphEnhanceItem{}
 	}
 
 	items, err := fastapiClient.ParseGraphEnhanceResult(graphResult.Data)
 	if err != nil {
-		l.Warningf(utils.GRAPH_ENHANCE_DEGRADE_LOG,
+		l.Warningf(constants.GRAPH_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
 		return []fastapiClient.GraphEnhanceItem{}
 	}

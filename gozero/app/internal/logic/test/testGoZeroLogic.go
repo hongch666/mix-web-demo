@@ -4,6 +4,7 @@
 package test
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/utils"
@@ -29,7 +30,7 @@ func NewTestGoZeroLogic(ctx context.Context, svcCtx *svc.ServiceContext) *TestGo
 func (l *TestGoZeroLogic) TestGoZero() (resp *types.TestGoZeroResp, err error) {
 	// 直接返回GoZero的欢迎消息
 	resp = &types.TestGoZeroResp{
-		Data: utils.TEST_MESSAGE,
+		Data: constants.TEST_MESSAGE,
 	}
 	return
 }

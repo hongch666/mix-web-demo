@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"app/common/constants"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -67,7 +68,7 @@ func (s *ChatHub) JoinQueue(userID string, client *Client) {
 		client.ZeroLogger = s.ZeroLogger
 	}
 	if s.ZeroLogger != nil {
-		s.Info(utils.USER_JOINED_QUEUE_MESSAGE)
+		s.Info(constants.USER_JOINED_QUEUE_MESSAGE)
 	}
 }
 
@@ -82,7 +83,7 @@ func (s *ChatHub) LeaveQueue(userID string) {
 	}
 	chatQueue.mu.Unlock()
 	if s.ZeroLogger != nil {
-		s.Info(utils.USER_LEFT_QUEUE_MESSAGE)
+		s.Info(constants.USER_LEFT_QUEUE_MESSAGE)
 	}
 }
 
@@ -104,7 +105,7 @@ func (s *ChatHub) LeaveQueueIfMatch(userID string, connectionID string, client *
 	}
 	chatQueue.mu.Unlock()
 	if ok && exists && currentClient == client && s.ZeroLogger != nil {
-		s.Info(utils.USER_LEFT_QUEUE_MESSAGE)
+		s.Info(constants.USER_LEFT_QUEUE_MESSAGE)
 	}
 }
 
@@ -178,7 +179,7 @@ func (s *ChatHub) SendMessageToQueue(userID string, message []byte) bool {
 	}
 
 	if !sentAny && s.ZeroLogger != nil {
-		s.Warning(utils.USER_IN_QUEUE_NOT_CONNECTED_WARNING)
+		s.Warning(constants.USER_IN_QUEUE_NOT_CONNECTED_WARNING)
 	}
 
 	return sentAny
@@ -240,7 +241,7 @@ func (c *Client) ReadPump() {
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				if c.ZeroLogger != nil {
-					c.Error(fmt.Sprintf(utils.WS_ERROR, err))
+					c.Error(fmt.Sprintf(constants.WS_ERROR, err))
 				}
 			}
 			break
@@ -250,14 +251,14 @@ func (c *Client) ReadPump() {
 		var wsMessage WebSocketMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
 			if c.ZeroLogger != nil {
-				c.Error(fmt.Sprintf(utils.PARSE_MESSAGE_FAIL, err))
+				c.Error(fmt.Sprintf(constants.PARSE_MESSAGE_FAIL, err))
 			}
 			continue
 		}
 
 		// 处理ping消息
-		if wsMessage.Type == utils.HEARTBEAT_MESSAGE {
-			pongMessage := WebSocketMessage{Type: utils.HEARTBEAT_RESPONSE}
+		if wsMessage.Type == constants.HEARTBEAT_MESSAGE {
+			pongMessage := WebSocketMessage{Type: constants.HEARTBEAT_RESPONSE}
 			pongBytes, _ := json.Marshal(pongMessage)
 			if !c.SafeSend(pongBytes) {
 				return
@@ -272,7 +273,7 @@ func (c *Client) WritePump() {
 	for message := range c.Send {
 		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
 			if c.ZeroLogger != nil {
-				c.Error(fmt.Sprintf(utils.WS_WRITE_MESSAGE_FAIL, err))
+				c.Error(fmt.Sprintf(constants.WS_WRITE_MESSAGE_FAIL, err))
 			}
 			break
 		}

@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/utils"
@@ -28,7 +29,7 @@ func NewChatWebsocketLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 
 func (l *ChatWebsocketLogic) ChatWebsocket(req *types.ChatWsConnectReq) (resp *types.ChatWsConnectResp, err error) {
 	// WebSocket实时瘪天实现
-	l.Info(utils.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
+	l.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
 
 	return
 }

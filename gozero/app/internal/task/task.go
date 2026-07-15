@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"app/common/constants"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/task/logic"
@@ -23,7 +24,7 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
 		logger := svcCtx.Logger.WithContext(ctx)
-		lockKey := utils.LOCK_TASK_ES_SYNC
+		lockKey := constants.LOCK_TASK_ES_SYNC
 
 		// 尝试获取分布式锁
 		if svcCtx.RedisClient == nil {
@@ -33,28 +34,28 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 		}
 
 		lock := utils.NewRedisDistributedLock(svcCtx.RedisClient)
-		lockValue, err := lock.TryLock(ctx, lockKey, utils.LOCK_TASK_ES_SYNC_EXPIRE)
+		lockValue, err := lock.TryLock(ctx, lockKey, constants.LOCK_TASK_ES_SYNC_EXPIRE)
 		if err != nil {
-			logger.Error(fmt.Sprintf(utils.REDIS_LOCK_ACQUIRE_ERROR, err))
+			logger.Error(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_ERROR, err))
 			return
 		}
 		if lockValue == "" {
-			logger.Info(fmt.Sprintf(utils.REDIS_LOCK_ACQUIRE_FAIL, lockKey))
+			logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_FAIL, lockKey))
 			return
 		}
-		logger.Info(fmt.Sprintf(utils.REDIS_LOCK_ACQUIRE_SUCCESS, lockKey))
+		logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_SUCCESS, lockKey))
 
 		// 确保任务执行完毕后释放锁
 		defer func() {
 			released, unlockErr := lock.Unlock(ctx, lockKey, lockValue)
 			if unlockErr != nil {
-				logger.Error(fmt.Sprintf(utils.REDIS_LOCK_RELEASE_ERROR, unlockErr))
+				logger.Error(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_ERROR, unlockErr))
 				return
 			}
 			if released {
-				logger.Info(fmt.Sprintf(utils.REDIS_LOCK_RELEASE_SUCCESS, lockKey))
+				logger.Info(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_SUCCESS, lockKey))
 			} else {
-				logger.Info(fmt.Sprintf(utils.REDIS_LOCK_RELEASE_FAIL, lockKey))
+				logger.Info(fmt.Sprintf(constants.REDIS_LOCK_RELEASE_FAIL, lockKey))
 			}
 		}()
 
@@ -62,22 +63,22 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 	})
 	if err != nil {
 		if svcCtx.Logger != nil {
-			svcCtx.Logger.Error(fmt.Sprintf(utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
+			svcCtx.Logger.Error(fmt.Sprintf(constants.TASK_SYNC_ES_FAILED_MESSAGE, err))
 		}
 	}
 
 	TaskScheduler.Start()
 	if svcCtx.Logger != nil {
-		svcCtx.Logger.Info(utils.TASK_SCHEDULER_STARTED_MESSAGE)
+		svcCtx.Logger.Info(constants.TASK_SCHEDULER_STARTED_MESSAGE)
 	}
 }
 
 // executeESSync 执行 ES 同步任务
 func executeESSync(ctx context.Context, logger *utils.ZeroLogger, svcCtx *svc.ServiceContext) {
-	logger.Info(utils.TASK_SYNC_ES_STARTED_MESSAGE)
+	logger.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 	if err := logic.SyncArticlesToES(ctx, svcCtx); err != nil {
-		logger.Error(fmt.Sprintf(utils.TASK_SYNC_ES_FAILED_MESSAGE, err))
+		logger.Error(fmt.Sprintf(constants.TASK_SYNC_ES_FAILED_MESSAGE, err))
 		return
 	}
-	logger.Info(utils.TASK_SYNC_ES_COMPLETED_MESSAGE)
+	logger.Info(constants.TASK_SYNC_ES_COMPLETED_MESSAGE)
 }

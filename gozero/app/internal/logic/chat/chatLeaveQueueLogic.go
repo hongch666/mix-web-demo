@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 
 	"app/common/utils"
@@ -35,11 +36,11 @@ func (l *ChatLeaveQueueLogic) ChatLeaveQueue(req *types.ChatLeaveQueueReq) (resp
 	// 检查用户是否在队列中
 	if l.svcCtx.ChatHub.IsUserInQueue(req.UserId) {
 		l.svcCtx.ChatHub.LeaveQueue(req.UserId)
-		resp.Status = utils.USER_DISCONNECTED
+		resp.Status = constants.USER_DISCONNECTED
 	} else {
-		resp.Status = utils.USER_NOT_IN_QUEUE
+		resp.Status = constants.USER_NOT_IN_QUEUE
 	}
 
-	l.Info(utils.LEAVE_QUEUE_SUCCESS)
+	l.Info(constants.LEAVE_QUEUE_SUCCESS)
 	return
 }

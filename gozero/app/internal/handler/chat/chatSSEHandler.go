@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"net/http"
 
 	"app/common/utils"
@@ -21,8 +22,8 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 
 		if userID == "" {
-			svcCtx.Logger.Error(utils.USER_ID_LESS)
-			utils.Error(w, utils.HttpBadRequest, utils.USER_ID_LESS)
+			svcCtx.Logger.Error(constants.USER_ID_LESS)
+			utils.Error(w, utils.HttpBadRequest, constants.USER_ID_LESS)
 			return
 		}
 

@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"runtime/debug"
+
+	"app/common/constants"
 )
 
 type panicLogger interface {
@@ -14,7 +16,7 @@ func SafeGo(log panicLogger, taskName string, fn func()) {
 	go func() {
 		defer func() {
 			if err := recover(); err != nil {
-				message := fmt.Sprintf(SAFE_GO_PANIC_RECOVERED_MESSAGE, taskName, err, debug.Stack())
+				message := fmt.Sprintf(constants.SAFE_GO_PANIC_RECOVERED_MESSAGE, taskName, err, debug.Stack())
 				if log != nil {
 					log.Error(message)
 				}

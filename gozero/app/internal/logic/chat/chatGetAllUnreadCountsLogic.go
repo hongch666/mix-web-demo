@@ -4,6 +4,7 @@
 package chat
 
 import (
+	"app/common/constants"
 	"context"
 	"fmt"
 
@@ -32,11 +33,11 @@ func (l *ChatGetAllUnreadCountsLogic) ChatGetAllUnreadCounts(req *types.ChatGetA
 	// 获取用户与其他所有人的未读消息数
 	unreadCounts, err := l.svcCtx.ChatMessagesModel.GetAllUnreadCounts(l.ctx, req.UserId)
 	if err != nil {
-		l.Error(fmt.Sprintf(utils.GET_ALL_UNREAD_COUNTS_ERROR+": %v", err))
-		return nil, exceptions.NewInternalServerError(utils.GET_ALL_UNREAD_COUNTS_ERROR, err.Error())
+		l.Error(fmt.Sprintf(constants.GET_ALL_UNREAD_COUNTS_ERROR+": %v", err))
+		return nil, exceptions.NewInternalServerError(constants.GET_ALL_UNREAD_COUNTS_ERROR, err.Error())
 	}
 
-	l.Info(utils.GET_ALL_UNREAD_COUNTS_SUCCESS)
+	l.Info(constants.GET_ALL_UNREAD_COUNTS_SUCCESS)
 
 	resp = &types.ChatGetAllUnreadCountsResp{
 		Data: unreadCounts,

@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"app/common/constants"
 	"os"
 	"regexp"
 	"strconv"
@@ -137,14 +138,14 @@ func LoadConfig(configFile string) config.Config {
 	// 初始化日志系统
 	logger, err := utils.NewZeroLogger(logPath)
 	if err != nil {
-		logx.Errorf(utils.ZERO_LOGGER_INIT_FAIL, err)
+		logx.Errorf(constants.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)
 	}
 
 	// 读取配置文件内容
 	content, err := os.ReadFile(configFile)
 	if err != nil {
-		logger.Errorf(utils.READ_CONFIG_FILE_ERROR, configFile, err)
+		logger.Errorf(constants.READ_CONFIG_FILE_ERROR, configFile, err)
 		os.Exit(1)
 	}
 
@@ -154,7 +155,7 @@ func LoadConfig(configFile string) config.Config {
 	// 解析展开后的配置
 	var c config.Config
 	if err := conf.LoadFromYamlBytes([]byte(expandedContent), &c); err != nil {
-		logger.Errorf(utils.PARSE_CONFIG_FILE_ERROR, configFile, err)
+		logger.Errorf(constants.PARSE_CONFIG_FILE_ERROR, configFile, err)
 		os.Exit(1)
 	}
 
