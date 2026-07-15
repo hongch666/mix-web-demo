@@ -1,9 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as jwt from 'jsonwebtoken';
-import { BusinessException } from '../exceptions/business.exception';
-import { Constants } from './constants';
-import { HttpCode } from './httpCode';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as jwt from "jsonwebtoken";
+import { HttpCode, Messages } from "../constants";
+import { BusinessException } from "../exceptions/business.exception";
 
 interface InternalTokenClaims {
   userId: number;
@@ -23,16 +22,16 @@ export class InternalTokenUtil {
   private expiration: number;
 
   constructor(private readonly configService: ConfigService) {
-    this.secret = this.configService.get<string>('internal-token.secret')!;
+    this.secret = this.configService.get<string>("internal-token.secret")!;
     this.expiration = this.configService.get<number>(
-      'internal-token.expiration',
+      "internal-token.expiration",
     )!;
 
     if (!this.secret) {
       throw new BusinessException(
-        Constants.INTERNAL_TOKEN_SECRET_NOT_CONFIGURED,
+        Messages.INTERNAL_TOKEN_SECRET_NOT_CONFIGURED,
         HttpCode.INTERNAL_SERVER_ERROR,
-        'INTERNAL_TOKEN_SECRET_NOT_NULL',
+        "INTERNAL_TOKEN_SECRET_NOT_NULL",
       );
     }
   }
@@ -50,7 +49,7 @@ export class InternalTokenUtil {
     const claims: InternalTokenClaims = {
       userId,
       serviceName,
-      tokenType: 'internal',
+      tokenType: "internal",
     };
 
     // 计算过期时间（毫秒转秒）
@@ -71,15 +70,15 @@ export class InternalTokenUtil {
     } catch (error: unknown) {
       if (error instanceof jwt.TokenExpiredError) {
         throw new BusinessException(
-          Constants.INTERNAL_TOKEN_EXPIRED,
+          Messages.INTERNAL_TOKEN_EXPIRED,
           HttpCode.UNAUTHORIZED,
-          'INTERNAL_TOKEN_EXPIRED',
+          "INTERNAL_TOKEN_EXPIRED",
         );
       }
       throw new BusinessException(
-        Constants.INTERNAL_TOKEN_INVALID,
+        Messages.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,
-        'INTERNAL_TOKEN_INVALID',
+        "INTERNAL_TOKEN_INVALID",
       );
     }
   }

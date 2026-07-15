@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { ApiLogService } from './apiLog.service';
-import { ApiLogMessage, ApiMethod, CreateApiLogDto } from './dto/apiLog.dto';
+import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
+import { Injectable } from "@nestjs/common";
+import { Messages } from "src/common/constants";
+import { logger } from "src/common/utils/writeLog";
+import { ApiLogService } from "./apiLog.service";
+import { ApiLogMessage, ApiMethod, CreateApiLogDto } from "./dto/apiLog.dto";
 
 type RawApiLogMessage = Partial<ApiLogMessage> & {
   user_id?: number;
@@ -21,18 +21,18 @@ export class ApiLogConsumerService {
   constructor(private readonly apiLogService: ApiLogService) {}
 
   @RabbitSubscribe({
-    queue: 'api-log-queue',
+    queue: "api-log-queue",
   })
   async handleApiLog(msg: unknown): Promise<void> {
     try {
-      logger.info(Constants.API_RABBITMQ_START);
+      logger.info(Messages.API_RABBITMQ_START);
 
       // 处理两种消息格式：
       // 1. 对象
       // 2. JSON 字符串
       let apiLogData: RawApiLogMessage;
 
-      if (typeof msg === 'string') {
+      if (typeof msg === "string") {
         // 如果是字符串，尝试解析为 JSON
         apiLogData = JSON.parse(msg) as RawApiLogMessage;
         logger.info(`接收到 Spring 发送的 ApiLog 消息: ${String(msg)}`);
@@ -44,12 +44,11 @@ export class ApiLogConsumerService {
 
       const normalizedData: ApiLogMessage = {
         userId: apiLogData.userId ?? apiLogData.user_id ?? 0,
-        username: apiLogData.username || Constants.UNKNOWN_USERNAME,
+        username: apiLogData.username || Messages.UNKNOWN_USERNAME,
         apiDescription:
-          apiLogData.apiDescription ?? apiLogData.api_description ?? '',
-        apiPath: apiLogData.apiPath ?? apiLogData.api_path ?? '',
-        apiMethod: (apiLogData.apiMethod ??
-          apiLogData.api_method) as ApiMethod,
+          apiLogData.apiDescription ?? apiLogData.api_description ?? "",
+        apiPath: apiLogData.apiPath ?? apiLogData.api_path ?? "",
+        apiMethod: (apiLogData.apiMethod ?? apiLogData.api_method) as ApiMethod,
         queryParams: apiLogData.queryParams ?? apiLogData.query_params,
         pathParams: apiLogData.pathParams ?? apiLogData.path_params,
         requestBody: apiLogData.requestBody ?? apiLogData.request_body,
@@ -80,7 +79,7 @@ export class ApiLogConsumerService {
         queryParams: normalizedData.queryParams,
         pathParams: normalizedData.pathParams,
         requestBody:
-          typeof normalizedData.requestBody === 'string'
+          typeof normalizedData.requestBody === "string"
             ? { value: normalizedData.requestBody }
             : normalizedData.requestBody || undefined,
         responseTime: responseTime,
@@ -88,7 +87,7 @@ export class ApiLogConsumerService {
 
       // 保存到数据库
       await this.apiLogService.create(dto);
-      logger.info(Constants.API_SAVE);
+      logger.info(Messages.API_SAVE);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

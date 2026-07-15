@@ -1,21 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import dayjs from 'dayjs';
-import isLeapYear from 'dayjs/plugin/isLeapYear';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
-import { Model } from 'mongoose';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { CreateApiLogDto, QueryApiLogDto } from './dto/apiLog.dto';
-import { ApiLog, ApiLogDocument } from './schema/apiLog.schema';
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import dayjs from "dayjs";
+import isLeapYear from "dayjs/plugin/isLeapYear";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+import { Model } from "mongoose";
+import { Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { logger } from "src/common/utils/writeLog";
+import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
+import { ApiLog, ApiLogDocument } from "./schema/apiLog.schema";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(isLeapYear);
 
-const TIMEZONE = 'Asia/Shanghai';
+const TIMEZONE = "Asia/Shanghai";
 
 interface MongoIndexInfo {
   name?: string;
@@ -66,16 +66,16 @@ export class ApiLogService {
     }> = [
       {
         spec: { userId: 1, createdAt: -1 },
-        options: { name: 'userId_1_createdAt_-1' },
+        options: { name: "userId_1_createdAt_-1" },
       },
-      { spec: { createdAt: -1 }, options: { name: 'createdAt_-1' } },
+      { spec: { createdAt: -1 }, options: { name: "createdAt_-1" } },
       {
         spec: { apiPath: 1, createdAt: -1 },
-        options: { name: 'apiPath_1_createdAt_-1' },
+        options: { name: "apiPath_1_createdAt_-1" },
       },
       {
         spec: { userId: 1, apiMethod: 1, createdAt: -1 },
-        options: { name: 'userId_1_apiMethod_1_createdAt_-1' },
+        options: { name: "userId_1_apiMethod_1_createdAt_-1" },
       },
     ];
 
@@ -113,7 +113,7 @@ export class ApiLogService {
   async removeById(id: string): Promise<void> {
     const existingLog = await this.apiLogModel.findById(id).exec();
     if (!existingLog) {
-      throw BusinessException.notFound(Constants.API_LOG_NOT_FOUND);
+      throw BusinessException.notFound(Messages.API_LOG_NOT_FOUND);
     }
     this.apiLogModel.findByIdAndDelete(id).exec();
   }
@@ -132,7 +132,7 @@ export class ApiLogService {
     // 找出不存在的ID
     const notFoundIds = ids.filter((id) => !existingIds.includes(id));
     if (notFoundIds.length > 0) {
-      throw BusinessException.notFound(Constants.API_LOG_PARTIAL_NOT_FOUND);
+      throw BusinessException.notFound(Messages.API_LOG_PARTIAL_NOT_FOUND);
     }
 
     this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
@@ -151,31 +151,25 @@ export class ApiLogService {
       apiMethod,
       startTime,
       endTime,
-      page = '1',
-      size = '10',
+      page = "1",
+      size = "10",
     } = query;
 
     const filters: Record<string, unknown> = {};
 
     if (userId) filters.userId = Number(userId);
-    if (username) filters.username = { $regex: username, $options: 'i' };
+    if (username) filters.username = { $regex: username, $options: "i" };
     if (apiDescription)
-      filters.apiDescription = { $regex: apiDescription, $options: 'i' };
-    if (apiPath) filters.apiPath = { $regex: apiPath, $options: 'i' };
+      filters.apiDescription = { $regex: apiDescription, $options: "i" };
+    if (apiPath) filters.apiPath = { $regex: apiPath, $options: "i" };
     if (apiMethod) filters.apiMethod = apiMethod;
 
     if (startTime || endTime) {
       const createdAtFilter: Record<string, Date> = {};
       if (startTime)
-        createdAtFilter.$gte = dayjs(
-          startTime,
-          'YYYY-MM-DD HH:mm:ss',
-        ).toDate();
+        createdAtFilter.$gte = dayjs(startTime, "YYYY-MM-DD HH:mm:ss").toDate();
       if (endTime)
-        createdAtFilter.$lte = dayjs(
-          endTime,
-          'YYYY-MM-DD HH:mm:ss',
-        ).toDate();
+        createdAtFilter.$lte = dayjs(endTime, "YYYY-MM-DD HH:mm:ss").toDate();
       filters.createdAt = createdAtFilter;
     }
 
@@ -205,10 +199,10 @@ export class ApiLogService {
       requestBody: log.requestBody,
       responseTime: log.responseTime,
       createdAt: log.createdAt
-        ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+        ? dayjs(log.createdAt).tz(TIMEZONE).format("YYYY-MM-DD HH:mm:ss")
         : undefined,
       updatedAt: log.updatedAt
-        ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+        ? dayjs(log.updatedAt).tz(TIMEZONE).format("YYYY-MM-DD HH:mm:ss")
         : undefined,
     }));
 

@@ -1,11 +1,10 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { ClsService } from 'nestjs-cls';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { HttpCode } from 'src/common/utils/httpCode';
-import { UserService } from 'src/module/common/user/user.service';
-import { REQUIRE_ADMIN_KEY } from '../decorators/requireAdmin.decorator';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ClsService } from "nestjs-cls";
+import { HttpCode, Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { UserService } from "src/module/common/user/user.service";
+import { REQUIRE_ADMIN_KEY } from "../decorators/requireAdmin.decorator";
 
 @Injectable()
 export class RequireAdminGuard implements CanActivate {
@@ -25,13 +24,13 @@ export class RequireAdminGuard implements CanActivate {
       return true;
     }
 
-    const userId: number | undefined = this.cls.get<number>('userId');
+    const userId: number | undefined = this.cls.get<number>("userId");
 
     if (!userId) {
       throw new BusinessException(
-        Constants.UNAUTHORIZED_USER,
+        Messages.UNAUTHORIZED_USER,
         HttpCode.FORBIDDEN,
-        'UNAUTHORIZED_USER',
+        "UNAUTHORIZED_USER",
       );
     }
 
@@ -39,9 +38,9 @@ export class RequireAdminGuard implements CanActivate {
 
     if (!isAdmin) {
       throw new BusinessException(
-        Constants.NO_ADMIN_USER,
+        Messages.NO_ADMIN_USER,
         HttpCode.FORBIDDEN,
-        'NO_ADMIN_PERMISSION',
+        "NO_ADMIN_PERMISSION",
       );
     }
 

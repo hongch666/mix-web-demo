@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as nodemailer from 'nodemailer';
-import { Constants } from 'src/common/utils/constants';
-import { InternalEmailCodeSendDto } from './dto/mail.dto';
-import { buildEmailContent } from './templates/mail.template';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import * as nodemailer from "nodemailer";
+import { Messages } from "src/common/constants";
+import { InternalEmailCodeSendDto } from "./dto/mail.dto";
+import { buildEmailContent } from "./templates/mail.template";
 
 @Injectable()
 export class MailService {
@@ -12,25 +12,25 @@ export class MailService {
 
   constructor(private readonly configService: ConfigService) {
     const host: string | undefined =
-      this.configService.get<string>('mail.host');
+      this.configService.get<string>("mail.host");
     const port: string | undefined =
-      this.configService.get<string>('mail.port');
+      this.configService.get<string>("mail.port");
     const secureVal: string | undefined =
-      this.configService.get<string>('mail.secure');
+      this.configService.get<string>("mail.secure");
     const username: string | undefined =
-      this.configService.get<string>('mail.username');
+      this.configService.get<string>("mail.username");
     const password: string | undefined =
-      this.configService.get<string>('mail.password');
+      this.configService.get<string>("mail.password");
 
     if (!username || !password) {
-      this.logger.warn(Constants.MAIL_SERVICE_CONFIG_INCOMPLETE);
+      this.logger.warn(Messages.MAIL_SERVICE_CONFIG_INCOMPLETE);
       return;
     }
 
     this.transporter = nodemailer.createTransport({
       host,
       port: Number(port),
-      secure: secureVal === 'true' || secureVal === '1',
+      secure: secureVal === "true" || secureVal === "1",
       auth: {
         user: username,
         pass: password,
@@ -42,16 +42,16 @@ export class MailService {
     const { email, code, type, expireMinutes = 10 } = dto;
 
     // 脱敏记录日志，不打印完整验证码
-    const maskedEmail: string = email.replace(/(.{3}).+(.{2}@)/, '$1***$2');
+    const maskedEmail: string = email.replace(/(.{3}).+(.{2}@)/, "$1***$2");
     this.logger.log(`发送验证码邮件到: ${maskedEmail}, 场景: ${type}`);
 
     if (!this.transporter) {
-      throw new Error(Constants.MAIL_SERVICE_CONFIG_INCORRECT);
+      throw new Error(Messages.MAIL_SERVICE_CONFIG_INCORRECT);
     }
 
     const from: string | undefined =
-      this.configService.get<string>('mail.from') ||
-      this.configService.get<string>('mail.username');
+      this.configService.get<string>("mail.from") ||
+      this.configService.get<string>("mail.username");
 
     // 异步发送邮件，不阻塞调用方，发送结果通过日志记录，不影响主流程
     this.transporter
@@ -74,14 +74,14 @@ export class MailService {
 
   private getSubject(type: string): string {
     switch (type) {
-      case 'register':
-        return Constants.EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT;
-      case 'login':
-        return Constants.EMAIL_VERIFICATION_CODE_LOGIN_SUBJECT;
-      case 'reset':
-        return Constants.EMAIL_VERIFICATION_CODE_RESET_SUBJECT;
+      case "register":
+        return Messages.EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT;
+      case "login":
+        return Messages.EMAIL_VERIFICATION_CODE_LOGIN_SUBJECT;
+      case "reset":
+        return Messages.EMAIL_VERIFICATION_CODE_RESET_SUBJECT;
       default:
-        return Constants.EMAIL_VERIFICATION_CODE_SUBJECT;
+        return Messages.EMAIL_VERIFICATION_CODE_SUBJECT;
     }
   }
 }

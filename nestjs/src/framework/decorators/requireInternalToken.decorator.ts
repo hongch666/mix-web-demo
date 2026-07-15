@@ -1,8 +1,8 @@
-import { SetMetadata, applyDecorators } from '@nestjs/common';
+import { SetMetadata, applyDecorators } from "@nestjs/common";
 
-export const REQUIRE_INTERNAL_TOKEN_KEY = 'require_internal_token';
+export const REQUIRE_INTERNAL_TOKEN_KEY = "require_internal_token";
 export const REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY =
-  'require_internal_token_service_name';
+  "require_internal_token_service_name";
 
 /**
  * 需要内部服务令牌验证的装饰器
@@ -11,7 +11,7 @@ export const REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY =
  * @example
  * @RequireInternalToken()
  * async getSpring() {
- *   return success(Constants.TEST);
+ *   return success(Messages.TEST);
  * }
  *
  * @RequireInternalToken('spring')

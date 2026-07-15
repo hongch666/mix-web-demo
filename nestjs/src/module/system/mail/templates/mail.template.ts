@@ -1,4 +1,4 @@
-import { Constants } from 'src/common/utils/constants';
+import { Messages } from "src/common/constants";
 
 /**
  * 构建验证码邮件 HTML 内容
@@ -13,18 +13,18 @@ export function buildEmailContent(
   expireMinutes: number,
 ): string {
   const now = new Date();
-  const formattedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const formattedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
-  let title = Constants.EMAIL_VERIFICATION_CODE_SUBJECT;
+  let title = Messages.EMAIL_VERIFICATION_CODE_SUBJECT;
   switch (type) {
-    case 'register':
-      title = Constants.EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT;
+    case "register":
+      title = Messages.EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT;
       break;
-    case 'login':
-      title = Constants.EMAIL_VERIFICATION_CODE_LOGIN_SUBJECT;
+    case "login":
+      title = Messages.EMAIL_VERIFICATION_CODE_LOGIN_SUBJECT;
       break;
-    case 'reset':
-      title = Constants.EMAIL_VERIFICATION_CODE_RESET_SUBJECT;
+    case "reset":
+      title = Messages.EMAIL_VERIFICATION_CODE_RESET_SUBJECT;
       break;
   }
 

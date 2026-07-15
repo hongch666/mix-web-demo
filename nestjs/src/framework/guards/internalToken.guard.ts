@@ -1,14 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { HttpCode } from 'src/common/utils/httpCode';
-import { InternalTokenUtil } from 'src/common/utils/internalToken.util';
-import { logger } from 'src/common/utils/writeLog';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { HttpCode, Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { InternalTokenUtil } from "src/common/utils/internalToken.util";
+import { logger } from "src/common/utils/writeLog";
 import {
   REQUIRE_INTERNAL_TOKEN_KEY,
   REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY,
-} from '../decorators/requireInternalToken.decorator';
+} from "../decorators/requireInternalToken.decorator";
 
 /**
  * 内部服务令牌验证守卫
@@ -16,8 +15,8 @@ import {
  */
 @Injectable()
 export class InternalTokenGuard implements CanActivate {
-  private static readonly INTERNAL_TOKEN_HEADER = 'x-internal-token';
-  private static readonly BEARER_PREFIX = 'Bearer ';
+  private static readonly INTERNAL_TOKEN_HEADER = "x-internal-token";
+  private static readonly BEARER_PREFIX = "Bearer ";
 
   constructor(
     private readonly reflector: Reflector,
@@ -42,11 +41,11 @@ export class InternalTokenGuard implements CanActivate {
     const internalToken = this.extractInternalToken(request);
 
     if (!internalToken) {
-      logger.error(Constants.INTERNAL_TOKEN_MISSING);
+      logger.error(Messages.INTERNAL_TOKEN_MISSING);
       throw new BusinessException(
-        Constants.INTERNAL_TOKEN_MISSING,
+        Messages.INTERNAL_TOKEN_MISSING,
         HttpCode.UNAUTHORIZED,
-        'INTERNAL_TOKEN_MISSING',
+        "INTERNAL_TOKEN_MISSING",
       );
     }
 
@@ -64,12 +63,12 @@ export class InternalTokenGuard implements CanActivate {
 
       if (requiredServiceName && requiredServiceName !== claims.serviceName) {
         logger.error(
-          `${Constants.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${claims.serviceName}`,
+          `${Messages.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${claims.serviceName}`,
         );
         throw new BusinessException(
-          Constants.SERVICE_NAME_MISMATCH,
+          Messages.SERVICE_NAME_MISMATCH,
           HttpCode.FORBIDDEN,
-          'INTERNAL_TOKEN_SERVICE_MISMATCH',
+          "INTERNAL_TOKEN_SERVICE_MISMATCH",
         );
       }
 
@@ -84,9 +83,9 @@ export class InternalTokenGuard implements CanActivate {
       const message = error instanceof Error ? error.message : String(error);
       logger.error(`令牌验证失败: ${message}`);
       throw new BusinessException(
-        Constants.INTERNAL_TOKEN_INVALID,
+        Messages.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,
-        'INTERNAL_TOKEN_INVALID',
+        "INTERNAL_TOKEN_INVALID",
       );
     }
   }
@@ -102,11 +101,11 @@ export class InternalTokenGuard implements CanActivate {
     ];
     if (
       authHeader &&
-      typeof authHeader === 'string' &&
+      typeof authHeader === "string" &&
       authHeader.startsWith(InternalTokenGuard.BEARER_PREFIX)
     ) {
       return authHeader.substring(InternalTokenGuard.BEARER_PREFIX.length);
     }
-    return typeof authHeader === 'string' ? authHeader : null;
+    return typeof authHeader === "string" ? authHeader : null;
   }
 }

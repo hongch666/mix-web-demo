@@ -1,16 +1,15 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios, { Method } from 'axios';
-import type { NacosInstance } from 'nacos';
-import { NacosNamingClient } from 'nacos';
-import { ClsService } from 'nestjs-cls';
-import * as os from 'os';
-import qs from 'qs';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { HttpCode } from 'src/common/utils/httpCode';
-import { InternalTokenUtil } from 'src/common/utils/internalToken.util';
-import { logger } from 'src/common/utils/writeLog';
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import axios, { Method } from "axios";
+import type { NacosInstance } from "nacos";
+import { NacosNamingClient } from "nacos";
+import { ClsService } from "nestjs-cls";
+import * as os from "os";
+import qs from "qs";
+import { ErrorIds, HttpCode, Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { InternalTokenUtil } from "src/common/utils/internalToken.util";
+import { logger } from "src/common/utils/writeLog";
 
 interface CallOptions {
   serviceName: string;
@@ -23,9 +22,9 @@ interface CallOptions {
 }
 
 class CircuitBreakerOpenError extends Error {
-  constructor(message = Constants.CIRCUIT_BREAKER_OPEN) {
+  constructor(message = Messages.CIRCUIT_BREAKER_OPEN) {
     super(message);
-    this.name = 'CircuitBreakerOpenError';
+    this.name = "CircuitBreakerOpenError";
   }
 }
 
@@ -79,16 +78,16 @@ export class NacosService implements OnModuleInit {
     silentLogger.debug = (): void => {};
     silentLogger.warn = (): void => {};
 
-    const nacosHost: string = this.configService.get<string>('nacos.host')!;
+    const nacosHost: string = this.configService.get<string>("nacos.host")!;
     if (!nacosHost) {
       throw BusinessException.internalServerError(
-        Constants.NACOS_HOST_NOT_CONFIGURED,
+        Messages.NACOS_HOST_NOT_CONFIGURED,
       );
     }
-    const nacosPort: string = this.configService.get<string>('nacos.port')!;
+    const nacosPort: string = this.configService.get<string>("nacos.port")!;
     if (!nacosPort) {
       throw BusinessException.internalServerError(
-        Constants.NACOS_PORT_NOT_CONFIGURED,
+        Messages.NACOS_PORT_NOT_CONFIGURED,
       );
     }
     const nacosServerList: string = this.resolveNacosServerList(
@@ -96,12 +95,12 @@ export class NacosService implements OnModuleInit {
       nacosPort,
     );
     const serverMode: string = this.configService
-      .get<string>('server.mode')!
+      .get<string>("server.mode")!
       .trim()
       .toLowerCase();
     if (!serverMode) {
       throw BusinessException.internalServerError(
-        Constants.SERVER_MODE_NOT_CONFIGURED,
+        Messages.SERVER_MODE_NOT_CONFIGURED,
       );
     }
 
@@ -110,20 +109,20 @@ export class NacosService implements OnModuleInit {
       // Nacos 服务地址，默认端口为 8848
       serverList: nacosServerList,
       // 命名空间 ID
-      namespace: this.configService.get<string>('nacos.namespace')!,
+      namespace: this.configService.get<string>("nacos.namespace")!,
     });
 
     await this.client.ready();
 
     // 获取注册的 IP 地址，处理本地地址
-    let registrationIp = this.configService.get<string>('server.ip')!;
-    if (serverMode === 'dev') {
-      registrationIp = '127.0.0.1';
-      logger.info(Constants.REGISTER_NACOS_DEV_MODE);
+    let registrationIp = this.configService.get<string>("server.ip")!;
+    if (serverMode === "dev") {
+      registrationIp = "127.0.0.1";
+      logger.info(Messages.REGISTER_NACOS_DEV_MODE);
     } else if (
       !registrationIp ||
-      registrationIp === '127.0.0.1' ||
-      registrationIp === '0.0.0.0'
+      registrationIp === "127.0.0.1" ||
+      registrationIp === "0.0.0.0"
     ) {
       // 自动解析
       registrationIp = this.getLocalIp();
@@ -132,23 +131,23 @@ export class NacosService implements OnModuleInit {
 
     // 注册当前服务
     await this.client.registerInstance(
-      this.configService.get<string>('server.serviceName')!,
+      this.configService.get<string>("server.serviceName")!,
       {
         ip: registrationIp,
-        port: this.configService.get<string>('server.port')!,
+        port: this.configService.get<string>("server.port")!,
         weight: 1,
         ephemeral: true,
-        clusterName: this.configService.get<string>('nacos.clusterName')!,
-        serviceName: this.configService.get<string>('server.serviceName')!,
+        clusterName: this.configService.get<string>("nacos.clusterName")!,
+        serviceName: this.configService.get<string>("server.serviceName")!,
         enabled: true,
         healthy: true,
         metadata: {
-          version: '1.0.0',
+          version: "1.0.0",
         },
       },
     );
 
-    logger.info(Constants.REGISTER_NACOS);
+    logger.info(Messages.REGISTER_NACOS);
   }
 
   /**
@@ -161,7 +160,7 @@ export class NacosService implements OnModuleInit {
       if (!networkInterface) continue;
       for (const addr of networkInterface) {
         // 获取第一个非本地地址的 IPv4 地址
-        if (addr.family === 'IPv4' && !addr.internal) {
+        if (addr.family === "IPv4" && !addr.internal) {
           return addr.address;
         }
       }
@@ -177,9 +176,9 @@ export class NacosService implements OnModuleInit {
    */
   private resolveNacosServerList(host: string, port: string): string {
     const trimmedHost = host.trim();
-    const trimmedPort = port.trim() || '8848';
+    const trimmedPort = port.trim() || "8848";
 
-    if (trimmedHost.includes(':') && !trimmedHost.startsWith('[')) {
+    if (trimmedHost.includes(":") && !trimmedHost.startsWith("[")) {
       return trimmedHost;
     }
 
@@ -213,7 +212,7 @@ export class NacosService implements OnModuleInit {
     if (!instances || instances.length === 0) {
       throw BusinessException.serviceUnavailable(
         `服务 ${opts.serviceName} 无可用实例`,
-        'NO_AVAILABLE_SERVICE_INSTANCE',
+        "NO_AVAILABLE_SERVICE_INSTANCE",
       );
     }
 
@@ -232,18 +231,18 @@ export class NacosService implements OnModuleInit {
     // 拼接 URL
     const queryString: string = opts.queryParams
       ? `?${qs.stringify(opts.queryParams)}`
-      : '';
+      : "";
     const url: string = `http://${instance.ip}:${instance.port}${path}${queryString}`;
 
     // 默认请求头
-    const userId: number = this.cls.get<number>('userId') || 0;
-    const userName: string = this.cls.get<string>('username') || '';
+    const userId: number = this.cls.get<number>("userId") || 0;
+    const userName: string = this.cls.get<string>("username") || "";
     // 将非 ASCII 字符替换为安全字符（RFC 7230 要求 header 值为 ASCII）
     const safeUserName: string =
-      userName.replace(/[^\x20-\x7E]/g, '').trim() || 'system';
+      userName.replace(/[^\x20-\x7E]/g, "").trim() || "system";
     const defaultHeaders: Record<string, string> = {
-      'X-User-Id': String(userId || 0),
-      'X-Username': safeUserName,
+      "X-User-Id": String(userId || 0),
+      "X-Username": safeUserName,
     };
 
     // 生成并添加内部服务令牌 (没有用户ID时用-1代表系统调用)
@@ -251,9 +250,9 @@ export class NacosService implements OnModuleInit {
     const internalToken: string =
       await this.internalTokenUtil.generateInternalToken(
         finalUserId,
-        this.configService.get<string>('server.serviceName')!,
+        this.configService.get<string>("server.serviceName")!,
       );
-    defaultHeaders['X-Internal-Token'] = `Bearer ${internalToken}`;
+    defaultHeaders["X-Internal-Token"] = `Bearer ${internalToken}`;
 
     // 合并默认请求头和自定义请求头
     const headers: Record<string, string> = {
@@ -276,12 +275,12 @@ export class NacosService implements OnModuleInit {
       const responseData: Record<string, unknown> = response.data;
       if (responseData.code !== HttpCode.OK) {
         const errorMsg: string =
-          (responseData.msg as string) || Constants.UNKNOWN_ERROR;
+          (responseData.msg as string) || Messages.UNKNOWN_ERROR;
         const logMessage: string = `服务 ${opts.serviceName} 返回业务错误: code=${String(responseData.code)}, msg=${errorMsg}`;
         logger.error(logMessage);
         throw BusinessException.badGateway(
           `调用 ${opts.serviceName} 失败: ${errorMsg}`,
-          Constants.SERVICE_CALL_FAILED,
+          ErrorIds.SERVICE_CALL_FAILED,
         );
       }
 
@@ -303,7 +302,7 @@ export class NacosService implements OnModuleInit {
       );
       throw BusinessException.badGateway(
         `调用 ${opts.serviceName} 失败，请稍后重试`,
-        'SERVICE_CALL_FAILED',
+        "SERVICE_CALL_FAILED",
       );
     }
   }

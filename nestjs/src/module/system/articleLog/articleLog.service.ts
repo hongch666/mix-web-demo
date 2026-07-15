@@ -1,23 +1,23 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import dayjs from 'dayjs';
-import isLeapYear from 'dayjs/plugin/isLeapYear';
-import timezone from 'dayjs/plugin/timezone';
-import utc from 'dayjs/plugin/utc';
-import { DeleteResult, Model } from 'mongoose';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { ArticleService } from 'src/module/common/article/article.service';
-import { UserService } from 'src/module/common/user/user.service';
-import { CreateArticleLogDto, QueryArticleLogDto } from './dto/articleLog.dto';
-import { ArticleLog, ArticleLogDocument } from './schema/articleLog.schema';
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import dayjs from "dayjs";
+import isLeapYear from "dayjs/plugin/isLeapYear";
+import timezone from "dayjs/plugin/timezone";
+import utc from "dayjs/plugin/utc";
+import { DeleteResult, Model } from "mongoose";
+import { Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { logger } from "src/common/utils/writeLog";
+import { ArticleService } from "src/module/common/article/article.service";
+import { UserService } from "src/module/common/user/user.service";
+import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
+import { ArticleLog, ArticleLogDocument } from "./schema/articleLog.schema";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(isLeapYear);
 
-const TIMEZONE = 'Asia/Shanghai';
+const TIMEZONE = "Asia/Shanghai";
 
 interface MongoIndexInfo {
   name?: string;
@@ -66,22 +66,22 @@ export class ArticleLogService {
       spec: Record<string, 1 | -1>;
       options: { name: string };
     }> = [
-      { spec: { createdAt: -1 }, options: { name: 'createdAt_-1' } },
+      { spec: { createdAt: -1 }, options: { name: "createdAt_-1" } },
       {
         spec: { userId: 1, createdAt: -1 },
-        options: { name: 'userId_1_createdAt_-1' },
+        options: { name: "userId_1_createdAt_-1" },
       },
       {
         spec: { articleId: 1, createdAt: -1 },
-        options: { name: 'articleId_1_createdAt_-1' },
+        options: { name: "articleId_1_createdAt_-1" },
       },
       {
         spec: { action: 1, createdAt: -1 },
-        options: { name: 'action_1_createdAt_-1' },
+        options: { name: "action_1_createdAt_-1" },
       },
       {
         spec: { userId: 1, action: 1, articleId: 1 },
-        options: { name: 'userId_1_action_1_articleId_1' },
+        options: { name: "userId_1_action_1_articleId_1" },
       },
     ];
 
@@ -113,7 +113,7 @@ export class ArticleLogService {
       .findById(id)
       .exec();
     if (!existingLog) {
-      throw BusinessException.notFound(Constants.ARTICLE_LOG_NOT_FOUND);
+      throw BusinessException.notFound(Messages.ARTICLE_LOG_NOT_FOUND);
     }
     return this.logModel.findByIdAndDelete(id).exec();
   }
@@ -132,7 +132,7 @@ export class ArticleLogService {
       (id: string) => !existingIds.includes(id),
     );
     if (notFoundIds.length > 0) {
-      throw BusinessException.notFound(Constants.ARTICLE_LOG_PARTIAL_NOT_FOUND);
+      throw BusinessException.notFound(Messages.ARTICLE_LOG_PARTIAL_NOT_FOUND);
     }
 
     return this.logModel.deleteMany({ _id: { $in: ids } }).exec();
@@ -147,8 +147,8 @@ export class ArticleLogService {
       action,
       startTime,
       endTime,
-      page = '1',
-      size = '10',
+      page = "1",
+      size = "10",
     } = query;
 
     const filters: Record<string, unknown> = {};
@@ -187,9 +187,9 @@ export class ArticleLogService {
     if (startTime || endTime) {
       const createdAtFilter: Record<string, Date> = {};
       if (startTime)
-        createdAtFilter.$gte = dayjs(startTime, 'YYYY-MM-DD HH:mm:ss').toDate();
+        createdAtFilter.$gte = dayjs(startTime, "YYYY-MM-DD HH:mm:ss").toDate();
       if (endTime)
-        createdAtFilter.$lte = dayjs(endTime, 'YYYY-MM-DD HH:mm:ss').toDate();
+        createdAtFilter.$lte = dayjs(endTime, "YYYY-MM-DD HH:mm:ss").toDate();
       filters.createdAt = createdAtFilter;
     }
 
@@ -244,17 +244,17 @@ export class ArticleLogService {
       (log: ArticleLogDocument): ArticleLogListItem => ({
         _id: log._id,
         userId: log.userId,
-        username: userMap.get(log.userId) || '',
+        username: userMap.get(log.userId) || "",
         articleId: log.articleId,
-        articleTitle: articleMap.get(log.articleId) || '',
+        articleTitle: articleMap.get(log.articleId) || "",
         action: log.action,
         content: log.content,
         msg: log.msg,
         createdAt: log.createdAt
-          ? dayjs(log.createdAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+          ? dayjs(log.createdAt).tz(TIMEZONE).format("YYYY-MM-DD HH:mm:ss")
           : undefined,
         updatedAt: log.updatedAt
-          ? dayjs(log.updatedAt).tz(TIMEZONE).format('YYYY-MM-DD HH:mm:ss')
+          ? dayjs(log.updatedAt).tz(TIMEZONE).format("YYYY-MM-DD HH:mm:ss")
           : undefined,
       }),
     );

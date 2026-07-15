@@ -1,17 +1,17 @@
+import { AmqpConnection } from "@golevelup/nestjs-rabbitmq";
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
   NestInterceptor,
-} from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { Reflector } from '@nestjs/core';
-import { ClsService } from 'nestjs-cls';
-import { Observable } from 'rxjs';
-import { finalize } from 'rxjs/operators';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { API_LOG_KEY, ApiLogOptions } from '../decorators/apiLog.decorator';
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ClsService } from "nestjs-cls";
+import { Observable } from "rxjs";
+import { finalize } from "rxjs/operators";
+import { Messages } from "src/common/constants";
+import { logger } from "src/common/utils/writeLog";
+import { API_LOG_KEY, ApiLogOptions } from "../decorators/apiLog.decorator";
 
 @Injectable()
 export class ApiLogInterceptor implements NestInterceptor {
@@ -33,28 +33,28 @@ export class ApiLogInterceptor implements NestInterceptor {
     const request: Record<string, unknown> = context
       .switchToHttp()
       .getRequest();
-    const method: string = (request.method as string) || 'UNKNOWN';
+    const method: string = (request.method as string) || "UNKNOWN";
     const url: string = (() => {
       if (
         request.route &&
-        typeof request.route === 'object' &&
-        'path' in request.route
+        typeof request.route === "object" &&
+        "path" in request.route
       ) {
         const path = (request.route as Record<string, unknown>).path;
-        if (typeof path === 'string' && path) {
+        if (typeof path === "string" && path) {
           return path;
         }
       }
-      if (typeof request.url === 'string') {
-        const splitUrl = request.url.split('?')[0];
-        return splitUrl || 'UNKNOWN';
+      if (typeof request.url === "string") {
+        const splitUrl = request.url.split("?")[0];
+        return splitUrl || "UNKNOWN";
       }
-      return 'UNKNOWN';
+      return "UNKNOWN";
     })();
 
     // 获取用户信息
-    const userId: number = this.cls.get<number>('userId') || 0;
-    const username: string = this.cls.get<string>('username') || 'unknown';
+    const userId: number = this.cls.get<number>("userId") || 0;
+    const username: string = this.cls.get<string>("username") || "unknown";
 
     // 构建基础日志消息
     let logMessage: string = `用户${userId}:${username} ${method} ${url}: ${logConfig.message}`;
@@ -71,7 +71,7 @@ export class ApiLogInterceptor implements NestInterceptor {
     }
 
     // 记录日志
-    const logLevel: string = logConfig.logLevel || 'info';
+    const logLevel: string = logConfig.logLevel || "info";
     if (logLevel in logger) {
       (logger[logLevel as keyof typeof logger] as (message: string) => void)(
         logMessage,
@@ -86,7 +86,7 @@ export class ApiLogInterceptor implements NestInterceptor {
         // 计算耗时
         const responseTime: number = Date.now() - start;
         const timeMessage: string = `${method} ${url} 使用了${responseTime}ms`;
-        const timeLogLevel: string = logConfig.logLevel || 'info';
+        const timeLogLevel: string = logConfig.logLevel || "info";
         if (timeLogLevel in logger) {
           (
             logger[timeLogLevel as keyof typeof logger] as (
@@ -131,24 +131,24 @@ export class ApiLogInterceptor implements NestInterceptor {
       // 检查是否是 multipart/form-data 请求（文件上传）
       const contentType: string =
         typeof (request.headers as Record<string, unknown>)?.[
-          'content-type'
-        ] === 'string'
+          "content-type"
+        ] === "string"
           ? ((request.headers as Record<string, unknown>)[
-              'content-type'
+              "content-type"
             ] as string)
-          : '';
-      const isMultipart: boolean = contentType.includes('multipart/form-data');
+          : "";
+      const isMultipart: boolean = contentType.includes("multipart/form-data");
 
       // 提取查询参数
       const queryParams: Record<string, unknown> | null =
-        method === 'GET' && request.query
+        method === "GET" && request.query
           ? (request.query as Record<string, unknown>)
           : null;
 
       // 提取路径参数
       const pathParams: Record<string, unknown> | null =
         request.params &&
-        typeof request.params === 'object' &&
+        typeof request.params === "object" &&
         Object.keys(request.params as Record<string, unknown>).length > 0
           ? (request.params as Record<string, unknown>)
           : null;
@@ -157,9 +157,9 @@ export class ApiLogInterceptor implements NestInterceptor {
       let requestBody: Record<string, unknown> | null = null;
       if (
         !isMultipart &&
-        method !== 'GET' &&
+        method !== "GET" &&
         request.body &&
-        typeof request.body === 'object'
+        typeof request.body === "object"
       ) {
         requestBody = this.filterFields(
           request.body as Record<string, unknown>,
@@ -176,12 +176,12 @@ export class ApiLogInterceptor implements NestInterceptor {
         apiMethod: method,
         queryParams: queryParams,
         pathParams: pathParams,
-        requestBody: isMultipart ? '[文件上传]' : requestBody,
+        requestBody: isMultipart ? "[文件上传]" : requestBody,
         responseTime: responseTime,
       };
 
       // 发送到消息队列
-      this.amqpConnection.publish('', 'api-log-queue', apiLogMessage);
+      this.amqpConnection.publish("", "api-log-queue", apiLogMessage);
 
       logger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
     } catch (error: unknown) {
@@ -200,29 +200,29 @@ export class ApiLogInterceptor implements NestInterceptor {
       .switchToHttp()
       .getRequest();
     const method: string =
-      typeof request.method === 'string' ? request.method : 'UNKNOWN';
+      typeof request.method === "string" ? request.method : "UNKNOWN";
     const contentType: string =
-      typeof (request.headers as Record<string, unknown>)?.['content-type'] ===
-      'string'
+      typeof (request.headers as Record<string, unknown>)?.["content-type"] ===
+      "string"
         ? ((request.headers as Record<string, unknown>)[
-            'content-type'
+            "content-type"
           ] as string)
-        : '';
+        : "";
     const params: string[] = [];
 
     try {
       // 检查是否是 multipart/form-data 请求（文件上传）
-      if (contentType.includes('multipart/form-data')) {
-        params.push('RequestType: multipart/form-data [文件上传]');
-        return params.join('\n');
+      if (contentType.includes("multipart/form-data")) {
+        params.push("RequestType: multipart/form-data [文件上传]");
+        return params.join("\n");
       }
 
       // 处理不同类型的参数
-      if (method === 'GET') {
+      if (method === "GET") {
         // Query 参数
         if (
           request.query &&
-          typeof request.query === 'object' &&
+          typeof request.query === "object" &&
           Object.keys(request.query as Record<string, unknown>).length > 0
         ) {
           const filteredQuery: Record<string, unknown> = this.filterFields(
@@ -236,7 +236,7 @@ export class ApiLogInterceptor implements NestInterceptor {
         // Body 参数
         if (
           request.body &&
-          typeof request.body === 'object' &&
+          typeof request.body === "object" &&
           Object.keys(request.body as Record<string, unknown>).length > 0
         ) {
           const filteredBody: Record<string, unknown> = this.filterFields(
@@ -251,16 +251,16 @@ export class ApiLogInterceptor implements NestInterceptor {
       // Path 参数
       if (
         request.params &&
-        typeof request.params === 'object' &&
+        typeof request.params === "object" &&
         Object.keys(request.params as Record<string, unknown>).length > 0
       ) {
         const pathParamName: string = this.getPathParamName(context);
         params.push(`${pathParamName}: ${JSON.stringify(request.params)}`);
       }
 
-      return params.join('\n');
+      return params.join("\n");
     } catch {
-      return Constants.PARAM_ERROR;
+      return Messages.PARAM_ERROR;
     }
   }
 
@@ -271,13 +271,13 @@ export class ApiLogInterceptor implements NestInterceptor {
 
     // 根据方法名推断参数类型
     if (
-      handlerName.includes('find') ||
-      handlerName.includes('query') ||
-      handlerName.includes('search')
+      handlerName.includes("find") ||
+      handlerName.includes("query") ||
+      handlerName.includes("search")
     ) {
-      return 'QueryDto';
+      return "QueryDto";
     }
-    return 'Query参数';
+    return "Query参数";
   }
 
   private getBodyParamName(context: ExecutionContext): string {
@@ -286,12 +286,12 @@ export class ApiLogInterceptor implements NestInterceptor {
     const handlerName = handler.name;
 
     // 根据方法名推断参数类型
-    if (handlerName.includes('create')) {
-      return 'CreateDto';
-    } else if (handlerName.includes('update')) {
-      return 'UpdateDto';
+    if (handlerName.includes("create")) {
+      return "CreateDto";
+    } else if (handlerName.includes("update")) {
+      return "UpdateDto";
     }
-    return 'RequestBody';
+    return "RequestBody";
   }
 
   private getPathParamName(context: ExecutionContext): string {
@@ -299,7 +299,7 @@ export class ApiLogInterceptor implements NestInterceptor {
       .switchToHttp()
       .getRequest();
     const paramKeys: string[] =
-      request.params && typeof request.params === 'object'
+      request.params && typeof request.params === "object"
         ? Object.keys(request.params as Record<string, unknown>)
         : [];
 
@@ -310,9 +310,9 @@ export class ApiLogInterceptor implements NestInterceptor {
       }
     }
     if (paramKeys.length > 1) {
-      return 'PARAMS';
+      return "PARAMS";
     }
-    return 'PathParams';
+    return "PathParams";
   }
 
   private filterFields(

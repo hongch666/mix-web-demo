@@ -1,21 +1,26 @@
-import multipart from '@fastify/multipart';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
-import type { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
-import type { OpenAPIObject } from '@nestjs/swagger';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { HttpCode } from 'src/common/utils/httpCode';
-import { applySwaggerSnakeCase } from 'src/common/utils/swaggerSnakeCase';
-import { logger } from 'src/common/utils/writeLog';
-import { AllExceptionsFilter } from 'src/framework/filters/allException.filter';
-import { FieldNamingInterceptor } from 'src/framework/interceptors/fieldNaming.interceptor';
-import { Constants } from '../common/utils/constants';
-import { AppModule } from './app.module';
+import multipart from "@fastify/multipart";
+import { ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { NestFactory } from "@nestjs/core";
+import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import { FastifyAdapter } from "@nestjs/platform-fastify";
+import type { OpenAPIObject } from "@nestjs/swagger";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import {
+  Defaults,
+  HttpCode,
+  Messages,
+  SwaggerConfig,
+} from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { applySwaggerSnakeCase } from "src/common/utils/swaggerSnakeCase";
+import { logger } from "src/common/utils/writeLog";
+import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
+import { FieldNamingInterceptor } from "src/framework/interceptors/fieldNaming.interceptor";
 
-type FastifyRegisterPlugin = Parameters<NestFastifyApplication['register']>[0];
+import { AppModule } from "./app.module";
+
+type FastifyRegisterPlugin = Parameters<NestFastifyApplication["register"]>[0];
 
 function extractValidationMessage(errors: unknown[]): string {
   const messages: string[] = [];
@@ -37,9 +42,7 @@ function extractValidationMessage(errors: unknown[]): string {
     }
   }
 
-  return messages.length > 0
-    ? messages.join('; ')
-    : Constants.ERROR_DEFAULT_MSG;
+  return messages.length > 0 ? messages.join("; ") : Messages.ERROR_DEFAULT_MSG;
 }
 
 export async function createApp(): Promise<NestFastifyApplication> {
@@ -68,20 +71,20 @@ export async function createApp(): Promise<NestFastifyApplication> {
 
   // Swagger 配置
   const swaggerBuilder = new DocumentBuilder()
-    .setTitle(Constants.SWAGGER_TITLE)
-    .setDescription(Constants.SWAGGER_DESCRIPTION)
-    .setVersion(Constants.SWAGGER_VERSION);
+    .setTitle(SwaggerConfig.SWAGGER_TITLE)
+    .setDescription(SwaggerConfig.SWAGGER_DESCRIPTION)
+    .setVersion(SwaggerConfig.SWAGGER_VERSION);
 
   // 注册 Swagger 标签描述
-  Constants.SWAGGER_TAGS.forEach(([name, description]) => {
+  SwaggerConfig.SWAGGER_TAGS.forEach(([name, description]) => {
     swaggerBuilder.addTag(name, description);
   });
 
-  const config: Omit<OpenAPIObject, 'paths'> = swaggerBuilder.build();
+  const config: Omit<OpenAPIObject, "paths"> = swaggerBuilder.build();
   const document: OpenAPIObject = applySwaggerSnakeCase(
     SwaggerModule.createDocument(app, config),
   );
-  SwaggerModule.setup(Constants.SWAGGER_PATH, app, document);
+  SwaggerModule.setup(SwaggerConfig.SWAGGER_PATH, app, document);
 
   // 注册全局异常过滤器
   app.useGlobalFilters(new AllExceptionsFilter());
@@ -97,17 +100,17 @@ export async function createApp(): Promise<NestFastifyApplication> {
         return new BusinessException(
           message,
           HttpCode.BAD_REQUEST,
-          'PARAM_PARSE_FAILED',
+          "PARAM_PARSE_FAILED",
         );
       },
     }),
   );
   // 读取yaml文件中的端口和IP
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
-  const port: number = configService.get<number>('server.port')!;
-  const ip: string = Constants.INIT_IP;
+  const port: number = configService.get<number>("server.port")!;
+  const ip: string = Defaults.INIT_IP;
   // 输出启动信息和Swagger地址
-  logger.info(Constants.START_WELCOME);
+  logger.info(Messages.START_WELCOME);
   logger.info(`服务地址: http://${ip}:${port}`);
   logger.info(`Swagger文档地址: http://${ip}:${port}/api-docs`);
   // 返回 app

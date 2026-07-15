@@ -1,19 +1,19 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import dayjs from 'dayjs';
-import * as fs from 'fs';
-import * as marked from 'marked';
-import * as path from 'path';
-import { Browser, launch, Page } from 'puppeteer';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { ArticleService } from 'src/module/common/article/article.service';
-import { Articles } from 'src/module/common/article/entities/article.entity';
-import { OssService } from 'src/module/common/oss/oss.service';
-import { User } from 'src/module/common/user/entities/user.entity';
-import { UserService } from 'src/module/common/user/user.service';
-import { WordService } from 'src/module/common/word/word.service';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import dayjs from "dayjs";
+import * as fs from "fs";
+import * as marked from "marked";
+import * as path from "path";
+import { Browser, launch, Page } from "puppeteer";
+import { Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { logger } from "src/common/utils/writeLog";
+import { ArticleService } from "src/module/common/article/article.service";
+import { Articles } from "src/module/common/article/entities/article.entity";
+import { OssService } from "src/module/common/oss/oss.service";
+import { User } from "src/module/common/user/entities/user.entity";
+import { UserService } from "src/module/common/user/user.service";
+import { WordService } from "src/module/common/word/word.service";
 
 @Injectable()
 export class DownloadService {
@@ -32,10 +32,10 @@ export class DownloadService {
     if (!article) {
       throw BusinessException.notFound(
         `文章 ID ${id} 未找到`,
-        'ARTICLE_NOT_FOUND',
+        "ARTICLE_NOT_FOUND",
       );
     }
-    const htmlContent: string = marked.parse(article.content || '');
+    const htmlContent: string = marked.parse(article.content || "");
     const user: User | null = await this.userService.getUserById(
       article.user_id,
     );
@@ -44,22 +44,22 @@ export class DownloadService {
       // 传递htmlContent给word模板
       content: htmlContent,
       tags: article.tags,
-      username: user?.name || Constants.UNKNOWN_USER,
-      create_at: dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss'),
-      update_at: dayjs(article.update_at).format('YYYY-MM-DD HH:mm:ss'),
+      username: user?.name || Messages.UNKNOWN_USER,
+      create_at: dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss"),
+      update_at: dayjs(article.update_at).format("YYYY-MM-DD HH:mm:ss"),
     };
     const filePath: string | undefined =
-      this.configService.get<string>('files.word'); // 获取配置中的模板路径
+      this.configService.get<string>("files.word"); // 获取配置中的模板路径
     if (!filePath) {
       throw BusinessException.notFound(
-        Constants.EMPTY_FILE_PATH,
-        'EMPTY_FILE_PATH',
+        Messages.EMPTY_FILE_PATH,
+        "EMPTY_FILE_PATH",
       );
     }
     const templatePath: string = path.join(
       process.cwd(),
       filePath,
-      'template.docx',
+      "template.docx",
     ); // 模板文件路径
     const savePath: string = path.join(
       process.cwd(),
@@ -93,7 +93,7 @@ export class DownloadService {
     if (!article) {
       throw BusinessException.notFound(
         `文章 ID ${id} 未找到`,
-        'ARTICLE_NOT_FOUND',
+        "ARTICLE_NOT_FOUND",
       );
     }
     // 拼接markdown内容
@@ -102,15 +102,15 @@ export class DownloadService {
     const user: User | null = await this.userService.getUserById(
       article.user_id,
     );
-    markdown += `\n**作者：** ${user?.name || '未知'}\n`;
-    markdown += `\n**创作时间：** ${dayjs(article.create_at).format('YYYY-MM-DD HH:mm:ss')}\n`;
+    markdown += `\n**作者：** ${user?.name || "未知"}\n`;
+    markdown += `\n**创作时间：** ${dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")}\n`;
     markdown += `\n---\n`;
-    markdown += article.content || '';
+    markdown += article.content || "";
     // 保存到本地临时文件
-    const filePath: string = this.configService.get<string>('files.word')!;
+    const filePath: string = this.configService.get<string>("files.word")!;
     if (!filePath) {
       throw BusinessException.internalServerError(
-        Constants.WORD_FILE_PATH_NOT_CONFIGURED,
+        Messages.WORD_FILE_PATH_NOT_CONFIGURED,
       );
     }
     const saveDir: string = path.join(process.cwd(), filePath);
@@ -134,7 +134,7 @@ export class DownloadService {
     if (!article) {
       throw BusinessException.notFound(
         `文章 ID ${id} 未找到`,
-        'ARTICLE_NOT_FOUND',
+        "ARTICLE_NOT_FOUND",
       );
     }
 
@@ -143,10 +143,10 @@ export class DownloadService {
     );
 
     // 获取文件保存路径
-    const filePath: string = this.configService.get<string>('files.word')!;
+    const filePath: string = this.configService.get<string>("files.word")!;
     if (!filePath) {
       throw BusinessException.internalServerError(
-        Constants.WORD_FILE_PATH_NOT_CONFIGURED,
+        Messages.WORD_FILE_PATH_NOT_CONFIGURED,
       );
     }
     const saveDir: string = path.join(process.cwd(), filePath);
@@ -158,27 +158,27 @@ export class DownloadService {
     // 创建 HTML 内容
     const htmlContent: string = this.generatePdfHtml(
       article,
-      user || ({ name: '未知' } as User),
+      user || ({ name: "未知" } as User),
     );
 
     // 使用 puppeteer 生成 PDF
     const browser: Browser = await launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     const page: Page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
     // 生成 PDF
     await page.pdf({
       path: savePath,
-      format: 'A4',
+      format: "A4",
       margin: {
-        top: '15mm',
-        bottom: '15mm',
-        left: '15mm',
-        right: '15mm',
+        top: "15mm",
+        bottom: "15mm",
+        left: "15mm",
+        right: "15mm",
       },
       printBackground: true,
     });
@@ -199,11 +199,11 @@ export class DownloadService {
   // 生成 PDF 的 HTML 内容
   private generatePdfHtml(article: Articles, user: User): string {
     const createTime: string = dayjs(article.create_at).format(
-      'YYYY-MM-DD HH:mm:ss',
+      "YYYY-MM-DD HH:mm:ss",
     );
 
     // 使用 marked 解析 Markdown 内容为 HTML
-    const htmlContent: string = marked.parse(article.content || '');
+    const htmlContent: string = marked.parse(article.content || "");
 
     return `
       <!DOCTYPE html>
@@ -380,11 +380,11 @@ export class DownloadService {
           <div class="title">${article.title}</div>
 
           <div class="meta-info">
-            <div>作者: ${user?.name || '未知'}</div>
+            <div>作者: ${user?.name || "未知"}</div>
             <div>创作时间: ${createTime}</div>
           </div>
 
-          ${article.tags ? `<div class="tags">标签: ${article.tags}</div>` : ''}
+          ${article.tags ? `<div class="tags">标签: ${article.tags}</div>` : ""}
 
           <div class="divider"></div>
 
@@ -406,8 +406,8 @@ export class DownloadService {
         error instanceof Error ? error.message : String(error);
       logger.error(`上传阿里云OSS错误: ${message}`);
       throw BusinessException.internalServerError(
-        Constants.OSS_UPLOAD_ERR,
-        'OSS_UPLOAD_ERROR',
+        Messages.OSS_UPLOAD_ERR,
+        "OSS_UPLOAD_ERROR",
       );
     }
   }

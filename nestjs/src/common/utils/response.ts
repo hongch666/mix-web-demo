@@ -1,4 +1,4 @@
-import { HttpCode } from './httpCode';
+import { HttpCode } from "../constants";
 
 export interface ApiResponse<T = unknown> {
   code: number; // 3 位 HTTP 状态码，与 HTTP 响应状态码一致
@@ -6,7 +6,7 @@ export interface ApiResponse<T = unknown> {
   data?: T; // 成功时返回数据
 }
 
-export function success<T>(data: T, msg = 'success'): ApiResponse<T> {
+export function success<T>(data: T, msg = "success"): ApiResponse<T> {
   return {
     code: HttpCode.OK,
     msg,
@@ -14,7 +14,7 @@ export function success<T>(data: T, msg = 'success'): ApiResponse<T> {
   };
 }
 
-export function error(code: number, msg = 'failed'): ApiResponse<null> {
+export function error(code: number, msg = "failed"): ApiResponse<null> {
   return {
     code,
     msg,

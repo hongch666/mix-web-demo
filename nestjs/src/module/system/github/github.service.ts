@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios, { AxiosResponse } from 'axios';
-import { randomUUID } from 'crypto';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { SpringClientService } from 'src/module/common/client/springClient.service';
-import { RedisService } from 'src/module/common/redis/redis.service';
-import { User } from 'src/module/common/user/entities/user.entity';
-import { UserService } from 'src/module/common/user/user.service';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import axios, { AxiosResponse } from "axios";
+import { randomUUID } from "crypto";
+import { Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { logger } from "src/common/utils/writeLog";
+import { SpringClientService } from "src/module/common/client/springClient.service";
+import { RedisService } from "src/module/common/redis/redis.service";
+import { User } from "src/module/common/user/entities/user.entity";
+import { UserService } from "src/module/common/user/user.service";
 import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,
-} from './dto/github.dto';
+} from "./dto/github.dto";
 
 interface GithubOAuthConfig {
   clientId: string;
@@ -85,30 +85,30 @@ export class GithubService {
     const redisClient = this.redisService.getClient();
     if (!redisClient) {
       throw BusinessException.serviceUnavailable(
-        Constants.GITHUB_REDIS_UNAVAILABLE,
+        Messages.GITHUB_REDIS_UNAVAILABLE,
       );
     }
 
-    const state: string = randomUUID().replace(/-/g, '');
+    const state: string = randomUUID().replace(/-/g, "");
     const redirect: string = this.normalizeRedirect(query.redirect);
     const stateKey: string = this.buildStateKey(state);
 
     await redisClient.set(
       stateKey,
       JSON.stringify({ redirect }),
-      'EX',
+      "EX",
       this.stateTtlSeconds,
     );
 
     const authorizeUrl: URL = new URL(this.githubConfig.authorizeUrl);
-    authorizeUrl.searchParams.set('client_id', this.githubConfig.clientId);
+    authorizeUrl.searchParams.set("client_id", this.githubConfig.clientId);
     authorizeUrl.searchParams.set(
-      'redirect_uri',
+      "redirect_uri",
       this.githubConfig.redirectUri,
     );
-    authorizeUrl.searchParams.set('scope', this.githubConfig.scope);
-    authorizeUrl.searchParams.set('state', state);
-    authorizeUrl.searchParams.set('allow_signup', 'true');
+    authorizeUrl.searchParams.set("scope", this.githubConfig.scope);
+    authorizeUrl.searchParams.set("state", state);
+    authorizeUrl.searchParams.set("allow_signup", "true");
 
     return {
       authorizeUrl: authorizeUrl.toString(),
@@ -122,7 +122,7 @@ export class GithubService {
 
       if (!query.code || !query.state) {
         throw BusinessException.unauthorized(
-          Constants.GITHUB_AUTH_PARAMS_MISSING,
+          Messages.GITHUB_AUTH_PARAMS_MISSING,
         );
       }
 
@@ -132,7 +132,7 @@ export class GithubService {
 
       if (query.error) {
         throw BusinessException.unauthorized(
-          Constants.GITHUB_AUTH_CANCELLED_OR_FAILED,
+          Messages.GITHUB_AUTH_CANCELLED_OR_FAILED,
         );
       }
 
@@ -162,7 +162,7 @@ export class GithubService {
       return this.buildSuccessRedirectUrl(ticket, statePayload.redirect);
     } catch (error) {
       logger.error(
-        `${Constants.GITHUB_LOGIN_PROCESS_FAILED_PREFIX}${error instanceof Error ? error.message : String(error)}`,
+        `${Messages.GITHUB_LOGIN_PROCESS_FAILED_PREFIX}${error instanceof Error ? error.message : String(error)}`,
       );
       return this.buildFailureRedirectUrl();
     }
@@ -170,7 +170,7 @@ export class GithubService {
 
   private buildGithubConfig(): GithubOAuthConfig {
     const githubConfig =
-      this.configService.get<Record<string, unknown>>('github') || {};
+      this.configService.get<Record<string, unknown>>("github") || {};
     const oauth = (githubConfig.oauth as Record<string, unknown>) || {};
 
     return {
@@ -188,15 +188,15 @@ export class GithubService {
     };
   }
 
-  private readGithubConfigString(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') {
+  private readGithubConfigString(value: unknown, fallback = ""): string {
+    if (typeof value === "string") {
       return value.trim();
     }
 
     if (
-      typeof value === 'number' ||
-      typeof value === 'boolean' ||
-      typeof value === 'bigint'
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      typeof value === "bigint"
     ) {
       return String(value);
     }
@@ -206,22 +206,22 @@ export class GithubService {
 
   private validateGithubConfig(): void {
     const requiredFields: Array<{ value: string; name: string }> = [
-      { value: this.githubConfig.clientId, name: 'clientId' },
-      { value: this.githubConfig.clientSecret, name: 'clientSecret' },
-      { value: this.githubConfig.redirectUri, name: 'redirectUri' },
-      { value: this.githubConfig.scope, name: 'scope' },
-      { value: this.githubConfig.authorizeUrl, name: 'authorizeUrl' },
-      { value: this.githubConfig.accessTokenUrl, name: 'accessTokenUrl' },
-      { value: this.githubConfig.userApiUrl, name: 'userApiUrl' },
-      { value: this.githubConfig.emailsApiUrl, name: 'emailsApiUrl' },
-      { value: this.githubConfig.apiVersion, name: 'apiVersion' },
+      { value: this.githubConfig.clientId, name: "clientId" },
+      { value: this.githubConfig.clientSecret, name: "clientSecret" },
+      { value: this.githubConfig.redirectUri, name: "redirectUri" },
+      { value: this.githubConfig.scope, name: "scope" },
+      { value: this.githubConfig.authorizeUrl, name: "authorizeUrl" },
+      { value: this.githubConfig.accessTokenUrl, name: "accessTokenUrl" },
+      { value: this.githubConfig.userApiUrl, name: "userApiUrl" },
+      { value: this.githubConfig.emailsApiUrl, name: "emailsApiUrl" },
+      { value: this.githubConfig.apiVersion, name: "apiVersion" },
       {
         value: this.githubConfig.frontendSuccessUrl,
-        name: 'frontendSuccessUrl',
+        name: "frontendSuccessUrl",
       },
       {
         value: this.githubConfig.frontendFailureUrl,
-        name: 'frontendFailureUrl',
+        name: "frontendFailureUrl",
       },
     ];
 
@@ -229,7 +229,7 @@ export class GithubService {
       requiredFields.find(({ value }) => !value);
     if (missingField) {
       throw BusinessException.internalServerError(
-        `${Constants.GITHUB_OAUTH_CONFIG_INCOMPLETE_PREFIX}${missingField.name}`,
+        `${Messages.GITHUB_OAUTH_CONFIG_INCOMPLETE_PREFIX}${missingField.name}`,
       );
     }
   }
@@ -238,14 +238,14 @@ export class GithubService {
     const redisClient = this.redisService.getClient();
     if (!redisClient) {
       throw BusinessException.serviceUnavailable(
-        Constants.GITHUB_REDIS_STATE_UNAVAILABLE,
+        Messages.GITHUB_REDIS_STATE_UNAVAILABLE,
       );
     }
 
     const stateKey: string = this.buildStateKey(state);
     const storedState: string | null = await redisClient.get(stateKey);
     if (!storedState) {
-      throw BusinessException.unauthorized(Constants.GITHUB_STATE_EXPIRED);
+      throw BusinessException.unauthorized(Messages.GITHUB_STATE_EXPIRED);
     }
 
     await redisClient.del(stateKey);
@@ -253,7 +253,7 @@ export class GithubService {
     try {
       return JSON.parse(storedState) as GithubStatePayload;
     } catch {
-      throw BusinessException.unauthorized(Constants.GITHUB_STATE_PARSE_FAILED);
+      throw BusinessException.unauthorized(Messages.GITHUB_STATE_PARSE_FAILED);
     }
   }
 
@@ -269,8 +269,8 @@ export class GithubService {
         },
         {
           headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
+            Accept: "application/json",
+            "Content-Type": "application/json",
           },
           validateStatus: () => true,
         },
@@ -286,8 +286,8 @@ export class GithubService {
       throw BusinessException.badGateway(
         data.errorDescription ||
           data.error_description ||
-          Constants.GITHUB_ACCESS_TOKEN_FAILED,
-        'GITHUB_ACCESS_TOKEN_FAILED',
+          Messages.GITHUB_ACCESS_TOKEN_FAILED,
+        "GITHUB_ACCESS_TOKEN_FAILED",
       );
     }
 
@@ -300,25 +300,25 @@ export class GithubService {
     const response: AxiosResponse<GithubUserResponse> =
       await axios.get<GithubUserResponse>(this.githubConfig.userApiUrl, {
         headers: {
-          Accept: 'application/vnd.github+json',
+          Accept: "application/vnd.github+json",
           Authorization: `Bearer ${accessToken}`,
-          'X-GitHub-Api-Version': this.githubConfig.apiVersion,
+          "X-GitHub-Api-Version": this.githubConfig.apiVersion,
         },
         validateStatus: () => true,
       });
 
     if (response.status < 200 || response.status >= 300) {
       throw BusinessException.badGateway(
-        Constants.GITHUB_USER_PROFILE_FAILED,
-        'GITHUB_USER_PROFILE_FAILED',
+        Messages.GITHUB_USER_PROFILE_FAILED,
+        "GITHUB_USER_PROFILE_FAILED",
       );
     }
 
     const data: GithubUserResponse = response.data;
     if (!data.id || !data.login) {
       throw BusinessException.badGateway(
-        Constants.GITHUB_USER_PROFILE_INVALID,
-        'GITHUB_USER_PROFILE_INVALID',
+        Messages.GITHUB_USER_PROFILE_INVALID,
+        "GITHUB_USER_PROFILE_INVALID",
       );
     }
 
@@ -330,9 +330,9 @@ export class GithubService {
       GithubEmailResponse[]
     >(this.githubConfig.emailsApiUrl, {
       headers: {
-        Accept: 'application/vnd.github+json',
+        Accept: "application/vnd.github+json",
         Authorization: `Bearer ${accessToken}`,
-        'X-GitHub-Api-Version': this.githubConfig.apiVersion,
+        "X-GitHub-Api-Version": this.githubConfig.apiVersion,
       },
       validateStatus: () => true,
     });
@@ -357,8 +357,8 @@ export class GithubService {
 
     if (response.code !== 200) {
       throw BusinessException.badGateway(
-        Constants.GITHUB_SPRING_TOKEN_TICKET_FAILED,
-        'GITHUB_TOKEN_TICKET_FAILED',
+        Messages.GITHUB_SPRING_TOKEN_TICKET_FAILED,
+        "GITHUB_TOKEN_TICKET_FAILED",
       );
     }
 
@@ -368,8 +368,8 @@ export class GithubService {
     const ticket: string | undefined = data?.ticket as string | undefined;
     if (!ticket) {
       throw BusinessException.badGateway(
-        Constants.GITHUB_SPRING_TOKEN_TICKET_MISSING,
-        'GITHUB_TOKEN_TICKET_FAILED',
+        Messages.GITHUB_SPRING_TOKEN_TICKET_MISSING,
+        "GITHUB_TOKEN_TICKET_FAILED",
       );
     }
 
@@ -378,19 +378,19 @@ export class GithubService {
 
   private buildSuccessRedirectUrl(ticket: string, redirect: string): string {
     const successUrl = new URL(this.githubConfig.frontendSuccessUrl);
-    successUrl.searchParams.set('ticket', ticket);
-    successUrl.searchParams.set('redirect', this.normalizeRedirect(redirect));
+    successUrl.searchParams.set("ticket", ticket);
+    successUrl.searchParams.set("redirect", this.normalizeRedirect(redirect));
     return successUrl.toString();
   }
 
   private buildFailureRedirectUrl(): string {
     const failureUrl = new URL(this.githubConfig.frontendFailureUrl);
-    failureUrl.searchParams.set('oauth_error', 'github');
+    failureUrl.searchParams.set("oauth_error", "github");
     return failureUrl.toString();
   }
 
   private normalizeRedirect(redirect?: string): string {
-    const fallbackRedirect = '/';
+    const fallbackRedirect = "/";
     if (!redirect) {
       return fallbackRedirect;
     }
@@ -401,14 +401,14 @@ export class GithubService {
     }
 
     if (
-      trimmedRedirect.startsWith('http://') ||
-      trimmedRedirect.startsWith('https://') ||
-      trimmedRedirect.startsWith('//')
+      trimmedRedirect.startsWith("http://") ||
+      trimmedRedirect.startsWith("https://") ||
+      trimmedRedirect.startsWith("//")
     ) {
       return fallbackRedirect;
     }
 
-    return trimmedRedirect.startsWith('/')
+    return trimmedRedirect.startsWith("/")
       ? trimmedRedirect
       : `/${trimmedRedirect}`;
   }

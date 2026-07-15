@@ -1,13 +1,13 @@
-import { Inject, Injectable } from '@nestjs/common';
-import Redis from 'ioredis';
-import { Constants } from 'src/common/utils/constants';
-import { v4 as uuidv4 } from 'uuid';
+import { Inject, Injectable } from "@nestjs/common";
+import Redis from "ioredis";
+import { InfraKeys } from "src/common/constants";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class RedisService {
   private readonly redis: Redis | null;
 
-  constructor(@Inject(Constants.REDIS_CLIENT) redis: Redis | null) {
+  constructor(@Inject(InfraKeys.REDIS_CLIENT) redis: Redis | null) {
     this.redis = redis;
   }
 
@@ -30,18 +30,18 @@ export class RedisService {
   ): Promise<string | null> {
     if (!this.redis) {
       // Redis 未配置，返回空字符串表示单实例模式可直接执行
-      return '';
+      return "";
     }
 
     const lockValue = uuidv4();
     const result = await this.redis.set(
       lockKey,
       lockValue,
-      'EX',
+      "EX",
       expireSeconds,
-      'NX',
+      "NX",
     );
-    return result === 'OK' ? lockValue : null;
+    return result === "OK" ? lockValue : null;
   }
 
   /**
@@ -56,7 +56,7 @@ export class RedisService {
     }
 
     const result = await this.redis.eval(
-      Constants.UNLOCK_SCRIPT,
+      InfraKeys.UNLOCK_SCRIPT,
       1,
       lockKey,
       lockValue,

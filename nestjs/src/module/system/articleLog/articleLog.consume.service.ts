@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { BusinessException } from 'src/common/exceptions/business.exception';
-import { Constants } from 'src/common/utils/constants';
-import { logger } from 'src/common/utils/writeLog';
-import { ArticleLogService } from './articleLog.service';
+import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
+import { Injectable } from "@nestjs/common";
+import { Messages } from "src/common/constants";
+import { BusinessException } from "src/common/exceptions/business.exception";
+import { logger } from "src/common/utils/writeLog";
+import { ArticleLogService } from "./articleLog.service";
 import {
   ArticleAction,
   ArticleLogMessage,
   CreateArticleLogDto,
-} from './dto/articleLog.dto';
+} from "./dto/articleLog.dto";
 
 type RawArticleLogMessage = Partial<ArticleLogMessage> & {
   user_id?: number;
@@ -20,16 +20,16 @@ export class LogConsumerService {
   constructor(private readonly articleLogService: ArticleLogService) {}
 
   @RabbitSubscribe({
-    queue: 'article-log-queue',
+    queue: "article-log-queue",
   })
   async handleArticleLog(msg: unknown): Promise<void> {
     try {
-      logger.info(Constants.ARTICLE_RABBITMQ_START);
+      logger.info(Messages.ARTICLE_RABBITMQ_START);
 
       // 处理两种消息格式：1.对象, 2.JSON 字符串
       let logData: RawArticleLogMessage;
 
-      if (typeof msg === 'string') {
+      if (typeof msg === "string") {
         // 如果是字符串，尝试解析为 JSON
         logData = JSON.parse(msg) as RawArticleLogMessage;
         logger.info(`接收到 Spring 发送的 ArticleLog 消息: ${String(msg)}`);
@@ -48,7 +48,7 @@ export class LogConsumerService {
         articleId: logData.articleId ?? logData.article_id ?? -1,
       });
 
-      logger.info(Constants.ARTICLE_HANDLER);
+      logger.info(Messages.ARTICLE_HANDLER);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -60,24 +60,28 @@ export class LogConsumerService {
     // 验证必填字段
     if (!msg.action) {
       logger.error(`ArticleLog 消息缺少 action 字段: ${JSON.stringify(msg)}`);
-      throw BusinessException.unprocessableEntity(Constants.ARTICLE_LESS_ACTION);
+      throw BusinessException.unprocessableEntity(Messages.ARTICLE_LESS_ACTION);
     }
 
     if (!msg.content) {
       logger.error(`ArticleLog 消息缺少 content 字段: ${JSON.stringify(msg)}`);
-      throw BusinessException.unprocessableEntity(Constants.ARTICLE_LESS_CONTNET);
+      throw BusinessException.unprocessableEntity(
+        Messages.ARTICLE_LESS_CONTNET,
+      );
     }
 
     // 验证 action 是否是有效的枚举值
     const validActions: ArticleAction[] = Object.values(ArticleAction);
     if (!validActions.includes(msg.action)) {
       logger.error(`ArticleLog 消息包含无效的 action 值: ${msg.action}`);
-      throw BusinessException.unprocessableEntity(`无效的操作类型: ${msg.action}`);
+      throw BusinessException.unprocessableEntity(
+        `无效的操作类型: ${msg.action}`,
+      );
     }
 
     // 解析 content 为对象（如果是 JSON 字符串）
     let contentObj: Record<string, unknown>;
-    if (typeof msg.content === 'string') {
+    if (typeof msg.content === "string") {
       try {
         contentObj = JSON.parse(msg.content) as Record<string, unknown>;
       } catch {
@@ -97,6 +101,6 @@ export class LogConsumerService {
 
     logger.info(`准备保存 ArticleLog: ${JSON.stringify(dto)}`);
     await this.articleLogService.create(dto);
-    logger.info(Constants.ARTICLE_SAVE);
+    logger.info(Messages.ARTICLE_SAVE);
   }
 }
