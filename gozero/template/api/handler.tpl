@@ -6,12 +6,14 @@ package {{.PkgName}}
 import (
 	"net/http"
 
+	"app/common/constants"
 	"app/common/utils"
 	"app/internal/middleware"
 	"app/internal/svc"
-	{{if .HasRequest}}"app/internal/types"
-	"github.com/zeromicro/go-zero/rest/httpx"{{end}}
+	{{if .HasRequest}}"app/internal/types"{{end}}
 	{{.ImportPackages}}
+
+	{{if .HasRequest}}"github.com/zeromicro/go-zero/rest/httpx"{{end}}
 )
 
 {{if .HasDoc}}{{.Doc}}{{end}}
@@ -19,7 +21,7 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		{{if .HasRequest}}var req types.{{.RequestType}}
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, utils.HttpBadRequest, err.Error())
+			utils.Error(w, constants.HttpBadRequest, err.Error())
 			return
 		}
 
