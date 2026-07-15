@@ -1,8 +1,11 @@
-package com.hcsy.gateway.common;
+package com.hcsy.gateway.common.constants;
 
-public class Constants {
+/**
+ * 错误标识常量
+ */
+public class ErrorCodes {
 
-    private Constants() {}
+    private ErrorCodes() {}
 
     // ===== 401 Unauthorized =====
     public static final String TOKEN_EXPIRED = "TOKEN_EXPIRED";

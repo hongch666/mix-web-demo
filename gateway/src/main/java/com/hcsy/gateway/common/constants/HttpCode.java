@@ -1,5 +1,8 @@
-package com.hcsy.gateway.common;
+package com.hcsy.gateway.common.constants;
 
+/**
+ * HTTP 状态码常量
+ */
 public class HttpCode {
     public static final int OK = 200;
     public static final int BAD_REQUEST = 400;

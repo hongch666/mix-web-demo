@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.hcsy.gateway.common.HttpCode;
+import com.hcsy.gateway.common.constants.HttpCode;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.config.AuthProperties;
 

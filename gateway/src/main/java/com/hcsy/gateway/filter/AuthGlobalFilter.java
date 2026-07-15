@@ -15,8 +15,8 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.hcsy.gateway.common.BusinessException;
-import com.hcsy.gateway.common.Constants;
-import com.hcsy.gateway.common.HttpCode;
+import com.hcsy.gateway.common.constants.ErrorCodes;
+import com.hcsy.gateway.common.constants.HttpCode;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.config.AuthProperties;
 import com.hcsy.gateway.utils.JwtUtil;
@@ -51,7 +51,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 2. 获取 access token（只接受 access token）
         String token = extractToken(request);
         if (token == null) {
-            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
+            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
         }
 
         try {
@@ -68,25 +68,25 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             String storedValue = redisUtil.get(accessKey);
             String expectedValue = userId + ":" + sessionId;
             if (storedValue == null || !expectedValue.equals(storedValue)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
             }
 
             // 6. 判断 user:session:{userId}:{sessionId} 是否存在
             String sessionKey = "user:session:" + userId + ":" + sessionId;
             if (!redisUtil.exists(sessionKey)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
             }
 
             // 7. 校验 session hash 中保存的 accessToken 与请求 token 一致
             String storedAccessToken = redisUtil.getHash(sessionKey, "accessToken");
             if (!token.equals(storedAccessToken)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
             }
 
             // 8. 校验 user:status:{userId} 不为 0
             String userStatus = redisUtil.get("user:status:" + userId);
             if ("0".equals(userStatus)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", Constants.USER_NOT_LOGIN);
+                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
             }
 
             // 9. 传递用户信息到下游服务
@@ -108,12 +108,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             return errorResponse(exchange, ex.getStatusCode(), ex.getMessage(), ex.getError());
         } catch (DataAccessException ex) {
             // Redis 不可用（连接断开、超时、重启中等），不应判定为用户未登录
-            log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", Constants.REDIS_UNAVAILABLE, path, ex);
-            return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试", Constants.REDIS_UNAVAILABLE);
+            log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, ex);
+            return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试", ErrorCodes.REDIS_UNAVAILABLE);
         } catch (Exception ex) {
             // 认证流程中出现的其他非预期异常，不应返回 401 误导前端退出登录
-            log.error("[{}] 认证流程非预期异常 - 路径: {}", Constants.AUTH_UNEXPECTED_ERROR, path, ex);
-            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, "服务器内部错误，请稍后重试", Constants.AUTH_UNEXPECTED_ERROR);
+            log.error("[{}] 认证流程非预期异常 - 路径: {}", ErrorCodes.AUTH_UNEXPECTED_ERROR, path, ex);
+            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, "服务器内部错误，请稍后重试", ErrorCodes.AUTH_UNEXPECTED_ERROR);
         }
     }
 

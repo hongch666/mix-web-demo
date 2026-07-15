@@ -1,5 +1,7 @@
 package com.hcsy.gateway.common;
 
+import com.hcsy.gateway.common.constants.HttpCode;
+
 public class BusinessException extends RuntimeException {
     private final int statusCode;
     private final String error;

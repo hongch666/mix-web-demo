@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 
-import com.hcsy.gateway.common.Constants;
-import com.hcsy.gateway.common.HttpCode;
+import com.hcsy.gateway.common.constants.ErrorCodes;
+import com.hcsy.gateway.common.constants.HttpCode;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.properties.RateLimitProperties;
 import com.hcsy.gateway.utils.TokenBucketRateLimiter;
@@ -55,7 +55,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         );
 
         if (!allowed) {
-            log.warn("[{}] 请求被限流: path={}, clientId={}", Constants.RATE_LIMIT_EXCEEDED, path, clientId);
+            log.warn("[{}] 请求被限流: path={}, clientId={}", ErrorCodes.RATE_LIMIT_EXCEEDED, path, clientId);
             return rateLimitExceededResponse(exchange, rateLimitPath.getMessage());
         }
 
