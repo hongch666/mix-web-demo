@@ -2,7 +2,7 @@ import traceback
 from typing import Any, Callable, Optional
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 from app.core.db import get_redis_client
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -107,8 +107,8 @@ async def update_analyze_caches_async(
     db_factory: Optional[Callable[[], AsyncSession]] = None,
 ) -> None:
     """更新分析接口缓存，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
-    lock_key: str = Messages.LOCK_TASK_ANALYZE_CACHE
-    lock_expire: int = Messages.LOCK_TASK_ANALYZE_CACHE_EXPIRE
+    lock_key: str = Defaults.LOCK_TASK_ANALYZE_CACHE
+    lock_expire: int = Defaults.LOCK_TASK_ANALYZE_CACHE_EXPIRE
 
     # 尝试获取分布式锁
     redis_client = get_redis_client()

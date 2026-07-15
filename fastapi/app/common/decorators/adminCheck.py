@@ -4,7 +4,7 @@ from typing import Any, Callable, Optional
 
 from app.core.constants import HttpCode, Messages
 from app.common.middleware import get_current_user_id
-from app.core.base import HttpCode, Logger
+from app.core.base import Logger
 from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.crud import UserMapper, get_user_mapper

@@ -1,7 +1,7 @@
 from fastapi.openapi.utils import get_openapi
 
 from app.common.middleware import middlewares
-from app.core.constants import Messages
+from app.core.constants import SwaggerConfig
 from app.core.errors import exception_handlers
 from app.internal.api import routers
 from fastapi import FastAPI
@@ -16,10 +16,10 @@ def create_app() -> FastAPI:
         FastAPI: 配置完成的 FastAPI 应用实例
     """
     app: FastAPI = FastAPI(
-        title=Messages.SWAGGER_TITLE,
-        description=Messages.SWAGGER_DESCRIPTION,
-        version=Messages.SWAGGER_VERSION,
-        openapi_tags=Messages.OPENAPI_TAGS,
+        title=SwaggerConfig.SWAGGER_TITLE,
+        description=SwaggerConfig.SWAGGER_DESCRIPTION,
+        version=SwaggerConfig.SWAGGER_VERSION,
+        openapi_tags=SwaggerConfig.OPENAPI_TAGS,
         lifespan=lifespan,
     )
 
@@ -30,7 +30,7 @@ def create_app() -> FastAPI:
         openapi_schema = get_openapi(
             title=app.title,
             version=app.version,
-            openapi_version=Messages.OPENAPI_VERSION,
+            openapi_version=SwaggerConfig.OPENAPI_VERSION,
             description=app.description,
             routes=app.routes,
         )
