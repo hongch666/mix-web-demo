@@ -29,26 +29,62 @@ type ArticleSearchDTO struct {
 }
 
 type ArticleES struct {
-	ID                int64   `json:"id"`
-	Title             string  `json:"title"`
-	Content           string  `json:"content"`
-	UserID            int64   `json:"user_id"`
-	Username          string  `json:"username"`
-	Tags              string  `json:"tags"`
-	Status            int     `json:"status"`
-	Views             int     `json:"views"`
-	LikeCount         int     `json:"like_count"`
-	CollectCount      int     `json:"collect_count"`
-	AuthorFollowCount int     `json:"author_follow_count"`
-	CategoryName      string  `json:"category_name"`
-	SubCategoryName   string  `json:"sub_category_name"`
-	CreateAt          string  `json:"create_at"`
-	UpdateAt          string  `json:"update_at"`
-	AIScore           float64 `json:"ai_score"`
-	UserScore         float64 `json:"user_score"`
-	AICommentCount    int     `json:"ai_comment_count"`
-	UserCommentCount  int     `json:"user_comment_count"`
-	ESScore           float64 `json:"-"` // ES 原始评分（不序列化到 JSON）
+	ID                int64    `json:"id"`
+	Title             string   `json:"title"`
+	Content           string   `json:"content"`
+	UserID            int64    `json:"user_id"`
+	Username          string   `json:"username"`
+	Tags              string   `json:"tags"`
+	Status            int      `json:"status"`
+	Views             int      `json:"views"`
+	LikeCount         int      `json:"like_count"`
+	CollectCount      int      `json:"collect_count"`
+	AuthorFollowCount int      `json:"author_follow_count"`
+	CategoryName      string   `json:"category_name"`
+	SubCategoryName   string   `json:"sub_category_name"`
+	CreateAt          string   `json:"create_at"`
+	UpdateAt          string   `json:"update_at"`
+	AIScore           float64  `json:"ai_score"`
+	UserScore         float64  `json:"user_score"`
+	AICommentCount    int      `json:"ai_comment_count"`
+	UserCommentCount  int      `json:"user_comment_count"`
+	ESScore           float64  `json:"-"`
+	TagList           []string `json:"tag_list"`
+	SubCategoryID     int64    `json:"sub_category_id"`
+}
+
+// ArticleESWithScores ES 搜索结果（含子分）
+type ArticleESWithScores struct {
+	ArticleES
+	FinalScore        float64
+	TradScore         float64
+	VecScore          float64
+	GraphScore        float64
+	CandidateSimScore float64
+}
+
+// ArticleSearchParams ES 查询参数
+type ArticleSearchParams struct {
+	ES *ESScoringParams
+}
+
+// ESScoringParams ES 评分参数
+type ESScoringParams struct {
+	EsWeight, AiWeight, UserWeight         float64
+	ViewsWeight, LikesWeight               float64
+	CollectsWeight, FollowWeight           float64
+	RecencyWeight                          float64
+	MaxViewsNorm, MaxLikesNorm             float64
+	MaxCollectsNorm, MaxFollowsNorm        float64
+	DecayDaysSq                            float64
+	VectorWeight                           float64
+	QueryVector                            []float64
+	GraphInterestWeight, GraphFollowWeight   float64
+	GraphSubcatWeight, GraphKeywordWeight    float64
+	UserTagList        []string
+	FollowedAuthorIds  []int64
+	PreferredSubCatIds []int64
+	KeywordTags        []string
 }
 
 type SearchLog struct {
@@ -74,22 +110,6 @@ type SearchContent struct {
 	Size            int     `json:"Size"`
 }
 
-type SearchModelConfig struct {
-	ESScoreWeight         float64
-	AIRatingWeight        float64
-	UserRatingWeight      float64
-	ViewsWeight           float64
-	LikesWeight           float64
-	CollectsWeight        float64
-	AuthorFollowWeight    float64
-	RecencyWeight         float64
-	MaxViewsNormalized    float64
-	MaxLikesNormalized    float64
-	MaxCollectsNormalized float64
-	MaxFollowsNormalized  float64
-	RecencyDecayDays      int64
-}
-
 type ArticleViewCounter interface {
 	GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error)
 }
@@ -110,7 +130,6 @@ type SearchModelDeps struct {
 	ESClient      *elastic.Client
 	MongoClient   *mongo.Client
 	MongoDatabase string
-	Config        SearchModelConfig
 
 	ArticlesModel ArticleViewCounter
 	LikesModel    LikeCounter
@@ -119,7 +138,7 @@ type SearchModelDeps struct {
 }
 
 type SearchModel interface {
-	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO) ([]ArticleES, int, error)
+	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, params *ArticleSearchParams) ([]ArticleESWithScores, int, error)
 	GetSearchHistory(ctx context.Context, userID int64) ([]string, error)
 }
 
@@ -127,7 +146,6 @@ type searchModel struct {
 	esClient      *elastic.Client
 	mongoClient   *mongo.Client
 	mongoDatabase string
-	config        SearchModelConfig
 
 	articlesModel ArticleViewCounter
 	likesModel    LikeCounter
@@ -140,7 +158,6 @@ func NewSearchModel(deps SearchModelDeps) SearchModel {
 		esClient:      deps.ESClient,
 		mongoClient:   deps.MongoClient,
 		mongoDatabase: deps.MongoDatabase,
-		config:        deps.Config,
 		articlesModel: deps.ArticlesModel,
 		likesModel:    deps.LikesModel,
 		collectsModel: deps.CollectsModel,

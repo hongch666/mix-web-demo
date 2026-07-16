@@ -19,6 +19,8 @@ require (
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/lib/pq v1.12.3
+	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
 	github.com/redis/go-redis/v9 v9.19.0
 	github.com/swaggo/files v1.0.1
 )

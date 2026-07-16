@@ -150,6 +150,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/syncer",
 					Handler: test.SyncESHandler(serverCtx),
 				},
+				{
+					// 手动触发文章向量同步 (pgvector 均值 → ES embedding_vector)
+					Method:  http.MethodPost,
+					Path:    "/syncer/embedding",
+					Handler: test.SyncEmbeddingHandler(serverCtx),
+				},
+				{
+					// 手动触发表谱特征缓存同步 (Neo4j → Redis)
+					Method:  http.MethodPost,
+					Path:    "/syncer/graph-cache",
+					Handler: test.SyncGraphCacheHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithPrefix("/api_gozero"),

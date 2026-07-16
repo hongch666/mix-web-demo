@@ -7,6 +7,7 @@ import (
 
 	"app/common/client"
 	"app/common/constants"
+	apptypes "app/internal/types"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 )
@@ -78,4 +79,39 @@ func (c *FastapiClient) Test(ctx context.Context) (client.Result, error) {
 	return sd.CallService(ctx, c.serviceName, "/api_fastapi/fastapi", client.RequestOptions{
 		Method: "GET",
 	})
+}
+
+// GetMatchedChunks 获取文章的匹配文本片段（仅用于展示，不参与排序）
+func (c *FastapiClient) GetMatchedChunks(ctx context.Context, articleIDs []int64, keyword string) (map[int64][]apptypes.VectorMatchedChunk, error) {
+	result, err := c.EnhanceVector(ctx, &VectorEnhanceRequest{
+		Keyword:    keyword,
+		ArticleIDs: articleIDs,
+		Limit:      len(articleIDs),
+		TopK:       len(articleIDs),
+		Mode:       "hybrid",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	items, err := ParseVectorEnhanceResult(result.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	chunksMap := make(map[int64][]apptypes.VectorMatchedChunk, len(items))
+	for _, item := range items {
+		var chunks []apptypes.VectorMatchedChunk
+		for _, c := range item.MatchedChunks {
+			chunks = append(chunks, apptypes.VectorMatchedChunk{
+				ArticleId:  c.ArticleID,
+				Title:      c.Title,
+				ChunkIndex: c.ChunkIndex,
+				Score:      c.Score,
+				Content:    c.Content,
+			})
+		}
+		chunksMap[item.ArticleID] = chunks
+	}
+	return chunksMap, nil
 }
