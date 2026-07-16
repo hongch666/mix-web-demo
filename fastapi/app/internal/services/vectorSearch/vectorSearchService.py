@@ -5,8 +5,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Tuple
 
 from app.core.base import Logger
-from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, Defaults
 from app.internal.agents import get_rag_tools
 from app.internal.schemas.vectorSearchDTO import (
     VectorMatchedChunkDTO,
@@ -201,23 +200,14 @@ class VectorSearchService:
             return None
 
 
-def _to_bool(value: Any, default: bool) -> bool:
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return value
-    return str(value).strip().lower() in {"true", "1", "yes", "y", "on"}
-
-
 @lru_cache
 def get_vector_search_service() -> VectorSearchService:
-    """获取 VectorSearchService 单例（从配置读取参数）"""
-    vector_search_cfg = (load_config("agent") or {}).get("vector_search", {})
+    """获取 VectorSearchService 单例"""
     return VectorSearchService(
-        enabled=_to_bool(vector_search_cfg.get("enabled"), True),
-        candidate_limit=int(vector_search_cfg.get("candidate_limit", 50)),
-        fetch_multiplier=int(vector_search_cfg.get("fetch_multiplier", 4)),
-        max_matched_chunks=int(vector_search_cfg.get("max_matched_chunks", 2)),
-        min_score=float(vector_search_cfg.get("min_score", 0.3)),
-        score_mode=str(vector_search_cfg.get("score_mode", "similarity")),
+        enabled=Defaults.VECTOR_SEARCH_ENABLED,
+        candidate_limit=Defaults.VECTOR_SEARCH_CANDIDATE_LIMIT,
+        fetch_multiplier=Defaults.VECTOR_SEARCH_FETCH_MULTIPLIER,
+        max_matched_chunks=Defaults.VECTOR_SEARCH_MAX_MATCHED_CHUNKS,
+        min_score=Defaults.VECTOR_SEARCH_MIN_SCORE,
+        score_mode=Defaults.VECTOR_SEARCH_SCORE_MODE,
     )

@@ -5,8 +5,7 @@ from functools import lru_cache
 from typing import Dict, List
 
 from app.core.base import Logger
-from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, Defaults
 from app.core.db import get_neo4j_client
 from app.internal.schemas.graphSearchDTO import (
     GraphRelationDTO,
@@ -360,18 +359,11 @@ class GraphSearchService:
 
 @lru_cache
 def get_graph_search_service() -> GraphSearchService:
-    """获取 GraphSearchService 单例（从配置读取权重）"""
-    graph_search_cfg = (load_config("agent") or {}).get("graph_search", {})
+    """获取 GraphSearchService 单例"""
     return GraphSearchService(
-        tag_interest_weight=float(graph_search_cfg.get("tag_interest_weight", 0.35)),
-        followed_author_weight=float(
-            graph_search_cfg.get("followed_author_weight", 0.25)
-        ),
-        same_sub_category_weight=float(
-            graph_search_cfg.get("same_sub_category_weight", 0.20)
-        ),
-        candidate_similarity_weight=float(
-            graph_search_cfg.get("candidate_similarity_weight", 0.20)
-        ),
-        keyword_tag_weight=float(graph_search_cfg.get("keyword_tag_weight", 0.20)),
+        tag_interest_weight=Defaults.GRAPH_TAG_INTEREST_WEIGHT,
+        followed_author_weight=Defaults.GRAPH_FOLLOWED_AUTHOR_WEIGHT,
+        same_sub_category_weight=Defaults.GRAPH_SAME_SUB_CATEGORY_WEIGHT,
+        candidate_similarity_weight=Defaults.GRAPH_CANDIDATE_SIMILARITY_WEIGHT,
+        keyword_tag_weight=Defaults.GRAPH_KEYWORD_TAG_WEIGHT,
     )
