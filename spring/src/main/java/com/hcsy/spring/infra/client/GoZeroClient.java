@@ -14,4 +14,12 @@ public interface GoZeroClient {
 
     @PostMapping("/api_gozero/syncer")
     Result<?> syncES();
+
+    // 手动触发文章向量同步 (pgvector 均值 → ES embedding_vector)
+    @PostMapping("/api_gozero/syncer/embedding")
+    Result<?> syncEmbedding();
+
+    // 手动触发表谱特征缓存同步 (Neo4j → Redis)
+    @PostMapping("/api_gozero/syncer/graph-cache")
+    Result<?> syncGraphCache();
 }

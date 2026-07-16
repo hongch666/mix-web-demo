@@ -31,6 +31,16 @@ public class GoZeroClientFallbackFactory implements FallbackFactory<GoZeroClient
             public Result<?> syncES() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.ES_SERVICE_UNAVAILABLE);
             }
+
+            @Override
+            public Result<?> syncEmbedding() {
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.ES_SERVICE_UNAVAILABLE);
+            }
+
+            @Override
+            public Result<?> syncGraphCache() {
+                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.ES_SERVICE_UNAVAILABLE);
+            }
         };
     }
 }

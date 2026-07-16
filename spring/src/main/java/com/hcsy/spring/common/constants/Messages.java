@@ -314,4 +314,9 @@ public class Messages {
     public static final String LOCK_ACQUIRE_FAIL = "获取分布式锁失败，跳过本次执行，key: %s";
     public static final String LOCK_RELEASE_SUCCESS = "释放分布式锁成功，key: %s";
     public static final String LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
+
+    // ===== Embedding / 图谱缓存同步（GoZero 端点）=====
+    public static final String SYNC_EMBEDDING_FAIL = "embedding 同步失败, 定时任务兜底: ";
+    public static final String SYNC_GRAPH_CACHE_FAIL = "图谱缓存同步失败, 定时任务兜底: ";
+    public static final String SYNC_GRAPH_CACHE_WARN = "图谱缓存刷新异常, 定时任务兜底: ";
 }
