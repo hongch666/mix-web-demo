@@ -62,7 +62,7 @@
 4. 基于 SpringBoot 和 AOP 技术权限校验实现用户端和管理端
 5. 基于 SpringCloud Gateway 和 JWT 实现 API 网关的统一认证和权限控制
 6. 基于 Redis Token Bucket 算法在网关层实现 API 限流和防刷功能
-7. 基于 GoZero 聚合 ElasticSearch、pgvector 向量检索和 Neo4j 图谱增强，实现关键词、语义和关系融合的文章搜索
+7. 基于 GoZero + ElasticSearch 实现统一搜索排序，ES 内部 script_score 一次性计算关键词匹配、向量语义相似度（cosineSimilarity）和用户图谱增强信号（兴趣标签/关注作者/同子分类/关键词标签），权重配置由 FastAPI 统一管理，图谱特征通过 Redis 缓存加速读取
 8. 基于 GoZero 和 GORM/sqlx 实现文章相关数据获取和同步（双 ORM 并存）
 9. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 10. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
@@ -1879,115 +1879,134 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### 搜索算法公式说明
 
-搜索入口由 GoZero 统一提供，默认搜索模式为 `hybrid`。当前搜索链路分为两层：
+搜索入口由 GoZero 统一提供，默认搜索模式为 `hybrid`。所有打分逻辑收敛到 ES 内部 `script_score` 一次性完成，不再需要 GoZero 二阶段调用 FastAPI 做向量/图谱增强。
 
-1. ElasticSearch 负责关键词召回、过滤、高亮和基础业务排序。
-2. GoZero 在 ES 候选结果上按需调用 FastAPI 向量增强和 Neo4j 图谱增强，再进行最终融合重排。
+#### 整体流程
 
-#### 1. ES 候选综合评分
+```mermaid
+sequenceDiagram
+    participant 前端 as 前端
+    participant GoZero as GoZero
+    participant FastAPI as FastAPI
+    participant Redis as Redis
+    participant ES as ElasticSearch
+    participant MySQL as MySQL
 
-GoZero 调用 ES 搜索时，ES 内部 `script_score` 会综合关键词相关性、内容质量、热度、作者影响力和新鲜度。
+    前端->>GoZero: GET /search?keyword=Spring Boot&mode=hybrid
 
-ES 候选综合评分公式如下：
+    Note over GoZero: 并行获取预处理数据
+    par 并行
+        GoZero->>FastAPI: GET /algorithm/search/weights
+        FastAPI-->>GoZero: 17个权重参数 (缓存60s)
+    and
+        GoZero->>FastAPI: GET /vector-search/embed?keyword=...
+        FastAPI->>Redis: 检查嵌入缓存 embed:{md5}
+        alt 缓存命中
+            Redis-->>FastAPI: query_vector
+        else 缓存未命中
+            FastAPI-->>FastAPI: 调用阿里云 DashScope Qwen 嵌入模型
+            FastAPI->>Redis: 写入缓存 (TTL 1h)
+        end
+        FastAPI-->>GoZero: 1024维 query_vector
+    and
+        GoZero->>Redis: GET user_graph:{userId}
+        Redis-->>GoZero: 图谱特征 (TTL 5min)
+    end
 
-$$
-\text{ESRawScore} = w_1 \cdot S_{es} + w_2 \cdot S_{ai} + w_3 \cdot S_{user} + w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} + w_8 \cdot S_{recency}
-$$
+    Note over GoZero,ES: ES 一次性 script_score (13项信号)
+    GoZero->>ES: script_score: BM25 + 7项传统 + vector + 图谱4路
+    ES-->>GoZero: 排好序的 top N 结果
 
-其中：
+    Note over GoZero,MySQL: 实时统计回填
+    GoZero->>MySQL: 查询 views/likes/collects/follows (4路并行)
+    MySQL-->>GoZero: 最新实时值
 
-- $S_{es} = \frac{1}{1 + e^{-x}}$（Sigmoid 归一化的 ElasticSearch 关键词相关性分数，0-1 范围）
-- $S_{ai} = \frac{\text{AI评分}}{10.0}$（0-1 范围，AI 评分范围为 0-10）
-- $S_{user} = \frac{\text{用户评分}}{10.0}$（0-1 范围，用户评分范围为 0-10）
-- $S_{views} = \min\left(\frac{\text{阅读量}}{\text{maxViewsNormalized}}, 1.0\right)$（阅读量归一化，0-1 范围）
-- $S_{likes} = \min\left(\frac{\text{点赞量}}{\text{maxLikesNormalized}}, 1.0\right)$（点赞量归一化，0-1 范围）
-- $S_{collects} = \min\left(\frac{\text{收藏量}}{\text{maxCollectsNormalized}}, 1.0\right)$（收藏量归一化，0-1 范围）
-- $S_{follow} = \min\left(\frac{\text{作者关注数}}{\text{maxFollowsNormalized}}, 1.0\right)$（作者粉丝数归一化，0-1 范围）
-- $S_{recency}$：文章新鲜度分数（基于创建时间）
+    Note over GoZero,FastAPI: 匹配片段 (仅展示)
+    GoZero->>FastAPI: POST /vector-search/enhance
+    FastAPI->>FastAPI: pgvector 查找 chunk 匹配片段
+    FastAPI-->>GoZero: matched_chunks
 
-文章新鲜度采用高斯衰减函数，使时间离当前越近的文章得分越高：
+    Note over GoZero: 组装响应
+    GoZero-->>前端: 搜索结果 JSON
+```
 
-$$
-S_{\text{recency}} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}
-$$
-
-其中：
-
-- $\Delta t$：文章创建时间与当前时间的差值（单位：天）
-- $\sigma$：时间衰减周期，默认由 `SEARCH_RECENCY_DECAY_DAYS=30` 配置
-
-高斯衰减函数具有以下特性：
-
-- 当 $\Delta t = 0$（刚发布）时，$S_{\text{recency}} = 1.0$（新鲜度最高）
-- 当 $\Delta t = 30$ 天时，$S_{\text{recency}} \approx 0.606$（衰减至约 60.6%）
-- 当 $\Delta t = 60$ 天时，$S_{\text{recency}} \approx 0.135$（衰减至约 13.5%）
-
-ES 内部权重配置说明：
-
-| 因素        | 默认权重 | 配置项                        | 说明                                          |
-| ----------- | -------- | ----------------------------- | --------------------------------------------- |
-| ES 基础分数 | 0.25     | `SEARCH_ES_SCORE_WEIGHT`      | 关键词匹配的基础相关性（通过 Sigmoid 归一化） |
-| AI 评分     | 0.15     | `SEARCH_AI_RATING_WEIGHT`     | 系统 AI 模型的内容质量评估（0-10 范围）       |
-| 用户评分    | 0.10     | `SEARCH_USER_RATING_WEIGHT`   | 用户对文章的综合评价（0-10 范围）             |
-| 阅读量      | 0.08     | `SEARCH_VIEWS_WEIGHT`         | 文章的浏览热度                                |
-| 点赞量      | 0.08     | `SEARCH_LIKES_WEIGHT`         | 用户的认可度                                  |
-| 收藏量      | 0.08     | `SEARCH_COLLECTS_WEIGHT`      | 用户的收藏价值指数                            |
-| 作者关注数  | 0.04     | `SEARCH_AUTHOR_FOLLOW_WEIGHT` | 作者的影响力                                  |
-| 文章新鲜度  | 0.22     | `SEARCH_RECENCY_WEIGHT`       | 近期发布的内容获得更高排名                    |
-
-ES 内部权重总和为 1.0，确保评分结果的可比性和公平性。
-
-#### 2. 向量与图谱增强后的最终融合评分
-
-ES 返回当前页候选文章后，GoZero 会对当前页候选进行二阶段增强：
-
-- 向量增强：调用 FastAPI `/vector-search/enhance`，基于 PostgreSQL + pgvector + LangChain 计算候选文章与搜索词的语义相似度，返回 `vectorScore`、`semanticReason`、`matchedChunks`。
-- 图谱增强：调用 FastAPI `/graph-search/enhance`，基于 Neo4j 的用户兴趣、关注作者、同分类、候选标签相似、关键词标签命中等信号返回 `graphScore`、`reason`、`relations`。
-- 融合重排：GoZero 只对 ES 当前页候选重排，不改变 `total`。
-
-融合前先对 ES 原始分做当前候选集归一化：
+#### 1. ES 统一评分公式（Painless 脚本内一次性计算13项信号）
 
 $$
-S_{esNorm} = \frac{\text{ESRawScore}}{\max(\text{ESRawScore in current candidates})}
-$$
-
-最终融合公式：
-
-$$
-\text{FinalScore} = W_{es} \cdot S_{esNorm} + W_{vector} \cdot S_{vector} + W_{graph} \cdot S_{graph}
+\begin{aligned}
+\text{FinalScore} =\ & w_1 \cdot \sigma(\text{BM25}) \\
+&+ w_2 \cdot S_{ai} + w_3 \cdot S_{user} \\
+&+ w_4 \cdot S_{views} + w_5 \cdot S_{likes} + w_6 \cdot S_{collects} + w_7 \cdot S_{follow} \\
+&+ w_8 \cdot e^{-\frac{(\Delta t)^2}{2\sigma^2}} \\
+&+ w_9 \cdot \max(0,\ \text{cosineSimilarity}(\vec{q},\ \vec{d})) \\
+&+ w_{10} \cdot \min\left(\frac{\#\text{兴趣标签匹配}}{5}, 1\right) \\
+&+ w_{11} \cdot \mathbf{1}[\text{作者被关注}] \\
+&+ w_{12} \cdot \mathbf{1}[\text{同子分类}] \\
+&+ w_{13} \cdot \min\left(\frac{\#\text{关键词标签匹配}}{3}, 1\right)
+\end{aligned}
 $$
 
 其中：
 
-- $S_{vector}$：向量语义相似度分，范围 0-1；未命中时为 0。
-- $S_{graph}$：图谱增强分，范围 0-1；未命中时为 0。
-- $W_{es} + W_{vector} + W_{graph} = 1$。
-- $W_{es}$ 不低于 `SEARCH_HYBRID_MIN_ES_WEIGHT`，默认 0.55，保证 ES 关键词和业务排序仍是主排序来源。
+- $\sigma(\text{BM25}) = \frac{1}{1 + e^{-\text{BM25}}}$（Sigmoid 归一化，0-1）
+- $S_{ai} = \frac{\text{AI评分}}{10.0}$，$S_{user} = \frac{\text{用户评分}}{10.0}$
+- $S_{views}$、$S_{likes}$、$S_{collects}$、$S_{follow}$：各热度指标与归一化上限的比值，上限 1.0
+- $\vec{q}$：搜索词嵌入向量，$\vec{d}$：文章嵌入向量（存储于 ES `dense_vector` 字段）
+- $\mathbf{1}[\cdot]$：指示函数，命中时为 1，否则为 0
 
-默认权重：
+文章新鲜度采用高斯衰减：$S_{recency} = e^{-\frac{(\Delta t)^2}{2\sigma^2}}$，$\sigma=30$天。刚发布时 $S_{recency}=1.0$，30天时 $\approx 0.606$。
 
-| 融合信号    | 默认权重 | 配置项                        | 说明                                         |
-| ----------- | -------- | ----------------------------- | -------------------------------------------- |
-| ES 归一化分 | 0.55     | `SEARCH_HYBRID_MIN_ES_WEIGHT` | 关键词相关性、业务热度、新鲜度等综合排序基础 |
-| 向量语义分  | 0.25     | `SEARCH_VECTOR_SCORE_WEIGHT`  | 同义词、长句、自然语言问题的语义匹配         |
-| 图谱增强分  | 0.20     | `SEARCH_GRAPH_SCORE_WEIGHT`   | 用户兴趣、关注关系、标签和分类关系           |
+#### 2. 各项信号默认权重与说明
 
-动态调整规则：
+|   序号   | 信号           | 默认权重 | 说明                                           |
+| :------: | -------------- | :------: | ---------------------------------------------- |
+|  $w_1$   | ES 文本相关度  |   0.25   | Sigmoid 归一化 BM25 关键词匹配分               |
+|  $w_2$   | AI 评分        |   0.15   | 系统 AI 模型内容质量评估（0-10）               |
+|  $w_3$   | 用户评分       |   0.10   | 用户对文章的综合评价（0-10）                   |
+|  $w_4$   | 阅读量         |   0.08   | 浏览热度，归一化上限 10000                     |
+|  $w_5$   | 点赞量         |   0.08   | 用户认可度，归一化上限 5000                    |
+|  $w_6$   | 收藏量         |   0.08   | 收藏价值，归一化上限 5000                      |
+|  $w_7$   | 作者影响力     |   0.04   | 作者粉丝数，归一化上限 5000                    |
+|  $w_8$   | 新鲜度         |   0.22   | 高斯衰减，$\sigma=30$天                        |
+|  $w_9$   | 向量语义相似度 |   0.25   | `cosineSimilarity`，搜索词与文章向量           |
+| $w_{10}$ | 兴趣标签匹配   |   0.07   | 用户点赞/收藏标签与文章标签交集（上限5个匹配） |
+| $w_{11}$ | 关注作者       |   0.05   | 文章作者在用户关注列表中                       |
+| $w_{12}$ | 同子分类偏好   |   0.04   | 文章子分类为用户常看子分类                     |
+| $w_{13}$ | 关键词标签     |   0.04   | 搜索词命中文章图谱标签名（上限3个匹配）        |
 
-- `mode=keyword`：只使用 ES，`W_{es}=1.0`，不调用向量和图谱增强。
-- 未登录用户：关闭图谱权重；有关键词时向量权重可提升到 0.30，ES 保持主导。
-- 已登录且有关键词：默认使用 `ES 0.55 + Vector 0.25 + Graph 0.20`。
-- 已登录且空关键词：不启用向量增强，主要由 ES 业务排序和图谱增强承担推荐。
-- `enableVector=false`：强制关闭向量增强。
-- `enableGraph=false`：强制关闭图谱增强。
-- `explain=false`：保留分数字段，但清空 `semanticReason`、`matchedChunks`、`reason`、`relations` 等解释字段。
+#### 3. 数据来源与更新管道
 
-降级规则：
+| 信号                         | 数据存储                  | 更新方式                                                                             |
+| ---------------------------- | ------------------------- | ------------------------------------------------------------------------------------ |
+| $w_1$~$w_8$（传统8项）       | ES 索引各字段             | GoZero ES 同步任务（定时从 MySQL 读取）                                              |
+| $w_9$（向量）                | ES`dense_vector`          | GoZero`embeddingSyncer.go`（pgvector chunk 向量逐文章求均值后写入 ES）               |
+| $w_{10}$~$w_{12}$（图谱3路） | Redis`user_graph:{id}`    | GoZero`graphCacheTask.go`（直连 Neo4j 定时查询活跃用户图谱特征 → Redis，TTL 5 分钟） |
+| $w_{13}$（关键词标签）       | 搜索词实时拆分            | GoZero 搜索时本地计算                                                                |
+| 所有权重数值                 | FastAPI`application.yaml` | `GET /algorithm/search/weights` 端点，GoZero 启动时和每 60 秒获取并缓存              |
+| 搜索词嵌入向量               | FastAPI Redis 缓存        | `GET /vector-search/embed` 端点，DashScope Qwen 嵌入模型，TTL 1 小时                 |
+| matched_chunks               | FastAPI pgvector          | `POST /vector-search/enhance` 端点，仅展示匹配文本片段，不参与排序                   |
 
-- ES 查询失败：搜索请求失败，不使用向量或图谱单独兜底，避免改变主搜索语义。
-- 向量增强失败：记录 warning，保留 ES + Graph 或纯 ES 结果。
-- 图谱增强失败：记录 warning，保留 ES + Vector 或纯 ES 结果。
-- 向量和图谱都无结果或都失败：返回 ES 当前页原始排序，并补齐 `esScore` 和 `finalScore`。
+#### 4. 动态权重调整
+
+GoZero 在构建 ES 脚本参数时，根据请求上下文动态裁剪权重（权重为 0 的信号在 ES 脚本中不计算）：
+
+| 场景              | 向量权重 |      图谱权重       | 说明                 |
+| ----------------- | :------: | :-----------------: | -------------------- |
+| 关键词 + 已登录   |   0.25   | 0.07+0.05+0.04+0.04 | 全部 13 项信号生效   |
+| 关键词 + 未登录   |   0.30   |       全部 0        | 向量提权补偿图谱缺位 |
+| 空搜索词 + 已登录 |    0     |  0.20+0.15+0.12+0   | 图谱提权补偿向量缺位 |
+| 空搜索词 + 未登录 |    0     |       全部 0        | 纯传统 8 项信号      |
+| mode=keyword      |    0     |       全部 0        | 纯传统 8 项信号      |
+
+#### 5. 降级策略
+
+| 故障场景               | 行为                                                                                                            |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- |
+| FastAPI 权重接口不可用 | GoZero 使用上次缓存权重（60s 内有效）                                                                           |
+| FastAPI 嵌入接口不可用 | `queryVector=nil`，ES 脚本跳过向量计算，其余信号正常                                                            |
+| Redis 不可用           | 图谱特征为空，图谱 4 路归零，其余正常                                                                           |
+| pgvector 不可用        | 新文章无`embedding_vector`，ES 脚本自动跳过（`doc['embedding_vector'].size() != 1024`），旧文章 ES 中已有不影响 |
+| ES 不可用              | 返回 500，与当前行为一致                                                                                        |
 
 ## 许可证
 
