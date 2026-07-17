@@ -114,31 +114,6 @@ class VectorSearchService:
         )
         return VectorSearchEnhanceResp(items=items)
 
-    async def get_query_embedding(self, keyword: str, redis_client) -> dict[str, Any]:
-        """获取搜索词的嵌入向量（带 Redis 缓存）"""
-        import hashlib
-        import json
-
-        cache_key = f"embed:{hashlib.md5(keyword.encode()).hexdigest()}"
-
-        # 检查 Redis 缓存
-        if redis_client is not None:
-            cached = await redis_client.get(cache_key)
-            if cached is not None:
-                Logger.info(f"嵌入缓存命中: keyword='{keyword[:30]}...'")
-                return {"query_vector": json.loads(cached), "cached": True}
-
-        # 缓存未命中 → 调用 DashScope API
-        Logger.info(f"嵌入缓存未命中，调用 DashScope API: keyword='{keyword[:30]}...'")
-        rag_tools = get_rag_tools()
-        query_vector = await rag_tools.embeddings.aembed_query(keyword)
-
-        # 写入 Redis 缓存
-        if redis_client is not None:
-            await redis_client.setex(cache_key, 3600, json.dumps(list(query_vector)))
-
-        return {"query_vector": list(query_vector), "cached": False}
-
     def _normalize_article_ids(
         self, article_ids: List[int], req_limit: int
     ) -> List[int]:
