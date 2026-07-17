@@ -1,3 +1,4 @@
+PUT /articles
 {
   "settings": {
     "number_of_shards": 1,
