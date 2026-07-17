@@ -51,6 +51,26 @@ type ArticleES struct {
 	ESScore           float64 `json:"-"` // ES 原始评分（不序列化到 JSON）
 }
 
+// SearchWeights 搜索权重（从 FastAPI 获取）
+type SearchWeights struct {
+	ESScoreWeight         float64
+	AIRatingWeight        float64
+	UserRatingWeight      float64
+	ViewsWeight           float64
+	LikesWeight           float64
+	CollectsWeight        float64
+	AuthorFollowWeight    float64
+	RecencyWeight         float64
+	MaxViewsNormalized    float64
+	MaxLikesNormalized    float64
+	MaxCollectsNormalized float64
+	MaxFollowsNormalized  float64
+	RecencyDecayDays      int64
+	VectorScoreWeight     float64
+	GraphScoreWeight      float64
+	HybridMinESWeight     float64
+}
+
 type SearchLog struct {
 	ID        string         `bson:"_id,omitempty"`
 	UserID    int64          `bson:"user_id"`
@@ -74,22 +94,6 @@ type SearchContent struct {
 	Size            int     `json:"Size"`
 }
 
-type SearchModelConfig struct {
-	ESScoreWeight         float64
-	AIRatingWeight        float64
-	UserRatingWeight      float64
-	ViewsWeight           float64
-	LikesWeight           float64
-	CollectsWeight        float64
-	AuthorFollowWeight    float64
-	RecencyWeight         float64
-	MaxViewsNormalized    float64
-	MaxLikesNormalized    float64
-	MaxCollectsNormalized float64
-	MaxFollowsNormalized  float64
-	RecencyDecayDays      int64
-}
-
 type ArticleViewCounter interface {
 	GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error)
 }
@@ -110,7 +114,6 @@ type SearchModelDeps struct {
 	ESClient      *elastic.Client
 	MongoClient   *mongo.Client
 	MongoDatabase string
-	Config        SearchModelConfig
 
 	ArticlesModel ArticleViewCounter
 	LikesModel    LikeCounter
@@ -119,7 +122,7 @@ type SearchModelDeps struct {
 }
 
 type SearchModel interface {
-	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO) ([]ArticleES, int, error)
+	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, weights *SearchWeights) ([]ArticleES, int, error)
 	GetSearchHistory(ctx context.Context, userID int64) ([]string, error)
 }
 
@@ -127,7 +130,6 @@ type searchModel struct {
 	esClient      *elastic.Client
 	mongoClient   *mongo.Client
 	mongoDatabase string
-	config        SearchModelConfig
 
 	articlesModel ArticleViewCounter
 	likesModel    LikeCounter
@@ -140,7 +142,6 @@ func NewSearchModel(deps SearchModelDeps) SearchModel {
 		esClient:      deps.ESClient,
 		mongoClient:   deps.MongoClient,
 		mongoDatabase: deps.MongoDatabase,
-		config:        deps.Config,
 		articlesModel: deps.ArticlesModel,
 		likesModel:    deps.LikesModel,
 		collectsModel: deps.CollectsModel,

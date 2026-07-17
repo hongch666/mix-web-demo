@@ -108,8 +108,8 @@ func NormalizeSearchMode(req *SearchArticlesReq) string {
 }
 
 // IsVectorEnhanceEnabled 判断本次搜索是否启用向量增强
-func IsVectorEnhanceEnabled(req *SearchArticlesReq, keyword string, configEnabled bool) bool {
-	if !configEnabled || NormalizeSearchMode(req) == "keyword" || strings.TrimSpace(keyword) == "" {
+func IsVectorEnhanceEnabled(req *SearchArticlesReq, keyword string) bool {
+	if NormalizeSearchMode(req) == "keyword" || strings.TrimSpace(keyword) == "" {
 		return false
 	}
 	if req.EnableVector != nil {
@@ -119,8 +119,8 @@ func IsVectorEnhanceEnabled(req *SearchArticlesReq, keyword string, configEnable
 }
 
 // IsGraphEnhanceEnabled 判断本次搜索是否启用图谱增强
-func IsGraphEnhanceEnabled(req *SearchArticlesReq, configEnabled bool) bool {
-	if !configEnabled || NormalizeSearchMode(req) == "keyword" {
+func IsGraphEnhanceEnabled(req *SearchArticlesReq) bool {
+	if NormalizeSearchMode(req) == "keyword" {
 		return false
 	}
 	if req.EnableGraph != nil {

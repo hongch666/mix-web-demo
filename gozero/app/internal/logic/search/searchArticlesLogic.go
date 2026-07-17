@@ -80,8 +80,15 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		Size:            size,
 	}
 
+	// 从 FastAPI 获取搜索权重（缓存 60s）
+	weights, err := l.svcCtx.FastapiClient.GetSearchWeights(l.ctx)
+	if err != nil {
+		l.Error(fmt.Sprintf(constants.SEARCH_WEIGHTS_FETCH_FAIL, err))
+		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
+	}
+
 	// 执行ES搜索
-	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO)
+	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, &weights)
 	if err != nil {
 		l.Error(fmt.Sprintf(constants.SEARCH_EXECUTION_ERROR+": %v", err))
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
@@ -122,8 +129,8 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	}
 
 	mode := types.NormalizeSearchMode(req)
-	vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword, l.svcCtx.Config.Search.VectorEnabled)
-	graphEnabled := types.IsGraphEnhanceEnabled(req, l.svcCtx.Config.Search.GraphEnabled)
+	vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword)
+	graphEnabled := types.IsGraphEnhanceEnabled(req)
 
 	if len(items) > 0 {
 		articleIDs := extractArticleIDsFromItems(items)
@@ -153,9 +160,9 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 
 		if vectorEnabled || graphEnabled {
 			resp.List = MergeAndRerank(items, vectorItems, graphItems, FusionConfig{
-				VectorScoreWeight: l.svcCtx.Config.Search.VectorScoreWeight,
-				GraphScoreWeight:  l.svcCtx.Config.Search.GraphScoreWeight,
-				HybridMinESWeight: l.svcCtx.Config.Search.HybridMinESWeight,
+				VectorScoreWeight: weights.VectorScoreWeight,
+				GraphScoreWeight:  weights.GraphScoreWeight,
+				HybridMinESWeight: weights.HybridMinESWeight,
 				IsLoggedIn:        currentUserID > 0,
 				HasKeyword:        keyword != "",
 				VectorEnabled:     len(vectorItems) > 0,
@@ -215,7 +222,7 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 	userID int64,
 	mode string,
 ) []fastapiClient.VectorEnhanceItem {
-	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.VectorCandidateLimit)
+	limitedIDs := limitArticleIDs(articleIDs, constants.SEARCH_VECTOR_CANDIDATE_LIMIT)
 	if len(limitedIDs) == 0 || keyword == "" {
 		return []fastapiClient.VectorEnhanceItem{}
 	}
@@ -233,9 +240,9 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 	}
 
 	ctx := l.ctx
-	if l.svcCtx.Config.Search.VectorTimeoutMs > 0 {
+	if constants.SEARCH_VECTOR_TIMEOUT_MS > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(l.svcCtx.Config.Search.VectorTimeoutMs)*time.Millisecond)
+		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(constants.SEARCH_VECTOR_TIMEOUT_MS)*time.Millisecond)
 		defer cancel()
 	}
 
@@ -265,7 +272,7 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 	userID int64,
 	mode string,
 ) []fastapiClient.GraphEnhanceItem {
-	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.GraphCandidateLimit)
+	limitedIDs := limitArticleIDs(articleIDs, constants.SEARCH_GRAPH_CANDIDATE_LIMIT)
 	if len(limitedIDs) == 0 {
 		return []fastapiClient.GraphEnhanceItem{}
 	}
@@ -282,9 +289,9 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 	}
 
 	ctx := l.ctx
-	if l.svcCtx.Config.Search.GraphTimeoutMs > 0 {
+	if constants.SEARCH_GRAPH_TIMEOUT_MS > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(l.svcCtx.Config.Search.GraphTimeoutMs)*time.Millisecond)
+		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(constants.SEARCH_GRAPH_TIMEOUT_MS)*time.Millisecond)
 		defer cancel()
 	}
 

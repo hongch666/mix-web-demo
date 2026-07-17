@@ -16,7 +16,7 @@ const (
 	searchHistoryTableName = "articlelogs"
 )
 
-func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO) ([]ArticleES, int, error) {
+func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, weights *SearchWeights) ([]ArticleES, int, error) {
 	if m.esClient == nil {
 		return nil, 0, ErrNilESClient
 	}
@@ -73,19 +73,19 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	from := (page - 1) * size
 
 	scoreScript := elastic.NewScript(constants.ES_SEARCH_SCRIPT).
-		Param(constants.ES_WEIGHT_NAME, m.config.ESScoreWeight).
-		Param(constants.AI_RATING_WEIGHT_NAME, m.config.AIRatingWeight).
-		Param(constants.USER_RATING_WEIGHT_NAME, m.config.UserRatingWeight).
-		Param(constants.VIEWS_WEIGHT_NAME, m.config.ViewsWeight).
-		Param(constants.LIKES_WEIGHT_NAME, m.config.LikesWeight).
-		Param(constants.COLLECTS_WEIGHT_NAME, m.config.CollectsWeight).
-		Param(constants.AUTHOR_FOLLOW_WEIGHT_NAME, m.config.AuthorFollowWeight).
-		Param(constants.RECENCY_WEIGHT_NAME, m.config.RecencyWeight).
-		Param(constants.RECENCY_DECAY_DAYS_NAME, float64(m.config.RecencyDecayDays)*float64(m.config.RecencyDecayDays)).
-		Param(constants.MAX_VIEWS_NORMALIZED_NAME, m.config.MaxViewsNormalized).
-		Param(constants.MAX_LIKES_NORMALIZED_NAME, m.config.MaxLikesNormalized).
-		Param(constants.MAX_COLLECTS_NORMALIZED_NAME, m.config.MaxCollectsNormalized).
-		Param(constants.MAX_FOLLOWS_NORMALIZED_NAME, m.config.MaxFollowsNormalized)
+		Param(constants.ES_WEIGHT_NAME, weights.ESScoreWeight).
+		Param(constants.AI_RATING_WEIGHT_NAME, weights.AIRatingWeight).
+		Param(constants.USER_RATING_WEIGHT_NAME, weights.UserRatingWeight).
+		Param(constants.VIEWS_WEIGHT_NAME, weights.ViewsWeight).
+		Param(constants.LIKES_WEIGHT_NAME, weights.LikesWeight).
+		Param(constants.COLLECTS_WEIGHT_NAME, weights.CollectsWeight).
+		Param(constants.AUTHOR_FOLLOW_WEIGHT_NAME, weights.AuthorFollowWeight).
+		Param(constants.RECENCY_WEIGHT_NAME, weights.RecencyWeight).
+		Param(constants.RECENCY_DECAY_DAYS_NAME, float64(weights.RecencyDecayDays)*float64(weights.RecencyDecayDays)).
+		Param(constants.MAX_VIEWS_NORMALIZED_NAME, weights.MaxViewsNormalized).
+		Param(constants.MAX_LIKES_NORMALIZED_NAME, weights.MaxLikesNormalized).
+		Param(constants.MAX_COLLECTS_NORMALIZED_NAME, weights.MaxCollectsNormalized).
+		Param(constants.MAX_FOLLOWS_NORMALIZED_NAME, weights.MaxFollowsNormalized)
 
 	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
 

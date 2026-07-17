@@ -118,6 +118,8 @@ const (
 	NACOS_REGISTER_FAIL                      = "Nacos 注册失败: service=%s, address=%s:%d, group=%s, err=%v"
 	REDIS_INIT_FAIL                          = "初始化 Redis 客户端失败: %v"
 	REDIS_CONNECT_SUCCESS                    = "Redis 连接成功: %s:%d (DB: %d)"
+	FASTAPI_WEIGHTS_FORMAT_ERROR             = "权重响应格式异常"
+	SEARCH_WEIGHTS_FETCH_FAIL               = "获取搜索权重失败: %v"
 	GORM_IS_NIL_MESSAGE                      = "GORM DB 对象未初始化"
 
 	// 日志文件

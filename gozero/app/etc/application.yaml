@@ -57,28 +57,4 @@ internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 
-search:
-  es_score_weight: 0.25
-  ai_rating_weight: 0.15
-  user_rating_weight: 0.10
-  views_weight: 0.08
-  likes_weight: 0.08
-  collects_weight: 0.08
-  author_follow_weight: 0.04
-  recency_weight: 0.22
-  max_views_normalized: 10000.0
-  max_likes_normalized: 1000.0
-  max_collects_normalized: 1000.0
-  max_follows_normalized: 5000.0
-  recency_decay_days: 30
-  vector_enabled: true
-  vector_timeout_ms: 1000
-  vector_candidate_limit: 50
-  vector_score_weight: 0.25
-  vector_fallback_enabled: true
-  graph_enabled: true
-  graph_timeout_ms: 800
-  graph_candidate_limit: 50
-  graph_score_weight: 0.20
-  graph_fallback_enabled: true
-  hybrid_min_es_weight: 0.55
+
