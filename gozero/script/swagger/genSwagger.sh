@@ -1,8 +1,9 @@
 #!/bin/bash
 # 生成Swagger文档的脚本 - 使用goctl工具从.api文件生成
 
-# 进入脚本所在目录
-cd "$(dirname "$0")" || exit 1
+# 进入脚本所在目录并记录绝对路径
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
 
 # 进入项目根目录
 cd "../.." || exit 1
@@ -34,16 +35,6 @@ if [ -f "../app/docs/main.json" ] && [ -f "../app/docs/main.yaml" ]; then
     echo "JSON文档位置：./app/docs/main.json"
     echo "YAML文档位置：./app/docs/main.yaml"
     
-    # 使用Python脚本为swagger添加中文标签和版本信息
-    python_script="$(dirname "$0")/fix.py"
-    if [ -f "$python_script" ] && command -v python3 &> /dev/null; then
-        echo "正在添加中文分组和版本信息..."
-        python3 "$python_script" "../app/docs/main.json" "../app/docs/main.yaml"
-    fi
-    
-    # 清理api目录下可能残留的文件
-    rm -f main.json main.yaml
-    
     # 转换为 OpenAPI 3.0 JSON 格式，直接覆盖 main.json
     if command -v swagger2openapi &> /dev/null; then
         echo "正在转换为 OpenAPI 3.0 格式..."
@@ -54,6 +45,13 @@ if [ -f "../app/docs/main.json" ] && [ -f "../app/docs/main.yaml" ]; then
     else
         echo "提示: 如需转换为 OpenAPI 3.0 格式，请先安装 swagger2openapi"
         echo "运行: npm install -g swagger2openapi"
+    fi
+
+    # 使用Python脚本为swagger添加中文标签和版本信息，并修复 schemes
+    python_script="$SCRIPT_DIR/fix.py"
+    if [ -f "$python_script" ] && command -v python3 &> /dev/null; then
+        echo "正在添加中文分组、版本信息和修复 schemes..."
+        python3 "$python_script" "../app/docs/main.json" "../app/docs/main.yaml"
     fi
 else
     echo "Swagger文档生成失败"

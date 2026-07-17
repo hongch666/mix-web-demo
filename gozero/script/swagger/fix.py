@@ -16,7 +16,7 @@ except ImportError:
 
 def add_chinese_tags_to_dict(swagger_data):
     """
-    为swagger数据字典添加中文标签定义和info信息
+    为swagger数据字典添加中文标签定义和info信息，并修复 schemes
     此函数可以用于处理JSON和YAML数据
     """
 
@@ -56,20 +56,25 @@ def add_chinese_tags_to_dict(swagger_data):
             }
         )
 
-    # 更新所有路径中的tags为中文名称
+    # 更新所有路径中的tags为中文名称，并移除swagger2openapi注入的per-operation schemes
     if "paths" in swagger_data:
         for path, methods in swagger_data["paths"].items():
             for method, details in methods.items():
-                if isinstance(details, dict) and "tags" in details:
+                if isinstance(details, dict):
                     # 将英文标签转换为对应的中文标签
-                    tags = details["tags"]
-                    new_tags = []
-                    for tag in tags:
-                        if tag in tag_mapping:
-                            new_tags.append(tag_mapping[tag]["name"])
-                        else:
-                            new_tags.append(tag)
-                    details["tags"] = new_tags
+                    if "tags" in details:
+                        tags = details["tags"]
+                        new_tags = []
+                        for tag in tags:
+                            if tag in tag_mapping:
+                                new_tags.append(tag_mapping[tag]["name"])
+                            else:
+                                new_tags.append(tag)
+                        details["tags"] = new_tags
+
+                    # 移除 per-operation schemes（swagger2openapi 会注入 https，导致前端用错协议）
+                    if "schemes" in details:
+                        del details["schemes"]
 
     return swagger_data
 
