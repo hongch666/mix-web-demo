@@ -102,4 +102,30 @@ agent:
     dimension: 1536 # 嵌入维度（text-embedding-v3默认1536维）
     similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
     similarity_tolerance: 0.01 # 相似度容差（用于去重，相似度差异在此范围内视为相近）
-
+  graph_search:
+    tag_interest_weight: 0.35
+    followed_author_weight: 0.25
+    same_sub_category_weight: 0.20
+    candidate_similarity_weight: 0.20
+    keyword_tag_weight: 0.20
+  vector_search:
+    enabled: true
+    candidate_limit: 50
+    fetch_multiplier: 4
+    max_matched_chunks: 2
+    min_score: 0.3
+    score_mode: similarity
+  permission:
+    personal_info_keywords:
+      - "我的"
+      - "个人"
+      - "自己的"
+      - "本人的"
+      - "我"
+      - "自己"
+      - "点赞"
+      - "收藏"
+      - "喜欢"
+      - "评论"
+      - "互动"
+      - "关注"

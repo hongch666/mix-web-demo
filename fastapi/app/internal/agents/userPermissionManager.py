@@ -1,13 +1,32 @@
 from functools import lru_cache
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from app.core.base import Logger
-from app.core.constants import Defaults, Messages
+from app.core.config import load_config
+from app.core.constants import Messages
 from sqlalchemy.orm import Session
 
 
 class UserPermissionManager:
     """用户权限管理器"""
+
+    # 个人信息查询的关键字 - 从配置文件加载
+    @property
+    def PERSONAL_INFO_KEYWORDS(self) -> List[str]:
+        """动态从配置文件加载个人信息查询关键字"""
+        try:
+            keywords: List[str] = (
+                (load_config("agent") or {})
+                .get("permission", {})
+                .get("personal_info_keywords", [])
+            )
+            if keywords:
+                return keywords
+        except Exception as e:
+            Logger.warning(f"从配置文件加载关键字失败: {e}，使用默认关键字")
+
+        # 默认关键字
+        return Messages.DEFAULT_KEYWORDS
 
     def __init__(self, user_mapper: Optional[Any] = None) -> None:
         """
@@ -58,7 +77,7 @@ class UserPermissionManager:
         question_lower: str = question.lower()
 
         # 检查是否包含个人信息查询的关键字
-        for keyword in Defaults.PERSONAL_INFO_KEYWORDS:
+        for keyword in self.PERSONAL_INFO_KEYWORDS:
             if keyword in question_lower:
                 Logger.debug(f"[权限] 检测到个人信息查询关键字: '{keyword}'")
                 return True
