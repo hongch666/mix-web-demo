@@ -31,7 +31,7 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	boolQuery.Filter(elastic.NewTermQuery("status", 1))
 
 	if searchDTO.UserID != nil {
-		boolQuery.Filter(elastic.NewTermQuery("userId", *searchDTO.UserID))
+		boolQuery.Filter(elastic.NewTermQuery("user_id", *searchDTO.UserID))
 	}
 
 	if searchDTO.Username != "" {

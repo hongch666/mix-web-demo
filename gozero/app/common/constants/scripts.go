@@ -40,11 +40,11 @@ const (
 
 		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
 
-		double likesBoost = params.likesWeight * (doc['likeCount'].size() > 0 ? Math.min((double)doc['likeCount'].value / params.maxLikesNormalized, 1.0) : 0);
+		double likesBoost = params.likesWeight * (doc['like_count'].size() > 0 ? Math.min((double)doc['like_count'].value / params.maxLikesNormalized, 1.0) : 0);
 
-		double collectsBoost = params.collectsWeight * (doc['collectCount'].size() > 0 ? Math.min((double)doc['collectCount'].value / params.maxCollectsNormalized, 1.0) : 0);
+		double collectsBoost = params.collectsWeight * (doc['collect_count'].size() > 0 ? Math.min((double)doc['collect_count'].value / params.maxCollectsNormalized, 1.0) : 0);
 
-		double followBoost = params.followWeight * (doc['authorFollowCount'].size() > 0 ? Math.min((double)doc['authorFollowCount'].value / params.maxFollowsNormalized, 1.0) : 0);
+		double followBoost = params.followWeight * (doc['author_follow_count'].size() > 0 ? Math.min((double)doc['author_follow_count'].value / params.maxFollowsNormalized, 1.0) : 0);
 
 		long now = System.currentTimeMillis();
 		long articleTime = doc['create_at'].value.getMillis();
@@ -62,16 +62,16 @@ const (
 				"id": { "type": "integer" },
 				"title": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
 				"content": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
-				"userId": { "type": "integer" },
+				"user_id": { "type": "integer" },
 				"username": { "type": "keyword" },
 				"category_name": { "type": "keyword" },
 				"sub_category_name": { "type": "keyword" },
 				"tags": { "type": "text", "analyzer": "ik_smart", "search_analyzer": "ik_smart" },
 				"status": { "type": "integer" },
 				"views": { "type": "integer" },
-				"likeCount": { "type": "integer" },
-				"collectCount": { "type": "integer" },
-				"authorFollowCount": { "type": "integer" },
+				"like_count": { "type": "integer" },
+				"collect_count": { "type": "integer" },
+				"author_follow_count": { "type": "integer" },
 				"create_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
 				"update_at": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss" },
 				"ai_score": { "type": "float" },
