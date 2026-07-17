@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter
 
 from .aiHistory.aiHistoryRouter import router as aiHistoryRouter
+from .algorithm.algorithmRouter import router as algorithmRouter
 from .analyze.analyzeRouter import router as analyzeRouter
 from .apiLog.apiLogRouter import router as apiLogRouter
 from .chat.chatRouter import router as chatRouter
@@ -23,6 +24,7 @@ routers: List[APIRouter] = [
     userRouter,
     graphSearchRouter,
     vectorSearchRouter,
+    algorithmRouter,
 ]
 
 __all__: List[str] = [
@@ -36,4 +38,5 @@ __all__: List[str] = [
     "testRouter",
     "graphSearchRouter",
     "vectorSearchRouter",
+    "algorithmRouter",
 ]
