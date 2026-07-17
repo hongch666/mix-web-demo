@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Dict, List
 
 from app.core.base import Logger
-from app.core.constants import Defaults, Messages
+from app.core.constants import Defaults, Messages, Scripts
 from app.core.db import get_neo4j_client
 from app.internal.schemas.graphSearchDTO import (
     GraphRelationDTO,
@@ -138,7 +138,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号1: 用户兴趣标签"""
         rows = await self._safe_query(
-            Messages.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
+            Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
             {
                 "userId": user_id,
                 "articleIds": article_ids,
@@ -174,7 +174,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号2: 关注作者"""
         rows = await self._safe_query(
-            Messages.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
+            Scripts.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
             {
                 "userId": user_id,
                 "articleIds": article_ids,
@@ -208,7 +208,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号3: 同子分类"""
         rows = await self._safe_query(
-            Messages.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
+            Scripts.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
             {
                 "userId": user_id,
                 "articleIds": article_ids,
@@ -244,7 +244,7 @@ class GraphSearchService:
     ) -> Dict[int, dict]:
         """信号4: 候选间相似标签"""
         rows = await self._safe_query(
-            Messages.GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER,
+            Scripts.GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER,
             {
                 "articleIds": article_ids,
             },
@@ -281,7 +281,7 @@ class GraphSearchService:
             return {}
 
         rows = await self._safe_query(
-            Messages.GRAPH_SEARCH_KEYWORD_TAG_CYPHER,
+            Scripts.GRAPH_SEARCH_KEYWORD_TAG_CYPHER,
             {
                 "articleIds": article_ids,
                 "keyword": keyword,

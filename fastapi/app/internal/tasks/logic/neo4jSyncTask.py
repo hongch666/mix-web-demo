@@ -5,7 +5,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Messages, Scripts
 from app.core.db import SessionLocal, get_redis_client
 from app.core.db.neo4j import get_neo4j_client
 from sqlalchemy import text
@@ -71,7 +71,7 @@ class KnowledgeGraphSyncService:
         if last_sync_time is None or not timestamp_column:
             return base_sql
         sync_time_text = last_sync_time.strftime("%Y-%m-%d %H:%M:%S")
-        return Messages.NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT % (
+        return Scripts.NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT % (
             base_sql,
             timestamp_column,
             sync_time_text,
@@ -83,7 +83,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_USERS,
+                Scripts.NEO4J_SQL_SELECT_USERS,
                 "update_at",
                 last_sync_time,
             )
@@ -107,7 +107,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_CATEGORIES,
+                Scripts.NEO4J_SQL_SELECT_CATEGORIES,
                 "update_time",
                 last_sync_time,
             )
@@ -126,7 +126,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_SUB_CATEGORIES,
+                Scripts.NEO4J_SQL_SELECT_SUB_CATEGORIES,
                 "update_time",
                 last_sync_time,
             )
@@ -146,7 +146,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_ARTICLES,
+                Scripts.NEO4J_SQL_SELECT_ARTICLES,
                 "update_at",
                 last_sync_time,
             )
@@ -173,7 +173,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_LIKES,
+                Scripts.NEO4J_SQL_SELECT_LIKES,
                 "created_time",
                 last_sync_time,
             )
@@ -192,7 +192,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_COLLECTS,
+                Scripts.NEO4J_SQL_SELECT_COLLECTS,
                 "created_time",
                 last_sync_time,
             )
@@ -211,7 +211,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_COMMENTS,
+                Scripts.NEO4J_SQL_SELECT_COMMENTS,
                 "update_time",
                 last_sync_time,
             )
@@ -231,7 +231,7 @@ class KnowledgeGraphSyncService:
     ) -> List[Dict[str, Any]]:
         rows = self._fetch_rows(
             self._build_incremental_sql(
-                Messages.NEO4J_SQL_SELECT_FOCUS,
+                Scripts.NEO4J_SQL_SELECT_FOCUS,
                 "created_time",
                 last_sync_time,
             )
@@ -246,7 +246,7 @@ class KnowledgeGraphSyncService:
         ]
 
     async def _ensure_schema(self) -> None:
-        for cypher in Messages.NEO4J_CREATE_CONSTRAINTS:
+        for cypher in Scripts.NEO4J_CREATE_CONSTRAINTS:
             await self.client.run_write_query(cypher)
 
     async def _batch_write(
@@ -319,7 +319,7 @@ class KnowledgeGraphSyncService:
         cleanup_result: Dict[str, int] = {}
 
         cleanup_result["published_by"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_PUBLISHED_BY_CYPHER,
+            Scripts.NEO4J_CLEANUP_PUBLISHED_BY_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["id"], item["userId"])
@@ -331,7 +331,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["article_sub_category"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_ARTICLE_SUB_CATEGORY_CYPHER,
+            Scripts.NEO4J_CLEANUP_ARTICLE_SUB_CATEGORY_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["id"], item["subCategoryId"])
@@ -343,7 +343,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["sub_category_category"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_SUB_CATEGORY_CATEGORY_CYPHER,
+            Scripts.NEO4J_CLEANUP_SUB_CATEGORY_CATEGORY_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["id"], item["categoryId"])
@@ -355,7 +355,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["tagged_as"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_TAGGED_AS_CYPHER,
+            Scripts.NEO4J_CLEANUP_TAGGED_AS_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["articleId"], item["tagName"])
@@ -366,7 +366,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["likes"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_LIKES_CYPHER,
+            Scripts.NEO4J_CLEANUP_LIKES_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["userId"], item["articleId"])
@@ -377,7 +377,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["collects"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_COLLECTS_CYPHER,
+            Scripts.NEO4J_CLEANUP_COLLECTS_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["userId"], item["articleId"])
@@ -388,7 +388,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["commented_on"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_COMMENTED_ON_CYPHER,
+            Scripts.NEO4J_CLEANUP_COMMENTED_ON_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(
@@ -401,7 +401,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["follows"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_FOLLOWS_CYPHER,
+            Scripts.NEO4J_CLEANUP_FOLLOWS_CYPHER,
             {
                 "keys": [
                     self._build_relation_key(item["followerId"], item["followedId"])
@@ -412,31 +412,31 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["articles"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_ARTICLES_CYPHER,
+            Scripts.NEO4J_CLEANUP_ARTICLES_CYPHER,
             {"ids": [item["id"] for item in articles]},
             Messages.NEO4J_CLEANUP_LABEL_ARTICLE,
         )
 
         cleanup_result["users"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_USERS_CYPHER,
+            Scripts.NEO4J_CLEANUP_USERS_CYPHER,
             {"ids": [item["id"] for item in users]},
             Messages.NEO4J_CLEANUP_LABEL_USER,
         )
 
         cleanup_result["sub_categories"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_SUB_CATEGORIES_CYPHER,
+            Scripts.NEO4J_CLEANUP_SUB_CATEGORIES_CYPHER,
             {"ids": [item["id"] for item in sub_categories]},
             Messages.NEO4J_CLEANUP_LABEL_SUB_CATEGORY,
         )
 
         cleanup_result["categories"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_CATEGORIES_CYPHER,
+            Scripts.NEO4J_CLEANUP_CATEGORIES_CYPHER,
             {"ids": [item["id"] for item in categories]},
             Messages.NEO4J_CLEANUP_LABEL_CATEGORY,
         )
 
         cleanup_result["tags"] = await self._cleanup_write(
-            Messages.NEO4J_CLEANUP_TAGS_CYPHER,
+            Scripts.NEO4J_CLEANUP_TAGS_CYPHER,
             {
                 "names": sorted(
                     {
@@ -462,27 +462,27 @@ class KnowledgeGraphSyncService:
 
         users = self._fetch_all_users()
         result["users"] = await self._batch_write(
-            users, Messages.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
+            users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
 
         categories = self._fetch_all_categories()
         result["categories"] = await self._batch_write(
             categories,
-            Messages.NEO4J_MERGE_CATEGORIES_CYPHER,
+            Scripts.NEO4J_MERGE_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_CATEGORY,
         )
 
         sub_categories = self._fetch_all_sub_categories()
         result["sub_categories"] = await self._batch_write(
             sub_categories,
-            Messages.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
+            Scripts.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_SUB_CATEGORY,
         )
 
         articles = self._fetch_all_articles()
         result["articles"] = await self._batch_write(
             articles,
-            Messages.NEO4J_MERGE_ARTICLES_CYPHER,
+            Scripts.NEO4J_MERGE_ARTICLES_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE,
         )
 
@@ -497,7 +497,7 @@ class KnowledgeGraphSyncService:
                 )
         tags = [{"name": tag_name} for tag_name in sorted(tag_names)]
         result["tags"] = await self._batch_write(
-            tags, Messages.NEO4J_MERGE_TAGS_CYPHER, Messages.NEO4J_LABEL_TAG
+            tags, Scripts.NEO4J_MERGE_TAGS_CYPHER, Messages.NEO4J_LABEL_TAG
         )
 
         sub_category_relations = [
@@ -507,7 +507,7 @@ class KnowledgeGraphSyncService:
         ]
         result["sub_category_belongs_to_category"] = await self._batch_write(
             sub_category_relations,
-            Messages.NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER,
+            Scripts.NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER,
             Messages.NEO4J_LABEL_SUB_CATEGORY_RELATION,
         )
 
@@ -518,7 +518,7 @@ class KnowledgeGraphSyncService:
         ]
         result["belongs_to"] = await self._batch_write(
             article_sub_relations,
-            Messages.NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER,
+            Scripts.NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION,
         )
 
@@ -529,41 +529,41 @@ class KnowledgeGraphSyncService:
         ]
         result["published_by"] = await self._batch_write(
             article_user_relations,
-            Messages.NEO4J_MERGE_PUBLISHED_BY_CYPHER,
+            Scripts.NEO4J_MERGE_PUBLISHED_BY_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE_AUTHOR_RELATION,
         )
 
         result["tagged_as"] = await self._batch_write(
             article_tag_relations,
-            Messages.NEO4J_MERGE_TAGGED_AS_CYPHER,
+            Scripts.NEO4J_MERGE_TAGGED_AS_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE_TAG_RELATION,
         )
 
         likes = self._fetch_all_likes()
         result["likes"] = await self._batch_write(
             likes,
-            Messages.NEO4J_MERGE_LIKES_CYPHER,
+            Scripts.NEO4J_MERGE_LIKES_CYPHER,
             Messages.NEO4J_LABEL_LIKE_RELATION,
         )
 
         collects = self._fetch_all_collects()
         result["collects"] = await self._batch_write(
             collects,
-            Messages.NEO4J_MERGE_COLLECTS_CYPHER,
+            Scripts.NEO4J_MERGE_COLLECTS_CYPHER,
             Messages.NEO4J_LABEL_COLLECT_RELATION,
         )
 
         comments = self._fetch_all_comments()
         result["commented_on"] = await self._batch_write(
             comments,
-            Messages.NEO4J_MERGE_COMMENTED_ON_CYPHER,
+            Scripts.NEO4J_MERGE_COMMENTED_ON_CYPHER,
             Messages.NEO4J_LABEL_COMMENT_RELATION,
         )
 
         focus = self._fetch_all_focus()
         result["follows"] = await self._batch_write(
             focus,
-            Messages.NEO4J_MERGE_FOLLOWS_CYPHER,
+            Scripts.NEO4J_MERGE_FOLLOWS_CYPHER,
             Messages.NEO4J_LABEL_FOLLOW_RELATION,
         )
 
@@ -605,27 +605,27 @@ class KnowledgeGraphSyncService:
 
         users = self._fetch_all_users(last_sync_time)
         result["users"] = await self._batch_write(
-            users, Messages.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
+            users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
 
         categories = self._fetch_all_categories(last_sync_time)
         result["categories"] = await self._batch_write(
             categories,
-            Messages.NEO4J_MERGE_CATEGORIES_CYPHER,
+            Scripts.NEO4J_MERGE_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_CATEGORY,
         )
 
         sub_categories = self._fetch_all_sub_categories(last_sync_time)
         result["sub_categories"] = await self._batch_write(
             sub_categories,
-            Messages.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
+            Scripts.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_SUB_CATEGORY,
         )
 
         articles = self._fetch_all_articles(last_sync_time)
         result["articles"] = await self._batch_write(
             articles,
-            Messages.NEO4J_MERGE_ARTICLES_CYPHER,
+            Scripts.NEO4J_MERGE_ARTICLES_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE,
         )
 
@@ -640,7 +640,7 @@ class KnowledgeGraphSyncService:
                 )
         tags = [{"name": tag_name} for tag_name in sorted(tag_names)]
         result["tags"] = await self._batch_write(
-            tags, Messages.NEO4J_MERGE_TAGS_CYPHER, Messages.NEO4J_LABEL_TAG
+            tags, Scripts.NEO4J_MERGE_TAGS_CYPHER, Messages.NEO4J_LABEL_TAG
         )
 
         sub_category_relations = [
@@ -650,7 +650,7 @@ class KnowledgeGraphSyncService:
         ]
         result["sub_category_belongs_to_category"] = await self._batch_write(
             sub_category_relations,
-            Messages.NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER,
+            Scripts.NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER,
             Messages.NEO4J_LABEL_SUB_CATEGORY_RELATION,
         )
 
@@ -661,7 +661,7 @@ class KnowledgeGraphSyncService:
         ]
         result["belongs_to"] = await self._batch_write(
             article_sub_relations,
-            Messages.NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER,
+            Scripts.NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION,
         )
 
@@ -672,41 +672,41 @@ class KnowledgeGraphSyncService:
         ]
         result["published_by"] = await self._batch_write(
             article_user_relations,
-            Messages.NEO4J_MERGE_PUBLISHED_BY_CYPHER,
+            Scripts.NEO4J_MERGE_PUBLISHED_BY_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE_AUTHOR_RELATION,
         )
 
         result["tagged_as"] = await self._batch_write(
             article_tag_relations,
-            Messages.NEO4J_MERGE_TAGGED_AS_CYPHER,
+            Scripts.NEO4J_MERGE_TAGGED_AS_CYPHER,
             Messages.NEO4J_LABEL_ARTICLE_TAG_RELATION,
         )
 
         likes = self._fetch_all_likes(last_sync_time)
         result["likes"] = await self._batch_write(
             likes,
-            Messages.NEO4J_MERGE_LIKES_CYPHER,
+            Scripts.NEO4J_MERGE_LIKES_CYPHER,
             Messages.NEO4J_LABEL_LIKE_RELATION,
         )
 
         collects = self._fetch_all_collects(last_sync_time)
         result["collects"] = await self._batch_write(
             collects,
-            Messages.NEO4J_MERGE_COLLECTS_CYPHER,
+            Scripts.NEO4J_MERGE_COLLECTS_CYPHER,
             Messages.NEO4J_LABEL_COLLECT_RELATION,
         )
 
         comments = self._fetch_all_comments(last_sync_time)
         result["commented_on"] = await self._batch_write(
             comments,
-            Messages.NEO4J_MERGE_COMMENTED_ON_CYPHER,
+            Scripts.NEO4J_MERGE_COMMENTED_ON_CYPHER,
             Messages.NEO4J_LABEL_COMMENT_RELATION,
         )
 
         focus = self._fetch_all_focus(last_sync_time)
         result["follows"] = await self._batch_write(
             focus,
-            Messages.NEO4J_MERGE_FOLLOWS_CYPHER,
+            Scripts.NEO4J_MERGE_FOLLOWS_CYPHER,
             Messages.NEO4J_LABEL_FOLLOW_RELATION,
         )
 

@@ -101,7 +101,7 @@ class Scripts:
         "CREATE CONSTRAINT tag_name_unique IF NOT EXISTS FOR (t:Tag) REQUIRE t.name IS UNIQUE",
     ]
 
-    # ===== Neo4j MERGE Cypher =====
+    # ===== Neo4j MERGE Cypher（节点） =====
     NEO4J_MERGE_USERS_CYPHER: str = """
         UNWIND $rows AS row
         MERGE (u:User {id: row.id})
@@ -124,4 +124,241 @@ class Scripts:
         SET a.title = row.title, a.tags = row.tags, a.status = row.status,
             a.views = row.views, a.createAt = row.createAt, a.updateAt = row.updateAt,
             a.contentHash = row.contentHash, a.updatedAt = row.updatedAt
+    """
+
+    # ===== Neo4j MERGE Cypher（关系） — 同步任务 _batch_write 调用 =====
+    # 每条 Cypher 使用 UNWIND $rows 批量写入
+
+    # Tag 节点
+    NEO4J_MERGE_TAGS_CYPHER: str = """
+        UNWIND $rows AS row
+        MERGE (t:Tag {name: row.name})
+    """
+
+    # SubCategory -[:BELONGS_TO]-> Category
+    NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (s:SubCategory {id: row.subCategoryId})
+        MATCH (c:Category {id: row.categoryId})
+        MERGE (s)-[:BELONGS_TO]->(c)
+    """
+
+    # Article -[:BELONGS_TO]-> SubCategory
+    NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})
+        MATCH (s:SubCategory {id: row.subCategoryId})
+        MERGE (a)-[:BELONGS_TO]->(s)
+    """
+
+    # Article -[:PUBLISHED_BY]-> User
+    NEO4J_MERGE_PUBLISHED_BY_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})
+        MATCH (u:User {id: row.userId})
+        MERGE (a)-[:PUBLISHED_BY]->(u)
+    """
+
+    # Article -[:TAGGED_AS]-> Tag
+    NEO4J_MERGE_TAGGED_AS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (a:Article {id: row.articleId})
+        MERGE (t:Tag {name: row.tagName})
+        MERGE (a)-[:TAGGED_AS]->(t)
+    """
+
+    # User -[:LIKES]-> Article（含创建时间）
+    NEO4J_MERGE_LIKES_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})
+        MATCH (a:Article {id: row.articleId})
+        MERGE (u)-[r:LIKES]->(a)
+        SET r.createdAt = row.createdAt
+    """
+
+    # User -[:COLLECTS]-> Article（含创建时间）
+    NEO4J_MERGE_COLLECTS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})
+        MATCH (a:Article {id: row.articleId})
+        MERGE (u)-[r:COLLECTS]->(a)
+        SET r.createdAt = row.createdAt
+    """
+
+    # User -[:COMMENTED_ON]-> Article（含评论ID和创建时间）
+    NEO4J_MERGE_COMMENTED_ON_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})
+        MATCH (a:Article {id: row.articleId})
+        MERGE (u)-[r:COMMENTED_ON]->(a)
+        SET r.commentId = row.commentId, r.createdAt = row.createdAt
+    """
+
+    # User -[:FOLLOWS]-> User（含创建时间）
+    NEO4J_MERGE_FOLLOWS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (follower:User {id: row.followerId})
+        MATCH (followed:User {id: row.followedId})
+        MERGE (follower)-[r:FOLLOWS]->(followed)
+        SET r.createdAt = row.createdAt
+    """
+
+    # ===== Neo4j 清理 Cypher（同步任务 _cleanup_write 调用） =====
+    # 关系清理用 keys 参数（"id1:id2" 格式的字符串列表）
+    # 节点清理用 ids（整数ID列表）或 names（标签名列表）
+
+    # 清理 PUBLISHED_BY 关系
+    NEO4J_CLEANUP_PUBLISHED_BY_CYPHER: str = """
+        MATCH (a:Article)-[r:PUBLISHED_BY]->(u:User)
+        WITH a, r, u, toString(a.id) + ':' + toString(u.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 Article -[:BELONGS_TO]-> SubCategory 关系
+    NEO4J_CLEANUP_ARTICLE_SUB_CATEGORY_CYPHER: str = """
+        MATCH (a:Article)-[r:BELONGS_TO]->(s:SubCategory)
+        WITH a, r, s, toString(a.id) + ':' + toString(s.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 SubCategory -[:BELONGS_TO]-> Category 关系
+    NEO4J_CLEANUP_SUB_CATEGORY_CATEGORY_CYPHER: str = """
+        MATCH (s:SubCategory)-[r:BELONGS_TO]->(c:Category)
+        WITH s, r, c, toString(s.id) + ':' + toString(c.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 Article -[:TAGGED_AS]-> Tag 关系
+    NEO4J_CLEANUP_TAGGED_AS_CYPHER: str = """
+        MATCH (a:Article)-[r:TAGGED_AS]->(t:Tag)
+        WITH a, r, t, toString(a.id) + ':' + t.name AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 User -[:LIKES]-> Article 关系
+    NEO4J_CLEANUP_LIKES_CYPHER: str = """
+        MATCH (u:User)-[r:LIKES]->(a:Article)
+        WITH u, r, a, toString(u.id) + ':' + toString(a.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 User -[:COLLECTS]-> Article 关系
+    NEO4J_CLEANUP_COLLECTS_CYPHER: str = """
+        MATCH (u:User)-[r:COLLECTS]->(a:Article)
+        WITH u, r, a, toString(u.id) + ':' + toString(a.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 User -[:COMMENTED_ON]-> Article 关系（key 格式: commentId:userId:articleId）
+    NEO4J_CLEANUP_COMMENTED_ON_CYPHER: str = """
+        MATCH (u:User)-[r:COMMENTED_ON]->(a:Article)
+        WITH u, r, a, toString(r.commentId) + ':' + toString(u.id) + ':' + toString(a.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理 User -[:FOLLOWS]-> User 关系
+    NEO4J_CLEANUP_FOLLOWS_CYPHER: str = """
+        MATCH (follower:User)-[r:FOLLOWS]->(followed:User)
+        WITH follower, r, followed, toString(follower.id) + ':' + toString(followed.id) AS key
+        WHERE NOT key IN $keys
+        DELETE r
+    """
+
+    # 清理不在 ids 中的 Article 节点（级联删除关联关系）
+    NEO4J_CLEANUP_ARTICLES_CYPHER: str = """
+        MATCH (n:Article)
+        WHERE NOT n.id IN $ids
+        DETACH DELETE n
+    """
+
+    # 清理不在 ids 中的 User 节点（级联删除关联关系）
+    NEO4J_CLEANUP_USERS_CYPHER: str = """
+        MATCH (n:User)
+        WHERE NOT n.id IN $ids
+        DETACH DELETE n
+    """
+
+    # 清理不在 ids 中的 SubCategory 节点（级联删除关联关系）
+    NEO4J_CLEANUP_SUB_CATEGORIES_CYPHER: str = """
+        MATCH (n:SubCategory)
+        WHERE NOT n.id IN $ids
+        DETACH DELETE n
+    """
+
+    # 清理不在 ids 中的 Category 节点（级联删除关联关系）
+    NEO4J_CLEANUP_CATEGORIES_CYPHER: str = """
+        MATCH (n:Category)
+        WHERE NOT n.id IN $ids
+        DETACH DELETE n
+    """
+
+    # 清理不在 names 列表中的 Tag 节点（级联删除关联关系）
+    NEO4J_CLEANUP_TAGS_CYPHER: str = """
+        MATCH (n:Tag)
+        WHERE NOT n.name IN $names
+        DETACH DELETE n
+    """
+
+    # ===== 图谱搜索增强 Cypher（只读查询） =====
+
+    # 信号1：用户兴趣标签 — 候选文章与用户点赞文章共享的标签数
+    # 路径: User-LIKES-Article-TAGGED_AS-Tag
+    # 入参: userId, articleIds  /  返回: articleId, rawScore, matchedTags
+    GRAPH_SEARCH_TAG_INTEREST_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[:LIKES]->(liked:Article)-[:TAGGED_AS]->(tag:Tag)
+        MATCH (cand:Article)-[:TAGGED_AS]->(tag)
+        WHERE cand.id IN $articleIds
+        WITH cand.id AS articleId, collect(DISTINCT tag.name) AS matchedTags
+        RETURN articleId, size(matchedTags) AS rawScore, matchedTags
+    """
+
+    # 信号2：关注作者 — 候选文章作者是否在用户关注列表里
+    # 路径: User-FOLLOWS-User-PUBLISHED_BY-Article
+    # 入参: userId, articleIds  /  返回: articleId, names
+    GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[:FOLLOWS]->(followed:User)<-[:PUBLISHED_BY]-(cand:Article)
+        WHERE cand.id IN $articleIds
+        WITH cand.id AS articleId, collect(DISTINCT followed.name) AS names
+        RETURN articleId, names
+    """
+
+    # 信号3：同子分类 — 候选文章是否属于用户近期互动过的子分类
+    # 路径: User-LIKES|COLLECTS|COMMENTED_ON-Article-BELONGS_TO-SubCategory
+    # 入参: userId, articleIds  /  返回: articleId, rawScore, names
+    GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER: str = """
+        MATCH (u:User {id: $userId})-[r:LIKES|COLLECTS|COMMENTED_ON]->(interacted:Article)-[:BELONGS_TO]->(sc:SubCategory)
+        MATCH (cand:Article)-[:BELONGS_TO]->(sc)
+        WHERE cand.id IN $articleIds
+          AND NOT (u)-[:LIKES|COLLECTS|COMMENTED_ON]->(cand)
+        WITH cand.id AS articleId, collect(DISTINCT sc.name) AS names
+        RETURN articleId, size(names) AS rawScore, names
+    """
+
+    # 信号4：候选间相似标签 — 候选文章两两之间共享的标签数
+    # 路径: Article-TAGGED_AS-Tag-TAGGED_AS-Article
+    # 入参: articleIds  /  返回: articleId, rawScore, names
+    GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER: str = """
+        MATCH (cand:Article)-[:TAGGED_AS]->(tag:Tag)<-[:TAGGED_AS]-(other:Article)
+        WHERE cand.id IN $articleIds
+          AND other.id IN $articleIds
+          AND other.id <> cand.id
+        WITH cand.id AS articleId, collect(DISTINCT tag.name) AS names
+        RETURN articleId, size(names) AS rawScore, names
+    """
+
+    # 信号5：关键词标签命中 — 候选文章中包含关键词相关标签的文章
+    # 路径: Article-TAGGED_AS-Tag
+    # 入参: articleIds, keyword  /  返回: articleId, rawScore, names
+    GRAPH_SEARCH_KEYWORD_TAG_CYPHER: str = """
+        MATCH (cand:Article)-[:TAGGED_AS]->(tag:Tag)
+        WHERE cand.id IN $articleIds AND tag.name CONTAINS $keyword
+        WITH cand.id AS articleId, collect(DISTINCT tag.name) AS names
+        RETURN articleId, size(names) AS rawScore, names
     """
