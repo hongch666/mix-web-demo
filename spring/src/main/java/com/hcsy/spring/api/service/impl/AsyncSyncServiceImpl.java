@@ -46,8 +46,6 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
      * @param userId   触发同步的用户ID
      * @param username 触发同步的用户名
      */
-    private static final long EMBEDDING_SYNC_DELAY_MS = 300_000; // 5 分钟
-
     @Override
     @Async("syncTaskExecutor")
     public void syncAllAsync(Long userId, String username) {
@@ -59,38 +57,30 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         try {
             logger.info(user + Messages.SYNC);
 
+            // 使用 CompletableFuture + syncTaskExecutor 并行执行ES同步
             CompletableFuture<Void> esFuture = CompletableFuture.runAsync(
                 () -> syncESWithRetry(MAX_RETRY_TIMES),
                 syncTaskExecutor
             );
 
-            // 保留: FastAPI pgvector 同步 (Agent 需要)
+            // 使用 CompletableFuture + syncTaskExecutor 并行执行Vector同步
             CompletableFuture<Void> vectorFuture = CompletableFuture.runAsync(
                 () -> syncVectorWithRetry(MAX_RETRY_TIMES),
                 syncTaskExecutor
             );
 
+            // 使用 CompletableFuture + syncTaskExecutor 并行执行缓存清理
             CompletableFuture<Void> cacheFuture = CompletableFuture.runAsync(
                 () -> clearCacheWithRetry(MAX_RETRY_TIMES),
                 syncTaskExecutor
             );
 
-            CompletableFuture<Void> graphCacheFuture = CompletableFuture.runAsync(
-                () -> syncGraphCacheWithRetry(MAX_RETRY_TIMES),
-                syncTaskExecutor
-            );
-
-            // embedding 同步内建 5 分钟延迟, fire-and-forget, 不参与 allOf
-            CompletableFuture.runAsync(
-                () -> syncEmbeddingWithRetry(MAX_RETRY_TIMES),
-                syncTaskExecutor
-            );
-
-            CompletableFuture.allOf(esFuture, vectorFuture, cacheFuture, graphCacheFuture)
+            CompletableFuture.allOf(esFuture, vectorFuture, cacheFuture)
                 .get(SYNC_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             long duration = System.currentTimeMillis() - startTime;
             logger.info(Messages.SYNC_PARALLEL_SUCCESS, user, duration);
+            logger.info(Messages.SYNC_ALL_SUCCESS);
 
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -189,65 +179,6 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
                 } else {
                     logger.error(Messages.CACHE_CLEAR_MAX_RETRY, e.getMessage(), e);
                     throw new RuntimeException(Messages.CACHE_CLEAR_FAILED, e);
-                }
-            }
-        }
-    }
-
-    /**
-     * 带重试机制的 ES embedding_vector 同步 (内建5分钟延迟, fire-and-forget)
-     * 延迟原因: syncVector 是异步触发, 等待 pgvector 同步完成
-     * 定时任务兜底确保最终一致性
-     */
-    private void syncEmbeddingWithRetry(int maxRetries) {
-        try {
-            Thread.sleep(EMBEDDING_SYNC_DELAY_MS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-        }
-
-        int retryCount = 0;
-        while (retryCount <= maxRetries) {
-            try {
-                goZeroClient.syncEmbedding();
-                return;
-            } catch (Exception e) {
-                retryCount++;
-                if (retryCount > maxRetries) {
-                    logger.error(Messages.SYNC_EMBEDDING_FAIL + e.getMessage());
-                    return;
-                }
-                try {
-                    Thread.sleep(RETRY_DELAY_MS);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
-        }
-    }
-
-    /**
-     * 带重试机制的图谱缓存同步 (Neo4j → Redis)
-     */
-    private void syncGraphCacheWithRetry(int maxRetries) {
-        int retryCount = 0;
-        while (retryCount <= maxRetries) {
-            try {
-                goZeroClient.syncGraphCache();
-                return;
-            } catch (Exception e) {
-                retryCount++;
-                if (retryCount > maxRetries) {
-                    logger.error(Messages.SYNC_GRAPH_CACHE_FAIL + e.getMessage());
-                    return;
-                }
-                try {
-                    Thread.sleep(RETRY_DELAY_MS);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    return;
                 }
             }
         }
