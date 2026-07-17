@@ -7,22 +7,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
+	"time"
 
 	"app/common/constants"
 	"app/common/exceptions"
 	"app/common/keys"
 	"app/common/utils"
-	"app/internal/cache"
 	"app/internal/client/fastapiClient"
-	"app/internal/logic/search/graphreason"
-	"app/internal/logic/search/vectorreason"
 	"app/internal/svc"
 	"app/internal/types"
 	"app/model/search"
 
 	rabbitmq "github.com/wagslane/go-rabbitmq"
+
 	"github.com/zeromicro/go-zero/core/mr"
 )
 
@@ -42,15 +40,14 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 }
 
 func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp *types.SearchArticlesResp, err error) {
-	page := req.Page
-	if page < 1 {
-		page = 1
-	}
+	// 设置默认分页
+	page := max(req.Page, 1)
 	size := req.Size
 	if size < 1 {
 		size = 10
 	}
 
+	// 构建搜索DTO
 	keyword := ""
 	if req.Keyword != nil {
 		keyword = *req.Keyword
@@ -69,61 +66,11 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	}
 
 	currentUserID, _ := getCurrentUserFromContext(l.ctx)
-	isLoggedIn := currentUserID > 0
-
-	// ═══════════ Step 1: 并行获取权重 + 嵌入向量 + 用户图谱特征 ═══════
-	var weights fastapiClient.SearchWeights
-	var queryVector []float64
-	var userFeatures *cache.UserGraphFeatures
-
-	err = mr.Finish(
-		func() error {
-			w, err := l.svcCtx.FastapiClient.GetSearchWeights(l.ctx)
-			if err != nil {
-				return err
-			}
-			weights = w
-			return nil
-		},
-		func() error {
-			if keyword == "" || !l.svcCtx.Config.Search.EmbedEnabled {
-				return nil
-			}
-			qv, err := l.svcCtx.FastapiClient.GetQueryEmbedding(l.ctx, keyword)
-			if err != nil {
-				l.Warningf(constants.SEARCH_EMBED_FAIL, err)
-				return nil
-			}
-			queryVector = qv
-			return nil
-		},
-		func() error {
-			if currentUserID <= 0 || !l.svcCtx.Config.Search.GraphEnabled {
-				return nil
-			}
-			uf, err := cache.GetUserGraphFeatures(l.ctx, l.svcCtx.RedisClient, currentUserID)
-			if err != nil {
-				l.Warningf(constants.SEARCH_GRAPH_FEATURE_FAIL, err)
-				return nil
-			}
-			userFeatures = uf
-			return nil
-		},
-	)
-	if err != nil {
-		return nil, exceptions.NewInternalServerError(constants.SEARCH_PREPARE_FAIL, err.Error())
-	}
-
-	// ═══════════ Step 2: 构建 ES 查询参数 ═══════
-	esParams := buildESQueryParams(
-		keyword, weights, queryVector, userFeatures,
-		types.NormalizeSearchMode(req),
-		isLoggedIn,
-	)
+	userID := req.UserId
 
 	searchDTO := search.ArticleSearchDTO{
 		Keyword:         keyword,
-		UserID:          req.UserId,
+		UserID:          userID,
 		Username:        username,
 		CategoryName:    categoryName,
 		SubCategoryName: subCategoryName,
@@ -133,127 +80,104 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		Size:            size,
 	}
 
-	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, &search.ArticleSearchParams{
-		ES: &search.ESScoringParams{
-			EsWeight:            esParams.EsWeight,
-			AiWeight:            esParams.AiWeight,
-			UserWeight:          esParams.UserWeight,
-			ViewsWeight:         esParams.ViewsWeight,
-			LikesWeight:         esParams.LikesWeight,
-			CollectsWeight:      esParams.CollectsWeight,
-			FollowWeight:        esParams.FollowWeight,
-			RecencyWeight:       esParams.RecencyWeight,
-			MaxViewsNorm:        esParams.MaxViewsNorm,
-			MaxLikesNorm:        esParams.MaxLikesNorm,
-			MaxCollectsNorm:     esParams.MaxCollectsNorm,
-			MaxFollowsNorm:      esParams.MaxFollowsNorm,
-			DecayDaysSq:         esParams.DecayDaysSq,
-			VectorWeight:        esParams.VectorWeight,
-			QueryVector:         esParams.QueryVector,
-			GraphInterestWeight: esParams.GraphInterestWeight,
-			GraphFollowWeight:   esParams.GraphFollowWeight,
-			GraphSubcatWeight:   esParams.GraphSubcatWeight,
-			GraphKeywordWeight:  esParams.GraphKeywordWeight,
-			UserTagList:         esParams.UserTagList,
-			FollowedAuthorIds:   esParams.FollowedAuthorIds,
-			PreferredSubCatIds:  esParams.PreferredSubCatIds,
-			KeywordTags:         esParams.KeywordTags,
-		},
-	})
+	// 执行ES搜索
+	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO)
 	if err != nil {
 		l.Error(fmt.Sprintf(constants.SEARCH_EXECUTION_ERROR+": %v", err))
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
 	}
 
-	l.Info(constants.ARTICLE_SEARCH_SUCCESS)
-
-	// ═══════════ Step 3: MySQL 回填 + matched_chunks 并行获取 ═══
-	// MySQL 回填已在 es.go 中完成
-	// matched_chunks 从 FastAPI 获取 (仅用于展示, 不参与排序)
-	var matchedChunksMap map[int64][]types.VectorMatchedChunk
-
-	if keyword != "" {
-		articleIDs := make([]int64, 0, len(articles))
-		for _, a := range articles {
-			articleIDs = append(articleIDs, a.ID)
+	// 转换为ArticleEsItem
+	items := make([]types.ArticleEsItem, len(articles))
+	for i, article := range articles {
+		items[i] = types.ArticleEsItem{
+			Id:                article.ID,
+			Title:             article.Title,
+			Content:           article.Content,
+			UserId:            article.UserID,
+			Username:          article.Username,
+			Tags:              article.Tags,
+			Status:            article.Status,
+			Views:             article.Views,
+			LikeCount:         article.LikeCount,
+			CollectCount:      article.CollectCount,
+			AuthorFollowCount: article.AuthorFollowCount,
+			CategoryName:      article.CategoryName,
+			SubCategoryName:   article.SubCategoryName,
+			CreateAt:          article.CreateAt,
+			UpdateAt:          article.UpdateAt,
+			AiScore:           article.AIScore,
+			UserScore:         article.UserScore,
+			AiCommentCount:    article.AICommentCount,
+			UserCommentCount:  article.UserCommentCount,
+			EsScore:           article.ESScore,
 		}
-		chunks, chunkErr := l.svcCtx.FastapiClient.GetMatchedChunks(l.ctx, articleIDs, keyword)
-		if chunkErr != nil {
-			l.Warningf(constants.SEARCH_MATCHED_CHUNKS_FAIL, chunkErr)
-			matchedChunksMap = make(map[int64][]types.VectorMatchedChunk)
-		} else {
-			matchedChunksMap = chunks
-		}
-	} else {
-		matchedChunksMap = make(map[int64][]types.VectorMatchedChunk)
 	}
 
-	// ═══════════ Step 3.5: 信号4 候选间相似度补算 ═══
-	fillCandidateSimScores(articles)
+	l.Info(constants.ARTICLE_SEARCH_SUCCESS)
 
-	// ═══════════ Step 4: 组装响应 ═══════
-	items := make([]types.ArticleEsItem, len(articles))
-	for i, art := range articles {
-		items[i] = types.ArticleEsItem{
-			Id:                art.ID,
-			Title:             art.Title,
-			Content:           art.Content,
-			UserId:            art.UserID,
-			Username:          art.Username,
-			Tags:              art.Tags,
-			Status:            art.Status,
-			Views:             art.Views,
-			LikeCount:         art.LikeCount,
-			CollectCount:      art.CollectCount,
-			AuthorFollowCount: art.AuthorFollowCount,
-			CategoryName:      art.CategoryName,
-			SubCategoryName:   art.SubCategoryName,
-			CreateAt:          art.CreateAt,
-			UpdateAt:          art.UpdateAt,
-			AiScore:           art.AIScore,
-			UserScore:         art.UserScore,
-			AiCommentCount:    art.AICommentCount,
-			UserCommentCount:  art.UserCommentCount,
+	resp = &types.SearchArticlesResp{
+		Total: total,
+		List:  items,
+	}
+
+	mode := types.NormalizeSearchMode(req)
+	vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword, l.svcCtx.Config.Search.VectorEnabled)
+	graphEnabled := types.IsGraphEnhanceEnabled(req, l.svcCtx.Config.Search.GraphEnabled)
+
+	if len(items) > 0 {
+		articleIDs := extractArticleIDsFromItems(items)
+		tagList := extractTagsFromItems(items)
+		vectorItems := make([]fastapiClient.VectorEnhanceItem, 0)
+		graphItems := make([]fastapiClient.GraphEnhanceItem, 0)
+
+		// 向量增强与图谱增强是两次相互独立的远程调用，用 mr.Finish 并发执行，
+		// 将搜索尾延迟由两者耗时之和降为两者之大者。两个 fetch 均在内部吞掉错误
+		// 并降级为空切片、返回 nil，因此 mr.Finish 不会触发快速失败，可安全并发。
+		var enhanceTasks []func() error
+		if vectorEnabled {
+			enhanceTasks = append(enhanceTasks, func() error {
+				vectorItems = l.fetchVectorEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+				return nil
+			})
+		}
+		if graphEnabled {
+			enhanceTasks = append(enhanceTasks, func() error {
+				graphItems = l.fetchGraphEnhance(articleIDs, tagList, keyword, categoryName, subCategoryName, currentUserID, mode)
+				return nil
+			})
+		}
+		if len(enhanceTasks) > 0 {
+			_ = mr.Finish(enhanceTasks...)
 		}
 
-		// 打分字段
-		items[i].EsScore = roundTo4(art.TradScore)
-		items[i].VectorScore = roundTo4(art.VecScore)
-		items[i].GraphScore = roundTo4(userGraphScore(art, userFeatures))
-		items[i].FinalScore = roundTo4(art.FinalScore)
-
-		// 解释字段
-		items[i].Reason = graphreason.Generate(art.ID, art.UserID, art.Username, art.Tags, art.SubCategoryName, userFeatures)
-		items[i].SemanticReason = vectorreason.Generate(art.VecScore)
-		items[i].Relations = graphreason.BuildRelations(art.ID, art.UserID, art.Tags, userFeatures)
-
-		if chunks, ok := matchedChunksMap[art.ID]; ok {
-			items[i].MatchedChunks = chunks
+		if vectorEnabled || graphEnabled {
+			resp.List = MergeAndRerank(items, vectorItems, graphItems, FusionConfig{
+				VectorScoreWeight: l.svcCtx.Config.Search.VectorScoreWeight,
+				GraphScoreWeight:  l.svcCtx.Config.Search.GraphScoreWeight,
+				HybridMinESWeight: l.svcCtx.Config.Search.HybridMinESWeight,
+				IsLoggedIn:        currentUserID > 0,
+				HasKeyword:        keyword != "",
+				VectorEnabled:     len(vectorItems) > 0,
+				GraphEnabled:      len(graphItems) > 0,
+			})
 		} else {
-			items[i].MatchedChunks = make([]types.VectorMatchedChunk, 0)
-		}
-
-		items[i].ScoreDetails = types.ScoreDetails{
-			EsScore:       roundTo4(art.TradScore),
-			VectorScore:   roundTo4(art.VecScore),
-			GraphScore:    roundTo4(items[i].GraphScore),
-			BusinessScore: 0,
-			RecencyScore:  0,
+			FillDefaultScores(resp.List)
 		}
 	}
 
 	if !types.IsExplainEnabled(req) {
-		clearExplainFields(items)
+		clearExplainFields(resp.List)
 	}
 
-	resp = &types.SearchArticlesResp{Total: total, List: items}
-
-	// ═══════════ Step 5: RabbitMQ 搜索日志 ═══
+	// 如果指定了搜索关键字，记录搜索信息
 	if req.Keyword != nil && *req.Keyword != "" {
 		logUserID := currentUserID
 		if logUserID <= 0 && req.UserId != nil {
 			logUserID = int64(*req.UserId)
 		}
+
+		// 发送搜索信息到消息队列中进行异步处理
 		msg := map[string]any{
 			"action":  "search",
 			"userId":  logUserID,
@@ -264,6 +188,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		if err != nil {
 			l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
 		} else {
+			// 通过RabbitMQ发送消息
 			if l.svcCtx.RabbitMQPublisher != nil {
 				err = l.svcCtx.RabbitMQPublisher.Publish(
 					jsonBytes,
@@ -280,33 +205,141 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	return
 }
 
-// userGraphScore 图谱总分 (ES 已算信号1/2/3/5 + GoZero 补算信号4)
-func userGraphScore(art search.ArticleESWithScores, uf *cache.UserGraphFeatures) float64 {
-	total := art.GraphScore + art.CandidateSimScore
-	return clamp01(total)
+// fetchVectorEnhance 调用向量增强
+func (l *SearchArticlesLogic) fetchVectorEnhance(
+	articleIDs []int64,
+	tagList []string,
+	keyword string,
+	categoryName string,
+	subCategoryName string,
+	userID int64,
+	mode string,
+) []fastapiClient.VectorEnhanceItem {
+	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.VectorCandidateLimit)
+	if len(limitedIDs) == 0 || keyword == "" {
+		return []fastapiClient.VectorEnhanceItem{}
+	}
+
+	vectorReq := &fastapiClient.VectorEnhanceRequest{
+		UserID:          userID,
+		Keyword:         keyword,
+		ArticleIDs:      limitedIDs,
+		CategoryName:    categoryName,
+		SubCategoryName: subCategoryName,
+		Tags:            tagList,
+		Limit:           len(limitedIDs),
+		TopK:            len(limitedIDs),
+		Mode:            mode,
+	}
+
+	ctx := l.ctx
+	if l.svcCtx.Config.Search.VectorTimeoutMs > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(l.svcCtx.Config.Search.VectorTimeoutMs)*time.Millisecond)
+		defer cancel()
+	}
+
+	result, err := l.svcCtx.FastapiClient.EnhanceVector(ctx, vectorReq)
+	if err != nil {
+		l.Warningf(constants.VECTOR_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []fastapiClient.VectorEnhanceItem{}
+	}
+
+	items, err := fastapiClient.ParseVectorEnhanceResult(result.Data)
+	if err != nil {
+		l.Warningf(constants.VECTOR_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []fastapiClient.VectorEnhanceItem{}
+	}
+	return items
 }
 
-// fillCandidateSimScores 信号4：候选间标签相似度
-func fillCandidateSimScores(articles []search.ArticleESWithScores) {
-	tagFreq := make(map[string]int)
-	for _, a := range articles {
-		for _, tag := range strings.Split(a.Tags, ",") {
+// fetchGraphEnhance 调用图谱增强
+func (l *SearchArticlesLogic) fetchGraphEnhance(
+	articleIDs []int64,
+	tagList []string,
+	keyword string,
+	categoryName string,
+	subCategoryName string,
+	userID int64,
+	mode string,
+) []fastapiClient.GraphEnhanceItem {
+	limitedIDs := limitArticleIDs(articleIDs, l.svcCtx.Config.Search.GraphCandidateLimit)
+	if len(limitedIDs) == 0 {
+		return []fastapiClient.GraphEnhanceItem{}
+	}
+
+	graphReq := &fastapiClient.GraphEnhanceRequest{
+		UserID:          userID,
+		Keyword:         keyword,
+		ArticleIDs:      limitedIDs,
+		CategoryName:    categoryName,
+		SubCategoryName: subCategoryName,
+		Tags:            tagList,
+		Limit:           len(limitedIDs),
+		Mode:            mode,
+	}
+
+	ctx := l.ctx
+	if l.svcCtx.Config.Search.GraphTimeoutMs > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(l.svcCtx.Config.Search.GraphTimeoutMs)*time.Millisecond)
+		defer cancel()
+	}
+
+	graphResult, err := l.svcCtx.FastapiClient.EnhanceGraph(ctx, graphReq)
+	if err != nil {
+		l.Warningf(constants.GRAPH_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []fastapiClient.GraphEnhanceItem{}
+	}
+
+	items, err := fastapiClient.ParseGraphEnhanceResult(graphResult.Data)
+	if err != nil {
+		l.Warningf(constants.GRAPH_ENHANCE_DEGRADE_LOG,
+			keyword, userID, len(limitedIDs), err)
+		return []fastapiClient.GraphEnhanceItem{}
+	}
+	return items
+}
+
+// extractArticleIDsFromItems 从文章列表中提取文章ID
+func extractArticleIDsFromItems(items []types.ArticleEsItem) []int64 {
+	articleIDs := make([]int64, 0, len(items))
+	for _, item := range items {
+		articleIDs = append(articleIDs, item.Id)
+	}
+	return articleIDs
+}
+
+// extractTagsFromItems 从文章列表中提取所有标签
+func extractTagsFromItems(items []types.ArticleEsItem) []string {
+	tagSet := make(map[string]struct{})
+	for _, item := range items {
+		if item.Tags == "" {
+			continue
+		}
+		for _, tag := range strings.Split(item.Tags, ",") {
 			tag = strings.TrimSpace(tag)
 			if tag != "" {
-				tagFreq[tag]++
+				tagSet[tag] = struct{}{}
 			}
 		}
 	}
-	for i := range articles {
-		shared := 0
-		for _, tag := range strings.Split(articles[i].Tags, ",") {
-			tag = strings.TrimSpace(tag)
-			if tagFreq[tag] > 1 {
-				shared++
-			}
-		}
-		articles[i].CandidateSimScore = math.Min(float64(shared)/3.0, 1.0) * 0.04
+
+	tags := make([]string, 0, len(tagSet))
+	for tag := range tagSet {
+		tags = append(tags, tag)
 	}
+	return tags
+}
+
+func limitArticleIDs(articleIDs []int64, limit int) []int64 {
+	if limit <= 0 || limit > len(articleIDs) {
+		limit = len(articleIDs)
+	}
+	return articleIDs[:limit]
 }
 
 func clearExplainFields(items []types.ArticleEsItem) {

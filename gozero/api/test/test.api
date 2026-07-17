@@ -49,29 +49,10 @@ service App {
 	)
 	@handler SyncESHandler
 	post /syncer (SyncESReq) returns (SyncESResp)
-
-	@doc (
-		summary:     "手动触发文章向量同步"
-		description: "从 pgvector 读取 chunk 向量均值, 写入 ES embedding_vector 字段"
-	)
-	@handler SyncEmbeddingHandler
-	post /syncer/embedding (SyncEmbeddingReq) returns (SyncEmbeddingResp)
-
-	@doc (
-		summary:     "手动触发表谱特征缓存同步"
-		description: "从 Neo4j 读取活跃用户图谱特征, 写入 Redis user_graph:{id}"
-	)
-	@handler SyncGraphCacheHandler
-	post /syncer/graph-cache (SyncGraphCacheReq) returns (SyncGraphCacheResp)
 }
 
 type (
-	SyncESReq          {}
-	SyncESResp         {}
-	SyncEmbeddingReq   {}
-	SyncEmbeddingResp  {}
-	SyncGraphCacheReq  {}
-	SyncGraphCacheResp {}
+	SyncESReq  {}
 	TestGoZeroResp {
 		Data string `json:"data"`
 	}
@@ -84,5 +65,6 @@ type (
 	TestFastAPIResp {
 		Data string `json:"data"`
 	}
+	SyncESResp  {}
 )
 

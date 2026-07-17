@@ -58,19 +58,27 @@ internal-token:
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 
 search:
-  embed_enabled: true
-  embed_timeout_ms: 2000
+  es_score_weight: 0.25
+  ai_rating_weight: 0.15
+  user_rating_weight: 0.10
+  views_weight: 0.08
+  likes_weight: 0.08
+  collects_weight: 0.08
+  author_follow_weight: 0.04
+  recency_weight: 0.22
+  max_views_normalized: 10000.0
+  max_likes_normalized: 1000.0
+  max_collects_normalized: 1000.0
+  max_follows_normalized: 5000.0
+  recency_decay_days: 30
+  vector_enabled: true
+  vector_timeout_ms: 1000
+  vector_candidate_limit: 50
+  vector_score_weight: 0.25
+  vector_fallback_enabled: true
   graph_enabled: true
-  graph_redis_ttl: 600
-
-pgvector:
-  host: ${DB_PG_HOST:127.0.0.1}
-  port: ${DB_PG_PORT:5432}
-  username: ${DB_PG_USERNAME:postgres}
-  password: ${DB_PG_PASSWORD:}
-  dbname: ${DB_PG_DBNAME:demo}
-
-neo4j:
-  uri: ${NEO4J_URI:bolt://127.0.0.1:7687}
-  username: ${NEO4J_USERNAME:neo4j}
-  password: ${NEO4J_PASSWORD:12345678}
+  graph_timeout_ms: 800
+  graph_candidate_limit: 50
+  graph_score_weight: 0.20
+  graph_fallback_enabled: true
+  hybrid_min_es_weight: 0.55

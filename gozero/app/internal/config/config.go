@@ -18,9 +18,6 @@ type Config struct {
 	Logs   LogsConfig   `json:"logs"`
 	Search SearchConfig `json:"search"`
 
-	Pgvector PgvectorConfig `json:"pgvector"`
-	Neo4j    Neo4jConfig    `json:"neo4j"`
-
 	InternalToken InternalTokenConfig `json:"internal-token"`
 }
 
@@ -94,22 +91,28 @@ type LogsConfig struct {
 }
 
 type SearchConfig struct {
-	EmbedEnabled   bool  `json:"embed_enabled"`
-	EmbedTimeoutMs int64 `json:"embed_timeout_ms"`
-	GraphEnabled   bool  `json:"graph_enabled"`
-	GraphRedisTTL  int   `json:"graph_redis_ttl"`
-}
-
-type PgvectorConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Dbname   string `json:"dbname"`
-}
-
-type Neo4jConfig struct {
-	Uri      string `json:"uri"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ESScoreWeight         float64 `json:"es_score_weight"`
+	AIRatingWeight        float64 `json:"ai_rating_weight"`
+	UserRatingWeight      float64 `json:"user_rating_weight"`
+	ViewsWeight           float64 `json:"views_weight"`
+	LikesWeight           float64 `json:"likes_weight"`
+	CollectsWeight        float64 `json:"collects_weight"`
+	AuthorFollowWeight    float64 `json:"author_follow_weight"`
+	RecencyWeight         float64 `json:"recency_weight"`
+	MaxViewsNormalized    float64 `json:"max_views_normalized"`
+	MaxLikesNormalized    float64 `json:"max_likes_normalized"`
+	MaxCollectsNormalized float64 `json:"max_collects_normalized"`
+	MaxFollowsNormalized  float64 `json:"max_follows_normalized"`
+	RecencyDecayDays      int64   `json:"recency_decay_days"`
+	VectorEnabled         bool    `json:"vector_enabled"`
+	VectorTimeoutMs       int64   `json:"vector_timeout_ms"`
+	VectorCandidateLimit  int     `json:"vector_candidate_limit"`
+	VectorScoreWeight     float64 `json:"vector_score_weight"`
+	VectorFallbackEnabled bool    `json:"vector_fallback_enabled"`
+	GraphEnabled          bool    `json:"graph_enabled"`
+	GraphTimeoutMs        int64   `json:"graph_timeout_ms"`
+	GraphCandidateLimit   int     `json:"graph_candidate_limit"`
+	GraphScoreWeight      float64 `json:"graph_score_weight"`
+	GraphFallbackEnabled  bool    `json:"graph_fallback_enabled"`
+	HybridMinESWeight     float64 `json:"hybrid_min_es_weight"`
 }

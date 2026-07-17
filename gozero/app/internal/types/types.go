@@ -165,14 +165,6 @@ type SyncESReq struct{}
 
 type SyncESResp struct{}
 
-type SyncEmbeddingReq struct{}
-
-type SyncEmbeddingResp struct{}
-
-type SyncGraphCacheReq struct{}
-
-type SyncGraphCacheResp struct{}
-
 type TestFastAPIResp struct {
 	Data string `json:"data"`
 }
