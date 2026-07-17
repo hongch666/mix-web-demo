@@ -16,7 +16,7 @@ except ImportError:
 
 def add_chinese_tags_to_dict(swagger_data):
     """
-    为swagger数据字典添加中文标签定义和info信息，并修复 schemes
+    为swagger数据字典添加中文标签定义和info信息，并修复 schemes/servers
     此函数可以用于处理JSON和YAML数据
     """
 
@@ -56,9 +56,19 @@ def add_chinese_tags_to_dict(swagger_data):
             }
         )
 
-    # 更新所有路径中的tags为中文名称，并移除swagger2openapi注入的per-operation schemes
+    # 移除 swagger2openapi 自动注入的全局 servers 字段
+    # 根因：Swagger 2.0 文档里没有 host，转换工具默认生成 https:// 的 server
+    # 删除后 Swagger UI 会回退使用当前页面的 host + protocol，避免协议错误
+    if "servers" in swagger_data:
+        del swagger_data["servers"]
+
+    # 更新所有路径中的tags为中文名称，并移除swagger2openapi注入的per-operation schemes/servers
     if "paths" in swagger_data:
         for path, methods in swagger_data["paths"].items():
+            # 移除 path 级别可能存在的 servers（OpenAPI 3.0 允许 path 级 server）
+            if isinstance(methods, dict) and "servers" in methods:
+                del methods["servers"]
+
             for method, details in methods.items():
                 if isinstance(details, dict):
                     # 将英文标签转换为对应的中文标签
@@ -75,6 +85,10 @@ def add_chinese_tags_to_dict(swagger_data):
                     # 移除 per-operation schemes（swagger2openapi 会注入 https，导致前端用错协议）
                     if "schemes" in details:
                         del details["schemes"]
+
+                    # 移除 per-operation servers（swagger2openapi 会在每个 operation 下注入 https 的 servers）
+                    if "servers" in details:
+                        del details["servers"]
 
     return swagger_data
 
