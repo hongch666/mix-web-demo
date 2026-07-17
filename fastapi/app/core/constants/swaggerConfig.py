@@ -44,4 +44,8 @@ class SwaggerConfig:
             "name": "向量搜索模块",
             "description": "向量搜索相关API，包括根据 ES 候选文章进行语义分、语义原因和匹配片段增强",
         },
+        {
+            "name": "算法模块",
+            "description": "算法相关API，包括提供ES复合打分和融合排序所需的全量权重参数",
+        },
     ]

@@ -9,7 +9,7 @@ from app.internal.services.algorithm import (
 
 from fastapi import APIRouter, Depends, Request
 
-router = APIRouter(prefix="/algorithm", tags=["搜索算法模块"])
+router = APIRouter(prefix="/algorithm", tags=["算法模块"])
 
 
 @router.get(
