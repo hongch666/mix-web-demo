@@ -30,6 +30,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
     private final ArticleService articleService;
     private final UserService userService;
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Comments> listCommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
@@ -81,6 +82,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Comments> listAICommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO) {
@@ -129,6 +131,7 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return this.baseMapper.selectCommentsWithFilter(page, content, articleIds, userIds);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId) {
@@ -138,12 +141,14 @@ public class CommentsServiceImpl extends ServiceImpl<CommentsMapper, Comments> i
         return commentsPage;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay) {
         // 使用SQL级别JOIN过滤，确保分页基于已过滤的数据
         return this.baseMapper.selectCommentsByArticleIdWithoutAI(page, articleId, sortWay);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public List<Comments> listAICommentsByArticleId(Long articleId) {

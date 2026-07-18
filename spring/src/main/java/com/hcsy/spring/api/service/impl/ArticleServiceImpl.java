@@ -42,6 +42,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
     private final CategoryService categoryService;
     private final SubCategoryService subCategoryService;
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public List<Article> listPublishedArticles() {
@@ -50,6 +51,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 .list();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public IPage<ArticleWithCategoryVO> listArticlesByIdWithCategory(Page<Article> page, Integer id, boolean onlyPublished) {
         IPage<Article> resultPage = listArticlesById(page, id, onlyPublished);
@@ -95,6 +97,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return voPage;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Article> listPublishedArticles(Page<Article> page) {
@@ -105,6 +108,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return this.page(page, queryWrapper);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Article> listArticlesById(Page<Article> page, Integer id) {
@@ -115,6 +119,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return this.page(page, queryWrapper);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Article> listArticlesById(Page<Article> page, Integer id, boolean onlyPublished) {
@@ -229,6 +234,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         }
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public List<Article> listUnpublishedArticles() {
@@ -236,6 +242,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<Article> listUnpublishedArticles(Page<Article> page) {
@@ -243,6 +250,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 new LambdaQueryWrapper<Article>().eq(Article::getStatus, 0));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public IPage<ArticleWithCategoryVO> listUnpublishedArticlesWithCategory(Page<Article> page) {
         @SuppressWarnings("null")
@@ -289,6 +297,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
         return voPage;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public Article findByArticleTitle(String articleTitle) {
@@ -296,6 +305,7 @@ public class ArticleServiceImpl extends ServiceImpl<ArticleMapper, Article> impl
                 new LambdaQueryWrapper<Article>().eq(Article::getTitle, articleTitle));
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public List<Article> listAllArticlesByTitle(String articleTitle) {

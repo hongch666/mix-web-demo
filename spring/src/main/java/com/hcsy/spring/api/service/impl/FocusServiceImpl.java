@@ -62,6 +62,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.delete(queryWrapper) > 0;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public boolean isFocused(Long userId, Long focusId) {
@@ -72,6 +73,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.selectOne(queryWrapper) != null;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<FocusUserVO> listUserFocuses(Long userId, Page<Focus> page) {
@@ -102,6 +104,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return resultPage;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<FocusUserVO> listUserFollowers(Long userId, Page<Focus> page) {
@@ -132,6 +135,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return resultPage;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public Long getFocusCountByUserId(Long userId) {
@@ -141,6 +145,7 @@ public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements
         return focusMapper.selectCount(queryWrapper);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public Long getFollowerCountByUserId(Long userId) {

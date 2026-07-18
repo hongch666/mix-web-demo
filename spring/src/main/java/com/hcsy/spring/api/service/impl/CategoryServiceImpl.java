@@ -179,11 +179,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         subCategoryMapper.deleteBatchIds(ids);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public CategoryVO getCategoryById(Long id) {
         return categoryCacheService.getCategoryById(id);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public IPage<CategoryVO> pageCategory(Page<?> page) {
         // 使用被缓存的 DTO 方法获取分页数据，然后转换为 IPage 返回，保持接口字段不变

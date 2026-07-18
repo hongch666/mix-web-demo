@@ -71,6 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource(name = "userQueryExecutor")
     private Executor userQueryExecutor;
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public UserListVO listUsersWithFilter(long page, long size, String username) {
@@ -191,6 +192,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public User findByUsername(String username) {
@@ -201,6 +203,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return userMapper.selectOne(queryWrapper);
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public List<User> listAllUserByUsername(String username) {
@@ -324,6 +327,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         emailVerificationService.markEmailAsVerified(registerDTO.getEmail());
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public UserListVO getAllUsers(String username) {
@@ -358,6 +362,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public UserListVO getAllAiUsers() {
@@ -387,21 +392,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .build();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<Long> getNormalUserIds() {
         return userMapper.selectNormalUserIds();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<Long> getAiUserIds() {
         return userMapper.selectAiUserIds();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public long countNormalUsers() {
         return userMapper.countNormalUsers();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public long countAiUsers() {
         return userMapper.countAiUsers();
@@ -426,6 +435,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         redisUtil.set(RedisKeys.userStatus(user.getId()), "0");
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public User findByEmail(String email) {

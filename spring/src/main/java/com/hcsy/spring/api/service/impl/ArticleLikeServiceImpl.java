@@ -71,6 +71,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return articleLikeMapper.delete(queryWrapper) > 0;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public boolean isLiked(Long articleId, Long userId) {
@@ -81,6 +82,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return articleLikeMapper.selectOne(queryWrapper) != null;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<ArticleLikeVO> listUserLikes(Long userId, Page<ArticleLike> page) {
@@ -146,6 +148,7 @@ public class ArticleLikeServiceImpl extends ServiceImpl<ArticleLikeMapper, Artic
         return voPage;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public Long getLikeCountByArticleId(Long articleId) {

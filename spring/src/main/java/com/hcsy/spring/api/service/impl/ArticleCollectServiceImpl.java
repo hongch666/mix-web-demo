@@ -72,6 +72,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return articleCollectMapper.delete(queryWrapper) > 0;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public boolean isCollected(Long articleId, Long userId) {
@@ -82,6 +83,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return articleCollectMapper.selectOne(queryWrapper) != null;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public IPage<ArticleCollectVO> listUserCollects(Long userId, Page<ArticleCollect> page) {
@@ -146,6 +148,7 @@ public class ArticleCollectServiceImpl extends ServiceImpl<ArticleCollectMapper,
         return voPage;
     }
 
+    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public Long getCollectCountByArticleId(Long articleId) {

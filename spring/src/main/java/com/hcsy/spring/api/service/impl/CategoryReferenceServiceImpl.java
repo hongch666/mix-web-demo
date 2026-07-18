@@ -134,6 +134,7 @@ public class CategoryReferenceServiceImpl extends ServiceImpl<CategoryReferenceM
         }
     }
 
+    @Transactional(readOnly = true)
     @Override
     public CategoryReferenceVO getCategoryReferenceBySubCategoryId(Long subCategoryId) {
         CategoryReference reference = categoryReferenceMapper.selectOne(
