@@ -16,7 +16,7 @@ const (
 	searchHistoryTableName = "articlelogs"
 )
 
-func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, weights *SearchWeights) ([]ArticleES, int, error) {
+func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights) ([]ArticleES, int, error) {
 	if m.esClient == nil {
 		return nil, 0, ErrNilESClient
 	}
@@ -72,7 +72,8 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	}
 	from := (page - 1) * size
 
-	scoreScript := elastic.NewScript(constants.ES_SEARCH_SCRIPT).
+	// 使用从 FastAPI 获取的 ES Painless 脚本模板，通过 Param 传入权重值
+	scoreScript := elastic.NewScript(esScript).
 		Param(constants.ES_WEIGHT_NAME, weights.ESScoreWeight).
 		Param(constants.AI_RATING_WEIGHT_NAME, weights.AIRatingWeight).
 		Param(constants.USER_RATING_WEIGHT_NAME, weights.UserRatingWeight).

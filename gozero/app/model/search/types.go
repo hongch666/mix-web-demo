@@ -71,6 +71,11 @@ type SearchWeights struct {
 	HybridMinESWeight     float64
 }
 
+// SearchScript ES 搜索脚本，包含使用 params.xxx 占位符的 Painless 脚本，由调用方传入权重参数后使用
+type SearchScript struct {
+	EsScript string
+}
+
 type SearchLog struct {
 	ID        string         `bson:"_id,omitempty"`
 	UserID    int64          `bson:"user_id"`
@@ -122,7 +127,7 @@ type SearchModelDeps struct {
 }
 
 type SearchModel interface {
-	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, weights *SearchWeights) ([]ArticleES, int, error)
+	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights) ([]ArticleES, int, error)
 	GetSearchHistory(ctx context.Context, userID int64) ([]string, error)
 }
 

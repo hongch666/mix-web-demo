@@ -69,6 +69,14 @@ var (
 	weightCacheTTL    = 60 * time.Second
 )
 
+// 全局搜索脚本缓存
+var (
+	cachedScript     *search.SearchScript
+	scriptCacheMutex sync.RWMutex
+	scriptLastFetch  time.Time
+	scriptCacheTTL   = 60 * time.Second
+)
+
 // GetSearchWeights 从 FastAPI 获取搜索权重（缓存 60s）
 func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeights, error) {
 	// 读缓存
@@ -116,4 +124,50 @@ func (c *FastapiClient) GetSearchWeights(ctx context.Context) (search.SearchWeig
 	weightsCacheMutex.Unlock()
 
 	return w, nil
+}
+
+// GetSearchScript 从 FastAPI 获取 ES 搜索脚本模板（缓存 60s）
+// 返回使用 params.xxx 占位符的 Painless 脚本，由调用方通过 elastic.NewScript(script).Param(...) 传入权重后使用
+func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScript, error) {
+	// 读缓存
+	scriptCacheMutex.RLock()
+	if cachedScript != nil && time.Since(scriptLastFetch) < scriptCacheTTL {
+		s := *cachedScript
+		scriptCacheMutex.RUnlock()
+		return s, nil
+	}
+	scriptCacheMutex.RUnlock()
+
+	// 调用 FastAPI 新接口
+	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/script", client.RequestOptions{
+		Method: "GET",
+	})
+	if err != nil {
+		// FastAPI 不可用时返回旧缓存（如果存在）
+		scriptCacheMutex.RLock()
+		if cachedScript != nil {
+			s := *cachedScript
+			scriptCacheMutex.RUnlock()
+			return s, nil
+		}
+		scriptCacheMutex.RUnlock()
+		return search.SearchScript{}, err
+	}
+
+	// 解析响应
+	dataMap, ok := result.Data.(map[string]any)
+	if !ok {
+		return search.SearchScript{}, fmt.Errorf(constants.FASTAPI_WEIGHTS_FORMAT_ERROR)
+	}
+	esScript, _ := dataMap["es_script"].(string)
+
+	s := search.SearchScript{EsScript: esScript}
+
+	// 写缓存
+	scriptCacheMutex.Lock()
+	cachedScript = &s
+	scriptLastFetch = time.Now()
+	scriptCacheMutex.Unlock()
+
+	return s, nil
 }
