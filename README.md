@@ -1132,7 +1132,7 @@ docker restart mix-spring-container
 
 - `spring/application.yaml -> /app/application.yaml`
 - `gozero/etc -> /app/etc`
-- `nestjs/application.yaml -> /app/application.yaml`
+- `nestjs/src/config/application.yaml -> /app/dist/config/application.yaml`
 - `fastapi/application.yaml -> /app/application.yaml`
 - `logs/<service> -> /app/logs/<service>`
 - `static/pic`, `static/excel`, `static/upload`
