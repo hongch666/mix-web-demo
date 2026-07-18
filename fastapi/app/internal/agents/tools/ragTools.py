@@ -4,18 +4,19 @@ import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
-from app.internal.agents.langsmith import get_langsmith_context
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages, Prompts
 from app.core.db import get_pgvector_connection_string
 from app.core.errors import BusinessException
+from app.internal.agents.langsmith import get_langsmith_context
 from langchain_community.cache import InMemoryCache
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from langchain_core.documents import Document
 from langchain_core.globals import set_llm_cache
 from langchain_core.tools import Tool
+from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 # 抑制 PGVector 弃用警告
@@ -111,8 +112,6 @@ class RAGTools:
         agent_cfg: Dict[str, Any] = (load_config("agent") or {}).get("closeai", {})
         if agent_cfg.get("api_key") and agent_cfg.get("base_url"):
             try:
-                from langchain_openai import ChatOpenAI
-
                 self.hyde_llm = ChatOpenAI(
                     model=agent_cfg.get("model_name", "gpt-3.5-turbo"),
                     api_key=agent_cfg["api_key"],

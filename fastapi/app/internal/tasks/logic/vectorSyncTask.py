@@ -4,12 +4,12 @@ import time
 from datetime import datetime
 from typing import Any, List, Optional
 
-from app.internal.agents.langsmith import get_langsmith_context, load_langsmith_config
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.db import SessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
+from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.cache import get_redis_client
 from app.internal.crud import get_article_mapper
 from app.internal.models import Article
@@ -212,7 +212,6 @@ def _export_article_vectors_to_postgres(
 
     sync_start_time: datetime = datetime.now()
     sync_mode = "增量" if enable_incremental_sync else "全量"
-    langsmith_config = load_langsmith_config()
 
     try:
         Logger.info(Messages.START_SYNC_TO_POSTGRES_MESSAGE)
@@ -290,7 +289,8 @@ def _export_article_vectors_to_postgres(
                 tags=["job:vector_sync", f"mode:{sync_mode}"],
                 metadata={
                     "batch_num": batch_num,
-                    "total_batches": (len(sync_articles) + batch_size - 1) // batch_size,
+                    "total_batches": (len(sync_articles) + batch_size - 1)
+                    // batch_size,
                     "batch_size": len(batch),
                     "article_ids": [str(aid) for aid in article_ids],
                     "sync_mode": sync_mode,
@@ -473,8 +473,6 @@ async def export_article_vectors_to_postgres_async(
     lock_expire: int = Messages.LOCK_TASK_VECTOR_SYNC_EXPIRE
 
     # 尝试获取分布式锁
-    from app.core.db import get_redis_client
-
     redis_client: Any = get_redis_client()
     lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
     if lock_value is None:

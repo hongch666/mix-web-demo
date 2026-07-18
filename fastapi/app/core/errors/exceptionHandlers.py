@@ -44,8 +44,6 @@ async def global_exception_handler(request: Request, exc: Exception) -> Response
     Returns:
         Response: JSON 格式的一般错误响应
     """
-    from ..base.writeLog import Logger
-
     Logger.error(f"请求路径: {request.url}，错误信息: {str(exc)}")
     return JSONResponse(
         status_code=HttpCode.INTERNAL_SERVER_ERROR,
@@ -80,8 +78,6 @@ async def request_validation_exception_handler(
         if validation_message_parts
         else Messages.EXCEPTION_HANDLER_MESSAGE
     )
-    from ..base.writeLog import Logger
-
     Logger.error(f"请求路径: {request.url}，校验错误: {validation_message}")
     return JSONResponse(
         status_code=HttpCode.BAD_REQUEST,
