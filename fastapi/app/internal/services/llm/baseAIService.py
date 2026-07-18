@@ -3,7 +3,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, Prompts
 from app.internal.agents import (
     IntentRouter,
     get_mongodb_tools,
@@ -25,7 +25,7 @@ def get_agent_prompt() -> ChatPromptTemplate:
     """获取Agent的Prompt模板"""
     return ChatPromptTemplate.from_messages(
         [
-            ("system", Messages.AGENT_PROMPT_TEMPLATE),
+            ("system", Prompts.AGENT_PROMPT_TEMPLATE),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
@@ -148,7 +148,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return Messages.CONTENT_SUMMARIZE_PROMPT.format(
+        return Prompts.CONTENT_SUMMARIZE_PROMPT.format(
             content=content, max_length=max_length
         )
 
@@ -164,7 +164,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return Messages.REFERENCE_BASED_EVALUATION_PROMPT.format(
+        return Prompts.REFERENCE_BASED_EVALUATION_PROMPT.format(
             reference_content=reference_content, message=message
         )
 
@@ -431,9 +431,20 @@ class BaseAiService:
             return f"总结服务异常: {str(error)}"
 
     async def simple_chat(
-        self, message: str, user_id: int | str = 0, db: Optional[Session] = None
+        self,
+        message: str,
+        user_id: int | str = 0,
+        db: Optional[Session] = None,
+        runnable_config: Optional[dict] = None,
     ) -> str:
-        """普通聊天接口"""
+        """普通聊天接口
+
+        Args:
+            message: 用户消息
+            user_id: 用户ID
+            db: 数据库会话
+            runnable_config: LangChain RunnableConfig (用于 LangSmith 追踪传播)
+        """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
             Logger.info(f"用户 {user_id} 发送消息: {message}")
@@ -445,11 +456,13 @@ class BaseAiService:
                 return await self.basic_chat(message)
 
             intent = "general_chat"
+            intent_resolution = "default_fallback"
             if self.intent_router and db and normalized_user_id is not None:
                 (
                     intent,
                     has_permission,
                     permission_msg,
+                    intent_resolution,
                 ) = await self.intent_router.route_with_permission_check_async(
                     message, normalized_user_id, db
                 )
@@ -459,14 +472,23 @@ class BaseAiService:
                     Logger.info(f"用户 {user_id} 无权限访问: {intent}")
                     return permission_msg or Messages.NO_PERMISSION_ERROR
             elif self.intent_router:
-                intent = await self.intent_router.route_async(message)
+                intent, intent_resolution = await self.intent_router.route_async(message)
                 Logger.info(f"识别意图: {intent}")
+
+            # 将意图信息补充到 runnable_config 中
+            config = dict(runnable_config) if runnable_config else {}
+            config.setdefault("metadata", {})
+            config["metadata"].update({
+                "intent": intent,
+                "intent_resolution": intent_resolution,
+            })
 
             chat_history: List[ChatHistoryItem] = []
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
             if intent == "general_chat":
+                config.setdefault("run_name", "chat.direct")
                 history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
                     history_messages.append(HumanMessage(content=human_msg))
@@ -477,10 +499,11 @@ class BaseAiService:
                     *history_messages,
                     HumanMessage(content=message),
                 ]
-                response = await self.llm.ainvoke(messages)
+                response = await self.llm.ainvoke(messages, config=config)
                 result = response.content
             else:
                 Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
+                config.setdefault("run_name", "agent.execute")
 
                 if normalized_user_id is not None:
                     try:
@@ -497,7 +520,7 @@ class BaseAiService:
                 full_input = context + user_info + f"当前问题: {message}"
 
                 agent_response = await self.agent_executor.ainvoke(
-                    {"input": full_input}
+                    {"input": full_input}, config=config
                 )
                 result = agent_response.get("output", Messages.MESSAGE_RETRIEVAL_ERROR)
 
@@ -509,9 +532,20 @@ class BaseAiService:
             return self._resolve_service_error_message(str(error))
 
     async def stream_chat(
-        self, message: str, user_id: int | str = 0, db: Optional[Session] = None
+        self,
+        message: str,
+        user_id: int | str = 0,
+        db: Optional[Session] = None,
+        runnable_config: Optional[dict] = None,
     ) -> AsyncGenerator[dict[str, str], None]:
-        """流式聊天接口"""
+        """流式聊天接口
+
+        Args:
+            message: 用户消息
+            user_id: 用户ID
+            db: 数据库会话
+            runnable_config: LangChain RunnableConfig (用于 LangSmith 追踪传播)
+        """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
             Logger.info(f"用户 {user_id} 开始流式聊天: {message}")
@@ -536,8 +570,11 @@ class BaseAiService:
                     HumanMessage(content=message),
                 ]
 
+                config = dict(runnable_config) if runnable_config else {}
+                config.setdefault("run_name", "chat.direct")
+
                 try:
-                    async for chunk in self.llm.astream(messages):
+                    async for chunk in self.llm.astream(messages, config=config):
                         try:
                             if chunk.content:
                                 Logger.debug(
@@ -557,11 +594,13 @@ class BaseAiService:
                 return
 
             intent = "general_chat"
+            intent_resolution = "default_fallback"
             if self.intent_router and db and normalized_user_id is not None:
                 (
                     intent,
                     has_permission,
                     permission_msg,
+                    intent_resolution,
                 ) = await self.intent_router.route_with_permission_check_async(
                     message, normalized_user_id, db
                 )
@@ -578,14 +617,23 @@ class BaseAiService:
                     return
 
             elif self.intent_router:
-                intent = await self.intent_router.route_async(message)
+                intent, intent_resolution = await self.intent_router.route_async(message)
                 Logger.info(f"识别意图: {intent}")
+
+            # 将意图信息补充到 runnable_config 中
+            config = dict(runnable_config) if runnable_config else {}
+            config.setdefault("metadata", {})
+            config["metadata"].update({
+                "intent": intent,
+                "intent_resolution": intent_resolution,
+            })
 
             chat_history = []
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
             if intent == "general_chat":
+                config.setdefault("run_name", "chat.direct")
                 history_messages: list[Any] = []
                 for human_msg, ai_msg in chat_history:
                     history_messages.append(HumanMessage(content=human_msg))
@@ -598,7 +646,7 @@ class BaseAiService:
                 ]
 
                 try:
-                    async for chunk in self.llm.astream(messages):
+                    async for chunk in self.llm.astream(messages, config=config):
                         try:
                             if chunk.content:
                                 yield {"type": "content", "content": chunk.content}
@@ -614,6 +662,7 @@ class BaseAiService:
                     }
             else:
                 Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
+                config.setdefault("run_name", "agent.execute")
 
                 if normalized_user_id is not None:
                     try:
@@ -635,7 +684,8 @@ class BaseAiService:
                         {
                             "input": full_input,
                             "system_message": Messages.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE,
-                        }
+                        },
+                        config=config,
                     )
                     agent_result = agent_response.get(
                         "output", Messages.MESSAGE_RETRIEVAL_ERROR
@@ -685,7 +735,7 @@ class BaseAiService:
                 ]
 
                 try:
-                    async for chunk in self.llm.astream(stream_messages):
+                    async for chunk in self.llm.astream(stream_messages, config=config):
                         try:
                             if chunk.content:
                                 yield {"type": "content", "content": chunk.content}

@@ -4,9 +4,10 @@ import warnings
 from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
+from app.internal.agents.langsmith import get_langsmith_context
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import HttpCode, Messages
+from app.core.constants import HttpCode, Messages, Prompts
 from app.core.db import get_pgvector_connection_string
 from app.core.errors import BusinessException
 from langchain_community.cache import InMemoryCache
@@ -300,20 +301,32 @@ class RAGTools:
             # HyDE: 用 LLM 生成假设性回答替代原始短查询，提升检索精度
             search_query: str = query
             if use_hyde and self.hyde_llm is not None:
-                try:
-                    hyde_prompt = f"请用一段话回答以下问题，使用专业语言：\n\n{query}"
-                    hypothetical_doc = await self.hyde_llm.ainvoke(hyde_prompt)
-                    search_query = (
-                        hypothetical_doc.content
-                        if hasattr(hypothetical_doc, "content")
-                        else str(hypothetical_doc)
-                    )
-                    self.logger.info(
-                        f"HyDE 假设性文档生成成功（原始查询: {len(query)} 字 → HyDE: {len(search_query)} 字）"
-                    )
-                except Exception as hyde_error:
-                    self.logger.warning(f"HyDE 生成失败，降级为原查询: {hyde_error}")
-                    search_query = query
+                with get_langsmith_context(
+                    name="rag.hyde",
+                    tags=["feature:rag", "stage:hyde"],
+                    metadata={
+                        "query_length": len(query),
+                        "hyde_enabled": True,
+                    },
+                ):
+                    try:
+                        hyde_prompt = (
+                            f"请用一段话回答以下问题，使用专业语言：\n\n{query}"
+                        )
+                        hypothetical_doc = await self.hyde_llm.ainvoke(hyde_prompt)
+                        search_query = (
+                            hypothetical_doc.content
+                            if hasattr(hypothetical_doc, "content")
+                            else str(hypothetical_doc)
+                        )
+                        self.logger.info(
+                            f"HyDE 假设性文档生成成功（原始查询: {len(query)} 字 → HyDE: {len(search_query)} 字）"
+                        )
+                    except Exception as hyde_error:
+                        self.logger.warning(
+                            f"HyDE 生成失败，降级为原查询: {hyde_error}"
+                        )
+                        search_query = query
 
             # 构建元数据过滤器（pgvector JSONB 过滤）
             pgvector_filter: Optional[Dict[str, Any]] = None
@@ -344,6 +357,10 @@ class RAGTools:
 
             # 对相似文章进行智能去重处理
             dedup_docs = self._deduplicate_articles(filtered_docs, search_k)
+
+            self.logger.info(
+                f"RAG搜索成功，返回 {len(dedup_docs)} 个结果（去重前: {len(filtered_docs)}，过滤前: {len(docs)}）"
+            )
 
             # 格式化结果（检索后过滤恶意注入文本）
             result_text = f"找到 {len(dedup_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"
@@ -442,7 +459,7 @@ class RAGTools:
         return [
             Tool(
                 name=Messages.RAG_TOOL_NAME,
-                description=Messages.RAG_TOOL_DESC,
+                description=Prompts.RAG_TOOL_DESC,
                 func=None,
                 coroutine=_search_tool,
             )

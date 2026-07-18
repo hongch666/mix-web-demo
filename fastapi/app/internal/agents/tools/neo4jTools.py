@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Messages, Prompts, Scripts
 from app.core.db import get_neo4j_client
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
@@ -43,13 +43,13 @@ class Neo4jQueryTools:
         if self.client is None:
             return Messages.NEO4J_SERVICE_UNAVAILABLE_MESSAGE
 
-        if query_name not in Messages.INTENT_TO_CYPHER:
-            available = ", ".join(Messages.INTENT_TO_CYPHER.keys())
+        if query_name not in Scripts.INTENT_TO_CYPHER:
+            available = ", ".join(Scripts.INTENT_TO_CYPHER.keys())
             return f"不支持的查询类型，可选: {available}"
 
         safe_params = self._normalize_limit(params or {})
         records = await self.client.run_query(
-            Messages.INTENT_TO_CYPHER[query_name], safe_params
+            Scripts.INTENT_TO_CYPHER[query_name], safe_params
         )
         if not records:
             return Messages.NEO4J_NO_RESULT_MESSAGE
@@ -99,7 +99,7 @@ class Neo4jQueryTools:
         class PredefinedQueryInput(BaseModel):
             query_name: str = Field(
                 description=Messages.NEO4J_QUERY_NAME_INPUT_DESC
-                + ", ".join(Messages.INTENT_TO_CYPHER)
+                + ", ".join(Scripts.INTENT_TO_CYPHER)
             )
             params: Dict[str, Any] = Field(
                 default_factory=dict,
@@ -114,13 +114,13 @@ class Neo4jQueryTools:
         return [
             StructuredTool(
                 name=Messages.NEO4J_PREDEFINED_QUERY_TOOL_NAME,
-                description=Messages.NEO4J_PREDEFINED_QUERY_TOOL_DESC,
+                description=Prompts.NEO4J_PREDEFINED_QUERY_TOOL_DESC,
                 coroutine=self.execute_predefined_query,
                 args_schema=PredefinedQueryInput,
             ),
             StructuredTool(
                 name=Messages.NEO4J_CUSTOM_CYPHER_TOOL_NAME,
-                description=Messages.NEO4J_CUSTOM_CYPHER_TOOL_DESC,
+                description=Prompts.NEO4J_CUSTOM_CYPHER_TOOL_DESC,
                 coroutine=self.execute_custom_cypher,
                 args_schema=CustomCypherInput,
             ),

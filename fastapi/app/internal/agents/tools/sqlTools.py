@@ -4,7 +4,7 @@ from functools import lru_cache
 from typing import List, Optional
 from urllib.parse import quote_plus
 
-from app.core.constants import Messages
+from app.core.constants import Messages, Prompts
 from langchain_community.utilities import SQLDatabase
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
@@ -318,13 +318,13 @@ class SQLTools:
         return [
             StructuredTool(
                 name=Messages.SQL_TABLE_TOOL_NAME,
-                description=Messages.SQL_TABLE_TOOL_DESC,
+                description=Prompts.SQL_TABLE_TOOL_DESC,
                 func=self.get_table_schema,
                 args_schema=GetTableSchemaInput,
             ),
             StructuredTool(
                 name=Messages.SQL_QUERY_TOOL_NAME,
-                description=Messages.SQL_QUERY_TOOL_DESC,
+                description=Prompts.SQL_QUERY_TOOL_DESC,
                 func=self.execute_query,
                 args_schema=ExecuteSqlQueryInput,
             ),

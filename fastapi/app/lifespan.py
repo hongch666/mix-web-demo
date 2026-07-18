@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.internal.agents.langsmith import init_langsmith, load_langsmith_config, shutdown_langsmith
 from app.core.base import Logger
 from app.core.client import set_shared_http_client, start_nacos
 from app.core.config import load_config
@@ -27,6 +28,10 @@ PORT: int = server_config["port"]
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    # LangSmith 初始化（追踪关闭或失败时均不阻断业务启动）
+    langsmith_config = load_langsmith_config()
+    init_langsmith(langsmith_config)
+
     await create_tables_async(["ai_history"])
     start_nacos(ip=IP, port=PORT)
     Logger.info(Messages.NACOS_REGISTER_SUCCESS)
@@ -68,3 +73,6 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     if rabbitmq_client:
         await rabbitmq_client.close_async()
         Logger.info(Messages.RABBITMQ_CONNECTION_CLOSED_MESSAGE)
+
+    # LangSmith 关闭（flush 缓冲区）
+    shutdown_langsmith()

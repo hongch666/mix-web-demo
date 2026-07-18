@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 from typing import Any, List, Optional
 
+from app.internal.agents.langsmith import get_langsmith_context, load_langsmith_config
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.db import SessionLocal
@@ -210,6 +211,8 @@ def _export_article_vectors_to_postgres(
     rag_tools: Any = get_rag_tools()
 
     sync_start_time: datetime = datetime.now()
+    sync_mode = "增量" if enable_incremental_sync else "全量"
+    langsmith_config = load_langsmith_config()
 
     try:
         Logger.info(Messages.START_SYNC_TO_POSTGRES_MESSAGE)
@@ -281,67 +284,79 @@ def _export_article_vectors_to_postgres(
                     }
                 )
 
-            # 重试逻辑
-            retry_count: int = 0
-            batch_success: bool = False
+            # LangSmith 批次边界 Trace
+            with get_langsmith_context(
+                name="vector.sync.batch",
+                tags=["job:vector_sync", f"mode:{sync_mode}"],
+                metadata={
+                    "batch_num": batch_num,
+                    "total_batches": (len(sync_articles) + batch_size - 1) // batch_size,
+                    "batch_size": len(batch),
+                    "article_ids": [str(aid) for aid in article_ids],
+                    "sync_mode": sync_mode,
+                },
+            ):
+                # 重试逻辑
+                retry_count: int = 0
+                batch_success: bool = False
 
-            while retry_count < max_retries and not batch_success:
-                try:
-                    # 增量同步时，先删除旧向量再插入新向量
-                    if enable_incremental_sync and hasattr(
-                        rag_tools, "delete_articles_from_vector_store"
-                    ):
-                        try:
-                            rag_tools.delete_articles_from_vector_store(article_ids)
-                            Logger.debug(f"已删除旧向量 (IDs: {article_ids})")
-                        except Exception as e:
-                            Logger.warning(f"删除旧向量失败，将覆盖: {e}")
+                while retry_count < max_retries and not batch_success:
+                    try:
+                        # 增量同步时，先删除旧向量再插入新向量
+                        if enable_incremental_sync and hasattr(
+                            rag_tools, "delete_articles_from_vector_store"
+                        ):
+                            try:
+                                rag_tools.delete_articles_from_vector_store(article_ids)
+                                Logger.debug(f"已删除旧向量 (IDs: {article_ids})")
+                            except Exception as e:
+                                Logger.warning(f"删除旧向量失败，将覆盖: {e}")
 
-                    # 使用RAG工具添加到向量存储
-                    result: Any = asyncio.run(
-                        rag_tools.add_articles_to_vector_store(
-                            article_ids=article_ids,
-                            titles=titles,
-                            contents=contents,
-                            metadata_list=metadata_list,
+                        # 使用RAG工具添加到向量存储
+                        result: Any = asyncio.run(
+                            rag_tools.add_articles_to_vector_store(
+                                article_ids=article_ids,
+                                titles=titles,
+                                contents=contents,
+                                metadata_list=metadata_list,
+                            )
                         )
-                    )
 
-                    # 检查结果是否成功（如果返回字符串包含"失败"则视为失败）
-                    result_str: str = str(result)
-                    if "失败" in result_str or "error" in result_str.lower():
+                        # 检查结果是否成功（如果返回字符串包含"失败"则视为失败）
+                        result_str: str = str(result)
+                        if "失败" in result_str or "error" in result_str.lower():
+                            retry_count += 1
+                            if retry_count < max_retries:
+                                Logger.warning(
+                                    f"批次 {batch_num} 同步返回失败信息，准备重试 ({retry_count}/{max_retries}): {result}"
+                                )
+                                time.sleep(retry_delay)
+                                continue
+                            else:
+                                raise BusinessException(
+                                    f"重试 {max_retries} 次后仍然失败: {result}",
+                                    HttpCode.INTERNAL_SERVER_ERROR,
+                                    Messages.ERROR_FASTAPI_SERVER_ERROR,
+                                )
+
+                        total_synced += len(batch)
+                        batch_success = True
+                        Logger.info(f"批次 {batch_num} 同步成功: {result}")
+
+                    except Exception as e:
                         retry_count += 1
+
                         if retry_count < max_retries:
                             Logger.warning(
-                                f"批次 {batch_num} 同步返回失败信息，准备重试 ({retry_count}/{max_retries}): {result}"
+                                f"批次 {batch_num} 同步失败，准备重试 ({retry_count}/{max_retries}): {e}"
                             )
                             time.sleep(retry_delay)
-                            continue
                         else:
-                            raise BusinessException(
-                                f"重试 {max_retries} 次后仍然失败: {result}",
-                                HttpCode.INTERNAL_SERVER_ERROR,
-                                Messages.ERROR_FASTAPI_SERVER_ERROR,
+                            total_errors += len(batch)
+                            failed_articles.extend(article_ids)
+                            Logger.error(
+                                f"批次 {batch_num} 重试 {max_retries} 次仍然失败，放弃同步: {e}"
                             )
-
-                    total_synced += len(batch)
-                    batch_success = True
-                    Logger.info(f"批次 {batch_num} 同步成功: {result}")
-
-                except Exception as e:
-                    retry_count += 1
-
-                    if retry_count < max_retries:
-                        Logger.warning(
-                            f"批次 {batch_num} 同步失败，准备重试 ({retry_count}/{max_retries}): {e}"
-                        )
-                        time.sleep(retry_delay)
-                    else:
-                        total_errors += len(batch)
-                        failed_articles.extend(article_ids)
-                        Logger.error(
-                            f"批次 {batch_num} 重试 {max_retries} 次仍然失败，放弃同步: {e}"
-                        )
 
         # 4. 只有当有成功的同步时才保存时间戳
         if enable_incremental_sync and total_synced > 0:

@@ -103,4 +103,14 @@ agent:
     similarity_threshold: 0.3 # 相似度阈值（0-1之间，0.3表示30%相似度及以上才召回）
     similarity_tolerance: 0.01 # 相似度容差（用于去重，相似度差异在此范围内视为相近）
 
+langsmith:
+  enabled: ${LANGSMITH_TRACING:false} # 是否启用 LangSmith 追踪
+  api_key: ${LANGSMITH_API_KEY:} # LangSmith API Key
+  project: ${LANGSMITH_PROJECT:mix-web-demo-dev} # LangSmith 项目名
+  endpoint: ${LANGSMITH_ENDPOINT:https://api.smith.langchain.com} # LangSmith API 端点
+  workspace_id: ${LANGSMITH_WORKSPACE_ID:} # 工作区 ID（可选）
+  hide_inputs: ${LANGSMITH_HIDE_INPUTS:false} # 是否隐藏输入
+  hide_outputs: ${LANGSMITH_HIDE_OUTPUTS:false} # 是否隐藏输出
+  sampling_rate: ${LANGSMITH_TRACING_SAMPLING_RATE:1.0} # 采样率（0.0-1.0）
+
 

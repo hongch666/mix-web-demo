@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from functools import lru_cache
 from typing import Any, Dict, List, Tuple
 
+from app.internal.agents.langsmith import get_langsmith_context
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
 from app.internal.agents import get_rag_tools
@@ -55,11 +57,26 @@ class VectorSearchService:
         query = self._build_query(keyword, req)
         fetch_k = self._resolve_fetch_k(req.topK, len(article_ids))
 
+        search_start = time.time()
         rag_tools = get_rag_tools()
-        docs_with_scores = await asyncio.to_thread(
-            rag_tools.vector_store.similarity_search_with_score,
-            query,
-            fetch_k,
+        with get_langsmith_context(
+            name="vector.enhance",
+            tags=["feature:vector_search"],
+            metadata={
+                "candidate_count": len(article_ids),
+                "query_length": len(query),
+                "fetch_k": fetch_k,
+                "min_score": self.min_score,
+            },
+        ):
+            docs_with_scores = await asyncio.to_thread(
+                rag_tools.vector_store.similarity_search_with_score,
+                query,
+                fetch_k,
+            )
+        search_elapsed = time.time() - search_start
+        Logger.info(
+            f"向量增强检索耗时: {search_elapsed:.3f}s, 结果数: {len(docs_with_scores)}"
         )
 
         article_id_set = set(article_ids)

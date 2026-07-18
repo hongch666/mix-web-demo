@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, Prompts
 from app.core.db import async_db
 from bson import ObjectId
 from langchain_core.tools import StructuredTool
@@ -123,13 +123,13 @@ class MongoDBTools:
         return [
             StructuredTool(
                 name=Messages.MONGODB_LIST_COLLECTIONS_TOOL_NAME,
-                description=Messages.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
+                description=Prompts.MONGODB_LIST_COLLECTIONS_TOOL_DESC,
                 coroutine=self.list_mongodb_collections,
                 args_schema=EmptyInput,
             ),
             StructuredTool(
                 name=Messages.MONGODB_QUERY_TOOL_NAME,
-                description=Messages.MONGODB_QUERY_TOOL_DESC,
+                description=Prompts.MONGODB_QUERY_TOOL_DESC,
                 coroutine=self.query_mongodb,
                 args_schema=QueryMongoInput,
             ),

@@ -1,7 +1,7 @@
 from typing import Any, Literal, Optional, Tuple
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Messages, Prompts
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
@@ -16,6 +16,12 @@ IntentType = Literal[
     "log_analysis",
     "knowledge_query",
     "general_chat",
+]
+
+IntentResolution = Literal[
+    "structured",
+    "text_fallback",
+    "default_fallback",
 ]
 
 
@@ -64,7 +70,7 @@ class IntentRouter:
         # 创建意图识别提示词
         self.intent_prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", Messages.ROUTER_INTENT_PROMPT),
+                ("system", Prompts.ROUTER_INTENT_PROMPT),
                 ("human", "用户问题：{question}"),
             ]
         )
@@ -98,35 +104,52 @@ class IntentRouter:
         self.user_id = user_id
         self.db = db
 
-    async def route_async(self, question: str) -> IntentType:
-        """异步路由用户问题（优先使用结构化输出，降级为文本匹配）"""
+    async def route_async(
+        self, question: str, runnable_config: Optional[dict] = None
+    ) -> tuple[IntentType, IntentResolution]:
+        """异步路由用户问题（优先使用结构化输出，降级为文本匹配）
+
+        Args:
+            question: 用户问题
+            runnable_config: LangChain RunnableConfig (用于 LangSmith 追踪)
+
+        Returns:
+            (意图类型, 识别路径)
+        """
+        config = dict(runnable_config) if runnable_config else {}
+        config.setdefault("run_name", "intent.route")
         try:
             if self._use_structured_output:
-                return await self._route_structured(question)
+                intent, resolution = await self._route_structured(question, config)
             else:
-                return await self._route_text_match(question)
+                intent, resolution = await self._route_text_match(question, config)
+            return intent, resolution
         except Exception as e:
             self.logger.error(f"意图识别失败: {e}, 默认使用 article_search")
-            return "article_search"
+            return "article_search", "default_fallback"
 
-    async def _route_structured(self, question: str) -> IntentType:
+    async def _route_structured(
+        self, question: str, config: dict
+    ) -> tuple[IntentType, IntentResolution]:
         """通过 with_structured_output 链识别意图"""
         try:
             result: StructuredIntent = await self.structured_chain.ainvoke(
-                {"question": question}
+                {"question": question}, config=config
             )
             self.logger.info(
                 f"意图识别结果(结构化): {question} -> {result.type} (置信度: {result.confidence:.2f})"
             )
-            return result.type
+            return result.type, "structured"
         except Exception as e:
             # 结构化输出失败，降级为文本匹配
             self.logger.warning(f"结构化意图识别失败，降级为文本匹配: {e}")
-            return await self._route_text_match(question)
+            return await self._route_text_match(question, config)
 
-    async def _route_text_match(self, question: str) -> IntentType:
+    async def _route_text_match(
+        self, question: str, config: dict
+    ) -> tuple[IntentType, IntentResolution]:
         """通过文本匹配识别意图（降级方案）"""
-        result: Any = await self.chain.ainvoke({"question": question})
+        result: Any = await self.chain.ainvoke({"question": question}, config=config)
         result_text: str = str(result).strip().lower()
 
         if "database" in result_text or "数据库" in result_text:
@@ -151,13 +174,21 @@ class IntentRouter:
             intent = "article_search"
 
         self.logger.info(f"意图识别结果(文本匹配): {question} -> {intent}")
-        return intent
+        return intent, "text_fallback"
 
     async def route_with_permission_check_async(
-        self, question: str, user_id: Optional[int] = None, db: Optional[Session] = None
-    ) -> Tuple[IntentType, bool, str]:
-        """异步路由用户问题并检查权限"""
-        intent = await self.route_async(question)
+        self,
+        question: str,
+        user_id: Optional[int] = None,
+        db: Optional[Session] = None,
+        runnable_config: Optional[dict] = None,
+    ) -> Tuple[IntentType, bool, str, IntentResolution]:
+        """异步路由用户问题并检查权限
+
+        Returns:
+            (意图类型, 是否有权限, 权限消息, 识别路径)
+        """
+        intent, resolution = await self.route_async(question, runnable_config)
 
         if user_id is not None and db is not None:
             self.user_id = user_id
@@ -165,8 +196,13 @@ class IntentRouter:
 
         if not self.user_id or not self.db:
             if intent in ["database_query", "log_analysis"]:
-                return intent, False, Messages.INTENT_ROUTER_NO_PERMISSION_ERROR
-            return intent, True, ""
+                return (
+                    intent,
+                    False,
+                    Messages.INTENT_ROUTER_NO_PERMISSION_ERROR,
+                    resolution,
+                )
+            return intent, True, "", resolution
 
         perm_manager: UserPermissionManager = UserPermissionManager(self.user_mapper)
 
@@ -179,6 +215,7 @@ class IntentRouter:
                         intent,
                         False,
                         Messages.SQL_NATURAL_LANGUAGE_WRITE_BLOCK_MESSAGE,
+                        resolution,
                     )
             except Exception as e:
                 self.logger.warning(f"写操作意图检测失败，继续执行权限校验: {e}")
@@ -187,18 +224,18 @@ class IntentRouter:
                 self.user_id, self.db, question
             )
             if not has_permission:
-                return intent, False, msg
-            return intent, True, ""
+                return intent, False, msg, resolution
+            return intent, True, "", resolution
 
         if intent == "knowledge_query":
-            return intent, True, ""
+            return intent, True, "", resolution
 
         if intent == "log_analysis":
             has_permission, msg = await perm_manager.can_access_mongodb_logs_async(
                 self.user_id, self.db, question
             )
             if not has_permission:
-                return intent, False, msg
-            return intent, True, ""
+                return intent, False, msg, resolution
+            return intent, True, "", resolution
 
-        return intent, True, ""
+        return intent, True, "", resolution

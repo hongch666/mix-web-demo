@@ -1,9 +1,9 @@
-from typing import List
+from typing import Dict, List, Tuple
 
 
 class Scripts:
     """
-    脚本类 — SQL 语句、Cypher 语句、SQL 安全规则
+    脚本类 — SQL 语句、Cypher 语句、安全规则（SQL / 数据脱敏）
     """
 
     # ===== SQL 建表 =====
@@ -91,6 +91,19 @@ class Scripts:
     SAFE_SQL_QUERY_REQUEST_PATTERNS: List[str] = [
         r"^(查询|查看|统计|列出|展示|获取|分析).*(最近|最新|已)?(更新|新增)的",
     ]
+
+    # ===== 数据脱敏规则 =====
+    SANITIZER_MAX_STRING_LENGTH: int = 500  # 字符串最大长度（超出截断）
+    SANITIZER_MAX_LIST_LENGTH: int = 10  # 列表最大长度（超出截断）
+    SANITIZER_MAX_DICT_DEPTH: int = 5  # 字典最大递归深度
+
+    # 敏感字段键名模式（不区分大小写匹配）
+    SENSITIVE_KEY_PATTERNS: Tuple[str, ...] = (
+        "api_key", "apikey", "api-key", "password", "secret", "token",
+        "authorization", "credential", "private_key", "private-key",
+        "access_key", "access-key", "secret_key", "secret-key",
+        "dsn", "connection_string", "connection-string",
+    )
 
     # ===== Neo4j 约束 =====
     NEO4J_CREATE_CONSTRAINTS: List[str] = [
@@ -362,3 +375,68 @@ class Scripts:
         WITH cand.id AS articleId, collect(DISTINCT tag.name) AS names
         RETURN articleId, size(names) AS rawScore, names
     """
+
+    # ===== Neo4j 意图到 Cypher 查询映射 =====
+    # 预定义查询，Agent 通过 query_name 参数调用
+    INTENT_TO_CYPHER: Dict[str, str] = {
+        "article_detail": (
+            "MATCH (a:Article {id: $id}) "
+            "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User) "
+            "OPTIONAL MATCH (a)-[:BELONGS_TO]->(s:SubCategory) "
+            "OPTIONAL MATCH (s)-[:BELONGS_TO_CATEGORY]->(c:Category) "
+            "OPTIONAL MATCH (a)-[:TAGGED_AS]->(t:Tag) "
+            "RETURN a.id AS id, a.title AS title, a.views AS views, "
+            "u.name AS author, s.name AS subCategory, c.name AS category, "
+            "collect(DISTINCT t.name) AS tags"
+        ),
+        "category_articles": (
+            "MATCH (s:SubCategory {name: $name})<-[:BELONGS_TO]-(a:Article) "
+            "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User) "
+            "RETURN a.id AS id, a.title AS title, a.views AS views, "
+            "a.createAt AS createAt, u.name AS author "
+            "ORDER BY a.views DESC LIMIT $limit"
+        ),
+        "user_articles": (
+            "MATCH (a:Article)-[:PUBLISHED_BY]->(u:User {name: $name}) "
+            "RETURN a.id AS id, a.title AS title, a.views AS views, a.createAt AS createAt "
+            "ORDER BY a.createAt DESC LIMIT $limit"
+        ),
+        "similar_articles_same_category": (
+            "MATCH (a:Article {id: $articleId})-[:BELONGS_TO]->(s:SubCategory) "
+            "MATCH (other:Article)-[:BELONGS_TO]->(s) "
+            "WHERE other.id <> a.id "
+            "OPTIONAL MATCH (other)-[:PUBLISHED_BY]->(u:User) "
+            "RETURN other.id AS id, other.title AS title, other.views AS views, "
+            "u.name AS author "
+            "ORDER BY other.views DESC LIMIT $limit"
+        ),
+        "user_interest_chain": (
+            "MATCH (u:User {id: $userId})-[:FOLLOWS]->(:User)-[:LIKES]->(a:Article) "
+            "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(author:User) "
+            "RETURN a.id AS id, a.title AS title, a.views AS views, author.name AS author "
+            "ORDER BY a.views DESC LIMIT $limit"
+        ),
+        "top_viewed_articles": (
+            "MATCH (a:Article) "
+            "RETURN a.id AS id, a.title AS title, a.views AS views "
+            "ORDER BY a.views DESC LIMIT $limit"
+        ),
+        "tag_graph": (
+            "MATCH (t:Tag)<-[:TAGGED_AS]-(a:Article) "
+            "RETURN t.name AS tag, count(a) AS articleCount "
+            "ORDER BY articleCount DESC LIMIT $limit"
+        ),
+        "user_recommendation": (
+            "MATCH (u:User {id: $userId})-[:LIKES|COLLECTS]->(interest:Article) "
+            "MATCH (interest)-[:TAGGED_AS]->(t:Tag) "
+            "MATCH (a:Article)-[:TAGGED_AS]->(t) "
+            "WHERE a.id <> interest.id "
+            "AND NOT EXISTS { (u)-[:LIKES|COLLECTS]->(a) } "
+            "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(author:User) "
+            "WITH a, author, t "
+            "RETURN a.id AS id, a.title AS title, author.name AS author, "
+            "collect(DISTINCT t.name) AS matchTags, "
+            "count(DISTINCT t) AS relevance "
+            "ORDER BY relevance DESC, a.views DESC LIMIT $limit"
+        ),
+    }

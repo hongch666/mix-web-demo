@@ -608,6 +608,8 @@ class Messages:
 
     REDIS_CLIENT_INITIALIZED_MESSAGE_PREFIX: str = "[Redis] 客户端已初始化: "
 
+    REDIS_CLIENT_INITIALIZED_MESSAGE_PREFIX: str = "[Redis] 客户端已初始化: "
+
     REDIS_CONNECTION_FAILED_MESSAGE: str = "Redis 连接失败，无法获取上次同步时间戳"
 
     REDIS_CONNECTION_FAILED_MESSAGE_PREFIX: str = "[Redis] 连接失败: "
