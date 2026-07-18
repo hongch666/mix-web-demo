@@ -60,7 +60,7 @@ spring:
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml # 指定 Mapper XML 文件位置
   configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 打印 SQL（可选）
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl # SQL日志走SLF4J，级别由logging.level控制
   global-config:
     db-config:
       id-type: auto # 主键策略
@@ -69,6 +69,8 @@ mybatis-plus:
 logging:
   file:
     path: ${LOGGING_PATH:../logs/spring}
+  level:
+    '[com.hcsy.spring.api.mapper]': ${MYBATIS_LOG_LEVEL:DEBUG} # DEBUG打印SQL（生产环境设为INFO关闭）
 jwt:
   secret: ${JWT_SECRET:}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000} # 毫秒数（默认1小时）
