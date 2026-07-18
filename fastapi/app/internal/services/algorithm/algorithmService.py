@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Any, Dict, List
 
-from app.core.constants import Defaults
+from app.core.constants import Defaults, Scripts
 from app.internal.schemas.algorithmDTO import ScoreWeightItem
 
 
@@ -41,6 +41,14 @@ class AlgorithmService:
                 description=desc,
             ))
         return {"weights": weights}
+
+    def get_es_script(self) -> Dict[str, Any]:
+        """获取 ES Painless 搜索脚本
+
+        返回使用 params.xxx 占位符的脚本模板，由 GoZero 调用方在运行时通过
+        elastic.NewScript(script).Param(name, value) 方式传入具体的权重值后使用。
+        """
+        return {"es_script": Scripts.ES_SEARCH_SCRIPT}
 
 
 @lru_cache

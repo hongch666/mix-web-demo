@@ -99,10 +99,23 @@ class Scripts:
 
     # 敏感字段键名模式（不区分大小写匹配）
     SENSITIVE_KEY_PATTERNS: Tuple[str, ...] = (
-        "api_key", "apikey", "api-key", "password", "secret", "token",
-        "authorization", "credential", "private_key", "private-key",
-        "access_key", "access-key", "secret_key", "secret-key",
-        "dsn", "connection_string", "connection-string",
+        "api_key",
+        "apikey",
+        "api-key",
+        "password",
+        "secret",
+        "token",
+        "authorization",
+        "credential",
+        "private_key",
+        "private-key",
+        "access_key",
+        "access-key",
+        "secret_key",
+        "secret-key",
+        "dsn",
+        "connection_string",
+        "connection-string",
     )
 
     # ===== Neo4j 约束 =====
@@ -378,6 +391,26 @@ class Scripts:
 
     # ===== Neo4j 意图到 Cypher 查询映射 =====
     # 预定义查询，Agent 通过 query_name 参数调用
+    # ===== ES 搜索排序脚本（Painless） =====
+    # 该脚本通过 params.xxx 占位符接收权重参数，由 GoZero 调用方在运行时传入具体的权重值
+    # GoZero 获取此脚本后使用 elastic.NewScript(script).Param(name, value) 方式组装执行
+    ES_SEARCH_SCRIPT: str = """
+        double esScore = 1.0 / (1.0 + Math.exp(-_score));
+        double score = params.esWeight * esScore;
+        double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 10.0 : 0);
+        double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 10.0 : 0);
+        double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
+        double likesBoost = params.likesWeight * (doc['like_count'].size() > 0 ? Math.min((double)doc['like_count'].value / params.maxLikesNormalized, 1.0) : 0);
+        double collectsBoost = params.collectsWeight * (doc['collect_count'].size() > 0 ? Math.min((double)doc['collect_count'].value / params.maxCollectsNormalized, 1.0) : 0);
+        double followBoost = params.followWeight * (doc['author_follow_count'].size() > 0 ? Math.min((double)doc['author_follow_count'].value / params.maxFollowsNormalized, 1.0) : 0);
+        long now = System.currentTimeMillis();
+        long articleTime = doc['create_at'].value.getMillis();
+        long daysDiff = (now - articleTime) / (1000L * 86400L);
+        double recencyScore = Math.exp(-1.0 * (daysDiff * daysDiff) / (2.0 * params.decayDaysSq));
+        double recencyBoost = params.recencyWeight * recencyScore;
+        return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
+    """
+
     INTENT_TO_CYPHER: Dict[str, str] = {
         "article_detail": (
             "MATCH (a:Article {id: $id}) "
