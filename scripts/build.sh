@@ -417,8 +417,9 @@ build_nestjs() {
         cp -r node_modules "$NESTJS_DIST/"
     fi
     
-    # 复制配置文件
-    cp application.yaml "$NESTJS_DIST/"
+    # 复制配置文件（tsc 不会自动复制非 .ts 文件，application.yaml 需要随 dist/config 一起打包）
+    mkdir -p "$NESTJS_DIST/dist/config"
+    cp src/config/application.yaml "$NESTJS_DIST/dist/config/application.yaml"
     cp package.json "$NESTJS_DIST/"
     
     # 复制 .env 文件

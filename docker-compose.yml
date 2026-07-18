@@ -118,7 +118,7 @@ services:
       RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/nestjs
     volumes:
-      - ./nestjs/application.yaml:/app/application.yaml:ro
+      - ./nestjs/src/config/application.yaml:/app/dist/config/application.yaml:ro
       - ./logs/nestjs:/app/logs/nestjs
       - ./static/pic:/app/static/pic
       - ./static/excel:/app/static/excel

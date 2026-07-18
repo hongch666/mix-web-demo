@@ -237,10 +237,16 @@ run_container() {
     append_env_file env_args "$env_file"
     
     case $service in
-        gozero|nestjs|spring)
-            # 这三个服务都有 application.yaml 配置
+        gozero|spring)
+            # 这两个服务都有 application.yaml 配置
             if [ -f "$service_dir/application.yaml" ]; then
                 volume_args+=( -v "$service_dir/application.yaml:/app/application.yaml" )
+            fi
+            ;;
+        nestjs)
+            # NestJS 配置已迁移到 src/config/application.yaml
+            if [ -f "$service_dir/src/config/application.yaml" ]; then
+                volume_args+=( -v "$service_dir/src/config/application.yaml:/app/dist/config/application.yaml" )
             fi
             ;;
         fastapi)
