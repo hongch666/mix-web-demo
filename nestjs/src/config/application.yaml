@@ -1,0 +1,84 @@
+server:
+  ip: ${SERVER_IP:127.0.0.1}
+  mode: ${SERVER_MODE:dev}
+  port: ${SERVER_PORT:8083}
+  serviceName: ${SERVER_SERVICE_NAME:nestjs}
+
+nacos:
+  host: ${NACOS_SERVER:127.0.0.1}
+  port: ${NACOS_PORT:8848}
+  namespace: ${NACOS_NAMESPACE:public}
+  clusterName: ${NACOS_CLUSTER_NAME:DEFAULT}
+
+database:
+  mysql:
+    type: ${DB_TYPE:mysql}
+    host: ${DB_HOST:localhost}
+    port: ${DB_PORT:3306}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    database: ${DB_DATABASE:demo}
+    synchronize: ${DB_SYNCHRONIZE:false}
+    logging: ${DB_LOGGING:false}
+    entities:
+      - src/**/*.entity.js
+  mongodb:
+    host: ${DB_MONGODB_HOST:localhost}
+    port: ${DB_MONGODB_PORT:27017}
+    username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
+    password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
+    dbName: ${DB_MONGODB_DATABASE:demo}
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    username: ${REDIS_USERNAME:}
+    password: ${REDIS_PASSWORD:}
+    db: ${REDIS_DB:0}
+
+rabbitmq:
+  host: ${RABBITMQ_HOST:localhost}
+  port: ${RABBITMQ_PORT:5672}
+  username: ${RABBITMQ_USERNAME:}
+  password: ${RABBITMQ_PASSWORD:}
+  vhost: ${RABBITMQ_VHOST:test}
+
+files:
+  word: ${FILES_WORD_PATH:../static/word}
+  upload: ${FILES_UPLOAD_PATH:../static/upload}
+
+logs:
+  path: ${LOGS_PATH:../logs/nestjs}
+
+mail:
+  host: ${MAIL_HOST:smtp.qq.com}
+  port: ${MAIL_PORT:465}
+  secure: ${MAIL_SECURE:true}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
+  from: ${MAIL_FROM:}
+  timeout: ${MAIL_TIMEOUT:5000}
+
+oss:
+  bucket_name: ${OSS_BUCKET_NAME:mix-web-demo}
+  endpoint: ${OSS_ENDPOINT:oss-cn-guangzhou.aliyuncs.com}
+  access_key_id: ${OSS_ACCESS_KEY_ID:}
+  access_key_secret: ${OSS_ACCESS_KEY_SECRET:}
+  put_timeout: ${OSS_PUT_TIMEOUT:120} # 上传超时时间（秒）
+
+github:
+  oauth:
+    clientId: ${GITHUB_OAUTH_CLIENT_ID:}
+    clientSecret: ${GITHUB_OAUTH_CLIENT_SECRET:}
+    redirectUri: ${GITHUB_OAUTH_REDIRECT_URI:http://localhost:8080/github/callback}
+    scope: "read:user user:email"
+    authorizeUrl: https://github.com/login/oauth/authorize
+    accessTokenUrl: https://github.com/login/oauth/access_token
+    userApiUrl: https://api.github.com/user
+    emailsApiUrl: https://api.github.com/user/emails
+    apiVersion: "2026-03-10"
+    frontendSuccessUrl: ${GITHUB_OAUTH_FRONTEND_SUCCESS_URL:http://localhost:5173}
+    frontendFailureUrl: ${GITHUB_OAUTH_FRONTEND_FAILURE_URL:http://localhost:5173/login}
+
+internal-token:
+  secret: ${INTERNAL_TOKEN_SECRET:}
+  expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}

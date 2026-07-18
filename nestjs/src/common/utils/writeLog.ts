@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import * as fs from "fs";
 import * as path from "path";
-import yamlConfig from "../config/yamlConfig.service";
+import config from "src/config";
 
 export class LoggerUtil {
   private static logPath: string;
@@ -12,13 +12,15 @@ export class LoggerUtil {
     if (this.configLoaded) return;
 
     try {
-      // 复用现有的 YAML 配置服务
-      const config: Record<string, unknown> = yamlConfig();
+      // 复用现有的配置对象
+      const logsConfig: Record<string, unknown> | undefined = config.logs as
+        | Record<string, unknown>
+        | undefined;
 
       // 获取日志路径，支持环境变量覆盖
       this.logPath =
         process.env.LOG_PATH ||
-        ((config?.logs as Record<string, unknown>)?.path as string) ||
+        (logsConfig?.path as string | undefined) ||
         "logs";
       this.configLoaded = true;
       Logger.log(`日志配置加载成功，路径: ${this.logPath}`);

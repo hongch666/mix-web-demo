@@ -14,7 +14,7 @@ import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor
 import { CommonModule } from "src/module/common/common.module";
 import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
-import yamlConfig from "../common/config/yamlConfig.service";
+import config from "src/config";
 import { InternalTokenUtil } from "../common/utils/internalToken.util";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
 
@@ -59,7 +59,7 @@ interface MongoDbConfig {
     }),
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [yamlConfig],
+      load: [(): Record<string, unknown> => config],
     }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],

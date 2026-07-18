@@ -38,8 +38,8 @@ RUN npm install --omit=dev --prefer-offline --no-audit
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist ./dist
 
-# 复制默认配置文件
-COPY application.yaml ./
+# 复制默认配置文件（与 src/config/application.yaml 保持同步）
+COPY src/config/application.yaml ./dist/config/application.yaml
 
 # 创建日志目录
 RUN mkdir -p /app/logs/nestjs && \
