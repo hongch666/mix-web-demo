@@ -8,8 +8,8 @@ import { DeleteResult, Model } from "mongoose";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
-import { ArticleService } from "src/module/common/article/article.service";
-import { UserService } from "src/module/common/user/user.service";
+import { ArticleService } from "src/module/system/article/article.service";
+import { UserService } from "src/module/system/user/user.service";
 import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
 import { ArticleLog, ArticleLogDocument } from "./schema/articleLog.schema";
 

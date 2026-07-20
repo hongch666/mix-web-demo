@@ -1,23 +1,23 @@
 import { Module } from "@nestjs/common";
-import { ArticleModule } from "./article/article.module";
+import { GithubModule } from "./github/github.module";
+import { MailModule } from "./mail/mail.module";
 import { NacosModule } from "./nacos/nacos.module";
 import { OssModule } from "./oss/oss.module";
 import { TaskModule } from "./task/task.module";
-import { UserModule } from "./user/user.module";
 import { WordModule } from "./word/word.module";
 
 @Module({
   imports: [
-    ArticleModule,
-    UserModule,
+    GithubModule,
+    MailModule,
     NacosModule,
     TaskModule,
     WordModule,
     OssModule,
   ],
   exports: [
-    ArticleModule,
-    UserModule,
+    GithubModule,
+    MailModule,
     NacosModule,
     TaskModule,
     WordModule,

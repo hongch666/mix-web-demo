@@ -7,8 +7,8 @@ import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { RedisService } from "src/module/common/redis/redis.service";
-import { User } from "src/module/common/user/entities/user.entity";
-import { UserService } from "src/module/common/user/user.service";
+import { User } from "src/module/system/user/entities/user.entity";
+import { UserService } from "src/module/system/user/user.service";
 import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,

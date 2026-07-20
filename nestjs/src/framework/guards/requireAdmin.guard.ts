@@ -3,7 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { UserService } from "src/module/common/user/user.service";
+import { UserService } from "src/module/system/user/user.service";
 import { REQUIRE_ADMIN_KEY } from "../decorators/requireAdmin.decorator";
 
 @Injectable()
