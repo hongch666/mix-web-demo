@@ -9,6 +9,7 @@ from .apiLog.apiLogRouter import router as apiLogRouter
 from .chat.chatRouter import router as chatRouter
 from .generate.generateRouter import router as generateRouter
 from .graphSearch.graphSearchRouter import router as graphSearchRouter
+from .task.taskRouter import router as taskRouter
 from .test.testRouter import router as testRouter
 from .user.userRouter import router as userRouter
 from .vectorSearch.vectorSearchRouter import router as vectorSearchRouter
@@ -20,6 +21,7 @@ routers: List[APIRouter] = [
     chatRouter,
     generateRouter,
     testRouter,
+    taskRouter,
     aiHistoryRouter,
     userRouter,
     graphSearchRouter,
@@ -36,6 +38,7 @@ __all__: List[str] = [
     "aiHistoryRouter",
     "apiLogRouter",
     "testRouter",
+    "taskRouter",
     "graphSearchRouter",
     "vectorSearchRouter",
     "algorithmRouter",
