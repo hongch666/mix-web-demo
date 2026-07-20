@@ -12,12 +12,12 @@ public interface FastAPIClient {
     @GetMapping("/api_fastapi/fastapi")
     Result<?> testFastAPI();
 
-    @PostMapping("/api_fastapi/task/vector")
+    @PostMapping("/task/vector")
     Result<?> syncVector();
 
-    @PostMapping("/api_fastapi/task/clear-analyze-caches")
+    @PostMapping("/task/clear-analyze-caches")
     Result<?> clearAnalyzeCaches();
 
-    @PostMapping("/api_fastapi/task/sync-neo4j")
+    @PostMapping("/task/sync-neo4j")
     Result<?> syncNeo4j();
 }

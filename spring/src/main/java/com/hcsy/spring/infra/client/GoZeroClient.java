@@ -12,6 +12,6 @@ public interface GoZeroClient {
     @GetMapping("/api_gozero/gozero")
     Result<?> testGoZero();
 
-    @PostMapping("/api_gozero/syncer")
+    @PostMapping("/task/syncer")
     Result<?> syncES();
 }
