@@ -8,6 +8,7 @@ import (
 
 	chat "app/internal/handler/chat"
 	search "app/internal/handler/search"
+	task "app/internal/handler/task"
 	test "app/internal/handler/test"
 	"app/internal/svc"
 
@@ -145,13 +146,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware, serverCtx.InternalServiceMiddleware},
 			[]rest.Route{
 				{
-					// 调用同步ES的测试
+					// 手动触发同步ES任务
 					Method:  http.MethodPost,
 					Path:    "/syncer",
-					Handler: test.SyncESHandler(serverCtx),
+					Handler: task.SyncESHandler(serverCtx),
 				},
 			}...,
 		),
-		rest.WithPrefix("/api_gozero"),
+		rest.WithPrefix("/task"),
 	)
 }

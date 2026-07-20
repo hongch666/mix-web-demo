@@ -36,23 +36,7 @@ service App {
 	get /fastapi returns (TestFastAPIResp)
 }
 
-@server (
-	group:      test
-	tags:       test
-	prefix:     /api_gozero
-	middleware: UserContextMiddleware,RecoveryMiddleware,InternalServiceMiddleware
-)
-service App {
-	@doc (
-		summary:     "调用同步ES的测试"
-		description: "查看是否同步成功"
-	)
-	@handler SyncESHandler
-	post /syncer (SyncESReq) returns (SyncESResp)
-}
-
 type (
-	SyncESReq  {}
 	TestGoZeroResp {
 		Data string `json:"data"`
 	}
@@ -65,6 +49,5 @@ type (
 	TestFastAPIResp {
 		Data string `json:"data"`
 	}
-	SyncESResp  {}
 )
 

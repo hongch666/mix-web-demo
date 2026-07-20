@@ -1,0 +1,16 @@
+syntax = "v2"
+
+@server (
+	group:      task
+	tags:       task
+	prefix:     /task
+	middleware: UserContextMiddleware,RecoveryMiddleware,InternalServiceMiddleware
+)
+service App {
+	@doc (
+		summary:     "手动触发同步ES任务"
+		description: "手动触发同步MySQL文章数据到Elasticsearch"
+	)
+	@handler SyncESHandler
+	post /syncer (SyncESReq) returns (SyncESResp)
+}

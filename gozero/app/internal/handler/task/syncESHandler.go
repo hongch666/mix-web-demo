@@ -1,14 +1,14 @@
 // Code scaffolded by goctl. Safe to edit.
 // goctl 1.9.2
 
-package test
+package task
 
 import (
 	"net/http"
 
 	"app/common/constants"
 	"app/common/utils"
-	"app/internal/logic/test"
+	"app/internal/logic/task"
 	"app/internal/middleware"
 	"app/internal/svc"
 	"app/internal/types"
@@ -25,7 +25,7 @@ func SyncESHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := test.NewSyncESLogic(r.Context(), svcCtx)
+		l := task.NewSyncESLogic(r.Context(), svcCtx)
 		resp, err := l.SyncES(&req)
 		if err != nil {
 			utils.HandleError(w, err)

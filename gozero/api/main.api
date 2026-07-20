@@ -12,6 +12,7 @@ import (
 	"./chat/chat.api"
 	"./chat/stream.api"
 	"./search/search.api"
+	"./task/task.api"
 	"./test/test.api"
 )
 
