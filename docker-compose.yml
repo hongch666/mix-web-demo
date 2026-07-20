@@ -58,7 +58,7 @@ services:
           cpus: "0.5"
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/api_spring/spring"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/test/spring"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -96,7 +96,7 @@ services:
           cpus: "0.25"
           memory: 256M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/api_gozero/gozero"]
+      test: ["CMD", "curl", "-f", "http://localhost:8082/test/gozero"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -134,7 +134,7 @@ services:
           cpus: "0.25"
           memory: 256M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/api_nestjs/nestjs"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/test/nestjs"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -174,7 +174,7 @@ services:
           cpus: "0.5"
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/api_fastapi/fastapi"]
+      test: ["CMD", "curl", "-f", "http://localhost:8084/test/fastapi"]
       interval: 30s
       timeout: 10s
       retries: 3
