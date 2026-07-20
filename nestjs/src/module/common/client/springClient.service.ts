@@ -5,14 +5,6 @@ import { NacosService } from "../nacos/nacos.service";
 export class SpringClientService {
   constructor(private readonly nacosService: NacosService) {}
 
-  async test(): Promise<Record<string, unknown>> {
-    return await this.nacosService.call({
-      serviceName: "spring",
-      method: "GET",
-      path: "/api_spring/spring",
-    });
-  }
-
   async createTokenTicket(
     userId: number,
     username: string,
