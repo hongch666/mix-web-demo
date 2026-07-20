@@ -72,10 +72,3 @@ func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceReq
 	})
 }
 
-// Test 测试 FastAPI 服务连通性，返回完整响应结果
-func (c *FastapiClient) Test(ctx context.Context) (client.Result, error) {
-	sd := c.serviceDisc
-	return sd.CallService(ctx, c.serviceName, "/api_fastapi/fastapi", client.RequestOptions{
-		Method: "GET",
-	})
-}

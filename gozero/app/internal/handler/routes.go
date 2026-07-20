@@ -113,32 +113,14 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
 			[]rest.Route{
 				{
-					// 调用FastAPI的测试
-					Method:  http.MethodGet,
-					Path:    "/fastapi",
-					Handler: test.TestFastAPIHandler(serverCtx),
-				},
-				{
 					// 测试GoZero服务
 					Method:  http.MethodGet,
 					Path:    "/gozero",
 					Handler: test.TestGoZeroHandler(serverCtx),
 				},
-				{
-					// 调用NestJS的测试
-					Method:  http.MethodGet,
-					Path:    "/nestjs",
-					Handler: test.TestNestJSHandler(serverCtx),
-				},
-				{
-					// 调用Spring的测试
-					Method:  http.MethodGet,
-					Path:    "/spring",
-					Handler: test.TestSpringHandler(serverCtx),
-				},
 			}...,
 		),
-		rest.WithPrefix("/api_gozero"),
+		rest.WithPrefix("/test"),
 	)
 
 	server.AddRoutes(

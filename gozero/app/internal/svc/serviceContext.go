@@ -16,8 +16,6 @@ import (
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
-	"app/internal/client/nestjsClient"
-	"app/internal/client/springClient"
 	"app/internal/config"
 	"app/internal/middleware"
 	"app/model/aiHistory"
@@ -81,8 +79,6 @@ type ServiceContext struct {
 	SSEHub  *hub.SSEHubManager
 
 	FastapiClient *fastapiClient.FastapiClient
-	SpringClient  *springClient.SpringClient
-	NestjsClient  *nestjsClient.NestjsClient
 
 	Logger *utils.ZeroLogger
 
@@ -150,8 +146,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	})
 
 	fastapiClient := fastapiClient.NewFastapiClient(namingClient)
-	springClient := springClient.NewSpringClient(namingClient)
-	nestjsClient := nestjsClient.NewNestjsClient(namingClient)
 
 	return &ServiceContext{
 		Config:                 c,
@@ -175,8 +169,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		UserModel:              userModel,
 		SearchModel:            searchModel,
 		FastapiClient:          fastapiClient,
-		SpringClient:           springClient,
-		NestjsClient:           nestjsClient,
 		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
 		SSEHub: func() *hub.SSEHubManager {
 			hub := hub.GetSSEHub()

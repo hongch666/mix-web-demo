@@ -3,7 +3,7 @@ syntax = "v2"
 @server (
 	group:      test
 	tags:       test
-	prefix:     /api_gozero
+	prefix:     /test
 	middleware: UserContextMiddleware,RecoveryMiddleware
 )
 service App {
@@ -13,40 +13,10 @@ service App {
 	)
 	@handler TestGoZeroHandler
 	get /gozero returns (TestGoZeroResp)
-
-	@doc (
-		summary:     "调用Spring的测试"
-		description: "输出欢迎信息"
-	)
-	@handler TestSpringHandler
-	get /spring returns (TestSpringResp)
-
-	@doc (
-		summary:     "调用NestJS的测试"
-		description: "输出欢迎信息"
-	)
-	@handler TestNestJSHandler
-	get /nestjs returns (TestNestJSResp)
-
-	@doc (
-		summary:     "调用FastAPI的测试"
-		description: "输出欢迎信息"
-	)
-	@handler TestFastAPIHandler
-	get /fastapi returns (TestFastAPIResp)
 }
 
 type (
 	TestGoZeroResp {
-		Data string `json:"data"`
-	}
-	TestSpringResp {
-		Data string `json:"data"`
-	}
-	TestNestJSResp {
-		Data string `json:"data"`
-	}
-	TestFastAPIResp {
 		Data string `json:"data"`
 	}
 )
