@@ -1,13 +1,11 @@
-import { Controller, Get, Post } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Messages } from "src/common/constants";
 import { ApiResponse, success } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
-import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { FastapiClientService } from "src/module/common/client/fastapiClient.service";
 import { GoZeroClientService } from "src/module/common/client/gozeroClient.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
-import { TaskService } from "src/module/common/task/task.service";
 
 @Controller("api_nestjs")
 @ApiTags("测试模块")
@@ -16,7 +14,6 @@ export class TestController {
     private readonly springClientService: SpringClientService,
     private readonly gozeroClientService: GoZeroClientService,
     private readonly fastapiClientService: FastapiClientService,
-    private readonly taskService: TaskService,
   ) {}
 
   @Get("nestjs")
@@ -60,29 +57,5 @@ export class TestController {
   async getFastAPI(): Promise<ApiResponse<unknown>> {
     const res: Record<string, unknown> = await this.fastapiClientService.test();
     return success(res.data);
-  }
-
-  @Post("execute/apilog")
-  @ApiOperation({
-    summary: "手动执行清理API日志任务",
-    description: "手动触发清理超过1个月的API日志任务",
-  })
-  @RequireInternalToken()
-  @ApiLog("手动执行清理API日志任务")
-  async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
-    await this.taskService.cleanupOldApiLogs();
-    return success(null);
-  }
-
-  @Post("execute/articlelog")
-  @ApiOperation({
-    summary: "手动执行清理文章日志任务",
-    description: "手动触发清理超过1个月的文章日志任务",
-  })
-  @RequireInternalToken()
-  @ApiLog("手动执行清理文章日志任务")
-  async executeCleanupOldArticleLogsTask(): Promise<ApiResponse<null>> {
-    await this.taskService.cleanupOldArticleLogs();
-    return success(null);
   }
 }
