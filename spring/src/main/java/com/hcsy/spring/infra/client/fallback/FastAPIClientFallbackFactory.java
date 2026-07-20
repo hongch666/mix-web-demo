@@ -23,11 +23,6 @@ public class FastAPIClientFallbackFactory implements FallbackFactory<FastAPIClie
 
         return new FastAPIClient() {
             @Override
-            public Result<?> testFastAPI() {
-                return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.FASTAPI_SERVICE_UNAVAILABLE);
-            }
-
-            @Override
             public Result<?> syncVector() {
                 return Result.error(HttpCode.SERVICE_UNAVAILABLE, Messages.VECTOR_SYNC_SERVICE_UNAVAILABLE);
             }

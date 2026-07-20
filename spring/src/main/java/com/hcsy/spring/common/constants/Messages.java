@@ -279,15 +279,12 @@ public class Messages {
 
     // ===== 服务降级 =====
     public static final String FASTAPI_CALL_DEGRADED = "FastAPI 服务调用触发降级: ";
-    public static final String FASTAPI_SERVICE_UNAVAILABLE = "FastAPI 服务暂时不可用，已触发降级";
     public static final String VECTOR_SYNC_SERVICE_UNAVAILABLE = "向量同步服务暂时不可用，已触发降级";
     public static final String ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE = "分析缓存清理服务暂时不可用，已触发降级";
     public static final String NEO4J_SYNC_SERVICE_UNAVAILABLE = "Neo4j同步服务暂时不可用，已触发降级";
     public static final String GOZERO_SERVICE_UNAVAILABLE = "GoZero 服务调用触发降级: ";
-    public static final String GOZERO_SERVICE_UNAVAILABLE_DEGRADE = "GoZero 服务暂时不可用，已触发降级";
     public static final String ES_SERVICE_UNAVAILABLE = "ES 同步服务暂时不可用，已触发降级";
     public static final String NESTJS_SERVICE_UNAVAILABLE = "NestJS 服务调用触发降级: ";
-    public static final String NESTJS_SERVICE_UNAVAILABLE_DEGRADE = "NestJS 服务暂时不可用，已触发降级";
     public static final String NESTJS_EMAIL_SERVICE_UNAVAILABLE = "NestJS 邮件服务调用触发降级: ";
     public static final String NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG = "邮件服务暂时不可用，请稍后再试";
 
