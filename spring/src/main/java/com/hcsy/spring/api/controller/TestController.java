@@ -11,6 +11,7 @@ import com.hcsy.spring.core.annotation.ApiLog;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/test")
@@ -21,7 +22,7 @@ public class TestController {
     @GetMapping("/spring")
     @Operation(summary = "Spring自己的测试", description = "输出欢迎信息")
     @ApiLog("测试Spring服务")
-    public Result<String> getHello() {
-        return Result.success(Defaults.TEST);
+    public Mono<Result<String>> getHello() {
+        return Mono.just(Result.success(Defaults.TEST));
     }
 }

@@ -2,11 +2,6 @@ server:
   address: ${SERVER_ADDRESS:0.0.0.0}
   mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8081}
-  tomcat:
-    threads:
-      max: 25
-    accept-count: 25
-    max-connections: 100
 spring:
   application:
     name: spring
@@ -65,6 +60,17 @@ mybatis-plus:
     db-config:
       id-type: auto # 主键策略
       logic-delete-field: deleted # 逻辑删除字段
+
+# SpringDoc OpenAPI 配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs # OpenAPI 规范 JSON 路径
+  swagger-ui:
+    path: /swagger-ui.html # Swagger UI 入口路径
+    url: /v3/api-docs # Swagger UI 加载的 OpenAPI 规范 URL（避免加载默认 Petstore 示例）
+    operations-sorter: alpha # 按字母顺序排序接口
+    tags-sorter: alpha # 按字母顺序排序标签
+    disable-swagger-default-url: true # 禁用 springdoc 默认 URL 配置
 
 logging:
   file:

@@ -1,5 +1,6 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,11 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-
-import jakarta.annotation.Resource;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,12 +21,12 @@ import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
-import com.hcsy.spring.common.utils.PasswordEncryptor;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -57,6 +53,8 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     private static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
     private static final String GITHUB_TOKEN_TICKET_PREFIX = "oauth:github:token:";
+    private static final String ALL_USERS_CACHE_KEY = "user:page:all-users";
+    private static final Duration CACHE_TTL = Duration.ofHours(24);
 
     private final UserMapper userMapper;
     private final RedisUtil redisUtil;
@@ -68,9 +66,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final ObjectMapper objectMapper;
     private final SimpleLogger logger;
 
-    @Resource(name = "userQueryExecutor")
-    private Executor userQueryExecutor;
-
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
@@ -78,7 +73,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 1. 先获取所有符合条件的用户ID（轻量查询）
         LambdaQueryWrapper<User> idQueryWrapper = Wrappers.lambdaQuery();
         idQueryWrapper.select(User::getId);
-        // 排除 role 为 ai 的用户
         idQueryWrapper.ne(User::getRole, "ai");
         if (username != null && !username.isEmpty()) {
             idQueryWrapper.like(User::getName, username);
@@ -114,32 +108,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 offset,
                 size);
 
-        // 4. 转换为 UserVO，设置登录状态和在线设备数（并行批量查询减少 N+1 延迟）
-        List<UserVO> userVOs = new java.util.ArrayList<>();
-        ConcurrentHashMap<Long, Long> deviceCountMap = new ConcurrentHashMap<>();
-
-        // 并行查询所有用户的在线设备数
-        List<CompletableFuture<Void>> deviceCountTasks = new ArrayList<>();
-        for (User user : users) {
-            Long userId = user.getId();
-            deviceCountTasks.add(CompletableFuture.runAsync(() -> {
-                deviceCountMap.put(userId, tokenService.getUserOnlineDeviceCount(userId));
-            }, userQueryExecutor));
-        }
-        try {
-            CompletableFuture.allOf(deviceCountTasks.toArray(new CompletableFuture[0])).get();
-        } catch (Exception e) {
-            // 并行查询失败时降级为串行兜底，保证可用性
-            logger.warning("并行查询在线设备数失败，降级为串行", e.getMessage());
-            for (User user : users) {
-                deviceCountMap.put(user.getId(), tokenService.getUserOnlineDeviceCount(user.getId()));
-            }
-        }
-
+        // 4. 转换为 UserVO，设置登录状态和在线设备数
+        List<UserVO> userVOs = new ArrayList<>();
         for (User user : users) {
             UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
             vo.setLoginStatus(loginStatusMap.getOrDefault(user.getId(), 0));
-            vo.setOnlineDeviceCount(deviceCountMap.getOrDefault(user.getId(), 0L));
+            vo.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(user.getId()));
             userVOs.add(vo);
         }
 
@@ -162,6 +136,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
         }
         userMapper.deleteById(id);
+        evictAllUsersCache();
         redisUtil.delete(RedisKeys.userStatus(id));
     }
 
@@ -187,6 +162,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         userMapper.deleteBatchIds(ids);
+        evictAllUsersCache();
         for (Long id : ids) {
             redisUtil.delete(RedisKeys.userStatus(id));
         }
@@ -198,7 +174,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         if (username != null && !username.isEmpty()) {
-            queryWrapper.eq(User::getName, username); // 用户名模糊匹配
+            queryWrapper.eq(User::getName, username);
         }
         return userMapper.selectOne(queryWrapper);
     }
@@ -209,7 +185,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public List<User> listAllUserByUsername(String username) {
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
         if (username != null && !username.isEmpty()) {
-            queryWrapper.like(User::getName, username); // 用户名模糊匹配
+            queryWrapper.like(User::getName, username);
         }
         return userMapper.selectList(queryWrapper);
     }
@@ -270,6 +246,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                     buildGithubTicketKey(ticket),
                     objectMapper.writeValueAsString(loginVO),
                     GITHUB_TOKEN_TICKET_TTL_SECONDS);
+        evictAllUsersCache();
         } catch (Exception e) {
             try {
                 tokenService.removeSessionByAccessToken(loginVO.getAccessToken());
@@ -325,48 +302,78 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         saveUserAndStatus(user);
 
         emailVerificationService.markEmailAsVerified(registerDTO.getEmail());
+        evictAllUsersCache();
     }
 
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public UserListVO getAllUsers(String username) {
-        // 先通过 SQL COUNT 获取总数，避免内存中 list.size()
+        // 只有不带搜索条件的全量查询才使用缓存
+        boolean useCache = (username == null || username.isEmpty());
+        if (useCache) {
+            try {
+                String cached = redisUtil.get(ALL_USERS_CACHE_KEY);
+                if (cached != null && !cached.isEmpty()) {
+                    return objectMapper.readValue(cached, UserListVO.class);
+                }
+            } catch (Exception e) {
+                logger.error("用户列表缓存读取失败: " + e.getMessage());
+            }
+        }
+
         long total = userMapper.countUsersByUsername(username);
 
         if (total == 0) {
-            return UserListVO.builder()
+            UserListVO emptyResult = UserListVO.builder()
                     .total(0L)
                     .list(Collections.emptyList())
                     .build();
+            if (useCache) {
+                try {
+                    String json = objectMapper.writeValueAsString(emptyResult);
+                    redisUtil.set(ALL_USERS_CACHE_KEY, json, 10 * 60L);
+                } catch (Exception e) {
+                    logger.error("用户列表缓存写入失败: " + e.getMessage());
+                }
+            }
+            return emptyResult;
         }
 
-        // 查询所有符合条件的用户
         LambdaQueryWrapper<User> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.ne(User::getRole, "ai"); // 排除 role 为 ai 的用户
+        queryWrapper.ne(User::getRole, "ai");
         if (username != null && !username.isEmpty()) {
             queryWrapper.like(User::getName, username);
         }
         List<User> users = this.list(queryWrapper);
 
-        // 转换为 UserVO（不包含登录状态和设备数）
         List<UserVO> voList = users.stream().map(user -> {
             UserVO vo = new UserVO();
             BeanUtil.copyProperties(user, vo);
             return vo;
         }).toList();
 
-        return UserListVO.builder()
+        UserListVO result = UserListVO.builder()
                 .total(total)
                 .list(voList)
                 .build();
+
+        if (useCache) {
+            try {
+                String json = objectMapper.writeValueAsString(result);
+                redisUtil.set(ALL_USERS_CACHE_KEY, json, CACHE_TTL.toSeconds());
+            } catch (Exception e) {
+                logger.error("用户列表缓存写入失败: " + e.getMessage());
+            }
+        }
+
+        return result;
     }
 
     @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
     public UserListVO getAllAiUsers() {
-        // 先通过 SQL COUNT 获取总数，避免内存中 list.size()
         long total = userMapper.countAiUsers();
 
         if (total == 0) {
@@ -419,13 +426,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_SAVE)
     public void saveUserAndStatus(User user) {
-        // 加密密码后再保存
         if (user.getAuthProvider() == null || user.getAuthProvider().isBlank()) {
             user.setAuthProvider("local");
         }
         String password = user.getPassword();
         if (password != null && !password.isEmpty()) {
-            // 检查是否已经被加密过（bcrypt hash 格式为 $2a$, $2b$, $2x$, $2y$ 开头）
             if (!password.startsWith("$2a$") && !password.startsWith("$2b$") && !password.startsWith("$2x$")
                     && !password.startsWith("$2y$")) {
                 user.setPassword(passwordEncryptor.encryptPassword(password));
@@ -453,6 +458,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public void updateUserStatus(Long userId, String status) {
         redisUtil.set(RedisKeys.userStatus(userId), status);
+        evictAllUsersCache();
     }
 
     @Override
@@ -468,6 +474,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             user.setPassword(passwordEncryptor.encryptPassword(user.getPassword()));
         }
         saveUserAndStatus(user);
+        evictAllUsersCache();
     }
 
     @Override
@@ -493,6 +500,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         updateById(user);
+        evictAllUsersCache();
     }
 
     @Override
@@ -536,6 +544,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         final String resetPassword = passwordEncryptor.encryptPassword(userPasswordProperties.getResetPassword());
         user.setPassword(resetPassword);
         updateById(user);
+    }
+
+    /**
+     * 清除所有用户列表缓存，在任何修改用户的操作后调用
+     */
+    private void evictAllUsersCache() {
+        try {
+            redisUtil.delete(ALL_USERS_CACHE_KEY);
+        } catch (Exception e) {
+            logger.error("用户列表缓存清除失败: " + e.getMessage());
+        }
     }
 
     private void validateLoginCaptcha(String captchaId, String captchaText) {

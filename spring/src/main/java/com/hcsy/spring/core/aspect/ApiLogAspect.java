@@ -29,8 +29,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,6 +39,7 @@ import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 /**
  * API 日志切面
@@ -63,87 +62,59 @@ public class ApiLogAspect {
     @Around("@annotation(apiLog)")
     public Object logAround(ProceedingJoinPoint pjp, ApiLog apiLog) throws Throwable {
         long start = System.currentTimeMillis();
-        Object result = null;
-        try {
-            // 获取用户信息
-            Long userId = UserContext.getUserId();
-            String username = UserContext.getUsername();
 
-            // 增加判空
-            if (userId == null) {
-                userId = 0L;
-            }
-            if (username == null) {
-                username = "unknown";
-            }
+        // 从方法参数中直接提取可获取的信息
+        MethodSignature signature = (MethodSignature) pjp.getSignature();
+        Method method = signature.getMethod();
+        String httpMethod = getHttpMethod(method);
+        String requestPath = getRequestPath(method);
 
-            // 获取请求信息
-            MethodSignature signature = (MethodSignature) pjp.getSignature();
-            Method method = signature.getMethod();
+        // 构建基础日志消息
+        String baseMessage = String.format("%s %s: %s", httpMethod, requestPath, apiLog.value());
 
-            String httpMethod = getHttpMethod(method);
-            String requestPath = getRequestPath(method);
-
-            // 构建基础日志消息
-            String baseMessage = String.format("用户%s:%s %s %s: %s",
-                    userId, username, httpMethod, requestPath, apiLog.value());
-
-            // 添加参数信息
-            if (apiLog.includeParams()) {
-                String paramsInfo = extractParamsInfo(pjp, apiLog.excludeFields());
-                if (paramsInfo != null && !paramsInfo.isEmpty()) {
-                    baseMessage += "\n" + paramsInfo;
-                }
-            }
-
-            // 根据日志级别记录日志（方法开始时）
-            switch (apiLog.level()) {
-                case WARN:
-                    logger.warning(baseMessage);
-                    break;
-                case ERROR:
-                    logger.error(baseMessage);
-                    break;
-                default:
-                    logger.info(baseMessage);
-                    break;
-            }
-
-            // 执行原方法
-            result = pjp.proceed();
-
-            return result;
-
-        } catch (Throwable t) {
-            // 若方法抛出异常，仍然向上抛出，但先记录错误日志
-            logger.error(Messages.API_EXCEPTION, t);
-            throw t;
-        } finally {
-            // 计算并记录耗时（无论正常或异常都会执行）
-            long end = System.currentTimeMillis();
-            long responseTime = end - start;
-
-            try {
-                MethodSignature signature = (MethodSignature) pjp.getSignature();
-                Method method = signature.getMethod();
-                String httpMethod = getHttpMethod(method);
-                String requestPath = getRequestPath(method);
-
-                String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, responseTime);
-                logger.info(timeMessage);
-
-                // 向消息队列发送 API 日志
-                sendApiLogToQueue(
-                        pjp,
-                        httpMethod,
-                        requestPath,
-                        apiLog.value(),
-                        responseTime,
-                        apiLog.excludeFields());
-            } catch (Exception e) {
-                logger.error(Messages.TIME_FAIL, e);
+        // 添加参数信息
+        if (apiLog.includeParams()) {
+            String paramsInfo = extractParamsInfo(pjp, apiLog.excludeFields());
+            if (paramsInfo != null && !paramsInfo.isEmpty()) {
+                baseMessage += "\n" + paramsInfo;
             }
         }
+
+        // 根据日志级别记录日志（方法开始时）
+        switch (apiLog.level()) {
+            case WARN:
+                logger.warning(baseMessage);
+                break;
+            case ERROR:
+                logger.error(baseMessage);
+                break;
+            default:
+                logger.info(baseMessage);
+                break;
+        }
+
+        Object result = pjp.proceed();
+
+        // 包装返回的 Mono，在链内用 flatMap + deferContextual 获取上下文
+        // 注意：doOnSuccess 是同步回调，Mono.deferContextual().subscribe() 会创建新的订阅链，
+        // 新的订阅链没有上游 Context，所以必须在响应式链内访问 Context
+        if (result instanceof Mono<?> monoResult) {
+            return monoResult
+                .flatMap(res -> Mono.deferContextual(ctx -> {
+                    long duration = System.currentTimeMillis() - start;
+                    String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, duration);
+                    logger.info(timeMessage);
+                    // 发送 API 日志到消息队列
+                    sendApiLogToQueue(ctx, pjp, httpMethod, requestPath, apiLog, duration);
+                    return Mono.just(res);
+                }))
+                .doOnError(err -> {
+                    logger.error(Messages.API_EXCEPTION, err);
+                });
+        }
+
+        // 非响应式类型保持原逻辑（如内部调用）
+        return result;
     }
 
     /**
@@ -376,50 +347,30 @@ public class ApiLogAspect {
      * 在接口完成后自动发送到 RabbitMQ
      */
     private void sendApiLogToQueue(
+            reactor.util.context.ContextView ctx,
             ProceedingJoinPoint pjp,
             String httpMethod,
             String requestPath,
-            String description,
-            long responseTime,
-            String[] excludeFields) {
+            ApiLog apiLog,
+            long responseTime) {
         try {
-            // 获取用户信息
-            Long userId = UserContext.getUserId();
+            // 从 Reactor Context 获取用户信息
+            Long userId = UserContext.getUserId(ctx);
             if (userId == null) {
                 userId = 0L;
             }
-            String username = UserContext.getUsername();
+            String username = UserContext.getUsername(ctx);
             if (username == null) {
                 username = "unknown";
             }
 
-            // 获取 HTTP 请求对象
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
-                    .getRequestAttributes();
-
-            Object queryParams = null;
-            Object pathParams = null;
-            Object requestBody = null;
-
-            if (attributes != null) {
-                // 提取查询参数（仅 GET 请求）
-                if ("GET".equals(httpMethod)) {
-                    java.util.Map<String, String[]> parameterMap = attributes.getRequest().getParameterMap();
-                    if (!parameterMap.isEmpty()) {
-                        queryParams = new HashMap<>(parameterMap);
-                    }
-                }
-
-                // 提取路径参数 - 从 pjp 的参数中获取
-                Map<String, Object> extractedPathParams = extractPathParams(pjp);
-                if (!extractedPathParams.isEmpty()) {
-                    pathParams = extractedPathParams;
-                }
-            }
+            // 提取路径参数 - 从 pjp 的参数中获取
+            Map<String, Object> pathParams = extractPathParams(pjp);
 
             // 提取请求体（非 GET 请求）
+            Object requestBody = null;
             if (!"GET".equals(httpMethod)) {
-                Set<String> excludeSet = new HashSet<>(Arrays.asList(excludeFields));
+                Set<String> excludeSet = new HashSet<>(Arrays.asList(apiLog.excludeFields()));
                 requestBody = extractRequestBody(pjp, excludeSet);
             }
 
@@ -427,11 +378,11 @@ public class ApiLogAspect {
             Map<String, Object> apiLogMessage = new LinkedHashMap<>();
             apiLogMessage.put("userId", userId);
             apiLogMessage.put("username", username);
-            apiLogMessage.put("apiDescription", description);
+            apiLogMessage.put("apiDescription", apiLog.value());
             apiLogMessage.put("apiPath", requestPath);
             apiLogMessage.put("apiMethod", httpMethod);
-            apiLogMessage.put("queryParams", queryParams);
-            apiLogMessage.put("pathParams", pathParams);
+            apiLogMessage.put("queryParams", null);
+            apiLogMessage.put("pathParams", pathParams.isEmpty() ? null : pathParams);
             apiLogMessage.put("requestBody", requestBody);
             apiLogMessage.put("responseTime", responseTime);
 
@@ -440,7 +391,6 @@ public class ApiLogAspect {
 
         } catch (Exception e) {
             logger.error(Messages.RabbitMQ_SEND_FAIL + e.getMessage(), e);
-            // 不要抛出异常，避免影响业务逻辑
         }
     }
 

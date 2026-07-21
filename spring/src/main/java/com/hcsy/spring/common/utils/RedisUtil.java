@@ -3,17 +3,19 @@ package com.hcsy.spring.common.utils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Redis 工具类
+ * 保留阻塞式 API 供定时任务等场景使用
+ * 响应式场景请使用 ReactiveRedisService
+ */
 @Component
 @RequiredArgsConstructor
 public class RedisUtil {
@@ -44,22 +46,10 @@ public class RedisUtil {
             return new ArrayList<>();
         }
 
-        StringRedisSerializer serializer = new StringRedisSerializer();
-        List<Object> results = redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
-            for (String key : keys) {
-                if (key != null) {
-                    byte[] rawKey = serializer.serialize(key);
-                    if (rawKey != null) {
-                        connection.stringCommands().get(rawKey);
-                    }
-                }
-            }
-            return null;
-        });
-
-        List<String> values = new ArrayList<>(results.size());
-        for (Object result : results) {
-            values.add(Objects.toString(result, null));
+        List<String> values = new ArrayList<>(keys.size());
+        for (String key : keys) {
+            String value = get(key);
+            values.add(value);
         }
         return values;
     }

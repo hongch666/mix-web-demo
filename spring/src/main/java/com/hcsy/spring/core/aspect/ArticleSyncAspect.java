@@ -8,22 +8,19 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.service.AsyncSyncService;
-import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.constants.Messages;
-import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.common.utils.UserContextHolder;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Article;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Aspect
 @Component
@@ -32,59 +29,69 @@ public class ArticleSyncAspect {
 
     private final RabbitMQUtil rabbitMQUtil;
     private final ObjectMapper objectMapper;
-    private final TransactionTemplate transactionTemplate;
     private final SimpleLogger logger;
     private final AsyncSyncService asyncSyncService;
 
     @Around("@annotation(articleSync)")
     public Object handleArticleSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync) throws Throwable {
-        return transactionTemplate.execute(status -> {
-            try {
-                // 1. 执行业务方法（写数据库）
-                Object result = joinPoint.proceed();
+        Object result = joinPoint.proceed();
 
-                // 2. 获取注解信息（articleSync 已通过参数注入）
-                String action = articleSync.action();
-                String description = articleSync.description();
-                Object[] paramValues = joinPoint.getArgs();
+        if (result instanceof Mono<?> monoResult) {
+            // Controller 层返回 Mono 的方法：在响应式链内获取 Reactor Context
+            return monoResult
+                .flatMap(res -> Mono.deferContextual(ctx -> {
+                    executeSync(joinPoint, articleSync, ctx);
+                    return Mono.just(res);
+                }));
+        }
 
-                Map<String, Object> msg = new HashMap<>();
-                Map<String, Object> content = new HashMap<>();
+        // Service 层返回非 Mono 类型的方法（boolean/Long/void 等）：
+        // 这些方法在 Controller 的 Mono.deferContextual 内同步调用，
+        // 不在响应式链中，需要直接执行同步逻辑
+        executeSync(joinPoint, articleSync, null);
+        return result;
+    }
 
-                // 3. 获取当前用户 ID
-                Long userId = UserContext.getUserId();
+    /**
+     * 执行同步逻辑：发送 MQ 消息 + 触发 ES/Vector 同步
+     *
+     * @param ctx Reactor Context，非 Mono 路径传入 null（会从 ThreadLocal 回退读取）
+     */
+    private void executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
+            reactor.util.context.ContextView ctx) {
+        try {
+            String action = articleSync.action();
+            String description = articleSync.description();
+            Object[] paramValues = joinPoint.getArgs();
 
-                // 4. 根据注解类型构建消息
-                buildActionMessage(action, paramValues, content, msg, userId, description);
-                msg.put("action", action);
+            Map<String, Object> msg = new HashMap<>();
+            Map<String, Object> content = new HashMap<>();
 
-                // 5. 发送消息
-                String json = objectMapper.writeValueAsString(msg);
-                rabbitMQUtil.sendMessage("article-log-queue", msg);
-                logger.info(Messages.MQ_SEND + json);
-
-                // 6. 在主线程中保存用户信息，用于异步任务日志记录
-                final Long currentUserId = userId;
-                final String currentUsername = UserContext.getUsername();
-
-                // 7. 注册事务提交后的回调，异步同步 ES 和 Vector
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        logger.info(Messages.TRIGGER_SYNC);
-                        // 所有文章相关操作在事务提交后统一触发 ES 和 Vector 同步，
-                        asyncSyncService.syncAllAsync(currentUserId, currentUsername);
-                    }
-                });
-
-                return result;
-
-            } catch (Throwable e) {
-                logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage());
-                status.setRollbackOnly(); // 显式回滚
-                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.TRANSACTION_ROLLBACK).build();
+            // 优先从 Reactor Context 读取，非 Mono 路径回退到 ThreadLocal
+            Long userId;
+            String username;
+            if (ctx != null) {
+                userId = UserContext.getUserId(ctx);
+                username = UserContext.getUsername(ctx);
+            } else {
+                userId = UserContextHolder.getUserId();
+                username = UserContextHolder.getUsername();
             }
-        });
+
+            // 根据注解类型构建消息
+            buildActionMessage(action, paramValues, content, msg, userId, description);
+            msg.put("action", action);
+
+            // 发送消息
+            String json = objectMapper.writeValueAsString(msg);
+            rabbitMQUtil.sendMessage("article-log-queue", msg);
+            logger.info(Messages.MQ_SEND + json);
+
+            // 触发异步同步 ES 和 Vector
+            asyncSyncService.syncAllAsync(userId, username);
+        } catch (Exception e) {
+            logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage());
+        }
     }
 
     /**
@@ -134,7 +141,7 @@ public class ArticleSyncAspect {
             }
             default:
                 logger.error(Messages.UNKNOWN_OPERATION + action);
-                throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.UNKNOWN_OPERATION).build();
+                break;
         }
 
         // 公共处理逻辑

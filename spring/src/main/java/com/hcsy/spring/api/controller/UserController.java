@@ -4,10 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -56,11 +52,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
-@CacheConfig(cacheNames = "user")
 @Tag(name = "用户模块", description = "用户管理功能相关API，包括用户注册、登录、信息管理、验证码等")
 public class UserController {
     private final UserService userService;
@@ -73,181 +69,194 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "query", paramNames = { "page", "size",
             "username" })
     @ApiLog("获取用户信息")
-    public Result<UserListVO> listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
-        UserListVO data = userService.listUsersWithFilter(
-                queryDTO.getPage(),
-                queryDTO.getSize(),
-                queryDTO.getUsername());
-        return Result.success(data);
+    public Mono<Result<UserListVO>> listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
+        return Mono.deferContextual(ctx -> {
+            UserListVO data = userService.listUsersWithFilter(
+                    queryDTO.getPage(),
+                    queryDTO.getSize(),
+                    queryDTO.getUsername());
+            return Mono.just(Result.success(data));
+        });
     }
 
     @GetMapping("/all")
-    @Operation(summary = "获取所有用户", description = "获取所有用户列表（不分页），结果会被缓存")
-    @Cacheable(value = "userPage", key = "'all-users'")
+    @Operation(summary = "获取所有用户", description = "获取所有用户列表（不分页）")
     @ApiLog("获取所有用户")
-    public Result<UserListVO> getAllUsers() {
-        UserListVO data = userService.getAllUsers(null);
-        return Result.success(data);
+    public Mono<Result<UserListVO>> getAllUsers() {
+        return Mono.deferContextual(ctx -> {
+            UserListVO data = userService.getAllUsers(null);
+            return Mono.just(Result.success(data));
+        });
     }
 
     @GetMapping("/ai")
     @Operation(summary = "获取所有AI用户", description = "获取 role 为 ai 的用户列表，不分页")
     @ApiLog("获取所有AI用户")
-    public Result<UserListVO> getAllAiUsers() {
-        UserListVO data = userService.getAllAiUsers();
-        return Result.success(data);
+    public Mono<Result<UserListVO>> getAllAiUsers() {
+        return Mono.deferContextual(ctx -> {
+            UserListVO data = userService.getAllAiUsers();
+            return Mono.just(Result.success(data));
+        });
     }
 
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用配置中的默认密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
     @ApiLog("新增用户")
-    public Result<Void> addUser(@Valid @RequestBody UserCreateDTO userDto) {
-        userService.createUser(userDto);
-        return Result.success();
+    public Mono<Result<Void>> addUser(@Valid @RequestBody UserCreateDTO userDto) {
+        return Mono.deferContextual(ctx -> {
+            userService.createUser(userDto);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "id" })
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
     @ApiLog("删除用户")
-    public Result<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUserAndStatusById(id);
-        return Result.success();
+    public Mono<Result<Void>> deleteUser(@PathVariable Long id) {
+        return Mono.deferContextual(ctx -> {
+            userService.deleteUserAndStatusById(id);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @SuppressWarnings("null")
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
     @ApiLog("批量删除用户")
-    public Result<Void> deleteUsers(@PathVariable String ids) {
-        List<Long> idList = Arrays.stream(ids.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Long::valueOf)
-                .toList();
-        userService.deleteUsersAndStatusByIds(idList);
-        return Result.success();
+    public Mono<Result<Void>> deleteUsers(@PathVariable String ids) {
+        return Mono.deferContextual(ctx -> {
+            List<Long> idList = Arrays.stream(ids.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::valueOf)
+                    .toList();
+            userService.deleteUsersAndStatusByIds(idList);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "查询用户", description = "根据id查询用户，返回用户信息及其登录状态和设备数")
     @ApiLog("查询用户")
-    public Result<UserVO> getUserById(@PathVariable Long id) {
-        User user = userService.getById(id);
-        if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);
-        }
+    public Mono<Result<UserVO>> getUserById(@PathVariable Long id) {
+        return Mono.deferContextual(ctx -> {
+            User user = userService.getById(id);
+            if (user == null) {
+                return Mono.just(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            }
 
-        // 转换为 UserVO
-        UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+            // 转换为 UserVO
+            UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
 
-        // 从 Service 查询登录状态和在线设备数
-        userVO.setLoginStatus(userService.getUserLoginStatus(id));
-        userVO.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(id));
+            // 从 Service 查询登录状态和在线设备数
+            userVO.setLoginStatus(userService.getUserLoginStatus(id));
+            userVO.setOnlineDeviceCount(tokenService.getUserOnlineDeviceCount(id));
 
-        return Result.success(userVO);
+            return Mono.just(Result.success(userVO));
+        });
     }
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = {
             "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
     @ApiLog("修改用户")
-    public Result<Void> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
-        userService.updateUserInfo(userDto);
-        return Result.success();
+    public Mono<Result<Void>> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
+        return Mono.deferContextual(ctx -> {
+            userService.updateUserInfo(userDto);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
     @RequirePermission(roles = {
             "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single", paramNames = { "id" })
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
     @ApiLog("修改用户状态")
-    public Result<Void> updateUserStatus(@PathVariable Long id, @RequestParam String status) {
-        userService.updateUserStatus(id, status);
-        return Result.success();
+    public Mono<Result<Void>> updateUserStatus(@PathVariable Long id, @RequestParam String status) {
+        return Mono.deferContextual(ctx -> {
+            userService.updateUserStatus(id, status);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @GetMapping("/captcha")
     @Operation(summary = "获取图形验证码", description = "生成图形验证码，返回验证码ID和base64图片数据，验证码缓存到Redis并在5分钟后过期")
     @ApiLog("获取图形验证码")
-    public Result<ImageCaptchaVO> getImageCaptcha() {
-        ImageCaptchaVO captchaVO = imageCaptchaService.createCaptcha();
-        return Result.success(captchaVO);
+    public Mono<Result<ImageCaptchaVO>> getImageCaptcha() {
+        return Mono.deferContextual(ctx -> {
+            ImageCaptchaVO captchaVO = imageCaptchaService.createCaptcha();
+            return Mono.just(Result.success(captchaVO));
+        });
     }
 
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("用户登录")
-    public Result<UserLoginVO> login(@Valid @RequestBody LoginDTO loginDTO) {
-        UserLoginVO loginVO = userService.login(loginDTO);
-        return Result.success(loginVO);
+    public Mono<Result<UserLoginVO>> login(@Valid @RequestBody LoginDTO loginDTO) {
+        return Mono.deferContextual(ctx -> {
+            UserLoginVO loginVO = userService.login(loginDTO);
+            return Mono.just(Result.success(loginVO));
+        });
     }
 
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
     @ApiLog("邮箱验证码登录")
-    public Result<UserLoginVO> emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
-        UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
-        return Result.success(loginVO);
+    public Mono<Result<UserLoginVO>> emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
+        return Mono.deferContextual(ctx -> {
+            UserLoginVO loginVO = userService.emailLogin(emailLoginDTO);
+            return Mono.just(Result.success(loginVO));
+        });
     }
 
     @PostMapping("/github/token-ticket")
     @Operation(summary = "生成 GitHub 登录票据", description = "在 GitHub 回调成功后生成本站登录票据")
     @RequireInternalToken
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
     @ApiLog("生成 GitHub 登录票据")
-    public Result<GithubTokenTicketVO> createGithubTokenTicket(@Valid @RequestBody GithubTokenTicketCreateDTO dto) {
-        GithubTokenTicketVO ticketVO = userService.createGithubTokenTicket(dto);
-        return Result.success(ticketVO);
+    public Mono<Result<GithubTokenTicketVO>> createGithubTokenTicket(@Valid @RequestBody GithubTokenTicketCreateDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            GithubTokenTicketVO ticketVO = userService.createGithubTokenTicket(dto);
+            return Mono.just(Result.success(ticketVO));
+        });
     }
 
     @PostMapping("/github/token")
     @Operation(summary = "获取 GitHub 登录 Token", description = "前端使用一次性 ticket 换取本站登录 token，成功后立即删除 ticket")
     @ApiLog("获取 GitHub 登录 Token")
-    public Result<UserLoginVO> exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
-        UserLoginVO loginVO = userService.exchangeGithubTokenTicket(dto);
-        return Result.success(loginVO);
+    public Mono<Result<UserLoginVO>> exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            UserLoginVO loginVO = userService.exchangeGithubTokenTicket(dto);
+            return Mono.just(Result.success(loginVO));
+        });
     }
 
     @PostMapping("/logout")
     @Operation(summary = "用户登出", description = "用户登出，从当前 access token 解析 session 并清除")
     @ApiLog("用户登出")
-    public Result<Void> logout() {
-        String accessToken = UserContext.getToken();
-        if (accessToken == null) {
-            return Result.error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID);
-        }
-        tokenService.removeSessionByAccessToken(accessToken);
-        return Result.success();
+    public Mono<Result<Void>> logout() {
+        return Mono.deferContextual(ctx -> {
+            String accessToken = UserContext.getToken(ctx);
+            if (accessToken == null) {
+                return Mono.just(Result.<Void>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
+            }
+            tokenService.removeSessionByAccessToken(accessToken);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PostMapping("/token/refresh")
     @Operation(summary = "刷新 Token", description = "使用 refresh token 刷新 access token 和 refresh token，支持 token 轮换")
     @ApiLog("刷新 Token")
-    public Result<TokenRefreshVO> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
-        TokenRefreshVO tokenRefreshVO = tokenService.refreshToken(refreshTokenDTO.getRefreshToken());
-        return Result.success(tokenRefreshVO);
+    public Mono<Result<TokenRefreshVO>> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
+        return Mono.deferContextual(ctx -> {
+            TokenRefreshVO tokenRefreshVO = tokenService.refreshToken(refreshTokenDTO.getRefreshToken());
+            return Mono.just(Result.success(tokenRefreshVO));
+        });
     }
 
     /**
@@ -258,114 +267,123 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
             "user_id" })
     @ApiLog("手动下线用户")
-    public Result<Void> forceLogoutUser(@PathVariable("user_id") Long userId) {
-        // 验证用户是否存在
-        User user = userService.getById(userId);
-        if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);
-        }
+    public Mono<Result<Void>> forceLogoutUser(@PathVariable("user_id") Long userId) {
+        return Mono.deferContextual(ctx -> {
+            // 验证用户是否存在
+            User user = userService.getById(userId);
+            if (user == null) {
+                return Mono.just(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            }
 
-        // 执行下线操作
-        tokenService.forceLogoutUser(userId);
-        return Result.success();
+            // 执行下线操作
+            tokenService.forceLogoutUser(userId);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PostMapping("/kick-other-devices")
     @Operation(summary = "踢出其他设备", description = "清除当前用户除本次请求携带的 access token 之外的所有 session（保留当前设备）")
     @ApiLog("踢出其他设备")
-    public Result<KickOtherDevicesVO> kickOtherDevices() {
-        String token = UserContext.getToken();
-        Long userId = UserContext.getUserId();
+    public Mono<Result<KickOtherDevicesVO>> kickOtherDevices() {
+        return Mono.deferContextual(ctx -> {
+            String token = UserContext.getToken(ctx);
+            Long userId = UserContext.getUserId(ctx);
 
-        if (token == null || userId == null) {
-            return Result.error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID);
-        }
+            if (token == null || userId == null) {
+                return Mono.just(Result.<KickOtherDevicesVO>error(HttpCode.UNAUTHORIZED, Messages.GET_USER_TOKEN_ID));
+            }
 
-        int removed = tokenService.removeOtherSessions(userId, token);
-        long remaining = tokenService.getUserOnlineDeviceCount(userId);
+            int removed = tokenService.removeOtherSessions(userId, token);
+            long remaining = tokenService.getUserOnlineDeviceCount(userId);
 
-        KickOtherDevicesVO vo = KickOtherDevicesVO.builder()
-                .userId(userId)
-                .removedSessionCount(removed)
-                .onlineDeviceCount(remaining)
-                .build();
-        return Result.success(vo);
+            KickOtherDevicesVO vo = KickOtherDevicesVO.builder()
+                    .userId(userId)
+                    .removedSessionCount(removed)
+                    .onlineDeviceCount(remaining)
+                    .build();
+            return Mono.just(Result.success(vo));
+        });
     }
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
     @ApiLog("用户注册")
-    @Caching(evict = {
-            @CacheEvict(value = "userPage", key = "'all-users'")
-    })
-    public Result<Void> registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
-        userService.registerUser(registerDto);
-        return Result.success();
+    public Mono<Result<Void>> registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
+        return Mono.deferContextual(ctx -> {
+            userService.registerUser(registerDto);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PostMapping("/email/send")
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
     @ApiLog("发送邮箱验证码")
-    public Result<Void> sendVerificationCode(@RequestParam(required = false) String email,
+    public Mono<Result<Void>> sendVerificationCode(@RequestParam(required = false) String email,
             @RequestParam(required = false) String type,
             @RequestBody(required = false) EmailCodeSendDTO body) {
-        String finalEmail = email;
-        String finalType = type;
-        if (body != null) {
-            if (finalEmail == null || finalEmail.isBlank()) {
-                finalEmail = body.getEmail();
+        return Mono.deferContextual(ctx -> {
+            String finalEmail = email;
+            String finalType = type;
+            if (body != null) {
+                if (finalEmail == null || finalEmail.isBlank()) {
+                    finalEmail = body.getEmail();
+                }
+                if (finalType == null || finalType.isBlank()) {
+                    finalType = body.getType();
+                }
             }
             if (finalType == null || finalType.isBlank()) {
-                finalType = body.getType();
+                finalType = "register";
             }
-        }
-        if (finalType == null || finalType.isBlank()) {
-            finalType = "register";
-        }
 
-        // 1. 验证邮箱格式
-        if (finalEmail == null || !finalEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            return Result.error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL);
-        }
-
-        // 2. 根据类型验证邮箱状态
-        User existingUser = userService.findByEmail(finalEmail);
-
-        if ("register".equals(finalType)) {
-            // 注册场景：邮箱不能已被注册
-            if (existingUser != null) {
-                return Result.error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER);
+            // 1. 验证邮箱格式
+            if (finalEmail == null || !finalEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                return Mono.just(Result.<Void>error(HttpCode.UNPROCESSABLE_ENTITY, Messages.EMAIL));
             }
-        } else if ("login".equals(finalType) || "reset".equals(finalType)) {
-            // 登录场景/重置密码场景：邮箱必须已被注册
-            if (existingUser == null) {
-                return Result.error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER);
+
+            // 2. 根据类型验证邮箱状态
+            User existingUser = userService.findByEmail(finalEmail);
+
+            if ("register".equals(finalType)) {
+                // 注册场景：邮箱不能已被注册
+                if (existingUser != null) {
+                    return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.EMAIL_REGISTER));
+                }
+            } else if ("login".equals(finalType) || "reset".equals(finalType)) {
+                // 登录场景/重置密码场景：邮箱必须已被注册
+                if (existingUser == null) {
+                    return Mono.just(Result.<Void>error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER));
+                }
+            } else {
+                return Mono.just(Result.<Void>error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT));
             }
-        } else {
-            return Result.error(HttpCode.BAD_REQUEST, Messages.VERIFY_CODE_UNSUPPORT);
-        }
 
-        // 3. 发送验证码
-        emailVerificationService.sendVerificationCode(finalEmail, finalType);
+            // 3. 发送验证码
+            emailVerificationService.sendVerificationCode(finalEmail, finalType);
 
-        return Result.success();
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PostMapping("/reset-password")
     @Operation(summary = "通过邮箱验证码重置密码", description = "用户通过邮箱验证码验证身份后重置密码")
     @ApiLog("重置密码")
-    public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
-        userService.resetPassword(resetPasswordDTO);
-        return Result.success();
+    public Mono<Result<Void>> resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+        return Mono.deferContextual(ctx -> {
+            userService.resetPassword(resetPasswordDTO);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PostMapping("/admin/reset-all-passwords")
     @Operation(summary = "管理员重置所有用户密码", description = "管理员操作：将所有用户密码重置为配置中的重置密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
     @ApiLog("重置所有用户密码")
-    public Result<Void> resetAllPasswords() {
-        userService.resetAllPasswords();
-        return Result.success();
+    public Mono<Result<Void>> resetAllPasswords() {
+        return Mono.deferContextual(ctx -> {
+            userService.resetAllPasswords();
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PostMapping("/admin/reset-password/{user_id}")
@@ -373,8 +391,10 @@ public class UserController {
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
             "user_id" })
     @ApiLog("重置指定用户密码")
-    public Result<Void> resetUserPassword(@PathVariable("user_id") Long userId) {
-        userService.resetUserPassword(userId);
-        return Result.success();
+    public Mono<Result<Void>> resetUserPassword(@PathVariable("user_id") Long userId) {
+        return Mono.deferContextual(ctx -> {
+            userService.resetUserPassword(userId);
+            return Mono.just(Result.<Void>success());
+        });
     }
 }

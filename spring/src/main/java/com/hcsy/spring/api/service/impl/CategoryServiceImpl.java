@@ -2,9 +2,6 @@ package com.hcsy.spring.api.service.impl;
 
 import java.util.List;
 
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +29,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@CacheConfig(cacheNames = "category")
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
     private final CategoryMapper categoryMapper;
     private final SubCategoryMapper subCategoryMapper;
@@ -40,36 +36,30 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true)
-    })
     public Long addCategory(CategoryCreateDTO dto) {
         Category category = new Category();
         category.setName(dto.getName());
         categoryMapper.insert(category);
+        // 新增分类后清除所有分类缓存
+        categoryCacheService.evictAllCategoryCaches();
         return category.getId();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", key = "#dto.id")
-    })
     public void updateCategory(CategoryUpdateDTO dto) {
         Category category = categoryMapper.selectById(dto.getId());
         if (category != null) {
             category.setName(dto.getName());
             categoryMapper.updateById(category);
         }
+        // 修改分类后清除指定ID缓存 + 所有分页缓存
+        categoryCacheService.evictCategoryByIdCache(dto.getId());
+        categoryCacheService.evictAllCategoryCaches();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", allEntries = true)
-    })
     public void deleteCategory(Long id) {
         Category existing = categoryMapper.selectById(id);
         if (existing == null) {
@@ -78,14 +68,13 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         // 先删子分类
         subCategoryMapper.delete(new QueryWrapper<SubCategory>().eq("category_id", id));
         categoryMapper.deleteById(id);
+        // 删除分类后清除指定ID缓存 + 所有分页缓存
+        categoryCacheService.evictCategoryByIdCache(id);
+        categoryCacheService.evictAllCategoryCaches();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", allEntries = true)
-    })
     public void deleteCategories(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return;
@@ -104,32 +93,28 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_CATEGORIES).build();
         }
 
-        // 不通过Mapper的删除, 通过service的删除, 可以批量删除分类对应的子分类
         for (Long id : ids) {
             deleteCategory(id);
         }
+        // 批量删除后清除所有分类缓存
+        categoryCacheService.evictAllCategoryCaches();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", key = "#dto.categoryId")
-    })
     public Long addSubCategory(SubCategoryCreateDTO dto) {
         SubCategory sub = new SubCategory();
         sub.setName(dto.getName());
         sub.setCategoryId(dto.getCategoryId());
         subCategoryMapper.insert(sub);
+        // 新增子分类后清除父分类缓存 + 所有分页缓存
+        categoryCacheService.evictCategoryByIdCache(dto.getCategoryId());
+        categoryCacheService.evictAllCategoryCaches();
         return sub.getId();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", key = "#dto.categoryId")
-    })
     public void updateSubCategory(SubCategoryUpdateDTO dto) {
         SubCategory sub = subCategoryMapper.selectById(dto.getId());
         if (sub != null) {
@@ -137,28 +122,31 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
             sub.setCategoryId(dto.getCategoryId());
             subCategoryMapper.updateById(sub);
         }
+        // 修改子分类后清除父分类缓存 + 所有分页缓存
+        if (dto.getCategoryId() != null) {
+            categoryCacheService.evictCategoryByIdCache(dto.getCategoryId());
+        }
+        categoryCacheService.evictAllCategoryCaches();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", allEntries = true)
-    })
     public void deleteSubCategory(Long id) {
         SubCategory existing = subCategoryMapper.selectById(id);
         if (existing == null) {
             throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_SUB_CATEGORY).build();
         }
+        Long categoryId = existing.getCategoryId();
         subCategoryMapper.deleteById(id);
+        // 删除子分类后清除父分类缓存 + 所有分页缓存
+        if (categoryId != null) {
+            categoryCacheService.evictCategoryByIdCache(categoryId);
+        }
+        categoryCacheService.evictAllCategoryCaches();
     }
 
     @Override
     @Transactional
-    @Caching(evict = {
-            @CacheEvict(value = "categoryPage", allEntries = true),
-            @CacheEvict(value = "categoryById", allEntries = true)
-    })
     public void deleteSubCategories(List<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return;
@@ -177,6 +165,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
         }
 
         subCategoryMapper.deleteBatchIds(ids);
+        // 批量删除子分类后清除所有分类缓存
+        categoryCacheService.evictAllCategoryCaches();
     }
 
     @Transactional(readOnly = true)
@@ -188,7 +178,6 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     @Transactional(readOnly = true)
     @Override
     public IPage<CategoryVO> pageCategory(Page<?> page) {
-        // 使用被缓存的 DTO 方法获取分页数据，然后转换为 IPage 返回，保持接口字段不变
         PageDTO<CategoryVO> dto = categoryCacheService.cachedPageCategory(page);
         IPage<CategoryVO> voPage = new Page<>(dto.getCurrent(), dto.getSize(), dto.getTotal());
         voPage.setRecords(dto.getRecords());

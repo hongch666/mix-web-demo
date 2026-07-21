@@ -9,4 +9,14 @@ public interface CategoryCacheService {
     CategoryVO getCategoryById(Long id);
 
     PageDTO<CategoryVO> cachedPageCategory(Page<?> page);
+
+    /**
+     * 清除所有分类相关缓存（分页 + 按ID）
+     */
+    void evictAllCategoryCaches();
+
+    /**
+     * 清除指定 ID 的分类缓存
+     */
+    void evictCategoryByIdCache(Long id);
 }

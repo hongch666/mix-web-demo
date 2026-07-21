@@ -12,6 +12,7 @@ import com.hcsy.spring.infra.task.TokenCleanupTask;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/task")
@@ -24,8 +25,10 @@ public class TaskController {
     @Operation(summary = "手动执行清理过期Token", description = "手动触发清理过期Token任务")
     @RequireInternalToken
     @ApiLog("手动执行清理过期Token任务")
-    public Result<Void> executeTokenCleanup() {
-        tokenCleanupTask.cleanupExpiredTokens();
-        return Result.success();
+    public Mono<Result<Void>> executeTokenCleanup() {
+        return Mono.deferContextual(ctx -> {
+            tokenCleanupTask.cleanupExpiredTokens();
+            return Mono.just(Result.<Void>success());
+        });
     }
 }

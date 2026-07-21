@@ -1,13 +1,10 @@
 package com.hcsy.spring.core.config;
 
-import java.time.Duration;
-
-import org.springframework.cache.CacheManager;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -19,15 +16,17 @@ import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
-public class RedisCacheConfig {
+public class ReactiveRedisConfig {
+
     @SuppressWarnings("null")
     @Bean
-    CacheManager cacheManager(RedisConnectionFactory factory) {
+    ReactiveRedisTemplate<String, Object> reactiveRedisTemplate(
+            @Qualifier("redisConnectionFactory") ReactiveRedisConnectionFactory factory) {
         // 自定义 ObjectMapper，注册 JavaTimeModule 以支持 LocalDateTime 等日期时间类型
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        // 启用多态类型处理，确保序列化时写入类型信息，反序列化能恢复为具体类型（如 Page）
+        // 启用多态类型处理，确保序列化时写入类型信息
         objectMapper.activateDefaultTyping(
             BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
             ObjectMapper.DefaultTyping.NON_FINAL,
@@ -40,15 +39,11 @@ public class RedisCacheConfig {
             .SerializationPair
             .fromSerializer(valueSerializer);
 
-        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration
-            .defaultCacheConfig()
-            .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(keySerializer))
-            .serializeValuesWith(pair)
-            .entryTtl(Duration.ofHours(24));
-
-        return RedisCacheManager
-            .builder(factory)
-            .cacheDefaults(defaultConfig)
+        RedisSerializationContext<String, Object> context = RedisSerializationContext
+            .<String, Object>newSerializationContext(keySerializer)
+            .value(pair)
             .build();
+
+        return new ReactiveRedisTemplate<>(factory, context);
     }
 }

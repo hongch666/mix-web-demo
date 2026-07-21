@@ -21,6 +21,7 @@ import com.hcsy.spring.entity.vo.CategoryReferenceVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/category/reference")
@@ -39,9 +40,11 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("创建权威参考文本")
-    public Result<Void> addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
-        categoryReferenceService.addCategoryReference(dto);
-        return Result.success();
+    public Mono<Result<Void>> addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            categoryReferenceService.addCategoryReference(dto);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @Operation(summary = "修改权威参考文本")
@@ -53,9 +56,11 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("修改权威参考文本")
-    public Result<Void> updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
-        categoryReferenceService.updateCategoryReference(dto);
-        return Result.success();
+    public Mono<Result<Void>> updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            categoryReferenceService.updateCategoryReference(dto);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @Operation(summary = "删除权威参考文本")
@@ -67,19 +72,23 @@ public class CategoryReferenceController {
         paramNames = { "id" }
     )
     @ApiLog("删除权威参考文本")
-    public Result<Void> deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
-        categoryReferenceService.deleteCategoryReference(subCategoryId);
-        return Result.success();
+    public Mono<Result<Void>> deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
+        return Mono.deferContextual(ctx -> {
+            categoryReferenceService.deleteCategoryReference(subCategoryId);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @Operation(summary = "根据子分类ID获取权威参考文本")
     @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")
-    public Result<CategoryReferenceVO> getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
-        CategoryReferenceVO vo = categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId);
-        if (vo == null) {
-            return Result.success(null);
-        }
-        return Result.success(vo);
+    public Mono<Result<CategoryReferenceVO>> getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
+        return Mono.deferContextual(ctx -> {
+            CategoryReferenceVO vo = categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId);
+            if (vo == null) {
+                return Mono.just(Result.<CategoryReferenceVO>success(null));
+            }
+            return Mono.just(Result.success(vo));
+        });
     }
 }

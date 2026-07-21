@@ -37,6 +37,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/articles")
@@ -51,61 +52,66 @@ public class ArticleController {
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_CREATE)
     @ApiLog("创建文章")
-    public Result<Void> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
-        Article article = BeanUtil.copyProperties(dto, Article.class);
-        // 获取用户id
-        User user = userService.findByUsername(dto.getUsername());
-        if (user == null) {
-            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);
-        }
-        article.setUserId(user.getId());
-        article.setViews(0);
-        articleService.saveArticle(article);
-        return Result.success();
+    public Mono<Result<Void>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            Article article = BeanUtil.copyProperties(dto, Article.class);
+            // 获取用户id
+            User user = userService.findByUsername(dto.getUsername());
+            if (user == null) {
+                return Mono.just(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            }
+            article.setUserId(user.getId());
+            article.setViews(0);
+            articleService.saveArticle(article);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @GetMapping("/list")
     @Operation(summary = "获取文章列表", description = "返回所有已发布的文章")
     @RequireInternalToken
     @ApiLog("获取已发布文章列表")
-    public Result<PageVO<Article>> getPublishedArticles(
+    public Mono<Result<PageVO<Article>>> getPublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<Article> articlePage = new Page<>(page, size);
-        IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
-
-        return Result.success(new PageVO<>(resultPage.getTotal(), resultPage.getRecords()));
+        return Mono.deferContextual(ctx -> {
+            Page<Article> articlePage = new Page<>(page, size);
+            IPage<Article> resultPage = articleService.listPublishedArticles(articlePage);
+            return Mono.just(Result.success(new PageVO<>(resultPage.getTotal(), resultPage.getRecords())));
+        });
     }
 
     @GetMapping("user/{id}")
     @Operation(summary = "获取用户文章", description = "返回用户文章，可指定是否只查询已发布的文章")
     @ApiLog("获取用户文章")
-    public Result<PageVO<ArticleWithCategoryVO>> getArticlesByUserId(
+    public Mono<Result<PageVO<ArticleWithCategoryVO>>> getArticlesByUserId(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             @PathVariable Integer id,
             @RequestParam(defaultValue = "0") int published) {
-        Page<Article> articlePage = new Page<>(page, size);
-        IPage<ArticleWithCategoryVO> voPage = articleService.listArticlesByIdWithCategory(articlePage, id, published == 1);
-
-        return Result.success(new PageVO<>(voPage.getTotal(), voPage.getRecords()));
+        return Mono.deferContextual(ctx -> {
+            Page<Article> articlePage = new Page<>(page, size);
+            IPage<ArticleWithCategoryVO> voPage = articleService.listArticlesByIdWithCategory(articlePage, id, published == 1);
+            return Mono.just(Result.success(new PageVO<>(voPage.getTotal(), voPage.getRecords())));
+        });
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "获取文章详情", description = "根据ID获取文章详情")
     @ApiLog("获取文章详情")
-    public Result<ArticleWithCategoryVO> getArticleById(@PathVariable Long id) {
-        Article article = articleService.getById(id);
-        if (article == null) {
-            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE);
-        }
-        ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-        // 查询作者用户名
-        User user = userService.getById(article.getUserId());
-        String username = user != null ? user.getName() : null;
-        vo.setUsername(username);
-
-        return Result.success(vo);
+    public Mono<Result<ArticleWithCategoryVO>> getArticleById(@PathVariable Long id) {
+        return Mono.deferContextual(ctx -> {
+            Article article = articleService.getById(id);
+            if (article == null) {
+                return Mono.just(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
+            }
+            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+            // 查询作者用户名
+            User user = userService.getById(article.getUserId());
+            String username = user != null ? user.getName() : null;
+            vo.setUsername(username);
+            return Mono.just(Result.success(vo));
+        });
     }
 
     @PutMapping
@@ -119,16 +125,19 @@ public class ArticleController {
     )
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
     @ApiLog("更新文章")
-    public Result<Void> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
-        // 获取用户id
-        User userFromUsername = userService.findByUsername(dto.getUsername());
-        if (userFromUsername == null) {
-            return Result.error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER);        }
+    public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            // 获取用户id
+            User userFromUsername = userService.findByUsername(dto.getUsername());
+            if (userFromUsername == null) {
+                return Mono.just(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            }
 
-        Article article = BeanUtil.copyProperties(dto, Article.class);
-        article.setUserId(userFromUsername.getId());
-        articleService.updateArticle(article);
-        return Result.success();
+            Article article = BeanUtil.copyProperties(dto, Article.class);
+            article.setUserId(userFromUsername.getId());
+            articleService.updateArticle(article);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @DeleteMapping("/{id}")
@@ -142,9 +151,11 @@ public class ArticleController {
     )
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_DELETE)
     @ApiLog("删除文章")
-    public Result<Void> deleteArticle(@PathVariable Long id) {
-        articleService.deleteArticle(id);
-        return Result.success();
+    public Mono<Result<Void>> deleteArticle(@PathVariable Long id) {
+        return Mono.deferContextual(ctx -> {
+            articleService.deleteArticle(id);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @SuppressWarnings("null")
@@ -158,16 +169,17 @@ public class ArticleController {
     )
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
     @ApiLog("批量删除文章")
-    public Result<Void> deleteArticles(@PathVariable String ids) {
-        List<Long> idList = Arrays.stream(ids.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Long::valueOf)
-                .toList();
+    public Mono<Result<Void>> deleteArticles(@PathVariable String ids) {
+        return Mono.deferContextual(ctx -> {
+            List<Long> idList = Arrays.stream(ids.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .map(Long::valueOf)
+                    .toList();
 
-        articleService.deleteArticles(idList);
-        return Result.success();
-
+            articleService.deleteArticles(idList);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PutMapping("/publish/{id}")
@@ -180,34 +192,39 @@ public class ArticleController {
     )
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
     @ApiLog("发布文章")
-    public Result<Void> publishArticle(@PathVariable Long id) {
-        articleService.publishArticle(id);
-        return Result.success();
+    public Mono<Result<Void>> publishArticle(@PathVariable Long id) {
+        return Mono.deferContextual(ctx -> {
+            articleService.publishArticle(id);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_VIEW)
     @ApiLog("增加文章阅读量")
-    public Result<Void> addViewArticle(@PathVariable Long id) {
-        Article dbArticle = articleService.getById(id);
-        if (dbArticle == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE).build();
-        }
-        articleService.addViewArticle(id);
-        return Result.success();
+    public Mono<Result<Void>> addViewArticle(@PathVariable Long id) {
+        return Mono.deferContextual(ctx -> {
+            Article dbArticle = articleService.getById(id);
+            if (dbArticle == null) {
+                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_ARTICLE).build();
+            }
+            articleService.addViewArticle(id);
+            return Mono.just(Result.<Void>success());
+        });
     }
 
     @GetMapping("/unpublished/list")
     @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
     @ApiLog("获取未发布文章列表")
-    public Result<PageVO<ArticleWithCategoryVO>> getUnpublishedArticles(
+    public Mono<Result<PageVO<ArticleWithCategoryVO>>> getUnpublishedArticles(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Page<Article> articlePage = new Page<>(page, size);
-        IPage<ArticleWithCategoryVO> resultPage = articleService.listUnpublishedArticlesWithCategory(articlePage);
-
-        return Result.success(new PageVO<>(resultPage.getTotal(), resultPage.getRecords()));
+        return Mono.deferContextual(ctx -> {
+            Page<Article> articlePage = new Page<>(page, size);
+            IPage<ArticleWithCategoryVO> resultPage = articleService.listUnpublishedArticlesWithCategory(articlePage);
+            return Mono.just(Result.success(new PageVO<>(resultPage.getTotal(), resultPage.getRecords())));
+        });
     }
 
 }

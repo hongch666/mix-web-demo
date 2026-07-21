@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/collects")
@@ -42,59 +43,68 @@ public class ArticleCollectController {
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COLLECT)
     @ApiLog("添加收藏")
-    public Result<Void> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
-        boolean success = articleCollectService.addCollect(dto.getArticleId(), dto.getUserId());
-        if (success) {
-            return Result.success();
-        } else {
-            return Result.error(HttpCode.CONFLICT, Messages.COLLECT_FAIL);
-        }
+    public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            boolean success = articleCollectService.addCollect(dto.getArticleId(), dto.getUserId());
+            if (success) {
+                return Mono.just(Result.<Void>success());
+            } else {
+                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
+            }
+        });
     }
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNCOLLECT)
     @ApiLog("取消收藏")
-    public Result<Void> removeCollect(
+    public Mono<Result<Void>> removeCollect(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
-        boolean success = articleCollectService.removeCollect(articleId, userId);
-        if (success) {
-            return Result.success();
-        } else {
-            return Result.error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL);
-        }
+        return Mono.deferContextual(ctx -> {
+            boolean success = articleCollectService.removeCollect(articleId, userId);
+            if (success) {
+                return Mono.just(Result.<Void>success());
+            } else {
+                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
+            }
+        });
     }
 
     @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有收藏", description = "分页查询某个用户的所有收藏记录（包含文章详情）")
     @ApiLog("查询用户收藏")
-    public Result<PageVO<ArticleCollectVO>> listUserCollects(
+    public Mono<Result<PageVO<ArticleCollectVO>>> listUserCollects(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
-        Page<ArticleCollect> pageRequest = new Page<>(page, size);
-        IPage<ArticleCollectVO> result = articleCollectService.listUserCollects(userId, pageRequest);
-
-        return Result.success(new PageVO<>(result.getTotal(), result.getRecords()));
+        return Mono.deferContextual(ctx -> {
+            Page<ArticleCollect> pageRequest = new Page<>(page, size);
+            IPage<ArticleCollectVO> result = articleCollectService.listUserCollects(userId, pageRequest);
+            return Mono.just(Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+        });
     }
 
     @GetMapping("/check")
     @Operation(summary = "检查用户是否收藏", description = "查询用户是否收藏过某篇文章")
     @ApiLog("检查收藏状态")
-    public Result<CollectCheckVO> isCollected(
+    public Mono<Result<CollectCheckVO>> isCollected(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
-        boolean collected = articleCollectService.isCollected(articleId, userId);
-        return Result.success(new CollectCheckVO(collected));
+        return Mono.deferContextual(ctx -> {
+            boolean collected = articleCollectService.isCollected(articleId, userId);
+            return Mono.just(Result.success(new CollectCheckVO(collected)));
+        });
     }
 
     @GetMapping("/count/{article_id}")
     @Operation(summary = "获取文章的收藏数", description = "获取某篇文章的总收藏数")
     @ApiLog("获取收藏数")
-    public Result<CollectCountVO> getCollectCount(
+    public Mono<Result<CollectCountVO>> getCollectCount(
             @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
-        Long count = articleCollectService.getCollectCountByArticleId(articleId);
-        return Result.success(new CollectCountVO(count));
+        return Mono.deferContextual(ctx -> {
+            Long count = articleCollectService.getCollectCountByArticleId(articleId);
+            return Mono.just(Result.success(new CollectCountVO(count)));
+        });
     }
 }

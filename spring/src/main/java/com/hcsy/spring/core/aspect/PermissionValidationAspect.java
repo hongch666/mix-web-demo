@@ -11,8 +11,6 @@ import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
@@ -27,8 +25,8 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Aspect
 @Component
@@ -44,48 +42,50 @@ public class PermissionValidationAspect {
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission)
             throws Throwable {
-        try {
-            // 1. 获取当前用户ID，未登录使用-1
-            Long currentUserId = UserContext.getUserId();
-            if (currentUserId == null) {
-                currentUserId = -1L;
-                logger.info(Messages.UNLOGIN_DEFAULT);
-            }
+        // 包装返回的 Mono，在链内用 deferContextual 获取上下文
+        Object result = joinPoint.proceed();
+        if (result instanceof Mono<?> monoResult) {
+            return monoResult
+                .flatMap(res -> Mono.deferContextual(ctx -> {
+                    try {
+                        // 从 Reactor Context 获取用户信息
+                        Long currentUserId = UserContext.getUserId(ctx);
+                        if (currentUserId == null) {
+                            currentUserId = -1L;
+                            logger.info(Messages.UNLOGIN_DEFAULT);
+                        }
 
-            // 2. 检查管理员权限
-            if (currentUserId > 0) {
-                User currentUser = userService.getById(currentUserId);
-                if (currentUser != null && Arrays.asList(requirePermission.roles()).contains(currentUser.getRole())) {
-                    logger.info(Messages.ADMIN_PASS);
-                    return joinPoint.proceed();
-                }
-            }
+                        // 检查管理员权限
+                        if (currentUserId > 0) {
+                            User currentUser = userService.getById(currentUserId);
+                            if (currentUser != null && Arrays.asList(requirePermission.roles()).contains(currentUser.getRole())) {
+                                logger.info(Messages.ADMIN_PASS);
+                                return Mono.just(res);
+                            }
+                        }
 
-            // 3. 获取目标资源ID（传入当前用户ID用于批量验证）
-            Long targetResourceId = getTargetResourceId(joinPoint, requirePermission, currentUserId);
-            logger.info(Messages.TARGET_SOURCE,
-                    currentUserId, requirePermission.businessType(), requirePermission.paramSource(), targetResourceId);
+                        // 获取目标资源ID
+                        Long targetResourceId = getTargetResourceId(joinPoint, requirePermission, currentUserId);
+                        logger.info(Messages.TARGET_SOURCE,
+                                currentUserId, requirePermission.businessType(), requirePermission.paramSource(), targetResourceId);
 
-            // 4. 根据业务类型校验权限
-            if (requirePermission.allowSelf()) {
-                // 允许个人操作自己的数据
-                if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                    throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
-                }
-            } else {
-                // 不允许操作自己，仅管理员能执行（权限已在步骤2检查）
-                throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
-            }
+                        // 根据业务类型校验权限
+                        if (requirePermission.allowSelf()) {
+                            if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
+                                throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
+                            }
+                        } else {
+                            throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
+                        }
 
-            return joinPoint.proceed();
-
-        } catch (RuntimeException e) {
-            logger.error(Messages.PERMITION_FAIL + e.getMessage());
-            throw e;
-        } catch (Throwable e) {
-            logger.error(Messages.PERMITION_FAIL + e.getMessage());
-            throw e;
+                        return Mono.just(res);
+                    } catch (Exception e) {
+                        logger.error(Messages.PERMITION_FAIL + e.getMessage());
+                        return Mono.error(e);
+                    }
+                }));
         }
+        return result;
     }
 
     /**
@@ -98,13 +98,10 @@ public class PermissionValidationAspect {
 
         try {
             if ("path_single".equals(paramSource)) {
-                // 路径单个参数：如 /users/{id}
                 return getPathSingleParam(joinPoint, paramNames[0]);
             } else if ("path_multi".equals(paramSource)) {
-                // 路径多个参数：如 /comments/batch/{ids}，传入当前用户ID进行所有权验证
                 return getPathMultiParams(joinPoint, paramNames, requirePermission.businessType(), currentUserId);
             } else if ("body".equals(paramSource)) {
-                // 请求体参数
                 return getBodyParam(joinPoint, paramNames[0], requirePermission.businessType());
             }
         } catch (Exception e) {
@@ -119,7 +116,6 @@ public class PermissionValidationAspect {
      */
     private Long getPathSingleParam(ProceedingJoinPoint joinPoint, String paramName) {
         try {
-            // 先尝试从方法参数中获取 @PathVariable 标注的参数
             Object[] args = joinPoint.getArgs();
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
             Method method = methodSignature.getMethod();
@@ -131,7 +127,6 @@ public class PermissionValidationAspect {
                         PathVariable pathVar = (PathVariable) annotation;
                         String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
 
-                        // 如果参数名匹配或是通用的id参数
                         if (name.equals(paramName) || "id".equals(paramName)) {
                             Object argValue = args[i];
                             if (argValue instanceof Long) {
@@ -155,35 +150,6 @@ public class PermissionValidationAspect {
                     }
                 }
             }
-
-            // 备用方案：从URL中提取最后一个路径段作为ID
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
-                    .getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                String pathVariable = request.getRequestURI();
-                // 移除查询参数
-                if (request.getQueryString() != null) {
-                    pathVariable = pathVariable.split("\\?")[0];
-                }
-
-                String[] parts = pathVariable.split("/");
-                // 从路径的最后一个非空段提取ID
-                for (int i = parts.length - 1; i >= 0; i--) {
-                    if (!parts[i].isEmpty()) {
-                        try {
-                            // 尝试将最后一个路径段转换为ID
-                            Long id = Long.parseLong(parts[i]);
-                            logger.info(Messages.URL_ID, id);
-                            return id;
-                        } catch (NumberFormatException e) {
-                            // 如果最后一个不是数字，说明这不是ID参数，返回null
-                            logger.warning(Messages.URL_ID_FAIL, parts[i]);
-                            return null;
-                        }
-                    }
-                }
-            }
         } catch (Exception e) {
             logger.warning(Messages.SINGLE_PATH + e.getMessage());
         }
@@ -202,7 +168,6 @@ public class PermissionValidationAspect {
             Method method = methodSignature.getMethod();
             java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
 
-            // 先尝试从方法参数中获取批量ID参数
             String batchIdsStr = null;
             for (int i = 0; i < paramAnnotations.length; i++) {
                 for (java.lang.annotation.Annotation annotation : paramAnnotations[i]) {
@@ -210,7 +175,6 @@ public class PermissionValidationAspect {
                         PathVariable pathVar = (PathVariable) annotation;
                         String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
 
-                        // 查找 ids 或 paramNames[0] 参数
                         if ("ids".equals(name) || (paramNames.length > 0 && name.equals(paramNames[0]))) {
                             Object argValue = args[i];
                             if (argValue instanceof String) {
@@ -225,7 +189,6 @@ public class PermissionValidationAspect {
             }
 
             if (batchIdsStr != null && batchIdsStr.contains(",")) {
-                // 批量删除的情况
                 String[] ids = batchIdsStr.split(",");
                 Long ownerUserId = null;
 
@@ -247,7 +210,6 @@ public class PermissionValidationAspect {
                             ownerUserId = comment.getUserId();
                         }
                     }
-                    // 验证当前用户是这些评论的所有者
                     if (!currentUserId.equals(ownerUserId)) {
                         throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
                     }
@@ -270,13 +232,11 @@ public class PermissionValidationAspect {
                             ownerUserId = article.getUserId();
                         }
                     }
-                    // 验证当前用户是这些文章的所有者
                     if (!currentUserId.equals(ownerUserId)) {
                         throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
                     }
                     logger.info(Messages.FUNCTION_ARTICLE, ownerUserId);
                 }
-                // 返回当前用户ID，校验 checkOwnership 时直接通过
                 return currentUserId;
             }
 
@@ -302,7 +262,6 @@ public class PermissionValidationAspect {
                 }
             }
 
-            // 如果找不到参数名，尝试从第一个对象获取
             if (args.length > 0) {
                 return extractUserIdFromObject(args[0], paramName, businessType);
             }
@@ -322,7 +281,6 @@ public class PermissionValidationAspect {
         }
 
         try {
-            // 首先尝试直接获取id属性
             if ("id".equals(paramName) || paramName.contains("Id")) {
                 Method idMethod = tryGetMethod(obj, "getId");
                 if (idMethod != null) {
@@ -335,7 +293,6 @@ public class PermissionValidationAspect {
                 }
             }
 
-            // 尝试获取username，然后查询用户ID
             Method usernameMethod = tryGetMethod(obj, "getUsername");
             if (usernameMethod != null) {
                 String username = (String) usernameMethod.invoke(obj);
@@ -348,7 +305,6 @@ public class PermissionValidationAspect {
                 }
             }
 
-            // 尝试获取userId
             Method userIdMethod = tryGetMethod(obj, "getUserId");
             if (userIdMethod != null) {
                 Object userIdValue = userIdMethod.invoke(obj);
@@ -387,30 +343,24 @@ public class PermissionValidationAspect {
         }
 
         if ("user".equals(businessType)) {
-            // 用户只能操作自己
             return currentUserId.equals(targetResourceId);
         } else if ("article".equals(businessType)) {
-            // 批量操作已在 getPathMultiParams 中完成所有权验证
             if (currentUserId.equals(targetResourceId)) {
                 return true;
             }
-            // 单条操作：检查文章所有者
             Article article = articleService.getById(targetResourceId);
             if (article != null) {
                 return currentUserId.equals(article.getUserId());
             }
         } else if ("comment".equals(businessType)) {
-            // 批量操作已在 getPathMultiParams 中完成所有权验证
             if (currentUserId.equals(targetResourceId)) {
                 return true;
             }
-            // 单条操作：检查评论所有者
             Comments comment = commentsService.getById(targetResourceId);
             if (comment != null) {
                 return currentUserId.equals(comment.getUserId());
             }
         } else if ("category".equals(businessType) || "subcategory".equals(businessType)) {
-            // 分类操作不允许自己操作，只有管理员
             return false;
         }
 

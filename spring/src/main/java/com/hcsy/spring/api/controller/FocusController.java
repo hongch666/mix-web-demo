@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/focus")
@@ -42,81 +43,93 @@ public class FocusController {
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_FOCUS)
     @ApiLog("新增关注")
-    public Result<Void> addFocus(@Valid @RequestBody FocusDTO dto) {
-        boolean success = focusService.addFocus(dto.getUserId(), dto.getFocusId());
-        if (success) {
-            return Result.success();
-        } else {
-            return Result.error(HttpCode.CONFLICT, Messages.FOCUS_FAIL);
-        }
+    public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
+        return Mono.deferContextual(ctx -> {
+            boolean success = focusService.addFocus(dto.getUserId(), dto.getFocusId());
+            if (success) {
+                return Mono.just(Result.<Void>success());
+            } else {
+                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.FOCUS_FAIL));
+            }
+        });
     }
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNFOCUS)
     @ApiLog("取消关注")
-    public Result<Void> removeFocus(
+    public Mono<Result<Void>> removeFocus(
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
             @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
-        boolean success = focusService.removeFocus(userId, focusId);
-        if (success) {
-            return Result.success();
-        } else {
-            return Result.error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL);
-        }
+        return Mono.deferContextual(ctx -> {
+            boolean success = focusService.removeFocus(userId, focusId);
+            if (success) {
+                return Mono.just(Result.<Void>success());
+            } else {
+                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL));
+            }
+        });
     }
 
     @GetMapping("/check")
     @Operation(summary = "检查关注状态", description = "查询用户是否关注了某个用户")
     @ApiLog("检查关注状态")
-    public Result<FocusCheckVO> isFocused(
+    public Mono<Result<FocusCheckVO>> isFocused(
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
             @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
-        boolean focused = focusService.isFocused(userId, focusId);
-        return Result.success(new FocusCheckVO(focused));
+        return Mono.deferContextual(ctx -> {
+            boolean focused = focusService.isFocused(userId, focusId);
+            return Mono.just(Result.success(new FocusCheckVO(focused)));
+        });
     }
 
     @GetMapping("/authors/{user_id}")
     @Operation(summary = "查询用户的所有关注作者", description = "分页查询某个用户关注的所有作者信息")
     @ApiLog("查询用户关注")
-    public Result<PageVO<FocusUserVO>> listUserFocuses(
+    public Mono<Result<PageVO<FocusUserVO>>> listUserFocuses(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
-        Page<Focus> pageRequest = new Page<>(page, size);
-        IPage<FocusUserVO> result = focusService.listUserFocuses(userId, pageRequest);
-
-        return Result.success(new PageVO<>(result.getTotal(), result.getRecords()));
+        return Mono.deferContextual(ctx -> {
+            Page<Focus> pageRequest = new Page<>(page, size);
+            IPage<FocusUserVO> result = focusService.listUserFocuses(userId, pageRequest);
+            return Mono.just(Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+        });
     }
 
     @GetMapping("/followers/{user_id}")
     @Operation(summary = "查询用户的所有粉丝", description = "分页查询某个用户的所有粉丝信息")
     @ApiLog("查询用户粉丝")
-    public Result<PageVO<FocusUserVO>> listUserFollowers(
+    public Mono<Result<PageVO<FocusUserVO>>> listUserFollowers(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
-        Page<Focus> pageRequest = new Page<>(page, size);
-        IPage<FocusUserVO> result = focusService.listUserFollowers(userId, pageRequest);
-
-        return Result.success(new PageVO<>(result.getTotal(), result.getRecords()));
+        return Mono.deferContextual(ctx -> {
+            Page<Focus> pageRequest = new Page<>(page, size);
+            IPage<FocusUserVO> result = focusService.listUserFollowers(userId, pageRequest);
+            return Mono.just(Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+        });
     }
 
     @GetMapping("/count/focus/{user_id}")
     @Operation(summary = "获取用户的关注数", description = "查询用户关注的人数")
     @ApiLog("查询关注数")
-    public Result<CountVO> getFocusCount(
+    public Mono<Result<CountVO>> getFocusCount(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
-        Long count = focusService.getFocusCountByUserId(userId);
-        return Result.success(new CountVO(count));
+        return Mono.deferContextual(ctx -> {
+            Long count = focusService.getFocusCountByUserId(userId);
+            return Mono.just(Result.success(new CountVO(count)));
+        });
     }
 
     @GetMapping("/count/follower/{user_id}")
     @Operation(summary = "获取用户的粉丝数", description = "查询用户的粉丝数量")
     @ApiLog("查询粉丝数")
-    public Result<CountVO> getFollowerCount(
+    public Mono<Result<CountVO>> getFollowerCount(
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId) {
-        Long count = focusService.getFollowerCountByUserId(userId);
-        return Result.success(new CountVO(count));
+        return Mono.deferContextual(ctx -> {
+            Long count = focusService.getFollowerCountByUserId(userId);
+            return Mono.just(Result.success(new CountVO(count)));
+        });
     }
 }

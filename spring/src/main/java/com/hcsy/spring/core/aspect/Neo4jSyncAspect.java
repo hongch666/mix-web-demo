@@ -4,13 +4,12 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.api.service.AsyncNeo4jSyncService;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
 @Aspect
 @Component
@@ -24,21 +23,20 @@ public class Neo4jSyncAspect {
         Object result = joinPoint.proceed();
         String description = neo4jSync.description();
 
-        Runnable syncTask = () -> asyncNeo4jSyncService.syncNeo4jAsync(
-                joinPoint.getSignature().toShortString(),
-                description);
-
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    syncTask.run();
-                }
-            });
-        } else {
-            syncTask.run();
+        if (result instanceof Mono<?> monoResult) {
+            // Controller 层返回 Mono 的方法
+            return monoResult
+                .doOnSuccess(res -> triggerNeo4jSync(joinPoint, description));
         }
 
+        // Service 层返回非 Mono 类型的方法（boolean/Long/void 等）
+        triggerNeo4jSync(joinPoint, description);
         return result;
+    }
+
+    private void triggerNeo4jSync(ProceedingJoinPoint joinPoint, String description) {
+        asyncNeo4jSyncService.syncNeo4jAsync(
+                joinPoint.getSignature().toShortString(),
+                description);
     }
 }
