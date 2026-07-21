@@ -13,8 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Redis 工具类
- * 保留阻塞式 API 供定时任务等场景使用
- * 响应式场景请使用 ReactiveRedisService
+ * 基于 StringRedisTemplate 的阻塞式 API，项目中所有 Redis 操作统一使用此类
  */
 @Component
 @RequiredArgsConstructor
