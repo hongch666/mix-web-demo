@@ -67,10 +67,12 @@ async def task_export_vector(
 )
 @requireInternalToken
 @log("初始化文章内容 hash 缓存")
-async def task_init_hash_cache(request: Request) -> JSONResponse:
+async def task_init_hash_cache(
+    request: Request, background_tasks: BackgroundTasks
+) -> JSONResponse:
     """初始化文章内容 hash 缓存接口"""
 
-    await initialize_article_content_hash_cache_async()
+    background_tasks.add_task(initialize_article_content_hash_cache_async)
     return success()
 
 
