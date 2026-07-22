@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
@@ -54,10 +52,7 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_CREATE)
     @ApiLog("新增分类")
     public Mono<Result<Void>> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            categoryService.addCategory(dto);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryService.addCategory(dto).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "修改分类")
@@ -71,10 +66,7 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
     @ApiLog("修改分类")
     public Mono<Result<Void>> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            categoryService.updateCategory(dto);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryService.updateCategory(dto).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "删除分类（级联删除子分类）")
@@ -88,10 +80,7 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_DELETE)
     @ApiLog("删除分类")
     public Mono<Result<Void>> deleteCategory(@PathVariable Long id) {
-        return Mono.deferContextual(ctx -> {
-            categoryService.deleteCategory(id);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryService.deleteCategory(id).thenReturn(Result.<Void>success());
     }
 
     @SuppressWarnings("null")
@@ -106,15 +95,12 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
     @ApiLog("批量删除分类")
     public Mono<Result<Void>> deleteCategories(@PathVariable String ids) {
-        return Mono.deferContextual(ctx -> {
-            List<Long> idList = Arrays.stream(ids.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(Long::valueOf)
-                    .toList();
-            categoryService.deleteCategories(idList);
-            return Mono.just(Result.<Void>success());
-        });
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+        return categoryService.deleteCategories(idList).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "新增子分类")
@@ -128,10 +114,7 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
     @ApiLog("新增子分类")
     public Mono<Result<Void>> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            categoryService.addSubCategory(dto);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryService.addSubCategory(dto).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "修改子分类")
@@ -145,10 +128,7 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
     @ApiLog("修改子分类")
     public Mono<Result<Void>> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            categoryService.updateSubCategory(dto);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryService.updateSubCategory(dto).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "删除子分类")
@@ -162,10 +142,7 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
     @ApiLog("删除子分类")
     public Mono<Result<Void>> deleteSubCategory(@PathVariable Long id) {
-        return Mono.deferContextual(ctx -> {
-            categoryService.deleteSubCategory(id);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryService.deleteSubCategory(id).thenReturn(Result.<Void>success());
     }
 
     @SuppressWarnings("null")
@@ -180,15 +157,12 @@ public class CategoryController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
     @ApiLog("批量删除子分类")
     public Mono<Result<Void>> deleteSubCategories(@PathVariable String ids) {
-        return Mono.deferContextual(ctx -> {
-            List<Long> idList = Arrays.stream(ids.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .map(Long::valueOf)
-                    .toList();
-            categoryService.deleteSubCategories(idList);
-            return Mono.just(Result.<Void>success());
-        });
+        List<Long> idList = Arrays.stream(ids.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Long::valueOf)
+                .toList();
+        return categoryService.deleteSubCategories(idList).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "分页查询分类（含子分类信息）")
@@ -196,24 +170,18 @@ public class CategoryController {
     @ApiLog("分页查询分类")
     public Mono<Result<Map<String, Object>>> pageCategory(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return Mono.deferContextual(ctx -> {
-            IPage<CategoryVO> resultPage = categoryService.pageCategory(new Page<>(page, size));
-            return Mono.just(Result.success(Map.of(
-                    "list", resultPage.getRecords(),
-                    "total", resultPage.getTotal())));
-        });
+        return categoryService.pageCategory(page, size)
+                .map(result -> Result.success(Map.of(
+                        "list", result.getRecords(),
+                        "total", result.getTotal())));
     }
 
     @Operation(summary = "根据ID查询分类（含子分类信息）")
     @GetMapping("/{id}")
     @ApiLog("根据ID查询分类")
     public Mono<Result<CategoryVO>> getCategoryById(@PathVariable Long id) {
-        return Mono.deferContextual(ctx -> {
-            CategoryVO vo = categoryService.getCategoryById(id);
-            if (vo == null) {
-                return Mono.just(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
-            }
-            return Mono.just(Result.success(vo));
-        });
+        return categoryService.getCategoryById(id)
+                .map(Result::success)
+                .defaultIfEmpty(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
     }
 }

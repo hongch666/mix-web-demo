@@ -1,6 +1,7 @@
 package com.hcsy.spring.infra.filter;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -30,7 +31,7 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
         }
 
         Map<String, String[]> modifiedParams = new LinkedHashMap<>();
-        for (Map.Entry<String, java.util.List<String>> entry : queryParams.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : queryParams.entrySet()) {
             String key = entry.getKey();
             modifiedParams.put(key, entry.getValue().toArray(new String[0]));
             if (key.contains("_")) {

@@ -7,31 +7,17 @@ spring:
     name: spring
   jackson:
     property-naming-strategy: SNAKE_CASE
-  cloud:
-    openfeign:
-      circuitbreaker:
-        enabled: true
-      client:
-        config:
-          default:
-            connectTimeout: 2000
-            readTimeout: 3000
-          fastapi:
-            connectTimeout: 5000
-            readTimeout: 30000
-  datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+  r2dbc:
+    url: r2dbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:demo}?sslMode=DISABLED&serverZoneId=Asia/Shanghai
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-      auto-commit: true
-      leak-detection-threshold: 60000
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+      max-acquire-time: 30s
+      max-idle-time: 10m
+      max-life-time: 30m
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -52,15 +38,6 @@ spring:
     password: ${RABBITMQ_PASSWORD:}
     virtual-host: ${RABBITMQ_VHOST:test}
 
-mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml # 指定 Mapper XML 文件位置
-  configuration:
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl # SQL日志走SLF4J，级别由logging.level控制
-  global-config:
-    db-config:
-      id-type: auto # 主键策略
-      logic-delete-field: deleted # 逻辑删除字段
-
 # SpringDoc OpenAPI 配置
 springdoc:
   api-docs:
@@ -76,7 +53,7 @@ logging:
   file:
     path: ${LOGGING_PATH:../logs/spring}
   level:
-    '[com.hcsy.spring.api.mapper]': ${MYBATIS_LOG_LEVEL:DEBUG} # DEBUG打印SQL（生产环境设为INFO关闭）
+    '[org.springframework.r2dbc]': ${R2DBC_LOG_LEVEL:INFO}
 jwt:
   secret: ${JWT_SECRET:}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000} # 毫秒数（默认1小时）

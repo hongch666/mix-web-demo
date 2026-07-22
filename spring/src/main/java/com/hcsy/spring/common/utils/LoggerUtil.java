@@ -1,7 +1,10 @@
 package com.hcsy.spring.common.utils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -65,8 +68,8 @@ public class LoggerUtil {
             String logEntry = String.format("%s - %s - %s%n", timestamp, level, message);
 
             // 写入文件，指定UTF-8编码
-            try (java.io.OutputStreamWriter writer = new java.io.OutputStreamWriter(
-                    new java.io.FileOutputStream(logFile, true), java.nio.charset.StandardCharsets.UTF_8)) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(
+                    new FileOutputStream(logFile, true), StandardCharsets.UTF_8)) {
                 writer.write(logEntry);
                 writer.flush();
             }

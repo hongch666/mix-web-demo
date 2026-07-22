@@ -41,10 +41,7 @@ public class CategoryReferenceController {
     )
     @ApiLog("创建权威参考文本")
     public Mono<Result<Void>> addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            categoryReferenceService.addCategoryReference(dto);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryReferenceService.addCategoryReference(dto).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "修改权威参考文本")
@@ -57,10 +54,7 @@ public class CategoryReferenceController {
     )
     @ApiLog("修改权威参考文本")
     public Mono<Result<Void>> updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            categoryReferenceService.updateCategoryReference(dto);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryReferenceService.updateCategoryReference(dto).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "删除权威参考文本")
@@ -73,22 +67,15 @@ public class CategoryReferenceController {
     )
     @ApiLog("删除权威参考文本")
     public Mono<Result<Void>> deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
-        return Mono.deferContextual(ctx -> {
-            categoryReferenceService.deleteCategoryReference(subCategoryId);
-            return Mono.just(Result.<Void>success());
-        });
+        return categoryReferenceService.deleteCategoryReference(subCategoryId).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "根据子分类ID获取权威参考文本")
     @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")
     public Mono<Result<CategoryReferenceVO>> getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
-        return Mono.deferContextual(ctx -> {
-            CategoryReferenceVO vo = categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId);
-            if (vo == null) {
-                return Mono.just(Result.<CategoryReferenceVO>success(null));
-            }
-            return Mono.just(Result.success(vo));
-        });
+        return categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId)
+                .map(Result::success)
+                .defaultIfEmpty(Result.<CategoryReferenceVO>success(null));
     }
 }

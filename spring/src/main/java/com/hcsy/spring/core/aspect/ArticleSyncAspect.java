@@ -15,7 +15,6 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
-import com.hcsy.spring.common.utils.UserContextHolder;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.po.Article;
 
@@ -37,27 +36,21 @@ public class ArticleSyncAspect {
         Object result = joinPoint.proceed();
 
         if (result instanceof Mono<?> monoResult) {
-            // Controller 层返回 Mono 的方法：在响应式链内获取 Reactor Context
             return monoResult
                 .flatMap(res -> Mono.deferContextual(ctx -> {
-                    executeSync(joinPoint, articleSync, ctx);
-                    return Mono.just(res);
-                }));
+                    return executeSync(joinPoint, articleSync, ctx).thenReturn(res);
+                }))
+                .switchIfEmpty(Mono.deferContextual(ctx -> executeSync(joinPoint, articleSync, ctx).then(Mono.empty())));
         }
-
-        // Service 层返回非 Mono 类型的方法（boolean/Long/void 等）：
-        // 这些方法在 Controller 的 Mono.deferContextual 内同步调用，
-        // 不在响应式链中，需要直接执行同步逻辑
-        executeSync(joinPoint, articleSync, null);
         return result;
     }
 
     /**
      * 执行同步逻辑：发送 MQ 消息 + 触发 ES/Vector 同步
      *
-     * @param ctx Reactor Context，非 Mono 路径传入 null（会从 ThreadLocal 回退读取）
+     * @param ctx Reactor Context
      */
-    private void executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
+    private Mono<Void> executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
             reactor.util.context.ContextView ctx) {
         try {
             String action = articleSync.action();
@@ -67,16 +60,8 @@ public class ArticleSyncAspect {
             Map<String, Object> msg = new HashMap<>();
             Map<String, Object> content = new HashMap<>();
 
-            // 优先从 Reactor Context 读取，非 Mono 路径回退到 ThreadLocal
-            Long userId;
-            String username;
-            if (ctx != null) {
-                userId = UserContext.getUserId(ctx);
-                username = UserContext.getUsername(ctx);
-            } else {
-                userId = UserContextHolder.getUserId();
-                username = UserContextHolder.getUsername();
-            }
+            Long userId = UserContext.getUserId(ctx);
+            String username = UserContext.getUsername(ctx);
 
             // 根据注解类型构建消息
             buildActionMessage(action, paramValues, content, msg, userId, description);
@@ -84,13 +69,17 @@ public class ArticleSyncAspect {
 
             // 发送消息
             String json = objectMapper.writeValueAsString(msg);
-            rabbitMQUtil.sendMessage("article-log-queue", msg);
-            logger.info(Messages.MQ_SEND + json);
-
-            // 触发异步同步 ES 和 Vector
-            asyncSyncService.syncAllAsync(userId, username);
+            return Mono.whenDelayError(
+                            rabbitMQUtil.sendMessage("article-log-queue", msg)
+                                    .doOnSuccess(ignored -> logger.info(Messages.MQ_SEND + json)),
+                            asyncSyncService.syncAllAsync(userId, username))
+                    .onErrorResume(error -> {
+                        logger.error(Messages.TRANSACTION_ROLLBACK + error.getMessage(), error);
+                        return Mono.empty();
+                    });
         } catch (Exception e) {
-            logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage());
+            logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage(), e);
+            return Mono.empty();
         }
     }
 

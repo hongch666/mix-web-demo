@@ -24,18 +24,15 @@ public class Neo4jSyncAspect {
         String description = neo4jSync.description();
 
         if (result instanceof Mono<?> monoResult) {
-            // Controller 层返回 Mono 的方法
             return monoResult
-                .doOnSuccess(res -> triggerNeo4jSync(joinPoint, description));
+                    .flatMap(value -> triggerNeo4jSync(joinPoint, description).thenReturn(value))
+                    .switchIfEmpty(triggerNeo4jSync(joinPoint, description).then(Mono.empty()));
         }
-
-        // Service 层返回非 Mono 类型的方法（boolean/Long/void 等）
-        triggerNeo4jSync(joinPoint, description);
         return result;
     }
 
-    private void triggerNeo4jSync(ProceedingJoinPoint joinPoint, String description) {
-        asyncNeo4jSyncService.syncNeo4jAsync(
+    private Mono<Void> triggerNeo4jSync(ProceedingJoinPoint joinPoint, String description) {
+        return asyncNeo4jSyncService.syncNeo4jAsync(
                 joinPoint.getSignature().toShortString(),
                 description);
     }

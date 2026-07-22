@@ -2,15 +2,15 @@ package com.hcsy.spring.entity.po;
 
 import java.time.LocalDateTime;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.Data;
 
 @Data
-@TableName("sub_category") // 对应数据库中的表名
+@Table("sub_category")
 public class SubCategory {
-    @TableId
+    @Id
     private Long id;
     private String name;
     private Long categoryId; // 关联的主分类ID

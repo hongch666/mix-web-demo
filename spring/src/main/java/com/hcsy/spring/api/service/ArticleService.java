@@ -1,43 +1,48 @@
 package com.hcsy.spring.api.service;
 
+import java.util.Collection;
 import java.util.List;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 
-public interface ArticleService extends IService<Article> {
-    List<Article> listPublishedArticles();
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-    IPage<Article> listPublishedArticles(Page<Article> page);
+public interface ArticleService {
+    Flux<Article> listPublishedArticles();
 
-    boolean saveArticle(Article article);
+    Mono<PageDTO<Article>> listPublishedArticles(long page, long size);
 
-    boolean updateArticle(Article article);
+    Mono<Boolean> saveArticle(Article article);
 
-    boolean deleteArticle(Long id);
+    Mono<Boolean> updateArticle(Article article);
 
-    boolean deleteArticles(List<Long> ids);
+    Mono<Boolean> deleteArticle(Long id);
 
-    IPage<Article> listArticlesById(Page<Article> page, Integer id);
+    Mono<Boolean> deleteArticles(List<Long> ids);
 
-    IPage<Article> listArticlesById(Page<Article> page, Integer id, boolean onlyPublished);
+    Mono<PageDTO<Article>> listArticlesById(long page, long size, Long id, boolean onlyPublished);
 
-    void publishArticle(Long id);
+    Mono<PageDTO<ArticleWithCategoryVO>> listArticlesByIdWithCategory(
+            long page, long size, Long id, boolean onlyPublished);
 
-    void addViewArticle(Long id);
+    Mono<Void> publishArticle(Long id);
 
-    List<Article> listUnpublishedArticles();
+    Mono<Void> addViewArticle(Long id);
 
-    IPage<Article> listUnpublishedArticles(Page<Article> page);
+    Flux<Article> listUnpublishedArticles();
 
-    IPage<com.hcsy.spring.entity.vo.ArticleWithCategoryVO> listUnpublishedArticlesWithCategory(Page<Article> page);
+    Mono<PageDTO<Article>> listUnpublishedArticles(long page, long size);
 
-    IPage<com.hcsy.spring.entity.vo.ArticleWithCategoryVO> listArticlesByIdWithCategory(Page<Article> page, Integer id, boolean onlyPublished);
+    Mono<PageDTO<ArticleWithCategoryVO>> listUnpublishedArticlesWithCategory(long page, long size);
 
-    Article findByArticleTitle(String articleTitle);
+    Mono<Article> findByArticleTitle(String articleTitle);
 
-    List<Article> listAllArticlesByTitle(String articleTitle);
+    Flux<Article> listAllArticlesByTitle(String articleTitle);
 
+    Mono<Article> getById(Long id);
+
+    Flux<Article> listByIds(Collection<Long> ids);
 }

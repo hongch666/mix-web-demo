@@ -1,22 +1,16 @@
 package com.hcsy.spring.api.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
+import reactor.core.publisher.Mono;
+
 public interface CategoryCacheService {
+    Mono<CategoryVO> getCategoryById(Long id);
 
-    CategoryVO getCategoryById(Long id);
+    Mono<PageDTO<CategoryVO>> cachedPageCategory(long page, long size);
 
-    PageDTO<CategoryVO> cachedPageCategory(Page<?> page);
+    Mono<Void> evictAllCategoryCaches();
 
-    /**
-     * 清除所有分类相关缓存（分页 + 按ID）
-     */
-    void evictAllCategoryCaches();
-
-    /**
-     * 清除指定 ID 的分类缓存
-     */
-    void evictCategoryByIdCache(Long id);
+    Mono<Void> evictCategoryByIdCache(Long id);
 }

@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.service;
 
+import reactor.core.publisher.Mono;
+
 /**
  * 异步同步服务接口
  * 用于在后台异步执行 ES、Hive、Vector 同步操作
@@ -13,7 +15,7 @@ public interface AsyncSyncService {
      * @param userId   触发同步的用户ID（用于日志记录）
      * @param username 触发同步的用户名（用于日志记录）
      */
-    void syncAllAsync(Long userId, String username);
+    Mono<Void> syncAllAsync(Long userId, String username);
 
 
 }

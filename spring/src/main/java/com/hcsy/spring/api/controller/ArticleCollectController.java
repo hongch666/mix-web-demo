@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleCollectService;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
@@ -18,7 +16,6 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
-import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 import com.hcsy.spring.entity.vo.CollectCheckVO;
 import com.hcsy.spring.entity.vo.CollectCountVO;
@@ -44,14 +41,9 @@ public class ArticleCollectController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COLLECT)
     @ApiLog("添加收藏")
     public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            boolean success = articleCollectService.addCollect(dto.getArticleId(), dto.getUserId());
-            if (success) {
-                return Mono.just(Result.<Void>success());
-            } else {
-                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
-            }
-        });
+        return articleCollectService.addCollect(dto.getArticleId(), dto.getUserId())
+                .map(success -> success ? Result.<Void>success()
+                        : Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
     }
 
     @DeleteMapping
@@ -61,14 +53,9 @@ public class ArticleCollectController {
     public Mono<Result<Void>> removeCollect(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
-        return Mono.deferContextual(ctx -> {
-            boolean success = articleCollectService.removeCollect(articleId, userId);
-            if (success) {
-                return Mono.just(Result.<Void>success());
-            } else {
-                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
-            }
-        });
+        return articleCollectService.removeCollect(articleId, userId)
+                .map(success -> success ? Result.<Void>success()
+                        : Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
     }
 
     @GetMapping("/user/{user_id}")
@@ -78,11 +65,8 @@ public class ArticleCollectController {
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
-        return Mono.deferContextual(ctx -> {
-            Page<ArticleCollect> pageRequest = new Page<>(page, size);
-            IPage<ArticleCollectVO> result = articleCollectService.listUserCollects(userId, pageRequest);
-            return Mono.just(Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
-        });
+        return articleCollectService.listUserCollects(userId, page, size)
+                .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
     @GetMapping("/check")
@@ -91,10 +75,8 @@ public class ArticleCollectController {
     public Mono<Result<CollectCheckVO>> isCollected(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
-        return Mono.deferContextual(ctx -> {
-            boolean collected = articleCollectService.isCollected(articleId, userId);
-            return Mono.just(Result.success(new CollectCheckVO(collected)));
-        });
+        return articleCollectService.isCollected(articleId, userId)
+                .map(collected -> Result.success(new CollectCheckVO(collected)));
     }
 
     @GetMapping("/count/{article_id}")
@@ -102,9 +84,7 @@ public class ArticleCollectController {
     @ApiLog("获取收藏数")
     public Mono<Result<CollectCountVO>> getCollectCount(
             @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
-        return Mono.deferContextual(ctx -> {
-            Long count = articleCollectService.getCollectCountByArticleId(articleId);
-            return Mono.just(Result.success(new CollectCountVO(count)));
-        });
+        return articleCollectService.getCollectCountByArticleId(articleId)
+                .map(count -> Result.success(new CollectCountVO(count)));
     }
 }

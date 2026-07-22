@@ -2,6 +2,8 @@ package com.hcsy.spring.api.service;
 
 import java.util.Map;
 
+import reactor.core.publisher.Mono;
+
 /**
  * API 日志异步发送服务接口
  * 用于在后台异步发送 API 日志到 RabbitMQ，不阻塞业务接口响应
@@ -14,5 +16,5 @@ public interface AsyncApiLogService {
      *
      * @param apiLogMessage API 日志消息 Map
      */
-    void sendAsync(Map<String, Object> apiLogMessage);
+    Mono<Void> sendAsync(Map<String, Object> apiLogMessage);
 }

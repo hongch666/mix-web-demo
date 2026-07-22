@@ -2,156 +2,138 @@ package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.hcsy.spring.api.mapper.FocusMapper;
-import com.hcsy.spring.api.mapper.UserMapper;
+import com.hcsy.spring.api.repository.FocusRepository;
+import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.api.service.FocusService;
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.core.annotation.ArticleSync;
+import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class FocusServiceImpl extends ServiceImpl<FocusMapper, Focus> implements FocusService {
+public class FocusServiceImpl implements FocusService {
 
-    private final FocusMapper focusMapper;
-    private final UserMapper userMapper;
-
-    @Override
-    @Transactional
-    @ArticleSync(action = "focus", description = "关注了1个用户")
-    public boolean addFocus(Long userId, Long focusId) {
-        // 检查是否已经关注
-        if (isFocused(userId, focusId)) {
-            return false;
-        }
-
-        Focus focus = new Focus();
-        focus.setUserId(userId);
-        focus.setFocusId(focusId);
-        focus.setCreatedTime(LocalDateTime.now());
-
-        return focusMapper.insert(focus) > 0;
-    }
+    private final FocusRepository focusRepository;
+    private final UserRepository userRepository;
+    private final TransactionalOperator transactionalOperator;
 
     @SuppressWarnings("null")
     @Override
-    @Transactional
-    @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
-    public boolean removeFocus(Long userId, Long focusId) {
-        LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Focus::getUserId, userId);
-        queryWrapper.eq(Focus::getFocusId, focusId);
-
-        return focusMapper.delete(queryWrapper) > 0;
-    }
-
-    @Transactional(readOnly = true)
-    @SuppressWarnings("null")
-    @Override
-    public boolean isFocused(Long userId, Long focusId) {
-        LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Focus::getUserId, userId);
-        queryWrapper.eq(Focus::getFocusId, focusId);
-
-        return focusMapper.selectOne(queryWrapper) != null;
-    }
-
-    @Transactional(readOnly = true)
-    @SuppressWarnings("null")
-    @Override
-    public IPage<FocusUserVO> listUserFocuses(Long userId, Page<Focus> page) {
-        LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Focus::getUserId, userId);
-        queryWrapper.orderByDesc(Focus::getCreatedTime);
-
-        IPage<Focus> focusPage = this.page(page, queryWrapper);
-
-        // 转换为VO，并关联用户信息
-        List<FocusUserVO> voList = focusPage.getRecords().stream().map(
-                focus -> {
-                    User user = userMapper.selectById(focus.getFocusId());
-
-                    if (user == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
+    @ArticleSync(action = "focus", description = Messages.ARTICLE_SYNC_FOCUS)
+    public Mono<Boolean> addFocus(Long userId, Long focusId) {
+        Mono<Boolean> operation = focusRepository.existsByUserIdAndFocusId(userId, focusId)
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.just(false);
                     }
-                    FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
-                    vo.setFocusedTime(focus.getCreatedTime());
-
-                    return vo;
-                }).collect(Collectors.toList());
-
-        // 构建新的分页结果
-        Page<FocusUserVO> resultPage = new Page<>(page.getCurrent(), page.getSize(), focusPage.getTotal());
-        resultPage.setRecords(voList);
-
-        return resultPage;
+                    Focus focus = new Focus();
+                    focus.setUserId(userId);
+                    focus.setFocusId(focusId);
+                    focus.setCreatedTime(LocalDateTime.now());
+                    return focusRepository.save(focus).thenReturn(true);
+                });
+        return transactionalOperator.transactional(operation);
     }
 
-    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
-    public IPage<FocusUserVO> listUserFollowers(Long userId, Page<Focus> page) {
-        LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Focus::getFocusId, userId);
-        queryWrapper.orderByDesc(Focus::getCreatedTime);
-
-        IPage<Focus> focusPage = this.page(page, queryWrapper);
-
-        // 转换为VO，并关联用户信息
-        List<FocusUserVO> voList = focusPage.getRecords().stream().map(
-                focus -> {
-                    User user = userMapper.selectById(focus.getUserId());
-
-                    if (user == null) {
-                        throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.UNDEFINED_USER).build();
-                    }
-                    FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
-                    vo.setFocusedTime(focus.getCreatedTime());
-
-                    return vo;
-                }).collect(Collectors.toList());
-
-        // 构建新的分页结果
-        Page<FocusUserVO> resultPage = new Page<>(page.getCurrent(), page.getSize(), focusPage.getTotal());
-        resultPage.setRecords(voList);
-
-        return resultPage;
+    @ArticleSync(action = "unfocus", description = Messages.ARTICLE_SYNC_UNFOCUS)
+    public Mono<Boolean> removeFocus(Long userId, Long focusId) {
+        return transactionalOperator.transactional(
+                focusRepository.existsByUserIdAndFocusId(userId, focusId)
+                        .flatMap(exists -> exists
+                                ? focusRepository.deleteByUserIdAndFocusId(userId, focusId).thenReturn(true)
+                                : Mono.just(false)));
     }
 
-    @Transactional(readOnly = true)
-    @SuppressWarnings("null")
     @Override
-    public Long getFocusCountByUserId(Long userId) {
-        LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Focus::getUserId, userId);
-
-        return focusMapper.selectCount(queryWrapper);
+    public Mono<Boolean> isFocused(Long userId, Long focusId) {
+        return focusRepository.existsByUserIdAndFocusId(userId, focusId);
     }
 
-    @Transactional(readOnly = true)
     @SuppressWarnings("null")
     @Override
-    public Long getFollowerCountByUserId(Long userId) {
-        LambdaQueryWrapper<Focus> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.eq(Focus::getFocusId, userId);
+    public Mono<PageDTO<FocusUserVO>> listUserFocuses(Long userId, long page, long size) {
+        Flux<Focus> query = focusRepository.findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size));
+        return buildPage(query, focusRepository.countByUserId(userId), page, size, Focus::getFocusId);
+    }
 
-        return focusMapper.selectCount(queryWrapper);
+    @SuppressWarnings("null")
+    @Override
+    public Mono<PageDTO<FocusUserVO>> listUserFollowers(Long userId, long page, long size) {
+        Flux<Focus> query = focusRepository.findByFocusIdOrderByCreatedTimeDesc(userId, pageRequest(page, size));
+        return buildPage(query, focusRepository.countByFocusId(userId), page, size, Focus::getUserId);
+    }
+
+    @Override
+    public Mono<Long> getFocusCountByUserId(Long userId) {
+        return focusRepository.countByUserId(userId);
+    }
+
+    @Override
+    public Mono<Long> getFollowerCountByUserId(Long userId) {
+        return focusRepository.countByFocusId(userId);
+    }
+
+    @SuppressWarnings("null")
+    private Mono<PageDTO<FocusUserVO>> buildPage(
+            Flux<Focus> query,
+            Mono<Long> total,
+            long page,
+            long size,
+            Function<Focus, Long> relatedUserId) {
+        Mono<List<FocusUserVO>> records = query.collectList().flatMap(focuses -> {
+            Set<Long> userIds = focuses.stream().map(relatedUserId).collect(Collectors.toSet());
+            return userRepository.findAllById(userIds)
+                    .collectMap(User::getId, Function.identity())
+                    .map(users -> toVOs(focuses, users, relatedUserId));
+        });
+        return Mono.zip(records, total).map(result -> {
+            PageDTO<FocusUserVO> pageDTO = new PageDTO<>();
+            pageDTO.setCurrent(page);
+            pageDTO.setSize(size);
+            pageDTO.setTotal(result.getT2());
+            pageDTO.setRecords(result.getT1());
+            return pageDTO;
+        });
+    }
+
+    private List<FocusUserVO> toVOs(
+            List<Focus> focuses,
+            Map<Long, User> users,
+            Function<Focus, Long> relatedUserId) {
+        return focuses.stream().map(focus -> {
+            User user = users.get(relatedUserId.apply(focus));
+            if (user == null) {
+                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND)
+                        .errorMessage(Messages.UNDEFINED_USER).build();
+            }
+            FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
+            vo.setFocusedTime(focus.getCreatedTime());
+            return vo;
+        }).toList();
+    }
+
+    private PageRequest pageRequest(long page, long size) {
+        return PageRequest.of((int) Math.max(0, page - 1), (int) Math.max(1, Math.min(size, 1000)));
     }
 }

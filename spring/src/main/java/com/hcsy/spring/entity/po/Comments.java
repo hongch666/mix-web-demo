@@ -2,15 +2,15 @@ package com.hcsy.spring.entity.po;
 
 import java.time.LocalDateTime;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.Data;
 
 @Data
-@TableName("comments") // 对应数据库中的表名
+@Table("comments")
 public class Comments {
-    @TableId
+    @Id
     private Long id;
     private String content;
     private Double star; // 星级评分，1~10

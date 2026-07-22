@@ -13,10 +13,9 @@ import com.wf.captcha.SpecCaptcha;
 import com.wf.captcha.base.Captcha;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-/**
- * 图形验证码服务实现（基于 EasyCaptcha）
- */
 @Service
 @RequiredArgsConstructor
 public class ImageCaptchaServiceImpl implements ImageCaptchaService {
@@ -30,49 +29,49 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
     private final SimpleLogger logger;
 
     @Override
-    public ImageCaptchaVO createCaptcha() {
-        String captchaId = UUID.randomUUID().toString().replace("-", "");
-        String key = buildCaptchaKey(captchaId);
+    public Mono<ImageCaptchaVO> createCaptcha() {
+        return Mono.fromCallable(this::generateCaptcha)
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(generated -> redisUtil.set(generated.key(), generated.text(), CAPTCHA_EXPIRY)
+                        .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_SAVE + generated.id()))
+                        .thenReturn(generated.vo()));
+    }
 
-        // 生成 png 格式验证码（如需 GIF 动图改为 new GifCaptcha(...)）
+    @Override
+    public Mono<Boolean> verifyCaptcha(String captchaId, String captchaText) {
+        return redisUtil.get(buildCaptchaKey(captchaId))
+                .map(stored -> captchaText != null && stored.equalsIgnoreCase(captchaText.trim()))
+                .doOnNext(matched -> logger.info((matched
+                        ? Messages.IMAGE_CAPTCHA_VERIFY_SUCCESS
+                        : Messages.IMAGE_CAPTCHA_VERIFY_FAIL) + captchaId))
+                .switchIfEmpty(Mono.fromSupplier(() -> {
+                    logger.info(Messages.IMAGE_CAPTCHA_EXPIRED + captchaId);
+                    return false;
+                }));
+    }
+
+    @Override
+    public Mono<Void> deleteCaptcha(String captchaId) {
+        return redisUtil.delete(buildCaptchaKey(captchaId))
+                .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_DELETE + captchaId))
+                .then();
+    }
+
+    private GeneratedCaptcha generateCaptcha() {
+        String captchaId = UUID.randomUUID().toString().replace("-", "");
         SpecCaptcha captcha = new SpecCaptcha(CAPTCHA_WIDTH, CAPTCHA_HEIGHT, CAPTCHA_LENGTH);
         captcha.setCharType(Captcha.TYPE_DEFAULT);
-        String captchaText = captcha.text();
-
-        redisUtil.set(key, captchaText, CAPTCHA_EXPIRY);
-        logger.info(Messages.IMAGE_CAPTCHA_SAVE + captchaId);
-
-        return ImageCaptchaVO.builder()
+        String text = captcha.text();
+        ImageCaptchaVO vo = ImageCaptchaVO.builder()
                 .captchaId(captchaId)
                 .imageBase64(captcha.toBase64())
                 .build();
-    }
-
-    @Override
-    public boolean verifyCaptcha(String captchaId, String captchaText) {
-        String storedCaptcha = redisUtil.get(buildCaptchaKey(captchaId));
-        if (storedCaptcha == null || captchaText == null) {
-            logger.info(Messages.IMAGE_CAPTCHA_EXPIRED + captchaId);
-            return false;
-        }
-
-        boolean matched = storedCaptcha.equalsIgnoreCase(captchaText.trim());
-        if (!matched) {
-            logger.info(Messages.IMAGE_CAPTCHA_VERIFY_FAIL + captchaId);
-            return false;
-        }
-
-        logger.info(Messages.IMAGE_CAPTCHA_VERIFY_SUCCESS + captchaId);
-        return true;
-    }
-
-    @Override
-    public void deleteCaptcha(String captchaId) {
-        redisUtil.delete(buildCaptchaKey(captchaId));
-        logger.info(Messages.IMAGE_CAPTCHA_DELETE + captchaId);
+        return new GeneratedCaptcha(captchaId, buildCaptchaKey(captchaId), text, vo);
     }
 
     private String buildCaptchaKey(String captchaId) {
         return CAPTCHA_PREFIX + captchaId;
     }
+
+    private record GeneratedCaptcha(String id, String key, String text, ImageCaptchaVO vo) { }
 }

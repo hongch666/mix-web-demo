@@ -1,14 +1,25 @@
 package com.hcsy.spring.infra.client;
 
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.PostMapping;
+import java.time.Duration;
 
+import org.springframework.http.HttpMethod;
+import org.springframework.stereotype.Component;
+
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
-import com.hcsy.spring.infra.client.fallback.GoZeroClientFallbackFactory;
 
-@FeignClient(name = "gozero", fallbackFactory = GoZeroClientFallbackFactory.class)
-public interface GoZeroClient {
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
 
-    @PostMapping("/task/syncer")
-    Result<?> syncES();
+@Component
+@RequiredArgsConstructor
+public class GoZeroClient {
+
+    private final ServiceWebClient serviceWebClient;
+
+    public Mono<Result<?>> syncES() {
+        return serviceWebClient.request(HttpMethod.POST, "gozero", "/task/syncer", ServiceRequestOptions.empty(),
+                Duration.ofSeconds(3),
+                Messages.ES_SERVICE_UNAVAILABLE);
+    }
 }

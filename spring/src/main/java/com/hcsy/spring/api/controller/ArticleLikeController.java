@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
@@ -18,7 +16,6 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
-import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
 import com.hcsy.spring.entity.vo.LikeCheckVO;
 import com.hcsy.spring.entity.vo.LikeCountVO;
@@ -44,14 +41,9 @@ public class ArticleLikeController {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_LIKE)
     @ApiLog("添加点赞")
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
-        return Mono.deferContextual(ctx -> {
-            boolean success = articleLikeService.addLike(dto.getArticleId(), dto.getUserId());
-            if (success) {
-                return Mono.just(Result.<Void>success());
-            } else {
-                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.LIKE_FAIL));
-            }
-        });
+        return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
+                .map(success -> success ? Result.<Void>success()
+                        : Result.<Void>error(HttpCode.CONFLICT, Messages.LIKE_FAIL));
     }
 
     @DeleteMapping
@@ -61,14 +53,9 @@ public class ArticleLikeController {
     public Mono<Result<Void>> removeLike(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
-        return Mono.deferContextual(ctx -> {
-            boolean success = articleLikeService.removeLike(articleId, userId);
-            if (success) {
-                return Mono.just(Result.<Void>success());
-            } else {
-                return Mono.just(Result.<Void>error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL));
-            }
-        });
+        return articleLikeService.removeLike(articleId, userId)
+                .map(success -> success ? Result.<Void>success()
+                        : Result.<Void>error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL));
     }
 
     @GetMapping("/user/{user_id}")
@@ -78,11 +65,8 @@ public class ArticleLikeController {
             @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
             @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
             @Parameter(description = "每页数量", required = false) @RequestParam(defaultValue = "10") int size) {
-        return Mono.deferContextual(ctx -> {
-            Page<ArticleLike> pageRequest = new Page<>(page, size);
-            IPage<ArticleLikeVO> result = articleLikeService.listUserLikes(userId, pageRequest);
-            return Mono.just(Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
-        });
+        return articleLikeService.listUserLikes(userId, page, size)
+                .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
     @GetMapping("/check")
@@ -91,10 +75,8 @@ public class ArticleLikeController {
     public Mono<Result<LikeCheckVO>> isLiked(
             @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
             @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
-        return Mono.deferContextual(ctx -> {
-            boolean liked = articleLikeService.isLiked(articleId, userId);
-            return Mono.just(Result.success(new LikeCheckVO(liked)));
-        });
+        return articleLikeService.isLiked(articleId, userId)
+                .map(liked -> Result.success(new LikeCheckVO(liked)));
     }
 
     @GetMapping("/count/{article_id}")
@@ -102,9 +84,7 @@ public class ArticleLikeController {
     @ApiLog("获取点赞数")
     public Mono<Result<LikeCountVO>> getLikeCount(
             @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
-        return Mono.deferContextual(ctx -> {
-            Long count = articleLikeService.getLikeCountByArticleId(articleId);
-            return Mono.just(Result.success(new LikeCountVO(count)));
-        });
+        return articleLikeService.getLikeCountByArticleId(articleId)
+                .map(count -> Result.success(new LikeCountVO(count)));
     }
 }

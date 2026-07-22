@@ -1,35 +1,39 @@
 package com.hcsy.spring.api.service;
 
+import java.util.Collection;
 import java.util.List;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
+import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
-public interface CategoryService extends IService<Category> {
-    Long addCategory(CategoryCreateDTO dto);
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-    void updateCategory(CategoryUpdateDTO dto);
+public interface CategoryService {
+    Mono<Long> addCategory(CategoryCreateDTO dto);
 
-    void deleteCategory(Long id);
+    Mono<Void> updateCategory(CategoryUpdateDTO dto);
 
-    void deleteCategories(List<Long> ids);
+    Mono<Void> deleteCategory(Long id);
 
-    Long addSubCategory(SubCategoryCreateDTO dto);
+    Mono<Void> deleteCategories(List<Long> ids);
 
-    void updateSubCategory(SubCategoryUpdateDTO dto);
+    Mono<Long> addSubCategory(SubCategoryCreateDTO dto);
 
-    void deleteSubCategory(Long id);
+    Mono<Void> updateSubCategory(SubCategoryUpdateDTO dto);
 
-    void deleteSubCategories(List<Long> ids);
+    Mono<Void> deleteSubCategory(Long id);
 
-    CategoryVO getCategoryById(Long id);
+    Mono<Void> deleteSubCategories(List<Long> ids);
 
-    IPage<CategoryVO> pageCategory(Page<?> page);
+    Mono<CategoryVO> getCategoryById(Long id);
+
+    Mono<PageDTO<CategoryVO>> pageCategory(long page, long size);
+
+    Flux<Category> listByIds(Collection<Long> ids);
 }

@@ -2,24 +2,31 @@ package com.hcsy.spring.api.service;
 
 import java.util.List;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
+import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Comments;
 
-public interface CommentsService extends IService<Comments> {
-    IPage<Comments> listCommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO);
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-    IPage<Comments> listAICommentsWithFilter(Page<Comments> page, CommentsQueryDTO queryDTO);
+public interface CommentsService {
+    Mono<PageDTO<Comments>> listCommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO);
 
-    IPage<Comments> listCommentsByUserId(Page<Comments> page, Long userId);
+    Mono<PageDTO<Comments>> listAICommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO);
 
-    IPage<Comments> listCommentsByArticleId(Page<Comments> page, Long articleId, String sortWay);
+    Mono<PageDTO<Comments>> listCommentsByUserId(long page, long size, Long userId);
 
-    List<Comments> listAICommentsByArticleId(Long articleId);
+    Mono<PageDTO<Comments>> listCommentsByArticleId(long page, long size, Long articleId, String sortWay);
 
-    void deleteComment(Long id);
+    Flux<Comments> listAICommentsByArticleId(Long articleId);
 
-    void deleteComments(List<Long> ids);
+    Mono<Comments> save(Comments comments);
+
+    Mono<Comments> update(Comments comments);
+
+    Mono<Comments> getById(Long id);
+
+    Mono<Void> deleteComment(Long id);
+
+    Mono<Void> deleteComments(List<Long> ids);
 }

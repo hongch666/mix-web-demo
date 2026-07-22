@@ -95,18 +95,14 @@ public class ApiLogAspect {
 
         Object result = pjp.proceed();
 
-        // 包装返回的 Mono，在链内用 flatMap + deferContextual 获取上下文
-        // 注意：doOnSuccess 是同步回调，Mono.deferContextual().subscribe() 会创建新的订阅链，
-        // 新的订阅链没有上游 Context，所以必须在响应式链内访问 Context
         if (result instanceof Mono<?> monoResult) {
             return monoResult
                 .flatMap(res -> Mono.deferContextual(ctx -> {
                     long duration = System.currentTimeMillis() - start;
                     String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, duration);
                     logger.info(timeMessage);
-                    // 发送 API 日志到消息队列
-                    sendApiLogToQueue(ctx, pjp, httpMethod, requestPath, apiLog, duration);
-                    return Mono.just(res);
+                    return sendApiLogToQueue(ctx, pjp, httpMethod, requestPath, apiLog, duration)
+                            .thenReturn(res);
                 }))
                 .doOnError(err -> {
                     logger.error(Messages.API_EXCEPTION, err);
@@ -346,7 +342,7 @@ public class ApiLogAspect {
      * 向消息队列发送 API 日志
      * 在接口完成后自动发送到 RabbitMQ
      */
-    private void sendApiLogToQueue(
+    private Mono<Void> sendApiLogToQueue(
             reactor.util.context.ContextView ctx,
             ProceedingJoinPoint pjp,
             String httpMethod,
@@ -386,11 +382,11 @@ public class ApiLogAspect {
             apiLogMessage.put("requestBody", requestBody);
             apiLogMessage.put("responseTime", responseTime);
 
-            // 异步发送到消息队列（不阻塞业务接口响应）
-            asyncApiLogService.sendAsync(apiLogMessage);
+            return asyncApiLogService.sendAsync(apiLogMessage);
 
         } catch (Exception e) {
             logger.error(Messages.RabbitMQ_SEND_FAIL + e.getMessage(), e);
+            return Mono.empty();
         }
     }
 

@@ -13,16 +13,18 @@ public class UserContext {
     public static final String CONTEXT_KEY_USERNAME = "username";
     public static final String CONTEXT_KEY_SESSION_ID = "sessionId";
     public static final String CONTEXT_KEY_TOKEN = "token";
+    public static final String CONTEXT_KEY_INTERNAL_TOKEN = "internalToken";
 
     /**
      * 将用户信息写入 Reactor Context
      */
     public static Context writeContext(Context ctx, Long userId, String username,
-                                       String sessionId, String token) {
+                                       String sessionId, String token, String internalToken) {
         if (userId != null) ctx = ctx.put(CONTEXT_KEY_USER_ID, userId);
         if (username != null) ctx = ctx.put(CONTEXT_KEY_USERNAME, username);
         if (sessionId != null) ctx = ctx.put(CONTEXT_KEY_SESSION_ID, sessionId);
         if (token != null) ctx = ctx.put(CONTEXT_KEY_TOKEN, token);
+        if (internalToken != null) ctx = ctx.put(CONTEXT_KEY_INTERNAL_TOKEN, internalToken);
         return ctx;
     }
 
@@ -52,5 +54,9 @@ public class UserContext {
      */
     public static String getSessionId(ContextView ctx) {
         return ctx.getOrDefault(CONTEXT_KEY_SESSION_ID, null);
+    }
+
+    public static String getInternalToken(ContextView ctx) {
+        return ctx.getOrDefault(CONTEXT_KEY_INTERNAL_TOKEN, null);
     }
 }

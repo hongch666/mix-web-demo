@@ -1,165 +1,138 @@
 package com.hcsy.spring.common.utils;
 
-import java.util.ArrayList;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.stereotype.Component;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
- * Redis 工具类
- * 基于 StringRedisTemplate 的阻塞式 API，项目中所有 Redis 操作统一使用此类
+ * Redis 响应式工具类。
  */
 @Component
 @RequiredArgsConstructor
 public class RedisUtil {
 
-    private final StringRedisTemplate redisTemplate;
+    private final ReactiveStringRedisTemplate redisTemplate;
 
-    // 设置带过期时间的值
     @SuppressWarnings("null")
-    public void set(String key, String value, long timeoutSeconds) {
-        redisTemplate.opsForValue().set(key, value, timeoutSeconds, TimeUnit.SECONDS);
+    public Mono<Boolean> set(String key, String value, long timeoutSeconds) {
+        return redisTemplate.opsForValue().set(key, value, Duration.ofSeconds(timeoutSeconds));
     }
 
-    // 设置永久不过期的值
     @SuppressWarnings("null")
-    public void set(String key, String value) {
-        redisTemplate.opsForValue().set(key, value);
+    public Mono<Boolean> set(String key, String value) {
+        return redisTemplate.opsForValue().set(key, value);
     }
 
-    // 获取值
     @SuppressWarnings("null")
-    public String get(String key) {
+    public Mono<String> get(String key) {
         return redisTemplate.opsForValue().get(key);
     }
 
-    // 批量获取值，保持返回顺序与入参一致
-    public List<String> batchGet(List<String> keys) {
+    public Mono<List<String>> batchGet(List<String> keys) {
         if (keys == null || keys.isEmpty()) {
-            return new ArrayList<>();
+            return Mono.just(List.of());
         }
-
-        List<String> values = new ArrayList<>(keys.size());
-        for (String key : keys) {
-            String value = get(key);
-            values.add(value);
-        }
-        return values;
+        return redisTemplate.opsForValue().multiGet(keys);
     }
 
-    // 删除值
-    @SuppressWarnings("null")
-    public void delete(String key) {
-        redisTemplate.delete(key);
-    }
-
-    // 设置过期时间
-    @SuppressWarnings("null")
-    public void expire(String key, long timeoutSeconds) {
-        redisTemplate.expire(key, timeoutSeconds, TimeUnit.SECONDS);
-    }
-
-    // 添加元素到列表末尾
-    @SuppressWarnings("null")
-    public void addToList(String key, String value) {
-        redisTemplate.opsForList().rightPush(key, value);
-    }
-
-    // 从列表中移除指定元素
-    @SuppressWarnings("null")
-    public void removeFromList(String key, String value) {
-        redisTemplate.opsForList().remove(key, 1, value);
-    }
-
-    // 获取列表所有元素
-    @SuppressWarnings("null")
-    public List<String> getList(String key) {
-        Long size = redisTemplate.opsForList().size(key);
-        if (size == null || size == 0) {
-            return new ArrayList<>();
-        }
-        return redisTemplate.opsForList().range(key, 0, -1);
-    }
-
-    // 获取列表大小
-    @SuppressWarnings("null")
-    public long getListSize(String key) {
-        Long size = redisTemplate.opsForList().size(key);
-        return size != null ? size : 0;
-    }
-
-    // 清空列表
-    @SuppressWarnings("null")
-    public void clearList(String key) {
-        redisTemplate.delete(key);
-    }
-
-    // 检查元素是否在列表中
-    public boolean existsInList(String key, String value) {
-        List<String> list = getList(key);
-        return list.contains(value);
-    }
-
-    // 获取所有匹配 pattern 的 key
-    @SuppressWarnings("null")
-    public Set<String> getKeys(String pattern) {
-        return redisTemplate.keys(pattern);
-    }
-
-    // ========== Hash 操作 ==========
-
-    @SuppressWarnings("null")
-    public void putHash(String key, String hashKey, String value) {
-        redisTemplate.opsForHash().put(key, hashKey, value);
+    public Mono<Boolean> delete(String key) {
+        return redisTemplate.delete(key).map(count -> count > 0);
     }
 
     @SuppressWarnings("null")
-    public String getHash(String key, String hashKey) {
-        Object value = redisTemplate.opsForHash().get(key, hashKey);
-        return value != null ? value.toString() : null;
+    public Mono<Long> delete(Iterable<String> keys) {
+        return redisTemplate.delete(Flux.fromIterable(keys));
     }
 
     @SuppressWarnings("null")
-    public Map<Object, Object> getHashEntries(String key) {
-        return redisTemplate.opsForHash().entries(key);
+    public Mono<Boolean> expire(String key, long timeoutSeconds) {
+        return redisTemplate.expire(key, Duration.ofSeconds(timeoutSeconds));
     }
 
     @SuppressWarnings("null")
-    public void deleteHash(String key, String... hashKeys) {
-        redisTemplate.opsForHash().delete(key, (Object[]) hashKeys);
+    public Mono<Long> addToList(String key, String value) {
+        return redisTemplate.opsForList().rightPush(key, value);
     }
 
     @SuppressWarnings("null")
-    public boolean exists(String key) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
-    }
-
-    // ========== Set 操作 ==========
-
-    @SuppressWarnings("null")
-    public void addToSet(String key, String value) {
-        redisTemplate.opsForSet().add(key, value);
+    public Mono<Long> removeFromList(String key, String value) {
+        return redisTemplate.opsForList().remove(key, 1, value);
     }
 
     @SuppressWarnings("null")
-    public void removeFromSet(String key, String value) {
-        redisTemplate.opsForSet().remove(key, value);
+    public Mono<List<String>> getList(String key) {
+        return redisTemplate.opsForList().range(key, 0, -1).collectList();
     }
 
     @SuppressWarnings("null")
-    public Set<String> getSet(String key) {
-        return redisTemplate.opsForSet().members(key);
+    public Mono<Long> getListSize(String key) {
+        return redisTemplate.opsForList().size(key).defaultIfEmpty(0L);
+    }
+
+    public Mono<Boolean> clearList(String key) {
+        return delete(key);
+    }
+
+    public Mono<Boolean> existsInList(String key, String value) {
+        return getList(key).map(values -> values.contains(value));
     }
 
     @SuppressWarnings("null")
-    public long getSetSize(String key) {
-        Long size = redisTemplate.opsForSet().size(key);
-        return size != null ? size : 0;
+    public Flux<String> getKeys(String pattern) {
+        return redisTemplate.scan(ScanOptions.scanOptions().match(pattern).count(200).build());
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Boolean> putHash(String key, String hashKey, String value) {
+        return redisTemplate.opsForHash().put(key, hashKey, value);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<String> getHash(String key, String hashKey) {
+        return redisTemplate.<String, String>opsForHash().get(key, hashKey);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Map<String, String>> getHashEntries(String key) {
+        return redisTemplate.<String, String>opsForHash().entries(key).collectMap(Map.Entry::getKey,
+                Map.Entry::getValue);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Long> deleteHash(String key, String... hashKeys) {
+        return redisTemplate.<String, String>opsForHash().remove(key, (Object[]) hashKeys);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Boolean> exists(String key) {
+        return redisTemplate.hasKey(key);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Long> addToSet(String key, String value) {
+        return redisTemplate.opsForSet().add(key, value);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Long> removeFromSet(String key, String value) {
+        return redisTemplate.opsForSet().remove(key, value);
+    }
+
+    @SuppressWarnings("null")
+    public Mono<List<String>> getSet(String key) {
+        return redisTemplate.opsForSet().members(key).collectList();
+    }
+
+    @SuppressWarnings("null")
+    public Mono<Long> getSetSize(String key) {
+        return redisTemplate.opsForSet().size(key).defaultIfEmpty(0L);
     }
 }

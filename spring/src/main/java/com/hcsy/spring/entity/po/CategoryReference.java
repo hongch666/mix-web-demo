@@ -1,23 +1,17 @@
 package com.hcsy.spring.entity.po;
 
-import com.baomidou.mybatisplus.annotation.FieldStrategy;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.Data;
 
 @Data
-@TableName("category_reference") // 对应数据库中的表名
+@Table("category_reference")
 public class CategoryReference {
-    @TableId
+    @Id
     private Long id;
     private Long subCategoryId; // 子分类ID
     private String type; // 类型：link 或 pdf
-    @SuppressWarnings("deprecation")
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String link; // 官网链接
-    @SuppressWarnings("deprecation")
-    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private String pdf; // PDF链接（OSS）
 }

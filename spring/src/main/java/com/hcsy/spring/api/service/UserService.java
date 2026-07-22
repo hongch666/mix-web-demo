@@ -1,8 +1,8 @@
 package com.hcsy.spring.api.service;
 
+import java.util.Collection;
 import java.util.List;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
@@ -16,114 +16,61 @@ import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 
-public interface UserService extends IService<User> {
-    UserListVO listUsersWithFilter(long page, long size, String username);
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-    UserListVO getAllUsers(String username);
+public interface UserService {
+    Mono<UserListVO> listUsersWithFilter(long page, long size, String username);
 
-    UserListVO getAllAiUsers();
+    Mono<UserListVO> getAllUsers(String username);
 
-    void saveUserAndStatus(User user);
+    Mono<UserListVO> getAllAiUsers();
 
-    void deleteUserAndStatusById(Long id);
+    Mono<User> saveUserAndStatus(User user);
 
-    void deleteUsersAndStatusByIds(List<Long> ids);
+    Mono<Void> deleteUserAndStatusById(Long id);
 
-    User findByUsername(String username);
+    Mono<Void> deleteUsersAndStatusByIds(List<Long> ids);
 
-    User findByEmail(String email);
+    Mono<User> findByUsername(String username);
 
-    List<User> listAllUserByUsername(String username);
+    Mono<User> findByEmail(String email);
 
-    UserLoginVO login(LoginDTO loginDTO);
+    Flux<User> listAllUserByUsername(String username);
 
-    UserLoginVO emailLogin(EmailLoginDTO emailLoginDTO);
+    Mono<UserLoginVO> login(LoginDTO loginDTO);
 
-    GithubTokenTicketVO createGithubTokenTicket(GithubTokenTicketCreateDTO dto);
+    Mono<UserLoginVO> emailLogin(EmailLoginDTO emailLoginDTO);
 
-    UserLoginVO exchangeGithubTokenTicket(GithubTokenExchangeDTO dto);
+    Mono<GithubTokenTicketVO> createGithubTokenTicket(GithubTokenTicketCreateDTO dto);
 
-    void registerUser(UserRegisterDTO registerDTO);
+    Mono<UserLoginVO> exchangeGithubTokenTicket(GithubTokenExchangeDTO dto);
 
-    /**
-     * 创建新用户（含密码加密、默认值设置等业务逻辑）
-     *
-     * @param userDto 用户创建DTO
-     */
-    void createUser(UserCreateDTO userDto);
+    Mono<Void> registerUser(UserRegisterDTO registerDTO);
 
-    /**
-     * 修改用户信息（含密码加密、保留原用户字段等业务逻辑）
-     *
-     * @param userDto 用户修改DTO
-     */
-    void updateUserInfo(UserUpdateDTO userDto);
+    Mono<Void> createUser(UserCreateDTO userDto);
 
-    /**
-     * 通过邮箱验证码重置密码
-     *
-     * @param resetPasswordDTO 重置密码DTO
-     */
-    void resetPassword(ResetPasswordDTO resetPasswordDTO);
+    Mono<Void> updateUserInfo(UserUpdateDTO userDto);
 
-    /**
-     * 管理员重置所有用户密码为配置中的重置密码
-     */
-    void resetAllPasswords();
+    Mono<Void> resetPassword(ResetPasswordDTO resetPasswordDTO);
 
-    /**
-     * 管理员重置指定用户密码为配置中的重置密码
-     *
-     * @param userId 用户ID
-     */
-    void resetUserPassword(Long userId);
+    Mono<Void> resetAllPasswords();
 
-    /**
-     * 获取用户登录状态（从Redis）
-     *
-     * @param userId 用户ID
-     * @return 1-在线，0-离线
-     */
-    int getUserLoginStatus(Long userId);
+    Mono<Void> resetUserPassword(Long userId);
 
-    /**
-     * 更新用户登录状态（写入Redis）
-     *
-     * @param userId 用户ID
-     * @param status 1-在线，0-离线
-     */
-    void updateUserStatus(Long userId, String status);
+    Mono<Integer> getUserLoginStatus(Long userId);
 
-    /**
-     * 查询所有非 AI 用户的 ID 列表
-     * 通过 SQL 直接返回 ID，避免内存中 stream 操作
-     *
-     * @return 非 AI 用户的 ID 列表
-     */
-    List<Long> getNormalUserIds();
+    Mono<Void> updateUserStatus(Long userId, String status);
 
-    /**
-     * 查询所有 AI 用户的 ID 列表
-     * 通过 SQL 直接返回 ID，避免内存中 stream 操作
-     *
-     * @return AI 用户的 ID 列表
-     */
-    List<Long> getAiUserIds();
+    Flux<Long> getNormalUserIds();
 
-    /**
-     * 统计非 AI 用户总数
-     * 通过 SQL COUNT 统计，避免内存中 list.size() 操作
-     *
-     * @return 非 AI 用户总数
-     */
-    long countNormalUsers();
+    Flux<Long> getAiUserIds();
 
-    /**
-     * 统计 AI 用户总数
-     * 通过 SQL COUNT 统计，避免内存中 list.size() 操作
-     *
-     * @return AI 用户总数
-     */
-    long countAiUsers();
+    Mono<Long> countNormalUsers();
 
+    Mono<Long> countAiUsers();
+
+    Mono<User> getById(Long id);
+
+    Flux<User> listByIds(Collection<Long> ids);
 }

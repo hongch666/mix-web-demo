@@ -1,7 +1,9 @@
 package com.hcsy.spring.core.aspect;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -15,17 +17,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
 import com.hcsy.spring.api.service.UserService;
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.RequirePermission;
-import com.hcsy.spring.entity.po.Article;
-import com.hcsy.spring.entity.po.Comments;
-import com.hcsy.spring.entity.po.User;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Aspect
@@ -42,352 +42,208 @@ public class PermissionValidationAspect {
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission)
             throws Throwable {
-        // 包装返回的 Mono，在链内用 deferContextual 获取上下文
         Object result = joinPoint.proceed();
-        if (result instanceof Mono<?> monoResult) {
-            return monoResult
-                .flatMap(res -> Mono.deferContextual(ctx -> {
-                    try {
-                        // 从 Reactor Context 获取用户信息
-                        Long currentUserId = UserContext.getUserId(ctx);
-                        if (currentUserId == null) {
-                            currentUserId = -1L;
-                            logger.info(Messages.UNLOGIN_DEFAULT);
-                        }
-
-                        // 检查管理员权限
-                        if (currentUserId > 0) {
-                            User currentUser = userService.getById(currentUserId);
-                            if (currentUser != null && Arrays.asList(requirePermission.roles()).contains(currentUser.getRole())) {
-                                logger.info(Messages.ADMIN_PASS);
-                                return Mono.just(res);
-                            }
-                        }
-
-                        // 获取目标资源ID
-                        Long targetResourceId = getTargetResourceId(joinPoint, requirePermission, currentUserId);
-                        logger.info(Messages.TARGET_SOURCE,
-                                currentUserId, requirePermission.businessType(), requirePermission.paramSource(), targetResourceId);
-
-                        // 根据业务类型校验权限
-                        if (requirePermission.allowSelf()) {
-                            if (!checkOwnership(currentUserId, targetResourceId, requirePermission.businessType())) {
-                                throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
-                            }
-                        } else {
-                            throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
-                        }
-
-                        return Mono.just(res);
-                    } catch (Exception e) {
-                        logger.error(Messages.PERMITION_FAIL + e.getMessage());
-                        return Mono.error(e);
-                    }
-                }));
+        if (!(result instanceof Mono<?> businessMono)) {
+            return result;
         }
-        return result;
+        return Mono.deferContextual(context -> {
+            Long currentUserId = UserContext.getUserId(context);
+            if (currentUserId == null) {
+                logger.info(Messages.UNLOGIN_DEFAULT);
+                return Mono.error(forbidden());
+            }
+            return validatePermission(joinPoint, requirePermission, currentUserId)
+                    .then(businessMono);
+        });
     }
 
-    /**
-     * 获取目标资源ID，支持多种参数来源
-     */
-    private Long getTargetResourceId(ProceedingJoinPoint joinPoint, RequirePermission requirePermission,
-            Long currentUserId) {
-        String paramSource = requirePermission.paramSource();
-        String[] paramNames = requirePermission.paramNames();
-
-        try {
-            if ("path_single".equals(paramSource)) {
-                return getPathSingleParam(joinPoint, paramNames[0]);
-            } else if ("path_multi".equals(paramSource)) {
-                return getPathMultiParams(joinPoint, paramNames, requirePermission.businessType(), currentUserId);
-            } else if ("body".equals(paramSource)) {
-                return getBodyParam(joinPoint, paramNames[0], requirePermission.businessType());
-            }
-        } catch (Exception e) {
-            logger.error(Messages.TARGET_FAIL + e.getMessage(), e);
-        }
-
-        return null;
+    private Mono<Void> validatePermission(
+            ProceedingJoinPoint joinPoint, RequirePermission permission, Long currentUserId) {
+        return userService.getById(currentUserId)
+                .filter(user -> Arrays.asList(permission.roles()).contains(user.getRole()))
+                .doOnNext(ignored -> logger.info(Messages.ADMIN_PASS))
+                .hasElement()
+                .flatMap(roleAllowed -> {
+                    if (roleAllowed) {
+                        return Mono.empty();
+                    }
+                    if (!permission.allowSelf()) {
+                        return Mono.error(forbidden());
+                    }
+                    return resolveTargetResourceId(joinPoint, permission)
+                            .flatMap(targetId -> checkOwnership(currentUserId, targetId, permission.businessType()))
+                            .filter(Boolean.TRUE::equals)
+                            .switchIfEmpty(Mono.error(forbidden()))
+                            .then();
+                });
     }
 
-    /**
-     * 获取路径单个参数
-     */
-    private Long getPathSingleParam(ProceedingJoinPoint joinPoint, String paramName) {
-        try {
-            Object[] args = joinPoint.getArgs();
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            Method method = methodSignature.getMethod();
-            java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
-
-            for (int i = 0; i < paramAnnotations.length; i++) {
-                for (java.lang.annotation.Annotation annotation : paramAnnotations[i]) {
-                    if (annotation instanceof PathVariable) {
-                        PathVariable pathVar = (PathVariable) annotation;
-                        String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
-
-                        if (name.equals(paramName) || "id".equals(paramName)) {
-                            Object argValue = args[i];
-                            if (argValue instanceof Long) {
-                                Long id = (Long) argValue;
-                                logger.info(Messages.FUNCTION_PATH, paramName, id);
-                                return id;
-                            } else if (argValue instanceof String) {
-                                try {
-                                    Long id = Long.parseLong((String) argValue);
-                                    logger.info(Messages.FUNCTION_PATH, paramName, id);
-                                    return id;
-                                } catch (NumberFormatException e) {
-                                    logger.warning(Messages.FUNCTION_PATH_FAIL + argValue);
-                                }
-                            } else if (argValue instanceof Integer) {
-                                Long id = ((Integer) argValue).longValue();
-                                logger.info(Messages.FUNCTION_PATH, paramName, id);
-                                return id;
-                            }
-                        }
-                    }
-                }
+    private Mono<Long> resolveTargetResourceId(ProceedingJoinPoint joinPoint, RequirePermission permission) {
+        String paramSource = permission.paramSource();
+        String parameterName = permission.paramNames().length == 0 ? "id" : permission.paramNames()[0];
+        if ("path_single".equals(paramSource) || "path_multi".equals(paramSource)) {
+            Object value = getPathParameter(joinPoint, parameterName);
+            if (value instanceof String text && text.contains(",")) {
+                return validateBatchOwnership(text, permission.businessType());
             }
-        } catch (Exception e) {
-            logger.warning(Messages.SINGLE_PATH + e.getMessage());
+            return Mono.justOrEmpty(toLong(value));
         }
-
-        return null;
+        if ("body".equals(paramSource)) {
+            Object body = getBody(joinPoint, parameterName);
+            return extractTargetFromBody(body, parameterName);
+        }
+        return Mono.empty();
     }
 
-    /**
-     * 获取路径多个参数，处理特殊场景如 /comments/batch/{ids}
-     */
-    private Long getPathMultiParams(ProceedingJoinPoint joinPoint, String[] paramNames, String businessType,
-            Long currentUserId) {
-        try {
-            Object[] args = joinPoint.getArgs();
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            Method method = methodSignature.getMethod();
-            java.lang.annotation.Annotation[][] paramAnnotations = method.getParameterAnnotations();
-
-            String batchIdsStr = null;
-            for (int i = 0; i < paramAnnotations.length; i++) {
-                for (java.lang.annotation.Annotation annotation : paramAnnotations[i]) {
-                    if (annotation instanceof PathVariable) {
-                        PathVariable pathVar = (PathVariable) annotation;
-                        String name = pathVar.value().isEmpty() ? pathVar.name() : pathVar.value();
-
-                        if ("ids".equals(name) || (paramNames.length > 0 && name.equals(paramNames[0]))) {
-                            Object argValue = args[i];
-                            if (argValue instanceof String) {
-                                batchIdsStr = (String) argValue;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (batchIdsStr != null)
-                    break;
-            }
-
-            if (batchIdsStr != null && batchIdsStr.contains(",")) {
-                String[] ids = batchIdsStr.split(",");
-                Long ownerUserId = null;
-
-                if ("comment".equals(businessType)) {
-                    for (String idStr : ids) {
-                        idStr = idStr.trim();
-                        if (!idStr.isEmpty()) {
-                            Long commentId = Long.parseLong(idStr);
-                            Comments comment = commentsService.getById(commentId);
-                            if (comment == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.COMMENT_ID + commentId).build();
-                            }
-                            if (comment.getUserId() == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.COMMENT_NO_USER + commentId).build();
-                            }
-                            if (ownerUserId != null && !ownerUserId.equals(comment.getUserId())) {
-                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Messages.COMMENT_MULTI_USER).build();
-                            }
-                            ownerUserId = comment.getUserId();
-                        }
-                    }
-                    if (!currentUserId.equals(ownerUserId)) {
-                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
-                    }
-                    logger.info(Messages.FUNCTION_COMMENT, ownerUserId);
-                } else if ("article".equals(businessType)) {
-                    for (String idStr : ids) {
-                        idStr = idStr.trim();
-                        if (!idStr.isEmpty()) {
-                            Long articleId = Long.parseLong(idStr);
-                            Article article = articleService.getById(articleId);
-                            if (article == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.ARTICLE_ID + articleId).build();
-                            }
-                            if (article.getUserId() == null) {
-                                throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(Messages.ARTICLE_NO_USER + articleId).build();
-                            }
-                            if (ownerUserId != null && !ownerUserId.equals(article.getUserId())) {
-                                throw BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST).errorMessage(Messages.ARTICLE_MULTI_USER).build();
-                            }
-                            ownerUserId = article.getUserId();
-                        }
-                    }
-                    if (!currentUserId.equals(ownerUserId)) {
-                        throw BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
-                    }
-                    logger.info(Messages.FUNCTION_ARTICLE, ownerUserId);
-                }
-                return currentUserId;
-            }
-
-        } catch (Exception e) {
-            logger.warning(Messages.MULTI_PATH + e.getMessage());
-        }
-
-        return null;
-    }
-
-    /**
-     * 获取请求体参数
-     */
-    private Long getBodyParam(ProceedingJoinPoint joinPoint, String paramName, String businessType) {
-        try {
-            Object[] args = joinPoint.getArgs();
-            String[] paramNames = getParameterNames(joinPoint);
-
-            for (int i = 0; i < paramNames.length; i++) {
-                if (paramNames[i].equals(paramName) || paramNames[i].equals("dto") || paramNames[i].equals("DTO")) {
-                    Object obj = args[i];
-                    return extractUserIdFromObject(obj, paramName, businessType);
-                }
-            }
-
-            if (args.length > 0) {
-                return extractUserIdFromObject(args[0], paramName, businessType);
-            }
-        } catch (Exception e) {
-            logger.warning(Messages.BODY_GET + e.getMessage());
-        }
-
-        return null;
-    }
-
-    /**
-     * 从对象中提取用户ID
-     */
-    private Long extractUserIdFromObject(Object obj, String paramName, String businessType) throws Exception {
-        if (obj == null) {
-            return null;
-        }
-
-        try {
-            if ("id".equals(paramName) || paramName.contains("Id")) {
-                Method idMethod = tryGetMethod(obj, "getId");
-                if (idMethod != null) {
-                    Object idValue = idMethod.invoke(obj);
-                    if (idValue instanceof Integer) {
-                        return ((Integer) idValue).longValue();
-                    } else if (idValue instanceof Long) {
-                        return (Long) idValue;
-                    }
-                }
-            }
-
-            Method usernameMethod = tryGetMethod(obj, "getUsername");
-            if (usernameMethod != null) {
-                String username = (String) usernameMethod.invoke(obj);
-                if (username != null) {
-                    User user = userService.findByUsername(username);
-                    if (user != null) {
-                        logger.info(Messages.USERNAME_ID, username, user.getId());
-                        return user.getId();
-                    }
-                }
-            }
-
-            Method userIdMethod = tryGetMethod(obj, "getUserId");
-            if (userIdMethod != null) {
-                Object userIdValue = userIdMethod.invoke(obj);
-                if (userIdValue instanceof Long) {
-                    return (Long) userIdValue;
-                } else if (userIdValue instanceof Integer) {
-                    return ((Integer) userIdValue).longValue();
-                }
-            }
-
-        } catch (Exception e) {
-            logger.warning(Messages.OBJECT_PARAM + e.getMessage());
-        }
-
-        return null;
-    }
-
-    /**
-     * 尝试获取指定方法
-     */
-    private Method tryGetMethod(Object obj, String methodName) {
-        try {
-            return obj.getClass().getMethod(methodName);
-        } catch (NoSuchMethodException e) {
-            return null;
-        }
-    }
-
-    /**
-     * 检查资源所有权
-     */
-    private boolean checkOwnership(Long currentUserId, Long targetResourceId, String businessType) {
-        if (targetResourceId == null) {
-            logger.warning(Messages.NO_SOURCE);
-            return false;
-        }
-
-        if ("user".equals(businessType)) {
-            return currentUserId.equals(targetResourceId);
-        } else if ("article".equals(businessType)) {
-            if (currentUserId.equals(targetResourceId)) {
-                return true;
-            }
-            Article article = articleService.getById(targetResourceId);
-            if (article != null) {
-                return currentUserId.equals(article.getUserId());
-            }
-        } else if ("comment".equals(businessType)) {
-            if (currentUserId.equals(targetResourceId)) {
-                return true;
-            }
-            Comments comment = commentsService.getById(targetResourceId);
-            if (comment != null) {
-                return currentUserId.equals(comment.getUserId());
-            }
-        } else if ("category".equals(businessType) || "subcategory".equals(businessType)) {
-            return false;
-        }
-
-        return false;
-    }
-
-    /**
-     * 获取方法参数名
-     */
     @SuppressWarnings("null")
-    private String[] getParameterNames(ProceedingJoinPoint joinPoint) {
+    private Mono<Long> validateBatchOwnership(String ids, String businessType) {
+        List<Long> resourceIds;
         try {
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            Method method = methodSignature.getMethod();
-
-            String[] parameterNames = parameterNameDiscoverer.getParameterNames(method);
-
-            if (parameterNames != null) {
-                return parameterNames;
-            }
-
-            logger.warning(Messages.PARAM_NAME);
-            return new String[] {};
-
-        } catch (Exception e) {
-            logger.warning(Messages.PARAM_NAME + e.getMessage());
-            return new String[] {};
+            resourceIds = Arrays.stream(ids.split(","))
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .map(Long::valueOf)
+                    .distinct()
+                    .toList();
+        } catch (NumberFormatException error) {
+            return Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
+                    .errorMessage(Messages.TARGET_FAIL).cause(error).build());
         }
+        if (resourceIds.isEmpty()) {
+            return Mono.empty();
+        }
+
+        Flux<Long> owners;
+        if ("article".equals(businessType)) {
+            owners = articleService.listByIds(resourceIds)
+                    .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLES)))
+                    .map(article -> article.getUserId());
+        } else if ("comment".equals(businessType)) {
+            owners = Flux.fromIterable(resourceIds)
+                    .concatMap(id -> commentsService.getById(id)
+                            .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + id))))
+                    .map(comment -> comment.getUserId());
+        } else {
+            return Mono.empty();
+        }
+        return owners.collectList().flatMap(ownerIds -> {
+            if (ownerIds.size() != resourceIds.size() || ownerIds.stream().anyMatch(id -> id == null)) {
+                return Mono.error(notFound(Messages.NO_SOURCE));
+            }
+            Long owner = ownerIds.get(0);
+            if (ownerIds.stream().anyMatch(id -> !owner.equals(id))) {
+                return Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
+                        .errorMessage(Messages.MULTIPLE_RESOURCE_OWNERS).build());
+            }
+            return Mono.just(owner);
+        });
+    }
+
+    private Mono<Long> extractTargetFromBody(Object body, String parameterName) {
+        if (body == null) {
+            return Mono.empty();
+        }
+        Long id = invokeLongGetter(body, "getId");
+        if (id != null && ("id".equals(parameterName) || parameterName.endsWith("Id"))) {
+            return Mono.just(id);
+        }
+        Long userId = invokeLongGetter(body, "getUserId");
+        if (userId != null) {
+            return Mono.just(userId);
+        }
+        String username = invokeStringGetter(body, "getUsername");
+        if (username != null) {
+            return userService.findByUsername(username).map(user -> user.getId());
+        }
+        return Mono.empty();
+    }
+
+    private Mono<Boolean> checkOwnership(Long currentUserId, Long targetResourceId, String businessType) {
+        if ("user".equals(businessType)) {
+            return Mono.just(currentUserId.equals(targetResourceId));
+        }
+        if ("article".equals(businessType)) {
+            return articleService.getById(targetResourceId)
+                    .map(article -> currentUserId.equals(article.getUserId()))
+                    .defaultIfEmpty(false);
+        }
+        if ("comment".equals(businessType)) {
+            return commentsService.getById(targetResourceId)
+                    .map(comment -> currentUserId.equals(comment.getUserId()))
+                    .defaultIfEmpty(false);
+        }
+        return Mono.just(false);
+    }
+
+    private Object getPathParameter(ProceedingJoinPoint joinPoint, String requestedName) {
+        Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
+        Object[] arguments = joinPoint.getArgs();
+        Annotation[][] annotations = method.getParameterAnnotations();
+        for (int index = 0; index < annotations.length; index++) {
+            for (Annotation annotation : annotations[index]) {
+                if (annotation instanceof PathVariable pathVariable) {
+                    String name = pathVariable.value().isEmpty() ? pathVariable.name() : pathVariable.value();
+                    if (name.equals(requestedName) || "id".equals(requestedName)) {
+                        return arguments[index];
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Object getBody(ProceedingJoinPoint joinPoint, String requestedName) {
+        @SuppressWarnings("null")
+        String[] names = parameterNameDiscoverer.getParameterNames(
+                ((MethodSignature) joinPoint.getSignature()).getMethod());
+        Object[] arguments = joinPoint.getArgs();
+        if (names != null) {
+            for (int index = 0; index < names.length; index++) {
+                if (requestedName.equals(names[index]) || "dto".equalsIgnoreCase(names[index])) {
+                    return arguments[index];
+                }
+            }
+        }
+        return arguments.length == 0 ? null : arguments[0];
+    }
+
+    private Long invokeLongGetter(Object source, String methodName) {
+        try {
+            Object value = source.getClass().getMethod(methodName).invoke(source);
+            return toLong(value);
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private String invokeStringGetter(Object source, String methodName) {
+        try {
+            Object value = source.getClass().getMethod(methodName).invoke(source);
+            return value instanceof String text ? text : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private Long toLong(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text && !text.contains(",")) {
+            try {
+                return Long.parseLong(text);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private BusinessException forbidden() {
+        return BusinessException.builder().httpStatus(HttpCode.FORBIDDEN).errorMessage(Messages.NO_PERMISION).build();
+    }
+
+    private BusinessException notFound(String message) {
+        return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
 }

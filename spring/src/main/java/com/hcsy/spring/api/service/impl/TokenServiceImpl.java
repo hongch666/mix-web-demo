@@ -1,409 +1,288 @@
 package com.hcsy.spring.api.service.impl;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.TokenService;
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
-import com.hcsy.spring.common.utils.JwtUtil;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
+import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-/**
- * Token 管理服务实现
- * 基于 session 的双 token 机制，使用 Redis Hash/Set 存储会话关系
- */
 @Service
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
-    private final SimpleLogger logger;
+
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
+    private final SimpleLogger logger;
 
     @Override
-    public UserLoginVO createLoginSession(Long userId, String username) {
-        String sessionId = jwtUtil.generateSessionId();
-
-        // 1. 生成 access token 和 refresh token
+    public Mono<UserLoginVO> createLoginSession(Long userId, String username) {
+        String sessionId = UUID.randomUUID().toString().replace("-", "");
         String accessToken = jwtUtil.generateAccessToken(userId, username, sessionId);
         String refreshToken = jwtUtil.generateRefreshToken(userId, username, sessionId);
-
         long accessTtl = jwtUtil.getAccessExpirationSeconds();
         long refreshTtl = jwtUtil.getRefreshExpirationSeconds();
+        String sessionKey = sessionKey(userId, sessionId);
+        String sessionsKey = sessionsKey(userId);
 
-        // 2. 写入 session hash
-        String sessionKey = "user:session:" + userId + ":" + sessionId;
-        redisUtil.putHash(sessionKey, "accessToken", accessToken);
-        redisUtil.putHash(sessionKey, "refreshToken", refreshToken);
-        redisUtil.putHash(sessionKey, "username", username);
-        redisUtil.putHash(sessionKey, "createTime", String.valueOf(System.currentTimeMillis()));
-        redisUtil.expire(sessionKey, refreshTtl);
+        Mono<Void> sessionWrite = Mono.when(
+                redisUtil.putHash(sessionKey, "accessToken", accessToken),
+                redisUtil.putHash(sessionKey, "refreshToken", refreshToken),
+                redisUtil.putHash(sessionKey, "username", username))
+                .then(redisUtil.expire(sessionKey, refreshTtl))
+                .then();
+        Mono<Void> reverseIndexes = Mono.when(
+                redisUtil.set(accessKey(accessToken), userId + ":" + sessionId, accessTtl),
+                redisUtil.set(refreshKey(refreshToken), userId + ":" + sessionId, refreshTtl));
+        Mono<Void> sessionSet = redisUtil.addToSet(sessionsKey, sessionId)
+                .then(redisUtil.expire(sessionsKey, refreshTtl))
+                .then();
 
-        // 3. 写入 access 反查 key
-        redisUtil.set("user:access:" + accessToken, userId + ":" + sessionId, accessTtl);
-
-        // 4. 写入 refresh 反查 key
-        redisUtil.set("user:refresh:" + refreshToken, userId + ":" + sessionId, refreshTtl);
-
-        // 5. 加入用户 session 列表
-        String sessionsKey = "user:sessions:" + userId;
-        redisUtil.addToSet(sessionsKey, sessionId);
-        redisUtil.expire(sessionsKey, refreshTtl);
-
-        // 6. 标记用户在线
-        redisUtil.set(RedisKeys.userStatus(userId), "1");
-
-        // 7. 获取在线设备数
-        long deviceCount = getUserOnlineDeviceCount(userId);
-
-        logger.info(Messages.LOGIN_SESSION_CREATED, userId, sessionId);
-
-        return UserLoginVO.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(accessTtl)
-                .refreshExpiresIn(refreshTtl)
-                .userId(userId)
-                .username(username)
-                .sessionId(sessionId)
-                .onlineDeviceCount(deviceCount)
-                .build();
+        return Mono.when(sessionWrite, reverseIndexes, sessionSet,
+                redisUtil.set(RedisKeys.userStatus(userId), "1"))
+                .then(redisUtil.getSetSize(sessionsKey))
+                .map(deviceCount -> {
+                    logger.info(Messages.LOGIN_SESSION_CREATED, userId, sessionId);
+                    return UserLoginVO.builder()
+                            .accessToken(accessToken)
+                            .refreshToken(refreshToken)
+                            .tokenType("Bearer")
+                            .expiresIn(accessTtl)
+                            .refreshExpiresIn(refreshTtl)
+                            .userId(userId)
+                            .username(username)
+                            .sessionId(sessionId)
+                            .onlineDeviceCount(deviceCount)
+                            .build();
+                });
     }
 
     @Override
-    public TokenRefreshVO refreshToken(String refreshToken) {
-        // 1. 校验 refresh token JWT
+    public Mono<TokenRefreshVO> refreshToken(String refreshToken) {
         jwtUtil.validateRefreshToken(refreshToken);
-
         Long userId = jwtUtil.extractUserId(refreshToken);
         String sessionId = jwtUtil.extractSessionId(refreshToken);
-
-        // 2. 通过 refresh 反查 key 校验
-        String refreshKey = "user:refresh:" + refreshToken;
-        String storedValue = redisUtil.get(refreshKey);
-        if (storedValue == null) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.REFRESH_TOKEN_INVALID).build();
-        }
-
+        String sessionKey = sessionKey(userId, sessionId);
         String expectedValue = userId + ":" + sessionId;
-        if (!expectedValue.equals(storedValue)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.REFRESH_TOKEN_INVALID).build();
-        }
 
-        // 3. 校验 session hash 存在且 refresh token 一致
-        String sessionKey = "user:session:" + userId + ":" + sessionId;
-        if (!redisUtil.exists(sessionKey)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.SESSION_NOT_FOUND).build();
-        }
+        Mono<String> reverseValue = redisUtil.get(refreshKey(refreshToken)).defaultIfEmpty("");
+        Mono<String> storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
+        Mono<String> username = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
+        Mono<String> oldAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
 
-        String storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken");
-        if (!refreshToken.equals(storedRefreshToken)) {
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.REFRESH_TOKEN_INVALID).build();
-        }
+        return Mono.zip(reverseValue, storedRefreshToken, username, oldAccessToken)
+                .flatMap(values -> {
+                    if (!expectedValue.equals(values.getT1()) || !refreshToken.equals(values.getT2())) {
+                        return Mono.error(unauthorized(Messages.REFRESH_TOKEN_INVALID));
+                    }
+                    if (values.getT3().isEmpty()) {
+                        return Mono.error(unauthorized(Messages.SESSION_NOT_FOUND));
+                    }
+                    return rotateTokens(userId, sessionId, values.getT3(), refreshToken, values.getT4());
+                });
+    }
 
-        String username = redisUtil.getHash(sessionKey, "username");
-
-        // 4. 获取旧的 access token 并删除
-        String oldAccessToken = redisUtil.getHash(sessionKey, "accessToken");
-        if (oldAccessToken != null) {
-            redisUtil.delete("user:access:" + oldAccessToken);
-        }
-
-        // 5. 删除旧的 refresh 反查 key
-        redisUtil.delete(refreshKey);
-
-        // 6. 生成新的 token
+    private Mono<TokenRefreshVO> rotateTokens(
+            Long userId, String sessionId, String username, String oldRefreshToken, String oldAccessToken) {
         String newAccessToken = jwtUtil.generateAccessToken(userId, username, sessionId);
         String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, sessionId);
-
         long accessTtl = jwtUtil.getAccessExpirationSeconds();
         long refreshTtl = jwtUtil.getRefreshExpirationSeconds();
+        String sessionKey = sessionKey(userId, sessionId);
 
-        // 7. 更新 session hash
-        redisUtil.putHash(sessionKey, "accessToken", newAccessToken);
-        redisUtil.putHash(sessionKey, "refreshToken", newRefreshToken);
-        redisUtil.expire(sessionKey, refreshTtl);
+        Mono<Void> deleteOldIndexes = Mono.when(
+                oldAccessToken.isEmpty() ? Mono.empty() : redisUtil.delete(accessKey(oldAccessToken)),
+                redisUtil.delete(refreshKey(oldRefreshToken)));
+        Mono<Void> updateSession = Mono.when(
+                redisUtil.putHash(sessionKey, "accessToken", newAccessToken),
+                redisUtil.putHash(sessionKey, "refreshToken", newRefreshToken))
+                .then(redisUtil.expire(sessionKey, refreshTtl))
+                .then();
+        Mono<Void> writeIndexes = Mono.when(
+                redisUtil.set(accessKey(newAccessToken), userId + ":" + sessionId, accessTtl),
+                redisUtil.set(refreshKey(newRefreshToken), userId + ":" + sessionId, refreshTtl),
+                redisUtil.expire(sessionsKey(userId), refreshTtl),
+                redisUtil.set(RedisKeys.userStatus(userId), "1"));
 
-        // 8. 写入新的反查 key
-        redisUtil.set("user:access:" + newAccessToken, userId + ":" + sessionId, accessTtl);
-        redisUtil.set("user:refresh:" + newRefreshToken, userId + ":" + sessionId, refreshTtl);
-
-        // 9. 刷新 session 列表 TTL
-        String sessionsKey = "user:sessions:" + userId;
-        redisUtil.expire(sessionsKey, refreshTtl);
-
-        // 10. 确保用户在线
-        redisUtil.set(RedisKeys.userStatus(userId), "1");
-
-        logger.info(Messages.REFRESH_TOKEN_SUCCESS);
-
-        return TokenRefreshVO.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
-                .tokenType("Bearer")
-                .expiresIn(accessTtl)
-                .refreshExpiresIn(refreshTtl)
-                .userId(userId)
-                .username(username)
-                .sessionId(sessionId)
-                .build();
+        return deleteOldIndexes.then(Mono.when(updateSession, writeIndexes)).then(Mono.fromSupplier(() -> {
+            logger.info(Messages.REFRESH_TOKEN_SUCCESS);
+            return TokenRefreshVO.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(newRefreshToken)
+                    .tokenType("Bearer")
+                    .expiresIn(accessTtl)
+                    .refreshExpiresIn(refreshTtl)
+                    .userId(userId)
+                    .username(username)
+                    .sessionId(sessionId)
+                    .build();
+        }));
     }
 
     @Override
-    public void removeSessionByAccessToken(String accessToken) {
-        String accessKey = "user:access:" + accessToken;
-        String storedValue = redisUtil.get(accessKey);
-        if (storedValue == null) {
-            return;
-        }
-
-        String[] parts = storedValue.split(":", 2);
-        if (parts.length != 2) {
-            return;
-        }
-
-        Long userId = Long.parseLong(parts[0]);
-        String sessionId = parts[1];
-
-        removeSession(userId, sessionId);
-    }
-
-    @Override
-    public void removeSession(Long userId, String sessionId) {
-        String sessionKey = "user:session:" + userId + ":" + sessionId;
-
-        // 1. 获取 access/refresh token
-        String accessToken = redisUtil.getHash(sessionKey, "accessToken");
-        String refreshToken = redisUtil.getHash(sessionKey, "refreshToken");
-
-        // 2. 删除反查 key
-        if (accessToken != null) {
-            redisUtil.delete("user:access:" + accessToken);
-        }
-        if (refreshToken != null) {
-            redisUtil.delete("user:refresh:" + refreshToken);
-        }
-
-        // 3. 删除 session hash
-        redisUtil.delete(sessionKey);
-
-        // 4. 从 session 列表移除
-        String sessionsKey = "user:sessions:" + userId;
-        redisUtil.removeFromSet(sessionsKey, sessionId);
-
-        // 5. 检查是否还有 session
-        long remainingSessions = redisUtil.getSetSize(sessionsKey);
-        if (remainingSessions == 0) {
-            redisUtil.set(RedisKeys.userStatus(userId), "0");
-            redisUtil.delete(sessionsKey);
-            logger.info(Messages.REMOVE_SESSION_LOGOUT, userId);
-        } else {
-            logger.info(Messages.REMOVE_SESSION, userId, remainingSessions);
-        }
-
-        logger.info(Messages.LOGIN_SESSION_REMOVED, userId, sessionId);
-    }
-
-    @Override
-    public boolean validateAccessTokenInRedis(Long userId, String sessionId, String accessToken) {
-        // 1. 检查 access 反查 key
-        String accessKey = "user:access:" + accessToken;
-        String storedValue = redisUtil.get(accessKey);
-        if (storedValue == null) {
-            return false;
-        }
-
-        String expectedValue = userId + ":" + sessionId;
-        if (!expectedValue.equals(storedValue)) {
-            return false;
-        }
-
-        // 2. 检查 session hash 是否存在
-        String sessionKey = "user:session:" + userId + ":" + sessionId;
-        if (!redisUtil.exists(sessionKey)) {
-            return false;
-        }
-
-        // 3. 检查 session 中的 access token 是否匹配
-        String storedAccessToken = redisUtil.getHash(sessionKey, "accessToken");
-        return accessToken.equals(storedAccessToken);
-    }
-
-    @Override
-    public long getUserOnlineDeviceCount(Long userId) {
-        String sessionsKey = "user:sessions:" + userId;
-        return redisUtil.getSetSize(sessionsKey);
-    }
-
-    @Override
-    public List<String> getUserSessions(Long userId) {
-        String sessionsKey = "user:sessions:" + userId;
-        Set<String> sessions = redisUtil.getSet(sessionsKey);
-        return sessions != null ? new ArrayList<>(sessions) : new ArrayList<>();
-    }
-
-    @Override
-    public void forceLogoutUser(Long userId) {
-        String sessionsKey = "user:sessions:" + userId;
-        Set<String> sessionIds = redisUtil.getSet(sessionsKey);
-
-        if (sessionIds != null) {
-            for (String sessionId : sessionIds) {
-                removeSession(userId, sessionId);
-            }
-        }
-
-        // 额外确保状态为离线
-        redisUtil.set(RedisKeys.userStatus(userId), "0");
-
-        logger.info(Messages.ADMIN_SESSION_CLEAN, userId, sessionIds != null ? sessionIds.size() : 0);
-    }
-
-    @Override
-    public int removeOtherSessions(Long userId, String currentAccessToken) {
-        // 从当前 access token 解析 sessionId
-        String sessionId = jwtUtil.extractSessionId(currentAccessToken);
-
-        String sessionsKey = "user:sessions:" + userId;
-        Set<String> sessionIds = redisUtil.getSet(sessionsKey);
-
-        int removed = 0;
-        if (sessionIds != null) {
-            for (String sid : sessionIds) {
-                if (!sid.equals(sessionId)) {
-                    removeSession(userId, sid);
-                    removed++;
-                }
-            }
-        }
-
-        // 确保当前 session 的 user:status 正确
-        long remaining = redisUtil.getSetSize(sessionsKey);
-        if (remaining > 0) {
-            redisUtil.set(RedisKeys.userStatus(userId), "1");
-            redisUtil.expire(sessionsKey, jwtUtil.getRefreshExpirationSeconds());
-        }
-
-        return removed;
-    }
-
-    @Override
-    public void cleanupExpiredTokens() {
-        // 扫描所有 user:sessions:* 的 key
-        Set<String> sessionKeys = redisUtil.getKeys("user:sessions:*");
-        if (sessionKeys == null || sessionKeys.isEmpty()) {
-            logger.info(Messages.TASK_NO_CLEAN_SESSION);
-            return;
-        }
-
-        int totalCleaned = 0;
-        int totalUsers = sessionKeys.size();
-
-        for (String key : sessionKeys) {
-            try {
-                Long userId = Long.parseLong(key.replace("user:sessions:", ""));
-                Set<String> sessionIds = redisUtil.getSet(key);
-                int cleanedForUser = 0;
-
-                if (sessionIds == null || sessionIds.isEmpty()) {
-                    redisUtil.set(RedisKeys.userStatus(userId), "0");
-                    redisUtil.delete(key);
-                    continue;
-                }
-
-                List<String> toRemove = new ArrayList<>();
-
-                for (String sessionId : sessionIds) {
-                    String sessionKey = "user:session:" + userId + ":" + sessionId;
-
-                    // 检查 session hash 是否存在
-                    if (!redisUtil.exists(sessionKey)) {
-                        toRemove.add(sessionId);
-                        cleanedForUser++;
-                        continue;
+    public Mono<Void> removeSessionByAccessToken(String accessToken) {
+        return redisUtil.get(accessKey(accessToken))
+                .flatMap(value -> {
+                    String[] parts = value.split(":", 2);
+                    if (parts.length != 2) {
+                        return Mono.empty();
                     }
+                    return removeSession(Long.parseLong(parts[0]), parts[1]);
+                })
+                .then();
+    }
 
-                    // 检查 refresh token
-                    String refreshToken = redisUtil.getHash(sessionKey, "refreshToken");
-                    if (refreshToken == null || refreshToken.isEmpty()) {
-                        toRemove.add(sessionId);
-                        cleanedForUser++;
-                        cleanSessionKeys(userId, sessionId, sessionKey);
-                        continue;
-                    }
+    @Override
+    public Mono<Void> removeSession(Long userId, String sessionId) {
+        String sessionKey = sessionKey(userId, sessionId);
+        Mono<String> accessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
+        Mono<String> refreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
 
-                    // 校验 refresh token 是否有效
-                    String refreshKey = "user:refresh:" + refreshToken;
-                    String storedValue = redisUtil.get(refreshKey);
-                    if (storedValue == null || !storedValue.equals(userId + ":" + sessionId)) {
-                        toRemove.add(sessionId);
-                        cleanedForUser++;
-                        cleanSessionKeys(userId, sessionId, sessionKey);
-                        continue;
-                    }
-
-                    // 校验 access token
-                    String accessToken = redisUtil.getHash(sessionKey, "accessToken");
-                    if (accessToken != null) {
-                        String accessKey = "user:access:" + accessToken;
-                        if (!redisUtil.exists(accessKey)) {
-                            // access 反查 key 不存在，可能是 TTL 过期，补写
-                            long remainingMs = jwtUtil.getRemainingTime(accessToken);
-                            long remainingSec = remainingMs > 0 ? remainingMs / 1000 : 0;
-                            if (remainingSec > 0) {
-                                redisUtil.set(accessKey, userId + ":" + sessionId, remainingSec);
-                            }
+        return Mono.zip(accessToken, refreshToken).flatMap(tokens -> {
+            Mono<Void> deleteIndexes = Mono.when(
+                    tokens.getT1().isEmpty() ? Mono.empty() : redisUtil.delete(accessKey(tokens.getT1())),
+                    tokens.getT2().isEmpty() ? Mono.empty() : redisUtil.delete(refreshKey(tokens.getT2())));
+            return Mono.when(
+                    deleteIndexes,
+                    redisUtil.delete(sessionKey),
+                    redisUtil.removeFromSet(sessionsKey(userId), sessionId))
+                    .then(redisUtil.getSetSize(sessionsKey(userId)))
+                    .flatMap(remaining -> {
+                        logger.info(Messages.LOGIN_SESSION_REMOVED, userId, sessionId);
+                        if (remaining == 0) {
+                            logger.info(Messages.REMOVE_SESSION_LOGOUT, userId);
+                            return Mono.when(
+                                    redisUtil.set(RedisKeys.userStatus(userId), "0"),
+                                    redisUtil.delete(sessionsKey(userId))).then();
                         }
-                    }
-                }
-
-                // 移除已清理的 session
-                for (String sid : toRemove) {
-                    redisUtil.removeFromSet(key, sid);
-                }
-
-                // 更新状态
-                long remainingSessions = redisUtil.getSetSize(key);
-                if (remainingSessions == 0) {
-                    redisUtil.set(RedisKeys.userStatus(userId), "0");
-                    redisUtil.delete(key);
-                } else {
-                    redisUtil.set(RedisKeys.userStatus(userId), "1");
-                }
-
-                if (cleanedForUser > 0) {
-                    logger.info(Messages.SESSION_CLEAN_LOG, key, cleanedForUser);
-                }
-
-                totalCleaned += cleanedForUser;
-            } catch (Exception e) {
-                logger.error(Messages.EXPIRED_USER_FAIL + key);
-            }
-        }
-
-        logger.info(Messages.TOTAL_SESSION_CLEAN, totalUsers, totalCleaned);
+                        logger.info(Messages.REMOVE_SESSION, userId, remaining);
+                        return Mono.empty();
+                    });
+        });
     }
 
-    private void cleanSessionKeys(Long userId, String sessionId, String sessionKey) {
-        String accessToken = redisUtil.getHash(sessionKey, "accessToken");
-        String refreshToken = redisUtil.getHash(sessionKey, "refreshToken");
-        if (accessToken != null) {
-            redisUtil.delete("user:access:" + accessToken);
+    @Override
+    public Mono<Boolean> validateAccessTokenInRedis(Long userId, String sessionId, String accessToken) {
+        String expectedValue = userId + ":" + sessionId;
+        return Mono.zip(
+                redisUtil.get(accessKey(accessToken)).defaultIfEmpty(""),
+                redisUtil.getHash(sessionKey(userId, sessionId), "accessToken").defaultIfEmpty(""))
+                .map(values -> expectedValue.equals(values.getT1()) && accessToken.equals(values.getT2()));
+    }
+
+    @Override
+    public Mono<Long> getUserOnlineDeviceCount(Long userId) {
+        return redisUtil.getSetSize(sessionsKey(userId));
+    }
+
+    @Override
+    public Mono<List<String>> getUserSessions(Long userId) {
+        return redisUtil.getSet(sessionsKey(userId));
+    }
+
+    @Override
+    public Mono<Void> forceLogoutUser(Long userId) {
+        return redisUtil.getSet(sessionsKey(userId))
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(sessionId -> removeSession(userId, sessionId), 8)
+                .then(redisUtil.set(RedisKeys.userStatus(userId), "0"))
+                .doOnSuccess(ignored -> logger.info(Messages.ADMIN_SESSION_CLEAN, userId, 0))
+                .then();
+    }
+
+    @SuppressWarnings("null")
+    @Override
+    public Mono<Integer> removeOtherSessions(Long userId, String currentAccessToken) {
+        String currentSessionId = jwtUtil.extractSessionId(currentAccessToken);
+        return redisUtil.getSet(sessionsKey(userId))
+                .flatMapMany(Flux::fromIterable)
+                .filter(sessionId -> !sessionId.equals(currentSessionId))
+                .flatMap(sessionId -> removeSession(userId, sessionId).thenReturn(1), 8)
+                .reduce(0, Integer::sum)
+                .flatMap(removed -> redisUtil.getSetSize(sessionsKey(userId))
+                        .flatMap(remaining -> remaining > 0
+                                ? Mono.when(
+                                        redisUtil.set(RedisKeys.userStatus(userId), "1"),
+                                        redisUtil.expire(sessionsKey(userId), jwtUtil.getRefreshExpirationSeconds()))
+                                        .thenReturn(removed)
+                                : Mono.just(removed)));
+    }
+
+    @SuppressWarnings("null")
+    @Override
+    public Mono<Void> cleanupExpiredTokens() {
+        return redisUtil.getKeys("user:sessions:*")
+                .flatMap(this::cleanupUserSessions, 4)
+                .reduce(0, Integer::sum)
+                .doOnNext(cleaned -> logger.info(Messages.TOTAL_SESSION_CLEAN, 0, cleaned))
+                .then();
+    }
+
+    @SuppressWarnings("null")
+    private Mono<Integer> cleanupUserSessions(String key) {
+        Long userId;
+        try {
+            userId = Long.parseLong(key.substring("user:sessions:".length()));
+        } catch (RuntimeException error) {
+            logger.error(Messages.EXPIRED_USER_FAIL + key, error);
+            return Mono.just(0);
         }
-        if (refreshToken != null) {
-            redisUtil.delete("user:refresh:" + refreshToken);
-        }
-        redisUtil.delete(sessionKey);
+
+        return redisUtil.getSet(key)
+                .flatMapMany(Flux::fromIterable)
+                .flatMap(sessionId -> isSessionValid(userId, sessionId)
+                        .filter(Boolean.FALSE::equals)
+                        .flatMap(ignored -> removeSession(userId, sessionId).thenReturn(1)), 8)
+                .reduce(0, Integer::sum)
+                .doOnNext(cleaned -> {
+                    if (cleaned > 0) {
+                        logger.info(Messages.SESSION_CLEAN_LOG, key, cleaned);
+                    }
+                })
+                .onErrorResume(error -> {
+                    logger.error(Messages.EXPIRED_USER_FAIL + key, error);
+                    return Mono.just(0);
+                });
+    }
+
+    private Mono<Boolean> isSessionValid(Long userId, String sessionId) {
+        String sessionKey = sessionKey(userId, sessionId);
+        return redisUtil.getHash(sessionKey, "refreshToken")
+                .flatMap(refreshToken -> redisUtil.get(refreshKey(refreshToken))
+                        .map(value -> value.equals(userId + ":" + sessionId)))
+                .defaultIfEmpty(false);
+    }
+
+    private String sessionKey(Long userId, String sessionId) {
+        return "user:session:" + userId + ":" + sessionId;
+    }
+
+    private String sessionsKey(Long userId) {
+        return "user:sessions:" + userId;
+    }
+
+    private String accessKey(String accessToken) {
+        return "user:access:" + accessToken;
+    }
+
+    private String refreshKey(String refreshToken) {
+        return "user:refresh:" + refreshToken;
+    }
+
+    private BusinessException unauthorized(String message) {
+        return BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(message).build();
     }
 }
