@@ -18,7 +18,8 @@ export class TaskController {
   @RequireInternalToken()
   @ApiLog("手动执行清理API日志任务")
   async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
-    await this.taskService.cleanupOldApiLogs();
+    // 后台异步执行，不阻塞接口响应
+    void this.taskService.cleanupOldApiLogs();
     return success(null);
   }
 
@@ -30,7 +31,8 @@ export class TaskController {
   @RequireInternalToken()
   @ApiLog("手动执行清理文章日志任务")
   async executeCleanupOldArticleLogsTask(): Promise<ApiResponse<null>> {
-    await this.taskService.cleanupOldArticleLogs();
+    // 后台异步执行，不阻塞接口响应
+    void this.taskService.cleanupOldArticleLogs();
     return success(null);
   }
 }
