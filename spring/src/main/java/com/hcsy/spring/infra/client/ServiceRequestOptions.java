@@ -9,7 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * 微服务请求的可选参数。
+ * 微服务请求的可选参数
  */
 @Getter
 @Builder

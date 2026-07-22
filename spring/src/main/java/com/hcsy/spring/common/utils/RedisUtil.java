@@ -13,7 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
- * Redis 响应式工具类。
+ * Redis 响应式工具类
  */
 @Component
 @RequiredArgsConstructor

@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 /**
  * 用户上下文 WebFilter
  * 替代原有的 UserInfoInterceptor + WebConfig
- * 将请求用户信息写入 Reactor Context。
+ * 将请求用户信息写入 Reactor Context
  */
 @Component
 public class UserContextWebFilter implements WebFilter {
@@ -29,11 +29,12 @@ public class UserContextWebFilter implements WebFilter {
         String internalToken = extractToken(request.getHeaders().getFirst("X-Internal-Token"));
 
         return chain.filter(exchange)
-            .contextWrite(ctx -> UserContext.writeContext(ctx, userId, username, sessionId, token, internalToken));
+                .contextWrite(ctx -> UserContext.writeContext(ctx, userId, username, sessionId, token, internalToken));
     }
 
     private Long parseLong(String value) {
-        if (value == null) return null;
+        if (value == null)
+            return null;
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException e) {

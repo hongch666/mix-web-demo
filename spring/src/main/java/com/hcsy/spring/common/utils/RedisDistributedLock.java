@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 /**
- * Redis 响应式分布式锁。
+ * Redis 响应式分布式锁
  */
 @Component
 @RequiredArgsConstructor

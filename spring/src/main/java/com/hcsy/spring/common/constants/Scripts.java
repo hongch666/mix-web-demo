@@ -1,11 +1,12 @@
 package com.hcsy.spring.common.constants;
 
 /**
- * 脚本类，统一管理数据库初始化 SQL。
+ * 脚本类，统一管理数据库初始化 SQL
  */
 public final class Scripts {
 
-    private Scripts() {}
+    private Scripts() {
+    }
 
     public static final String INSERT_AI_USER = "INSERT IGNORE INTO user "
             + "(id, name, password, email, role, img, create_at, update_at) "
