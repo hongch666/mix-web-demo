@@ -36,19 +36,19 @@ public class ArticleSyncAspect {
         Object result = joinPoint.proceed();
 
         if (result instanceof Mono<?> monoResult) {
+            // 使用 doOnSuccess 发后即忘：主流程不等待 MQ 发送和 ES/Vector 同步完成
             return monoResult
-                .flatMap(res -> Mono.deferContextual(ctx -> {
-                    return executeSync(joinPoint, articleSync, ctx).thenReturn(res);
-                }))
-                .switchIfEmpty(Mono.deferContextual(ctx -> executeSync(joinPoint, articleSync, ctx).then(Mono.empty())));
+                .doOnSuccess(res -> {
+                    Mono.deferContextual(ctx ->
+                        executeSync(joinPoint, articleSync, ctx)
+                    ).subscribe();
+                });
         }
         return result;
     }
 
     /**
      * 执行同步逻辑：发送 MQ 消息 + 触发 ES/Vector 同步
-     *
-     * @param ctx Reactor Context
      */
     private Mono<Void> executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
             reactor.util.context.ContextView ctx) {
@@ -67,7 +67,7 @@ public class ArticleSyncAspect {
             buildActionMessage(action, paramValues, content, msg, userId, description);
             msg.put("action", action);
 
-            // 发送消息
+            // 发送消息到 MQ + 触发 ES/Vector 同步，并行执行
             String json = objectMapper.writeValueAsString(msg);
             return Mono.whenDelayError(
                             rabbitMQUtil.sendMessage("article-log-queue", msg)
@@ -133,7 +133,6 @@ public class ArticleSyncAspect {
                 break;
         }
 
-        // 公共处理逻辑
         msg.put("content", content);
         msg.put("userId", userId);
     }

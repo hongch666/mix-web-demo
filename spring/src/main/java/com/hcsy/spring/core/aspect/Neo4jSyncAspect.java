@@ -24,9 +24,9 @@ public class Neo4jSyncAspect {
         String description = neo4jSync.description();
 
         if (result instanceof Mono<?> monoResult) {
+            // 使用 doOnSuccess 发后即忘：主流程不等待 Neo4j 同步完成
             return monoResult
-                    .flatMap(value -> triggerNeo4jSync(joinPoint, description).thenReturn(value))
-                    .switchIfEmpty(triggerNeo4jSync(joinPoint, description).then(Mono.empty()));
+                    .doOnSuccess(value -> triggerNeo4jSync(joinPoint, description).subscribe());
         }
         return result;
     }
