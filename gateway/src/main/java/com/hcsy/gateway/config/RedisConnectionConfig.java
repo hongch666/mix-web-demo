@@ -2,9 +2,9 @@ package com.hcsy.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
 import com.hcsy.gateway.properties.RedisProperties;
 
@@ -20,7 +20,7 @@ public class RedisConnectionConfig {
 
     @Bean
     @SuppressWarnings("null")
-    RedisConnectionFactory redisConnectionFactory() {
+    LettuceConnectionFactory lettuceConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
 
         if (redisProperties.getHost() != null) {
@@ -33,13 +33,11 @@ public class RedisConnectionConfig {
             config.setDatabase(redisProperties.getDatabase());
         }
 
-        // 只有当用户名不为空时才设置
         if (redisProperties.getUsername() != null && !redisProperties.getUsername().isEmpty()) {
             config.setUsername(redisProperties.getUsername());
             log.info("[Redis] 用户名: {}", redisProperties.getUsername());
         }
 
-        // 只有当密码不为空时才设置
         if (redisProperties.getPassword() != null && !redisProperties.getPassword().isEmpty()) {
             config.setPassword(redisProperties.getPassword());
             log.info("[Redis] 已设置密码");
@@ -53,5 +51,11 @@ public class RedisConnectionConfig {
         );
 
         return new LettuceConnectionFactory(config);
+    }
+
+    @SuppressWarnings("null")
+    @Bean
+    ReactiveStringRedisTemplate reactiveStringRedisTemplate(LettuceConnectionFactory lettuceConnectionFactory) {
+        return new ReactiveStringRedisTemplate(lettuceConnectionFactory);
     }
 }
