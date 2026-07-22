@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
-import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -26,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple4;
 
 @Component
 @RequiredArgsConstructor
@@ -63,53 +63,49 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             String username = jwtUtil.extractUsername(token);
             String sessionId = jwtUtil.extractSessionId(token);
 
-            // 5. 判断 user:access:{accessToken} 是否存在且值正确
+            // 5. 并行读取认证所需的 Redis 数据
             String accessKey = "user:access:" + token;
-            String storedValue = redisUtil.get(accessKey);
             String expectedValue = userId + ":" + sessionId;
-            if (storedValue == null || !expectedValue.equals(storedValue)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
-            }
-
-            // 6. 判断 user:session:{userId}:{sessionId} 是否存在
             String sessionKey = "user:session:" + userId + ":" + sessionId;
-            if (!redisUtil.exists(sessionKey)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
-            }
+            Mono<Tuple4<String, Boolean, String, String>> authData = Mono.zip(
+                    redisUtil.get(accessKey).defaultIfEmpty(""),
+                    redisUtil.exists(sessionKey),
+                    redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty(""),
+                    redisUtil.get("user:status:" + userId).defaultIfEmpty(""))
+                    .onErrorResume(error -> {
+                        log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, error);
+                        return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试",
+                                ErrorCodes.REDIS_UNAVAILABLE).then(Mono.empty());
+                    });
+            return authData.flatMap(values -> {
+                        String storedValue = values.getT1();
+                        boolean sessionExists = values.getT2();
+                        String storedAccessToken = values.getT3();
+                        String userStatus = values.getT4();
 
-            // 7. 校验 session hash 中保存的 accessToken 与请求 token 一致
-            String storedAccessToken = redisUtil.getHash(sessionKey, "accessToken");
-            if (!token.equals(storedAccessToken)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
-            }
+                        if (!expectedValue.equals(storedValue)
+                                || !sessionExists
+                                || !token.equals(storedAccessToken)
+                                || "0".equals(userStatus)) {
+                            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录",
+                                    ErrorCodes.USER_NOT_LOGIN);
+                        }
 
-            // 8. 校验 user:status:{userId} 不为 0
-            String userStatus = redisUtil.get("user:status:" + userId);
-            if ("0".equals(userStatus)) {
-                return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
-            }
+                        ServerHttpRequest mutatedRequest = request.mutate()
+                                .header("X-User-Id", userId.toString())
+                                .header("X-Username", username)
+                                .header("X-Session-Id", sessionId)
+                                .header("Authorization", "Bearer " + token)
+                                .build();
 
-            // 9. 传递用户信息到下游服务
-            ServerHttpRequest mutatedRequest = request.mutate()
-                    .header("X-User-Id", userId.toString())
-                    .header("X-Username", username)
-                    .header("X-Session-Id", sessionId)
-                    .header("Authorization", "Bearer " + token)
-                    .build();
-
-            // 10. 记录审计日志（异步）
-            logAccess(userId, path);
-            log.info("身份验证成功 - 用户ID: {}, 路径: {}", userId, path);
-
-            return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                        logAccess(userId, path);
+                        log.info("身份验证成功 - 用户ID: {}, 路径: {}", userId, path);
+                        return chain.filter(exchange.mutate().request(mutatedRequest).build());
+                    });
 
         } catch (BusinessException ex) {
             log.error("[{}] 认证失败 - 路径: {}", ex.getError(), path, ex);
             return errorResponse(exchange, ex.getStatusCode(), ex.getMessage(), ex.getError());
-        } catch (DataAccessException ex) {
-            // Redis 不可用（连接断开、超时、重启中等），不应判定为用户未登录
-            log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, ex);
-            return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试", ErrorCodes.REDIS_UNAVAILABLE);
         } catch (Exception ex) {
             // 认证流程中出现的其他非预期异常，不应返回 401 误导前端退出登录
             log.error("[{}] 认证流程非预期异常 - 路径: {}", ErrorCodes.AUTH_UNEXPECTED_ERROR, path, ex);
