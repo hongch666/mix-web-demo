@@ -360,6 +360,7 @@ public class UserServiceImpl implements UserService {
                     user.setAuthProvider(existing.getAuthProvider());
                     user.setLastLoginAt(existing.getLastLoginAt());
                     user.setCreateAt(existing.getCreateAt());
+                    user.setUpdateAt(LocalDateTime.now());
                     Mono<String> password = hasText(dto.getPassword())
                             ? encryptPassword(dto.getPassword())
                             : Mono.just(existing.getPassword());

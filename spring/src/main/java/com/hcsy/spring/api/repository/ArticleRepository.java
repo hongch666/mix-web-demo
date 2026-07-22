@@ -37,4 +37,17 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
     @Modifying
     @Query("UPDATE articles SET views = views + 1, update_at = update_at WHERE id = :id AND status = 1")
     Mono<Integer> incrementViews(@Param("id") Long id);
+
+    @Modifying
+    @Query("UPDATE articles SET title = :title, content = :content, user_id = :userId, "
+        + "tags = :tags, status = :status, sub_category_id = :subCategoryId, "
+        + "update_at = :updateAt WHERE id = :id")
+    Mono<Integer> updateArticle(@Param("id") Long id,
+        @Param("title") String title,
+        @Param("content") String content,
+        @Param("userId") Long userId,
+        @Param("tags") String tags,
+        @Param("status") Integer status,
+        @Param("subCategoryId") Integer subCategoryId,
+        @Param("updateAt") java.time.LocalDateTime updateAt);
 }

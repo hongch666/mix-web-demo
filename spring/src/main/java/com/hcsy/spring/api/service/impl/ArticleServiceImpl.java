@@ -68,7 +68,18 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @ArticleSync(action = "edit", description = Messages.ARTICLE_SYNC_UPDATE)
     public Mono<Boolean> updateArticle(Article article) {
-        return transactionalOperator.transactional(articleRepository.save(article)).thenReturn(true);
+        return transactionalOperator.transactional(
+            articleRepository.updateArticle(
+                article.getId(),
+                article.getTitle(),
+                article.getContent(),
+                article.getUserId(),
+                article.getTags(),
+                article.getStatus(),
+                article.getSubCategoryId(),
+                article.getUpdateAt()
+            )
+        ).thenReturn(true);
     }
 
     @SuppressWarnings("null")

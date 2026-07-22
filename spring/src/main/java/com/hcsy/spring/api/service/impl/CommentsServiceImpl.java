@@ -97,8 +97,10 @@ public class CommentsServiceImpl implements CommentsService {
                 commentsRepository.findById(comments.getId())
                         .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + comments.getId())))
                         .flatMap(existing -> {
-                            comments.setCreateTime(existing.getCreateTime());
-                            return commentsRepository.save(comments);
+                            // 仅允许更新内容和评分，保留 userId/articleId/createTime 防止越权篡改
+                            existing.setContent(comments.getContent());
+                            existing.setStar(comments.getStar());
+                            return commentsRepository.save(existing);
                         }));
     }
 
