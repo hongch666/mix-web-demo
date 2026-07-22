@@ -1,5 +1,7 @@
 package com.hcsy.gateway.config;
 
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.core.Ordered;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -70,10 +72,10 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
     @SuppressWarnings("null")
     private MediaType getMediaType(String filename) {
         if (filename.endsWith(".css")) {
-            return new MediaType("text", "css", java.nio.charset.StandardCharsets.UTF_8);
+            return new MediaType("text", "css", StandardCharsets.UTF_8);
         }
         if (filename.endsWith(".js")) {
-            return new MediaType("application", "javascript", java.nio.charset.StandardCharsets.UTF_8);
+            return new MediaType("application", "javascript", StandardCharsets.UTF_8);
         }
         if (filename.endsWith(".png")) {
             return MediaType.IMAGE_PNG;
@@ -81,6 +83,6 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
         if (filename.endsWith(".ico")) {
             return new MediaType("image", "x-icon");
         }
-        return new MediaType("text", "html", java.nio.charset.StandardCharsets.UTF_8);
+        return new MediaType("text", "html", StandardCharsets.UTF_8);
     }
 }

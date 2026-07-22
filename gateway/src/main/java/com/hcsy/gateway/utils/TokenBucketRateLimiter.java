@@ -1,5 +1,6 @@
 package com.hcsy.gateway.utils;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -139,7 +140,7 @@ public class TokenBucketRateLimiter {
         try {
             redisTemplate.opsForHash().put(key, "tokens", String.valueOf(capacity));
             redisTemplate.opsForHash().put(key, "last_refill_time", String.valueOf(System.currentTimeMillis()));
-            redisTemplate.expire(key, java.time.Duration.ofDays(1));
+            redisTemplate.expire(key, Duration.ofDays(1));
             log.info("已重置限流器: key={}, capacity={}", key, capacity);
         } catch (Exception e) {
             log.error("重置限流器失败: key={}", key, e);
