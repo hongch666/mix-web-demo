@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"app/common/constants"
-	"app/common/exceptions"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/task/logic"
@@ -31,16 +30,16 @@ func NewSyncESLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SyncESLogi
 }
 
 func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err error) {
-	// 手动触发同步ES任务
 	l.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 
-	// 调用实际的ES同步逻辑
-	if err = logic.SyncArticlesToES(l.ctx, l.svcCtx); err != nil {
-		l.Error(fmt.Sprintf("%s: %v", constants.TASK_SYNC_ES_FAILED_MESSAGE, err))
-		return nil, exceptions.NewInternalServerError(constants.TASK_SYNC_ES_FAILED_MESSAGE, err.Error())
-	}
+	// 在后台 goroutine 中异步执行 ES 同步，立刻返回成功
+	go func() {
+		if syncErr := logic.SyncArticlesToES(context.Background(), l.svcCtx); syncErr != nil {
+			l.Error(fmt.Sprintf("%s: %v", constants.TASK_SYNC_ES_FAILED_MESSAGE, syncErr))
+			return
+		}
+		l.Info(constants.TASK_SYNC_ES_COMPLETED_MESSAGE)
+	}()
 
-	l.Info(constants.TASK_SYNC_ES_COMPLETED_MESSAGE)
-
-	return
+	return &types.SyncESResp{}, nil
 }
