@@ -27,8 +27,8 @@ public final class Scripts {
                 signature VARCHAR(255) COMMENT '个性签名',
                 auth_provider VARCHAR(50) NOT NULL DEFAULT 'local' COMMENT '注册来源：local/github',
                 last_login_at DATETIME COMMENT '最近登录时间',
-                create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                 UNIQUE KEY uk_user_github_id (github_id),
                 INDEX idx_user_auth_provider (auth_provider)
             ) COMMENT='用户表'
@@ -44,8 +44,8 @@ public final class Scripts {
                 tags VARCHAR(255) NOT NULL COMMENT '文章标签',
                 status TINYINT NOT NULL COMMENT '文章状态',
                 views INT NOT NULL COMMENT '文章浏览量',
-                create_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                update_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
             ) COMMENT='文章表'
             """;
 
