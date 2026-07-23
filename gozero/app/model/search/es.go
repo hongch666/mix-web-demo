@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"app/common/constants"
-
 	"github.com/olivere/elastic/v7"
 )
 
@@ -16,7 +14,7 @@ const (
 	searchHistoryTableName = "articlelogs"
 )
 
-func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights) ([]ArticleES, int, error) {
+func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error) {
 	if m.esClient == nil {
 		return nil, 0, ErrNilESClient
 	}
@@ -73,20 +71,21 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	from := (page - 1) * size
 
 	// 使用从 FastAPI 获取的 ES Painless 脚本模板，通过 Param 传入权重值
+	// 参数名从 FastAPI 的脚本参数映射动态获取
 	scoreScript := elastic.NewScript(esScript).
-		Param(constants.ES_WEIGHT_NAME, weights.ESScoreWeight).
-		Param(constants.AI_RATING_WEIGHT_NAME, weights.AIRatingWeight).
-		Param(constants.USER_RATING_WEIGHT_NAME, weights.UserRatingWeight).
-		Param(constants.VIEWS_WEIGHT_NAME, weights.ViewsWeight).
-		Param(constants.LIKES_WEIGHT_NAME, weights.LikesWeight).
-		Param(constants.COLLECTS_WEIGHT_NAME, weights.CollectsWeight).
-		Param(constants.AUTHOR_FOLLOW_WEIGHT_NAME, weights.AuthorFollowWeight).
-		Param(constants.RECENCY_WEIGHT_NAME, weights.RecencyWeight).
-		Param(constants.RECENCY_DECAY_DAYS_NAME, float64(weights.RecencyDecayDays)*float64(weights.RecencyDecayDays)).
-		Param(constants.MAX_VIEWS_NORMALIZED_NAME, weights.MaxViewsNormalized).
-		Param(constants.MAX_LIKES_NORMALIZED_NAME, weights.MaxLikesNormalized).
-		Param(constants.MAX_COLLECTS_NORMALIZED_NAME, weights.MaxCollectsNormalized).
-		Param(constants.MAX_FOLLOWS_NORMALIZED_NAME, weights.MaxFollowsNormalized)
+		Param(getParamName(paramMap, "es_score_weight"), weights.ESScoreWeight).
+		Param(getParamName(paramMap, "ai_rating_weight"), weights.AIRatingWeight).
+		Param(getParamName(paramMap, "user_rating_weight"), weights.UserRatingWeight).
+		Param(getParamName(paramMap, "views_weight"), weights.ViewsWeight).
+		Param(getParamName(paramMap, "likes_weight"), weights.LikesWeight).
+		Param(getParamName(paramMap, "collects_weight"), weights.CollectsWeight).
+		Param(getParamName(paramMap, "author_follow_weight"), weights.AuthorFollowWeight).
+		Param(getParamName(paramMap, "recency_weight"), weights.RecencyWeight).
+		Param(getParamName(paramMap, "recency_decay_days"), float64(weights.RecencyDecayDays)*float64(weights.RecencyDecayDays)).
+		Param(getParamName(paramMap, "max_views_normalized"), weights.MaxViewsNormalized).
+		Param(getParamName(paramMap, "max_likes_normalized"), weights.MaxLikesNormalized).
+		Param(getParamName(paramMap, "max_collects_normalized"), weights.MaxCollectsNormalized).
+		Param(getParamName(paramMap, "max_follows_normalized"), weights.MaxFollowsNormalized)
 
 	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
 
@@ -191,4 +190,16 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 
 	total := int(searchResult.Hits.TotalHits.Value)
 	return articles, total, nil
+}
+
+// getParamName 从脚本参数映射中获取参数名，返回 FastAPI 定义的脚本参数名
+// paramMap: 从 FastAPI 获取的 weight_key → param_name 映射
+// weightKey: FastAPI 定义的权重 key
+func getParamName(paramMap ScriptParamMapping, weightKey string) string {
+	if paramMap != nil {
+		if name, ok := paramMap[weightKey]; ok && name != "" {
+			return name
+		}
+	}
+	return weightKey
 }

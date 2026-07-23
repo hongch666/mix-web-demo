@@ -80,10 +80,11 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		Size:            size,
 	}
 
-	// 并行从 FastAPI 获取 ES 搜索脚本模板和权重参数（各自缓存 60s）
+	// 并行从 FastAPI 获取 ES 搜索脚本模板、权重参数和脚本参数名映射（各自缓存 60s）
 	var script search.SearchScript
 	var weights search.SearchWeights
-	var scriptErr, weightsErr error
+	var paramMap search.ScriptParamMapping
+	var scriptErr, weightsErr, paramErr error
 	_ = mr.Finish(
 		func() error {
 			script, scriptErr = l.svcCtx.FastapiClient.GetSearchScript(l.ctx)
@@ -99,6 +100,15 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			}
 			return nil
 		},
+		func() error {
+			paramMap, paramErr = l.svcCtx.FastapiClient.GetSearchScriptParams(l.ctx)
+			if paramErr != nil {
+				// 脚本参数名映射获取失败时可降级，使用 weightKey 作为参数名回退
+				l.Warningf(constants.SCRIPT_PARAMS_FETCH_DEGRADE_LOG, paramErr)
+				return nil
+			}
+			return nil
+		},
 	)
 	if scriptErr != nil || weightsErr != nil {
 		errMsg := scriptErr
@@ -109,8 +119,8 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, errMsg.Error())
 	}
 
-	// 执行ES搜索：传入脚本模板和权重参数，由 es.go 组装 ScriptScoreQuery
-	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, script.EsScript, &weights)
+	// 执行ES搜索：传入脚本模板、权重参数和参数名映射，由 es.go 组装 ScriptScoreQuery
+	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, script.EsScript, &weights, paramMap)
 	if err != nil {
 		l.Error(fmt.Sprintf(constants.SEARCH_EXECUTION_ERROR+": %v", err))
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())

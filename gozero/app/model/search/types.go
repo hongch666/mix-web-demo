@@ -76,6 +76,9 @@ type SearchScript struct {
 	EsScript string
 }
 
+// ScriptParamMapping 脚本参数名映射: weight_key → script_param_name
+type ScriptParamMapping map[string]string
+
 type SearchLog struct {
 	ID        string         `bson:"_id,omitempty"`
 	UserID    int64          `bson:"user_id"`
@@ -127,7 +130,7 @@ type SearchModelDeps struct {
 }
 
 type SearchModel interface {
-	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights) ([]ArticleES, int, error)
+	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error)
 	GetSearchHistory(ctx context.Context, userID int64) ([]string, error)
 }
 

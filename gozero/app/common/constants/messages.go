@@ -151,6 +151,7 @@ const (
 	VECTOR_ENHANCE_CALL_FAILED             = "向量增强服务调用失败: %w"
 	VECTOR_ENHANCE_RESPONSE_FORMAT_ERROR   = "向量增强响应格式异常"
 	VECTOR_ENHANCE_DEGRADE_LOG             = "向量增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
+	SCRIPT_PARAMS_FETCH_DEGRADE_LOG        = "获取脚本参数名映射失败，降级使用weightKey作为参数名: %v"
 
 	// 用户日志
 	RECORD_DURATION_MESSAGE    = "%s %s 使用了%dms"

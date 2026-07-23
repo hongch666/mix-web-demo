@@ -19,6 +19,14 @@ type ScoreWeightItem struct {
 	Description string  `json:"description"`
 }
 
+// ScriptParamItem FastAPI 返回的脚本参数名映射项
+// 告知 GoZero 每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名
+type ScriptParamItem struct {
+	WeightKey   string `json:"weight_key"`
+	ParamName   string `json:"param_name"`
+	Description string `json:"description"`
+}
+
 // parseWeights 从 key-value 列表解析为结构化权重
 func parseWeights(items []ScoreWeightItem) search.SearchWeights {
 	w := search.SearchWeights{}
@@ -75,6 +83,14 @@ var (
 	scriptCacheMutex sync.RWMutex
 	scriptLastFetch  time.Time
 	scriptCacheTTL   = 60 * time.Second
+)
+
+// 全局脚本参数名映射缓存
+var (
+	cachedScriptParams     *search.ScriptParamMapping
+	scriptParamsCacheMutex sync.RWMutex
+	scriptParamsLastFetch  time.Time
+	scriptParamsCacheTTL   = 60 * time.Second
 )
 
 // GetSearchWeights 从 FastAPI 获取搜索权重（缓存 60s）
@@ -170,4 +186,59 @@ func (c *FastapiClient) GetSearchScript(ctx context.Context) (search.SearchScrip
 	scriptCacheMutex.Unlock()
 
 	return s, nil
+}
+
+// GetSearchScriptParams 从 FastAPI 获取脚本参数名映射（缓存 60s）
+// 返回 weight_key → script_param_name 的映射关系，告诉 GoZero 每个权重值在 Painless 脚本中对应的 params.xxx 参数名
+// 当 FastAPI 修改脚本参数名时，GoZero 无需修改代码即可自适应
+func (c *FastapiClient) GetSearchScriptParams(ctx context.Context) (search.ScriptParamMapping, error) {
+	// 读缓存
+	scriptParamsCacheMutex.RLock()
+	if cachedScriptParams != nil && time.Since(scriptParamsLastFetch) < scriptParamsCacheTTL {
+		pm := *cachedScriptParams
+		scriptParamsCacheMutex.RUnlock()
+		return pm, nil
+	}
+	scriptParamsCacheMutex.RUnlock()
+
+	// 调用 FastAPI
+	result, err := c.serviceDisc.CallService(ctx, c.serviceName, "/algorithm/search/script-params", client.RequestOptions{
+		Method: "GET",
+	})
+	if err != nil {
+		// FastAPI 不可用时返回旧缓存（如果存在）
+		scriptParamsCacheMutex.RLock()
+		if cachedScriptParams != nil {
+			pm := *cachedScriptParams
+			scriptParamsCacheMutex.RUnlock()
+			return pm, nil
+		}
+		scriptParamsCacheMutex.RUnlock()
+		return nil, err
+	}
+
+	// 解析响应
+	dataMap, ok := result.Data.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf(constants.FASTAPI_WEIGHTS_FORMAT_ERROR)
+	}
+	paramsRaw, _ := json.Marshal(dataMap["script_params"])
+	var items []ScriptParamItem
+	if err := json.Unmarshal(paramsRaw, &items); err != nil {
+		return nil, err
+	}
+
+	// 构建 weight_key → param_name 映射
+	paramMap := make(search.ScriptParamMapping, len(items))
+	for _, item := range items {
+		paramMap[item.WeightKey] = item.ParamName
+	}
+
+	// 写缓存
+	scriptParamsCacheMutex.Lock()
+	cachedScriptParams = &paramMap
+	scriptParamsLastFetch = time.Now()
+	scriptParamsCacheMutex.Unlock()
+
+	return paramMap, nil
 }
