@@ -2,96 +2,69 @@ package likes
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"app/model"
-
-	"gorm.io/gorm"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 var _ LikesModel = (*customLikesModel)(nil)
 
 type (
-	// LikesModel is an interface to be customized, add more methods here,
-	// and implement the added methods in customLikesModel.
 	LikesModel interface {
-		Insert(ctx context.Context, data *Likes) error
-		FindOne(ctx context.Context, id int64) (*Likes, error)
-		Update(ctx context.Context, data *Likes) error
-		Delete(ctx context.Context, id int64) error
-		FindOneByArticleIdUserId(ctx context.Context, articleId, userId int64) (*Likes, error)
-		GetLikeCountByArticleID(ctx context.Context, articleID int64) (int64, error)
-		GetLikeCountsByArticleIDs(ctx context.Context, articleIDs []int64) (map[int64]int64, error)
+		Insert(context.Context, *Likes) error
+		FindOne(context.Context, int64) (*Likes, error)
+		Update(context.Context, *Likes) error
+		Delete(context.Context, int64) error
+		FindOneByArticleIdUserId(context.Context, int64, int64) (*Likes, error)
+		GetLikeCountByArticleID(context.Context, int64) (int64, error)
+		GetLikeCountsByArticleIDs(context.Context, []int64) (map[int64]int64, error)
 	}
-
 	customLikesModel struct {
-		crud *model.GormCrud[Likes]
+		conn      sqlx.SqlConn
+		baseModel *defaultLikesModel
 	}
 )
 
-// NewLikesModel returns a model for the database table.
-func NewLikesModel(db *gorm.DB) LikesModel {
-	return &customLikesModel{
-		crud: model.NewGormCrud[Likes](db, "likes"),
-	}
+func NewLikesModel(conn sqlx.SqlConn) LikesModel {
+	return &customLikesModel{conn: conn, baseModel: newLikesModel(conn)}
 }
-
 func (m *customLikesModel) Insert(ctx context.Context, data *Likes) error {
-	return m.crud.Insert(ctx, data)
+	_, err := m.baseModel.Insert(ctx, data)
+	return err
 }
-
 func (m *customLikesModel) FindOne(ctx context.Context, id int64) (*Likes, error) {
-	return m.crud.FindOne(ctx, id)
+	return m.baseModel.FindOne(ctx, id)
 }
-
 func (m *customLikesModel) Update(ctx context.Context, data *Likes) error {
-	return m.crud.Update(ctx, data.Id, data)
+	return m.baseModel.Update(ctx, data)
 }
-
 func (m *customLikesModel) Delete(ctx context.Context, id int64) error {
-	return m.crud.Delete(ctx, id)
+	return m.baseModel.Delete(ctx, id)
 }
-
-func (m *customLikesModel) FindOneByArticleIdUserId(ctx context.Context, articleId, userId int64) (*Likes, error) {
-	db, err := m.crud.Query(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var item Likes
-	err = db.Where("article_id = ? AND user_id = ?", articleId, userId).First(&item).Error
-	if err == gorm.ErrRecordNotFound {
-		return nil, model.ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &item, nil
+func (m *customLikesModel) FindOneByArticleIdUserId(ctx context.Context, articleID, userID int64) (*Likes, error) {
+	return m.baseModel.FindOneByArticleIdUserId(ctx, articleID, userID)
 }
-
 func (m *customLikesModel) GetLikeCountByArticleID(ctx context.Context, articleID int64) (int64, error) {
-	db, err := m.crud.Query(ctx)
-	if err != nil {
-		return 0, err
-	}
 	var count int64
-	err = db.Where("article_id = ?", articleID).Count(&count).Error
+	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where article_id = ?", m.baseModel.table), articleID)
 	return count, err
 }
-
-func (m *customLikesModel) GetLikeCountsByArticleIDs(ctx context.Context, articleIDs []int64) (map[int64]int64, error) {
+func (m *customLikesModel) GetLikeCountsByArticleIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	result := make(map[int64]int64)
-	if len(articleIDs) == 0 {
+	if len(ids) == 0 {
 		return result, nil
 	}
-	db, err := m.crud.Query(ctx)
-	if err != nil {
-		return nil, err
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
 	}
 	var rows []struct {
-		ArticleID int64 `gorm:"column:article_id"`
-		Count     int64 `gorm:"column:count"`
+		ArticleID int64 `db:"article_id"`
+		Count     int64 `db:"count"`
 	}
-	err = db.Select("article_id, count(*) as count").Where("article_id IN ?", articleIDs).Group("article_id").Scan(&rows).Error
-	if err != nil {
+	query := fmt.Sprintf("select article_id, count(*) as count from %s where article_id in (%s) group by article_id", m.baseModel.table, strings.TrimRight(strings.Repeat("?,", len(ids)), ","))
+	if err := m.conn.QueryRowsCtx(ctx, &rows, query, args...); err != nil {
 		return nil, err
 	}
 	for _, row := range rows {

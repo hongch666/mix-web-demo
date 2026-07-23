@@ -3,9 +3,7 @@ package aiHistory
 import (
 	"context"
 
-	"app/model"
-
-	"gorm.io/gorm"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 var _ AiHistoryModel = (*customAiHistoryModel)(nil)
@@ -19,29 +17,27 @@ type (
 	}
 
 	customAiHistoryModel struct {
-		crud *model.GormCrud[AiHistory]
+		baseModel *defaultAiHistoryModel
 	}
 )
 
-// NewAiHistoryModel returns a model for the database table.
-func NewAiHistoryModel(db *gorm.DB) AiHistoryModel {
-	return &customAiHistoryModel{
-		crud: model.NewGormCrud[AiHistory](db, "ai_history"),
-	}
+func NewAiHistoryModel(conn sqlx.SqlConn) AiHistoryModel {
+	return &customAiHistoryModel{baseModel: newAiHistoryModel(conn)}
 }
 
 func (m *customAiHistoryModel) Insert(ctx context.Context, data *AiHistory) error {
-	return m.crud.Insert(ctx, data)
+	_, err := m.baseModel.Insert(ctx, data)
+	return err
 }
 
 func (m *customAiHistoryModel) FindOne(ctx context.Context, id int64) (*AiHistory, error) {
-	return m.crud.FindOne(ctx, id)
+	return m.baseModel.FindOne(ctx, id)
 }
 
 func (m *customAiHistoryModel) Update(ctx context.Context, data *AiHistory) error {
-	return m.crud.Update(ctx, data.Id, data)
+	return m.baseModel.Update(ctx, data)
 }
 
 func (m *customAiHistoryModel) Delete(ctx context.Context, id int64) error {
-	return m.crud.Delete(ctx, id)
+	return m.baseModel.Delete(ctx, id)
 }

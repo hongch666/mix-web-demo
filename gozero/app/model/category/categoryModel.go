@@ -3,9 +3,7 @@ package category
 import (
 	"context"
 
-	"app/model"
-
-	"gorm.io/gorm"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 var _ CategoryModel = (*customCategoryModel)(nil)
@@ -19,34 +17,25 @@ type (
 		SearchCategoryById(ctx context.Context, categoryID int64) (*Category, error)
 	}
 
-	customCategoryModel struct {
-		crud *model.GormCrud[Category]
-	}
+	customCategoryModel struct{ baseModel *defaultCategoryModel }
 )
 
-// NewCategoryModel returns a model for the database table.
-func NewCategoryModel(db *gorm.DB) CategoryModel {
-	return &customCategoryModel{
-		crud: model.NewGormCrud[Category](db, "category"),
-	}
+func NewCategoryModel(conn sqlx.SqlConn) CategoryModel {
+	return &customCategoryModel{baseModel: newCategoryModel(conn)}
 }
-
 func (m *customCategoryModel) Insert(ctx context.Context, data *Category) error {
-	return m.crud.Insert(ctx, data)
+	_, err := m.baseModel.Insert(ctx, data)
+	return err
 }
-
 func (m *customCategoryModel) FindOne(ctx context.Context, id int64) (*Category, error) {
-	return m.crud.FindOne(ctx, id)
+	return m.baseModel.FindOne(ctx, id)
 }
-
 func (m *customCategoryModel) Update(ctx context.Context, data *Category) error {
-	return m.crud.Update(ctx, data.Id, data)
+	return m.baseModel.Update(ctx, data)
 }
-
 func (m *customCategoryModel) Delete(ctx context.Context, id int64) error {
-	return m.crud.Delete(ctx, id)
+	return m.baseModel.Delete(ctx, id)
 }
-
 func (m *customCategoryModel) SearchCategoryById(ctx context.Context, categoryID int64) (*Category, error) {
 	return m.FindOne(ctx, categoryID)
 }

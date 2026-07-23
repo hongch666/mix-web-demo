@@ -71,4 +71,3 @@ func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceReq
 		},
 	})
 }
-

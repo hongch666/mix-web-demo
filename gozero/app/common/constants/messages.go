@@ -107,7 +107,6 @@ const (
 	LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR       = "未找到本机可用的 IPv4 地址"
 	CREATE_LOG_DIR_ERROR                     = "创建日志目录失败"
 	ZERO_LOGGER_INIT_FAIL                    = "初始化日志失败: %v"
-	GORM_INIT_FAIL                           = "初始化 Gorm 失败: %v"
 	ES_CLIENT_INIT_FAIL                      = "初始化 ES 客户端失败: %v"
 	RABBITMQ_CONNECTION_INIT_FAIL            = "初始化 RabbitMQ 连接失败: %v"
 	RABBITMQ_CONNECT_SUCCESS                 = "RabbitMQ 连接成功"
@@ -119,8 +118,9 @@ const (
 	REDIS_INIT_FAIL                          = "初始化 Redis 客户端失败: %v"
 	REDIS_CONNECT_SUCCESS                    = "Redis 连接成功: %s:%d (DB: %d)"
 	FASTAPI_WEIGHTS_FORMAT_ERROR             = "FastAPI 响应格式异常"
-	SEARCH_WEIGHTS_FETCH_FAIL               = "获取搜索参数失败: %v"
-	GORM_IS_NIL_MESSAGE                      = "GORM DB 对象未初始化"
+	SEARCH_WEIGHTS_FETCH_FAIL                = "获取搜索参数失败: %v"
+	ENSURE_CHAT_MESSAGES_TABLE_FAIL          = "确保 chat_messages 表存在失败: %v"
+	ENSURE_CHAT_MESSAGES_TABLE_SUCCESS       = "已确保 chat_messages 表存在"
 
 	// 日志文件
 	OPEN_LOG_FILE_ERROR      = "打开日志文件失败"
@@ -134,10 +134,6 @@ const (
 	READ_CONFIG_FILE_ERROR  = "读取配置文件失败: %s, %v"
 	PARSE_CONFIG_FILE_ERROR = "解析配置文件失败: %s, %v"
 	CONFIG_DESCRIPTION      = "配置文件路径，默认为 etc/application.yaml"
-
-	// 建表
-	AUTO_CREATE_TABLE_FAIL    = "自动创建 chat_messages 表失败: %v"
-	AUTO_CREATE_TABLE_SUCCESS = "自动创建 chat_messages 表成功"
 
 	// 序列化/HTTP
 	JSON_SERIALIZATION_ERROR = "JSON序列化失败"

@@ -88,4 +88,3 @@ type LogsConfig struct {
 	Path string `json:"path"`
 }
 
-

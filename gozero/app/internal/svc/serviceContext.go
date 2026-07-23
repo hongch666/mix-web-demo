@@ -43,8 +43,6 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 var (
@@ -55,7 +53,6 @@ var (
 type ServiceContext struct {
 	Config            config.Config
 	MySQLConn         sqlx.SqlConn
-	DB                *gorm.DB
 	ESClient          *elastic.Client
 	RabbitMQPublisher *rabbitmq.Publisher
 	MongoClient       *mongo.Client
@@ -99,7 +96,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration)
 
 	mysqlConn := initSqlx(c)
-	db := initGorm(c)
+	initChatMessagesTable(mysqlConn)
 	esClient := initES(c)
 	rabbitPublisher := initRabbitMQ(c)
 	mongoClient := initMongoDB(c)
@@ -121,18 +118,18 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		searchModel            search.SearchModel
 	)
 
-	if db != nil {
-		aiHistoryModel = aiHistory.NewAiHistoryModel(db)
-		articlesModel = articles.NewArticlesModel(db)
-		categoryModel = category.NewCategoryModel(db)
-		categoryReferenceModel = categoryReference.NewCategoryReferenceModel(db)
-		chatMessagesModel = chatMessages.NewChatMessagesModel(db)
-		collectsModel = collects.NewCollectsModel(db)
-		commentsModel = comments.NewCommentsModel(db)
-		focusModel = focus.NewFocusModel(db)
-		likesModel = likes.NewLikesModel(db)
-		subCategoryModel = subCategory.NewSubCategoryModel(db)
-		userModel = user.NewUserModel(db)
+	if mysqlConn != nil {
+		aiHistoryModel = aiHistory.NewAiHistoryModel(mysqlConn)
+		articlesModel = articles.NewArticlesModel(mysqlConn)
+		categoryModel = category.NewCategoryModel(mysqlConn)
+		categoryReferenceModel = categoryReference.NewCategoryReferenceModel(mysqlConn)
+		chatMessagesModel = chatMessages.NewChatMessagesModel(mysqlConn)
+		collectsModel = collects.NewCollectsModel(mysqlConn)
+		commentsModel = comments.NewCommentsModel(mysqlConn)
+		focusModel = focus.NewFocusModel(mysqlConn)
+		likesModel = likes.NewLikesModel(mysqlConn)
+		subCategoryModel = subCategory.NewSubCategoryModel(mysqlConn)
+		userModel = user.NewUserModel(mysqlConn)
 	}
 
 	searchModel = search.NewSearchModel(search.SearchModelDeps{
@@ -150,7 +147,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:                 c,
 		MySQLConn:              mysqlConn,
-		DB:                     db,
 		ESClient:               esClient,
 		RabbitMQPublisher:      rabbitPublisher,
 		MongoClient:            mongoClient,
@@ -190,45 +186,17 @@ func initSqlx(c config.Config) sqlx.SqlConn {
 	return sqlx.NewMysql(dsn)
 }
 
-func initGorm(c config.Config) *gorm.DB {
-	dsn := buildMysqlDsn(c)
-	if dsn == "" {
-		return nil
-	}
-
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		logger.Errorf(constants.GORM_INIT_FAIL, err)
-		panic(err)
-	}
-
-	if sqlDB, err := db.DB(); err == nil {
-		sqlDB.SetMaxIdleConns(10)
-		sqlDB.SetMaxOpenConns(100)
-		sqlDB.SetConnMaxLifetime(time.Hour)
-	}
-
-	initMigrate(db)
-
-	return db
-}
-
-func initMigrate(db *gorm.DB) {
-	if db == nil {
+func initChatMessagesTable(conn sqlx.SqlConn) {
+	if conn == nil {
 		return
 	}
 
-	migrator := db.Migrator()
-	if migrator.HasTable("chat_messages") {
+	if _, err := conn.ExecCtx(context.Background(), constants.CREATE_CHAT_MESSAGES_TABLE_SQL); err != nil {
+		logger.Errorf(constants.ENSURE_CHAT_MESSAGES_TABLE_FAIL, err)
 		return
 	}
 
-	if err := db.Exec(constants.CREATE_CHAT_MESSAGES_TABLE_SQL).Error; err != nil {
-		logger.Errorf(constants.AUTO_CREATE_TABLE_FAIL, err)
-		return
-	}
-
-	logger.Info(constants.AUTO_CREATE_TABLE_SUCCESS)
+	logger.Info(constants.ENSURE_CHAT_MESSAGES_TABLE_SUCCESS)
 }
 
 func buildMysqlDsn(c config.Config) string {

@@ -2,10 +2,10 @@ package subCategory
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"app/model"
-
-	"gorm.io/gorm"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 var _ SubCategoryModel = (*customSubCategoryModel)(nil)
@@ -18,42 +18,38 @@ type (
 		Delete(ctx context.Context, id int64) error
 		SearchSubCategoriesByIds(ctx context.Context, subCategoryIDs []int64) ([]SubCategory, error)
 	}
-
 	customSubCategoryModel struct {
-		crud *model.GormCrud[SubCategory]
+		conn      sqlx.SqlConn
+		baseModel *defaultSubCategoryModel
 	}
 )
 
-// NewSubCategoryModel returns a model for the database table.
-func NewSubCategoryModel(db *gorm.DB) SubCategoryModel {
-	return &customSubCategoryModel{
-		crud: model.NewGormCrud[SubCategory](db, "sub_category"),
-	}
+func NewSubCategoryModel(conn sqlx.SqlConn) SubCategoryModel {
+	return &customSubCategoryModel{conn: conn, baseModel: newSubCategoryModel(conn)}
 }
-
 func (m *customSubCategoryModel) Insert(ctx context.Context, data *SubCategory) error {
-	return m.crud.Insert(ctx, data)
+	_, err := m.baseModel.Insert(ctx, data)
+	return err
 }
-
 func (m *customSubCategoryModel) FindOne(ctx context.Context, id int64) (*SubCategory, error) {
-	return m.crud.FindOne(ctx, id)
+	return m.baseModel.FindOne(ctx, id)
 }
-
 func (m *customSubCategoryModel) Update(ctx context.Context, data *SubCategory) error {
-	return m.crud.Update(ctx, data.Id, data)
+	return m.baseModel.Update(ctx, data)
 }
-
 func (m *customSubCategoryModel) Delete(ctx context.Context, id int64) error {
-	return m.crud.Delete(ctx, id)
+	return m.baseModel.Delete(ctx, id)
 }
-
-func (m *customSubCategoryModel) SearchSubCategoriesByIds(ctx context.Context, subCategoryIDs []int64) ([]SubCategory, error) {
-	db, err := m.crud.Query(ctx)
-	if err != nil {
-		return nil, err
+func (m *customSubCategoryModel) SearchSubCategoriesByIds(ctx context.Context, ids []int64) ([]SubCategory, error) {
+	if len(ids) == 0 {
+		return []SubCategory{}, nil
 	}
-
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+	query := fmt.Sprintf("select %s from %s where `id` in (%s)", subCategoryRows, m.baseModel.table, strings.TrimRight(strings.Repeat("?,", len(ids)), ","))
 	var items []SubCategory
-	err = db.Where("id IN ?", subCategoryIDs).Find(&items).Error
+	err := m.conn.QueryRowsCtx(ctx, &items, query, args...)
 	return items, err
 }

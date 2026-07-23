@@ -3,47 +3,36 @@ package categoryReference
 import (
 	"context"
 
-	"app/model"
-
-	"gorm.io/gorm"
+	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
 var _ CategoryReferenceModel = (*customCategoryReferenceModel)(nil)
 
 type (
-	// CategoryReferenceModel is an interface to be customized, add more methods here,
-	// and implement the added methods in customCategoryReferenceModel.
 	CategoryReferenceModel interface {
 		Insert(ctx context.Context, data *CategoryReference) error
 		FindOne(ctx context.Context, id int64) (*CategoryReference, error)
 		Update(ctx context.Context, data *CategoryReference) error
 		Delete(ctx context.Context, id int64) error
 	}
-
 	customCategoryReferenceModel struct {
-		crud *model.GormCrud[CategoryReference]
+		baseModel *defaultCategoryReferenceModel
 	}
 )
 
-// NewCategoryReferenceModel returns a model for the database table.
-func NewCategoryReferenceModel(db *gorm.DB) CategoryReferenceModel {
-	return &customCategoryReferenceModel{
-		crud: model.NewGormCrud[CategoryReference](db, "category_reference"),
-	}
+func NewCategoryReferenceModel(conn sqlx.SqlConn) CategoryReferenceModel {
+	return &customCategoryReferenceModel{baseModel: newCategoryReferenceModel(conn)}
 }
-
 func (m *customCategoryReferenceModel) Insert(ctx context.Context, data *CategoryReference) error {
-	return m.crud.Insert(ctx, data)
+	_, err := m.baseModel.Insert(ctx, data)
+	return err
 }
-
 func (m *customCategoryReferenceModel) FindOne(ctx context.Context, id int64) (*CategoryReference, error) {
-	return m.crud.FindOne(ctx, id)
+	return m.baseModel.FindOne(ctx, id)
 }
-
 func (m *customCategoryReferenceModel) Update(ctx context.Context, data *CategoryReference) error {
-	return m.crud.Update(ctx, data.Id, data)
+	return m.baseModel.Update(ctx, data)
 }
-
 func (m *customCategoryReferenceModel) Delete(ctx context.Context, id int64) error {
-	return m.crud.Delete(ctx, id)
+	return m.baseModel.Delete(ctx, id)
 }
