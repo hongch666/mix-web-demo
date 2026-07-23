@@ -64,7 +64,7 @@
 6. 基于 Redis Token Bucket 算法在网关层实现 API 限流和防刷功能
 7. 基于 WebClient、Nacos 服务发现和 Spring Cloud LoadBalancer 实现微服务间响应式 HTTP 调用
 8. 基于 GoZero 聚合 ElasticSearch、pgvector 向量检索和 Neo4j 图谱增强，实现关键词、语义和关系融合的文章搜索
-9. 基于 GoZero 和 GORM/sqlx 实现文章相关数据获取和同步（双 ORM 并存）
+9. 基于 GoZero 和 sqlx 实现文章相关数据获取和同步
 10. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 11. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
 12. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
@@ -760,11 +760,8 @@ pytest tests/core/auth/test_internal_token.py
 # 真正生成 ORM 代码
 ./mix goctl-orm -s
 
-# 真正生成 ORM，并为新表生成项目 GormCrud 风格 custom model
-./mix goctl-orm -s --gorm
-
 # 只生成指定 SQL 文件
-./mix goctl-orm -s --gorm -pattern user.sql
+./mix goctl-orm -s -pattern user.sql
 
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
@@ -890,7 +887,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 # 参数会透传给 gozero/script/goctl 下的实际生成脚本
 ./scripts/goctl-api-init.sh -s
-./scripts/goctl-orm-init.sh -s --gorm -pattern user.sql
+./scripts/goctl-orm-init.sh -s -pattern user.sql
 
 # 停止所有服务或指定服务
 ./scripts/dist-control.sh stop               # 停止所有
@@ -1710,14 +1707,11 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 # 真正生成 ORM 代码
 ./mix goctl-orm -s
 
-# 真正生成 ORM，并为新表生成项目 GormCrud 风格 custom model
-./mix goctl-orm -s --gorm
-
 # 只生成某一个 SQL
-./mix goctl-orm -s --gorm -pattern user.sql
+./mix goctl-orm -s -pattern user.sql
 
 # 指定 SQL 目录、输出目录或模板目录
-./mix goctl-orm -s --gorm -srcDir gozero/script/sql -outDir ./gozero/app/model
+./mix goctl-orm -s -srcDir gozero/script/sql -outDir ./gozero/app/model
 ./mix goctl-api --template gozero/template
 ./mix goctl-orm -s --template gozero/template
 ```
@@ -1729,13 +1723,12 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 | `goctl-api` | `-s`                | 生成 API 代码后，同时生成 Swagger/OpenAPI                         |
 | `goctl-api` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`                        |
 | `goctl-orm` | `-s`                | 执行生成；不加时只 dry-run 打印命令                               |
-| `goctl-orm` | `--gorm`            | 为新表生成项目`GormCrud` 风格 custom model，已有业务 model 不覆盖 |
 | `goctl-orm` | `-srcDir <path>`    | 指定 SQL 文件目录，默认`gozero/script/sql`                        |
 | `goctl-orm` | `-outDir <path>`    | 指定 model 输出目录，默认`./gozero/app/model`                     |
 | `goctl-orm` | `-pattern <glob>`   | 指定 SQL 匹配规则，默认`*.sql`                                    |
 | `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`                        |
 
-ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql` 会生成到 `gozero/app/model/subCategory`。`--gorm` 主要用于新表初始化：它会把 goctl 默认 custom model 外壳替换成项目当前使用的 `GormCrud` 外壳，同时保留 `*_gen.go` 中由 goctl 生成的结构体和基础 SQLX 代码。
+ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql` 会生成到 `gozero/app/model/subCategory`。生成的 `*_gen.go` 提供结构体和基础 sqlx CRUD 实现；业务自定义查询应在对应的 model 文件中使用 sqlx 编写。
 
 ### FastAPI Agent 工具说明
 
