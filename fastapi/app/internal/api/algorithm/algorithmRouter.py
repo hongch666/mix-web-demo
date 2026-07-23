@@ -40,3 +40,18 @@ async def get_search_script(
 ) -> Any:
     result = algorithm_service.get_es_script()
     return success(result)
+
+
+@router.get(
+    "/search/script-params",
+    summary="获取脚本参数名映射",
+    description="返回每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名，GoZero 端根据此映射关系动态组装脚本参数，无需硬编码参数名常量",
+)
+@log("获取脚本参数名映射")
+@requireInternalToken
+async def get_search_script_params(
+    request: Request,
+    algorithm_service: AlgorithmService = Depends(get_algorithm_service),
+) -> Any:
+    result = algorithm_service.get_script_params()
+    return success(result)
