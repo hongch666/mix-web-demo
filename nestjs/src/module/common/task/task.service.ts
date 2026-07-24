@@ -45,11 +45,11 @@ export class TaskService {
       const deletedCount: number =
         await this.apiLogService.cleanupOldLogs(oneMonthAgo);
 
-      logger.info(`API 日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`);
+      logger.info(Messages.API_LOG_CLEANUP_COMPLETED(deletedCount));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(`清理 API 日志失败: ${errorMessage}`);
+      logger.error(Messages.API_LOG_CLEANUP_FAILED(errorMessage));
     } finally {
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
@@ -91,11 +91,11 @@ export class TaskService {
       const deletedCount: number =
         await this.articleLogService.cleanupOldLogs(oneMonthAgo);
 
-      logger.info(`文章日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`);
+      logger.info(Messages.ARTICLE_LOG_CLEANUP_COMPLETED(deletedCount));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(`清理文章日志失败: ${errorMessage}`);
+      logger.error(Messages.ARTICLE_LOG_CLEANUP_FAILED(errorMessage));
     } finally {
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {

@@ -31,7 +31,7 @@ export class DownloadService {
       await this.articleService.getArticleById(id);
     if (!article) {
       throw BusinessException.notFound(
-        `文章 ID ${id} 未找到`,
+        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
         ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
@@ -92,7 +92,7 @@ export class DownloadService {
       await this.articleService.getArticleById(id);
     if (!article) {
       throw BusinessException.notFound(
-        `文章 ID ${id} 未找到`,
+        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
         ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
@@ -133,7 +133,7 @@ export class DownloadService {
       await this.articleService.getArticleById(id);
     if (!article) {
       throw BusinessException.notFound(
-        `文章 ID ${id} 未找到`,
+        Messages.ARTICLE_NOT_FOUND_BY_ID(id),
         ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
@@ -404,7 +404,7 @@ export class DownloadService {
     } catch (error: unknown) {
       const message: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(`上传阿里云OSS错误: ${message}`);
+      logger.error(Messages.OSS_UPLOAD_ERROR_MESSAGE(message));
       throw BusinessException.internalServerError(
         Messages.OSS_UPLOAD_ERR,
         ErrorIds.OSS_UPLOAD_ERROR,

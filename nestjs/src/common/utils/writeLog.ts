@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import * as fs from "fs";
 import * as path from "path";
+import { Messages } from "src/common/constants";
 import config from "src/config";
 
 export class LoggerUtil {
@@ -23,11 +24,11 @@ export class LoggerUtil {
         (logsConfig?.path as string | undefined) ||
         "logs";
       this.configLoaded = true;
-      Logger.log(`日志配置加载成功，路径: ${this.logPath}`);
+      Logger.log(Messages.LOG_CONFIG_LOADED(this.logPath));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      throw new Error(`加载日志配置失败: ${errorMessage}`);
+      throw new Error(Messages.LOG_CONFIG_LOAD_FAILED(errorMessage));
     }
   }
 
@@ -66,7 +67,7 @@ export class LoggerUtil {
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      throw new Error(`写入日志失败: ${errorMessage}`);
+      throw new Error(Messages.LOG_WRITE_FAILED(errorMessage));
     }
   }
 

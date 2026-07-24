@@ -99,7 +99,9 @@ export class ArticleLogService {
         ),
       );
       missingIndexes.forEach((indexConfig) => {
-        logger.info(`索引已创建: ${indexConfig.options.name}`);
+        logger.info(
+          Messages.ARTICLE_LOG_INDEX_CREATED(indexConfig.options.name),
+        );
       });
     }
   }

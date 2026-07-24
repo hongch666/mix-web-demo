@@ -2,6 +2,132 @@
  * 消息常量类
  */
 export class Messages {
+  // ===== 动态消息 =====
+  static INTERNAL_TOKEN_SERVICE_NAME_MISMATCH(
+    requiredServiceName: string,
+    actualServiceName: string,
+  ): string {
+    return `${this.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${actualServiceName}`;
+  }
+
+  static INTERNAL_TOKEN_VERIFICATION_SUCCESS(
+    userId: number,
+    serviceName: string,
+  ): string {
+    return `内部令牌验证成功 - 用户ID: ${userId}, 服务: ${serviceName}`;
+  }
+
+  static INTERNAL_TOKEN_VERIFICATION_FAILED(message: string): string {
+    return `令牌验证失败: ${message}`;
+  }
+
+  static STARTUP_SERVICE_ADDRESS(ip: string, port: number): string {
+    return `服务地址: http://${ip}:${port}`;
+  }
+
+  static STARTUP_SWAGGER_ADDRESS(ip: string, port: number): string {
+    return `Swagger文档地址: http://${ip}:${port}/api-docs`;
+  }
+
+  static ARTICLE_LOG_SPRING_MESSAGE(message: string): string {
+    return `接收到 Spring 发送的 ArticleLog 消息: ${message}`;
+  }
+
+  static ARTICLE_LOG_MESSAGE(message: string): string {
+    return `接收到 ArticleLog 消息: ${message}`;
+  }
+
+  static ARTICLE_LOG_PROCESS_FAILED(message: string): string {
+    return `处理 ArticleLog 消息失败: ${message}`;
+  }
+
+  static ARTICLE_LOG_MISSING_ACTION(message: string): string {
+    return `ArticleLog 消息缺少 action 字段: ${message}`;
+  }
+
+  static ARTICLE_LOG_MISSING_CONTENT(message: string): string {
+    return `ArticleLog 消息缺少 content 字段: ${message}`;
+  }
+
+  static ARTICLE_LOG_INVALID_ACTION(action: string): string {
+    return `无效的操作类型: ${action}`;
+  }
+
+  static ARTICLE_LOG_INVALID_ACTION_DETAIL(action: string): string {
+    return `ArticleLog 消息包含无效的 action 值: ${action}`;
+  }
+
+  static ARTICLE_LOG_PREPARE_SAVE(message: string): string {
+    return `准备保存 ArticleLog: ${message}`;
+  }
+
+  static API_LOG_SPRING_MESSAGE(message: string): string {
+    return `接收到 Spring 发送的 ApiLog 消息: ${message}`;
+  }
+
+  static API_LOG_MESSAGE(message: string): string {
+    return `接收到 ApiLog 消息: ${message}`;
+  }
+
+  static API_LOG_IGNORED_MESSAGE(message: string): string {
+    return `收到非 API 日志格式的消息，已忽略: ${message}`;
+  }
+
+  static API_LOG_RESPONSE_TIME_CORRECTED(responseTime: number): string {
+    return `接口响应时间为${responseTime}，已将其设置为0: `;
+  }
+
+  static API_LOG_PROCESS_FAILED(message: string): string {
+    return `处理 ApiLog 消息失败: ${message}`;
+  }
+
+  static API_LOG_INDEX_CREATED(indexName: string): string {
+    return `ApiLog 索引已创建: ${indexName}`;
+  }
+
+  static ARTICLE_LOG_INDEX_CREATED(indexName: string): string {
+    return `索引已创建: ${indexName}`;
+  }
+
+  static EXCEPTION_LOG(
+    method: string,
+    url: string,
+    errorIdentifier: string,
+    message: string,
+    stack: string | undefined,
+  ): string {
+    return `[${method}] ${url} - [${errorIdentifier}] ${message} - ${stack}`;
+  }
+
+  static API_LOG_REQUEST(
+    userId: number,
+    username: string,
+    method: string,
+    url: string,
+    message: string,
+  ): string {
+    return `用户${userId}:${username} ${method} ${url}: ${message}`;
+  }
+
+  static API_LOG_RESPONSE_TIME(
+    method: string,
+    url: string,
+    responseTime: number,
+  ): string {
+    return `${method} ${url} 使用了${responseTime}ms`;
+  }
+
+  static API_LOG_QUEUE_SEND_FAILED(message: string): string {
+    return `发送 API 日志到队列失败: ${message}`;
+  }
+
+  static API_LOG_QUEUE_SENT(message: string): string {
+    return `API 日志已发送到队列: ${message}`;
+  }
+
+  static API_LOG_QUEUE_ERROR(message: string): string {
+    return `向消息队列发送 API 日志出错: ${message}`;
+  }
   // ===== 内部令牌 =====
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
   static readonly INTERNAL_TOKEN_MISSING = "请求头中缺少内部令牌";
@@ -119,4 +245,218 @@ export class Messages {
     "获取分布式锁失败，跳过本次执行，key: %s";
   static readonly REDIS_LOCK_RELEASE_SUCCESS = "释放分布式锁成功，key: %s";
   static readonly REDIS_LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
+
+  // ===== 下载模块 =====
+  static ARTICLE_NOT_FOUND_BY_ID(id: number): string {
+    return `文章 ID ${id} 未找到`;
+  }
+
+  static OSS_UPLOAD_ERROR_MESSAGE(message: string): string {
+    return `上传阿里云OSS错误: ${message}`;
+  }
+
+  // ===== 定时任务模块 =====
+  static API_LOG_CLEANUP_COMPLETED(deletedCount: number): string {
+    return `API 日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
+  }
+
+  static API_LOG_CLEANUP_FAILED(errorMessage: string): string {
+    return `清理 API 日志失败: ${errorMessage}`;
+  }
+
+  static ARTICLE_LOG_CLEANUP_COMPLETED(deletedCount: number): string {
+    return `文章日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
+  }
+
+  static ARTICLE_LOG_CLEANUP_FAILED(errorMessage: string): string {
+    return `清理文章日志失败: ${errorMessage}`;
+  }
+
+  // ===== Nacos 服务调用模块 =====
+  static LOCAL_IP_CONVERTED(registrationIp: string): string {
+    return `本地 IP 已转换为: ${registrationIp}`;
+  }
+
+  static SERVICE_NO_AVAILABLE_INSTANCE(serviceName: string): string {
+    return `服务 ${serviceName} 无可用实例`;
+  }
+
+  static SERVICE_BUSINESS_ERROR_DETAIL(
+    serviceName: string,
+    code: string,
+    msg: string,
+  ): string {
+    return `服务 ${serviceName} 返回业务错误: code=${code}, msg=${msg}`;
+  }
+
+  static SERVICE_CALL_FAILED_WITH_MSG(
+    serviceName: string,
+    errorMsg: string,
+  ): string {
+    return `调用 ${serviceName} 失败: ${errorMsg}`;
+  }
+
+  static SERVICE_CIRCUIT_BREAKER_TRIGGERED(serviceName: string): string {
+    return `调用 ${serviceName} 已触发熔断，直接返回降级结果`;
+  }
+
+  static SERVICE_DEGRADED_MSG(serviceName: string): string {
+    return `调用 ${serviceName} 已降级，请稍后再试`;
+  }
+
+  static SERVICE_CALL_ERROR(serviceName: string, error: string): string {
+    return `调用 ${serviceName} 失败: ${error}`;
+  }
+
+  static SERVICE_CALL_FAILED_RETRY_LATER(serviceName: string): string {
+    return `调用 ${serviceName} 失败，请稍后重试`;
+  }
+
+  // ===== 邮件模块 =====
+  static VERIFICATION_CODE_EMAIL_SENDING(
+    maskedEmail: string,
+    type: string,
+  ): string {
+    return `发送验证码邮件到: ${maskedEmail}, 场景: ${type}`;
+  }
+
+  static VERIFICATION_CODE_EMAIL_SENT(maskedEmail: string): string {
+    return `验证码邮件已成功发送到: ${maskedEmail}`;
+  }
+
+  static VERIFICATION_CODE_EMAIL_FAILED(maskedEmail: string): string {
+    return `验证码邮件发送失败: ${maskedEmail}`;
+  }
+
+  // ===== 日志工具模块 =====
+  static LOG_CONFIG_LOADED(path: string): string {
+    return `日志配置加载成功，路径: ${path}`;
+  }
+
+  static LOG_CONFIG_LOAD_FAILED(errorMessage: string): string {
+    return `加载日志配置失败: ${errorMessage}`;
+  }
+
+  static LOG_WRITE_FAILED(errorMessage: string): string {
+    return `写入日志失败: ${errorMessage}`;
+  }
+
+  // ===== 文件上传模块 =====
+  static UPLOAD_IMAGE_START(filename: string | undefined): string {
+    return `uploadImage 开始，文件信息: filename=${filename}`;
+  }
+
+  static UPLOAD_FILE_TYPE_INFO(
+    type: string,
+    hasReadable: unknown,
+    hasPipe: unknown,
+  ): string {
+    return `文件对象类型: ${type}, 是否有 readable: ${String(hasReadable)}, 是否有 pipe: ${String(hasPipe)}`;
+  }
+
+  static UPLOAD_FILE_KEYS(keys: string): string {
+    return `文件对象键: ${keys}`;
+  }
+
+  static UPLOAD_GENERATED_FILENAME(filename: string): string {
+    return `生成唯一文件名: ${filename}`;
+  }
+
+  static UPLOAD_FILE_SAVED_TO_TEMP(path: string): string {
+    return `文件已保存到临时目录: ${path}`;
+  }
+
+  static UPLOAD_OSS_TARGET_PATH(path: string): string {
+    return `OSS 目标路径: ${path}`;
+  }
+
+  static UPLOAD_OSS_COMPLETED(url: string): string {
+    return `OSS 上传完成，URL: ${url}`;
+  }
+
+  static UPLOAD_PDF_START(filename: string | undefined): string {
+    return `uploadPdf 开始，文件信息: filename=${filename}`;
+  }
+
+  static UPLOAD_UNSUPPORTED_FORMAT(
+    ext: string,
+    allowedFormats: string,
+  ): string {
+    return `不支持的文件格式: ${ext}，允许格式: ${allowedFormats}`;
+  }
+
+  static UPLOAD_ALLOWED_FORMATS(formats: string): string {
+    return `仅支持以下格式: ${formats}`;
+  }
+
+  static UPLOAD_CHECK_FILE_PROPERTY(type: string): string {
+    return `检查 file.file 属性, 类型: ${type}`;
+  }
+
+  static UPLOAD_USE_FILE_STREAM(type: string, hasPipe: unknown): string {
+    return `使用 file.file 作为流, 类型: ${type}, 是否有 pipe: ${String(hasPipe)}`;
+  }
+
+  static UPLOAD_SAVE_TO_TEMP_FAILED(message: string): string {
+    return `保存文件到临时目录失败: ${message}`;
+  }
+
+  static UPLOAD_TEMP_FILE_DELETED(path: string): string {
+    return `临时文件已删除: ${path}`;
+  }
+
+  static UPLOAD_DELETE_TEMP_FAILED(message: string): string {
+    return `删除临时文件失败: ${message}`;
+  }
+
+  // ===== OSS 模块 =====
+  static OSS_UPLOAD_START_DETAIL(
+    localFile: string,
+    ossFile: string,
+  ): string {
+    return `开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`;
+  }
+
+  static OSS_CLIENT_CONFIG_INFO(bucket: string, endpoint: string): string {
+    return `OSS 客户端配置: bucket=${bucket}, endpoint=${endpoint}`;
+  }
+
+  static OSS_CHECK_FILE_EXISTS(localFile: string): string {
+    return `检查本地文件是否存在: ${localFile}`;
+  }
+
+  static OSS_FILE_EXISTS_RESULT(exists: boolean): string {
+    return `文件存在性检查结果: ${exists}`;
+  }
+
+  static OSS_LOCAL_FILE_NOT_FOUND(localFile: string): string {
+    return `本地文件不存在: ${localFile}`;
+  }
+
+  static OSS_LOCAL_FILE_SIZE(size: number): string {
+    return `本地文件大小: ${size} bytes`;
+  }
+
+  static OSS_PUT_RESULT_INFO(result: string): string {
+    return `OSS put 返回结果: ${result}`;
+  }
+
+  static OSS_FILE_UPLOAD_SUCCESS(url: string): string {
+    return `OSS 文件上传成功: ${url}`;
+  }
+
+  static OSS_UPLOAD_ERROR_LOG(message: string): string {
+    return `OSS 上传失败: ${message}`;
+  }
+
+  static OSS_UPLOAD_ERROR_DETAIL_INFO(
+    localFile: string,
+    ossFile: string,
+  ): string {
+    return `失败的 localFile: ${localFile}, ossFile: ${ossFile}`;
+  }
+
+  static OSS_UPLOAD_ERROR_STACK_INFO(stack: string): string {
+    return `错误堆栈: ${stack}`;
+  }
 }

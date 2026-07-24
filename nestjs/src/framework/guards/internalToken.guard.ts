@@ -63,7 +63,10 @@ export class InternalTokenGuard implements CanActivate {
 
       if (requiredServiceName && requiredServiceName !== claims.serviceName) {
         logger.error(
-          `${Messages.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${claims.serviceName}`,
+          Messages.INTERNAL_TOKEN_SERVICE_NAME_MISMATCH(
+            requiredServiceName,
+            claims.serviceName,
+          ),
         );
         throw new BusinessException(
           Messages.SERVICE_NAME_MISMATCH,
@@ -73,7 +76,10 @@ export class InternalTokenGuard implements CanActivate {
       }
 
       logger.debug(
-        `内部令牌验证成功 - 用户ID: ${claims.userId}, 服务: ${claims.serviceName}`,
+        Messages.INTERNAL_TOKEN_VERIFICATION_SUCCESS(
+          claims.userId,
+          claims.serviceName,
+        ),
       );
       return true;
     } catch (error: unknown) {
@@ -81,7 +87,7 @@ export class InternalTokenGuard implements CanActivate {
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
-      logger.error(`令牌验证失败: ${message}`);
+      logger.error(Messages.INTERNAL_TOKEN_VERIFICATION_FAILED(message));
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,

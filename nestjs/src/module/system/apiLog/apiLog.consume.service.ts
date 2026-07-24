@@ -35,11 +35,11 @@ export class ApiLogConsumerService {
       if (typeof msg === "string") {
         // 如果是字符串，尝试解析为 JSON
         apiLogData = JSON.parse(msg) as RawApiLogMessage;
-        logger.info(`接收到 Spring 发送的 ApiLog 消息: ${String(msg)}`);
+        logger.info(Messages.API_LOG_SPRING_MESSAGE(String(msg)));
       } else {
         // 如果已是对象，直接使用
         apiLogData = msg as RawApiLogMessage;
-        logger.info(`接收到 ApiLog 消息: ${JSON.stringify(apiLogData)}`);
+        logger.info(Messages.API_LOG_MESSAGE(JSON.stringify(apiLogData)));
       }
 
       const normalizedData: ApiLogMessage = {
@@ -58,7 +58,7 @@ export class ApiLogConsumerService {
       // 验证消息是否为 API 日志格式（必须包含 apiPath 和 apiMethod）
       if (!normalizedData.apiPath || !normalizedData.apiMethod) {
         logger.info(
-          `收到非 API 日志格式的消息，已忽略: ${JSON.stringify(apiLogData)}`,
+          Messages.API_LOG_IGNORED_MESSAGE(JSON.stringify(apiLogData)),
         );
         return;
       }
@@ -66,7 +66,7 @@ export class ApiLogConsumerService {
       // 转换为 DTO 格式
       let responseTime = normalizedData.responseTime;
       if (responseTime < 0) {
-        logger.warning(`接口响应时间为${responseTime}，已将其设置为0: `);
+        logger.warning(Messages.API_LOG_RESPONSE_TIME_CORRECTED(responseTime));
         responseTime = 0;
       }
 
@@ -91,7 +91,7 @@ export class ApiLogConsumerService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error(`处理 ApiLog 消息失败: ${errorMessage}`);
+      logger.error(Messages.API_LOG_PROCESS_FAILED(errorMessage));
     }
   }
 }

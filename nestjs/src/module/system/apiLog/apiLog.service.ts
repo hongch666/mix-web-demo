@@ -93,7 +93,7 @@ export class ApiLogService {
         ),
       );
       missingIndexes.forEach((indexConfig) => {
-        logger.info(`ApiLog 索引已创建: ${indexConfig.options.name}`);
+        logger.info(Messages.API_LOG_INDEX_CREATED(indexConfig.options.name));
       });
     }
   }

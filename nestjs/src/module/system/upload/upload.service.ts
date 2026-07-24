@@ -40,17 +40,21 @@ export class UploadService {
    * 上传图片到 OSS
    */
   async uploadImage(file: MultipartUploadFile): Promise<UploadResult> {
-    logger.info(`uploadImage 开始，文件信息: filename=${file?.filename}`);
+    logger.info(Messages.UPLOAD_IMAGE_START(file?.filename));
     logger.info(
-      `文件对象类型: ${typeof file}, 是否有 readable: ${file?.readable}, 是否有 pipe: ${typeof file?.pipe}`,
+      Messages.UPLOAD_FILE_TYPE_INFO(
+        typeof file,
+        file?.readable,
+        typeof file?.pipe,
+      ),
     );
-    logger.info(`文件对象键: ${Object.keys(file || {}).join(", ")}`);
+    logger.info(Messages.UPLOAD_FILE_KEYS(Object.keys(file || {}).join(", ")));
 
     const originalFilename: string = file.filename || "image";
     const fileExtension: string =
       path.extname(originalFilename).toLowerCase() || ".jpg";
     const uniqueFilename: string = `${crypto.randomUUID()}${fileExtension}`;
-    logger.info(`生成唯一文件名: ${uniqueFilename}`);
+    logger.info(Messages.UPLOAD_GENERATED_FILENAME(uniqueFilename));
 
     // 保存到本地临时目录
     logger.info(Messages.FILE_SAVE_TEMP_START);
@@ -61,19 +65,19 @@ export class UploadService {
       ".gif",
       ".webp",
     ]);
-    logger.info(`文件已保存到临时目录: ${localPath}`);
+    logger.info(Messages.UPLOAD_FILE_SAVED_TO_TEMP(localPath));
 
     try {
       // 上传到 OSS
       logger.info(Messages.FILE_UPLOAD_OSS_START);
       const ossPath: string = `pic/${uniqueFilename}`;
-      logger.info(`OSS 目标路径: ${ossPath}`);
+      logger.info(Messages.UPLOAD_OSS_TARGET_PATH(ossPath));
 
       const ossUrl: string = await this.ossService.uploadFile(
         localPath,
         ossPath,
       );
-      logger.info(`OSS 上传完成，URL: ${ossUrl}`);
+      logger.info(Messages.UPLOAD_OSS_COMPLETED(ossUrl));
 
       return {
         originalFilename,
@@ -95,7 +99,7 @@ export class UploadService {
     file: MultipartUploadFile,
     customFilename?: string,
   ): Promise<UploadResult> {
-    logger.info(`uploadPdf 开始，文件信息: filename=${file?.filename}`);
+    logger.info(Messages.UPLOAD_PDF_START(file?.filename));
 
     const originalFilename: string = file.filename || "document.pdf";
     const fileExtension: string = path.extname(originalFilename).toLowerCase();
@@ -111,24 +115,24 @@ export class UploadService {
     } else {
       uniqueFilename = `${crypto.randomUUID()}${fileExtension}`;
     }
-    logger.info(`生成唯一文件名: ${uniqueFilename}`);
+    logger.info(Messages.UPLOAD_GENERATED_FILENAME(uniqueFilename));
 
     // 保存到本地临时目录
     logger.info(Messages.FILE_SAVE_TEMP_START);
     const localPath: string = await this.saveFileToTemp(file, uniqueFilename);
-    logger.info(`文件已保存到临时目录: ${localPath}`);
+    logger.info(Messages.UPLOAD_FILE_SAVED_TO_TEMP(localPath));
 
     try {
       // 上传到 OSS
       logger.info(Messages.FILE_UPLOAD_OSS_START);
       const ossPath: string = `pdf/${uniqueFilename}`;
-      logger.info(`OSS 目标路径: ${ossPath}`);
+      logger.info(Messages.UPLOAD_OSS_TARGET_PATH(ossPath));
 
       const ossUrl: string = await this.ossService.uploadFile(
         localPath,
         ossPath,
       );
-      logger.info(`OSS 上传完成，URL: ${ossUrl}`);
+      logger.info(Messages.UPLOAD_OSS_COMPLETED(ossUrl));
 
       return {
         originalFilename,
@@ -158,10 +162,10 @@ export class UploadService {
       const ext: string = path.extname(originalFilename).toLowerCase() || "";
       if (!allowExt.includes(ext)) {
         logger.error(
-          `不支持的文件格式: ${ext}，允许格式: ${allowExt.join(", ")}`,
+          Messages.UPLOAD_UNSUPPORTED_FORMAT(ext, allowExt.join(", ")),
         );
         throw BusinessException.badRequest(
-          `仅支持以下格式: ${allowExt.join(", ")}`,
+          Messages.UPLOAD_ALLOWED_FORMATS(allowExt.join(", ")),
         );
       }
     }
@@ -181,7 +185,7 @@ export class UploadService {
 
     try {
       // @fastify/multipart 返回的对象有 file 属性是真正的 Readable stream
-      logger.info(`检查 file.file 属性, 类型: ${typeof file?.file}`);
+      logger.info(Messages.UPLOAD_CHECK_FILE_PROPERTY(typeof file?.file));
 
       if (!file.file) {
         // 如果没有 file.file 属性，尝试使用 toBuffer() 方法
@@ -189,7 +193,7 @@ export class UploadService {
           logger.info(Messages.USING_TO_BUFFER_METHOD);
           const buffer: Buffer = await file.toBuffer();
           await fs.promises.writeFile(localPath, buffer);
-          logger.info(`文件已保存到临时目录: ${localPath}`);
+          logger.info(Messages.UPLOAD_FILE_SAVED_TO_TEMP(localPath));
           return localPath;
         } else {
           throw BusinessException.unprocessableEntity(
@@ -200,17 +204,20 @@ export class UploadService {
 
       // 使用 file.file 作为流
       logger.info(
-        `使用 file.file 作为流, 类型: ${typeof file.file}, 是否有 pipe: ${typeof file.file?.pipe}`,
+        Messages.UPLOAD_USE_FILE_STREAM(
+          typeof file.file,
+          typeof file.file?.pipe,
+        ),
       );
       await pump(file.file, fs.createWriteStream(localPath));
-      logger.info(`文件已保存到临时目录: ${localPath}`);
+      logger.info(Messages.UPLOAD_FILE_SAVED_TO_TEMP(localPath));
       return localPath;
     } catch (error: unknown) {
       if (error instanceof BusinessException) {
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
-      logger.error(`保存文件到临时目录失败: ${message}`);
+      logger.error(Messages.UPLOAD_SAVE_TO_TEMP_FAILED(message));
       throw error;
     }
   }
@@ -218,10 +225,10 @@ export class UploadService {
   private async cleanupTempFile(filePath: string): Promise<void> {
     try {
       await fs.promises.unlink(filePath);
-      logger.info(`临时文件已删除: ${filePath}`);
+      logger.info(Messages.UPLOAD_TEMP_FILE_DELETED(filePath));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      logger.warning(`删除临时文件失败: ${message}`);
+      logger.warning(Messages.UPLOAD_DELETE_TEMP_FAILED(message));
     }
   }
 }

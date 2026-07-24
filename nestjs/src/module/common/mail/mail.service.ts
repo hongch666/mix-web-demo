@@ -43,7 +43,7 @@ export class MailService {
 
     // 脱敏记录日志，不打印完整验证码
     const maskedEmail: string = email.replace(/(.{3}).+(.{2}@)/, "$1***$2");
-    this.logger.log(`发送验证码邮件到: ${maskedEmail}, 场景: ${type}`);
+    this.logger.log(Messages.VERIFICATION_CODE_EMAIL_SENDING(maskedEmail, type));
 
     if (!this.transporter) {
       throw new Error(Messages.MAIL_SERVICE_CONFIG_INCORRECT);
@@ -62,11 +62,11 @@ export class MailService {
         html: buildEmailContent(code, type, expireMinutes),
       })
       .then((): void => {
-        this.logger.log(`验证码邮件已成功发送到: ${maskedEmail}`);
+        this.logger.log(Messages.VERIFICATION_CODE_EMAIL_SENT(maskedEmail));
       })
       .catch((error: unknown) => {
         this.logger.error(
-          `验证码邮件发送失败: ${maskedEmail}`,
+          Messages.VERIFICATION_CODE_EMAIL_FAILED(maskedEmail),
           error instanceof Error ? error.message : String(error),
         );
       });

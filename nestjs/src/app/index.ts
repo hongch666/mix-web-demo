@@ -112,8 +112,8 @@ export async function createApp(): Promise<NestFastifyApplication> {
   const ip: string = Defaults.INIT_IP;
   // 输出启动信息和Swagger地址
   logger.info(Messages.START_WELCOME);
-  logger.info(`服务地址: http://${ip}:${port}`);
-  logger.info(`Swagger文档地址: http://${ip}:${port}/api-docs`);
+  logger.info(Messages.STARTUP_SERVICE_ADDRESS(ip, port));
+  logger.info(Messages.STARTUP_SWAGGER_ADDRESS(ip, port));
   // 返回 app
   return app;
 }

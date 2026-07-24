@@ -84,24 +84,26 @@ export class OssService implements OnModuleInit {
   async uploadFile(localFile: string, ossFile: string): Promise<string> {
     try {
       logger.info(
-        `开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`,
+        Messages.OSS_UPLOAD_START_DETAIL(localFile, ossFile),
       );
       logger.info(
-        `OSS 客户端配置: bucket=${this.bucketName}, endpoint=${this.endpoint}`,
+        Messages.OSS_CLIENT_CONFIG_INFO(this.bucketName, this.endpoint),
       );
 
       // 检查文件是否存在
-      logger.info(`检查本地文件是否存在: ${localFile}`);
+      logger.info(Messages.OSS_CHECK_FILE_EXISTS(localFile));
       const fileExists = fs.existsSync(localFile);
-      logger.info(`文件存在性检查结果: ${fileExists}`);
+      logger.info(Messages.OSS_FILE_EXISTS_RESULT(fileExists));
 
       if (!fileExists) {
-        throw BusinessException.notFound(`本地文件不存在: ${localFile}`);
+        throw BusinessException.notFound(
+          Messages.OSS_LOCAL_FILE_NOT_FOUND(localFile),
+        );
       }
 
       // 获取文件大小
       const stats = fs.statSync(localFile);
-      logger.info(`本地文件大小: ${stats.size} bytes`);
+      logger.info(Messages.OSS_LOCAL_FILE_SIZE(stats.size));
 
       // 添加超时控制
       logger.info(Messages.OSS_PUT_OPERATION_START);
@@ -109,17 +111,25 @@ export class OssService implements OnModuleInit {
         ? await this.uploadFileWithBun(localFile, ossFile)
         : await this.uploadFileWithAliOss(localFile, ossFile);
 
-      logger.info(`OSS put 返回结果: ${JSON.stringify(result)}`);
+      logger.info(
+        Messages.OSS_PUT_RESULT_INFO(JSON.stringify(result)),
+      );
 
       const url: string = this.getFileUrl(ossFile);
-      logger.info(`OSS 文件上传成功: ${url}`);
+      logger.info(Messages.OSS_FILE_UPLOAD_SUCCESS(url));
       return url;
     } catch (error: unknown) {
       const message: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(`OSS 上传失败: ${message}`);
-      logger.error(`失败的 localFile: ${localFile}, ossFile: ${ossFile}`);
-      logger.error(`错误堆栈: ${error instanceof Error ? error.stack : ""}`);
+      logger.error(Messages.OSS_UPLOAD_ERROR_LOG(message));
+      logger.error(
+        Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile),
+      );
+      logger.error(
+        Messages.OSS_UPLOAD_ERROR_STACK_INFO(
+          error instanceof Error ? error.stack || "" : "",
+        ),
+      );
       throw BusinessException.internalServerError(Messages.OSS_UPLOAD_FAILED);
     }
   }

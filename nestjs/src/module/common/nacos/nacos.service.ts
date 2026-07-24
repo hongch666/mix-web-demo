@@ -126,7 +126,7 @@ export class NacosService implements OnModuleInit {
     ) {
       // 自动解析
       registrationIp = this.getLocalIp();
-      logger.info(`本地 IP 已转换为: ${registrationIp}`);
+      logger.info(Messages.LOCAL_IP_CONVERTED(registrationIp));
     }
 
     // 注册当前服务
@@ -211,7 +211,7 @@ export class NacosService implements OnModuleInit {
     );
     if (!instances || instances.length === 0) {
       throw BusinessException.serviceUnavailable(
-        `服务 ${opts.serviceName} 无可用实例`,
+        Messages.SERVICE_NO_AVAILABLE_INSTANCE(opts.serviceName),
         ErrorIds.NO_AVAILABLE_SERVICE_INSTANCE,
       );
     }
@@ -276,10 +276,15 @@ export class NacosService implements OnModuleInit {
       if (responseData.code !== HttpCode.OK) {
         const errorMsg: string =
           (responseData.msg as string) || Messages.UNKNOWN_ERROR;
-        const logMessage: string = `服务 ${opts.serviceName} 返回业务错误: code=${String(responseData.code)}, msg=${errorMsg}`;
-        logger.error(logMessage);
+        logger.error(
+          Messages.SERVICE_BUSINESS_ERROR_DETAIL(
+            opts.serviceName,
+            String(responseData.code),
+            errorMsg,
+          ),
+        );
         throw BusinessException.badGateway(
-          `调用 ${opts.serviceName} 失败: ${errorMsg}`,
+          Messages.SERVICE_CALL_FAILED_WITH_MSG(opts.serviceName, errorMsg),
           ErrorIds.SERVICE_CALL_FAILED,
         );
       }
@@ -288,20 +293,25 @@ export class NacosService implements OnModuleInit {
       return responseData;
     } catch (err) {
       if (err instanceof CircuitBreakerOpenError) {
-        logger.warning(`调用 ${opts.serviceName} 已触发熔断，直接返回降级结果`);
+        logger.warning(
+          Messages.SERVICE_CIRCUIT_BREAKER_TRIGGERED(opts.serviceName),
+        );
         return {
           code: HttpCode.SERVICE_UNAVAILABLE,
-          msg: `调用 ${opts.serviceName} 已降级，请稍后再试`,
+          msg: Messages.SERVICE_DEGRADED_MSG(opts.serviceName),
           data: null,
         };
       }
 
       breaker.recordFailure();
       logger.error(
-        `调用 ${opts.serviceName} 失败: ${err instanceof Error ? err.message : String(err)}`,
+        Messages.SERVICE_CALL_ERROR(
+          opts.serviceName,
+          err instanceof Error ? err.message : String(err),
+        ),
       );
       throw BusinessException.badGateway(
-        `调用 ${opts.serviceName} 失败，请稍后重试`,
+        Messages.SERVICE_CALL_FAILED_RETRY_LATER(opts.serviceName),
         ErrorIds.SERVICE_CALL_FAILED,
       );
     }

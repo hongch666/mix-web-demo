@@ -60,7 +60,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // 打印错误日志（所有异常都记录详细信息）
     logger.error(
-      `[${request.method}] ${request.url} - [${errorIdentifier}] ${exception instanceof BusinessException ? message : exceptionMessage} - ${exceptionStack}`,
+      Messages.EXCEPTION_LOG(
+        request.method,
+        request.url,
+        errorIdentifier,
+        exception instanceof BusinessException ? message : exceptionMessage,
+        exceptionStack,
+      ),
     );
 
     response.status(httpStatus).send(error(httpStatus, message));

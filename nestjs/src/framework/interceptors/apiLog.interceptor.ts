@@ -57,7 +57,13 @@ export class ApiLogInterceptor implements NestInterceptor {
     const username: string = this.cls.get<string>("username") || "unknown";
 
     // 构建基础日志消息
-    let logMessage: string = `用户${userId}:${username} ${method} ${url}: ${logConfig.message}`;
+    let logMessage: string = Messages.API_LOG_REQUEST(
+      userId,
+      username,
+      method,
+      url,
+      logConfig.message,
+    );
 
     // 添加参数信息
     if (logConfig.includeParams) {
@@ -85,7 +91,11 @@ export class ApiLogInterceptor implements NestInterceptor {
       finalize(() => {
         // 计算耗时
         const responseTime: number = Date.now() - start;
-        const timeMessage: string = `${method} ${url} 使用了${responseTime}ms`;
+        const timeMessage: string = Messages.API_LOG_RESPONSE_TIME(
+          method,
+          url,
+          responseTime,
+        );
         const timeLogLevel: string = logConfig.logLevel || "info";
         if (timeLogLevel in logger) {
           (
@@ -108,7 +118,7 @@ export class ApiLogInterceptor implements NestInterceptor {
         ).catch((error: unknown) => {
           const errorMessage: string =
             error instanceof Error ? error.message : String(error);
-          logger.error(`发送 API 日志到队列失败: ${errorMessage}`);
+          logger.error(Messages.API_LOG_QUEUE_SEND_FAILED(errorMessage));
         });
       }),
     );
@@ -183,11 +193,11 @@ export class ApiLogInterceptor implements NestInterceptor {
       // 发送到消息队列
       this.amqpConnection.publish("", "api-log-queue", apiLogMessage);
 
-      logger.info(`API 日志已发送到队列: ${JSON.stringify(apiLogMessage)}`);
+      logger.info(Messages.API_LOG_QUEUE_SENT(JSON.stringify(apiLogMessage)));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(`向消息队列发送 API 日志出错: ${errorMessage}`);
+      logger.error(Messages.API_LOG_QUEUE_ERROR(errorMessage));
       // 不要抛出异常，避免影响业务逻辑
     }
   }

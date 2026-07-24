@@ -32,11 +32,11 @@ export class LogConsumerService {
       if (typeof msg === "string") {
         // 如果是字符串，尝试解析为 JSON
         logData = JSON.parse(msg) as RawArticleLogMessage;
-        logger.info(`接收到 Spring 发送的 ArticleLog 消息: ${String(msg)}`);
+        logger.info(Messages.ARTICLE_LOG_SPRING_MESSAGE(String(msg)));
       } else {
         // 如果已是对象，直接使用
         logData = msg as RawArticleLogMessage;
-        logger.info(`接收到 ArticleLog 消息: ${JSON.stringify(logData)}`);
+        logger.info(Messages.ARTICLE_LOG_MESSAGE(JSON.stringify(logData)));
       }
 
       // 处理消息
@@ -52,19 +52,19 @@ export class LogConsumerService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error(`处理 ArticleLog 消息失败: ${errorMessage}`);
+      logger.error(Messages.ARTICLE_LOG_PROCESS_FAILED(errorMessage));
     }
   }
 
   private async handleMessage(msg: ArticleLogMessage): Promise<void> {
     // 验证必填字段
     if (!msg.action) {
-      logger.error(`ArticleLog 消息缺少 action 字段: ${JSON.stringify(msg)}`);
+      logger.error(Messages.ARTICLE_LOG_MISSING_ACTION(JSON.stringify(msg)));
       throw BusinessException.unprocessableEntity(Messages.ARTICLE_LESS_ACTION);
     }
 
     if (!msg.content) {
-      logger.error(`ArticleLog 消息缺少 content 字段: ${JSON.stringify(msg)}`);
+      logger.error(Messages.ARTICLE_LOG_MISSING_CONTENT(JSON.stringify(msg)));
       throw BusinessException.unprocessableEntity(
         Messages.ARTICLE_LESS_CONTNET,
       );
@@ -73,9 +73,9 @@ export class LogConsumerService {
     // 验证 action 是否是有效的枚举值
     const validActions: ArticleAction[] = Object.values(ArticleAction);
     if (!validActions.includes(msg.action)) {
-      logger.error(`ArticleLog 消息包含无效的 action 值: ${msg.action}`);
+      logger.error(Messages.ARTICLE_LOG_INVALID_ACTION_DETAIL(msg.action));
       throw BusinessException.unprocessableEntity(
-        `无效的操作类型: ${msg.action}`,
+        Messages.ARTICLE_LOG_INVALID_ACTION(msg.action),
       );
     }
 
@@ -99,7 +99,7 @@ export class LogConsumerService {
       content: contentObj,
     };
 
-    logger.info(`准备保存 ArticleLog: ${JSON.stringify(dto)}`);
+    logger.info(Messages.ARTICLE_LOG_PREPARE_SAVE(JSON.stringify(dto)));
     await this.articleLogService.create(dto);
     logger.info(Messages.ARTICLE_SAVE);
   }
