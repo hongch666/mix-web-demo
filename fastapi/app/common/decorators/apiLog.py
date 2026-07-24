@@ -81,21 +81,27 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
 
             # 构建基础日志消息
             log_lines: List[str] = [
-                f"用户{user_id}:{username} {method} {path}: {log_config.message}"
+                Messages.API_LOG_REQUEST_MESSAGE(
+                    user_id, username, method, path, log_config.message
+                )
             ]
 
             # 添加查询参数
             if request and request.query_params:
                 query_params: Dict[str, Any] = dict(request.query_params)
                 log_lines.append(
-                    f"  查询参数: {json.dumps(query_params, ensure_ascii=False)}"
+                    Messages.API_LOG_QUERY_PARAMS(
+                        json.dumps(query_params, ensure_ascii=False)
+                    )
                 )
 
             # 添加路径参数
             if request and hasattr(request, "path_params") and request.path_params:
                 path_params: Dict[str, Any] = dict(request.path_params)
                 log_lines.append(
-                    f"  路径参数: {json.dumps(path_params, ensure_ascii=False)}"
+                    Messages.API_LOG_PATH_PARAMS(
+                        json.dumps(path_params, ensure_ascii=False)
+                    )
                 )
 
             # 添加请求体（业务参数）
@@ -136,7 +142,9 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                         finally:
                             # 流完成时记录耗时
                             duration_ms: int = int((time.time() - start) * 1000)
-                            time_message: str = f"{method} {path} 使用了{duration_ms}ms"
+                            time_message: str = Messages.API_LOG_RESPONSE_TIME(
+                                method, path, duration_ms
+                            )
                             logger_method(time_message)
 
                             # 发送 API 日志到 RabbitMQ（使用捕获的上下文）
@@ -158,7 +166,9 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 else:
                     # 非流式响应，立即记录耗时
                     duration_ms: int = int((time.time() - start) * 1000)
-                    time_message: str = f"{method} {path} 使用了{duration_ms}ms"
+                    time_message: str = Messages.API_LOG_RESPONSE_TIME(
+                        method, path, duration_ms
+                    )
                     logger_method(time_message)
 
                     # 发送 API 日志到 RabbitMQ
@@ -180,14 +190,14 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 raise
             except Exception as e:
                 duration_ms: int = int((time.time() - start) * 1000)
-                time_message: str = (
-                    f"{method} {path} 使用了{duration_ms}ms (异常)，异常信息: {str(e)}"
+                time_message: str = Messages.API_LOG_RESPONSE_TIME_WITH_ERROR(
+                    method, path, duration_ms, e
                 )
                 logger_method(time_message)
                 raise BusinessException(
-                    f"请求处理异常: {str(e)}",
+                    Messages.API_LOG_REQUEST_PROCESS_FAILED(e),
                     HttpCode.SERVICE_UNAVAILABLE,
-                    f"REQUEST_ERROR: {str(e)[:200]}",
+                    Messages.API_LOG_REQUEST_ERROR_ID(e),
                 )
 
         # 根据函数是否为协程选择包装器
@@ -309,13 +319,13 @@ def _extract_params_info(
         if filtered_params:
             param_info: List[str] = []
             for key, value in filtered_params.items():
-                param_info.append(f"    {key}: {value}")
+                param_info.append(Messages.API_LOG_PARAM_LINE(key, value))
             return "\n".join(param_info)
 
         return ""
 
     except Exception as e:
-        return f"参数解析失败: {str(e)}"
+        return Messages.API_LOG_PARAM_PARSE_FAILED(e)
 
 
 def _serialize_for_json(obj: Any) -> Any:
@@ -343,7 +353,7 @@ def _serialize_for_json(obj: Any) -> Any:
         return [_serialize_for_json(item) for item in obj]
     elif hasattr(obj, "filename") and hasattr(obj, "file"):
         # 处理 UploadFile 对象
-        return f"UploadFile(filename='{obj.filename}')"
+        return Messages.UPLOAD_FILE_DESCRIPTION(obj.filename)
     else:
         # 其他对象转字符串
         return str(obj)
@@ -367,7 +377,7 @@ def _serialize_param(param: Any) -> str:
         else:
             # 检查是否是 UploadFile 对象
             if hasattr(param, "filename") and hasattr(param, "file"):
-                return f"UploadFile(filename='{param.filename}')"
+                return Messages.UPLOAD_FILE_DESCRIPTION(param.filename)
             # 检查是否是 Pydantic 模型
             elif hasattr(param, "model_dump"):
                 # Pydantic v2
@@ -463,8 +473,8 @@ def _extract_request_body_for_queue(
                 for dict_key, dict_value in value.items():
                     # 检查是否是 UploadFile 对象
                     if hasattr(dict_value, "filename") and hasattr(dict_value, "file"):
-                        processed_dict[dict_key] = (
-                            f"UploadFile(filename='{dict_value.filename}')"
+                        processed_dict[dict_key] = Messages.UPLOAD_FILE_DESCRIPTION(
+                            dict_value.filename
                         )
                     else:
                         processed_dict[dict_key] = dict_value
@@ -487,7 +497,7 @@ def _extract_request_body_for_queue(
         return request_body_dict if request_body_dict else None
 
     except Exception as e:
-        Logger.warning(f"提取请求体信息时出错: {str(e)}")
+        Logger.warning(Messages.API_LOG_REQUEST_BODY_EXTRACTION_FAILED(e))
         return None
 
 
@@ -608,7 +618,7 @@ async def _send_api_log_to_queue_async(
             Logger.error(Messages.API_RABBITMQ_LOGGING_FAILURE)
 
     except Exception as e:
-        Logger.error(f"发送 API 日志到队列时出错: {e}")
+        Logger.error(Messages.API_LOG_QUEUE_SEND_FAILED(e))
 
 
 # 简化版装饰器，直接传入消息

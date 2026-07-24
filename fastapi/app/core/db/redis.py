@@ -32,7 +32,7 @@ class RedisClient:
             self._client_loop_id: Optional[int] = None
             self._init_lock = Lock()
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_CONNECTION_FAILED_MESSAGE_PREFIX}{e}")
+            Logger.error(Messages.REDIS_CONNECTION_FAILED(e))
             self._redis_config = None
             self._client = None
             self._client_loop_id = None
@@ -79,7 +79,11 @@ class RedisClient:
             self._client_loop_id = loop_id
 
             Logger.info(
-                f"{Messages.REDIS_CLIENT_INITIALIZED_MESSAGE_PREFIX}{pool_params['host']}:{pool_params['port']}, DB: {pool_params['db']}"
+                Messages.REDIS_CLIENT_INITIALIZED(
+                    str(pool_params["host"]),
+                    int(pool_params["port"]),
+                    int(pool_params["db"]),
+                )
             )
             return self._client
 
@@ -120,7 +124,7 @@ class RedisClient:
                     return value
             return None
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_GET_FAILED_MESSAGE_PREFIX}{key}: {e}")
+            Logger.error(Messages.REDIS_GET_FAILED(key, e))
             return None
 
     async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
@@ -136,7 +140,7 @@ class RedisClient:
             await client.set(key, value, ex=ex)
             return True
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_SET_FAILED_MESSAGE_PREFIX}{key}: {e}")
+            Logger.error(Messages.REDIS_SET_FAILED(key, e))
             return False
 
     async def delete(self, *keys: str) -> bool:
@@ -148,7 +152,7 @@ class RedisClient:
             await client.delete(*keys)
             return True
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_DELETE_FAILED_MESSAGE_PREFIX}{keys}: {e}")
+            Logger.error(Messages.REDIS_DELETE_FAILED(keys, e))
             return False
 
     async def exists(self, key: str) -> bool:
@@ -159,7 +163,7 @@ class RedisClient:
                 return False
             return (await client.exists(key)) > 0
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_EXISTS_FAILED_MESSAGE_PREFIX}{key}: {e}")
+            Logger.error(Messages.REDIS_EXISTS_FAILED(key, e))
             return False
 
     async def expire(self, key: str, seconds: int) -> bool:
@@ -170,7 +174,7 @@ class RedisClient:
                 return False
             return bool(await client.expire(key, seconds))
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_EXPIRE_FAILED_MESSAGE_PREFIX}{key}: {e}")
+            Logger.error(Messages.REDIS_EXPIRE_FAILED(key, e))
             return False
 
     async def ttl(self, key: str) -> int:
@@ -181,7 +185,7 @@ class RedisClient:
                 return -2
             return await client.ttl(key)
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_TTL_FAILED_MESSAGE_PREFIX}{key}: {e}")
+            Logger.error(Messages.REDIS_TTL_FAILED(key, e))
             return -2
 
     async def keys(self, pattern: str) -> list[str]:
@@ -192,7 +196,7 @@ class RedisClient:
                 return []
             return await client.keys(pattern)
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_KEYS_FAILED_MESSAGE_PREFIX}{pattern}: {e}")
+            Logger.error(Messages.REDIS_KEYS_FAILED(pattern, e))
             return []
 
     async def flushdb(self) -> bool:
@@ -205,7 +209,7 @@ class RedisClient:
             Logger.warning(Messages.REDIS_DATABASE_CLEARED_MESSAGE)
             return True
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_FLUSHDB_FAILED_MESSAGE_PREFIX}{e}")
+            Logger.error(Messages.REDIS_FLUSHDB_FAILED(e))
             return False
 
     # 分布式锁相关方法
@@ -232,7 +236,7 @@ class RedisClient:
             )
             return lock_value if result else None
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_LOCK_ACQUIRE_ERROR_PREFIX}{lock_key}: {e}")
+            Logger.error(Messages.REDIS_LOCK_ACQUIRE_FAILED(lock_key, e))
             return None
 
     async def unlock(self, lock_key: str, lock_value: str) -> bool:
@@ -260,7 +264,7 @@ class RedisClient:
             result: Any = await client.eval(unlock_script, 1, lock_key, lock_value)
             return result == 1
         except Exception as e:
-            Logger.error(f"{Messages.REDIS_LOCK_RELEASE_ERROR_PREFIX}{lock_key}: {e}")
+            Logger.error(Messages.REDIS_LOCK_RELEASE_FAILED(lock_key, e))
             return False
 
 

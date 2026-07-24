@@ -15,7 +15,7 @@ from app.internal.agents.langsmith import (
 )
 from app.core.base import Logger, success
 from app.core.config import load_config
-from app.core.constants import HttpCode
+from app.core.constants import HttpCode, Messages
 from app.core.db import get_db
 from app.internal.models import AiHistory
 from app.internal.schemas import (
@@ -139,7 +139,7 @@ async def send_message(
 
         # 根据请求的服务类型选择对应的AI服务
         if request.service == AIServiceType.GPT:
-            Logger.info(f"使用GPT服务处理用户 {actual_user_id} 的请求")
+            Logger.info(Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, False))
             response_message: str = await gptService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -147,7 +147,7 @@ async def send_message(
                 runnable_config=runnable_config,
             )
         elif request.service == AIServiceType.GEMINI:
-            Logger.info(f"使用Gemini服务处理用户 {actual_user_id} 的请求")
+            Logger.info(Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, False))
             response_message = await geminiService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -155,7 +155,7 @@ async def send_message(
                 runnable_config=runnable_config,
             )
         else:
-            Logger.info(f"使用DeepSeek服务处理用户 {actual_user_id} 的请求")
+            Logger.info(Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, False))
             response_message = await deepseekService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -182,9 +182,7 @@ async def send_message(
         ai_type=request.service.value,
     )
     await aiHistoryService.create_ai_history(history, db)
-    Logger.info(
-        f"AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}"
-    )
+    Logger.info(Messages.AI_HISTORY_SAVED(actual_user_id, request.service.value, False))
 
     # 成功响应 - 按照success格式
     response_data: ChatResponseData = ChatResponseData(
@@ -269,7 +267,7 @@ async def stream_message(
                 db = await anext(db_generator)
                 # 根据请求的服务类型选择对应的AI服务
                 if request.service == AIServiceType.GPT:
-                    Logger.info(f"使用GPT流式服务处理用户 {actual_user_id} 的请求")
+                    Logger.info(Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, True))
                     stream_generator: AsyncGenerator[Any, None] = (
                         gptService.stream_chat(
                             message=request.message,
@@ -279,7 +277,7 @@ async def stream_message(
                         )
                     )
                 elif request.service == AIServiceType.GEMINI:
-                    Logger.info(f"使用Gemini流式服务处理用户 {actual_user_id} 的请求")
+                    Logger.info(Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, True))
                     stream_generator = geminiService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
@@ -287,7 +285,7 @@ async def stream_message(
                         runnable_config=runnable_config,
                     )
                 else:
-                    Logger.info(f"使用DeepSeek流式服务处理用户 {actual_user_id} 的请求")
+                    Logger.info(Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, True))
                     stream_generator = deepseekService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
@@ -308,7 +306,7 @@ async def stream_message(
 
                     # 记录chunk长度（用于调试）
                     Logger.debug(
-                        f"流式块类型: {chunk_type}, 块内容长度: {len(chunk_content)}"
+                        Messages.STREAM_CHUNK_RECEIVED(chunk_type, len(chunk_content))
                     )
 
                     # 分别累积思考过程和最终内容
@@ -334,7 +332,7 @@ async def stream_message(
                     json_str: str = json.dumps(
                         data.model_dump(), ensure_ascii=False, separators=(",", ":")
                     )
-                    Logger.debug(f"SSE 数据包大小: {len(json_str)} 字节")
+                    Logger.debug(Messages.SSE_PACKET_SIZE(len(json_str)))
                     yield f"data: {json_str}\n\n"
 
                 # 流式聊天完成后保存AI历史记录（在完成流式传输后）
@@ -348,7 +346,9 @@ async def stream_message(
                     )
                     await aiHistoryService.create_ai_history(history, db)
                     Logger.info(
-                        f"流式AI历史记录已保存: user_id={actual_user_id}, ai_type={request.service.value}"
+                        Messages.AI_HISTORY_SAVED(
+                            actual_user_id, request.service.value, True
+                        )
                     )
 
                 if not message_acc:

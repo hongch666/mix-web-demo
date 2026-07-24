@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import jieba.analyse
 from app.core.base import Logger
-from app.core.constants import HttpCode, Messages
+from app.core.constants import HttpCode, Messages, Prompts
 from app.core.db import AsyncSessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
@@ -71,7 +71,7 @@ class GenerateService:
             )
         )
         if ai_comments_count > 0:
-            Logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
+            Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
             await self.comments_mapper.delete_ai_comments_by_article_id_mapper_async(
                 article_id, db
             )
@@ -87,19 +87,11 @@ class GenerateService:
                 Messages.ERROR_ARTICLE_NOT_FOUND,
             )
         # 2.2 构建提示词
-        prompt = f"""请对以下文章进行评价，并给出评分。
-        要求：
-        1. 给出简短的评价（100-200字）
-        2. 给出0-10分的评分（可以是小数）
-        3. 请使用以下格式输出：
-            评价内容：[你的评价]
-            评分：[你的评分]
-        文章标题：{article.title}
-        文章标签：{article.tags}
-        文章内容：{article.content}
-        """
+        prompt = Prompts.ARTICLE_EVALUATION(
+            article.title, article.tags, article.content
+        )
         # 2.3 异步并发调用3个大模型生成AI评论
-        Logger.info(f"开始并发调用3个大模型生成AI评论，文章ID：{article_id}")
+        Logger.info(Messages.CONCURRENT_LLM_AI_COMMENT_START(article_id))
 
         # 记录整体开始时间
         total_start_time = time.time()
@@ -110,11 +102,11 @@ class GenerateService:
             try:
                 result = await self.deepseek_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                Logger.info(f"DeepSeek调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(Messages.LLM_CALL_COMPLETED("DeepSeek", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"DeepSeek调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(Messages.LLM_CALL_FAILED_TIMED("DeepSeek", elapsed, e))
                 return e
 
         async def timed_gemini_call() -> Any:
@@ -122,11 +114,11 @@ class GenerateService:
             try:
                 result = await self.gemini_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                Logger.info(f"Gemini调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(Messages.LLM_CALL_COMPLETED("Gemini", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"Gemini调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(Messages.LLM_CALL_FAILED_TIMED("Gemini", elapsed, e))
                 return e
 
         async def timed_gpt_call() -> Any:
@@ -134,11 +126,11 @@ class GenerateService:
             try:
                 result = await self.gpt_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                Logger.info(f"GPT调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(Messages.LLM_CALL_COMPLETED("GPT", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"GPT调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(Messages.LLM_CALL_FAILED_TIMED("GPT", elapsed, e))
                 return e
 
         # 使用 asyncio.gather 并发执行三个异步调用
@@ -152,20 +144,20 @@ class GenerateService:
         # 记录整体结束时间
         total_elapsed = time.time() - total_start_time
         Logger.info(
-            f"3个大模型并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}"
+            Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id)
         )
 
         response_deepseek, response_gemini, response_gpt = responses
 
         # 检查是否有异常返回
         if isinstance(response_deepseek, Exception):
-            Logger.error(f"DeepSeek大模型最终失败: {response_deepseek}")
+            Logger.error(Messages.LLM_FINAL_FAILED("DeepSeek", response_deepseek))
             response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
-            Logger.error(f"Gemini大模型最终失败: {response_gemini}")
+            Logger.error(Messages.LLM_FINAL_FAILED("Gemini", response_gemini))
             response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_gpt, Exception):
-            Logger.error(f"GPT大模型最终失败: {response_gpt}")
+            Logger.error(Messages.LLM_FINAL_FAILED("GPT", response_gpt))
             response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 2.4 解析大模型返回结果
@@ -210,7 +202,7 @@ class GenerateService:
             _insert_comment(gemini_ai_comment),
             _insert_comment(gpt_ai_comment),
         )
-        Logger.info(f"AI评论生成并保存完成，文章ID：{article_id}")
+        Logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     # 定义工具函数解析大模型返回结果
     def _parse_ai_comment_response(self, response: str) -> tuple[str, float]:
@@ -266,7 +258,7 @@ class GenerateService:
             )
         )
         if ai_comments_count > 0:
-            Logger.info(f"文章ID：{article_id} 已存在AI评论，删除对应AI评论")
+            Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
             await self.comments_mapper.delete_ai_comments_by_article_id_mapper_async(
                 article_id, db
             )
@@ -276,10 +268,10 @@ class GenerateService:
             article_id, db
         )
         if not article:
-            Logger.error(f"文章不存在: {article_id}")
+            Logger.error(Messages.ARTICLE_NOT_FOUND_WITH_ID(article_id))
             return
 
-        Logger.info(f"开始基于参考文本生成AI评论，文章ID：{article_id}")
+        Logger.info(Messages.REFERENCE_BASED_AI_COMMENT_START(article_id))
 
         # 3. 获取权威参考文本
         category_ref_mapper: CategoryReferenceMapper = get_category_reference_mapper()
@@ -296,8 +288,8 @@ class GenerateService:
             )
 
             if category_ref:
-                Logger.info(f"找到权威参考文本，类型: {category_ref.get('type')}")
-                Logger.info(f"参考文本详情: {category_ref}")
+                Logger.info(Messages.REFERENCE_TEXT_TYPE_FOUND(str(category_ref.get('type'))))
+                Logger.info(Messages.REFERENCE_TEXT_DETAIL(category_ref))
 
                 # 4. 根据类型提取内容并使用大模型进行总结
                 extractor = get_reference_content_extractor()
@@ -306,10 +298,10 @@ class GenerateService:
 
                 if ref_type == "pdf":
                     ref_value = category_ref.get("pdf")
-                    Logger.info(f"开始提取 PDF 权威文本: {ref_value}")
+                    Logger.info(Messages.REFERENCE_PDF_EXTRACTION_START(str(ref_value)))
                 elif ref_type == "link":
                     ref_value = category_ref.get("link")
-                    Logger.info(f"开始提取链接权威文本: {ref_value}")
+                    Logger.info(Messages.REFERENCE_LINK_EXTRACTION_START(str(ref_value)))
 
                 # 定义三个大模型的总结函数
                 async def summarize_with_deepseek(content: str) -> str:
@@ -318,7 +310,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(f"DeepSeek总结失败: {e}")
+                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("DeepSeek", e))
                         return content[:1500]
 
                 async def summarize_with_gemini(content: str) -> str:
@@ -327,7 +319,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(f"Gemini总结失败: {e}")
+                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("Gemini", e))
                         return content[:1500]
 
                 async def summarize_with_gpt(content: str) -> str:
@@ -336,7 +328,7 @@ class GenerateService:
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(f"GPT总结失败: {e}")
+                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("GPT", e))
                         return content[:1500]
 
                 # 并发调用三个大模型对提取的内容进行总结
@@ -359,42 +351,40 @@ class GenerateService:
                 # 合并三个大模型的总结结果
                 summaries = []
                 if isinstance(summary_results[0], str) and summary_results[0]:
-                    summaries.append(f"【DeepSeek总结】\n{summary_results[0]}")
+                    summaries.append(Messages.LLM_SUMMARY_RESULT_ENTRY("DeepSeek", summary_results[0]))
                 if isinstance(summary_results[1], str) and summary_results[1]:
-                    summaries.append(f"【Gemini总结】\n{summary_results[1]}")
+                    summaries.append(Messages.LLM_SUMMARY_RESULT_ENTRY("Gemini", summary_results[1]))
                 if isinstance(summary_results[2], str) and summary_results[2]:
-                    summaries.append(f"【GPT总结】\n{summary_results[2]}")
+                    summaries.append(Messages.LLM_SUMMARY_RESULT_ENTRY("GPT", summary_results[2]))
 
                 if summaries:
                     reference_content = "\n\n".join(summaries)
                     Logger.info(
-                        f"权威参考文本提取并总结完成，总结内容长度: {len(reference_content)} 字"
+                        Messages.REFERENCE_TEXT_EXTRACTED_AND_SUMMARIZED(len(reference_content))
                     )
                 else:
-                    Logger.warning(f"无法提取或总结参考文本内容，类型: {ref_type}")
+                    Logger.warning(Messages.REFERENCE_TEXT_EXTRACTION_FAILED_TYPE(ref_type))
                     reference_content = (
-                        f"参考文本类型: {ref_type}\n参考文本链接: {ref_value}"
+                        Messages.REFERENCE_TEXT_FALLBACK_CONTENT(ref_type, str(ref_value))
                     )
             else:
-                Logger.info(f"子分类 {sub_category_id} 无权威参考文本")
+                Logger.info(Messages.SUB_CATEGORY_NO_REFERENCE(sub_category_id))
                 reference_content = None
         else:
-            Logger.warning(f"文章 {article_id} 无子分类信息")
+            Logger.warning(Messages.ARTICLE_NO_SUB_CATEGORY(article_id))
             reference_content = None
         # 如果没有参考文本，使用默认参考提示
         if not reference_content:
             reference_content = Messages.CATEGORY_NO_AUTHORITATIVE_REFERENCE_TEXT_ERROR
 
         # 5. 构建要评价的内容
-        article_content = f"""
-                        标题：{article.title}
-                        标签：{article.tags}
-                        内容摘要（前500字）：{article.content[:500] if article.content else "无"}
-                        """
+        article_content = Prompts.ARTICLE_REFERENCE_CONTENT(
+            article.title, article.tags, article.content
+        )
 
         # 6. 异步并发调用3个大模型生成AI评论
         Logger.info(
-            f"开始并发调用3个大模型生成AI评论（基于参考文本），文章ID：{article_id}"
+            Messages.CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id)
         )
 
         total_start_time = time.time()
@@ -406,12 +396,12 @@ class GenerateService:
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                Logger.info(f"DeepSeek参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("DeepSeek", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
                 Logger.error(
-                    f"DeepSeek参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}"
+                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("DeepSeek", elapsed, e)
                 )
                 return e
 
@@ -422,12 +412,12 @@ class GenerateService:
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                Logger.info(f"Gemini参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("Gemini", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
                 Logger.error(
-                    f"Gemini参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}"
+                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("Gemini", elapsed, e)
                 )
                 return e
 
@@ -438,11 +428,11 @@ class GenerateService:
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                Logger.info(f"GPT参考文本调用完成，耗时: {elapsed:.2f}秒")
+                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("GPT", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(f"GPT参考文本调用失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                Logger.error(Messages.LLM_REFERENCE_CALL_FAILED_TIMED("GPT", elapsed, e))
                 return e
 
         # 并发执行三个调用
@@ -455,20 +445,20 @@ class GenerateService:
 
         total_elapsed = time.time() - total_start_time
         Logger.info(
-            f"3个大模型参考文本并发调用全部完成，总耗时: {total_elapsed:.2f}秒，文章ID：{article_id}"
+            Messages.CONCURRENT_LLM_REFERENCE_ALL_COMPLETED(total_elapsed, article_id)
         )
 
         response_deepseek, response_gemini, response_gpt = responses
 
         # 检查异常返回
         if isinstance(response_deepseek, Exception):
-            Logger.error(f"DeepSeek参考文本最终失败: {response_deepseek}")
+            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("DeepSeek", response_deepseek))
             response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
-            Logger.error(f"Gemini参考文本最终失败: {response_gemini}")
+            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("Gemini", response_gemini))
             response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
         if isinstance(response_gpt, Exception):
-            Logger.error(f"GPT参考文本最终失败: {response_gpt}")
+            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("GPT", response_gpt))
             response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 7. 解析大模型返回结果
@@ -514,7 +504,7 @@ class GenerateService:
             _insert_comment_ref(gemini_ai_comment),
             _insert_comment_ref(gpt_ai_comment),
         )
-        Logger.info(f"基于参考文本的AI评论生成并保存完成，文章ID：{article_id}")
+        Logger.info(Messages.REFERENCE_AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_authority_article_with_ai_summaries(
         self, reference_type: str, reference_value: str
@@ -531,7 +521,7 @@ class GenerateService:
         """
         try:
             Logger.info(
-                f"开始生成权威文章，类型: {reference_type}，值: {reference_value}"
+                Messages.AUTHORITY_ARTICLE_GENERATION_START(reference_type, reference_value)
             )
 
             # 1. 提取原始内容
@@ -546,10 +536,10 @@ class GenerateService:
                     reference_value, max_length=3000
                 )
             else:
-                Logger.error(f"不支持的参考文本类型: {reference_type}")
+                Logger.error(Messages.UNSUPPORTED_REFERENCE_TYPE(reference_type))
                 return {
                     "status": "error",
-                    "message": f"不支持的参考文本类型: {reference_type}",
+                    "message": Messages.UNSUPPORTED_REFERENCE_TYPE(reference_type),
                 }
 
             if not raw_content:
@@ -559,7 +549,7 @@ class GenerateService:
                     "message": Messages.REFERENCE_TEXT_EXTRACTION_ERROR,
                 }
 
-            Logger.info(f"原始内容提取完成，长度: {len(raw_content)} 字符")
+            Logger.info(Messages.RAW_CONTENT_EXTRACTION_COMPLETED(len(raw_content)))
 
             # 2. 并发调用三个大模型进行总结
             Logger.info(Messages.CONCURRENT_SUMMARY_MESSAGE)
@@ -573,12 +563,12 @@ class GenerateService:
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        f"DeepSeek总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
+                        Messages.LLM_SUMMARIZE_COMPLETED("DeepSeek", elapsed, len(result) if result else 0)
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(f"DeepSeek总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("DeepSeek", elapsed, e))
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:
@@ -589,12 +579,12 @@ class GenerateService:
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        f"Gemini总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
+                        Messages.LLM_SUMMARIZE_COMPLETED("Gemini", elapsed, len(result) if result else 0)
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(f"Gemini总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("Gemini", elapsed, e))
                     return None
 
             async def timed_gpt_summarize() -> Optional[str]:
@@ -605,12 +595,12 @@ class GenerateService:
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        f"GPT总结完成，耗时: {elapsed:.2f}秒，长度: {len(result) if result else 0}"
+                        Messages.LLM_SUMMARIZE_COMPLETED("GPT", elapsed, len(result) if result else 0)
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(f"GPT总结失败，耗时: {elapsed:.2f}秒，错误: {e}")
+                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("GPT", elapsed, e))
                     return None
 
             # 并发执行三个总结任务
@@ -622,7 +612,7 @@ class GenerateService:
             )
 
             total_elapsed = time.time() - total_start_time
-            Logger.info(f"三个大模型总结任务全部完成，总耗时: {total_elapsed:.2f}秒")
+            Logger.info(Messages.ALL_CONCURRENT_SUMMARIZE_COMPLETED(total_elapsed))
 
             # 3. 构建返回结果
             result = {
@@ -652,8 +642,8 @@ class GenerateService:
             return result
 
         except Exception as e:
-            Logger.error(f"生成权威文章异常: {str(e)}")
-            return {"status": "error", "message": f"生成权威文章失败: {str(e)}"}
+            Logger.error(Messages.AUTHORITY_ARTICLE_GENERATION_EXCEPTION(str(e)))
+            return {"status": "error", "message": Messages.AUTHORITY_ARTICLE_GENERATION_FAILED(str(e))}
 
 
 @lru_cache()

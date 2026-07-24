@@ -120,7 +120,7 @@ class UserService:
 
             return {"period": period, "timeline": timeline}
         except Exception as e:
-            Logger.error(f"获取新增粉丝数统计失败: {e}")
+            Logger.error(Messages.USER_NEW_FOLLOWER_COUNT_FAILED(e))
             return {"period": period, "timeline": []}
 
     async def get_article_view_distribution_service(
@@ -132,7 +132,7 @@ class UserService:
                 user_id
             )
         except Exception as e:
-            Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
+            Logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e), exc_info=True)
             return {"total_views": 0, "articles": []}
 
     async def get_author_follow_statistics_service(
@@ -170,7 +170,7 @@ class UserService:
 
             return {"total_authors": total_authors, "daily_follows": daily_follows}
         except Exception as e:
-            Logger.error(f"获取关注作者统计失败: {e}")
+            Logger.error(Messages.USER_AUTHOR_FOLLOW_STATS_FAILED(e))
             return {"total_authors": 0, "daily_follows": []}
 
     async def get_monthly_comment_trend_service(
@@ -182,7 +182,7 @@ class UserService:
                 db, user_id
             )
         except Exception as e:
-            Logger.error(f"获取评论趋势失败: {e}")
+            Logger.error(Messages.USER_COMMENT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_like_trend_service(
@@ -194,7 +194,7 @@ class UserService:
                 db, user_id
             )
         except Exception as e:
-            Logger.error(f"获取点赞趋势失败: {e}")
+            Logger.error(Messages.USER_LIKE_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_collect_trend_service(
@@ -206,7 +206,7 @@ class UserService:
                 db, user_id
             )
         except Exception as e:
-            Logger.error(f"获取收藏趋势失败: {e}")
+            Logger.error(Messages.USER_COLLECT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
 

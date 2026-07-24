@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any, Dict, List
 
 from app.core.base import Logger
+from app.core.constants import Messages
 from app.internal.models import Focus
 from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -120,7 +121,7 @@ class FocusMapper:
             total += count
 
         Logger.debug(
-            f"用户 {user_id} 本月关注趋势: 总数={total}, 天数={len(daily_trends)}"
+            Messages.USER_MONTHLY_TREND(user_id, "关注", total, len(daily_trends))
         )
         return {"total": total, "daily_trends": daily_trends}
 
@@ -165,7 +166,7 @@ class FocusMapper:
             total += count
 
         Logger.debug(
-            f"用户 {user_id} 本月粉丝趋势: 总数={total}, 天数={len(daily_trends)}"
+            Messages.USER_MONTHLY_TREND(user_id, "粉丝", total, len(daily_trends))
         )
         return {"total": total, "daily_trends": daily_trends}
 

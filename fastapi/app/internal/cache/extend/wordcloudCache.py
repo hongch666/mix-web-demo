@@ -40,7 +40,7 @@ class WordcloudCache(BaseCache):
             Logger.info(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
-            Logger.error(f"[L2缓存] Redis 读取失败: {e}")
+            Logger.error(Messages.CACHE_L2_READ_FAILED(e))
             return None
 
     async def get(self) -> Optional[str]:
@@ -87,7 +87,7 @@ class WordcloudCache(BaseCache):
             await self._redis.delete(self.REDIS_KEY_PREFIX)
             Logger.info(Messages.WORDCLOUD_CACHE_DELETED)
         except Exception as e:
-            Logger.error(f"[L2缓存] Redis 清除失败: {e}")
+            Logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
 
 
 @lru_cache

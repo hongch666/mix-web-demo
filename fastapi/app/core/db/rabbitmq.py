@@ -53,19 +53,19 @@ class RabbitMQClient:
             # 注册重连回调：重连后自动重新获取 channel
             self.connection.reconnect_callbacks.add(self._on_reconnect)
 
-            Logger.info("RabbitMQ 连接成功（自动重连已启用）")
+            Logger.info(Messages.RABBITMQ_CONNECTED_AUTO_RECONNECT)
             return True
         except Exception as e:
-            Logger.warning(f"RabbitMQ 连接失败: {e}")
+            Logger.warning(Messages.RABBITMQ_CONNECTION_FAILED(e))
             return False
 
     async def _on_reconnect(self, _: Any) -> None:
         """重连后的回调：重新获取 channel"""
         try:
             self.channel = await self.connection.channel()
-            Logger.info("RabbitMQ 重连成功，channel 已恢复")
+            Logger.info(Messages.RABBITMQ_RECONNECT_CHANNEL_RECOVERED)
         except Exception as e:
-            Logger.warning(f"RabbitMQ 重连后恢复 channel 失败: {e}")
+            Logger.warning(Messages.RABBITMQ_RECONNECT_CHANNEL_FAILED(e))
 
     async def send_message_async(
         self, queue_name: str, message: Any, persistent: bool = True
@@ -107,11 +107,11 @@ class RabbitMQClient:
                 routing_key=queue_name,
             )
 
-            Logger.info(f"消息已发送到队列 [{queue_name}]: {message_body[:100]}...")
+            Logger.info(Messages.RABBITMQ_MESSAGE_SENT(queue_name, message_body))
             return True
 
         except Exception as e:
-            Logger.warning(f"发送消息到队列 [{queue_name}] 失败: {e}")
+            Logger.warning(Messages.RABBITMQ_MESSAGE_SEND_FAILED(queue_name, e))
             return False
 
     async def close_async(self) -> None:
@@ -122,7 +122,7 @@ class RabbitMQClient:
             if self.connection and not self.connection.is_closed:
                 await self.connection.close()
         except Exception as e:
-            Logger.error(f"关闭 RabbitMQ 连接失败: {e}")
+            Logger.error(Messages.RABBITMQ_CONNECTION_CLOSE_FAILED(e))
         finally:
             self.channel = None
             self.connection = None
@@ -160,7 +160,7 @@ def get_rabbitmq_client() -> Optional[RabbitMQClient]:
         try:
             _rabbitmq_client = RabbitMQClient()
         except Exception as e:
-            Logger.error(f"初始化 RabbitMQ 客户端失败: {e}")
+            Logger.error(Messages.RABBITMQ_CLIENT_INITIALIZATION_FAILED(e))
             return None
     return _rabbitmq_client
 
@@ -176,5 +176,5 @@ async def send_to_queue_async(
             return False
         return await client.send_message_async(queue_name, message, persistent)
     except Exception as e:
-        Logger.error(f"发送消息失败: {e}")
+        Logger.error(Messages.RABBITMQ_SEND_FAILED(e))
         return False

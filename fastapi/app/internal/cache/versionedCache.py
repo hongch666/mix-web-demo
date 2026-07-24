@@ -46,7 +46,7 @@ class VersionedCache(BaseCache):
             version_str = f"{ch_db}.{ch_table}:{int(total_rows)}:{int(max_update_ts)}:{int(max_id)}"
             return hashlib.md5(version_str.encode()).hexdigest()[:8]
         except Exception as e:
-            Logger.debug(f"获取版本号失败: {type(e).__name__}: {e}")
+            Logger.debug(Messages.CACHE_VERSION_GET_FAILED(e))
             return None
 
     async def _persist_version(self, version: str) -> None:
@@ -74,7 +74,7 @@ class VersionedCache(BaseCache):
                         else old_version.decode("utf-8")
                     )
             except Exception as e:
-                Logger.debug(f"[缓存] Redis 读取版本号失败: {e}")
+                Logger.debug(Messages.CACHE_VERSION_REDIS_READ_FAILED(e))
                 old_version = None
 
             # 本地版本号作为备选
@@ -84,19 +84,19 @@ class VersionedCache(BaseCache):
             # 关键修复：如果没有旧版本号（首次调用），不认为是版本变化
             if not old_version:
                 await self._persist_version(current_version)
-                Logger.debug(f"[缓存] 首次初始化，当前版本: {current_version}")
+                Logger.debug(Messages.CACHE_VERSION_INITIALIZED(current_version))
                 return False
 
             # 版本号对比：有旧版本且不相等时才算变化
             if str(current_version) != str(old_version):
                 Logger.info(
-                    f"[缓存] 表版本已变化 (旧: {old_version} → 新: {current_version})"
+                    Messages.CACHE_VERSION_CHANGED(str(old_version), str(current_version))
                 )
                 return True
 
             return False
         except Exception as e:
-            Logger.warning(f"版本检测异常: {e}")
+            Logger.warning(Messages.CACHE_VERSION_CHECK_FAILED(e))
             return False
 
     async def update_version(self, ch_conn: Any) -> None:
@@ -105,9 +105,9 @@ class VersionedCache(BaseCache):
             version = await self.get_cache_version(ch_conn)
             if version:
                 await self._persist_version(version)
-                Logger.info(f"[缓存] 版本号已更新: {version}")
+                Logger.info(Messages.CACHE_VERSION_UPDATED(version))
         except Exception as e:
-            Logger.warning(f"设置缓存版本号失败: {e}")
+            Logger.warning(Messages.CACHE_VERSION_SET_FAILED(e))
 
     async def clear_all(self) -> None:
         """清除所有缓存，包括版本号"""
@@ -116,4 +116,4 @@ class VersionedCache(BaseCache):
         try:
             await self._redis.delete(self.REDIS_VERSION_KEY)
         except Exception as e:
-            Logger.error(f"[L2缓存] Redis 清除版本号失败: {e}")
+            Logger.error(Messages.CACHE_VERSION_CLEAR_FAILED(e))

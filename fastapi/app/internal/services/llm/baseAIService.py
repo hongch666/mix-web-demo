@@ -25,7 +25,7 @@ def get_agent_prompt() -> ChatPromptTemplate:
     """获取Agent的Prompt模板"""
     return ChatPromptTemplate.from_messages(
         [
-            ("system", Prompts.AGENT_PROMPT_TEMPLATE),
+            ("system", Prompts.AGENT_PROMPT()),
             ("human", "{input}"),
             MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
@@ -57,27 +57,27 @@ def initialize_ai_tools(
             sql_tools_instance = get_sql_tools()
             sql_tools: List[Any] = sql_tools_instance.get_langchain_tools()
             all_tools.extend(sql_tools)
-            Logger.info(f"已加载 SQL 工具: {len(sql_tools)} 个")
+            Logger.info(Messages.LLM_TOOL_LOADED("SQL", len(sql_tools)))
         except Exception as e:
-            Logger.warning(f"加载 SQL 工具失败: {e}")
+            Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("SQL", e))
 
     # 获取 RAG 工具
     try:
         rag_tools_instance = get_rag_tools()
         rag_tools: List[Any] = rag_tools_instance.get_langchain_tools()
         all_tools.extend(rag_tools)
-        Logger.info(f"已加载 RAG 工具: {len(rag_tools)} 个")
+        Logger.info(Messages.LLM_TOOL_LOADED("RAG", len(rag_tools)))
     except Exception as e:
-        Logger.warning(f"加载 RAG 工具失败: {e}")
+        Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("RAG", e))
 
     # 获取 Neo4j 知识图谱工具
     try:
         neo4j_tools_instance = get_neo4j_tools()
         neo4j_tools: List[Any] = neo4j_tools_instance.get_langchain_tools()
         all_tools.extend(neo4j_tools)
-        Logger.info(f"已加载 Neo4j 知识图谱工具: {len(neo4j_tools)} 个")
+        Logger.info(Messages.LLM_TOOL_LOADED("Neo4j 知识图谱", len(neo4j_tools)))
     except Exception as e:
-        Logger.warning(f"加载 Neo4j 知识图谱工具失败: {e}")
+        Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("Neo4j 知识图谱", e))
 
     # 获取 MongoDB 日志工具
     if include_logs:
@@ -85,11 +85,11 @@ def initialize_ai_tools(
             mongodb_tools_instance = get_mongodb_tools()
             mongodb_tools: List[Any] = mongodb_tools_instance.get_langchain_tools()
             all_tools.extend(mongodb_tools)
-            Logger.info(f"已加载 MongoDB 日志工具: {len(mongodb_tools)} 个")
+            Logger.info(Messages.LLM_TOOL_LOADED("MongoDB 日志", len(mongodb_tools)))
         except Exception as e:
-            Logger.warning(f"加载 MongoDB 日志工具失败: {e}")
+            Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("MongoDB 日志", e))
 
-    Logger.info(f"总共加载了 {len(all_tools)} 个工具")
+    Logger.info(Messages.LLM_TOOLS_LOADED_TOTAL(len(all_tools)))
     return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
 
 
@@ -148,9 +148,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return Prompts.CONTENT_SUMMARIZE_PROMPT.format(
-            content=content, max_length=max_length
-        )
+        return Prompts.CONTENT_SUMMARIZE(content, max_length)
 
     def _get_reference_evaluation_prompt(
         self, message: str, reference_content: str
@@ -164,9 +162,7 @@ class BaseAiService:
         Returns:
             str: 格式化后的提示词
         """
-        return Prompts.REFERENCE_BASED_EVALUATION_PROMPT.format(
-            reference_content=reference_content, message=message
-        )
+        return Prompts.REFERENCE_BASED_EVALUATION(message, reference_content)
 
     async def _load_chat_history(
         self, user_id: int, db: Session
@@ -181,7 +177,7 @@ class BaseAiService:
                 chat_history.append((h.ask, h.reply))
             return chat_history
         except Exception as e:
-            Logger.error(f"加载聊天历史失败: {e}")
+            Logger.error(Messages.LLM_CHAT_HISTORY_LOAD_FAILED(e))
             return []
 
     def _build_complete_thinking_text(
@@ -205,16 +201,13 @@ class BaseAiService:
                 tool_name = action.tool if hasattr(action, "tool") else str(action)
                 tool_input = action.tool_input if hasattr(action, "tool_input") else ""
 
-                step_text = f"\n步骤 {i}:\n"
-                step_text += f"  工具: {tool_name}\n"
-                step_text += f"  输入: {tool_input}\n"
-                step_text += f"  结果: {observation}\n"
+                step_text = Messages.AGENT_EXECUTION_STEP(i, tool_name, str(tool_input), str(observation))
 
                 thinking_parts.append(step_text)
 
         # 添加最终结果
         if final_result:
-            thinking_parts.append(f"\n\n最终分析结果:\n{final_result}")
+            thinking_parts.append(Messages.AGENT_FINAL_RESULT(final_result))
 
         # 拼接所有部分
         complete_text = "".join(thinking_parts)
@@ -233,7 +226,7 @@ class BaseAiService:
         if chat_history:
             context = (
                 "\n\n历史对话:\n"
-                + "\n".join([f"用户: {h}\nAI: {a}" for h, a in chat_history[-3:]])
+                + "\n".join([Messages.CHAT_HISTORY_LINE(h, a) for h, a in chat_history[-3:]])
                 + "\n\n"
             )
         return context
@@ -249,7 +242,7 @@ class BaseAiService:
                 return None
             return int(user_id_text)
         except (TypeError, ValueError):
-            Logger.warning(f"用户ID格式不合法，已忽略: {user_id}")
+            Logger.warning(Messages.LLM_INVALID_USER_ID(user_id))
             return None
 
     def _reset_runtime_state(self) -> None:
@@ -261,25 +254,25 @@ class BaseAiService:
         self.all_tools = []
 
     def _build_initialization_success_message(self) -> str:
-        return f"{self.service_name} Agent服务初始化完成"
+        return Messages.LLM_INITIALIZATION_SUCCESS(self.service_name)
 
     def _build_configuration_incomplete_message(self) -> str:
-        return f"{self.service_name}配置不完整，客户端未初始化"
+        return Messages.LLM_CONFIGURATION_INCOMPLETE(self.service_name)
 
     def _build_client_initialization_error_message(self, error: Exception) -> str:
-        return f"初始化{self.service_name}客户端失败: {error}"
+        return Messages.LLM_CLIENT_INITIALIZATION_FAILED(self.service_name, error)
 
     def _build_invalid_api_key_error_message(self) -> str:
-        return f"API密钥无效。请检查{self.service_name} API密钥配置。"
+        return Messages.LLM_INVALID_API_KEY(self.service_name)
 
     def _build_quota_exceeded_error_message(self) -> str:
-        return f"{self.service_name} API 配额已用完。请稍后重试。"
+        return Messages.LLM_QUOTA_EXCEEDED(self.service_name)
 
     def _build_rate_limit_exceeded_error_message(self) -> str:
-        return f"{self.service_name} API调用频率超限。请稍后重试。"
+        return Messages.LLM_RATE_LIMIT_EXCEEDED(self.service_name)
 
     def _build_call_failed_error_message(self) -> str:
-        return f"{self.service_name}调用失败"
+        return Messages.LLM_CALL_FAILED(self.service_name)
 
     def _resolve_service_error_message(self, error_message: str) -> str:
         """把底层模型错误映射成可读的中文提示"""
@@ -292,7 +285,7 @@ class BaseAiService:
             return self._build_rate_limit_exceeded_error_message()
         if "timeout" in lower_error:
             return Messages.REQUEST_TIMEOUT_ERROR
-        return f"{self.service_name}服务异常: {error_message}"
+        return Messages.LLM_SERVICE_ERROR(self.service_name, error_message)
 
     def _initialize_agent_stack(
         self, user_mapper: Optional[Any], max_iterations: int = 5
@@ -317,7 +310,7 @@ class BaseAiService:
                 return_intermediate_steps=True,
             )
         except Exception as tool_error:
-            Logger.warning(f"工具初始化部分失败: {tool_error}, 降级为基础对话模式")
+            Logger.warning(Messages.LLM_AGENT_INITIALIZATION_PARTIAL_FAILED(tool_error))
             self.agent = None
             self.agent_executor = None
             self.intent_router = None
@@ -361,7 +354,7 @@ class BaseAiService:
     async def basic_chat(self, message: str) -> str:
         """最基础的对话接口 - 不使用知识库和向量数据库"""
         try:
-            Logger.info(f"基础对话: {message}")
+            Logger.info(Messages.BASIC_CHAT_START(message))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -373,17 +366,17 @@ class BaseAiService:
             response = await self.llm.ainvoke(messages)
 
             result: str = response.content
-            Logger.info(f"{self.service_name}基础回复长度: {len(result)} 字符")
+            Logger.info(Messages.BASIC_CHAT_REPLY_LENGTH(self.service_name, len(result)))
             return result
 
         except Exception as error:
-            Logger.error(f"{self.service_name}基础对话异常: {str(error)}")
-            return f"对话服务异常: {str(error)}"
+            Logger.error(Messages.BASIC_CHAT_EXCEPTION(self.service_name, str(error)))
+            return Messages.CHAT_SERVICE_ERROR(error)
 
     async def with_reference_chat(self, message: str, reference_content: str) -> str:
         """基于参考文本进行评价和打分"""
         try:
-            Logger.info(f"基于参考文本的对话（长度: {len(reference_content)}）")
+            Logger.info(Messages.REFERENCE_CHAT_START(len(reference_content)))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -396,18 +389,18 @@ class BaseAiService:
 
             response = await self.llm.ainvoke(messages)
             result: str = response.content
-            Logger.info(f"{self.service_name}参考文本对话回复长度: {len(result)} 字符")
+            Logger.info(Messages.REFERENCE_CHAT_REPLY_LENGTH(self.service_name, len(result)))
             return result
 
         except Exception as error:
-            Logger.error(f"{self.service_name}参考文本对话异常: {str(error)}")
-            return f"对话服务异常: {str(error)}"
+            Logger.error(Messages.REFERENCE_CHAT_EXCEPTION(self.service_name, str(error)))
+            return Messages.CHAT_SERVICE_ERROR(error)
 
     async def summarize_content(self, content: str, max_length: int = 1000) -> str:
         """总结长文本内容"""
         try:
             Logger.info(
-                f"{self.service_name}开始总结内容，原始长度: {len(content)} 字符"
+                Messages.SUMMARIZE_START(self.service_name, len(content))
             )
 
             if not getattr(self, "llm", None):
@@ -422,13 +415,13 @@ class BaseAiService:
             response = await self.llm.ainvoke(messages)
             result: str = response.content[:max_length]
             Logger.info(
-                f"{self.service_name}内容总结完成，总结长度: {len(result)} 字符"
+                Messages.SUMMARIZE_COMPLETED(self.service_name, len(result))
             )
             return result
 
         except Exception as error:
-            Logger.error(f"{self.service_name}内容总结异常: {str(error)}")
-            return f"总结服务异常: {str(error)}"
+            Logger.error(Messages.SUMMARIZE_EXCEPTION(self.service_name, str(error)))
+            return Messages.SUMMARIZE_SERVICE_ERROR(error)
 
     async def simple_chat(
         self,
@@ -447,7 +440,7 @@ class BaseAiService:
         """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
-            Logger.info(f"用户 {user_id} 发送消息: {message}")
+            Logger.info(Messages.USER_SEND_MESSAGE(user_id, message))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -466,14 +459,14 @@ class BaseAiService:
                 ) = await self.intent_router.route_with_permission_check_async(
                     message, normalized_user_id, db
                 )
-                Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
+                Logger.info(Messages.INTENT_WITH_PERMISSION(intent, has_permission))
 
                 if not has_permission:
-                    Logger.info(f"用户 {user_id} 无权限访问: {intent}")
+                    Logger.info(Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent))
                     return permission_msg or Messages.NO_PERMISSION_ERROR
             elif self.intent_router:
                 intent, intent_resolution = await self.intent_router.route_async(message)
-                Logger.info(f"识别意图: {intent}")
+                Logger.info(Messages.INTENT_RECOGNIZED(intent))
 
             # 将意图信息补充到 runnable_config 中
             config = dict(runnable_config) if runnable_config else {}
@@ -509,26 +502,26 @@ class BaseAiService:
                     try:
                         sql_tools = get_sql_tools()
                         sql_tools.set_user_id(normalized_user_id)
-                        Logger.info(f"为SQL工具设置用户ID: {normalized_user_id}")
+                        Logger.info(Messages.SQL_TOOL_SET_USER_ID(normalized_user_id))
                     except Exception as error:
-                        Logger.warning(f"设置SQL工具用户ID失败: {error}")
+                        Logger.warning(Messages.SQL_TOOL_SET_USER_ID_FAILED(error))
 
                 context = self._build_chat_context(chat_history)
                 user_info = (
-                    f"当前用户ID: {normalized_user_id}\n" if normalized_user_id else ""
+                    Messages.CURRENT_USER_ID_INFO(normalized_user_id) if normalized_user_id else ""
                 )
-                full_input = context + user_info + f"当前问题: {message}"
+                full_input = context + user_info + Messages.CURRENT_QUESTION(message)
 
                 agent_response = await self.agent_executor.ainvoke(
                     {"input": full_input}, config=config
                 )
                 result = agent_response.get("output", Messages.MESSAGE_RETRIEVAL_ERROR)
 
-            Logger.info(f"{self.service_name}回复长度: {len(result)} 字符")
+            Logger.info(Messages.CHAT_REPLY_LENGTH(self.service_name, len(result)))
             return result
 
         except Exception as error:
-            Logger.error(f"{self.service_name}聊天异常: {str(error)}")
+            Logger.error(Messages.CHAT_EXCEPTION(self.service_name, str(error)))
             return self._resolve_service_error_message(str(error))
 
     async def stream_chat(
@@ -548,7 +541,7 @@ class BaseAiService:
         """
         try:
             normalized_user_id = self._normalize_user_id(user_id)
-            Logger.info(f"用户 {user_id} 开始流式聊天: {message}")
+            Logger.info(Messages.USER_START_STREAMING_CHAT(user_id, message))
 
             if not getattr(self, "llm", None):
                 yield {"type": "error", "content": Messages.INITIALIZATION_ERROR}
@@ -578,15 +571,15 @@ class BaseAiService:
                         try:
                             if chunk.content:
                                 Logger.debug(
-                                    f"收到流式内容块，长度: {len(chunk.content)} 字符"
+                                    Messages.STREAM_CHUNK_RECEIVED_LENGTH(len(chunk.content))
                                 )
                                 yield {"type": "content", "content": chunk.content}
                         except Exception as chunk_error:
-                            Logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                            Logger.error(Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error)))
                             continue
                 except Exception as stream_error:
                     error_msg = str(stream_error)
-                    Logger.error(f"基础流式对话失败: {error_msg}")
+                    Logger.error(Messages.STREAM_BASIC_CHAT_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
@@ -604,12 +597,12 @@ class BaseAiService:
                 ) = await self.intent_router.route_with_permission_check_async(
                     message, normalized_user_id, db
                 )
-                Logger.info(f"识别意图: {intent}, 有权限: {has_permission}")
+                Logger.info(Messages.INTENT_WITH_PERMISSION(intent, has_permission))
 
                 if not has_permission:
-                    Logger.info(f"用户 {user_id} 无权限访问: {intent}")
+                    Logger.info(Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent))
                     permission_message = permission_msg or Messages.NO_PERMISSION_ERROR
-                    thinking = f"检测到用户请求需要 {intent} 权限，但当前用户权限不足。"
+                    thinking = Messages.PERMISSION_DENIED_STREAM_THINKING(intent)
                     yield {"type": "thinking", "content": thinking}
 
                     for char in permission_message:
@@ -618,7 +611,7 @@ class BaseAiService:
 
             elif self.intent_router:
                 intent, intent_resolution = await self.intent_router.route_async(message)
-                Logger.info(f"识别意图: {intent}")
+                Logger.info(Messages.INTENT_RECOGNIZED(intent))
 
             # 将意图信息补充到 runnable_config 中
             config = dict(runnable_config) if runnable_config else {}
@@ -651,11 +644,11 @@ class BaseAiService:
                             if chunk.content:
                                 yield {"type": "content", "content": chunk.content}
                         except Exception as chunk_error:
-                            Logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                            Logger.error(Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error)))
                             continue
                 except Exception as stream_error:
                     error_msg = str(stream_error)
-                    Logger.error(f"流式聊天失败: {error_msg}")
+                    Logger.error(Messages.STREAM_CHAT_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
@@ -668,15 +661,15 @@ class BaseAiService:
                     try:
                         sql_tools = get_sql_tools()
                         sql_tools.set_user_id(normalized_user_id)
-                        Logger.info(f"为SQL工具设置用户ID: {normalized_user_id}")
+                        Logger.info(Messages.SQL_TOOL_SET_USER_ID(normalized_user_id))
                     except Exception as error:
-                        Logger.warning(f"设置SQL工具用户ID失败: {error}")
+                        Logger.warning(Messages.SQL_TOOL_SET_USER_ID_FAILED(error))
 
                 context = self._build_chat_context(chat_history)
                 user_info = (
-                    f"当前用户ID: {normalized_user_id}\n" if normalized_user_id else ""
+                    Messages.CURRENT_USER_ID_INFO(normalized_user_id) if normalized_user_id else ""
                 )
-                full_input = context + user_info + f"当前问题: {message}"
+                full_input = context + user_info + Messages.CURRENT_QUESTION(message)
 
                 Logger.info(Messages.AGENT_START_PROCESSING_MESSAGE)
                 try:
@@ -692,7 +685,7 @@ class BaseAiService:
                     )
                 except Exception as agent_error:
                     error_msg = str(agent_error)
-                    Logger.error(f"Agent执行失败: {error_msg}")
+                    Logger.error(Messages.AGENT_EXECUTION_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
@@ -704,15 +697,15 @@ class BaseAiService:
                     intermediate_steps, agent_result
                 )
 
-                Logger.info(f"思考过程长度: {len(thinking_text)} 字符")
+                Logger.info(Messages.THINKING_PROCESS_LENGTH(len(thinking_text)))
                 if len(thinking_text) > 5000:
-                    Logger.debug(f"思考过程内容（前2000字）: {thinking_text[:2000]}")
+                    Logger.debug(Messages.THINKING_PROCESS_PREVIEW_TEXT(thinking_text[:2000]))
                     Logger.debug(
-                        f"思考过程内容（中间2000字）: {thinking_text[len(thinking_text) // 2 - 1000 : len(thinking_text) // 2 + 1000]}"
+                        Messages.THINKING_PROCESS_MIDDLE_TEXT(thinking_text[len(thinking_text) // 2 - 1000 : len(thinking_text) // 2 + 1000])
                     )
-                    Logger.debug(f"思考过程内容（末尾2000字）: {thinking_text[-2000:]}")
+                    Logger.debug(Messages.THINKING_PROCESS_END_TEXT(thinking_text[-2000:]))
                 else:
-                    Logger.debug(f"完整思考过程: {thinking_text}")
+                    Logger.debug(Messages.COMPLETE_THINKING_PROCESS_TEXT(thinking_text))
 
                 yield {"type": "thinking", "content": thinking_text}
 
@@ -728,8 +721,7 @@ class BaseAiService:
                     *history_messages,
                     HumanMessage(
                         content=(
-                            f"用户问题: {message}\n\n我已经获取到以下信息:\n{agent_result}\n\n"
-                            "请基于这些信息,用清晰、友好的方式回答用户的问题。"
+                            Messages.STREAM_FINAL_PROMPT(message, agent_result)
                         )
                     ),
                 ]
@@ -740,18 +732,18 @@ class BaseAiService:
                             if chunk.content:
                                 yield {"type": "content", "content": chunk.content}
                         except Exception as chunk_error:
-                            Logger.error(f"处理流式内容块异常: {str(chunk_error)}")
+                            Logger.error(Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error)))
                             continue
                 except Exception as final_stream_error:
                     error_msg = str(final_stream_error)
-                    Logger.error(f"最终流式输出失败: {error_msg}")
+                    Logger.error(Messages.FINAL_STREAM_OUTPUT_FAILED(error_msg))
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
                     }
 
         except Exception as error:
-            Logger.error(f"流式聊天异常: {str(error)}")
+            Logger.error(Messages.STREAM_CHAT_EXCEPTION(str(error)))
             yield {
                 "type": "error",
                 "content": self._resolve_service_error_message(str(error)),

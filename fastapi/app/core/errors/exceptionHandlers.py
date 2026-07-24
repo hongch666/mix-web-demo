@@ -24,7 +24,7 @@ async def business_exception_handler(
         Response: JSON 格式的错误响应，使用实际的 HTTP 状态码
     """
 
-    Logger.error(f"请求路径: {request.url}，业务错误: [{exc.error}] {str(exc)}")
+    Logger.error(Messages.BUSINESS_EXCEPTION_LOG(request.url, exc.error, exc))
     return JSONResponse(
         status_code=exc.status_code,
         content=error(
@@ -44,7 +44,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> Response
     Returns:
         Response: JSON 格式的一般错误响应
     """
-    Logger.error(f"请求路径: {request.url}，错误信息: {str(exc)}")
+    Logger.error(Messages.GLOBAL_EXCEPTION_LOG(request.url, exc))
     return JSONResponse(
         status_code=HttpCode.INTERNAL_SERVER_ERROR,
         content=error(
@@ -78,7 +78,7 @@ async def request_validation_exception_handler(
         if validation_message_parts
         else Messages.EXCEPTION_HANDLER_MESSAGE
     )
-    Logger.error(f"请求路径: {request.url}，校验错误: {validation_message}")
+    Logger.error(Messages.REQUEST_VALIDATION_EXCEPTION_LOG(request.url, validation_message))
     return JSONResponse(
         status_code=HttpCode.BAD_REQUEST,
         content=error(

@@ -22,19 +22,17 @@ class UserPermissionManager:
         """异步获取用户角色"""
         try:
             if not self.user_mapper:
-                Logger.warning(
-                    f"用户Mapper未初始化，无法获取用户 {user_id} 的角色，使用默认角色 'user'"
-                )
+                Logger.warning(Messages.USER_ROLE_MAPPER_UNINITIALIZED(user_id))
                 return Messages.ROLE_USER
 
             role: Optional[str] = await self.user_mapper.get_user_role_async(
                 user_id, db
             )
             role = role or Messages.ROLE_USER
-            Logger.info(f"用户 {user_id} 的角色: {role}")
+            Logger.info(Messages.USER_ROLE_LOADED(user_id, role))
             return role
         except Exception as e:
-            Logger.error(f"获取用户 {user_id} 的角色失败: {e}，使用默认角色 'user'")
+            Logger.error(Messages.USER_ROLE_LOAD_FAILED(user_id, e))
             return Messages.ROLE_USER
 
     async def is_admin_async(self, user_id: int, db: Session) -> bool:
@@ -60,7 +58,7 @@ class UserPermissionManager:
         # 检查是否包含个人信息查询的关键字
         for keyword in Defaults.PERSONAL_INFO_KEYWORDS:
             if keyword in question_lower:
-                Logger.debug(f"[权限] 检测到个人信息查询关键字: '{keyword}'")
+                Logger.debug(Messages.PERSONAL_INFO_KEYWORD_DETECTED(keyword))
                 return True
 
         return False
@@ -85,23 +83,21 @@ class UserPermissionManager:
             tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
             return (
                 False,
-                f"权限拒绝：请先登录才能访问{tool_name}功能。您当前可以使用文章搜索和闲聊功能。",
+                Messages.TOOL_ACCESS_LOGIN_REQUIRED(tool_name),
             )
 
         if question and await self.is_personal_info_query(question):
-            Logger.info(f"用户 {user_id} 查询个人信息，允许访问 {tool_type} 工具")
+            Logger.info(Messages.PERSONAL_TOOL_ACCESS_GRANTED(user_id, tool_type))
             return True, ""
 
         role: Optional[str] = await self.get_user_role_async(user_id, db)
         if role == Messages.ROLE_ADMIN:
-            Logger.info(f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具")
+            Logger.info(Messages.ADMIN_TOOL_ACCESS_GRANTED(user_id, role, tool_type))
             return True, ""
 
         tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
-        reason: str = f"权限拒绝：您的账户权限不足，无法访问{tool_name}功能。仅管理员账户可以使用此功能。如需查询个人信息（如'我的点赞文章'），请在问题中包含相关关键词。"
-        Logger.warning(
-            f"用户 {user_id} (角色: {role}) 尝试访问 {tool_type} 工具被拒绝：{question}"
-        )
+        reason: str = Messages.TOOL_ACCESS_DENIED_REASON(tool_name)
+        Logger.warning(Messages.TOOL_ACCESS_DENIED_LOG(user_id, role, tool_type, question))
         return False, reason
 
     async def validate_database_query_permission_async(

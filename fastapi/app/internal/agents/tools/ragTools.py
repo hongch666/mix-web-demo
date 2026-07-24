@@ -48,8 +48,8 @@ def sanitize_retrieved_content(text: str) -> str:
     """
     for pattern in _INJECTION_PATTERNS:
         if re.search(pattern, text, re.IGNORECASE):
-            Logger.warning("检测到疑似 Prompt 注入内容，已过滤")
-            text = re.sub(pattern, "[已过滤]", text, flags=re.IGNORECASE)
+            Logger.warning(Messages.RAG_TOOL_PROMPT_INJECTION_DETECTED())
+            text = re.sub(pattern, Messages.RAG_TOOL_FILTERED_PLACEHOLDER(), text, flags=re.IGNORECASE)
     return text
 
 
@@ -69,9 +69,9 @@ class RAGTools:
         # 0. 启用 Embedding 缓存（避免重复计算相同文本的向量）
         try:
             set_llm_cache(InMemoryCache())
-            self.logger.info("Embedding 缓存已启用")
+            self.logger.info(Messages.EMBEDDING_CACHE_ENABLED())
         except Exception as cache_error:
-            self.logger.warning(f"Embedding 缓存启用失败: {cache_error}")
+            self.logger.warning(Messages.EMBEDDING_CACHE_ENABLE_FAILED(cache_error))
 
         # 1. 初始化嵌入模型
         embedding_cfg = (load_config("agent") or {}).get("embedding", {})
@@ -95,11 +95,11 @@ class RAGTools:
             self.embeddings = DashScopeEmbeddings(
                 model=embedding_model, dashscope_api_key=api_key
             )
-            self.logger.info(f"Embedding嵌入模型初始化成功: {embedding_model}")
+            self.logger.info(Messages.EMBEDDING_MODEL_INITIALIZED(embedding_model))
         except Exception as error:
             self.enabled = False
             self._init_error_message = (
-                f"Embedding初始化失败，请检查 DashScope API Key 是否有效：{error}"
+                Messages.EMBEDDING_INIT_FAILED(error)
             )
             raise BusinessException(
                 self._init_error_message,
@@ -120,10 +120,10 @@ class RAGTools:
                     max_tokens=300,
                     timeout=10,
                 )
-                self.logger.info("HyDE LLM 初始化成功（假设性文档生成增强已启用）")
+                self.logger.info(Messages.HYDE_LLM_INITIALIZED())
             except Exception as hyde_error:
                 self.logger.warning(
-                    f"HyDE LLM 初始化失败，将使用纯 query 检索: {hyde_error}"
+                    Messages.HYDE_LLM_INIT_FAILED(hyde_error)
                 )
 
         # 2. 初始化文本切分器
@@ -213,12 +213,12 @@ class RAGTools:
             # 批量添加到向量存储
             self.vector_store.add_documents(documents)
 
-            result = f"成功添加 {len(article_ids)} 篇文章，共 {len(documents)} 个文本块到向量存储"
+            result = Messages.RAG_BATCH_ADDED_ARTICLES(len(article_ids), len(documents))
             self.logger.info(result)
             return result
 
         except Exception as e:
-            error_msg = f"添加文章到向量存储失败: {str(e)}"
+            error_msg = Messages.RAG_BATCH_ADD_FAILED(e)
             self.logger.error(error_msg)
             return error_msg
 
@@ -310,7 +310,7 @@ class RAGTools:
                 ):
                     try:
                         hyde_prompt = (
-                            f"请用一段话回答以下问题，使用专业语言：\n\n{query}"
+                            Prompts.HYDE_GENERATION_PROMPT(query)
                         )
                         hypothetical_doc = await self.hyde_llm.ainvoke(hyde_prompt)
                         search_query = (
@@ -319,11 +319,11 @@ class RAGTools:
                             else str(hypothetical_doc)
                         )
                         self.logger.info(
-                            f"HyDE 假设性文档生成成功（原始查询: {len(query)} 字 → HyDE: {len(search_query)} 字）"
+                            Messages.HYDE_GENERATION_SUCCESS(len(query), len(search_query))
                         )
                     except Exception as hyde_error:
                         self.logger.warning(
-                            f"HyDE 生成失败，降级为原查询: {hyde_error}"
+                            Messages.HYDE_GENERATION_FAILED(hyde_error)
                         )
                         search_query = query
 
@@ -358,11 +358,11 @@ class RAGTools:
             dedup_docs = self._deduplicate_articles(filtered_docs, search_k)
 
             self.logger.info(
-                f"RAG搜索成功，返回 {len(dedup_docs)} 个结果（去重前: {len(filtered_docs)}，过滤前: {len(docs)}）"
+                Messages.RAG_SEARCH_SUCCESS(len(dedup_docs), len(filtered_docs), len(docs))
             )
 
             # 格式化结果（检索后过滤恶意注入文本）
-            result_text = f"找到 {len(dedup_docs)} 篇相关文章 (相似度阈值: {self.similarity_threshold}):\n\n"
+            result_text = Messages.RAG_SEARCH_RESULT_HEADER(len(dedup_docs), self.similarity_threshold)
 
             for i, (doc, score) in enumerate(dedup_docs, 1):
                 article_id = doc.metadata.get("article_id", "未知")
@@ -373,15 +373,15 @@ class RAGTools:
                 # 检索后过滤恶意注入文本
                 content = sanitize_retrieved_content(content)
 
-                result_text += f"{i}. 文章ID: {article_id}, 标题: {title}\n"
-                result_text += f"   相似度分数: {score:.4f}\n"
+                result_text += Messages.RAG_RESULT_ARTICLE_LINE(i, article_id, title)
+                result_text += Messages.RAG_RESULT_SIMILARITY_SCORE(score)
                 result_text += (
-                    f"   内容片段(第{chunk_index + 1}块, 共{len(content)}字):\n"
+                    Messages.RAG_RESULT_CONTENT_FRAGMENT(chunk_index + 1, len(content))
                 )
                 result_text += f"   {content}\n\n"
 
             self.logger.info(
-                f"RAG搜索成功，返回 {len(dedup_docs)} 个结果（去重前: {len(filtered_docs)}，过滤前: {len(docs)}）"
+                Messages.RAG_SEARCH_SUCCESS(len(dedup_docs), len(filtered_docs), len(docs))
             )
             return result_text
 
@@ -395,7 +395,7 @@ class RAGTools:
                 self._init_error_message = Messages.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
                 self.logger.error(self._init_error_message)
                 return self._init_error_message
-            error_msg = f"RAG搜索失败: {str(e)}"
+            error_msg = Messages.RAG_SEARCH_FAILED(e)
             self.logger.error(error_msg)
             return error_msg
 
@@ -428,7 +428,7 @@ class RAGTools:
             dedup_docs = [doc for doc, _ in dedup_docs_with_scores]
 
             self.logger.info(
-                f"获取文章上下文成功，返回 {len(dedup_docs)} 个文档（去重前: {len(docs_with_scores)}）"
+                Messages.RAG_CONTEXT_FETCH_SUCCESS(len(dedup_docs), len(docs_with_scores))
             )
             return dedup_docs
         except Exception as e:
@@ -441,7 +441,7 @@ class RAGTools:
                 self._init_error_message = Messages.EMBEDDING_CONFIG_INCOMPLETE_MESSAGE
                 self.logger.error(self._init_error_message)
                 return []
-            self.logger.error(f"获取文章上下文失败: {e}")
+            self.logger.error(Messages.RAG_CONTEXT_FETCH_FAILED(e))
             return []
 
     def get_langchain_tools(self) -> List[Tool]:

@@ -141,5 +141,5 @@ async def create_tables_async(tables: Optional[List[str]] = None) -> None:
         else:
             Logger.warning(Messages.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
     except Exception as e:
-        Logger.error(f"数据库表创建失败: {e}")
+        Logger.error(Messages.DATABASE_TABLE_CREATION_FAILED(e))
         Logger.error(traceback.format_exc())

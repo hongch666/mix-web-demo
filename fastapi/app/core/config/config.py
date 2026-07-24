@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import yaml
+from app.core.constants import Messages
 from dotenv import load_dotenv
 
 # 在应用启动时加载 .env 文件
@@ -46,9 +47,7 @@ def load_config(section: Optional[str] = None, key: Optional[str] = None) -> Any
 
     if config_path is None:
         searched = "\n".join(str(candidate) for candidate in candidates)
-        raise FileNotFoundError(
-            f"未找到 application.yaml，请确认配置文件存在。已搜索路径:\n{searched}"
-        )
+        raise FileNotFoundError(Messages.CONFIG_FILE_NOT_FOUND(searched))
 
     # 读取原始文件
     with open(config_path, "r", encoding="utf-8") as f:

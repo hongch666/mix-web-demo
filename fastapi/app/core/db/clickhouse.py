@@ -33,7 +33,7 @@ class ClickhouseConnectionPool:
             if self._connections:
                 conn: Any = self._connections.pop()
                 Logger.info(
-                    f"[ClickHouse连接池] 从池中获取复用连接，池内剩余: {len(self._connections)}个"
+                    Messages.CLICKHOUSE_POOL_REUSED(len(self._connections))
                 )
                 return conn
 
@@ -43,13 +43,13 @@ class ClickhouseConnectionPool:
                 conn_index: int = self._conn_count
             else:
                 Logger.warning(
-                    f"[ClickHouse连接池] 连接池已耗尽，等待可用连接 (活跃连接: {self._active_connections}/{self._max_connections})"
+                    Messages.CLICKHOUSE_POOL_EXHAUSTED(self._active_connections, self._max_connections)
                 )
                 while not self._connections:
                     self._condition.wait()
                 conn: Any = self._connections.pop()
                 Logger.info(
-                    f"[ClickHouse连接池] 等待后获取复用连接，池内剩余: {len(self._connections)}个"
+                    Messages.CLICKHOUSE_POOL_REUSED_AFTER_WAIT(len(self._connections))
                 )
                 return conn
 
@@ -64,9 +64,9 @@ class ClickhouseConnectionPool:
         if not ch_password or ch_password == "None":
             ch_password = ""
 
-        Logger.info(f"[ClickHouse连接池] 创建新连接 (第{conn_index}个)")
+        Logger.info(Messages.CLICKHOUSE_CONNECTION_CREATING(conn_index))
         Logger.info(
-            f"[ClickHouse连接池] 连接配置 - Host: {ch_host}, Port: {ch_port}, DB: {ch_database}, User: {ch_username}"
+            Messages.CLICKHOUSE_CONNECTION_CONFIG(ch_host, ch_port, ch_database, ch_username)
         )
         conn_start: float = time.time()
 
@@ -81,13 +81,13 @@ class ClickhouseConnectionPool:
                 client_name="fastapi-app",
             )
             conn_time: float = time.time() - conn_start
-            Logger.info(f"[ClickHouse连接池] 连接建立耗时 {conn_time:.3f}s")
+            Logger.info(Messages.CLICKHOUSE_CONNECTION_CREATED(conn_time))
             return conn
         except Exception as e:
             with self._condition:
                 self._active_connections = max(self._active_connections - 1, 0)
                 self._condition.notify()
-            Logger.error(f"[ClickHouse连接池] 创建连接失败: {e}")
+            Logger.error(Messages.CLICKHOUSE_CONNECTION_CREATE_FAILED(e))
             raise
 
     def return_connection(self, conn: Any) -> None:
@@ -99,7 +99,7 @@ class ClickhouseConnectionPool:
             if len(self._connections) < self._max_connections:
                 self._connections.append(conn)
                 Logger.info(
-                    f"[ClickHouse连接池] 连接已归还到池，池内现有: {len(self._connections)}个"
+                    Messages.CLICKHOUSE_CONNECTION_RETURNED(len(self._connections))
                 )
                 self._condition.notify()
                 return

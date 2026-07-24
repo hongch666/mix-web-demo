@@ -33,7 +33,7 @@ class ArticleLogMapper:
         """获取用户的文章浏览分布"""
         try:
             logs: Any = mongo_db["articlelogs"]
-            Logger.debug(f"开始查询用户 {user_id} 的浏览分布")
+            Logger.debug(Messages.ARTICLE_VIEW_DISTRIBUTION_QUERY_STARTED(user_id))
 
             # 使用 aggregation pipeline 进行数据处理
             pipeline = [
@@ -47,7 +47,7 @@ class ArticleLogMapper:
             results: List[Dict[str, Any]] = await cursor.to_list(length=None)
 
             if not results:
-                Logger.info(f"用户 {user_id} 无浏览记录")
+                Logger.info(Messages.ARTICLE_VIEW_DISTRIBUTION_EMPTY(user_id))
                 return {"total_views": 0, "articles": []}
 
             # 提取所有文章ID进行批量查询
@@ -82,12 +82,12 @@ class ArticleLogMapper:
                 )
 
             Logger.info(
-                f"用户 {user_id} 的文章浏览分布: 总浏览数={total_views}, 文章数={len(articles)}"
+                Messages.ARTICLE_VIEW_DISTRIBUTION_RESULT(user_id, total_views, len(articles))
             )
 
             return {"total_views": total_views, "articles": articles}
         except Exception as e:
-            Logger.error(f"获取文章浏览分布失败: {e}", exc_info=True)
+            Logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e), exc_info=True)
             raise BusinessException(
                 Messages.GET_TOP_FAIL,
                 HttpCode.INTERNAL_SERVER_ERROR,

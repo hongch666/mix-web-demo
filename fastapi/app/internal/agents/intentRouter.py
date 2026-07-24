@@ -90,7 +90,7 @@ class IntentRouter:
         except Exception as e:
             self._use_structured_output = False
             self.logger.warning(
-                f"with_structured_output 不可用，降级为文本匹配模式: {e}"
+                Messages.INTENT_STRUCTURED_OUTPUT_UNAVAILABLE(e)
             )
 
     def set_user_context(self, user_id: int, db: Session) -> None:
@@ -125,7 +125,7 @@ class IntentRouter:
                 intent, resolution = await self._route_text_match(question, config)
             return intent, resolution
         except Exception as e:
-            self.logger.error(f"意图识别失败: {e}, 默认使用 article_search")
+            self.logger.error(Messages.INTENT_RECOGNITION_FAILED(e))
             return "article_search", "default_fallback"
 
     async def _route_structured(
@@ -137,12 +137,12 @@ class IntentRouter:
                 {"question": question}, config=config
             )
             self.logger.info(
-                f"意图识别结果(结构化): {question} -> {result.type} (置信度: {result.confidence:.2f})"
+                Messages.INTENT_STRUCTURED_RESULT(question, result.type, result.confidence)
             )
             return result.type, "structured"
         except Exception as e:
             # 结构化输出失败，降级为文本匹配
-            self.logger.warning(f"结构化意图识别失败，降级为文本匹配: {e}")
+            self.logger.warning(Messages.INTENT_STRUCTURED_FALLBACK(e))
             return await self._route_text_match(question, config)
 
     async def _route_text_match(
@@ -173,7 +173,7 @@ class IntentRouter:
         else:
             intent = "article_search"
 
-        self.logger.info(f"意图识别结果(文本匹配): {question} -> {intent}")
+        self.logger.info(Messages.INTENT_TEXT_RESULT(question, intent))
         return intent, "text_fallback"
 
     async def route_with_permission_check_async(
@@ -210,7 +210,7 @@ class IntentRouter:
             try:
                 sql_tools: SQLTools = get_sql_tools()
                 if sql_tools.is_dangerous_nl_request(question):
-                    self.logger.warning(f"拦截疑似写操作SQL请求: {question}")
+                    self.logger.warning(Messages.INTENT_WRITE_SQL_BLOCKED(question))
                     return (
                         intent,
                         False,
@@ -218,7 +218,7 @@ class IntentRouter:
                         resolution,
                     )
             except Exception as e:
-                self.logger.warning(f"写操作意图检测失败，继续执行权限校验: {e}")
+                self.logger.warning(Messages.INTENT_WRITE_CHECK_FAILED(e))
 
             has_permission, msg = await perm_manager.can_access_sql_tools_async(
                 self.user_id, self.db, question

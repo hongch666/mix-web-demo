@@ -29,7 +29,7 @@ class MongoDBTools:
         try:
             return self.db[self.logs_collection_name]
         except Exception as e:
-            self.logger.error(f"获取日志集合失败: {e}")
+            self.logger.error(Messages.MONGODB_LOG_COLLECTION_GET_FAILED(e))
             return None
 
     async def list_mongodb_collections(self) -> str:
@@ -53,12 +53,14 @@ class MongoDBTools:
                         }
                     )
                 except Exception as e:
-                    self.logger.warning(f"无法获取 {collection_name} 的信息: {e}")
+                    self.logger.warning(
+                        Messages.MONGODB_COLLECTION_INFO_GET_FAILED(collection_name, e)
+                    )
                     collections_info.append({"name": collection_name, "error": str(e)})
 
             return json.dumps(collections_info, ensure_ascii=False, indent=2)
         except Exception as e:
-            error_msg = f"获取 collection 列表失败: {str(e)}"
+            error_msg = Messages.MONGODB_COLLECTION_LIST_FAILED(e)
             self.logger.error(error_msg)
             return error_msg
 
@@ -91,12 +93,12 @@ class MongoDBTools:
             ]
 
             self.logger.info(
-                f"查询 {collection_name}: 条件={filter_obj}, 返回 {len(results)} 条记录"
+                Messages.MONGODB_QUERY_RESULT(collection_name, filter_obj, len(results))
             )
             return json.dumps(results, ensure_ascii=False, indent=2)
 
         except Exception as e:
-            error_msg = f"MongoDB 查询失败: {str(e)}"
+            error_msg = Messages.MONGODB_QUERY_FAILED(e)
             self.logger.error(error_msg)
             return error_msg
 

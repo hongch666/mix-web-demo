@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, AsyncGenerator, Dict, Generator, Optional
 
 from app.core.base import Logger
+from app.core.constants import Messages
 from langsmith import Client as LangSmithClient
 from langsmith.run_trees import RunTree
 
@@ -54,11 +55,12 @@ def init_langsmith(config: Optional[LangSmithConfig] = None) -> None:
             api_url=config.endpoint or "https://api.smith.langchain.com",
         )
         Logger.info(
-            f"LangSmith 客户端初始化成功，项目: {config.project}，"
-            f"端点: {config.endpoint or '默认'}"
+            Messages.LANGSMITH_CLIENT_INITIALIZED(
+                config.project, config.endpoint or "默认"
+            )
         )
     except Exception as e:
-        _init_error = f"LangSmith 客户端初始化失败: {e}"
+        _init_error = Messages.LANGSMITH_CLIENT_INITIALIZATION_FAILED(e)
         _client = None
         Logger.warning(_init_error)
 
@@ -76,7 +78,7 @@ def shutdown_langsmith() -> None:
             # 但为了完整性保留此接口
             Logger.info("LangSmith 客户端已关闭")
         except Exception as e:
-            Logger.warning(f"LangSmith 客户端关闭异常: {e}")
+            Logger.warning(Messages.LANGSMITH_CLIENT_CLOSE_FAILED(e))
     _client = None
 
 
@@ -136,14 +138,14 @@ def get_langsmith_context(
 
         yield run
     except Exception as error:
-        Logger.warning(f"创建 LangSmith Run 失败: {error}")
+        Logger.warning(Messages.LANGSMITH_RUN_CREATE_FAILED(error))
         yield None
     finally:
         if run is not None:
             try:
                 run.end()
             except Exception as end_error:
-                Logger.warning(f"结束 LangSmith Run 失败: {end_error}")
+                Logger.warning(Messages.LANGSMITH_RUN_END_FAILED(end_error))
 
 
 @asynccontextmanager
@@ -186,11 +188,11 @@ async def get_langsmith_context_async(
 
         yield run
     except Exception as error:
-        Logger.warning(f"创建 LangSmith Run 失败: {error}")
+        Logger.warning(Messages.LANGSMITH_RUN_CREATE_FAILED(error))
         yield None
     finally:
         if run is not None:
             try:
                 run.end()
             except Exception as end_error:
-                Logger.warning(f"结束 LangSmith Run 失败: {end_error}")
+                Logger.warning(Messages.LANGSMITH_RUN_END_FAILED(end_error))

@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 from app.core.base import Logger
 from app.core.config import load_config
+from app.core.constants import Messages
 
 
 def get_postgres_config() -> Dict[str, Any]:
@@ -25,9 +26,9 @@ def get_pgvector_connection_string() -> str:
             f"@{cfg['host']}:{cfg['port']}/{cfg['database']}"
         )
         Logger.info(
-            f"PostgreSQL 连接字符串构建成功: {cfg['host']}:{cfg['port']}/{cfg['database']}"
+            Messages.POSTGRES_CONNECTION_STRING_CREATED(cfg["host"], cfg["port"], cfg["database"])
         )
         return connection_string
     except Exception as e:
-        Logger.error(f"PostgreSQL 连接字符串构建失败: {e}")
+        Logger.error(Messages.POSTGRES_CONNECTION_STRING_CREATE_FAILED(e))
         raise

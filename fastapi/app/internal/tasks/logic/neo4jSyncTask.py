@@ -71,11 +71,10 @@ class KnowledgeGraphSyncService:
         if last_sync_time is None or not timestamp_column:
             return base_sql
         sync_time_text = last_sync_time.strftime("%Y-%m-%d %H:%M:%S")
-        return Scripts.NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT % (
+        return Scripts.NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(
             base_sql,
             timestamp_column,
             sync_time_text,
-            timestamp_column,
         )
 
     def _fetch_all_users(
@@ -257,7 +256,7 @@ class KnowledgeGraphSyncService:
         batch_size: int = 500,
     ) -> int:
         if not rows:
-            self.logger.info(f"[知识图谱] 无 {label} 需要同步")
+            self.logger.info(Messages.NEO4J_SYNC_NO_DATA(label))
             return 0
 
         total = 0
@@ -265,7 +264,7 @@ class KnowledgeGraphSyncService:
             batch = rows[start : start + batch_size]
             await self.client.run_write_query(cypher, {"rows": batch})
             total += len(batch)
-            self.logger.info(f"[知识图谱] 已同步 {label}: {total}/{len(rows)}")
+            self.logger.info(Messages.NEO4J_SYNC_PROGRESS(label, total, len(rows)))
         return total
 
     async def _cleanup_write(
@@ -273,7 +272,7 @@ class KnowledgeGraphSyncService:
     ) -> int:
         summary = await self.client.run_write_query(cypher, params)
         deleted_count = self._extract_deleted_count(summary)
-        self.logger.info(f"[知识图谱] 已清理 {label}: {deleted_count}")
+        self.logger.info(Messages.NEO4J_SYNC_CLEANUP(label, deleted_count))
         return deleted_count
 
     async def _has_graph_data(self) -> bool:
@@ -450,7 +449,7 @@ class KnowledgeGraphSyncService:
         )
 
         cleanup_result["total"] = sum(cleanup_result.values())
-        self.logger.info(f"[知识图谱] 删除同步清理完成: {cleanup_result}")
+        self.logger.info(Messages.NEO4J_SYNC_CLEANUP_COMPLETE(cleanup_result))
         return cleanup_result
 
     async def sync_all(self) -> Dict[str, int]:
@@ -581,7 +580,7 @@ class KnowledgeGraphSyncService:
             {f"cleanup_{key}": value for key, value in cleanup_result.items()}
         )
 
-        self.logger.info(f"[知识图谱] 全量同步完成: {result}")
+        self.logger.info(Messages.NEO4J_SYNC_FULL_COMPLETE(result))
         return result
 
     async def sync_incremental(
@@ -741,9 +740,9 @@ def _save_sync_time(sync_time: datetime) -> None:
     try:
         redis_client = get_redis_client()
         _run_redis_coro(redis_client.set(_NEO4J_SYNC_TIME_KEY, sync_time.isoformat()))
-        Logger.info(f"[知识图谱] 已保存同步时间戳到 Redis: {sync_time.isoformat()}")
+        Logger.info(Messages.NEO4J_SYNC_TIME_SAVED(sync_time.isoformat()))
     except Exception as e:
-        Logger.error(f"[知识图谱] 保存同步时间戳到 Redis 失败: {e}")
+        Logger.error(Messages.NEO4J_SYNC_TIME_SAVE_FAILED(e))
 
 
 def _get_last_sync_time() -> Optional[datetime]:
@@ -754,7 +753,7 @@ def _get_last_sync_time() -> Optional[datetime]:
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
-        Logger.warning(f"从 Redis 读取 Neo4j 同步时间戳失败: {e}")
+        Logger.warning(Messages.NEO4J_SYNC_TIME_READ_FAILED(e))
     return None
 
 
@@ -769,10 +768,10 @@ def _sync_mysql_to_neo4j() -> Dict[str, int]:
         result = asyncio.run(sync_service.sync_incremental(last_sync_time))
         if any(result.values()):
             _save_sync_time(sync_start_time)
-        Logger.info(Messages.NEO4J_TASK_FINISH_MESSAGE % result)
+        Logger.info(Messages.NEO4J_TASK_FINISH_MESSAGE(result))
         return result
     except Exception as e:
-        Logger.error(f"[知识图谱任务] MySQL 到 Neo4j 同步失败: {e}")
+        Logger.error(Messages.NEO4J_MYSQL_SYNC_FAILED(e))
         return {}
 
 
@@ -784,15 +783,15 @@ async def sync_mysql_to_neo4j_async() -> None:
     redis_client = get_redis_client()
     lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
     if lock_value is None:
-        Logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE % lock_key)
+        Logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE(lock_key))
         return
-    Logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE % lock_key)
+    Logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE(lock_key))
 
     try:
         await asyncio.to_thread(_sync_mysql_to_neo4j)
     finally:
         released = await redis_client.unlock(lock_key, lock_value)
         if released:
-            Logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS_MESSAGE % lock_key)
+            Logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS_MESSAGE(lock_key))
         else:
-            Logger.info(Messages.REDIS_LOCK_RELEASE_FAIL_MESSAGE % lock_key)
+            Logger.info(Messages.REDIS_LOCK_RELEASE_FAIL_MESSAGE(lock_key))

@@ -2,13 +2,15 @@ from collections.abc import AsyncGenerator
 from functools import wraps
 from typing import Any, Callable, Optional
 
-from app.core.constants import HttpCode, Messages
 from app.common.middleware import get_current_user_id
 from app.core.base import Logger
+from app.core.constants import HttpCode, Messages
 from app.core.db import get_db
 from app.core.errors import BusinessException
 from app.internal.crud import UserMapper, get_user_mapper
 from sqlalchemy.ext.asyncio import AsyncSession
+
+
 def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
     """
     管理员权限检查装饰器
@@ -53,15 +55,13 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                 user_mapper: UserMapper = get_user_mapper()
                 user_role: str = await user_mapper.get_user_role_async(int(user_id), db)
                 if user_role != Messages.ROLE_ADMIN:
-                    Logger.warning(
-                        f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
-                    )
+                    Logger.warning(Messages.ADMIN_PERMISSION_DENIED(user_id, user_role))
                     raise BusinessException(
                         Messages.USER_NO_ADMIN_PERMISSION_MESSAGE,
                         HttpCode.FORBIDDEN,
                         Messages.ERROR_USER_NO_ADMIN_PERMISSION,
                     )
-                Logger.info(f"管理员 {user_id} 访问受保护的接口")
+                Logger.info(Messages.ADMIN_ACCESS_GRANTED(user_id))
                 return await func(*args, **kwargs)
             db_generator: AsyncGenerator[AsyncSession, None] = get_db()
             current_db: AsyncSession = await anext(db_generator)
@@ -71,15 +71,13 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                     int(user_id), current_db
                 )
                 if user_role != Messages.ROLE_ADMIN:
-                    Logger.warning(
-                        f"权限不足: 用户 {user_id} 尝试访问管理员接口，角色: {user_role}"
-                    )
+                    Logger.warning(Messages.ADMIN_PERMISSION_DENIED(user_id, user_role))
                     raise BusinessException(
                         Messages.USER_NO_ADMIN_PERMISSION_MESSAGE,
                         HttpCode.FORBIDDEN,
                         Messages.ERROR_USER_NO_ADMIN_PERMISSION,
                     )
-                Logger.info(f"管理员 {user_id} 访问受保护的接口")
+                Logger.info(Messages.ADMIN_ACCESS_GRANTED(user_id))
                 return await func(*args, **kwargs)
             finally:
                 await db_generator.aclose()
@@ -87,7 +85,7 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
         except BusinessException:
             raise
         except Exception as e:
-            Logger.error(f"检查管理员权限时出错: {e}")
+            Logger.error(Messages.ADMIN_PERMISSION_CHECK_FAILED(e))
             raise BusinessException(
                 Messages.PERMISSION_CHECK_FAILED_MESSAGE,
                 HttpCode.FORBIDDEN,

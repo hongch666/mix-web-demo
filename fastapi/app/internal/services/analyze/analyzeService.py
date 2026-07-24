@@ -103,10 +103,10 @@ class AnalyzeService:
         async with lock:
             cached_result: Any = await cache_getter()
             if cached_result is not None:
-                Logger.info(f"[singleflight] key={key} 命中回填缓存，复用首个请求结果")
+                Logger.info(Messages.SINGLEFLIGHT_KEY_HIT(key))
                 return cached_result
 
-            Logger.info(f"[singleflight] key={key} 开始执行缓存回源")
+            Logger.info(Messages.SINGLEFLIGHT_KEY_START(key))
             return await loader()
 
     async def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
@@ -115,7 +115,7 @@ class AnalyzeService:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._article_cache.get(ch_conn)
         except Exception as e:
-            Logger.debug(f"_get_top10_cached 失败: {e}")
+            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_top10_cached", e))
             return None
         finally:
             if ch_conn:
@@ -125,14 +125,14 @@ class AnalyzeService:
         try:
             return await self._wordcloud_cache.get()
         except Exception as e:
-            Logger.debug(f"_get_wordcloud_cached 失败: {e}")
+            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_wordcloud_cached", e))
             return None
 
     async def _get_statistics_cached(self) -> Optional[Dict[str, Any]]:
         try:
             return await self._statistics_cache.get()
         except Exception as e:
-            Logger.debug(f"_get_statistics_cached 失败: {e}")
+            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_statistics_cached", e))
             return None
 
     async def _get_category_article_count_cached(
@@ -143,7 +143,7 @@ class AnalyzeService:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._category_cache.get(ch_conn)
         except Exception as e:
-            Logger.debug(f"_get_category_article_count_cached 失败: {e}")
+            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_category_article_count_cached", e))
             return None
         finally:
             if ch_conn:
@@ -155,7 +155,7 @@ class AnalyzeService:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._publish_time_cache.get(ch_conn)
         except Exception as e:
-            Logger.debug(f"_get_monthly_publish_count_cached 失败: {e}")
+            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_monthly_publish_count_cached", e))
             return None
         finally:
             if ch_conn:
@@ -245,11 +245,11 @@ class AnalyzeService:
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
-                        f"get_top10_articles_service: [缓存命中] 耗时 {total_time:.3f}s"
+                        Messages.SERVICE_CACHE_HIT("get_top10_articles_service", total_time)
                     )
                     return cached_result
             except Exception as cache_e:
-                Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+                Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
             Logger.info(Messages.TOP10_CACHE_MISS)
 
@@ -260,7 +260,7 @@ class AnalyzeService:
                     Logger.info(Messages.TOP10_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
-                    f"get_top10_articles_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
+                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_top10_articles_service", ch_e)
                 )
 
             if not articles or len(articles) == 0:
@@ -333,10 +333,10 @@ class AnalyzeService:
                     await self._article_cache.set(result, ch_conn)
                     total_time: float = time.time() - start
                     Logger.info(
-                        f"get_top10_articles_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
+                        Messages.SERVICE_CACHE_UPDATED("get_top10_articles_service", data_source, total_time)
                     )
                 except Exception as cache_e:
-                    Logger.warning(f"更新缓存失败: {cache_e}")
+                    Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
             return result
         finally:
@@ -390,11 +390,11 @@ class AnalyzeService:
                 file_path, oss_path
             )
             oss_url: str = str(result.get("data", ""))
-            Logger.info(f"文件上传成功，OSS地址: {oss_url}")
-            Logger.info(f"本地文件路径: {file_path}, OSS路径: {oss_path}")
+            Logger.info(Messages.UPLOAD_FILE_TO_OSS_SUCCESS(oss_url))
+            Logger.info(Messages.UPLOAD_FILE_TO_OSS_PATH_INFO(file_path, oss_path))
             return oss_url
         except Exception as e:
-            Logger.error(f"远程上传文件到OSS失败: {str(e)}")
+            Logger.error(Messages.UPLOAD_FILE_TO_OSS_REMOTE_FAILED(str(e)))
             raise
 
     async def upload_wordcloud_to_oss(self) -> str:
@@ -425,10 +425,10 @@ class AnalyzeService:
             cached_url: Optional[str] = await self._wordcloud_cache.get()
             if cached_url:
                 elapsed: float = time.time() - start
-                Logger.info(f"get_wordcloud_service: [缓存命中] 耗时 {elapsed:.3f}s")
+                Logger.info(Messages.SERVICE_CACHE_HIT("get_wordcloud_service", elapsed))
                 return cached_url
         except Exception as cache_e:
-            Logger.debug(f"获取词云图缓存失败，将重新生成: {cache_e}")
+            Logger.debug(Messages.WORDCLOUD_CACHE_MISS_WILL_RETRY(cache_e))
 
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
         Logger.info(Messages.WORDCLOUD_CACHE_FETCH_FAILED)
@@ -444,10 +444,10 @@ class AnalyzeService:
             await self._wordcloud_cache.set(oss_url)
             elapsed: float = time.time() - start
             Logger.info(
-                f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {elapsed:.3f}s"
+                Messages.WORDCLOUD_GENERATED_AND_CACHED(elapsed)
             )
         except Exception as cache_e:
-            Logger.warning(f"缓存词云图URL失败: {cache_e}")
+            Logger.warning(Messages.WORDCLOUD_CACHE_URL_FAILED(cache_e))
 
         return oss_url
 
@@ -511,7 +511,7 @@ class AnalyzeService:
             total_rows += 1
 
         workbook.save(file_path)
-        Logger.info(f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录")
+        Logger.info(Messages.EXPORT_ARTICLES_SUCCESS(file_path, total_rows))
         return file_path
 
     async def upload_excel_to_oss(self, file_path: str) -> str:
@@ -551,11 +551,11 @@ class AnalyzeService:
             if cached_result:
                 total_time: float = time.time() - start
                 Logger.info(
-                    f"get_article_statistics_service: [缓存命中] 耗时 {total_time:.3f}s"
+                    Messages.SERVICE_CACHE_HIT("get_article_statistics_service", total_time)
                 )
                 return cached_result
         except Exception as cache_e:
-            Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
         # ========== 步骤2: 缓存未命中，串行查询DB（同一 AsyncSession 不支持并发操作） ==========
         Logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
@@ -586,12 +586,12 @@ class AnalyzeService:
             await self._statistics_cache.set(statistics)
             total_time: float = time.time() - start
             Logger.info(
-                f"get_article_statistics_service: DB 数据已更新缓存，总耗时 {total_time:.3f}s"
+                Messages.SERVICE_CACHE_UPDATED("get_article_statistics_service", "DB", total_time)
             )
         except Exception as cache_e:
-            Logger.warning(f"更新缓存失败: {cache_e}")
+            Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
-        Logger.info(f"获取文章统计信息: {statistics}")
+        Logger.info(Messages.STATISTICS_RESULT_INFO(statistics))
         return statistics
 
     async def get_category_article_count_service(
@@ -622,11 +622,11 @@ class AnalyzeService:
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
-                        f"get_category_article_count_service: [缓存命中] 耗时 {total_time:.3f}s"
+                        Messages.SERVICE_CACHE_HIT("get_category_article_count_service", total_time)
                     )
                     return cached_result
             except Exception as cache_e:
-                Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+                Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
@@ -639,7 +639,7 @@ class AnalyzeService:
                 Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
-                    f"get_category_article_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
+                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_category_article_count_service", ch_e)
                 )
                 local_data_source = "DB"
 
@@ -684,7 +684,7 @@ class AnalyzeService:
 
             non_zero_count: int = len([c for c in result if c["article_count"] > 0])
             Logger.info(
-                f"get_category_article_count_service: 获取 {len(result)} 个大分类，有文章的分类数: {non_zero_count}"
+                Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count)
             )
 
             data_source: str = local_data_source
@@ -695,10 +695,10 @@ class AnalyzeService:
                     await self._category_cache.set(result, ch_conn)
                     total_time = time.time() - start
                     Logger.info(
-                        f"get_category_article_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
+                        Messages.SERVICE_CACHE_UPDATED("get_category_article_count_service", data_source, total_time)
                     )
                 except Exception as cache_e:
-                    Logger.warning(f"更新缓存失败: {cache_e}")
+                    Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
             return result
         finally:
@@ -730,11 +730,11 @@ class AnalyzeService:
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
-                        f"get_monthly_publish_count_service: [缓存命中] 耗时 {total_time:.3f}s"
+                        Messages.SERVICE_CACHE_HIT("get_monthly_publish_count_service", total_time)
                     )
                     return cached_result
             except Exception as cache_e:
-                Logger.debug(f"缓存获取失败，将查询数据源: {cache_e}")
+                Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
@@ -747,7 +747,7 @@ class AnalyzeService:
                 Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
-                    f"get_monthly_publish_count_service: ClickHouse 查询失败，降级为 DB: {ch_e}"
+                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_publish_count_service", ch_e)
                 )
 
             if not local_publish_data:
@@ -775,7 +775,7 @@ class AnalyzeService:
 
             result.sort(key=lambda x: x["year_month"], reverse=False)
             Logger.info(
-                f"get_monthly_publish_count_service: 获取过去6个月中 {len(result)} 个月份数据，有文章的月份数: {len([r for r in result if r['count'] > 0])}"
+                Messages.MONTHLY_PUBLISH_COUNT_RESULT(len(result), len([r for r in result if r['count'] > 0]))
             )
             data_source: str = local_data_source
 
@@ -785,10 +785,10 @@ class AnalyzeService:
                     await self._publish_time_cache.set(result, ch_conn)
                     total_time: float = time.time() - start
                     Logger.info(
-                        f"get_monthly_publish_count_service: {data_source} 数据已更新缓存，总耗时 {total_time:.3f}s"
+                        Messages.SERVICE_CACHE_UPDATED("get_monthly_publish_count_service", data_source, total_time)
                     )
                 except Exception as cache_e:
-                    Logger.warning(f"更新缓存失败: {cache_e}")
+                    Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
             return result
         finally:

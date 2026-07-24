@@ -75,7 +75,9 @@ def requireInternalToken(
 
                 # 验证服务名称（如果指定了）
                 if service_name and claims.get("serviceName") != service_name:
-                    error_msg: str = f"{Messages.SERVICE_NAME_MISMATCH}. 期望: {service_name}, 获得: {claims.get('serviceName')}"
+                    error_msg: str = Messages.INTERNAL_TOKEN_SERVICE_NAME_MISMATCH(
+                        service_name, claims.get("serviceName")
+                    )
                     Logger.error(error_msg)
                     raise BusinessException(
                         Messages.SERVICE_NAME_MISMATCH,
@@ -84,7 +86,9 @@ def requireInternalToken(
                     )
 
                 Logger.debug(
-                    f"内部令牌验证成功 - 用户ID: {claims.get('userId')}, 服务: {claims.get('serviceName')}"
+                    Messages.INTERNAL_TOKEN_VERIFICATION_SUCCESS(
+                        claims.get("userId"), claims.get("serviceName")
+                    )
                 )
 
                 # 将令牌信息存储到请求中供后续使用
@@ -95,7 +99,7 @@ def requireInternalToken(
             except BusinessException:
                 raise
             except Exception as e:
-                Logger.error(f"令牌验证失败: {str(e)}")
+                Logger.error(Messages.INTERNAL_TOKEN_VERIFICATION_FAILED(e))
                 raise BusinessException(
                     Messages.INTERNAL_TOKEN_INVALID,
                     HttpCode.UNAUTHORIZED,

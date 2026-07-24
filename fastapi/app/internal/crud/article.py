@@ -6,7 +6,7 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, Scripts
 from app.core.db import ClickhouseConnectionPool, engine, get_clickhouse_connection_pool
 from app.internal.models import (
     Article,
@@ -46,11 +46,11 @@ class ArticleMapper:
                         else:
                             row_dict[col] = val
                     except Exception as val_e:
-                        Logger.debug(f"值转换失败 {col}={val}: {val_e}")
+                        Logger.debug(Messages.CLICKHOUSE_VALUE_CONVERSION_FAILED(col, val, val_e))
                         row_dict[col] = None
                 result.append(row_dict)
             except Exception as row_e:
-                Logger.debug(f"行数据转换失败: {row_e}")
+                Logger.debug(Messages.CLICKHOUSE_ROW_CONVERSION_FAILED(row_e))
                 continue
         return result
 
@@ -84,7 +84,7 @@ class ArticleMapper:
         query_start: float = time.time()
         ch_table: str = load_config("database")["clickhouse"]["table"]
         query = (
-            f"SELECT {', '.join(columns)} FROM {ch_table} ORDER BY views DESC LIMIT 10"
+            Scripts.TOP10_ARTICLES_CLICKHOUSE_QUERY(", ".join(columns), ch_table)
         )
 
         try:
@@ -98,18 +98,18 @@ class ArticleMapper:
 
             total_time: float = time.time() - start
             Logger.info(
-                f"获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s"
+                Messages.CLICKHOUSE_QUERY_TIMING(pool_time, query_time, total_time)
             )
 
             return result
         except AttributeError as ae:
-            Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
-            Logger.error(f"详细错误: {traceback.format_exc()}")
+            Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
+            Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
             return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
         except Exception as e:
-            Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
-            Logger.debug(f"详细异常: {traceback.format_exc()}")
+            Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
+            Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
             return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
         finally:
@@ -344,7 +344,7 @@ class ArticleMapper:
         Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
         ch_table: str = load_config("database")["clickhouse"]["table"]
-        query = f"SELECT sub_category_id, count() as count FROM {ch_table} WHERE status = 1 GROUP BY sub_category_id ORDER BY count DESC"
+        query = Scripts.CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY(ch_table)
 
         try:
             results: Any = ch_conn.execute(query)
@@ -361,25 +361,25 @@ class ArticleMapper:
                         }
                     )
                 except (ValueError, TypeError) as e:
-                    Logger.debug(f"行转换失败: {e}，跳过此行")
+                    Logger.debug(Messages.CLICKHOUSE_QUERY_ROW_CONVERSION_FAILED(e))
                     continue
 
             total_time: float = time.time() - start
             Logger.info(
-                f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {len(result)} 个分类"
+                Messages.CLICKHOUSE_CATEGORY_QUERY_RESULT(query_time, total_time, len(result))
             )
 
             return result
         except AttributeError as ae:
-            Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
-            Logger.error(f"详细错误: {traceback.format_exc()}")
+            Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
+            Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
             return await self._get_category_article_count_db_mapper_sync(
                 SyncSession(engine)
             )
         except Exception as e:
-            Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
-            Logger.debug(f"详细异常: {traceback.format_exc()}")
+            Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
+            Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
             return await self._get_category_article_count_db_mapper_sync(
                 SyncSession(engine)
@@ -455,15 +455,7 @@ class ArticleMapper:
         ch_table: str = load_config("database")["clickhouse"]["table"]
 
         # 使用 ClickHouse 的日期函数
-        query = f"""
-            SELECT
-                formatDateTime(create_at, '%Y-%m') as year_month,
-                count() as count
-            FROM {ch_table}
-            WHERE status = 1 AND create_at >= subtractMonths(now(), 24)
-            GROUP BY year_month
-            ORDER BY year_month DESC
-        """
+        query = Scripts.MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(ch_table)
 
         try:
             results: Any = ch_conn.execute(query)
@@ -480,25 +472,25 @@ class ArticleMapper:
                         }
                     )
                 except (ValueError, TypeError) as e:
-                    Logger.debug(f"行转换失败: {e}，跳过此行")
+                    Logger.debug(Messages.CLICKHOUSE_QUERY_ROW_CONVERSION_FAILED(e))
                     continue
 
             total_time: float = time.time() - start
             Logger.info(
-                f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {len(result)} 个有数据的月份"
+                Messages.CLICKHOUSE_MONTHLY_QUERY_RESULT(query_time, total_time, len(result))
             )
 
             return result
         except AttributeError as ae:
-            Logger.error(f"ClickHouse 查询失败，属性错误: {ae}")
-            Logger.error(f"详细错误: {traceback.format_exc()}")
+            Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
+            Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
             return await self._get_monthly_publish_count_db_mapper_sync(
                 SyncSession(engine)
             )
         except Exception as e:
-            Logger.error(f"ClickHouse 查询失败，降级为 DB: {type(e).__name__}: {e}")
-            Logger.debug(f"详细异常: {traceback.format_exc()}")
+            Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
+            Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
             return await self._get_monthly_publish_count_db_mapper_sync(
                 SyncSession(engine)

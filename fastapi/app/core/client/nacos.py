@@ -61,10 +61,10 @@ def _get_registration_ip(ip: str) -> str:
             sock.connect(("8.8.8.8", 80))
             real_ip: str = sock.getsockname()[0]
             sock.close()
-            Logger.info(f"自动解析本地 IP: {real_ip}")
+            Logger.info(Messages.NACOS_LOCAL_IP_RESOLVED(real_ip))
             return real_ip
         except Exception as e:
-            Logger.warning(f"自动解析 IP 失败: {e}，使用主机名")
+            Logger.warning(Messages.NACOS_LOCAL_IP_RESOLVE_FAILED(e))
             return socket.gethostbyname(socket.gethostname())
 
     return ip
@@ -82,18 +82,18 @@ def register_instance(ip: str = IP, port: int = PORT) -> None:
                 SERVICE_NAME, registration_ip, port, group_name=GROUP_NAME
             )
             Logger.info(
-                f"Nacos 注册成功: service={SERVICE_NAME}, address={registration_ip}:{port}, group={GROUP_NAME}"
+                Messages.NACOS_REGISTERED(
+                    SERVICE_NAME, registration_ip, port, GROUP_NAME
+                )
             )
             return
         except Exception as e:
             last_error = e
-            Logger.warning(
-                f"Nacos 注册失败，第 {attempt}/{REGISTER_RETRIES} 次重试: {e}"
-            )
+            Logger.warning(Messages.NACOS_REGISTER_RETRY(attempt, REGISTER_RETRIES, e))
             time.sleep(RETRY_INTERVAL)
 
     raise RuntimeError(
-        f"Nacos 注册失败，已重试 {REGISTER_RETRIES} 次，server={SERVER_ADDRESSES}"
+        Messages.NACOS_REGISTER_FAILED(REGISTER_RETRIES, SERVER_ADDRESSES)
     ) from last_error
 
 
@@ -123,7 +123,7 @@ def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
                     SERVICE_NAME, registration_ip, port, group_name=GROUP_NAME
                 )
             except Exception as e:
-                Logger.error(f"Nacos 心跳错误: {e}")
+                Logger.error(Messages.NACOS_HEARTBEAT_ERROR(e))
             time.sleep(HEARTBEAT_INTERVAL)
 
     threading.Thread(target=keep_heartbeat, daemon=True).start()

@@ -40,7 +40,23 @@ class Scripts:
         "SELECT id, user_id, article_id, create_time, update_time FROM comments"
     )
     NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
-    NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT: str = "%s WHERE %s >= '%s' ORDER BY %s ASC"
+
+    @staticmethod
+    def NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(base_sql: str, timestamp_column: str, sync_time_text: str) -> str:
+        return f"{base_sql} WHERE {timestamp_column} >= '{sync_time_text}' ORDER BY {timestamp_column} ASC"
+
+    # ===== ClickHouse SQL 模板 =====
+    @staticmethod
+    def TOP10_ARTICLES_CLICKHOUSE_QUERY(columns: str, table: str) -> str:
+        return f"SELECT {columns} FROM {table} ORDER BY views DESC LIMIT 10"
+
+    @staticmethod
+    def CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY(table: str) -> str:
+        return f"SELECT sub_category_id, count() as count FROM {table} WHERE status = 1 GROUP BY sub_category_id ORDER BY count DESC"
+
+    @staticmethod
+    def MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(table: str) -> str:
+        return f"SELECT formatDateTime(create_at, '%Y-%m') as year_month, count() as count FROM {table} WHERE status = 1 AND create_at >= subtractMonths(now(), 24) GROUP BY year_month ORDER BY year_month DESC"
 
     # ===== SQL 安全规则 =====
     SQL_QUERY_PREFIX: str = "SELECT"

@@ -44,7 +44,7 @@ class SQLTools:
         """设置当前用户ID"""
         if user_id:
             user_id_context.set(user_id)
-            self.logger.info(f"设置SQL工具用户ID: {user_id}")
+            self.logger.info(Messages.SQL_TOOL_USER_ID_SET(user_id))
 
     def get_user_id(self) -> Optional[int]:
         """获取当前用户ID"""
@@ -166,7 +166,7 @@ class SQLTools:
                         table_name = singular_table_name
 
                 if table_name not in table_names:
-                    return f"表 '{table_name}' 不存在"
+                    return Messages.SQL_TOOL_TABLE_NOT_FOUND(table_name)
 
                 columns = inspector.get_columns(table_name)
                 pk = inspector.get_pk_constraint(table_name)
@@ -209,7 +209,7 @@ class SQLTools:
                 return schema_info
 
         except Exception as e:
-            error_msg = f"获取表结构失败: {str(e)}"
+            error_msg = Messages.SQL_TOOL_GET_SCHEMA_FAILED(e)
             self.logger.error(error_msg)
             return error_msg
 
@@ -249,7 +249,7 @@ class SQLTools:
                         ):
                             # 在FROM/JOIN之后添加WHERE条件
                             self.logger.info(
-                                f"[SQL工具] 为用户 {current_user_id} 的查询添加用户ID过滤"
+                                Messages.SQL_TOOL_ADD_USER_FILTER(current_user_id)
                             )
                             # 这里可以进一步增强查询，但为了安全起见，我们只在日志中记录
                         break
@@ -284,11 +284,11 @@ class SQLTools:
                     ]
                     result_text += " | ".join(row_data) + "\n"
 
-                self.logger.info(f"SQL查询成功，返回 {len(rows)} 行")
+                self.logger.info(Messages.SQL_TOOL_QUERY_SUCCESS(len(rows)))
                 return result_text
 
         except Exception as e:
-            error_msg = f"SQL查询失败: {str(e)}"
+            error_msg = Messages.SQL_TOOL_QUERY_FAILED(e)
             self.logger.error(error_msg)
             return error_msg
 

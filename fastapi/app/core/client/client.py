@@ -98,7 +98,7 @@ def _build_internal_token_header(user_id: str) -> Dict[str, str]:
         )
         return {"X-Internal-Token": f"Bearer {internal_token}"}
     except Exception as e:
-        Logger.error(f"生成内部令牌失败: {str(e)}")
+        Logger.error(Messages.INTERNAL_TOKEN_GENERATION_FAILED(e))
         return {}
 
 
@@ -131,9 +131,7 @@ def _should_retry_remote_call(error: Exception) -> bool:
 def _before_retry_log(retry_state: RetryCallState) -> None:
     """输出 tenacity 重试日志"""
     error: Optional[BaseException] = retry_state.outcome.exception()
-    Logger.warning(
-        f"调用远程服务失败，准备第 {retry_state.attempt_number + 1} 次重试: {error}"
-    )
+    Logger.warning(Messages.REMOTE_SERVICE_RETRY(retry_state.attempt_number + 1, error))
 
 
 async def _request_remote_service(
@@ -163,26 +161,28 @@ def _build_remote_service_error(
 ) -> BusinessException:
     """统一映射远程调用错误"""
     if isinstance(error, CircuitBreakerOpenError):
-        Logger.warning(f"调用 {service_name} 已触发熔断，直接降级返回")
+        Logger.warning(Messages.REMOTE_SERVICE_CIRCUIT_OPEN(service_name))
         return BusinessException(
-            f"调用远程服务 {service_name} 已降级，请稍后再试",
+            Messages.REMOTE_SERVICE_DEGRADED(service_name),
             HttpCode.SERVICE_UNAVAILABLE,
             "SERVICE_CALL_FAILED",
         )
     if isinstance(error, httpx.HTTPStatusError):
         status_code: int = error.response.status_code
         Logger.error(
-            f"调用 {service_name} 返回非 2xx 状态码: {status_code}, url={error.request.url}"
+            Messages.REMOTE_SERVICE_NON_SUCCESS(
+                service_name, status_code, error.request.url
+            )
         )
     elif isinstance(error, httpx.RequestError):
-        Logger.error(f"调用 {service_name} 网络异常: {error}")
+        Logger.error(Messages.REMOTE_SERVICE_NETWORK_ERROR(service_name, error))
     elif isinstance(error, ValueError):
-        Logger.error(f"调用 {service_name} 响应解析失败: {error}")
+        Logger.error(Messages.REMOTE_SERVICE_RESPONSE_PARSE_ERROR(service_name, error))
     else:
-        Logger.error(f"调用 {service_name} 失败: {error}")
+        Logger.error(Messages.REMOTE_SERVICE_CALL_ERROR(service_name, error))
 
     return BusinessException(
-        f"调用远程服务 {service_name} 失败，请稍后重试",
+        Messages.REMOTE_SERVICE_UNAVAILABLE(service_name),
         HttpCode.BAD_GATEWAY,
         Messages.ERROR_SERVICE_CALL_FAILED,
     )
@@ -267,7 +267,9 @@ async def _call_with_client(
             with attempt:
                 url: str = _resolve_service_url(service_name, path)
                 Logger.info(
-                    f"正在调用 {service_name} 的接口：{method} {url}（第 {attempt.retry_state.attempt_number} 次尝试）"
+                    Messages.REMOTE_SERVICE_REQUEST(
+                        service_name, method, url, attempt.retry_state.attempt_number
+                    )
                 )
                 result: Any = await _request_remote_service(
                     client=client,
@@ -282,10 +284,12 @@ async def _call_with_client(
                 if isinstance(result, dict) and result.get("code") != HttpCode.OK:
                     error_msg: str = result.get("msg", Messages.UNKNOWN_ERROR)
                     Logger.error(
-                        f"服务 {service_name} 返回业务错误: code={result.get('code')}, msg={error_msg}"
+                        Messages.REMOTE_SERVICE_BUSINESS_ERROR(
+                            service_name, result.get("code"), error_msg
+                        )
                     )
                     raise BusinessException(
-                        f"调用远程服务 {service_name} 失败: {error_msg}",
+                        Messages.REMOTE_SERVICE_CALL_FAILED(service_name, error_msg),
                         HttpCode.BAD_GATEWAY,
                         Messages.ERROR_SERVICE_CALL_FAILED,
                     )
@@ -297,7 +301,7 @@ async def _call_with_client(
         raise _build_remote_service_error(service_name, e)
 
     raise BusinessException(
-        f"调用远程服务 {service_name} 失败，请稍后重试",
+        Messages.REMOTE_SERVICE_UNAVAILABLE(service_name),
         HttpCode.BAD_GATEWAY,
         Messages.ERROR_SERVICE_CALL_FAILED,
     )

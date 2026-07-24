@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any, Dict, List
 
 from app.core.base import Logger
+from app.core.constants import Messages
 from app.internal.models import Comments, User
 from sqlalchemy import Date, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -95,7 +96,7 @@ class CommentsMapper:
             total += count
 
         Logger.debug(
-            f"用户 {user_id} 本月评论趋势: 总数={total}, 天数={len(daily_trends)}"
+            Messages.USER_MONTHLY_TREND(user_id, "评论", total, len(daily_trends))
         )
         return {"total": total, "daily_trends": daily_trends}
 

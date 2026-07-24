@@ -30,11 +30,11 @@ class Neo4jClient:
             self.user = str(neo4j_cfg.get("user") or "neo4j")
             self.password = str(neo4j_cfg.get("password") or "").strip()
             self.auth = (self.user, self.password) if self.password else None
-            self.logger.info(f"Neo4j 连接参数初始化成功: {self.uri}")
+            self.logger.info(Messages.NEO4J_CONFIG_INITIALIZED(self.uri))
         except Exception as e:
             self.uri = ""
             self.auth = None
-            self.logger.error(f"Neo4j 连接参数初始化失败: {e}")
+            self.logger.error(Messages.NEO4J_CONFIG_INITIALIZATION_FAILED(e))
 
     def _get_driver(self) -> Optional[Any]:
         """获取当前事件循环对应的 Neo4j 驱动"""
@@ -57,7 +57,7 @@ class Neo4jClient:
                 max_connection_lifetime=3600,
             )
             self._drivers[loop_id] = driver
-            self.logger.info(f"Neo4j 驱动初始化成功: {self.uri}")
+            self.logger.info(Messages.NEO4J_DRIVER_INITIALIZED(self.uri))
         return driver
 
     async def get_session(self) -> Optional[AsyncSession]:
@@ -81,7 +81,7 @@ class Neo4jClient:
             return await result.data()
         except Exception as e:
             self.logger.error(
-                f"Cypher 查询失败: {e}\nCypher: {cypher}\nParams: {params}"
+                Messages.CYPHER_QUERY_FAILED(e, cypher, params)
             )
             return []
         finally:
@@ -100,7 +100,7 @@ class Neo4jClient:
             return await result.consume()
         except Exception as e:
             self.logger.error(
-                f"Cypher 写操作失败: {e}\nCypher: {cypher}\nParams: {params}"
+                Messages.CYPHER_WRITE_FAILED(e, cypher, params)
             )
             return None
         finally:

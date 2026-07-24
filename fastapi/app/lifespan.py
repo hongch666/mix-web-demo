@@ -59,9 +59,9 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     Logger.info(InitMessages.HTTP_CLIENT_POOL_INITIALIZED)
 
     Logger.info(Messages.STARTUP_MESSAGE)
-    Logger.info(f"服务地址:http://{IP}:{PORT}")
-    Logger.info(f"Swagger文档地址: http://{IP}:{PORT}/docs")
-    Logger.info(f"ReDoc文档地址: http://{IP}:{PORT}/redoc")
+    Logger.info(Messages.STARTUP_SERVICE_ADDRESS(IP, PORT))
+    Logger.info(Messages.STARTUP_SWAGGER_ADDRESS(IP, PORT))
+    Logger.info(Messages.STARTUP_REDOC_ADDRESS(IP, PORT))
 
     yield
 

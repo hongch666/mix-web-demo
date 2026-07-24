@@ -74,7 +74,7 @@ class GraphSearchService:
         signal_results: List[Dict[int, dict]] = []
         for r in results:
             if isinstance(r, Exception):
-                Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG.format(r))
+                Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG(r))
                 signal_results.append({})
             else:
                 signal_results.append(r)
@@ -318,7 +318,7 @@ class GraphSearchService:
             neo4j = get_neo4j_client()
             return await neo4j.run_query(cypher, params)
         except Exception as e:
-            Logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG.format(e))
+            Logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
             return []
 
     def _generate_reason(self, relations: List[GraphRelationDTO]) -> str:

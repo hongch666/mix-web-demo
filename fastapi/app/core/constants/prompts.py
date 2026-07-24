@@ -47,44 +47,73 @@ class Prompts:
     )
 
     # ===== Agent 提示词模板 =====
-    AGENT_PROMPT_TEMPLATE: str = (
-        "你是一个中文 AI 助手，负责查询数据库信息、搜索文章内容、分析系统日志和使用知识图谱分析实体关系。\n\n"
-        "你可以直接调用绑定好的工具，不需要手写 Thought/Action/Observation 这种文本格式。\n\n"
-        "规则：\n"
-        "1. 需要查询数据时优先使用工具，不要凭空猜测。\n"
-        "2. 数据库统计和业务数据查询优先使用 SQL 工具，并尽量加上时间范围、用户范围、状态条件或 limit。\n"
-        "3. 查询数据库表结构时，先确认真实表名，再执行查询；例如用户表是 user，不是 users。\n"
-        "4. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。\n"
-        "5. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。\n"
-        "6. 最终回答必须使用中文，简洁明确。\n\n"
-        "当前问题：{input}"
-    )
+    @staticmethod
+    def AGENT_PROMPT() -> str:
+        return (
+            "你是一个中文 AI 助手，负责查询数据库信息、搜索文章内容、分析系统日志和使用知识图谱分析实体关系。\n\n"
+            "你可以直接调用绑定好的工具，不需要手写 Thought/Action/Observation 这种文本格式。\n\n"
+            "规则：\n"
+            "1. 需要查询数据时优先使用工具，不要凭空猜测。\n"
+            "2. 数据库统计和业务数据查询优先使用 SQL 工具，并尽量加上时间范围、用户范围、状态条件或 limit。\n"
+            "3. 查询数据库表结构时，先确认真实表名，再执行查询；例如用户表是 user，不是 users。\n"
+            "4. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。\n"
+            "5. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。\n"
+            "6. 最终回答必须使用中文，简洁明确。\n\n"
+            "当前问题：{input}"
+        )
 
-    CONTENT_SUMMARIZE_PROMPT: str = (
-        "请对以下内容进行精要总结，提取关键信息和核心观点：\n\n"
-        "原文内容：\n"
-        "{content}\n\n"
-        "要求：\n"
-        "1. 总结长度控制在 {max_length} 字以内\n"
-        "2. 提取核心要点和关键信息\n"
-        "3. 保留最重要的细节\n"
-        "4. 用清晰、凝练的语言表述"
-    )
+    @staticmethod
+    def CONTENT_SUMMARIZE(content: str, max_length: int) -> str:
+        return f"""请对以下内容进行精要总结，提取关键信息和核心观点：
 
-    REFERENCE_BASED_EVALUATION_PROMPT: str = (
-        "请基于以下权威参考文本，对文章或内容进行评价。\n\n"
-        "权威参考文本：\n"
-        "{reference_content}\n\n"
-        "请对以下内容进行评价，并给出评分：\n"
-        "1. 给出简短的评价（100-200字），要求在评价中明确提及\"参考权威文本\"或\"基于权威文本\"等字眼\n"
-        "2. 给出0-10分的评分（可以是小数）\n"
-        "3. 请使用以下格式输出：\n"
-        "    评价内容：[你的评价，需包含参考权威文本的相关表述]\n"
-        "    评分：[你的评分]\n"
-        "4. 评价内容中应清晰指出哪些观点与权威文本相符或不符\n\n"
-        "待评价内容：\n"
-        "{message}"
-    )
+        原文内容：
+        {content}
+
+        要求：
+        1. 总结长度控制在 {max_length} 字以内
+        2. 提取核心要点和关键信息
+        3. 保留最重要的细节
+        4. 用清晰、凝练的语言表述"""
+
+    @staticmethod
+    def REFERENCE_BASED_EVALUATION(message: str, reference_content: str) -> str:
+        return f"""请基于以下权威参考文本，对文章或内容进行评价。
+
+        权威参考文本：
+        {reference_content}
+
+        请对以下内容进行评价，并给出评分：
+        1. 给出简短的评价（100-200字），要求在评价中明确提及\"参考权威文本\"或\"基于权威文本\"等字眼
+        2. 给出0-10分的评分（可以是小数）
+        3. 请使用以下格式输出：
+            评价内容：[你的评价，需包含参考权威文本的相关表述]
+            评分：[你的评分]
+        4. 评价内容中应清晰指出哪些观点与权威文本相符或不符
+
+        待评价内容：
+        {message}"""
+
+    @staticmethod
+    def ARTICLE_EVALUATION(title: str, tags: str, content: str) -> str:
+        return f"""请对以下文章进行评价，并给出评分。
+        要求：
+        1. 给出简短的评价（100-200字）
+        2. 给出0-10分的评分（可以是小数）
+        3. 请使用以下格式输出：
+            评价内容：[你的评价]
+            评分：[你的评分]
+        文章标题：{title}
+        文章标签：{tags}
+        文章内容：{content}
+        """
+
+    @staticmethod
+    def ARTICLE_REFERENCE_CONTENT(title: str, tags: str, content: str) -> str:
+        return f"""
+                        标题：{title}
+                        标签：{tags}
+                        内容摘要（前500字）：{content[:500] if content else "无"}
+                        """
 
     # ===== RAG 工具描述 =====
     RAG_TOOL_DESC: str = (
@@ -92,7 +121,7 @@ class Prompts:
         "根据用户问题，在向量数据库中搜索最相关的文章内容。"
         "适用于回答关于文章内容、技术知识、教程等问题。"
         "参数格式: 用户的问题或关键词(字符串)"
-        "示例: \"如何使用Python进行数据分析\""
+        '示例: "如何使用Python进行数据分析"'
         "使用场景: 用户询问具体的技术问题、寻找相关文章、需要文章内容支持时使用。"
     )
 
@@ -141,3 +170,8 @@ class Prompts:
         "图谱包含 User、Article、Category、SubCategory、Tag 节点，以及 PUBLISHED_BY、BELONGS_TO、BELONGS_TO_CATEGORY、TAGGED_AS、LIKES、COLLECTS、COMMENTED_ON、FOLLOWS 关系。"
         "仅允许 MATCH、OPTIONAL MATCH、WITH、RETURN 或 CALL db.* 类型的只读查询。"
     )
+
+    # ===== HyDE 提示词 =====
+    @staticmethod
+    def HYDE_GENERATION_PROMPT(query: str) -> str:
+        return f"请用一段话回答以下问题，使用专业语言：\n\n{query}"

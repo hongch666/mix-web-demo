@@ -76,7 +76,7 @@ class VectorSearchService:
             )
         search_elapsed = time.time() - search_start
         Logger.info(
-            f"向量增强检索耗时: {search_elapsed:.3f}s, 结果数: {len(docs_with_scores)}"
+            Messages.VECTOR_ENHANCE_SEARCH_TIMING(search_elapsed, len(docs_with_scores))
         )
 
         article_id_set = set(article_ids)
@@ -126,7 +126,7 @@ class VectorSearchService:
 
         items.sort(key=lambda item: item.vectorScore, reverse=True)
         Logger.info(
-            f"向量搜索增强成功，候选 {len(article_ids)} 篇，命中 {len(items)} 篇"
+            Messages.VECTOR_ENHANCE_SEARCH_SUCCESS(len(article_ids), len(items))
         )
         return VectorSearchEnhanceResp(items=items)
 
@@ -157,12 +157,12 @@ class VectorSearchService:
     def _build_query(self, keyword: str, req: VectorSearchEnhanceReq) -> str:
         parts = [keyword]
         if req.categoryName:
-            parts.append(f"分类: {req.categoryName}")
+            parts.append(Messages.VECTOR_QUERY_CATEGORY(req.categoryName))
         if req.subCategoryName:
-            parts.append(f"子分类: {req.subCategoryName}")
+            parts.append(Messages.VECTOR_QUERY_SUB_CATEGORY(req.subCategoryName))
         tags = [tag.strip() for tag in req.tags if tag and tag.strip()]
         if tags:
-            parts.append("标签: " + ", ".join(tags[:10]))
+            parts.append(Messages.VECTOR_QUERY_TAGS(", ".join(tags[:10])))
         return "\n".join(parts)
 
     def _normalize_score(self, raw_score: float) -> float:

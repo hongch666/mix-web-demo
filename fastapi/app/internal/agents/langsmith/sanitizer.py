@@ -5,7 +5,7 @@ import re
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from app.core.constants import Scripts
+from app.core.constants import Messages, Scripts
 
 # 通过 HMAC 对用户 ID 进行不可逆哈希
 _user_hash_hmac_key: Optional[bytes] = None
@@ -52,7 +52,7 @@ def _sanitize_string(value: str) -> str:
         r"1[3-9]\d{9}", lambda m: m.group()[:3] + "****" + m.group()[-4:], value
     )
     if len(value) > max_len:
-        value = value[:max_len] + f"...[截断,原长{len(value)}]"
+        value = value[:max_len] + Messages.SANITIZED_TEXT_TRUNCATED(len(value))
     return value
 
 
@@ -86,7 +86,7 @@ def sanitize_tool_input(tool_input: Any) -> str:
     if isinstance(tool_input, dict):
         safe_dict = _sanitize_dict(tool_input, depth=0)
         return str(safe_dict) if safe_dict else "[工具输入已隐藏]"
-    return f"[{type(tool_input).__name__} 类型输入已隐藏]"
+    return Messages.SANITIZED_TOOL_INPUT_HIDDEN(type(tool_input).__name__)
 
 
 def sanitize_tool_output(output: Any) -> str:
@@ -100,8 +100,8 @@ def sanitize_tool_output(output: Any) -> str:
     """
     text = str(output) if output is not None else ""
     if len(text) > Scripts.SANITIZER_MAX_STRING_LENGTH:
-        return f"[输出已截断, 原长 {len(text)}] {text[:100]}..."
-    return f"[工具输出, 长度: {len(text)}]"
+        return Messages.SANITIZED_OUTPUT_TRUNCATED(len(text), text[:100])
+    return Messages.SANITIZED_TOOL_OUTPUT_LENGTH(len(text))
 
 
 def _sanitize_dict(
@@ -110,7 +110,7 @@ def _sanitize_dict(
 ) -> Dict[str, Any]:
     """递归脱敏字典"""
     if depth > Scripts.SANITIZER_MAX_DICT_DEPTH:
-        return {"_truncated": f"超过最大深度 {Scripts.SANITIZER_MAX_DICT_DEPTH}"}
+        return {"_truncated": Messages.SANITIZED_MAX_DEPTH(Scripts.SANITIZER_MAX_DICT_DEPTH)}
 
     result: Dict[str, Any] = {}
     for key, value in data.items():
@@ -137,12 +137,12 @@ def _sanitize_list(
 ) -> List[Any]:
     """递归脱敏列表，限制最大长度"""
     if depth > Scripts.SANITIZER_MAX_DICT_DEPTH:
-        return [f"[超过最大深度 {Scripts.SANITIZER_MAX_DICT_DEPTH}]"]
+        return [Messages.SANITIZED_LIST_MAX_DEPTH(Scripts.SANITIZER_MAX_DICT_DEPTH)]
 
     result: List[Any] = []
     for i, item in enumerate(data):
         if i >= Scripts.SANITIZER_MAX_LIST_LENGTH:
-            result.append(f"...[截断, 共 {len(data)} 项]")
+            result.append(Messages.SANITIZED_LIST_TRUNCATED(len(data)))
             break
         if isinstance(item, str):
             result.append(_sanitize_string(item))

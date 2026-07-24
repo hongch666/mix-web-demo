@@ -24,7 +24,7 @@ class Neo4jQueryTools:
             self.logger.info(Messages.NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE)
         except Exception as e:
             self.client = None
-            self.logger.warning(f"Neo4j 查询工具初始化失败: {e}")
+            self.logger.warning(Messages.NEO4J_QUERY_TOOL_INITIALIZATION_FAILED(e))
 
     @staticmethod
     def _normalize_limit(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -45,7 +45,7 @@ class Neo4jQueryTools:
 
         if query_name not in Scripts.INTENT_TO_CYPHER:
             available = ", ".join(Scripts.INTENT_TO_CYPHER.keys())
-            return f"不支持的查询类型，可选: {available}"
+            return Messages.NEO4J_QUERY_TYPE_UNSUPPORTED(available)
 
         safe_params = self._normalize_limit(params or {})
         records = await self.client.run_query(
@@ -54,15 +54,19 @@ class Neo4jQueryTools:
         if not records:
             return Messages.NEO4J_NO_RESULT_MESSAGE
 
-        result_lines = [f"查询 {query_name} 返回 {len(records)} 条结果:"]
+        result_lines = [Messages.NEO4J_QUERY_RESULT_HEADER(query_name, len(records))]
         for index, record in enumerate(records, 1):
             fields = []
             for key, value in record.items():
                 if isinstance(value, list):
-                    fields.append(f"{key}: {', '.join(str(item) for item in value)}")
+                    fields.append(
+                        Messages.NEO4J_QUERY_FIELD(
+                            key, ", ".join(str(item) for item in value)
+                        )
+                    )
                 elif value is not None:
-                    fields.append(f"{key}: {value}")
-            result_lines.append(f"{index}. {' | '.join(fields)}")
+                    fields.append(Messages.NEO4J_QUERY_FIELD(key, str(value)))
+            result_lines.append(Messages.NEO4J_QUERY_RESULT_ROW(index, " | ".join(fields)))
         return "\n".join(result_lines)
 
     @staticmethod

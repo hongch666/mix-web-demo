@@ -56,7 +56,7 @@ class BaseCache(ABC):
         """从本地缓存获取"""
         if await self.is_local_cache_valid():
             cache_age = time.time() - self._local_cache_time
-            Logger.info(f"[L1缓存] 命中，缓存年龄: {cache_age:.1f}s")
+            Logger.info(Messages.CACHE_L1_HIT(cache_age))
             return self._local_cache
         return None
 
@@ -74,7 +74,7 @@ class BaseCache(ABC):
             Logger.info(Messages.L2_CACHE_MISS)
             return None
         except Exception as e:
-            Logger.error(f"[L2缓存] Redis 读取失败: {e}")
+            Logger.error(Messages.CACHE_L2_READ_FAILED(e))
             return None
 
     async def update_local_cache(self, data: Any) -> None:
@@ -87,9 +87,9 @@ class BaseCache(ABC):
         """更新 Redis 缓存"""
         try:
             await self._redis.set(self.REDIS_KEY_PREFIX, data, ex=self._redis_ttl)
-            Logger.info(f"[L2缓存] 已更新 Redis，TTL={self._redis_ttl}s (1天)")
+            Logger.info(Messages.CACHE_L2_UPDATED(self._redis_ttl))
         except Exception as e:
-            Logger.error(f"[L2缓存] Redis 写入失败: {e}")
+            Logger.error(Messages.CACHE_L2_WRITE_FAILED(e))
 
     async def clear_local_cache(self) -> None:
         """清除本地缓存"""
@@ -103,7 +103,7 @@ class BaseCache(ABC):
             await self._redis.delete(self.REDIS_KEY_PREFIX)
             Logger.info(Messages.L2_CACHE_CLEARED)
         except Exception as e:
-            Logger.error(f"[L2缓存] Redis 清除失败: {e}")
+            Logger.error(Messages.CACHE_L2_CLEAR_FAILED(e))
 
     async def clear_all(self) -> None:
         """清除所有缓存"""
