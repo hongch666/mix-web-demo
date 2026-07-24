@@ -2027,6 +2027,10 @@ class Messages:
 
     REDIS_CONNECTION_SAVE_FAILED_MESSAGE: str = "Redis 连接失败，无法保存同步时间戳"
 
+    @staticmethod
+    def REDIS_CLIENT_INITIALIZED(host: str, port: int, db: int) -> str:
+        return f"[Redis] 客户端初始化成功: {host}:{port}/{db}"
+
     REDIS_COROUTINE_SYNC_EXECUTION_ERROR: str = (
         "Redis 协程不能在运行中的事件循环里直接同步执行"
     )
