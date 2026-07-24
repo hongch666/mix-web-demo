@@ -1,12 +1,11 @@
 import os
 import re
-import urllib.request
 from functools import lru_cache
 from typing import Awaitable, Callable, List, Optional
 
 import httpx
-import requests
 from app.core.base import Logger
+from app.core.client import get_shared_http_client
 from app.core.constants import Messages
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
@@ -148,9 +147,14 @@ class ReferenceContentExtractor:
 
             Logger.info(Messages.REFERENCE_CONTENT_STARTED("下载PDF", pdf_url))
 
-            # 下载PDF到临时文件
+            # 异步下载PDF到临时文件（PDF较大，使用独立客户端避免阻塞共享连接池超时）
             temp_pdf_path = f"/tmp/temp_pdf_{hash(pdf_url)}.pdf"
-            urllib.request.urlretrieve(pdf_url, temp_pdf_path)
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                async with client.stream("GET", pdf_url) as response:
+                    response.raise_for_status()
+                    with open(temp_pdf_path, "wb") as f:
+                        async for chunk in response.aiter_bytes():
+                            f.write(chunk)
 
             # 使用PyPDFLoader加载PDF
             loader: PyPDFLoader = PyPDFLoader(temp_pdf_path)
@@ -201,11 +205,17 @@ class ReferenceContentExtractor:
                 "Referer": "https://www.google.com/",
             }
 
-            # 发送 HTTP 请求，返回报错时不抛异常
-            async with httpx.AsyncClient(timeout=10) as client:
-                response: httpx.Response = await client.get(link_url, headers=headers)
+            # 优先使用共享长连接池复用连接，不可用时创建临时客户端
+            shared_client = get_shared_http_client()
+            if shared_client is not None:
+                response: httpx.Response = await shared_client.get(link_url, headers=headers)
                 response.raise_for_status()
                 html_content: str = response.text
+            else:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    response: httpx.Response = await client.get(link_url, headers=headers)
+                    response.raise_for_status()
+                    html_content: str = response.text
 
             # 清理文本
             full_text: str = cls._clean_text(html_content)
@@ -262,33 +272,6 @@ class ReferenceContentExtractor:
 
         except Exception as e:
             Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR("参考内容提取失败", e))
-            return ""
-
-    @classmethod
-    def extract_content_sync(
-        cls, url: str, content_type: str = "link", max_length: int = 2000
-    ) -> str:
-        """同步版本的内容提取方法"""
-        try:
-            if content_type == "link":
-                # 同步HTTP请求
-                response: requests.Response = requests.get(url, timeout=10)
-                response.raise_for_status()
-                html_content: str = response.text
-
-                # 清理文本
-                text: str = cls._clean_text(html_content)
-
-                # 提取关键要点
-                key_points: str = cls._extract_key_points(text, max_length)
-
-                return key_points
-            else:
-                Logger.warning(Messages.REFERENCE_TYPE_UNSUPPORTED(content_type, True))
-                return ""
-
-        except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR("同步内容提取失败", e))
             return ""
 
     @classmethod
