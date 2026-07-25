@@ -43,7 +43,9 @@ export class MailService {
 
     // 脱敏记录日志，不打印完整验证码
     const maskedEmail: string = email.replace(/(.{3}).+(.{2}@)/, "$1***$2");
-    this.logger.log(Messages.VERIFICATION_CODE_EMAIL_SENDING(maskedEmail, type));
+    this.logger.log(
+      Messages.VERIFICATION_CODE_EMAIL_SENDING(maskedEmail, type),
+    );
 
     if (!this.transporter) {
       throw new Error(Messages.MAIL_SERVICE_CONFIG_INCORRECT);

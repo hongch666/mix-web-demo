@@ -8,13 +8,13 @@ import { ScheduleModule } from "@nestjs/schedule";
 import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ClsModule } from "nestjs-cls";
+import config from "src/config";
 import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
 import { CommonModule } from "src/module/common/common.module";
 import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
-import config from "src/config";
 import { InternalTokenUtil } from "../common/utils/internalToken.util";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
 

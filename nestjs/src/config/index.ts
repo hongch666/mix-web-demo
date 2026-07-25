@@ -1,7 +1,7 @@
 import { config as loadDotenv } from "dotenv";
 import * as fs from "fs";
-import * as path from "path";
 import * as yaml from "js-yaml";
+import * as path from "path";
 
 /**
  * 配置文件加载入口

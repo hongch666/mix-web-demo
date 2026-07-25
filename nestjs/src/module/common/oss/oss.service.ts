@@ -83,9 +83,7 @@ export class OssService implements OnModuleInit {
    */
   async uploadFile(localFile: string, ossFile: string): Promise<string> {
     try {
-      logger.info(
-        Messages.OSS_UPLOAD_START_DETAIL(localFile, ossFile),
-      );
+      logger.info(Messages.OSS_UPLOAD_START_DETAIL(localFile, ossFile));
       logger.info(
         Messages.OSS_CLIENT_CONFIG_INFO(this.bucketName, this.endpoint),
       );
@@ -111,9 +109,7 @@ export class OssService implements OnModuleInit {
         ? await this.uploadFileWithBun(localFile, ossFile)
         : await this.uploadFileWithAliOss(localFile, ossFile);
 
-      logger.info(
-        Messages.OSS_PUT_RESULT_INFO(JSON.stringify(result)),
-      );
+      logger.info(Messages.OSS_PUT_RESULT_INFO(JSON.stringify(result)));
 
       const url: string = this.getFileUrl(ossFile);
       logger.info(Messages.OSS_FILE_UPLOAD_SUCCESS(url));
@@ -122,9 +118,7 @@ export class OssService implements OnModuleInit {
       const message: string =
         error instanceof Error ? error.message : String(error);
       logger.error(Messages.OSS_UPLOAD_ERROR_LOG(message));
-      logger.error(
-        Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile),
-      );
+      logger.error(Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile));
       logger.error(
         Messages.OSS_UPLOAD_ERROR_STACK_INFO(
           error instanceof Error ? error.stack || "" : "",

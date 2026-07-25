@@ -8,12 +8,12 @@ import { Browser, launch, Page } from "puppeteer";
 import { ErrorIds, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
+import { OssService } from "src/module/common/oss/oss.service";
+import { WordService } from "src/module/common/word/word.service";
 import { ArticleService } from "src/module/system/article/article.service";
 import { Articles } from "src/module/system/article/entities/article.entity";
-import { OssService } from "src/module/common/oss/oss.service";
 import { User } from "src/module/system/user/entities/user.entity";
 import { UserService } from "src/module/system/user/user.service";
-import { WordService } from "src/module/common/word/word.service";
 
 @Injectable()
 export class DownloadService {

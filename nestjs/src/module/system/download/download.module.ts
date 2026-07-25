@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
-import { ArticleModule } from "src/module/system/article/article.module";
 import { NacosModule } from "src/module/common/nacos/nacos.module";
 import { OssModule } from "src/module/common/oss/oss.module";
-import { UserModule } from "src/module/system/user/user.module";
 import { WordModule } from "src/module/common/word/word.module";
+import { ArticleModule } from "src/module/system/article/article.module";
+import { UserModule } from "src/module/system/user/user.module";
 import { DownloadController } from "./download.controller";
 import { DownloadService } from "./download.service";
 

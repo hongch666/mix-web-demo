@@ -410,10 +410,7 @@ export class Messages {
   }
 
   // ===== OSS 模块 =====
-  static OSS_UPLOAD_START_DETAIL(
-    localFile: string,
-    ossFile: string,
-  ): string {
+  static OSS_UPLOAD_START_DETAIL(localFile: string, ossFile: string): string {
     return `开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`;
   }
 
