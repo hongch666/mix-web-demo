@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 public class SwaggerRewriteConfig {
 
     @Bean
-    public RewriteFunction<String, String> swaggerRewriteFunction() {
+    RewriteFunction<String, String> swaggerRewriteFunction() {
         return new RewriteFunction<String, String>() {
             @Override
             public Mono<String> apply(ServerWebExchange exchange, String body) {

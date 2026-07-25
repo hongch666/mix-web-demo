@@ -8,7 +8,7 @@ import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAd
 public class WebSocketConfig {
 
     @Bean
-    public WebSocketHandlerAdapter handlerAdapter() {
+    WebSocketHandlerAdapter handlerAdapter() {
         return new WebSocketHandlerAdapter();
     }
 }
