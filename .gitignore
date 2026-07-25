@@ -256,3 +256,5 @@ CLAUDE.md
 /node_modules/
 
 loki-config
+
+eclipse-formatter.xml
