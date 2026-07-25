@@ -38,7 +38,7 @@ public class FocusController {
 
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_FOCUS)
+    @Neo4jSync(description = "关注用户后同步 Neo4j")
     @ApiLog("新增关注")
     public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
         return focusService.addFocus(dto.getUserId(), dto.getFocusId())
@@ -48,7 +48,7 @@ public class FocusController {
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNFOCUS)
+    @Neo4jSync(description = "取消关注用户后同步 Neo4j")
     @ApiLog("取消关注")
     public Mono<Result<Void>> removeFocus(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,

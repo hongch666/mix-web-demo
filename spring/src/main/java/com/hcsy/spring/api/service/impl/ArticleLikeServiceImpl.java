@@ -9,7 +9,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.hcsy.spring.api.repository.ArticleLikeRepository;
 import com.hcsy.spring.api.service.ArticleLikeService;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
@@ -28,7 +27,7 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
 
     @SuppressWarnings("null")
     @Override
-    @ArticleSync(action = "like", description = Messages.ARTICLE_SYNC_LIKE)
+    @ArticleSync(action = "like", description = "点赞了1篇文章")
     public Mono<Boolean> addLike(Long articleId, Long userId) {
         Mono<Boolean> operation = articleLikeRepository.existsByArticleIdAndUserId(articleId, userId)
             .flatMap(exists -> {
@@ -46,7 +45,7 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
 
     @SuppressWarnings("null")
     @Override
-    @ArticleSync(action = "unlike", description = Messages.ARTICLE_SYNC_UNLIKE)
+    @ArticleSync(action = "unlike", description = "取消点赞了1篇文章")
     public Mono<Boolean> removeLike(Long articleId, Long userId) {
         return transactionalOperator.transactional(
             articleLikeRepository.existsByArticleIdAndUserId(articleId, userId)

@@ -46,9 +46,6 @@ public class Messages {
     public static final String GITHUB_TOKEN_TICKET_EMPTY = "GitHub 登录票据不能为空";
     public static final String GITHUB_TOKEN_TICKET_EXPIRED = "GitHub 登录票据已过期，请重新登录";
     public static final String GITHUB_TOKEN_TICKET_PARSE_FAILED = "解析 GitHub 登录票据失败";
-    public static final String GITHUB_TOKEN_TICKET_USER_ID_REQUIRED = "用户ID不能为空";
-    public static final String GITHUB_TOKEN_TICKET_USERNAME_REQUIRED = "用户名不能为空";
-    public static final String GITHUB_TOKEN_EXCHANGE_TICKET_REQUIRED = "票据不能为空";
 
     // ===== 文章发布/阅读量 =====
     public static final String UNDEFINED_ARTICLE_ID = "文章不存在，ID：";
@@ -74,48 +71,6 @@ public class Messages {
     public static final String NEO4J_SYNC_TASK_SUBMIT_FAIL_MESSAGE = "Neo4j 同步异步任务提交失败，方法: %s，操作: %s，错误: %s";
     public static final String NEO4J_SYNC_CALL_FAIL_MESSAGE = "Neo4j 同步调用失败，方法: %s，操作: %s，返回信息: %s";
     public static final String NEO4J_SYNC_CALL_EMPTY_MESSAGE = "Neo4j 同步调用返回空结果，方法: %s，操作: %s";
-    public static final String NEO4J_SYNC_DESC_USER_SAVE = "保存用户后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_USER_DELETE = "删除用户后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_USER_BATCH_DELETE = "批量删除用户后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_USER_UPDATE = "修改用户后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_COMMENT_CREATE = "新增评论后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_COMMENT_UPDATE = "修改评论后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_COMMENT_DELETE = "删除评论后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE = "批量删除评论后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_CATEGORY_CREATE = "新增分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_CATEGORY_UPDATE = "修改分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_CATEGORY_DELETE = "删除分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE = "批量删除分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_SUBCATEGORY_CREATE = "新增子分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE = "修改子分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_SUBCATEGORY_DELETE = "删除子分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE = "批量删除子分类后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_ARTICLE_CREATE = "新增文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_ARTICLE_UPDATE = "编辑文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_ARTICLE_DELETE = "删除文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE = "批量删除文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_ARTICLE_PUBLISH = "发布文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_ARTICLE_VIEW = "浏览文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_LIKE = "点赞文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_UNLIKE = "取消点赞文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_COLLECT = "收藏文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_UNCOLLECT = "取消收藏文章后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_FOCUS = "关注用户后同步 Neo4j";
-    public static final String NEO4J_SYNC_DESC_UNFOCUS = "取消关注用户后同步 Neo4j";
-
-    // ===== 文章同步消息描述 =====
-    public static final String ARTICLE_SYNC_CREATE = "创建了1篇文章";
-    public static final String ARTICLE_SYNC_UPDATE = "编辑了1篇文章";
-    public static final String ARTICLE_SYNC_DELETE = "删除了1篇文章";
-    public static final String ARTICLE_SYNC_BATCH_DELETE = "批量删除文章";
-    public static final String ARTICLE_SYNC_PUBLISH = "发布了1篇文章";
-    public static final String ARTICLE_SYNC_VIEW = "浏览了1篇文章";
-    public static final String ARTICLE_SYNC_LIKE = "点赞了1篇文章";
-    public static final String ARTICLE_SYNC_UNLIKE = "取消点赞了1篇文章";
-    public static final String ARTICLE_SYNC_COLLECT = "收藏了1篇文章";
-    public static final String ARTICLE_SYNC_UNCOLLECT = "取消收藏了1篇文章";
-    public static final String ARTICLE_SYNC_FOCUS = "关注了1个用户";
-    public static final String ARTICLE_SYNC_UNFOCUS = "取消关注了1个用户";
 
     // ===== 缓存清理 =====
     public static final String CATEGORY_CACHE = "缓存未命中，从数据库加载 category";

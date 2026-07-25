@@ -46,7 +46,7 @@ public class ArticleController {
 
     @PostMapping
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_CREATE)
+    @Neo4jSync(description = "新增文章后同步 Neo4j")
     @ApiLog("创建文章")
     public Mono<Result<Void>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         return userService.findByUsername(dto.getUsername())
@@ -101,7 +101,7 @@ public class ArticleController {
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "article", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
+    @Neo4jSync(description = "编辑文章后同步 Neo4j")
     @ApiLog("更新文章")
     public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         return userService.findByUsername(dto.getUsername())
@@ -117,7 +117,7 @@ public class ArticleController {
     @Operation(summary = "删除文章", description = "根据ID删除文章")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "article", paramSource = "path_single", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_DELETE)
+    @Neo4jSync(description = "删除文章后同步 Neo4j")
     @ApiLog("删除文章")
     public Mono<Result<Void>> deleteArticle(@PathVariable Long id) {
         return articleService.deleteArticle(id).thenReturn(Result.<Void>success());
@@ -128,7 +128,7 @@ public class ArticleController {
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
         "ids" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
+    @Neo4jSync(description = "批量删除文章后同步 Neo4j")
     @ApiLog("批量删除文章")
     public Mono<Result<Void>> deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -143,7 +143,7 @@ public class ArticleController {
     @Operation(summary = "发布文章", description = "将文章状态修改为发布")
     @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
         "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
+    @Neo4jSync(description = "发布文章后同步 Neo4j")
     @ApiLog("发布文章")
     public Mono<Result<Void>> publishArticle(@PathVariable Long id) {
         return articleService.publishArticle(id).thenReturn(Result.<Void>success());
@@ -151,7 +151,7 @@ public class ArticleController {
 
     @PutMapping("/view/{id}")
     @Operation(summary = "增加文章阅读量", description = "增加文章阅读量")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_VIEW)
+    @Neo4jSync(description = "浏览文章后同步 Neo4j")
     @ApiLog("增加文章阅读量")
     public Mono<Result<Void>> addViewArticle(@PathVariable Long id) {
         return articleService.addViewArticle(id).thenReturn(Result.<Void>success());

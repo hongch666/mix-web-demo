@@ -138,7 +138,7 @@ public class UserController {
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
+    @Neo4jSync(description = "修改用户后同步 Neo4j")
     @ApiLog("修改用户")
     public Mono<Result<Void>> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         return userService.updateUserInfo(userDto).thenReturn(Result.<Void>success());

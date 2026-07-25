@@ -38,7 +38,7 @@ public class ArticleCollectController {
 
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COLLECT)
+    @Neo4jSync(description = "收藏文章后同步 Neo4j")
     @ApiLog("添加收藏")
     public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         return articleCollectService.addCollect(dto.getArticleId(), dto.getUserId())
@@ -48,7 +48,7 @@ public class ArticleCollectController {
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNCOLLECT)
+    @Neo4jSync(description = "取消收藏文章后同步 Neo4j")
     @ApiLog("取消收藏")
     public Mono<Result<Void>> removeCollect(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,

@@ -107,7 +107,7 @@ public class UserServiceImpl implements UserService {
 
     @SuppressWarnings("null")
     @Override
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_DELETE)
+    @Neo4jSync(description = "删除用户后同步 Neo4j")
     public Mono<Void> deleteUserAndStatusById(Long id) {
         Mono<Void> databaseOperation = userRepository.findById(id)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
@@ -118,7 +118,7 @@ public class UserServiceImpl implements UserService {
 
     @SuppressWarnings("null")
     @Override
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_BATCH_DELETE)
+    @Neo4jSync(description = "批量删除用户后同步 Neo4j")
     public Mono<Void> deleteUsersAndStatusByIds(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
         if (distinctIds.isEmpty()) {
@@ -303,7 +303,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_SAVE)
+    @Neo4jSync(description = "保存用户后同步 Neo4j")
     public Mono<User> saveUserAndStatus(User user) {
         if (!hasText(user.getAuthProvider())) {
             user.setAuthProvider("local");
@@ -332,7 +332,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_SAVE)
+    @Neo4jSync(description = "保存用户后同步 Neo4j")
     public Mono<Void> createUser(UserCreateDTO dto) {
         User user = BeanUtil.copyProperties(dto, User.class);
         user.setRole("user");
@@ -348,7 +348,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
+    @Neo4jSync(description = "修改用户后同步 Neo4j")
     public Mono<Void> updateUserInfo(UserUpdateDTO dto) {
         return userRepository.findById(dto.getId().longValue())
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))

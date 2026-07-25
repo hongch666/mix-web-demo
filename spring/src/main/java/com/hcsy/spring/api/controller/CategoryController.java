@@ -44,7 +44,7 @@ public class CategoryController {
     @Operation(summary = "新增分类")
     @PostMapping()
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_CREATE)
+    @Neo4jSync(description = "新增分类后同步 Neo4j")
     @ApiLog("新增分类")
     public Mono<Result<Void>> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
         return categoryService.addCategory(dto).thenReturn(Result.<Void>success());
@@ -53,7 +53,7 @@ public class CategoryController {
     @Operation(summary = "修改分类")
     @PutMapping()
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
+    @Neo4jSync(description = "修改分类后同步 Neo4j")
     @ApiLog("修改分类")
     public Mono<Result<Void>> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
         return categoryService.updateCategory(dto).thenReturn(Result.<Void>success());
@@ -63,7 +63,7 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
         "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_DELETE)
+    @Neo4jSync(description = "删除分类后同步 Neo4j")
     @ApiLog("删除分类")
     public Mono<Result<Void>> deleteCategory(@PathVariable Long id) {
         return categoryService.deleteCategory(id).thenReturn(Result.<Void>success());
@@ -74,7 +74,7 @@ public class CategoryController {
     @DeleteMapping("/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
         "ids" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
+    @Neo4jSync(description = "批量删除分类后同步 Neo4j")
     @ApiLog("批量删除分类")
     public Mono<Result<Void>> deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -88,7 +88,7 @@ public class CategoryController {
     @Operation(summary = "新增子分类")
     @PostMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
+    @Neo4jSync(description = "新增子分类后同步 Neo4j")
     @ApiLog("新增子分类")
     public Mono<Result<Void>> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
         return categoryService.addSubCategory(dto).thenReturn(Result.<Void>success());
@@ -97,7 +97,7 @@ public class CategoryController {
     @Operation(summary = "修改子分类")
     @PutMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
+    @Neo4jSync(description = "修改子分类后同步 Neo4j")
     @ApiLog("修改子分类")
     public Mono<Result<Void>> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
         return categoryService.updateSubCategory(dto).thenReturn(Result.<Void>success());
@@ -107,7 +107,7 @@ public class CategoryController {
     @DeleteMapping("/sub/{id}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
         "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
+    @Neo4jSync(description = "删除子分类后同步 Neo4j")
     @ApiLog("删除子分类")
     public Mono<Result<Void>> deleteSubCategory(@PathVariable Long id) {
         return categoryService.deleteSubCategory(id).thenReturn(Result.<Void>success());
@@ -118,7 +118,7 @@ public class CategoryController {
     @DeleteMapping("/sub/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
         "ids" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
+    @Neo4jSync(description = "批量删除子分类后同步 Neo4j")
     @ApiLog("批量删除子分类")
     public Mono<Result<Void>> deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))

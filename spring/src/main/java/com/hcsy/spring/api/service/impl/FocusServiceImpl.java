@@ -38,7 +38,7 @@ public class FocusServiceImpl implements FocusService {
 
     @SuppressWarnings("null")
     @Override
-    @ArticleSync(action = "focus", description = Messages.ARTICLE_SYNC_FOCUS)
+    @ArticleSync(action = "focus", description = "关注了1个用户")
     public Mono<Boolean> addFocus(Long userId, Long focusId) {
         Mono<Boolean> operation = focusRepository.existsByUserIdAndFocusId(userId, focusId)
             .flatMap(exists -> {
@@ -56,7 +56,7 @@ public class FocusServiceImpl implements FocusService {
 
     @SuppressWarnings("null")
     @Override
-    @ArticleSync(action = "unfocus", description = Messages.ARTICLE_SYNC_UNFOCUS)
+    @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
     public Mono<Boolean> removeFocus(Long userId, Long focusId) {
         return transactionalOperator.transactional(
             focusRepository.existsByUserIdAndFocusId(userId, focusId)

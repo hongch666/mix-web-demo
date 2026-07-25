@@ -58,7 +58,7 @@ public class CommentsController {
 
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_CREATE)
+    @Neo4jSync(description = "新增评论后同步 Neo4j")
     @ApiLog("新增评论")
     public Mono<Result<Void>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
         return articleService.findByArticleTitle(dto.getArticleTitle())
@@ -71,7 +71,7 @@ public class CommentsController {
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_UPDATE)
+    @Neo4jSync(description = "修改评论后同步 Neo4j")
     @ApiLog("修改评论")
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
         return articleService.findByArticleTitle(dto.getArticleTitle())
@@ -89,7 +89,7 @@ public class CommentsController {
     @Operation(summary = "删除评论", description = "根据id删除评论")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "id" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_DELETE)
+    @Neo4jSync(description = "删除评论后同步 Neo4j")
     @ApiLog("删除评论")
     public Mono<Result<Void>> deleteComment(@PathVariable Long id) {
         return commentsService.deleteComment(id).thenReturn(Result.<Void>success());
@@ -100,7 +100,7 @@ public class CommentsController {
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "ids" })
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_COMMENT_BATCH_DELETE)
+    @Neo4jSync(description = "批量删除评论后同步 Neo4j")
     @ApiLog("批量删除评论")
     public Mono<Result<Void>> deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))

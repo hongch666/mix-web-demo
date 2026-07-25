@@ -38,7 +38,7 @@ public class ArticleLikeController {
 
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_LIKE)
+    @Neo4jSync(description = "点赞文章后同步 Neo4j")
     @ApiLog("添加点赞")
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
@@ -48,7 +48,7 @@ public class ArticleLikeController {
 
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
-    @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_UNLIKE)
+    @Neo4jSync(description = "取消点赞文章后同步 Neo4j")
     @ApiLog("取消点赞")
     public Mono<Result<Void>> removeLike(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
