@@ -3,7 +3,11 @@
 
 package config
 
-import "github.com/zeromicro/go-zero/rest"
+import (
+	"time"
+
+	"github.com/zeromicro/go-zero/rest"
+)
 
 type Config struct {
 	rest.RestConf
@@ -31,13 +35,23 @@ type NacosConfig struct {
 }
 
 type MysqlConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Dbname   string `json:"dbname"`
-	Charset  string `json:"charset"`
-	Loc      string `json:"loc"`
+	Host          string `json:"host"`
+	Port          int    `json:"port"`
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	Dbname        string `json:"dbname"`
+	Charset       string `json:"charset"`
+	Loc           string `json:"loc"`
+	LogEnabled    bool   `json:"sqlLogEnabled"`  // SQL 普通日志开关，默认 true
+	SlowThreshold int    `json:"slowThreshold"`   // 慢查询阈值(毫秒)，默认 500
+}
+
+// GetSlowThreshold 获取慢查询阈值，返回 time.Duration，默认 500ms
+func (m MysqlConfig) GetSlowThreshold() time.Duration {
+	if m.SlowThreshold <= 0 {
+		return 500 * time.Millisecond
+	}
+	return time.Duration(m.SlowThreshold) * time.Millisecond
 }
 
 type ESConfig struct {

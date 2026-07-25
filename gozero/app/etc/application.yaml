@@ -24,6 +24,8 @@ database:
     dbname: ${DB_MYSQL_DBNAME:demo}
     charset: ${DB_MYSQL_CHARSET:utf8mb4}
     loc: ${DB_MYSQL_LOC:Local}
+    sqlLogEnabled: ${DB_SQL_LOG_ENABLED:true}       # SQL普通日志开关，默认启用
+    slowThreshold: ${DB_SQL_SLOW_THRESHOLD:500}      # 慢查询阈值(毫秒)，默认500ms
   es:
     host: ${DB_ES_HOST:127.0.0.1}
     port: ${DB_ES_PORT:9200}

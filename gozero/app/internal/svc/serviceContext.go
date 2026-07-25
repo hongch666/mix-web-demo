@@ -183,6 +183,14 @@ func initSqlx(c config.Config) sqlx.SqlConn {
 	if dsn == "" {
 		return nil
 	}
+
+	sqlConf := c.Database.Mysql
+	// 配置 SQL 日志：关闭普通日志时仅保留慢查询日志
+	if !sqlConf.LogEnabled {
+		sqlx.DisableStmtLog()
+	}
+	sqlx.SetSlowThreshold(sqlConf.GetSlowThreshold())
+
 	return sqlx.NewMysql(dsn)
 }
 
