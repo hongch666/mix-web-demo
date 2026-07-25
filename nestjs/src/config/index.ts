@@ -26,7 +26,7 @@ if (fs.existsSync(dotenvPath)) {
  */
 function resolveEnvVars(obj: unknown): unknown {
   if (typeof obj === "string") {
-    return obj.replace(
+    const resolved: string = obj.replace(
       /\$\{([^:}]+)(?::([^}]*))?\}/g,
       (_: string, key: string, defaultVal?: string): string => {
         const value: string | undefined = process.env[key];
@@ -36,6 +36,20 @@ function resolveEnvVars(obj: unknown): unknown {
         return defaultVal !== undefined ? defaultVal : "";
       },
     );
+    // 环境变量替换后恢复 YAML 布尔值类型（仅恢复布尔值，数字保持字符串兼容）
+    if (resolved !== obj) {
+      const lower: string = resolved.toLowerCase();
+      if (lower === "true" || lower === "yes" || lower === "on") {
+        return true;
+      }
+      if (lower === "false" || lower === "no" || lower === "off") {
+        return false;
+      }
+      if (lower === "null" || lower === "~") {
+        return null;
+      }
+    }
+    return resolved;
   }
   if (Array.isArray(obj)) {
     return obj.map((item: unknown): unknown => resolveEnvVars(item));
