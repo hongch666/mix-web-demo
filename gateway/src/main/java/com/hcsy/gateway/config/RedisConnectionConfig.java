@@ -47,8 +47,7 @@ public class RedisConnectionConfig {
             "[Redis] 连接: {}:{}, DB: {}",
             redisProperties.getHost() != null ? redisProperties.getHost() : "unknown",
             redisProperties.getPort() != null ? redisProperties.getPort() : 0,
-            redisProperties.getDatabase() != null ? redisProperties.getDatabase() : 0
-        );
+            redisProperties.getDatabase() != null ? redisProperties.getDatabase() : 0);
 
         return new LettuceConnectionFactory(config);
     }

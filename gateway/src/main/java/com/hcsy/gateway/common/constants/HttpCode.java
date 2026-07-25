@@ -17,5 +17,6 @@ public class HttpCode {
     public static final int SERVICE_UNAVAILABLE = 503;
     public static final int GATEWAY_TIMEOUT = 504;
 
-    private HttpCode() {}
+    private HttpCode() {
+    }
 }

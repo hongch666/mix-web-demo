@@ -19,13 +19,13 @@ public class WebSocketRouteFilter extends AbstractGatewayFilterFactory<Object> {
             String connection = request.getHeaders().getFirst(HttpHeaders.CONNECTION);
 
             if ("websocket".equalsIgnoreCase(upgrade) &&
-                    connection != null && connection.toLowerCase().contains("upgrade")) {
+                connection != null && connection.toLowerCase().contains("upgrade")) {
 
                 // 修改请求头以确保正确的Host传递
                 ServerHttpRequest mutatedRequest = request.mutate()
-                        .header("X-Forwarded-Proto", "ws")
-                        .header("X-Forwarded-Port", "8080")
-                        .build();
+                    .header("X-Forwarded-Proto", "ws")
+                    .header("X-Forwarded-Port", "8080")
+                    .build();
 
                 return chain.filter(exchange.mutate().request(mutatedRequest).build());
             }

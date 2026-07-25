@@ -5,7 +5,8 @@ package com.hcsy.gateway.common.constants;
  */
 public class ErrorCodes {
 
-    private ErrorCodes() {}
+    private ErrorCodes() {
+    }
 
     // ===== 401 Unauthorized =====
     public static final String TOKEN_EXPIRED = "TOKEN_EXPIRED";

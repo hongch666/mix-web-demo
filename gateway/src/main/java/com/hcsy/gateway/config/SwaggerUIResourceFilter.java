@@ -45,8 +45,8 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
         // 确定资源路径：/swagger-ui/ 或 /swagger-ui -> index.html
         // /swagger-ui/xxx.css -> static/swagger-ui/xxx.css
         String relativePath = path.equals(SWAGGER_UI_PREFIX) || path.equals("/swagger-ui")
-                ? "static/swagger-ui/index.html"
-                : "static/swagger-ui/" + path.substring(SWAGGER_UI_PREFIX.length());
+            ? "static/swagger-ui/index.html"
+            : "static/swagger-ui/" + path.substring(SWAGGER_UI_PREFIX.length());
 
         Resource resource = new ClassPathResource(relativePath);
         if (!resource.exists()) {
@@ -60,13 +60,13 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
 
         // 从资源文件读取内容并写入响应
         return DataBufferUtils.readInputStream(resource::getInputStream, response.bufferFactory(), 4096)
-                .reduce(DataBuffer::write)
-                .flatMap(buffer -> {
-                    response.getHeaders().setContentLength(buffer.readableByteCount());
-                    return response.writeWith(Mono.just(buffer));
-                })
-                .doOnError(error -> log.error("读取 Swagger UI 资源失败: {}", relativePath, error))
-                .then();
+            .reduce(DataBuffer::write)
+            .flatMap(buffer -> {
+                response.getHeaders().setContentLength(buffer.readableByteCount());
+                return response.writeWith(Mono.just(buffer));
+            })
+            .doOnError(error -> log.error("读取 Swagger UI 资源失败: {}", relativePath, error))
+            .then();
     }
 
     @SuppressWarnings("null")

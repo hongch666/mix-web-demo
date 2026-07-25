@@ -14,9 +14,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.hcsy.gateway.common.BusinessException;
+import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
-import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.config.AuthProperties;
 import com.hcsy.gateway.utils.JwtUtil;
 import com.hcsy.gateway.utils.RedisUtil;
@@ -68,40 +68,40 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             String expectedValue = userId + ":" + sessionId;
             String sessionKey = "user:session:" + userId + ":" + sessionId;
             Mono<Tuple4<String, Boolean, String, String>> authData = Mono.zip(
-                    redisUtil.get(accessKey).defaultIfEmpty(""),
-                    redisUtil.exists(sessionKey),
-                    redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty(""),
-                    redisUtil.get("user:status:" + userId).defaultIfEmpty(""))
-                    .onErrorResume(error -> {
-                        log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, error);
-                        return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试",
-                                ErrorCodes.REDIS_UNAVAILABLE).then(Mono.empty());
-                    });
+                redisUtil.get(accessKey).defaultIfEmpty(""),
+                redisUtil.exists(sessionKey),
+                redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty(""),
+                redisUtil.get("user:status:" + userId).defaultIfEmpty(""))
+                .onErrorResume(error -> {
+                    log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, error);
+                    return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试",
+                        ErrorCodes.REDIS_UNAVAILABLE).then(Mono.empty());
+                });
             return authData.flatMap(values -> {
-                        String storedValue = values.getT1();
-                        boolean sessionExists = values.getT2();
-                        String storedAccessToken = values.getT3();
-                        String userStatus = values.getT4();
+                String storedValue = values.getT1();
+                boolean sessionExists = values.getT2();
+                String storedAccessToken = values.getT3();
+                String userStatus = values.getT4();
 
-                        if (!expectedValue.equals(storedValue)
-                                || !sessionExists
-                                || !token.equals(storedAccessToken)
-                                || "0".equals(userStatus)) {
-                            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录",
-                                    ErrorCodes.USER_NOT_LOGIN);
-                        }
+                if (!expectedValue.equals(storedValue)
+                    || !sessionExists
+                    || !token.equals(storedAccessToken)
+                    || "0".equals(userStatus)) {
+                    return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录",
+                        ErrorCodes.USER_NOT_LOGIN);
+                }
 
-                        ServerHttpRequest mutatedRequest = request.mutate()
-                                .header("X-User-Id", userId.toString())
-                                .header("X-Username", username)
-                                .header("X-Session-Id", sessionId)
-                                .header("Authorization", "Bearer " + token)
-                                .build();
+                ServerHttpRequest mutatedRequest = request.mutate()
+                    .header("X-User-Id", userId.toString())
+                    .header("X-Username", username)
+                    .header("X-Session-Id", sessionId)
+                    .header("Authorization", "Bearer " + token)
+                    .build();
 
-                        logAccess(userId, path);
-                        log.info("身份验证成功 - 用户ID: {}, 路径: {}", userId, path);
-                        return chain.filter(exchange.mutate().request(mutatedRequest).build());
-                    });
+                logAccess(userId, path);
+                log.info("身份验证成功 - 用户ID: {}, 路径: {}", userId, path);
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
+            });
 
         } catch (BusinessException ex) {
             log.error("[{}] 认证失败 - 路径: {}", ex.getError(), path, ex);
@@ -109,7 +109,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         } catch (Exception ex) {
             // 认证流程中出现的其他非预期异常，不应返回 401 误导前端退出登录
             log.error("[{}] 认证流程非预期异常 - 路径: {}", ErrorCodes.AUTH_UNEXPECTED_ERROR, path, ex);
-            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, "服务器内部错误，请稍后重试", ErrorCodes.AUTH_UNEXPECTED_ERROR);
+            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, "服务器内部错误，请稍后重试",
+                ErrorCodes.AUTH_UNEXPECTED_ERROR);
         }
     }
 
@@ -137,7 +138,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     @SuppressWarnings("null")
     private boolean isExcludePath(String path) {
         return authProperties.getExcludePaths().stream()
-                .anyMatch(pattern -> antPathMatcher.match(pattern, path));
+            .anyMatch(pattern -> antPathMatcher.match(pattern, path));
     }
 
     private Mono<Void> errorResponse(ServerWebExchange exchange, int code, String msg, String errorIdentifier) {
@@ -149,7 +150,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     private void logAccess(Long userId, String path) {
         Mono.fromRunnable(() -> log.info("[AUDIT] User {} accessed {} at {}", userId, path, System.currentTimeMillis()))
-                .subscribeOn(Schedulers.boundedElastic()).subscribe();
+            .subscribeOn(Schedulers.boundedElastic()).subscribe();
     }
 
     @Override

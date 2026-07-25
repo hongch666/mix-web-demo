@@ -93,6 +93,6 @@ public class RedisUtil {
     @SuppressWarnings("null")
     public Mono<Map<String, String>> getHashEntries(String key) {
         return redisTemplate.<String, String>opsForHash().entries(key)
-                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 }

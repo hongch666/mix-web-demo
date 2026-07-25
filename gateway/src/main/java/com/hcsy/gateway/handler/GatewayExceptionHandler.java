@@ -11,9 +11,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 
 import com.hcsy.gateway.common.BusinessException;
+import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
-import com.hcsy.gateway.common.Result;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -44,8 +44,8 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
             response.setStatusCode(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
             String serviceId = extractServiceId(ex.getMessage());
             String msg = serviceId != null
-                    ? String.format("找不到可用的服务实例: %s", serviceId)
-                    : "服务不可用";
+                ? String.format("找不到可用的服务实例: %s", serviceId)
+                : "服务不可用";
             log.error("[{}] 路径: {}", ErrorCodes.NO_AVAILABLE_SERVICE_INSTANCE, exchange.getRequest().getPath(), ex);
             return Result.error(HttpCode.SERVICE_UNAVAILABLE, msg).writeTo(response);
         }
