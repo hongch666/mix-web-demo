@@ -90,7 +90,9 @@ class VersionedCache(BaseCache):
             # 版本号对比：有旧版本且不相等时才算变化
             if str(current_version) != str(old_version):
                 Logger.info(
-                    Messages.CACHE_VERSION_CHANGED(str(old_version), str(current_version))
+                    Messages.CACHE_VERSION_CHANGED(
+                        str(old_version), str(current_version)
+                    )
                 )
                 return True
 

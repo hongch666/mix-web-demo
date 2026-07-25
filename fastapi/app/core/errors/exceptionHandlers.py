@@ -78,7 +78,9 @@ async def request_validation_exception_handler(
         if validation_message_parts
         else Messages.EXCEPTION_HANDLER_MESSAGE
     )
-    Logger.error(Messages.REQUEST_VALIDATION_EXCEPTION_LOG(request.url, validation_message))
+    Logger.error(
+        Messages.REQUEST_VALIDATION_EXCEPTION_LOG(request.url, validation_message)
+    )
     return JSONResponse(
         status_code=HttpCode.BAD_REQUEST,
         content=error(

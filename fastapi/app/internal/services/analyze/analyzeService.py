@@ -143,7 +143,11 @@ class AnalyzeService:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._category_cache.get(ch_conn)
         except Exception as e:
-            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_category_article_count_cached", e))
+            Logger.debug(
+                Messages.CACHE_GET_FAILED_DETAIL(
+                    "_get_category_article_count_cached", e
+                )
+            )
             return None
         finally:
             if ch_conn:
@@ -155,7 +159,9 @@ class AnalyzeService:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
             return await self._publish_time_cache.get(ch_conn)
         except Exception as e:
-            Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_monthly_publish_count_cached", e))
+            Logger.debug(
+                Messages.CACHE_GET_FAILED_DETAIL("_get_monthly_publish_count_cached", e)
+            )
             return None
         finally:
             if ch_conn:
@@ -245,7 +251,9 @@ class AnalyzeService:
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
-                        Messages.SERVICE_CACHE_HIT("get_top10_articles_service", total_time)
+                        Messages.SERVICE_CACHE_HIT(
+                            "get_top10_articles_service", total_time
+                        )
                     )
                     return cached_result
             except Exception as cache_e:
@@ -260,7 +268,9 @@ class AnalyzeService:
                     Logger.info(Messages.TOP10_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
-                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_top10_articles_service", ch_e)
+                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                        "get_top10_articles_service", ch_e
+                    )
                 )
 
             if not articles or len(articles) == 0:
@@ -333,7 +343,9 @@ class AnalyzeService:
                     await self._article_cache.set(result, ch_conn)
                     total_time: float = time.time() - start
                     Logger.info(
-                        Messages.SERVICE_CACHE_UPDATED("get_top10_articles_service", data_source, total_time)
+                        Messages.SERVICE_CACHE_UPDATED(
+                            "get_top10_articles_service", data_source, total_time
+                        )
                     )
                 except Exception as cache_e:
                     Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
@@ -425,7 +437,9 @@ class AnalyzeService:
             cached_url: Optional[str] = await self._wordcloud_cache.get()
             if cached_url:
                 elapsed: float = time.time() - start
-                Logger.info(Messages.SERVICE_CACHE_HIT("get_wordcloud_service", elapsed))
+                Logger.info(
+                    Messages.SERVICE_CACHE_HIT("get_wordcloud_service", elapsed)
+                )
                 return cached_url
         except Exception as cache_e:
             Logger.debug(Messages.WORDCLOUD_CACHE_MISS_WILL_RETRY(cache_e))
@@ -443,9 +457,7 @@ class AnalyzeService:
         try:
             await self._wordcloud_cache.set(oss_url)
             elapsed: float = time.time() - start
-            Logger.info(
-                Messages.WORDCLOUD_GENERATED_AND_CACHED(elapsed)
-            )
+            Logger.info(Messages.WORDCLOUD_GENERATED_AND_CACHED(elapsed))
         except Exception as cache_e:
             Logger.warning(Messages.WORDCLOUD_CACHE_URL_FAILED(cache_e))
 
@@ -551,7 +563,9 @@ class AnalyzeService:
             if cached_result:
                 total_time: float = time.time() - start
                 Logger.info(
-                    Messages.SERVICE_CACHE_HIT("get_article_statistics_service", total_time)
+                    Messages.SERVICE_CACHE_HIT(
+                        "get_article_statistics_service", total_time
+                    )
                 )
                 return cached_result
         except Exception as cache_e:
@@ -586,7 +600,9 @@ class AnalyzeService:
             await self._statistics_cache.set(statistics)
             total_time: float = time.time() - start
             Logger.info(
-                Messages.SERVICE_CACHE_UPDATED("get_article_statistics_service", "DB", total_time)
+                Messages.SERVICE_CACHE_UPDATED(
+                    "get_article_statistics_service", "DB", total_time
+                )
             )
         except Exception as cache_e:
             Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
@@ -622,7 +638,9 @@ class AnalyzeService:
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
-                        Messages.SERVICE_CACHE_HIT("get_category_article_count_service", total_time)
+                        Messages.SERVICE_CACHE_HIT(
+                            "get_category_article_count_service", total_time
+                        )
                     )
                     return cached_result
             except Exception as cache_e:
@@ -639,7 +657,9 @@ class AnalyzeService:
                 Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
-                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_category_article_count_service", ch_e)
+                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                        "get_category_article_count_service", ch_e
+                    )
                 )
                 local_data_source = "DB"
 
@@ -695,7 +715,11 @@ class AnalyzeService:
                     await self._category_cache.set(result, ch_conn)
                     total_time = time.time() - start
                     Logger.info(
-                        Messages.SERVICE_CACHE_UPDATED("get_category_article_count_service", data_source, total_time)
+                        Messages.SERVICE_CACHE_UPDATED(
+                            "get_category_article_count_service",
+                            data_source,
+                            total_time,
+                        )
                     )
                 except Exception as cache_e:
                     Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
@@ -730,7 +754,9 @@ class AnalyzeService:
                 if cached_result:
                     total_time: float = time.time() - start
                     Logger.info(
-                        Messages.SERVICE_CACHE_HIT("get_monthly_publish_count_service", total_time)
+                        Messages.SERVICE_CACHE_HIT(
+                            "get_monthly_publish_count_service", total_time
+                        )
                     )
                     return cached_result
             except Exception as cache_e:
@@ -747,7 +773,9 @@ class AnalyzeService:
                 Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
             except Exception as ch_e:
                 Logger.warning(
-                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_publish_count_service", ch_e)
+                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                        "get_monthly_publish_count_service", ch_e
+                    )
                 )
 
             if not local_publish_data:
@@ -775,7 +803,9 @@ class AnalyzeService:
 
             result.sort(key=lambda x: x["year_month"], reverse=False)
             Logger.info(
-                Messages.MONTHLY_PUBLISH_COUNT_RESULT(len(result), len([r for r in result if r['count'] > 0]))
+                Messages.MONTHLY_PUBLISH_COUNT_RESULT(
+                    len(result), len([r for r in result if r["count"] > 0])
+                )
             )
             data_source: str = local_data_source
 
@@ -785,7 +815,9 @@ class AnalyzeService:
                     await self._publish_time_cache.set(result, ch_conn)
                     total_time: float = time.time() - start
                     Logger.info(
-                        Messages.SERVICE_CACHE_UPDATED("get_monthly_publish_count_service", data_source, total_time)
+                        Messages.SERVICE_CACHE_UPDATED(
+                            "get_monthly_publish_count_service", data_source, total_time
+                        )
                     )
                 except Exception as cache_e:
                     Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))

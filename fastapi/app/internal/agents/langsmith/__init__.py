@@ -14,7 +14,7 @@ from .sanitizer import (
     sanitize_tool_output,
     sanitize_user_id,
 )
-from .tags import build_chat_tags, build_chat_metadata
+from .tags import build_chat_metadata, build_chat_tags
 
 __all__: List[str] = [
     "LangSmithConfig",

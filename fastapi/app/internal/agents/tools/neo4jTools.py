@@ -66,7 +66,9 @@ class Neo4jQueryTools:
                     )
                 elif value is not None:
                     fields.append(Messages.NEO4J_QUERY_FIELD(key, str(value)))
-            result_lines.append(Messages.NEO4J_QUERY_RESULT_ROW(index, " | ".join(fields)))
+            result_lines.append(
+                Messages.NEO4J_QUERY_RESULT_ROW(index, " | ".join(fields))
+            )
         return "\n".join(result_lines)
 
     @staticmethod

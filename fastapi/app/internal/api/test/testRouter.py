@@ -17,4 +17,3 @@ router: APIRouter = APIRouter(
 async def testFastapi(request: Request) -> JSONResponse:
     """测试FastAPI服务接口"""
     return success(Messages.TEST_MESSAGE)
-

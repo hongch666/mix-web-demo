@@ -110,7 +110,9 @@ def _sanitize_dict(
 ) -> Dict[str, Any]:
     """递归脱敏字典"""
     if depth > Scripts.SANITIZER_MAX_DICT_DEPTH:
-        return {"_truncated": Messages.SANITIZED_MAX_DEPTH(Scripts.SANITIZER_MAX_DICT_DEPTH)}
+        return {
+            "_truncated": Messages.SANITIZED_MAX_DEPTH(Scripts.SANITIZER_MAX_DICT_DEPTH)
+        }
 
     result: Dict[str, Any] = {}
     for key, value in data.items():

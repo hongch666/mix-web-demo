@@ -9,6 +9,7 @@ from .alias import Alias
 
 class GraphSearchEnhanceReq(BaseModel):
     """图谱搜索增强请求"""
+
     model_config = {"populate_by_name": True}
 
     userId: Optional[int] = Alias("userId", default=None)
@@ -23,6 +24,7 @@ class GraphSearchEnhanceReq(BaseModel):
 
 class GraphRelationDTO(BaseModel):
     """图谱关系"""
+
     type: str
     name: str
     score: float
@@ -31,6 +33,7 @@ class GraphRelationDTO(BaseModel):
 
 class GraphSearchEnhanceItemDTO(BaseModel):
     """图谱增强单项结果"""
+
     model_config = {"populate_by_name": True}
 
     articleId: int = Alias("articleId")
@@ -43,4 +46,5 @@ class GraphSearchEnhanceItemDTO(BaseModel):
 
 class GraphSearchEnhanceResp(BaseModel):
     """图谱搜索增强响应"""
+
     items: List[GraphSearchEnhanceItemDTO] = Field(default_factory=list)

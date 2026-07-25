@@ -5,7 +5,6 @@ from typing import Any, Dict, Optional
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.internal.agents.langsmith import init_langsmith, load_langsmith_config, shutdown_langsmith
 from app.core.base import Logger
 from app.core.client import set_shared_http_client, start_nacos
 from app.core.config import load_config
@@ -15,6 +14,11 @@ from app.core.db import (
     RabbitMQClient,
     create_tables_async,
     get_rabbitmq_client,
+)
+from app.internal.agents.langsmith import (
+    init_langsmith,
+    load_langsmith_config,
+    shutdown_langsmith,
 )
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler

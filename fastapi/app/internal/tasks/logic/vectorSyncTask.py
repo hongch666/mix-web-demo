@@ -178,7 +178,9 @@ def _get_changed_articles(
         elif cached_hash != current_hash:
             # hash 不相同，说明内容有变化
             Logger.info(
-                Messages.VECTOR_ARTICLE_CONTENT_CHANGED(article_id, cached_hash, current_hash)
+                Messages.VECTOR_ARTICLE_CONTENT_CHANGED(
+                    article_id, cached_hash, current_hash
+                )
             )
             changed_articles.append(article)
             # 更新 hash 值
@@ -308,7 +310,11 @@ def _export_article_vectors_to_postgres(
                         ):
                             try:
                                 rag_tools.delete_articles_from_vector_store(article_ids)
-                                Logger.debug(Messages.VECTOR_DELETED_OLD_VECTORS(str(article_ids)))
+                                Logger.debug(
+                                    Messages.VECTOR_DELETED_OLD_VECTORS(
+                                        str(article_ids)
+                                    )
+                                )
                             except Exception as e:
                                 Logger.warning(Messages.VECTOR_DELETE_OLD_FAILED(e))
 
@@ -328,34 +334,44 @@ def _export_article_vectors_to_postgres(
                             retry_count += 1
                             if retry_count < max_retries:
                                 Logger.warning(
-                                    Messages.VECTOR_BATCH_SYNC_RETRY(batch_num, retry_count, max_retries, str(result))
+                                    Messages.VECTOR_BATCH_SYNC_RETRY(
+                                        batch_num, retry_count, max_retries, str(result)
+                                    )
                                 )
                                 time.sleep(retry_delay)
                                 continue
                             else:
                                 raise BusinessException(
-                                    Messages.VECTOR_BATCH_RETRY_EXHAUSTED(max_retries, str(result)),
+                                    Messages.VECTOR_BATCH_RETRY_EXHAUSTED(
+                                        max_retries, str(result)
+                                    ),
                                     HttpCode.INTERNAL_SERVER_ERROR,
                                     Messages.ERROR_FASTAPI_SERVER_ERROR,
                                 )
 
                         total_synced += len(batch)
                         batch_success = True
-                        Logger.info(Messages.VECTOR_BATCH_SYNC_SUCCESS(batch_num, str(result)))
+                        Logger.info(
+                            Messages.VECTOR_BATCH_SYNC_SUCCESS(batch_num, str(result))
+                        )
 
                     except Exception as e:
                         retry_count += 1
 
                         if retry_count < max_retries:
                             Logger.warning(
-                                Messages.VECTOR_BATCH_SYNC_FAILED_RETRY(batch_num, retry_count, max_retries, e)
+                                Messages.VECTOR_BATCH_SYNC_FAILED_RETRY(
+                                    batch_num, retry_count, max_retries, e
+                                )
                             )
                             time.sleep(retry_delay)
                         else:
                             total_errors += len(batch)
                             failed_articles.extend(article_ids)
                             Logger.error(
-                                Messages.VECTOR_BATCH_RETRY_EXHAUSTED_ABANDON(batch_num, max_retries, e)
+                                Messages.VECTOR_BATCH_RETRY_EXHAUSTED_ABANDON(
+                                    batch_num, max_retries, e
+                                )
                             )
 
         # 4. 只有当有成功的同步时才保存时间戳
@@ -417,9 +433,7 @@ def _initialize_article_content_hash_cache(
             Logger.info(Messages.NO_PUBLISHED_ARTICLES_MESSAGE)
             return
 
-        Logger.info(
-            Messages.VECTOR_HASH_INIT_FOUND_ARTICLES(len(published_articles))
-        )
+        Logger.info(Messages.VECTOR_HASH_INIT_FOUND_ARTICLES(len(published_articles)))
 
         # 3. 为每篇文章计算并保存 hash
         total_initialized = 0

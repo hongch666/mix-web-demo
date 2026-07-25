@@ -52,7 +52,9 @@ class ReferenceContentExtractor:
                     separators=["\n\n", "\n", " ", ""],
                 )
             except Exception as e:
-                Logger.warning(Messages.REFERENCE_EXTRACTOR_ERROR("初始化文本分割器失败", e))
+                Logger.warning(
+                    Messages.REFERENCE_EXTRACTOR_ERROR("初始化文本分割器失败", e)
+                )
 
     @staticmethod
     def _clean_text(text: str) -> str:
@@ -171,7 +173,9 @@ class ReferenceContentExtractor:
             # 提取关键要点
             key_points: str = cls._extract_key_points(full_text, max_length)
 
-            Logger.info(Messages.REFERENCE_CONTENT_COMPLETED("PDF内容提取", len(key_points)))
+            Logger.info(
+                Messages.REFERENCE_CONTENT_COMPLETED("PDF内容提取", len(key_points))
+            )
             return key_points
 
         except Exception as e:
@@ -208,12 +212,16 @@ class ReferenceContentExtractor:
             # 优先使用共享长连接池复用连接，不可用时创建临时客户端
             shared_client = get_shared_http_client()
             if shared_client is not None:
-                response: httpx.Response = await shared_client.get(link_url, headers=headers)
+                response: httpx.Response = await shared_client.get(
+                    link_url, headers=headers
+                )
                 response.raise_for_status()
                 html_content: str = response.text
             else:
                 async with httpx.AsyncClient(timeout=10) as client:
-                    response: httpx.Response = await client.get(link_url, headers=headers)
+                    response: httpx.Response = await client.get(
+                        link_url, headers=headers
+                    )
                     response.raise_for_status()
                     html_content: str = response.text
 
@@ -223,7 +231,9 @@ class ReferenceContentExtractor:
             # 提取关键要点
             key_points: str = cls._extract_key_points(full_text, max_length)
 
-            Logger.info(Messages.REFERENCE_CONTENT_COMPLETED("链接内容提取", len(key_points)))
+            Logger.info(
+                Messages.REFERENCE_CONTENT_COMPLETED("链接内容提取", len(key_points))
+            )
             return key_points
 
         except Exception as e:
@@ -261,11 +271,17 @@ class ReferenceContentExtractor:
                 try:
                     summarized_content: str = await summarize_func(raw_content)
                     Logger.info(
-                        Messages.REFERENCE_SUMMARIZED(len(raw_content), len(summarized_content))
+                        Messages.REFERENCE_SUMMARIZED(
+                            len(raw_content), len(summarized_content)
+                        )
                     )
                     return summarized_content
                 except Exception as e:
-                    Logger.warning(Messages.REFERENCE_EXTRACTOR_ERROR("AI总结失败，使用原始内容", e))
+                    Logger.warning(
+                        Messages.REFERENCE_EXTRACTOR_ERROR(
+                            "AI总结失败，使用原始内容", e
+                        )
+                    )
                     return raw_content
             else:
                 return raw_content

@@ -6,6 +6,7 @@ from .alias import Alias
 
 class CreateHistoryDTO(BaseModel):
     """创建历史记录 DTO"""
+
     model_config = {"populate_by_name": True}
 
     userId: int = Alias(

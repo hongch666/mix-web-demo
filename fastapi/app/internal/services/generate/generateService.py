@@ -143,9 +143,7 @@ class GenerateService:
 
         # 记录整体结束时间
         total_elapsed = time.time() - total_start_time
-        Logger.info(
-            Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id)
-        )
+        Logger.info(Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id))
 
         response_deepseek, response_gemini, response_gpt = responses
 
@@ -288,7 +286,9 @@ class GenerateService:
             )
 
             if category_ref:
-                Logger.info(Messages.REFERENCE_TEXT_TYPE_FOUND(str(category_ref.get('type'))))
+                Logger.info(
+                    Messages.REFERENCE_TEXT_TYPE_FOUND(str(category_ref.get("type")))
+                )
                 Logger.info(Messages.REFERENCE_TEXT_DETAIL(category_ref))
 
                 # 4. 根据类型提取内容并使用大模型进行总结
@@ -301,7 +301,9 @@ class GenerateService:
                     Logger.info(Messages.REFERENCE_PDF_EXTRACTION_START(str(ref_value)))
                 elif ref_type == "link":
                     ref_value = category_ref.get("link")
-                    Logger.info(Messages.REFERENCE_LINK_EXTRACTION_START(str(ref_value)))
+                    Logger.info(
+                        Messages.REFERENCE_LINK_EXTRACTION_START(str(ref_value))
+                    )
 
                 # 定义三个大模型的总结函数
                 async def summarize_with_deepseek(content: str) -> str:
@@ -351,21 +353,33 @@ class GenerateService:
                 # 合并三个大模型的总结结果
                 summaries = []
                 if isinstance(summary_results[0], str) and summary_results[0]:
-                    summaries.append(Messages.LLM_SUMMARY_RESULT_ENTRY("DeepSeek", summary_results[0]))
+                    summaries.append(
+                        Messages.LLM_SUMMARY_RESULT_ENTRY(
+                            "DeepSeek", summary_results[0]
+                        )
+                    )
                 if isinstance(summary_results[1], str) and summary_results[1]:
-                    summaries.append(Messages.LLM_SUMMARY_RESULT_ENTRY("Gemini", summary_results[1]))
+                    summaries.append(
+                        Messages.LLM_SUMMARY_RESULT_ENTRY("Gemini", summary_results[1])
+                    )
                 if isinstance(summary_results[2], str) and summary_results[2]:
-                    summaries.append(Messages.LLM_SUMMARY_RESULT_ENTRY("GPT", summary_results[2]))
+                    summaries.append(
+                        Messages.LLM_SUMMARY_RESULT_ENTRY("GPT", summary_results[2])
+                    )
 
                 if summaries:
                     reference_content = "\n\n".join(summaries)
                     Logger.info(
-                        Messages.REFERENCE_TEXT_EXTRACTED_AND_SUMMARIZED(len(reference_content))
+                        Messages.REFERENCE_TEXT_EXTRACTED_AND_SUMMARIZED(
+                            len(reference_content)
+                        )
                     )
                 else:
-                    Logger.warning(Messages.REFERENCE_TEXT_EXTRACTION_FAILED_TYPE(ref_type))
-                    reference_content = (
-                        Messages.REFERENCE_TEXT_FALLBACK_CONTENT(ref_type, str(ref_value))
+                    Logger.warning(
+                        Messages.REFERENCE_TEXT_EXTRACTION_FAILED_TYPE(ref_type)
+                    )
+                    reference_content = Messages.REFERENCE_TEXT_FALLBACK_CONTENT(
+                        ref_type, str(ref_value)
                     )
             else:
                 Logger.info(Messages.SUB_CATEGORY_NO_REFERENCE(sub_category_id))
@@ -383,9 +397,7 @@ class GenerateService:
         )
 
         # 6. 异步并发调用3个大模型生成AI评论
-        Logger.info(
-            Messages.CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id)
-        )
+        Logger.info(Messages.CONCURRENT_LLM_REFERENCE_AI_COMMENT_START(article_id))
 
         total_start_time = time.time()
 
@@ -432,7 +444,9 @@ class GenerateService:
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(Messages.LLM_REFERENCE_CALL_FAILED_TIMED("GPT", elapsed, e))
+                Logger.error(
+                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("GPT", elapsed, e)
+                )
                 return e
 
         # 并发执行三个调用
@@ -452,7 +466,9 @@ class GenerateService:
 
         # 检查异常返回
         if isinstance(response_deepseek, Exception):
-            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("DeepSeek", response_deepseek))
+            Logger.error(
+                Messages.LLM_REFERENCE_FINAL_FAILED("DeepSeek", response_deepseek)
+            )
             response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("Gemini", response_gemini))
@@ -521,7 +537,9 @@ class GenerateService:
         """
         try:
             Logger.info(
-                Messages.AUTHORITY_ARTICLE_GENERATION_START(reference_type, reference_value)
+                Messages.AUTHORITY_ARTICLE_GENERATION_START(
+                    reference_type, reference_value
+                )
             )
 
             # 1. 提取原始内容
@@ -563,12 +581,16 @@ class GenerateService:
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        Messages.LLM_SUMMARIZE_COMPLETED("DeepSeek", elapsed, len(result) if result else 0)
+                        Messages.LLM_SUMMARIZE_COMPLETED(
+                            "DeepSeek", elapsed, len(result) if result else 0
+                        )
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("DeepSeek", elapsed, e))
+                    Logger.error(
+                        Messages.LLM_SUMMARIZE_FAILED_TIMED("DeepSeek", elapsed, e)
+                    )
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:
@@ -579,12 +601,16 @@ class GenerateService:
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        Messages.LLM_SUMMARIZE_COMPLETED("Gemini", elapsed, len(result) if result else 0)
+                        Messages.LLM_SUMMARIZE_COMPLETED(
+                            "Gemini", elapsed, len(result) if result else 0
+                        )
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("Gemini", elapsed, e))
+                    Logger.error(
+                        Messages.LLM_SUMMARIZE_FAILED_TIMED("Gemini", elapsed, e)
+                    )
                     return None
 
             async def timed_gpt_summarize() -> Optional[str]:
@@ -595,7 +621,9 @@ class GenerateService:
                     )
                     elapsed = time.time() - start
                     Logger.info(
-                        Messages.LLM_SUMMARIZE_COMPLETED("GPT", elapsed, len(result) if result else 0)
+                        Messages.LLM_SUMMARIZE_COMPLETED(
+                            "GPT", elapsed, len(result) if result else 0
+                        )
                     )
                     return result
                 except Exception as e:
@@ -643,7 +671,10 @@ class GenerateService:
 
         except Exception as e:
             Logger.error(Messages.AUTHORITY_ARTICLE_GENERATION_EXCEPTION(str(e)))
-            return {"status": "error", "message": Messages.AUTHORITY_ARTICLE_GENERATION_FAILED(str(e))}
+            return {
+                "status": "error",
+                "message": Messages.AUTHORITY_ARTICLE_GENERATION_FAILED(str(e)),
+            }
 
 
 @lru_cache()

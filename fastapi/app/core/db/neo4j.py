@@ -80,9 +80,7 @@ class Neo4jClient:
             result: Any = await session.run(cypher, params or {})
             return await result.data()
         except Exception as e:
-            self.logger.error(
-                Messages.CYPHER_QUERY_FAILED(e, cypher, params)
-            )
+            self.logger.error(Messages.CYPHER_QUERY_FAILED(e, cypher, params))
             return []
         finally:
             await session.close()
@@ -99,9 +97,7 @@ class Neo4jClient:
             result: Any = await session.run(cypher, params or {})
             return await result.consume()
         except Exception as e:
-            self.logger.error(
-                Messages.CYPHER_WRITE_FAILED(e, cypher, params)
-            )
+            self.logger.error(Messages.CYPHER_WRITE_FAILED(e, cypher, params))
             return None
         finally:
             await session.close()

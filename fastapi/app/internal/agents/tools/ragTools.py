@@ -49,7 +49,12 @@ def sanitize_retrieved_content(text: str) -> str:
     for pattern in _INJECTION_PATTERNS:
         if re.search(pattern, text, re.IGNORECASE):
             Logger.warning(Messages.RAG_TOOL_PROMPT_INJECTION_DETECTED())
-            text = re.sub(pattern, Messages.RAG_TOOL_FILTERED_PLACEHOLDER(), text, flags=re.IGNORECASE)
+            text = re.sub(
+                pattern,
+                Messages.RAG_TOOL_FILTERED_PLACEHOLDER(),
+                text,
+                flags=re.IGNORECASE,
+            )
     return text
 
 
@@ -98,9 +103,7 @@ class RAGTools:
             self.logger.info(Messages.EMBEDDING_MODEL_INITIALIZED(embedding_model))
         except Exception as error:
             self.enabled = False
-            self._init_error_message = (
-                Messages.EMBEDDING_INIT_FAILED(error)
-            )
+            self._init_error_message = Messages.EMBEDDING_INIT_FAILED(error)
             raise BusinessException(
                 self._init_error_message,
                 HttpCode.SERVICE_UNAVAILABLE,
@@ -122,9 +125,7 @@ class RAGTools:
                 )
                 self.logger.info(Messages.HYDE_LLM_INITIALIZED())
             except Exception as hyde_error:
-                self.logger.warning(
-                    Messages.HYDE_LLM_INIT_FAILED(hyde_error)
-                )
+                self.logger.warning(Messages.HYDE_LLM_INIT_FAILED(hyde_error))
 
         # 2. 初始化文本切分器
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -309,9 +310,7 @@ class RAGTools:
                     },
                 ):
                     try:
-                        hyde_prompt = (
-                            Prompts.HYDE_GENERATION_PROMPT(query)
-                        )
+                        hyde_prompt = Prompts.HYDE_GENERATION_PROMPT(query)
                         hypothetical_doc = await self.hyde_llm.ainvoke(hyde_prompt)
                         search_query = (
                             hypothetical_doc.content
@@ -319,12 +318,12 @@ class RAGTools:
                             else str(hypothetical_doc)
                         )
                         self.logger.info(
-                            Messages.HYDE_GENERATION_SUCCESS(len(query), len(search_query))
+                            Messages.HYDE_GENERATION_SUCCESS(
+                                len(query), len(search_query)
+                            )
                         )
                     except Exception as hyde_error:
-                        self.logger.warning(
-                            Messages.HYDE_GENERATION_FAILED(hyde_error)
-                        )
+                        self.logger.warning(Messages.HYDE_GENERATION_FAILED(hyde_error))
                         search_query = query
 
             # 构建元数据过滤器（pgvector JSONB 过滤）
@@ -358,11 +357,15 @@ class RAGTools:
             dedup_docs = self._deduplicate_articles(filtered_docs, search_k)
 
             self.logger.info(
-                Messages.RAG_SEARCH_SUCCESS(len(dedup_docs), len(filtered_docs), len(docs))
+                Messages.RAG_SEARCH_SUCCESS(
+                    len(dedup_docs), len(filtered_docs), len(docs)
+                )
             )
 
             # 格式化结果（检索后过滤恶意注入文本）
-            result_text = Messages.RAG_SEARCH_RESULT_HEADER(len(dedup_docs), self.similarity_threshold)
+            result_text = Messages.RAG_SEARCH_RESULT_HEADER(
+                len(dedup_docs), self.similarity_threshold
+            )
 
             for i, (doc, score) in enumerate(dedup_docs, 1):
                 article_id = doc.metadata.get("article_id", "未知")
@@ -375,13 +378,15 @@ class RAGTools:
 
                 result_text += Messages.RAG_RESULT_ARTICLE_LINE(i, article_id, title)
                 result_text += Messages.RAG_RESULT_SIMILARITY_SCORE(score)
-                result_text += (
-                    Messages.RAG_RESULT_CONTENT_FRAGMENT(chunk_index + 1, len(content))
+                result_text += Messages.RAG_RESULT_CONTENT_FRAGMENT(
+                    chunk_index + 1, len(content)
                 )
                 result_text += f"   {content}\n\n"
 
             self.logger.info(
-                Messages.RAG_SEARCH_SUCCESS(len(dedup_docs), len(filtered_docs), len(docs))
+                Messages.RAG_SEARCH_SUCCESS(
+                    len(dedup_docs), len(filtered_docs), len(docs)
+                )
             )
             return result_text
 
@@ -428,7 +433,9 @@ class RAGTools:
             dedup_docs = [doc for doc, _ in dedup_docs_with_scores]
 
             self.logger.info(
-                Messages.RAG_CONTEXT_FETCH_SUCCESS(len(dedup_docs), len(docs_with_scores))
+                Messages.RAG_CONTEXT_FETCH_SUCCESS(
+                    len(dedup_docs), len(docs_with_scores)
+                )
             )
             return dedup_docs
         except Exception as e:

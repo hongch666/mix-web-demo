@@ -201,7 +201,9 @@ class BaseAiService:
                 tool_name = action.tool if hasattr(action, "tool") else str(action)
                 tool_input = action.tool_input if hasattr(action, "tool_input") else ""
 
-                step_text = Messages.AGENT_EXECUTION_STEP(i, tool_name, str(tool_input), str(observation))
+                step_text = Messages.AGENT_EXECUTION_STEP(
+                    i, tool_name, str(tool_input), str(observation)
+                )
 
                 thinking_parts.append(step_text)
 
@@ -226,7 +228,9 @@ class BaseAiService:
         if chat_history:
             context = (
                 "\n\n历史对话:\n"
-                + "\n".join([Messages.CHAT_HISTORY_LINE(h, a) for h, a in chat_history[-3:]])
+                + "\n".join(
+                    [Messages.CHAT_HISTORY_LINE(h, a) for h, a in chat_history[-3:]]
+                )
                 + "\n\n"
             )
         return context
@@ -366,7 +370,9 @@ class BaseAiService:
             response = await self.llm.ainvoke(messages)
 
             result: str = response.content
-            Logger.info(Messages.BASIC_CHAT_REPLY_LENGTH(self.service_name, len(result)))
+            Logger.info(
+                Messages.BASIC_CHAT_REPLY_LENGTH(self.service_name, len(result))
+            )
             return result
 
         except Exception as error:
@@ -389,19 +395,21 @@ class BaseAiService:
 
             response = await self.llm.ainvoke(messages)
             result: str = response.content
-            Logger.info(Messages.REFERENCE_CHAT_REPLY_LENGTH(self.service_name, len(result)))
+            Logger.info(
+                Messages.REFERENCE_CHAT_REPLY_LENGTH(self.service_name, len(result))
+            )
             return result
 
         except Exception as error:
-            Logger.error(Messages.REFERENCE_CHAT_EXCEPTION(self.service_name, str(error)))
+            Logger.error(
+                Messages.REFERENCE_CHAT_EXCEPTION(self.service_name, str(error))
+            )
             return Messages.CHAT_SERVICE_ERROR(error)
 
     async def summarize_content(self, content: str, max_length: int = 1000) -> str:
         """总结长文本内容"""
         try:
-            Logger.info(
-                Messages.SUMMARIZE_START(self.service_name, len(content))
-            )
+            Logger.info(Messages.SUMMARIZE_START(self.service_name, len(content)))
 
             if not getattr(self, "llm", None):
                 return Messages.INITIALIZATION_ERROR
@@ -414,9 +422,7 @@ class BaseAiService:
 
             response = await self.llm.ainvoke(messages)
             result: str = response.content[:max_length]
-            Logger.info(
-                Messages.SUMMARIZE_COMPLETED(self.service_name, len(result))
-            )
+            Logger.info(Messages.SUMMARIZE_COMPLETED(self.service_name, len(result)))
             return result
 
         except Exception as error:
@@ -465,16 +471,20 @@ class BaseAiService:
                     Logger.info(Messages.USER_NO_PERMISSION_FOR_INTENT(user_id, intent))
                     return permission_msg or Messages.NO_PERMISSION_ERROR
             elif self.intent_router:
-                intent, intent_resolution = await self.intent_router.route_async(message)
+                intent, intent_resolution = await self.intent_router.route_async(
+                    message
+                )
                 Logger.info(Messages.INTENT_RECOGNIZED(intent))
 
             # 将意图信息补充到 runnable_config 中
             config = dict(runnable_config) if runnable_config else {}
             config.setdefault("metadata", {})
-            config["metadata"].update({
-                "intent": intent,
-                "intent_resolution": intent_resolution,
-            })
+            config["metadata"].update(
+                {
+                    "intent": intent,
+                    "intent_resolution": intent_resolution,
+                }
+            )
 
             chat_history: List[ChatHistoryItem] = []
             if db and normalized_user_id is not None:
@@ -508,7 +518,9 @@ class BaseAiService:
 
                 context = self._build_chat_context(chat_history)
                 user_info = (
-                    Messages.CURRENT_USER_ID_INFO(normalized_user_id) if normalized_user_id else ""
+                    Messages.CURRENT_USER_ID_INFO(normalized_user_id)
+                    if normalized_user_id
+                    else ""
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
 
@@ -571,11 +583,15 @@ class BaseAiService:
                         try:
                             if chunk.content:
                                 Logger.debug(
-                                    Messages.STREAM_CHUNK_RECEIVED_LENGTH(len(chunk.content))
+                                    Messages.STREAM_CHUNK_RECEIVED_LENGTH(
+                                        len(chunk.content)
+                                    )
                                 )
                                 yield {"type": "content", "content": chunk.content}
                         except Exception as chunk_error:
-                            Logger.error(Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error)))
+                            Logger.error(
+                                Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
+                            )
                             continue
                 except Exception as stream_error:
                     error_msg = str(stream_error)
@@ -610,16 +626,20 @@ class BaseAiService:
                     return
 
             elif self.intent_router:
-                intent, intent_resolution = await self.intent_router.route_async(message)
+                intent, intent_resolution = await self.intent_router.route_async(
+                    message
+                )
                 Logger.info(Messages.INTENT_RECOGNIZED(intent))
 
             # 将意图信息补充到 runnable_config 中
             config = dict(runnable_config) if runnable_config else {}
             config.setdefault("metadata", {})
-            config["metadata"].update({
-                "intent": intent,
-                "intent_resolution": intent_resolution,
-            })
+            config["metadata"].update(
+                {
+                    "intent": intent,
+                    "intent_resolution": intent_resolution,
+                }
+            )
 
             chat_history = []
             if db and normalized_user_id is not None:
@@ -644,7 +664,9 @@ class BaseAiService:
                             if chunk.content:
                                 yield {"type": "content", "content": chunk.content}
                         except Exception as chunk_error:
-                            Logger.error(Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error)))
+                            Logger.error(
+                                Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
+                            )
                             continue
                 except Exception as stream_error:
                     error_msg = str(stream_error)
@@ -667,7 +689,9 @@ class BaseAiService:
 
                 context = self._build_chat_context(chat_history)
                 user_info = (
-                    Messages.CURRENT_USER_ID_INFO(normalized_user_id) if normalized_user_id else ""
+                    Messages.CURRENT_USER_ID_INFO(normalized_user_id)
+                    if normalized_user_id
+                    else ""
                 )
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
 
@@ -699,11 +723,20 @@ class BaseAiService:
 
                 Logger.info(Messages.THINKING_PROCESS_LENGTH(len(thinking_text)))
                 if len(thinking_text) > 5000:
-                    Logger.debug(Messages.THINKING_PROCESS_PREVIEW_TEXT(thinking_text[:2000]))
                     Logger.debug(
-                        Messages.THINKING_PROCESS_MIDDLE_TEXT(thinking_text[len(thinking_text) // 2 - 1000 : len(thinking_text) // 2 + 1000])
+                        Messages.THINKING_PROCESS_PREVIEW_TEXT(thinking_text[:2000])
                     )
-                    Logger.debug(Messages.THINKING_PROCESS_END_TEXT(thinking_text[-2000:]))
+                    Logger.debug(
+                        Messages.THINKING_PROCESS_MIDDLE_TEXT(
+                            thinking_text[
+                                len(thinking_text) // 2 - 1000 : len(thinking_text) // 2
+                                + 1000
+                            ]
+                        )
+                    )
+                    Logger.debug(
+                        Messages.THINKING_PROCESS_END_TEXT(thinking_text[-2000:])
+                    )
                 else:
                     Logger.debug(Messages.COMPLETE_THINKING_PROCESS_TEXT(thinking_text))
 
@@ -720,9 +753,7 @@ class BaseAiService:
                     SystemMessage(content=Messages.GENERIC_CHAT_MESSAGE),
                     *history_messages,
                     HumanMessage(
-                        content=(
-                            Messages.STREAM_FINAL_PROMPT(message, agent_result)
-                        )
+                        content=(Messages.STREAM_FINAL_PROMPT(message, agent_result))
                     ),
                 ]
 
@@ -732,7 +763,9 @@ class BaseAiService:
                             if chunk.content:
                                 yield {"type": "content", "content": chunk.content}
                         except Exception as chunk_error:
-                            Logger.error(Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error)))
+                            Logger.error(
+                                Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
+                            )
                             continue
                 except Exception as final_stream_error:
                     error_msg = str(final_stream_error)

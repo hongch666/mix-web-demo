@@ -66,8 +66,10 @@ class UserService:
                         hour=23, minute=59, second=59, microsecond=999999
                     )
                     async with AsyncSessionLocal() as session:
-                        count: int = await self.focusMapper.get_followers_in_period_mapper_async(
-                            session, user_id, start_date, end_date
+                        count: int = (
+                            await self.focusMapper.get_followers_in_period_mapper_async(
+                                session, user_id, start_date, end_date
+                            )
                         )
                     return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
@@ -85,8 +87,10 @@ class UserService:
                         hour=0, minute=0, second=0, microsecond=0
                     ) - timedelta(seconds=1)
                     async with AsyncSessionLocal() as session:
-                        count: int = await self.focusMapper.get_followers_in_period_mapper_async(
-                            session, user_id, start_date, end_date
+                        count: int = (
+                            await self.focusMapper.get_followers_in_period_mapper_async(
+                                session, user_id, start_date, end_date
+                            )
                         )
                     return {"month": date.strftime("%Y-%m"), "count": count}
 
@@ -109,8 +113,10 @@ class UserService:
                         microsecond=999999,
                     )
                     async with AsyncSessionLocal() as session:
-                        count: int = await self.focusMapper.get_followers_in_period_mapper_async(
-                            session, user_id, start_date, end_date
+                        count: int = (
+                            await self.focusMapper.get_followers_in_period_mapper_async(
+                                session, user_id, start_date, end_date
+                            )
                         )
                     return {"year": date.strftime("%Y"), "count": count}
 

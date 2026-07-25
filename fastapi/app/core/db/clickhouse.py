@@ -32,9 +32,7 @@ class ClickhouseConnectionPool:
         with self._condition:
             if self._connections:
                 conn: Any = self._connections.pop()
-                Logger.info(
-                    Messages.CLICKHOUSE_POOL_REUSED(len(self._connections))
-                )
+                Logger.info(Messages.CLICKHOUSE_POOL_REUSED(len(self._connections)))
                 return conn
 
             if self._active_connections < self._max_connections:
@@ -43,7 +41,9 @@ class ClickhouseConnectionPool:
                 conn_index: int = self._conn_count
             else:
                 Logger.warning(
-                    Messages.CLICKHOUSE_POOL_EXHAUSTED(self._active_connections, self._max_connections)
+                    Messages.CLICKHOUSE_POOL_EXHAUSTED(
+                        self._active_connections, self._max_connections
+                    )
                 )
                 while not self._connections:
                     self._condition.wait()
@@ -66,7 +66,9 @@ class ClickhouseConnectionPool:
 
         Logger.info(Messages.CLICKHOUSE_CONNECTION_CREATING(conn_index))
         Logger.info(
-            Messages.CLICKHOUSE_CONNECTION_CONFIG(ch_host, ch_port, ch_database, ch_username)
+            Messages.CLICKHOUSE_CONNECTION_CONFIG(
+                ch_host, ch_port, ch_database, ch_username
+            )
         )
         conn_start: float = time.time()
 

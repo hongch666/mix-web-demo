@@ -9,6 +9,7 @@ from .alias import Alias
 
 class VectorSearchEnhanceReq(BaseModel):
     """向量搜索增强请求"""
+
     model_config = {"populate_by_name": True}
 
     userId: Optional[int] = Alias("userId", default=None)
@@ -24,6 +25,7 @@ class VectorSearchEnhanceReq(BaseModel):
 
 class VectorMatchedChunkDTO(BaseModel):
     """向量匹配片段"""
+
     model_config = {"populate_by_name": True}
 
     articleId: int = Alias("articleId")
@@ -35,6 +37,7 @@ class VectorMatchedChunkDTO(BaseModel):
 
 class VectorSearchEnhanceItemDTO(BaseModel):
     """向量增强单项结果"""
+
     model_config = {"populate_by_name": True}
 
     articleId: int = Alias("articleId")

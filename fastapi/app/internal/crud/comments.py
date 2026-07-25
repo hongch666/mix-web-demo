@@ -33,7 +33,9 @@ class CommentsMapper:
 
         return len(ai_comments)
 
-    async def _create_comment_mapper_sync(self, comment: Comments, db: AsyncSession) -> Comments:
+    async def _create_comment_mapper_sync(
+        self, comment: Comments, db: AsyncSession
+    ) -> Comments:
         db.add(comment)
         await db.commit()
         await db.refresh(comment)

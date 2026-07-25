@@ -26,7 +26,9 @@ def get_pgvector_connection_string() -> str:
             f"@{cfg['host']}:{cfg['port']}/{cfg['database']}"
         )
         Logger.info(
-            Messages.POSTGRES_CONNECTION_STRING_CREATED(cfg["host"], cfg["port"], cfg["database"])
+            Messages.POSTGRES_CONNECTION_STRING_CREATED(
+                cfg["host"], cfg["port"], cfg["database"]
+            )
         )
         return connection_string
     except Exception as e:

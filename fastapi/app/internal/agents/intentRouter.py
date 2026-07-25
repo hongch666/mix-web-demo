@@ -89,9 +89,7 @@ class IntentRouter:
             )
         except Exception as e:
             self._use_structured_output = False
-            self.logger.warning(
-                Messages.INTENT_STRUCTURED_OUTPUT_UNAVAILABLE(e)
-            )
+            self.logger.warning(Messages.INTENT_STRUCTURED_OUTPUT_UNAVAILABLE(e))
 
     def set_user_context(self, user_id: int, db: Session) -> None:
         """
@@ -137,7 +135,9 @@ class IntentRouter:
                 {"question": question}, config=config
             )
             self.logger.info(
-                Messages.INTENT_STRUCTURED_RESULT(question, result.type, result.confidence)
+                Messages.INTENT_STRUCTURED_RESULT(
+                    question, result.type, result.confidence
+                )
             )
             return result.type, "structured"
         except Exception as e:

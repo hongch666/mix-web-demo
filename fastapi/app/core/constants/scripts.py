@@ -42,7 +42,9 @@ class Scripts:
     NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
 
     @staticmethod
-    def NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(base_sql: str, timestamp_column: str, sync_time_text: str) -> str:
+    def NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(
+        base_sql: str, timestamp_column: str, sync_time_text: str
+    ) -> str:
         return f"{base_sql} WHERE {timestamp_column} >= '{sync_time_text}' ORDER BY {timestamp_column} ASC"
 
     # ===== ClickHouse SQL 模板 =====

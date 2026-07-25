@@ -46,7 +46,9 @@ class ArticleMapper:
                         else:
                             row_dict[col] = val
                     except Exception as val_e:
-                        Logger.debug(Messages.CLICKHOUSE_VALUE_CONVERSION_FAILED(col, val, val_e))
+                        Logger.debug(
+                            Messages.CLICKHOUSE_VALUE_CONVERSION_FAILED(col, val, val_e)
+                        )
                         row_dict[col] = None
                 result.append(row_dict)
             except Exception as row_e:
@@ -83,9 +85,7 @@ class ArticleMapper:
         Logger.info(Messages.TOP10_CLICKHOUSE_QUERY)
         query_start: float = time.time()
         ch_table: str = load_config("database")["clickhouse"]["table"]
-        query = (
-            Scripts.TOP10_ARTICLES_CLICKHOUSE_QUERY(", ".join(columns), ch_table)
-        )
+        query = Scripts.TOP10_ARTICLES_CLICKHOUSE_QUERY(", ".join(columns), ch_table)
 
         try:
             results: List[tuple] = ch_conn.execute(query)
@@ -366,7 +366,9 @@ class ArticleMapper:
 
             total_time: float = time.time() - start
             Logger.info(
-                Messages.CLICKHOUSE_CATEGORY_QUERY_RESULT(query_time, total_time, len(result))
+                Messages.CLICKHOUSE_CATEGORY_QUERY_RESULT(
+                    query_time, total_time, len(result)
+                )
             )
 
             return result
@@ -477,7 +479,9 @@ class ArticleMapper:
 
             total_time: float = time.time() - start
             Logger.info(
-                Messages.CLICKHOUSE_MONTHLY_QUERY_RESULT(query_time, total_time, len(result))
+                Messages.CLICKHOUSE_MONTHLY_QUERY_RESULT(
+                    query_time, total_time, len(result)
+                )
             )
 
             return result

@@ -82,7 +82,9 @@ class ArticleLogMapper:
                 )
 
             Logger.info(
-                Messages.ARTICLE_VIEW_DISTRIBUTION_RESULT(user_id, total_views, len(articles))
+                Messages.ARTICLE_VIEW_DISTRIBUTION_RESULT(
+                    user_id, total_views, len(articles)
+                )
             )
 
             return {"total_views": total_views, "articles": articles}

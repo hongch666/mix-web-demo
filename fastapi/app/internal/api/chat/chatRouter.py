@@ -7,16 +7,16 @@ from typing import Any, AsyncGenerator, Dict, Optional
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
+from app.core.base import Logger, success
+from app.core.config import load_config
+from app.core.constants import HttpCode, Messages
+from app.core.db import get_db
 from app.internal.agents.langsmith import (
     build_chat_metadata,
     build_chat_tags,
     get_langsmith_context,
     get_langsmith_context_async,
 )
-from app.core.base import Logger, success
-from app.core.config import load_config
-from app.core.constants import HttpCode, Messages
-from app.core.db import get_db
 from app.internal.models import AiHistory
 from app.internal.schemas import (
     AIServiceType,
@@ -147,7 +147,9 @@ async def send_message(
                 runnable_config=runnable_config,
             )
         elif request.service == AIServiceType.GEMINI:
-            Logger.info(Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, False))
+            Logger.info(
+                Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, False)
+            )
             response_message = await geminiService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -155,7 +157,9 @@ async def send_message(
                 runnable_config=runnable_config,
             )
         else:
-            Logger.info(Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, False))
+            Logger.info(
+                Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, False)
+            )
             response_message = await deepseekService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -267,7 +271,9 @@ async def stream_message(
                 db = await anext(db_generator)
                 # 根据请求的服务类型选择对应的AI服务
                 if request.service == AIServiceType.GPT:
-                    Logger.info(Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, True))
+                    Logger.info(
+                        Messages.CHAT_SERVICE_PROCESSING("GPT", actual_user_id, True)
+                    )
                     stream_generator: AsyncGenerator[Any, None] = (
                         gptService.stream_chat(
                             message=request.message,
@@ -277,7 +283,9 @@ async def stream_message(
                         )
                     )
                 elif request.service == AIServiceType.GEMINI:
-                    Logger.info(Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, True))
+                    Logger.info(
+                        Messages.CHAT_SERVICE_PROCESSING("Gemini", actual_user_id, True)
+                    )
                     stream_generator = geminiService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
@@ -285,7 +293,11 @@ async def stream_message(
                         runnable_config=runnable_config,
                     )
                 else:
-                    Logger.info(Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, True))
+                    Logger.info(
+                        Messages.CHAT_SERVICE_PROCESSING(
+                            "DeepSeek", actual_user_id, True
+                        )
+                    )
                     stream_generator = deepseekService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,

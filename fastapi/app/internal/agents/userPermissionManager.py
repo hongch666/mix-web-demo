@@ -97,7 +97,9 @@ class UserPermissionManager:
 
         tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
         reason: str = Messages.TOOL_ACCESS_DENIED_REASON(tool_name)
-        Logger.warning(Messages.TOOL_ACCESS_DENIED_LOG(user_id, role, tool_type, question))
+        Logger.warning(
+            Messages.TOOL_ACCESS_DENIED_LOG(user_id, role, tool_type, question)
+        )
         return False, reason
 
     async def validate_database_query_permission_async(
