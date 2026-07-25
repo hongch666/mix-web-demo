@@ -25,7 +25,7 @@ database:
     read_timeout: 120 # pymysql读超时（秒），增大以支持大批量导出查询
     write_timeout: 120 # pymysql写超时（秒），增大以支持大批量导出查询
     autocommit: False # 自动提交事务
-    echo: False # 是否打印SQL语句到日志
+    echo: ${DB_SQL_LOG_ENABLED:} # 是否打印SQL语句到日志
   postgres:
     host: ${DB_POSTGRES_HOST:localhost}
     port: ${DB_POSTGRES_PORT:5432}
@@ -112,5 +112,3 @@ langsmith:
   hide_inputs: ${LANGSMITH_HIDE_INPUTS:false} # 是否隐藏输入
   hide_outputs: ${LANGSMITH_HIDE_OUTPUTS:false} # 是否隐藏输出
   sampling_rate: ${LANGSMITH_TRACING_SAMPLING_RATE:1.0} # 采样率（0.0-1.0）
-
-

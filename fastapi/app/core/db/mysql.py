@@ -41,7 +41,9 @@ POOL_TIMEOUT: int = int(mysql_config.get("pool_timeout", 30))
 READ_TIMEOUT: int = int(mysql_config.get("read_timeout", 120))
 WRITE_TIMEOUT: int = int(mysql_config.get("write_timeout", 120))
 AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
-ECHO: bool = SERVER_MODE == "dev"
+# SQL 日志回显开关：优先使用显式配置，未配置时根据 SERVER_MODE 自动判断
+_echo_val = mysql_config.get("echo")
+ECHO: bool = _echo_val if _echo_val is not None else SERVER_MODE == "dev"
 
 # 配置连接池参数以支持高并发访问
 engine: Engine = create_engine(
