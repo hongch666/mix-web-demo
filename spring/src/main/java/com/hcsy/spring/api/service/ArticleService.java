@@ -26,7 +26,7 @@ public interface ArticleService {
     Mono<PageDTO<Article>> listArticlesById(long page, long size, Long id, boolean onlyPublished);
 
     Mono<PageDTO<ArticleWithCategoryVO>> listArticlesByIdWithCategory(
-            long page, long size, Long id, boolean onlyPublished);
+        long page, long size, Long id, boolean onlyPublished);
 
     Mono<Void> publishArticle(Long id);
 

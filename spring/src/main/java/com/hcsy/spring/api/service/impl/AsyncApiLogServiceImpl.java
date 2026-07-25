@@ -22,8 +22,8 @@ public class AsyncApiLogServiceImpl implements AsyncApiLogService {
     @Override
     public Mono<Void> sendAsync(Map<String, Object> apiLogMessage) {
         return rabbitMQUtil.sendMessage("api-log-queue", apiLogMessage)
-                .doOnSuccess(ignored -> logger.info(Messages.ASYNC_API_LOG_SEND_SUCCESS))
-                .doOnError(error -> logger.error(Messages.ASYNC_API_LOG_SEND_FAILED, error.getMessage(), error))
-                .onErrorResume(error -> Mono.empty());
+            .doOnSuccess(ignored -> logger.info(Messages.ASYNC_API_LOG_SEND_SUCCESS))
+            .doOnError(error -> logger.error(Messages.ASYNC_API_LOG_SEND_FAILED, error.getMessage(), error))
+            .onErrorResume(error -> Mono.empty());
     }
 }

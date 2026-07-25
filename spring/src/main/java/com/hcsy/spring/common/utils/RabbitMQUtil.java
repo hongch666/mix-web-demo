@@ -4,11 +4,11 @@ import java.nio.charset.StandardCharsets;
 
 import org.springframework.stereotype.Component;
 
-import com.rabbitmq.client.AMQP;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.rabbitmq.client.AMQP;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -21,10 +21,10 @@ public class RabbitMQUtil {
 
     private static final String DEFAULT_EXCHANGE = "";
     private static final AMQP.BasicProperties JSON_MESSAGE_PROPERTIES = new AMQP.BasicProperties.Builder()
-            .contentType("application/json")
-            .contentEncoding(StandardCharsets.UTF_8.name())
-            .deliveryMode(2)
-            .build();
+        .contentType("application/json")
+        .contentEncoding(StandardCharsets.UTF_8.name())
+        .deliveryMode(2)
+        .build();
 
     private final Sender sender;
     private final SimpleLogger logger;
@@ -36,14 +36,14 @@ public class RabbitMQUtil {
      */
     public Mono<Void> sendMessage(String queueName, Object message) {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(message))
-                .flatMap(jsonMessage -> sendWithConfirm(DEFAULT_EXCHANGE, queueName, jsonMessage)
-                        .doOnSuccess(ignored -> logger.info(Messages.MSG_SEND_SUCCESS, queueName, jsonMessage)))
-                .onErrorMap(error -> {
-                    logger.error(Messages.MSG_SEND_FAIL + error.getMessage(), error);
-                    return BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
-                            .errorMessage(Messages.MSG_SEND_FAIL + queueName).cause(error).build();
-                })
-                .then();
+            .flatMap(jsonMessage -> sendWithConfirm(DEFAULT_EXCHANGE, queueName, jsonMessage)
+                .doOnSuccess(ignored -> logger.info(Messages.MSG_SEND_SUCCESS, queueName, jsonMessage)))
+            .onErrorMap(error -> {
+                logger.error(Messages.MSG_SEND_FAIL + error.getMessage(), error);
+                return BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                    .errorMessage(Messages.MSG_SEND_FAIL + queueName).cause(error).build();
+            })
+            .then();
     }
 
     /**
@@ -51,28 +51,28 @@ public class RabbitMQUtil {
      */
     public Mono<Void> sendMessage(String exchange, String routingKey, Object message) {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(message))
-                .flatMap(jsonMessage -> sendWithConfirm(exchange, routingKey, jsonMessage)
-                        .doOnSuccess(ignored -> logger.info(
-                                Messages.EXCHANGE_SEND_SUCCESS, exchange, routingKey, jsonMessage)))
-                .onErrorMap(error -> {
-                    logger.error(Messages.EXCHANGE_SEND_FAIL + error.getMessage(), error);
-                    return BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
-                            .errorMessage(Messages.EXCHANGE_SEND_FAIL + exchange).cause(error).build();
-                })
-                .then();
+            .flatMap(jsonMessage -> sendWithConfirm(exchange, routingKey, jsonMessage)
+                .doOnSuccess(ignored -> logger.info(
+                    Messages.EXCHANGE_SEND_SUCCESS, exchange, routingKey, jsonMessage)))
+            .onErrorMap(error -> {
+                logger.error(Messages.EXCHANGE_SEND_FAIL + error.getMessage(), error);
+                return BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                    .errorMessage(Messages.EXCHANGE_SEND_FAIL + exchange).cause(error).build();
+            })
+            .then();
     }
 
     private Mono<Void> sendWithConfirm(String exchange, String routingKey, String jsonMessage) {
         OutboundMessage outboundMessage = new OutboundMessage(
-                exchange,
-                routingKey,
-                JSON_MESSAGE_PROPERTIES,
-                jsonMessage.getBytes(StandardCharsets.UTF_8));
+            exchange,
+            routingKey,
+            JSON_MESSAGE_PROPERTIES,
+            jsonMessage.getBytes(StandardCharsets.UTF_8));
         return sender.sendWithPublishConfirms(Mono.just(outboundMessage))
-                .single()
-                .flatMap(result -> result.isAck()
-                        ? Mono.empty()
-                        : Mono.error(new IllegalStateException(Messages.RABBITMQ_MESSAGE_UNCONFIRMED)));
+            .single()
+            .flatMap(result -> result.isAck()
+                ? Mono.empty()
+                : Mono.error(new IllegalStateException(Messages.RABBITMQ_MESSAGE_UNCONFIRMED)));
     }
 
     /**
@@ -83,7 +83,8 @@ public class RabbitMQUtil {
             return objectMapper.readValue(jsonMessage, targetClass);
         } catch (Exception e) {
             logger.error(Messages.TRANSFORM_MSG_FAIL, e.getMessage(), e);
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.TRANSFORM_MSG_FAIL).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                .errorMessage(Messages.TRANSFORM_MSG_FAIL).build();
         }
     }
 }

@@ -5,7 +5,8 @@ package com.hcsy.spring.common.constants;
  */
 public class Defaults {
 
-    private Defaults() {}
+    private Defaults() {
+    }
 
     // ===== 默认值 =====
     public static final String DEFAULT_ARTICLE = "未知文章";

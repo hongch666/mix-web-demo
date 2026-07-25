@@ -41,7 +41,7 @@ public class PermissionValidationAspect {
 
     @Around("@annotation(requirePermission)")
     public Object checkPermission(ProceedingJoinPoint joinPoint, RequirePermission requirePermission)
-            throws Throwable {
+        throws Throwable {
         Object result = joinPoint.proceed();
         if (!(result instanceof Mono<?> businessMono)) {
             return result;
@@ -53,29 +53,29 @@ public class PermissionValidationAspect {
                 return Mono.error(forbidden());
             }
             return validatePermission(joinPoint, requirePermission, currentUserId)
-                    .then(businessMono);
+                .then(businessMono);
         });
     }
 
     private Mono<Void> validatePermission(
-            ProceedingJoinPoint joinPoint, RequirePermission permission, Long currentUserId) {
+        ProceedingJoinPoint joinPoint, RequirePermission permission, Long currentUserId) {
         return userService.getById(currentUserId)
-                .filter(user -> Arrays.asList(permission.roles()).contains(user.getRole()))
-                .doOnNext(ignored -> logger.info(Messages.ADMIN_PASS))
-                .hasElement()
-                .flatMap(roleAllowed -> {
-                    if (roleAllowed) {
-                        return Mono.empty();
-                    }
-                    if (!permission.allowSelf()) {
-                        return Mono.error(forbidden());
-                    }
-                    return resolveTargetResourceId(joinPoint, permission)
-                            .flatMap(targetId -> checkOwnership(currentUserId, targetId, permission.businessType()))
-                            .filter(Boolean.TRUE::equals)
-                            .switchIfEmpty(Mono.error(forbidden()))
-                            .then();
-                });
+            .filter(user -> Arrays.asList(permission.roles()).contains(user.getRole()))
+            .doOnNext(ignored -> logger.info(Messages.ADMIN_PASS))
+            .hasElement()
+            .flatMap(roleAllowed -> {
+                if (roleAllowed) {
+                    return Mono.empty();
+                }
+                if (!permission.allowSelf()) {
+                    return Mono.error(forbidden());
+                }
+                return resolveTargetResourceId(joinPoint, permission)
+                    .flatMap(targetId -> checkOwnership(currentUserId, targetId, permission.businessType()))
+                    .filter(Boolean.TRUE::equals)
+                    .switchIfEmpty(Mono.error(forbidden()))
+                    .then();
+            });
     }
 
     private Mono<Long> resolveTargetResourceId(ProceedingJoinPoint joinPoint, RequirePermission permission) {
@@ -100,14 +100,14 @@ public class PermissionValidationAspect {
         List<Long> resourceIds;
         try {
             resourceIds = Arrays.stream(ids.split(","))
-                    .map(String::trim)
-                    .filter(value -> !value.isEmpty())
-                    .map(Long::valueOf)
-                    .distinct()
-                    .toList();
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .map(Long::valueOf)
+                .distinct()
+                .toList();
         } catch (NumberFormatException error) {
             return Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
-                    .errorMessage(Messages.TARGET_FAIL).cause(error).build());
+                .errorMessage(Messages.TARGET_FAIL).cause(error).build());
         }
         if (resourceIds.isEmpty()) {
             return Mono.empty();
@@ -116,13 +116,13 @@ public class PermissionValidationAspect {
         Flux<Long> owners;
         if ("article".equals(businessType)) {
             owners = articleService.listByIds(resourceIds)
-                    .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLES)))
-                    .map(article -> article.getUserId());
+                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLES)))
+                .map(article -> article.getUserId());
         } else if ("comment".equals(businessType)) {
             owners = Flux.fromIterable(resourceIds)
-                    .concatMap(id -> commentsService.getById(id)
-                            .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + id))))
-                    .map(comment -> comment.getUserId());
+                .concatMap(id -> commentsService.getById(id)
+                    .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + id))))
+                .map(comment -> comment.getUserId());
         } else {
             return Mono.empty();
         }
@@ -133,7 +133,7 @@ public class PermissionValidationAspect {
             Long owner = ownerIds.get(0);
             if (ownerIds.stream().anyMatch(id -> !owner.equals(id))) {
                 return Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
-                        .errorMessage(Messages.MULTIPLE_RESOURCE_OWNERS).build());
+                    .errorMessage(Messages.MULTIPLE_RESOURCE_OWNERS).build());
             }
             return Mono.just(owner);
         });
@@ -164,13 +164,13 @@ public class PermissionValidationAspect {
         }
         if ("article".equals(businessType)) {
             return articleService.getById(targetResourceId)
-                    .map(article -> currentUserId.equals(article.getUserId()))
-                    .defaultIfEmpty(false);
+                .map(article -> currentUserId.equals(article.getUserId()))
+                .defaultIfEmpty(false);
         }
         if ("comment".equals(businessType)) {
             return commentsService.getById(targetResourceId)
-                    .map(comment -> currentUserId.equals(comment.getUserId()))
-                    .defaultIfEmpty(false);
+                .map(comment -> currentUserId.equals(comment.getUserId()))
+                .defaultIfEmpty(false);
         }
         return Mono.just(false);
     }
@@ -195,7 +195,7 @@ public class PermissionValidationAspect {
     private Object getBody(ProceedingJoinPoint joinPoint, String requestedName) {
         @SuppressWarnings("null")
         String[] names = parameterNameDiscoverer.getParameterNames(
-                ((MethodSignature) joinPoint.getSignature()).getMethod());
+            ((MethodSignature) joinPoint.getSignature()).getMethod());
         Object[] arguments = joinPoint.getArgs();
         if (names != null) {
             for (int index = 0; index < names.length; index++) {

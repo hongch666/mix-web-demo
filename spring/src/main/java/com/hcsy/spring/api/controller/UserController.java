@@ -66,11 +66,11 @@ public class UserController {
     @GetMapping()
     @Operation(summary = "获取用户信息", description = "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "query", paramNames = { "page", "size",
-            "username" })
+        "username" })
     @ApiLog("获取用户信息")
     public Mono<Result<UserListVO>> listUsers(@ParameterObject @ModelAttribute UserQueryDTO queryDTO) {
         return userService.listUsersWithFilter(queryDTO.getPage(), queryDTO.getSize(), queryDTO.getUsername())
-                .map(Result::success);
+            .map(Result::success);
     }
 
     @GetMapping("/all")
@@ -110,10 +110,10 @@ public class UserController {
     @ApiLog("批量删除用户")
     public Mono<Result<Void>> deleteUsers(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Long::valueOf)
-                .toList();
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Long::valueOf)
+            .toList();
         return userService.deleteUsersAndStatusByIds(idList).thenReturn(Result.<Void>success());
     }
 
@@ -122,22 +122,22 @@ public class UserController {
     @ApiLog("查询用户")
     public Mono<Result<UserVO>> getUserById(@PathVariable Long id) {
         return userService.getById(id)
-                .flatMap(user -> Mono.zip(
-                        userService.getUserLoginStatus(id),
-                        tokenService.getUserOnlineDeviceCount(id))
-                        .map(status -> {
-                            UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
-                            userVO.setLoginStatus(status.getT1());
-                            userVO.setOnlineDeviceCount(status.getT2());
-                            return Result.success(userVO);
-                        }))
-                .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .flatMap(user -> Mono.zip(
+                userService.getUserLoginStatus(id),
+                tokenService.getUserOnlineDeviceCount(id))
+                .map(status -> {
+                    UserVO userVO = BeanUtil.copyProperties(user, UserVO.class);
+                    userVO.setLoginStatus(status.getT1());
+                    userVO.setOnlineDeviceCount(status.getT2());
+                    return Result.success(userVO);
+                }))
+            .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
     @PutMapping
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
     @ApiLog("修改用户")
     public Mono<Result<Void>> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
@@ -147,7 +147,7 @@ public class UserController {
     @PutMapping("/status/{id}")
     @Operation(summary = "修改用户状态", description = "根据用户ID修改用户状态（存储在Redis中）")
     @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single", paramNames = { "id" })
     @ApiLog("修改用户状态")
     public Mono<Result<Void>> updateUserStatus(@PathVariable Long id, @RequestParam String status) {
         return userService.updateUserStatus(id, status).thenReturn(Result.<Void>success());
@@ -179,7 +179,7 @@ public class UserController {
     @RequireInternalToken
     @ApiLog("生成 GitHub 登录票据")
     public Mono<Result<GithubTokenTicketVO>> createGithubTokenTicket(
-            @Valid @RequestBody GithubTokenTicketCreateDTO dto) {
+        @Valid @RequestBody GithubTokenTicketCreateDTO dto) {
         return userService.createGithubTokenTicket(dto).map(Result::success);
     }
 
@@ -216,12 +216,12 @@ public class UserController {
     @PostMapping("/force-logout/{user_id}")
     @Operation(summary = "手动下线用户", description = "管理员操作：将指定用户的所有登录会话强制下线")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-            "user_id" })
+        "user_id" })
     @ApiLog("手动下线用户")
     public Mono<Result<Void>> forceLogoutUser(@PathVariable("user_id") Long userId) {
         return userService.getById(userId)
-                .flatMap(user -> tokenService.forceLogoutUser(userId).thenReturn(Result.<Void>success()))
-                .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .flatMap(user -> tokenService.forceLogoutUser(userId).thenReturn(Result.<Void>success()))
+            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
     @PostMapping("/kick-other-devices")
@@ -237,12 +237,12 @@ public class UserController {
             }
 
             return tokenService.removeOtherSessions(userId, token)
-                    .flatMap(removed -> tokenService.getUserOnlineDeviceCount(userId)
-                            .map(remaining -> Result.success(KickOtherDevicesVO.builder()
-                                    .userId(userId)
-                                    .removedSessionCount(removed)
-                                    .onlineDeviceCount(remaining)
-                                    .build())));
+                .flatMap(removed -> tokenService.getUserOnlineDeviceCount(userId)
+                    .map(remaining -> Result.success(KickOtherDevicesVO.builder()
+                        .userId(userId)
+                        .removedSessionCount(removed)
+                        .onlineDeviceCount(remaining)
+                        .build())));
         });
     }
 
@@ -257,8 +257,8 @@ public class UserController {
     @Operation(summary = "发送邮箱验证码", description = "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景")
     @ApiLog("发送邮箱验证码")
     public Mono<Result<Void>> sendVerificationCode(@RequestParam(required = false) String email,
-            @RequestParam(required = false) String type,
-            @RequestBody(required = false) EmailCodeSendDTO body) {
+        @RequestParam(required = false) String type,
+        @RequestBody(required = false) EmailCodeSendDTO body) {
         String resolvedEmail = email;
         String resolvedType = type;
         if (body != null) {
@@ -283,7 +283,7 @@ public class UserController {
                 return Mono.just(Result.<Void>error(HttpCode.NOT_FOUND, Messages.EMAIL_UNREGISTER));
             }
             return emailVerificationService.sendVerificationCode(finalEmail, finalType)
-                    .thenReturn(Result.<Void>success());
+                .thenReturn(Result.<Void>success());
         });
     }
 
@@ -305,7 +305,7 @@ public class UserController {
     @PostMapping("/admin/reset-password/{user_id}")
     @Operation(summary = "管理员重置指定用户密码", description = "管理员操作：将指定用户ID的密码重置为配置中的重置密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = {
-            "user_id" })
+        "user_id" })
     @ApiLog("重置指定用户密码")
     public Mono<Result<Void>> resetUserPassword(@PathVariable("user_id") Long userId) {
         return userService.resetUserPassword(userId).thenReturn(Result.<Void>success());

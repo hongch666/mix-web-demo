@@ -43,8 +43,10 @@ public class LoggerUtil {
     /**
      * 直接写入日志到文件
      *
-     * @param message 日志消息
-     * @param level   日志级别
+     * @param message
+     *                    日志消息
+     * @param level
+     *                    日志级别
      */
     public static void writeLog(String message, String level) {
         if (staticLogPath == null) {
@@ -69,7 +71,7 @@ public class LoggerUtil {
 
             // 写入文件，指定UTF-8编码
             try (OutputStreamWriter writer = new OutputStreamWriter(
-                    new FileOutputStream(logFile, true), StandardCharsets.UTF_8)) {
+                new FileOutputStream(logFile, true), StandardCharsets.UTF_8)) {
                 writer.write(logEntry);
                 writer.flush();
             }

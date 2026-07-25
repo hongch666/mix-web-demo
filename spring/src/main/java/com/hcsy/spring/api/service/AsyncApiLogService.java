@@ -14,7 +14,8 @@ public interface AsyncApiLogService {
      * 异步发送 API 日志到消息队列
      * 此方法会在后台线程池中执行，不阻塞主流程
      *
-     * @param apiLogMessage API 日志消息 Map
+     * @param apiLogMessage
+     *                          API 日志消息 Map
      */
     Mono<Void> sendAsync(Map<String, Object> apiLogMessage);
 }

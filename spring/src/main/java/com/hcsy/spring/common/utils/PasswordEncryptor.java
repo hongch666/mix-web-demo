@@ -16,7 +16,8 @@ public class PasswordEncryptor {
     /**
      * 加密密码
      *
-     * @param rawPassword 原始密码
+     * @param rawPassword
+     *                        原始密码
      * @return 加密后的密码
      */
     public String encryptPassword(String rawPassword) {
@@ -26,8 +27,10 @@ public class PasswordEncryptor {
     /**
      * 验证密码是否正确
      *
-     * @param rawPassword     原始密码（用户输入）
-     * @param encodedPassword 数据库中的加密密码
+     * @param rawPassword
+     *                            原始密码（用户输入）
+     * @param encodedPassword
+     *                            数据库中的加密密码
      * @return 是否匹配
      */
     public boolean matchPassword(String rawPassword, String encodedPassword) {

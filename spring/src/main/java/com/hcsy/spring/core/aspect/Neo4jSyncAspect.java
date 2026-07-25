@@ -5,8 +5,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.api.service.AsyncNeo4jSyncService;
+import com.hcsy.spring.core.annotation.Neo4jSync;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -26,14 +26,14 @@ public class Neo4jSyncAspect {
         if (result instanceof Mono<?> monoResult) {
             // 使用 doOnSuccess 发后即忘：主流程不等待 Neo4j 同步完成
             return monoResult
-                    .doOnSuccess(value -> triggerNeo4jSync(joinPoint, description).subscribe());
+                .doOnSuccess(value -> triggerNeo4jSync(joinPoint, description).subscribe());
         }
         return result;
     }
 
     private Mono<Void> triggerNeo4jSync(ProceedingJoinPoint joinPoint, String description) {
         return asyncNeo4jSyncService.syncNeo4jAsync(
-                joinPoint.getSignature().toShortString(),
-                description);
+            joinPoint.getSignature().toShortString(),
+            description);
     }
 }

@@ -31,16 +31,16 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     @ArticleSync(action = "collect", description = Messages.ARTICLE_SYNC_COLLECT)
     public Mono<Boolean> addCollect(Long articleId, Long userId) {
         Mono<Boolean> operation = articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
-                .flatMap(exists -> {
-                    if (exists) {
-                        return Mono.just(false);
-                    }
-                    ArticleCollect collect = new ArticleCollect();
-                    collect.setArticleId(articleId);
-                    collect.setUserId(userId);
-                    collect.setCreatedTime(LocalDateTime.now());
-                    return articleCollectRepository.save(collect).thenReturn(true);
-                });
+            .flatMap(exists -> {
+                if (exists) {
+                    return Mono.just(false);
+                }
+                ArticleCollect collect = new ArticleCollect();
+                collect.setArticleId(articleId);
+                collect.setUserId(userId);
+                collect.setCreatedTime(LocalDateTime.now());
+                return articleCollectRepository.save(collect).thenReturn(true);
+            });
         return transactionalOperator.transactional(operation);
     }
 
@@ -49,11 +49,11 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     @ArticleSync(action = "uncollect", description = Messages.ARTICLE_SYNC_UNCOLLECT)
     public Mono<Boolean> removeCollect(Long articleId, Long userId) {
         return transactionalOperator.transactional(
-                articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
-                        .flatMap(exists -> exists
-                                ? articleCollectRepository.deleteByArticleIdAndUserId(articleId, userId)
-                                        .thenReturn(true)
-                                : Mono.just(false)));
+            articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
+                .flatMap(exists -> exists
+                    ? articleCollectRepository.deleteByArticleIdAndUserId(articleId, userId)
+                        .thenReturn(true)
+                    : Mono.just(false)));
     }
 
     @Override
@@ -64,11 +64,11 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     @Override
     public Mono<PageDTO<ArticleCollectVO>> listUserCollects(Long userId, long page, long size) {
         Mono<List<ArticleCollectVO>> records = articleCollectRepository
-                .findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size))
-                .collectList()
-                .flatMap(assembler::toCollectVOs);
+            .findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size))
+            .collectList()
+            .flatMap(assembler::toCollectVOs);
         return Mono.zip(records, articleCollectRepository.countByUserId(userId))
-                .map(result -> page(page, size, result.getT2(), result.getT1()));
+            .map(result -> page(page, size, result.getT2(), result.getT1()));
     }
 
     @Override

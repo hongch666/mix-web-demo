@@ -58,15 +58,15 @@ public class CommentsServiceImpl implements CommentsService {
     @SuppressWarnings("null")
     @Override
     public Mono<PageDTO<Comments>> listCommentsByArticleId(
-            long page, long size, Long articleId, String sortWay) {
+        long page, long size, Long articleId, String sortWay) {
         return userRepository.findIdsByRoleNot(AI_ROLE).collectList().flatMap(userIds -> {
             if (userIds.isEmpty()) {
                 return Mono.just(emptyPage(page, size));
             }
             Criteria criteria = Criteria.where("article_id").is(articleId).and("user_id").in(userIds);
             Sort sort = "star".equals(sortWay)
-                    ? Sort.by(Sort.Direction.DESC, "star")
-                    : Sort.by(Sort.Direction.DESC, "create_time");
+                ? Sort.by(Sort.Direction.DESC, "star")
+                : Sort.by(Sort.Direction.DESC, "create_time");
             return queryPage(criteria, page, size, sort);
         });
     }
@@ -79,7 +79,7 @@ public class CommentsServiceImpl implements CommentsService {
                 return Flux.empty();
             }
             Query query = Query.query(Criteria.where("article_id").is(articleId).and("user_id").in(userIds))
-                    .sort(Sort.by(Sort.Direction.DESC, "create_time"));
+                .sort(Sort.by(Sort.Direction.DESC, "create_time"));
             return entityTemplate.select(Comments.class).matching(query).all();
         });
     }
@@ -94,14 +94,14 @@ public class CommentsServiceImpl implements CommentsService {
     @Override
     public Mono<Comments> update(Comments comments) {
         return transactionalOperator.transactional(
-                commentsRepository.findById(comments.getId())
-                        .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + comments.getId())))
-                        .flatMap(existing -> {
-                            // 仅允许更新内容和评分，保留 userId/articleId/createTime 防止越权篡改
-                            existing.setContent(comments.getContent());
-                            existing.setStar(comments.getStar());
-                            return commentsRepository.save(existing);
-                        }));
+            commentsRepository.findById(comments.getId())
+                .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + comments.getId())))
+                .flatMap(existing -> {
+                    // 仅允许更新内容和评分，保留 userId/articleId/createTime 防止越权篡改
+                    existing.setContent(comments.getContent());
+                    existing.setStar(comments.getStar());
+                    return commentsRepository.save(existing);
+                }));
     }
 
     @SuppressWarnings("null")
@@ -114,8 +114,8 @@ public class CommentsServiceImpl implements CommentsService {
     @Override
     public Mono<Void> deleteComment(Long id) {
         Mono<Void> operation = commentsRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + id)))
-                .flatMap(commentsRepository::delete);
+            .switchIfEmpty(Mono.error(notFound(Messages.COMMENT_ID + id)))
+            .flatMap(commentsRepository::delete);
         return transactionalOperator.transactional(operation);
     }
 
@@ -123,36 +123,36 @@ public class CommentsServiceImpl implements CommentsService {
     @Override
     public Mono<Void> deleteComments(List<Long> ids) {
         List<Long> distinctIds = ids == null ? List.of()
-                : ids.stream()
-                        .filter(id -> id != null).distinct().toList();
+            : ids.stream()
+                .filter(id -> id != null).distinct().toList();
         if (distinctIds.isEmpty()) {
             return Mono.empty();
         }
         Mono<Void> operation = commentsRepository.findAllById(distinctIds)
-                .count()
-                .filter(count -> count == distinctIds.size())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_COMMENTS)))
-                .then(commentsRepository.deleteAllById(distinctIds));
+            .count()
+            .filter(count -> count == distinctIds.size())
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_COMMENTS)))
+            .then(commentsRepository.deleteAllById(distinctIds));
         return transactionalOperator.transactional(operation);
     }
 
     @SuppressWarnings("null")
     private Mono<PageDTO<Comments>> listWithFilter(
-            long page, long size, CommentsQueryDTO queryDTO, boolean aiOnly) {
+        long page, long size, CommentsQueryDTO queryDTO, boolean aiOnly) {
         Flux<Long> articleIds = hasText(queryDTO.getArticleTitle())
-                ? articleRepository.findByTitleContaining(queryDTO.getArticleTitle()).map(Article::getId)
-                : Flux.empty();
+            ? articleRepository.findByTitleContaining(queryDTO.getArticleTitle()).map(Article::getId)
+            : Flux.empty();
         Flux<Long> userIds;
         if (aiOnly) {
             userIds = hasText(queryDTO.getUsername())
-                    ? userRepository.findByNameContaining(queryDTO.getUsername())
-                            .filter(user -> AI_ROLE.equals(user.getRole())).map(User::getId)
-                    : userRepository.findIdsByRole(AI_ROLE);
+                ? userRepository.findByNameContaining(queryDTO.getUsername())
+                    .filter(user -> AI_ROLE.equals(user.getRole())).map(User::getId)
+                : userRepository.findIdsByRole(AI_ROLE);
         } else {
             userIds = hasText(queryDTO.getUsername())
-                    ? userRepository.findByNameContaining(queryDTO.getUsername())
-                            .filter(user -> !AI_ROLE.equals(user.getRole())).map(User::getId)
-                    : userRepository.findIdsByRoleNot(AI_ROLE);
+                ? userRepository.findByNameContaining(queryDTO.getUsername())
+                    .filter(user -> !AI_ROLE.equals(user.getRole())).map(User::getId)
+                : userRepository.findIdsByRoleNot(AI_ROLE);
         }
 
         Mono<List<Long>> articleIdList = articleIds.collectList();

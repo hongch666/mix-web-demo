@@ -20,9 +20,9 @@ public class NestjsClient {
 
     public Mono<Result<?>> sendEmailCode(InternalEmailCodeSendDTO dto) {
         ServiceRequestOptions options = ServiceRequestOptions.builder()
-                .body(dto)
-                .build();
+            .body(dto)
+            .build();
         return serviceWebClient.request(HttpMethod.POST, "nestjs", "/email/send-code", options, Duration.ofSeconds(3),
-                Messages.NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG);
+            Messages.NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG);
     }
 }

@@ -68,8 +68,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<UserListVO> listUsersWithFilter(long page, long size, String username) {
         Flux<User> query = hasText(username)
-                ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
-                : userRepository.findByRoleNotOrderByIdAsc(AI_ROLE);
+            ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
+            : userRepository.findByRoleNotOrderByIdAsc(AI_ROLE);
 
         return query.collectList().flatMap(users -> {
             if (users.isEmpty()) {
@@ -77,8 +77,8 @@ public class UserServiceImpl implements UserService {
             }
             List<String> statusKeys = users.stream().map(user -> RedisKeys.userStatus(user.getId())).toList();
             return redisUtil.batchGet(statusKeys)
-                    .onErrorReturn(List.of())
-                    .flatMap(statuses -> toPagedUserList(users, statuses, page, size));
+                .onErrorReturn(List.of())
+                .flatMap(statuses -> toPagedUserList(users, statuses, page, size));
         });
     }
 
@@ -94,15 +94,15 @@ public class UserServiceImpl implements UserService {
         List<User> paged = users.subList(from, to);
 
         return Flux.fromIterable(paged)
-                .flatMapSequential(user -> tokenService.getUserOnlineDeviceCount(user.getId())
-                        .map(deviceCount -> {
-                            UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
-                            vo.setLoginStatus(user.getLoginStatus());
-                            vo.setOnlineDeviceCount(deviceCount);
-                            return vo;
-                        }), 8)
-                .collectList()
-                .map(records -> userList(records, users.size()));
+            .flatMapSequential(user -> tokenService.getUserOnlineDeviceCount(user.getId())
+                .map(deviceCount -> {
+                    UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
+                    vo.setLoginStatus(user.getLoginStatus());
+                    vo.setOnlineDeviceCount(deviceCount);
+                    return vo;
+                }), 8)
+            .collectList()
+            .map(records -> userList(records, users.size()));
     }
 
     @SuppressWarnings("null")
@@ -110,10 +110,10 @@ public class UserServiceImpl implements UserService {
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_DELETE)
     public Mono<Void> deleteUserAndStatusById(Long id) {
         Mono<Void> databaseOperation = userRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-                .flatMap(userRepository::delete);
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
+            .flatMap(userRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-                .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
+            .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
     }
 
     @SuppressWarnings("null")
@@ -125,15 +125,15 @@ public class UserServiceImpl implements UserService {
             return Mono.empty();
         }
         Mono<Void> databaseOperation = userRepository.findAllById(distinctIds)
-                .count()
-                .filter(count -> count == distinctIds.size())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USERS)))
-                .then(userRepository.deleteAllById(distinctIds));
+            .count()
+            .filter(count -> count == distinctIds.size())
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USERS)))
+            .then(userRepository.deleteAllById(distinctIds));
         Mono<Void> clearStatuses = Flux.fromIterable(distinctIds)
-                .flatMap(id -> redisUtil.delete(RedisKeys.userStatus(id)), 8)
-                .then();
+            .flatMap(id -> redisUtil.delete(RedisKeys.userStatus(id)), 8)
+            .then();
         return transactionalOperator.transactional(databaseOperation)
-                .then(Mono.when(evictAllUsersCache(), clearStatuses));
+            .then(Mono.when(evictAllUsersCache(), clearStatuses));
     }
 
     @Override
@@ -154,10 +154,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<UserLoginVO> login(LoginDTO loginDTO) {
         return validateLoginCaptcha(loginDTO.getCaptchaId(), loginDTO.getCaptchaText())
-                .then(findByUsername(loginDTO.getName())
-                        .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN))))
-                .flatMap(user -> validatePassword(loginDTO.getPassword(), user).then(loginUser(user)))
-                .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login));
+            .then(findByUsername(loginDTO.getName())
+                .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN))))
+            .flatMap(user -> validatePassword(loginDTO.getPassword(), user).then(loginUser(user)))
+            .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login));
     }
 
     @Override
@@ -165,46 +165,46 @@ public class UserServiceImpl implements UserService {
         Mono<Boolean> captchaValid = imageCaptchaService.verifyCaptcha(dto.getCaptchaId(), dto.getCaptchaText());
         Mono<Boolean> emailCodeValid = emailVerificationService.verifyCode(dto.getEmail(), dto.getVerificationCode());
         return Mono.zip(captchaValid, emailCodeValid)
-                .flatMap(valid -> {
-                    if (!valid.getT1()) {
-                        return Mono.error(unauthorized(Messages.IMAGE_CAPTCHA_INVALID));
-                    }
-                    if (!valid.getT2()) {
-                        return Mono.error(unauthorized(Messages.VERIFY_CODE));
-                    }
-                    return findByEmail(dto.getEmail())
-                            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER_REGISTER)));
-                })
-                .flatMap(this::loginUser)
-                .flatMap(login -> imageCaptchaService.deleteCaptcha(dto.getCaptchaId()).thenReturn(login));
+            .flatMap(valid -> {
+                if (!valid.getT1()) {
+                    return Mono.error(unauthorized(Messages.IMAGE_CAPTCHA_INVALID));
+                }
+                if (!valid.getT2()) {
+                    return Mono.error(unauthorized(Messages.VERIFY_CODE));
+                }
+                return findByEmail(dto.getEmail())
+                    .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER_REGISTER)));
+            })
+            .flatMap(this::loginUser)
+            .flatMap(login -> imageCaptchaService.deleteCaptcha(dto.getCaptchaId()).thenReturn(login));
     }
 
     private Mono<UserLoginVO> loginUser(User user) {
         return tokenService.createLoginSession(user.getId(), user.getName())
-                .flatMap(login -> markLastLoginTime(user).thenReturn(login));
+            .flatMap(login -> markLastLoginTime(user).thenReturn(login));
     }
 
     @Override
     public Mono<GithubTokenTicketVO> createGithubTokenTicket(GithubTokenTicketCreateDTO dto) {
         return userRepository.findById(dto.getUserId().longValue())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-                .flatMap(user -> tokenService.createLoginSession(user.getId(), user.getName()))
-                .flatMap(login -> {
-                    String ticket = UUID.randomUUID().toString().replace("-", "");
-                    return Mono.fromCallable(() -> objectMapper.writeValueAsString(login))
-                            .flatMap(json -> redisUtil.set(buildGithubTicketKey(ticket), json,
-                                    GITHUB_TOKEN_TICKET_TTL_SECONDS))
-                            .onErrorResume(error -> tokenService.removeSessionByAccessToken(login.getAccessToken())
-                                    .then(Mono.error(BusinessException.builder()
-                                            .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
-                                            .errorMessage(Messages.GITHUB_LOGIN_TICKET_CACHE_FAILED)
-                                            .cause(error).build())))
-                            .then(evictAllUsersCache())
-                            .thenReturn(GithubTokenTicketVO.builder()
-                                    .ticket(ticket)
-                                    .expiresIn(GITHUB_TOKEN_TICKET_TTL_SECONDS)
-                                    .build());
-                });
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
+            .flatMap(user -> tokenService.createLoginSession(user.getId(), user.getName()))
+            .flatMap(login -> {
+                String ticket = UUID.randomUUID().toString().replace("-", "");
+                return Mono.fromCallable(() -> objectMapper.writeValueAsString(login))
+                    .flatMap(json -> redisUtil.set(buildGithubTicketKey(ticket), json,
+                        GITHUB_TOKEN_TICKET_TTL_SECONDS))
+                    .onErrorResume(error -> tokenService.removeSessionByAccessToken(login.getAccessToken())
+                        .then(Mono.error(BusinessException.builder()
+                            .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                            .errorMessage(Messages.GITHUB_LOGIN_TICKET_CACHE_FAILED)
+                            .cause(error).build())))
+                    .then(evictAllUsersCache())
+                    .thenReturn(GithubTokenTicketVO.builder()
+                        .ticket(ticket)
+                        .expiresIn(GITHUB_TOKEN_TICKET_TTL_SECONDS)
+                        .build());
+            });
     }
 
     @Override
@@ -212,18 +212,18 @@ public class UserServiceImpl implements UserService {
         String ticket = dto.getTicket() == null ? "" : dto.getTicket().trim();
         if (ticket.isEmpty()) {
             return Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
-                    .errorMessage(Messages.GITHUB_TOKEN_TICKET_EMPTY).build());
+                .errorMessage(Messages.GITHUB_TOKEN_TICKET_EMPTY).build());
         }
         String key = buildGithubTicketKey(ticket);
         return redisUtil.get(key)
-                .switchIfEmpty(Mono.error(unauthorized(Messages.GITHUB_TOKEN_TICKET_EXPIRED)))
-                .flatMap(json -> redisUtil.delete(key)
-                        .then(Mono.fromCallable(() -> objectMapper.readValue(json, UserLoginVO.class))))
-                .onErrorMap(error -> error instanceof BusinessException ? error
-                        : BusinessException.builder()
-                                .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
-                                .errorMessage(Messages.GITHUB_TOKEN_TICKET_PARSE_FAILED)
-                                .cause(error).build());
+            .switchIfEmpty(Mono.error(unauthorized(Messages.GITHUB_TOKEN_TICKET_EXPIRED)))
+            .flatMap(json -> redisUtil.delete(key)
+                .then(Mono.fromCallable(() -> objectMapper.readValue(json, UserLoginVO.class))))
+            .onErrorMap(error -> error instanceof BusinessException ? error
+                : BusinessException.builder()
+                    .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                    .errorMessage(Messages.GITHUB_TOKEN_TICKET_PARSE_FAILED)
+                    .cause(error).build());
     }
 
     @Override
@@ -231,55 +231,55 @@ public class UserServiceImpl implements UserService {
         Mono<Boolean> emailAvailable = findByEmail(dto.getEmail()).hasElement().map(exists -> !exists);
         Mono<Boolean> codeValid = emailVerificationService.verifyCode(dto.getEmail(), dto.getVerificationCode());
         return Mono.zip(emailAvailable, codeValid)
-                .flatMap(valid -> {
-                    if (!valid.getT1()) {
-                        return Mono.error(conflict(Messages.EMAIL_REGISTER));
-                    }
-                    if (!valid.getT2()) {
-                        return Mono.error(unauthorized(Messages.VERIFY_CODE));
-                    }
-                    User user = BeanUtil.copyProperties(dto, User.class);
-                    user.setRole("user");
-                    user.setAuthProvider("local");
-                    return encryptPassword(user.getPassword()).flatMap(password -> {
-                        user.setPassword(password);
-                        return saveUserAndStatus(user);
-                    });
-                })
-                .then(emailVerificationService.markEmailAsVerified(dto.getEmail()))
-                .then(evictAllUsersCache());
+            .flatMap(valid -> {
+                if (!valid.getT1()) {
+                    return Mono.error(conflict(Messages.EMAIL_REGISTER));
+                }
+                if (!valid.getT2()) {
+                    return Mono.error(unauthorized(Messages.VERIFY_CODE));
+                }
+                User user = BeanUtil.copyProperties(dto, User.class);
+                user.setRole("user");
+                user.setAuthProvider("local");
+                return encryptPassword(user.getPassword()).flatMap(password -> {
+                    user.setPassword(password);
+                    return saveUserAndStatus(user);
+                });
+            })
+            .then(emailVerificationService.markEmailAsVerified(dto.getEmail()))
+            .then(evictAllUsersCache());
     }
 
     @Override
     public Mono<UserListVO> getAllUsers(String username) {
         boolean useCache = !hasText(username);
         Mono<UserListVO> cached = useCache
-                ? redisUtil.get(ALL_USERS_CACHE_KEY)
-                        .flatMap(json -> Mono.fromCallable(() -> objectMapper.readValue(json, UserListVO.class)))
-                        .onErrorResume(error -> {
-                            logger.error(Messages.USER_LIST_CACHE_READ_FAILED, error.getMessage(), error);
-                            return Mono.empty();
-                        })
-                : Mono.empty();
+            ? redisUtil.get(ALL_USERS_CACHE_KEY)
+                .flatMap(json -> Mono.fromCallable(() -> objectMapper.readValue(json, UserListVO.class)))
+                .onErrorResume(error -> {
+                    logger.error(Messages.USER_LIST_CACHE_READ_FAILED, error.getMessage(), error);
+                    return Mono.empty();
+                })
+            : Mono.empty();
         return cached.switchIfEmpty(Mono.defer(() -> loadAllUsers(username)
-                .flatMap(result -> useCache ? writeUsersCache(result).thenReturn(result) : Mono.just(result))));
+            .flatMap(result -> useCache ? writeUsersCache(result).thenReturn(result) : Mono.just(result))));
     }
 
     private Mono<UserListVO> loadAllUsers(String username) {
         Flux<User> users = hasText(username)
-                ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
-                : userRepository.findByRoleNotOrderByIdAsc(AI_ROLE);
+            ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
+            : userRepository.findByRoleNotOrderByIdAsc(AI_ROLE);
         return users.map(user -> BeanUtil.copyProperties(user, UserVO.class))
-                .collectList()
-                .map(records -> userList(records, records.size()));
+            .collectList()
+            .map(records -> userList(records, records.size()));
     }
 
     @Override
     public Mono<UserListVO> getAllAiUsers() {
         return userRepository.findByRoleOrderByIdAsc(AI_ROLE)
-                .map(user -> BeanUtil.copyProperties(user, UserVO.class))
-                .collectList()
-                .map(records -> userList(records, records.size()));
+            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+            .collectList()
+            .map(records -> userList(records, records.size()));
     }
 
     @Override
@@ -309,16 +309,16 @@ public class UserServiceImpl implements UserService {
             user.setAuthProvider("local");
         }
         Mono<String> password = isEncoded(user.getPassword())
-                ? Mono.justOrEmpty(user.getPassword())
-                : encryptPassword(user.getPassword());
+            ? Mono.justOrEmpty(user.getPassword())
+            : encryptPassword(user.getPassword());
         return password.defaultIfEmpty("")
-                .flatMap(encoded -> {
-                    if (!encoded.isEmpty()) {
-                        user.setPassword(encoded);
-                    }
-                    return transactionalOperator.transactional(userRepository.save(user));
-                })
-                .flatMap(saved -> redisUtil.set(RedisKeys.userStatus(saved.getId()), "0").thenReturn(saved));
+            .flatMap(encoded -> {
+                if (!encoded.isEmpty()) {
+                    user.setPassword(encoded);
+                }
+                return transactionalOperator.transactional(userRepository.save(user));
+            })
+            .flatMap(saved -> redisUtil.set(RedisKeys.userStatus(saved.getId()), "0").thenReturn(saved));
     }
 
     @Override
@@ -338,74 +338,74 @@ public class UserServiceImpl implements UserService {
         user.setRole("user");
         user.setAuthProvider("local");
         String rawPassword = hasText(user.getPassword()) ? user.getPassword()
-                : userPasswordProperties.getDefaultPassword();
+            : userPasswordProperties.getDefaultPassword();
         return encryptPassword(rawPassword)
-                .flatMap(password -> {
-                    user.setPassword(password);
-                    return saveUserAndStatus(user);
-                })
-                .then(evictAllUsersCache());
+            .flatMap(password -> {
+                user.setPassword(password);
+                return saveUserAndStatus(user);
+            })
+            .then(evictAllUsersCache());
     }
 
     @Override
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_USER_UPDATE)
     public Mono<Void> updateUserInfo(UserUpdateDTO dto) {
         return userRepository.findById(dto.getId().longValue())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-                .flatMap(existing -> {
-                    User user = BeanUtil.copyProperties(dto, User.class);
-                    user.setGithubId(existing.getGithubId());
-                    user.setGithubLogin(existing.getGithubLogin());
-                    user.setGithubUrl(existing.getGithubUrl());
-                    user.setAuthProvider(existing.getAuthProvider());
-                    user.setLastLoginAt(existing.getLastLoginAt());
-                    user.setCreateAt(existing.getCreateAt());
-                    user.setUpdateAt(LocalDateTime.now());
-                    Mono<String> password = hasText(dto.getPassword())
-                            ? encryptPassword(dto.getPassword())
-                            : Mono.just(existing.getPassword());
-                    return password.flatMap(encoded -> {
-                        user.setPassword(encoded);
-                        return transactionalOperator.transactional(userRepository.save(user));
-                    });
-                })
-                .then(evictAllUsersCache());
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
+            .flatMap(existing -> {
+                User user = BeanUtil.copyProperties(dto, User.class);
+                user.setGithubId(existing.getGithubId());
+                user.setGithubLogin(existing.getGithubLogin());
+                user.setGithubUrl(existing.getGithubUrl());
+                user.setAuthProvider(existing.getAuthProvider());
+                user.setLastLoginAt(existing.getLastLoginAt());
+                user.setCreateAt(existing.getCreateAt());
+                user.setUpdateAt(LocalDateTime.now());
+                Mono<String> password = hasText(dto.getPassword())
+                    ? encryptPassword(dto.getPassword())
+                    : Mono.just(existing.getPassword());
+                return password.flatMap(encoded -> {
+                    user.setPassword(encoded);
+                    return transactionalOperator.transactional(userRepository.save(user));
+                });
+            })
+            .then(evictAllUsersCache());
     }
 
     @Override
     public Mono<Void> resetPassword(ResetPasswordDTO dto) {
         return emailVerificationService.verifyCode(dto.getEmail(), dto.getVerificationCode())
-                .filter(Boolean.TRUE::equals)
-                .switchIfEmpty(Mono.error(unauthorized(Messages.VERIFY_CODE)))
-                .then(findByEmail(dto.getEmail()).switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER))))
-                .flatMap(user -> encryptPassword(dto.getNewPassword()).flatMap(password -> {
-                    user.setPassword(password);
-                    return transactionalOperator.transactional(userRepository.save(user));
-                }))
-                .then();
+            .filter(Boolean.TRUE::equals)
+            .switchIfEmpty(Mono.error(unauthorized(Messages.VERIFY_CODE)))
+            .then(findByEmail(dto.getEmail()).switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER))))
+            .flatMap(user -> encryptPassword(dto.getNewPassword()).flatMap(password -> {
+                user.setPassword(password);
+                return transactionalOperator.transactional(userRepository.save(user));
+            }))
+            .then();
     }
 
     @Override
     public Mono<Void> resetAllPasswords() {
         return userRepository.count()
-                .filter(count -> count > 0)
-                .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
-                        .errorMessage(Messages.PASSWORD_NO_USER).build()))
-                .then(encryptPassword(userPasswordProperties.getResetPassword()))
-                .flatMap(userRepository::updateAllPasswords)
-                .then();
+            .filter(count -> count > 0)
+            .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
+                .errorMessage(Messages.PASSWORD_NO_USER).build()))
+            .then(encryptPassword(userPasswordProperties.getResetPassword()))
+            .flatMap(userRepository::updateAllPasswords)
+            .then();
     }
 
     @SuppressWarnings("null")
     @Override
     public Mono<Void> resetUserPassword(Long userId) {
         return userRepository.findById(userId)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-                .flatMap(user -> encryptPassword(userPasswordProperties.getResetPassword()).flatMap(password -> {
-                    user.setPassword(password);
-                    return transactionalOperator.transactional(userRepository.save(user));
-                }))
-                .then();
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
+            .flatMap(user -> encryptPassword(userPasswordProperties.getResetPassword()).flatMap(password -> {
+                user.setPassword(password);
+                return transactionalOperator.transactional(userRepository.save(user));
+            }))
+            .then();
     }
 
     @SuppressWarnings("null")
@@ -427,9 +427,9 @@ public class UserServiceImpl implements UserService {
 
     private Mono<Void> validateLoginCaptcha(String captchaId, String captchaText) {
         return imageCaptchaService.verifyCaptcha(captchaId, captchaText)
-                .filter(Boolean.TRUE::equals)
-                .switchIfEmpty(Mono.error(unauthorized(Messages.IMAGE_CAPTCHA_INVALID)))
-                .then();
+            .filter(Boolean.TRUE::equals)
+            .switchIfEmpty(Mono.error(unauthorized(Messages.IMAGE_CAPTCHA_INVALID)))
+            .then();
     }
 
     private Mono<Void> validatePassword(String rawPassword, User user) {
@@ -437,35 +437,35 @@ public class UserServiceImpl implements UserService {
             return Mono.error(unauthorized(Messages.GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED));
         }
         return Mono.fromCallable(() -> passwordEncryptor.matchPassword(rawPassword, user.getPassword()))
-                .subscribeOn(Schedulers.boundedElastic())
-                .filter(Boolean.TRUE::equals)
-                .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN)))
-                .then();
+            .subscribeOn(Schedulers.boundedElastic())
+            .filter(Boolean.TRUE::equals)
+            .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN)))
+            .then();
     }
 
     private Mono<String> encryptPassword(String rawPassword) {
         return Mono.fromCallable(() -> passwordEncryptor.encryptPassword(rawPassword))
-                .subscribeOn(Schedulers.boundedElastic());
+            .subscribeOn(Schedulers.boundedElastic());
     }
 
     private Mono<Void> writeUsersCache(UserListVO result) {
         long ttl = result.getTotal() == 0 ? 10 * 60L : ALL_USERS_CACHE_TTL_SECONDS;
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(result))
-                .flatMap(json -> redisUtil.set(ALL_USERS_CACHE_KEY, json, ttl))
-                .onErrorResume(error -> {
-                    logger.error(Messages.USER_LIST_CACHE_WRITE_FAILED, error.getMessage(), error);
-                    return Mono.just(false);
-                })
-                .then();
+            .flatMap(json -> redisUtil.set(ALL_USERS_CACHE_KEY, json, ttl))
+            .onErrorResume(error -> {
+                logger.error(Messages.USER_LIST_CACHE_WRITE_FAILED, error.getMessage(), error);
+                return Mono.just(false);
+            })
+            .then();
     }
 
     private Mono<Void> evictAllUsersCache() {
         return redisUtil.delete(ALL_USERS_CACHE_KEY)
-                .onErrorResume(error -> {
-                    logger.error(Messages.USER_LIST_CACHE_EVICT_FAILED, error.getMessage(), error);
-                    return Mono.just(false);
-                })
-                .then();
+            .onErrorResume(error -> {
+                logger.error(Messages.USER_LIST_CACHE_EVICT_FAILED, error.getMessage(), error);
+                return Mono.just(false);
+            })
+            .then();
     }
 
     private UserListVO userList(List<UserVO> users, long total) {
@@ -478,7 +478,7 @@ public class UserServiceImpl implements UserService {
 
     private boolean isEncoded(String password) {
         return password != null && (password.startsWith("$2a$") || password.startsWith("$2b$")
-                || password.startsWith("$2x$") || password.startsWith("$2y$"));
+            || password.startsWith("$2x$") || password.startsWith("$2y$"));
     }
 
     private List<Long> normalizeIds(List<Long> ids) {

@@ -1,9 +1,10 @@
 package com.hcsy.spring.core.properties;
 
-import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
+
+import jakarta.validation.constraints.NotBlank;
 
 @Configuration
 @ConfigurationProperties(prefix = "user")

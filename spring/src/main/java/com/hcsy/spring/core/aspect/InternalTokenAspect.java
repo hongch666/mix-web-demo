@@ -34,7 +34,8 @@ public class InternalTokenAspect {
      * 环绕切面：在执行带有 @RequireInternalToken 注解的方法前验证内部令牌
      */
     @Around("@annotation(requireInternalToken)")
-    public Object validateInternalToken(ProceedingJoinPoint pjp, RequireInternalToken requireInternalToken) throws Throwable {
+    public Object validateInternalToken(ProceedingJoinPoint pjp, RequireInternalToken requireInternalToken)
+        throws Throwable {
         Object result = pjp.proceed();
         if (result instanceof Mono<?> monoResult) {
             return Mono.deferContextual(ctx -> validate(ctx, pjp, requireInternalToken).then(monoResult));
@@ -43,13 +44,13 @@ public class InternalTokenAspect {
     }
 
     private Mono<Void> validate(reactor.util.context.ContextView ctx, ProceedingJoinPoint pjp,
-            RequireInternalToken requireInternalToken) {
+        RequireInternalToken requireInternalToken) {
         try {
             String internalToken = UserContext.getInternalToken(ctx);
             if (internalToken == null || internalToken.isEmpty()) {
                 logger.error(Messages.INTERNAL_TOKEN_MISSING);
                 return Mono.error(BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED)
-                        .errorMessage(Messages.INTERNAL_TOKEN_MISSING).build());
+                    .errorMessage(Messages.INTERNAL_TOKEN_MISSING).build());
             }
             internalTokenUtil.validateInternalToken(internalToken);
             String requiredServiceName = requireInternalToken.value();
@@ -57,9 +58,9 @@ public class InternalTokenAspect {
                 String tokenServiceName = internalTokenUtil.extractServiceName(internalToken);
                 if (!requiredServiceName.equals(tokenServiceName)) {
                     logger.error(Messages.SERVICE_NAME_MISMATCH + ". 期望: " + requiredServiceName + ", 获得: "
-                            + tokenServiceName);
+                        + tokenServiceName);
                     return Mono.error(BusinessException.builder().httpStatus(HttpCode.FORBIDDEN)
-                            .errorMessage(Messages.SERVICE_NAME_MISMATCH).build());
+                        .errorMessage(Messages.SERVICE_NAME_MISMATCH).build());
                 }
             }
             logger.debug(Messages.INTERNAL_TOKEN_VALIDATE_METHOD + pjp.getSignature().getName());
@@ -69,7 +70,7 @@ public class InternalTokenAspect {
         } catch (Exception error) {
             logger.error(Messages.INTERNAL_TOKEN_VALIDATION_FAIL + error.getMessage(), error);
             return Mono.error(BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED)
-                    .errorMessage(Messages.INTERNAL_TOKEN_VALIDATION_FAIL + error.getMessage()).build());
+                .errorMessage(Messages.INTERNAL_TOKEN_VALIDATION_FAIL + error.getMessage()).build());
         }
     }
 }

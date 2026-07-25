@@ -29,7 +29,7 @@ public class UserContextWebFilter implements WebFilter {
         String internalToken = extractToken(request.getHeaders().getFirst("X-Internal-Token"));
 
         return chain.filter(exchange)
-                .contextWrite(ctx -> UserContext.writeContext(ctx, userId, username, sessionId, token, internalToken));
+            .contextWrite(ctx -> UserContext.writeContext(ctx, userId, username, sessionId, token, internalToken));
     }
 
     private Long parseLong(String value) {

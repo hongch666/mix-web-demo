@@ -53,8 +53,8 @@ public class ArticleServiceImpl implements ArticleService {
     public Mono<PageDTO<Article>> listPublishedArticles(long page, long size) {
         PageRequest pageable = pageRequest(page, size);
         return toPage(page, size,
-                articleRepository.findByStatusOrderByCreateAtAsc(1, pageable).collectList(),
-                articleRepository.countByStatus(1));
+            articleRepository.findByStatusOrderByCreateAtAsc(1, pageable).collectList(),
+            articleRepository.countByStatus(1));
     }
 
     @SuppressWarnings("null")
@@ -77,9 +77,8 @@ public class ArticleServiceImpl implements ArticleService {
                 article.getTags(),
                 article.getStatus(),
                 article.getSubCategoryId(),
-                article.getUpdateAt()
-            )
-        ).thenReturn(true);
+                article.getUpdateAt()))
+            .thenReturn(true);
     }
 
     @SuppressWarnings("null")
@@ -87,8 +86,8 @@ public class ArticleServiceImpl implements ArticleService {
     @ArticleSync(action = "delete", description = Messages.ARTICLE_SYNC_DELETE)
     public Mono<Boolean> deleteArticle(Long id) {
         Mono<Void> operation = articleRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE_ID + id)))
-                .flatMap(articleRepository::delete);
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE_ID + id)))
+            .flatMap(articleRepository::delete);
         return transactionalOperator.transactional(operation).thenReturn(true);
     }
 
@@ -101,10 +100,10 @@ public class ArticleServiceImpl implements ArticleService {
             return Mono.just(true);
         }
         Mono<Void> operation = articleRepository.findAllById(distinctIds)
-                .count()
-                .filter(count -> count == distinctIds.size())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLES)))
-                .then(articleRepository.deleteAllById(distinctIds));
+            .count()
+            .filter(count -> count == distinctIds.size())
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLES)))
+            .then(articleRepository.deleteAllById(distinctIds));
         return transactionalOperator.transactional(operation).thenReturn(true);
     }
 
@@ -113,17 +112,17 @@ public class ArticleServiceImpl implements ArticleService {
         PageRequest pageable = pageRequest(page, size);
         if (onlyPublished) {
             return toPage(page, size,
-                    articleRepository.findByUserIdAndStatusOrderByCreateAtAsc(id, 1, pageable).collectList(),
-                    articleRepository.countByUserIdAndStatus(id, 1));
+                articleRepository.findByUserIdAndStatusOrderByCreateAtAsc(id, 1, pageable).collectList(),
+                articleRepository.countByUserIdAndStatus(id, 1));
         }
         return toPage(page, size,
-                articleRepository.findByUserIdOrderByCreateAtAsc(id, pageable).collectList(),
-                articleRepository.countByUserId(id));
+            articleRepository.findByUserIdOrderByCreateAtAsc(id, pageable).collectList(),
+            articleRepository.countByUserId(id));
     }
 
     @Override
     public Mono<PageDTO<ArticleWithCategoryVO>> listArticlesByIdWithCategory(
-            long page, long size, Long id, boolean onlyPublished) {
+        long page, long size, Long id, boolean onlyPublished) {
         return listArticlesById(page, size, id, onlyPublished).flatMap(this::toArticleVoPage);
     }
 
@@ -132,11 +131,11 @@ public class ArticleServiceImpl implements ArticleService {
     @ArticleSync(action = "publish", description = Messages.ARTICLE_SYNC_PUBLISH)
     public Mono<Void> publishArticle(Long id) {
         Mono<Void> operation = articleRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE)))
-                .then(articleRepository.publishById(id))
-                .filter(updated -> updated > 0)
-                .switchIfEmpty(Mono.error(unprocessable(Messages.PUBLISH_ARTICLE)))
-                .then();
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE)))
+            .then(articleRepository.publishById(id))
+            .filter(updated -> updated > 0)
+            .switchIfEmpty(Mono.error(unprocessable(Messages.PUBLISH_ARTICLE)))
+            .then();
         return transactionalOperator.transactional(operation);
     }
 
@@ -145,16 +144,16 @@ public class ArticleServiceImpl implements ArticleService {
     @ArticleSync(action = "view", description = Messages.ARTICLE_SYNC_VIEW)
     public Mono<Void> addViewArticle(Long id) {
         Mono<Void> operation = articleRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE)))
-                .flatMap(article -> {
-                    if (!Integer.valueOf(1).equals(article.getStatus())) {
-                        return Mono.error(unprocessable(Messages.UNPUBLISH_ADD_VIEW));
-                    }
-                    return articleRepository.incrementViews(id);
-                })
-                .filter(updated -> updated > 0)
-                .switchIfEmpty(Mono.error(unprocessable(Messages.ADD_VIEW_ARTICLE)))
-                .then();
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE)))
+            .flatMap(article -> {
+                if (!Integer.valueOf(1).equals(article.getStatus())) {
+                    return Mono.error(unprocessable(Messages.UNPUBLISH_ADD_VIEW));
+                }
+                return articleRepository.incrementViews(id);
+            })
+            .filter(updated -> updated > 0)
+            .switchIfEmpty(Mono.error(unprocessable(Messages.ADD_VIEW_ARTICLE)))
+            .then();
         return transactionalOperator.transactional(operation);
     }
 
@@ -167,8 +166,8 @@ public class ArticleServiceImpl implements ArticleService {
     public Mono<PageDTO<Article>> listUnpublishedArticles(long page, long size) {
         PageRequest pageable = pageRequest(page, size);
         return toPage(page, size,
-                articleRepository.findByStatusOrderByCreateAtAsc(0, pageable).collectList(),
-                articleRepository.countByStatus(0));
+            articleRepository.findByStatusOrderByCreateAtAsc(0, pageable).collectList(),
+            articleRepository.countByStatus(0));
     }
 
     @Override
@@ -206,30 +205,30 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         Set<Long> userIds = records.stream().map(Article::getUserId).filter(id -> id != null)
-                .collect(Collectors.toSet());
+            .collect(Collectors.toSet());
         Set<Long> subCategoryIds = records.stream().map(Article::getSubCategoryId).filter(id -> id != null)
-                .map(Integer::longValue).collect(Collectors.toSet());
+            .map(Integer::longValue).collect(Collectors.toSet());
 
         Mono<Map<Long, User>> users = userRepository.findAllById(userIds)
-                .collectMap(User::getId, Function.identity());
+            .collectMap(User::getId, Function.identity());
         Mono<Map<Long, SubCategory>> subCategories = subCategoryRepository.findAllById(subCategoryIds)
-                .collectMap(SubCategory::getId, Function.identity());
+            .collectMap(SubCategory::getId, Function.identity());
 
         return Mono.zip(users, subCategories).flatMap(relations -> {
             Map<Long, SubCategory> subCategoryMap = relations.getT2();
             Set<Long> categoryIds = subCategoryMap.values().stream().map(SubCategory::getCategoryId)
-                    .filter(id -> id != null).collect(Collectors.toSet());
+                .filter(id -> id != null).collect(Collectors.toSet());
             return categoryRepository.findAllById(categoryIds)
-                    .collectMap(Category::getId, Function.identity())
-                    .map(categories -> mapArticlePage(source, relations.getT1(), subCategoryMap, categories));
+                .collectMap(Category::getId, Function.identity())
+                .map(categories -> mapArticlePage(source, relations.getT1(), subCategoryMap, categories));
         });
     }
 
     private PageDTO<ArticleWithCategoryVO> mapArticlePage(
-            PageDTO<Article> source,
-            Map<Long, User> users,
-            Map<Long, SubCategory> subCategories,
-            Map<Long, Category> categories) {
+        PageDTO<Article> source,
+        Map<Long, User> users,
+        Map<Long, SubCategory> subCategories,
+        Map<Long, Category> categories) {
         List<ArticleWithCategoryVO> records = source.getRecords().stream().map(article -> {
             ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
             User user = users.get(article.getUserId());

@@ -31,33 +31,33 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
         String key = VERIFICATION_CODE_PREFIX + email;
         return redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY)
-                .doOnSuccess(ignored -> logger.info(Messages.CODE_SAVE + email))
-                .then(nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(email, code, type, 10)))
-                .doOnSuccess(ignored -> logger.info(Messages.CODE_SUCCESS + email))
-                .then();
+            .doOnSuccess(ignored -> logger.info(Messages.CODE_SAVE + email))
+            .then(nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(email, code, type, 10)))
+            .doOnSuccess(ignored -> logger.info(Messages.CODE_SUCCESS + email))
+            .then();
     }
 
     @Override
     public Mono<Boolean> verifyCode(String email, String code) {
         String key = VERIFICATION_CODE_PREFIX + email;
         return redisUtil.get(key)
-                .flatMap(storedCode -> {
-                    if (!storedCode.equals(code)) {
-                        logger.info(Messages.CODE_VERIFY_FAIL + email);
-                        return Mono.just(false);
-                    }
-                    return redisUtil.delete(key)
-                            .doOnSuccess(ignored -> logger.info(Messages.CODE_VERIFY_SUCCESS + email))
-                            .thenReturn(true);
-                })
-                .switchIfEmpty(Mono.fromSupplier(() -> {
-                    logger.info(Messages.CODE_EXPIRED + email);
-                    return false;
-                }))
-                .onErrorResume(error -> {
-                    logger.error(Messages.CODE_VERIFY_EXCEPTION + error.getMessage(), error);
+            .flatMap(storedCode -> {
+                if (!storedCode.equals(code)) {
+                    logger.info(Messages.CODE_VERIFY_FAIL + email);
                     return Mono.just(false);
-                });
+                }
+                return redisUtil.delete(key)
+                    .doOnSuccess(ignored -> logger.info(Messages.CODE_VERIFY_SUCCESS + email))
+                    .thenReturn(true);
+            })
+            .switchIfEmpty(Mono.fromSupplier(() -> {
+                logger.info(Messages.CODE_EXPIRED + email);
+                return false;
+            }))
+            .onErrorResume(error -> {
+                logger.error(Messages.CODE_VERIFY_EXCEPTION + error.getMessage(), error);
+                return Mono.just(false);
+            });
     }
 
     @Override

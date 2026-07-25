@@ -39,9 +39,7 @@ public class ArticleSyncAspect {
             // 使用 doOnSuccess 发后即忘：主流程不等待 MQ 发送和 ES/Vector 同步完成
             return monoResult
                 .doOnSuccess(res -> {
-                    Mono.deferContextual(ctx ->
-                        executeSync(joinPoint, articleSync, ctx)
-                    ).subscribe();
+                    Mono.deferContextual(ctx -> executeSync(joinPoint, articleSync, ctx)).subscribe();
                 });
         }
         return result;
@@ -51,7 +49,7 @@ public class ArticleSyncAspect {
      * 执行同步逻辑：发送 MQ 消息 + 触发 ES/Vector 同步
      */
     private Mono<Void> executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
-            reactor.util.context.ContextView ctx) {
+        reactor.util.context.ContextView ctx) {
         try {
             String action = articleSync.action();
             String description = articleSync.description();
@@ -70,13 +68,13 @@ public class ArticleSyncAspect {
             // 发送消息到 MQ + 触发 ES/Vector 同步，并行执行
             String json = objectMapper.writeValueAsString(msg);
             return Mono.whenDelayError(
-                            rabbitMQUtil.sendMessage("article-log-queue", msg)
-                                    .doOnSuccess(ignored -> logger.info(Messages.MQ_SEND + json)),
-                            asyncSyncService.syncAllAsync(userId, username))
-                    .onErrorResume(error -> {
-                        logger.error(Messages.TRANSACTION_ROLLBACK + error.getMessage(), error);
-                        return Mono.empty();
-                    });
+                rabbitMQUtil.sendMessage("article-log-queue", msg)
+                    .doOnSuccess(ignored -> logger.info(Messages.MQ_SEND + json)),
+                asyncSyncService.syncAllAsync(userId, username))
+                .onErrorResume(error -> {
+                    logger.error(Messages.TRANSACTION_ROLLBACK + error.getMessage(), error);
+                    return Mono.empty();
+                });
         } catch (Exception e) {
             logger.error(Messages.TRANSACTION_ROLLBACK + e.getMessage(), e);
             return Mono.empty();
@@ -87,7 +85,7 @@ public class ArticleSyncAspect {
      * 根据操作类型构建消息内容
      */
     private void buildActionMessage(String action, Object[] paramValues, Map<String, Object> content,
-            Map<String, Object> msg, Long userId, String description) {
+        Map<String, Object> msg, Long userId, String description) {
         switch (action) {
             case "add":
             case "edit": {

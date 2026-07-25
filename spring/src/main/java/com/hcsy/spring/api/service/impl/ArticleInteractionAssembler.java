@@ -40,40 +40,40 @@ class ArticleInteractionAssembler {
     @SuppressWarnings("null")
     Mono<List<ArticleCollectVO>> toCollectVOs(List<ArticleCollect> interactions) {
         return loadRelations(interactions.stream().map(ArticleCollect::getArticleId).collect(Collectors.toSet()))
-                .map(relations -> interactions.stream()
-                        .map(interaction -> toCollectVO(interaction, relations))
-                        .toList());
+            .map(relations -> interactions.stream()
+                .map(interaction -> toCollectVO(interaction, relations))
+                .toList());
     }
 
     @SuppressWarnings("null")
     Mono<List<ArticleLikeVO>> toLikeVOs(List<ArticleLike> interactions) {
         return loadRelations(interactions.stream().map(ArticleLike::getArticleId).collect(Collectors.toSet()))
-                .map(relations -> interactions.stream()
-                        .map(interaction -> toLikeVO(interaction, relations))
-                        .toList());
+            .map(relations -> interactions.stream()
+                .map(interaction -> toLikeVO(interaction, relations))
+                .toList());
     }
 
     @SuppressWarnings("null")
     private Mono<Relations> loadRelations(Set<Long> articleIds) {
         return articleRepository.findAllById(articleIds)
-                .collectMap(Article::getId, Function.identity())
-                .flatMap(articles -> {
-                    Set<Long> userIds = articles.values().stream().map(Article::getUserId)
-                            .filter(id -> id != null).collect(Collectors.toSet());
-                    Set<Long> subCategoryIds = articles.values().stream().map(Article::getSubCategoryId)
-                            .filter(id -> id != null).map(Integer::longValue).collect(Collectors.toSet());
-                    Mono<Map<Long, User>> users = userRepository.findAllById(userIds)
-                            .collectMap(User::getId, Function.identity());
-                    Mono<Map<Long, SubCategory>> subCategories = subCategoryRepository.findAllById(subCategoryIds)
-                            .collectMap(SubCategory::getId, Function.identity());
-                    return Mono.zip(users, subCategories).flatMap(result -> {
-                        Set<Long> categoryIds = result.getT2().values().stream().map(SubCategory::getCategoryId)
-                                .filter(id -> id != null).collect(Collectors.toSet());
-                        return categoryRepository.findAllById(categoryIds)
-                                .collectMap(Category::getId, Function.identity())
-                                .map(categories -> new Relations(articles, result.getT1(), result.getT2(), categories));
-                    });
+            .collectMap(Article::getId, Function.identity())
+            .flatMap(articles -> {
+                Set<Long> userIds = articles.values().stream().map(Article::getUserId)
+                    .filter(id -> id != null).collect(Collectors.toSet());
+                Set<Long> subCategoryIds = articles.values().stream().map(Article::getSubCategoryId)
+                    .filter(id -> id != null).map(Integer::longValue).collect(Collectors.toSet());
+                Mono<Map<Long, User>> users = userRepository.findAllById(userIds)
+                    .collectMap(User::getId, Function.identity());
+                Mono<Map<Long, SubCategory>> subCategories = subCategoryRepository.findAllById(subCategoryIds)
+                    .collectMap(SubCategory::getId, Function.identity());
+                return Mono.zip(users, subCategories).flatMap(result -> {
+                    Set<Long> categoryIds = result.getT2().values().stream().map(SubCategory::getCategoryId)
+                        .filter(id -> id != null).collect(Collectors.toSet());
+                    return categoryRepository.findAllById(categoryIds)
+                        .collectMap(Category::getId, Function.identity())
+                        .map(categories -> new Relations(articles, result.getT1(), result.getT2(), categories));
                 });
+            });
     }
 
     private ArticleCollectVO toCollectVO(ArticleCollect interaction, Relations relations) {
@@ -106,8 +106,8 @@ class ArticleInteractionAssembler {
             throw notFound(Messages.UNDEFINED_ARTICLE_AUTHOR_ID + article.getUserId());
         }
         SubCategory subCategory = article.getSubCategoryId() == null
-                ? null
-                : relations.subCategories().get(article.getSubCategoryId().longValue());
+            ? null
+            : relations.subCategories().get(article.getSubCategoryId().longValue());
         if (subCategory == null) {
             throw notFound(Messages.UNDEFINED_SUB_CATEGORY_AUTHOR_ID + article.getSubCategoryId());
         }
@@ -139,9 +139,9 @@ class ArticleInteractionAssembler {
     }
 
     private record Relations(
-            Map<Long, Article> articles,
-            Map<Long, User> users,
-            Map<Long, SubCategory> subCategories,
-            Map<Long, Category> categories) {
+        Map<Long, Article> articles,
+        Map<Long, User> users,
+        Map<Long, SubCategory> subCategories,
+        Map<Long, Category> categories) {
     }
 }

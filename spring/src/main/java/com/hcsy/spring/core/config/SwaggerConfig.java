@@ -30,12 +30,12 @@ public class SwaggerConfig {
     @Bean
     OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title(Defaults.SWAGGER_TITLE)
-                        .version(Defaults.SWAGGER_VERSION)
-                        .description(Defaults.SWAGGER_DESC))
-                .servers(List.of(
-                        new Server().url(Defaults.SWAGGER_URL_PREFIX + port).description("baseURL")));
+            .info(new Info()
+                .title(Defaults.SWAGGER_TITLE)
+                .version(Defaults.SWAGGER_VERSION)
+                .description(Defaults.SWAGGER_DESC))
+            .servers(List.of(
+                new Server().url(Defaults.SWAGGER_URL_PREFIX + port).description("baseURL")));
     }
 
     @Bean
@@ -146,7 +146,7 @@ public class SwaggerConfig {
             transformSchema(arraySchema.getItems());
         }
         if (schema instanceof MapSchema mapSchema
-                && mapSchema.getAdditionalProperties() instanceof Schema additionalSchema) {
+            && mapSchema.getAdditionalProperties() instanceof Schema additionalSchema) {
             transformSchema(additionalSchema);
         }
         if (schema instanceof ComposedSchema composedSchema) {

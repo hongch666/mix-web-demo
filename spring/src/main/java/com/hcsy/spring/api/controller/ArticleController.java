@@ -50,13 +50,13 @@ public class ArticleController {
     @ApiLog("创建文章")
     public Mono<Result<Void>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         return userService.findByUsername(dto.getUsername())
-                .flatMap(user -> {
-                    Article article = BeanUtil.copyProperties(dto, Article.class);
-                    article.setUserId(user.getId());
-                    article.setViews(0);
-                    return articleService.saveArticle(article).thenReturn(Result.<Void>success());
-                })
-                .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .flatMap(user -> {
+                Article article = BeanUtil.copyProperties(dto, Article.class);
+                article.setUserId(user.getId());
+                article.setViews(0);
+                return articleService.saveArticle(article).thenReturn(Result.<Void>success());
+            })
+            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
     @GetMapping("/list")
@@ -64,22 +64,22 @@ public class ArticleController {
     @RequireInternalToken
     @ApiLog("获取已发布文章列表")
     public Mono<Result<PageVO<Article>>> getPublishedArticles(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int size) {
         return articleService.listPublishedArticles(page, size)
-                .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+            .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
     @GetMapping("user/{id}")
     @Operation(summary = "获取用户文章", description = "返回用户文章，可指定是否只查询已发布的文章")
     @ApiLog("获取用户文章")
     public Mono<Result<PageVO<ArticleWithCategoryVO>>> getArticlesByUserId(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @PathVariable Long id,
-            @RequestParam(defaultValue = "0") int published) {
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @PathVariable Long id,
+        @RequestParam(defaultValue = "0") int published) {
         return articleService.listArticlesByIdWithCategory(page, size, id, published == 1)
-                .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+            .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
     @GetMapping("/{id}")
@@ -87,36 +87,36 @@ public class ArticleController {
     @ApiLog("获取文章详情")
     public Mono<Result<ArticleWithCategoryVO>> getArticleById(@PathVariable Long id) {
         return articleService.getById(id)
-                .flatMap(article -> userService.getById(article.getUserId())
-                        .map(user -> {
-                            ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-                            vo.setUsername(user.getName());
-                            return Result.success(vo);
-                        })
-                        .defaultIfEmpty(Result.success(BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))))
-                .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
+            .flatMap(article -> userService.getById(article.getUserId())
+                .map(user -> {
+                    ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+                    vo.setUsername(user.getName());
+                    return Result.success(vo);
+                })
+                .defaultIfEmpty(Result.success(BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))))
+            .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
     }
 
     @PutMapping
     @Operation(summary = "更新文章", description = "根据DTO更新文章信息")
     @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "article", paramSource = "body", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = "article", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_UPDATE)
     @ApiLog("更新文章")
     public Mono<Result<Void>> updateArticle(@Valid @RequestBody ArticleUpdateDTO dto) {
         return userService.findByUsername(dto.getUsername())
-                .flatMap(user -> {
-                    Article article = BeanUtil.copyProperties(dto, Article.class);
-                    article.setUserId(user.getId());
-                    return articleService.updateArticle(article).thenReturn(Result.<Void>success());
-                })
-                .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .flatMap(user -> {
+                Article article = BeanUtil.copyProperties(dto, Article.class);
+                article.setUserId(user.getId());
+                return articleService.updateArticle(article).thenReturn(Result.<Void>success());
+            })
+            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除文章", description = "根据ID删除文章")
     @RequirePermission(roles = {
-            "admin" }, allowSelf = true, businessType = "article", paramSource = "path_single", paramNames = { "id" })
+        "admin" }, allowSelf = true, businessType = "article", paramSource = "path_single", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_DELETE)
     @ApiLog("删除文章")
     public Mono<Result<Void>> deleteArticle(@PathVariable Long id) {
@@ -127,22 +127,22 @@ public class ArticleController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除文章", description = "根据ID数组批量删除文章，多个ID用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
-            "ids" })
+        "ids" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_BATCH_DELETE)
     @ApiLog("批量删除文章")
     public Mono<Result<Void>> deleteArticles(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Long::valueOf)
-                .toList();
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Long::valueOf)
+            .toList();
         return articleService.deleteArticles(idList).thenReturn(Result.<Void>success());
     }
 
     @PutMapping("/publish/{id}")
     @Operation(summary = "发布文章", description = "将文章状态修改为发布")
     @RequirePermission(roles = { "admin" }, businessType = "article", paramSource = "path_single", paramNames = {
-            "id" })
+        "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_ARTICLE_PUBLISH)
     @ApiLog("发布文章")
     public Mono<Result<Void>> publishArticle(@PathVariable Long id) {
@@ -161,10 +161,10 @@ public class ArticleController {
     @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
     @ApiLog("获取未发布文章列表")
     public Mono<Result<PageVO<ArticleWithCategoryVO>>> getUnpublishedArticles(
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int size) {
         return articleService.listUnpublishedArticlesWithCategory(page, size)
-                .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+            .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
 }

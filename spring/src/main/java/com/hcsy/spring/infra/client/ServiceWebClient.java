@@ -41,12 +41,12 @@ public class ServiceWebClient {
 
     @SuppressWarnings("null")
     public Mono<Result<?>> request(
-            HttpMethod method,
-            String serviceName,
-            String path,
-            ServiceRequestOptions options,
-            Duration timeout,
-            String fallbackMessage) {
+        HttpMethod method,
+        String serviceName,
+        String path,
+        ServiceRequestOptions options,
+        Duration timeout,
+        String fallbackMessage) {
         ServiceRequestOptions requestOptions = options == null ? ServiceRequestOptions.empty() : options;
         return Mono.deferContextual(context -> {
             Long userId = UserContext.getUserId(context);
@@ -54,39 +54,39 @@ public class ServiceWebClient {
             String token = internalTokenUtil.generateInternalToken(userId == null ? -1L : userId, SERVICE_NAME);
 
             WebClient.RequestBodySpec request = webClientBuilder.build()
-                    .method(method)
-                    .uri(uriBuilder -> buildUri(
-                            uriBuilder, serviceName, path, requestOptions.getQueryParameters(),
-                            requestOptions.getPathVariables()))
-                    .headers(requestHeaders -> applyHeaders(
-                            requestHeaders, requestOptions.getHeaders(), userId, username, token));
+                .method(method)
+                .uri(uriBuilder -> buildUri(
+                    uriBuilder, serviceName, path, requestOptions.getQueryParameters(),
+                    requestOptions.getPathVariables()))
+                .headers(requestHeaders -> applyHeaders(
+                    requestHeaders, requestOptions.getHeaders(), userId, username, token));
             WebClient.RequestHeadersSpec<?> requestSpec = requestOptions.getBody() == null
-                    ? request
-                    : request.bodyValue(requestOptions.getBody());
+                ? request
+                : request.bodyValue(requestOptions.getBody());
             return requestSpec
-                    .retrieve()
-                    .bodyToMono(RESULT_TYPE)
-                    .cast(Result.class)
-                    .map(result -> (Result<?>) result)
-                    .timeout(timeout)
-                    .onErrorResume(error -> {
-                        logger.error(fallbackMessage + error.getMessage(), error);
-                        return Mono.just(Result.error(HttpCode.SERVICE_UNAVAILABLE, fallbackMessage));
-                    });
+                .retrieve()
+                .bodyToMono(RESULT_TYPE)
+                .cast(Result.class)
+                .map(result -> (Result<?>) result)
+                .timeout(timeout)
+                .onErrorResume(error -> {
+                    logger.error(fallbackMessage + error.getMessage(), error);
+                    return Mono.just(Result.error(HttpCode.SERVICE_UNAVAILABLE, fallbackMessage));
+                });
         });
     }
 
     @SuppressWarnings("null")
     private URI buildUri(
-            UriBuilder uriBuilder,
-            String serviceName,
-            String path,
-            MultiValueMap<String, String> queryParameters,
-            Map<String, ?> pathVariables) {
+        UriBuilder uriBuilder,
+        String serviceName,
+        String path,
+        MultiValueMap<String, String> queryParameters,
+        Map<String, ?> pathVariables) {
         UriBuilder target = uriBuilder
-                .scheme("http")
-                .host(serviceName)
-                .path(normalizePath(path));
+            .scheme("http")
+            .host(serviceName)
+            .path(normalizePath(path));
         if (queryParameters != null) {
             queryParameters.forEach((name, values) -> addQueryParameter(target, name, values));
         }
@@ -104,11 +104,11 @@ public class ServiceWebClient {
 
     @SuppressWarnings("null")
     private void applyHeaders(
-            HttpHeaders requestHeaders,
-            HttpHeaders customHeaders,
-            Long userId,
-            String username,
-            String internalToken) {
+        HttpHeaders requestHeaders,
+        HttpHeaders customHeaders,
+        Long userId,
+        String username,
+        String internalToken) {
         if (customHeaders != null) {
             requestHeaders.addAll(customHeaders);
         }

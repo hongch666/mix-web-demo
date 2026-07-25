@@ -7,9 +7,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -38,7 +38,7 @@ public class GlobalExceptionHandler {
      * 处理参数校验异常
      */
     @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class,
-            ConstraintViolationException.class })
+        ConstraintViolationException.class })
     public Mono<ResponseEntity<Result<?>>> handleValidationException(Exception ex) {
         String message = extractValidationMessage(ex);
         logger.error(Messages.SYSTEM_EXCEPTION + message, ex);
@@ -80,10 +80,10 @@ public class GlobalExceptionHandler {
 
         if (ex instanceof ConstraintViolationException constraintViolationException) {
             return constraintViolationException.getConstraintViolations().stream()
-                    .map(ConstraintViolation::getMessage)
-                    .filter(message -> message != null && !message.isBlank())
-                    .findFirst()
-                    .orElse(Messages.SYSTEM_EXCEPTION_BACK);
+                .map(ConstraintViolation::getMessage)
+                .filter(message -> message != null && !message.isBlank())
+                .findFirst()
+                .orElse(Messages.SYSTEM_EXCEPTION_BACK);
         }
 
         return Messages.SYSTEM_EXCEPTION_BACK;

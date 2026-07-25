@@ -19,12 +19,17 @@ public class UserContext {
      * 将用户信息写入 Reactor Context
      */
     public static Context writeContext(Context ctx, Long userId, String username,
-                                       String sessionId, String token, String internalToken) {
-        if (userId != null) ctx = ctx.put(CONTEXT_KEY_USER_ID, userId);
-        if (username != null) ctx = ctx.put(CONTEXT_KEY_USERNAME, username);
-        if (sessionId != null) ctx = ctx.put(CONTEXT_KEY_SESSION_ID, sessionId);
-        if (token != null) ctx = ctx.put(CONTEXT_KEY_TOKEN, token);
-        if (internalToken != null) ctx = ctx.put(CONTEXT_KEY_INTERNAL_TOKEN, internalToken);
+        String sessionId, String token, String internalToken) {
+        if (userId != null)
+            ctx = ctx.put(CONTEXT_KEY_USER_ID, userId);
+        if (username != null)
+            ctx = ctx.put(CONTEXT_KEY_USERNAME, username);
+        if (sessionId != null)
+            ctx = ctx.put(CONTEXT_KEY_SESSION_ID, sessionId);
+        if (token != null)
+            ctx = ctx.put(CONTEXT_KEY_TOKEN, token);
+        if (internalToken != null)
+            ctx = ctx.put(CONTEXT_KEY_INTERNAL_TOKEN, internalToken);
         return ctx;
     }
 

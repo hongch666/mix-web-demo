@@ -34,10 +34,10 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
         }
 
         Mono<CategoryReference> operation = subCategoryRepository.findById(dto.getSubCategoryId())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-                .then(categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
-                        .flatMap(existing -> Mono.<CategoryReference>error(conflict(Messages.REFERENCE_EXIST)))
-                        .switchIfEmpty(Mono.defer(() -> categoryReferenceRepository.save(toEntity(dto)))));
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
+            .then(categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
+                .flatMap(existing -> Mono.<CategoryReference>error(conflict(Messages.REFERENCE_EXIST)))
+                .switchIfEmpty(Mono.defer(() -> categoryReferenceRepository.save(toEntity(dto)))));
 
         return transactionalOperator.transactional(operation).map(CategoryReference::getId);
     }
@@ -51,14 +51,14 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
         }
 
         Mono<Void> operation = subCategoryRepository.findById(dto.getSubCategoryId())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-                .then(categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
-                        .switchIfEmpty(Mono.error(conflict(Messages.REFERENCE_EXIST)))
-                        .flatMap(reference -> {
-                            applyContent(reference, dto.getType(), dto.getLink(), dto.getPdf());
-                            return categoryReferenceRepository.save(reference);
-                        }))
-                .then();
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
+            .then(categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
+                .switchIfEmpty(Mono.error(conflict(Messages.REFERENCE_EXIST)))
+                .flatMap(reference -> {
+                    applyContent(reference, dto.getType(), dto.getLink(), dto.getPdf());
+                    return categoryReferenceRepository.save(reference);
+                }))
+            .then();
         return transactionalOperator.transactional(operation);
     }
 
@@ -66,8 +66,8 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
     @Override
     public Mono<Void> deleteCategoryReference(Long subCategoryId) {
         Mono<Void> operation = categoryReferenceRepository.findBySubCategoryId(subCategoryId)
-                .switchIfEmpty(Mono.error(conflict(Messages.REFERENCE_EXIST)))
-                .flatMap(categoryReferenceRepository::delete);
+            .switchIfEmpty(Mono.error(conflict(Messages.REFERENCE_EXIST)))
+            .flatMap(categoryReferenceRepository::delete);
         return transactionalOperator.transactional(operation);
     }
 

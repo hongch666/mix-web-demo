@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.api.service.CategoryService;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -43,12 +43,7 @@ public class CategoryController {
 
     @Operation(summary = "新增分类")
     @PostMapping()
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "category",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_CREATE)
     @ApiLog("新增分类")
     public Mono<Result<Void>> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
@@ -57,12 +52,7 @@ public class CategoryController {
 
     @Operation(summary = "修改分类")
     @PutMapping()
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "category",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_UPDATE)
     @ApiLog("修改分类")
     public Mono<Result<Void>> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
@@ -71,12 +61,8 @@ public class CategoryController {
 
     @Operation(summary = "删除分类（级联删除子分类）")
     @DeleteMapping("/{id}")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "category",
-        paramSource = "path_single",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
+        "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_DELETE)
     @ApiLog("删除分类")
     public Mono<Result<Void>> deleteCategory(@PathVariable Long id) {
@@ -86,31 +72,22 @@ public class CategoryController {
     @SuppressWarnings("null")
     @Operation(summary = "批量删除分类（级联删除子分类）")
     @DeleteMapping("/batch/{ids}")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "category",
-        paramSource = "path_single",
-        paramNames = { "ids" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
+        "ids" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_CATEGORY_BATCH_DELETE)
     @ApiLog("批量删除分类")
     public Mono<Result<Void>> deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Long::valueOf)
-                .toList();
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Long::valueOf)
+            .toList();
         return categoryService.deleteCategories(idList).thenReturn(Result.<Void>success());
     }
 
     @Operation(summary = "新增子分类")
     @PostMapping("/sub")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "subcategory",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_CREATE)
     @ApiLog("新增子分类")
     public Mono<Result<Void>> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
@@ -119,12 +96,7 @@ public class CategoryController {
 
     @Operation(summary = "修改子分类")
     @PutMapping("/sub")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "subcategory",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_UPDATE)
     @ApiLog("修改子分类")
     public Mono<Result<Void>> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
@@ -133,12 +105,8 @@ public class CategoryController {
 
     @Operation(summary = "删除子分类")
     @DeleteMapping("/sub/{id}")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "subcategory",
-        paramSource = "path_single",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
+        "id" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_DELETE)
     @ApiLog("删除子分类")
     public Mono<Result<Void>> deleteSubCategory(@PathVariable Long id) {
@@ -148,20 +116,16 @@ public class CategoryController {
     @SuppressWarnings("null")
     @Operation(summary = "批量删除子分类")
     @DeleteMapping("/sub/batch/{ids}")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "subcategory",
-        paramSource = "path_single",
-        paramNames = { "ids" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
+        "ids" })
     @Neo4jSync(description = Messages.NEO4J_SYNC_DESC_SUBCATEGORY_BATCH_DELETE)
     @ApiLog("批量删除子分类")
     public Mono<Result<Void>> deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(Long::valueOf)
-                .toList();
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(Long::valueOf)
+            .toList();
         return categoryService.deleteSubCategories(idList).thenReturn(Result.<Void>success());
     }
 
@@ -169,11 +133,11 @@ public class CategoryController {
     @GetMapping("/list")
     @ApiLog("分页查询分类")
     public Mono<Result<Map<String, Object>>> pageCategory(@RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+        @RequestParam(defaultValue = "10") int size) {
         return categoryService.pageCategory(page, size)
-                .map(result -> Result.success(Map.of(
-                        "list", result.getRecords(),
-                        "total", result.getTotal())));
+            .map(result -> Result.success(Map.of(
+                "list", result.getRecords(),
+                "total", result.getTotal())));
     }
 
     @Operation(summary = "根据ID查询分类（含子分类信息）")
@@ -181,7 +145,7 @@ public class CategoryController {
     @ApiLog("根据ID查询分类")
     public Mono<Result<CategoryVO>> getCategoryById(@PathVariable Long id) {
         return categoryService.getCategoryById(id)
-                .map(Result::success)
-                .defaultIfEmpty(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
+            .map(Result::success)
+            .defaultIfEmpty(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
     }
 }

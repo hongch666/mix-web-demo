@@ -22,12 +22,12 @@ public class AsyncNeo4jSyncServiceImpl implements AsyncNeo4jSyncService {
     @Override
     public Mono<Void> syncNeo4jAsync(String methodName, String description) {
         return fastAPIClient.syncNeo4j()
-                .doOnSubscribe(ignored -> logger.info(Messages.NEO4J_SYNC_TASK_START_MESSAGE, methodName, description))
-                .doOnNext(response -> logResponse(response, methodName, description))
-                .doOnError(error -> logger.error(Messages.NEO4J_SYNC_TASK_SUBMIT_FAIL_MESSAGE,
-                        methodName, description, error.getMessage(), error))
-                .onErrorResume(error -> Mono.empty())
-                .then();
+            .doOnSubscribe(ignored -> logger.info(Messages.NEO4J_SYNC_TASK_START_MESSAGE, methodName, description))
+            .doOnNext(response -> logResponse(response, methodName, description))
+            .doOnError(error -> logger.error(Messages.NEO4J_SYNC_TASK_SUBMIT_FAIL_MESSAGE,
+                methodName, description, error.getMessage(), error))
+            .onErrorResume(error -> Mono.empty())
+            .then();
     }
 
     private void logResponse(Result<?> response, String methodName, String description) {

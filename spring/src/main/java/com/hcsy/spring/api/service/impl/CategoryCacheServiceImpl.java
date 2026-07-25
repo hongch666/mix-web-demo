@@ -40,43 +40,43 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
     public Mono<CategoryVO> getCategoryById(Long id) {
         String cacheKey = RedisKeys.categoryId(id);
         return redisUtil.get(cacheKey)
-                .flatMap(json -> readCache(json, CategoryVO.class, cacheKey))
-                .onErrorResume(error -> cacheReadFallback(cacheKey, error))
-                .switchIfEmpty(Mono.defer(() -> loadCategory(id)
-                        .flatMap(category -> writeCache(cacheKey, category).thenReturn(category))));
+            .flatMap(json -> readCache(json, CategoryVO.class, cacheKey))
+            .onErrorResume(error -> cacheReadFallback(cacheKey, error))
+            .switchIfEmpty(Mono.defer(() -> loadCategory(id)
+                .flatMap(category -> writeCache(cacheKey, category).thenReturn(category))));
     }
 
     @Override
     public Mono<PageDTO<CategoryVO>> cachedPageCategory(long page, long size) {
         String cacheKey = CATEGORY_PAGE_KEY.formatted(page, size);
         return redisUtil.get(cacheKey)
-                .flatMap(json -> readCache(json, new TypeReference<PageDTO<CategoryVO>>() {
-                }, cacheKey))
-                .onErrorResume(error -> cacheReadFallback(cacheKey, error))
-                .switchIfEmpty(Mono.defer(() -> loadCategoryPage(page, size)
-                        .flatMap(result -> writeCache(cacheKey, result).thenReturn(result))));
+            .flatMap(json -> readCache(json, new TypeReference<PageDTO<CategoryVO>>() {
+            }, cacheKey))
+            .onErrorResume(error -> cacheReadFallback(cacheKey, error))
+            .switchIfEmpty(Mono.defer(() -> loadCategoryPage(page, size)
+                .flatMap(result -> writeCache(cacheKey, result).thenReturn(result))));
     }
 
     @Override
     public Mono<Void> evictAllCategoryCaches() {
         return redisUtil.getKeys("category:*")
-                .collectList()
-                .flatMap(keys -> keys.isEmpty() ? Mono.empty() : redisUtil.delete(keys).then())
-                .onErrorResume(error -> {
-                    logger.error(Messages.CATEGORY_CACHE_EVICT_ALL_FAILED, error.getMessage(), error);
-                    return Mono.empty();
-                });
+            .collectList()
+            .flatMap(keys -> keys.isEmpty() ? Mono.empty() : redisUtil.delete(keys).then())
+            .onErrorResume(error -> {
+                logger.error(Messages.CATEGORY_CACHE_EVICT_ALL_FAILED, error.getMessage(), error);
+                return Mono.empty();
+            });
     }
 
     @Override
     public Mono<Void> evictCategoryByIdCache(Long id) {
         String cacheKey = RedisKeys.categoryId(id);
         return redisUtil.delete(cacheKey)
-                .onErrorResume(error -> {
-                    logger.error(Messages.CATEGORY_CACHE_EVICT_FAILED, cacheKey, error.getMessage(), error);
-                    return Mono.just(false);
-                })
-                .then();
+            .onErrorResume(error -> {
+                logger.error(Messages.CATEGORY_CACHE_EVICT_FAILED, cacheKey, error.getMessage(), error);
+                return Mono.just(false);
+            })
+            .then();
     }
 
     @SuppressWarnings("null")
@@ -89,8 +89,8 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
         logger.info(Messages.CATEGORY_CACHE_PAGE);
         PageRequest pageable = PageRequest.of(toPageIndex(page), toPageSize(size));
         Mono<List<CategoryVO>> records = categoryRepository.findAllByOrderByIdAsc(pageable)
-                .flatMapSequential(this::buildCategoryVO)
-                .collectList();
+            .flatMapSequential(this::buildCategoryVO)
+            .collectList();
         Mono<Long> total = categoryRepository.count();
 
         return Mono.zip(records, total).map(result -> {
@@ -108,42 +108,42 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
         CategoryVO vo = new CategoryVO();
         BeanUtils.copyProperties(category, vo);
         return subCategoryRepository.findByCategoryIdOrderByIdAsc(category.getId())
-                .map(subCategory -> {
-                    SubCategoryVO subCategoryVO = new SubCategoryVO();
-                    BeanUtils.copyProperties(subCategory, subCategoryVO);
-                    return subCategoryVO;
-                })
-                .collectList()
-                .map(subCategories -> {
-                    vo.setSubCategories(subCategories);
-                    return vo;
-                });
+            .map(subCategory -> {
+                SubCategoryVO subCategoryVO = new SubCategoryVO();
+                BeanUtils.copyProperties(subCategory, subCategoryVO);
+                return subCategoryVO;
+            })
+            .collectList()
+            .map(subCategories -> {
+                vo.setSubCategories(subCategories);
+                return vo;
+            });
     }
 
     private Mono<Void> writeCache(String key, Object value) {
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(value))
-                .flatMap(json -> redisUtil.set(key, json, CACHE_TTL_SECONDS))
-                .onErrorResume(error -> {
-                    logger.error(Messages.CACHE_WRITE_FAILED, key, error.getMessage(), error);
-                    return Mono.just(false);
-                })
-                .then();
+            .flatMap(json -> redisUtil.set(key, json, CACHE_TTL_SECONDS))
+            .onErrorResume(error -> {
+                logger.error(Messages.CACHE_WRITE_FAILED, key, error.getMessage(), error);
+                return Mono.just(false);
+            })
+            .then();
     }
 
     private <T> Mono<T> readCache(String json, Class<T> type, String key) {
         return Mono.fromCallable(() -> objectMapper.readValue(json, type))
-                .onErrorResume(error -> {
-                    logger.error(Messages.CACHE_DESERIALIZE_FAILED, key, error.getMessage(), error);
-                    return redisUtil.delete(key).then(Mono.empty());
-                });
+            .onErrorResume(error -> {
+                logger.error(Messages.CACHE_DESERIALIZE_FAILED, key, error.getMessage(), error);
+                return redisUtil.delete(key).then(Mono.empty());
+            });
     }
 
     private <T> Mono<T> readCache(String json, TypeReference<T> type, String key) {
         return Mono.fromCallable(() -> objectMapper.readValue(json, type))
-                .onErrorResume(error -> {
-                    logger.error(Messages.CACHE_DESERIALIZE_FAILED, key, error.getMessage(), error);
-                    return redisUtil.delete(key).then(Mono.empty());
-                });
+            .onErrorResume(error -> {
+                logger.error(Messages.CACHE_DESERIALIZE_FAILED, key, error.getMessage(), error);
+                return redisUtil.delete(key).then(Mono.empty());
+            });
     }
 
     private <T> Mono<T> cacheReadFallback(String key, Throwable error) {

@@ -32,7 +32,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     @Override
     public Mono<Void> syncAllAsync(Long userId, String username) {
         String user = (username != null ? username : Defaults.DEFAULT_USER) + ":"
-                + (userId != null ? userId : Defaults.DEFAULT_USER_ID);
+            + (userId != null ? userId : Defaults.DEFAULT_USER_ID);
         long startTime = System.currentTimeMillis();
         logger.info(user + Messages.SYNC);
 
@@ -41,26 +41,26 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         Mono<Void> cache = reactiveCall(fastAPIClient::clearAnalyzeCaches, Messages.CLEAR_CACHE_SUCCESS);
 
         return Mono.when(es, vector, cache)
-                .doOnSuccess(ignored -> {
-                    long duration = System.currentTimeMillis() - startTime;
-                    logger.info(Messages.SYNC_PARALLEL_SUCCESS, user, duration);
-                    logger.info(Messages.SYNC_ALL_SUCCESS);
-                })
-                .doOnError(error -> {
-                    long duration = System.currentTimeMillis() - startTime;
-                    logger.error(Messages.SYNC_PARALLEL_FAIL, user, duration, error.getMessage(), error);
-                });
+            .doOnSuccess(ignored -> {
+                long duration = System.currentTimeMillis() - startTime;
+                logger.info(Messages.SYNC_PARALLEL_SUCCESS, user, duration);
+                logger.info(Messages.SYNC_ALL_SUCCESS);
+            })
+            .doOnError(error -> {
+                long duration = System.currentTimeMillis() - startTime;
+                logger.error(Messages.SYNC_PARALLEL_FAIL, user, duration, error.getMessage(), error);
+            });
     }
 
     private Mono<Void> reactiveCall(Supplier<Mono<Result<?>>> action, String successMessage) {
         return Mono.defer(action)
-                .flatMap(result -> result.getCode() != null && result.getCode() == HttpCode.OK
-                        ? Mono.empty()
-                        : Mono.error(new IllegalStateException(result.getMsg())))
-                .retryWhen(Retry.fixedDelay(MAX_RETRY_TIMES, RETRY_DELAY)
-                        .doBeforeRetry(signal -> logger.warning(Messages.SYNC_TASK_RETRY,
-                                signal.totalRetries() + 1, signal.failure().getMessage())))
-                .doOnSuccess(ignored -> logger.info(successMessage))
-                .then();
+            .flatMap(result -> result.getCode() != null && result.getCode() == HttpCode.OK
+                ? Mono.empty()
+                : Mono.error(new IllegalStateException(result.getMsg())))
+            .retryWhen(Retry.fixedDelay(MAX_RETRY_TIMES, RETRY_DELAY)
+                .doBeforeRetry(signal -> logger.warning(Messages.SYNC_TASK_RETRY,
+                    signal.totalRetries() + 1, signal.failure().getMessage())))
+            .doOnSuccess(ignored -> logger.info(successMessage))
+            .then();
     }
 }

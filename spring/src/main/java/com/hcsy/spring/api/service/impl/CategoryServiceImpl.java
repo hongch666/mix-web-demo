@@ -40,32 +40,32 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = new Category();
         category.setName(dto.getName());
         return transactionalOperator.transactional(categoryRepository.save(category))
-                .flatMap(saved -> categoryCacheService.evictAllCategoryCaches().thenReturn(saved.getId()));
+            .flatMap(saved -> categoryCacheService.evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
     @SuppressWarnings("null")
     @Override
     public Mono<Void> updateCategory(CategoryUpdateDTO dto) {
         Mono<Void> databaseOperation = categoryRepository.findById(dto.getId())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_CATEGORY)))
-                .flatMap(category -> {
-                    category.setName(dto.getName());
-                    return categoryRepository.save(category);
-                })
-                .then();
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_CATEGORY)))
+            .flatMap(category -> {
+                category.setName(dto.getName());
+                return categoryRepository.save(category);
+            })
+            .then();
         return transactionalOperator.transactional(databaseOperation)
-                .then(categoryCacheService.evictAllCategoryCaches());
+            .then(categoryCacheService.evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteCategory(Long id) {
         Mono<Void> databaseOperation = categoryRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_CATEGORY)))
-                .flatMap(category -> subCategoryRepository.deleteByCategoryId(id)
-                        .then(categoryRepository.deleteById(id)));
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_CATEGORY)))
+            .flatMap(category -> subCategoryRepository.deleteByCategoryId(id)
+                .then(categoryRepository.deleteById(id)));
         return transactionalOperator.transactional(databaseOperation)
-                .then(categoryCacheService.evictAllCategoryCaches());
+            .then(categoryCacheService.evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
@@ -76,15 +76,15 @@ public class CategoryServiceImpl implements CategoryService {
             return Mono.empty();
         }
         Mono<Void> databaseOperation = categoryRepository.findAllById(distinctIds)
-                .count()
-                .filter(count -> count == distinctIds.size())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_CATEGORIES)))
-                .thenMany(Flux.fromIterable(distinctIds)
-                        .concatMap(id -> subCategoryRepository.deleteByCategoryId(id)
-                                .then(categoryRepository.deleteById(id))))
-                .then();
+            .count()
+            .filter(count -> count == distinctIds.size())
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_CATEGORIES)))
+            .thenMany(Flux.fromIterable(distinctIds)
+                .concatMap(id -> subCategoryRepository.deleteByCategoryId(id)
+                    .then(categoryRepository.deleteById(id))))
+            .then();
         return transactionalOperator.transactional(databaseOperation)
-                .then(categoryCacheService.evictAllCategoryCaches());
+            .then(categoryCacheService.evictAllCategoryCaches());
     }
 
     @Override
@@ -93,32 +93,32 @@ public class CategoryServiceImpl implements CategoryService {
         subCategory.setName(dto.getName());
         subCategory.setCategoryId(dto.getCategoryId());
         return transactionalOperator.transactional(subCategoryRepository.save(subCategory))
-                .flatMap(saved -> categoryCacheService.evictAllCategoryCaches().thenReturn(saved.getId()));
+            .flatMap(saved -> categoryCacheService.evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
     @SuppressWarnings("null")
     @Override
     public Mono<Void> updateSubCategory(SubCategoryUpdateDTO dto) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(dto.getId())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-                .flatMap(subCategory -> {
-                    subCategory.setName(dto.getName());
-                    subCategory.setCategoryId(dto.getCategoryId());
-                    return subCategoryRepository.save(subCategory);
-                })
-                .then();
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
+            .flatMap(subCategory -> {
+                subCategory.setName(dto.getName());
+                subCategory.setCategoryId(dto.getCategoryId());
+                return subCategoryRepository.save(subCategory);
+            })
+            .then();
         return transactionalOperator.transactional(databaseOperation)
-                .then(categoryCacheService.evictAllCategoryCaches());
+            .then(categoryCacheService.evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteSubCategory(Long id) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(id)
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-                .flatMap(subCategoryRepository::delete);
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
+            .flatMap(subCategoryRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-                .then(categoryCacheService.evictAllCategoryCaches());
+            .then(categoryCacheService.evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
@@ -129,12 +129,12 @@ public class CategoryServiceImpl implements CategoryService {
             return Mono.empty();
         }
         Mono<Void> databaseOperation = subCategoryRepository.findAllById(distinctIds)
-                .count()
-                .filter(count -> count == distinctIds.size())
-                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORIES)))
-                .then(subCategoryRepository.deleteAllById(distinctIds));
+            .count()
+            .filter(count -> count == distinctIds.size())
+            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORIES)))
+            .then(subCategoryRepository.deleteAllById(distinctIds));
         return transactionalOperator.transactional(databaseOperation)
-                .then(categoryCacheService.evictAllCategoryCaches());
+            .then(categoryCacheService.evictAllCategoryCaches());
     }
 
     @Override

@@ -34,13 +34,13 @@ class InternalTokenUtilTest {
         Map<String, String> envValues = loadDotEnvValues();
 
         internalTokenProperties.setSecret(resolveConfigValue(
-                envValues,
-                "INTERNAL_TOKEN_SECRET",
-                DEFAULT_INTERNAL_TOKEN_SECRET));
+            envValues,
+            "INTERNAL_TOKEN_SECRET",
+            DEFAULT_INTERNAL_TOKEN_SECRET));
         internalTokenProperties.setExpiration(Long.parseLong(resolveConfigValue(
-                envValues,
-                "INTERNAL_TOKEN_EXPIRATION",
-                String.valueOf(DEFAULT_INTERNAL_TOKEN_EXPIRATION))));
+            envValues,
+            "INTERNAL_TOKEN_EXPIRATION",
+            String.valueOf(DEFAULT_INTERNAL_TOKEN_EXPIRATION))));
 
         internalTokenUtil = new InternalTokenUtil(internalTokenProperties, new SimpleLogger());
         internalTokenUtil.initKey();
@@ -61,7 +61,7 @@ class InternalTokenUtilTest {
     void shouldValidateInternalToken() {
         String internalToken = System.getenv("INTERNAL_TOKEN_TEST_TOKEN");
         Assumptions.assumeTrue(Objects.nonNull(internalToken) && !internalToken.isEmpty(),
-                "环境变量 INTERNAL_TOKEN_TEST_TOKEN 不能为空");
+            "环境变量 INTERNAL_TOKEN_TEST_TOKEN 不能为空");
 
         assertTrue(internalTokenUtil.validateInternalToken(internalToken));
     }
@@ -69,9 +69,9 @@ class InternalTokenUtilTest {
     private Map<String, String> loadDotEnvValues() {
         Map<String, String> values = new HashMap<>();
         List<Path> candidates = List.of(
-                Path.of(".env"),
-                Path.of("spring/.env"),
-                Path.of("../.env"));
+            Path.of(".env"),
+            Path.of("spring/.env"),
+            Path.of("../.env"));
 
         for (Path candidate : candidates) {
             if (!Files.exists(candidate)) {

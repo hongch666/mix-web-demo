@@ -31,16 +31,16 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     @ArticleSync(action = "like", description = Messages.ARTICLE_SYNC_LIKE)
     public Mono<Boolean> addLike(Long articleId, Long userId) {
         Mono<Boolean> operation = articleLikeRepository.existsByArticleIdAndUserId(articleId, userId)
-                .flatMap(exists -> {
-                    if (exists) {
-                        return Mono.just(false);
-                    }
-                    ArticleLike like = new ArticleLike();
-                    like.setArticleId(articleId);
-                    like.setUserId(userId);
-                    like.setCreatedTime(LocalDateTime.now());
-                    return articleLikeRepository.save(like).thenReturn(true);
-                });
+            .flatMap(exists -> {
+                if (exists) {
+                    return Mono.just(false);
+                }
+                ArticleLike like = new ArticleLike();
+                like.setArticleId(articleId);
+                like.setUserId(userId);
+                like.setCreatedTime(LocalDateTime.now());
+                return articleLikeRepository.save(like).thenReturn(true);
+            });
         return transactionalOperator.transactional(operation);
     }
 
@@ -49,10 +49,10 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     @ArticleSync(action = "unlike", description = Messages.ARTICLE_SYNC_UNLIKE)
     public Mono<Boolean> removeLike(Long articleId, Long userId) {
         return transactionalOperator.transactional(
-                articleLikeRepository.existsByArticleIdAndUserId(articleId, userId)
-                        .flatMap(exists -> exists
-                                ? articleLikeRepository.deleteByArticleIdAndUserId(articleId, userId).thenReturn(true)
-                                : Mono.just(false)));
+            articleLikeRepository.existsByArticleIdAndUserId(articleId, userId)
+                .flatMap(exists -> exists
+                    ? articleLikeRepository.deleteByArticleIdAndUserId(articleId, userId).thenReturn(true)
+                    : Mono.just(false)));
     }
 
     @Override
@@ -63,11 +63,11 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     @Override
     public Mono<PageDTO<ArticleLikeVO>> listUserLikes(Long userId, long page, long size) {
         Mono<List<ArticleLikeVO>> records = articleLikeRepository
-                .findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size))
-                .collectList()
-                .flatMap(assembler::toLikeVOs);
+            .findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size))
+            .collectList()
+            .flatMap(assembler::toLikeVOs);
         return Mono.zip(records, articleLikeRepository.countByUserId(userId))
-                .map(result -> page(page, size, result.getT2(), result.getT1()));
+            .map(result -> page(page, size, result.getT2(), result.getT1()));
     }
 
     @Override

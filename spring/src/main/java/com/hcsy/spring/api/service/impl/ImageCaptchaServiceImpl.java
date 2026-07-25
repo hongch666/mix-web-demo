@@ -31,30 +31,30 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
     @Override
     public Mono<ImageCaptchaVO> createCaptcha() {
         return Mono.fromCallable(this::generateCaptcha)
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(generated -> redisUtil.set(generated.key(), generated.text(), CAPTCHA_EXPIRY)
-                        .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_SAVE + generated.id()))
-                        .thenReturn(generated.vo()));
+            .subscribeOn(Schedulers.boundedElastic())
+            .flatMap(generated -> redisUtil.set(generated.key(), generated.text(), CAPTCHA_EXPIRY)
+                .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_SAVE + generated.id()))
+                .thenReturn(generated.vo()));
     }
 
     @Override
     public Mono<Boolean> verifyCaptcha(String captchaId, String captchaText) {
         return redisUtil.get(buildCaptchaKey(captchaId))
-                .map(stored -> captchaText != null && stored.equalsIgnoreCase(captchaText.trim()))
-                .doOnNext(matched -> logger.info((matched
-                        ? Messages.IMAGE_CAPTCHA_VERIFY_SUCCESS
-                        : Messages.IMAGE_CAPTCHA_VERIFY_FAIL) + captchaId))
-                .switchIfEmpty(Mono.fromSupplier(() -> {
-                    logger.info(Messages.IMAGE_CAPTCHA_EXPIRED + captchaId);
-                    return false;
-                }));
+            .map(stored -> captchaText != null && stored.equalsIgnoreCase(captchaText.trim()))
+            .doOnNext(matched -> logger.info((matched
+                ? Messages.IMAGE_CAPTCHA_VERIFY_SUCCESS
+                : Messages.IMAGE_CAPTCHA_VERIFY_FAIL) + captchaId))
+            .switchIfEmpty(Mono.fromSupplier(() -> {
+                logger.info(Messages.IMAGE_CAPTCHA_EXPIRED + captchaId);
+                return false;
+            }));
     }
 
     @Override
     public Mono<Void> deleteCaptcha(String captchaId) {
         return redisUtil.delete(buildCaptchaKey(captchaId))
-                .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_DELETE + captchaId))
-                .then();
+            .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_DELETE + captchaId))
+            .then();
     }
 
     private GeneratedCaptcha generateCaptcha() {
@@ -63,9 +63,9 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
         captcha.setCharType(Captcha.TYPE_DEFAULT);
         String text = captcha.text();
         ImageCaptchaVO vo = ImageCaptchaVO.builder()
-                .captchaId(captchaId)
-                .imageBase64(captcha.toBase64())
-                .build();
+            .captchaId(captchaId)
+            .imageBase64(captcha.toBase64())
+            .build();
         return new GeneratedCaptcha(captchaId, buildCaptchaKey(captchaId), text, vo);
     }
 
@@ -73,5 +73,6 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
         return CAPTCHA_PREFIX + captchaId;
     }
 
-    private record GeneratedCaptcha(String id, String key, String text, ImageCaptchaVO vo) { }
+    private record GeneratedCaptcha(String id, String key, String text, ImageCaptchaVO vo) {
+    }
 }

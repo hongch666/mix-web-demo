@@ -8,9 +8,9 @@ import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.core.properties.InternalTokenProperties;
 
 import io.jsonwebtoken.Claims;
@@ -34,7 +34,8 @@ public class InternalTokenUtil {
     @PostConstruct
     public void initKey() {
         if (internalTokenProperties.getSecret() == null || internalTokenProperties.getSecret().isEmpty()) {
-            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR).errorMessage(Messages.INTERNAL_TOKEN_NOT_NULL).build();
+            throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
+                .errorMessage(Messages.INTERNAL_TOKEN_NOT_NULL).build();
         }
         key = Keys.hmacShaKeyFor(internalTokenProperties.getSecret().getBytes(StandardCharsets.UTF_8));
         log.info(Messages.INTERNAL_TOKEN_INIT);
@@ -73,10 +74,12 @@ public class InternalTokenUtil {
             return true;
         } catch (ExpiredJwtException e) {
             logger.warning(Messages.INTERNAL_TOKEN_EXPIRED);
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.INTERNAL_TOKEN_EXPIRED).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED)
+                .errorMessage(Messages.INTERNAL_TOKEN_EXPIRED).build();
         } catch (JwtException | IllegalArgumentException e) {
             logger.warning(Messages.INTERNAL_TOKEN_INVALID + e.getMessage());
-            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED).errorMessage(Messages.INTERNAL_TOKEN_INVALID).build();
+            throw BusinessException.builder().httpStatus(HttpCode.UNAUTHORIZED)
+                .errorMessage(Messages.INTERNAL_TOKEN_INVALID).build();
         }
     }
 

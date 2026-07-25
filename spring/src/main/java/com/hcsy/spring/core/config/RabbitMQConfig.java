@@ -25,7 +25,7 @@ public class RabbitMQConfig {
     @Bean(destroyMethod = "close")
     Sender rabbitSender(AbstractConnectionFactory connectionFactory) {
         SenderOptions senderOptions = new SenderOptions()
-                .connectionFactory(connectionFactory.getRabbitConnectionFactory());
+            .connectionFactory(connectionFactory.getRabbitConnectionFactory());
         return RabbitFlux.createSender(senderOptions);
     }
 }

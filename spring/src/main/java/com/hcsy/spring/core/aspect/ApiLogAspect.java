@@ -102,7 +102,7 @@ public class ApiLogAspect {
                     String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, duration);
                     logger.info(timeMessage);
                     return sendApiLogToQueue(ctx, pjp, httpMethod, requestPath, apiLog, duration)
-                            .thenReturn(res);
+                        .thenReturn(res);
                 }))
                 .doOnError(err -> {
                     logger.error(Messages.API_EXCEPTION, err);
@@ -306,14 +306,14 @@ public class ApiLogAspect {
      */
     private boolean isPrimitiveOrWrapper(Class<?> clazz) {
         return clazz.isPrimitive() ||
-                clazz == Boolean.class ||
-                clazz == Byte.class ||
-                clazz == Character.class ||
-                clazz == Short.class ||
-                clazz == Integer.class ||
-                clazz == Long.class ||
-                clazz == Float.class ||
-                clazz == Double.class;
+            clazz == Boolean.class ||
+            clazz == Byte.class ||
+            clazz == Character.class ||
+            clazz == Short.class ||
+            clazz == Integer.class ||
+            clazz == Long.class ||
+            clazz == Float.class ||
+            clazz == Double.class;
     }
 
     /**
@@ -343,12 +343,12 @@ public class ApiLogAspect {
      * 在接口完成后自动发送到 RabbitMQ
      */
     private Mono<Void> sendApiLogToQueue(
-            reactor.util.context.ContextView ctx,
-            ProceedingJoinPoint pjp,
-            String httpMethod,
-            String requestPath,
-            ApiLog apiLog,
-            long responseTime) {
+        reactor.util.context.ContextView ctx,
+        ProceedingJoinPoint pjp,
+        String httpMethod,
+        String requestPath,
+        ApiLog apiLog,
+        long responseTime) {
         try {
             // 从 Reactor Context 获取用户信息
             Long userId = UserContext.getUserId(ctx);

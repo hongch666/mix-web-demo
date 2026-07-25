@@ -33,12 +33,8 @@ public class CategoryReferenceController {
 
     @Operation(summary = "创建权威参考文本")
     @PostMapping()
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "categoryReference",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "categoryReference", paramSource = "body", paramNames = {
+        "id" })
     @ApiLog("创建权威参考文本")
     public Mono<Result<Void>> addCategoryReference(@Validated @RequestBody CategoryReferenceCreateDTO dto) {
         return categoryReferenceService.addCategoryReference(dto).thenReturn(Result.<Void>success());
@@ -46,12 +42,8 @@ public class CategoryReferenceController {
 
     @Operation(summary = "修改权威参考文本")
     @PutMapping()
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "categoryReference",
-        paramSource = "body",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = { "admin" }, businessType = "categoryReference", paramSource = "body", paramNames = {
+        "id" })
     @ApiLog("修改权威参考文本")
     public Mono<Result<Void>> updateCategoryReference(@Validated @RequestBody CategoryReferenceUpdateDTO dto) {
         return categoryReferenceService.updateCategoryReference(dto).thenReturn(Result.<Void>success());
@@ -59,12 +51,8 @@ public class CategoryReferenceController {
 
     @Operation(summary = "删除权威参考文本")
     @DeleteMapping("/sub/{sub_category_id}")
-    @RequirePermission(
-        roles = { "admin" },
-        businessType = "categoryReference",
-        paramSource = "path_single",
-        paramNames = { "id" }
-    )
+    @RequirePermission(roles = {
+        "admin" }, businessType = "categoryReference", paramSource = "path_single", paramNames = { "id" })
     @ApiLog("删除权威参考文本")
     public Mono<Result<Void>> deleteCategoryReference(@PathVariable("sub_category_id") Long subCategoryId) {
         return categoryReferenceService.deleteCategoryReference(subCategoryId).thenReturn(Result.<Void>success());
@@ -73,9 +61,10 @@ public class CategoryReferenceController {
     @Operation(summary = "根据子分类ID获取权威参考文本")
     @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")
-    public Mono<Result<CategoryReferenceVO>> getCategoryReferenceBySubCategoryId(@PathVariable("sub_category_id") Long subCategoryId) {
+    public Mono<Result<CategoryReferenceVO>> getCategoryReferenceBySubCategoryId(
+        @PathVariable("sub_category_id") Long subCategoryId) {
         return categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId)
-                .map(Result::success)
-                .defaultIfEmpty(Result.<CategoryReferenceVO>success(null));
+            .map(Result::success)
+            .defaultIfEmpty(Result.<CategoryReferenceVO>success(null));
     }
 }

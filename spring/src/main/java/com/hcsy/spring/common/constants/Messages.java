@@ -5,7 +5,8 @@ package com.hcsy.spring.common.constants;
  */
 public class Messages {
 
-    private Messages() {}
+    private Messages() {
+    }
 
     // ===== 错误信息 =====
     public static final String COLLECT_FAIL = "收藏失败，可能已经收藏过了";

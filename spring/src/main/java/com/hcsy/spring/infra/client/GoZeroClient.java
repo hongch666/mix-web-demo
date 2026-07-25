@@ -19,7 +19,7 @@ public class GoZeroClient {
 
     public Mono<Result<?>> syncES() {
         return serviceWebClient.request(HttpMethod.POST, "gozero", "/task/syncer", ServiceRequestOptions.empty(),
-                Duration.ofSeconds(3),
-                Messages.ES_SERVICE_UNAVAILABLE);
+            Duration.ofSeconds(3),
+            Messages.ES_SERVICE_UNAVAILABLE);
     }
 }

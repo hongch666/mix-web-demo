@@ -12,8 +12,10 @@ public interface AsyncNeo4jSyncService {
      * 异步同步 Neo4j
      * 此方法会在后台线程池中执行，不阻塞主流程
      *
-     * @param methodName  触发同步的方法名
-     * @param description 触发同步的操作描述
+     * @param methodName
+     *                        触发同步的方法名
+     * @param description
+     *                        触发同步的操作描述
      */
     Mono<Void> syncNeo4jAsync(String methodName, String description);
 }

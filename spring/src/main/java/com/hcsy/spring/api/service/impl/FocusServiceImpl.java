@@ -41,16 +41,16 @@ public class FocusServiceImpl implements FocusService {
     @ArticleSync(action = "focus", description = Messages.ARTICLE_SYNC_FOCUS)
     public Mono<Boolean> addFocus(Long userId, Long focusId) {
         Mono<Boolean> operation = focusRepository.existsByUserIdAndFocusId(userId, focusId)
-                .flatMap(exists -> {
-                    if (exists) {
-                        return Mono.just(false);
-                    }
-                    Focus focus = new Focus();
-                    focus.setUserId(userId);
-                    focus.setFocusId(focusId);
-                    focus.setCreatedTime(LocalDateTime.now());
-                    return focusRepository.save(focus).thenReturn(true);
-                });
+            .flatMap(exists -> {
+                if (exists) {
+                    return Mono.just(false);
+                }
+                Focus focus = new Focus();
+                focus.setUserId(userId);
+                focus.setFocusId(focusId);
+                focus.setCreatedTime(LocalDateTime.now());
+                return focusRepository.save(focus).thenReturn(true);
+            });
         return transactionalOperator.transactional(operation);
     }
 
@@ -59,10 +59,10 @@ public class FocusServiceImpl implements FocusService {
     @ArticleSync(action = "unfocus", description = Messages.ARTICLE_SYNC_UNFOCUS)
     public Mono<Boolean> removeFocus(Long userId, Long focusId) {
         return transactionalOperator.transactional(
-                focusRepository.existsByUserIdAndFocusId(userId, focusId)
-                        .flatMap(exists -> exists
-                                ? focusRepository.deleteByUserIdAndFocusId(userId, focusId).thenReturn(true)
-                                : Mono.just(false)));
+            focusRepository.existsByUserIdAndFocusId(userId, focusId)
+                .flatMap(exists -> exists
+                    ? focusRepository.deleteByUserIdAndFocusId(userId, focusId).thenReturn(true)
+                    : Mono.just(false)));
     }
 
     @Override
@@ -96,16 +96,16 @@ public class FocusServiceImpl implements FocusService {
 
     @SuppressWarnings("null")
     private Mono<PageDTO<FocusUserVO>> buildPage(
-            Flux<Focus> query,
-            Mono<Long> total,
-            long page,
-            long size,
-            Function<Focus, Long> relatedUserId) {
+        Flux<Focus> query,
+        Mono<Long> total,
+        long page,
+        long size,
+        Function<Focus, Long> relatedUserId) {
         Mono<List<FocusUserVO>> records = query.collectList().flatMap(focuses -> {
             Set<Long> userIds = focuses.stream().map(relatedUserId).collect(Collectors.toSet());
             return userRepository.findAllById(userIds)
-                    .collectMap(User::getId, Function.identity())
-                    .map(users -> toVOs(focuses, users, relatedUserId));
+                .collectMap(User::getId, Function.identity())
+                .map(users -> toVOs(focuses, users, relatedUserId));
         });
         return Mono.zip(records, total).map(result -> {
             PageDTO<FocusUserVO> pageDTO = new PageDTO<>();
@@ -118,14 +118,14 @@ public class FocusServiceImpl implements FocusService {
     }
 
     private List<FocusUserVO> toVOs(
-            List<Focus> focuses,
-            Map<Long, User> users,
-            Function<Focus, Long> relatedUserId) {
+        List<Focus> focuses,
+        Map<Long, User> users,
+        Function<Focus, Long> relatedUserId) {
         return focuses.stream().map(focus -> {
             User user = users.get(relatedUserId.apply(focus));
             if (user == null) {
                 throw BusinessException.builder().httpStatus(HttpCode.NOT_FOUND)
-                        .errorMessage(Messages.UNDEFINED_USER).build();
+                    .errorMessage(Messages.UNDEFINED_USER).build();
             }
             FocusUserVO vo = BeanUtil.copyProperties(user, FocusUserVO.class);
             vo.setFocusedTime(focus.getCreatedTime());

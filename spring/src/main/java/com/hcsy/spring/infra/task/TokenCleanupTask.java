@@ -24,22 +24,22 @@ public class TokenCleanupTask {
     public Mono<Void> cleanupExpiredTokens() {
         String lockKey = Defaults.LOCK_TASK_TOKEN_CLEANUP;
         return distributedLock.tryLock(lockKey, Defaults.LOCK_TASK_TOKEN_CLEANUP_EXPIRE)
-                .doOnNext(ignored -> logger.info(String.format(Messages.LOCK_ACQUIRE_SUCCESS, lockKey)))
-                .flatMap(lockValue -> tokenService.cleanupExpiredTokens()
-                        .doOnSubscribe(ignored -> logger.info(Messages.TASK_START))
-                        .doOnSuccess(ignored -> logger.info(Messages.TASK_END))
-                        .doOnError(error -> logger.error(Messages.TASK_EXCEPTION + error.getMessage(), error))
-                        .onErrorResume(error -> Mono.empty())
-                        .then(distributedLock.unlock(lockKey, lockValue))
-                        .doOnNext(released -> {
-                            if (released) {
-                                logger.info(String.format(Messages.LOCK_RELEASE_SUCCESS, lockKey));
-                            } else {
-                                logger.warning(String.format(Messages.LOCK_RELEASE_FAIL, lockKey));
-                            }
-                        })
-                        .then())
-                .switchIfEmpty(Mono.fromRunnable(
-                        () -> logger.info(String.format(Messages.LOCK_ACQUIRE_FAIL, lockKey))));
+            .doOnNext(ignored -> logger.info(String.format(Messages.LOCK_ACQUIRE_SUCCESS, lockKey)))
+            .flatMap(lockValue -> tokenService.cleanupExpiredTokens()
+                .doOnSubscribe(ignored -> logger.info(Messages.TASK_START))
+                .doOnSuccess(ignored -> logger.info(Messages.TASK_END))
+                .doOnError(error -> logger.error(Messages.TASK_EXCEPTION + error.getMessage(), error))
+                .onErrorResume(error -> Mono.empty())
+                .then(distributedLock.unlock(lockKey, lockValue))
+                .doOnNext(released -> {
+                    if (released) {
+                        logger.info(String.format(Messages.LOCK_RELEASE_SUCCESS, lockKey));
+                    } else {
+                        logger.warning(String.format(Messages.LOCK_RELEASE_FAIL, lockKey));
+                    }
+                })
+                .then())
+            .switchIfEmpty(Mono.fromRunnable(
+                () -> logger.info(String.format(Messages.LOCK_ACQUIRE_FAIL, lockKey))));
     }
 }

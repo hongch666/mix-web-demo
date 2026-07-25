@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 /**
  * 统一响应结果封装（泛型版本）
  *
- * @param <T> data 的数据类型
+ * @param <T>
+ *                data 的数据类型
  */
 @Data
 @NoArgsConstructor
