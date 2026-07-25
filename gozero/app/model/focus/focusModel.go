@@ -34,48 +34,62 @@ type (
 func NewFocusModel(conn sqlx.SqlConn) FocusModel {
 	return &customFocusModel{conn: conn, baseModel: newFocusModel(conn)}
 }
+
 func (m *customFocusModel) Insert(ctx context.Context, data *Focus) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customFocusModel) FindOne(ctx context.Context, id int64) (*Focus, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customFocusModel) Update(ctx context.Context, data *Focus) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customFocusModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customFocusModel) FindOneByUserIdFocusId(ctx context.Context, userID, focusID int64) (*Focus, error) {
 	return m.baseModel.FindOneByUserIdFocusId(ctx, userID, focusID)
 }
+
 func (m *customFocusModel) FindOneByFocuserIdFocusedId(ctx context.Context, focuserID, focusedID int64) (*Focus, error) {
 	return m.FindOneByUserIdFocusId(ctx, focuserID, focusedID)
 }
+
 func (m *customFocusModel) GetFocusCountByUserID(ctx context.Context, userID int64) (int64, error) {
 	return m.getCount(ctx, "user_id", userID)
 }
+
 func (m *customFocusModel) GetFocusedCountByUserID(ctx context.Context, userID int64) (int64, error) {
 	return m.getCount(ctx, "focus_id", userID)
 }
+
 func (m *customFocusModel) GetFocusCountsByUserIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	return m.getCounts(ctx, "user_id", ids)
 }
+
 func (m *customFocusModel) GetFocusedCountsByUserIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	return m.getCounts(ctx, "focus_id", ids)
 }
+
 func (m *customFocusModel) GetFollowCountByUserID(ctx context.Context, userID int64) (int64, error) {
 	return m.GetFocusedCountByUserID(ctx, userID)
 }
+
 func (m *customFocusModel) GetFollowCountsByUserIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	return m.GetFocusedCountsByUserIDs(ctx, ids)
 }
+
 func (m *customFocusModel) getCount(ctx context.Context, column string, userID int64) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where %s = ?", m.baseModel.table, column), userID)
 	return count, err
 }
+
 func (m *customFocusModel) getCounts(ctx context.Context, column string, ids []int64) (map[int64]int64, error) {
 	result := make(map[int64]int64)
 	if len(ids) == 0 {

@@ -29,24 +29,30 @@ type (
 func NewArticlesModel(conn sqlx.SqlConn) ArticlesModel {
 	return &customArticlesModel{conn: conn, baseModel: newArticlesModel(conn)}
 }
+
 func (m *customArticlesModel) Insert(ctx context.Context, data *Articles) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customArticlesModel) FindOne(ctx context.Context, id int64) (*Articles, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customArticlesModel) Update(ctx context.Context, data *Articles) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customArticlesModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customArticlesModel) SearchArticles(ctx context.Context) ([]Articles, error) {
 	var articles []Articles
 	err := m.IteratePublishedArticles(ctx, 500, func(batch []Articles) error { articles = append(articles, batch...); return nil })
 	return articles, err
 }
+
 func (m *customArticlesModel) IteratePublishedArticles(ctx context.Context, batchSize int, handler func([]Articles) error) error {
 	if batchSize <= 0 {
 		batchSize = 500
@@ -67,6 +73,7 @@ func (m *customArticlesModel) IteratePublishedArticles(ctx context.Context, batc
 		lastID = batch[len(batch)-1].Id
 	}
 }
+
 func (m *customArticlesModel) GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	result := make(map[int64]int64)
 	if len(ids) == 0 {

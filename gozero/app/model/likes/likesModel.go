@@ -29,27 +29,34 @@ type (
 func NewLikesModel(conn sqlx.SqlConn) LikesModel {
 	return &customLikesModel{conn: conn, baseModel: newLikesModel(conn)}
 }
+
 func (m *customLikesModel) Insert(ctx context.Context, data *Likes) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customLikesModel) FindOne(ctx context.Context, id int64) (*Likes, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customLikesModel) Update(ctx context.Context, data *Likes) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customLikesModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customLikesModel) FindOneByArticleIdUserId(ctx context.Context, articleID, userID int64) (*Likes, error) {
 	return m.baseModel.FindOneByArticleIdUserId(ctx, articleID, userID)
 }
+
 func (m *customLikesModel) GetLikeCountByArticleID(ctx context.Context, articleID int64) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where article_id = ?", m.baseModel.table), articleID)
 	return count, err
 }
+
 func (m *customLikesModel) GetLikeCountsByArticleIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	result := make(map[int64]int64)
 	if len(ids) == 0 {

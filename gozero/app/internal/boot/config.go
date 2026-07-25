@@ -67,16 +67,16 @@ func expandLineEnv(line string) string {
 		// Port、Expiration 等整数字段不加引号，让 YAML 保持数字类型
 		if isNestedField && value != "" && isNumeric(value) {
 			// 不对 port、expiration 等字段加引号，这些本应是数字类型
-		if strings.ToLower(fieldName) != "port" &&
-			strings.ToLower(fieldName) != "expiration" &&
-			strings.ToLower(fieldName) != "slowthreshold" &&
-			strings.ToLower(fieldName) != "recency_decay_days" &&
-			strings.ToLower(fieldName) != "vector_timeout_ms" &&
-			strings.ToLower(fieldName) != "vector_candidate_limit" &&
-			strings.ToLower(fieldName) != "graph_timeout_ms" &&
-			strings.ToLower(fieldName) != "graph_candidate_limit" &&
-			!strings.HasSuffix(strings.ToLower(fieldName), "_weight") &&
-			!strings.HasSuffix(strings.ToLower(fieldName), "_normalized") {
+			if strings.ToLower(fieldName) != "port" &&
+				strings.ToLower(fieldName) != "expiration" &&
+				strings.ToLower(fieldName) != "slowthreshold" &&
+				strings.ToLower(fieldName) != "recency_decay_days" &&
+				strings.ToLower(fieldName) != "vector_timeout_ms" &&
+				strings.ToLower(fieldName) != "vector_candidate_limit" &&
+				strings.ToLower(fieldName) != "graph_timeout_ms" &&
+				strings.ToLower(fieldName) != "graph_candidate_limit" &&
+				!strings.HasSuffix(strings.ToLower(fieldName), "_weight") &&
+				!strings.HasSuffix(strings.ToLower(fieldName), "_normalized") {
 				if !isQuoted(value) {
 					value = "\"" + value + "\""
 				}

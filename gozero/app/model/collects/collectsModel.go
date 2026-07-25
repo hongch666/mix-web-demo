@@ -29,27 +29,34 @@ type (
 func NewCollectsModel(conn sqlx.SqlConn) CollectsModel {
 	return &customCollectsModel{conn: conn, baseModel: newCollectsModel(conn)}
 }
+
 func (m *customCollectsModel) Insert(ctx context.Context, data *Collects) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customCollectsModel) FindOne(ctx context.Context, id int64) (*Collects, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customCollectsModel) Update(ctx context.Context, data *Collects) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customCollectsModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customCollectsModel) FindOneByArticleIdUserId(ctx context.Context, articleID, userID int64) (*Collects, error) {
 	return m.baseModel.FindOneByArticleIdUserId(ctx, articleID, userID)
 }
+
 func (m *customCollectsModel) GetCollectCountByArticleID(ctx context.Context, articleID int64) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where article_id = ?", m.baseModel.table), articleID)
 	return count, err
 }
+
 func (m *customCollectsModel) GetCollectCountsByArticleIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	result := make(map[int64]int64)
 	if len(ids) == 0 {

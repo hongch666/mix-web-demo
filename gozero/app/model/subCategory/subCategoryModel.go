@@ -27,19 +27,24 @@ type (
 func NewSubCategoryModel(conn sqlx.SqlConn) SubCategoryModel {
 	return &customSubCategoryModel{conn: conn, baseModel: newSubCategoryModel(conn)}
 }
+
 func (m *customSubCategoryModel) Insert(ctx context.Context, data *SubCategory) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customSubCategoryModel) FindOne(ctx context.Context, id int64) (*SubCategory, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customSubCategoryModel) Update(ctx context.Context, data *SubCategory) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customSubCategoryModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customSubCategoryModel) SearchSubCategoriesByIds(ctx context.Context, ids []int64) ([]SubCategory, error) {
 	if len(ids) == 0 {
 		return []SubCategory{}, nil

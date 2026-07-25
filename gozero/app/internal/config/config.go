@@ -19,7 +19,7 @@ type Config struct {
 	Database DatabaseConfig `json:"database"`
 	MQ       MQConfig       `json:"mq"`
 
-	Logs   LogsConfig   `json:"logs"`
+	Logs          LogsConfig          `json:"logs"`
 	InternalToken InternalTokenConfig `json:"internal-token"`
 }
 
@@ -42,8 +42,8 @@ type MysqlConfig struct {
 	Dbname        string `json:"dbname"`
 	Charset       string `json:"charset"`
 	Loc           string `json:"loc"`
-	LogEnabled    bool   `json:"sqlLogEnabled"`  // SQL 普通日志开关，默认 true
-	SlowThreshold int    `json:"slowThreshold"`   // 慢查询阈值(毫秒)，默认 500
+	LogEnabled    bool   `json:"sqlLogEnabled"` // SQL 普通日志开关，默认 true
+	SlowThreshold int    `json:"slowThreshold"` // 慢查询阈值(毫秒)，默认 500
 }
 
 // GetSlowThreshold 获取慢查询阈值，返回 time.Duration，默认 500ms
@@ -101,4 +101,3 @@ type InternalTokenConfig struct {
 type LogsConfig struct {
 	Path string `json:"path"`
 }
-

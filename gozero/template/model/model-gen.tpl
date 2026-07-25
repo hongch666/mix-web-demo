@@ -3,14 +3,23 @@
 //  goctl version: 1.9.2
 
 package {{.pkg}}
+
 {{.imports}}
+
 {{.vars}}
+
 {{.types}}
+
 {{.new}}
+
 {{.delete}}
+
 {{.find}}
+
 {{.insert}}
+
 {{.update}}
 {{.extraMethod}}
 {{.tableName}}
+
 {{.customized}}

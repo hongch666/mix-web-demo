@@ -31,22 +31,28 @@ type (
 func NewChatMessagesModel(conn sqlx.SqlConn) ChatMessagesModel {
 	return &customChatMessagesModel{conn: conn, baseModel: newChatMessagesModel(conn)}
 }
+
 func (m *customChatMessagesModel) Insert(ctx context.Context, data *ChatMessages) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customChatMessagesModel) FindOne(ctx context.Context, id uint64) (*ChatMessages, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customChatMessagesModel) Update(ctx context.Context, data *ChatMessages) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customChatMessagesModel) Delete(ctx context.Context, id uint64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message *ChatMessages) error {
 	return m.Insert(ctx, message)
 }
+
 func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, otherID string, offset, limit int) ([]*ChatMessages, int64, error) {
 	var total int64
 	where := "(sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)"
@@ -65,11 +71,13 @@ func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, ot
 	}
 	return result, total, nil
 }
+
 func (m *customChatMessagesModel) GetUnreadCount(ctx context.Context, userID, otherID string) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where receiver_id = ? and sender_id = ? and is_read = 0", m.baseModel.table), userID, otherID)
 	return count, err
 }
+
 func (m *customChatMessagesModel) GetAllUnreadCounts(ctx context.Context, userID string) (map[string]int64, error) {
 	var rows []struct {
 		SenderID string `db:"sender_id"`
@@ -85,10 +93,12 @@ func (m *customChatMessagesModel) GetAllUnreadCounts(ctx context.Context, userID
 	}
 	return result, nil
 }
+
 func (m *customChatMessagesModel) MarkAsRead(ctx context.Context, messageID uint64) error {
 	_, err := m.conn.ExecCtx(ctx, fmt.Sprintf("update %s set is_read = 1 where id = ?", m.baseModel.table), messageID)
 	return err
 }
+
 func (m *customChatMessagesModel) MarkChatHistoryAsRead(ctx context.Context, userID, otherID string) error {
 	_, err := m.conn.ExecCtx(ctx, fmt.Sprintf("update %s set is_read = 1 where receiver_id = ? and sender_id = ?", m.baseModel.table), userID, otherID)
 	return err

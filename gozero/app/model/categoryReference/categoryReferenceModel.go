@@ -23,16 +23,20 @@ type (
 func NewCategoryReferenceModel(conn sqlx.SqlConn) CategoryReferenceModel {
 	return &customCategoryReferenceModel{baseModel: newCategoryReferenceModel(conn)}
 }
+
 func (m *customCategoryReferenceModel) Insert(ctx context.Context, data *CategoryReference) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customCategoryReferenceModel) FindOne(ctx context.Context, id int64) (*CategoryReference, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customCategoryReferenceModel) Update(ctx context.Context, data *CategoryReference) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customCategoryReferenceModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }

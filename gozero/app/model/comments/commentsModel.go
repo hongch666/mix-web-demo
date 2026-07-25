@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"app/common/constants"
+
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
 
@@ -36,24 +37,30 @@ type (
 func NewCommentsModel(conn sqlx.SqlConn) CommentsModel {
 	return &customCommentsModel{conn: conn, baseModel: newCommentsModel(conn)}
 }
+
 func (m *customCommentsModel) Insert(ctx context.Context, data *Comments) error {
 	_, err := m.baseModel.Insert(ctx, data)
 	return err
 }
+
 func (m *customCommentsModel) FindOne(ctx context.Context, id int64) (*Comments, error) {
 	return m.baseModel.FindOne(ctx, id)
 }
+
 func (m *customCommentsModel) Update(ctx context.Context, data *Comments) error {
 	return m.baseModel.Update(ctx, data)
 }
+
 func (m *customCommentsModel) Delete(ctx context.Context, id int64) error {
 	return m.baseModel.Delete(ctx, id)
 }
+
 func (m *customCommentsModel) GetCommentCountByArticleID(ctx context.Context, articleID int64) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where article_id = ?", m.baseModel.table), articleID)
 	return count, err
 }
+
 func (m *customCommentsModel) GetCommentCountsByArticleIDs(ctx context.Context, ids []int64) (map[int64]int64, error) {
 	result := make(map[int64]int64)
 	if len(ids) == 0 {
@@ -73,11 +80,13 @@ func (m *customCommentsModel) GetCommentCountsByArticleIDs(ctx context.Context, 
 	}
 	return result, nil
 }
+
 func (m *customCommentsModel) GetCommentRateByArticleID(ctx context.Context, articleID int64) (float64, error) {
 	var rate float64
 	err := m.conn.QueryRowCtx(ctx, &rate, fmt.Sprintf("select coalesce(avg(star), 0) from %s where article_id = ?", m.baseModel.table), articleID)
 	return rate, err
 }
+
 func (m *customCommentsModel) GetCommentRatesByArticleIDs(ctx context.Context, ids []int64) (map[int64]float64, error) {
 	result := make(map[int64]float64)
 	if len(ids) == 0 {
@@ -96,6 +105,7 @@ func (m *customCommentsModel) GetCommentRatesByArticleIDs(ctx context.Context, i
 	}
 	return result, nil
 }
+
 func (m *customCommentsModel) GetCommentScoresByArticleIDs(ctx context.Context, ids []int64) (map[int64]map[string]*CommentScore, error) {
 	result := make(map[int64]map[string]*CommentScore, len(ids))
 	if len(ids) == 0 {

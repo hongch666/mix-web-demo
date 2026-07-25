@@ -12,7 +12,7 @@ func New{{.name}}() *{{.name}} {
 	return &{{.name}}{}
 }
 
-func (m *{{.name}})Handle(next http.HandlerFunc) http.HandlerFunc {
+func (m *{{.name}}) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// TODO generate middleware implement function, delete after code implementation
 
