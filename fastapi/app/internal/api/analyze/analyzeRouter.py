@@ -1,7 +1,8 @@
 from typing import Any, Dict, List
 
 from app.common.decorators import log, requireAdmin
-from app.core.base import ListResponse, success
+from app.core.base import success
+from app.internal.schemas import ListResponse
 from app.core.db import get_db
 from app.internal.services import AnalyzeService, get_analyze_service
 from sqlalchemy.ext.asyncio import AsyncSession
