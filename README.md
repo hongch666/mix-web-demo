@@ -254,11 +254,227 @@ Body 参数：
 
 - 系统架构图
 
-  ![architecture](./static/pic/architecture.drawio.png)
+  ```mermaid
+  flowchart TB
+      subgraph 浏览器层
+          direction TB
+          React["React 前端页面"]
+      end
+
+      subgraph API网关层
+          direction TB
+          JWT["JWT 校验"]
+          SCG["SpringCloud Gateway 网关路由"]
+      end
+
+      subgraph 微服务通信层
+          direction TB
+          Nacos["Nacos 注册中心"]
+          RestfulAPI["Restful API 远程调用"]
+          RabbitMQ["RabbitMQ 异步消息队列"]
+      end
+
+      subgraph 服务层
+          direction TB
+          SpringSvc["Spring 服务<br/>(项目核心业务)"]
+          GoZeroSvc["GoZero 服务<br/>(搜索/聊天/同步)"]
+          NestJSSvc["NestJS 服务<br/>(日志和第三方自动化)"]
+          FastAPISvc["FastAPI 服务<br/>(AI 算法和数据分析)"]
+      end
+
+      subgraph 数据持久层
+          direction TB
+          Redis["Redis 缓存 (热点数据缓存)"]
+          ES["ElasticSearch 搜索引擎 (文章检索)"]
+          MongoDB["MongoDB 文档 (日志存储)"]
+          MySQL["MySQL 数据库 (核心数据存储)"]
+          ClickHouse["ClickHouse OLAP (数仓分析)"]
+          Postgres["PostgreSQL 向量库 (RAG 向量存储)"]
+          Neo4j["Neo4j 图数据库 (知识图谱)"]
+      end
+
+      subgraph 第三方服务层
+          direction TB
+          LLM["大模型 API 调用 (豆包/Qwen/Gemini)"]
+          OSS["阿里云 OSS 对象存储"]
+          GithubAPI["Github API 调用"]
+          Email["邮件服务调用"]
+      end
+
+      React <-->|请求/响应| JWT
+      JWT <-->|请求/响应| SCG
+
+      SCG -->|调度| Nacos
+      SCG -->|远程调用| RestfulAPI
+      SCG -->|异步消息| RabbitMQ
+
+      SCG -->|请求/响应| SpringSvc
+      SCG -->|请求/响应| GoZeroSvc
+      SCG -->|请求/响应| NestJSSvc
+      SCG -->|请求/响应| FastAPISvc
+
+      SpringSvc <-.->|RPC| GoZeroSvc
+      GoZeroSvc <-.->|RPC| NestJSSvc
+      NestJSSvc <-.->|RPC| FastAPISvc
+
+      SpringSvc <-->|缓存| Redis
+      Redis <-->|持久化| MySQL
+      GoZeroSvc <-->|检索| ES
+      NestJSSvc <-->|存储| MongoDB
+      FastAPISvc -->|分析| ClickHouse
+      FastAPISvc <-->|向量| Postgres
+      FastAPISvc <-->|图谱| Neo4j
+
+      FastAPISvc -->|AI| LLM
+      NestJSSvc -->|OSS| OSS
+      NestJSSvc -->|登录| GithubAPI
+      SpringSvc -->|邮件| Email
+  ```
 
 - ER 图
 
-  ![er](./static/pic/er.drawio.png)
+  ```mermaid
+  erDiagram
+      USER ||--o{ FOCUS : "关注"
+      USER ||--o{ FOCUS : "被关注"
+      USER ||--o{ APILOGS : "记录"
+      USER ||--o{ AI_HISTORY : "提问"
+      USER ||--o{ CHAT_MESSAGE : "发送"
+      USER ||--o{ CHAT_MESSAGE : "接收"
+      USER ||--o{ ARTICLE : "创建"
+      USER ||--o{ LIKES : "点赞"
+      USER ||--o{ COLLECTS : "收藏"
+      USER ||--o{ COMMENTS : "评论"
+      USER ||--o{ ARTICLELOG : "产生"
+
+      ARTICLE ||--o{ LIKES : "被点赞"
+      ARTICLE ||--o{ COLLECTS : "被收藏"
+      ARTICLE ||--o{ COMMENTS : "被评论"
+      ARTICLE ||--o{ ARTICLELOG : "被记录"
+
+      CATEGORY ||--o{ SUB_CATEGORY : "包含"
+      SUB_CATEGORY ||--o{ ARTICLE : "归属"
+      SUB_CATEGORY ||--|| CATEGORY_REFERENCE : "权威文章"
+
+      USER {
+          bigint id PK
+          bigint github_id
+          varchar github_login
+          varchar github_url
+          varchar name
+          varchar password
+          int age
+          varchar email
+          varchar role
+          varchar img
+          varchar signature
+          varchar auth_provider
+          datetime last_login_at
+          datetime create_at
+          datetime update_at
+      }
+      FOCUS {
+          bigint id PK
+          bigint user_id FK
+          bigint focus_id FK
+          datetime created_time
+      }
+      APILOGS {
+          object_id id PK
+          number user_id FK
+          string username
+          string apiDescription
+          string apiPath
+          string apiMethod
+          object queryParams
+          object pathParams
+          object requestBody
+          number responseTime
+          date createdAt
+          date updatedAt
+      }
+      AI_HISTORY {
+          bigint id PK
+          bigint user_id FK
+          text ask
+          text reply
+          text thinking
+          varchar ai_type
+          datetime created_at
+          datetime updated_at
+      }
+      CHAT_MESSAGE {
+          bigint id PK
+          bigint sender_id FK
+          bigint receiver_id FK
+          text content
+          tinyint is_read
+          datetime created_at
+      }
+      ARTICLE {
+          bigint id PK
+          varchar title
+          text content
+          varchar tags
+          bigint user_id FK
+          bigint sub_category_id FK
+          tinyint status
+          int views
+          datetime create_at
+          datetime update_at
+      }
+      LIKES {
+          bigint id PK
+          bigint article_id FK
+          bigint user_id FK
+          datetime created_time
+      }
+      COLLECTS {
+          bigint id PK
+          bigint article_id FK
+          bigint user_id FK
+          datetime created_time
+      }
+      COMMENTS {
+          bigint id PK
+          text content
+          double star
+          bigint user_id FK
+          bigint article_id FK
+          datetime create_time
+          datetime update_time
+      }
+      CATEGORY {
+          bigint id PK
+          varchar name
+          datetime create_time
+          datetime update_time
+      }
+      SUB_CATEGORY {
+          bigint id PK
+          varchar name
+          bigint category_id FK
+          datetime create_time
+          datetime update_time
+      }
+      CATEGORY_REFERENCE {
+          bigint id PK
+          bigint sub_category_id FK
+          varchar type
+          varchar link
+          varchar pdf
+      }
+      ARTICLELOG {
+          object_id id PK
+          number userId FK
+          number articleId FK
+          string action
+          object content
+          string msg
+          date createdAt
+          date updatedAt
+      }
+  ```
 
 ## 技术栈
 
@@ -1496,8 +1712,8 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `errorCodes.py`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
    - `httpCode.py`：HTTP 状态码常量
    - `initMessages.py`：启动/初始化消息类（客户端初始化日志）
-   - `messages.py`：消息类常量（日志消息、用户提示、RabbitMQ/Redis/Nacos 消息）
-   - `prompts.py`：LLM 提示词模板类（Agent 的 System Prompt）
+   - `messages.py`：消息类常量，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `NAME: str = "value"`，需要嵌入运行时上下文（如 serviceName、error）时用 `@staticmethod` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
+   - `prompts.py`：LLM 提示词模板类（Agent 的 System Prompt），同样采用静态字符串与 `@staticmethod` 混合方式
    - `scripts.py`：脚本类（SQL 语句、Cypher 语句、SQL 安全规则、LangSmith 脱敏规则与阈值）
    - `swaggerConfig.py`：Swagger/OpenAPI 配置类
    - `__init__.py`：统一导出入口
@@ -1507,7 +1723,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `errorIds.constants.ts`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
    - `httpCode.constants.ts`：HTTP 状态码常量
    - `infra.constants.ts`：基础设施标识常量（锁 Key、队列名、客户端 Token、Lua 脚本）
-   - `messages.constants.ts`：消息常量类
+   - `messages.constants.ts`：消息常量类，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `static readonly NAME = "value"`，需要嵌入运行时上下文（如 userId、serviceName）时用 `static` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
    - `swagger.constants.ts`：Swagger/OpenAPI 配置常量
    - `index.ts`：统一导出入口
 
@@ -1516,6 +1732,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 - Java 各服务直接 `import` 对应常量类；Go 通过 `constants` 包引用；FastAPI 与 NestJS 通过包（目录）导入，由 `__init__.py`/`index.ts` 统一导出
 - 字符串模板（如 LLM 提示词、SQL/Cypher 脚本）已抽离到对应文件（如 `prompts.py`、`scripts.go`、`scripts.py`），不再散落在业务代码中
 - 消息类字符串（用户提示、日志描述）优先抽取到 `Messages`/`messages` 类，避免硬编码
+- FastAPI 与 NestJS 的函数常量方法名保持全大写+下划线风格（如 `STARTUP_SERVICE_ADDRESS`），与静态字符串命名一致
 - 目前常量类均可根据需要进行扩展，新增常量请按职责归入对应文件，保持统一管理
 
 ### 定时任务说明
@@ -1718,15 +1935,15 @@ GoZero 代码生成统一通过根目录 `mix` 脚本调用，`mix` 会把参数
 
 参数说明：
 
-| 命令        | 参数                | 说明                                                              |
-| ----------- | ------------------- | ----------------------------------------------------------------- |
-| `goctl-api` | `-s`                | 生成 API 代码后，同时生成 Swagger/OpenAPI                         |
-| `goctl-api` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`                        |
-| `goctl-orm` | `-s`                | 执行生成；不加时只 dry-run 打印命令                               |
-| `goctl-orm` | `-srcDir <path>`    | 指定 SQL 文件目录，默认`gozero/script/sql`                        |
-| `goctl-orm` | `-outDir <path>`    | 指定 model 输出目录，默认`./gozero/app/model`                     |
-| `goctl-orm` | `-pattern <glob>`   | 指定 SQL 匹配规则，默认`*.sql`                                    |
-| `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`                        |
+| 命令        | 参数                | 说明                                          |
+| ----------- | ------------------- | --------------------------------------------- |
+| `goctl-api` | `-s`                | 生成 API 代码后，同时生成 Swagger/OpenAPI     |
+| `goctl-api` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`    |
+| `goctl-orm` | `-s`                | 执行生成；不加时只 dry-run 打印命令           |
+| `goctl-orm` | `-srcDir <path>`    | 指定 SQL 文件目录，默认`gozero/script/sql`    |
+| `goctl-orm` | `-outDir <path>`    | 指定 model 输出目录，默认`./gozero/app/model` |
+| `goctl-orm` | `-pattern <glob>`   | 指定 SQL 匹配规则，默认`*.sql`                |
+| `goctl-orm` | `--template <path>` | 指定 goctl 模板目录，默认`gozero/template`    |
 
 ORM 生成会按表名落到项目现有目录结构，例如 `sub_category.sql` 会生成到 `gozero/app/model/subCategory`。生成的 `*_gen.go` 提供结构体和基础 sqlx CRUD 实现；业务自定义查询应在对应的 model 文件中使用 sqlx 编写。
 
