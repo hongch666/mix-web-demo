@@ -117,16 +117,6 @@ class ArticleMapper:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
 
-    async def get_top10_articles_hive_mapper_async(self) -> List[Dict[str, Any]]:
-        """获取前10篇文章 - Hive 查表（已弃用，保留向后兼容）"""
-        Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
-
-    async def get_top10_articles_spark_mapper_async(self) -> List[Dict[str, Any]]:
-        """获取前10篇文章 - Spark 查表（已弃用，保留向后兼容）"""
-        Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
-
     async def get_top10_articles_db_mapper_async(
         self, db: AsyncSession
     ) -> List[Article]:
@@ -390,28 +380,6 @@ class ArticleMapper:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
 
-    async def get_category_article_count_hive_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        """
-        从Hive获取按父分类排序的文章数量（已弃用）
-        """
-        Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self.get_category_article_count_db_mapper_async(
-            SyncSession(engine)
-        )
-
-    async def get_category_article_count_spark_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        """
-        从Spark获取按父分类排序的文章数量（已弃用）
-        """
-        Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self.get_category_article_count_db_mapper_async(
-            SyncSession(engine)
-        )
-
     async def get_category_article_count_db_mapper_async(
         self, db: AsyncSession
     ) -> List[Dict[str, Any]]:
@@ -502,22 +470,6 @@ class ArticleMapper:
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
-
-    async def get_monthly_publish_count_hive_mapper_async(self) -> List[Dict[str, Any]]:
-        """
-        从Hive获取最近24个月的文章发布数量统计（已弃用）
-        """
-        Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self.get_monthly_publish_count_db_mapper_async(SyncSession(engine))
-
-    async def get_monthly_publish_count_spark_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        """
-        从Spark获取最近24个月的文章发布数量统计（已弃用）
-        """
-        Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self.get_monthly_publish_count_db_mapper_async(SyncSession(engine))
 
     async def get_monthly_publish_count_db_mapper_async(
         self, db: AsyncSession
