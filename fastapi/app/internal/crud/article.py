@@ -56,7 +56,7 @@ class ArticleMapper:
                 continue
         return result
 
-    async def _get_top10_articles_clickhouse_mapper_sync(
+    async def get_top10_articles_clickhouse_mapper_async(
         self,
     ) -> List[Dict[str, Any]]:
         """获取前10篇文章 - ClickHouse 查表"""
@@ -106,42 +106,42 @@ class ArticleMapper:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
-            return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
+            return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
-            return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
+            return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
         finally:
             # 归还连接到池
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
 
-    async def _get_top10_articles_hive_mapper_sync(self) -> List[Dict[str, Any]]:
+    async def get_top10_articles_hive_mapper_async(self) -> List[Dict[str, Any]]:
         """获取前10篇文章 - Hive 查表（已弃用，保留向后兼容）"""
         Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
+        return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
 
-    async def _get_top10_articles_spark_mapper_sync(self) -> List[Dict[str, Any]]:
+    async def get_top10_articles_spark_mapper_async(self) -> List[Dict[str, Any]]:
         """获取前10篇文章 - Spark 查表（已弃用，保留向后兼容）"""
         Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self._get_top10_articles_db_mapper_sync(SyncSession(engine))
+        return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
 
-    async def _get_top10_articles_db_mapper_sync(
+    async def get_top10_articles_db_mapper_async(
         self, db: AsyncSession
     ) -> List[Article]:
         statement = select(Article).order_by(Article.views.desc()).limit(10)
         return (await db.execute(statement)).scalars().all()
 
-    async def _get_clickhouse_connection_sync(self) -> Any:
+    async def get_clickhouse_connection_async(self) -> Any:
         """获取 ClickHouse 连接（用于缓存版本检查）"""
         return self._clickhouse_pool.get_connection()
 
-    async def _return_clickhouse_connection_sync(self, conn: Any) -> None:
+    async def return_clickhouse_connection_async(self, conn: Any) -> None:
         """归还 ClickHouse 连接"""
         self._clickhouse_pool.return_connection(conn)
 
-    async def _get_all_articles_mapper_sync(self, db: AsyncSession) -> List[Article]:
+    async def get_all_articles_mapper_async(self, db: AsyncSession) -> List[Article]:
         statement = select(Article)
         return (await db.execute(statement)).scalars().all()
 
@@ -167,7 +167,7 @@ class ArticleMapper:
             yield articles
             last_id = articles[-1].id
 
-    async def _get_articles_for_excel_export_mapper_sync(
+    async def get_articles_for_excel_export_mapper_async(
         self, db: AsyncSession
     ) -> List[Dict[str, Any]]:
         """获取导出Excel所需文章数据（连表聚合）"""
@@ -295,13 +295,13 @@ class ArticleMapper:
             yield result
             last_id = base_rows[-1].id
 
-    async def _get_article_by_id_mapper_sync(
+    async def get_article_by_id_mapper_async(
         self, article_id: int, db: AsyncSession
     ) -> Optional[Article]:
         statement = select(Article).where(Article.id == article_id)
         return (await db.execute(statement)).scalars().first()
 
-    async def _get_articles_by_ids_mapper_sync(
+    async def get_articles_by_ids_mapper_async(
         self, article_ids: List[int], db: AsyncSession
     ) -> Dict[int, Article]:
         """批量获取文章信息，返回 {article_id: Article} 字典"""
@@ -311,28 +311,28 @@ class ArticleMapper:
         articles = (await db.execute(statement)).scalars().all()
         return {article.id: article for article in articles}
 
-    async def _get_total_views_mapper_sync(self, db: AsyncSession) -> int:
+    async def get_total_views_mapper_async(self, db: AsyncSession) -> int:
         """获取所有文章的总阅读量"""
         statement = select(func.coalesce(func.sum(Article.views), 0))
         return (await db.execute(statement)).scalar_one()
 
-    async def _get_total_articles_mapper_sync(self, db: AsyncSession) -> int:
+    async def get_total_articles_mapper_async(self, db: AsyncSession) -> int:
         """获取文章总数"""
         statement = select(func.count(Article.id))
         return (await db.execute(statement)).scalar_one()
 
-    async def _get_active_authors_mapper_sync(self, db: AsyncSession) -> int:
+    async def get_active_authors_mapper_async(self, db: AsyncSession) -> int:
         """获取活跃作者数（所有有文章的用户）"""
         statement = select(func.count(func.distinct(Article.user_id)))
         return (await db.execute(statement)).scalar_one()
 
-    async def _get_average_views_mapper_sync(self, db: AsyncSession) -> float:
+    async def get_average_views_mapper_async(self, db: AsyncSession) -> float:
         """获取平均阅读次数"""
         statement = select(func.coalesce(func.avg(Article.views), 0))
         average_views: float = (await db.execute(statement)).scalar_one()
         return round(float(average_views), 2)
 
-    async def _get_category_article_count_clickhouse_mapper_sync(
+    async def get_category_article_count_clickhouse_mapper_async(
         self,
     ) -> List[Dict[str, Any]]:
         """
@@ -376,43 +376,43 @@ class ArticleMapper:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
-            return await self._get_category_article_count_db_mapper_sync(
+            return await self.get_category_article_count_db_mapper_async(
                 SyncSession(engine)
             )
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
-            return await self._get_category_article_count_db_mapper_sync(
+            return await self.get_category_article_count_db_mapper_async(
                 SyncSession(engine)
             )
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
 
-    async def _get_category_article_count_hive_mapper_sync(
+    async def get_category_article_count_hive_mapper_async(
         self,
     ) -> List[Dict[str, Any]]:
         """
         从Hive获取按父分类排序的文章数量（已弃用）
         """
         Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self._get_category_article_count_db_mapper_sync(
+        return await self.get_category_article_count_db_mapper_async(
             SyncSession(engine)
         )
 
-    async def _get_category_article_count_spark_mapper_sync(
+    async def get_category_article_count_spark_mapper_async(
         self,
     ) -> List[Dict[str, Any]]:
         """
         从Spark获取按父分类排序的文章数量（已弃用）
         """
         Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self._get_category_article_count_db_mapper_sync(
+        return await self.get_category_article_count_db_mapper_async(
             SyncSession(engine)
         )
 
-    async def _get_category_article_count_db_mapper_sync(
+    async def get_category_article_count_db_mapper_async(
         self, db: AsyncSession
     ) -> List[Dict[str, Any]]:
         """
@@ -442,7 +442,7 @@ class ArticleMapper:
             for row in rows
         ]
 
-    async def _get_monthly_publish_count_clickhouse_mapper_sync(
+    async def get_monthly_publish_count_clickhouse_mapper_async(
         self,
     ) -> List[Dict[str, Any]]:
         """
@@ -489,37 +489,37 @@ class ArticleMapper:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
-            return await self._get_monthly_publish_count_db_mapper_sync(
+            return await self.get_monthly_publish_count_db_mapper_async(
                 SyncSession(engine)
             )
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
-            return await self._get_monthly_publish_count_db_mapper_sync(
+            return await self.get_monthly_publish_count_db_mapper_async(
                 SyncSession(engine)
             )
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
 
-    async def _get_monthly_publish_count_hive_mapper_sync(self) -> List[Dict[str, Any]]:
+    async def get_monthly_publish_count_hive_mapper_async(self) -> List[Dict[str, Any]]:
         """
         从Hive获取最近24个月的文章发布数量统计（已弃用）
         """
         Logger.warning("Hive 已删除，使用 DB 替代")
-        return await self._get_monthly_publish_count_db_mapper_sync(SyncSession(engine))
+        return await self.get_monthly_publish_count_db_mapper_async(SyncSession(engine))
 
-    async def _get_monthly_publish_count_spark_mapper_sync(
+    async def get_monthly_publish_count_spark_mapper_async(
         self,
     ) -> List[Dict[str, Any]]:
         """
         从Spark获取最近24个月的文章发布数量统计（已弃用）
         """
         Logger.warning("Spark 已删除，使用 DB 替代")
-        return await self._get_monthly_publish_count_db_mapper_sync(SyncSession(engine))
+        return await self.get_monthly_publish_count_db_mapper_async(SyncSession(engine))
 
-    async def _get_monthly_publish_count_db_mapper_sync(
+    async def get_monthly_publish_count_db_mapper_async(
         self, db: AsyncSession
     ) -> List[Dict[str, Any]]:
         """
@@ -555,98 +555,6 @@ class ArticleMapper:
             }
             for row in rows
         ]
-
-    async def get_clickhouse_connection_async(self) -> Any:
-        return await self._get_clickhouse_connection_sync()
-
-    async def return_clickhouse_connection_async(self, conn: Any) -> None:
-        await self._return_clickhouse_connection_sync(conn)
-
-    async def get_top10_articles_clickhouse_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_top10_articles_clickhouse_mapper_sync()
-
-    async def get_top10_articles_hive_mapper_async(self) -> List[Dict[str, Any]]:
-        return await self._get_top10_articles_hive_mapper_sync()
-
-    async def get_top10_articles_spark_mapper_async(self) -> List[Dict[str, Any]]:
-        return await self._get_top10_articles_spark_mapper_sync()
-
-    async def get_top10_articles_db_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Article]:
-        return await self._get_top10_articles_db_mapper_sync(db)
-
-    async def get_all_articles_mapper_async(self, db: AsyncSession) -> List[Article]:
-        return await self._get_all_articles_mapper_sync(db)
-
-    async def get_articles_for_excel_export_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
-        return await self._get_articles_for_excel_export_mapper_sync(db)
-
-    async def get_article_by_id_mapper_async(
-        self, article_id: int, db: AsyncSession
-    ) -> Optional[Article]:
-        return await self._get_article_by_id_mapper_sync(article_id, db)
-
-    async def get_articles_by_ids_mapper_async(
-        self, article_ids: List[int], db: AsyncSession
-    ) -> Dict[int, Article]:
-        return await self._get_articles_by_ids_mapper_sync(article_ids, db)
-
-    async def get_total_views_mapper_async(self, db: AsyncSession) -> int:
-        return await self._get_total_views_mapper_sync(db)
-
-    async def get_total_articles_mapper_async(self, db: AsyncSession) -> int:
-        return await self._get_total_articles_mapper_sync(db)
-
-    async def get_active_authors_mapper_async(self, db: AsyncSession) -> int:
-        return await self._get_active_authors_mapper_sync(db)
-
-    async def get_average_views_mapper_async(self, db: AsyncSession) -> float:
-        return await self._get_average_views_mapper_sync(db)
-
-    async def get_category_article_count_clickhouse_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_category_article_count_clickhouse_mapper_sync()
-
-    async def get_category_article_count_hive_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_category_article_count_hive_mapper_sync()
-
-    async def get_category_article_count_spark_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_category_article_count_spark_mapper_sync()
-
-    async def get_category_article_count_db_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
-        return await self._get_category_article_count_db_mapper_sync(db)
-
-    async def get_monthly_publish_count_clickhouse_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_monthly_publish_count_clickhouse_mapper_sync()
-
-    async def get_monthly_publish_count_hive_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_monthly_publish_count_hive_mapper_sync()
-
-    async def get_monthly_publish_count_spark_mapper_async(
-        self,
-    ) -> List[Dict[str, Any]]:
-        return await self._get_monthly_publish_count_spark_mapper_sync()
-
-    async def get_monthly_publish_count_db_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
-        return await self._get_monthly_publish_count_db_mapper_sync(db)
 
 
 @lru_cache()

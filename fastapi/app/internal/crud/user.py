@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class UserMapper:
     """用户数据访问层 - 数据库查询封装"""
 
-    async def _get_users_by_ids_mapper_sync(
+    async def get_users_by_ids_mapper_async(
         self, user_ids: List[int], db: AsyncSession
     ) -> List[User]:
         """根据用户ID列表获取用户列表
@@ -25,7 +25,7 @@ class UserMapper:
         statement = select(User).where(User.id.in_(user_ids))
         return (await db.execute(statement)).scalars().all()
 
-    async def _get_user_by_id_sync(
+    async def get_user_by_id_async(
         self, user_id: int, db: AsyncSession
     ) -> Optional[User]:
         """根据用户ID获取用户信息
@@ -40,7 +40,7 @@ class UserMapper:
         statement = select(User).where(User.id == user_id)
         return (await db.execute(statement)).scalars().first()
 
-    async def _get_user_role_sync(self, user_id: int, db: AsyncSession) -> str:
+    async def get_user_role_async(self, user_id: int, db: AsyncSession) -> str:
         """获取用户角色
 
         Args:
@@ -50,25 +50,12 @@ class UserMapper:
         Returns:
             用户角色字符串
         """
-        user: Optional[User] = await self._get_user_by_id_sync(user_id, db)
+        user: Optional[User] = await self.get_user_by_id_async(user_id, db)
         if not user:
             return Messages.ROLE_USER  # 默认返回普通用户角色
         # 如果用户有 role 字段，返回该角色；否则默认返回 'user'
         role: Any = getattr(user, "role", None)
         return role if role else Messages.ROLE_USER
-
-    async def get_users_by_ids_mapper_async(
-        self, user_ids: List[int], db: AsyncSession
-    ) -> List[User]:
-        return await self._get_users_by_ids_mapper_sync(user_ids, db)
-
-    async def get_user_by_id_async(
-        self, user_id: int, db: AsyncSession
-    ) -> Optional[User]:
-        return await self._get_user_by_id_sync(user_id, db)
-
-    async def get_user_role_async(self, user_id: int, db: AsyncSession) -> str:
-        return await self._get_user_role_sync(user_id, db)
 
 
 @lru_cache()

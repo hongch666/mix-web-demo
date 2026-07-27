@@ -9,11 +9,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class CategoryMapper:
     """分类 Mapper"""
 
-    async def _get_all_categories_mapper_sync(self, db: AsyncSession) -> List[Category]:
+    async def get_all_categories_mapper_async(self, db: AsyncSession) -> List[Category]:
         statement = select(Category).distinct()
         return (await db.execute(statement)).scalars().all()
 
-    async def _get_subcategories_with_parent_mapper_sync(
+    async def get_subcategories_with_parent_mapper_async(
         self, db: AsyncSession
     ) -> List[Dict[str, object]]:
         """
@@ -50,14 +50,6 @@ class CategoryMapper:
             )
 
         return result
-
-    async def get_all_categories_mapper_async(self, db: AsyncSession) -> List[Category]:
-        return await self._get_all_categories_mapper_sync(db)
-
-    async def get_subcategories_with_parent_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, object]]:
-        return await self._get_subcategories_with_parent_mapper_sync(db)
 
 
 @lru_cache()

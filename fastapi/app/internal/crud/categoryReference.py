@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class CategoryReferenceMapper:
     """权威参考文本 Mapper - 直接从数据库查询"""
 
-    async def _get_category_reference_by_sub_category_id_mapper_sync(
+    async def get_category_reference_by_sub_category_id_mapper_async(
         self, sub_category_id: int, db: AsyncSession
     ) -> Optional[Dict[str, Any]]:
         """
@@ -37,13 +37,6 @@ class CategoryReferenceMapper:
         else:
             Logger.info(Messages.CATEGORY_REFERENCE_NOT_FOUND(sub_category_id))
             return None
-
-    async def get_category_reference_by_sub_category_id_mapper_async(
-        self, sub_category_id: int, db: AsyncSession
-    ) -> Optional[Dict[str, Any]]:
-        return await self._get_category_reference_by_sub_category_id_mapper_sync(
-            sub_category_id, db
-        )
 
 
 @lru_cache()
