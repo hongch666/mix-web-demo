@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { AxiosResponse } from "axios";
 import { randomUUID } from "crypto";
-import { ErrorIds, Messages } from "src/common/constants";
+import { ErrorIds, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { SpringClientService } from "src/module/common/client/springClient.service";
@@ -91,7 +91,7 @@ export class GithubService {
 
     const state: string = randomUUID().replace(/-/g, "");
     const redirect: string = this.normalizeRedirect(query.redirect);
-    const stateKey: string = this.buildStateKey(state);
+    const stateKey: string = RedisKeys.OAUTH_GITHUB_STATE(state);
 
     await redisClient.set(
       stateKey,
@@ -242,7 +242,7 @@ export class GithubService {
       );
     }
 
-    const stateKey: string = this.buildStateKey(state);
+    const stateKey: string = RedisKeys.OAUTH_GITHUB_STATE(state);
     const storedState: string | null = await redisClient.get(stateKey);
     if (!storedState) {
       throw BusinessException.unauthorized(Messages.GITHUB_STATE_EXPIRED);
@@ -413,7 +413,4 @@ export class GithubService {
       : `/${trimmedRedirect}`;
   }
 
-  private buildStateKey(state: string): string {
-    return `oauth:github:state:${state}`;
-  }
 }

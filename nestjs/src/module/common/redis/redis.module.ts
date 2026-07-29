@@ -1,7 +1,7 @@
 import { DynamicModule, Module, Provider } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import Redis from "ioredis";
-import { InfraKeys } from "src/common/constants";
+import { RedisKeys } from "src/common/constants";
 import { RedisService } from "./redis.service";
 
 @Module({})
@@ -12,7 +12,7 @@ export class RedisModule {
    */
   static forRoot(): DynamicModule {
     const redisClientProvider: Provider = {
-      provide: InfraKeys.REDIS_CLIENT,
+      provide: RedisKeys.REDIS_CLIENT,
       useFactory: (configService: ConfigService): Redis | null => {
         const redisConfig = configService.get("database.redis") as Record<
           string,

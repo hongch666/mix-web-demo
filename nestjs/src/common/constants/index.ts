@@ -2,6 +2,6 @@
 export { Defaults } from "./defaults.constants";
 export { ErrorIds } from "./errorIds.constants";
 export { HttpCode } from "./httpCode.constants";
-export { InfraKeys } from "./infra.constants";
+export { RedisKeys } from "./redisKey.constants";
 export { Messages } from "./messages.constants";
 export { SwaggerConfig } from "./swagger.constants";

@@ -1,13 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
 import Redis from "ioredis";
-import { InfraKeys } from "src/common/constants";
+import { RedisKeys } from "src/common/constants";
 import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class RedisService {
   private readonly redis: Redis | null;
 
-  constructor(@Inject(InfraKeys.REDIS_CLIENT) redis: Redis | null) {
+  constructor(@Inject(RedisKeys.REDIS_CLIENT) redis: Redis | null) {
     this.redis = redis;
   }
 
@@ -56,7 +56,7 @@ export class RedisService {
     }
 
     const result = await this.redis.eval(
-      InfraKeys.UNLOCK_SCRIPT,
+      RedisKeys.UNLOCK_SCRIPT,
       1,
       lockKey,
       lockValue,

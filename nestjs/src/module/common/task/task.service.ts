@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
-import { Defaults, InfraKeys, Messages } from "src/common/constants";
+import { Defaults, Messages, RedisKeys } from "src/common/constants";
 import { logger } from "src/common/utils/writeLog";
 import { ApiLogService } from "src/module/system/apiLog/apiLog.service";
 import { ArticleLogService } from "src/module/system/articleLog/articleLog.service";
@@ -22,7 +22,7 @@ export class TaskService {
    */
   @Cron("0 0 2 1 * *")
   async cleanupOldApiLogs(): Promise<void> {
-    const lockKey = InfraKeys.LOCK_TASK_API_LOG_CLEANUP;
+    const lockKey = RedisKeys.LOCK_TASK_API_LOG_CLEANUP;
     const lockExpire = Defaults.LOCK_TASK_API_LOG_CLEANUP_EXPIRE;
 
     // 尝试获取分布式锁
@@ -68,7 +68,7 @@ export class TaskService {
    */
   @Cron("0 0 0 1 * *")
   async cleanupOldArticleLogs(): Promise<void> {
-    const lockKey = InfraKeys.LOCK_TASK_ARTICLE_LOG_CLEANUP;
+    const lockKey = RedisKeys.LOCK_TASK_ARTICLE_LOG_CLEANUP;
     const lockExpire = Defaults.LOCK_TASK_ARTICLE_LOG_CLEANUP_EXPIRE;
 
     // 尝试获取分布式锁

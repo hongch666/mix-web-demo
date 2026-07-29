@@ -1,7 +1,7 @@
 /**
- * 基础设施标识常量 — 锁Key、队列名、客户端Token、Lua脚本
+ * Redis 标识常量 — 锁Key、客户端Token、OAuth状态Key、Lua脚本
  */
-export class InfraKeys {
+export class RedisKeys {
   // ===== Redis 客户端 Token =====
   static readonly REDIS_CLIENT = "REDIS_CLIENT";
 
@@ -9,6 +9,10 @@ export class InfraKeys {
   static readonly LOCK_TASK_API_LOG_CLEANUP = "lock:task:api:log:cleanup";
   static readonly LOCK_TASK_ARTICLE_LOG_CLEANUP =
     "lock:task:article:log:cleanup";
+
+  // ===== OAuth 状态 Key =====
+  static readonly OAUTH_GITHUB_STATE = (state: string): string =>
+    `oauth:github:state:${state}`;
 
   // ===== Lua 脚本 =====
   /** 解锁脚本: 仅锁持有者可释放 */
