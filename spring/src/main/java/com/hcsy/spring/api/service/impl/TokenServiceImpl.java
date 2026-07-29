@@ -35,8 +35,8 @@ public class TokenServiceImpl implements TokenService {
         String refreshToken = jwtUtil.generateRefreshToken(userId, username, sessionId);
         long accessTtl = jwtUtil.getAccessExpirationSeconds();
         long refreshTtl = jwtUtil.getRefreshExpirationSeconds();
-        String sessionKey = sessionKey(userId, sessionId);
-        String sessionsKey = sessionsKey(userId);
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
+        String sessionsKey = RedisKeys.userSessions(userId);
 
         Mono<Void> sessionWrite = Mono.when(
             redisUtil.putHash(sessionKey, "accessToken", accessToken),
@@ -45,8 +45,8 @@ public class TokenServiceImpl implements TokenService {
             .then(redisUtil.expire(sessionKey, refreshTtl))
             .then();
         Mono<Void> reverseIndexes = Mono.when(
-            redisUtil.set(accessKey(accessToken), userId + ":" + sessionId, accessTtl),
-            redisUtil.set(refreshKey(refreshToken), userId + ":" + sessionId, refreshTtl));
+            redisUtil.set(RedisKeys.userAccess(accessToken), userId + ":" + sessionId, accessTtl),
+            redisUtil.set(RedisKeys.userRefresh(refreshToken), userId + ":" + sessionId, refreshTtl));
         Mono<Void> sessionSet = redisUtil.addToSet(sessionsKey, sessionId)
             .then(redisUtil.expire(sessionsKey, refreshTtl))
             .then();
@@ -75,10 +75,10 @@ public class TokenServiceImpl implements TokenService {
         jwtUtil.validateRefreshToken(refreshToken);
         Long userId = jwtUtil.extractUserId(refreshToken);
         String sessionId = jwtUtil.extractSessionId(refreshToken);
-        String sessionKey = sessionKey(userId, sessionId);
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
         String expectedValue = userId + ":" + sessionId;
 
-        Mono<String> reverseValue = redisUtil.get(refreshKey(refreshToken)).defaultIfEmpty("");
+        Mono<String> reverseValue = redisUtil.get(RedisKeys.userRefresh(refreshToken)).defaultIfEmpty("");
         Mono<String> storedRefreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
         Mono<String> username = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
         Mono<String> oldAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
@@ -101,20 +101,20 @@ public class TokenServiceImpl implements TokenService {
         String newRefreshToken = jwtUtil.generateRefreshToken(userId, username, sessionId);
         long accessTtl = jwtUtil.getAccessExpirationSeconds();
         long refreshTtl = jwtUtil.getRefreshExpirationSeconds();
-        String sessionKey = sessionKey(userId, sessionId);
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
 
         Mono<Void> deleteOldIndexes = Mono.when(
-            oldAccessToken.isEmpty() ? Mono.empty() : redisUtil.delete(accessKey(oldAccessToken)),
-            redisUtil.delete(refreshKey(oldRefreshToken)));
+            oldAccessToken.isEmpty() ? Mono.empty() : redisUtil.delete(RedisKeys.userAccess(oldAccessToken)),
+            redisUtil.delete(RedisKeys.userRefresh(oldRefreshToken)));
         Mono<Void> updateSession = Mono.when(
             redisUtil.putHash(sessionKey, "accessToken", newAccessToken),
             redisUtil.putHash(sessionKey, "refreshToken", newRefreshToken))
             .then(redisUtil.expire(sessionKey, refreshTtl))
             .then();
         Mono<Void> writeIndexes = Mono.when(
-            redisUtil.set(accessKey(newAccessToken), userId + ":" + sessionId, accessTtl),
-            redisUtil.set(refreshKey(newRefreshToken), userId + ":" + sessionId, refreshTtl),
-            redisUtil.expire(sessionsKey(userId), refreshTtl),
+            redisUtil.set(RedisKeys.userAccess(newAccessToken), userId + ":" + sessionId, accessTtl),
+            redisUtil.set(RedisKeys.userRefresh(newRefreshToken), userId + ":" + sessionId, refreshTtl),
+            redisUtil.expire(RedisKeys.userSessions(userId), refreshTtl),
             redisUtil.set(RedisKeys.userStatus(userId), "1"));
 
         return deleteOldIndexes.then(Mono.when(updateSession, writeIndexes)).then(Mono.fromSupplier(() -> {
@@ -134,7 +134,7 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public Mono<Void> removeSessionByAccessToken(String accessToken) {
-        return redisUtil.get(accessKey(accessToken))
+        return redisUtil.get(RedisKeys.userAccess(accessToken))
             .flatMap(value -> {
                 String[] parts = value.split(":", 2);
                 if (parts.length != 2) {
@@ -147,26 +147,26 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public Mono<Void> removeSession(Long userId, String sessionId) {
-        String sessionKey = sessionKey(userId, sessionId);
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
         Mono<String> accessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
         Mono<String> refreshToken = redisUtil.getHash(sessionKey, "refreshToken").defaultIfEmpty("");
 
         return Mono.zip(accessToken, refreshToken).flatMap(tokens -> {
             Mono<Void> deleteIndexes = Mono.when(
-                tokens.getT1().isEmpty() ? Mono.empty() : redisUtil.delete(accessKey(tokens.getT1())),
-                tokens.getT2().isEmpty() ? Mono.empty() : redisUtil.delete(refreshKey(tokens.getT2())));
+                tokens.getT1().isEmpty() ? Mono.empty() : redisUtil.delete(RedisKeys.userAccess(tokens.getT1())),
+                tokens.getT2().isEmpty() ? Mono.empty() : redisUtil.delete(RedisKeys.userRefresh(tokens.getT2())));
             return Mono.when(
                 deleteIndexes,
                 redisUtil.delete(sessionKey),
-                redisUtil.removeFromSet(sessionsKey(userId), sessionId))
-                .then(redisUtil.getSetSize(sessionsKey(userId)))
+                redisUtil.removeFromSet(RedisKeys.userSessions(userId), sessionId))
+                .then(redisUtil.getSetSize(RedisKeys.userSessions(userId)))
                 .flatMap(remaining -> {
                     logger.info(Messages.LOGIN_SESSION_REMOVED, userId, sessionId);
                     if (remaining == 0) {
                         logger.info(Messages.REMOVE_SESSION_LOGOUT, userId);
                         return Mono.when(
                             redisUtil.set(RedisKeys.userStatus(userId), "0"),
-                            redisUtil.delete(sessionsKey(userId))).then();
+                            redisUtil.delete(RedisKeys.userSessions(userId))).then();
                     }
                     logger.info(Messages.REMOVE_SESSION, userId, remaining);
                     return Mono.empty();
@@ -178,24 +178,24 @@ public class TokenServiceImpl implements TokenService {
     public Mono<Boolean> validateAccessTokenInRedis(Long userId, String sessionId, String accessToken) {
         String expectedValue = userId + ":" + sessionId;
         return Mono.zip(
-            redisUtil.get(accessKey(accessToken)).defaultIfEmpty(""),
-            redisUtil.getHash(sessionKey(userId, sessionId), "accessToken").defaultIfEmpty(""))
+            redisUtil.get(RedisKeys.userAccess(accessToken)).defaultIfEmpty(""),
+            redisUtil.getHash(RedisKeys.userSession(userId, sessionId), "accessToken").defaultIfEmpty(""))
             .map(values -> expectedValue.equals(values.getT1()) && accessToken.equals(values.getT2()));
     }
 
     @Override
     public Mono<Long> getUserOnlineDeviceCount(Long userId) {
-        return redisUtil.getSetSize(sessionsKey(userId));
+        return redisUtil.getSetSize(RedisKeys.userSessions(userId));
     }
 
     @Override
     public Mono<List<String>> getUserSessions(Long userId) {
-        return redisUtil.getSet(sessionsKey(userId));
+        return redisUtil.getSet(RedisKeys.userSessions(userId));
     }
 
     @Override
     public Mono<Void> forceLogoutUser(Long userId) {
-        return redisUtil.getSet(sessionsKey(userId))
+        return redisUtil.getSet(RedisKeys.userSessions(userId))
             .flatMapMany(Flux::fromIterable)
             .flatMap(sessionId -> removeSession(userId, sessionId), 8)
             .then(redisUtil.set(RedisKeys.userStatus(userId), "0"))
@@ -207,16 +207,16 @@ public class TokenServiceImpl implements TokenService {
     @Override
     public Mono<Integer> removeOtherSessions(Long userId, String currentAccessToken) {
         String currentSessionId = jwtUtil.extractSessionId(currentAccessToken);
-        return redisUtil.getSet(sessionsKey(userId))
+        return redisUtil.getSet(RedisKeys.userSessions(userId))
             .flatMapMany(Flux::fromIterable)
             .filter(sessionId -> !sessionId.equals(currentSessionId))
             .flatMap(sessionId -> removeSession(userId, sessionId).thenReturn(1), 8)
             .reduce(0, Integer::sum)
-            .flatMap(removed -> redisUtil.getSetSize(sessionsKey(userId))
+            .flatMap(removed -> redisUtil.getSetSize(RedisKeys.userSessions(userId))
                 .flatMap(remaining -> remaining > 0
                     ? Mono.when(
                         redisUtil.set(RedisKeys.userStatus(userId), "1"),
-                        redisUtil.expire(sessionsKey(userId), jwtUtil.getRefreshExpirationSeconds()))
+                        redisUtil.expire(RedisKeys.userSessions(userId), jwtUtil.getRefreshExpirationSeconds()))
                         .thenReturn(removed)
                     : Mono.just(removed)));
     }
@@ -224,7 +224,7 @@ public class TokenServiceImpl implements TokenService {
     @SuppressWarnings("null")
     @Override
     public Mono<Void> cleanupExpiredTokens() {
-        return redisUtil.getKeys("user:sessions:*")
+        return redisUtil.getKeys(RedisKeys.userSessionsPattern())
             .flatMap(this::cleanupUserSessions, 4)
             .reduce(0, Integer::sum)
             .doOnNext(cleaned -> logger.info(Messages.TOTAL_SESSION_CLEAN, 0, cleaned))
@@ -235,7 +235,7 @@ public class TokenServiceImpl implements TokenService {
     private Mono<Integer> cleanupUserSessions(String key) {
         Long userId;
         try {
-            userId = Long.parseLong(key.substring("user:sessions:".length()));
+            userId = Long.parseLong(key.substring(RedisKeys.userSessionsPattern().length() - 1));
         } catch (RuntimeException error) {
             logger.error(Messages.EXPIRED_USER_FAIL + key, error);
             return Mono.just(0);
@@ -259,27 +259,11 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private Mono<Boolean> isSessionValid(Long userId, String sessionId) {
-        String sessionKey = sessionKey(userId, sessionId);
+        String sessionKey = RedisKeys.userSession(userId, sessionId);
         return redisUtil.getHash(sessionKey, "refreshToken")
-            .flatMap(refreshToken -> redisUtil.get(refreshKey(refreshToken))
+            .flatMap(refreshToken -> redisUtil.get(RedisKeys.userRefresh(refreshToken))
                 .map(value -> value.equals(userId + ":" + sessionId)))
             .defaultIfEmpty(false);
-    }
-
-    private String sessionKey(Long userId, String sessionId) {
-        return "user:session:" + userId + ":" + sessionId;
-    }
-
-    private String sessionsKey(Long userId) {
-        return "user:sessions:" + userId;
-    }
-
-    private String accessKey(String accessToken) {
-        return "user:access:" + accessToken;
-    }
-
-    private String refreshKey(String refreshToken) {
-        return "user:refresh:" + refreshToken;
     }
 
     private BusinessException unauthorized(String message) {

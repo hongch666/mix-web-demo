@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.ImageCaptchaVO;
@@ -19,7 +20,6 @@ import reactor.core.scheduler.Schedulers;
 @Service
 @RequiredArgsConstructor
 public class ImageCaptchaServiceImpl implements ImageCaptchaService {
-    private static final String CAPTCHA_PREFIX = "image:captcha:";
     private static final long CAPTCHA_EXPIRY = 5 * 60;
     private static final int CAPTCHA_WIDTH = 130;
     private static final int CAPTCHA_HEIGHT = 40;
@@ -39,7 +39,7 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
 
     @Override
     public Mono<Boolean> verifyCaptcha(String captchaId, String captchaText) {
-        return redisUtil.get(buildCaptchaKey(captchaId))
+        return redisUtil.get(RedisKeys.imageCaptcha(captchaId))
             .map(stored -> captchaText != null && stored.equalsIgnoreCase(captchaText.trim()))
             .doOnNext(matched -> logger.info((matched
                 ? Messages.IMAGE_CAPTCHA_VERIFY_SUCCESS
@@ -52,7 +52,7 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
 
     @Override
     public Mono<Void> deleteCaptcha(String captchaId) {
-        return redisUtil.delete(buildCaptchaKey(captchaId))
+        return redisUtil.delete(RedisKeys.imageCaptcha(captchaId))
             .doOnSuccess(ignored -> logger.info(Messages.IMAGE_CAPTCHA_DELETE + captchaId))
             .then();
     }
@@ -66,11 +66,7 @@ public class ImageCaptchaServiceImpl implements ImageCaptchaService {
             .captchaId(captchaId)
             .imageBase64(captcha.toBase64())
             .build();
-        return new GeneratedCaptcha(captchaId, buildCaptchaKey(captchaId), text, vo);
-    }
-
-    private String buildCaptchaKey(String captchaId) {
-        return CAPTCHA_PREFIX + captchaId;
+        return new GeneratedCaptcha(captchaId, RedisKeys.imageCaptcha(captchaId), text, vo);
     }
 
     private record GeneratedCaptcha(String id, String key, String text, ImageCaptchaVO vo) {

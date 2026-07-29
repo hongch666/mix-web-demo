@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.dto.InternalEmailCodeSendDTO;
@@ -18,7 +19,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class EmailVerificationServiceImpl implements EmailVerificationService {
 
-    private static final String VERIFICATION_CODE_PREFIX = "email:verify:";
     private static final long VERIFICATION_CODE_EXPIRY = 10 * 60;
     private static final SecureRandom RANDOM = new SecureRandom();
 
@@ -29,7 +29,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     @Override
     public Mono<Void> sendVerificationCode(String email, String type) {
         String code = String.format("%06d", RANDOM.nextInt(1_000_000));
-        String key = VERIFICATION_CODE_PREFIX + email;
+        String key = RedisKeys.emailVerify(email);
         return redisUtil.set(key, code, VERIFICATION_CODE_EXPIRY)
             .doOnSuccess(ignored -> logger.info(Messages.CODE_SAVE + email))
             .then(nestjsClient.sendEmailCode(new InternalEmailCodeSendDTO(email, code, type, 10)))
@@ -39,7 +39,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     @Override
     public Mono<Boolean> verifyCode(String email, String code) {
-        String key = VERIFICATION_CODE_PREFIX + email;
+        String key = RedisKeys.emailVerify(email);
         return redisUtil.get(key)
             .flatMap(storedCode -> {
                 if (!storedCode.equals(code)) {
@@ -62,11 +62,11 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
     @Override
     public Mono<Boolean> isEmailVerified(String email) {
-        return redisUtil.exists(VERIFICATION_CODE_PREFIX + "verified:" + email);
+        return redisUtil.exists(RedisKeys.emailVerified(email));
     }
 
     @Override
     public Mono<Void> markEmailAsVerified(String email) {
-        return redisUtil.set(VERIFICATION_CODE_PREFIX + "verified:" + email, "true", 24 * 60 * 60).then();
+        return redisUtil.set(RedisKeys.emailVerified(email), "true", 24 * 60 * 60).then();
     }
 }

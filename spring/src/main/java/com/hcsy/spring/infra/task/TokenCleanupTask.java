@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisDistributedLock;
 import com.hcsy.spring.common.utils.SimpleLogger;
 
@@ -22,7 +23,7 @@ public class TokenCleanupTask {
 
     @Scheduled(cron = "0 0 * * * *")
     public Mono<Void> cleanupExpiredTokens() {
-        String lockKey = Defaults.LOCK_TASK_TOKEN_CLEANUP;
+        String lockKey = RedisKeys.lockTaskTokenCleanup();
         return distributedLock.tryLock(lockKey, Defaults.LOCK_TASK_TOKEN_CLEANUP_EXPIRE)
             .doOnNext(ignored -> logger.info(String.format(Messages.LOCK_ACQUIRE_SUCCESS, lockKey)))
             .flatMap(lockValue -> tokenService.cleanupExpiredTokens()

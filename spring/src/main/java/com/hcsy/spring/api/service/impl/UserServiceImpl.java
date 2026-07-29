@@ -51,8 +51,6 @@ public class UserServiceImpl implements UserService {
     private static final String AI_ROLE = "ai";
     private static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
     private static final long ALL_USERS_CACHE_TTL_SECONDS = 24 * 60 * 60L;
-    private static final String GITHUB_TOKEN_TICKET_PREFIX = "oauth:github:token:";
-    private static final String ALL_USERS_CACHE_KEY = "user:page:all-users";
 
     private final UserRepository userRepository;
     private final RedisUtil redisUtil;
@@ -192,7 +190,7 @@ public class UserServiceImpl implements UserService {
             .flatMap(login -> {
                 String ticket = UUID.randomUUID().toString().replace("-", "");
                 return Mono.fromCallable(() -> objectMapper.writeValueAsString(login))
-                    .flatMap(json -> redisUtil.set(buildGithubTicketKey(ticket), json,
+                    .flatMap(json -> redisUtil.set(RedisKeys.githubTokenTicket(ticket), json,
                         GITHUB_TOKEN_TICKET_TTL_SECONDS))
                     .onErrorResume(error -> tokenService.removeSessionByAccessToken(login.getAccessToken())
                         .then(Mono.error(BusinessException.builder()
@@ -214,7 +212,7 @@ public class UserServiceImpl implements UserService {
             return Mono.error(BusinessException.builder().httpStatus(HttpCode.BAD_REQUEST)
                 .errorMessage(Messages.GITHUB_TOKEN_TICKET_EMPTY).build());
         }
-        String key = buildGithubTicketKey(ticket);
+        String key = RedisKeys.githubTokenTicket(ticket);
         return redisUtil.get(key)
             .switchIfEmpty(Mono.error(unauthorized(Messages.GITHUB_TOKEN_TICKET_EXPIRED)))
             .flatMap(json -> redisUtil.delete(key)
@@ -254,7 +252,7 @@ public class UserServiceImpl implements UserService {
     public Mono<UserListVO> getAllUsers(String username) {
         boolean useCache = !hasText(username);
         Mono<UserListVO> cached = useCache
-            ? redisUtil.get(ALL_USERS_CACHE_KEY)
+            ? redisUtil.get(RedisKeys.allUsersCache())
                 .flatMap(json -> Mono.fromCallable(() -> objectMapper.readValue(json, UserListVO.class)))
                 .onErrorResume(error -> {
                     logger.error(Messages.USER_LIST_CACHE_READ_FAILED, error.getMessage(), error);
@@ -451,7 +449,7 @@ public class UserServiceImpl implements UserService {
     private Mono<Void> writeUsersCache(UserListVO result) {
         long ttl = result.getTotal() == 0 ? 10 * 60L : ALL_USERS_CACHE_TTL_SECONDS;
         return Mono.fromCallable(() -> objectMapper.writeValueAsString(result))
-            .flatMap(json -> redisUtil.set(ALL_USERS_CACHE_KEY, json, ttl))
+            .flatMap(json -> redisUtil.set(RedisKeys.allUsersCache(), json, ttl))
             .onErrorResume(error -> {
                 logger.error(Messages.USER_LIST_CACHE_WRITE_FAILED, error.getMessage(), error);
                 return Mono.just(false);
@@ -460,7 +458,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private Mono<Void> evictAllUsersCache() {
-        return redisUtil.delete(ALL_USERS_CACHE_KEY)
+        return redisUtil.delete(RedisKeys.allUsersCache())
             .onErrorResume(error -> {
                 logger.error(Messages.USER_LIST_CACHE_EVICT_FAILED, error.getMessage(), error);
                 return Mono.just(false);
@@ -483,10 +481,6 @@ public class UserServiceImpl implements UserService {
 
     private List<Long> normalizeIds(List<Long> ids) {
         return ids == null ? List.of() : ids.stream().filter(id -> id != null).distinct().toList();
-    }
-
-    private String buildGithubTicketKey(String ticket) {
-        return GITHUB_TOKEN_TICKET_PREFIX + ticket;
     }
 
     private BusinessException notFound(String message) {

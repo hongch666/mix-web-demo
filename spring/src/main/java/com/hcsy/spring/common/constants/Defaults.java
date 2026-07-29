@@ -44,6 +44,5 @@ public class Defaults {
     public static final String SWAGGER_URL_PREFIX = "http://localhost:";
 
     // ===== 分布式锁配置 =====
-    public static final String LOCK_TASK_TOKEN_CLEANUP = "lock:task:token:cleanup";
     public static final long LOCK_TASK_TOKEN_CLEANUP_EXPIRE = 3600L;
 }

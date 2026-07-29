@@ -27,7 +27,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class CategoryCacheServiceImpl implements CategoryCacheService {
 
-    private static final String CATEGORY_PAGE_KEY = "category:page:p_%d_s_%d";
     private static final long CACHE_TTL_SECONDS = 24 * 60 * 60L;
 
     private final CategoryRepository categoryRepository;
@@ -48,7 +47,7 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
 
     @Override
     public Mono<PageDTO<CategoryVO>> cachedPageCategory(long page, long size) {
-        String cacheKey = CATEGORY_PAGE_KEY.formatted(page, size);
+        String cacheKey = RedisKeys.categoryPage(page, size);
         return redisUtil.get(cacheKey)
             .flatMap(json -> readCache(json, new TypeReference<PageDTO<CategoryVO>>() {
             }, cacheKey))
@@ -59,7 +58,7 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
 
     @Override
     public Mono<Void> evictAllCategoryCaches() {
-        return redisUtil.getKeys("category:*")
+        return redisUtil.getKeys(RedisKeys.categoryAllPattern())
             .collectList()
             .flatMap(keys -> keys.isEmpty() ? Mono.empty() : redisUtil.delete(keys).then())
             .onErrorResume(error -> {
