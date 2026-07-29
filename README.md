@@ -1700,10 +1700,12 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 2. Gateway 项目：`gateway/src/main/java/com/hcsy/gateway/common/constants/`
    - `ErrorCodes.java`：错误标识常量（传给响应 `error` 字段）
    - `HttpCode.java`：HTTP 状态码常量
+   - `RedisKeys.java`：Redis Key 常量（鉴权/限流 Key 前缀与生成方法，与 Spring 共享约定保持一致）
 
 3. GoZero 项目：`gozero/app/common/constants/`
-   - `defaults.go`：配置默认值（ES 权重名称、归一化参数名、分布式锁）
+   - `defaults.go`：配置默认值（ES 权重名称、归一化参数名）
    - `messages.go`：消息类常量（日志消息、用户提示、状态描述）
+   - `redisKeys.go`：Redis Key 常量（分布式锁 Key 及过期时间）
    - `scripts.go`：脚本类（SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping）
    - `validations.go`：参数校验类（校验错误消息）
 
@@ -1714,6 +1716,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `initMessages.py`：启动/初始化消息类（客户端初始化日志）
    - `messages.py`：消息类常量，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `NAME: str = "value"`，需要嵌入运行时上下文（如 serviceName、error）时用 `@staticmethod` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
    - `prompts.py`：LLM 提示词模板类（Agent 的 System Prompt），同样采用静态字符串与 `@staticmethod` 混合方式
+   - `redisKeys.py`：Redis Key 常量类（缓存 Key、同步时间 Key、分布式锁 Key 及过期时间，运行时拼接的 Key 用 `@staticmethod` 方法生成）
    - `scripts.py`：脚本类（SQL 语句、Cypher 语句、SQL 安全规则、LangSmith 脱敏规则与阈值）
    - `swaggerConfig.py`：Swagger/OpenAPI 配置类
    - `__init__.py`：统一导出入口
@@ -1722,8 +1725,8 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `defaults.constants.ts`：配置默认值常量
    - `errorIds.constants.ts`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
    - `httpCode.constants.ts`：HTTP 状态码常量
-   - `infra.constants.ts`：基础设施标识常量（锁 Key、队列名、客户端 Token、Lua 脚本）
    - `messages.constants.ts`：消息常量类，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `static readonly NAME = "value"`，需要嵌入运行时上下文（如 userId、serviceName）时用 `static` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
+   - `redisKey.constants.ts`：Redis 标识常量类 `RedisKeys`（锁 Key、客户端 Token、OAuth 状态 Key、Lua 脚本）
    - `swagger.constants.ts`：Swagger/OpenAPI 配置常量
    - `index.ts`：统一导出入口
 
