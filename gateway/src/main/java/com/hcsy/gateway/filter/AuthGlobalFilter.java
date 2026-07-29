@@ -17,6 +17,7 @@ import com.hcsy.gateway.common.BusinessException;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.RedisKeys;
 import com.hcsy.gateway.config.AuthProperties;
 import com.hcsy.gateway.utils.JwtUtil;
 import com.hcsy.gateway.utils.RedisUtil;
@@ -64,14 +65,14 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             String sessionId = jwtUtil.extractSessionId(token);
 
             // 5. 并行读取认证所需的 Redis 数据
-            String accessKey = "user:access:" + token;
+            String accessKey = RedisKeys.userAccess(token);
             String expectedValue = userId + ":" + sessionId;
-            String sessionKey = "user:session:" + userId + ":" + sessionId;
+            String sessionKey = RedisKeys.userSession(userId, sessionId);
             Mono<Tuple4<String, Boolean, String, String>> authData = Mono.zip(
                 redisUtil.get(accessKey).defaultIfEmpty(""),
                 redisUtil.exists(sessionKey),
                 redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty(""),
-                redisUtil.get("user:status:" + userId).defaultIfEmpty(""))
+                redisUtil.get(RedisKeys.userStatus(userId)).defaultIfEmpty(""))
                 .onErrorResume(error -> {
                     log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, error);
                     return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试",

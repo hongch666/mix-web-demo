@@ -11,6 +11,7 @@ import org.springframework.web.server.ServerWebExchange;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.RedisKeys;
 import com.hcsy.gateway.properties.RateLimitProperties;
 import com.hcsy.gateway.utils.TokenBucketRateLimiter;
 
@@ -77,15 +78,15 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
     private String getClientIdentifier(ServerWebExchange exchange) {
         String userId = exchange.getRequest().getHeaders().getFirst("X-User-Id");
         if (userId != null) {
-            return "user:" + userId;
+            return RedisKeys.clientIdUser(userId);
         }
 
         String clientIp = getClientIp(exchange);
         if (clientIp != null) {
-            return "ip:" + clientIp;
+            return RedisKeys.clientIdIp(clientIp);
         }
 
-        return "unknown";
+        return RedisKeys.CLIENT_ID_UNKNOWN;
     }
 
     @SuppressWarnings("null")
@@ -116,7 +117,7 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
 
     private String buildRateLimitKey(String path, String clientId) {
         String cleanPath = path.split("\\?")[0];
-        return "rate-limit:" + cleanPath + ":" + clientId;
+        return RedisKeys.rateLimit(cleanPath, clientId);
     }
 
     private Mono<Void> rateLimitExceededResponse(ServerWebExchange exchange, String message) {
