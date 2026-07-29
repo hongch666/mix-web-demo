@@ -4,6 +4,7 @@ from .httpCode import HttpCode
 from .initMessages import InitMessages
 from .messages import Messages
 from .prompts import Prompts
+from .redisKeys import RedisKeys
 from .scripts import Scripts
 from .swaggerConfig import SwaggerConfig
 
@@ -13,6 +14,7 @@ __all__ = [
     "Scripts",
     "Prompts",
     "Defaults",
+    "RedisKeys",
     "SwaggerConfig",
     "InitMessages",
     "HttpCode",

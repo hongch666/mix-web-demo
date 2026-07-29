@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Messages, RedisKeys
 
 from ..versionedCache import VersionedCache
 
@@ -21,8 +21,8 @@ class ArticleCache(VersionedCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX: str = "article:top10"
-    REDIS_VERSION_KEY: str = "article:top10:version"
+    REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_TOP10
+    REDIS_VERSION_KEY: str = RedisKeys.ARTICLE_TOP10_VERSION
     L1_CACHE_TTL: int = 300  # 5分钟
 
     async def get(self, ch_conn: Any) -> Optional[List[Dict[str, Any]]]:

@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Any, Dict, Optional
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Messages, RedisKeys
 
 from ..baseCache import BaseCache
 
@@ -20,7 +20,7 @@ class StatisticsCache(BaseCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX: str = "article:statistics"
+    REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_STATISTICS
     L1_CACHE_TTL: int = 600  # 10分钟
 
     async def get(self) -> Optional[Dict[str, Any]]:

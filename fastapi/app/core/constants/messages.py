@@ -1713,18 +1713,6 @@ class Messages:
 
     L2_CACHE_UNAVAILABLE: str = "[L2缓存] Redis 不可用"
 
-    LOCK_TASK_ANALYZE_CACHE: str = "lock:task:analyze:cache"
-
-    LOCK_TASK_ANALYZE_CACHE_EXPIRE: int = 600
-
-    LOCK_TASK_NEO4J_SYNC: str = "lock:task:neo4j:sync"
-
-    LOCK_TASK_NEO4J_SYNC_EXPIRE: int = 3600
-
-    LOCK_TASK_VECTOR_SYNC: str = "lock:task:vector:sync"
-
-    LOCK_TASK_VECTOR_SYNC_EXPIRE: int = 86400
-
     MESSAGE_RETRIEVAL_ERROR: str = "无法获取结果"
 
     MONGODB_COLLECTION_NAME_INPUT_DESC: str = "collection 的名称"

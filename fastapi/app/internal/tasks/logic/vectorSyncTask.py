@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any, List, Optional
 
 from app.core.base import Logger
-from app.core.constants import HttpCode, Messages
+from app.core.constants import HttpCode, Messages, RedisKeys
 from app.core.db import SessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
@@ -14,11 +14,6 @@ from app.internal.cache import get_redis_client
 from app.internal.crud import get_article_mapper
 from app.internal.models import Article
 from sqlalchemy import select
-
-# Redis 键名
-_VECTOR_SYNC_TIME_KEY: str = "vector_sync:last_sync_time"
-_ARTICLE_CONTENT_HASH_PREFIX: str = "article_content_hash:"
-
 
 def _get_redis_client() -> Optional[Any]:
     """获取 Redis 客户端"""
@@ -60,7 +55,7 @@ def _get_article_content_hash(article_id: int) -> Optional[str]:
             return None
 
         hash_value: Optional[str] = _run_redis_coro(
-            redis_client.get(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}")
+            redis_client.get(RedisKeys.article_content_hash(article_id))
         )
         return hash_value
     except Exception as e:
@@ -78,7 +73,7 @@ def _save_article_content_hash(article_id: int, hash_value: str) -> None:
 
         # 永久保存 hash（不设置过期时间）
         _run_redis_coro(
-            redis_client.set(f"{_ARTICLE_CONTENT_HASH_PREFIX}{article_id}", hash_value)
+            redis_client.set(RedisKeys.article_content_hash(article_id), hash_value)
         )
         Logger.debug(Messages.VECTOR_ARTICLE_HASH_SAVED(article_id, hash_value))
     except Exception as e:
@@ -94,7 +89,7 @@ def _get_last_sync_time() -> Optional[datetime]:
             return None
 
         timestamp_str: Optional[str] = _run_redis_coro(
-            redis_client.get(_VECTOR_SYNC_TIME_KEY)
+            redis_client.get(RedisKeys.VECTOR_SYNC_TIME)
         )
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
@@ -113,7 +108,7 @@ def _save_sync_time(sync_time: datetime) -> None:
             return
 
         # 永久保存时间戳（不设置过期时间）
-        _run_redis_coro(redis_client.set(_VECTOR_SYNC_TIME_KEY, sync_time.isoformat()))
+        _run_redis_coro(redis_client.set(RedisKeys.VECTOR_SYNC_TIME, sync_time.isoformat()))
         Logger.info(Messages.VECTOR_SYNC_TIME_SAVED(sync_time.isoformat()))
     except Exception as e:
         Logger.error(Messages.VECTOR_SYNC_TIME_SAVE_FAILED(e))
@@ -483,8 +478,8 @@ async def export_article_vectors_to_postgres_async(
     enable_incremental_sync: bool = True,
 ) -> None:
     """同步文章向量到 PostgreSQL，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
-    lock_key: str = Messages.LOCK_TASK_VECTOR_SYNC
-    lock_expire: int = Messages.LOCK_TASK_VECTOR_SYNC_EXPIRE
+    lock_key: str = RedisKeys.LOCK_TASK_VECTOR_SYNC
+    lock_expire: int = RedisKeys.LOCK_TASK_VECTOR_SYNC_EXPIRE
 
     # 尝试获取分布式锁
     redis_client: Any = get_redis_client()

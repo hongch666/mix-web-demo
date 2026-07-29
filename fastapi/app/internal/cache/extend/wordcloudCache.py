@@ -3,7 +3,7 @@ from functools import lru_cache
 from typing import Optional
 
 from app.core.base import Logger
-from app.core.constants import Messages
+from app.core.constants import Messages, RedisKeys
 
 from ..baseCache import BaseCache
 
@@ -21,7 +21,7 @@ class WordcloudCache(BaseCache):
     """
 
     # Redis 键前缀
-    REDIS_KEY_PREFIX: str = "wordcloud:url"
+    REDIS_KEY_PREFIX: str = RedisKeys.WORDCLOUD_URL
     L1_CACHE_TTL: int = 300  # 5分钟
 
     async def get_from_redis(self) -> Optional[str]:

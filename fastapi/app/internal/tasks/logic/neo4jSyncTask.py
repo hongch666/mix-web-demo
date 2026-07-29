@@ -5,12 +5,10 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set
 
 from app.core.base import Logger
-from app.core.constants import Messages, Scripts
+from app.core.constants import Messages, RedisKeys, Scripts
 from app.core.db import SessionLocal, get_redis_client
 from app.core.db.neo4j import get_neo4j_client
 from sqlalchemy import text
-
-_NEO4J_SYNC_TIME_KEY: str = "neo4j_sync:last_sync_time"
 
 
 class KnowledgeGraphSyncService:
@@ -739,7 +737,7 @@ def _save_sync_time(sync_time: datetime) -> None:
     """将 Neo4j 同步时间保存到 Redis"""
     try:
         redis_client = get_redis_client()
-        _run_redis_coro(redis_client.set(_NEO4J_SYNC_TIME_KEY, sync_time.isoformat()))
+        _run_redis_coro(redis_client.set(RedisKeys.NEO4J_SYNC_TIME, sync_time.isoformat()))
         Logger.info(Messages.NEO4J_SYNC_TIME_SAVED(sync_time.isoformat()))
     except Exception as e:
         Logger.error(Messages.NEO4J_SYNC_TIME_SAVE_FAILED(e))
@@ -749,7 +747,7 @@ def _get_last_sync_time() -> Optional[datetime]:
     """从 Redis 获取上次 Neo4j 同步时间"""
     try:
         redis_client = get_redis_client()
-        timestamp_str = _run_redis_coro(redis_client.get(_NEO4J_SYNC_TIME_KEY))
+        timestamp_str = _run_redis_coro(redis_client.get(RedisKeys.NEO4J_SYNC_TIME))
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
@@ -777,8 +775,8 @@ def _sync_mysql_to_neo4j() -> Dict[str, int]:
 
 async def sync_mysql_to_neo4j_async() -> None:
     """同步 MySQL 数据到 Neo4j，使用 Redis 分布式锁避免多实例重复执行"""
-    lock_key: str = Messages.LOCK_TASK_NEO4J_SYNC
-    lock_expire: int = Messages.LOCK_TASK_NEO4J_SYNC_EXPIRE
+    lock_key: str = RedisKeys.LOCK_TASK_NEO4J_SYNC
+    lock_expire: int = RedisKeys.LOCK_TASK_NEO4J_SYNC_EXPIRE
 
     redis_client = get_redis_client()
     lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
