@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
-from app.core.db import SessionLocal, get_redis_client
+from app.core.db import AsyncSessionLocal, get_redis_client
 from app.core.db.neo4j import get_neo4j_client
 from sqlalchemy import text
 
@@ -56,9 +56,10 @@ class KnowledgeGraphSyncService:
                 relations.append({"articleId": article_id, "tagName": tag_name})
         return relations
 
-    def _fetch_rows(self, sql: str) -> List[Any]:
-        with SessionLocal() as session:
-            return list(session.execute(text(sql)).fetchall())
+    async def _fetch_rows(self, sql: str) -> List[Any]:
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(text(sql))
+            return list(result.fetchall())
 
     def _build_incremental_sql(
         self,
@@ -75,10 +76,10 @@ class KnowledgeGraphSyncService:
             sync_time_text,
         )
 
-    def _fetch_all_users(
+    async def _fetch_all_users(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_USERS,
                 "update_at",
@@ -99,10 +100,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_categories(
+    async def _fetch_all_categories(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_CATEGORIES,
                 "update_time",
@@ -118,10 +119,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_sub_categories(
+    async def _fetch_all_sub_categories(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_SUB_CATEGORIES,
                 "update_time",
@@ -138,10 +139,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_articles(
+    async def _fetch_all_articles(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_ARTICLES,
                 "update_at",
@@ -165,10 +166,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_likes(
+    async def _fetch_all_likes(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_LIKES,
                 "created_time",
@@ -184,10 +185,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_collects(
+    async def _fetch_all_collects(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_COLLECTS,
                 "created_time",
@@ -203,10 +204,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_comments(
+    async def _fetch_all_comments(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_COMMENTS,
                 "update_time",
@@ -223,10 +224,10 @@ class KnowledgeGraphSyncService:
             for row in rows
         ]
 
-    def _fetch_all_focus(
+    async def _fetch_all_focus(
         self, last_sync_time: Optional[datetime] = None
     ) -> List[Dict[str, Any]]:
-        rows = self._fetch_rows(
+        rows = await self._fetch_rows(
             self._build_incremental_sql(
                 Scripts.NEO4J_SQL_SELECT_FOCUS,
                 "created_time",
@@ -297,20 +298,29 @@ class KnowledgeGraphSyncService:
         """按 MySQL 当前完整快照删除 Neo4j 中已经不存在的节点和关系"""
         self.logger.info(Messages.NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE)
 
-        users = users if users is not None else self._fetch_all_users()
-        categories = (
-            categories if categories is not None else self._fetch_all_categories()
+        fetched_data = await asyncio.gather(
+            self._fetch_all_users() if users is None else asyncio.sleep(0, result=users),
+            self._fetch_all_categories()
+            if categories is None
+            else asyncio.sleep(0, result=categories),
+            self._fetch_all_sub_categories()
+            if sub_categories is None
+            else asyncio.sleep(0, result=sub_categories),
+            self._fetch_all_articles()
+            if articles is None
+            else asyncio.sleep(0, result=articles),
+            self._fetch_all_likes() if likes is None else asyncio.sleep(0, result=likes),
+            self._fetch_all_collects()
+            if collects is None
+            else asyncio.sleep(0, result=collects),
+            self._fetch_all_comments()
+            if comments is None
+            else asyncio.sleep(0, result=comments),
+            self._fetch_all_focus() if focus is None else asyncio.sleep(0, result=focus),
         )
-        sub_categories = (
-            sub_categories
-            if sub_categories is not None
-            else self._fetch_all_sub_categories()
+        users, categories, sub_categories, articles, likes, collects, comments, focus = (
+            fetched_data
         )
-        articles = articles if articles is not None else self._fetch_all_articles()
-        likes = likes if likes is not None else self._fetch_all_likes()
-        collects = collects if collects is not None else self._fetch_all_collects()
-        comments = comments if comments is not None else self._fetch_all_comments()
-        focus = focus if focus is not None else self._fetch_all_focus()
         article_tag_relations = self._build_article_tag_relations(articles)
 
         cleanup_result: Dict[str, int] = {}
@@ -457,26 +467,34 @@ class KnowledgeGraphSyncService:
 
         result: Dict[str, int] = {}
 
-        users = self._fetch_all_users()
+        users, categories, sub_categories, articles, likes, collects, comments, focus = (
+            await asyncio.gather(
+                self._fetch_all_users(),
+                self._fetch_all_categories(),
+                self._fetch_all_sub_categories(),
+                self._fetch_all_articles(),
+                self._fetch_all_likes(),
+                self._fetch_all_collects(),
+                self._fetch_all_comments(),
+                self._fetch_all_focus(),
+            )
+        )
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
 
-        categories = self._fetch_all_categories()
         result["categories"] = await self._batch_write(
             categories,
             Scripts.NEO4J_MERGE_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_CATEGORY,
         )
 
-        sub_categories = self._fetch_all_sub_categories()
         result["sub_categories"] = await self._batch_write(
             sub_categories,
             Scripts.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_SUB_CATEGORY,
         )
 
-        articles = self._fetch_all_articles()
         result["articles"] = await self._batch_write(
             articles,
             Scripts.NEO4J_MERGE_ARTICLES_CYPHER,
@@ -536,28 +554,24 @@ class KnowledgeGraphSyncService:
             Messages.NEO4J_LABEL_ARTICLE_TAG_RELATION,
         )
 
-        likes = self._fetch_all_likes()
         result["likes"] = await self._batch_write(
             likes,
             Scripts.NEO4J_MERGE_LIKES_CYPHER,
             Messages.NEO4J_LABEL_LIKE_RELATION,
         )
 
-        collects = self._fetch_all_collects()
         result["collects"] = await self._batch_write(
             collects,
             Scripts.NEO4J_MERGE_COLLECTS_CYPHER,
             Messages.NEO4J_LABEL_COLLECT_RELATION,
         )
 
-        comments = self._fetch_all_comments()
         result["commented_on"] = await self._batch_write(
             comments,
             Scripts.NEO4J_MERGE_COMMENTED_ON_CYPHER,
             Messages.NEO4J_LABEL_COMMENT_RELATION,
         )
 
-        focus = self._fetch_all_focus()
         result["follows"] = await self._batch_write(
             focus,
             Scripts.NEO4J_MERGE_FOLLOWS_CYPHER,
@@ -600,26 +614,34 @@ class KnowledgeGraphSyncService:
 
         result: Dict[str, int] = {}
 
-        users = self._fetch_all_users(last_sync_time)
+        users, categories, sub_categories, articles, likes, collects, comments, focus = (
+            await asyncio.gather(
+                self._fetch_all_users(last_sync_time),
+                self._fetch_all_categories(last_sync_time),
+                self._fetch_all_sub_categories(last_sync_time),
+                self._fetch_all_articles(last_sync_time),
+                self._fetch_all_likes(last_sync_time),
+                self._fetch_all_collects(last_sync_time),
+                self._fetch_all_comments(last_sync_time),
+                self._fetch_all_focus(last_sync_time),
+            )
+        )
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
 
-        categories = self._fetch_all_categories(last_sync_time)
         result["categories"] = await self._batch_write(
             categories,
             Scripts.NEO4J_MERGE_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_CATEGORY,
         )
 
-        sub_categories = self._fetch_all_sub_categories(last_sync_time)
         result["sub_categories"] = await self._batch_write(
             sub_categories,
             Scripts.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
             Messages.NEO4J_LABEL_SUB_CATEGORY,
         )
 
-        articles = self._fetch_all_articles(last_sync_time)
         result["articles"] = await self._batch_write(
             articles,
             Scripts.NEO4J_MERGE_ARTICLES_CYPHER,
@@ -679,28 +701,24 @@ class KnowledgeGraphSyncService:
             Messages.NEO4J_LABEL_ARTICLE_TAG_RELATION,
         )
 
-        likes = self._fetch_all_likes(last_sync_time)
         result["likes"] = await self._batch_write(
             likes,
             Scripts.NEO4J_MERGE_LIKES_CYPHER,
             Messages.NEO4J_LABEL_LIKE_RELATION,
         )
 
-        collects = self._fetch_all_collects(last_sync_time)
         result["collects"] = await self._batch_write(
             collects,
             Scripts.NEO4J_MERGE_COLLECTS_CYPHER,
             Messages.NEO4J_LABEL_COLLECT_RELATION,
         )
 
-        comments = self._fetch_all_comments(last_sync_time)
         result["commented_on"] = await self._batch_write(
             comments,
             Scripts.NEO4J_MERGE_COMMENTED_ON_CYPHER,
             Messages.NEO4J_LABEL_COMMENT_RELATION,
         )
 
-        focus = self._fetch_all_focus(last_sync_time)
         result["follows"] = await self._batch_write(
             focus,
             Scripts.NEO4J_MERGE_FOLLOWS_CYPHER,
@@ -724,30 +742,21 @@ def get_knowledge_graph_sync_service() -> KnowledgeGraphSyncService:
     return KnowledgeGraphSyncService()
 
 
-def _run_redis_coro(coro: Any) -> Any:
-    """在同步线程中执行 Redis 协程"""
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(coro)
-    raise RuntimeError(Messages.REDIS_COROUTINE_SYNC_EXECUTION_ERROR)
-
-
-def _save_sync_time(sync_time: datetime) -> None:
+async def _save_sync_time(sync_time: datetime) -> None:
     """将 Neo4j 同步时间保存到 Redis"""
     try:
         redis_client = get_redis_client()
-        _run_redis_coro(redis_client.set(RedisKeys.NEO4J_SYNC_TIME, sync_time.isoformat()))
+        await redis_client.set(RedisKeys.NEO4J_SYNC_TIME, sync_time.isoformat())
         Logger.info(Messages.NEO4J_SYNC_TIME_SAVED(sync_time.isoformat()))
     except Exception as e:
         Logger.error(Messages.NEO4J_SYNC_TIME_SAVE_FAILED(e))
 
 
-def _get_last_sync_time() -> Optional[datetime]:
+async def _get_last_sync_time() -> Optional[datetime]:
     """从 Redis 获取上次 Neo4j 同步时间"""
     try:
         redis_client = get_redis_client()
-        timestamp_str = _run_redis_coro(redis_client.get(RedisKeys.NEO4J_SYNC_TIME))
+        timestamp_str = await redis_client.get(RedisKeys.NEO4J_SYNC_TIME)
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
@@ -755,17 +764,17 @@ def _get_last_sync_time() -> Optional[datetime]:
     return None
 
 
-def _sync_mysql_to_neo4j() -> Dict[str, int]:
-    """同步线程入口：优先增量同步 MySQL 数据到 Neo4j"""
+async def _sync_mysql_to_neo4j() -> Dict[str, int]:
+    """同步 MySQL 数据到 Neo4j"""
     sync_start_time = datetime.now()
     Logger.info(Messages.NEO4J_TASK_START_MESSAGE)
 
     try:
         sync_service = get_knowledge_graph_sync_service()
-        last_sync_time = _get_last_sync_time()
-        result = asyncio.run(sync_service.sync_incremental(last_sync_time))
+        last_sync_time = await _get_last_sync_time()
+        result = await sync_service.sync_incremental(last_sync_time)
         if any(result.values()):
-            _save_sync_time(sync_start_time)
+            await _save_sync_time(sync_start_time)
         Logger.info(Messages.NEO4J_TASK_FINISH_MESSAGE(result))
         return result
     except Exception as e:
@@ -786,7 +795,7 @@ async def sync_mysql_to_neo4j_async() -> None:
     Logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE(lock_key))
 
     try:
-        await asyncio.to_thread(_sync_mysql_to_neo4j)
+        await _sync_mysql_to_neo4j()
     finally:
         released = await redis_client.unlock(lock_key, lock_value)
         if released:

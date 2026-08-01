@@ -6,17 +6,13 @@ from urllib.parse import quote_plus
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages
-from fastapi.concurrency import run_in_threadpool
-from sqlalchemy import Engine, create_engine
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import Session as SASession
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.pool import QueuePool
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -30,7 +26,6 @@ USER: str = mysql_config["user"]
 PASSWORD: str = str(mysql_config["password"])
 ENCODED_PASSWORD: str = quote_plus(str(PASSWORD))
 
-DATABASE_URL: str = f"mysql+pymysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 ASYNC_DATABASE_URL: str = f"mysql+aiomysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 
 POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
@@ -38,29 +33,10 @@ MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
 POOL_RECYCLE: int = int(mysql_config.get("pool_recycle", 3600))
 POOL_PRE_PING: bool = mysql_config.get("pool_pre_ping", True)
 POOL_TIMEOUT: int = int(mysql_config.get("pool_timeout", 30))
-READ_TIMEOUT: int = int(mysql_config.get("read_timeout", 120))
-WRITE_TIMEOUT: int = int(mysql_config.get("write_timeout", 120))
 AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
 # SQL 日志回显开关：优先使用显式配置，未配置时根据 SERVER_MODE 自动判断
 _echo_val = mysql_config.get("echo")
 ECHO: bool = _echo_val if _echo_val is not None else SERVER_MODE == "dev"
-
-# 配置连接池参数以支持高并发访问
-engine: Engine = create_engine(
-    DATABASE_URL,
-    echo=ECHO,
-    poolclass=QueuePool,
-    pool_size=POOL_SIZE,  # 基础连接池大小
-    max_overflow=MAX_OVERFLOW,  # 最多额外创建的连接数
-    pool_recycle=POOL_RECYCLE,  # 连接回收时间（秒）
-    pool_pre_ping=POOL_PRE_PING,  # 每次取连接前进行ping检查
-    pool_timeout=POOL_TIMEOUT,  # 获取连接的超时时间（秒）
-    connect_args={
-        "read_timeout": READ_TIMEOUT,  # pymysql 读超时（秒）
-        "write_timeout": WRITE_TIMEOUT,  # pymysql 写超时（秒）
-        "autocommit": AUTOCOMMIT,
-    },
-)
 
 async_engine: AsyncEngine = create_async_engine(
     ASYNC_DATABASE_URL,
@@ -73,14 +49,6 @@ async_engine: AsyncEngine = create_async_engine(
     connect_args={
         "autocommit": AUTOCOMMIT,
     },
-)
-
-SessionLocal = sessionmaker(
-    bind=engine,
-    autocommit=False,
-    autoflush=False,
-    future=True,
-    class_=SASession,
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -99,21 +67,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     async with AsyncSessionLocal() as session:
         yield session
-
-
-async def get_db_sync() -> AsyncGenerator[SASession, None]:
-    """获取数据库同步会话（通过线程池桥接，避免阻塞 asyncio 事件循环）
-
-    使用 pymysql 同步驱动，通过 run_in_threadpool 将 session 的
-    创建和关闭操作放到独立线程池执行。
-
-    建议逐步迁移到 get_db()（AsyncSession + aiomysql）以获得最佳性能。
-    """
-    session: SASession = await run_in_threadpool(SessionLocal)
-    try:
-        yield session
-    finally:
-        await run_in_threadpool(session.close)
 
 
 async def create_tables_async(tables: Optional[List[str]] = None) -> None:

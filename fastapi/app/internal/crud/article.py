@@ -7,7 +7,11 @@ from typing import Any, AsyncGenerator, Dict, List, Optional
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Scripts
-from app.core.db import ClickhouseConnectionPool, engine, get_clickhouse_connection_pool
+from app.core.db import (
+    AsyncSessionLocal,
+    ClickhouseConnectionPool,
+    get_clickhouse_connection_pool,
+)
 from app.internal.models import (
     Article,
     Category,
@@ -19,7 +23,6 @@ from app.internal.models import (
 )
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session as SyncSession
 
 
 class ArticleMapper:
@@ -106,12 +109,14 @@ class ArticleMapper:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
-            return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
+            async with AsyncSessionLocal() as db:
+                return await self.get_top10_articles_db_mapper_async(db)
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
-            return await self.get_top10_articles_db_mapper_async(SyncSession(engine))
+            async with AsyncSessionLocal() as db:
+                return await self.get_top10_articles_db_mapper_async(db)
         finally:
             # 归还连接到池
             if ch_conn:
@@ -366,16 +371,14 @@ class ArticleMapper:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
-            return await self.get_category_article_count_db_mapper_async(
-                SyncSession(engine)
-            )
+            async with AsyncSessionLocal() as db:
+                return await self.get_category_article_count_db_mapper_async(db)
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
-            return await self.get_category_article_count_db_mapper_async(
-                SyncSession(engine)
-            )
+            async with AsyncSessionLocal() as db:
+                return await self.get_category_article_count_db_mapper_async(db)
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
@@ -457,16 +460,14 @@ class ArticleMapper:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
             # 降级到 DB
-            return await self.get_monthly_publish_count_db_mapper_async(
-                SyncSession(engine)
-            )
+            async with AsyncSessionLocal() as db:
+                return await self.get_monthly_publish_count_db_mapper_async(db)
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             # 降级到 DB
-            return await self.get_monthly_publish_count_db_mapper_async(
-                SyncSession(engine)
-            )
+            async with AsyncSessionLocal() as db:
+                return await self.get_monthly_publish_count_db_mapper_async(db)
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
