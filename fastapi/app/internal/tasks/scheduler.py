@@ -28,7 +28,9 @@ def start_scheduler(
           db_factory=lambda: AsyncSessionLocal()
       )
     """
-    scheduler: AsyncIOScheduler = AsyncIOScheduler()
+    scheduler: AsyncIOScheduler = AsyncIOScheduler(
+        job_defaults={"coalesce": True, "max_instances": 1}
+    )
 
     # 任务1：同步文章向量到 PostgreSQL（使用LangChain）- 增量同步模式
     sync_vector_job_func = partial(

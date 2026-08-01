@@ -1,4 +1,5 @@
 import contextvars
+import asyncio
 import re
 from functools import lru_cache
 from typing import List, Optional
@@ -293,10 +294,10 @@ class SQLTools:
             return error_msg
 
     async def get_table_schema_async(self, table_name: str = "") -> str:
-        return self.get_table_schema(table_name)
+        return await asyncio.to_thread(self.get_table_schema, table_name)
 
     async def execute_query_async(self, query: str) -> str:
-        return self.execute_query(query)
+        return await asyncio.to_thread(self.execute_query, query)
 
     def get_langchain_tools(self) -> List[StructuredTool]:
         """

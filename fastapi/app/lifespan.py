@@ -13,7 +13,10 @@ from app.core.db import (
     AsyncSessionLocal,
     RabbitMQClient,
     create_tables_async,
+    async_engine,
+    get_clickhouse_connection_pool,
     get_rabbitmq_client,
+    get_neo4j_client,
 )
 from app.internal.agents.langsmith import (
     init_langsmith,
@@ -22,6 +25,7 @@ from app.internal.agents.langsmith import (
 )
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
 # 加载服务器配置
@@ -32,6 +36,7 @@ PORT: int = server_config["port"]
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
+    scheduler: Optional[AsyncIOScheduler] = None
     # LangSmith 初始化（追踪关闭或失败时均不阻断业务启动）
     langsmith_config = load_langsmith_config()
     init_langsmith(langsmith_config)
@@ -52,7 +57,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     def db_factory() -> AsyncSession:
         return AsyncSessionLocal()
 
-    start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
+    scheduler = start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
     shared_http_client = httpx.AsyncClient(
@@ -68,6 +73,14 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     Logger.info(Messages.STARTUP_REDOC_ADDRESS(IP, PORT))
 
     yield
+
+    if scheduler:
+        scheduler.shutdown(wait=False)
+        Logger.info(InitMessages.SCHEDULER_STOPPED)
+
+    await get_neo4j_client().close()
+    await get_clickhouse_connection_pool().close_all_async()
+    await async_engine.dispose()
 
     # 应用关闭时清理 httpx 连接池
     await shared_http_client.aclose()

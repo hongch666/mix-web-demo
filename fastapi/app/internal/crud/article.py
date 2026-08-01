@@ -1,3 +1,4 @@
+import asyncio
 import time
 import traceback
 from datetime import datetime, timedelta
@@ -91,7 +92,7 @@ class ArticleMapper:
         query = Scripts.TOP10_ARTICLES_CLICKHOUSE_QUERY(", ".join(columns), ch_table)
 
         try:
-            results: List[tuple] = ch_conn.execute(query)
+            results: List[tuple] = await asyncio.to_thread(ch_conn.execute, query)
             query_time: float = time.time() - query_start
 
             # 安全转换为字典
@@ -130,11 +131,11 @@ class ArticleMapper:
 
     async def get_clickhouse_connection_async(self) -> Any:
         """获取 ClickHouse 连接（用于缓存版本检查）"""
-        return self._clickhouse_pool.get_connection()
+        return await asyncio.to_thread(self._clickhouse_pool.get_connection)
 
     async def return_clickhouse_connection_async(self, conn: Any) -> None:
         """归还 ClickHouse 连接"""
-        self._clickhouse_pool.return_connection(conn)
+        await asyncio.to_thread(self._clickhouse_pool.return_connection, conn)
 
     async def get_all_articles_mapper_async(self, db: AsyncSession) -> List[Article]:
         statement = select(Article)
@@ -342,7 +343,7 @@ class ArticleMapper:
         query = Scripts.CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY(ch_table)
 
         try:
-            results: Any = ch_conn.execute(query)
+            results: Any = await asyncio.to_thread(ch_conn.execute, query)
             query_time: float = time.time() - query_start
 
             # 安全转换为字典列表
@@ -431,7 +432,7 @@ class ArticleMapper:
         query = Scripts.MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(ch_table)
 
         try:
-            results: Any = ch_conn.execute(query)
+            results: Any = await asyncio.to_thread(ch_conn.execute, query)
             query_time: float = time.time() - query_start
 
             # 安全转换为字典列表

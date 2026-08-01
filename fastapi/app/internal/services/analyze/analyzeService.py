@@ -449,7 +449,7 @@ class AnalyzeService:
         # 获取关键词字典
         keywords_dic: Dict[str, int] = await self.get_keywords_dic()
         # 生成词云图
-        self.generate_wordcloud(keywords_dic)
+        await asyncio.to_thread(self.generate_wordcloud, keywords_dic)
         # 上传到OSS
         oss_url: str = await self.upload_wordcloud_to_oss()
 
@@ -522,7 +522,7 @@ class AnalyzeService:
             )
             total_rows += 1
 
-        workbook.save(file_path)
+        await asyncio.to_thread(workbook.save, file_path)
         Logger.info(Messages.EXPORT_ARTICLES_SUCCESS(file_path, total_rows))
         return file_path
 

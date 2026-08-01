@@ -109,17 +109,14 @@ class Neo4jClient:
         except RuntimeError:
             current_loop_id = None
 
-        if current_loop_id is not None:
-            driver: Optional[Any] = self._drivers.pop(current_loop_id, None)
-            if driver is not None:
-                await driver.close()
-                self.logger.info(Messages.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)
-            return
-
-        for driver in list(self._drivers.values()):
-            await driver.close()
+        drivers: List[Any] = list(self._drivers.values())
         self._drivers.clear()
-        self.logger.info(Messages.NEO4J_DRIVER_CLOSED_MESSAGE)
+        for driver in drivers:
+            await driver.close()
+        if current_loop_id is not None:
+            self.logger.info(Messages.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)
+        else:
+            self.logger.info(Messages.NEO4J_DRIVER_CLOSED_MESSAGE)
 
 
 @lru_cache

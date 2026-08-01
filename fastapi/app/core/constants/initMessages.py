@@ -11,6 +11,7 @@ class InitMessages:
     HTTP_CLIENT_POOL_INITIALIZED: str = "HTTP 客户端连接池已创建"
     HTTP_CLIENT_POOL_CLOSED: str = "HTTP 客户端连接池已关闭"
     SCHEDULER_STARTED: str = "定时任务调度器已启动"
+    SCHEDULER_STOPPED: str = "定时任务调度器已停止"
     SCHEDULER_VECTOR_SYNC_MESSAGE: str = "  - 向量同步任务：每 24 小时执行一次"
     SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE: str = (
         "  - 分析接口缓存更新任务：每 10 分钟执行一次（启动时立即执行）"
