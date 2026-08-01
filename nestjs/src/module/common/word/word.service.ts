@@ -19,7 +19,7 @@ export class WordService {
     const absTemplatePath: string = path.isAbsolute(templatePath)
       ? templatePath
       : path.resolve(__dirname, "../../", templatePath);
-    const template: Buffer = fs.readFileSync(absTemplatePath);
+    const template: Buffer = await fs.promises.readFile(absTemplatePath);
 
     // 这里将content转为docx可用的rawXml
     const processedData: Record<string, unknown> = {

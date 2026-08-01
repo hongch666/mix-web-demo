@@ -140,13 +140,16 @@ export class GithubService {
         query.code,
       );
       // profile 与 emails 为两个完全独立的 GitHub API 调用，Promise.all 并行降低延迟
-      const [githubProfile, githubEmailFallback]: [
-        GithubUserResponse,
-        string | null,
-      ] = await Promise.all([
+      const [profileResult, emailResult] = await Promise.allSettled([
         this.fetchGithubProfile(accessToken),
         this.fetchPrimaryEmail(accessToken),
       ]);
+      if (profileResult.status === "rejected") {
+        throw profileResult.reason;
+      }
+      const githubProfile: GithubUserResponse = profileResult.value;
+      const githubEmailFallback: string | null =
+        emailResult.status === "fulfilled" ? emailResult.value : null;
       const githubEmail: string | null =
         githubProfile.email || githubEmailFallback;
       const user: User = await this.userService.findOrCreateGithubUser({

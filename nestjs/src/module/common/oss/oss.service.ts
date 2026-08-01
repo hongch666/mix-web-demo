@@ -90,17 +90,17 @@ export class OssService implements OnModuleInit {
 
       // 检查文件是否存在
       logger.info(Messages.OSS_CHECK_FILE_EXISTS(localFile));
-      const fileExists = fs.existsSync(localFile);
-      logger.info(Messages.OSS_FILE_EXISTS_RESULT(fileExists));
-
-      if (!fileExists) {
+      try {
+        await fs.promises.access(localFile);
+      } catch {
         throw BusinessException.notFound(
           Messages.OSS_LOCAL_FILE_NOT_FOUND(localFile),
         );
       }
+      logger.info(Messages.OSS_FILE_EXISTS_RESULT(true));
 
       // 获取文件大小
-      const stats = fs.statSync(localFile);
+      const stats = await fs.promises.stat(localFile);
       logger.info(Messages.OSS_LOCAL_FILE_SIZE(stats.size));
 
       // 添加超时控制

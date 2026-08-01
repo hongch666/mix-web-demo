@@ -107,7 +107,7 @@ export class ArticleLogService {
   }
 
   async create(dto: CreateArticleLogDto): Promise<void> {
-    this.logModel.create(dto);
+    await this.logModel.create(dto);
   }
 
   async removeById(id: string): Promise<ArticleLogDocument | null> {

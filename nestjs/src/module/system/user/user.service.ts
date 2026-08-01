@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
-import { Like, Repository } from "typeorm";
+import { DataSource, EntityManager, Like, Repository } from "typeorm";
 import { User } from "./entities/user.entity";
 
 export interface GithubUserProfile {
@@ -20,6 +20,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {}
 
   private readonly saltRounds = 10;
@@ -53,22 +54,6 @@ export class UserService {
 
   // 创建或更新 GitHub 用户
   async findOrCreateGithubUser(profile: GithubUserProfile): Promise<User> {
-    // getUserByGithubId 与 resolveAvailableEmail 为独立 DB 查询，并行降低延迟
-    const [existingUser, availableEmail] = await Promise.all([
-      this.getUserByGithubId(profile.githubId),
-      this.resolveAvailableEmail(profile.email, undefined),
-    ]);
-
-    if (existingUser) {
-      existingUser.githubLogin = profile.githubLogin;
-      existingUser.githubUrl = profile.githubUrl;
-      existingUser.img = profile.avatarUrl;
-      existingUser.email = availableEmail ?? existingUser.email;
-      existingUser.authProvider = "github";
-      existingUser.lastLoginAt = new Date();
-      return this.userRepository.save(existingUser);
-    }
-
     // 首次登录注册：使用默认密码的 bcrypt 加密值
     const rawDefaultPassword: string = this.configService.get<string>(
       "USER_DEFAULT_PASSWORD",
@@ -78,21 +63,45 @@ export class UserService {
       this.saltRounds,
     );
 
-    const user: User = this.userRepository.create({
-      githubId: profile.githubId,
-      githubLogin: profile.githubLogin,
-      githubUrl: profile.githubUrl,
-      name: await this.buildUniqueGithubUsername(profile),
-      password: encryptedPassword,
-      email: availableEmail,
-      role: "user",
-      img: profile.avatarUrl,
-      age: 18,
-      authProvider: "github",
-      lastLoginAt: new Date(),
-    });
+    return this.dataSource.transaction(
+      async (manager: EntityManager): Promise<User> => {
+        const repository: Repository<User> = manager.getRepository(User);
+        const existingUser: User | null = await repository.findOne({
+          where: { githubId: profile.githubId },
+        });
+        const availableEmail: string | null = await this.resolveAvailableEmail(
+          profile.email,
+          undefined,
+          repository,
+        );
 
-    return this.userRepository.save(user);
+        if (existingUser) {
+          existingUser.githubLogin = profile.githubLogin;
+          existingUser.githubUrl = profile.githubUrl;
+          existingUser.img = profile.avatarUrl;
+          existingUser.email = availableEmail ?? existingUser.email;
+          existingUser.authProvider = "github";
+          existingUser.lastLoginAt = new Date();
+          return repository.save(existingUser);
+        }
+
+        const user: User = repository.create({
+          githubId: profile.githubId,
+          githubLogin: profile.githubLogin,
+          githubUrl: profile.githubUrl,
+          name: await this.buildUniqueGithubUsername(profile, repository),
+          password: encryptedPassword,
+          email: availableEmail,
+          role: "user",
+          img: profile.avatarUrl,
+          age: 18,
+          authProvider: "github",
+          lastLoginAt: new Date(),
+        });
+
+        return repository.save(user);
+      },
+    );
   }
 
   // 判断用户是否是管理员
@@ -107,13 +116,14 @@ export class UserService {
 
   private async buildUniqueGithubUsername(
     profile: GithubUserProfile,
+    repository: Repository<User> = this.userRepository,
   ): Promise<string> {
     const preferredName: string =
       profile.githubName?.trim() ||
       profile.githubLogin.trim() ||
       `github_${profile.githubId}`;
 
-    const preferredExists: User | null = await this.userRepository.findOne({
+    const preferredExists: User | null = await repository.findOne({
       where: { name: preferredName },
     });
     if (!preferredExists) {
@@ -121,7 +131,7 @@ export class UserService {
     }
 
     const fallbackBase: string = `github_${profile.githubLogin || "user"}_${profile.githubId}`;
-    const fallbackExists: User | null = await this.userRepository.findOne({
+    const fallbackExists: User | null = await repository.findOne({
       where: { name: fallbackBase },
     });
     if (!fallbackExists) {
@@ -131,7 +141,7 @@ export class UserService {
     let suffix = 1;
     while (true) {
       const candidate = `${fallbackBase}_${suffix}`;
-      const existing: User | null = await this.userRepository.findOne({
+      const existing: User | null = await repository.findOne({
         where: { name: candidate },
       });
       if (!existing) {
@@ -144,12 +154,13 @@ export class UserService {
   private async resolveAvailableEmail(
     email: string | null,
     currentUserId?: number,
+    repository: Repository<User> = this.userRepository,
   ): Promise<string | null> {
     if (!email) {
       return null;
     }
 
-    const existingUser: User | null = await this.userRepository.findOne({
+    const existingUser: User | null = await repository.findOne({
       where: { email },
     });
     if (existingUser && existingUser.id !== currentUserId) {

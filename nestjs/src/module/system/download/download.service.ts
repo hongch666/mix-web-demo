@@ -72,18 +72,14 @@ export class DownloadService {
       templatePath,
     );
     // 确保保存目录存在
-    if (!fs.existsSync(path.dirname(savePath))) {
-      fs.mkdirSync(path.dirname(savePath), { recursive: true });
-    }
+    await fs.promises.mkdir(path.dirname(savePath), { recursive: true });
     // 保存文件到指定路径
-    fs.writeFileSync(savePath, buffer);
-    const url: string = await this.uploadFileToOSS(
-      savePath,
-      `articles/article-${id}.docx`,
-    );
-    // 上传后删除本地Word文件
-    fs.unlinkSync(savePath);
-    return url;
+    await fs.promises.writeFile(savePath, buffer);
+    try {
+      return await this.uploadFileToOSS(savePath, `articles/article-${id}.docx`);
+    } finally {
+      await fs.promises.unlink(savePath).catch(() => undefined);
+    }
   }
 
   // 生成markdown文件并上传到OSS，返回下载链接
@@ -114,17 +110,14 @@ export class DownloadService {
       );
     }
     const saveDir: string = path.join(process.cwd(), filePath);
-    if (!fs.existsSync(saveDir)) {
-      fs.mkdirSync(saveDir, { recursive: true });
-    }
+    await fs.promises.mkdir(saveDir, { recursive: true });
     const savePath: string = path.join(saveDir, `article-${id}.md`);
-    fs.writeFileSync(savePath, markdown);
-    // 上传到OSS
-    const ossPath: string = `articles/article-${id}.md`;
-    const url: string = await this.uploadFileToOSS(savePath, ossPath);
-    // 上传后删除本地Markdown文件
-    fs.unlinkSync(savePath);
-    return url;
+    await fs.promises.writeFile(savePath, markdown, "utf8");
+    try {
+      return await this.uploadFileToOSS(savePath, `articles/article-${id}.md`);
+    } finally {
+      await fs.promises.unlink(savePath).catch(() => undefined);
+    }
   }
 
   // 生成PDF文件并保存到指定位置
@@ -150,9 +143,7 @@ export class DownloadService {
       );
     }
     const saveDir: string = path.join(process.cwd(), filePath);
-    if (!fs.existsSync(saveDir)) {
-      fs.mkdirSync(saveDir, { recursive: true });
-    }
+    await fs.promises.mkdir(saveDir, { recursive: true });
     const savePath: string = path.join(saveDir, `article-${id}.pdf`);
 
     // 创建 HTML 内容
@@ -167,33 +158,30 @@ export class DownloadService {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
-    const page: Page = await browser.newPage();
-    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    try {
+      const page: Page = await browser.newPage();
+      try {
+        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+        await page.pdf({
+          path: savePath,
+          format: "A4",
+          margin: {
+            top: "15mm",
+            bottom: "15mm",
+            left: "15mm",
+            right: "15mm",
+          },
+          printBackground: true,
+        });
+      } finally {
+        await page.close();
+      }
 
-    // 生成 PDF
-    await page.pdf({
-      path: savePath,
-      format: "A4",
-      margin: {
-        top: "15mm",
-        bottom: "15mm",
-        left: "15mm",
-        right: "15mm",
-      },
-      printBackground: true,
-    });
-
-    await page.close();
-    await browser.close();
-
-    // 上传到 OSS
-    const ossPath: string = `articles/article-${id}.pdf`;
-    const url: string = await this.uploadFileToOSS(savePath, ossPath);
-
-    // 删除本地 PDF 文件
-    fs.unlinkSync(savePath);
-
-    return url;
+      return await this.uploadFileToOSS(savePath, `articles/article-${id}.pdf`);
+    } finally {
+      await browser.close();
+      await fs.promises.unlink(savePath).catch(() => undefined);
+    }
   }
 
   // 生成 PDF 的 HTML 内容

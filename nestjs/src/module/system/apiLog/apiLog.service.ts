@@ -103,7 +103,7 @@ export class ApiLogService {
    * @param dto 创建日志DTO
    */
   async create(dto: CreateApiLogDto): Promise<void> {
-    this.apiLogModel.create(dto);
+    await this.apiLogModel.create(dto);
   }
 
   /**
@@ -115,7 +115,7 @@ export class ApiLogService {
     if (!existingLog) {
       throw BusinessException.notFound(Messages.API_LOG_NOT_FOUND);
     }
-    this.apiLogModel.findByIdAndDelete(id).exec();
+    await this.apiLogModel.findByIdAndDelete(id).exec();
   }
 
   /**
@@ -135,7 +135,7 @@ export class ApiLogService {
       throw BusinessException.notFound(Messages.API_LOG_PARTIAL_NOT_FOUND);
     }
 
-    this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
+    await this.apiLogModel.deleteMany({ _id: { $in: ids } }).exec();
   }
 
   /**
