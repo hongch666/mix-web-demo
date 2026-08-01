@@ -51,6 +51,8 @@ var (
 )
 
 type ServiceContext struct {
+	Context           context.Context
+	Cancel            context.CancelFunc
 	Config            config.Config
 	MySQLConn         sqlx.SqlConn
 	ESClient          *elastic.Client
@@ -85,6 +87,7 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
+	serviceContext, cancel := context.WithCancel(context.Background())
 	// 初始化日志
 	zLogger, err := utils.NewZeroLogger(c.Logs.Path)
 	if err != nil {
@@ -145,6 +148,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	fastapiClient := fastapiClient.NewFastapiClient(namingClient)
 
 	return &ServiceContext{
+		Context:                serviceContext,
+		Cancel:                 cancel,
 		Config:                 c,
 		MySQLConn:              mysqlConn,
 		ESClient:               esClient,

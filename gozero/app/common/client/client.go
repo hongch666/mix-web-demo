@@ -34,6 +34,7 @@ const (
 
 type ServiceDiscovery struct {
 	namingClient naming_client.INamingClient
+	httpClient   *http.Client
 	serviceMap   sync.Map          // 服务实例缓存
 	mu           sync.Mutex        // 保证线程安全
 	lbIndex      map[string]uint64 // 负载均衡轮询索引
@@ -42,7 +43,17 @@ type ServiceDiscovery struct {
 func NewServiceDiscovery(client naming_client.INamingClient) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		namingClient: client,
-		lbIndex:      make(map[string]uint64),
+		httpClient: &http.Client{
+			Timeout: defaultRequestTimeout,
+			Transport: &http.Transport{
+				MaxIdleConns:          100,
+				MaxIdleConnsPerHost:   20,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   5 * time.Second,
+				ResponseHeaderTimeout: defaultRequestTimeout,
+			},
+		},
+		lbIndex: make(map[string]uint64),
 	}
 }
 
@@ -191,8 +202,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		req.Header.Set("Content-Type", contentType)
 	}
 
-	client := &http.Client{Timeout: defaultRequestTimeout}
-	resp, err := client.Do(req)
+	resp, err := sd.httpClient.Do(req)
 	if err != nil {
 		return Result{}, err
 	}

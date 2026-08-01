@@ -21,7 +21,7 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 
 	// 每小时同步一次 ES
 	_, err := TaskScheduler.AddFunc("* * */1 * *", func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		ctx, cancel := context.WithTimeout(svcCtx.Context, 30*time.Minute)
 		defer cancel()
 		logger := svcCtx.Logger.WithContext(ctx)
 		lockKey := constants.LOCK_TASK_ES_SYNC
@@ -70,6 +70,16 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 	TaskScheduler.Start()
 	if svcCtx.Logger != nil {
 		svcCtx.Logger.Info(constants.TASK_SCHEDULER_STARTED_MESSAGE)
+	}
+}
+
+// StopTaskScheduler 停止定时任务并取消服务级后台上下文。
+func StopTaskScheduler(svcCtx *svc.ServiceContext) {
+	if TaskScheduler != nil {
+		TaskScheduler.Stop()
+	}
+	if svcCtx != nil && svcCtx.Cancel != nil {
+		svcCtx.Cancel()
 	}
 }
 
