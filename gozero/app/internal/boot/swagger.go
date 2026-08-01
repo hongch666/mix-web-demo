@@ -3,6 +3,7 @@ package boot
 import (
 	"net/http"
 
+	"app/common/constants"
 	"app/docs"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -28,7 +29,7 @@ func registerSwaggerRoute(server *rest.Server) {
 		Handler: func(w http.ResponseWriter, r *http.Request) {
 			content, err := docs.StaticFiles.ReadFile("swagger.html")
 			if err != nil {
-				http.Error(w, "获取 Swagger 页面失败", http.StatusInternalServerError)
+				http.Error(w, constants.SWAGGER_PAGE_FETCH_FAIL, http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -44,7 +45,7 @@ func registerSwaggerRoute(server *rest.Server) {
 		Handler: func(w http.ResponseWriter, r *http.Request) {
 			content, err := docs.StaticFiles.ReadFile("main.json")
 			if err != nil {
-				http.Error(w, "获取 Swagger 文档失败", http.StatusInternalServerError)
+				http.Error(w, constants.GET_SWAGGER_FAIL, http.StatusInternalServerError)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")

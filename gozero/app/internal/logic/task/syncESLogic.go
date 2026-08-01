@@ -33,7 +33,7 @@ func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err 
 	l.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 
 	// 在后台 goroutine 中异步执行 ES 同步，立刻返回成功
-	utils.SafeGo(l.ZeroLogger, "同步ES数据", func() {
+	utils.SafeGo(l.ZeroLogger, constants.SAFE_GO_SYNC_ES_DATA, func() {
 		if syncErr := logic.SyncArticlesToES(l.svcCtx.Context, l.svcCtx); syncErr != nil {
 			l.Error(fmt.Sprintf("%s: %v", constants.TASK_SYNC_ES_FAILED_MESSAGE, syncErr))
 			return

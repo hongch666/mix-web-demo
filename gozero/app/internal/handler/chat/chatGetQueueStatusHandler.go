@@ -6,6 +6,7 @@ package chat
 import (
 	"net/http"
 
+	"app/common/constants"
 	"app/common/utils"
 	"app/internal/logic/chat"
 	"app/internal/middleware"
@@ -23,5 +24,5 @@ func ChatGetQueueStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			utils.Success(w, resp)
 		}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "获取队列状态")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_GET_QUEUE_STATUS)
 }

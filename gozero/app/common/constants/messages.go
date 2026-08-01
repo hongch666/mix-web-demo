@@ -210,4 +210,27 @@ const (
 	REDIS_LOCK_RELEASE_ERROR   = "释放分布式锁错误: %v"
 	REDIS_LOCK_RELEASE_FAIL    = "[分布式锁] 释放锁失败，key: %s"
 	REDIS_LOCK_RELEASE_SUCCESS = "[分布式锁] 释放锁成功，key: %s"
+
+	// API日志操作描述（ApplyApiLog 的接口描述参数）
+	API_LOG_TEST_GOZERO_SERVICE      = "测试GoZero服务"
+	API_LOG_MANUAL_SYNC_ES_TASK      = "手动触发同步ES任务"
+	API_LOG_GET_SEARCH_HISTORY       = "获取搜索历史"
+	API_LOG_SEARCH_ARTICLES          = "搜索文章"
+	API_LOG_GET_UNREAD_MESSAGE_COUNT = "获取未读消息数"
+	API_LOG_GET_ALL_UNREAD_COUNTS    = "获取所有未读消息数"
+	API_LOG_GET_QUEUE_STATUS         = "获取队列状态"
+	API_LOG_LEAVE_QUEUE              = "离开队列"
+	API_LOG_GET_CHAT_HISTORY         = "获取聊天历史"
+	API_LOG_SEND_MESSAGE             = "发送消息"
+	API_LOG_JOIN_QUEUE               = "加入队列"
+
+	// Swagger
+	SWAGGER_PAGE_FETCH_FAIL = "获取 Swagger 页面失败"
+
+	// FastAPI 客户端错误描述
+	FASTAPI_ARTICLE_IDS_EMPTY            = "文章ID列表为空"
+	FASTAPI_ARTICLE_IDS_OR_KEYWORD_EMPTY = "文章ID列表为空或关键词为空"
+
+	// 异步任务描述（SafeGo）
+	SAFE_GO_SYNC_ES_DATA = "同步ES数据"
 )
