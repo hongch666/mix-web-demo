@@ -70,7 +70,7 @@ public class ApiLogAspect {
         String requestPath = getRequestPath(method);
 
         // 构建基础日志消息
-        String baseMessage = String.format("%s %s: %s", httpMethod, requestPath, apiLog.value());
+        String baseMessage = String.format(Messages.API_LOG_START, httpMethod, requestPath, apiLog.value());
 
         // 添加参数信息
         if (apiLog.includeParams()) {
@@ -99,7 +99,7 @@ public class ApiLogAspect {
             return monoResult
                 .flatMap(res -> Mono.deferContextual(ctx -> {
                     long duration = System.currentTimeMillis() - start;
-                    String timeMessage = String.format("%s %s 使用了%dms", httpMethod, requestPath, duration);
+                    String timeMessage = String.format(Messages.API_LOG_DURATION, httpMethod, requestPath, duration);
                     logger.info(timeMessage);
                     return sendApiLogToQueue(ctx, pjp, httpMethod, requestPath, apiLog, duration)
                         .thenReturn(res);

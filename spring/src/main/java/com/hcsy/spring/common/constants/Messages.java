@@ -123,6 +123,8 @@ public class Messages {
     public static final String TOTAL_SESSION_CLEAN = "定时任务：清理完成，扫描 %d 个用户，共清除 %d 个过期 Session";
 
     // ===== AOP/权限 =====
+    public static final String API_LOG_START = "%s %s: %s";
+    public static final String API_LOG_DURATION = "%s %s 使用了%dms";
     public static final String API_EXCEPTION = "API方法执行异常";
     public static final String PARAM_EXPIRED = "参数解析失败";
     public static final String FORMAT_PARAM = "格式化参数值失败";
