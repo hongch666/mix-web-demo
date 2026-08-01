@@ -7,6 +7,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.Messages;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -52,7 +53,7 @@ public class Result {
             DataBuffer buffer = response.bufferFactory().wrap(bytes);
             return response.writeWith(Mono.just(buffer));
         } catch (JsonProcessingException e) {
-            log.error("序列化响应结果失败", e);
+            log.error(Messages.RESULT_SERIALIZE_FAIL, e);
             return response.setComplete();
         }
     }

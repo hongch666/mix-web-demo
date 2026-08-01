@@ -7,6 +7,8 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
+import com.hcsy.gateway.common.constants.Messages;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -70,7 +72,7 @@ public class TokenBucketRateLimiter {
             .map(result -> isAllowedResult(result, key))
             .defaultIfEmpty(false)
             .onErrorResume(error -> {
-                log.error("限流器执行出错: key={}, Redis异常，拒绝请求", key, error);
+                log.error(Messages.RATELIMIT_BUCKET_EXEC_ERROR, key, error);
                 return Mono.just(false);
             });
     }
@@ -86,7 +88,7 @@ public class TokenBucketRateLimiter {
         return Mono.zip(tokens, lastRefillTime)
             .map(result -> String.format("tokens=%s, lastRefillTime=%s", result.getT1(), result.getT2()))
             .onErrorResume(error -> {
-                log.error("获取限流器状态出错: key={}", key, error);
+                log.error(Messages.RATELIMIT_STATUS_ERROR, key, error);
                 return Mono.just("unknown");
             });
     }
@@ -101,9 +103,9 @@ public class TokenBucketRateLimiter {
             .next()
             .map(result -> result == 1L)
             .defaultIfEmpty(false)
-            .doOnSuccess(ignored -> log.info("已重置限流器: key={}, capacity={}", key, capacity))
+            .doOnSuccess(ignored -> log.info(Messages.RATELIMIT_RESET_SUCCESS, key, capacity))
             .onErrorResume(error -> {
-                log.error("重置限流器失败: key={}", key, error);
+                log.error(Messages.RATELIMIT_RESET_FAIL, key, error);
                 return Mono.just(false);
             });
     }
@@ -116,11 +118,11 @@ public class TokenBucketRateLimiter {
         long allowed = ((Number) result.get(0)).longValue();
         long remainingTokens = result.size() > 1 ? ((Number) result.get(1)).longValue() : 0L;
         if (allowed == 1L) {
-            log.debug("限流检查通过: key={}, 剩余令牌数={}", key, remainingTokens);
+            log.debug(Messages.RATELIMIT_CHECK_PASS, key, remainingTokens);
             return true;
         }
 
-        log.warn("请求被限流: key={}, 剩余令牌数={}", key, remainingTokens);
+        log.warn(Messages.RATELIMIT_REJECTED, key, remainingTokens);
         return false;
     }
 }

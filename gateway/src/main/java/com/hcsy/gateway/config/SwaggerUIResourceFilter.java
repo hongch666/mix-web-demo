@@ -14,6 +14,8 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import com.hcsy.gateway.common.constants.Messages;
+
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -50,7 +52,7 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
 
         Resource resource = new ClassPathResource(relativePath);
         if (!resource.exists()) {
-            log.warn("Swagger UI 资源不存在: {}", relativePath);
+            log.warn(Messages.SWAGGER_UI_RESOURCE_NOT_EXIST, relativePath);
             return chain.filter(exchange);
         }
 
@@ -65,7 +67,7 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
                 response.getHeaders().setContentLength(buffer.readableByteCount());
                 return response.writeWith(Mono.just(buffer));
             })
-            .doOnError(error -> log.error("读取 Swagger UI 资源失败: {}", relativePath, error))
+            .doOnError(error -> log.error(Messages.SWAGGER_UI_RESOURCE_READ_FAIL, relativePath, error))
             .then();
     }
 

@@ -11,6 +11,7 @@ import org.springframework.web.server.ServerWebExchange;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.Messages;
 import com.hcsy.gateway.common.constants.RedisKeys;
 import com.hcsy.gateway.properties.RateLimitProperties;
 import com.hcsy.gateway.utils.TokenBucketRateLimiter;
@@ -55,12 +56,12 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
             rateLimitPath.getRefillRate())
             .flatMap(allowed -> {
                 if (!allowed) {
-                    log.warn("[{}] 请求被限流: path={}, clientId={}", ErrorCodes.RATE_LIMIT_EXCEEDED, path,
+                    log.warn(Messages.RATELIMIT_FILTER_REJECTED, ErrorCodes.RATE_LIMIT_EXCEEDED, path,
                         clientId);
                     return rateLimitExceededResponse(exchange, rateLimitPath.getMessage());
                 }
 
-                log.debug("限流检查通过: path={}, clientId={}", path, clientId);
+                log.debug(Messages.RATELIMIT_FILTER_PASS, path, clientId);
                 return chain.filter(exchange);
             });
     }

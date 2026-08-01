@@ -6,6 +6,7 @@ import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
+import com.hcsy.gateway.common.constants.Messages;
 import com.hcsy.gateway.properties.RedisProperties;
 
 import lombok.RequiredArgsConstructor;
@@ -35,16 +36,16 @@ public class RedisConnectionConfig {
 
         if (redisProperties.getUsername() != null && !redisProperties.getUsername().isEmpty()) {
             config.setUsername(redisProperties.getUsername());
-            log.info("[Redis] 用户名: {}", redisProperties.getUsername());
+            log.info(Messages.REDIS_USERNAME, redisProperties.getUsername());
         }
 
         if (redisProperties.getPassword() != null && !redisProperties.getPassword().isEmpty()) {
             config.setPassword(redisProperties.getPassword());
-            log.info("[Redis] 已设置密码");
+            log.info(Messages.REDIS_PASSWORD_SET);
         }
 
         log.info(
-            "[Redis] 连接: {}:{}, DB: {}",
+            Messages.REDIS_CONNECT,
             redisProperties.getHost() != null ? redisProperties.getHost() : "unknown",
             redisProperties.getPort() != null ? redisProperties.getPort() : 0,
             redisProperties.getDatabase() != null ? redisProperties.getDatabase() : 0);

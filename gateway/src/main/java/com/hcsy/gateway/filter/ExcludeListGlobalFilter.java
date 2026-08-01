@@ -13,6 +13,7 @@ import org.springframework.web.server.ServerWebExchange;
 
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.Messages;
 import com.hcsy.gateway.config.AuthProperties;
 
 import lombok.RequiredArgsConstructor;
@@ -44,10 +45,10 @@ public class ExcludeListGlobalFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        log.info("排除列表拦截路径: {}", path);
+        log.info(Messages.EXCLUDE_INTERCEPT_PATH, path);
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(HttpStatus.FORBIDDEN);
-        return Result.error(HttpCode.FORBIDDEN, "该接口为内部接口，仅内部使用").writeTo(response);
+        return Result.error(HttpCode.FORBIDDEN, Messages.INTERNAL_INTERFACE_FORBIDDEN).writeTo(response);
     }
 
     @Override

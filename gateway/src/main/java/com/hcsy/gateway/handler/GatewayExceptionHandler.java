@@ -14,6 +14,7 @@ import com.hcsy.gateway.common.BusinessException;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.Messages;
 
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
@@ -44,8 +45,8 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
             response.setStatusCode(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
             String serviceId = extractServiceId(ex.getMessage());
             String msg = serviceId != null
-                ? String.format("找不到可用的服务实例: %s", serviceId)
-                : "服务不可用";
+                ? String.format(Messages.NO_AVAILABLE_SERVICE_INSTANCE, serviceId)
+                : Messages.SERVICE_UNAVAILABLE;
             log.error("[{}] 路径: {}", ErrorCodes.NO_AVAILABLE_SERVICE_INSTANCE, exchange.getRequest().getPath(), ex);
             return Result.error(HttpCode.SERVICE_UNAVAILABLE, msg).writeTo(response);
         }
@@ -54,14 +55,14 @@ public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
         if (isConnectException(ex)) {
             response.setStatusCode(org.springframework.http.HttpStatus.BAD_GATEWAY);
             log.error("[{}] 服务调用失败 - 路径: {}", ErrorCodes.SERVICE_CALL_FAILED, exchange.getRequest().getPath(), ex);
-            return Result.error(HttpCode.BAD_GATEWAY, "服务调用失败").writeTo(response);
+            return Result.error(HttpCode.BAD_GATEWAY, Messages.SERVICE_CALL_FAILED).writeTo(response);
         }
 
         // TimeoutException - 请求超时（504）
         if (isTimeoutException(ex)) {
             response.setStatusCode(org.springframework.http.HttpStatus.GATEWAY_TIMEOUT);
             log.error("[{}] 请求超时 - 路径: {}", ErrorCodes.REQUEST_TIMEOUT, exchange.getRequest().getPath(), ex);
-            return Result.error(HttpCode.GATEWAY_TIMEOUT, "请求超时，请稍后重试").writeTo(response);
+            return Result.error(HttpCode.GATEWAY_TIMEOUT, Messages.REQUEST_TIMEOUT).writeTo(response);
         }
 
         // 其他异常 - 服务器内部错误（500）

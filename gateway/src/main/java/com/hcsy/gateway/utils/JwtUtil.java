@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.hcsy.gateway.common.BusinessException;
 import com.hcsy.gateway.common.constants.ErrorCodes;
+import com.hcsy.gateway.common.constants.Messages;
 import com.hcsy.gateway.properties.JwtProperties;
 
 import io.jsonwebtoken.Claims;
@@ -59,15 +60,15 @@ public class JwtUtil {
             Claims claims = getClaims(token);
             String tokenType = claims.get("tokenType", String.class);
             if (!"access".equals(tokenType)) {
-                throw BusinessException.unauthorized("Token类型错误", ErrorCodes.TOKEN_TYPE_INVALID);
+                throw BusinessException.unauthorized(Messages.TOKEN_TYPE_ERROR, ErrorCodes.TOKEN_TYPE_INVALID);
             }
             return true;
         } catch (ExpiredJwtException e) {
-            throw BusinessException.unauthorized("Token已过期", ErrorCodes.TOKEN_EXPIRED);
+            throw BusinessException.unauthorized(Messages.TOKEN_EXPIRED_MSG, ErrorCodes.TOKEN_EXPIRED);
         } catch (BusinessException e) {
             throw e;
         } catch (JwtException | IllegalArgumentException e) {
-            throw BusinessException.unauthorized("无效的Token", ErrorCodes.TOKEN_INVALID);
+            throw BusinessException.unauthorized(Messages.TOKEN_INVALID_MSG, ErrorCodes.TOKEN_INVALID);
         }
     }
 

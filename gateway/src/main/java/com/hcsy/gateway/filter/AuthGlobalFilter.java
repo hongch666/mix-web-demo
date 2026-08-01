@@ -17,6 +17,7 @@ import com.hcsy.gateway.common.BusinessException;
 import com.hcsy.gateway.common.Result;
 import com.hcsy.gateway.common.constants.ErrorCodes;
 import com.hcsy.gateway.common.constants.HttpCode;
+import com.hcsy.gateway.common.constants.Messages;
 import com.hcsy.gateway.common.constants.RedisKeys;
 import com.hcsy.gateway.config.AuthProperties;
 import com.hcsy.gateway.utils.JwtUtil;
@@ -45,14 +46,14 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         // 1. 排除不需要认证的路径
         if (isExcludePath(path)) {
-            log.info("排除身份验证的路径: {}", path);
+            log.info(Messages.AUTH_EXCLUDE_PATH, path);
             return chain.filter(exchange);
         }
 
         // 2. 获取 access token（只接受 access token）
         String token = extractToken(request);
         if (token == null) {
-            return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录", ErrorCodes.USER_NOT_LOGIN);
+            return errorResponse(exchange, HttpCode.UNAUTHORIZED, Messages.USER_NOT_LOGIN, ErrorCodes.USER_NOT_LOGIN);
         }
 
         try {
@@ -74,8 +75,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty(""),
                 redisUtil.get(RedisKeys.userStatus(userId)).defaultIfEmpty(""))
                 .onErrorResume(error -> {
-                    log.error("[{}] Redis 不可用，认证流程中断 - 路径: {}", ErrorCodes.REDIS_UNAVAILABLE, path, error);
-                    return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, "服务暂时不可用，请稍后重试",
+                    log.error(Messages.REDIS_UNAVAILABLE_AUTH_INTERRUPT, ErrorCodes.REDIS_UNAVAILABLE, path, error);
+                    return errorResponse(exchange, HttpCode.SERVICE_UNAVAILABLE, Messages.SERVICE_TEMP_UNAVAILABLE,
                         ErrorCodes.REDIS_UNAVAILABLE).then(Mono.empty());
                 });
             return authData.flatMap(values -> {
@@ -88,7 +89,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     || !sessionExists
                     || !token.equals(storedAccessToken)
                     || "0".equals(userStatus)) {
-                    return errorResponse(exchange, HttpCode.UNAUTHORIZED, "用户未登录，请先登录",
+                    return errorResponse(exchange, HttpCode.UNAUTHORIZED, Messages.USER_NOT_LOGIN,
                         ErrorCodes.USER_NOT_LOGIN);
                 }
 
@@ -100,17 +101,17 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     .build();
 
                 logAccess(userId, path);
-                log.info("身份验证成功 - 用户ID: {}, 路径: {}", userId, path);
+                log.info(Messages.AUTH_SUCCESS, userId, path);
                 return chain.filter(exchange.mutate().request(mutatedRequest).build());
             });
 
         } catch (BusinessException ex) {
-            log.error("[{}] 认证失败 - 路径: {}", ex.getError(), path, ex);
+            log.error(Messages.AUTH_FAIL, ex.getError(), path, ex);
             return errorResponse(exchange, ex.getStatusCode(), ex.getMessage(), ex.getError());
         } catch (Exception ex) {
             // 认证流程中出现的其他非预期异常，不应返回 401 误导前端退出登录
-            log.error("[{}] 认证流程非预期异常 - 路径: {}", ErrorCodes.AUTH_UNEXPECTED_ERROR, path, ex);
-            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, "服务器内部错误，请稍后重试",
+            log.error(Messages.AUTH_UNEXPECTED_ERROR, ErrorCodes.AUTH_UNEXPECTED_ERROR, path, ex);
+            return errorResponse(exchange, HttpCode.INTERNAL_SERVER_ERROR, Messages.SERVER_INTERNAL_ERROR,
                 ErrorCodes.AUTH_UNEXPECTED_ERROR);
         }
     }

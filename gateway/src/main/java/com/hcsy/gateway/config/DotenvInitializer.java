@@ -6,6 +6,8 @@ import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.hcsy.gateway.common.constants.Messages;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -25,7 +27,7 @@ public class DotenvInitializer {
             File envFile = new File(DOT_ENV_FILE);
 
             if (!envFile.exists()) {
-                log.info("[DotenvLoader] .env文件不存在，跳过加载");
+                log.info(Messages.DOTENV_NOT_EXIST);
                 return;
             }
 
@@ -43,10 +45,10 @@ public class DotenvInitializer {
                 }
             }
 
-            log.info("[DotenvLoader] 成功加载 {} 个环境变量", envMap.size());
+            log.info(Messages.DOTENV_LOADED, envMap.size());
 
         } catch (Exception e) {
-            log.error("[DotenvLoader] 加载.env文件失败: " + e.getMessage(), e);
+            log.error(Messages.DOTENV_LOAD_FAIL + e.getMessage(), e);
         }
     }
 
