@@ -11,6 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.repository.CategoryRepository;
 import com.hcsy.spring.api.repository.SubCategoryRepository;
 import com.hcsy.spring.api.service.CategoryCacheService;
+import com.hcsy.spring.common.cache.CacheInvalidationPublisher;
+import com.hcsy.spring.common.cache.CategoryLocalCache;
+import com.hcsy.spring.common.cache.ReactiveLocalCache;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.utils.RedisUtil;
@@ -34,10 +37,18 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
     private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
     private final SimpleLogger logger;
+    private final CategoryLocalCache categoryLocalCache;
+    private final ReactiveLocalCache reactiveLocalCache;
+    private final CacheInvalidationPublisher cacheInvalidationPublisher;
 
     @Override
     public Mono<CategoryVO> getCategoryById(Long id) {
         String cacheKey = RedisKeys.categoryId(id);
+        return reactiveLocalCache.get(categoryLocalCache.getCategoryByIdCache(), id,
+            () -> loadCategoryFromRedisOrDatabase(cacheKey, id));
+    }
+
+    private Mono<CategoryVO> loadCategoryFromRedisOrDatabase(String cacheKey, Long id) {
         return redisUtil.get(cacheKey)
             .flatMap(json -> readCache(json, CategoryVO.class, cacheKey))
             .onErrorResume(error -> cacheReadFallback(cacheKey, error))
@@ -48,6 +59,11 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
     @Override
     public Mono<PageDTO<CategoryVO>> cachedPageCategory(long page, long size) {
         String cacheKey = RedisKeys.categoryPage(page, size);
+        return reactiveLocalCache.get(categoryLocalCache.getCategoryPageCache(), cacheKey,
+            () -> loadCategoryPageFromRedisOrDatabase(cacheKey, page, size));
+    }
+
+    private Mono<PageDTO<CategoryVO>> loadCategoryPageFromRedisOrDatabase(String cacheKey, long page, long size) {
         return redisUtil.get(cacheKey)
             .flatMap(json -> readCache(json, new TypeReference<PageDTO<CategoryVO>>() {
             }, cacheKey))
@@ -58,24 +74,27 @@ public class CategoryCacheServiceImpl implements CategoryCacheService {
 
     @Override
     public Mono<Void> evictAllCategoryCaches() {
-        return redisUtil.getKeys(RedisKeys.categoryAllPattern())
+        return Mono.fromRunnable(categoryLocalCache::evictAll)
+            .then(redisUtil.getKeys(RedisKeys.categoryAllPattern())
             .collectList()
             .flatMap(keys -> keys.isEmpty() ? Mono.empty() : redisUtil.delete(keys).then())
             .onErrorResume(error -> {
                 logger.error(Messages.CATEGORY_CACHE_EVICT_ALL_FAILED, error.getMessage(), error);
                 return Mono.empty();
-            });
+            }))
+            .then(cacheInvalidationPublisher.publishCategoryEviction());
     }
 
     @Override
     public Mono<Void> evictCategoryByIdCache(Long id) {
         String cacheKey = RedisKeys.categoryId(id);
-        return redisUtil.delete(cacheKey)
+        return Mono.fromRunnable(() -> categoryLocalCache.evictById(id))
+            .then(redisUtil.delete(cacheKey))
             .onErrorResume(error -> {
                 logger.error(Messages.CATEGORY_CACHE_EVICT_FAILED, cacheKey, error.getMessage(), error);
                 return Mono.just(false);
             })
-            .then();
+            .then(cacheInvalidationPublisher.publishCategoryEviction());
     }
 
     @SuppressWarnings("null")

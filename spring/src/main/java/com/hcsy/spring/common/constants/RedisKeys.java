@@ -30,6 +30,18 @@ public final class RedisKeys {
         return ALL_USERS_CACHE_KEY;
     }
 
+    // ===== 本地缓存失效通知 =====
+    private static final String CATEGORY_CACHE_INVALIDATION_CHANNEL = "cache:invalidation:category";
+    private static final String USER_CACHE_INVALIDATION_CHANNEL = "cache:invalidation:user";
+
+    public static String categoryCacheInvalidationChannel() {
+        return CATEGORY_CACHE_INVALIDATION_CHANNEL;
+    }
+
+    public static String userCacheInvalidationChannel() {
+        return USER_CACHE_INVALIDATION_CHANNEL;
+    }
+
     // ===== 分类 =====
     private static final String CATEGORY_BY_ID_PREFIX = "category:byId:";
     private static final String CATEGORY_PREFIX = "category:";

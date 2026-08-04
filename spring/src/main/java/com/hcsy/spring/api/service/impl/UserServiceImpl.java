@@ -14,6 +14,7 @@ import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.api.service.UserCacheService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
@@ -22,7 +23,6 @@ import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
-import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
@@ -50,7 +50,6 @@ import reactor.core.scheduler.Schedulers;
 public class UserServiceImpl implements UserService {
     private static final String AI_ROLE = "ai";
     private static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
-    private static final long ALL_USERS_CACHE_TTL_SECONDS = 24 * 60 * 60L;
 
     private final UserRepository userRepository;
     private final RedisUtil redisUtil;
@@ -60,8 +59,8 @@ public class UserServiceImpl implements UserService {
     private final EmailVerificationService emailVerificationService;
     private final ImageCaptchaService imageCaptchaService;
     private final ObjectMapper objectMapper;
-    private final SimpleLogger logger;
     private final TransactionalOperator transactionalOperator;
+    private final UserCacheService userCacheService;
 
     @Override
     public Mono<UserListVO> listUsersWithFilter(long page, long size, String username) {
@@ -111,7 +110,7 @@ public class UserServiceImpl implements UserService {
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
             .flatMap(userRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
+            .then(Mono.when(userCacheService.evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
     }
 
     @SuppressWarnings("null")
@@ -131,7 +130,7 @@ public class UserServiceImpl implements UserService {
             .flatMap(id -> redisUtil.delete(RedisKeys.userStatus(id)), 8)
             .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(evictAllUsersCache(), clearStatuses));
+            .then(Mono.when(userCacheService.evictAllUsersCache(), clearStatuses));
     }
 
     @Override
@@ -197,7 +196,7 @@ public class UserServiceImpl implements UserService {
                             .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
                             .errorMessage(Messages.GITHUB_LOGIN_TICKET_CACHE_FAILED)
                             .cause(error).build())))
-                    .then(evictAllUsersCache())
+                    .then(userCacheService.evictAllUsersCache())
                     .thenReturn(GithubTokenTicketVO.builder()
                         .ticket(ticket)
                         .expiresIn(GITHUB_TOKEN_TICKET_TTL_SECONDS)
@@ -245,29 +244,20 @@ public class UserServiceImpl implements UserService {
                 });
             })
             .then(emailVerificationService.markEmailAsVerified(dto.getEmail()))
-            .then(evictAllUsersCache());
+            .then();
     }
 
     @Override
     public Mono<UserListVO> getAllUsers(String username) {
-        boolean useCache = !hasText(username);
-        Mono<UserListVO> cached = useCache
-            ? redisUtil.get(RedisKeys.allUsersCache())
-                .flatMap(json -> Mono.fromCallable(() -> objectMapper.readValue(json, UserListVO.class)))
-                .onErrorResume(error -> {
-                    logger.error(Messages.USER_LIST_CACHE_READ_FAILED, error.getMessage(), error);
-                    return Mono.empty();
-                })
-            : Mono.empty();
-        return cached.switchIfEmpty(Mono.defer(() -> loadAllUsers(username)
-            .flatMap(result -> useCache ? writeUsersCache(result).thenReturn(result) : Mono.just(result))));
+        if (!hasText(username)) {
+            return userCacheService.getAllUsers();
+        }
+        return loadUsersByUsername(username);
     }
 
-    private Mono<UserListVO> loadAllUsers(String username) {
-        Flux<User> users = hasText(username)
-            ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
-            : userRepository.findByRoleNotOrderByIdAsc(AI_ROLE);
-        return users.map(user -> BeanUtil.copyProperties(user, UserVO.class))
+    private Mono<UserListVO> loadUsersByUsername(String username) {
+        return userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
+            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
             .collectList()
             .map(records -> userList(records, records.size()));
     }
@@ -316,7 +306,8 @@ public class UserServiceImpl implements UserService {
                 }
                 return transactionalOperator.transactional(userRepository.save(user));
             })
-            .flatMap(saved -> redisUtil.set(RedisKeys.userStatus(saved.getId()), "0").thenReturn(saved));
+            .flatMap(saved -> redisUtil.set(RedisKeys.userStatus(saved.getId()), "0").thenReturn(saved))
+            .flatMap(saved -> userCacheService.evictAllUsersCache().thenReturn(saved));
     }
 
     @Override
@@ -326,7 +317,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<Void> updateUserStatus(Long userId, String status) {
-        return redisUtil.set(RedisKeys.userStatus(userId), status).then(evictAllUsersCache());
+        return redisUtil.set(RedisKeys.userStatus(userId), status).then(userCacheService.evictAllUsersCache());
     }
 
     @Override
@@ -342,7 +333,7 @@ public class UserServiceImpl implements UserService {
                 user.setPassword(password);
                 return saveUserAndStatus(user);
             })
-            .then(evictAllUsersCache());
+            .then();
     }
 
     @Override
@@ -367,7 +358,7 @@ public class UserServiceImpl implements UserService {
                     return transactionalOperator.transactional(userRepository.save(user));
                 });
             })
-            .then(evictAllUsersCache());
+            .then(userCacheService.evictAllUsersCache());
     }
 
     @Override
@@ -420,7 +411,8 @@ public class UserServiceImpl implements UserService {
 
     private Mono<Void> markLastLoginTime(User user) {
         user.setLastLoginAt(LocalDateTime.now());
-        return transactionalOperator.transactional(userRepository.save(user)).then();
+        return transactionalOperator.transactional(userRepository.save(user))
+            .then(userCacheService.evictAllUsersCache());
     }
 
     private Mono<Void> validateLoginCaptcha(String captchaId, String captchaText) {
@@ -444,26 +436,6 @@ public class UserServiceImpl implements UserService {
     private Mono<String> encryptPassword(String rawPassword) {
         return Mono.fromCallable(() -> passwordEncryptor.encryptPassword(rawPassword))
             .subscribeOn(Schedulers.boundedElastic());
-    }
-
-    private Mono<Void> writeUsersCache(UserListVO result) {
-        long ttl = result.getTotal() == 0 ? 10 * 60L : ALL_USERS_CACHE_TTL_SECONDS;
-        return Mono.fromCallable(() -> objectMapper.writeValueAsString(result))
-            .flatMap(json -> redisUtil.set(RedisKeys.allUsersCache(), json, ttl))
-            .onErrorResume(error -> {
-                logger.error(Messages.USER_LIST_CACHE_WRITE_FAILED, error.getMessage(), error);
-                return Mono.just(false);
-            })
-            .then();
-    }
-
-    private Mono<Void> evictAllUsersCache() {
-        return redisUtil.delete(RedisKeys.allUsersCache())
-            .onErrorResume(error -> {
-                logger.error(Messages.USER_LIST_CACHE_EVICT_FAILED, error.getMessage(), error);
-                return Mono.just(false);
-            })
-            .then();
     }
 
     private UserListVO userList(List<UserVO> users, long total) {

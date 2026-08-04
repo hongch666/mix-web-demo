@@ -83,6 +83,8 @@ public class Messages {
     public static final String USER_LIST_CACHE_READ_FAILED = "用户列表缓存读取失败: %s";
     public static final String USER_LIST_CACHE_WRITE_FAILED = "用户列表缓存写入失败: %s";
     public static final String USER_LIST_CACHE_EVICT_FAILED = "用户列表缓存清除失败: %s";
+    public static final String CACHE_INVALIDATION_PUBLISH_FAILED = "发布本地缓存失效消息失败，频道=%s: %s";
+    public static final String CACHE_INVALIDATION_SUBSCRIBE_FAILED = "订阅本地缓存失效消息失败，频道=%s: %s";
     public static final String CLEAR_CACHE_SUCCESS = "成功清除分析相关缓存";
     public static final String REFERENCE_EXIST = "该子分类已存在权威参考文本";
     public static final String PDF_EMPTY = "PDF类型必须提供pdf链接";
