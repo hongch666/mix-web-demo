@@ -116,7 +116,14 @@ public class CacheUtil {
     @SuppressWarnings("null")
     private Disposable subscribe(String channel) {
         return listenerContainer.receive(ChannelTopic.of(channel))
-            .subscribe(message -> evictLocalByChannel(channel).subscribe(),
+            .concatMap(ignoredMessage -> evictLocalByChannel(channel)
+                .onErrorResume(error -> {
+                    logger.error(Messages.CACHE_INVALIDATION_SUBSCRIBE_FAILED,
+                        channel, error.getMessage(), error);
+                    return Mono.empty();
+                }))
+            .subscribe(ignored -> {
+            },
                 error -> logger.error(Messages.CACHE_INVALIDATION_SUBSCRIBE_FAILED,
                     channel, error.getMessage(), error));
     }
