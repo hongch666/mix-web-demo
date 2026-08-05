@@ -30,7 +30,7 @@ public final class RedisKeys {
         return ALL_USERS_CACHE_KEY;
     }
 
-    // ===== 本地缓存失效通知 =====
+    // ===== 本地缓存失效通知（channel 名称） =====
     private static final String CATEGORY_CACHE_INVALIDATION_CHANNEL = "cache:invalidation:category";
     private static final String USER_CACHE_INVALIDATION_CHANNEL = "cache:invalidation:user";
 
@@ -40,6 +40,23 @@ public final class RedisKeys {
 
     public static String userCacheInvalidationChannel() {
         return USER_CACHE_INVALIDATION_CHANNEL;
+    }
+
+    // ===== 本地缓存名称（Caffeine cache name） =====
+    private static final String ALL_USERS_CACHE_NAME = "all-users";
+    private static final String CATEGORY_BY_ID_CACHE_NAME = "category-by-id";
+    private static final String CATEGORY_PAGE_CACHE_NAME = "category-page";
+
+    public static String allUsersCacheName() {
+        return ALL_USERS_CACHE_NAME;
+    }
+
+    public static String categoryByIdCacheName() {
+        return CATEGORY_BY_ID_CACHE_NAME;
+    }
+
+    public static String categoryPageCacheName() {
+        return CATEGORY_PAGE_CACHE_NAME;
     }
 
     // ===== 分类 =====

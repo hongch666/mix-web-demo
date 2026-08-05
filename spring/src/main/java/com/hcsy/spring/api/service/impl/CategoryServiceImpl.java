@@ -34,11 +34,10 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
-    private static final long CATEGORY_CACHE_TTL_SECONDS = 24 * 60 * 60L;
     private static final CacheUtil.CacheOptions<CategoryVO> CATEGORY_BY_ID_CACHE = CacheUtil.CacheOptions.fixed(
-        "category-by-id", RedisKeys.categoryCacheInvalidationChannel(), 1_000, CATEGORY_CACHE_TTL_SECONDS);
+        RedisKeys.categoryByIdCacheName(), RedisKeys.categoryCacheInvalidationChannel(), 1_000);
     private static final CacheUtil.CacheOptions<PageDTO<CategoryVO>> CATEGORY_PAGE_CACHE = CacheUtil.CacheOptions.fixed(
-        "category-page", RedisKeys.categoryCacheInvalidationChannel(), 200, CATEGORY_CACHE_TTL_SECONDS);
+        RedisKeys.categoryPageCacheName(), RedisKeys.categoryCacheInvalidationChannel(), 200);
 
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;

@@ -13,6 +13,7 @@ import com.hcsy.spring.api.repository.ArticleRepository;
 import com.hcsy.spring.api.repository.CommentsRepository;
 import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.api.service.CommentsService;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
@@ -29,8 +30,6 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class CommentsServiceImpl implements CommentsService {
-
-    private static final String AI_ROLE = "ai";
 
     private final CommentsRepository commentsRepository;
     private final ArticleRepository articleRepository;
@@ -59,7 +58,7 @@ public class CommentsServiceImpl implements CommentsService {
     @Override
     public Mono<PageDTO<Comments>> listCommentsByArticleId(
         long page, long size, Long articleId, String sortWay) {
-        return userRepository.findIdsByRoleNot(AI_ROLE).collectList().flatMap(userIds -> {
+        return userRepository.findIdsByRoleNot(Defaults.AI_ROLE).collectList().flatMap(userIds -> {
             if (userIds.isEmpty()) {
                 return Mono.just(emptyPage(page, size));
             }
@@ -74,7 +73,7 @@ public class CommentsServiceImpl implements CommentsService {
     @SuppressWarnings("null")
     @Override
     public Flux<Comments> listAICommentsByArticleId(Long articleId) {
-        return userRepository.findIdsByRole(AI_ROLE).collectList().flatMapMany(userIds -> {
+        return userRepository.findIdsByRole(Defaults.AI_ROLE).collectList().flatMapMany(userIds -> {
             if (userIds.isEmpty()) {
                 return Flux.empty();
             }
@@ -146,13 +145,13 @@ public class CommentsServiceImpl implements CommentsService {
         if (aiOnly) {
             userIds = hasText(queryDTO.getUsername())
                 ? userRepository.findByNameContaining(queryDTO.getUsername())
-                    .filter(user -> AI_ROLE.equals(user.getRole())).map(User::getId)
-                : userRepository.findIdsByRole(AI_ROLE);
+                    .filter(user -> Defaults.AI_ROLE.equals(user.getRole())).map(User::getId)
+                : userRepository.findIdsByRole(Defaults.AI_ROLE);
         } else {
             userIds = hasText(queryDTO.getUsername())
                 ? userRepository.findByNameContaining(queryDTO.getUsername())
-                    .filter(user -> !AI_ROLE.equals(user.getRole())).map(User::getId)
-                : userRepository.findIdsByRoleNot(AI_ROLE);
+                    .filter(user -> !Defaults.AI_ROLE.equals(user.getRole())).map(User::getId)
+                : userRepository.findIdsByRoleNot(Defaults.AI_ROLE);
         }
 
         Mono<List<Long>> articleIdList = articleIds.collectList();

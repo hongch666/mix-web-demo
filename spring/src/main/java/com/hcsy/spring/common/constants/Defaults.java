@@ -45,4 +45,16 @@ public class Defaults {
 
     // ===== 分布式锁配置 =====
     public static final long LOCK_TASK_TOKEN_CLEANUP_EXPIRE = 3600L;
+
+    // ===== 用户角色 =====
+    public static final String AI_ROLE = "ai";
+
+    // ===== GitHub OAuth 票据过期时间（秒） =====
+    public static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
+
+    // ===== 多级缓存 TTL（秒） =====
+    // 所有缓存统一：L1 为本地 Caffeine，L2 为 Redis
+    // L1 应短于 L2，以缩小跨实例失效广播漏收时的脏数据窗口
+    public static final long CACHE_L1_TTL_SECONDS = 5 * 60L;
+    public static final long CACHE_L2_TTL_SECONDS = 24 * 60 * 60L;
 }

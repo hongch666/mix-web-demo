@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.function.ToLongFunction;
 
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.ReactiveRedisMessageListenerContainer;
@@ -15,13 +14,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Expiry;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.Messages;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
  * 通用响应式多级缓存工具，统一管理 Caffeine、Redis 与多实例失效通知。
@@ -47,7 +47,7 @@ public class CacheUtil {
         Class<V> valueType,
         Supplier<Mono<V>> loader) {
         return getFromLocal(options, localKey,
-            () -> loadFromRedisOrSource(redisKey, valueType, loader, options.ttlResolver()));
+            () -> loadFromRedisOrSource(redisKey, valueType, loader, options.l2TtlSeconds()));
     }
 
     public <K, V> Mono<V> get(
@@ -57,11 +57,11 @@ public class CacheUtil {
         TypeReference<V> valueType,
         Supplier<Mono<V>> loader) {
         return getFromLocal(options, localKey,
-            () -> loadFromRedisOrSource(redisKey, valueType, loader, options.ttlResolver()));
+            () -> loadFromRedisOrSource(redisKey, valueType, loader, options.l2TtlSeconds()));
     }
 
     public Mono<Void> evict(String redisKey, CacheOptions<?>... options) {
-        return Mono.fromRunnable(() -> evictLocal(options))
+        return evictLocal(options)
             .then(redisUtil.delete(redisKey))
             .onErrorResume(error -> {
                 logger.error(Messages.CACHE_L2_CLEAR_FAILED, error.getMessage(), error);
@@ -71,7 +71,7 @@ public class CacheUtil {
     }
 
     public Mono<Void> evictAll(String redisPattern, CacheOptions<?>... options) {
-        return Mono.fromRunnable(() -> evictLocal(options))
+        return evictLocal(options)
             .then(redisUtil.getKeys(redisPattern).collectList())
             .flatMap(keys -> keys.isEmpty() ? Mono.empty() : redisUtil.delete(keys).then())
             .onErrorResume(error -> {
@@ -102,7 +102,7 @@ public class CacheUtil {
     private AsyncCache<Object, Object> createLocalCache(CacheOptions<?> options) {
         return Caffeine.newBuilder()
             .maximumSize(options.maximumSize())
-            .expireAfter(new CacheExpiry(options))
+            .expireAfterWrite(options.l1TtlSeconds(), TimeUnit.SECONDS)
             .recordStats()
             .buildAsync();
     }
@@ -116,27 +116,35 @@ public class CacheUtil {
     @SuppressWarnings("null")
     private Disposable subscribe(String channel) {
         return listenerContainer.receive(ChannelTopic.of(channel))
-            .subscribe(message -> evictLocalByChannel(channel),
+            .subscribe(message -> evictLocalByChannel(channel).subscribe(),
                 error -> logger.error(Messages.CACHE_INVALIDATION_SUBSCRIBE_FAILED,
                     channel, error.getMessage(), error));
     }
 
-    private void evictLocal(CacheOptions<?>... options) {
-        for (CacheOptions<?> option : options) {
-            AsyncCache<Object, Object> localCache = localCaches.get(option.name());
-            if (localCache != null) {
-                localCache.synchronous().invalidateAll();
-            }
-        }
+    private Mono<Void> evictLocal(CacheOptions<?>... options) {
+        return Mono.fromRunnable(() -> {
+                for (CacheOptions<?> option : options) {
+                    AsyncCache<Object, Object> localCache = localCaches.get(option.name());
+                    if (localCache != null) {
+                        localCache.synchronous().invalidateAll();
+                    }
+                }
+            })
+            .subscribeOn(Schedulers.boundedElastic())
+            .then();
     }
 
-    private void evictLocalByChannel(String channel) {
-        cacheNamesByChannel.getOrDefault(channel, Set.of()).forEach(cacheName -> {
-            AsyncCache<Object, Object> localCache = localCaches.get(cacheName);
-            if (localCache != null) {
-                localCache.synchronous().invalidateAll();
-            }
-        });
+    private Mono<Void> evictLocalByChannel(String channel) {
+        return Mono.fromRunnable(() -> {
+                cacheNamesByChannel.getOrDefault(channel, Set.of()).forEach(cacheName -> {
+                    AsyncCache<Object, Object> localCache = localCaches.get(cacheName);
+                    if (localCache != null) {
+                        localCache.synchronous().invalidateAll();
+                    }
+                });
+            })
+            .subscribeOn(Schedulers.boundedElastic())
+            .then();
     }
 
     @SuppressWarnings("null")
@@ -161,12 +169,12 @@ public class CacheUtil {
         String redisKey,
         Class<V> valueType,
         Supplier<Mono<V>> loader,
-        ToLongFunction<V> ttlResolver) {
+        long ttlSeconds) {
         return redisUtil.get(redisKey)
             .flatMap(json -> deserialize(json, valueType, redisKey))
             .onErrorResume(error -> cacheReadFallback(redisKey, error))
             .switchIfEmpty(Mono.defer(() -> loader.get()
-                .flatMap(value -> writeToRedis(redisKey, value, ttlResolver.applyAsLong(value))
+                .flatMap(value -> writeToRedis(redisKey, value, ttlSeconds)
                     .thenReturn(value))));
     }
 
@@ -174,12 +182,12 @@ public class CacheUtil {
         String redisKey,
         TypeReference<V> valueType,
         Supplier<Mono<V>> loader,
-        ToLongFunction<V> ttlResolver) {
+        long ttlSeconds) {
         return redisUtil.get(redisKey)
             .flatMap(json -> deserialize(json, valueType, redisKey))
             .onErrorResume(error -> cacheReadFallback(redisKey, error))
             .switchIfEmpty(Mono.defer(() -> loader.get()
-                .flatMap(value -> writeToRedis(redisKey, value, ttlResolver.applyAsLong(value))
+                .flatMap(value -> writeToRedis(redisKey, value, ttlSeconds)
                     .thenReturn(value))));
     }
 
@@ -222,7 +230,8 @@ public class CacheUtil {
         String name,
         String invalidationChannel,
         long maximumSize,
-        ToLongFunction<V> ttlResolver) {
+        long l1TtlSeconds,
+        long l2TtlSeconds) {
 
         public CacheOptions {
             if (name == null || name.isBlank()) {
@@ -234,45 +243,34 @@ public class CacheUtil {
             if (maximumSize < 1) {
                 throw new IllegalArgumentException("缓存容量必须大于零");
             }
-            if (ttlResolver == null) {
-                throw new IllegalArgumentException("缓存过期时间不能为空");
+            if (l1TtlSeconds < 1) {
+                throw new IllegalArgumentException("L1 本地缓存过期时间必须大于零");
+            }
+            if (l2TtlSeconds < 1) {
+                throw new IllegalArgumentException("L2 缓存过期时间必须大于零");
             }
         }
 
+        /** 全参版本：显式指定 L1/L2 TTL（特殊场景使用）。 */
         public static <V> CacheOptions<V> fixed(
             String name,
             String invalidationChannel,
             long maximumSize,
-            long ttlSeconds) {
-            return new CacheOptions<>(name, invalidationChannel, maximumSize, value -> ttlSeconds);
-        }
-    }
-
-    private static final class CacheExpiry implements Expiry<Object, Object> {
-        private final CacheOptions<?> options;
-
-        private CacheExpiry(CacheOptions<?> options) {
-            this.options = options;
+            long l1TtlSeconds,
+            long l2TtlSeconds) {
+            return new CacheOptions<>(name, invalidationChannel, maximumSize, l1TtlSeconds, l2TtlSeconds);
         }
 
-        @Override
-        public long expireAfterCreate(Object key, Object value, long currentTime) {
-            return TimeUnit.SECONDS.toNanos(Math.max(1L, resolveTtl(value)));
-        }
-
-        @Override
-        public long expireAfterUpdate(Object key, Object value, long currentTime, long currentDuration) {
-            return currentDuration;
-        }
-
-        @Override
-        public long expireAfterRead(Object key, Object value, long currentTime, long currentDuration) {
-            return currentDuration;
-        }
-
-        @SuppressWarnings("unchecked")
-        private long resolveTtl(Object value) {
-            return ((ToLongFunction<Object>) options.ttlResolver()).applyAsLong(value);
+        /**
+         * 简化版本：自动使用全局统一 TTL（L1=5min / L2=24h），
+         * 业务方无需再引用 Defaults 或自行定义 TTL 中转常量。
+         */
+        public static <V> CacheOptions<V> fixed(
+            String name,
+            String invalidationChannel,
+            long maximumSize) {
+            return new CacheOptions<>(name, invalidationChannel, maximumSize,
+                Defaults.CACHE_L1_TTL_SECONDS, Defaults.CACHE_L2_TTL_SECONDS);
         }
     }
 }

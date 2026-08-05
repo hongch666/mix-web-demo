@@ -20,8 +20,8 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.CacheUtil;
+import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
@@ -48,11 +48,8 @@ import reactor.core.scheduler.Schedulers;
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
-    private static final String AI_ROLE = "ai";
-    private static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
-    private static final CacheUtil.CacheOptions<UserListVO> ALL_USERS_CACHE = new CacheUtil.CacheOptions<>(
-        "all-users", RedisKeys.userCacheInvalidationChannel(), 1,
-        value -> value.getTotal() != null && value.getTotal() == 0 ? 10 * 60L : 24 * 60 * 60L);
+    private static final CacheUtil.CacheOptions<UserListVO> ALL_USERS_CACHE = CacheUtil.CacheOptions.fixed(
+        RedisKeys.allUsersCacheName(), RedisKeys.userCacheInvalidationChannel(), 1);
 
     private final UserRepository userRepository;
     private final RedisUtil redisUtil;
@@ -68,8 +65,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<UserListVO> listUsersWithFilter(long page, long size, String username) {
         Flux<User> query = hasText(username)
-            ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
-            : userRepository.findByRoleNotOrderByIdAsc(AI_ROLE);
+            ? userRepository.findByRoleNotAndNameContainingOrderByIdAsc(Defaults.AI_ROLE, username)
+            : userRepository.findByRoleNotOrderByIdAsc(Defaults.AI_ROLE);
 
         return query.collectList().flatMap(users -> {
             if (users.isEmpty()) {
@@ -193,7 +190,7 @@ public class UserServiceImpl implements UserService {
                 String ticket = UUID.randomUUID().toString().replace("-", "");
                 return Mono.fromCallable(() -> objectMapper.writeValueAsString(login))
                     .flatMap(json -> redisUtil.set(RedisKeys.githubTokenTicket(ticket), json,
-                        GITHUB_TOKEN_TICKET_TTL_SECONDS))
+                        Defaults.GITHUB_TOKEN_TICKET_TTL_SECONDS))
                     .onErrorResume(error -> tokenService.removeSessionByAccessToken(login.getAccessToken())
                         .then(Mono.error(BusinessException.builder()
                             .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
@@ -202,7 +199,7 @@ public class UserServiceImpl implements UserService {
                     .then(evictAllUsersCache())
                     .thenReturn(GithubTokenTicketVO.builder()
                         .ticket(ticket)
-                        .expiresIn(GITHUB_TOKEN_TICKET_TTL_SECONDS)
+                        .expiresIn(Defaults.GITHUB_TOKEN_TICKET_TTL_SECONDS)
                         .build());
             });
     }
@@ -264,14 +261,14 @@ public class UserServiceImpl implements UserService {
     }
 
     private Mono<UserListVO> loadAllUsers() {
-        return userRepository.findByRoleNotOrderByIdAsc(AI_ROLE)
+        return userRepository.findByRoleNotOrderByIdAsc(Defaults.AI_ROLE)
             .map(user -> BeanUtil.copyProperties(user, UserVO.class))
             .collectList()
             .map(records -> userList(records, records.size()));
     }
 
     private Mono<UserListVO> loadUsersByUsername(String username) {
-        return userRepository.findByRoleNotAndNameContainingOrderByIdAsc(AI_ROLE, username)
+        return userRepository.findByRoleNotAndNameContainingOrderByIdAsc(Defaults.AI_ROLE, username)
             .map(user -> BeanUtil.copyProperties(user, UserVO.class))
             .collectList()
             .map(records -> userList(records, records.size()));
@@ -279,7 +276,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<UserListVO> getAllAiUsers() {
-        return userRepository.findByRoleOrderByIdAsc(AI_ROLE)
+        return userRepository.findByRoleOrderByIdAsc(Defaults.AI_ROLE)
             .map(user -> BeanUtil.copyProperties(user, UserVO.class))
             .collectList()
             .map(records -> userList(records, records.size()));
@@ -287,22 +284,22 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Flux<Long> getNormalUserIds() {
-        return userRepository.findIdsByRoleNot(AI_ROLE);
+        return userRepository.findIdsByRoleNot(Defaults.AI_ROLE);
     }
 
     @Override
     public Flux<Long> getAiUserIds() {
-        return userRepository.findIdsByRole(AI_ROLE);
+        return userRepository.findIdsByRole(Defaults.AI_ROLE);
     }
 
     @Override
     public Mono<Long> countNormalUsers() {
-        return userRepository.countByRoleNot(AI_ROLE);
+        return userRepository.countByRoleNot(Defaults.AI_ROLE);
     }
 
     @Override
     public Mono<Long> countAiUsers() {
-        return userRepository.countByRole(AI_ROLE);
+        return userRepository.countByRole(Defaults.AI_ROLE);
     }
 
     @Override
