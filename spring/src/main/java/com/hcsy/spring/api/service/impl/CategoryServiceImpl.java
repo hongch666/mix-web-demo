@@ -3,16 +3,20 @@ package com.hcsy.spring.api.service.impl;
 import java.util.Collection;
 import java.util.List;
 
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.hcsy.spring.api.repository.CategoryRepository;
 import com.hcsy.spring.api.repository.SubCategoryRepository;
-import com.hcsy.spring.api.service.CategoryCacheService;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.CacheUtil;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -21,6 +25,7 @@ import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.CategoryVO;
+import com.hcsy.spring.entity.vo.SubCategoryVO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -29,10 +34,15 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
+    private static final long CATEGORY_CACHE_TTL_SECONDS = 24 * 60 * 60L;
+    private static final CacheUtil.CacheOptions<CategoryVO> CATEGORY_BY_ID_CACHE = CacheUtil.CacheOptions.fixed(
+        "category-by-id", RedisKeys.categoryCacheInvalidationChannel(), 1_000, CATEGORY_CACHE_TTL_SECONDS);
+    private static final CacheUtil.CacheOptions<PageDTO<CategoryVO>> CATEGORY_PAGE_CACHE = CacheUtil.CacheOptions.fixed(
+        "category-page", RedisKeys.categoryCacheInvalidationChannel(), 200, CATEGORY_CACHE_TTL_SECONDS);
 
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
-    private final CategoryCacheService categoryCacheService;
+    private final CacheUtil cacheUtil;
     private final TransactionalOperator transactionalOperator;
 
     @Override
@@ -40,7 +50,7 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = new Category();
         category.setName(dto.getName());
         return transactionalOperator.transactional(categoryRepository.save(category))
-            .flatMap(saved -> categoryCacheService.evictAllCategoryCaches().thenReturn(saved.getId()));
+            .flatMap(saved -> evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
     @SuppressWarnings("null")
@@ -54,7 +64,7 @@ public class CategoryServiceImpl implements CategoryService {
             })
             .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(categoryCacheService.evictAllCategoryCaches());
+            .then(evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
@@ -65,7 +75,7 @@ public class CategoryServiceImpl implements CategoryService {
             .flatMap(category -> subCategoryRepository.deleteByCategoryId(id)
                 .then(categoryRepository.deleteById(id)));
         return transactionalOperator.transactional(databaseOperation)
-            .then(categoryCacheService.evictAllCategoryCaches());
+            .then(evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
@@ -84,7 +94,7 @@ public class CategoryServiceImpl implements CategoryService {
                     .then(categoryRepository.deleteById(id))))
             .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(categoryCacheService.evictAllCategoryCaches());
+            .then(evictAllCategoryCaches());
     }
 
     @Override
@@ -93,7 +103,7 @@ public class CategoryServiceImpl implements CategoryService {
         subCategory.setName(dto.getName());
         subCategory.setCategoryId(dto.getCategoryId());
         return transactionalOperator.transactional(subCategoryRepository.save(subCategory))
-            .flatMap(saved -> categoryCacheService.evictAllCategoryCaches().thenReturn(saved.getId()));
+            .flatMap(saved -> evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
     @SuppressWarnings("null")
@@ -108,7 +118,7 @@ public class CategoryServiceImpl implements CategoryService {
             })
             .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(categoryCacheService.evictAllCategoryCaches());
+            .then(evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
@@ -118,7 +128,7 @@ public class CategoryServiceImpl implements CategoryService {
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
             .flatMap(subCategoryRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-            .then(categoryCacheService.evictAllCategoryCaches());
+            .then(evictAllCategoryCaches());
     }
 
     @SuppressWarnings("null")
@@ -134,23 +144,75 @@ public class CategoryServiceImpl implements CategoryService {
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORIES)))
             .then(subCategoryRepository.deleteAllById(distinctIds));
         return transactionalOperator.transactional(databaseOperation)
-            .then(categoryCacheService.evictAllCategoryCaches());
+            .then(evictAllCategoryCaches());
     }
 
     @Override
     public Mono<CategoryVO> getCategoryById(Long id) {
-        return categoryCacheService.getCategoryById(id);
+        String cacheKey = RedisKeys.categoryId(id);
+        return cacheUtil.get(CATEGORY_BY_ID_CACHE, id, cacheKey,
+            CategoryVO.class, () -> loadCategory(id));
     }
 
     @Override
     public Mono<PageDTO<CategoryVO>> pageCategory(long page, long size) {
-        return categoryCacheService.cachedPageCategory(page, size);
+        String cacheKey = RedisKeys.categoryPage(page, size);
+        return cacheUtil.get(CATEGORY_PAGE_CACHE, cacheKey, cacheKey,
+            new TypeReference<PageDTO<CategoryVO>>() {
+            }, () -> loadCategoryPage(page, size));
     }
 
     @SuppressWarnings("null")
     @Override
     public Flux<Category> listByIds(Collection<Long> ids) {
         return categoryRepository.findAllById(ids);
+    }
+
+    @SuppressWarnings("null")
+    private Mono<CategoryVO> loadCategory(Long id) {
+        return categoryRepository.findById(id).flatMap(category -> {
+            CategoryVO vo = new CategoryVO();
+            BeanUtils.copyProperties(category, vo);
+            return subCategoryRepository.findByCategoryIdOrderByIdAsc(category.getId())
+                .map(subCategory -> {
+                    SubCategoryVO subCategoryVO = new SubCategoryVO();
+                    BeanUtils.copyProperties(subCategory, subCategoryVO);
+                    return subCategoryVO;
+                })
+                .collectList()
+                .map(subCategories -> {
+                    vo.setSubCategories(subCategories);
+                    return vo;
+                });
+        });
+    }
+
+    private Mono<PageDTO<CategoryVO>> loadCategoryPage(long page, long size) {
+        PageRequest pageable = PageRequest.of(toPageIndex(page), toPageSize(size));
+        Mono<List<CategoryVO>> records = categoryRepository.findAllByOrderByIdAsc(pageable)
+            .flatMapSequential(category -> loadCategory(category.getId()))
+            .collectList();
+        Mono<Long> total = categoryRepository.count();
+        return Mono.zip(records, total).map(result -> {
+            PageDTO<CategoryVO> pageDTO = new PageDTO<>();
+            pageDTO.setCurrent(page);
+            pageDTO.setSize(size);
+            pageDTO.setTotal(result.getT2());
+            pageDTO.setRecords(result.getT1());
+            return pageDTO;
+        });
+    }
+
+    private Mono<Void> evictAllCategoryCaches() {
+        return cacheUtil.evictAll(RedisKeys.categoryAllPattern(), CATEGORY_BY_ID_CACHE, CATEGORY_PAGE_CACHE);
+    }
+
+    private int toPageIndex(long page) {
+        return (int) Math.max(0, page - 1);
+    }
+
+    private int toPageSize(long size) {
+        return (int) Math.max(1, Math.min(size, 1000));
     }
 
     private List<Long> normalizeIds(List<Long> ids) {

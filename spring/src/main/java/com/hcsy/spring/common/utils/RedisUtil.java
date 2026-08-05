@@ -48,6 +48,11 @@ public class RedisUtil {
     }
 
     @SuppressWarnings("null")
+    public Mono<Long> publish(String channel, String message) {
+        return redisTemplate.convertAndSend(channel, message);
+    }
+
+    @SuppressWarnings("null")
     public Mono<Long> delete(Iterable<String> keys) {
         return redisTemplate.delete(Flux.fromIterable(keys));
     }

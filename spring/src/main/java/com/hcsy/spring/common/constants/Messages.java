@@ -80,6 +80,7 @@ public class Messages {
     public static final String CACHE_WRITE_FAILED = "缓存写入失败，key=%s: %s";
     public static final String CACHE_DESERIALIZE_FAILED = "缓存反序列化失败，key=%s: %s";
     public static final String CACHE_READ_FAILED = "缓存读取失败，key=%s: %s";
+    public static final String CACHE_L2_CLEAR_FAILED = "L2缓存清除失败: %s";
     public static final String USER_LIST_CACHE_READ_FAILED = "用户列表缓存读取失败: %s";
     public static final String USER_LIST_CACHE_WRITE_FAILED = "用户列表缓存写入失败: %s";
     public static final String USER_LIST_CACHE_EVICT_FAILED = "用户列表缓存清除失败: %s";

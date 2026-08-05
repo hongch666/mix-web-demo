@@ -14,7 +14,6 @@ import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
-import com.hcsy.spring.api.service.UserCacheService;
 import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
@@ -22,6 +21,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
+import com.hcsy.spring.common.utils.CacheUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
@@ -50,6 +50,9 @@ import reactor.core.scheduler.Schedulers;
 public class UserServiceImpl implements UserService {
     private static final String AI_ROLE = "ai";
     private static final long GITHUB_TOKEN_TICKET_TTL_SECONDS = 60L;
+    private static final CacheUtil.CacheOptions<UserListVO> ALL_USERS_CACHE = new CacheUtil.CacheOptions<>(
+        "all-users", RedisKeys.userCacheInvalidationChannel(), 1,
+        value -> value.getTotal() != null && value.getTotal() == 0 ? 10 * 60L : 24 * 60 * 60L);
 
     private final UserRepository userRepository;
     private final RedisUtil redisUtil;
@@ -60,7 +63,7 @@ public class UserServiceImpl implements UserService {
     private final ImageCaptchaService imageCaptchaService;
     private final ObjectMapper objectMapper;
     private final TransactionalOperator transactionalOperator;
-    private final UserCacheService userCacheService;
+    private final CacheUtil cacheUtil;
 
     @Override
     public Mono<UserListVO> listUsersWithFilter(long page, long size, String username) {
@@ -110,7 +113,7 @@ public class UserServiceImpl implements UserService {
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
             .flatMap(userRepository::delete);
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(userCacheService.evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
+            .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
     }
 
     @SuppressWarnings("null")
@@ -130,7 +133,7 @@ public class UserServiceImpl implements UserService {
             .flatMap(id -> redisUtil.delete(RedisKeys.userStatus(id)), 8)
             .then();
         return transactionalOperator.transactional(databaseOperation)
-            .then(Mono.when(userCacheService.evictAllUsersCache(), clearStatuses));
+            .then(Mono.when(evictAllUsersCache(), clearStatuses));
     }
 
     @Override
@@ -196,7 +199,7 @@ public class UserServiceImpl implements UserService {
                             .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
                             .errorMessage(Messages.GITHUB_LOGIN_TICKET_CACHE_FAILED)
                             .cause(error).build())))
-                    .then(userCacheService.evictAllUsersCache())
+                    .then(evictAllUsersCache())
                     .thenReturn(GithubTokenTicketVO.builder()
                         .ticket(ticket)
                         .expiresIn(GITHUB_TOKEN_TICKET_TTL_SECONDS)
@@ -250,9 +253,21 @@ public class UserServiceImpl implements UserService {
     @Override
     public Mono<UserListVO> getAllUsers(String username) {
         if (!hasText(username)) {
-            return userCacheService.getAllUsers();
+            return getAllUsersFromCache();
         }
         return loadUsersByUsername(username);
+    }
+
+    private Mono<UserListVO> getAllUsersFromCache() {
+        return cacheUtil.get(ALL_USERS_CACHE, RedisKeys.allUsersCache(), RedisKeys.allUsersCache(),
+            UserListVO.class, this::loadAllUsers);
+    }
+
+    private Mono<UserListVO> loadAllUsers() {
+        return userRepository.findByRoleNotOrderByIdAsc(AI_ROLE)
+            .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+            .collectList()
+            .map(records -> userList(records, records.size()));
     }
 
     private Mono<UserListVO> loadUsersByUsername(String username) {
@@ -307,7 +322,7 @@ public class UserServiceImpl implements UserService {
                 return transactionalOperator.transactional(userRepository.save(user));
             })
             .flatMap(saved -> redisUtil.set(RedisKeys.userStatus(saved.getId()), "0").thenReturn(saved))
-            .flatMap(saved -> userCacheService.evictAllUsersCache().thenReturn(saved));
+            .flatMap(saved -> evictAllUsersCache().thenReturn(saved));
     }
 
     @Override
@@ -317,7 +332,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<Void> updateUserStatus(Long userId, String status) {
-        return redisUtil.set(RedisKeys.userStatus(userId), status).then(userCacheService.evictAllUsersCache());
+        return redisUtil.set(RedisKeys.userStatus(userId), status).then(evictAllUsersCache());
     }
 
     @Override
@@ -358,7 +373,7 @@ public class UserServiceImpl implements UserService {
                     return transactionalOperator.transactional(userRepository.save(user));
                 });
             })
-            .then(userCacheService.evictAllUsersCache());
+            .then(evictAllUsersCache());
     }
 
     @Override
@@ -412,7 +427,11 @@ public class UserServiceImpl implements UserService {
     private Mono<Void> markLastLoginTime(User user) {
         user.setLastLoginAt(LocalDateTime.now());
         return transactionalOperator.transactional(userRepository.save(user))
-            .then(userCacheService.evictAllUsersCache());
+            .then(evictAllUsersCache());
+    }
+
+    private Mono<Void> evictAllUsersCache() {
+        return cacheUtil.evict(RedisKeys.allUsersCache(), ALL_USERS_CACHE);
     }
 
     private Mono<Void> validateLoginCaptcha(String captchaId, String captchaText) {
