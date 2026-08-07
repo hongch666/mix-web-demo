@@ -1365,6 +1365,7 @@ class Messages:
 
     # ===== 调度器 =====
     SCHEDULER_STARTED: str = "定时任务调度器已启动"
+    SCHEDULER_STOPPED: str = "定时任务调度器已停止"
 
     # ===== 服务降级 =====
     UNKNOWN_ERROR: str = "未知错误"

@@ -1,7 +1,6 @@
 from .defaults import Defaults
 from .errorCodes import ErrorCodes
 from .httpCode import HttpCode
-from .initMessages import InitMessages
 from .messages import Messages
 from .prompts import Prompts
 from .redisKeys import RedisKeys
@@ -16,6 +15,5 @@ __all__ = [
     "Defaults",
     "RedisKeys",
     "SwaggerConfig",
-    "InitMessages",
     "HttpCode",
 ]
