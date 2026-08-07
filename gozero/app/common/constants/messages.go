@@ -56,7 +56,6 @@ const (
 	SSE_SEND_FAIL_WARNING              = "无法发送SSE通知给用户 %s,通道已满"
 	SSE_BROADCAST_SUCCESS              = "广播消息已发送给用户 %s"
 	SSE_BROADCAST_FAIL_WARNING         = "无法广播消息给用户 %s，通道已满"
-	SSE_SEND_EMPTY_MESSAGE_WARNING     = "尝试发送空的SSE消息"
 	SSE_SERIALIZE_MESSAGE_ERROR        = "序列化SSE消息错误: %v"
 	SSE_SERIALIZE_MESSAGE_EMPTY        = "序列化后的SSE消息为null"
 	SSE_CONNECTION_ESTABLISHED_MESSAGE = "SSE 连接已建立"
