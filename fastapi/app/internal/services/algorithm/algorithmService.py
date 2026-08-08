@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Any, Dict, List
 
 from app.core.constants import Defaults, Scripts
-from app.internal.schemas.algorithmDTO import ScoreWeightItem, ScriptParamItem
+from app.internal.schemas import ScoreWeightItem, ScriptParamItem
 
 
 class AlgorithmService:

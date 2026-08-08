@@ -6,8 +6,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
-from app.core.db import AsyncSessionLocal, get_redis_client
-from app.core.db.neo4j import get_neo4j_client
+from app.core.db import AsyncSessionLocal, get_neo4j_client, get_redis_client
 from sqlalchemy import text
 
 
@@ -299,7 +298,9 @@ class KnowledgeGraphSyncService:
         self.logger.info(Messages.NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE)
 
         fetched_data = await asyncio.gather(
-            self._fetch_all_users() if users is None else asyncio.sleep(0, result=users),
+            self._fetch_all_users()
+            if users is None
+            else asyncio.sleep(0, result=users),
             self._fetch_all_categories()
             if categories is None
             else asyncio.sleep(0, result=categories),
@@ -309,18 +310,29 @@ class KnowledgeGraphSyncService:
             self._fetch_all_articles()
             if articles is None
             else asyncio.sleep(0, result=articles),
-            self._fetch_all_likes() if likes is None else asyncio.sleep(0, result=likes),
+            self._fetch_all_likes()
+            if likes is None
+            else asyncio.sleep(0, result=likes),
             self._fetch_all_collects()
             if collects is None
             else asyncio.sleep(0, result=collects),
             self._fetch_all_comments()
             if comments is None
             else asyncio.sleep(0, result=comments),
-            self._fetch_all_focus() if focus is None else asyncio.sleep(0, result=focus),
+            self._fetch_all_focus()
+            if focus is None
+            else asyncio.sleep(0, result=focus),
         )
-        users, categories, sub_categories, articles, likes, collects, comments, focus = (
-            fetched_data
-        )
+        (
+            users,
+            categories,
+            sub_categories,
+            articles,
+            likes,
+            collects,
+            comments,
+            focus,
+        ) = fetched_data
         article_tag_relations = self._build_article_tag_relations(articles)
 
         cleanup_result: Dict[str, int] = {}
@@ -467,17 +479,24 @@ class KnowledgeGraphSyncService:
 
         result: Dict[str, int] = {}
 
-        users, categories, sub_categories, articles, likes, collects, comments, focus = (
-            await asyncio.gather(
-                self._fetch_all_users(),
-                self._fetch_all_categories(),
-                self._fetch_all_sub_categories(),
-                self._fetch_all_articles(),
-                self._fetch_all_likes(),
-                self._fetch_all_collects(),
-                self._fetch_all_comments(),
-                self._fetch_all_focus(),
-            )
+        (
+            users,
+            categories,
+            sub_categories,
+            articles,
+            likes,
+            collects,
+            comments,
+            focus,
+        ) = await asyncio.gather(
+            self._fetch_all_users(),
+            self._fetch_all_categories(),
+            self._fetch_all_sub_categories(),
+            self._fetch_all_articles(),
+            self._fetch_all_likes(),
+            self._fetch_all_collects(),
+            self._fetch_all_comments(),
+            self._fetch_all_focus(),
         )
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
@@ -614,17 +633,24 @@ class KnowledgeGraphSyncService:
 
         result: Dict[str, int] = {}
 
-        users, categories, sub_categories, articles, likes, collects, comments, focus = (
-            await asyncio.gather(
-                self._fetch_all_users(last_sync_time),
-                self._fetch_all_categories(last_sync_time),
-                self._fetch_all_sub_categories(last_sync_time),
-                self._fetch_all_articles(last_sync_time),
-                self._fetch_all_likes(last_sync_time),
-                self._fetch_all_collects(last_sync_time),
-                self._fetch_all_comments(last_sync_time),
-                self._fetch_all_focus(last_sync_time),
-            )
+        (
+            users,
+            categories,
+            sub_categories,
+            articles,
+            likes,
+            collects,
+            comments,
+            focus,
+        ) = await asyncio.gather(
+            self._fetch_all_users(last_sync_time),
+            self._fetch_all_categories(last_sync_time),
+            self._fetch_all_sub_categories(last_sync_time),
+            self._fetch_all_articles(last_sync_time),
+            self._fetch_all_likes(last_sync_time),
+            self._fetch_all_collects(last_sync_time),
+            self._fetch_all_comments(last_sync_time),
+            self._fetch_all_focus(last_sync_time),
         )
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER

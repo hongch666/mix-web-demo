@@ -7,7 +7,7 @@ from typing import Dict, List
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages, Scripts
 from app.core.db import get_neo4j_client
-from app.internal.schemas.graphSearchDTO import (
+from app.internal.schemas import (
     GraphRelationDTO,
     GraphSearchEnhanceItemDTO,
     GraphSearchEnhanceReq,

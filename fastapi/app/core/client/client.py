@@ -5,7 +5,6 @@ import httpx
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
-from app.core.client.nacos import get_service_instance
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
@@ -16,6 +15,8 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+
+from .nacos import get_service_instance
 
 # 共享 httpx 客户端实例（由 lifespan 初始化，复用连接池降低延迟）
 _shared_http_client: Optional[httpx.AsyncClient] = None

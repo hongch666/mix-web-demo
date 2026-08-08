@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from app.core.config.config import load_config
+from app.core.config import load_config
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 # 从配置文件读取 MongoDB 连接信息
