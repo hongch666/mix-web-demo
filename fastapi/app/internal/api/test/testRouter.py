@@ -1,7 +1,7 @@
 from app.common.decorators import log
 from app.core.base import success
+from app.core.base.response import ApiResponse
 from app.core.constants import Messages
-from fastapi.responses import JSONResponse
 
 from fastapi import APIRouter, Request
 
@@ -12,8 +12,13 @@ router: APIRouter = APIRouter(
 
 
 # 测试FastAPI服务
-@router.get("/fastapi", summary="测试FastAPI服务", description="测试FastAPI服务")
+@router.get(
+    "/fastapi",
+    summary="测试FastAPI服务",
+    description="测试FastAPI服务",
+    response_model=ApiResponse,
+)
 @log("测试FastAPI服务")
-async def testFastapi(request: Request) -> JSONResponse:
+async def testFastapi(request: Request) -> ApiResponse:
     """测试FastAPI服务接口"""
     return success(Messages.TEST_MESSAGE)

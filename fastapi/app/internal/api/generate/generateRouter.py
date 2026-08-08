@@ -1,29 +1,14 @@
-from typing import Any
-
 from app.common.decorators import log
 from app.core.base import success
+from app.core.base.response import ApiResponse
 from app.core.constants import Messages
-from app.core.db import get_db
-from app.internal.crud import (
-    ArticleMapper,
-    CommentsMapper,
-    get_article_mapper,
-    get_comments_mapper,
+from app.dependencies import (
+    DbSession,
+    GenerateServiceDep,
 )
 from app.internal.schemas import GenerateDTO
-from app.internal.services import (
-    DeepseekService,
-    GeminiService,
-    GenerateService,
-    GptService,
-    get_deepseek_service,
-    get_gemini_service,
-    get_generate_service,
-    get_gpt_service,
-)
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
+from fastapi import APIRouter, BackgroundTasks, Path, Request
 
 router: APIRouter = APIRouter(
     prefix="/generate",
@@ -31,13 +16,18 @@ router: APIRouter = APIRouter(
 )
 
 
-@router.post("/tags", summary="生成tags", description="根据输入文本生成tags数组")
+@router.post(
+    "/tags",
+    summary="生成tags",
+    description="根据输入文本生成tags数组",
+    response_model=ApiResponse,
+)
 @log("生成tags")
 async def generate_tags(
     request: Request,
     data: GenerateDTO,
-    generateService: GenerateService = Depends(get_generate_service),
-) -> Any:
+    generateService: GenerateServiceDep,
+) -> ApiResponse:
     """生成tags接口"""
 
     tags: list[str] = await generateService.extract_tags(data.text)
@@ -48,29 +38,18 @@ async def generate_tags(
     "/ai_comment/{article_id}",
     summary="文章创建AI评论",
     description="为指定文章创建AI评论",
+    response_model=ApiResponse,
 )
 @log("文章创建AI评论")
 async def create_article_ai_comment(
     request: Request,
     background_tasks: BackgroundTasks,
+    db: DbSession,
+    generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
-    db: AsyncSession = Depends(get_db),
-    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
-    article_mapper: ArticleMapper = Depends(get_article_mapper),
-    deepseek_service: DeepseekService = Depends(get_deepseek_service),
-    gemini_service: GeminiService = Depends(get_gemini_service),
-    gpt_service: GptService = Depends(get_gpt_service),
-) -> Any:
+) -> ApiResponse:
     """文章创建AI评论接口"""
 
-    # 创建完整的 GenerateService 实例
-    generate_service = GenerateService(
-        comments_mapper=comments_mapper,
-        article_mapper=article_mapper,
-        deepseek_service=deepseek_service,
-        gemini_service=gemini_service,
-        gpt_service=gpt_service,
-    )
     # 添加后台任务
     background_tasks.add_task(generate_service.generate_ai_comments, articleId, db)
     return success(
@@ -82,29 +61,18 @@ async def create_article_ai_comment(
     "/ai_comment_with_reference/{article_id}",
     summary="文章创建基于权威参考文本的AI评论",
     description="为指定文章创建基于权威参考文本的AI评论，使用权威参考文本进行评价打分",
+    response_model=ApiResponse,
 )
 @log("文章创建基于权威参考文本的AI评论")
 async def create_article_ai_comment_with_reference(
     request: Request,
     background_tasks: BackgroundTasks,
+    db: DbSession,
+    generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
-    db: AsyncSession = Depends(get_db),
-    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
-    article_mapper: ArticleMapper = Depends(get_article_mapper),
-    deepseek_service: DeepseekService = Depends(get_deepseek_service),
-    gemini_service: GeminiService = Depends(get_gemini_service),
-    gpt_service: GptService = Depends(get_gpt_service),
-) -> Any:
+) -> ApiResponse:
     """文章创建基于权威参考文本的AI评论接口"""
 
-    # 创建完整的 GenerateService 实例
-    generate_service = GenerateService(
-        comments_mapper=comments_mapper,
-        article_mapper=article_mapper,
-        deepseek_service=deepseek_service,
-        gemini_service=gemini_service,
-        gpt_service=gpt_service,
-    )
     # 添加后台任务
     background_tasks.add_task(
         generate_service.generate_ai_comments_with_reference, articleId, db

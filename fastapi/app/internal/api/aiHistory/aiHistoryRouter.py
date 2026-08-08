@@ -2,12 +2,11 @@ from typing import Any
 
 from app.common.decorators import log, requireInternalToken
 from app.core.base import success
-from app.core.db import get_db
+from app.core.base.response import ApiResponse
+from app.dependencies import AiHistoryServiceDep, DbSession
 from app.internal.schemas import CreateHistoryDTO
-from app.internal.services import AiHistoryService, get_ai_history_service
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi import APIRouter, Path, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/ai_history",
@@ -15,15 +14,20 @@ router: APIRouter = APIRouter(
 )
 
 
-@router.post("", summary="创建AI历史记录", description="创建一条AI历史记录")
+@router.post(
+    "",
+    summary="创建AI历史记录",
+    description="创建一条AI历史记录",
+    response_model=ApiResponse,
+)
 @requireInternalToken
 @log("创建AI历史记录")
 async def create_ai_history(
     request: Request,
     data: CreateHistoryDTO,
-    db: AsyncSession = Depends(get_db),
-    ai_history_service: AiHistoryService = Depends(get_ai_history_service),
-) -> Any:
+    db: DbSession,
+    ai_history_service: AiHistoryServiceDep,
+) -> ApiResponse:
     """创建AI历史记录接口"""
 
     await ai_history_service.create_ai_history(data, db)
@@ -31,15 +35,18 @@ async def create_ai_history(
 
 
 @router.get(
-    "/list", summary="获取所有AI历史记录", description="获取指定用户的所有AI历史记录"
+    "/list",
+    summary="获取所有AI历史记录",
+    description="获取指定用户的所有AI历史记录",
+    response_model=ApiResponse,
 )
 @log("获取所有AI历史记录")
 async def get_all_ai_history(
     request: Request,
+    db: DbSession,
+    ai_history_service: AiHistoryServiceDep,
     userId: int = Query(alias="user_id"),
-    db: AsyncSession = Depends(get_db),
-    ai_history_service: AiHistoryService = Depends(get_ai_history_service),
-) -> Any:
+) -> ApiResponse:
     """获取所有AI历史记录接口"""
 
     histories: list[dict[str, Any]] = await ai_history_service.get_all_ai_history(
@@ -52,14 +59,15 @@ async def get_all_ai_history(
     "/{user_id}",
     summary="删除用户所有AI历史记录",
     description="删除指定用户的所有AI历史记录",
+    response_model=ApiResponse,
 )
 @log("删除用户所有AI历史记录")
 async def delete_ai_history(
     request: Request,
+    db: DbSession,
+    ai_history_service: AiHistoryServiceDep,
     userId: int = Path(alias="user_id"),
-    db: AsyncSession = Depends(get_db),
-    ai_history_service: AiHistoryService = Depends(get_ai_history_service),
-) -> Any:
+) -> ApiResponse:
     """删除用户所有AI历史记录接口"""
 
     await ai_history_service.delete_ai_history_by_userid(userId, db)

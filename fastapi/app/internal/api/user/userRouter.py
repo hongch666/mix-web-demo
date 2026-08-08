@@ -2,11 +2,10 @@ from typing import Any, Dict
 
 from app.common.decorators import log
 from app.core.base import success
-from app.core.db import get_db
-from app.internal.services import UserService, get_user_service
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.base.response import ApiResponse
+from app.dependencies import DbSession, UserServiceDep
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze/user",
@@ -18,15 +17,16 @@ router: APIRouter = APIRouter(
     "/new-followers",
     summary="获取新增粉丝数统计",
     description="获取指定周期内的新增粉丝数（支持按日/月/年统计）",
+    response_model=ApiResponse,
 )
 @log("获取新增粉丝数统计")
 async def get_new_followers(
     request: Request,
+    db: DbSession,
+    userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
     period: str = "day",
-    db: AsyncSession = Depends(get_db),
-    userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> ApiResponse:
     """获取新增粉丝数统计"""
 
     result: Dict[str, Any] = await userService.get_new_followers_service(
@@ -39,13 +39,14 @@ async def get_new_followers(
     "/article-view-distribution",
     summary="获取文章浏览分布",
     description="查询用户浏览过的文章及其浏览次数分布",
+    response_model=ApiResponse,
 )
 @log("获取文章浏览分布")
 async def get_article_view_distribution(
     request: Request,
+    userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
-    userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> ApiResponse:
     """获取文章浏览分布"""
 
     result: Dict[str, Any] = await userService.get_article_view_distribution_service(
@@ -58,14 +59,15 @@ async def get_article_view_distribution(
     "/author-follow-statistics",
     summary="获取关注作者统计",
     description="获取用户的总关注数和前7天每天关注的作者数",
+    response_model=ApiResponse,
 )
 @log("获取关注作者统计")
 async def get_author_follow_statistics(
     request: Request,
+    db: DbSession,
+    userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
-    db: AsyncSession = Depends(get_db),
-    userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> ApiResponse:
     """获取关注作者统计"""
 
     result: Dict[str, Any] = await userService.get_author_follow_statistics_service(
@@ -78,14 +80,15 @@ async def get_author_follow_statistics(
     "/monthly-comment-trend",
     summary="获取本月评论趋势",
     description="按天统计用户本月的评论数量趋势",
+    response_model=ApiResponse,
 )
 @log("获取本月评论趋势")
 async def get_monthly_comment_trend(
     request: Request,
+    db: DbSession,
+    userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
-    db: AsyncSession = Depends(get_db),
-    userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> ApiResponse:
     """获取本月评论趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_comment_trend_service(
@@ -98,14 +101,15 @@ async def get_monthly_comment_trend(
     "/monthly-like-trend",
     summary="获取本月点赞趋势",
     description="按天统计用户本月的点赞数量趋势",
+    response_model=ApiResponse,
 )
 @log("获取本月点赞趋势")
 async def get_monthly_like_trend(
     request: Request,
+    db: DbSession,
+    userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
-    db: AsyncSession = Depends(get_db),
-    userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> ApiResponse:
     """获取本月点赞趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_like_trend_service(
@@ -118,14 +122,15 @@ async def get_monthly_like_trend(
     "/monthly-collect-trend",
     summary="获取本月收藏趋势",
     description="按天统计用户本月的收藏数量趋势",
+    response_model=ApiResponse,
 )
 @log("获取本月收藏趋势")
 async def get_monthly_collect_trend(
     request: Request,
+    db: DbSession,
+    userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
-    db: AsyncSession = Depends(get_db),
-    userService: UserService = Depends(get_user_service),
-) -> Any:
+) -> ApiResponse:
     """获取本月收藏趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_collect_trend_service(

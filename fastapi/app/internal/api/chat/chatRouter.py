@@ -10,7 +10,13 @@ from app.common.middleware import get_current_user_id
 from app.core.base import Logger, success
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
-from app.core.db import get_db
+from app.dependencies import (
+    AiHistoryServiceDep,
+    DbSession,
+    DeepseekServiceDep,
+    GeminiServiceDep,
+    GptServiceDep,
+)
 from app.internal.agents.langsmith import (
     build_chat_metadata,
     build_chat_tags,
@@ -24,20 +30,9 @@ from app.internal.schemas import (
     ChatResponse,
     ChatResponseData,
 )
-from app.internal.services import (
-    AiHistoryService,
-    DeepseekService,
-    GeminiService,
-    GptService,
-    get_ai_history_service,
-    get_deepseek_service,
-    get_gemini_service,
-    get_gpt_service,
-)
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/chat",
@@ -75,11 +70,11 @@ def _resolve_model_info(service: AIServiceType) -> dict:
 async def send_message(
     http_request: Request,
     request: ChatRequest,
-    db: AsyncSession = Depends(get_db),
-    gptService: GptService = Depends(get_gpt_service),
-    geminiService: GeminiService = Depends(get_gemini_service),
-    deepseekService: DeepseekService = Depends(get_deepseek_service),
-    aiHistoryService: AiHistoryService = Depends(get_ai_history_service),
+    db: DbSession,
+    gptService: GptServiceDep,
+    geminiService: GeminiServiceDep,
+    deepseekService: DeepseekServiceDep,
+    aiHistoryService: AiHistoryServiceDep,
 ) -> JSONResponse:
     """普通发送聊天消息"""
 
@@ -209,10 +204,10 @@ async def send_message(
 async def stream_message(
     http_request: Request,
     request: ChatRequest,
-    gptService: GptService = Depends(get_gpt_service),
-    geminiService: GeminiService = Depends(get_gemini_service),
-    deepseekService: DeepseekService = Depends(get_deepseek_service),
-    aiHistoryService: AiHistoryService = Depends(get_ai_history_service),
+    gptService: GptServiceDep,
+    geminiService: GeminiServiceDep,
+    deepseekService: DeepseekServiceDep,
+    aiHistoryService: AiHistoryServiceDep,
 ) -> StreamingResponse:
     """流式发送聊天消息"""
 
