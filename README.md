@@ -476,6 +476,45 @@ Body 参数：
       }
   ```
 
+- 系统架构流程图
+
+  ```mermaid
+  flowchart LR
+    Client[客户端] --> Gateway[Gateway :8080]
+
+    Gateway --> Spring[Spring :8081]
+    Gateway --> GoZero[GoZero :8082]
+    Gateway --> Nest[NestJS :8083]
+    Gateway --> FastAPI[FastAPI :8084]
+
+    Spring --> MySQL[(MySQL)]
+    GoZero --> MySQL
+    Nest --> MySQL
+    FastAPI --> MySQL
+
+    Spring --> Redis[(Redis)]
+    Gateway --> Redis
+    GoZero --> Redis
+    Nest --> Redis
+    FastAPI --> Redis
+
+    GoZero --> ES[(Elasticsearch)]
+    Nest --> Mongo[(MongoDB)]
+    FastAPI --> PG[(PostgreSQL + pgvector)]
+    FastAPI --> CH[(ClickHouse)]
+    FastAPI --> Neo4j[(Neo4j)]
+
+    Spring -.-> Nacos[Nacos]
+    Gateway -.-> Nacos
+    GoZero -.-> Nacos
+    Nest -.-> Nacos
+    FastAPI -.-> Nacos
+
+    Spring -.-> MQ[RabbitMQ]
+    Nest -.-> MQ
+    FastAPI -.-> MQ
+  ```
+
 ## 技术栈
 
 - Spring Boot WebFlux：Java 响应式后端框架，支撑系统核心业务服务
