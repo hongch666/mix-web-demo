@@ -34,9 +34,9 @@ func ChatJoinQueueHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		resp, err := l.ChatJoinQueue(&req)
 		if err != nil {
 			utils.HandleError(w, err)
-		} else {
-			utils.Success(w, resp)
+			return
 		}
+		utils.Success(w, resp)
 	}
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_JOIN_QUEUE)
 }

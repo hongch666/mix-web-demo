@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"time"
 
 	"app/common/constants"
@@ -25,22 +26,23 @@ type InternalTokenUtil struct {
 var tokenUtil *InternalTokenUtil
 
 // InitInternalTokenUtil 初始化内部令牌工具
-func InitInternalTokenUtil(secret string, expiration int64) {
+func InitInternalTokenUtil(secret string, expiration int64) error {
+	if secret == "" {
+		return errors.New(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
+	}
 	tokenUtil = &InternalTokenUtil{
 		secret:     secret,
 		expiration: expiration,
 	}
-	if tokenUtil.secret == "" {
-		panic(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
-	}
+	return nil
 }
 
 // GetTokenUtil 获取内部令牌工具实例
-func GetTokenUtil() *InternalTokenUtil {
+func GetTokenUtil() (*InternalTokenUtil, error) {
 	if tokenUtil == nil {
-		panic(constants.INTERNAL_TOKEN_SECRET_NOT_NULL)
+		return nil, errors.New(constants.INTERNAL_TOKEN_NOT_INITIALIZED)
 	}
-	return tokenUtil
+	return tokenUtil, nil
 }
 
 // GenerateInternalToken 生成内部服务令牌

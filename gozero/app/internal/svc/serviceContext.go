@@ -10,7 +10,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"app/common/constants"
 	"app/common/hub"
@@ -96,7 +95,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 	logger = zLogger
 
-	utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration)
+	if err := utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration); err != nil {
+		logx.Errorf(constants.INTERNAL_TOKEN_INIT_FAIL, err)
+		panic(err)
+	}
 
 	mysqlConn := initSqlx(c)
 	initChatMessagesTable(mysqlConn)
@@ -183,6 +185,42 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 }
 
+// Close 释放 ServiceContext 持有的所有资源
+func (sc *ServiceContext) Close() {
+	// 取消上下文
+	if sc.Cancel != nil {
+		sc.Cancel()
+	}
+
+	// 关闭 Redis 连接
+	if sc.RedisClient != nil {
+		if err := sc.RedisClient.Close(); err != nil {
+			logx.Errorf("关闭 Redis 连接失败: %v", err)
+		}
+	}
+
+	// 关闭 MongoDB 连接
+	if sc.MongoClient != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), constants.MongoDBDisconnectTimeout)
+		defer cancel()
+		if err := sc.MongoClient.Disconnect(ctx); err != nil {
+			logx.Errorf("关闭 MongoDB 连接失败: %v", err)
+		}
+	}
+
+	// 关闭 RabbitMQ Publisher
+	if sc.RabbitMQPublisher != nil {
+		sc.RabbitMQPublisher.Close()
+	}
+
+	// 关闭日志文件句柄
+	if sc.Logger != nil {
+		if err := sc.Logger.Close(); err != nil {
+			logx.Errorf("关闭日志文件失败: %v", err)
+		}
+	}
+}
+
 func initSqlx(c config.Config) sqlx.SqlConn {
 	dsn := buildMysqlDsn(c)
 	if dsn == "" {
@@ -204,7 +242,10 @@ func initChatMessagesTable(conn sqlx.SqlConn) {
 		return
 	}
 
-	if _, err := conn.ExecCtx(context.Background(), constants.CREATE_CHAT_MESSAGES_TABLE_SQL); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DDLOperationTimeout)
+	defer cancel()
+
+	if _, err := conn.ExecCtx(ctx, constants.CREATE_CHAT_MESSAGES_TABLE_SQL); err != nil {
 		logger.Errorf(constants.ENSURE_CHAT_MESSAGES_TABLE_FAIL, err)
 		return
 	}
@@ -248,10 +289,10 @@ func initES(c config.Config) *elastic.Client {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(esURL),
 		elastic.SetSniff(esConf.Sniff),
-		elastic.SetMaxRetries(3),
-		elastic.SetHealthcheckInterval(10 * time.Second),
+		elastic.SetMaxRetries(constants.ESMaxRetries),
+		elastic.SetHealthcheckInterval(constants.ESHealthcheckInterval),
 		elastic.SetGzip(true),
-		elastic.SetHealthcheckTimeoutStartup(5 * time.Second),
+		elastic.SetHealthcheckTimeoutStartup(constants.ESHealthcheckTimeoutStartup),
 		elastic.SetErrorLog(&esLoggerAdapter{}),
 		elastic.SetInfoLog(&esLoggerAdapter{}),
 	}
@@ -312,7 +353,7 @@ func initMongoDB(c config.Config) *mongo.Client {
 		mongoURI = fmt.Sprintf("mongodb://%s:%d", mongoConf.Host, mongoConf.Port)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.MongoDBConnectTimeout)
 	defer cancel()
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
@@ -354,7 +395,7 @@ func initNacos(c config.Config) naming_client.INamingClient {
 
 	clientConfig := constant.ClientConfig{
 		NamespaceId:         nacosConf.Namespace,
-		TimeoutMs:           5000,
+		TimeoutMs:           constants.NacosClientTimeoutMs,
 		NotLoadCacheAtStart: true,
 		LogLevel:            "error",
 		CacheDir:            nacosConf.CacheDir,
@@ -484,7 +525,7 @@ func initRedis(c config.Config) *redis.Client {
 		DB:       db,
 	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.RedisConnectTimeout)
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {

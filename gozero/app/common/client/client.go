@@ -188,14 +188,16 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
 	req.Header.Set("X-Username", username)
 
-	tokenUtil := utils.GetTokenUtil()
-	finalUserID := userID
-	if finalUserID <= 0 {
-		finalUserID = -1
-	}
-	internalToken, err := tokenUtil.GenerateInternalToken(finalUserID, "gozero")
+	tokenUtil, err := utils.GetTokenUtil()
 	if err == nil {
-		req.Header.Set("X-Internal-Token", "Bearer "+internalToken)
+		finalUserID := userID
+		if finalUserID <= 0 {
+			finalUserID = -1
+		}
+		internalToken, err := tokenUtil.GenerateInternalToken(finalUserID, "gozero")
+		if err == nil {
+			req.Header.Set("X-Internal-Token", "Bearer "+internalToken)
+		}
 	}
 
 	if contentType != "" && req.Header.Get("Content-Type") == "" {

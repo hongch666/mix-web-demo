@@ -52,7 +52,12 @@ func validateInternalToken(
 	}
 
 	// 验证令牌
-	tokenUtil := utils.GetTokenUtil()
+	tokenUtil, err := utils.GetTokenUtil()
+	if err != nil {
+		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))
+		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_INVALID)
+		return false
+	}
 	claims, err := tokenUtil.ValidateInternalToken(tokenString)
 	if err != nil {
 		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_VALIDATE_FAIL_LOG, err, r.URL.Path))

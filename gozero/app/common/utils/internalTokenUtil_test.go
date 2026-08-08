@@ -20,9 +20,15 @@ func initTestInternalTokenUtil(t *testing.T) *utils.InternalTokenUtil {
 	configFile := filepath.Join("..", "..", "etc", "application.yaml")
 	c := boot.LoadConfig(configFile)
 
-	utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration)
+	if err := utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration); err != nil {
+		t.Fatalf("初始化内部令牌工具失败: %v", err)
+	}
 
-	return utils.GetTokenUtil()
+	tokenUtil, err := utils.GetTokenUtil()
+	if err != nil {
+		t.Fatalf("获取内部令牌工具失败: %v", err)
+	}
+	return tokenUtil
 }
 
 func TestGenerateInternalToken(t *testing.T) {

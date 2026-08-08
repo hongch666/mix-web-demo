@@ -34,9 +34,9 @@ func ChatGetAllUnreadCountsHandler(svcCtx *svc.ServiceContext) http.HandlerFunc 
 		resp, err := l.ChatGetAllUnreadCounts(&req)
 		if err != nil {
 			utils.HandleError(w, err)
-		} else {
-			utils.Success(w, resp)
+			return
 		}
+		utils.Success(w, resp)
 	}
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_GET_ALL_UNREAD_COUNTS)
 }

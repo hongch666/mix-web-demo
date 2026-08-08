@@ -15,6 +15,8 @@ const (
 
 	// 错误
 	INTERNAL_TOKEN_SECRET_NOT_NULL = "内部服务令牌密钥不能为空"
+	INTERNAL_TOKEN_INIT_FAIL       = "内部服务令牌初始化失败: %v"
+	INTERNAL_TOKEN_NOT_INITIALIZED = "内部服务令牌未初始化"
 	INTERNAL_TOKEN_MISSING         = "缺少必需的内部服务令牌请求头"
 	INTERNAL_TOKEN_INVALID         = "内部服务令牌无效"
 	INTERNAL_TOKEN_EXPIRED         = "内部服务令牌已过期"

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -93,7 +92,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 发送 API 日志到队列（异步，不阻塞主流程）
 		if m.ZeroLogger != nil {
 			utils.SafeGo(m.ZeroLogger, "sendApiLogToQueue", func() {
-				sendApiLogToQueue(r.Context(), m.ZeroLogger, m.rabbitPublisher, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
+				sendApiLogToQueue(m.ZeroLogger, m.rabbitPublisher, userID, username, method, path, m.description, queryParams, requestBody, durationMs)
 			})
 		}
 	}
@@ -209,7 +208,7 @@ func formatLogMessage(method, path, description string, userID int64, username s
 }
 
 // sendApiLogToQueue 发送 API 日志到队列（异步处理）
-func sendApiLogToQueue(ctx context.Context, lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publisher, userID int64, username, method, path, description string,
+func sendApiLogToQueue(lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publisher, userID int64, username, method, path, description string,
 	queryParams map[string]any, requestBody any, responseTimeMs int64,
 ) {
 	// 构建 API 日志消息（统一格式：camelCase）

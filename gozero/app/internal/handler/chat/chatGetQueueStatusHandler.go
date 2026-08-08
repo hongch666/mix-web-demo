@@ -20,9 +20,9 @@ func ChatGetQueueStatusHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		resp, err := l.ChatGetQueueStatus()
 		if err != nil {
 			utils.HandleError(w, err)
-		} else {
-			utils.Success(w, resp)
+			return
 		}
+		utils.Success(w, resp)
 	}
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_GET_QUEUE_STATUS)
 }

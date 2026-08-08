@@ -34,9 +34,9 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		{{if .HasResp}}resp, {{end}}err := l.{{.Call}}({{if .HasRequest}}&req{{end}})
 		if err != nil {
 			utils.HandleError(w, err)
-		} else {
-			{{if .HasResp}}utils.Success(w, resp){{else}}utils.Success(w, nil){{end}}
+			return
 		}
+		{{if .HasResp}}utils.Success(w, resp){{else}}utils.Success(w, nil){{end}}
 	}
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "TODO: 添加接口描述")
 }

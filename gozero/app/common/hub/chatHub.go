@@ -235,7 +235,7 @@ func (c *Client) ReadPump() {
 		chatHub.LeaveQueueIfMatch(c.UserID, c.ConnectionID, c)
 	}()
 
-	c.Conn.SetReadLimit(512)
+	c.Conn.SetReadLimit(constants.WebSocketReadLimit)
 	for {
 		_, messageBytes, err := c.Conn.ReadMessage()
 		if err != nil {

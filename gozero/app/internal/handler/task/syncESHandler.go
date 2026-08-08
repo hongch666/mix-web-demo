@@ -29,9 +29,9 @@ func SyncESHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		resp, err := l.SyncES(&req)
 		if err != nil {
 			utils.HandleError(w, err)
-		} else {
-			utils.Success(w, resp)
+			return
 		}
+		utils.Success(w, resp)
 	}
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_MANUAL_SYNC_ES_TASK)
 }

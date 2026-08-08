@@ -167,7 +167,7 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Connection", "keep-alive")
 
 	connectionID := NewConnectionID("sse")
-	sendCh := make(chan any, 256)
+	sendCh := make(chan any, constants.SSESendBufferSize)
 	closeCh := make(chan bool)
 
 	// 注册客户端
@@ -188,7 +188,7 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 	}
 
 	// 创建心跳定时器
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(constants.SSEHeartbeatInterval)
 	defer ticker.Stop()
 
 	// 事件循环

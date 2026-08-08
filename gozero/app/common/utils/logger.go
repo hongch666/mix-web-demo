@@ -144,3 +144,17 @@ func (z *ZeroLogger) Debugf(format string, args ...interface{}) {
 	logx.WithContext(z.ctx).Debug(msg)
 	z.writeToFile(msg, "DEBUG")
 }
+
+// Close 关闭日志文件句柄，刷新缓冲区
+func (z *ZeroLogger) Close() error {
+	z.fileMu.Lock()
+	defer z.fileMu.Unlock()
+
+	if z.currentFile != nil {
+		err := z.currentFile.Close()
+		z.currentFile = nil
+		z.currentDate = ""
+		return err
+	}
+	return nil
+}

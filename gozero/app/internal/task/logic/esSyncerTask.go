@@ -124,7 +124,7 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			svcCtx.Logger.Info(fmt.Sprintf(constants.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
 		}
 
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(constants.ESSyncBatchDelay)
 		return nil
 	})
 	if err != nil {
