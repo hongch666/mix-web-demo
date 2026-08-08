@@ -1,8 +1,7 @@
 from typing import Any, Dict, List
 
 from app.common.decorators import log, requireAdmin
-from app.core.base import success
-from app.core.base.response import ApiResponse
+from app.core.base import ApiResponse, success
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import ListResponse
 

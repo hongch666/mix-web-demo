@@ -1,11 +1,10 @@
 from typing import Any, Dict, List
 
 from app.common.decorators import log, requireAdmin
-from app.core.base import success
-from app.core.base.response import ApiResponse
-from app.internal.services import ApiLogService, get_apilog_service
+from app.core.base import ApiResponse, success
+from app.dependencies import ApiLogServiceDep
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze/api",
@@ -22,7 +21,7 @@ router: APIRouter = APIRouter(
 @log("获取所有接口的平均响应速度")
 @requireAdmin
 async def get_api_average_speed(
-    request: Request, apilogService: ApiLogService = Depends(get_apilog_service)
+    request: Request, apilogService: ApiLogServiceDep
 ) -> ApiResponse:
     """获取所有接口的平均响应速度"""
 
@@ -41,7 +40,7 @@ async def get_api_average_speed(
 @log("获取接口调用次数")
 @requireAdmin
 async def get_called_count_apis(
-    request: Request, apilogService: ApiLogService = Depends(get_apilog_service)
+    request: Request, apilogService: ApiLogServiceDep
 ) -> ApiResponse:
     """获取接口调用次数"""
 

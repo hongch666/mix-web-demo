@@ -1,8 +1,7 @@
 from typing import Any
 
 from app.common.decorators import log, requireInternalToken
-from app.core.base import success
-from app.core.base.response import ApiResponse
+from app.core.base import ApiResponse, success
 from app.dependencies import AiHistoryServiceDep, DbSession
 from app.internal.schemas import CreateHistoryDTO
 

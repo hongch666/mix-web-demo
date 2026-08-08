@@ -1,12 +1,8 @@
 from app.common.decorators import log, requireInternalToken
-from app.core.base import success
-from app.core.base.response import ApiResponse
-from app.internal.services.algorithm import (
-    AlgorithmService,
-    get_algorithm_service,
-)
+from app.core.base import ApiResponse, success
+from app.dependencies import AlgorithmServiceDep
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 
 router = APIRouter(prefix="/algorithm", tags=["算法模块"])
 
@@ -21,7 +17,7 @@ router = APIRouter(prefix="/algorithm", tags=["算法模块"])
 @requireInternalToken
 async def get_search_weights(
     request: Request,
-    algorithm_service: AlgorithmService = Depends(get_algorithm_service),
+    algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     result = algorithm_service.get_weights()
     return success(result)
@@ -37,7 +33,7 @@ async def get_search_weights(
 @requireInternalToken
 async def get_search_script(
     request: Request,
-    algorithm_service: AlgorithmService = Depends(get_algorithm_service),
+    algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     result = algorithm_service.get_es_script()
     return success(result)
@@ -53,7 +49,7 @@ async def get_search_script(
 @requireInternalToken
 async def get_search_script_params(
     request: Request,
-    algorithm_service: AlgorithmService = Depends(get_algorithm_service),
+    algorithm_service: AlgorithmServiceDep,
 ) -> ApiResponse:
     result = algorithm_service.get_script_params()
     return success(result)

@@ -1,6 +1,5 @@
 from app.common.decorators import log, requireInternalToken
-from app.core.base import success
-from app.core.base.response import ApiResponse
+from app.core.base import ApiResponse, success
 from app.dependencies import VectorSearchServiceDep
 from app.internal.schemas.vectorSearchDTO import VectorSearchEnhanceReq
 

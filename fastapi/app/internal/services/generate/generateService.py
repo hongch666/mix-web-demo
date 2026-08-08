@@ -202,6 +202,11 @@ class GenerateService:
         )
         Logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
+    async def generate_ai_comments_in_background(self, article_id: int) -> None:
+        """后台生成 AI 评论，并使用独立的数据库会话。"""
+        async with AsyncSessionLocal() as db:
+            await self.generate_ai_comments(article_id, db)
+
     # 定义工具函数解析大模型返回结果
     def _parse_ai_comment_response(self, response: str) -> tuple[str, float]:
         content = ""
@@ -675,6 +680,13 @@ class GenerateService:
                 "status": "error",
                 "message": Messages.AUTHORITY_ARTICLE_GENERATION_FAILED(str(e)),
             }
+
+    async def generate_ai_comments_with_reference_in_background(
+        self, article_id: int
+    ) -> None:
+        """后台生成带参考文本的 AI 评论，并使用独立的数据库会话。"""
+        async with AsyncSessionLocal() as db:
+            await self.generate_ai_comments_with_reference(article_id, db)
 
 
 @lru_cache()

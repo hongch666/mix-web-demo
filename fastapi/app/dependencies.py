@@ -11,6 +11,7 @@ from app.internal.crud import (
 )
 from app.internal.services import (
     AiHistoryService,
+    AlgorithmService,
     AnalyzeService,
     ApiLogService,
     DeepseekService,
@@ -19,7 +20,9 @@ from app.internal.services import (
     GptService,
     GraphSearchService,
     UserService,
+    VectorSearchService,
     get_ai_history_service,
+    get_algorithm_service,
     get_analyze_service,
     get_apilog_service,
     get_deepseek_service,
@@ -28,9 +31,6 @@ from app.internal.services import (
     get_gpt_service,
     get_graph_search_service,
     get_user_service,
-)
-from app.internal.services.vectorSearch import (
-    VectorSearchService,
     get_vector_search_service,
 )
 from fastapi import Depends
@@ -39,6 +39,7 @@ from fastapi import Depends
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 # 服务层依赖
+AlgorithmServiceDep = Annotated[AlgorithmService, Depends(get_algorithm_service)]
 AnalyzeServiceDep = Annotated[AnalyzeService, Depends(get_analyze_service)]
 GenerateServiceDep = Annotated[GenerateService, Depends(get_generate_service)]
 AiHistoryServiceDep = Annotated[AiHistoryService, Depends(get_ai_history_service)]

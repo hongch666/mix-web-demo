@@ -1,11 +1,7 @@
 from app.common.decorators import log
-from app.core.base import success
-from app.core.base.response import ApiResponse
+from app.core.base import ApiResponse, success
 from app.core.constants import Messages
-from app.dependencies import (
-    DbSession,
-    GenerateServiceDep,
-)
+from app.dependencies import GenerateServiceDep
 from app.internal.schemas import GenerateDTO
 
 from fastapi import APIRouter, BackgroundTasks, Path, Request
@@ -44,14 +40,16 @@ async def generate_tags(
 async def create_article_ai_comment(
     request: Request,
     background_tasks: BackgroundTasks,
-    db: DbSession,
     generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
 ) -> ApiResponse:
     """文章创建AI评论接口"""
 
     # 添加后台任务
-    background_tasks.add_task(generate_service.generate_ai_comments, articleId, db)
+    background_tasks.add_task(
+        generate_service.generate_ai_comments_in_background,
+        articleId,
+    )
     return success(
         data={"message": Messages.AI_COMMENT_TASK_SUBMITTED, "article_id": articleId}
     )
@@ -67,7 +65,6 @@ async def create_article_ai_comment(
 async def create_article_ai_comment_with_reference(
     request: Request,
     background_tasks: BackgroundTasks,
-    db: DbSession,
     generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
 ) -> ApiResponse:
@@ -75,7 +72,8 @@ async def create_article_ai_comment_with_reference(
 
     # 添加后台任务
     background_tasks.add_task(
-        generate_service.generate_ai_comments_with_reference, articleId, db
+        generate_service.generate_ai_comments_with_reference_in_background,
+        articleId,
     )
     return success(
         data={
