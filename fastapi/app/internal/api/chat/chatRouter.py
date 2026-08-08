@@ -10,6 +10,7 @@ from app.common.middleware import get_current_user_id
 from app.core.base import Logger, success
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
+from app.core.db import get_db
 from app.dependencies import (
     AiHistoryServiceDep,
     DbSession,

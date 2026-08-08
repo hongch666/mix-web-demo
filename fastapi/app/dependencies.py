@@ -1,8 +1,3 @@
-"""FastAPI 依赖注入类型别名
-
-使用 Annotated 模式简化依赖注入声明，避免在每个路由中重复写 Depends()
-"""
-
 from typing import Annotated
 
 from sqlalchemy.ext.asyncio import AsyncSession
