@@ -136,6 +136,9 @@ const (
 	PARSE_CONFIG_FILE_ERROR = "解析配置文件失败: %s, %v"
 	CONFIG_DESCRIPTION      = "配置文件路径，默认为 etc/application.yaml"
 
+	// go-zero 日志配置
+	GOZERO_LOG_SETUP_FAIL = "初始化 go-zero 日志配置失败: %v"
+
 	// 序列化/HTTP
 	JSON_SERIALIZATION_ERROR = "JSON序列化失败"
 	UNEXPECTED_STATUS_CODE   = "异常状态码: %d, 响应内容: %s"
