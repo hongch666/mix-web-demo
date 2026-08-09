@@ -11,14 +11,10 @@ import (
 
 type Config struct {
 	rest.RestConf
-
-	Prefix string `json:"prefix"`
-
-	Nacos NacosConfig `json:"nacos"`
-
-	Database DatabaseConfig `json:"database"`
-	MQ       MQConfig       `json:"mq"`
-
+	Prefix        string              `json:"prefix"`
+	Nacos         NacosConfig         `json:"nacos"`
+	Database      DatabaseConfig      `json:"database"`
+	MQ            MQConfig            `json:"mq"`
 	Logs          LogsConfig          `json:"logs"`
 	InternalToken InternalTokenConfig `json:"internal-token"`
 }

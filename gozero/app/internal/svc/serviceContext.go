@@ -50,6 +50,7 @@ var (
 )
 
 type ServiceContext struct {
+	// Normal
 	Context           context.Context
 	Cancel            context.CancelFunc
 	Config            config.Config
@@ -59,7 +60,7 @@ type ServiceContext struct {
 	MongoClient       *mongo.Client
 	RedisClient       *redis.Client
 	NamingClient      naming_client.INamingClient
-
+	// Models
 	AiHistoryModel         aiHistory.AiHistoryModel
 	ArticlesModel          articles.ArticlesModel
 	CategoryModel          category.CategoryModel
@@ -72,14 +73,14 @@ type ServiceContext struct {
 	SubCategoryModel       subCategory.SubCategoryModel
 	UserModel              user.UserModel
 	SearchModel            search.SearchModel
-
+	// Hubs
 	ChatHub *hub.ChatHub
 	SSEHub  *hub.SSEHubManager
-
+	// Client
 	FastapiClient *fastapiClient.FastapiClient
-
+	// Logger
 	Logger *utils.ZeroLogger
-
+	// Middlewares
 	UserContextMiddleware     rest.Middleware
 	RecoveryMiddleware        rest.Middleware
 	InternalServiceMiddleware rest.Middleware
