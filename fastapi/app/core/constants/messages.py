@@ -7,11 +7,6 @@ class Messages:
     """
 
     # ===== 内部令牌 =====
-    INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
-    INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"
-    INTERNAL_TOKEN_INVALID: str = "内部令牌无效"
-    INTERNAL_TOKEN_EXPIRED: str = "内部令牌已过期"
-    SERVICE_NAME_MISMATCH: str = "服务名称不匹配"
 
     @staticmethod
     def STARTUP_SERVICE_ADDRESS(ip: str, port: int) -> str:
@@ -1317,65 +1312,6 @@ class Messages:
     def RAG_RESULT_CONTENT_FRAGMENT(chunk_index: int, content_length: int) -> str:
         return f"   内容片段(第{chunk_index}块, 共{content_length}字):\n"
 
-    TEST_MESSAGE: str = "Hello, I am FastAPI!"
-    STARTUP_MESSAGE: str = "FastAPI服务启动成功"
-
-    # ===== AI评论 =====
-    AI_COMMENT_TASK_SUBMITTED: str = "AI生成评论任务已提交"
-    AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED: str = (
-        "基于权威参考文本的AI生成评论任务已提交"
-    )
-
-    # ===== 缓存 =====
-    CACHE_HIT_L1: str = "L1缓存命中"
-    CACHE_HIT_L2: str = "L2缓存命中"
-    CACHE_MISS: str = "L1/L2缓存均未命中，从数据源查询"
-    CACHE_SET_L1: str = "设置L1缓存"
-    CACHE_SET_L2: str = "设置L2缓存"
-
-    # ===== RabbitMQ =====
-    RABBITMQ_CONNECTED_MESSAGE: str = "RabbitMQ 连接已建立"
-    RABBITMQ_CONNECTED_AUTO_RECONNECT: str = "RabbitMQ 连接成功（自动重连已启用）"
-    RABBITMQ_RECONNECT_CHANNEL_RECOVERED: str = "RabbitMQ 重连成功，channel 已恢复"
-    RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE: str = "RabbitMQ 客户端未初始化"
-    RABBITMQ_CONNECTION_CLOSED_MESSAGE: str = "RabbitMQ 连接已关闭"
-    RABBITMQ_SEND_TO_QUEUE_SUCCESS: str = "RabbitMQ 消息已发送到队列"
-    RABBITMQ_SEND_TO_QUEUE_FAILURE: str = "RabbitMQ 发送消息到队列失败"
-    RABBITMQ_NOT_AVAILABLE: str = "日志装饰器捕获到异常，请检查日志详情"
-    API_RABBITMQ_LOGGING_SUCCESS: str = "API 日志已发送到队列"
-    API_RABBITMQ_LOGGING_FAILURE: str = "API 日志发送到队列失败"
-
-    # ===== Redis =====
-    REDIS_INITIALIZED_MESSAGE: str = "Redis 客户端初始化成功"
-
-    # ===== Nacos =====
-    NACOS_REGISTER_SUCCESS: str = "注册到 nacos 成功"
-    NACOS_REGISTER_DEV_MODE_MESSAGE: str = (
-        "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
-    )
-
-    # ===== 异常处理 =====
-    EXCEPTION_HANDLER_MESSAGE: str = "FastAPI服务器错误"
-
-    # ===== 分布式锁 =====
-    REDIS_LOCK_ACQUIRE_SUCCESS: str = "获取分布式锁成功"
-    REDIS_LOCK_ACQUIRE_FAIL: str = "获取分布式锁失败"
-    REDIS_LOCK_RELEASE_SUCCESS: str = "释放分布式锁成功"
-    REDIS_LOCK_RELEASE_FAIL: str = "释放分布式锁失败"
-
-    # ===== 调度器 =====
-    SCHEDULER_STARTED: str = "定时任务调度器已启动"
-    SCHEDULER_STOPPED: str = "定时任务调度器已停止"
-
-    # ===== 服务降级 =====
-    UNKNOWN_ERROR: str = "未知错误"
-    CIRCUIT_BREAKER_OPEN: str = "熔断器已开启"
-    AI_CHAT_NO_INSTANCE_MESSAGE: str = "找不到可用的服务实例"
-
-    # ===== 向量搜索 =====
-    VECTOR_SEARCH_SIMILARITY_REASON: str = "语义内容高度相关"
-    VECTOR_ENHANCE_DEGRADE_LOG: str = "向量增强失败"
-
     @staticmethod
     def VECTOR_ENHANCE_SEARCH_TIMING(search_elapsed: float, result_count: int) -> str:
         return f"向量增强检索耗时: {search_elapsed:.3f}s, 结果数: {result_count}"
@@ -1396,43 +1332,310 @@ class Messages:
     def VECTOR_QUERY_TAGS(tags_text: str) -> str:
         return f"标签: {tags_text}"
 
+    @staticmethod
+    def GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(error: Any) -> str:
+        return f"Neo4j 查询异常: {error}"
+
+    @staticmethod
+    def GRAPH_SEARCH_QUERY_EXCEPTION_LOG(error: Any) -> str:
+        return f"图谱信号查询异常: {error}"
+
+    @staticmethod
+    def NEO4J_TASK_FINISH_MESSAGE(result: Any) -> str:
+        return f"[知识图谱任务] MySQL 到 Neo4j 同步完成: {result}"
+
+    @staticmethod
+    def SINGLEFLIGHT_KEY_HIT(key: str) -> str:
+        return f"[singleflight] key={key} 命中回填缓存，复用首个请求结果"
+
+    @staticmethod
+    def SINGLEFLIGHT_KEY_START(key: str) -> str:
+        return f"[singleflight] key={key} 开始执行缓存回源"
+
+    @staticmethod
+    def CACHE_GET_FAILED_DETAIL(func_name: str, error: Exception) -> str:
+        return f"{func_name} 失败: {error}"
+
+    @staticmethod
+    def SERVICE_CACHE_HIT(service_name: str, duration: float) -> str:
+        return f"{service_name}: [缓存命中] 耗时 {duration:.3f}s"
+
+    @staticmethod
+    def CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(error: Exception) -> str:
+        return f"缓存获取失败，将查询数据源: {error}"
+
+    @staticmethod
+    def SERVICE_CLICKHOUSE_DEGRADE_TO_DB(service_name: str, error: Exception) -> str:
+        return f"{service_name}: ClickHouse 查询失败，降级为 DB: {error}"
+
+    @staticmethod
+    def SERVICE_CACHE_UPDATED(
+        service_name: str, data_source: str, duration: float
+    ) -> str:
+        return f"{service_name}: {data_source} 数据已更新缓存，总耗时 {duration:.3f}s"
+
+    @staticmethod
+    def CACHE_UPDATE_FAILED_DETAIL(error: Exception) -> str:
+        return f"更新缓存失败: {error}"
+
+    @staticmethod
+    def UPLOAD_FILE_TO_OSS_SUCCESS(oss_url: str) -> str:
+        return f"文件上传成功，OSS地址: {oss_url}"
+
+    @staticmethod
+    def UPLOAD_FILE_TO_OSS_PATH_INFO(local_path: str, oss_path: str) -> str:
+        return f"本地文件路径: {local_path}, OSS路径: {oss_path}"
+
+    @staticmethod
+    def UPLOAD_FILE_TO_OSS_REMOTE_FAILED(error: str) -> str:
+        return f"远程上传文件到OSS失败: {error}"
+
+    @staticmethod
+    def WORDCLOUD_CACHE_MISS_WILL_RETRY(error: Exception) -> str:
+        return f"获取词云图缓存失败，将重新生成: {error}"
+
+    @staticmethod
+    def WORDCLOUD_GENERATED_AND_CACHED(duration: float) -> str:
+        return (
+            f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {duration:.3f}s"
+        )
+
+    @staticmethod
+    def WORDCLOUD_CACHE_URL_FAILED(error: Exception) -> str:
+        return f"缓存词云图URL失败: {error}"
+
+    @staticmethod
+    def EXPORT_ARTICLES_SUCCESS(file_path: str, total_rows: int) -> str:
+        return f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录"
+
+    @staticmethod
+    def STATISTICS_RESULT_INFO(statistics: Any) -> str:
+        return f"获取文章统计信息: {statistics}"
+
+    @staticmethod
+    def CATEGORY_ARTICLE_COUNT_RESULT(
+        total_categories: int, non_zero_count: int
+    ) -> str:
+        return f"get_category_article_count_service: 获取 {total_categories} 个大分类，有文章的分类数: {non_zero_count}"
+
+    @staticmethod
+    def MONTHLY_PUBLISH_COUNT_RESULT(month_count: int, article_month_count: int) -> str:
+        return f"get_monthly_publish_count_service: 获取过去6个月中 {month_count} 个月份数据，有文章的月份数: {article_month_count}"
+
+    @staticmethod
+    def REDIS_CONNECTION_FAILED(error: Exception) -> str:
+        return f"[Redis] 连接失败: {error}"
+
+    @staticmethod
+    def REDIS_CLIENT_INITIALIZED(host: str, port: int, db: int) -> str:
+        return f"[Redis] 客户端初始化成功: {host}:{port}/{db}"
+
+    @staticmethod
+    def REDIS_GET_FAILED(key: str, error: Exception) -> str:
+        return f"[Redis] GET 失败 key={key}: {error}"
+
+    @staticmethod
+    def REDIS_SET_FAILED(key: str, error: Exception) -> str:
+        return f"[Redis] SET 失败 key={key}: {error}"
+
+    @staticmethod
+    def REDIS_DELETE_FAILED(keys: tuple[str, ...], error: Exception) -> str:
+        return f"[Redis] DELETE 失败 keys={keys}: {error}"
+
+    @staticmethod
+    def REDIS_EXISTS_FAILED(key: str, error: Exception) -> str:
+        return f"[Redis] EXISTS 失败 key={key}: {error}"
+
+    @staticmethod
+    def REDIS_EXPIRE_FAILED(key: str, error: Exception) -> str:
+        return f"[Redis] EXPIRE 失败 key={key}: {error}"
+
+    @staticmethod
+    def REDIS_TTL_FAILED(key: str, error: Exception) -> str:
+        return f"[Redis] TTL 失败 key={key}: {error}"
+
+    @staticmethod
+    def REDIS_KEYS_FAILED(pattern: str, error: Exception) -> str:
+        return f"[Redis] KEYS 失败 pattern={pattern}: {error}"
+
+    @staticmethod
+    def REDIS_FLUSHDB_FAILED(error: Exception) -> str:
+        return f"[Redis] FLUSHDB 失败: {error}"
+
+    @staticmethod
+    def REDIS_LOCK_ACQUIRE_FAILED(lock_key: str, error: Exception) -> str:
+        return f"[Redis] 获取分布式锁失败 key={lock_key}: {error}"
+
+    @staticmethod
+    def REDIS_LOCK_ACQUIRE_FAIL_MESSAGE(lock_key: str) -> str:
+        return f"[分布式锁] 获取锁失败，跳过本次执行，key: {lock_key}"
+
+    @staticmethod
+    def REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE(lock_key: str) -> str:
+        return f"[分布式锁] 获取锁成功，key: {lock_key}"
+
+    @staticmethod
+    def REDIS_LOCK_RELEASE_FAILED(lock_key: str, error: Exception) -> str:
+        return f"[Redis] 释放分布式锁失败 key={lock_key}: {error}"
+
+    @staticmethod
+    def REDIS_LOCK_RELEASE_FAIL_MESSAGE(lock_key: str) -> str:
+        return f"[分布式锁] 释放锁失败，key: {lock_key}"
+
+    @staticmethod
+    def REDIS_LOCK_RELEASE_SUCCESS_MESSAGE(lock_key: str) -> str:
+        return f"[分布式锁] 释放锁成功，key: {lock_key}"
+
+    INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
+
+    INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"
+
+    INTERNAL_TOKEN_INVALID: str = "内部令牌无效"
+
+    INTERNAL_TOKEN_EXPIRED: str = "内部令牌已过期"
+
+    SERVICE_NAME_MISMATCH: str = "服务名称不匹配"
+
+    TEST_MESSAGE: str = "Hello, I am FastAPI!"
+
+    STARTUP_MESSAGE: str = "FastAPI服务启动成功"
+
+    # ===== AI评论 =====
+    AI_COMMENT_TASK_SUBMITTED: str = "AI生成评论任务已提交"
+
+    AI_COMMENT_WITH_REFERENCE_TASK_SUBMITTED: str = (
+        "基于权威参考文本的AI生成评论任务已提交"
+    )
+
+    # ===== 缓存 =====
+    CACHE_HIT_L1: str = "L1缓存命中"
+
+    CACHE_HIT_L2: str = "L2缓存命中"
+
+    CACHE_MISS: str = "L1/L2缓存均未命中，从数据源查询"
+
+    CACHE_SET_L1: str = "设置L1缓存"
+
+    CACHE_SET_L2: str = "设置L2缓存"
+
+    # ===== RabbitMQ =====
+    RABBITMQ_CONNECTED_MESSAGE: str = "RabbitMQ 连接已建立"
+
+    RABBITMQ_CONNECTED_AUTO_RECONNECT: str = "RabbitMQ 连接成功（自动重连已启用）"
+
+    RABBITMQ_RECONNECT_CHANNEL_RECOVERED: str = "RabbitMQ 重连成功，channel 已恢复"
+
+    RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE: str = "RabbitMQ 客户端未初始化"
+
+    RABBITMQ_CONNECTION_CLOSED_MESSAGE: str = "RabbitMQ 连接已关闭"
+
+    RABBITMQ_SEND_TO_QUEUE_SUCCESS: str = "RabbitMQ 消息已发送到队列"
+
+    RABBITMQ_SEND_TO_QUEUE_FAILURE: str = "RabbitMQ 发送消息到队列失败"
+
+    RABBITMQ_NOT_AVAILABLE: str = "日志装饰器捕获到异常，请检查日志详情"
+
+    API_RABBITMQ_LOGGING_SUCCESS: str = "API 日志已发送到队列"
+
+    API_RABBITMQ_LOGGING_FAILURE: str = "API 日志发送到队列失败"
+
+    # ===== Redis =====
+    REDIS_INITIALIZED_MESSAGE: str = "Redis 客户端初始化成功"
+
+    # ===== Nacos =====
+    NACOS_REGISTER_SUCCESS: str = "注册到 nacos 成功"
+
+    NACOS_REGISTER_DEV_MODE_MESSAGE: str = (
+        "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
+    )
+
+    # ===== 异常处理 =====
+    EXCEPTION_HANDLER_MESSAGE: str = "FastAPI服务器错误"
+
+    # ===== 分布式锁 =====
+    REDIS_LOCK_ACQUIRE_SUCCESS: str = "获取分布式锁成功"
+
+    REDIS_LOCK_ACQUIRE_FAIL: str = "获取分布式锁失败"
+
+    REDIS_LOCK_RELEASE_SUCCESS: str = "释放分布式锁成功"
+
+    REDIS_LOCK_RELEASE_FAIL: str = "释放分布式锁失败"
+
+    # ===== 调度器 =====
+    SCHEDULER_STARTED: str = "定时任务调度器已启动"
+
+    SCHEDULER_STOPPED: str = "定时任务调度器已停止"
+
+    # ===== 服务降级 =====
+    UNKNOWN_ERROR: str = "未知错误"
+
+    CIRCUIT_BREAKER_OPEN: str = "熔断器已开启"
+
+    AI_CHAT_NO_INSTANCE_MESSAGE: str = "找不到可用的服务实例"
+
+    # ===== 向量搜索 =====
+    VECTOR_SEARCH_SIMILARITY_REASON: str = "语义内容高度相关"
+
+    VECTOR_ENHANCE_DEGRADE_LOG: str = "向量增强失败"
+
     # ===== 图谱搜索 =====
     GRAPH_SEARCH_QUERY_SUCCESS: str = "图谱查询成功"
+
     GRAPH_SEARCH_QUERY_FAILURE: str = "图谱查询失败"
 
     # ===== Agent =====
     EMBEDDING_CONFIG_INCOMPLETE_MESSAGE: str = "Embedding配置不完整"
+
     RAG_SERVICE_NOT_INITIALIZED_MESSAGE: str = "RAG服务未初始化"
+
     NEO4J_SERVICE_UNAVAILABLE_MESSAGE: str = "Neo4j 知识图谱服务暂不可用"
+
     NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE: str = "Neo4j 连接参数未初始化"
+
     NEO4J_QUERY_TOOLS_INITIALIZED_MESSAGE: str = "Neo4j 查询工具初始化成功"
+
     NEO4J_NO_RESULT_MESSAGE: str = "未找到相关知识图谱结果"
+
     NEO4J_QUERY_EMPTY_MESSAGE: str = "查询未返回结果"
+
     NEO4J_READ_ONLY_LIMIT_MESSAGE: str = (
         "安全限制：Neo4j 工具只允许执行单条只读 Cypher 查询"
     )
+
     UPDATE_ANALYZE_CACHES_ANALYZE_SERVICE_NONE_MESSAGE: str = (
         "update_analyze_caches: analyze_service 为 None，跳过缓存更新"
     )
+
     UPDATE_ANALYZE_CACHES_START_MESSAGE: str = "开始更新分析接口缓存"
+
     UPDATE_ANALYZE_CACHES_TOP10_START_MESSAGE: str = "更新前10篇文章缓存..."
+
     UPDATE_ANALYZE_CACHES_TOP10_SUCCESS_MESSAGE: str = "前10篇文章缓存更新成功"
+
     UPDATE_ANALYZE_CACHES_WORDCLOUD_START_MESSAGE: str = "更新词云图缓存..."
+
     UPDATE_ANALYZE_CACHES_WORDCLOUD_SUCCESS_MESSAGE: str = "词云图缓存更新成功"
+
     UPDATE_ANALYZE_CACHES_STATISTICS_START_MESSAGE: str = "更新文章统计信息缓存..."
+
     UPDATE_ANALYZE_CACHES_STATISTICS_SUCCESS_MESSAGE: str = "文章统计信息缓存更新成功"
+
     UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_START_MESSAGE: str = (
         "更新按分类统计文章数量缓存..."
     )
+
     UPDATE_ANALYZE_CACHES_CATEGORY_STATISTICS_SUCCESS_MESSAGE: str = (
         "按分类统计文章数量缓存更新成功"
     )
+
     UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_START_MESSAGE: str = (
         "更新月度文章发布统计缓存..."
     )
+
     UPDATE_ANALYZE_CACHES_MONTHLY_STATISTICS_SUCCESS_MESSAGE: str = (
         "月度文章发布统计缓存更新成功"
     )
+
     UPDATE_ANALYZE_CACHES_COMPLETE_MESSAGE: str = "分析接口缓存更新完成"
 
     AGENT_PARSING_ERROR_HINT: str = (
@@ -1658,10 +1861,6 @@ class Messages:
 
     GPT_RATE_LIMIT_EXCEEDED_ERROR: str = "GPT API调用频率超限。请稍后重试。"
 
-    @staticmethod
-    def GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(error: Any) -> str:
-        return f"Neo4j 查询异常: {error}"
-
     GRAPH_SEARCH_PATH_CANDIDATE: str = "Article-TAGGED_AS-Tag-TAGGED_AS-Article"
 
     GRAPH_SEARCH_PATH_FOLLOWED: str = "User-FOLLOWS-User-PUBLISHED_BY-Article"
@@ -1673,10 +1872,6 @@ class Messages:
     GRAPH_SEARCH_PATH_SUB_CATEGORY: str = (
         "User-LIKES|COLLECTS|COMMENTED_ON-Article-BELONGS_TO-SubCategory"
     )
-
-    @staticmethod
-    def GRAPH_SEARCH_QUERY_EXCEPTION_LOG(error: Any) -> str:
-        return f"图谱信号查询异常: {error}"
 
     GRAPH_SEARCH_REASON_CANDIDATE: str = "与当前搜索结果中的多篇文章标签相关"
 
@@ -1863,10 +2058,6 @@ class Messages:
 
     NEO4J_SYNC_START_MESSAGE: str = "[知识图谱] 开始全量同步 MySQL 到 Neo4j"
 
-    @staticmethod
-    def NEO4J_TASK_FINISH_MESSAGE(result: Any) -> str:
-        return f"[知识图谱任务] MySQL 到 Neo4j 同步完成: {result}"
-
     NEO4J_TASK_START_MESSAGE: str = "[知识图谱任务] 开始执行 MySQL 到 Neo4j 全量同步"
 
     NO_ARTICLES_DATA_MESSAGE: str = "没有文章数据"
@@ -1930,157 +2121,15 @@ class Messages:
 
     RAG_TOOL_NAME: str = "search_articles"
 
-    @staticmethod
-    def SINGLEFLIGHT_KEY_HIT(key: str) -> str:
-        return f"[singleflight] key={key} 命中回填缓存，复用首个请求结果"
-
-    @staticmethod
-    def SINGLEFLIGHT_KEY_START(key: str) -> str:
-        return f"[singleflight] key={key} 开始执行缓存回源"
-
-    @staticmethod
-    def CACHE_GET_FAILED_DETAIL(func_name: str, error: Exception) -> str:
-        return f"{func_name} 失败: {error}"
-
-    @staticmethod
-    def SERVICE_CACHE_HIT(service_name: str, duration: float) -> str:
-        return f"{service_name}: [缓存命中] 耗时 {duration:.3f}s"
-
-    @staticmethod
-    def CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(error: Exception) -> str:
-        return f"缓存获取失败，将查询数据源: {error}"
-
-    @staticmethod
-    def SERVICE_CLICKHOUSE_DEGRADE_TO_DB(service_name: str, error: Exception) -> str:
-        return f"{service_name}: ClickHouse 查询失败，降级为 DB: {error}"
-
-    @staticmethod
-    def SERVICE_CACHE_UPDATED(
-        service_name: str, data_source: str, duration: float
-    ) -> str:
-        return f"{service_name}: {data_source} 数据已更新缓存，总耗时 {duration:.3f}s"
-
-    @staticmethod
-    def CACHE_UPDATE_FAILED_DETAIL(error: Exception) -> str:
-        return f"更新缓存失败: {error}"
-
-    @staticmethod
-    def UPLOAD_FILE_TO_OSS_SUCCESS(oss_url: str) -> str:
-        return f"文件上传成功，OSS地址: {oss_url}"
-
-    @staticmethod
-    def UPLOAD_FILE_TO_OSS_PATH_INFO(local_path: str, oss_path: str) -> str:
-        return f"本地文件路径: {local_path}, OSS路径: {oss_path}"
-
-    @staticmethod
-    def UPLOAD_FILE_TO_OSS_REMOTE_FAILED(error: str) -> str:
-        return f"远程上传文件到OSS失败: {error}"
-
-    @staticmethod
-    def WORDCLOUD_CACHE_MISS_WILL_RETRY(error: Exception) -> str:
-        return f"获取词云图缓存失败，将重新生成: {error}"
-
-    @staticmethod
-    def WORDCLOUD_GENERATED_AND_CACHED(duration: float) -> str:
-        return (
-            f"get_wordcloud_service: 词云图已生成并缓存到L1+L2，总耗时 {duration:.3f}s"
-        )
-
-    @staticmethod
-    def WORDCLOUD_CACHE_URL_FAILED(error: Exception) -> str:
-        return f"缓存词云图URL失败: {error}"
-
-    @staticmethod
-    def EXPORT_ARTICLES_SUCCESS(file_path: str, total_rows: int) -> str:
-        return f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录"
-
-    @staticmethod
-    def STATISTICS_RESULT_INFO(statistics: Any) -> str:
-        return f"获取文章统计信息: {statistics}"
-
-    @staticmethod
-    def CATEGORY_ARTICLE_COUNT_RESULT(
-        total_categories: int, non_zero_count: int
-    ) -> str:
-        return f"get_category_article_count_service: 获取 {total_categories} 个大分类，有文章的分类数: {non_zero_count}"
-
-    @staticmethod
-    def MONTHLY_PUBLISH_COUNT_RESULT(month_count: int, article_month_count: int) -> str:
-        return f"get_monthly_publish_count_service: 获取过去6个月中 {month_count} 个月份数据，有文章的月份数: {article_month_count}"
-
     REDIS_CONNECTION_FAILED_MESSAGE: str = "Redis 连接失败，无法获取上次同步时间戳"
 
-    @staticmethod
-    def REDIS_CONNECTION_FAILED(error: Exception) -> str:
-        return f"[Redis] 连接失败: {error}"
-
     REDIS_CONNECTION_SAVE_FAILED_MESSAGE: str = "Redis 连接失败，无法保存同步时间戳"
-
-    @staticmethod
-    def REDIS_CLIENT_INITIALIZED(host: str, port: int, db: int) -> str:
-        return f"[Redis] 客户端初始化成功: {host}:{port}/{db}"
 
     REDIS_COROUTINE_SYNC_EXECUTION_ERROR: str = (
         "Redis 协程不能在运行中的事件循环里直接同步执行"
     )
 
     REDIS_DATABASE_CLEARED_MESSAGE: str = "Redis数据库已清空"
-
-    @staticmethod
-    def REDIS_GET_FAILED(key: str, error: Exception) -> str:
-        return f"[Redis] GET 失败 key={key}: {error}"
-
-    @staticmethod
-    def REDIS_SET_FAILED(key: str, error: Exception) -> str:
-        return f"[Redis] SET 失败 key={key}: {error}"
-
-    @staticmethod
-    def REDIS_DELETE_FAILED(keys: tuple[str, ...], error: Exception) -> str:
-        return f"[Redis] DELETE 失败 keys={keys}: {error}"
-
-    @staticmethod
-    def REDIS_EXISTS_FAILED(key: str, error: Exception) -> str:
-        return f"[Redis] EXISTS 失败 key={key}: {error}"
-
-    @staticmethod
-    def REDIS_EXPIRE_FAILED(key: str, error: Exception) -> str:
-        return f"[Redis] EXPIRE 失败 key={key}: {error}"
-
-    @staticmethod
-    def REDIS_TTL_FAILED(key: str, error: Exception) -> str:
-        return f"[Redis] TTL 失败 key={key}: {error}"
-
-    @staticmethod
-    def REDIS_KEYS_FAILED(pattern: str, error: Exception) -> str:
-        return f"[Redis] KEYS 失败 pattern={pattern}: {error}"
-
-    @staticmethod
-    def REDIS_FLUSHDB_FAILED(error: Exception) -> str:
-        return f"[Redis] FLUSHDB 失败: {error}"
-
-    @staticmethod
-    def REDIS_LOCK_ACQUIRE_FAILED(lock_key: str, error: Exception) -> str:
-        return f"[Redis] 获取分布式锁失败 key={lock_key}: {error}"
-
-    @staticmethod
-    def REDIS_LOCK_ACQUIRE_FAIL_MESSAGE(lock_key: str) -> str:
-        return f"[分布式锁] 获取锁失败，跳过本次执行，key: {lock_key}"
-
-    @staticmethod
-    def REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE(lock_key: str) -> str:
-        return f"[分布式锁] 获取锁成功，key: {lock_key}"
-
-    @staticmethod
-    def REDIS_LOCK_RELEASE_FAILED(lock_key: str, error: Exception) -> str:
-        return f"[Redis] 释放分布式锁失败 key={lock_key}: {error}"
-
-    @staticmethod
-    def REDIS_LOCK_RELEASE_FAIL_MESSAGE(lock_key: str) -> str:
-        return f"[分布式锁] 释放锁失败，key: {lock_key}"
-
-    @staticmethod
-    def REDIS_LOCK_RELEASE_SUCCESS_MESSAGE(lock_key: str) -> str:
-        return f"[分布式锁] 释放锁成功，key: {lock_key}"
 
     REFERENCE_CHAT_MESSAGE: str = (
         "你是一个专业的文章评价助手。请根据提供的权威参考文本进行客观、专业的评价。"

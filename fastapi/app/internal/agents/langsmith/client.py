@@ -41,23 +41,21 @@ def init_langsmith(config: Optional[LangSmithConfig] = None) -> None:
     _config = config
 
     if not config.enabled:
-        Logger.info("LangSmith 追踪已关闭，跳过初始化")
+        Logger.info(Messages.LANGSMITH_TRACING_DISABLED)
         return
 
     if LangSmithClient is None:
-        _init_error = "langsmith 包未安装，无法初始化"
+        _init_error = Messages.LANGSMITH_PACKAGE_NOT_INSTALLED
         Logger.warning(_init_error)
         return
 
     try:
         _client = LangSmithClient(
             api_key=config.api_key,
-            api_url=config.endpoint or "https://api.smith.langchain.com",
+            api_url=config.endpoint,
         )
         Logger.info(
-            Messages.LANGSMITH_CLIENT_INITIALIZED(
-                config.project, config.endpoint or "默认"
-            )
+            Messages.LANGSMITH_CLIENT_INITIALIZED(config.project, config.endpoint)
         )
     except Exception as e:
         _init_error = Messages.LANGSMITH_CLIENT_INITIALIZATION_FAILED(e)
@@ -76,7 +74,7 @@ def shutdown_langsmith() -> None:
         try:
             # LangSmith client 通常不需要显式 flush，
             # 但为了完整性保留此接口
-            Logger.info("LangSmith 客户端已关闭")
+            Logger.info(Messages.LANGSMITH_CLIENT_CLOSED)
         except Exception as e:
             Logger.warning(Messages.LANGSMITH_CLIENT_CLOSE_FAILED(e))
     _client = None

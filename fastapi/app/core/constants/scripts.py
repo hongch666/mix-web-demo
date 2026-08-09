@@ -7,39 +7,6 @@ class Scripts:
     """
 
     # ===== SQL 建表 =====
-    AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
-    AI_CHAT_SQL_TABLE_CREATION_MESSAGE: str = """
-        CREATE TABLE `ai_history` (
-            `id` BIGINT NOT NULL AUTO_INCREMENT,
-            `user_id` BIGINT,
-            `ask` TEXT NOT NULL,
-            `reply` TEXT NOT NULL,
-            `thinking` TEXT,
-            `ai_type` VARCHAR(30),
-            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            KEY `idx_user_id` (`user_id`)
-        ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    """
-
-    # ===== Neo4j 同步 SQL =====
-    NEO4J_SQL_SELECT_USERS: str = (
-        "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"
-    )
-    NEO4J_SQL_SELECT_CATEGORIES: str = "SELECT id, name, update_time FROM category"
-    NEO4J_SQL_SELECT_SUB_CATEGORIES: str = (
-        "SELECT id, name, category_id, update_time FROM sub_category"
-    )
-    NEO4J_SQL_SELECT_ARTICLES: str = "SELECT id, title, tags, status, views, user_id, sub_category_id, create_at, update_at, content FROM articles"
-    NEO4J_SQL_SELECT_LIKES: str = "SELECT user_id, article_id, created_time FROM likes"
-    NEO4J_SQL_SELECT_COLLECTS: str = (
-        "SELECT user_id, article_id, created_time FROM collects"
-    )
-    NEO4J_SQL_SELECT_COMMENTS: str = (
-        "SELECT id, user_id, article_id, create_time, update_time FROM comments"
-    )
-    NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
 
     @staticmethod
     def NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(
@@ -60,8 +27,51 @@ class Scripts:
     def MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(table: str) -> str:
         return f"SELECT formatDateTime(create_at, '%Y-%m') as year_month, count() as count FROM {table} WHERE status = 1 AND create_at >= subtractMonths(now(), 24) GROUP BY year_month ORDER BY year_month DESC"
 
+    AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
+
+    AI_CHAT_SQL_TABLE_CREATION_MESSAGE: str = """
+        CREATE TABLE `ai_history` (
+            `id` BIGINT NOT NULL AUTO_INCREMENT,
+            `user_id` BIGINT,
+            `ask` TEXT NOT NULL,
+            `reply` TEXT NOT NULL,
+            `thinking` TEXT,
+            `ai_type` VARCHAR(30),
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_user_id` (`user_id`)
+        ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    """
+
+    # ===== Neo4j 同步 SQL =====
+    NEO4J_SQL_SELECT_USERS: str = (
+        "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"
+    )
+
+    NEO4J_SQL_SELECT_CATEGORIES: str = "SELECT id, name, update_time FROM category"
+
+    NEO4J_SQL_SELECT_SUB_CATEGORIES: str = (
+        "SELECT id, name, category_id, update_time FROM sub_category"
+    )
+
+    NEO4J_SQL_SELECT_ARTICLES: str = "SELECT id, title, tags, status, views, user_id, sub_category_id, create_at, update_at, content FROM articles"
+
+    NEO4J_SQL_SELECT_LIKES: str = "SELECT user_id, article_id, created_time FROM likes"
+
+    NEO4J_SQL_SELECT_COLLECTS: str = (
+        "SELECT user_id, article_id, created_time FROM collects"
+    )
+
+    NEO4J_SQL_SELECT_COMMENTS: str = (
+        "SELECT id, user_id, article_id, create_time, update_time FROM comments"
+    )
+
+    NEO4J_SQL_SELECT_FOCUS: str = "SELECT user_id, focus_id, created_time FROM focus"
+
     # ===== SQL 安全规则 =====
     SQL_QUERY_PREFIX: str = "SELECT"
+
     SQL_READONLY_ALLOWED_PREFIXES: List[str] = [
         "SELECT",
         "WITH",
@@ -70,6 +80,7 @@ class Scripts:
         "DESCRIBE",
         "EXPLAIN",
     ]
+
     SQL_DANGEROUS_KEYWORDS: List[str] = [
         "INSERT",
         "UPDATE",
@@ -97,22 +108,27 @@ class Scripts:
         "REPAIR",
         "KILL",
     ]
+
     SQL_DANGEROUS_PATTERNS: List[str] = [
         "INTO OUTFILE",
         "INTO DUMPFILE",
         "FOR UPDATE",
         "LOCK IN SHARE MODE",
     ]
+
     DANGEROUS_SQL_REQUEST_PATTERNS: List[str] = [
         r"\b(update|delete|insert|drop|alter|truncate|create|replace|merge)\b",
     ]
+
     SAFE_SQL_QUERY_REQUEST_PATTERNS: List[str] = [
         r"^(查询|查看|统计|列出|展示|获取|分析).*(最近|最新|已)?(更新|新增)的",
     ]
 
     # ===== 数据脱敏规则 =====
     SANITIZER_MAX_STRING_LENGTH: int = 500  # 字符串最大长度（超出截断）
+
     SANITIZER_MAX_LIST_LENGTH: int = 10  # 列表最大长度（超出截断）
+
     SANITIZER_MAX_DICT_DEPTH: int = 5  # 字典最大递归深度
 
     # 敏感字段键名模式（不区分大小写匹配）
