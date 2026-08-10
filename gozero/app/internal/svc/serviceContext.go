@@ -5,89 +5,30 @@ package svc
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"os"
-	"strconv"
-	"strings"
 
 	"app/common/constants"
-	"app/common/hub"
 	"app/common/utils"
-	"app/internal/client/fastapiClient"
 	"app/internal/config"
-	"app/internal/middleware"
-	"app/model/aiHistory"
-	"app/model/articles"
-	"app/model/category"
-	"app/model/categoryReference"
-	"app/model/chatMessages"
-	"app/model/collects"
-	"app/model/comments"
-	"app/model/focus"
-	"app/model/likes"
-	"app/model/search"
-	"app/model/subCategory"
-	"app/model/user"
 
-	"github.com/nacos-group/nacos-sdk-go/v2/clients"
-	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
-	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/v2/vo"
-	"github.com/olivere/elastic/v7"
-	"github.com/redis/go-redis/v9"
-	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"github.com/zeromicro/go-zero/rest"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	detectLocalIP = getLocalIPv4Address
-	logger        *utils.ZeroLogger
-)
+var logger *utils.ZeroLogger
 
+// ServiceContext 聚合各业务边界的服务依赖，通过匿名嵌入保持原有字段访问方式不变。
 type ServiceContext struct {
-	// Normal
-	Context           context.Context
-	Cancel            context.CancelFunc
-	Config            config.Config
-	MySQLConn         sqlx.SqlConn
-	ESClient          *elastic.Client
-	RabbitMQPublisher *rabbitmq.Publisher
-	MongoClient       *mongo.Client
-	RedisClient       *redis.Client
-	NamingClient      naming_client.INamingClient
-	// Models
-	AiHistoryModel         aiHistory.AiHistoryModel
-	ArticlesModel          articles.ArticlesModel
-	CategoryModel          category.CategoryModel
-	CategoryReferenceModel categoryReference.CategoryReferenceModel
-	ChatMessagesModel      chatMessages.ChatMessagesModel
-	CollectsModel          collects.CollectsModel
-	CommentsModel          comments.CommentsModel
-	FocusModel             focus.FocusModel
-	LikesModel             likes.LikesModel
-	SubCategoryModel       subCategory.SubCategoryModel
-	UserModel              user.UserModel
-	SearchModel            search.SearchModel
-	// Hubs
-	ChatHub *hub.ChatHub
-	SSEHub  *hub.SSEHubManager
-	// Client
-	FastapiClient *fastapiClient.FastapiClient
-	// Logger
-	Logger *utils.ZeroLogger
-	// Middlewares
-	UserContextMiddleware     rest.Middleware
-	RecoveryMiddleware        rest.Middleware
-	InternalServiceMiddleware rest.Middleware
+	*RuntimeContext
+	*InfrastructureContext
+	*ModelContext
+	*HubContext
+	*ClientContext
+	*LoggerContext
+	*MiddlewareContext
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	serviceContext, cancel := context.WithCancel(context.Background())
+
 	// 初始化日志
 	zLogger, err := utils.NewZeroLogger(c.Logs.Path)
 	if err != nil {
@@ -101,439 +42,32 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		panic(err)
 	}
 
-	mysqlConn := initSqlx(c)
-	initChatMessagesTable(mysqlConn)
-	esClient := initES(c)
-	rabbitPublisher := initRabbitMQ(c)
-	mongoClient := initMongoDB(c)
-	redisClient := initRedis(c)
-	namingClient := initNacos(c)
-
-	var (
-		aiHistoryModel         aiHistory.AiHistoryModel
-		articlesModel          articles.ArticlesModel
-		categoryModel          category.CategoryModel
-		categoryReferenceModel categoryReference.CategoryReferenceModel
-		chatMessagesModel      chatMessages.ChatMessagesModel
-		collectsModel          collects.CollectsModel
-		commentsModel          comments.CommentsModel
-		focusModel             focus.FocusModel
-		likesModel             likes.LikesModel
-		subCategoryModel       subCategory.SubCategoryModel
-		userModel              user.UserModel
-		searchModel            search.SearchModel
-	)
-
-	if mysqlConn != nil {
-		aiHistoryModel = aiHistory.NewAiHistoryModel(mysqlConn)
-		articlesModel = articles.NewArticlesModel(mysqlConn)
-		categoryModel = category.NewCategoryModel(mysqlConn)
-		categoryReferenceModel = categoryReference.NewCategoryReferenceModel(mysqlConn)
-		chatMessagesModel = chatMessages.NewChatMessagesModel(mysqlConn)
-		collectsModel = collects.NewCollectsModel(mysqlConn)
-		commentsModel = comments.NewCommentsModel(mysqlConn)
-		focusModel = focus.NewFocusModel(mysqlConn)
-		likesModel = likes.NewLikesModel(mysqlConn)
-		subCategoryModel = subCategory.NewSubCategoryModel(mysqlConn)
-		userModel = user.NewUserModel(mysqlConn)
-	}
-
-	searchModel = search.NewSearchModel(search.SearchModelDeps{
-		ESClient:      esClient,
-		MongoClient:   mongoClient,
-		MongoDatabase: c.Database.MongoDB.Database,
-		ArticlesModel: articlesModel,
-		LikesModel:    likesModel,
-		CollectsModel: collectsModel,
-		FocusModel:    focusModel,
-	})
-
-	fastapiClient := fastapiClient.NewFastapiClient(namingClient)
+	infrastructure := newInfrastructureContext(c)
+	models := newModelContext(c, infrastructure)
 
 	return &ServiceContext{
-		Context:                serviceContext,
-		Cancel:                 cancel,
-		Config:                 c,
-		MySQLConn:              mysqlConn,
-		ESClient:               esClient,
-		RabbitMQPublisher:      rabbitPublisher,
-		MongoClient:            mongoClient,
-		RedisClient:            redisClient,
-		NamingClient:           namingClient,
-		AiHistoryModel:         aiHistoryModel,
-		ArticlesModel:          articlesModel,
-		CategoryModel:          categoryModel,
-		CategoryReferenceModel: categoryReferenceModel,
-		ChatMessagesModel:      chatMessagesModel,
-		CollectsModel:          collectsModel,
-		CommentsModel:          commentsModel,
-		FocusModel:             focusModel,
-		LikesModel:             likesModel,
-		SubCategoryModel:       subCategoryModel,
-		UserModel:              userModel,
-		SearchModel:            searchModel,
-		FastapiClient:          fastapiClient,
-		ChatHub:                &hub.ChatHub{ZeroLogger: zLogger},
-		SSEHub: func() *hub.SSEHubManager {
-			hub := hub.GetSSEHub()
-			hub.ZeroLogger = zLogger
-			return hub
-		}(),
-		Logger:                    zLogger,
-		UserContextMiddleware:     middleware.NewUserContextMiddleware().Handle,
-		RecoveryMiddleware:        middleware.NewRecoveryMiddleware(zLogger).Handle,
-		InternalServiceMiddleware: middleware.NewInternalServiceMiddleware(zLogger).Handle,
+		RuntimeContext:        &RuntimeContext{Context: serviceContext, Cancel: cancel, Config: c},
+		InfrastructureContext: infrastructure,
+		ModelContext:          models,
+		HubContext:            newHubContext(zLogger),
+		ClientContext:         newClientContext(infrastructure.NamingClient),
+		LoggerContext:         newLoggerContext(zLogger),
+		MiddlewareContext:     newMiddlewareContext(zLogger),
 	}
 }
 
-// Close 释放 ServiceContext 持有的所有资源
+// Close 释放 ServiceContext 持有的所有资源。
 func (sc *ServiceContext) Close() {
-	// 取消上下文
-	if sc.Cancel != nil {
+	if sc == nil {
+		return
+	}
+	if sc.RuntimeContext != nil && sc.Cancel != nil {
 		sc.Cancel()
 	}
-
-	// 关闭 Redis 连接
-	if sc.RedisClient != nil {
-		if err := sc.RedisClient.Close(); err != nil {
-			logx.Errorf("关闭 Redis 连接失败: %v", err)
-		}
+	if sc.InfrastructureContext != nil {
+		sc.InfrastructureContext.Close()
 	}
-
-	// 关闭 MongoDB 连接
-	if sc.MongoClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), constants.MongoDBDisconnectTimeout)
-		defer cancel()
-		if err := sc.MongoClient.Disconnect(ctx); err != nil {
-			logx.Errorf("关闭 MongoDB 连接失败: %v", err)
-		}
+	if sc.LoggerContext != nil {
+		sc.LoggerContext.Close()
 	}
-
-	// 关闭 RabbitMQ Publisher
-	if sc.RabbitMQPublisher != nil {
-		sc.RabbitMQPublisher.Close()
-	}
-
-	// 关闭日志文件句柄
-	if sc.Logger != nil {
-		if err := sc.Logger.Close(); err != nil {
-			logx.Errorf("关闭日志文件失败: %v", err)
-		}
-	}
-}
-
-func initSqlx(c config.Config) sqlx.SqlConn {
-	dsn := buildMysqlDsn(c)
-	if dsn == "" {
-		return nil
-	}
-
-	sqlConf := c.Database.Mysql
-	// 配置 SQL 日志：关闭普通日志时仅保留慢查询日志
-	if !sqlConf.LogEnabled {
-		sqlx.DisableStmtLog()
-	}
-	sqlx.SetSlowThreshold(sqlConf.GetSlowThreshold())
-
-	return sqlx.NewMysql(dsn)
-}
-
-func initChatMessagesTable(conn sqlx.SqlConn) {
-	if conn == nil {
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), constants.DDLOperationTimeout)
-	defer cancel()
-
-	if _, err := conn.ExecCtx(ctx, constants.CREATE_CHAT_MESSAGES_TABLE_SQL); err != nil {
-		logger.Errorf(constants.ENSURE_CHAT_MESSAGES_TABLE_FAIL, err)
-		return
-	}
-
-	logger.Info(constants.ENSURE_CHAT_MESSAGES_TABLE_SUCCESS)
-}
-
-func buildMysqlDsn(c config.Config) string {
-	mysqlConf := c.Database.Mysql
-	if mysqlConf.Host == "" || mysqlConf.Port == 0 || mysqlConf.Username == "" || mysqlConf.Dbname == "" {
-		return ""
-	}
-
-	charset := mysqlConf.Charset
-	if charset == "" {
-		charset = "utf8mb4"
-	}
-	loc := mysqlConf.Loc
-	if loc == "" {
-		loc = "Local"
-	}
-
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=%s",
-		mysqlConf.Username,
-		mysqlConf.Password,
-		mysqlConf.Host,
-		mysqlConf.Port,
-		mysqlConf.Dbname,
-		charset,
-		loc,
-	)
-}
-
-func initES(c config.Config) *elastic.Client {
-	esConf := c.Database.ES
-	if esConf.Host == "" || esConf.Port == 0 {
-		return nil
-	}
-
-	esURL := fmt.Sprintf("http://%s:%d", esConf.Host, esConf.Port)
-	opts := []elastic.ClientOptionFunc{
-		elastic.SetURL(esURL),
-		elastic.SetSniff(esConf.Sniff),
-		elastic.SetMaxRetries(constants.ESMaxRetries),
-		elastic.SetHealthcheckInterval(constants.ESHealthcheckInterval),
-		elastic.SetGzip(true),
-		elastic.SetHealthcheckTimeoutStartup(constants.ESHealthcheckTimeoutStartup),
-		elastic.SetErrorLog(&esLoggerAdapter{}),
-		elastic.SetInfoLog(&esLoggerAdapter{}),
-	}
-	if esConf.Username != "" {
-		opts = append(opts, elastic.SetBasicAuth(esConf.Username, esConf.Password))
-	}
-
-	client, err := elastic.NewClient(opts...)
-	if err != nil {
-		logger.Errorf(constants.ES_CLIENT_INIT_FAIL, err)
-		panic(err)
-	}
-	return client
-}
-
-func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
-	mqConf := c.MQ
-	if mqConf.Host == "" || mqConf.Port == 0 {
-		return nil
-	}
-
-	vhost := mqConf.Vhost
-	if vhost == "" {
-		vhost = "/"
-	}
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", mqConf.Username, mqConf.Password, mqConf.Host, mqConf.Port, trimSlashPrefix(vhost))
-
-	conn, err := rabbitmq.NewConn(url)
-	if err != nil {
-		logger.Errorf(constants.RABBITMQ_CONNECTION_INIT_FAIL, err)
-		panic(err)
-	}
-
-	publisher, err := rabbitmq.NewPublisher(
-		conn,
-		rabbitmq.WithPublisherOptionsLogging,
-	)
-	if err != nil {
-		logger.Errorf(constants.RABBITMQ_CONNECTION_INIT_FAIL, err)
-		panic(err)
-	}
-
-	logger.Info(constants.RABBITMQ_CONNECT_SUCCESS)
-
-	return publisher
-}
-
-func initMongoDB(c config.Config) *mongo.Client {
-	mongoConf := c.Database.MongoDB
-	if mongoConf.Host == "" || mongoConf.Port == 0 {
-		return nil
-	}
-
-	var mongoURI string
-	if mongoConf.Username != "" && mongoConf.Password != "" {
-		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%d", mongoConf.Username, mongoConf.Password, mongoConf.Host, mongoConf.Port)
-	} else {
-		mongoURI = fmt.Sprintf("mongodb://%s:%d", mongoConf.Host, mongoConf.Port)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), constants.MongoDBConnectTimeout)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		logger.Errorf(constants.MONGODB_CONNECTION_INIT_FAIL, err)
-		panic(err)
-	}
-	if err = client.Ping(ctx, nil); err != nil {
-		logger.Errorf(constants.MONGODB_PING_FAIL, err)
-		panic(err)
-	}
-
-	return client
-}
-
-type esLoggerAdapter struct{}
-
-func (l *esLoggerAdapter) Printf(format string, v ...interface{}) {
-	logx.Infof(format, v...)
-}
-
-func initNacos(c config.Config) naming_client.INamingClient {
-	nacosConf := c.Nacos
-	if nacosConf.IpAddr == "" || nacosConf.Port == 0 {
-		return nil
-	}
-
-	if nacosConf.CacheDir != "" {
-		_ = os.MkdirAll(nacosConf.CacheDir, 0o755)
-	}
-	if nacosConf.LogDir != "" {
-		_ = os.MkdirAll(nacosConf.LogDir, 0o755)
-	}
-
-	serverConfigs := []constant.ServerConfig{{
-		IpAddr: nacosConf.IpAddr,
-		Port:   uint64(nacosConf.Port),
-	}}
-
-	clientConfig := constant.ClientConfig{
-		NamespaceId:         nacosConf.Namespace,
-		TimeoutMs:           constants.NacosClientTimeoutMs,
-		NotLoadCacheAtStart: true,
-		LogLevel:            "error",
-		CacheDir:            nacosConf.CacheDir,
-		LogDir:              nacosConf.LogDir,
-	}
-
-	namingClient, err := clients.NewNamingClient(vo.NacosClientParam{
-		ClientConfig:  &clientConfig,
-		ServerConfigs: serverConfigs,
-	})
-	if err != nil {
-		logger.Errorf(constants.NACOS_CLIENT_INIT_FAIL, err)
-		panic(err)
-	}
-
-	registerIP := resolveNacosRegisterIP(c.Host)
-	if strings.EqualFold(strings.TrimSpace(c.Mode), "dev") {
-		registerIP = "127.0.0.1"
-		logger.Info(constants.REGISTER_NACOS_DEV_MODE_MESSAGE)
-	}
-
-	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
-		_, err = namingClient.RegisterInstance(vo.RegisterInstanceParam{
-			Ip:          registerIP,
-			Port:        uint64(c.Port),
-			ServiceName: nacosConf.ServiceName,
-			GroupName:   nacosConf.GroupName,
-			ClusterName: nacosConf.ClusterName,
-			Weight:      1.0,
-			Enable:      true,
-			Healthy:     true,
-			Ephemeral:   true,
-		})
-		if err != nil {
-			logger.Errorf(constants.NACOS_REGISTER_FAIL,
-				nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, err)
-			panic(err)
-		}
-	}
-
-	return namingClient
-}
-
-func resolveNacosRegisterIP(listenHost string) string {
-	listenHost = strings.TrimSpace(listenHost)
-	if listenHost != "" && !isUnspecifiedHost(listenHost) {
-		return listenHost
-	}
-
-	if localIP, err := detectLocalIP(); err == nil && localIP != "" {
-		return localIP
-	}
-
-	return listenHost
-}
-
-func isUnspecifiedHost(host string) bool {
-	switch strings.TrimSpace(host) {
-	case "", "0.0.0.0", "::", "[::]":
-		return true
-	default:
-		return false
-	}
-}
-
-func getLocalIPv4Address() (string, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-
-	for _, iface := range interfaces {
-		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-
-			if ip == nil {
-				continue
-			}
-			ip = ip.To4()
-			if ip == nil {
-				continue
-			}
-			if ip.IsLoopback() {
-				continue
-			}
-			return ip.String(), nil
-		}
-	}
-
-	return "", fmt.Errorf(constants.LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR)
-}
-
-func trimSlashPrefix(v string) string {
-	if len(v) > 0 && v[0] == '/' {
-		return v[1:]
-	}
-	return v
-}
-
-func initRedis(c config.Config) *redis.Client {
-	redisConf := c.Database.Redis
-	if redisConf.Host == "" || redisConf.Port == 0 {
-		return nil
-	}
-
-	db, _ := strconv.Atoi(redisConf.DB)
-
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", redisConf.Host, redisConf.Port),
-		Username: redisConf.Username,
-		Password: redisConf.Password,
-		DB:       db,
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), constants.RedisConnectTimeout)
-	defer cancel()
-
-	if err := client.Ping(ctx).Err(); err != nil {
-		logger.Errorf(constants.REDIS_INIT_FAIL, err)
-		panic(err)
-	}
-
-	logger.Infof(constants.REDIS_CONNECT_SUCCESS, redisConf.Host, redisConf.Port, db)
-	return client
 }

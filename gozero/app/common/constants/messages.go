@@ -130,6 +130,7 @@ const (
 	LOGGER_CREATE_DIR_ERROR  = "创建日志目录失败: %w"
 	LOGGER_OPEN_FILE_ERROR   = "打开日志文件失败: %v"
 	LOGGER_WRITE_FILE_ERROR  = "写入日志文件失败: %v"
+	LOGGER_CLOSE_FILE_ERROR  = "关闭日志文件失败: %v"
 
 	// 配置
 	READ_CONFIG_FILE_ERROR  = "读取配置文件失败: %s, %v"
