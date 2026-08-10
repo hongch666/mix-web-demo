@@ -1753,6 +1753,34 @@ class Messages:
         "关注",
     ]
 
+    # ===== 参考资料提取器 =====
+    KEY_POINT_KEYWORDS: List[str] = [
+        "定义",
+        "概念",
+        "原理",
+        "方法",
+        "步骤",
+        "特点",
+        "优势",
+        "应用",
+        "案例",
+        "注意事项",
+    ]
+
+    # 参考内容提取步骤描述
+    REFERENCE_STEP_DOWNLOAD_PDF: str = "下载PDF"
+    REFERENCE_STEP_EXTRACT_PDF: str = "PDF内容提取"
+    REFERENCE_STEP_EXTRACT_LINK: str = "提取链接内容"
+    REFERENCE_STEP_EXTRACT_LINK_CONTENT: str = "链接内容提取"
+
+    # 参考内容提取错误描述
+    REFERENCE_ERR_INIT_SPLITTER: str = "初始化文本分割器失败"
+    REFERENCE_ERR_EXTRACT_PDF: str = "PDF内容提取失败"
+    REFERENCE_ERR_EXTRACT_LINK: str = "链接内容提取失败"
+    REFERENCE_ERR_EXTRACT_CONTENT: str = "参考内容提取失败"
+    REFERENCE_ERR_SPLIT_TEXT: str = "文本分割失败"
+    REFERENCE_ERR_AI_SUMMARIZE_FALLBACK: str = "AI总结失败，使用原始内容"
+
     ERROR_AI_CHAT_NO_INSTANCE: str = "AI_CHAT_NO_INSTANCE"
 
     ERROR_ARTICLE_NOT_FOUND: str = "ARTICLE_NOT_FOUND"

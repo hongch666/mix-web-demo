@@ -1,3 +1,6 @@
+from typing import List
+
+
 class Defaults:
     """
     配置默认值类 — TTL、权重、超时
@@ -62,3 +65,35 @@ class Defaults:
     SEARCH_MAX_COLLECTS_NORMALIZED: float = 1000.0
     SEARCH_MAX_FOLLOWS_NORMALIZED: float = 5000.0
     SEARCH_RECENCY_DECAY_DAYS: int = 30
+
+    # ===== 参考资料提取器 =====
+    TEMP_PDF_PATH_TEMPLATE: str = "/tmp/temp_pdf_{}.pdf"
+    EXTRACTOR_REQUEST_HEADERS: dict = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+
+    # 噪音元素过滤正则（HTML 注释、脚本、样式、导航、广告、版权标记等）
+    EXTRACTOR_NOISE_PATTERNS: List[str] = [
+        r"<!--.*?-->",
+        r"<script.*?</script>",
+        r"<style.*?</style>",
+        r"<nav.*?</nav>",
+        r"<footer.*?</footer>",
+        r"<header.*?</header>",
+        r"<aside.*?</aside>",
+        r"<advertisement.*?</advertisement>",
+        r'class=".*?ad.*?"[^>]*>.*?</[^>]*>',
+        r'class=".*?nav.*?"[^>]*>.*?</[^>]*>',
+        r'class=".*?sidebar.*?"[^>]*>.*?</[^>]*>',
+        r'id=".*?ad.*?"[^>]*>.*?</[^>]*>',
+        r"\s+(?:Click|Buy|Share|Like|Follow|Subscribe)\s+",
+        r"(?:Advertisement|广告|赞助|推广):?",
+        r"(?:Copyright|©|®|™)",
+    ]

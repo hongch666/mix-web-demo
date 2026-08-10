@@ -6,7 +6,7 @@ from typing import Awaitable, Callable, List, Optional
 import httpx
 from app.core.base import Logger
 from app.core.client import get_shared_http_client
-from app.core.constants import Messages
+from app.core.constants import Defaults, Messages
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,25 +14,6 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class ReferenceContentExtractor:
     """权威参考文本内容提取器"""
-
-    # 需要过滤的噪音元素
-    NOISE_PATTERNS: List[str] = [
-        r"<!--.*?-->",  # HTML 注释
-        r"<script.*?</script>",  # 脚本标签
-        r"<style.*?</style>",  # 样式标签
-        r"<nav.*?</nav>",  # 导航栏
-        r"<footer.*?</footer>",  # 页脚
-        r"<header.*?</header>",  # 页头
-        r"<aside.*?</aside>",  # 侧边栏
-        r"<advertisement.*?</advertisement>",  # 广告
-        r'class=".*?ad.*?"[^>]*>.*?</[^>]*>',  # CSS 类名包含 ad 的元素
-        r'class=".*?nav.*?"[^>]*>.*?</[^>]*>',  # 导航相关元素
-        r'class=".*?sidebar.*?"[^>]*>.*?</[^>]*>',  # 侧边栏相关
-        r'id=".*?ad.*?"[^>]*>.*?</[^>]*>',  # ID 包含 ad 的元素
-        r"\s+(?:Click|Buy|Share|Like|Follow|Subscribe)\s+",  # 常见的交互词汇
-        r"(?:Advertisement|广告|赞助|推广):?",  # 广告标记
-        r"(?:Copyright|©|®|™)",  # 版权符号
-    ]
 
     # 用于分割文本的分割器
     TEXT_SPLITTER: Optional[RecursiveCharacterTextSplitter] = None
@@ -53,7 +34,7 @@ class ReferenceContentExtractor:
                 )
             except Exception as e:
                 Logger.warning(
-                    Messages.REFERENCE_EXTRACTOR_ERROR("初始化文本分割器失败", e)
+                    Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_INIT_SPLITTER, e)
                 )
 
     @staticmethod
@@ -73,7 +54,7 @@ class ReferenceContentExtractor:
         text = re.sub(r"<[^>]+>", "", text)
 
         # 应用噪音过滤模式
-        for pattern in ReferenceContentExtractor.NOISE_PATTERNS:
+        for pattern in Defaults.EXTRACTOR_NOISE_PATTERNS:
             text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL)
 
         # 规范化空白字符
@@ -103,18 +84,7 @@ class ReferenceContentExtractor:
         key_points: List[str] = []
 
         # 优先选择包含关键词的句子
-        keywords = [
-            "定义",
-            "概念",
-            "原理",
-            "方法",
-            "步骤",
-            "特点",
-            "优势",
-            "应用",
-            "案例",
-            "注意事项",
-        ]
+        keywords = Messages.KEY_POINT_KEYWORDS
         for sentence in sentences:
             sentence = sentence.strip()
             if not sentence:
@@ -147,10 +117,10 @@ class ReferenceContentExtractor:
             if not pdf_url:
                 return ""
 
-            Logger.info(Messages.REFERENCE_CONTENT_STARTED("下载PDF", pdf_url))
+            Logger.info(Messages.REFERENCE_CONTENT_STARTED(Messages.REFERENCE_STEP_DOWNLOAD_PDF, pdf_url))
 
             # 异步下载PDF到临时文件（PDF较大，使用独立客户端避免阻塞共享连接池超时）
-            temp_pdf_path = f"/tmp/temp_pdf_{hash(pdf_url)}.pdf"
+            temp_pdf_path = Defaults.TEMP_PDF_PATH_TEMPLATE.format(hash(pdf_url))
             async with httpx.AsyncClient(timeout=30.0) as client:
                 async with client.stream("GET", pdf_url) as response:
                     response.raise_for_status()
@@ -174,12 +144,12 @@ class ReferenceContentExtractor:
             key_points: str = cls._extract_key_points(full_text, max_length)
 
             Logger.info(
-                Messages.REFERENCE_CONTENT_COMPLETED("PDF内容提取", len(key_points))
+                Messages.REFERENCE_CONTENT_COMPLETED(Messages.REFERENCE_STEP_EXTRACT_PDF, len(key_points))
             )
             return key_points
 
         except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR("PDF内容提取失败", e))
+            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_EXTRACT_PDF, e))
             return ""
         finally:
             # 清理临时文件
@@ -196,18 +166,10 @@ class ReferenceContentExtractor:
             if not link_url:
                 return ""
 
-            Logger.info(Messages.REFERENCE_CONTENT_STARTED("提取链接内容", link_url))
+            Logger.info(Messages.REFERENCE_CONTENT_STARTED(Messages.REFERENCE_STEP_EXTRACT_LINK, link_url))
 
             # 构造浏览器请求头，避免被反爬虫机制拒绝
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-                "Accept-Encoding": "gzip, deflate",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1",
-                "Referer": "https://www.google.com/",
-            }
+            headers = Defaults.EXTRACTOR_REQUEST_HEADERS
 
             # 优先使用共享长连接池复用连接，不可用时创建临时客户端
             shared_client = get_shared_http_client()
@@ -232,12 +194,12 @@ class ReferenceContentExtractor:
             key_points: str = cls._extract_key_points(full_text, max_length)
 
             Logger.info(
-                Messages.REFERENCE_CONTENT_COMPLETED("链接内容提取", len(key_points))
+                Messages.REFERENCE_CONTENT_COMPLETED(Messages.REFERENCE_STEP_EXTRACT_LINK_CONTENT, len(key_points))
             )
             return key_points
 
         except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR("链接内容提取失败", e))
+            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_EXTRACT_LINK, e))
             return ""
 
     @classmethod
@@ -279,7 +241,7 @@ class ReferenceContentExtractor:
                 except Exception as e:
                     Logger.warning(
                         Messages.REFERENCE_EXTRACTOR_ERROR(
-                            "AI总结失败，使用原始内容", e
+                            Messages.REFERENCE_ERR_AI_SUMMARIZE_FALLBACK, e
                         )
                     )
                     return raw_content
@@ -287,7 +249,7 @@ class ReferenceContentExtractor:
                 return raw_content
 
         except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR("参考内容提取失败", e))
+            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_EXTRACT_CONTENT, e))
             return ""
 
     @classmethod
@@ -304,7 +266,7 @@ class ReferenceContentExtractor:
             chunks: List[Document] = cls.TEXT_SPLITTER.split_documents([doc])
             return [chunk.page_content for chunk in chunks]
         except Exception as e:
-            Logger.warning(Messages.REFERENCE_EXTRACTOR_ERROR("文本分割失败", e))
+            Logger.warning(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_SPLIT_TEXT, e))
             return [text] if text else []
 
 
