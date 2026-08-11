@@ -13,8 +13,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-var logger *utils.ZeroLogger
-
 // ServiceContext 聚合各业务边界的服务依赖，通过匿名嵌入保持原有字段访问方式不变。
 type ServiceContext struct {
 	*RuntimeContext
@@ -35,14 +33,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		logx.Errorf(constants.ZERO_LOGGER_INIT_FAIL, err)
 		panic(err)
 	}
-	logger = zLogger
 
 	if err := utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration); err != nil {
 		logx.Errorf(constants.INTERNAL_TOKEN_INIT_FAIL, err)
 		panic(err)
 	}
 
-	infrastructure := newInfrastructureContext(c)
+	infrastructure := newInfrastructureContext(c, zLogger)
 	models := newModelContext(c, infrastructure)
 
 	return &ServiceContext{

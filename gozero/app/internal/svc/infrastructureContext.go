@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"app/common/constants"
+	"app/common/utils"
 	"app/internal/config"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
@@ -27,17 +28,17 @@ import (
 var detectLocalIP = getLocalIPv4Address
 
 // 初始化基础设施上下文
-func newInfrastructureContext(c config.Config) *InfrastructureContext {
+func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *InfrastructureContext {
 	mysqlConn := initSqlx(c)
-	initChatMessagesTable(mysqlConn)
+	initChatMessagesTable(logger, mysqlConn)
 
 	return &InfrastructureContext{
 		MySQLConn:         mysqlConn,
-		ESClient:          initES(c),
-		RabbitMQPublisher: initRabbitMQ(c),
-		MongoClient:       initMongoDB(c),
-		RedisClient:       initRedis(c),
-		NamingClient:      initNacos(c),
+		ESClient:          initES(c, logger),
+		RabbitMQPublisher: initRabbitMQ(c, logger),
+		MongoClient:       initMongoDB(c, logger),
+		RedisClient:       initRedis(c, logger),
+		NamingClient:      initNacos(c, logger),
 	}
 }
 
@@ -80,7 +81,7 @@ func initSqlx(c config.Config) sqlx.SqlConn {
 }
 
 // 初始化需要的表结构
-func initChatMessagesTable(conn sqlx.SqlConn) {
+func initChatMessagesTable(logger *utils.ZeroLogger, conn sqlx.SqlConn) {
 	if conn == nil {
 		return
 	}
@@ -124,7 +125,7 @@ func buildMysqlDsn(c config.Config) string {
 }
 
 // 初始化 ElasticSearch 客户端
-func initES(c config.Config) *elastic.Client {
+func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 	esConf := c.Database.ES
 	if esConf.Host == "" || esConf.Port == 0 {
 		return nil
@@ -154,7 +155,7 @@ func initES(c config.Config) *elastic.Client {
 }
 
 // 初始化 RabbitMQ 发布者
-func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
+func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher {
 	mqConf := c.MQ
 	if mqConf.Host == "" || mqConf.Port == 0 {
 		return nil
@@ -189,7 +190,7 @@ func initRabbitMQ(c config.Config) *rabbitmq.Publisher {
 }
 
 // 初始化 MongoDB 客户端
-func initMongoDB(c config.Config) *mongo.Client {
+func initMongoDB(c config.Config, logger *utils.ZeroLogger) *mongo.Client {
 	mongoConf := c.Database.MongoDB
 	if mongoConf.Host == "" || mongoConf.Port == 0 {
 		return nil
@@ -224,7 +225,7 @@ func initMongoDB(c config.Config) *mongo.Client {
 }
 
 // 初始化 Nacos 客户端
-func initNacos(c config.Config) naming_client.INamingClient {
+func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingClient {
 	nacosConf := c.Nacos
 	if nacosConf.IpAddr == "" || nacosConf.Port == 0 {
 		return nil
@@ -288,7 +289,7 @@ func initNacos(c config.Config) naming_client.INamingClient {
 }
 
 // 初始化 Redis 客户端
-func initRedis(c config.Config) *redis.Client {
+func initRedis(c config.Config, logger *utils.ZeroLogger) *redis.Client {
 	redisConf := c.Database.Redis
 	if redisConf.Host == "" || redisConf.Port == 0 {
 		return nil
