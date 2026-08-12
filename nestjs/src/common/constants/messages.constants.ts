@@ -261,6 +261,21 @@ export class Messages {
 
   static readonly CIRCUIT_BREAKER_OPEN = "熔断器已打开";
 
+  static readonly SERVICE_CIRCUIT_BREAKER_OPEN = (serviceName: string): string =>
+    `服务 ${serviceName} 的熔断器已打开`;
+
+  static readonly SERVICE_CIRCUIT_BREAKER_HALF_OPEN = (serviceName: string): string =>
+    `服务 ${serviceName} 的熔断器进入半开状态`;
+
+  static readonly SERVICE_CIRCUIT_BREAKER_CLOSE = (serviceName: string): string =>
+    `服务 ${serviceName} 的熔断器已关闭`;
+
+  static readonly SERVICE_CIRCUIT_BREAKER_FALLBACK = (serviceName: string, result: unknown): string =>
+    `服务 ${serviceName} 触发熔断降级，返回结果: ${JSON.stringify(result)}`;
+
+  static readonly SERVICE_RETRY = (url: string, retryCount: number, message: string): string =>
+    `请求 ${url} 第 ${retryCount} 次重试，原因: ${message}`;
+
   // ===== 启动/测试 =====
 
   static readonly TEST_WELCOME = "Hello,I am Nest.js!";

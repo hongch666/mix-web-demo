@@ -82,3 +82,13 @@ github:
 internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
+
+# 远程调用配置
+remote-call:
+  timeout: 3000 # 请求超时时间（毫秒）
+  maxRetries: 3 # 最大重试次数
+  circuitBreaker:
+    timeout: 3000 # 单次请求超时时间（毫秒）
+    errorThresholdPercentage: 50 # 错误率阈值（百分比）
+    resetTimeout: 15000 # 熔断器重置时间（毫秒）
+    volumeThreshold: 5 # 最小请求数

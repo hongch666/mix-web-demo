@@ -1,9 +1,11 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { Method } from "axios";
+import axiosRetry from "axios-retry";
 import type { NacosInstance } from "nacos";
 import { NacosNamingClient } from "nacos";
 import { ClsService } from "nestjs-cls";
+import CircuitBreaker from "opossum";
 import * as os from "os";
 import qs from "qs";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
@@ -21,47 +23,29 @@ interface CallOptions {
   headers?: Record<string, string>;
 }
 
-class CircuitBreakerOpenError extends Error {
-  constructor(message = Messages.CIRCUIT_BREAKER_OPEN) {
-    super(message);
-    this.name = "CircuitBreakerOpenError";
-  }
-}
-
-class SimpleCircuitBreaker {
-  private failureCount = 0;
-
-  private openUntil = 0;
-
-  constructor(
-    private readonly failureThreshold = 3,
-    private readonly recoveryTimeoutMs = 15000,
-  ) {}
-
-  allowRequest(): void {
-    if (this.openUntil > Date.now()) {
-      throw new CircuitBreakerOpenError();
-    }
-  }
-
-  recordSuccess(): void {
-    this.failureCount = 0;
-    this.openUntil = 0;
-  }
-
-  recordFailure(): void {
-    this.failureCount += 1;
-    if (this.failureCount >= this.failureThreshold) {
-      this.openUntil = Date.now() + this.recoveryTimeoutMs;
-    }
-  }
+interface RemoteCallConfig {
+  timeout: number;
+  maxRetries: number;
+  circuitBreaker: {
+    timeout: number;
+    errorThresholdPercentage: number;
+    resetTimeout: number;
+    volumeThreshold: number;
+  };
 }
 
 @Injectable()
 export class NacosService implements OnModuleInit {
   private client!: NacosNamingClient;
 
-  private readonly breakers = new Map<string, SimpleCircuitBreaker>();
+  // 使用 opossum 熔断器
+  private readonly breakers = new Map<string, CircuitBreaker>();
+
+  // 轮询负载均衡计数器
+  private readonly roundRobinCounters = new Map<string, number>();
+
+  // 远程调用配置
+  private remoteCallConfig!: RemoteCallConfig;
 
   constructor(
     private readonly configService: ConfigService,
@@ -70,6 +54,43 @@ export class NacosService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    // 加载远程调用配置
+    this.remoteCallConfig = this.configService.get<RemoteCallConfig>("remote-call") || {
+      timeout: 3000,
+      maxRetries: 3,
+      circuitBreaker: {
+        timeout: 3000,
+        errorThresholdPercentage: 50,
+        resetTimeout: 15000,
+        volumeThreshold: 5,
+      },
+    };
+
+    // 配置 axios 重试机制
+    axiosRetry(axios, {
+      retries: this.remoteCallConfig.maxRetries,
+      retryDelay: (retryCount: number) => {
+        // 指数退避：1s, 2s, 4s
+        return Math.pow(2, retryCount - 1) * 1000;
+      },
+      retryCondition: (error) => {
+        // 只对网络错误和 5xx 错误重试
+        return (
+          axiosRetry.isNetworkOrIdempotentRequestError(error) ||
+          (error.response?.status !== undefined && error.response.status >= 500)
+        );
+      },
+      onRetry: (retryCount, error) => {
+        logger.warning(
+          Messages.SERVICE_RETRY(
+            error.config?.url || "unknown",
+            retryCount,
+            error.message,
+          ),
+        );
+      },
+    });
+
     // 取消终端与nacos相关的日志,如果需要日志可以将下面的logger设置为console
     const silentLogger: Record<string, (message?: unknown) => void> =
       Object.create(console);
@@ -191,14 +212,43 @@ export class NacosService implements OnModuleInit {
     return instances;
   }
 
-  private getBreaker(serviceName: string): SimpleCircuitBreaker {
-    const existing: SimpleCircuitBreaker | undefined =
-      this.breakers.get(serviceName);
+  private getBreaker(serviceName: string): CircuitBreaker {
+    const existing: CircuitBreaker | undefined = this.breakers.get(serviceName);
     if (existing) {
       return existing;
     }
 
-    const breaker = new SimpleCircuitBreaker();
+    // 创建 opossum 熔断器，使用配置值
+    const cbConfig = this.remoteCallConfig.circuitBreaker;
+    const breaker = new CircuitBreaker(
+      async (fn: () => Promise<any>) => fn(),
+      {
+        timeout: cbConfig.timeout, // 请求超时时间
+        errorThresholdPercentage: cbConfig.errorThresholdPercentage, // 错误率阈值
+        resetTimeout: cbConfig.resetTimeout, // 熔断器重置时间
+        volumeThreshold: cbConfig.volumeThreshold, // 最小请求数
+      },
+    );
+
+    // 监听熔断器事件
+    breaker.on("open", () => {
+      logger.warning(Messages.SERVICE_CIRCUIT_BREAKER_OPEN(serviceName));
+    });
+
+    breaker.on("halfOpen", () => {
+      logger.info(Messages.SERVICE_CIRCUIT_BREAKER_HALF_OPEN(serviceName));
+    });
+
+    breaker.on("close", () => {
+      logger.info(Messages.SERVICE_CIRCUIT_BREAKER_CLOSE(serviceName));
+    });
+
+    breaker.on("fallback", (result: unknown) => {
+      logger.warning(
+        Messages.SERVICE_CIRCUIT_BREAKER_FALLBACK(serviceName, result),
+      );
+    });
+
     this.breakers.set(serviceName, breaker);
     return breaker;
   }
@@ -216,9 +266,10 @@ export class NacosService implements OnModuleInit {
       );
     }
 
-    // 负载均衡策略：随机
-    const instance: NacosInstance =
-      instances[Math.floor(Math.random() * instances.length)]!;
+    // 负载均衡策略：轮询
+    const currentIndex = this.roundRobinCounters.get(opts.serviceName) || 0;
+    const instance: NacosInstance = instances[currentIndex % instances.length]!;
+    this.roundRobinCounters.set(opts.serviceName, currentIndex + 1);
 
     // 替换 pathParams
     let path: string = opts.path;
@@ -261,38 +312,41 @@ export class NacosService implements OnModuleInit {
     };
 
     try {
-      breaker.allowRequest();
+      // 使用熔断器包装请求
+      const response = await breaker.fire(async () => {
+        const res = await axios.request({
+          url,
+          method: opts.method,
+          data: opts.body,
+          headers,
+          timeout: 3000,
+        });
 
-      const response: { data: Record<string, unknown> } = await axios.request({
-        url,
-        method: opts.method,
-        data: opts.body,
-        headers,
-        timeout: 3000,
+        // 校验业务响应码
+        const responseData: Record<string, unknown> = res.data;
+        if (responseData.code !== HttpCode.OK) {
+          const errorMsg: string =
+            (responseData.msg as string) || Messages.UNKNOWN_ERROR;
+          logger.error(
+            Messages.SERVICE_BUSINESS_ERROR_DETAIL(
+              opts.serviceName,
+              String(responseData.code),
+              errorMsg,
+            ),
+          );
+          throw BusinessException.badGateway(
+            Messages.SERVICE_CALL_FAILED_WITH_MSG(opts.serviceName, errorMsg),
+            ErrorIds.SERVICE_CALL_FAILED,
+          );
+        }
+
+        return responseData;
       });
 
-      // 校验业务响应码
-      const responseData: Record<string, unknown> = response.data;
-      if (responseData.code !== HttpCode.OK) {
-        const errorMsg: string =
-          (responseData.msg as string) || Messages.UNKNOWN_ERROR;
-        logger.error(
-          Messages.SERVICE_BUSINESS_ERROR_DETAIL(
-            opts.serviceName,
-            String(responseData.code),
-            errorMsg,
-          ),
-        );
-        throw BusinessException.badGateway(
-          Messages.SERVICE_CALL_FAILED_WITH_MSG(opts.serviceName, errorMsg),
-          ErrorIds.SERVICE_CALL_FAILED,
-        );
-      }
-
-      breaker.recordSuccess();
-      return responseData;
+      return response as Record<string, unknown>;
     } catch (err) {
-      if (err instanceof CircuitBreakerOpenError) {
+      // 熔断器降级处理
+      if (err instanceof Error && err.message === "Breaker is open") {
         logger.warning(
           Messages.SERVICE_CIRCUIT_BREAKER_TRIGGERED(opts.serviceName),
         );
@@ -303,7 +357,6 @@ export class NacosService implements OnModuleInit {
         };
       }
 
-      breaker.recordFailure();
       logger.error(
         Messages.SERVICE_CALL_ERROR(
           opts.serviceName,
