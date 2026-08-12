@@ -86,6 +86,14 @@ internal_token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 
+# 远程调用配置
+remote_call:
+  timeout: 5 # 请求超时时间（秒）
+  max_retries: 3 # 最大重试次数
+  circuit_breaker:
+    failure_threshold: 3 # 失败阈值（连续失败次数）
+    recovery_timeout: 15.0 # 恢复超时时间（秒）
+
 agent:
   closeai:
     base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址

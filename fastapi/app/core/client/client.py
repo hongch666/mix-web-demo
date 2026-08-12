@@ -21,6 +21,24 @@ from .nacos import get_service_instance
 # 共享 httpx 客户端实例（由 lifespan 初始化，复用连接池降低延迟）
 _shared_http_client: Optional[httpx.AsyncClient] = None
 
+# 远程调用配置（从 application.yaml 加载）
+_remote_call_config: Optional[Dict[str, Any]] = None
+
+
+def _get_remote_call_config() -> Dict[str, Any]:
+    """获取远程调用配置"""
+    global _remote_call_config
+    if _remote_call_config is None:
+        _remote_call_config = load_config("remote_call") or {
+            "timeout": 5,
+            "max_retries": 3,
+            "circuit_breaker": {
+                "failure_threshold": 3,
+                "recovery_timeout": 15.0,
+            },
+        }
+    return _remote_call_config
+
 
 def set_shared_http_client(client: httpx.AsyncClient) -> None:
     """由 lifespan 设置共享的 httpx 客户端"""
@@ -42,11 +60,17 @@ class SimpleCircuitBreaker:
 
     def __init__(
         self,
-        failure_threshold: int = 3,
-        recovery_timeout: float = 15.0,
+        failure_threshold: Optional[int] = None,
+        recovery_timeout: Optional[float] = None,
     ) -> None:
-        self.failure_threshold: int = failure_threshold
-        self.recovery_timeout: float = recovery_timeout
+        config = _get_remote_call_config()
+        cb_config = config.get("circuit_breaker", {})
+        self.failure_threshold: int = failure_threshold or cb_config.get(
+            "failure_threshold", 3
+        )
+        self.recovery_timeout: float = recovery_timeout or cb_config.get(
+            "recovery_timeout", 15.0
+        )
         self.failure_count: int = 0
         self.open_until: float = 0.0
 
@@ -197,8 +221,8 @@ async def call_remote_service(
     params: Optional[Dict[str, Any]] = None,
     data: Optional[Dict[str, Any]] = None,
     json: Optional[Dict[str, Any]] = None,
-    retries: int = 3,
-    timeout: int = 5,
+    retries: Optional[int] = None,
+    timeout: Optional[int] = None,
 ) -> Any:
     """
     通过 Nacos 服务发现并调用远程服务
@@ -206,6 +230,13 @@ async def call_remote_service(
     优先使用 lifespan 中创建的共享 httpx.AsyncClient（长连接池复用），
     不可用时才创建临时客户端。
     """
+    # 从配置文件读取默认值
+    config = _get_remote_call_config()
+    if retries is None:
+        retries = config.get("max_retries", 3)
+    if timeout is None:
+        timeout = config.get("timeout", 5)
+
     merged_headers: Dict[str, str] = _merge_headers(headers)
     breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
 

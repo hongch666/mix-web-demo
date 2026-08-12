@@ -1,4 +1,3 @@
-import random
 import socket
 import threading
 import time
@@ -97,11 +96,16 @@ def register_instance(ip: str = IP, port: int = PORT) -> None:
     ) from last_error
 
 
+# 轮询负载均衡计数器
+_round_robin_counters: Dict[str, int] = {}
+_round_robin_lock = threading.Lock()
+
+
 def get_service_instance(service_name: str) -> Dict[str, Any]:
+    """获取服务实例，使用轮询负载均衡策略"""
     instances: Dict[str, Any] = client.list_naming_instance(
         service_name, group_name=GROUP_NAME
     )
-    # 简单负载均衡：随机选一个
     hosts: List[Dict[str, Any]] = instances.get("hosts", [])
     if not hosts:
         raise BusinessException(
@@ -109,7 +113,14 @@ def get_service_instance(service_name: str) -> Dict[str, Any]:
             HttpCode.NOT_FOUND,
             Messages.ERROR_AI_CHAT_NO_INSTANCE,
         )
-    return random.choice(hosts)
+
+    # 轮询负载均衡
+    with _round_robin_lock:
+        current_index = _round_robin_counters.get(service_name, 0)
+        selected_instance = hosts[current_index % len(hosts)]
+        _round_robin_counters[service_name] = current_index + 1
+
+    return selected_instance
 
 
 def start_nacos(ip: str = "127.0.0.1", port: int = 8084) -> None:
