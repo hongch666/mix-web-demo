@@ -20,6 +20,10 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
+import io.github.resilience4j.reactor.retry.RetryOperator;
+import io.github.resilience4j.retry.RetryRegistry;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -38,6 +42,8 @@ public class ServiceWebClient {
     private final WebClient.Builder webClientBuilder;
     private final InternalTokenUtil internalTokenUtil;
     private final SimpleLogger logger;
+    private final CircuitBreakerRegistry circuitBreakerRegistry;
+    private final RetryRegistry retryRegistry;
 
     public Mono<Result<?>> request(
         HttpMethod method,
@@ -47,6 +53,11 @@ public class ServiceWebClient {
         Duration timeout,
         String fallbackMessage) {
         ServiceRequestOptions requestOptions = options == null ? ServiceRequestOptions.empty() : options;
+
+        // 获取对应服务的熔断器和重试器
+        var circuitBreaker = circuitBreakerRegistry.circuitBreaker(serviceName);
+        var retry = retryRegistry.retry(serviceName);
+
         return Mono.deferContextual(context -> {
             Long userId = UserContext.getUserId(context);
             String username = UserContext.getUsername(context);
@@ -68,6 +79,10 @@ public class ServiceWebClient {
                 .cast(Result.class)
                 .map(result -> (Result<?>) result)
                 .timeout(timeout)
+                // 应用重试机制
+                .transformDeferred(RetryOperator.of(retry))
+                // 应用熔断机制
+                .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
                 .onErrorResume(error -> {
                     logger.error(fallbackMessage + error.getMessage(), error);
                     return Mono.just(Result.error(HttpCode.SERVICE_UNAVAILABLE, fallbackMessage));

@@ -53,7 +53,7 @@ logging:
   file:
     path: ${LOGGING_PATH:../logs/spring}
   level:
-    '[org.springframework.r2dbc]': ${R2DBC_LOG_LEVEL:INFO}
+    "[org.springframework.r2dbc]": ${R2DBC_LOG_LEVEL:INFO}
 jwt:
   secret: ${JWT_SECRET:}
   access-expiration: ${JWT_ACCESS_EXPIRATION:3600000} # 毫秒数（默认1小时）
@@ -99,6 +99,32 @@ resilience4j:
         waitDurationInOpenState: 15s
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
+  retry:
+    instances:
+      gozero:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+      fastapi:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+      nestjs:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
   timelimiter:
     instances:
       gozero:
