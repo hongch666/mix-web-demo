@@ -61,7 +61,6 @@ public class TokenBucketRateLimiter {
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
-    @SuppressWarnings("null")
     public Mono<Boolean> isAllowed(String key, Integer capacity, Integer refillRate) {
         List<String> args = List.of(
             String.valueOf(System.currentTimeMillis()),
@@ -77,7 +76,6 @@ public class TokenBucketRateLimiter {
             });
     }
 
-    @SuppressWarnings("null")
     public Mono<String> getStatus(String key) {
         Mono<String> tokens = redisTemplate.<String, String>opsForHash()
             .get(key, "tokens")
@@ -93,7 +91,6 @@ public class TokenBucketRateLimiter {
             });
     }
 
-    @SuppressWarnings("null")
     public Mono<Boolean> reset(String key, Integer capacity) {
         List<String> args = List.of(
             String.valueOf(capacity),

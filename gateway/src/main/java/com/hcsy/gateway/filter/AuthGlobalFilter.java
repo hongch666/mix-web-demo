@@ -119,7 +119,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private String extractToken(ServerHttpRequest request) {
         List<String> headers = request.getHeaders().get(HttpHeaders.AUTHORIZATION);
         if (!CollectionUtils.isEmpty(headers)) {
-            @SuppressWarnings("null")
             String authHeader = headers.get(0);
             if (authHeader.startsWith("Bearer ")) {
                 return authHeader.substring(7);
@@ -137,7 +136,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         return null;
     }
 
-    @SuppressWarnings("null")
     private boolean isExcludePath(String path) {
         return authProperties.getExcludePaths().stream()
             .anyMatch(pattern -> antPathMatcher.match(pattern, path));

@@ -66,7 +66,6 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
             });
     }
 
-    @SuppressWarnings("null")
     private RateLimitProperties.RateLimitPath matchRateLimitPath(String path) {
         for (String pattern : rateLimitProperties.getPaths().keySet()) {
             if (antPathMatcher.match(pattern, path)) {
@@ -90,7 +89,6 @@ public class RateLimitGlobalFilter implements GlobalFilter, Ordered {
         return RedisKeys.CLIENT_ID_UNKNOWN;
     }
 
-    @SuppressWarnings("null")
     private String getClientIp(ServerWebExchange exchange) {
         String[] headers = {
             "X-Forwarded-For",

@@ -24,7 +24,6 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class GatewayExceptionHandler implements ErrorWebExceptionHandler {
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         if (exchange.getResponse().isCommitted()) {

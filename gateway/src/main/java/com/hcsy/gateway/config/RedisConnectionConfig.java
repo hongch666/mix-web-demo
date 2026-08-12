@@ -20,7 +20,6 @@ public class RedisConnectionConfig {
     private final RedisProperties redisProperties;
 
     @Bean
-    @SuppressWarnings("null")
     LettuceConnectionFactory lettuceConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
 
@@ -53,7 +52,6 @@ public class RedisConnectionConfig {
         return new LettuceConnectionFactory(config);
     }
 
-    @SuppressWarnings("null")
     @Bean
     ReactiveStringRedisTemplate reactiveStringRedisTemplate(LettuceConnectionFactory lettuceConnectionFactory) {
         return new ReactiveStringRedisTemplate(lettuceConnectionFactory);

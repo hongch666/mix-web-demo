@@ -45,7 +45,6 @@ public class Result {
     /**
      * 将当前 Result 写入 ServerHttpResponse 并返回 Mono<Void>
      */
-    @SuppressWarnings("null")
     public Mono<Void> writeTo(ServerHttpResponse response) {
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         try {

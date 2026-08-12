@@ -35,7 +35,6 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
         return Ordered.HIGHEST_PRECEDENCE - 200;
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
@@ -71,7 +70,6 @@ public class SwaggerUIResourceFilter implements WebFilter, Ordered {
             .then();
     }
 
-    @SuppressWarnings("null")
     private MediaType getMediaType(String filename) {
         if (filename.endsWith(".css")) {
             return new MediaType("text", "css", StandardCharsets.UTF_8);
