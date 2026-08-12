@@ -25,7 +25,6 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     private final ArticleInteractionAssembler assembler;
     private final TransactionalOperator transactionalOperator;
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "collect", description = "收藏了1篇文章")
     public Mono<Boolean> addCollect(Long articleId, Long userId) {
@@ -43,7 +42,6 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "uncollect", description = "取消收藏了1篇文章")
     public Mono<Boolean> removeCollect(Long articleId, Long userId) {

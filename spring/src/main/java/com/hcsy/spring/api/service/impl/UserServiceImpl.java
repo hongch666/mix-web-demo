@@ -79,7 +79,6 @@ public class UserServiceImpl implements UserService {
         });
     }
 
-    @SuppressWarnings("null")
     private Mono<UserListVO> toPagedUserList(List<User> users, List<String> statuses, long page, long size) {
         for (int index = 0; index < users.size(); index++) {
             String status = index < statuses.size() ? statuses.get(index) : null;
@@ -102,7 +101,6 @@ public class UserServiceImpl implements UserService {
             .map(records -> userList(records, users.size()));
     }
 
-    @SuppressWarnings("null")
     @Override
     @Neo4jSync(description = "删除用户后同步 Neo4j")
     public Mono<Void> deleteUserAndStatusById(Long id) {
@@ -113,7 +111,6 @@ public class UserServiceImpl implements UserService {
             .then(Mono.when(evictAllUsersCache(), redisUtil.delete(RedisKeys.userStatus(id))).then());
     }
 
-    @SuppressWarnings("null")
     @Override
     @Neo4jSync(description = "批量删除用户后同步 Neo4j")
     public Mono<Void> deleteUsersAndStatusByIds(List<Long> ids) {
@@ -397,7 +394,6 @@ public class UserServiceImpl implements UserService {
             .then();
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> resetUserPassword(Long userId) {
         return userRepository.findById(userId)
@@ -409,13 +405,11 @@ public class UserServiceImpl implements UserService {
             .then();
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<User> getById(Long id) {
         return userRepository.findById(id);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Flux<User> listByIds(Collection<Long> ids) {
         return userRepository.findAllById(ids);

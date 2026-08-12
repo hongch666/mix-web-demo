@@ -39,7 +39,6 @@ public class ServiceWebClient {
     private final InternalTokenUtil internalTokenUtil;
     private final SimpleLogger logger;
 
-    @SuppressWarnings("null")
     public Mono<Result<?>> request(
         HttpMethod method,
         String serviceName,
@@ -76,7 +75,6 @@ public class ServiceWebClient {
         });
     }
 
-    @SuppressWarnings("null")
     private URI buildUri(
         UriBuilder uriBuilder,
         String serviceName,
@@ -93,7 +91,6 @@ public class ServiceWebClient {
         return target.build(pathVariables == null ? Map.of() : pathVariables);
     }
 
-    @SuppressWarnings("null")
     private void addQueryParameter(UriBuilder uriBuilder, String name, List<String> values) {
         if (values == null || values.isEmpty()) {
             uriBuilder.queryParam(name);
@@ -102,7 +99,6 @@ public class ServiceWebClient {
         uriBuilder.queryParam(name, values.toArray());
     }
 
-    @SuppressWarnings("null")
     private void applyHeaders(
         HttpHeaders requestHeaders,
         HttpHeaders customHeaders,
@@ -119,7 +115,6 @@ public class ServiceWebClient {
         setOrRemove(requestHeaders, USERNAME_HEADER, username);
     }
 
-    @SuppressWarnings("null")
     private void setOrRemove(HttpHeaders headers, String name, String value) {
         if (value == null) {
             headers.remove(name);

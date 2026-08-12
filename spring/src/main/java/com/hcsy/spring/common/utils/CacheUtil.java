@@ -81,7 +81,6 @@ public class CacheUtil {
             .then(publishInvalidation(options));
     }
 
-    @SuppressWarnings("null")
     @PreDestroy
     void dispose() {
         subscriptions.values().forEach(Disposable::dispose);
@@ -113,7 +112,6 @@ public class CacheUtil {
         subscriptions.computeIfAbsent(options.invalidationChannel(), this::subscribe);
     }
 
-    @SuppressWarnings("null")
     private Disposable subscribe(String channel) {
         return listenerContainer.receive(ChannelTopic.of(channel))
             .concatMap(ignoredMessage -> evictLocalByChannel(channel)
@@ -154,7 +152,6 @@ public class CacheUtil {
             .then();
     }
 
-    @SuppressWarnings("null")
     private Mono<Void> publishInvalidation(CacheOptions<?>... options) {
         return Flux.fromArray(options)
             .map(CacheOptions::invalidationChannel)

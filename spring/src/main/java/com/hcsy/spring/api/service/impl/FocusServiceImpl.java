@@ -36,7 +36,6 @@ public class FocusServiceImpl implements FocusService {
     private final UserRepository userRepository;
     private final TransactionalOperator transactionalOperator;
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "focus", description = "关注了1个用户")
     public Mono<Boolean> addFocus(Long userId, Long focusId) {
@@ -54,7 +53,6 @@ public class FocusServiceImpl implements FocusService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
     public Mono<Boolean> removeFocus(Long userId, Long focusId) {
@@ -70,14 +68,12 @@ public class FocusServiceImpl implements FocusService {
         return focusRepository.existsByUserIdAndFocusId(userId, focusId);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<PageDTO<FocusUserVO>> listUserFocuses(Long userId, long page, long size) {
         Flux<Focus> query = focusRepository.findByUserIdOrderByCreatedTimeDesc(userId, pageRequest(page, size));
         return buildPage(query, focusRepository.countByUserId(userId), page, size, Focus::getFocusId);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<PageDTO<FocusUserVO>> listUserFollowers(Long userId, long page, long size) {
         Flux<Focus> query = focusRepository.findByFocusIdOrderByCreatedTimeDesc(userId, pageRequest(page, size));
@@ -94,7 +90,6 @@ public class FocusServiceImpl implements FocusService {
         return focusRepository.countByFocusId(userId);
     }
 
-    @SuppressWarnings("null")
     private Mono<PageDTO<FocusUserVO>> buildPage(
         Flux<Focus> query,
         Mono<Long> total,

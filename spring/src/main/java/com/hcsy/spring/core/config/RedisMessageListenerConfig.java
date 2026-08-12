@@ -7,7 +7,6 @@ import org.springframework.data.redis.listener.ReactiveRedisMessageListenerConta
 
 @Configuration
 public class RedisMessageListenerConfig {
-    @SuppressWarnings("null")
     @Bean
     ReactiveRedisMessageListenerContainer reactiveRedisMessageListenerContainer(
         ReactiveRedisConnectionFactory connectionFactory) {

@@ -69,7 +69,6 @@ public class CategoryController {
         return categoryService.deleteCategory(id).thenReturn(Result.<Void>success());
     }
 
-    @SuppressWarnings("null")
     @Operation(summary = "批量删除分类（级联删除子分类）")
     @DeleteMapping("/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
@@ -113,7 +112,6 @@ public class CategoryController {
         return categoryService.deleteSubCategory(id).thenReturn(Result.<Void>success());
     }
 
-    @SuppressWarnings("null")
     @Operation(summary = "批量删除子分类")
     @DeleteMapping("/sub/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {

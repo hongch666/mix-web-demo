@@ -25,7 +25,6 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
     private final SubCategoryRepository subCategoryRepository;
     private final TransactionalOperator transactionalOperator;
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Long> addCategoryReference(CategoryReferenceCreateDTO dto) {
         BusinessException validationError = validateContent(dto.getType(), dto.getLink(), dto.getPdf());
@@ -42,7 +41,6 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
         return transactionalOperator.transactional(operation).map(CategoryReference::getId);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> updateCategoryReference(CategoryReferenceUpdateDTO dto) {
         BusinessException validationError = validateContent(dto.getType(), dto.getLink(), dto.getPdf());
@@ -62,7 +60,6 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteCategoryReference(Long subCategoryId) {
         Mono<Void> operation = categoryReferenceRepository.findBySubCategoryId(subCategoryId)

@@ -47,14 +47,12 @@ public class CommentsServiceImpl implements CommentsService {
         return listWithFilter(page, size, queryDTO, true);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<PageDTO<Comments>> listCommentsByUserId(long page, long size, Long userId) {
         Criteria criteria = Criteria.where("user_id").is(userId);
         return queryPage(criteria, page, size, Sort.by(Sort.Direction.DESC, "create_time"));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<PageDTO<Comments>> listCommentsByArticleId(
         long page, long size, Long articleId, String sortWay) {
@@ -70,7 +68,6 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
-    @SuppressWarnings("null")
     @Override
     public Flux<Comments> listAICommentsByArticleId(Long articleId) {
         return userRepository.findIdsByRole(Defaults.AI_ROLE).collectList().flatMapMany(userIds -> {
@@ -83,13 +80,11 @@ public class CommentsServiceImpl implements CommentsService {
         });
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Comments> save(Comments comments) {
         return transactionalOperator.transactional(commentsRepository.save(comments));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Comments> update(Comments comments) {
         return transactionalOperator.transactional(
@@ -103,13 +98,11 @@ public class CommentsServiceImpl implements CommentsService {
                 }));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Comments> getById(Long id) {
         return commentsRepository.findById(id);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteComment(Long id) {
         Mono<Void> operation = commentsRepository.findById(id)
@@ -118,7 +111,6 @@ public class CommentsServiceImpl implements CommentsService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteComments(List<Long> ids) {
         List<Long> distinctIds = ids == null ? List.of()
@@ -135,7 +127,6 @@ public class CommentsServiceImpl implements CommentsService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     private Mono<PageDTO<Comments>> listWithFilter(
         long page, long size, CommentsQueryDTO queryDTO, boolean aiOnly) {
         Flux<Long> articleIds = hasText(queryDTO.getArticleTitle())
@@ -176,9 +167,7 @@ public class CommentsServiceImpl implements CommentsService {
     private Mono<PageDTO<Comments>> queryPage(Criteria criteria, long page, long size, Sort sort) {
         long offset = Math.max(0, page - 1) * Math.max(1, size);
         int limit = (int) Math.max(1, Math.min(size, 1000));
-        @SuppressWarnings("null")
         Query dataQuery = Query.query(criteria).sort(sort).offset(offset).limit(limit);
-        @SuppressWarnings("null")
         Query countQuery = Query.query(criteria);
         Mono<List<Comments>> records = entityTemplate.select(Comments.class).matching(dataQuery).all().collectList();
         Mono<Long> total = entityTemplate.count(countQuery, Comments.class);

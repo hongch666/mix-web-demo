@@ -18,7 +18,6 @@ import reactor.core.publisher.Mono;
 @Component
 public class UserContextWebFilter implements WebFilter {
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();

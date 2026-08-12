@@ -54,7 +54,6 @@ public class DatabaseInitializer {
             .then();
     }
 
-    @SuppressWarnings("null")
     private Mono<Void> execute(String sql) {
         return databaseClient.sql(sql)
             .fetch()
@@ -62,7 +61,6 @@ public class DatabaseInitializer {
             .then();
     }
 
-    @SuppressWarnings("null")
     private Mono<Void> insertAIUserIfNotExists(Long id, String name, String email, String img) {
         return databaseClient.sql(Scripts.INSERT_AI_USER)
             .bind(0, id)

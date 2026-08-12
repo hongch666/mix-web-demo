@@ -203,7 +203,6 @@ public class TokenServiceImpl implements TokenService {
             .then();
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Integer> removeOtherSessions(Long userId, String currentAccessToken) {
         String currentSessionId = jwtUtil.extractSessionId(currentAccessToken);
@@ -221,7 +220,6 @@ public class TokenServiceImpl implements TokenService {
                     : Mono.just(removed)));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> cleanupExpiredTokens() {
         return redisUtil.getKeys(RedisKeys.userSessionsPattern())
@@ -231,7 +229,6 @@ public class TokenServiceImpl implements TokenService {
             .then();
     }
 
-    @SuppressWarnings("null")
     private Mono<Integer> cleanupUserSessions(String key) {
         Long userId;
         try {

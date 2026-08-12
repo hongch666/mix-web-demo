@@ -95,7 +95,6 @@ public class CommentsController {
         return commentsService.deleteComment(id).thenReturn(Result.<Void>success());
     }
 
-    @SuppressWarnings("null")
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = {
@@ -168,7 +167,6 @@ public class CommentsController {
             .map(Result::success);
     }
 
-    @SuppressWarnings("null")
     @GetMapping("/article/ai/{id}")
     @Operation(summary = "根据文章id获取AI评论", description = "根据文章id获取AI评论")
     @ApiLog("根据文章id获取AI评论")
@@ -202,7 +200,6 @@ public class CommentsController {
         return Mono.zip(user, article).map(relations -> mapComment(comment, relations.getT1(), relations.getT2()));
     }
 
-    @SuppressWarnings("null")
     private Mono<PageVO<CommentsVO>> toCommentsPage(PageDTO<Comments> source) {
         Set<Long> userIds = source.getRecords().stream().map(Comments::getUserId).collect(Collectors.toSet());
         Set<Long> articleIds = source.getRecords().stream().map(Comments::getArticleId).collect(Collectors.toSet());

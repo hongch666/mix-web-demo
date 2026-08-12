@@ -52,7 +52,6 @@ public class CategoryServiceImpl implements CategoryService {
             .flatMap(saved -> evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> updateCategory(CategoryUpdateDTO dto) {
         Mono<Void> databaseOperation = categoryRepository.findById(dto.getId())
@@ -66,7 +65,6 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteCategory(Long id) {
         Mono<Void> databaseOperation = categoryRepository.findById(id)
@@ -77,7 +75,6 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteCategories(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
@@ -105,7 +102,6 @@ public class CategoryServiceImpl implements CategoryService {
             .flatMap(saved -> evictAllCategoryCaches().thenReturn(saved.getId()));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> updateSubCategory(SubCategoryUpdateDTO dto) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(dto.getId())
@@ -120,7 +116,6 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteSubCategory(Long id) {
         Mono<Void> databaseOperation = subCategoryRepository.findById(id)
@@ -130,7 +125,6 @@ public class CategoryServiceImpl implements CategoryService {
             .then(evictAllCategoryCaches());
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Void> deleteSubCategories(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
@@ -161,13 +155,11 @@ public class CategoryServiceImpl implements CategoryService {
             }, () -> loadCategoryPage(page, size));
     }
 
-    @SuppressWarnings("null")
     @Override
     public Flux<Category> listByIds(Collection<Long> ids) {
         return categoryRepository.findAllById(ids);
     }
 
-    @SuppressWarnings("null")
     private Mono<CategoryVO> loadCategory(Long id) {
         return categoryRepository.findById(id).flatMap(category -> {
             CategoryVO vo = new CategoryVO();

@@ -25,7 +25,6 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     private final ArticleInteractionAssembler assembler;
     private final TransactionalOperator transactionalOperator;
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "like", description = "点赞了1篇文章")
     public Mono<Boolean> addLike(Long articleId, Long userId) {
@@ -43,7 +42,6 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "unlike", description = "取消点赞了1篇文章")
     public Mono<Boolean> removeLike(Long articleId, Long userId) {

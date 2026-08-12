@@ -57,14 +57,12 @@ public class ArticleServiceImpl implements ArticleService {
             articleRepository.countByStatus(1));
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "add", description = "创建了1篇文章")
     public Mono<Boolean> saveArticle(Article article) {
         return transactionalOperator.transactional(articleRepository.save(article)).thenReturn(true);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "edit", description = "编辑了1篇文章")
     public Mono<Boolean> updateArticle(Article article) {
@@ -81,7 +79,6 @@ public class ArticleServiceImpl implements ArticleService {
             .thenReturn(true);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "delete", description = "删除了1篇文章")
     public Mono<Boolean> deleteArticle(Long id) {
@@ -91,7 +88,6 @@ public class ArticleServiceImpl implements ArticleService {
         return transactionalOperator.transactional(operation).thenReturn(true);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "delete", description = "批量删除文章")
     public Mono<Boolean> deleteArticles(List<Long> ids) {
@@ -126,7 +122,6 @@ public class ArticleServiceImpl implements ArticleService {
         return listArticlesById(page, size, id, onlyPublished).flatMap(this::toArticleVoPage);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "publish", description = "发布了1篇文章")
     public Mono<Void> publishArticle(Long id) {
@@ -139,7 +134,6 @@ public class ArticleServiceImpl implements ArticleService {
         return transactionalOperator.transactional(operation);
     }
 
-    @SuppressWarnings("null")
     @Override
     @ArticleSync(action = "view", description = "浏览了1篇文章")
     public Mono<Void> addViewArticle(Long id) {
@@ -185,19 +179,16 @@ public class ArticleServiceImpl implements ArticleService {
         return articleRepository.findByTitleContaining(articleTitle);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Mono<Article> getById(Long id) {
         return articleRepository.findById(id);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Flux<Article> listByIds(Collection<Long> ids) {
         return articleRepository.findAllById(ids);
     }
 
-    @SuppressWarnings("null")
     private Mono<PageDTO<ArticleWithCategoryVO>> toArticleVoPage(PageDTO<Article> source) {
         List<Article> records = source.getRecords();
         if (records == null || records.isEmpty()) {

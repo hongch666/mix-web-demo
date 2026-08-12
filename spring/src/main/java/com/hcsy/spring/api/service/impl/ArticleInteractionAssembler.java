@@ -37,7 +37,6 @@ class ArticleInteractionAssembler {
     private final SubCategoryRepository subCategoryRepository;
     private final CategoryRepository categoryRepository;
 
-    @SuppressWarnings("null")
     Mono<List<ArticleCollectVO>> toCollectVOs(List<ArticleCollect> interactions) {
         return loadRelations(interactions.stream().map(ArticleCollect::getArticleId).collect(Collectors.toSet()))
             .map(relations -> interactions.stream()
@@ -45,7 +44,6 @@ class ArticleInteractionAssembler {
                 .toList());
     }
 
-    @SuppressWarnings("null")
     Mono<List<ArticleLikeVO>> toLikeVOs(List<ArticleLike> interactions) {
         return loadRelations(interactions.stream().map(ArticleLike::getArticleId).collect(Collectors.toSet()))
             .map(relations -> interactions.stream()
@@ -53,7 +51,6 @@ class ArticleInteractionAssembler {
                 .toList());
     }
 
-    @SuppressWarnings("null")
     private Mono<Relations> loadRelations(Set<Long> articleIds) {
         return articleRepository.findAllById(articleIds)
             .collectMap(Article::getId, Function.identity())

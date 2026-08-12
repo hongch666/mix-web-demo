@@ -103,7 +103,6 @@ public class UserController {
         return userService.deleteUserAndStatusById(id).thenReturn(Result.<Void>success());
     }
 
-    @SuppressWarnings("null")
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })

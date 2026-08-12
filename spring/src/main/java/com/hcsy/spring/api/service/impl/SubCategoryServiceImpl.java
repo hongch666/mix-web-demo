@@ -18,13 +18,11 @@ public class SubCategoryServiceImpl implements SubCategoryService {
 
     private final SubCategoryRepository subCategoryRepository;
 
-    @SuppressWarnings("null")
     @Override
     public Mono<SubCategory> getById(Long id) {
         return subCategoryRepository.findById(id);
     }
 
-    @SuppressWarnings("null")
     @Override
     public Flux<SubCategory> listByIds(Collection<Long> ids) {
         return subCategoryRepository.findAllById(ids);

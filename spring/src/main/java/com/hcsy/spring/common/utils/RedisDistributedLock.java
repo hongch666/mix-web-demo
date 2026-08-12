@@ -24,7 +24,6 @@ public class RedisDistributedLock {
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
-    @SuppressWarnings("null")
     public Mono<String> tryLock(String lockKey, long expireSeconds) {
         String lockValue = UUID.randomUUID().toString();
         return redisTemplate.opsForValue()
@@ -33,7 +32,6 @@ public class RedisDistributedLock {
             .map(ignored -> lockValue);
     }
 
-    @SuppressWarnings("null")
     public Mono<Boolean> unlock(String lockKey, String lockValue) {
         return redisTemplate.execute(UNLOCK_SCRIPT, List.of(lockKey), List.of(lockValue))
             .next()

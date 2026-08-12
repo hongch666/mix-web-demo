@@ -95,7 +95,6 @@ public class PermissionValidationAspect {
         return Mono.empty();
     }
 
-    @SuppressWarnings("null")
     private Mono<Long> validateBatchOwnership(String ids, String businessType) {
         List<Long> resourceIds;
         try {
@@ -193,7 +192,6 @@ public class PermissionValidationAspect {
     }
 
     private Object getBody(ProceedingJoinPoint joinPoint, String requestedName) {
-        @SuppressWarnings("null")
         String[] names = parameterNameDiscoverer.getParameterNames(
             ((MethodSignature) joinPoint.getSignature()).getMethod());
         Object[] arguments = joinPoint.getArgs();
