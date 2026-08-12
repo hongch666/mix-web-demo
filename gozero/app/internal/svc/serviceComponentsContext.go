@@ -5,6 +5,7 @@ import (
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
+	"app/internal/config"
 	"app/internal/middleware"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -23,9 +24,9 @@ func newHubContext(zLogger *utils.ZeroLogger) *HubContext {
 }
 
 // 创建 ClientContext 实例，初始化各业务客户端依赖
-func newClientContext(namingClient naming_client.INamingClient) *ClientContext {
+func newClientContext(namingClient naming_client.INamingClient, cfg config.Config) *ClientContext {
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(namingClient),
+		FastapiClient: fastapiClient.NewFastapiClient(namingClient, cfg.RemoteCall),
 	}
 }
 

@@ -27,10 +27,18 @@ import (
 
 const (
 	defaultRequestTimeout = 3 * time.Second
-	maxRetryAttempts      = 3
-	initialRetryBackoff   = 200 * time.Millisecond
-	maxRetryBackoff       = 2 * time.Second
+	defaultMaxRetries     = 3
+	defaultInitialBackoff = 200 * time.Millisecond
+	defaultMaxBackoff     = 2 * time.Second
 )
+
+// RemoteCallConfig 远程调用配置
+type RemoteCallConfig struct {
+	Timeout        time.Duration
+	MaxRetries     int
+	InitialBackoff time.Duration
+	MaxBackoff     time.Duration
+}
 
 type ServiceDiscovery struct {
 	namingClient naming_client.INamingClient
@@ -38,22 +46,33 @@ type ServiceDiscovery struct {
 	serviceMap   sync.Map          // 服务实例缓存
 	mu           sync.Mutex        // 保证线程安全
 	lbIndex      map[string]uint64 // 负载均衡轮询索引
+	config       RemoteCallConfig  // 远程调用配置
 }
 
-func NewServiceDiscovery(client naming_client.INamingClient) *ServiceDiscovery {
+func NewServiceDiscovery(client naming_client.INamingClient, cfg ...RemoteCallConfig) *ServiceDiscovery {
+	rc := RemoteCallConfig{
+		Timeout:        defaultRequestTimeout,
+		MaxRetries:     defaultMaxRetries,
+		InitialBackoff: defaultInitialBackoff,
+		MaxBackoff:     defaultMaxBackoff,
+	}
+	if len(cfg) > 0 {
+		rc = cfg[0]
+	}
 	return &ServiceDiscovery{
 		namingClient: client,
 		httpClient: &http.Client{
-			Timeout: defaultRequestTimeout,
+			Timeout: rc.Timeout,
 			Transport: &http.Transport{
 				MaxIdleConns:          100,
 				MaxIdleConnsPerHost:   20,
 				IdleConnTimeout:       90 * time.Second,
 				TLSHandshakeTimeout:   5 * time.Second,
-				ResponseHeaderTimeout: defaultRequestTimeout,
+				ResponseHeaderTimeout: rc.Timeout,
 			},
 		},
 		lbIndex: make(map[string]uint64),
+		config:  rc,
 	}
 }
 
@@ -117,18 +136,18 @@ func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string,
 func (sd *ServiceDiscovery) callWithRetry(ctx context.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
 	var lastErr error
 
-	for attempt := 1; attempt <= maxRetryAttempts; attempt++ {
+	for attempt := 1; attempt <= sd.config.MaxRetries; attempt++ {
 		result, err := sd.doCall(ctx, serviceName, path, opts)
 		if err == nil {
 			return result, nil
 		}
 
 		lastErr = err
-		if !shouldRetry(err) || attempt == maxRetryAttempts {
+		if !shouldRetry(err) || attempt == sd.config.MaxRetries {
 			break
 		}
 
-		backoff := calculateBackoff(attempt)
+		backoff := calculateBackoff(attempt, sd.config.InitialBackoff, sd.config.MaxBackoff)
 		timer := time.NewTimer(backoff)
 		select {
 		case <-ctx.Done():
@@ -274,10 +293,10 @@ func shouldRetry(err error) bool {
 		strings.Contains(errMsg, "EOF")
 }
 
-func calculateBackoff(attempt int) time.Duration {
-	backoff := float64(initialRetryBackoff) * math.Pow(2, float64(attempt-1))
-	if backoff > float64(maxRetryBackoff) {
-		backoff = float64(maxRetryBackoff)
+func calculateBackoff(attempt int, initialBackoff, maxBackoff time.Duration) time.Duration {
+	backoff := float64(initialBackoff) * math.Pow(2, float64(attempt-1))
+	if backoff > float64(maxBackoff) {
+		backoff = float64(maxBackoff)
 	}
 	return time.Duration(backoff)
 }

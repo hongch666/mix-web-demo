@@ -24,8 +24,8 @@ database:
     dbname: ${DB_MYSQL_DBNAME:demo}
     charset: ${DB_MYSQL_CHARSET:utf8mb4}
     loc: ${DB_MYSQL_LOC:Local}
-    sqlLogEnabled: ${DB_SQL_LOG_ENABLED:true}       # SQL普通日志开关，默认启用
-    slowThreshold: ${DB_SQL_SLOW_THRESHOLD:500}      # 慢查询阈值(毫秒)，默认500ms
+    sqlLogEnabled: ${DB_SQL_LOG_ENABLED:true} # SQL普通日志开关，默认启用
+    slowThreshold: ${DB_SQL_SLOW_THRESHOLD:500} # 慢查询阈值(毫秒)，默认500ms
   es:
     host: ${DB_ES_HOST:127.0.0.1}
     port: ${DB_ES_PORT:9200}
@@ -59,4 +59,12 @@ internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000}
 
-
+# 远程调用配置
+remote-call:
+  timeout: 3000 # 请求超时时间（毫秒）
+  maxRetries: 3 # 最大重试次数
+  initialBackoff: 200 # 初始退避时间（毫秒）
+  maxBackoff: 2000 # 最大退避时间（毫秒）
+  circuitBreaker:
+    failureThreshold: 3 # 失败阈值（连续失败次数）
+    recoveryTimeout: 15000 # 恢复超时时间（毫秒）

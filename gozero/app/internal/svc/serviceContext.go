@@ -47,7 +47,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		InfrastructureContext: infrastructure,
 		ModelContext:          models,
 		HubContext:            newHubContext(zLogger),
-		ClientContext:         newClientContext(infrastructure.NamingClient),
+		ClientContext:         newClientContext(infrastructure.NamingClient, c),
 		LoggerContext:         newLoggerContext(zLogger),
 		MiddlewareContext:     newMiddlewareContext(zLogger),
 	}

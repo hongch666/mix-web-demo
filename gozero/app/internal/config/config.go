@@ -17,6 +17,7 @@ type Config struct {
 	MQ            MQConfig            `json:"mq"`
 	Logs          LogsConfig          `json:"logs"`
 	InternalToken InternalTokenConfig `json:"internal-token"`
+	RemoteCall    RemoteCallConfig    `json:"remote-call"`
 }
 
 type NacosConfig struct {
@@ -96,4 +97,17 @@ type InternalTokenConfig struct {
 
 type LogsConfig struct {
 	Path string `json:"path"`
+}
+
+type RemoteCallConfig struct {
+	Timeout        int                  `json:"timeout"`        // 请求超时时间（毫秒）
+	MaxRetries     int                  `json:"maxRetries"`     // 最大重试次数
+	InitialBackoff int                  `json:"initialBackoff"` // 初始退避时间（毫秒）
+	MaxBackoff     int                  `json:"maxBackoff"`     // 最大退避时间（毫秒）
+	CircuitBreaker CircuitBreakerConfig `json:"circuitBreaker"` // 熔断器配置
+}
+
+type CircuitBreakerConfig struct {
+	FailureThreshold int `json:"failureThreshold"` // 失败阈值
+	RecoveryTimeout  int `json:"recoveryTimeout"`  // 恢复超时时间（毫秒）
 }
