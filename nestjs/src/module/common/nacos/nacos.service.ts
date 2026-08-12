@@ -55,7 +55,9 @@ export class NacosService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // 加载远程调用配置
-    this.remoteCallConfig = this.configService.get<RemoteCallConfig>("remote-call") || {
+    this.remoteCallConfig = this.configService.get<RemoteCallConfig>(
+      "remote-call",
+    ) || {
       timeout: 3000,
       maxRetries: 3,
       circuitBreaker: {
@@ -220,15 +222,12 @@ export class NacosService implements OnModuleInit {
 
     // 创建 opossum 熔断器，使用配置值
     const cbConfig = this.remoteCallConfig.circuitBreaker;
-    const breaker = new CircuitBreaker(
-      async (fn: () => Promise<any>) => fn(),
-      {
-        timeout: cbConfig.timeout, // 请求超时时间
-        errorThresholdPercentage: cbConfig.errorThresholdPercentage, // 错误率阈值
-        resetTimeout: cbConfig.resetTimeout, // 熔断器重置时间
-        volumeThreshold: cbConfig.volumeThreshold, // 最小请求数
-      },
-    );
+    const breaker = new CircuitBreaker(async (fn: () => Promise<any>) => fn(), {
+      timeout: cbConfig.timeout, // 请求超时时间
+      errorThresholdPercentage: cbConfig.errorThresholdPercentage, // 错误率阈值
+      resetTimeout: cbConfig.resetTimeout, // 熔断器重置时间
+      volumeThreshold: cbConfig.volumeThreshold, // 最小请求数
+    });
 
     // 监听熔断器事件
     breaker.on("open", () => {
