@@ -62,6 +62,10 @@ internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}
   expiration: ${INTERNAL_TOKEN_EXPIRATION:60000} # 毫秒数（60秒）
 
+# 微服务间调用统一超时时间（所有 client 共用，默认 30 秒）
+service-client:
+  timeout: 30s
+
 user:
   default-password: ${USER_DEFAULT_PASSWORD:}
   reset-password: ${USER_RESET_PASSWORD:}

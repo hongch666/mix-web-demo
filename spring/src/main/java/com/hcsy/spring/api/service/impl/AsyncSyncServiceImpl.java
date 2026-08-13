@@ -1,6 +1,5 @@
 package com.hcsy.spring.api.service.impl;
 
-import java.time.Duration;
 import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
@@ -16,14 +15,10 @@ import com.hcsy.spring.infra.client.GoZeroClient;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
 
 @Service
 @RequiredArgsConstructor
 public class AsyncSyncServiceImpl implements AsyncSyncService {
-
-    private static final int MAX_RETRY_TIMES = 3;
-    private static final Duration RETRY_DELAY = Duration.ofSeconds(1);
 
     private final GoZeroClient goZeroClient;
     private final FastAPIClient fastAPIClient;
@@ -36,6 +31,7 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         long startTime = System.currentTimeMillis();
         logger.info(user + Messages.SYNC);
 
+        // 重试与熔断统一由底层 ServiceWebClient 的 resilience4j 处理，此处不再叠加重试，避免重复重试放大调用次数与耗时
         Mono<Void> es = reactiveCall(goZeroClient::syncES, Messages.SYNC_ES_SUCCESS);
         Mono<Void> vector = reactiveCall(fastAPIClient::syncVector, Messages.SYNC_VECTOR_SUCCESS);
         Mono<Void> cache = reactiveCall(fastAPIClient::clearAnalyzeCaches, Messages.CLEAR_CACHE_SUCCESS);
@@ -57,9 +53,6 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
             .flatMap(result -> result.getCode() != null && result.getCode() == HttpCode.OK
                 ? Mono.empty()
                 : Mono.error(new IllegalStateException(result.getMsg())))
-            .retryWhen(Retry.fixedDelay(MAX_RETRY_TIMES, RETRY_DELAY)
-                .doBeforeRetry(signal -> logger.warning(Messages.SYNC_TASK_RETRY,
-                    signal.totalRetries() + 1, signal.failure().getMessage())))
             .doOnSuccess(ignored -> logger.info(successMessage))
             .then();
     }

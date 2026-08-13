@@ -1,7 +1,5 @@
 package com.hcsy.spring.infra.client;
 
-import java.time.Duration;
-
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +20,7 @@ public class NestjsClient {
         ServiceRequestOptions options = ServiceRequestOptions.builder()
             .body(dto)
             .build();
-        return serviceWebClient.request(HttpMethod.POST, "nestjs", "/email/send-code", options, Duration.ofSeconds(3),
+        return serviceWebClient.request(HttpMethod.POST, "nestjs", "/email/send-code", options,
             Messages.NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG);
     }
 }

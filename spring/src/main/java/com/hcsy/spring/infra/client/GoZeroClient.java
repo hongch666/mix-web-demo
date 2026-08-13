@@ -1,7 +1,5 @@
 package com.hcsy.spring.infra.client;
 
-import java.time.Duration;
-
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +17,6 @@ public class GoZeroClient {
 
     public Mono<Result<?>> syncES() {
         return serviceWebClient.request(HttpMethod.POST, "gozero", "/task/syncer", ServiceRequestOptions.empty(),
-            Duration.ofSeconds(3),
             Messages.ES_SERVICE_UNAVAILABLE);
     }
 }

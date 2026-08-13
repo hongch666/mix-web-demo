@@ -19,6 +19,7 @@ import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.core.properties.ServiceClientProperties;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
@@ -44,6 +45,20 @@ public class ServiceWebClient {
     private final SimpleLogger logger;
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final RetryRegistry retryRegistry;
+    private final ServiceClientProperties serviceClientProperties;
+
+    /**
+     * 使用配置中的统一超时时间发起请求
+     */
+    public Mono<Result<?>> request(
+        HttpMethod method,
+        String serviceName,
+        String path,
+        ServiceRequestOptions options,
+        String fallbackMessage) {
+        return request(method, serviceName, path, options,
+            serviceClientProperties.getTimeout(), fallbackMessage);
+    }
 
     public Mono<Result<?>> request(
         HttpMethod method,
