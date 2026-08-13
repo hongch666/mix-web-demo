@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"app/common/client"
 	"app/common/constants"
-	"app/internal/config"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 )
@@ -21,16 +19,11 @@ type FastapiClient struct {
 }
 
 // NewFastapiClient 创建 FastAPI 客户端
-func NewFastapiClient(nc naming_client.INamingClient, cfg config.RemoteCallConfig) *FastapiClient {
+func NewFastapiClient(nc naming_client.INamingClient) *FastapiClient {
 	return &FastapiClient{
 		serviceName:  "fastapi",
 		namingClient: nc,
-		serviceDisc: client.NewServiceDiscovery(nc, client.RemoteCallConfig{
-			Timeout:        time.Duration(cfg.Timeout) * time.Millisecond,
-			MaxRetries:     cfg.MaxRetries,
-			InitialBackoff: time.Duration(cfg.InitialBackoff) * time.Millisecond,
-			MaxBackoff:     time.Duration(cfg.MaxBackoff) * time.Millisecond,
-		}),
+		serviceDisc:  client.NewServiceDiscovery(nc),
 	}
 }
 
