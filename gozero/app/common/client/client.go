@@ -57,7 +57,19 @@ func NewServiceDiscovery(client naming_client.INamingClient, cfg ...RemoteCallCo
 		MaxBackoff:     defaultMaxBackoff,
 	}
 	if len(cfg) > 0 {
-		rc = cfg[0]
+		provided := cfg[0]
+		if provided.Timeout > 0 {
+			rc.Timeout = provided.Timeout
+		}
+		if provided.MaxRetries > 0 {
+			rc.MaxRetries = provided.MaxRetries
+		}
+		if provided.InitialBackoff > 0 {
+			rc.InitialBackoff = provided.InitialBackoff
+		}
+		if provided.MaxBackoff > 0 {
+			rc.MaxBackoff = provided.MaxBackoff
+		}
 	}
 	return &ServiceDiscovery{
 		namingClient: client,
@@ -183,7 +195,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 		return Result{}, err
 	}
 
-	attemptCtx, cancel := context.WithTimeout(ctx, defaultRequestTimeout)
+	attemptCtx, cancel := context.WithTimeout(ctx, sd.config.Timeout)
 	defer cancel()
 
 	var body io.Reader

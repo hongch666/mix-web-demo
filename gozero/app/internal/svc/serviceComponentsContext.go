@@ -1,10 +1,14 @@
 package svc
 
 import (
+	"time"
+
+	"app/common/client"
 	"app/common/constants"
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
+	"app/internal/config"
 	"app/internal/middleware"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -23,9 +27,20 @@ func newHubContext(zLogger *utils.ZeroLogger) *HubContext {
 }
 
 // 创建 ClientContext 实例，初始化各业务客户端依赖
-func newClientContext(namingClient naming_client.INamingClient) *ClientContext {
+func newClientContext(
+	namingClient naming_client.INamingClient,
+	remoteCallConfig config.RemoteCallConfig,
+) *ClientContext {
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(namingClient),
+		FastapiClient: fastapiClient.NewFastapiClient(
+			namingClient,
+			client.RemoteCallConfig{
+				Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
+				MaxRetries:     remoteCallConfig.MaxRetries,
+				InitialBackoff: time.Duration(remoteCallConfig.InitialBackoff) * time.Millisecond,
+				MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
+			},
+		),
 	}
 }
 

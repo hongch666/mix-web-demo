@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"app/common/constants"
 	"app/common/exceptions"
@@ -271,14 +270,7 @@ func (l *SearchArticlesLogic) fetchVectorEnhance(
 		Mode:            mode,
 	}
 
-	ctx := l.ctx
-	if constants.SEARCH_VECTOR_TIMEOUT_MS > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(constants.SEARCH_VECTOR_TIMEOUT_MS)*time.Millisecond)
-		defer cancel()
-	}
-
-	result, err := l.svcCtx.FastapiClient.EnhanceVector(ctx, vectorReq)
+	result, err := l.svcCtx.FastapiClient.EnhanceVector(l.ctx, vectorReq)
 	if err != nil {
 		l.Warningf(constants.VECTOR_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)
@@ -320,14 +312,7 @@ func (l *SearchArticlesLogic) fetchGraphEnhance(
 		Mode:            mode,
 	}
 
-	ctx := l.ctx
-	if constants.SEARCH_GRAPH_TIMEOUT_MS > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(l.ctx, time.Duration(constants.SEARCH_GRAPH_TIMEOUT_MS)*time.Millisecond)
-		defer cancel()
-	}
-
-	graphResult, err := l.svcCtx.FastapiClient.EnhanceGraph(ctx, graphReq)
+	graphResult, err := l.svcCtx.FastapiClient.EnhanceGraph(l.ctx, graphReq)
 	if err != nil {
 		l.Warningf(constants.GRAPH_ENHANCE_DEGRADE_LOG,
 			keyword, userID, len(limitedIDs), err)

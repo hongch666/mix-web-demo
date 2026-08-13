@@ -4,13 +4,9 @@ import "time"
 
 // 配置默认值类 — 锁过期时间等
 const (
-	// 向量增强控制
-	SEARCH_VECTOR_TIMEOUT_MS      = 1000
+	// 搜索增强控制
 	SEARCH_VECTOR_CANDIDATE_LIMIT = 50
-
-	// 图谱增强控制
-	SEARCH_GRAPH_TIMEOUT_MS      = 800
-	SEARCH_GRAPH_CANDIDATE_LIMIT = 50
+	SEARCH_GRAPH_CANDIDATE_LIMIT  = 50
 )
 
 // WebSocket 相关默认值
