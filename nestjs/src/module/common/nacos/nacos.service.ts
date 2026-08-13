@@ -26,6 +26,8 @@ interface CallOptions {
 interface RemoteCallConfig {
   timeout: number;
   maxRetries: number;
+  initialBackoff: number;
+  maxBackoff: number;
   circuitBreaker: {
     timeout: number;
     errorThresholdPercentage: number;
@@ -62,8 +64,11 @@ export class NacosService implements OnModuleInit {
     axiosRetry(axios, {
       retries: this.remoteCallConfig.maxRetries,
       retryDelay: (retryCount: number) => {
-        // 指数退避：1s, 2s, 4s
-        return Math.pow(2, retryCount - 1) * 1000;
+        // 指数退避：使用配置的初始与最大退避时间
+        return Math.min(
+          this.remoteCallConfig.initialBackoff * Math.pow(2, retryCount - 1),
+          this.remoteCallConfig.maxBackoff,
+        );
       },
       retryCondition: (error) => {
         // 只对网络错误和 5xx 错误重试
@@ -308,7 +313,7 @@ export class NacosService implements OnModuleInit {
           method: opts.method,
           data: opts.body,
           headers,
-          timeout: 3000,
+          timeout: this.remoteCallConfig.timeout,
         });
 
         // 校验业务响应码

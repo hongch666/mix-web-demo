@@ -87,6 +87,8 @@ internal-token:
 remote-call:
   timeout: 3000 # 请求超时时间（毫秒）
   maxRetries: 3 # 最大重试次数
+  initialBackoff: 200 # 初始退避时间（毫秒）
+  maxBackoff: 2000 # 最大退避时间（毫秒）
   circuitBreaker:
     timeout: 3000 # 单次请求超时时间（毫秒）
     errorThresholdPercentage: 50 # 错误率阈值（百分比）
