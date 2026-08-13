@@ -64,6 +64,8 @@ dependencies {
     // 响应式服务发现客户端
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+    // resilience4j reactor 适配器，提供 CircuitBreakerOperator / RetryOperator 等响应式运算符
+    implementation 'io.github.resilience4j:resilience4j-reactor'
 
     // Tools
     compileOnly 'org.projectlombok:lombok'
