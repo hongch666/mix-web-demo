@@ -89,6 +89,7 @@ internal_token:
 # 远程调用配置
 remote_call:
   timeout: 5 # 请求超时时间（秒）
+  upload_timeout: 300 # 文件上传超时时间（秒），上传比普通接口耗时更长
   max_retries: 3 # 最大重试次数
   circuit_breaker:
     failure_threshold: 3 # 失败阈值（连续失败次数）
