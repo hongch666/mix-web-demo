@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 
 import httpx
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
@@ -12,11 +13,11 @@ from app.core.constants import Messages
 from app.core.db import (
     AsyncSessionLocal,
     RabbitMQClient,
-    create_tables_async,
     async_engine,
+    create_tables_async,
     get_clickhouse_connection_pool,
-    get_rabbitmq_client,
     get_neo4j_client,
+    get_rabbitmq_client,
 )
 from app.internal.agents.langsmith import (
     init_langsmith,
@@ -25,7 +26,6 @@ from app.internal.agents.langsmith import (
 )
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 
 # 加载服务器配置
@@ -60,8 +60,10 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     scheduler = start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
+    remote_call_config: Dict[str, Any] = load_config("remote_call")
+    default_timeout: float = float(remote_call_config.get("timeout", 5))
     shared_http_client = httpx.AsyncClient(
-        timeout=httpx.Timeout(10.0, connect=5.0),
+        timeout=httpx.Timeout(default_timeout, connect=min(5.0, default_timeout)),
         limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
     )
     set_shared_http_client(shared_http_client)

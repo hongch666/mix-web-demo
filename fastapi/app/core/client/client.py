@@ -160,8 +160,13 @@ async def _request_remote_service(
     params: Optional[Dict[str, Any]],
     data: Optional[Dict[str, Any]],
     json: Optional[Dict[str, Any]],
+    timeout: Any,
 ) -> Any:
-    """执行一次真正的异步远程请求"""
+    """执行一次真正的异步远程请求
+
+    timeout 透传到 client.request，确保即使使用 lifespan 中创建的共享客户端，
+    也能按配置默认超时（remote_call.timeout）或调用方显式传入的超时覆盖客户端级默认值。
+    """
     response: httpx.Response = await client.request(
         method=method,
         url=url,
@@ -169,6 +174,7 @@ async def _request_remote_service(
         params=params,
         data=data,
         json=json,
+        timeout=timeout,
     )
     response.raise_for_status()
     return response.json()
@@ -304,6 +310,7 @@ async def _call_with_client(
                     params=params,
                     data=data,
                     json=json,
+                    timeout=timeout,
                 )
                 # 校验业务响应码
                 if isinstance(result, dict) and result.get("code") != HttpCode.OK:
