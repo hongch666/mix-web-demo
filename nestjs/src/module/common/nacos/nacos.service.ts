@@ -55,18 +55,8 @@ export class NacosService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // 加载远程调用配置
-    this.remoteCallConfig = this.configService.get<RemoteCallConfig>(
-      "remote-call",
-    ) || {
-      timeout: 3000,
-      maxRetries: 3,
-      circuitBreaker: {
-        timeout: 3000,
-        errorThresholdPercentage: 50,
-        resetTimeout: 15000,
-        volumeThreshold: 5,
-      },
-    };
+    this.remoteCallConfig =
+      this.configService.get<RemoteCallConfig>("remote-call")!;
 
     // 配置 axios 重试机制
     axiosRetry(axios, {
