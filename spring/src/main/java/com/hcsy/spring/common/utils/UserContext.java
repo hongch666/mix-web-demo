@@ -4,8 +4,9 @@ import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
 /**
- * 基于 Reactor Context 的请求上下文
- * 替代原有的 InheritableThreadLocal 实现
+ * 基于 Reactor Context 的请求上下文（WebFlux 响应式实现）
+ * 通过响应式调用链传播用户信息，规避线程池切换导致的上下文丢失
+ * 替代原有的 InheritableThreadLocal 实现（Servlet 阻塞模型依赖线程绑定）
  */
 public class UserContext {
 

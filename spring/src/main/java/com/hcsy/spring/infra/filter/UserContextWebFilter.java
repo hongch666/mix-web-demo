@@ -11,9 +11,9 @@ import com.hcsy.spring.common.utils.UserContext;
 import reactor.core.publisher.Mono;
 
 /**
- * 用户上下文 WebFilter
- * 替代原有的 UserInfoInterceptor + WebConfig
- * 将请求用户信息写入 Reactor Context
+ * 用户上下文 WebFilter（WebFlux 响应式实现）
+ * 从请求头解析用户信息并写入 Reactor Context
+ * 替代原有的 UserInfoInterceptor + WebConfig（Servlet MVC 时代的拦截器 + 配置类）
  */
 @Component
 public class UserContextWebFilter implements WebFilter {
