@@ -1,7 +1,7 @@
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import VectorSearchServiceDep
-from app.internal.schemas import VectorSearchEnhanceReq
+from app.internal.schemas import VectorSearchEnhanceReq, VectorSearchEnhanceResp
 
 from fastapi import APIRouter, Request
 
@@ -26,5 +26,5 @@ async def vector_search_enhance(
 ) -> ApiResponse:
     """向量搜索增强接口"""
 
-    result = await vectorSearchService.enhance(req)
+    result: VectorSearchEnhanceResp = await vectorSearchService.enhance(req)
     return success(result)

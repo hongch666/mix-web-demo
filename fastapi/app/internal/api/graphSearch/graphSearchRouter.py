@@ -1,7 +1,7 @@
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import GraphSearchServiceDep
-from app.internal.schemas import GraphSearchEnhanceReq
+from app.internal.schemas import GraphSearchEnhanceReq, GraphSearchEnhanceResp
 
 from fastapi import APIRouter, Request
 
@@ -26,5 +26,5 @@ async def graph_search_enhance(
 ) -> ApiResponse:
     """知识图谱搜索增强接口"""
 
-    result = await graphSearchService.enhance(req)
+    result: GraphSearchEnhanceResp = await graphSearchService.enhance(req)
     return success(result)
