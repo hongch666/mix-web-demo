@@ -1,5 +1,6 @@
 package com.hcsy.gateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.factory.rewrite.RewriteFunction;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,12 @@ import reactor.core.publisher.Mono;
 @Configuration
 public class SwaggerRewriteConfig {
 
+    /**
+     * 网关监听端口，用于请求 URI 未携带端口时的回退
+     */
+    @Value("${server.port}")
+    private int serverPort;
+
     @Bean
     RewriteFunction<String, String> swaggerRewriteFunction() {
         return new RewriteFunction<String, String>() {
@@ -23,7 +30,7 @@ public class SwaggerRewriteConfig {
                 String gatewayHost = exchange.getRequest().getURI().getHost();
                 int gatewayPort = exchange.getRequest().getURI().getPort();
                 if (gatewayPort == -1) {
-                    gatewayPort = 8080;
+                    gatewayPort = serverPort;
                 }
                 String gatewayUrl = "http://" + gatewayHost + ":" + gatewayPort;
                 // 替换 Spring 服务返回的 servers 地址

@@ -19,7 +19,7 @@ public class RateLimitProperties {
     /**
      * 是否启用限流
      */
-    private boolean enabled = true;
+    private boolean enabled;
 
     /**
      * 通用限流配置，作为所有路径配置的默认值
@@ -65,17 +65,17 @@ public class RateLimitProperties {
         /**
          * 令牌桶容量
          */
-        private Integer capacity = 100;
+        private Integer capacity;
 
         /**
          * 令牌填充速率 (每秒填充多少个令牌)
          */
-        private Integer refillRate = 10;
+        private Integer refillRate;
 
         /**
          * 是否启用（可单独控制某些路径的启用/禁用）
          */
-        private Boolean enabled = true;
+        private Boolean enabled;
 
         /**
          * 限流超出时的响应消息
