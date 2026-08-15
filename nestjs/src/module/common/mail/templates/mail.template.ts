@@ -15,7 +15,7 @@ export function buildEmailContent(
   const now = new Date();
   const formattedTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
-  let title = Messages.EMAIL_VERIFICATION_CODE_SUBJECT;
+  let title: string = Messages.EMAIL_VERIFICATION_CODE_SUBJECT;
   switch (type) {
     case "register":
       title = Messages.EMAIL_VERIFICATION_CODE_REGISTER_SUBJECT;

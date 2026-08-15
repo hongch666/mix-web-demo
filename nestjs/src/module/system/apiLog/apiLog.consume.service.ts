@@ -64,7 +64,7 @@ export class ApiLogConsumerService {
       }
 
       // 转换为 DTO 格式
-      let responseTime = normalizedData.responseTime;
+      let responseTime: number = normalizedData.responseTime;
       if (responseTime < 0) {
         logger.warning(Messages.API_LOG_RESPONSE_TIME_CORRECTED(responseTime));
         responseTime = 0;
@@ -88,7 +88,7 @@ export class ApiLogConsumerService {
       // 保存到数据库
       await this.apiLogService.create(dto);
       logger.info(Messages.API_SAVE);
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       logger.error(Messages.API_LOG_PROCESS_FAILED(errorMessage));

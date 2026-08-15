@@ -16,7 +16,7 @@ export interface ApiLogOptions {
  * @ApiLog('新增日志')
  * @ApiLog({ message: '查询日志', includeParams: true, logLevel: 'info' })
  */
-export const ApiLog = (options: ApiLogOptions | string) => {
+export const ApiLog = (options: ApiLogOptions | string): MethodDecorator => {
   // 如果传入的是字符串，转换为配置对象
   const config: ApiLogOptions =
     typeof options === "string"

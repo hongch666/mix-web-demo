@@ -1,4 +1,7 @@
-import { RabbitMQModule } from "@golevelup/nestjs-rabbitmq";
+import {
+  RabbitMQConfig,
+  RabbitMQModule,
+} from "@golevelup/nestjs-rabbitmq";
 import { MiddlewareConsumer, Module, RequestMethod } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
@@ -95,7 +98,7 @@ interface MongoDbConfig {
     RabbitMQModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
+      useFactory: (configService: ConfigService): RabbitMQConfig => {
         const host: string = configService.get<string>("rabbitmq.host")!;
         const port: number = configService.get<number>("rabbitmq.port")!;
         const username: string =

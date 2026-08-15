@@ -24,7 +24,8 @@ export class GithubController {
   async authorize(
     @Query() query: GithubAuthorizeQueryDto,
   ): Promise<ApiResponse<{ authorizeUrl: string; state: string }>> {
-    const data = await this.githubService.buildAuthorizeUrl(query);
+    const data: { authorizeUrl: string; state: string } =
+      await this.githubService.buildAuthorizeUrl(query);
     return success(data);
   }
 
@@ -38,7 +39,7 @@ export class GithubController {
     @Query() query: GithubCallbackQueryDto,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const redirectUrl = await this.githubService.handleCallback(query);
+    const redirectUrl: string = await this.githubService.handleCallback(query);
     reply.code(HttpCode.FOUND).header("Location", redirectUrl).send();
   }
 }

@@ -150,8 +150,8 @@ export class OssService implements OnModuleInit {
       );
     }
 
-    const uploadPromise = this.client.put(ossFile, localFile);
-    const timeoutPromise = new Promise((_, reject) =>
+    const uploadPromise: Promise<object> = this.client.put(ossFile, localFile);
+    const timeoutPromise: Promise<never> = new Promise((_, reject) =>
       setTimeout(
         () => reject(new Error(Messages.OSS_PUT_OPERATION_TIMEOUT)),
         this.putTimeout,

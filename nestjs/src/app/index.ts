@@ -1,5 +1,6 @@
 import multipart from "@fastify/multipart";
 import { ValidationPipe } from "@nestjs/common";
+import type { ValidationError } from "class-validator";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
@@ -96,7 +97,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
     new ValidationPipe({
       transform: true,
       transformOptions: { enableImplicitConversion: true },
-      exceptionFactory: (errors) => {
+      exceptionFactory: (errors: ValidationError[]) => {
         const message = extractValidationMessage(errors);
         return new BusinessException(
           message,
