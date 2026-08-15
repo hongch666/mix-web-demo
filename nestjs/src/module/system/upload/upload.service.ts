@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import * as fs from "fs";
-import * as os from "os";
 import * as path from "path";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
@@ -170,10 +169,8 @@ export class UploadService {
       }
     }
 
-    // 从配置中获取上传目录，如果没有配置则使用系统临时目录
-    let uploadDir: string =
-      this.configService.get<string>("files.upload") ||
-      path.join(os.tmpdir(), "nestjs-upload");
+    // 从配置中获取上传目录
+    let uploadDir: string = this.configService.get<string>("files.upload")!;
 
     // 如果是相对路径，转换为绝对路径
     if (!path.isAbsolute(uploadDir)) {

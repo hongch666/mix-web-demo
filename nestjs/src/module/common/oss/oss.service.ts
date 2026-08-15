@@ -22,7 +22,7 @@ export class OssService implements OnModuleInit {
   private endpoint!: string;
   private accessKeyId!: string;
   private accessKeySecret!: string;
-  private putTimeout: number = 120000; // 默认 120 秒，通过 config 覆盖
+  private putTimeout!: number;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -55,9 +55,7 @@ export class OssService implements OnModuleInit {
 
     // 读取上传超时配置（秒转换为毫秒）
     const putTimeoutSec: number = Number(
-      (config["put_timeout"] as string) ||
-        (config["putTimeout"] as string) ||
-        "120",
+      (config["put_timeout"] as string) || (config["putTimeout"] as string),
     );
     this.putTimeout = Math.max(putTimeoutSec, 10) * 1000; // 最少 10 秒
 
