@@ -13,9 +13,9 @@ import org.springframework.context.annotation.Configuration;
 public class ServiceClientProperties {
 
     /**
-     * 微服务间调用统一的请求超时时间，默认 30 秒
+     * 微服务间调用统一的请求超时时间
      */
-    private Duration timeout = Duration.ofSeconds(30);
+    private Duration timeout;
 
     public Duration getTimeout() {
         return timeout;
