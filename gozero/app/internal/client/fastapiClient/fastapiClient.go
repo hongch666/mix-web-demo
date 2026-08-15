@@ -21,12 +21,12 @@ type FastapiClient struct {
 // NewFastapiClient 创建 FastAPI 客户端
 func NewFastapiClient(
 	nc naming_client.INamingClient,
-	remoteCallConfig ...client.RemoteCallConfig,
+	remoteCallConfig client.RemoteCallConfig,
 ) *FastapiClient {
 	return &FastapiClient{
 		serviceName:  "fastapi",
 		namingClient: nc,
-		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig...),
+		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig),
 	}
 }
 

@@ -25,13 +25,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-const (
-	defaultRequestTimeout = 3 * time.Second
-	defaultMaxRetries     = 3
-	defaultInitialBackoff = 200 * time.Millisecond
-	defaultMaxBackoff     = 2 * time.Second
-)
-
 // RemoteCallConfig 远程调用配置
 type RemoteCallConfig struct {
 	Timeout        time.Duration
@@ -49,42 +42,21 @@ type ServiceDiscovery struct {
 	config       RemoteCallConfig  // 远程调用配置
 }
 
-func NewServiceDiscovery(client naming_client.INamingClient, cfg ...RemoteCallConfig) *ServiceDiscovery {
-	rc := RemoteCallConfig{
-		Timeout:        defaultRequestTimeout,
-		MaxRetries:     defaultMaxRetries,
-		InitialBackoff: defaultInitialBackoff,
-		MaxBackoff:     defaultMaxBackoff,
-	}
-	if len(cfg) > 0 {
-		provided := cfg[0]
-		if provided.Timeout > 0 {
-			rc.Timeout = provided.Timeout
-		}
-		if provided.MaxRetries > 0 {
-			rc.MaxRetries = provided.MaxRetries
-		}
-		if provided.InitialBackoff > 0 {
-			rc.InitialBackoff = provided.InitialBackoff
-		}
-		if provided.MaxBackoff > 0 {
-			rc.MaxBackoff = provided.MaxBackoff
-		}
-	}
+func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		namingClient: client,
 		httpClient: &http.Client{
-			Timeout: rc.Timeout,
+			Timeout: cfg.Timeout,
 			Transport: &http.Transport{
 				MaxIdleConns:          100,
 				MaxIdleConnsPerHost:   20,
 				IdleConnTimeout:       90 * time.Second,
 				TLSHandshakeTimeout:   5 * time.Second,
-				ResponseHeaderTimeout: rc.Timeout,
+				ResponseHeaderTimeout: cfg.Timeout,
 			},
 		},
 		lbIndex: make(map[string]uint64),
-		config:  rc,
+		config:  cfg,
 	}
 }
 
