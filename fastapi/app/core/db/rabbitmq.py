@@ -22,11 +22,11 @@ class RabbitMQClient:
             Logger.warning(Messages.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
             return None
 
-        host: str = str(config.get("host", "127.0.0.1"))
-        port: int = int(config.get("port", 5672))
-        username: str = str(config.get("username", "guest"))
-        password: str = str(config.get("password", "guest"))
-        vhost: str = str(config.get("vhost", "/"))
+        host: str = str(config["host"])
+        port: int = int(config["port"])
+        username: str = str(config["username"])
+        password: str = str(config["password"])
+        vhost: str = str(config["vhost"])
 
         return f"amqp://{username}:{password}@{host}:{port}/{vhost.lstrip('/')}"
 

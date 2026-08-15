@@ -41,11 +41,11 @@ class RedisClient:
     def _build_pool_params(self) -> dict[str, Any]:
         redis_config: Dict[str, Any] = self._redis_config or {}
         pool_params: Dict[str, Any] = {
-            "host": redis_config.get("host", "127.0.0.1"),
-            "port": redis_config.get("port", 6379),
-            "db": redis_config.get("db", 0),
-            "decode_responses": redis_config.get("decode_responses", True),
-            "max_connections": redis_config.get("max_connections", 10),
+            "host": redis_config["host"],
+            "port": redis_config["port"],
+            "db": redis_config["db"],
+            "decode_responses": redis_config["decode_responses"],
+            "max_connections": redis_config["max_connections"],
             "socket_connect_timeout": 5,
             "socket_timeout": 5,
         }

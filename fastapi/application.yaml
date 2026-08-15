@@ -9,6 +9,11 @@ nacos:
   namespace: ${NACOS_NAMESPACE:public}
   service_name: ${NACOS_SERVICE_NAME:fastapi}
   group_name: ${NACOS_GROUP_NAME:DEFAULT_GROUP}
+  username: ${NACOS_USERNAME:} # 可选：Nacos 用户名
+  password: ${NACOS_PASSWORD:} # 可选：Nacos 密码
+  heartbeat_interval: 10 # 心跳间隔（秒）
+  register_retries: 5 # 注册重试次数
+  retry_interval: 2 # 重试间隔（秒）
 
 database:
   mysql:
@@ -45,7 +50,7 @@ database:
   clickhouse:
     host: ${DB_CLICKHOUSE_HOST:127.0.0.1}
     port: ${DB_CLICKHOUSE_PORT:9000}
-    username: ${DB_CLICKHOUSE_USERNAME:}
+    username: ${DB_CLICKHOUSE_USERNAME:default}
     password: ${DB_CLICKHOUSE_PASSWORD:}
     database: ${DB_CLICKHOUSE_DATABASE:default}
     table: ${DB_CLICKHOUSE_TABLE:articles}

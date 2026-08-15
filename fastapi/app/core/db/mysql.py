@@ -18,7 +18,7 @@ Base = declarative_base()
 
 server_config: Dict[str, Any] = load_config("server")
 mysql_config: Dict[str, Any] = load_config("database")["mysql"]
-SERVER_MODE: str = str(server_config.get("mode", "dev")).strip().lower()
+SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 HOST: str = mysql_config["host"]
 PORT: int = mysql_config["port"]
 DATABASE: str = mysql_config["database"]
@@ -28,12 +28,12 @@ ENCODED_PASSWORD: str = quote_plus(str(PASSWORD))
 
 ASYNC_DATABASE_URL: str = f"mysql+aiomysql://{USER}:{ENCODED_PASSWORD}@{HOST}:{PORT}/{DATABASE}?charset=utf8mb4"
 
-POOL_SIZE: int = int(mysql_config.get("pool_size", 30))
-MAX_OVERFLOW: int = int(mysql_config.get("max_overflow", 80))
-POOL_RECYCLE: int = int(mysql_config.get("pool_recycle", 3600))
-POOL_PRE_PING: bool = mysql_config.get("pool_pre_ping", True)
-POOL_TIMEOUT: int = int(mysql_config.get("pool_timeout", 30))
-AUTOCOMMIT: bool = mysql_config.get("autocommit", False)
+POOL_SIZE: int = int(mysql_config["pool_size"])
+MAX_OVERFLOW: int = int(mysql_config["max_overflow"])
+POOL_RECYCLE: int = int(mysql_config["pool_recycle"])
+POOL_PRE_PING: bool = mysql_config["pool_pre_ping"]
+POOL_TIMEOUT: int = int(mysql_config["pool_timeout"])
+AUTOCOMMIT: bool = mysql_config["autocommit"]
 # SQL 日志回显开关：优先使用显式配置，未配置时根据 SERVER_MODE 自动判断
 _echo_val = mysql_config.get("echo")
 ECHO: bool = _echo_val if _echo_val is not None else SERVER_MODE == "dev"

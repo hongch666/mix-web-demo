@@ -26,9 +26,9 @@ class Neo4jClient:
             neo4j_cfg: Dict[str, Any] = (load_config("database") or {}).get(
                 "neo4j"
             ) or {}
-            self.uri = str(neo4j_cfg.get("uri") or "bolt://127.0.0.1:7687")
-            self.user = str(neo4j_cfg.get("user") or "neo4j")
-            self.password = str(neo4j_cfg.get("password") or "").strip()
+            self.uri = str(neo4j_cfg["uri"]).strip()
+            self.user = str(neo4j_cfg["user"]).strip()
+            self.password = str(neo4j_cfg["password"]).strip()
             self.auth = (self.user, self.password) if self.password else None
             self.logger.info(Messages.NEO4J_CONFIG_INITIALIZED(self.uri))
         except Exception as e:

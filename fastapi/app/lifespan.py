@@ -61,7 +61,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
     remote_call_config: Dict[str, Any] = load_config("remote_call")
-    default_timeout: float = float(remote_call_config.get("timeout", 5))
+    default_timeout: float = float(remote_call_config["timeout"])
     shared_http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(default_timeout, connect=min(5.0, default_timeout)),
         limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),

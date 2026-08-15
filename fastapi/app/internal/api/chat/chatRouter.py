@@ -44,13 +44,13 @@ router: APIRouter = APIRouter(
 def _resolve_model_info(service: AIServiceType) -> dict:
     """解析当前服务对应的模型信息，用于 LangSmith metadata"""
     server_config = load_config("server") or {}
-    deployment_env = server_config.get("mode", "dev")
+    deployment_env = server_config["mode"]
     agent_cfg = (load_config("agent") or {}).get("closeai", {})
 
     model_map = {
-        AIServiceType.GPT: ("gpt", agent_cfg.get("gpt_model_name", "")),
-        AIServiceType.GEMINI: ("gemini", agent_cfg.get("gemini_model_name", "")),
-        AIServiceType.DEEPSEEK: ("deepseek", agent_cfg.get("deepseek_model_name", "")),
+        AIServiceType.GPT: ("gpt", agent_cfg["gpt_model_name"]),
+        AIServiceType.GEMINI: ("gemini", agent_cfg["gemini_model_name"]),
+        AIServiceType.DEEPSEEK: ("deepseek", agent_cfg["deepseek_model_name"]),
     }
     provider, model_name = model_map.get(service, ("unknown", ""))
     return {

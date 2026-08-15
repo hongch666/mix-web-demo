@@ -58,9 +58,9 @@ class ClickhouseConnectionPool:
         ch_host: str = str(clickhouse_config["host"])
         ch_port: int = int(clickhouse_config["port"])
         ch_database: str = str(clickhouse_config["database"])
-        ch_username: str = str(clickhouse_config.get("username", "default"))
+        ch_username: str = str(clickhouse_config["username"])
         # 确保密码始终是字符串类型
-        ch_password: str = str(clickhouse_config.get("password", ""))
+        ch_password: str = str(clickhouse_config["password"])
         if not ch_password or ch_password == "None":
             ch_password = ""
 

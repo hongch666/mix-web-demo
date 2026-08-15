@@ -17,15 +17,15 @@ SERVER_ADDRESSES: str = nacos_config["server_addresses"]
 NAMESPACE: str = nacos_config["namespace"]
 SERVICE_NAME: str = nacos_config["service_name"]
 GROUP_NAME: str = nacos_config["group_name"]
-USERNAME: str = nacos_config.get("username", "")
-PASSWORD: str = nacos_config.get("password", "")
-HEARTBEAT_INTERVAL: int = int(nacos_config.get("heartbeat_interval", 10))
-REGISTER_RETRIES: int = int(nacos_config.get("register_retries", 5))
-RETRY_INTERVAL: int = int(nacos_config.get("retry_interval", 2))
+USERNAME: str = nacos_config["username"]
+PASSWORD: str = nacos_config["password"]
+HEARTBEAT_INTERVAL: int = int(nacos_config["heartbeat_interval"])
+REGISTER_RETRIES: int = int(nacos_config["register_retries"])
+RETRY_INTERVAL: int = int(nacos_config["retry_interval"])
 
 server_config: Dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
-SERVER_MODE: str = str(server_config.get("mode", "dev")).strip().lower()
+SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 PORT: int = server_config["port"]
 
 

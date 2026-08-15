@@ -12,14 +12,14 @@ class LangSmithConfig:
     所有配置项通过 application.yaml + 环境变量加载，遵循项目统一配置规范。
     """
 
-    enabled: bool = False
-    api_key: str = ""
-    project: str = "mix-web-demo-dev"
-    endpoint: str = "https://api.smith.langchain.com"
-    workspace_id: Optional[str] = None
-    hide_inputs: bool = False
-    hide_outputs: bool = False
-    sampling_rate: float = 1.0
+    enabled: bool
+    api_key: str
+    project: str
+    endpoint: str
+    workspace_id: Optional[str]
+    hide_inputs: bool
+    hide_outputs: bool
+    sampling_rate: float
 
     # 脱敏配置
     max_string_length: int = Scripts.SANITIZER_MAX_STRING_LENGTH
@@ -35,8 +35,8 @@ def load_langsmith_config() -> LangSmithConfig:
     """
     cfg: Dict[str, Any] = load_config("langsmith") or {}
 
-    enabled = str(cfg.get("enabled", "false")).lower() == "true"
-    api_key = str(cfg.get("api_key", "")).strip()
+    enabled = str(cfg["enabled"]).lower() == "true"
+    api_key = str(cfg["api_key"]).strip()
 
     # 仅当显式开启且 API Key 存在时才启用
     if not api_key:
@@ -45,10 +45,10 @@ def load_langsmith_config() -> LangSmithConfig:
     return LangSmithConfig(
         enabled=enabled,
         api_key=api_key,
-        project=str(cfg.get("project", "mix-web-demo-dev")).strip(),
-        endpoint=str(cfg.get("endpoint", "https://api.smith.langchain.com")).strip(),
-        workspace_id=cfg.get("workspace_id") or None,
-        hide_inputs=str(cfg.get("hide_inputs", "false")).lower() == "true",
-        hide_outputs=str(cfg.get("hide_outputs", "false")).lower() == "true",
-        sampling_rate=float(cfg.get("sampling_rate", 1.0)),
+        project=str(cfg["project"]).strip(),
+        endpoint=str(cfg["endpoint"]).strip(),
+        workspace_id=cfg["workspace_id"] or None,
+        hide_inputs=str(cfg["hide_inputs"]).lower() == "true",
+        hide_outputs=str(cfg["hide_outputs"]).lower() == "true",
+        sampling_rate=float(cfg["sampling_rate"]),
     )

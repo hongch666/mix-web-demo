@@ -110,7 +110,7 @@ def _build_internal_token_header(user_id: str) -> Dict[str, str]:
         user_id_num: int = int(user_id) if user_id else -1
         final_user_id: int = user_id_num if user_id_num > 0 else -1
         service_config: Dict[str, Any] = load_config("nacos")
-        service_name_config: str = service_config.get("service_name", "fastapi")
+        service_name_config: str = service_config["service_name"]
         internal_token: str = internal_token_util.generate_internal_token(
             final_user_id, service_name_config
         )
