@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -131,7 +132,9 @@ func isQuoted(value string) bool {
 // LoadConfig 加载配置，包括环境变量和应用配置
 func LoadConfig(configFile string) config.Config {
 	// 加载 .env 文件中的环境变量
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		fmt.Printf(constants.GODOTENV_LOAD_FAIL+"\n", err)
+	}
 
 	// 获取日志路径
 	logPath := os.Getenv("LOGS_PATH")

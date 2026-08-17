@@ -232,10 +232,14 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 	}
 
 	if nacosConf.CacheDir != "" {
-		_ = os.MkdirAll(nacosConf.CacheDir, 0o755)
+		if err := os.MkdirAll(nacosConf.CacheDir, 0o755); err != nil {
+			logger.Error(fmt.Sprintf(constants.NACOS_CACHE_DIR_CREATE_FAIL, err, nacosConf.CacheDir))
+		}
 	}
 	if nacosConf.LogDir != "" {
-		_ = os.MkdirAll(nacosConf.LogDir, 0o755)
+		if err := os.MkdirAll(nacosConf.LogDir, 0o755); err != nil {
+			logger.Error(fmt.Sprintf(constants.NACOS_LOG_DIR_CREATE_FAIL, err, nacosConf.LogDir))
+		}
 	}
 
 	serverConfigs := []constant.ServerConfig{{

@@ -182,7 +182,10 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 		UnreadCounts: make(map[string]int64),
 	}
 	sseMessage := FormatSSEMessage(initMessage)
-	_, _ = io.WriteString(w, sseMessage)
+	if _, err := io.WriteString(w, sseMessage); err != nil {
+		hub.Error(fmt.Sprintf(constants.SSE_INIT_MESSAGE_SEND_FAIL, err))
+		return
+	}
 	if f, ok := w.(http.Flusher); ok {
 		f.Flush()
 	}

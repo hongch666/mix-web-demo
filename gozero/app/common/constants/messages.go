@@ -12,6 +12,9 @@ const (
 
 	// Nacos
 	REGISTER_NACOS_DEV_MODE_MESSAGE = "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
+	NACOS_CACHE_DIR_CREATE_FAIL     = "创建Nacos缓存目录失败: %v, 路径: %s"
+	NACOS_LOG_DIR_CREATE_FAIL       = "创建Nacos日志目录失败: %v, 路径: %s"
+	GODOTENV_LOAD_FAIL              = "加载.env文件失败: %v"
 
 	// 错误
 	INTERNAL_TOKEN_SECRET_NOT_NULL = "内部服务令牌密钥不能为空"
@@ -32,6 +35,8 @@ const (
 	WS_SEND_SUCCESS                          = "消息 %d 通过WebSocket发送成功，已标记为已读"
 	WS_SEND_FAIL                             = "用户 %s 不在线，消息 %d 已保存为未读"
 	WS_SERIALIZE_MESSAGE_ERROR               = "序列化WebSocket消息失败: %v"
+	WS_CLOSE_FRAME_SEND_FAIL                 = "发送WebSocket关闭帧失败: %v"
+	WS_HEARTBEAT_RESPONSE_FAIL               = "序列化WebSocket心跳响应失败: %v"
 	MESSAGE_SEND_ERROR                       = "消息发送失败"
 	MARK_READ_FAIL                           = "标记消息 %d 为已读失败"
 	USER_JOINED_QUEUE                        = "用户 %s 已加入聊天队列"
@@ -65,6 +70,7 @@ const (
 	EMPTY_SSE                          = "跳过空的SSE消息"
 	SSE_WRITE_FAIL                     = "SSE写入失败: "
 	SSE_HEARTBEAT                      = ": heartbeat\n\n"
+	SSE_INIT_MESSAGE_SEND_FAIL         = "SSE初始化消息写入失败: %v"
 
 	// 聊天
 	CREATE_MESSAGE_ERROR                   = "消息创建错误"

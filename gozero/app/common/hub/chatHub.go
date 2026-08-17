@@ -259,7 +259,13 @@ func (c *Client) ReadPump() {
 		// 处理ping消息
 		if wsMessage.Type == constants.HEARTBEAT_MESSAGE {
 			pongMessage := WebSocketMessage{Type: constants.HEARTBEAT_RESPONSE}
-			pongBytes, _ := json.Marshal(pongMessage)
+			pongBytes, err := json.Marshal(pongMessage)
+			if err != nil {
+				if c.ZeroLogger != nil {
+					c.Error(fmt.Sprintf(constants.WS_HEARTBEAT_RESPONSE_FAIL, err))
+				}
+				return
+			}
 			if !c.SafeSend(pongBytes) {
 				return
 			}
@@ -278,5 +284,9 @@ func (c *Client) WritePump() {
 			break
 		}
 	}
-	_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+	if err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
+		if c.ZeroLogger != nil {
+			c.Error(fmt.Sprintf(constants.WS_CLOSE_FRAME_SEND_FAIL, err))
+		}
+	}
 }
