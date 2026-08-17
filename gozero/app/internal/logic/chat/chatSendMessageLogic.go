@@ -56,7 +56,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		ReceiverID: req.ReceiverId,
 		Content:    req.Content,
 		MessageID:  uint(message.Id),
-		Timestamp:  time.Now().Format("2006-01-02 15:04:05"),
+		Timestamp:  time.Now().Format(constants.DateTimeFormat),
 	}
 
 	messageBytes, err := json.Marshal(wsMessage)
@@ -103,7 +103,7 @@ func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ string, message *ch
 			ReceiverID: message.ReceiverId,
 			Content:    message.Content,
 			IsRead:     int8(message.IsRead),
-			CreatedAt:  message.CreatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:  message.CreatedAt.Format(constants.DateTimeFormat),
 		},
 	}
 

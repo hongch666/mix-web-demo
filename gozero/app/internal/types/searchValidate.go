@@ -33,8 +33,8 @@ func (r *SearchArticlesReq) Validate() error {
 	}
 
 	if r.StartDate != nil && r.EndDate != nil {
-		startTime, _ := time.ParseInLocation("2006-01-02 15:04:05", strings.TrimSpace(*r.StartDate), time.Local)
-		endTime, _ := time.ParseInLocation("2006-01-02 15:04:05", strings.TrimSpace(*r.EndDate), time.Local)
+		startTime, _ := time.ParseInLocation(constants.DateTimeFormat, strings.TrimSpace(*r.StartDate), time.Local)
+		endTime, _ := time.ParseInLocation(constants.DateTimeFormat, strings.TrimSpace(*r.EndDate), time.Local)
 		if startTime.After(endTime) {
 			return exceptions.NewBadRequestErrorSame(constants.SEARCH_START_AFTER_END_ERROR)
 		}
@@ -77,8 +77,8 @@ func validateSearchArticlesTime(value *string, fieldName string) error {
 		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(constants.FIELD_EMPTY_ERROR, fieldName))
 	}
 
-	if _, err := time.ParseInLocation("2006-01-02 15:04:05", timeValue, time.Local); err != nil {
-		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(constants.SEARCH_TIME_FORMAT_ERROR, fieldName, "2006-01-02 15:04:05"))
+	if _, err := time.ParseInLocation(constants.DateTimeFormat, timeValue, time.Local); err != nil {
+		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(constants.SEARCH_TIME_FORMAT_ERROR, fieldName, constants.DateTimeFormat))
 	}
 
 	return nil

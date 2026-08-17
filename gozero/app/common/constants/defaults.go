@@ -2,6 +2,12 @@ package constants
 
 import "time"
 
+// 日期时间格式常量
+const (
+	// DateTimeFormat 用于日志输出、ES 索引、API 响应等场景的标准日期时间格式
+	DateTimeFormat = "2006-01-02 15:04:05"
+)
+
 // 配置默认值类 — 锁过期时间等
 const (
 	// 搜索增强控制

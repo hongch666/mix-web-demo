@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"app/common/constants"
+
 	"github.com/olivere/elastic/v7"
 )
 
@@ -46,15 +48,14 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 
 	if searchDTO.StartDate != nil || searchDTO.EndDate != nil {
 		rangeQuery := elastic.NewRangeQuery("create_at")
-		layout := "2006-01-02 15:04:05"
 		if searchDTO.StartDate != nil {
-			if startTime, err := time.ParseInLocation(layout, *searchDTO.StartDate, time.Local); err == nil {
-				rangeQuery.Gte(startTime.Format(layout))
+			if startTime, err := time.ParseInLocation(constants.DateTimeFormat, *searchDTO.StartDate, time.Local); err == nil {
+				rangeQuery.Gte(startTime.Format(constants.DateTimeFormat))
 			}
 		}
 		if searchDTO.EndDate != nil {
-			if endTime, err := time.ParseInLocation(layout, *searchDTO.EndDate, time.Local); err == nil {
-				rangeQuery.Lte(endTime.Format(layout))
+			if endTime, err := time.ParseInLocation(constants.DateTimeFormat, *searchDTO.EndDate, time.Local); err == nil {
+				rangeQuery.Lte(endTime.Format(constants.DateTimeFormat))
 			}
 		}
 		boolQuery.Filter(rangeQuery)

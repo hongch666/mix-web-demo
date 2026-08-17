@@ -65,7 +65,7 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 	logFile := filepath.Join(z.logPath, fmt.Sprintf("app_%s.log", today))
 
 	// 格式化日志消息
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	timestamp := time.Now().Format(constants.DateTimeFormat)
 	logEntry := fmt.Sprintf("%s - %s - %s\n", timestamp, level, message)
 
 	z.fileMu.Lock()

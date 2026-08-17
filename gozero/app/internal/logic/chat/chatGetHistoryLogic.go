@@ -63,7 +63,7 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 			ReceiverId: msg.ReceiverId,
 			Content:    msg.Content,
 			IsRead:     1, // 已读
-			CreatedAt:  msg.CreatedAt.Format("2006-01-02 15:04:05"),
+			CreatedAt:  msg.CreatedAt.Format(constants.DateTimeFormat),
 		}
 	}
 
