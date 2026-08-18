@@ -20,6 +20,7 @@ import com.hcsy.spring.entity.po.Article;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 @Aspect
 @Component
@@ -37,10 +38,14 @@ public class ArticleSyncAspect {
 
         if (result instanceof Mono<?> monoResult) {
             // 使用 doOnSuccess 发后即忘：主流程不等待 MQ 发送和 ES/Vector 同步完成
-            return monoResult
-                .doOnSuccess(res -> {
-                    Mono.deferContextual(ctx -> executeSync(joinPoint, articleSync, ctx)).subscribe();
-                });
+            return Mono.deferContextual(ctx -> {
+                Long userId = UserContext.getUserId(ctx);
+                String username = UserContext.getUsername(ctx);
+                Context syncContext = UserContext.writeContext(Context.empty(), userId, username, null, null, null);
+                return monoResult.doOnSuccess(res -> executeSync(joinPoint, articleSync, userId, username)
+                    .contextWrite(syncContext)
+                    .subscribe());
+            });
         }
         return result;
     }
@@ -49,7 +54,7 @@ public class ArticleSyncAspect {
      * 执行同步逻辑：发送 MQ 消息 + 触发 ES/Vector 同步
      */
     private Mono<Void> executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
-        reactor.util.context.ContextView ctx) {
+        Long userId, String username) {
         try {
             String action = articleSync.action();
             String description = articleSync.description();
@@ -57,9 +62,6 @@ public class ArticleSyncAspect {
 
             Map<String, Object> msg = new HashMap<>();
             Map<String, Object> content = new HashMap<>();
-
-            Long userId = UserContext.getUserId(ctx);
-            String username = UserContext.getUsername(ctx);
 
             // 根据注解类型构建消息
             buildActionMessage(action, paramValues, content, msg, userId, description);

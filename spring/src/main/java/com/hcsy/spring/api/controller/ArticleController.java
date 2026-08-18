@@ -108,6 +108,7 @@ public class ArticleController {
             .flatMap(user -> {
                 Article article = BeanUtil.copyProperties(dto, Article.class);
                 article.setUserId(user.getId());
+                article.setUpdateAt(java.time.LocalDateTime.now());
                 return articleService.updateArticle(article).thenReturn(Result.<Void>success());
             })
             .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
