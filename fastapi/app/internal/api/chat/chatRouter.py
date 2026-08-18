@@ -79,9 +79,9 @@ async def send_message(
 ) -> JSONResponse:
     """普通发送聊天消息"""
 
-    user_id: str = get_current_user_id() or ""
+    user_id: Optional[int] = get_current_user_id()
     # 使用实际用户ID替代请求中的 user_id
-    actual_user_id: str = user_id or "1"
+    actual_user_id: str = str(user_id) if user_id else "1"
     request_id: str = f"req_{uuid.uuid4().hex[:12]}"
 
     # 生成会话ID（如果没有提供）
@@ -212,8 +212,8 @@ async def stream_message(
 ) -> StreamingResponse:
     """流式发送聊天消息"""
 
-    user_id: str = get_current_user_id() or ""
-    actual_user_id: str = user_id or "1"
+    user_id: Optional[int] = get_current_user_id()
+    actual_user_id: str = str(user_id) if user_id else "1"
     request_id: str = f"req_{uuid.uuid4().hex[:12]}"
     conversation_id: str = (
         request.conversationId

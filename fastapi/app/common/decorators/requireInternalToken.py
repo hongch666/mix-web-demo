@@ -2,6 +2,7 @@ import inspect
 from functools import wraps
 from typing import Any, Callable, Dict, Optional, TypeVar
 
+from app.common.middleware import get_current_internal_token
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
@@ -50,21 +51,16 @@ def requireInternalToken(
                     Messages.ERROR_INTERNAL_TOKEN_MISSING,
                 )
 
-            # 获取请求头中的内部令牌
-            auth_header: str = request.headers.get("X-Internal-Token", "")
+            # 从上下文中获取已解析的内部令牌（由 ContextMiddleware 预先解析）
+            token: Optional[str] = get_current_internal_token()
 
-            if not auth_header:
+            if not token:
                 Logger.error(Messages.INTERNAL_TOKEN_MISSING)
                 raise BusinessException(
                     Messages.INTERNAL_TOKEN_MISSING,
                     HttpCode.UNAUTHORIZED,
                     Messages.ERROR_INTERNAL_TOKEN_MISSING,
                 )
-
-            # 移除 "Bearer " 前缀
-            token: str = auth_header
-            if token.startswith("Bearer "):
-                token = token[7:]
 
             try:
                 # 验证令牌

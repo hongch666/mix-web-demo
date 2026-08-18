@@ -63,7 +63,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 log_config = config
 
             # 获取用户信息
-            user_id: str = get_current_user_id() or "0"
+            user_id: Optional[int] = get_current_user_id()
             username: str = get_current_username() or "unknown"
 
             # 从参数中获取 Request 对象
@@ -82,7 +82,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
             # 构建基础日志消息
             log_lines: List[str] = [
                 Messages.API_LOG_REQUEST_MESSAGE(
-                    user_id, username, method, path, log_config.message
+                    str(user_id) if user_id is not None else "0", username, method, path, log_config.message
                 )
             ]
 

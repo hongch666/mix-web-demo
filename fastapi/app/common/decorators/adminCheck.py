@@ -31,7 +31,7 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(func)
     async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
         # 获取当前用户ID
-        user_id: Optional[str] = get_current_user_id()
+        user_id: Optional[int] = get_current_user_id()
 
         # 检查用户是否登录
         if not user_id:

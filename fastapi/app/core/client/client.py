@@ -2,7 +2,12 @@ import time
 from typing import Any, Dict, Optional
 
 import httpx
-from app.common.middleware import get_current_user_id, get_current_username
+from app.common.middleware import (
+    get_current_session_id,
+    get_current_token,
+    get_current_user_id,
+    get_current_username,
+)
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.config import load_config
@@ -95,12 +100,18 @@ def _get_service_breaker(service_name: str) -> SimpleCircuitBreaker:
 
 def _build_default_headers() -> Dict[str, str]:
     """构建基础用户上下文请求头"""
-    user_id: str = get_current_user_id() or ""
+    user_id: Optional[int] = get_current_user_id()
     username: str = get_current_username() or ""
-    return {
-        "X-User-Id": user_id,
+    session_id: str = get_current_session_id() or ""
+    token: Optional[str] = get_current_token()
+    headers: Dict[str, str] = {
+        "X-User-Id": str(user_id) if user_id is not None else "",
         "X-Username": username,
+        "X-Session-Id": session_id,
     }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
 
 
 def _build_internal_token_header(user_id: str) -> Dict[str, str]:
