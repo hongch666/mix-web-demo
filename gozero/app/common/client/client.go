@@ -188,8 +188,14 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 
 	userID, _ := ctx.Value(keys.UserIDKey).(int64)
 	username, _ := ctx.Value(keys.UsernameKey).(string)
+	sessionID, _ := ctx.Value(keys.SessionIDKey).(string)
+	token, _ := ctx.Value(keys.TokenKey).(string)
 	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
 	req.Header.Set("X-Username", username)
+	req.Header.Set("X-Session-Id", sessionID)
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	tokenUtil, err := utils.GetTokenUtil()
 	if err == nil {

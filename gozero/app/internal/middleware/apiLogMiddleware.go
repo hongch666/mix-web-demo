@@ -40,6 +40,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 获取用户信息
 		userID, _ := r.Context().Value(keys.UserIDKey).(int64)
 		username, _ := r.Context().Value(keys.UsernameKey).(string)
+		sessionID, _ := r.Context().Value(keys.SessionIDKey).(string)
 
 		// 如果用户信息为空，则设置为默认值
 		if username == "" {
@@ -57,6 +58,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		logInfo := map[string]any{
 			"用户ID": userID,
 			"用户名":  username,
+			"会话ID": sessionID,
 			"请求方法": method,
 			"请求路径": path,
 			"描述":   m.description,

@@ -3,16 +3,15 @@ package middleware
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"app/common/constants"
+	"app/common/keys"
 	"app/common/utils"
 )
 
 const (
 	InternalTokenHeader = "X-Internal-Token"
-	BearerPrefix        = "Bearer "
 )
 
 type InternalServiceMiddleware struct {
@@ -23,7 +22,7 @@ func NewInternalServiceMiddleware(log *utils.ZeroLogger) *InternalServiceMiddlew
 	return &InternalServiceMiddleware{ZeroLogger: log}
 }
 
-// validateInternalToken 提取并校验内部令牌（公共逻辑）
+// validateInternalToken 从上下文中提取并校验内部令牌（公共逻辑）
 // 返回 claims、错误响应是否已发送、是否应该继续处理
 func validateInternalToken(
 	w http.ResponseWriter,
@@ -31,22 +30,10 @@ func validateInternalToken(
 	m *InternalServiceMiddleware,
 	expectedServiceName string,
 ) (shouldContinue bool) {
-	// 从请求头中提取内部令牌
-	authHeader := r.Header.Get(InternalTokenHeader)
-	if authHeader == "" {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
-		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_MISSING)
-		return false
-	}
-
-	// 移除 Bearer 前缀
-	tokenString := authHeader
-	if strings.HasPrefix(authHeader, BearerPrefix) {
-		tokenString = authHeader[len(BearerPrefix):]
-	}
-
+	// 从上下文中获取已解析的内部令牌（由 UserContextMiddleware 预先解析）
+	tokenString, _ := r.Context().Value(keys.InternalTokenKey).(string)
 	if tokenString == "" {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_EMPTY_LOG, r.URL.Path))
+		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_MISSING)
 		return false
 	}
