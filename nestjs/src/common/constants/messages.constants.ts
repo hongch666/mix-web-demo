@@ -2,150 +2,279 @@
  * 消息常量类
  */
 export class Messages {
+  static readonly INTERNAL_TOKEN_SERVICE_NAME_MISMATCH = (
+    requiredServiceName: string,
+    actualServiceName: string,
+  ): string =>
+    `${this.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${actualServiceName}`;
+
+  static readonly INTERNAL_TOKEN_VERIFICATION_SUCCESS = (
+    userId: number,
+    serviceName: string,
+  ): string => `内部令牌验证成功 - 用户ID: ${userId}, 服务: ${serviceName}`;
+
+  static readonly INTERNAL_TOKEN_VERIFICATION_FAILED = (
+    message: string,
+  ): string => `令牌验证失败: ${message}`;
+
+  static readonly STARTUP_SERVICE_ADDRESS = (
+    ip: string,
+    port: number,
+  ): string => `服务地址: http://${ip}:${port}`;
 
-  static readonly INTERNAL_TOKEN_SERVICE_NAME_MISMATCH = (requiredServiceName: string,     actualServiceName: string,): string => `${this.SERVICE_NAME_MISMATCH}. 期望: ${requiredServiceName}, 获得: ${actualServiceName}`;
+  static readonly STARTUP_SWAGGER_ADDRESS = (
+    ip: string,
+    port: number,
+  ): string => `Swagger文档地址: http://${ip}:${port}/api-docs`;
 
-  static readonly INTERNAL_TOKEN_VERIFICATION_SUCCESS = (userId: number,     serviceName: string,): string => `内部令牌验证成功 - 用户ID: ${userId}, 服务: ${serviceName}`;
+  static readonly ARTICLE_LOG_SPRING_MESSAGE = (message: string): string =>
+    `接收到 Spring 发送的 ArticleLog 消息: ${message}`;
 
-  static readonly INTERNAL_TOKEN_VERIFICATION_FAILED = (message: string): string => `令牌验证失败: ${message}`;
+  static readonly ARTICLE_LOG_MESSAGE = (message: string): string =>
+    `接收到 ArticleLog 消息: ${message}`;
 
-  static readonly STARTUP_SERVICE_ADDRESS = (ip: string, port: number): string => `服务地址: http://${ip}:${port}`;
+  static readonly ARTICLE_LOG_PROCESS_FAILED = (message: string): string =>
+    `处理 ArticleLog 消息失败: ${message}`;
 
-  static readonly STARTUP_SWAGGER_ADDRESS = (ip: string, port: number): string => `Swagger文档地址: http://${ip}:${port}/api-docs`;
+  static readonly ARTICLE_LOG_MISSING_ACTION = (message: string): string =>
+    `ArticleLog 消息缺少 action 字段: ${message}`;
 
-  static readonly ARTICLE_LOG_SPRING_MESSAGE = (message: string): string => `接收到 Spring 发送的 ArticleLog 消息: ${message}`;
+  static readonly ARTICLE_LOG_MISSING_CONTENT = (message: string): string =>
+    `ArticleLog 消息缺少 content 字段: ${message}`;
 
-  static readonly ARTICLE_LOG_MESSAGE = (message: string): string => `接收到 ArticleLog 消息: ${message}`;
+  static readonly ARTICLE_LOG_INVALID_ACTION = (action: string): string =>
+    `无效的操作类型: ${action}`;
+
+  static readonly ARTICLE_LOG_INVALID_ACTION_DETAIL = (
+    action: string,
+  ): string => `ArticleLog 消息包含无效的 action 值: ${action}`;
+
+  static readonly ARTICLE_LOG_PREPARE_SAVE = (message: string): string =>
+    `准备保存 ArticleLog: ${message}`;
+
+  static readonly API_LOG_SPRING_MESSAGE = (message: string): string =>
+    `接收到 Spring 发送的 ApiLog 消息: ${message}`;
 
-  static readonly ARTICLE_LOG_PROCESS_FAILED = (message: string): string => `处理 ArticleLog 消息失败: ${message}`;
+  static readonly API_LOG_MESSAGE = (message: string): string =>
+    `接收到 ApiLog 消息: ${message}`;
 
-  static readonly ARTICLE_LOG_MISSING_ACTION = (message: string): string => `ArticleLog 消息缺少 action 字段: ${message}`;
+  static readonly API_LOG_IGNORED_MESSAGE = (message: string): string =>
+    `收到非 API 日志格式的消息，已忽略: ${message}`;
+
+  static readonly API_LOG_RESPONSE_TIME_CORRECTED = (
+    responseTime: number,
+  ): string => `接口响应时间为${responseTime}，已将其设置为0: `;
+
+  static readonly API_LOG_PROCESS_FAILED = (message: string): string =>
+    `处理 ApiLog 消息失败: ${message}`;
+
+  static readonly API_LOG_INDEX_CREATED = (indexName: string): string =>
+    `ApiLog 索引已创建: ${indexName}`;
 
-  static readonly ARTICLE_LOG_MISSING_CONTENT = (message: string): string => `ArticleLog 消息缺少 content 字段: ${message}`;
+  static readonly ARTICLE_LOG_INDEX_CREATED = (indexName: string): string =>
+    `索引已创建: ${indexName}`;
+
+  static readonly EXCEPTION_LOG = (
+    method: string,
+    url: string,
+    errorIdentifier: string,
+    message: string,
+    stack: string | undefined,
+  ): string =>
+    `[${method}] ${url} - [${errorIdentifier}] ${message} - ${stack}`;
 
-  static readonly ARTICLE_LOG_INVALID_ACTION = (action: string): string => `无效的操作类型: ${action}`;
+  static readonly API_LOG_REQUEST = (
+    userId: number,
+    username: string,
+    sessionId: string,
+    method: string,
+    url: string,
+    message: string,
+  ): string =>
+    `用户${userId}:${username} [${sessionId}] ${method} ${url}: ${message}`;
+
+  static readonly API_LOG_RESPONSE_TIME = (
+    method: string,
+    url: string,
+    responseTime: number,
+  ): string => `${method} ${url} 使用了${responseTime}ms`;
 
-  static readonly ARTICLE_LOG_INVALID_ACTION_DETAIL = (action: string): string => `ArticleLog 消息包含无效的 action 值: ${action}`;
+  static readonly API_LOG_QUEUE_SEND_FAILED = (message: string): string =>
+    `发送 API 日志到队列失败: ${message}`;
 
-  static readonly ARTICLE_LOG_PREPARE_SAVE = (message: string): string => `准备保存 ArticleLog: ${message}`;
+  static readonly API_LOG_QUEUE_SENT = (message: string): string =>
+    `API 日志已发送到队列: ${message}`;
 
-  static readonly API_LOG_SPRING_MESSAGE = (message: string): string => `接收到 Spring 发送的 ApiLog 消息: ${message}`;
+  static readonly API_LOG_QUEUE_ERROR = (message: string): string =>
+    `向消息队列发送 API 日志出错: ${message}`;
 
-  static readonly API_LOG_MESSAGE = (message: string): string => `接收到 ApiLog 消息: ${message}`;
+  static readonly ARTICLE_NOT_FOUND_BY_ID = (id: number): string =>
+    `文章 ID ${id} 未找到`;
 
-  static readonly API_LOG_IGNORED_MESSAGE = (message: string): string => `收到非 API 日志格式的消息，已忽略: ${message}`;
+  static readonly OSS_UPLOAD_ERROR_MESSAGE = (message: string): string =>
+    `上传阿里云OSS错误: ${message}`;
 
-  static readonly API_LOG_RESPONSE_TIME_CORRECTED = (responseTime: number): string => `接口响应时间为${responseTime}，已将其设置为0: `;
+  static readonly API_LOG_CLEANUP_COMPLETED = (deletedCount: number): string =>
+    `API 日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
 
-  static readonly API_LOG_PROCESS_FAILED = (message: string): string => `处理 ApiLog 消息失败: ${message}`;
+  static readonly API_LOG_CLEANUP_FAILED = (errorMessage: string): string =>
+    `清理 API 日志失败: ${errorMessage}`;
 
-  static readonly API_LOG_INDEX_CREATED = (indexName: string): string => `ApiLog 索引已创建: ${indexName}`;
+  static readonly ARTICLE_LOG_CLEANUP_COMPLETED = (
+    deletedCount: number,
+  ): string => `文章日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
 
-  static readonly ARTICLE_LOG_INDEX_CREATED = (indexName: string): string => `索引已创建: ${indexName}`;
+  static readonly ARTICLE_LOG_CLEANUP_FAILED = (errorMessage: string): string =>
+    `清理文章日志失败: ${errorMessage}`;
 
-  static readonly EXCEPTION_LOG = (method: string,     url: string,     errorIdentifier: string,     message: string,     stack: string | undefined,): string => `[${method}] ${url} - [${errorIdentifier}] ${message} - ${stack}`;
+  static readonly LOCAL_IP_CONVERTED = (registrationIp: string): string =>
+    `本地 IP 已转换为: ${registrationIp}`;
 
-  static readonly API_LOG_REQUEST = (userId: number,     username: string,     method: string,     url: string,     message: string,): string => `用户${userId}:${username} ${method} ${url}: ${message}`;
+  static readonly SERVICE_NO_AVAILABLE_INSTANCE = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 无可用实例`;
 
-  static readonly API_LOG_RESPONSE_TIME = (method: string,     url: string,     responseTime: number,): string => `${method} ${url} 使用了${responseTime}ms`;
+  static readonly SERVICE_BUSINESS_ERROR_DETAIL = (
+    serviceName: string,
+    code: string,
+    msg: string,
+  ): string => `服务 ${serviceName} 返回业务错误: code=${code}, msg=${msg}`;
 
-  static readonly API_LOG_QUEUE_SEND_FAILED = (message: string): string => `发送 API 日志到队列失败: ${message}`;
+  static readonly SERVICE_CALL_FAILED_WITH_MSG = (
+    serviceName: string,
+    errorMsg: string,
+  ): string => `调用 ${serviceName} 失败: ${errorMsg}`;
 
-  static readonly API_LOG_QUEUE_SENT = (message: string): string => `API 日志已发送到队列: ${message}`;
+  static readonly SERVICE_CIRCUIT_BREAKER_TRIGGERED = (
+    serviceName: string,
+  ): string => `调用 ${serviceName} 已触发熔断，直接返回降级结果`;
 
-  static readonly API_LOG_QUEUE_ERROR = (message: string): string => `向消息队列发送 API 日志出错: ${message}`;
+  static readonly SERVICE_DEGRADED_MSG = (serviceName: string): string =>
+    `调用 ${serviceName} 已降级，请稍后再试`;
 
-  static readonly ARTICLE_NOT_FOUND_BY_ID = (id: number): string => `文章 ID ${id} 未找到`;
+  static readonly SERVICE_CALL_ERROR = (
+    serviceName: string,
+    error: string,
+  ): string => `调用 ${serviceName} 失败: ${error}`;
 
-  static readonly OSS_UPLOAD_ERROR_MESSAGE = (message: string): string => `上传阿里云OSS错误: ${message}`;
+  static readonly SERVICE_CALL_FAILED_RETRY_LATER = (
+    serviceName: string,
+  ): string => `调用 ${serviceName} 失败，请稍后重试`;
 
-  static readonly API_LOG_CLEANUP_COMPLETED = (deletedCount: number): string => `API 日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
+  static readonly VERIFICATION_CODE_EMAIL_SENDING = (
+    maskedEmail: string,
+    type: string,
+  ): string => `发送验证码邮件到: ${maskedEmail}, 场景: ${type}`;
 
-  static readonly API_LOG_CLEANUP_FAILED = (errorMessage: string): string => `清理 API 日志失败: ${errorMessage}`;
+  static readonly VERIFICATION_CODE_EMAIL_SENT = (
+    maskedEmail: string,
+  ): string => `验证码邮件已成功发送到: ${maskedEmail}`;
 
-  static readonly ARTICLE_LOG_CLEANUP_COMPLETED = (deletedCount: number): string => `文章日志清理完成，删除了 ${deletedCount} 条超过1个月的日志`;
+  static readonly VERIFICATION_CODE_EMAIL_FAILED = (
+    maskedEmail: string,
+  ): string => `验证码邮件发送失败: ${maskedEmail}`;
 
-  static readonly ARTICLE_LOG_CLEANUP_FAILED = (errorMessage: string): string => `清理文章日志失败: ${errorMessage}`;
+  static readonly LOG_CONFIG_LOADED = (path: string): string =>
+    `日志配置加载成功，路径: ${path}`;
 
-  static readonly LOCAL_IP_CONVERTED = (registrationIp: string): string => `本地 IP 已转换为: ${registrationIp}`;
+  static readonly LOG_CONFIG_LOAD_FAILED = (errorMessage: string): string =>
+    `加载日志配置失败: ${errorMessage}`;
 
-  static readonly SERVICE_NO_AVAILABLE_INSTANCE = (serviceName: string): string => `服务 ${serviceName} 无可用实例`;
+  static readonly LOG_WRITE_FAILED = (errorMessage: string): string =>
+    `写入日志失败: ${errorMessage}`;
 
-  static readonly SERVICE_BUSINESS_ERROR_DETAIL = (serviceName: string,     code: string,     msg: string,): string => `服务 ${serviceName} 返回业务错误: code=${code}, msg=${msg}`;
+  static readonly UPLOAD_IMAGE_START = (filename: string | undefined): string =>
+    `uploadImage 开始，文件信息: filename=${filename}`;
 
-  static readonly SERVICE_CALL_FAILED_WITH_MSG = (serviceName: string,     errorMsg: string,): string => `调用 ${serviceName} 失败: ${errorMsg}`;
+  static readonly UPLOAD_FILE_TYPE_INFO = (
+    type: string,
+    hasReadable: unknown,
+    hasPipe: unknown,
+  ): string =>
+    `文件对象类型: ${type}, 是否有 readable: ${String(hasReadable)}, 是否有 pipe: ${String(hasPipe)}`;
 
-  static readonly SERVICE_CIRCUIT_BREAKER_TRIGGERED = (serviceName: string): string => `调用 ${serviceName} 已触发熔断，直接返回降级结果`;
+  static readonly UPLOAD_FILE_KEYS = (keys: string): string =>
+    `文件对象键: ${keys}`;
 
-  static readonly SERVICE_DEGRADED_MSG = (serviceName: string): string => `调用 ${serviceName} 已降级，请稍后再试`;
+  static readonly UPLOAD_GENERATED_FILENAME = (filename: string): string =>
+    `生成唯一文件名: ${filename}`;
 
-  static readonly SERVICE_CALL_ERROR = (serviceName: string, error: string): string => `调用 ${serviceName} 失败: ${error}`;
+  static readonly UPLOAD_FILE_SAVED_TO_TEMP = (path: string): string =>
+    `文件已保存到临时目录: ${path}`;
 
-  static readonly SERVICE_CALL_FAILED_RETRY_LATER = (serviceName: string): string => `调用 ${serviceName} 失败，请稍后重试`;
+  static readonly UPLOAD_OSS_TARGET_PATH = (path: string): string =>
+    `OSS 目标路径: ${path}`;
 
-  static readonly VERIFICATION_CODE_EMAIL_SENDING = (maskedEmail: string,     type: string,): string => `发送验证码邮件到: ${maskedEmail}, 场景: ${type}`;
+  static readonly UPLOAD_OSS_COMPLETED = (url: string): string =>
+    `OSS 上传完成，URL: ${url}`;
 
-  static readonly VERIFICATION_CODE_EMAIL_SENT = (maskedEmail: string): string => `验证码邮件已成功发送到: ${maskedEmail}`;
+  static readonly UPLOAD_PDF_START = (filename: string | undefined): string =>
+    `uploadPdf 开始，文件信息: filename=${filename}`;
 
-  static readonly VERIFICATION_CODE_EMAIL_FAILED = (maskedEmail: string): string => `验证码邮件发送失败: ${maskedEmail}`;
+  static readonly UPLOAD_UNSUPPORTED_FORMAT = (
+    ext: string,
+    allowedFormats: string,
+  ): string => `不支持的文件格式: ${ext}，允许格式: ${allowedFormats}`;
 
-  static readonly LOG_CONFIG_LOADED = (path: string): string => `日志配置加载成功，路径: ${path}`;
+  static readonly UPLOAD_ALLOWED_FORMATS = (formats: string): string =>
+    `仅支持以下格式: ${formats}`;
 
-  static readonly LOG_CONFIG_LOAD_FAILED = (errorMessage: string): string => `加载日志配置失败: ${errorMessage}`;
+  static readonly UPLOAD_CHECK_FILE_PROPERTY = (type: string): string =>
+    `检查 file.file 属性, 类型: ${type}`;
 
-  static readonly LOG_WRITE_FAILED = (errorMessage: string): string => `写入日志失败: ${errorMessage}`;
+  static readonly UPLOAD_USE_FILE_STREAM = (
+    type: string,
+    hasPipe: unknown,
+  ): string =>
+    `使用 file.file 作为流, 类型: ${type}, 是否有 pipe: ${String(hasPipe)}`;
 
-  static readonly UPLOAD_IMAGE_START = (filename: string | undefined): string => `uploadImage 开始，文件信息: filename=${filename}`;
+  static readonly UPLOAD_SAVE_TO_TEMP_FAILED = (message: string): string =>
+    `保存文件到临时目录失败: ${message}`;
 
-  static readonly UPLOAD_FILE_TYPE_INFO = (type: string,     hasReadable: unknown,     hasPipe: unknown,): string => `文件对象类型: ${type}, 是否有 readable: ${String(hasReadable)}, 是否有 pipe: ${String(hasPipe)}`;
+  static readonly UPLOAD_TEMP_FILE_DELETED = (path: string): string =>
+    `临时文件已删除: ${path}`;
 
-  static readonly UPLOAD_FILE_KEYS = (keys: string): string => `文件对象键: ${keys}`;
+  static readonly UPLOAD_DELETE_TEMP_FAILED = (message: string): string =>
+    `删除临时文件失败: ${message}`;
 
-  static readonly UPLOAD_GENERATED_FILENAME = (filename: string): string => `生成唯一文件名: ${filename}`;
+  static readonly OSS_UPLOAD_START_DETAIL = (
+    localFile: string,
+    ossFile: string,
+  ): string => `开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`;
 
-  static readonly UPLOAD_FILE_SAVED_TO_TEMP = (path: string): string => `文件已保存到临时目录: ${path}`;
+  static readonly OSS_CLIENT_CONFIG_INFO = (
+    bucket: string,
+    endpoint: string,
+  ): string => `OSS 客户端配置: bucket=${bucket}, endpoint=${endpoint}`;
 
-  static readonly UPLOAD_OSS_TARGET_PATH = (path: string): string => `OSS 目标路径: ${path}`;
+  static readonly OSS_CHECK_FILE_EXISTS = (localFile: string): string =>
+    `检查本地文件是否存在: ${localFile}`;
 
-  static readonly UPLOAD_OSS_COMPLETED = (url: string): string => `OSS 上传完成，URL: ${url}`;
+  static readonly OSS_FILE_EXISTS_RESULT = (exists: boolean): string =>
+    `文件存在性检查结果: ${exists}`;
 
-  static readonly UPLOAD_PDF_START = (filename: string | undefined): string => `uploadPdf 开始，文件信息: filename=${filename}`;
+  static readonly OSS_LOCAL_FILE_NOT_FOUND = (localFile: string): string =>
+    `本地文件不存在: ${localFile}`;
 
-  static readonly UPLOAD_UNSUPPORTED_FORMAT = (ext: string,     allowedFormats: string,): string => `不支持的文件格式: ${ext}，允许格式: ${allowedFormats}`;
+  static readonly OSS_LOCAL_FILE_SIZE = (size: number): string =>
+    `本地文件大小: ${size} bytes`;
 
-  static readonly UPLOAD_ALLOWED_FORMATS = (formats: string): string => `仅支持以下格式: ${formats}`;
+  static readonly OSS_PUT_RESULT_INFO = (result: string): string =>
+    `OSS put 返回结果: ${result}`;
 
-  static readonly UPLOAD_CHECK_FILE_PROPERTY = (type: string): string => `检查 file.file 属性, 类型: ${type}`;
+  static readonly OSS_FILE_UPLOAD_SUCCESS = (url: string): string =>
+    `OSS 文件上传成功: ${url}`;
 
-  static readonly UPLOAD_USE_FILE_STREAM = (type: string, hasPipe: unknown): string => `使用 file.file 作为流, 类型: ${type}, 是否有 pipe: ${String(hasPipe)}`;
+  static readonly OSS_UPLOAD_ERROR_LOG = (message: string): string =>
+    `OSS 上传失败: ${message}`;
 
-  static readonly UPLOAD_SAVE_TO_TEMP_FAILED = (message: string): string => `保存文件到临时目录失败: ${message}`;
+  static readonly OSS_UPLOAD_ERROR_DETAIL_INFO = (
+    localFile: string,
+    ossFile: string,
+  ): string => `失败的 localFile: ${localFile}, ossFile: ${ossFile}`;
 
-  static readonly UPLOAD_TEMP_FILE_DELETED = (path: string): string => `临时文件已删除: ${path}`;
-
-  static readonly UPLOAD_DELETE_TEMP_FAILED = (message: string): string => `删除临时文件失败: ${message}`;
-
-  static readonly OSS_UPLOAD_START_DETAIL = (localFile: string, ossFile: string): string => `开始上传文件到 OSS: localFile=${localFile}, ossFile=${ossFile}`;
-
-  static readonly OSS_CLIENT_CONFIG_INFO = (bucket: string, endpoint: string): string => `OSS 客户端配置: bucket=${bucket}, endpoint=${endpoint}`;
-
-  static readonly OSS_CHECK_FILE_EXISTS = (localFile: string): string => `检查本地文件是否存在: ${localFile}`;
-
-  static readonly OSS_FILE_EXISTS_RESULT = (exists: boolean): string => `文件存在性检查结果: ${exists}`;
-
-  static readonly OSS_LOCAL_FILE_NOT_FOUND = (localFile: string): string => `本地文件不存在: ${localFile}`;
-
-  static readonly OSS_LOCAL_FILE_SIZE = (size: number): string => `本地文件大小: ${size} bytes`;
-
-  static readonly OSS_PUT_RESULT_INFO = (result: string): string => `OSS put 返回结果: ${result}`;
-
-  static readonly OSS_FILE_UPLOAD_SUCCESS = (url: string): string => `OSS 文件上传成功: ${url}`;
-
-  static readonly OSS_UPLOAD_ERROR_LOG = (message: string): string => `OSS 上传失败: ${message}`;
-
-  static readonly OSS_UPLOAD_ERROR_DETAIL_INFO = (localFile: string,     ossFile: string,): string => `失败的 localFile: ${localFile}, ossFile: ${ossFile}`;
-
-  static readonly OSS_UPLOAD_ERROR_STACK_INFO = (stack: string): string => `错误堆栈: ${stack}`;
+  static readonly OSS_UPLOAD_ERROR_STACK_INFO = (stack: string): string =>
+    `错误堆栈: ${stack}`;
 
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
 
@@ -261,20 +390,29 @@ export class Messages {
 
   static readonly CIRCUIT_BREAKER_OPEN = "熔断器已打开";
 
-  static readonly SERVICE_CIRCUIT_BREAKER_OPEN = (serviceName: string): string =>
-    `服务 ${serviceName} 的熔断器已打开`;
+  static readonly SERVICE_CIRCUIT_BREAKER_OPEN = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 的熔断器已打开`;
 
-  static readonly SERVICE_CIRCUIT_BREAKER_HALF_OPEN = (serviceName: string): string =>
-    `服务 ${serviceName} 的熔断器进入半开状态`;
+  static readonly SERVICE_CIRCUIT_BREAKER_HALF_OPEN = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 的熔断器进入半开状态`;
 
-  static readonly SERVICE_CIRCUIT_BREAKER_CLOSE = (serviceName: string): string =>
-    `服务 ${serviceName} 的熔断器已关闭`;
+  static readonly SERVICE_CIRCUIT_BREAKER_CLOSE = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 的熔断器已关闭`;
 
-  static readonly SERVICE_CIRCUIT_BREAKER_FALLBACK = (serviceName: string, result: unknown): string =>
+  static readonly SERVICE_CIRCUIT_BREAKER_FALLBACK = (
+    serviceName: string,
+    result: unknown,
+  ): string =>
     `服务 ${serviceName} 触发熔断降级，返回结果: ${JSON.stringify(result)}`;
 
-  static readonly SERVICE_RETRY = (url: string, retryCount: number, message: string): string =>
-    `请求 ${url} 第 ${retryCount} 次重试，原因: ${message}`;
+  static readonly SERVICE_RETRY = (
+    url: string,
+    retryCount: number,
+    message: string,
+  ): string => `请求 ${url} 第 ${retryCount} 次重试，原因: ${message}`;
 
   // ===== 启动/测试 =====
 

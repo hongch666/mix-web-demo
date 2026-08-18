@@ -55,11 +55,13 @@ export class ApiLogInterceptor implements NestInterceptor {
     // 获取用户信息
     const userId: number = this.cls.get<number>("userId") || 0;
     const username: string = this.cls.get<string>("username") || "unknown";
+    const sessionId: string = this.cls.get<string>("sessionId") || "";
 
     // 构建基础日志消息
     let logMessage: string = Messages.API_LOG_REQUEST(
       userId,
       username,
+      sessionId,
       method,
       url,
       logConfig.message,

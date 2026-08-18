@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import { ClsService } from "nestjs-cls";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
@@ -15,11 +16,9 @@ import {
  */
 @Injectable()
 export class InternalTokenGuard implements CanActivate {
-  private static readonly INTERNAL_TOKEN_HEADER = "x-internal-token";
-  private static readonly BEARER_PREFIX = "Bearer ";
-
   constructor(
     private readonly reflector: Reflector,
+    private readonly cls: ClsService,
     private readonly internalTokenUtil: InternalTokenUtil,
   ) {}
 
@@ -35,10 +34,8 @@ export class InternalTokenGuard implements CanActivate {
       return true;
     }
 
-    const request = context
-      .switchToHttp()
-      .getRequest<Record<string, unknown>>();
-    const internalToken = this.extractInternalToken(request);
+    // 从 CLS 上下文中获取已解析的内部令牌（由 ClsMiddleware 预先解析）
+    const internalToken: string = this.cls.get<string>("internalToken") || "";
 
     if (!internalToken) {
       logger.error(Messages.INTERNAL_TOKEN_MISSING);
@@ -94,24 +91,5 @@ export class InternalTokenGuard implements CanActivate {
         ErrorIds.INTERNAL_TOKEN_INVALID_ERROR,
       );
     }
-  }
-
-  /**
-   * 从请求头中提取内部令牌
-   */
-  private extractInternalToken(
-    request: Record<string, unknown>,
-  ): string | null {
-    const authHeader: unknown = (request.headers as Record<string, unknown>)?.[
-      InternalTokenGuard.INTERNAL_TOKEN_HEADER
-    ];
-    if (
-      authHeader &&
-      typeof authHeader === "string" &&
-      authHeader.startsWith(InternalTokenGuard.BEARER_PREFIX)
-    ) {
-      return authHeader.substring(InternalTokenGuard.BEARER_PREFIX.length);
-    }
-    return typeof authHeader === "string" ? authHeader : null;
   }
 }
