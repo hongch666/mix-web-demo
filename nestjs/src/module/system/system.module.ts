@@ -3,6 +3,7 @@ import { ApiLogModule } from "./apiLog/apiLog.module";
 import { ArticleModule } from "./article/article.module";
 import { ArticleLogModule } from "./articleLog/articleLog.module";
 import { DownloadModule } from "./download/download.module";
+import { TableSettingsModule } from "./tableSettings/tableSettings.module";
 import { TestModule } from "./test/test.module";
 import { UploadModule } from "./upload/upload.module";
 import { UserModule } from "./user/user.module";
@@ -16,6 +17,7 @@ import { UserModule } from "./user/user.module";
     ArticleModule,
     UserModule,
     UploadModule,
+    TableSettingsModule,
   ],
   exports: [
     UserModule,
@@ -24,6 +26,7 @@ import { UserModule } from "./user/user.module";
     ApiLogModule,
     DownloadModule,
     UploadModule,
+    TableSettingsModule,
   ],
 })
 export class SystemModule {}

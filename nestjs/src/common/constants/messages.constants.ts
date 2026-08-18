@@ -276,6 +276,21 @@ export class Messages {
   static readonly OSS_UPLOAD_ERROR_STACK_INFO = (stack: string): string =>
     `错误堆栈: ${stack}`;
 
+  static readonly TABLE_SETTINGS_UPDATED = (
+    userId: number,
+    tableKey: string,
+  ): string => `用户 ${userId} 更新了页面 ${tableKey} 的列设置`;
+
+  static readonly TABLE_SETTINGS_CREATED = (
+    userId: number,
+    tableKey: string,
+  ): string => `用户 ${userId} 创建了页面 ${tableKey} 的列设置`;
+
+  static readonly TABLE_SETTINGS_DELETED = (
+    userId: number,
+    tableKey: string,
+  ): string => `用户 ${userId} 删除了页面 ${tableKey} 的列设置`;
+
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
 
   static readonly INTERNAL_TOKEN_MISSING = "请求头中缺少内部令牌";
@@ -493,6 +508,4 @@ export class Messages {
   static readonly REDIS_LOCK_RELEASE_SUCCESS = "释放分布式锁成功，key: %s";
 
   static readonly REDIS_LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
-
-  // ===== 下载模块 =====
 }
