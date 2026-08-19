@@ -1,7 +1,4 @@
-import {
-  RabbitMQConfig,
-  RabbitMQModule,
-} from "@golevelup/nestjs-rabbitmq";
+import { RabbitMQConfig, RabbitMQModule } from "@golevelup/nestjs-rabbitmq";
 import { MiddlewareConsumer, Module, RequestMethod } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
@@ -54,7 +51,7 @@ interface MongoDbConfig {
           username: db.username,
           password: db.password,
           database: db.database,
-          synchronize: false,
+          synchronize: true,
           logging: db.logging,
           autoLoadEntities: true,
         };

@@ -7,8 +7,6 @@ import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { RedisService } from "src/module/common/redis/redis.service";
-import { User } from "src/module/system/user/entities/user.entity";
-import { UserService } from "src/module/system/user/user.service";
 import {
   GithubAuthorizeQueryDto,
   GithubCallbackQueryDto,
@@ -71,7 +69,6 @@ export class GithubService {
   constructor(
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
-    private readonly userService: UserService,
     private readonly springClientService: SpringClientService,
   ) {
     this.githubConfig = this.buildGithubConfig();
@@ -152,15 +149,21 @@ export class GithubService {
         emailResult.status === "fulfilled" ? emailResult.value : null;
       const githubEmail: string | null =
         githubProfile.email || githubEmailFallback;
-      const user: User = await this.userService.findOrCreateGithubUser({
-        githubId: String(githubProfile.id),
-        githubLogin: githubProfile.login,
-        githubName: githubProfile.name?.trim() || githubProfile.login,
-        githubUrl:
-          githubProfile.html_url || `https://github.com/${githubProfile.login}`,
-        avatarUrl: githubProfile.avatar_url ?? null,
-        email: githubEmail,
-      });
+      const userResult: Record<string, unknown> =
+        await this.springClientService.findOrCreateGithubUser({
+          githubId: String(githubProfile.id),
+          githubLogin: githubProfile.login,
+          githubName: githubProfile.name?.trim() || githubProfile.login,
+          githubUrl:
+            githubProfile.html_url ||
+            `https://github.com/${githubProfile.login}`,
+          avatarUrl: githubProfile.avatar_url ?? null,
+          email: githubEmail,
+        });
+      const user: { id: number; name: string } =
+        SpringClientService.extractData<{ id: number; name: string }>(
+          userResult,
+        );
       const ticket: string = await this.createLoginTicket(user.id, user.name);
       return this.buildSuccessRedirectUrl(ticket, statePayload.redirect);
     } catch (error) {
@@ -415,5 +418,4 @@ export class GithubService {
       ? trimmedRedirect
       : `/${trimmedRedirect}`;
   }
-
 }

@@ -3,7 +3,7 @@ import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { UserService } from "src/module/system/user/user.service";
+import { SpringClientService } from "src/module/common/client/springClient.service";
 import { REQUIRE_ADMIN_KEY } from "../decorators/requireAdmin.decorator";
 
 @Injectable()
@@ -11,7 +11,7 @@ export class RequireAdminGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly cls: ClsService,
-    private readonly userService: UserService,
+    private readonly springClient: SpringClientService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,7 +34,8 @@ export class RequireAdminGuard implements CanActivate {
       );
     }
 
-    const isAdmin: boolean = await this.userService.isAdminUser(userId);
+    const result: Record<string, unknown> = await this.springClient.isAdminUser(userId);
+    const isAdmin: boolean = SpringClientService.extractData<boolean>(result);
 
     if (!isAdmin) {
       throw new BusinessException(

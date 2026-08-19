@@ -8,18 +8,38 @@ import { Browser, launch, Page } from "puppeteer";
 import { ErrorIds, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
+import { SpringClientService } from "src/module/common/client/springClient.service";
 import { OssService } from "src/module/common/oss/oss.service";
 import { WordService } from "src/module/common/word/word.service";
-import { ArticleService } from "src/module/system/article/article.service";
-import { Articles } from "src/module/system/article/entities/article.entity";
-import { User } from "src/module/system/user/entities/user.entity";
-import { UserService } from "src/module/system/user/user.service";
+
+/**
+ * 远程返回的文章数据结构
+ */
+interface RemoteArticle {
+  id: number;
+  title: string;
+  content: string;
+  userId: number;
+  username: string;
+  tags: string;
+  status: number;
+  views: number;
+  createAt: string | null;
+  updateAt: string | null;
+}
+
+/**
+ * 远程返回的用户数据结构
+ */
+interface RemoteUser {
+  id: number;
+  name: string;
+}
 
 @Injectable()
 export class DownloadService {
   constructor(
-    private readonly userService: UserService,
-    private readonly articleService: ArticleService,
+    private readonly springClient: SpringClientService,
     private readonly wordService: WordService,
     private readonly ossService: OssService,
     private readonly configService: ConfigService,
@@ -27,8 +47,8 @@ export class DownloadService {
 
   // 生成word并保存到指定位置
   async exportToWordAndSave(id: number): Promise<string> {
-    const article: Articles | null =
-      await this.articleService.getArticleById(id);
+    const res: Record<string, unknown> = await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null = SpringClientService.extractData<RemoteArticle | null>(res);
     if (!article) {
       throw BusinessException.notFound(
         Messages.ARTICLE_NOT_FOUND_BY_ID(id),
@@ -36,17 +56,24 @@ export class DownloadService {
       );
     }
     const htmlContent: string = marked.parse(article.content || "");
-    const user: User | null = await this.userService.getUserById(
-      article.user_id,
-    );
+
+    // 并行获取用户信息
+    const [userRes] = await Promise.all([
+      this.springClient.getUserById(article.userId),
+    ]);
+    const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
+
     const data: Record<string, unknown> = {
       title: article.title,
-      // 传递htmlContent给word模板
       content: htmlContent,
       tags: article.tags,
       username: user?.name || Messages.UNKNOWN_USER,
-      create_at: dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss"),
-      update_at: dayjs(article.update_at).format("YYYY-MM-DD HH:mm:ss"),
+      create_at: article.createAt
+        ? dayjs(article.createAt).format("YYYY-MM-DD HH:mm:ss")
+        : "",
+      update_at: article.updateAt
+        ? dayjs(article.updateAt).format("YYYY-MM-DD HH:mm:ss")
+        : "",
     };
     const filePath: string | undefined =
       this.configService.get<string>("files.word"); // 获取配置中的模板路径
@@ -84,8 +111,8 @@ export class DownloadService {
 
   // 生成markdown文件并上传到OSS，返回下载链接
   async exportMarkdownAndUpload(id: number): Promise<string> {
-    const article: Articles | null =
-      await this.articleService.getArticleById(id);
+    const res: Record<string, unknown> = await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null = SpringClientService.extractData<RemoteArticle | null>(res);
     if (!article) {
       throw BusinessException.notFound(
         Messages.ARTICLE_NOT_FOUND_BY_ID(id),
@@ -95,11 +122,10 @@ export class DownloadService {
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const user: User | null = await this.userService.getUserById(
-      article.user_id,
-    );
+    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.userId);
+    const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
     markdown += `\n**作者：** ${user?.name || "未知"}\n`;
-    markdown += `\n**创作时间：** ${dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")}\n`;
+    markdown += `\n**创作时间：** ${article.createAt ? dayjs(article.createAt).format("YYYY-MM-DD HH:mm:ss") : ""}\n`;
     markdown += "\n---\n";
     markdown += article.content || "";
     // 保存到本地临时文件
@@ -122,8 +148,8 @@ export class DownloadService {
 
   // 生成PDF文件并保存到指定位置
   async exportToPdfAndSave(id: number): Promise<string> {
-    const article: Articles | null =
-      await this.articleService.getArticleById(id);
+    const res: Record<string, unknown> = await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null = SpringClientService.extractData<RemoteArticle | null>(res);
     if (!article) {
       throw BusinessException.notFound(
         Messages.ARTICLE_NOT_FOUND_BY_ID(id),
@@ -131,9 +157,8 @@ export class DownloadService {
       );
     }
 
-    const user: User | null = await this.userService.getUserById(
-      article.user_id,
-    );
+    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.userId);
+    const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
 
     // 获取文件保存路径
     const filePath: string = this.configService.get<string>("files.word")!;
@@ -149,7 +174,7 @@ export class DownloadService {
     // 创建 HTML 内容
     const htmlContent: string = this.generatePdfHtml(
       article,
-      user || ({ name: "未知" } as User),
+      user || { name: "未知" },
     );
 
     // 使用 puppeteer 生成 PDF
@@ -185,10 +210,10 @@ export class DownloadService {
   }
 
   // 生成 PDF 的 HTML 内容
-  private generatePdfHtml(article: Articles, user: User): string {
-    const createTime: string = dayjs(article.create_at).format(
-      "YYYY-MM-DD HH:mm:ss",
-    );
+  private generatePdfHtml(article: RemoteArticle, user: RemoteUser | { name: string }): string {
+    const createTime: string = article.createAt
+      ? dayjs(article.createAt).format("YYYY-MM-DD HH:mm:ss")
+      : "";
 
     // 使用 marked 解析 Markdown 内容为 HTML
     const htmlContent: string = marked.parse(article.content || "");

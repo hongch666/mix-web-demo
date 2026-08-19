@@ -8,12 +8,11 @@ import { DeleteResult, Model } from "mongoose";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
-import { ArticleService } from "src/module/system/article/article.service";
-import { UserService } from "src/module/system/user/user.service";
+import { SpringClientService } from "src/module/common/client/springClient.service";
 import {
-  ArticleAction,
-  CreateArticleLogDto,
-  QueryArticleLogDto,
+    ArticleAction,
+    CreateArticleLogDto,
+    QueryArticleLogDto,
 } from "./dto/articleLog.dto";
 import { ArticleLog, ArticleLogDocument } from "./schema/articleLog.schema";
 
@@ -50,8 +49,7 @@ export class ArticleLogService {
   constructor(
     @InjectModel(ArticleLog.name)
     private readonly logModel: Model<ArticleLogDocument>,
-    private readonly userService: UserService,
-    private readonly articleService: ArticleService,
+    private readonly springClient: SpringClientService,
   ) {
     this.ensureIndexes();
   }
@@ -162,16 +160,23 @@ export class ArticleLogService {
     if (articleId) filters.articleId = Number(articleId);
     if (action) filters.action = action;
 
-    // 根据用户名和文章标题并行查找匹配的用户ID和文章ID（两次查询独立，Promise.all 降低延迟）
+    // 根据用户名和文章标题并行查找匹配的用户ID和文章ID
     if (username || articleTitle) {
-      const [users, articles] = await Promise.all([
+      const [userResult, articleResult] = await Promise.all([
         username
-          ? this.userService.getUsersByName(username)
-          : Promise.resolve([]),
+          ? this.springClient.getUsersByName(username)
+          : Promise.resolve(null),
         articleTitle
-          ? this.articleService.getArticlesByTitle(articleTitle)
-          : Promise.resolve([]),
+          ? this.springClient.getArticlesByTitle(articleTitle)
+          : Promise.resolve(null),
       ]);
+
+      const users: Array<{ id: number }> = userResult
+        ? (SpringClientService.extractData<Array<{ id: number }>>(userResult) ?? [])
+        : [];
+      const articles: Array<{ id: number }> = articleResult
+        ? (SpringClientService.extractData<Array<{ id: number }>>(articleResult) ?? [])
+        : [];
 
       if (username) {
         const userIds = users.map((user) => user.id);
@@ -228,14 +233,21 @@ export class ArticleLogService {
       ...new Set(list.map((log: ArticleLogDocument) => log.articleId)),
     ];
 
-    const [users, articles] = await Promise.all([
+    const [userResult, articleResult] = await Promise.all([
       userIds.length > 0
-        ? this.userService.getUserByIds(userIds)
-        : Promise.resolve([]),
+        ? this.springClient.getUserByIds(userIds)
+        : Promise.resolve(null),
       articleIds.length > 0
-        ? this.articleService.getArticleByIds(articleIds)
-        : Promise.resolve([]),
+        ? this.springClient.getArticleByIds(articleIds)
+        : Promise.resolve(null),
     ]);
+
+    const users: Array<{ id: number; name: string }> = userResult
+      ? (SpringClientService.extractData<Array<{ id: number; name: string }>>(userResult) ?? [])
+      : [];
+    const articles: Array<{ id: number; title: string }> = articleResult
+      ? (SpringClientService.extractData<Array<{ id: number; title: string }>>(articleResult) ?? [])
+      : [];
 
     // 构建 userId → username 和 articleId → title 的映射表
     const userMap: Map<number, string> = new Map(
@@ -326,7 +338,8 @@ export class ArticleLogService {
     }
 
     const articleIds: number[] = results.map((doc) => doc._id as number);
-    const articles = await this.articleService.getArticleByIds(articleIds);
+    const articleResult = await this.springClient.getArticleByIds(articleIds);
+    const articles: Array<{ id: number; title: string }> = SpringClientService.extractData<Array<{ id: number; title: string }>>(articleResult) ?? [];
     const articleMap: Map<number, string> = new Map(
       articles.map((article) => [article.id, article.title]),
     );

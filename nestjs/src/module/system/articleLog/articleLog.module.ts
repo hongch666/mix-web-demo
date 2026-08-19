@@ -1,8 +1,7 @@
 import { Module } from "@nestjs/common";
 import { MongooseModule } from "@nestjs/mongoose";
+import { ClientModule } from "src/module/common/client/client.module";
 import { NacosModule } from "src/module/common/nacos/nacos.module";
-import { ArticleModule } from "src/module/system/article/article.module";
-import { UserModule } from "src/module/system/user/user.module";
 import { LogConsumerService } from "./articleLog.consume.service";
 import { ArticleLogController } from "./articleLog.controller";
 import { ArticleLogService } from "./articleLog.service";
@@ -13,8 +12,7 @@ import { ArticleLog, ArticleLogSchema } from "./schema/articleLog.schema";
     MongooseModule.forFeature([
       { name: ArticleLog.name, schema: ArticleLogSchema },
     ]),
-    UserModule,
-    ArticleModule,
+    ClientModule,
     NacosModule,
   ],
   providers: [ArticleLogService, LogConsumerService],
