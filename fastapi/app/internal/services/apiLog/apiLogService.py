@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
+from app.internal.clients import NestjsClient
 from app.internal.crud import ApiLogMapper, get_apilog_mapper
 
 from fastapi import Depends
@@ -11,6 +12,7 @@ class ApiLogService:
 
     def __init__(self, api_log_mapper: Optional[ApiLogMapper] = None) -> None:
         self.mapper: Optional[ApiLogMapper] = api_log_mapper
+        self._nestjs_client: NestjsClient = NestjsClient()
 
     async def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:
         """
@@ -19,7 +21,7 @@ class ApiLogService:
         Returns:
             List[Dict]: 接口平均响应时间列表
         """
-        return await self.mapper.get_api_average_response_time_mapper()
+        return await self._nestjs_client.get_api_average_speed()
 
     async def get_called_count_apis_service(self) -> List[Dict[str, Any]]:
         """
@@ -28,7 +30,7 @@ class ApiLogService:
         Returns:
             List[Dict]: 接口调用次数
         """
-        return await self.mapper.get_called_count_apis_mapper()
+        return await self._nestjs_client.get_called_count()
 
     async def get_api_call_statistics_service(self) -> Dict[str, Any]:
         """
