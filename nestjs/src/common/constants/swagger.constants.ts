@@ -17,5 +17,9 @@ export class SwaggerConfig {
       "GitHub 授权与操作相关API，包括授权登录、用户信息获取等",
     ],
     ["邮件模块", "邮件发送相关API，包括验证码邮件、通知邮件等"],
+    [
+      "MongoDB工具模块",
+      "MongoDB 日志查询工具相关API，仅限白名单内集合的只读查询",
+    ],
   ];
 }

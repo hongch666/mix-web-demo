@@ -3,6 +3,7 @@ import { ApiLogModule } from "./apiLog/apiLog.module";
 import { ArticleModule } from "./article/article.module";
 import { ArticleLogModule } from "./articleLog/articleLog.module";
 import { DownloadModule } from "./download/download.module";
+import { MongoToolsModule } from "./mongoTools/mongoTools.module";
 import { TableSettingsModule } from "./tableSettings/tableSettings.module";
 import { TestModule } from "./test/test.module";
 import { UploadModule } from "./upload/upload.module";
@@ -14,6 +15,7 @@ import { UserModule } from "./user/user.module";
     ArticleLogModule,
     ApiLogModule,
     DownloadModule,
+    MongoToolsModule,
     ArticleModule,
     UserModule,
     UploadModule,
@@ -24,6 +26,7 @@ import { UserModule } from "./user/user.module";
     ArticleModule,
     ArticleLogModule,
     ApiLogModule,
+    MongoToolsModule,
     DownloadModule,
     UploadModule,
     TableSettingsModule,
