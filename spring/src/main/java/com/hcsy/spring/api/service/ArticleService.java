@@ -47,4 +47,44 @@ public interface ArticleService {
     Flux<Article> listByIds(Collection<Long> ids);
 
     Mono<java.util.Map<Long, Integer>> getArticleViewsByIDs(Collection<Long> ids);
+
+    /**
+     * 获取文章总数
+     */
+    Mono<Long> getTotalArticles();
+
+    /**
+     * 获取所有文章的总阅读量
+     */
+    Mono<Integer> getTotalViews();
+
+    /**
+     * 获取活跃作者数（有文章的用户数）
+     */
+    Mono<Long> getActiveAuthors();
+
+    /**
+     * 获取平均阅读次数
+     */
+    Mono<Double> getAverageViews();
+
+    /**
+     * 获取导出Excel所需文章数据
+     */
+    Mono<List<java.util.Map<String, Object>>> getArticlesForExcelExport();
+
+    /**
+     * 获取Top10文章（按阅读量降序）
+     */
+    Mono<List<java.util.Map<String, Object>>> getTop10Articles();
+
+    /**
+     * 获取按子分类统计的文章数量
+     */
+    Mono<List<java.util.Map<String, Object>>> getCategoryArticleCount();
+
+    /**
+     * 获取最近24个月文章发布数量统计
+     */
+    Mono<List<java.util.Map<String, Object>>> getMonthlyPublishCount();
 }

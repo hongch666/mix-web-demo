@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -40,6 +43,7 @@ public class CommentsServiceImpl implements CommentsService {
     private final UserRepository userRepository;
     private final R2dbcEntityTemplate entityTemplate;
     private final TransactionalOperator transactionalOperator;
+    private final DatabaseClient databaseClient;
 
     @Override
     public Mono<PageDTO<Comments>> listCommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO) {
@@ -246,5 +250,73 @@ public class CommentsServiceImpl implements CommentsService {
                     });
             })
             .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    // ==================== 统计方法 ====================
+
+    @Override
+    public Mono<Long> getAiCommentsNumByArticleId(Long articleId) {
+        String sql = """
+            SELECT COUNT(*) FROM comments
+            WHERE article_id = :articleId AND user_id IN (SELECT id FROM users WHERE role = 'ai')
+            """;
+        return databaseClient.sql(sql)
+            .bind("articleId", articleId)
+            .map((row, metadata) -> row.get(0, Long.class))
+            .one()
+            .defaultIfEmpty(0L);
+    }
+
+    @Override
+    public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
+        String sql = """
+            DELETE FROM comments
+            WHERE article_id = :articleId AND user_id IN (SELECT id FROM users WHERE role = 'ai')
+            """;
+        return databaseClient.sql(sql)
+            .bind("articleId", articleId)
+            .then();
+    }
+
+    @Override
+    public Mono<Map<String, Object>> getMonthlyCommentTrend(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime lastDay;
+        if (today.getMonthValue() == 12) {
+            lastDay = LocalDate.of(today.getYear() + 1, 1, 1).atStartOfDay();
+        } else {
+            lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
+        }
+
+        String sql = """
+            SELECT DATE(create_time) as date, COUNT(*) as count
+            FROM comments
+            WHERE user_id = :userId AND create_time >= :firstDay AND create_time < :lastDay
+            GROUP BY DATE(create_time)
+            ORDER BY DATE(create_time)
+            """;
+
+        return databaseClient.sql(sql)
+            .bind("userId", userId)
+            .bind("firstDay", firstDay)
+            .bind("lastDay", lastDay)
+            .map((row, metadata) -> {
+                Map<String, Object> trend = new HashMap<>();
+                trend.put("date", row.get("date").toString());
+                trend.put("count", row.get("count"));
+                return trend;
+            })
+            .all()
+            .collectList()
+            .map(dailyTrends -> {
+                Map<String, Object> result = new HashMap<>();
+                result.put("daily_trends", dailyTrends);
+                long total = dailyTrends.stream()
+                    .mapToLong(t -> ((Number) t.get("count")).longValue())
+                    .sum();
+                result.put("total", total);
+                return result;
+            });
     }
 }

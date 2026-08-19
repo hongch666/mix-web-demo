@@ -118,4 +118,44 @@ public class FocusController {
         return focusService.getFollowCountsByUserIds(dto.getIds())
             .map(Result::success);
     }
+
+    // ==================== 统计接口 ====================
+
+    @GetMapping("/statistics/followers-in-period/{userId}")
+    @Operation(summary = "获取时间段内粉丝数（内部）", description = "获取指定时间段内的新增粉丝数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取时间段内粉丝数")
+    public Mono<Result<Long>> getFollowersInPeriod(
+        @PathVariable Long userId,
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
+        return focusService.getFollowersInPeriod(userId, startDate, endDate).map(Result::success);
+    }
+
+    @GetMapping("/statistics/daily-follows/{userId}")
+    @Operation(summary = "获取每日关注数（内部）", description = "获取指定时间段内每天的关注数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取每日关注数")
+    public Mono<Result<java.util.Map<String, Object>>> getDailyFollows(
+        @PathVariable Long userId,
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
+        return focusService.getDailyFollows(userId, startDate, endDate).map(Result::success);
+    }
+
+    @GetMapping("/statistics/total-follows/{userId}")
+    @Operation(summary = "获取总关注数（内部）", description = "获取用户的总关注数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取总关注数")
+    public Mono<Result<Long>> getTotalFollows(@PathVariable Long userId) {
+        return focusService.getTotalFollows(userId).map(Result::success);
+    }
+
+    @GetMapping("/statistics/monthly-trend/{userId}")
+    @Operation(summary = "获取用户月度关注趋势（内部）", description = "获取用户本月关注的趋势，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取用户月度关注趋势")
+    public Mono<Result<java.util.Map<String, Object>>> getMonthlyFollowTrend(@PathVariable Long userId) {
+        return focusService.getMonthlyFollowTrend(userId).map(Result::success);
+    }
 }

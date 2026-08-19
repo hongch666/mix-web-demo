@@ -1,7 +1,9 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -9,6 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -43,6 +46,7 @@ public class ArticleServiceImpl implements ArticleService {
     private final SubCategoryRepository subCategoryRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionalOperator transactionalOperator;
+    private final DatabaseClient databaseClient;
 
     @Override
     public Flux<Article> listPublishedArticles() {
@@ -198,6 +202,11 @@ public class ArticleServiceImpl implements ArticleService {
             .collectMap(Article::getId, Article::getViews);
     }
 
+    @Override
+    public Mono<Long> getTotalArticles() {
+        return articleRepository.count();
+    }
+
     private Mono<PageDTO<ArticleWithCategoryVO>> toArticleVoPage(PageDTO<Article> source) {
         List<Article> records = source.getRecords();
         if (records == null || records.isEmpty()) {
@@ -276,5 +285,153 @@ public class ArticleServiceImpl implements ArticleService {
 
     private BusinessException unprocessable(String message) {
         return BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY).errorMessage(message).build();
+    }
+
+    // ==================== 统计方法 ====================
+
+    @Override
+    public Mono<Integer> getTotalViews() {
+        return articleRepository.findAll()
+            .map(article -> article.getViews() != null ? article.getViews() : 0)
+            .reduce(0, Integer::sum);
+    }
+
+    @Override
+    public Mono<Long> getActiveAuthors() {
+        String sql = "SELECT COUNT(DISTINCT user_id) FROM articles";
+        return databaseClient.sql(sql)
+            .map((row, metadata) -> row.get(0, Long.class))
+            .one()
+            .defaultIfEmpty(0L);
+    }
+
+    @Override
+    public Mono<Double> getAverageViews() {
+        return articleRepository.findAll()
+            .map(article -> article.getViews() != null ? article.getViews() : 0)
+            .collectList()
+            .map(views -> {
+                if (views.isEmpty()) {
+                    return 0.0;
+                }
+                double sum = views.stream().mapToInt(Integer::intValue).sum();
+                return Math.round(sum / views.size() * 100.0) / 100.0;
+            });
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getArticlesForExcelExport() {
+        String sql = """
+            SELECT
+                a.id, a.title, a.content, a.user_id, u.name as username,
+                a.tags, a.status, a.create_at, a.update_at, a.views,
+                a.sub_category_id, sc.name as sub_category_name,
+                c.id as category_id, c.name as category_name,
+                (SELECT COUNT(*) FROM likes l WHERE l.article_id = a.id) as like_count,
+                (SELECT COUNT(*) FROM collects cl WHERE cl.article_id = a.id) as collect_count
+            FROM articles a
+            LEFT JOIN users u ON a.user_id = u.id
+            LEFT JOIN sub_categories sc ON a.sub_category_id = sc.id
+            LEFT JOIN categories c ON sc.category_id = c.id
+            ORDER BY a.id
+            """;
+
+        return databaseClient.sql(sql)
+            .map((row, metadata) -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", row.get("id"));
+                map.put("title", row.get("title"));
+                map.put("content", row.get("content"));
+                map.put("user_id", row.get("user_id"));
+                map.put("username", row.get("username"));
+                map.put("tags", row.get("tags"));
+                map.put("status", row.get("status"));
+                map.put("create_at", row.get("create_at"));
+                map.put("update_at", row.get("update_at"));
+                map.put("views", row.get("views"));
+                map.put("sub_category_id", row.get("sub_category_id"));
+                map.put("sub_category_name", row.get("sub_category_name"));
+                map.put("category_id", row.get("category_id"));
+                map.put("category_name", row.get("category_name"));
+                map.put("like_count", row.get("like_count"));
+                map.put("collect_count", row.get("collect_count"));
+                return map;
+            })
+            .all()
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getTop10Articles() {
+        String sql = """
+            SELECT id, title, tags, status, views, create_at, update_at, content, user_id, sub_category_id
+            FROM articles
+            ORDER BY views DESC
+            LIMIT 10
+            """;
+
+        return databaseClient.sql(sql)
+            .map((row, metadata) -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", row.get("id"));
+                map.put("title", row.get("title"));
+                map.put("tags", row.get("tags"));
+                map.put("status", row.get("status"));
+                map.put("views", row.get("views"));
+                map.put("create_at", row.get("create_at"));
+                map.put("update_at", row.get("update_at"));
+                map.put("content", row.get("content"));
+                map.put("user_id", row.get("user_id"));
+                map.put("sub_category_id", row.get("sub_category_id"));
+                return map;
+            })
+            .all()
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getCategoryArticleCount() {
+        String sql = """
+            SELECT sub_category_id, COUNT(*) as count
+            FROM articles
+            WHERE status = 1
+            GROUP BY sub_category_id
+            ORDER BY count DESC
+            """;
+
+        return databaseClient.sql(sql)
+            .map((row, metadata) -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("sub_category_id", row.get("sub_category_id"));
+                map.put("count", row.get("count"));
+                return map;
+            })
+            .all()
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getMonthlyPublishCount() {
+        String sql = """
+            SELECT DATE_FORMAT(create_at, '%Y-%m') as year_month, COUNT(*) as count
+            FROM articles
+            WHERE status = 1 AND create_at >= DATE_SUB(NOW(), INTERVAL 24 MONTH)
+            GROUP BY year_month
+            ORDER BY year_month DESC
+            """;
+
+        return databaseClient.sql(sql)
+            .map((row, metadata) -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("year_month", row.get("year_month"));
+                map.put("count", row.get("count"));
+                return map;
+            })
+            .all()
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

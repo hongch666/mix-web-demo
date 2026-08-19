@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hcsy.spring.api.service.CategoryReferenceService;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -44,6 +45,7 @@ import reactor.core.publisher.Mono;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final CategoryReferenceService categoryReferenceService;
 
     @Operation(summary = "新增分类")
     @PostMapping()
@@ -179,5 +181,43 @@ public class CategoryController {
             })
             .collectList()
             .map(Result::success);
+    }
+
+    // ==================== 内部接口 ====================
+
+    @GetMapping("/internal/all")
+    @Operation(summary = "获取所有分类（内部）", description = "获取所有分类列表，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取所有分类")
+    public Mono<Result<List<CategoryVO>>> getAllCategories() {
+        return categoryService.listAllCategories()
+            .map(category -> {
+                CategoryVO vo = new CategoryVO();
+                org.springframework.beans.BeanUtils.copyProperties(category, vo);
+                return vo;
+            })
+            .collectList()
+            .map(Result::success);
+    }
+
+    @GetMapping("/internal/sub/with-parent")
+    @Operation(summary = "获取子分类及其父分类信息（内部）", description = "获取所有子分类及对应的父分类名称，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取子分类及父分类信息")
+    public Mono<Result<List<Map<String, Object>>>> getSubcategoriesWithParent() {
+        return categoryService.listAllSubCategoriesWithParent()
+            .collectList()
+            .map(Result::success);
+    }
+
+    @GetMapping("/internal/reference/sub/{sub_category_id}")
+    @Operation(summary = "获取子分类权威参考文本（内部）", description = "根据子分类ID获取权威参考文本，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取子分类权威参考文本")
+    public Mono<Result<com.hcsy.spring.entity.vo.CategoryReferenceVO>> getCategoryReferenceBySubCategoryId(
+        @PathVariable("sub_category_id") Long subCategoryId) {
+        return categoryReferenceService.getCategoryReferenceBySubCategoryId(subCategoryId)
+            .map(Result::success)
+            .defaultIfEmpty(Result.<com.hcsy.spring.entity.vo.CategoryReferenceVO>success(null));
     }
 }

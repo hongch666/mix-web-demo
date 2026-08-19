@@ -98,4 +98,30 @@ public class ArticleCollectController {
         return articleCollectService.getCollectCountsByArticleIds(dto.getIds())
             .map(Result::success);
     }
+
+    // ==================== 统计接口 ====================
+
+    @GetMapping("/statistics/total")
+    @Operation(summary = "获取总收藏数（内部）", description = "获取所有文章的总收藏数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取总收藏数")
+    public Mono<Result<Long>> getTotalCollects() {
+        return articleCollectService.getTotalCollects().map(Result::success);
+    }
+
+    @GetMapping("/statistics/average")
+    @Operation(summary = "获取平均收藏数（内部）", description = "获取每篇文章的平均收藏数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取平均收藏数")
+    public Mono<Result<Double>> getAverageCollects() {
+        return articleCollectService.getAverageCollects().map(Result::success);
+    }
+
+    @GetMapping("/statistics/monthly-trend/{userId}")
+    @Operation(summary = "获取用户月度收藏趋势（内部）", description = "获取用户本月收藏的趋势，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取用户月度收藏趋势")
+    public Mono<Result<java.util.Map<String, Object>>> getMonthlyCollectTrend(@PathVariable Long userId) {
+        return articleCollectService.getMonthlyCollectTrend(userId).map(Result::success);
+    }
 }

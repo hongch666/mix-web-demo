@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.service;
 
+import java.util.Map;
+
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 
@@ -16,5 +18,20 @@ public interface ArticleCollectService {
 
     Mono<Long> getCollectCountByArticleId(Long articleId);
 
-    Mono<java.util.Map<Long, Long>> getCollectCountsByArticleIds(java.util.Collection<Long> articleIds);
+    Mono<Map<Long, Long>> getCollectCountsByArticleIds(java.util.Collection<Long> articleIds);
+
+    /**
+     * 获取所有文章的总收藏数
+     */
+    Mono<Long> getTotalCollects();
+
+    /**
+     * 获取每篇文章的平均收藏数
+     */
+    Mono<Double> getAverageCollects();
+
+    /**
+     * 获取用户本月收藏的趋势
+     */
+    Mono<Map<String, Object>> getMonthlyCollectTrend(Long userId);
 }

@@ -1,16 +1,20 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.hcsy.spring.api.repository.ArticleCollectRepository;
 import com.hcsy.spring.api.service.ArticleCollectService;
+import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
@@ -27,6 +31,8 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     private final ArticleCollectRepository articleCollectRepository;
     private final ArticleInteractionAssembler assembler;
     private final TransactionalOperator transactionalOperator;
+    private final ArticleService articleService;
+    private final DatabaseClient databaseClient;
 
     @Override
     @ArticleSync(action = "collect", description = "收藏了1篇文章")
@@ -98,5 +104,66 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         result.setTotal(total);
         result.setRecords(records);
         return result;
+    }
+
+    // ==================== 统计方法 ====================
+
+    @Override
+    public Mono<Long> getTotalCollects() {
+        return articleCollectRepository.count();
+    }
+
+    @Override
+    public Mono<Double> getAverageCollects() {
+        return articleService.getTotalArticles()
+            .flatMap(totalArticles -> {
+                if (totalArticles == 0) {
+                    return Mono.just(0.0);
+                }
+                return getTotalCollects()
+                    .map(totalCollects -> Math.round(totalCollects * 100.0 / totalArticles) / 100.0);
+            });
+    }
+
+    @Override
+    public Mono<Map<String, Object>> getMonthlyCollectTrend(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime lastDay;
+        if (today.getMonthValue() == 12) {
+            lastDay = LocalDate.of(today.getYear() + 1, 1, 1).atStartOfDay();
+        } else {
+            lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
+        }
+
+        String sql = """
+            SELECT DATE(created_time) as date, COUNT(*) as count
+            FROM collects
+            WHERE user_id = :userId AND created_time >= :firstDay AND created_time < :lastDay
+            GROUP BY DATE(created_time)
+            ORDER BY DATE(created_time)
+            """;
+
+        return databaseClient.sql(sql)
+            .bind("userId", userId)
+            .bind("firstDay", firstDay)
+            .bind("lastDay", lastDay)
+            .map((row, metadata) -> {
+                Map<String, Object> trend = new HashMap<>();
+                trend.put("date", row.get("date").toString());
+                trend.put("count", row.get("count"));
+                return trend;
+            })
+            .all()
+            .collectList()
+            .map(dailyTrends -> {
+                Map<String, Object> result = new HashMap<>();
+                result.put("daily_trends", dailyTrends);
+                long total = dailyTrends.stream()
+                    .mapToLong(t -> ((Number) t.get("count")).longValue())
+                    .sum();
+                result.put("total", total);
+                return result;
+            });
     }
 }

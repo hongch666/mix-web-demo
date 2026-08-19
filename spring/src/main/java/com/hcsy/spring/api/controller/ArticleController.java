@@ -205,4 +205,70 @@ public class ArticleController {
             .map(Result::success);
     }
 
+    // ==================== 统计接口 ====================
+
+    @GetMapping("/statistics/total-views")
+    @Operation(summary = "获取文章总阅读量（内部）", description = "获取所有文章的总阅读量，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取文章总阅读量")
+    public Mono<Result<Integer>> getTotalViews() {
+        return articleService.getTotalViews().map(Result::success);
+    }
+
+    @GetMapping("/statistics/total")
+    @Operation(summary = "获取文章总数（内部）", description = "获取文章总数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取文章总数")
+    public Mono<Result<Long>> getTotalArticles() {
+        return articleService.getTotalArticles().map(Result::success);
+    }
+
+    @GetMapping("/statistics/active-authors")
+    @Operation(summary = "获取活跃作者数（内部）", description = "获取活跃作者数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取活跃作者数")
+    public Mono<Result<Long>> getActiveAuthors() {
+        return articleService.getActiveAuthors().map(Result::success);
+    }
+
+    @GetMapping("/statistics/average-views")
+    @Operation(summary = "获取平均阅读量（内部）", description = "获取平均阅读量，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取平均阅读量")
+    public Mono<Result<Double>> getAverageViews() {
+        return articleService.getAverageViews().map(Result::success);
+    }
+
+    @GetMapping("/statistics/excel-export")
+    @Operation(summary = "获取导出Excel所需文章数据（内部）", description = "获取导出Excel所需文章数据，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取导出Excel数据")
+    public Mono<Result<List<Map<String, Object>>>> getArticlesForExcelExport() {
+        return articleService.getArticlesForExcelExport().map(Result::success);
+    }
+
+    @GetMapping("/statistics/top10")
+    @Operation(summary = "获取Top10文章（内部）", description = "获取Top10文章（按阅读量降序），供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取Top10文章")
+    public Mono<Result<List<Map<String, Object>>>> getTop10Articles() {
+        return articleService.getTop10Articles().map(Result::success);
+    }
+
+    @GetMapping("/statistics/category-count")
+    @Operation(summary = "获取按子分类统计的文章数量（内部）", description = "获取按子分类统计的文章数量，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取分类文章数量统计")
+    public Mono<Result<List<Map<String, Object>>>> getCategoryArticleCount() {
+        return articleService.getCategoryArticleCount().map(Result::success);
+    }
+
+    @GetMapping("/statistics/monthly-publish-count")
+    @Operation(summary = "获取最近24个月文章发布数量统计（内部）", description = "获取最近24个月文章发布数量统计，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取月度发布数量统计")
+    public Mono<Result<List<Map<String, Object>>>> getMonthlyPublishCount() {
+        return articleService.getMonthlyPublishCount().map(Result::success);
+    }
+
 }

@@ -98,4 +98,30 @@ public class ArticleLikeController {
         return articleLikeService.getLikeCountsByArticleIds(dto.getIds())
             .map(Result::success);
     }
+
+    // ==================== 统计接口 ====================
+
+    @GetMapping("/statistics/total")
+    @Operation(summary = "获取总点赞数（内部）", description = "获取所有文章的总点赞数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取总点赞数")
+    public Mono<Result<Long>> getTotalLikes() {
+        return articleLikeService.getTotalLikes().map(Result::success);
+    }
+
+    @GetMapping("/statistics/average")
+    @Operation(summary = "获取平均点赞数（内部）", description = "获取每篇文章的平均点赞数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取平均点赞数")
+    public Mono<Result<Double>> getAverageLikes() {
+        return articleLikeService.getAverageLikes().map(Result::success);
+    }
+
+    @GetMapping("/statistics/monthly-trend/{userId}")
+    @Operation(summary = "获取用户月度点赞趋势（内部）", description = "获取用户本月点赞的趋势，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取用户月度点赞趋势")
+    public Mono<Result<java.util.Map<String, Object>>> getMonthlyLikeTrend(@PathVariable Long userId) {
+        return articleLikeService.getMonthlyLikeTrend(userId).map(Result::success);
+    }
 }

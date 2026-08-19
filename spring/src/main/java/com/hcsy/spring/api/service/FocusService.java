@@ -1,5 +1,8 @@
 package com.hcsy.spring.api.service;
 
+import java.time.LocalDateTime;
+import java.util.Map;
+
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 
@@ -20,5 +23,25 @@ public interface FocusService {
 
     Mono<Long> getFollowerCountByUserId(Long userId);
 
-    Mono<java.util.Map<Long, Long>> getFollowCountsByUserIds(java.util.Collection<Long> userIds);
+    Mono<Map<Long, Long>> getFollowCountsByUserIds(java.util.Collection<Long> userIds);
+
+    /**
+     * 获取指定时间段内的新增粉丝数
+     */
+    Mono<Long> getFollowersInPeriod(Long userId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * 获取指定时间段内每天的关注数
+     */
+    Mono<Map<String, Object>> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * 获取用户的总关注数
+     */
+    Mono<Long> getTotalFollows(Long userId);
+
+    /**
+     * 获取用户本月关注的趋势
+     */
+    Mono<Map<String, Object>> getMonthlyFollowTrend(Long userId);
 }

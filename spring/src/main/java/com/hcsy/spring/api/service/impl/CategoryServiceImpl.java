@@ -221,4 +221,34 @@ public class CategoryServiceImpl implements CategoryService {
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
     }
+
+    // ==================== 内部接口方法 ====================
+
+    @Override
+    public Flux<Category> listAllCategories() {
+        return categoryRepository.findAll();
+    }
+
+    @Override
+    public Flux<java.util.Map<String, Object>> listAllSubCategoriesWithParent() {
+        return subCategoryRepository.findAll()
+            .flatMap(subCategory -> categoryRepository.findById(subCategory.getCategoryId())
+                .map(category -> {
+                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", subCategory.getId());
+                    map.put("name", subCategory.getName());
+                    map.put("category_id", subCategory.getCategoryId());
+                    map.put("category_name", category.getName());
+                    map.put("create_time", subCategory.getCreateTime());
+                    map.put("update_time", subCategory.getUpdateTime());
+                    return map;
+                })
+                .defaultIfEmpty(java.util.Map.of(
+                    "id", subCategory.getId(),
+                    "name", subCategory.getName(),
+                    "category_id", subCategory.getCategoryId(),
+                    "category_name", "未分类",
+                    "create_time", subCategory.getCreateTime(),
+                    "update_time", subCategory.getUpdateTime())));
+    }
 }

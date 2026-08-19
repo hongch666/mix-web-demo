@@ -1,7 +1,9 @@
 package com.hcsy.spring.api.service;
 
 import java.util.List;
+import java.util.Map;
 
+import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Comments;
@@ -33,6 +35,21 @@ public interface CommentsService {
     /**
      * 批量查询文章评论评分，按角色（ai/user）分组
      */
-    Mono<java.util.Map<Long, java.util.Map<String, com.hcsy.spring.entity.dto.CommentScoreDTO>>> getCommentScoresByArticleIds(
+    Mono<Map<Long, Map<String, CommentScoreDTO>>> getCommentScoresByArticleIds(
         java.util.Collection<Long> articleIds);
+
+    /**
+     * 获取文章的AI评论数
+     */
+    Mono<Long> getAiCommentsNumByArticleId(Long articleId);
+
+    /**
+     * 删除文章的AI评论
+     */
+    Mono<Void> deleteAiCommentsByArticleId(Long articleId);
+
+    /**
+     * 获取用户本月评论的趋势
+     */
+    Mono<Map<String, Object>> getMonthlyCommentTrend(Long userId);
 }

@@ -39,4 +39,9 @@ public interface CategoryService {
     Flux<Category> listByIds(Collection<Long> ids);
 
     Flux<SubCategory> listSubCategoriesByIds(Collection<Long> ids);
+
+    // 新增：供内部接口使用的方法
+    Flux<Category> listAllCategories();
+
+    Flux<java.util.Map<String, Object>> listAllSubCategoriesWithParent();
 }
