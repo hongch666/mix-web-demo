@@ -2,6 +2,7 @@ package com.hcsy.spring.api.controller;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
+import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
 import com.hcsy.spring.entity.vo.PageVO;
@@ -165,6 +167,32 @@ public class ArticleController {
         @RequestParam(defaultValue = "10") int size) {
         return articleService.listUnpublishedArticlesWithCategory(page, size)
             .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "批量查询文章（内部）", description = "根据ID列表批量查询文章，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询文章")
+    public Mono<Result<List<ArticleWithCategoryVO>>> getArticleByIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return articleService.listByIds(dto.getIds())
+            .collectList()
+            .map(articles -> articles.stream()
+                .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
+                .collect(Collectors.toList()))
+            .map(Result::success);
+    }
+
+    @GetMapping("/by-title")
+    @Operation(summary = "根据标题模糊搜索文章（内部）", description = "根据标题模糊搜索，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部搜索文章")
+    public Mono<Result<List<ArticleWithCategoryVO>>> getArticlesByTitle(@RequestParam String title) {
+        return articleService.listAllArticlesByTitle(title)
+            .collectList()
+            .map(articles -> articles.stream()
+                .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
+                .collect(Collectors.toList()))
+            .map(Result::success);
     }
 
 }

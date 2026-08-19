@@ -6,6 +6,7 @@ import java.util.List;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
+import com.hcsy.spring.entity.dto.GithubUserInternalDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
@@ -37,6 +38,12 @@ public interface UserService {
     Mono<User> findByEmail(String email);
 
     Flux<User> listAllUserByUsername(String username);
+
+    Mono<User> findByGithubId(Long githubId);
+
+    Mono<User> findOrCreateGithubUser(GithubUserInternalDTO dto);
+
+    Mono<Boolean> isAdminUser(Long userId);
 
     Mono<UserLoginVO> login(LoginDTO loginDTO);
 

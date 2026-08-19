@@ -2,6 +2,7 @@ package com.hcsy.spring.api.controller;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -27,10 +28,12 @@ import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.EmailCodeSendDTO;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
+import com.hcsy.spring.entity.dto.GithubUserInternalDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.RefreshTokenDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
@@ -308,5 +311,65 @@ public class UserController {
     @ApiLog("重置指定用户密码")
     public Mono<Result<Void>> resetUserPassword(@PathVariable("user_id") Long userId) {
         return userService.resetUserPassword(userId).thenReturn(Result.<Void>success());
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "批量查询用户（内部）", description = "根据ID列表批量查询用户，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询用户")
+    public Mono<Result<List<UserVO>>> getUserByIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return userService.listByIds(dto.getIds())
+            .collectList()
+            .map(users -> users.stream()
+                .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+                .collect(Collectors.toList()))
+            .map(Result::success);
+    }
+
+    @GetMapping("/by-name")
+    @Operation(summary = "根据用户名模糊搜索用户（内部）", description = "根据用户名或GitHub登录名模糊搜索，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部搜索用户")
+    public Mono<Result<List<UserVO>>> getUsersByName(@RequestParam String name) {
+        return userService.listAllUserByUsername(name)
+            .collectList()
+            .map(users -> users.stream()
+                .map(user -> BeanUtil.copyProperties(user, UserVO.class))
+                .collect(Collectors.toList()))
+            .map(Result::success);
+    }
+
+    @GetMapping("/by-github-id/{githubId}")
+    @Operation(summary = "根据GitHub ID查询用户（内部）", description = "根据GitHub ID查询用户，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部GitHub ID查询用户")
+    public Mono<Result<UserVO>> getUserByGithubId(@PathVariable Long githubId) {
+        return userService.findByGithubId(githubId)
+            .map(user -> {
+                UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
+                return Result.success(vo);
+            })
+            .defaultIfEmpty(Result.<UserVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+    }
+
+    @PostMapping("/github-user")
+    @Operation(summary = "创建或更新GitHub用户（内部）", description = "GitHub OAuth登录后创建或更新用户，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部创建或更新GitHub用户")
+    public Mono<Result<UserVO>> findOrCreateGithubUser(@Valid @RequestBody GithubUserInternalDTO dto) {
+        return userService.findOrCreateGithubUser(dto)
+            .map(user -> {
+                UserVO vo = BeanUtil.copyProperties(user, UserVO.class);
+                return Result.success(vo);
+            });
+    }
+
+    @GetMapping("/{id}/is-admin")
+    @Operation(summary = "判断用户是否为管理员（内部）", description = "根据用户ID判断是否为管理员，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部判断管理员")
+    public Mono<Result<Boolean>> isAdminUser(@PathVariable Long id) {
+        return userService.isAdminUser(id)
+            .map(Result::success);
     }
 }

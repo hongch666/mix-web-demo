@@ -28,6 +28,7 @@ import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
 import com.hcsy.spring.entity.dto.GithubTokenTicketCreateDTO;
+import com.hcsy.spring.entity.dto.GithubUserInternalDTO;
 import com.hcsy.spring.entity.dto.LoginDTO;
 import com.hcsy.spring.entity.dto.ResetPasswordDTO;
 import com.hcsy.spring.entity.dto.UserCreateDTO;
@@ -403,6 +404,62 @@ public class UserServiceImpl implements UserService {
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
             .then();
+    }
+
+    @Override
+    public Mono<User> findByGithubId(Long githubId) {
+        if (githubId == null) {
+            return Mono.empty();
+        }
+        return userRepository.findByGithubId(githubId);
+    }
+
+    @Override
+    public Mono<User> findOrCreateGithubUser(GithubUserInternalDTO dto) {
+        String githubId = dto.getGithubId();
+        return userRepository.findByGithubId(Long.valueOf(githubId))
+            .flatMap(existingUser -> {
+                existingUser.setGithubLogin(dto.getGithubLogin());
+                existingUser.setGithubUrl(dto.getGithubUrl());
+                existingUser.setImg(dto.getAvatarUrl());
+                if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+                    existingUser.setEmail(dto.getEmail());
+                }
+                existingUser.setAuthProvider("github");
+                existingUser.setLastLoginAt(LocalDateTime.now());
+                return transactionalOperator.transactional(userRepository.save(existingUser));
+            })
+            .switchIfEmpty(Mono.defer(() -> {
+                User newUser = new User();
+                newUser.setGithubId(Long.valueOf(githubId));
+                newUser.setGithubLogin(dto.getGithubLogin());
+                newUser.setGithubUrl(dto.getGithubUrl());
+                newUser.setName(dto.getGithubName() != null && !dto.getGithubName().isBlank()
+                    ? dto.getGithubName()
+                    : dto.getGithubLogin());
+                newUser.setEmail(dto.getEmail());
+                newUser.setImg(dto.getAvatarUrl());
+                newUser.setAge(18);
+                newUser.setRole("user");
+                newUser.setAuthProvider("github");
+                newUser.setLastLoginAt(LocalDateTime.now());
+                return encryptPassword(userPasswordProperties.getDefaultPassword())
+                    .flatMap(password -> {
+                        newUser.setPassword(password);
+                        return saveUserAndStatus(newUser);
+                    })
+                    .flatMap(saved -> evictAllUsersCache().thenReturn(saved));
+            }));
+    }
+
+    @Override
+    public Mono<Boolean> isAdminUser(Long userId) {
+        if (userId == null) {
+            return Mono.just(false);
+        }
+        return userRepository.findById(userId)
+            .map(user -> "admin".equalsIgnoreCase(user.getRole()))
+            .defaultIfEmpty(false);
     }
 
     @Override
