@@ -45,4 +45,6 @@ public interface ArticleService {
     Mono<Article> getById(Long id);
 
     Flux<Article> listByIds(Collection<Long> ids);
+
+    Mono<java.util.Map<Long, Integer>> getArticleViewsByIDs(Collection<Long> ids);
 }

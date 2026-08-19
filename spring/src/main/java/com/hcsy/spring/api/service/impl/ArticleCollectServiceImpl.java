@@ -1,7 +1,9 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -71,6 +74,17 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     @Override
     public Mono<Long> getCollectCountByArticleId(Long articleId) {
         return articleCollectRepository.countByArticleId(articleId);
+    }
+
+    @Override
+    public Mono<Map<Long, Long>> getCollectCountsByArticleIds(Collection<Long> articleIds) {
+        if (articleIds == null || articleIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        return Flux.fromIterable(articleIds)
+            .flatMap(id -> articleCollectRepository.countByArticleId(id)
+                .map(count -> Map.entry(id, count)))
+            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
     private PageRequest pageRequest(long page, long size) {

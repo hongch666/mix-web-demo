@@ -15,4 +15,6 @@ public interface ArticleCollectService {
     Mono<PageDTO<ArticleCollectVO>> listUserCollects(Long userId, long page, long size);
 
     Mono<Long> getCollectCountByArticleId(Long articleId);
+
+    Mono<java.util.Map<Long, Long>> getCollectCountsByArticleIds(java.util.Collection<Long> articleIds);
 }

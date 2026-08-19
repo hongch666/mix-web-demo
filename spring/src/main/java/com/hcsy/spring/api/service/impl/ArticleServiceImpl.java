@@ -189,6 +189,15 @@ public class ArticleServiceImpl implements ArticleService {
         return articleRepository.findAllById(ids);
     }
 
+    @Override
+    public Mono<Map<Long, Integer>> getArticleViewsByIDs(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Mono.just(Collections.emptyMap());
+        }
+        return articleRepository.findAllById(ids)
+            .collectMap(Article::getId, Article::getViews);
+    }
+
     private Mono<PageDTO<ArticleWithCategoryVO>> toArticleVoPage(PageDTO<Article> source) {
         List<Article> records = source.getRecords();
         if (records == null || records.isEmpty()) {

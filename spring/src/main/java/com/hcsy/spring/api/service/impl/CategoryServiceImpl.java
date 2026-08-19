@@ -160,6 +160,11 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findAllById(ids);
     }
 
+    @Override
+    public Flux<SubCategory> listSubCategoriesByIds(Collection<Long> ids) {
+        return subCategoryRepository.findAllById(ids);
+    }
+
     private Mono<CategoryVO> loadCategory(Long id) {
         return categoryRepository.findById(id).flatMap(category -> {
             CategoryVO vo = new CategoryVO();

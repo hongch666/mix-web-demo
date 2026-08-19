@@ -15,4 +15,6 @@ public interface ArticleLikeService {
     Mono<PageDTO<ArticleLikeVO>> listUserLikes(Long userId, long page, long size);
 
     Mono<Long> getLikeCountByArticleId(Long articleId);
+
+    Mono<java.util.Map<Long, Long>> getLikeCountsByArticleIds(java.util.Collection<Long> articleIds);
 }

@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -88,6 +89,17 @@ public class FocusServiceImpl implements FocusService {
     @Override
     public Mono<Long> getFollowerCountByUserId(Long userId) {
         return focusRepository.countByFocusId(userId);
+    }
+
+    @Override
+    public Mono<Map<Long, Long>> getFollowCountsByUserIds(Collection<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        return Flux.fromIterable(userIds)
+            .flatMap(id -> focusRepository.countByFocusId(id)
+                .map(count -> Map.entry(id, count)))
+            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
     private Mono<PageDTO<FocusUserVO>> buildPage(

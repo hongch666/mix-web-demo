@@ -28,8 +28,11 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
+import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -184,6 +187,16 @@ public class CommentsController {
                         return vo;
                     }).toList());
             })
+            .map(Result::success);
+    }
+
+    @PostMapping("/scores/batch")
+    @Operation(summary = "批量查询评论评分（内部）", description = "根据文章ID列表批量查询评论评分，按角色分组，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询评论评分")
+    public Mono<Result<Map<Long, Map<String, CommentScoreDTO>>>> getCommentScoresByArticleIds(
+        @Valid @RequestBody BatchIdsDTO dto) {
+        return commentsService.getCommentScoresByArticleIds(dto.getIds())
             .map(Result::success);
     }
 

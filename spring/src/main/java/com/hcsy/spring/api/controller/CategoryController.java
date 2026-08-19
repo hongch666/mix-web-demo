@@ -21,15 +21,19 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
+import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.vo.CategoryVO;
+import com.hcsy.spring.entity.vo.SubCategoryVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -145,5 +149,35 @@ public class CategoryController {
         return categoryService.getCategoryById(id)
             .map(Result::success)
             .defaultIfEmpty(Result.<CategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_CATEGORY));
+    }
+
+    @PostMapping("/batch")
+    @Operation(summary = "批量查询分类（内部）", description = "根据ID列表批量查询分类，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询分类")
+    public Mono<Result<List<CategoryVO>>> getCategoryByIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return categoryService.listByIds(dto.getIds())
+            .map(category -> {
+                CategoryVO vo = new CategoryVO();
+                org.springframework.beans.BeanUtils.copyProperties(category, vo);
+                return vo;
+            })
+            .collectList()
+            .map(Result::success);
+    }
+
+    @PostMapping("/sub/batch")
+    @Operation(summary = "批量查询子分类（内部）", description = "根据ID列表批量查询子分类，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询子分类")
+    public Mono<Result<List<SubCategoryVO>>> getSubCategoryByIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return categoryService.listSubCategoriesByIds(dto.getIds())
+            .map(sub -> {
+                SubCategoryVO vo = new SubCategoryVO();
+                org.springframework.beans.BeanUtils.copyProperties(sub, vo);
+                return vo;
+            })
+            .collectList()
+            .map(Result::success);
     }
 }

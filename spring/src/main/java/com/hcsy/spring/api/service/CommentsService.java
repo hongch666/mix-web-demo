@@ -29,4 +29,10 @@ public interface CommentsService {
     Mono<Void> deleteComment(Long id);
 
     Mono<Void> deleteComments(List<Long> ids);
+
+    /**
+     * 批量查询文章评论评分，按角色（ai/user）分组
+     */
+    Mono<java.util.Map<Long, java.util.Map<String, com.hcsy.spring.entity.dto.CommentScoreDTO>>> getCommentScoresByArticleIds(
+        java.util.Collection<Long> articleIds);
 }

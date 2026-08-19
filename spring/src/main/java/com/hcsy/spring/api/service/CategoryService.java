@@ -9,6 +9,7 @@ import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
+import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.vo.CategoryVO;
 
 import reactor.core.publisher.Flux;
@@ -36,4 +37,6 @@ public interface CategoryService {
     Mono<PageDTO<CategoryVO>> pageCategory(long page, long size);
 
     Flux<Category> listByIds(Collection<Long> ids);
+
+    Flux<SubCategory> listSubCategoriesByIds(Collection<Long> ids);
 }

@@ -2,6 +2,7 @@ package com.hcsy.spring.api.controller;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -192,6 +193,15 @@ public class ArticleController {
             .map(articles -> articles.stream()
                 .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
                 .collect(Collectors.toList()))
+            .map(Result::success);
+    }
+
+    @PostMapping("/views/batch")
+    @Operation(summary = "批量查询文章阅读量（内部）", description = "根据ID列表批量查询文章阅读量，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询文章阅读量")
+    public Mono<Result<Map<Long, Integer>>> getArticleViewsByIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return articleService.getArticleViewsByIDs(dto.getIds())
             .map(Result::success);
     }
 

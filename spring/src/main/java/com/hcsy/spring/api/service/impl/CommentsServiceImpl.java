@@ -1,6 +1,9 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
@@ -17,6 +20,7 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
@@ -193,5 +197,54 @@ public class CommentsServiceImpl implements CommentsService {
 
     private BusinessException notFound(String message) {
         return BusinessException.builder().httpStatus(HttpCode.NOT_FOUND).errorMessage(message).build();
+    }
+
+    @Override
+    public Mono<Map<Long, Map<String, CommentScoreDTO>>> getCommentScoresByArticleIds(Collection<Long> articleIds) {
+        if (articleIds == null || articleIds.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        // 批量查询评论评分，按角色（ai/user）分组，与 gozero COMMENT_RATING_QUERY 逻辑一致
+        return Flux.fromIterable(articleIds)
+            .flatMap(articleId -> {
+                Criteria criteria = Criteria.where("article_id").is(articleId).and("star").greaterThan(0);
+                Query query = Query.query(criteria);
+                return entityTemplate.select(Comments.class).matching(query).all()
+                    .collectList()
+                    .flatMap(comments -> {
+                        if (comments.isEmpty()) {
+                            return Mono.just(Map.entry(articleId, Map.<String, CommentScoreDTO>of()));
+                        }
+                        List<Long> userIds = comments.stream().map(Comments::getUserId).distinct().toList();
+                        return userRepository.findAllById(userIds)
+                            .collectMap(User::getId, User::getRole)
+                            .map(userRoleMap -> {
+                                Map<String, CommentScoreDTO> roleScores = new HashMap<>();
+                                // 按角色分组计算平均分和数量
+                                double aiSum = 0;
+                                long aiCount = 0;
+                                double userSum = 0;
+                                long userCount = 0;
+                                for (Comments c : comments) {
+                                    String role = userRoleMap.getOrDefault(c.getUserId(), "user");
+                                    if ("ai".equals(role)) {
+                                        aiSum += c.getStar() != null ? c.getStar() : 0;
+                                        aiCount++;
+                                    } else {
+                                        userSum += c.getStar() != null ? c.getStar() : 0;
+                                        userCount++;
+                                    }
+                                }
+                                if (aiCount > 0) {
+                                    roleScores.put("ai", new CommentScoreDTO(aiSum / aiCount, aiCount));
+                                }
+                                if (userCount > 0) {
+                                    roleScores.put("user", new CommentScoreDTO(userSum / userCount, userCount));
+                                }
+                                return Map.entry(articleId, roleScores);
+                            });
+                    });
+            })
+            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 }

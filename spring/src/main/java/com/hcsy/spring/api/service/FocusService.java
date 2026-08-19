@@ -19,4 +19,6 @@ public interface FocusService {
     Mono<Long> getFocusCountByUserId(Long userId);
 
     Mono<Long> getFollowerCountByUserId(Long userId);
+
+    Mono<java.util.Map<Long, Long>> getFollowCountsByUserIds(java.util.Collection<Long> userIds);
 }

@@ -15,7 +15,9 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
+import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
 import com.hcsy.spring.entity.vo.LikeCheckVO;
 import com.hcsy.spring.entity.vo.LikeCountVO;
@@ -86,5 +88,14 @@ public class ArticleLikeController {
         @Parameter(description = "文章ID", required = true) @PathVariable("article_id") Long articleId) {
         return articleLikeService.getLikeCountByArticleId(articleId)
             .map(count -> Result.success(new LikeCountVO(count)));
+    }
+
+    @PostMapping("/counts/batch")
+    @Operation(summary = "批量查询点赞数（内部）", description = "根据文章ID列表批量查询点赞数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询点赞数")
+    public Mono<Result<java.util.Map<Long, Long>>> getLikeCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return articleLikeService.getLikeCountsByArticleIds(dto.getIds())
+            .map(Result::success);
     }
 }
