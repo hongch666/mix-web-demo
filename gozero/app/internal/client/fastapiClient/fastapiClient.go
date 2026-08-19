@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"app/common/client"
 	"app/common/constants"
@@ -71,6 +72,37 @@ func (c *FastapiClient) EnhanceVector(ctx context.Context, req *VectorEnhanceReq
 			"limit":             req.Limit,
 			"top_k":             req.TopK,
 			"mode":              req.Mode,
+		},
+	})
+}
+
+// GetAiHistoryByID 根据ID查询AI历史记录
+func (c *FastapiClient) GetAiHistoryByID(ctx context.Context, id int64) (client.Result, error) {
+	return c.serviceDisc.CallService(ctx, c.serviceName, "/ai_history/internal/:id", client.RequestOptions{
+		Method: "GET",
+		PathParams: map[string]string{
+			"id": strconv.FormatInt(id, 10),
+		},
+	})
+}
+
+// UpdateAiHistory 更新AI历史记录
+func (c *FastapiClient) UpdateAiHistory(ctx context.Context, id int64, req *UpdateAiHistoryRequest) (client.Result, error) {
+	return c.serviceDisc.CallService(ctx, c.serviceName, "/ai_history/internal/:id", client.RequestOptions{
+		Method: "PUT",
+		PathParams: map[string]string{
+			"id": strconv.FormatInt(id, 10),
+		},
+		BodyData: req,
+	})
+}
+
+// DeleteAiHistory 删除AI历史记录
+func (c *FastapiClient) DeleteAiHistory(ctx context.Context, id int64) (client.Result, error) {
+	return c.serviceDisc.CallService(ctx, c.serviceName, "/ai_history/internal/:id", client.RequestOptions{
+		Method: "DELETE",
+		PathParams: map[string]string{
+			"id": strconv.FormatInt(id, 10),
 		},
 	})
 }

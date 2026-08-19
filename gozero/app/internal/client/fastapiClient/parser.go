@@ -182,3 +182,32 @@ func parseVectorMatchedChunks(v any) []VectorMatchedChunk {
 	}
 	return chunks
 }
+
+// ParseAiHistoryVO 解析AI历史记录
+func ParseAiHistoryVO(data any) (*AiHistoryVO, error) {
+	if data == nil {
+		return nil, nil
+	}
+	m, ok := data.(map[string]any)
+	if !ok {
+		return nil, nil
+	}
+	id, _ := toInt64(m["id"])
+	userID, _ := toInt64(m["user_id"])
+	ask, _ := toString(m["ask"])
+	reply, _ := toString(m["reply"])
+	thinking, _ := toString(m["thinking"])
+	aiType, _ := toString(m["ai_type"])
+	createdAt, _ := toString(m["created_at"])
+	updatedAt, _ := toString(m["updated_at"])
+	return &AiHistoryVO{
+		ID:        id,
+		UserID:    userID,
+		Ask:       ask,
+		Reply:     reply,
+		Thinking:  thinking,
+		AiType:    aiType,
+		CreatedAt: createdAt,
+		UpdatedAt: updatedAt,
+	}, nil
+}

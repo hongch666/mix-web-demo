@@ -69,3 +69,24 @@ type VectorEnhanceItem struct {
 type VectorEnhanceResponse struct {
 	Items []VectorEnhanceItem `json:"items"`
 }
+
+// AiHistoryVO AI历史记录视图对象
+type AiHistoryVO struct {
+	ID        int64  `json:"id"`
+	UserID    int64  `json:"user_id"`
+	Ask       string `json:"ask"`
+	Reply     string `json:"reply"`
+	Thinking  string `json:"thinking"`
+	AiType    string `json:"ai_type"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// UpdateAiHistoryRequest 更新AI历史记录请求
+type UpdateAiHistoryRequest struct {
+	UserID   *int64  `json:"userId,omitempty"`
+	Ask      *string `json:"ask,omitempty"`
+	Reply    *string `json:"reply,omitempty"`
+	Thinking *string `json:"thinking,omitempty"`
+	AiType   *string `json:"aiType,omitempty"`
+}

@@ -9,7 +9,6 @@ import (
 	"app/internal/client/nestjsClient"
 	"app/internal/client/springClient"
 	"app/internal/config"
-	"app/model/aiHistory"
 	"app/model/chatMessages"
 	"app/model/search"
 
@@ -39,7 +38,6 @@ type InfrastructureContext struct {
 
 // ModelContext 保存业务模型依赖
 type ModelContext struct {
-	AiHistoryModel    aiHistory.AiHistoryModel
 	ChatMessagesModel chatMessages.ChatMessagesModel
 	SearchModel       search.SearchModel
 }
