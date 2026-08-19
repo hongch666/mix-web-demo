@@ -21,6 +21,21 @@ import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
 export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
 
+  @Get("search-history/:userId")
+  @ApiOperation({
+    summary: "获取搜索历史",
+    description: "根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用",
+  })
+  @RequireInternalToken()
+  async getSearchHistory(
+    @Param("userId") userId: string,
+  ): Promise<ApiResponse<{ keywords: string[] }>> {
+    const keywords: string[] = await this.logService.getSearchHistory(
+      Number(userId),
+    );
+    return success({ keywords });
+  }
+
   @Post()
   @HttpCode(200)
   @ApiOperation({

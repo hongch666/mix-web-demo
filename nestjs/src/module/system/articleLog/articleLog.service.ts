@@ -10,7 +10,11 @@ import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { ArticleService } from "src/module/system/article/article.service";
 import { UserService } from "src/module/system/user/user.service";
-import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
+import {
+  ArticleAction,
+  CreateArticleLogDto,
+  QueryArticleLogDto,
+} from "./dto/articleLog.dto";
 import { ArticleLog, ArticleLogDocument } from "./schema/articleLog.schema";
 
 dayjs.extend(utc);
@@ -274,5 +278,28 @@ export class ArticleLogService {
       .deleteMany({ createdAt: { $lt: before } })
       .exec();
     return result.deletedCount;
+  }
+
+  /**
+   * 获取用户搜索历史关键词（供 GoZero 内部远程调用）
+   * 从 articlelogs 集合中聚合出指定用户最近去重后的搜索关键词，最多 10 条
+   * @param userId 用户ID
+   * @returns 搜索关键词列表（按时间倒序，去重）
+   */
+  async getSearchHistory(userId: number): Promise<string[]> {
+    const result = await this.logModel
+      .aggregate([
+        { $match: { userId, action: ArticleAction.SEARCH } },
+        { $sort: { createdAt: -1 } },
+        { $addFields: { keyword: "$content.Keyword" } },
+        { $match: { keyword: { $exists: true, $nin: [null, ""] } } },
+        { $group: { _id: "$keyword", createdAt: { $first: "$createdAt" } } },
+        { $sort: { createdAt: -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, keyword: "$_id" } },
+      ])
+      .exec();
+
+    return result.map((item) => item.keyword as string);
   }
 }
