@@ -52,6 +52,17 @@ export class ArticleLogController {
     return success(data);
   }
 
+  @Get("search-keywords")
+  @ApiOperation({
+    summary: "获取搜索关键词",
+    description: "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
+  })
+  @RequireInternalToken()
+  async getSearchKeywords(): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.logService.getSearchKeywords();
+    return success(data);
+  }
+
   @Post()
   @HttpCode(200)
   @ApiOperation({

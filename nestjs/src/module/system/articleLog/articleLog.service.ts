@@ -344,4 +344,22 @@ export class ArticleLogService {
 
     return { total_views: totalViews, articles: list };
   }
+
+  /**
+   * 获取所有搜索关键词（供 FastAPI 词云功能内部远程调用）
+   * 从 articlelogs 集合中提取所有 action=search 的去重关键词
+   */
+  async getSearchKeywords(): Promise<string[]> {
+    const results = await this.logModel
+      .aggregate([
+        { $match: { action: ArticleAction.SEARCH } },
+        { $project: { keyword: "$content.Keyword" } },
+        { $match: { keyword: { $ne: "", $exists: true } } },
+        { $group: { _id: "$keyword" } },
+        { $sort: { _id: 1 } },
+      ])
+      .exec();
+
+    return results.map((doc) => doc._id as string);
+  }
 }
