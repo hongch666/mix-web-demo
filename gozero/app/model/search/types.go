@@ -3,16 +3,12 @@ package search
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/olivere/elastic/v7"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
 	ErrNilESClient     = errors.New("es client is nil")
-	ErrNilMongoClient  = errors.New("mongo client is nil")
-	ErrEmptyMongoDB    = errors.New("mongo database is empty")
 	ErrSearchHitsEmpty = errors.New("es search hits is nil")
 )
 
@@ -79,29 +75,6 @@ type SearchScript struct {
 // ScriptParamMapping 脚本参数名映射: weight_key → script_param_name
 type ScriptParamMapping map[string]string
 
-type SearchLog struct {
-	ID        string         `bson:"_id,omitempty"`
-	UserID    int64          `bson:"user_id"`
-	ArticleID *int64         `bson:"article_id,omitempty"`
-	Action    string         `bson:"action"`
-	Content   map[string]any `bson:"content"`
-	Msg       string         `bson:"msg"`
-	CreatedAt time.Time      `bson:"created_at"`
-	UpdatedAt time.Time      `bson:"updated_at"`
-}
-
-type SearchContent struct {
-	Keyword         string  `json:"Keyword"`
-	UserID          *int64  `json:"UserID"`
-	Username        string  `json:"Username"`
-	CategoryName    string  `json:"CategoryName"`
-	SubCategoryName string  `json:"SubCategoryName"`
-	StartDate       *string `json:"StartDate"`
-	EndDate         *string `json:"EndDate"`
-	Page            int     `json:"Page"`
-	Size            int     `json:"Size"`
-}
-
 type ArticleViewCounter interface {
 	GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error)
 }
@@ -119,9 +92,7 @@ type FollowCounter interface {
 }
 
 type SearchModelDeps struct {
-	ESClient      *elastic.Client
-	MongoClient   *mongo.Client
-	MongoDatabase string
+	ESClient *elastic.Client
 
 	ArticlesModel ArticleViewCounter
 	LikesModel    LikeCounter
@@ -131,13 +102,10 @@ type SearchModelDeps struct {
 
 type SearchModel interface {
 	SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error)
-	GetSearchHistory(ctx context.Context, userID int64) ([]string, error)
 }
 
 type searchModel struct {
-	esClient      *elastic.Client
-	mongoClient   *mongo.Client
-	mongoDatabase string
+	esClient *elastic.Client
 
 	articlesModel ArticleViewCounter
 	likesModel    LikeCounter
@@ -148,8 +116,6 @@ type searchModel struct {
 func NewSearchModel(deps SearchModelDeps) SearchModel {
 	return &searchModel{
 		esClient:      deps.ESClient,
-		mongoClient:   deps.MongoClient,
-		mongoDatabase: deps.MongoDatabase,
 		articlesModel: deps.ArticlesModel,
 		likesModel:    deps.LikesModel,
 		collectsModel: deps.CollectsModel,

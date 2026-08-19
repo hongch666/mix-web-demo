@@ -55,12 +55,8 @@ const (
 
 // 数据库连接超时
 const (
-	// MongoDB 连接超时
-	MongoDBConnectTimeout = 10 * time.Second
 	// Redis 连接超时
 	RedisConnectTimeout = 5 * time.Second
-	// ServiceContext 关闭时 MongoDB 断开超时
-	MongoDBDisconnectTimeout = 5 * time.Second
 	// DDL 执行超时（如建表）
 	DDLOperationTimeout = 10 * time.Second
 )

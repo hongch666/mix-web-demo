@@ -8,6 +8,7 @@ import (
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
+	"app/internal/client/nestjsClient"
 	"app/internal/config"
 	"app/internal/middleware"
 
@@ -33,6 +34,15 @@ func newClientContext(
 ) *ClientContext {
 	return &ClientContext{
 		FastapiClient: fastapiClient.NewFastapiClient(
+			namingClient,
+			client.RemoteCallConfig{
+				Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
+				MaxRetries:     remoteCallConfig.MaxRetries,
+				InitialBackoff: time.Duration(remoteCallConfig.InitialBackoff) * time.Millisecond,
+				MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
+			},
+		),
+		NestjsClient: nestjsClient.NewNestjsClient(
 			namingClient,
 			client.RemoteCallConfig{
 				Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,

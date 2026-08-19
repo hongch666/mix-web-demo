@@ -6,6 +6,7 @@ import (
 	"app/common/hub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
+	"app/internal/client/nestjsClient"
 	"app/internal/config"
 	"app/model/aiHistory"
 	"app/model/articles"
@@ -26,7 +27,6 @@ import (
 	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // RuntimeContext 保存服务级生命周期和配置
@@ -41,7 +41,6 @@ type InfrastructureContext struct {
 	MySQLConn         sqlx.SqlConn
 	ESClient          *elastic.Client
 	RabbitMQPublisher *rabbitmq.Publisher
-	MongoClient       *mongo.Client
 	RedisClient       *redis.Client
 	NamingClient      naming_client.INamingClient
 }
@@ -71,6 +70,7 @@ type HubContext struct {
 // ClientContext 保存内部服务客户端
 type ClientContext struct {
 	FastapiClient *fastapiClient.FastapiClient
+	NestjsClient  *nestjsClient.NestjsClient
 }
 
 // LoggerContext 保存服务级日志依赖

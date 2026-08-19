@@ -59,19 +59,10 @@ type ESConfig struct {
 	Sniff    bool   `json:"sniff"`
 }
 
-type MongoDBConfig struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Database string `json:"database"`
-}
-
 type DatabaseConfig struct {
-	Mysql   MysqlConfig   `json:"mysql"`
-	ES      ESConfig      `json:"es"`
-	MongoDB MongoDBConfig `json:"mongodb"`
-	Redis   RedisConfig   `json:"redis"`
+	Mysql MysqlConfig `json:"mysql"`
+	ES    ESConfig    `json:"es"`
+	Redis RedisConfig `json:"redis"`
 }
 
 type RedisConfig struct {

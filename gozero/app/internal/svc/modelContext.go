@@ -35,8 +35,6 @@ func newModelContext(c config.Config, infrastructure *InfrastructureContext) *Mo
 
 	models.SearchModel = search.NewSearchModel(search.SearchModelDeps{
 		ESClient:      infrastructure.ESClient,
-		MongoClient:   infrastructure.MongoClient,
-		MongoDatabase: c.Database.MongoDB.Database,
 		ArticlesModel: models.ArticlesModel,
 		LikesModel:    models.LikesModel,
 		CollectsModel: models.CollectsModel,

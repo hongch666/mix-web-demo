@@ -118,8 +118,6 @@ const (
 	RABBITMQ_CONNECTION_INIT_FAIL            = "初始化 RabbitMQ 连接失败: %v"
 	RABBITMQ_CONNECT_SUCCESS                 = "RabbitMQ 连接成功"
 	RABBITMQ_CHANNEL_NOT_INITIALIZED_MESSAGE = "RabbitMQ 发布者未初始化"
-	MONGODB_CONNECTION_INIT_FAIL             = "初始化 MongoDB 连接失败: %v"
-	MONGODB_PING_FAIL                        = "MongoDB 心跳检测失败: %v"
 	NACOS_CLIENT_INIT_FAIL                   = "初始化 Nacos 客户端失败: %v"
 	NACOS_REGISTER_FAIL                      = "Nacos 注册失败: service=%s, address=%s:%d, group=%s, err=%v"
 	REDIS_INIT_FAIL                          = "初始化 Redis 客户端失败: %v"

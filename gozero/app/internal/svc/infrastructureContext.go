@@ -21,8 +21,6 @@ import (
 	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var detectLocalIP = getLocalIPv4Address
@@ -36,7 +34,6 @@ func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *Infras
 		MySQLConn:         mysqlConn,
 		ESClient:          initES(c, logger),
 		RabbitMQPublisher: initRabbitMQ(c, logger),
-		MongoClient:       initMongoDB(c, logger),
 		RedisClient:       initRedis(c, logger),
 		NamingClient:      initNacos(c, logger),
 	}
@@ -47,14 +44,6 @@ func (ic *InfrastructureContext) Close() {
 	if ic.RedisClient != nil {
 		if err := ic.RedisClient.Close(); err != nil {
 			logx.Errorf("关闭 Redis 连接失败: %v", err)
-		}
-	}
-
-	if ic.MongoClient != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), constants.MongoDBDisconnectTimeout)
-		defer cancel()
-		if err := ic.MongoClient.Disconnect(ctx); err != nil {
-			logx.Errorf("关闭 MongoDB 连接失败: %v", err)
 		}
 	}
 
@@ -187,41 +176,6 @@ func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher
 
 	logger.Info(constants.RABBITMQ_CONNECT_SUCCESS)
 	return publisher
-}
-
-// 初始化 MongoDB 客户端
-func initMongoDB(c config.Config, logger *utils.ZeroLogger) *mongo.Client {
-	mongoConf := c.Database.MongoDB
-	if mongoConf.Host == "" || mongoConf.Port == 0 {
-		return nil
-	}
-
-	var mongoURI string
-	if mongoConf.Username != "" && mongoConf.Password != "" {
-		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%d",
-			mongoConf.Username,
-			mongoConf.Password,
-			mongoConf.Host,
-			mongoConf.Port,
-		)
-	} else {
-		mongoURI = fmt.Sprintf("mongodb://%s:%d", mongoConf.Host, mongoConf.Port)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), constants.MongoDBConnectTimeout)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		logger.Errorf(constants.MONGODB_CONNECTION_INIT_FAIL, err)
-		panic(err)
-	}
-	if err = client.Ping(ctx, nil); err != nil {
-		logger.Errorf(constants.MONGODB_PING_FAIL, err)
-		panic(err)
-	}
-
-	return client
 }
 
 // 初始化 Nacos 客户端

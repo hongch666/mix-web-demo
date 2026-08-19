@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	articlesIndexName      = "articles"
-	searchHistoryTableName = "articlelogs"
+	articlesIndexName = "articles"
 )
 
 func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearchDTO, esScript string, weights *SearchWeights, paramMap ScriptParamMapping) ([]ArticleES, int, error) {

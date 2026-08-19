@@ -10,6 +10,7 @@ import (
 	"app/common/constants"
 	"app/common/exceptions"
 	"app/common/utils"
+	"app/internal/client/nestjsClient"
 	"app/internal/svc"
 	"app/internal/types"
 )
@@ -41,13 +42,14 @@ func (l *GetSearchHistoryLogic) GetSearchHistory(req *types.GetSearchHistoryReq)
 		return nil, exceptions.NewBadRequestError(constants.PARAM_ERR, err.Error())
 	}
 
-	// 获取搜索历史
-	keywords, err := l.svcCtx.SearchModel.GetSearchHistory(l.ctx, userID)
+	// 通过远程调用 NestJS 内部接口获取搜索历史
+	result, err := l.svcCtx.NestjsClient.GetSearchHistory(l.ctx, userID)
 	if err != nil {
 		l.Error(fmt.Sprintf(constants.SEARCH_HISTORY_FAIL+": %v", err))
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_HISTORY_FAIL, err.Error())
 	}
 
+	keywords := nestjsClient.ParseSearchHistoryResult(result.Data)
 	if keywords == nil {
 		keywords = []string{}
 	}
