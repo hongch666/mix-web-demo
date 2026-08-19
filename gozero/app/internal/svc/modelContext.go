@@ -17,7 +17,7 @@ import (
 )
 
 // 创建 ModelContext 实例，初始化各业务模型依赖
-func newModelContext(c config.Config, infrastructure *InfrastructureContext) *ModelContext {
+func newModelContext(_ config.Config, infrastructure *InfrastructureContext) *ModelContext {
 	models := &ModelContext{}
 	if infrastructure.MySQLConn != nil {
 		models.AiHistoryModel = aiHistory.NewAiHistoryModel(infrastructure.MySQLConn)
