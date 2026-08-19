@@ -83,6 +83,46 @@ class AiHistoryService:
 
         await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
 
+    async def get_ai_history_by_id(self, id: int, db: Any) -> Optional[Dict[str, Any]]:
+        """根据ID查询AI历史记录"""
+        history = await self.ai_history_mapper.get_ai_history_by_id_async(db, id)
+        if not history:
+            return None
+        return self._serialize_ai_history(history)
+
+    async def update_ai_history(
+        self, id: int, data: Any, db: Any
+    ) -> Optional[Dict[str, Any]]:
+        """更新AI历史记录"""
+        history = await self.ai_history_mapper.get_ai_history_by_id_async(db, id)
+        if not history:
+            return None
+
+        # 更新字段
+        normalized_data = self._normalize_ai_history_data(data)
+        if "user_id" in normalized_data:
+            history.user_id = normalized_data["user_id"]
+        if "ask" in normalized_data:
+            history.ask = normalized_data["ask"]
+        if "reply" in normalized_data:
+            history.reply = normalized_data["reply"]
+        if "thinking" in normalized_data:
+            thinking = normalized_data["thinking"]
+            history.thinking = thinking if thinking != "" else None
+        if "ai_type" in normalized_data:
+            history.ai_type = normalized_data["ai_type"]
+
+        updated = await self.ai_history_mapper.update_ai_history_async(db, history)
+        return self._serialize_ai_history(updated)
+
+    async def delete_ai_history_by_id(self, id: int, db: Any) -> bool:
+        """根据ID删除AI历史记录"""
+        history = await self.ai_history_mapper.get_ai_history_by_id_async(db, id)
+        if not history:
+            return False
+        await self.ai_history_mapper.delete_ai_history_by_id_async(db, id)
+        return True
+
     @staticmethod
     def _serialize_ai_history(ai_history: AiHistory) -> Dict[str, Any]:
         """将 ORM 对象转换为可序列化的响应字典"""

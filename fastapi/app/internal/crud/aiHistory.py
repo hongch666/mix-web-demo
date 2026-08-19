@@ -44,6 +44,32 @@ class AiHistoryMapper:
             await db.delete(history)
         await db.commit()
 
+    async def get_ai_history_by_id_async(
+        self, db: AsyncSession, id: int
+    ) -> Optional[AiHistory]:
+        """根据ID查询AI历史记录"""
+        statement = select(AiHistory).where(AiHistory.id == id)
+        result = await db.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def update_ai_history_async(
+        self, db: AsyncSession, ai_history: AiHistory
+    ) -> AiHistory:
+        """更新AI历史记录"""
+        merged = await db.merge(ai_history)
+        await db.commit()
+        await db.refresh(merged)
+        return merged
+
+    async def delete_ai_history_by_id_async(self, db: AsyncSession, id: int) -> None:
+        """根据ID删除AI历史记录"""
+        statement = select(AiHistory).where(AiHistory.id == id)
+        result = await db.execute(statement)
+        history = result.scalar_one_or_none()
+        if history:
+            await db.delete(history)
+            await db.commit()
+
 
 @lru_cache()
 def get_ai_history_mapper() -> AiHistoryMapper:

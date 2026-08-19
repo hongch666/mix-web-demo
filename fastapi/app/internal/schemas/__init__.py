@@ -11,6 +11,7 @@ from .graphSearchDTO import (
     GraphSearchEnhanceResp,
 )
 from .listResponse import ListResponse
+from .updateHistoryDTO import UpdateHistoryDTO
 from .vectorSearchDTO import (
     VectorMatchedChunkDTO,
     VectorSearchEnhanceItemDTO,
@@ -25,6 +26,7 @@ __all__: List[str] = [
     "AIServiceType",
     "GenerateDTO",
     "CreateHistoryDTO",
+    "UpdateHistoryDTO",
     "GraphRelationDTO",
     "GraphSearchEnhanceItemDTO",
     "GraphSearchEnhanceReq",

@@ -3,7 +3,7 @@ from typing import Any
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import AiHistoryServiceDep, DbSession
-from app.internal.schemas import CreateHistoryDTO
+from app.internal.schemas import CreateHistoryDTO, UpdateHistoryDTO
 
 from fastapi import APIRouter, Path, Query, Request
 
@@ -71,3 +71,68 @@ async def delete_ai_history(
 
     await ai_history_service.delete_ai_history_by_userid(userId, db)
     return success()
+
+
+@router.get(
+    "/internal/{id}",
+    summary="根据ID查询AI历史记录（内部）",
+    description="根据ID查询AI历史记录，供内部服务远程调用",
+    response_model=ApiResponse,
+)
+@requireInternalToken
+@log("内部查询AI历史记录")
+async def get_ai_history_by_id_internal(
+    request: Request,
+    db: DbSession,
+    ai_history_service: AiHistoryServiceDep,
+    id: int = Path(description="AI历史记录ID"),
+) -> ApiResponse:
+    """根据ID查询AI历史记录（内部接口）"""
+
+    history = await ai_history_service.get_ai_history_by_id(id, db)
+    if not history:
+        return success(data=None)
+    return success(data=history)
+
+
+@router.put(
+    "/internal/{id}",
+    summary="更新AI历史记录（内部）",
+    description="更新AI历史记录，供内部服务远程调用",
+    response_model=ApiResponse,
+)
+@requireInternalToken
+@log("内部更新AI历史记录")
+async def update_ai_history_internal(
+    request: Request,
+    data: UpdateHistoryDTO,
+    db: DbSession,
+    ai_history_service: AiHistoryServiceDep,
+    id: int = Path(description="AI历史记录ID"),
+) -> ApiResponse:
+    """更新AI历史记录（内部接口）"""
+
+    history = await ai_history_service.update_ai_history(id, data, db)
+    if not history:
+        return success(data=None)
+    return success(data=history)
+
+
+@router.delete(
+    "/internal/{id}",
+    summary="删除AI历史记录（内部）",
+    description="根据ID删除AI历史记录，供内部服务远程调用",
+    response_model=ApiResponse,
+)
+@requireInternalToken
+@log("内部删除AI历史记录")
+async def delete_ai_history_internal(
+    request: Request,
+    db: DbSession,
+    ai_history_service: AiHistoryServiceDep,
+    id: int = Path(description="AI历史记录ID"),
+) -> ApiResponse:
+    """删除AI历史记录（内部接口）"""
+
+    deleted = await ai_history_service.delete_ai_history_by_id(id, db)
+    return success(data={"deleted": deleted})
