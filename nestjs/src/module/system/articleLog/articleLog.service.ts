@@ -302,4 +302,46 @@ export class ArticleLogService {
 
     return result.map((item) => item.keyword as string);
   }
+
+  /**
+   * 获取用户文章浏览分布（供 FastAPI 内部远程调用）
+   * 从 articlelogs 集合聚合出指定用户浏览过的文章及浏览次数，按浏览次数倒序
+   * @param userId 用户ID
+   */
+  async getViewDistribution(userId: number): Promise<{
+    total_views: number;
+    articles: Array<{ article_id: number; title: string; views: number }>;
+  }> {
+    const results = await this.logModel
+      .aggregate([
+        { $match: { userId, action: ArticleAction.VIEW } },
+        { $group: { _id: "$articleId", views: { $sum: 1 } } },
+        { $match: { _id: { $ne: null } } },
+        { $sort: { views: -1 } },
+      ])
+      .exec();
+
+    if (results.length === 0) {
+      return { total_views: 0, articles: [] };
+    }
+
+    const articleIds: number[] = results.map((doc) => doc._id as number);
+    const articles = await this.articleService.getArticleByIds(articleIds);
+    const articleMap: Map<number, string> = new Map(
+      articles.map((article) => [article.id, article.title]),
+    );
+
+    let totalViews = 0;
+    const list = results.map((doc) => {
+      const views = doc.views as number;
+      totalViews += views;
+      return {
+        article_id: doc._id as number,
+        title: articleMap.get(doc._id as number) || Messages.UNKNOWN_ARTICLE,
+        views,
+      };
+    });
+
+    return { total_views: totalViews, articles: list };
+  }
 }

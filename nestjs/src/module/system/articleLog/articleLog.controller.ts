@@ -36,6 +36,22 @@ export class ArticleLogController {
     return success({ keywords });
   }
 
+  @Get("view-distribution/:userId")
+  @ApiOperation({
+    summary: "获取文章浏览分布",
+    description:
+      "根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用",
+  })
+  @RequireInternalToken()
+  async getViewDistribution(
+    @Param("userId") userId: string,
+  ): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.logService.getViewDistribution(
+      Number(userId),
+    );
+    return success(data);
+  }
+
   @Post()
   @HttpCode(200)
   @ApiOperation({

@@ -21,6 +21,34 @@ export class ApiLogController {
   constructor(private readonly apiLogService: ApiLogService) {}
 
   /**
+   * 获取所有接口的平均响应速度（供 FastAPI 内部远程调用）
+   */
+  @Get("average-speed")
+  @ApiOperation({
+    summary: "获取所有接口的平均响应速度",
+    description: "获取所有接口的平均响应速度，供 FastAPI 内部远程调用",
+  })
+  @RequireInternalToken()
+  async getApiAverageSpeed(): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.apiLogService.getApiAverageResponseTime();
+    return success(data);
+  }
+
+  /**
+   * 获取接口调用次数（供 FastAPI 内部远程调用）
+   */
+  @Get("called-count")
+  @ApiOperation({
+    summary: "获取接口调用次数",
+    description: "获取接口调用次数，供 FastAPI 内部远程调用",
+  })
+  @RequireInternalToken()
+  async getCalledCount(): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.apiLogService.getCalledCount();
+    return success(data);
+  }
+
+  /**
    * 查询API日志（分页）
    */
   @Get("list")

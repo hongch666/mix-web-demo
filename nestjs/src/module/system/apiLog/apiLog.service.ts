@@ -221,4 +221,70 @@ export class ApiLogService {
       .exec();
     return result.deletedCount;
   }
+
+  /**
+   * 获取所有接口的平均响应速度（供 FastAPI 内部远程调用）
+   * 按接口路径、方法和描述分组，求平均响应时间
+   */
+  async getApiAverageResponseTime(): Promise<unknown[]> {
+    return this.apiLogModel
+      .aggregate([
+        {
+          $group: {
+            _id: {
+              api_path: "$apiPath",
+              api_method: "$apiMethod",
+              api_description: "$apiDescription",
+            },
+            avg_response_time: { $avg: "$responseTime" },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            api_path: "$_id.api_path",
+            api_method: "$_id.api_method",
+            api_description: "$_id.api_description",
+            avg_response_time: { $round: ["$avg_response_time", 2] },
+            count: 1,
+          },
+        },
+        { $sort: { avg_response_time: -1 } },
+      ])
+      .exec();
+  }
+
+  /**
+   * 获取接口调用次数（供 FastAPI 内部远程调用）
+   * 按接口路径、方法和描述分组，统计调用次数
+   */
+  async getCalledCount(): Promise<unknown[]> {
+    return this.apiLogModel
+      .aggregate([
+        {
+          $group: {
+            _id: {
+              api_path: "$apiPath",
+              api_method: "$apiMethod",
+              api_description: "$apiDescription",
+            },
+            call_count: { $sum: 1 },
+            avg_response_time: { $avg: "$responseTime" },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            api_path: "$_id.api_path",
+            api_method: "$_id.api_method",
+            api_description: "$_id.api_description",
+            call_count: 1,
+            avg_response_time: { $round: ["$avg_response_time", 2] },
+          },
+        },
+        { $sort: { call_count: -1 } },
+      ])
+      .exec();
+  }
 }

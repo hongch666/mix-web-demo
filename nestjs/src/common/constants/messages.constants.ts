@@ -343,6 +343,8 @@ export class Messages {
 
   static readonly UNKNOWN_ERROR = "未知错误";
 
+  static readonly UNKNOWN_ARTICLE = "未知文章";
+
   // ===== 日志模块消息 =====
 
   static readonly ARTICLE_LOG_NOT_FOUND = "文章日志记录不存在";
