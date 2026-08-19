@@ -24,14 +24,12 @@ from app.internal.cache import (
 )
 from app.internal.clients import NestjsClient
 from app.internal.crud import (
-    ArticleLogMapper,
     ArticleMapper,
     CategoryMapper,
     CollectMapper,
     LikeMapper,
     UserMapper,
     get_article_mapper,
-    get_articlelog_mapper,
     get_category_mapper,
     get_collect_mapper,
     get_like_mapper,
@@ -51,7 +49,6 @@ class AnalyzeService:
     def __init__(
         self,
         articleMapper: Optional[ArticleMapper] = None,
-        articleLogMapper: Optional[ArticleLogMapper] = None,
         userMapper: Optional[UserMapper] = None,
         categoryMapper: Optional[CategoryMapper] = None,
         likeMapper: Optional[LikeMapper] = None,
@@ -63,7 +60,6 @@ class AnalyzeService:
         wordcloud_cache: Optional[WordcloudCache] = None,
     ) -> None:
         self.articleMapper: Optional[ArticleMapper] = articleMapper
-        self.articleLogMapper: Optional[ArticleLogMapper] = articleLogMapper
         self.userMapper: Optional[UserMapper] = userMapper
         self.categoryMapper: Optional[CategoryMapper] = categoryMapper
         self.likeMapper: Optional[LikeMapper] = likeMapper
@@ -214,7 +210,6 @@ class AnalyzeService:
         """为调度器创建 AnalyzeService 实例（手动注入所有依赖）"""
         return cls(
             articleMapper=get_article_mapper(),
-            articleLogMapper=get_articlelog_mapper(),
             userMapper=get_user_mapper(),
             categoryMapper=get_category_mapper(),
             likeMapper=get_like_mapper(),
@@ -353,9 +348,7 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_keywords_dic(self) -> Dict[str, int]:
-        all_keywords: List[
-            str
-        ] = await self.articleLogMapper.get_search_keywords_articlelog_mapper()
+        all_keywords: List[str] = await self._nestjs_client.get_search_keywords()
         keywords_dic: Dict[str, int] = {}
         for keyword in all_keywords:
             if keyword in keywords_dic:
@@ -828,7 +821,6 @@ class AnalyzeService:
 @lru_cache()
 def get_analyze_service(
     articleMapper: ArticleMapper = Depends(get_article_mapper),
-    articleLogMapper: ArticleLogMapper = Depends(get_articlelog_mapper),
     userMapper: UserMapper = Depends(get_user_mapper),
     categoryMapper: CategoryMapper = Depends(get_category_mapper),
     likeMapper: LikeMapper = Depends(get_like_mapper),
@@ -841,7 +833,6 @@ def get_analyze_service(
 ) -> AnalyzeService:
     return AnalyzeService(
         articleMapper,
-        articleLogMapper,
         userMapper,
         categoryMapper,
         likeMapper,

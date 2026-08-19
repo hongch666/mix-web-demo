@@ -1,49 +1,24 @@
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from app.internal.clients import NestjsClient
-from app.internal.crud import ApiLogMapper, get_apilog_mapper
-
-from fastapi import Depends
 
 
 class ApiLogService:
     """API 日志 Service"""
 
-    def __init__(self, api_log_mapper: Optional[ApiLogMapper] = None) -> None:
-        self.mapper: Optional[ApiLogMapper] = api_log_mapper
+    def __init__(self) -> None:
         self._nestjs_client: NestjsClient = NestjsClient()
 
     async def get_api_average_response_time_service(self) -> List[Dict[str, Any]]:
-        """
-        获取所有接口的平均响应时间
-
-        Returns:
-            List[Dict]: 接口平均响应时间列表
-        """
+        """获取所有接口的平均响应时间"""
         return await self._nestjs_client.get_api_average_speed()
 
     async def get_called_count_apis_service(self) -> List[Dict[str, Any]]:
-        """
-        获取接口调用次数
-
-        Returns:
-            List[Dict]: 接口调用次数
-        """
+        """获取接口调用次数"""
         return await self._nestjs_client.get_called_count()
-
-    async def get_api_call_statistics_service(self) -> Dict[str, Any]:
-        """
-        获取 API 调用的整体统计信息
-
-        Returns:
-            Dict: 统计信息
-        """
-        return await self.mapper.get_api_call_statistics_mapper()
 
 
 @lru_cache()
-def get_apilog_service(
-    api_log_mapper: ApiLogMapper = Depends(get_apilog_mapper),
-) -> ApiLogService:
-    return ApiLogService(api_log_mapper)
+def get_apilog_service() -> ApiLogService:
+    return ApiLogService()

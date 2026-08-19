@@ -41,12 +41,6 @@ database:
     pool_size: 10
     max_overflow: 20
     echo: False
-  mongodb:
-    host: ${DB_MONGODB_HOST:localhost}
-    port: ${DB_MONGODB_PORT:27017}
-    username: ${DB_MONGODB_USERNAME:} # 可选：MongoDB 用户名
-    password: ${DB_MONGODB_PASSWORD:} # 可选：MongoDB 密码
-    database: ${DB_MONGODB_DATABASE:demo}
   clickhouse:
     host: ${DB_CLICKHOUSE_HOST:127.0.0.1}
     port: ${DB_CLICKHOUSE_PORT:9000}

@@ -36,6 +36,15 @@ class NestjsClient:
         )
         return result.get("data", {"total_views": 0, "articles": []})
 
+    async def get_search_keywords(self) -> Any:
+        """远程调用 NestJS 获取所有搜索关键词"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/article-logs/search-keywords",
+            method="GET",
+        )
+        return result.get("data", [])
+
     async def list_mongodb_collections(self) -> Any:
         """远程调用 NestJS 列出日志集合"""
         result: Dict[str, Any] = await call_remote_service(

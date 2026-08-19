@@ -1,7 +1,6 @@
 from typing import List
 
 from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
-from .mongodb import async_client, async_db
 from .mysql import (
     AsyncSessionLocal,
     Base,
@@ -20,8 +19,6 @@ from .rabbitmq import (
 from .redis import RedisClient, get_redis_client
 
 __all__: List[str] = [
-    "async_client",
-    "async_db",
     "get_db",
     "create_tables_async",
     "async_engine",
