@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"app/common/constants"
+	"app/internal/client/springClient"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -146,35 +147,38 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 		articleIDs = append(articleIDs, article.ID)
 	}
 
-	if len(articles) > 0 && m.articlesModel != nil && m.likesModel != nil && m.collectsModel != nil && m.focusModel != nil {
-		viewsMap, err := m.articlesModel.GetArticleViewsByIDs(ctx, articleIDs)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		likeCounts, err := m.likesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		collectCounts, err := m.collectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
-		if err != nil {
-			return nil, 0, err
-		}
+	if len(articles) > 0 && m.springClient != nil {
+		viewsResult, viewsErr := m.springClient.GetArticleViewsByIDs(ctx, articleIDs)
+		likeResult, likeErr := m.springClient.GetLikeCountsByArticleIDs(ctx, articleIDs)
+		collectResult, collectErr := m.springClient.GetCollectCountsByArticleIDs(ctx, articleIDs)
 
 		authorUserIDs := make([]int64, 0, len(articles))
 		for _, article := range articles {
 			authorUserIDs = append(authorUserIDs, article.UserID)
 		}
+		followResult, followErr := m.springClient.GetFollowCountsByUserIDs(ctx, authorUserIDs)
 
-		authorFollowCounts, err := m.focusModel.GetFollowCountsByUserIDs(ctx, authorUserIDs)
-		if err != nil {
-			return nil, 0, err
+		if viewsErr != nil {
+			return nil, 0, viewsErr
 		}
+		if likeErr != nil {
+			return nil, 0, likeErr
+		}
+		if collectErr != nil {
+			return nil, 0, collectErr
+		}
+		if followErr != nil {
+			return nil, 0, followErr
+		}
+
+		viewsMap, _ := springClient.ParseArticleViewsMap(viewsResult)
+		likeCounts, _ := springClient.ParseCountsMap(likeResult)
+		collectCounts, _ := springClient.ParseCountsMap(collectResult)
+		authorFollowCounts, _ := springClient.ParseCountsMap(followResult)
 
 		for i := range articles {
 			if views, ok := viewsMap[articles[i].ID]; ok {
-				articles[i].Views = int(views)
+				articles[i].Views = views
 			}
 			if likes, ok := likeCounts[articles[i].ID]; ok {
 				articles[i].LikeCount = int(likes)

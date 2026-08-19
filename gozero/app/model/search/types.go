@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"app/internal/client/springClient"
+
 	"github.com/olivere/elastic/v7"
 )
 
@@ -75,29 +77,10 @@ type SearchScript struct {
 // ScriptParamMapping 脚本参数名映射: weight_key → script_param_name
 type ScriptParamMapping map[string]string
 
-type ArticleViewCounter interface {
-	GetArticleViewsByIDs(ctx context.Context, ids []int64) (map[int64]int64, error)
-}
-
-type LikeCounter interface {
-	GetLikeCountsByArticleIDs(ctx context.Context, articleIDs []int64) (map[int64]int64, error)
-}
-
-type CollectCounter interface {
-	GetCollectCountsByArticleIDs(ctx context.Context, articleIDs []int64) (map[int64]int64, error)
-}
-
-type FollowCounter interface {
-	GetFollowCountsByUserIDs(ctx context.Context, userIDs []int64) (map[int64]int64, error)
-}
-
+// SearchModelDeps SearchModel 依赖项
 type SearchModelDeps struct {
-	ESClient *elastic.Client
-
-	ArticlesModel ArticleViewCounter
-	LikesModel    LikeCounter
-	CollectsModel CollectCounter
-	FocusModel    FollowCounter
+	ESClient     *elastic.Client
+	SpringClient *springClient.SpringClient
 }
 
 type SearchModel interface {
@@ -105,20 +88,13 @@ type SearchModel interface {
 }
 
 type searchModel struct {
-	esClient *elastic.Client
-
-	articlesModel ArticleViewCounter
-	likesModel    LikeCounter
-	collectsModel CollectCounter
-	focusModel    FollowCounter
+	esClient     *elastic.Client
+	springClient *springClient.SpringClient
 }
 
 func NewSearchModel(deps SearchModelDeps) SearchModel {
 	return &searchModel{
-		esClient:      deps.ESClient,
-		articlesModel: deps.ArticlesModel,
-		likesModel:    deps.LikesModel,
-		collectsModel: deps.CollectsModel,
-		focusModel:    deps.FocusModel,
+		esClient:     deps.ESClient,
+		springClient: deps.SpringClient,
 	}
 }

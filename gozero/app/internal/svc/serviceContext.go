@@ -40,14 +40,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	infrastructure := newInfrastructureContext(c, zLogger)
-	models := newModelContext(c, infrastructure)
+	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall)
+	models := newModelContext(c, infrastructure, clientCtx)
 
 	return &ServiceContext{
 		RuntimeContext:        &RuntimeContext{Context: serviceContext, Cancel: cancel, Config: c},
 		InfrastructureContext: infrastructure,
 		ModelContext:          models,
 		HubContext:            newHubContext(zLogger),
-		ClientContext:         newClientContext(infrastructure.NamingClient, c.RemoteCall),
+		ClientContext:         clientCtx,
 		LoggerContext:         newLoggerContext(zLogger),
 		MiddlewareContext:     newMiddlewareContext(zLogger),
 	}

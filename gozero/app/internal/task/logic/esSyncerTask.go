@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"app/common/constants"
+	"app/internal/client/springClient"
 	"app/internal/svc"
-	"app/model/articles"
 	"app/model/search"
 
 	"github.com/olivere/elastic/v7"
@@ -55,22 +55,31 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		return err
 	}
 
-	// 这些 map 是本次同步过程中的简单本地缓存，同一批次或后续批次中如果重复遇到同一个作者/分类，就不用再反复查数据库
+	// 这些 map 是本次同步过程中的简单本地缓存
 	userMap := make(map[int64]string)
 	categoryMap := make(map[int64]string)
 	subCategoryMap := make(map[int64]string)
 	stats := esSyncStats{}
 	batchIdx := 0
 
-	// 第二步：按批读取数据库中当前“已发布”的文章，避免一次性把整表读入内存
-	err = svcCtx.ArticlesModel.IteratePublishedArticles(ctx, esSyncBatchSize, func(batch []articles.Articles) error {
-		if len(batch) == 0 {
-			return nil
+	// 第二步：通过 Spring 远程调用分页遍历数据库中当前"已发布"的文章
+	springCli := svcCtx.SpringClient
+	page := 1
+	for {
+		result, err := springCli.GetPublishedArticles(ctx, page, esSyncBatchSize)
+		if err != nil {
+			return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		}
+		articles, total, err := springClient.ParseArticlePage(result)
+		if err != nil {
+			return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		}
+		if len(articles) == 0 {
+			break
 		}
 
 		batchIdx++
-		// 把当前批次的数据库文章补齐成完整的 ES 文档结构
-		docs, err := buildArticleESBatch(ctx, svcCtx, batch, userMap, categoryMap, subCategoryMap)
+		docs, err := buildArticleESBatchFromRemote(ctx, svcCtx, articles, userMap, categoryMap, subCategoryMap)
 		if err != nil {
 			return err
 		}
@@ -79,7 +88,6 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		batchAdded := 0
 		batchUpdated := 0
 		for _, doc := range docs {
-			// 使用 ES 文档的完整内容计算 hash
 			docHash, err := hashArticleES(doc)
 			if err != nil {
 				return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
@@ -87,7 +95,6 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 
 			existingHash, ok := existingDocs[doc.ID]
 			if !ok {
-				// DB 中有、ES 中没有，就新增文档
 				bulkRequest = bulkRequest.Add(
 					elastic.NewBulkIndexRequest().
 						Index(esArticlesIndexName).
@@ -96,7 +103,6 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 				)
 				batchAdded++
 			} else if existingHash != docHash {
-				// DB 和 ES 都有，但内容 hash 不一致，就更新文档
 				bulkRequest = bulkRequest.Add(
 					elastic.NewBulkIndexRequest().
 						Index(esArticlesIndexName).
@@ -106,11 +112,9 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 				batchUpdated++
 			}
 
-			// 无论是新增、更新还是无变化，只要这篇文章仍存在于 DB 中
 			delete(existingDocs, doc.ID)
 		}
 
-		// 当前批次只有在确实存在新增/更新操作时才提交到 ES
 		if bulkRequest.NumberOfActions() > 0 {
 			if err := executeESBulk(ctx, svcCtx, bulkRequest); err != nil {
 				return err
@@ -124,14 +128,14 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 			svcCtx.Logger.Info(fmt.Sprintf(constants.ES_SYNC_BATCH_COMPLETED_MESSAGE, batchIdx, batchAdded, batchUpdated))
 		}
 
+		if int64(page*esSyncBatchSize) >= total {
+			break
+		}
+		page++
 		time.Sleep(constants.ESSyncBatchDelay)
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 
-	// 第三步：如果遍历完 DB 后，existingDocs 里还有剩余 id，说明这些文档只存在于 ES，当前数据库里已经没有对应的“已发布文章”了
+	// 第三步：删除 ES 中多余的文档
 	if len(existingDocs) > 0 {
 		deleted, err := deleteStaleESArticles(ctx, svcCtx, existingDocs)
 		if err != nil {
@@ -151,91 +155,129 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	return nil
 }
 
-func buildArticleESBatch(
+// buildArticleESBatchFromRemote 通过 Spring 远程调用补齐文章 ES 文档所需的关联数据
+func buildArticleESBatchFromRemote(
 	ctx context.Context,
 	svcCtx *svc.ServiceContext,
-	articleBatch []articles.Articles,
+	articleBatch []springClient.ArticleVO,
 	userMap map[int64]string,
 	categoryMap map[int64]string,
 	subCategoryMap map[int64]string,
 ) ([]search.ArticleES, error) {
-	// 先收集本批次涉及到的主键集合，便于后续批量查询统计信息
+	springCli := svcCtx.SpringClient
+
+	// 收集本批次涉及的主键集合
 	userIDs := make([]int64, 0, len(articleBatch))
-	subCategoryIDs := make([]int64, 0, len(articleBatch))
+	subCategoryIDSet := make(map[int64]bool)
 	articleIDs := make([]int64, 0, len(articleBatch))
 
 	for _, article := range articleBatch {
-		userIDs = append(userIDs, article.UserId)
-		subCategoryIDs = append(subCategoryIDs, article.SubCategoryId)
-		articleIDs = append(articleIDs, article.Id)
+		userIDs = append(userIDs, article.UserID)
+		if article.SubCategoryID > 0 {
+			subCategoryIDSet[int64(article.SubCategoryID)] = true
+		}
+		articleIDs = append(articleIDs, article.ID)
 	}
 
+	// 批量补齐缺失的用户名
+	missingUserIDs := make([]int64, 0)
 	for _, uid := range userIDs {
-		if _, ok := userMap[uid]; ok {
-			continue
+		if _, ok := userMap[uid]; !ok {
+			missingUserIDs = append(missingUserIDs, uid)
 		}
-		// 用户名是 ES 文档的一部分，这里按需查一次并放入缓存
-		user, err := svcCtx.UserModel.FindOne(ctx, uid)
+	}
+	if len(missingUserIDs) > 0 {
+		result, err := springCli.GetUsersByIDs(ctx, missingUserIDs)
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(constants.QUERY_USER_ERROR, uid, err))
+				svcCtx.Logger.Error(fmt.Sprintf("批量查询用户失败: %v", err))
 			}
-			continue
+		} else {
+			users, err := springClient.ParseUserVOs(result)
+			if err == nil {
+				for _, u := range users {
+					userMap[u.ID] = u.Name
+				}
+			}
 		}
-		userMap[uid] = user.Name
 	}
 
-	for _, subCategoryID := range subCategoryIDs {
-		if _, ok := subCategoryMap[subCategoryID]; ok {
-			continue
+	// 批量补齐缺失的子分类名和分类名
+	missingSubCategoryIDs := make([]int64, 0)
+	for sid := range subCategoryIDSet {
+		if _, ok := subCategoryMap[sid]; !ok {
+			missingSubCategoryIDs = append(missingSubCategoryIDs, sid)
 		}
-
-		// 子分类名和父分类名同样是 ES 文档里的检索字段，因此在同步时补齐
-		subCategory, err := svcCtx.SubCategoryModel.FindOne(ctx, subCategoryID)
+	}
+	if len(missingSubCategoryIDs) > 0 {
+		result, err := springCli.GetSubCategoriesByIDs(ctx, missingSubCategoryIDs)
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(constants.QUERY_SUBCATEGORY_ERROR, subCategoryID, err))
+				svcCtx.Logger.Error(fmt.Sprintf("批量查询子分类失败: %v", err))
 			}
-			continue
-		}
-		subCategoryMap[subCategoryID] = subCategory.Name
-
-		if _, ok := categoryMap[subCategoryID]; ok {
-			continue
-		}
-		category, err := svcCtx.CategoryModel.FindOne(ctx, int64(subCategory.CategoryId))
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(constants.QUERY_CATEGORY_ERROR, subCategory.CategoryId, err))
+		} else {
+			subCategories, err := springClient.ParseSubCategoryVOs(result)
+			if err == nil {
+				for _, sc := range subCategories {
+					subCategoryMap[sc.ID] = sc.Name
+				}
+				// 收集需要查询的分类ID
+				categoryIDs := make([]int64, 0, len(subCategories))
+				for _, sc := range subCategories {
+					if _, ok := categoryMap[sc.CategoryID]; !ok {
+						categoryIDs = append(categoryIDs, sc.CategoryID)
+					}
+				}
+				if len(categoryIDs) > 0 {
+					catResult, catErr := springCli.GetCategoriesByIDs(ctx, categoryIDs)
+					if catErr == nil {
+						categories, parseErr := springClient.ParseCategoryVOs(catResult)
+						if parseErr == nil {
+							for _, c := range categories {
+								categoryMap[c.ID] = c.Name
+							}
+						}
+					}
+				}
+				// 建立子分类ID到分类ID的映射，用于后续填充categoryMap
+				for _, sc := range subCategories {
+					if catName, ok := categoryMap[sc.CategoryID]; ok {
+						categoryMap[sc.ID] = catName
+					}
+				}
 			}
-			continue
 		}
-		categoryMap[subCategoryID] = category.Name
 	}
 
-	// 下面这些统计信息会影响搜索排序或文档展示，因此统一按批拉取
-	commentScores, err := svcCtx.CommentsModel.GetCommentScoresByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, constants.CREATE_MESSAGE_ERROR, err)
+	// 批量查询评论评分、点赞数、收藏数、粉丝数
+	commentResult, commentErr := springCli.GetCommentScoresByArticleIDs(ctx, articleIDs)
+	likeResult, likeErr := springCli.GetLikeCountsByArticleIDs(ctx, articleIDs)
+	collectResult, collectErr := springCli.GetCollectCountsByArticleIDs(ctx, articleIDs)
+	followResult, followErr := springCli.GetFollowCountsByUserIDs(ctx, userIDs)
+
+	if commentErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.CREATE_MESSAGE_ERROR, commentErr)
 	}
-	likeCounts, err := svcCtx.LikesModel.GetLikeCountsByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, constants.LIKE_QUERY_ERROR, err)
+	if likeErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.LIKE_QUERY_ERROR, likeErr)
 	}
-	collectCounts, err := svcCtx.CollectsModel.GetCollectCountsByArticleIDs(ctx, articleIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, constants.COLLECT_QUERY_ERROR, err)
+	if collectErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.COLLECT_QUERY_ERROR, collectErr)
 	}
-	authorFollowCounts, err := svcCtx.FocusModel.GetFollowCountsByUserIDs(ctx, userIDs)
-	if err != nil {
-		return nil, logAndWrapError(svcCtx, constants.FOCUS_QUERY_ERROR, err)
+	if followErr != nil {
+		return nil, logAndWrapError(svcCtx, constants.FOCUS_QUERY_ERROR, followErr)
 	}
 
+	commentScores, _ := springClient.ParseCommentScoresMap(commentResult)
+	likeCounts, _ := springClient.ParseCountsMap(likeResult)
+	collectCounts, _ := springClient.ParseCountsMap(collectResult)
+	authorFollowCounts, _ := springClient.ParseCountsMap(followResult)
+
+	// 组装 ES 文档
 	docs := make([]search.ArticleES, 0, len(articleBatch))
 	for _, article := range articleBatch {
-		scores := commentScores[article.Id]
+		scores := commentScores[article.ID]
 
-		// 评论分数拆分为 AI 评分和用户评分两个维度，分别写入 ES
 		aiScore := 0.0
 		aiCount := 0
 		if aiScoreData, ok := scores["ai"]; ok {
@@ -250,23 +292,22 @@ func buildArticleESBatch(
 			userCount = int(userScoreData.Count)
 		}
 
-		// 组装出最终写入 ES 的完整文档
 		docs = append(docs, search.ArticleES{
-			ID:                article.Id,
+			ID:                article.ID,
 			Title:             article.Title,
 			Content:           article.Content,
-			UserID:            article.UserId,
-			Username:          userMap[article.UserId],
+			UserID:            article.UserID,
+			Username:          userMap[article.UserID],
 			Tags:              article.Tags,
-			Status:            int(article.Status),
-			Views:             int(article.Views),
-			LikeCount:         int(likeCounts[article.Id]),
-			CollectCount:      int(collectCounts[article.Id]),
-			AuthorFollowCount: int(authorFollowCounts[article.UserId]),
-			CategoryName:      categoryMap[article.SubCategoryId],
-			SubCategoryName:   subCategoryMap[article.SubCategoryId],
-			CreateAt:          article.CreateAt.Format(constants.DateTimeFormat),
-			UpdateAt:          article.UpdateAt.Format(constants.DateTimeFormat),
+			Status:            article.Status,
+			Views:             article.Views,
+			LikeCount:         int(likeCounts[article.ID]),
+			CollectCount:      int(collectCounts[article.ID]),
+			AuthorFollowCount: int(authorFollowCounts[article.UserID]),
+			CategoryName:      categoryMap[int64(article.SubCategoryID)],
+			SubCategoryName:   subCategoryMap[int64(article.SubCategoryID)],
+			CreateAt:          article.CreateAt,
+			UpdateAt:          article.UpdateAt,
 			AIScore:           aiScore,
 			UserScore:         userScore,
 			AICommentCount:    aiCount,
@@ -288,7 +329,6 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 		return existingDocs, nil
 	}
 
-	// 使用 Scroll 分批扫描 ES，避免一次性把索引中的所有文档拉回来
 	scroll := svcCtx.ESClient.Scroll(esArticlesIndexName).Size(esSyncBatchSize)
 	for {
 		result, err := scroll.Do(ctx)
@@ -304,7 +344,6 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 			if err := json.Unmarshal(hit.Source, &doc); err != nil {
 				return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
 			}
-			// 这里直接对 ES 中现有文档计算 hash，后面和 DB 生成的新文档做同口径比对
 			hashValue, err := hashArticleES(doc)
 			if err != nil {
 				return nil, logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
@@ -321,7 +360,6 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 		return 0, nil
 	}
 
-	// 剩余 staleDocs 的 key 就是“ES 中存在、但 DB 中已不存在的已发布文章”
 	ids := make([]int64, 0, len(staleDocs))
 	for id := range staleDocs {
 		ids = append(ids, id)
@@ -343,7 +381,6 @@ func deleteStaleESArticles(ctx context.Context, svcCtx *svc.ServiceContext, stal
 			)
 		}
 
-		// 删除也走 bulk，保持和新增/更新一致的批处理方式
 		if err := executeESBulk(ctx, svcCtx, bulkRequest); err != nil {
 			return deleted, err
 		}
@@ -358,7 +395,6 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 		return nil
 	}
 
-	// 统一封装 bulk 执行和失败处理，避免新增、更新、删除各写一套错误判断
 	resp, err := bulkRequest.Do(ctx)
 	if err != nil {
 		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
@@ -380,7 +416,6 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 }
 
 func hashArticleES(doc search.ArticleES) (string, error) {
-	// 直接对完整文档做 JSON 序列化后计算哈希
 	payload, err := json.Marshal(doc)
 	if err != nil {
 		return "", err

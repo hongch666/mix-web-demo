@@ -7,19 +7,11 @@ import (
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
+	"app/internal/client/springClient"
 	"app/internal/config"
 	"app/model/aiHistory"
-	"app/model/articles"
-	"app/model/category"
-	"app/model/categoryReference"
 	"app/model/chatMessages"
-	"app/model/collects"
-	"app/model/comments"
-	"app/model/focus"
-	"app/model/likes"
 	"app/model/search"
-	"app/model/subCategory"
-	"app/model/user"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/olivere/elastic/v7"
@@ -47,18 +39,9 @@ type InfrastructureContext struct {
 
 // ModelContext 保存业务模型依赖
 type ModelContext struct {
-	AiHistoryModel         aiHistory.AiHistoryModel
-	ArticlesModel          articles.ArticlesModel
-	CategoryModel          category.CategoryModel
-	CategoryReferenceModel categoryReference.CategoryReferenceModel
-	ChatMessagesModel      chatMessages.ChatMessagesModel
-	CollectsModel          collects.CollectsModel
-	CommentsModel          comments.CommentsModel
-	FocusModel             focus.FocusModel
-	LikesModel             likes.LikesModel
-	SubCategoryModel       subCategory.SubCategoryModel
-	UserModel              user.UserModel
-	SearchModel            search.SearchModel
+	AiHistoryModel    aiHistory.AiHistoryModel
+	ChatMessagesModel chatMessages.ChatMessagesModel
+	SearchModel       search.SearchModel
 }
 
 // HubContext 保存实时通信相关依赖
@@ -71,6 +54,7 @@ type HubContext struct {
 type ClientContext struct {
 	FastapiClient *fastapiClient.FastapiClient
 	NestjsClient  *nestjsClient.NestjsClient
+	SpringClient  *springClient.SpringClient
 }
 
 // LoggerContext 保存服务级日志依赖

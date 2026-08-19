@@ -9,6 +9,7 @@ import (
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
+	"app/internal/client/springClient"
 	"app/internal/config"
 	"app/internal/middleware"
 
@@ -32,25 +33,16 @@ func newClientContext(
 	namingClient naming_client.INamingClient,
 	remoteCallConfig config.RemoteCallConfig,
 ) *ClientContext {
+	remoteCallCfg := client.RemoteCallConfig{
+		Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
+		MaxRetries:     remoteCallConfig.MaxRetries,
+		InitialBackoff: time.Duration(remoteCallConfig.InitialBackoff) * time.Millisecond,
+		MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
+	}
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(
-			namingClient,
-			client.RemoteCallConfig{
-				Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
-				MaxRetries:     remoteCallConfig.MaxRetries,
-				InitialBackoff: time.Duration(remoteCallConfig.InitialBackoff) * time.Millisecond,
-				MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
-			},
-		),
-		NestjsClient: nestjsClient.NewNestjsClient(
-			namingClient,
-			client.RemoteCallConfig{
-				Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
-				MaxRetries:     remoteCallConfig.MaxRetries,
-				InitialBackoff: time.Duration(remoteCallConfig.InitialBackoff) * time.Millisecond,
-				MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
-			},
-		),
+		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg),
+		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg),
+		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg),
 	}
 }
 
