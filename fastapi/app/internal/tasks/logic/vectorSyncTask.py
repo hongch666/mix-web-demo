@@ -5,27 +5,32 @@ from typing import Any, List, Optional
 
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages, RedisKeys
-from app.core.db import AsyncSessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
 from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.cache import get_redis_client
-from app.internal.crud import get_article_mapper
-from app.internal.models import Article
-from sqlalchemy import select
+from app.internal.clients import SpringClient
+
 
 def _get_redis_client() -> Optional[Any]:
     """获取 Redis 客户端"""
     return get_redis_client()
 
 
+def _get_article_field(article: Any, field: str, default: Any = "") -> Any:
+    """兼容 dict 和 ORM 对象的字段访问"""
+    if isinstance(article, dict):
+        return article.get(field, default)
+    return getattr(article, field, default)
+
+
 def _compute_article_hash(article: Any) -> str:
     """计算文章内容的 hash 值（只包含需要同步的字段）"""
     try:
         # 只对标题和内容计算hash（这两个字段最重要）
-        title = str(getattr(article, "title", "")).strip()
-        content = str(getattr(article, "content", "")).strip()
-        tags = str(getattr(article, "tags", "")).strip()
+        title = str(_get_article_field(article, "title", "")).strip()
+        content = str(_get_article_field(article, "content", "")).strip()
+        tags = str(_get_article_field(article, "tags", "")).strip()
 
         # 组合成统一格式用于hash计算
         hash_str = f"{title}||{content}||{tags}"
@@ -62,9 +67,7 @@ async def _save_article_content_hash(article_id: int, hash_value: str) -> None:
             return
 
         # 永久保存 hash（不设置过期时间）
-        await redis_client.set(
-            RedisKeys.article_content_hash(article_id), hash_value
-        )
+        await redis_client.set(RedisKeys.article_content_hash(article_id), hash_value)
         Logger.debug(Messages.VECTOR_ARTICLE_HASH_SAVED(article_id, hash_value))
     except Exception as e:
         Logger.error(Messages.VECTOR_ARTICLE_HASH_SAVE_FAILED(article_id, e))
@@ -78,7 +81,9 @@ async def _get_last_sync_time() -> Optional[datetime]:
             Logger.warning(Messages.REDIS_CONNECTION_FAILED_MESSAGE)
             return None
 
-        timestamp_str: Optional[str] = await redis_client.get(RedisKeys.VECTOR_SYNC_TIME)
+        timestamp_str: Optional[str] = await redis_client.get(
+            RedisKeys.VECTOR_SYNC_TIME
+        )
         if timestamp_str:
             return datetime.fromisoformat(timestamp_str)
     except Exception as e:
@@ -117,7 +122,7 @@ async def _get_changed_articles(
     """
     # 先筛选已发布的文章
     published_articles: List[Any] = [
-        a for a in articles if getattr(a, "status", 0) == 1
+        a for a in articles if _get_article_field(a, "status", 0) == 1
     ]
 
     if last_sync_time is None:
@@ -125,7 +130,7 @@ async def _get_changed_articles(
         Logger.info(Messages.FIRST_TIME_SYNC_MESSAGE)
         # 同时为这些文章保存 hash 值
         for article in published_articles:
-            article_id = getattr(article, "id", 0)
+            article_id = _get_article_field(article, "id", 0)
             if article_id:
                 current_hash: str = _compute_article_hash(article)
                 if current_hash:
@@ -134,7 +139,7 @@ async def _get_changed_articles(
 
     changed_articles: List[Any] = []
     for article in published_articles:
-        article_id = getattr(article, "id", 0)
+        article_id = _get_article_field(article, "id", 0)
         if not article_id:
             continue
 
@@ -186,12 +191,11 @@ async def _export_article_vectors_to_postgres(
     支持增量同步模式，带重试机制
 
     Args:
-        article_mapper: ArticleMapper 实例
+        article_mapper: ArticleMapper 实例（已废弃，保留参数以兼容旧调用）
         mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
         enable_incremental_sync: 是否启用增量同步（仅同步有变更的文章）
     """
-    if article_mapper is None:
-        article_mapper = get_article_mapper()
+    spring_client: SpringClient = SpringClient()
 
     rag_tools: Any = get_rag_tools()
 
@@ -201,11 +205,29 @@ async def _export_article_vectors_to_postgres(
     try:
         Logger.info(Messages.START_SYNC_TO_POSTGRES_MESSAGE)
 
-        # 1. 使用异步会话获取所有文章
+        # 1. 通过SpringClient分页远程获取所有已发布文章
         try:
-            async with AsyncSessionLocal() as db:
-                result = await db.execute(select(Article))
-                articles: List[Any] = result.scalars().all()
+            articles: List[Any] = []
+            page: int = 1
+            page_size: int = 100
+            while True:
+                page_result: Any = await spring_client.get_published_articles(
+                    page=page, size=page_size
+                )
+                records: List[Any] = (
+                    page_result.get("records", [])
+                    if isinstance(page_result, dict)
+                    else []
+                )
+                if not records:
+                    break
+                articles.extend(records)
+                total: int = (
+                    page_result.get("total", 0) if isinstance(page_result, dict) else 0
+                )
+                if len(articles) >= total:
+                    break
+                page += 1
         except Exception as e:
             Logger.error(Messages.VECTOR_SYNC_GET_ARTICLES_FAILED(e))
             return
@@ -228,9 +250,9 @@ async def _export_article_vectors_to_postgres(
             Logger.info(Messages.VECTOR_INCREMENTAL_SYNC_CHANGED(len(changed_articles)))
             sync_articles: List[Any] = changed_articles
         else:
-            # 全量同步模式
+            # 全量同步模式（列表接口已返回已发布文章）
             published_articles: List[Any] = [
-                a for a in articles if getattr(a, "status", 0) == 1
+                a for a in articles if _get_article_field(a, "status", 0) == 1
             ]
             if not published_articles:
                 Logger.info(Messages.NO_PUBLISHED_ARTICLES_MESSAGE)
@@ -251,21 +273,21 @@ async def _export_article_vectors_to_postgres(
             batch_num = i // batch_size + 1
 
             # 提取文章信息
-            article_ids: List[int] = [getattr(a, "id", 0) for a in batch]
-            titles: List[str] = [getattr(a, "title", "") for a in batch]
-            contents: List[str] = [getattr(a, "content", "") for a in batch]
+            article_ids: List[int] = [_get_article_field(a, "id", 0) for a in batch]
+            titles: List[str] = [_get_article_field(a, "title", "") for a in batch]
+            contents: List[str] = [_get_article_field(a, "content", "") for a in batch]
 
             # 构建元数据
             metadata_list: List[dict] = []
             for a in batch:
                 metadata_list.append(
                     {
-                        "user_id": getattr(a, "user_id", None),
-                        "tags": getattr(a, "tags", ""),
-                        "status": getattr(a, "status", 0),
-                        "views": getattr(a, "views", 0),
-                        "create_at": str(getattr(a, "create_at", "")),
-                        "update_at": str(getattr(a, "update_at", "")),
+                        "user_id": _get_article_field(a, "user_id", None),
+                        "tags": _get_article_field(a, "tags", ""),
+                        "status": _get_article_field(a, "status", 0),
+                        "views": _get_article_field(a, "views", 0),
+                        "create_at": str(_get_article_field(a, "create_at", "")),
+                        "update_at": str(_get_article_field(a, "update_at", "")),
                     }
                 )
 
@@ -382,23 +404,37 @@ async def _initialize_article_content_hash_cache(
     此操作只生成 hash，不进行向量同步。
 
     Args:
-        article_mapper: ArticleMapper 实例
+        article_mapper: ArticleMapper 实例（已废弃，保留参数以兼容旧调用）
         mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
     """
-    # 延迟导入，避免循环依赖
-    if article_mapper is None:
-        from app.internal.crud import get_article_mapper
-
-        article_mapper = get_article_mapper()
+    spring_client: SpringClient = SpringClient()
 
     try:
         Logger.info(Messages.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
 
-        # 1. 使用异步会话获取所有文章
+        # 1. 通过SpringClient分页远程获取所有已发布文章
         try:
-            async with AsyncSessionLocal() as db:
-                result = await db.execute(select(Article))
-                articles: List[Any] = result.scalars().all()
+            articles: List[Any] = []
+            page: int = 1
+            page_size: int = 100
+            while True:
+                page_result: Any = await spring_client.get_published_articles(
+                    page=page, size=page_size
+                )
+                records: List[Any] = (
+                    page_result.get("records", [])
+                    if isinstance(page_result, dict)
+                    else []
+                )
+                if not records:
+                    break
+                articles.extend(records)
+                total: int = (
+                    page_result.get("total", 0) if isinstance(page_result, dict) else 0
+                )
+                if len(articles) >= total:
+                    break
+                page += 1
         except Exception as e:
             Logger.error(Messages.VECTOR_HASH_INIT_GET_ARTICLES_FAILED(e))
             return
@@ -409,7 +445,7 @@ async def _initialize_article_content_hash_cache(
 
         # 2. 筛选已发布的文章
         published_articles: List[Any] = [
-            a for a in articles if getattr(a, "status", 0) == 1
+            a for a in articles if _get_article_field(a, "status", 0) == 1
         ]
 
         if not published_articles:
@@ -423,7 +459,7 @@ async def _initialize_article_content_hash_cache(
         total_skipped = 0
 
         for article in published_articles:
-            article_id = getattr(article, "id", 0)
+            article_id = _get_article_field(article, "id", 0)
             if not article_id:
                 continue
 

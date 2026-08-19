@@ -4,7 +4,9 @@
 """
 
 from .nestjsClient import NestjsClient
+from .springClient import SpringClient
 
 __all__: list[str] = [
     "NestjsClient",
+    "SpringClient",
 ]

@@ -11,15 +11,7 @@ from app.core.constants import HttpCode, Messages, Prompts
 from app.core.db import AsyncSessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
-from app.internal.crud import (
-    ArticleMapper,
-    CategoryReferenceMapper,
-    CommentsMapper,
-    get_article_mapper,
-    get_category_reference_mapper,
-    get_comments_mapper,
-)
-from app.internal.models import Comments
+from app.internal.clients import SpringClient
 
 from fastapi import Depends
 
@@ -33,17 +25,14 @@ class GenerateService:
 
     def __init__(
         self,
-        comments_mapper: Optional[CommentsMapper] = None,
-        article_mapper: Optional[ArticleMapper] = None,
         deepseek_service: Optional[DeepseekService] = None,
         gemini_service: Optional[GeminiService] = None,
         gpt_service: Optional[GptService] = None,
     ) -> None:
-        self.comments_mapper: Optional[CommentsMapper] = comments_mapper
-        self.article_mapper: Optional[ArticleMapper] = article_mapper
         self.deepseek_service: Optional[DeepseekService] = deepseek_service
         self.gpt_service: Optional[GptService] = gpt_service
         self.gemini_service: Optional[GeminiService] = gemini_service
+        self._spring_client: SpringClient = SpringClient()
 
     async def extract_tags(self, text: str, topK: int = 5) -> str:
         """
@@ -62,33 +51,45 @@ class GenerateService:
         tags: list[str] = jieba.analyse.extract_tags(text, topK=topK)
         return ",".join(tags)
 
+    @staticmethod
+    def _build_comment_data(
+        article_id: int, user_id: int, content: str, star: float
+    ) -> Dict[str, Any]:
+        """构造Spring评论接口请求数据"""
+        now = datetime.now().isoformat()
+        return {
+            "articleId": article_id,
+            "userId": user_id,
+            "content": content,
+            "star": star,
+            "createTime": now,
+            "updateTime": now,
+        }
+
     async def generate_ai_comments(self, article_id: int, db: Any) -> None:
 
         # 1. 判断是否需要生成AI评论
-        ai_comments_count = (
-            await self.comments_mapper.get_ai_comments_num_by_article_id_mapper_async(
-                article_id, db
-            )
+        ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
+            article_id
         )
         if ai_comments_count > 0:
             Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
-            await self.comments_mapper.delete_ai_comments_by_article_id_mapper_async(
-                article_id, db
-            )
+            await self._spring_client.delete_ai_comments_by_article_id(article_id)
         # 2. 调用大模型生成AI评论
         # 2.1 获取文章标题,tags和内容
-        article = await self.article_mapper.get_article_by_id_mapper_async(
-            article_id, db
-        )
-        if not article:
+        articles = await self._spring_client.get_articles_by_ids([article_id])
+        if not articles:
             raise BusinessException(
                 Messages.ARTICLE_NOT_EXISTS_ERROR,
                 HttpCode.NOT_FOUND,
                 Messages.ERROR_ARTICLE_NOT_FOUND,
             )
+        article_data = articles[0]
         # 2.2 构建提示词
         prompt = Prompts.ARTICLE_EVALUATION(
-            article.title, article.tags, article.content
+            article_data.get("title", ""),
+            article_data.get("tags", ""),
+            article_data.get("content", ""),
         )
         # 2.3 异步并发调用3个大模型生成AI评论
         Logger.info(Messages.CONCURRENT_LLM_AI_COMMENT_START(article_id))
@@ -165,35 +166,19 @@ class GenerateService:
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
         content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
         # 3. 构建AI评论对象
-        deepseek_ai_comment: Any = Comments(
-            article_id=article_id,
-            user_id=1001,
-            content=content_deepseek,
-            star=star_deepseek,
-            create_time=datetime.now(),
-            update_time=datetime.now(),
+        deepseek_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1001, content_deepseek, star_deepseek
         )
-        gemini_ai_comment: Any = Comments(
-            article_id=article_id,
-            user_id=1002,
-            content=content_gemini,
-            star=star_gemini,
-            create_time=datetime.now(),
-            update_time=datetime.now(),
+        gemini_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1002, content_gemini, star_gemini
         )
-        gpt_ai_comment: Any = Comments(
-            article_id=article_id,
-            user_id=1003,
-            content=content_gpt,
-            star=star_gpt,
-            create_time=datetime.now(),
-            update_time=datetime.now(),
+        gpt_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1003, content_gpt, star_gpt
         )
 
-        # 4. 保存AI评论到数据库（独立 Session 并行插入，互不干扰）
-        async def _insert_comment(comment: Comments) -> None:
-            async with AsyncSessionLocal() as session:
-                await self.comments_mapper.create_comment_mapper_async(comment, session)
+        # 4. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
+        async def _insert_comment(comment: Dict[str, Any]) -> None:
+            await self._spring_client.create_comment(comment)
 
         await asyncio.gather(
             _insert_comment(deepseek_ai_comment),
@@ -251,43 +236,34 @@ class GenerateService:
             article_id: 文章ID
             db: 数据库会话
         """
-        # 延迟导入避免循环依赖
-        from app.internal.models import Comments
-
         # 1. 判断是否需要生成AI评论
-        ai_comments_count = (
-            await self.comments_mapper.get_ai_comments_num_by_article_id_mapper_async(
-                article_id, db
-            )
+        ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
+            article_id
         )
         if ai_comments_count > 0:
             Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
-            await self.comments_mapper.delete_ai_comments_by_article_id_mapper_async(
-                article_id, db
-            )
+            await self._spring_client.delete_ai_comments_by_article_id(article_id)
 
         # 2. 获取文章信息
-        article = await self.article_mapper.get_article_by_id_mapper_async(
-            article_id, db
-        )
-        if not article:
+        articles = await self._spring_client.get_articles_by_ids([article_id])
+        if not articles:
             Logger.error(Messages.ARTICLE_NOT_FOUND_WITH_ID(article_id))
             return
+        article_data = articles[0]
 
         Logger.info(Messages.REFERENCE_BASED_AI_COMMENT_START(article_id))
 
-        # 3. 获取权威参考文本
-        category_ref_mapper: CategoryReferenceMapper = get_category_reference_mapper()
+        # 3. 获取权威参考文本（通过SpringClient远程调用）
         reference_content = None
 
         # 获取文章的子分类ID
-        sub_category_id = (
-            article.sub_category_id if hasattr(article, "sub_category_id") else None
-        )
+        sub_category_id = article_data.get("sub_category_id")
 
         if sub_category_id:
-            category_ref = await category_ref_mapper.get_category_reference_by_sub_category_id_mapper_async(
-                sub_category_id, db
+            category_ref = (
+                await self._spring_client.get_category_reference_by_sub_category_id(
+                    sub_category_id
+                )
             )
 
             if category_ref:
@@ -398,7 +374,9 @@ class GenerateService:
 
         # 5. 构建要评价的内容
         article_content = Prompts.ARTICLE_REFERENCE_CONTENT(
-            article.title, article.tags, article.content
+            article_data.get("title", ""),
+            article_data.get("tags", ""),
+            article_data.get("content", ""),
         )
 
         # 6. 异步并发调用3个大模型生成AI评论
@@ -490,35 +468,19 @@ class GenerateService:
         content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
 
         # 8. 构建AI评论对象
-        deepseek_ai_comment: Any = Comments(
-            article_id=article_id,
-            user_id=1001,
-            content=content_deepseek,
-            star=star_deepseek,
-            create_time=datetime.now(),
-            update_time=datetime.now(),
+        deepseek_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1001, content_deepseek, star_deepseek
         )
-        gemini_ai_comment: Any = Comments(
-            article_id=article_id,
-            user_id=1002,
-            content=content_gemini,
-            star=star_gemini,
-            create_time=datetime.now(),
-            update_time=datetime.now(),
+        gemini_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1002, content_gemini, star_gemini
         )
-        gpt_ai_comment: Any = Comments(
-            article_id=article_id,
-            user_id=1003,
-            content=content_gpt,
-            star=star_gpt,
-            create_time=datetime.now(),
-            update_time=datetime.now(),
+        gpt_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1003, content_gpt, star_gpt
         )
 
-        # 9. 保存AI评论到数据库（独立 Session 并行插入，互不干扰）
-        async def _insert_comment_ref(comment: Comments) -> None:
-            async with AsyncSessionLocal() as session:
-                await self.comments_mapper.create_comment_mapper_async(comment, session)
+        # 9. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
+        async def _insert_comment_ref(comment: Dict[str, Any]) -> None:
+            await self._spring_client.create_comment(comment)
 
         await asyncio.gather(
             _insert_comment_ref(deepseek_ai_comment),
@@ -691,15 +653,11 @@ class GenerateService:
 
 @lru_cache()
 def get_generate_service(
-    comments_mapper: CommentsMapper = Depends(get_comments_mapper),
-    article_mapper: ArticleMapper = Depends(get_article_mapper),
     deepseek_service: DeepseekService = Depends(get_deepseek_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
     gpt_service: GptService = Depends(get_gpt_service),
 ) -> GenerateService:
     return GenerateService(
-        comments_mapper,
-        article_mapper,
         deepseek_service,
         gemini_service,
         gpt_service,

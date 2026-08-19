@@ -1,4 +1,3 @@
-import asyncio
 import hashlib
 from datetime import datetime
 from functools import lru_cache
@@ -6,8 +5,8 @@ from typing import Any, Dict, List, Optional, Set
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
-from app.core.db import AsyncSessionLocal, get_neo4j_client, get_redis_client
-from sqlalchemy import text
+from app.core.db import get_neo4j_client, get_redis_client
+from app.internal.clients import SpringClient
 
 
 class KnowledgeGraphSyncService:
@@ -16,6 +15,7 @@ class KnowledgeGraphSyncService:
     def __init__(self) -> None:
         self.logger = Logger
         self.client = get_neo4j_client()
+        self.spring_client = SpringClient()
 
     @staticmethod
     def _format_datetime(value: Any) -> str:
@@ -55,191 +55,116 @@ class KnowledgeGraphSyncService:
                 relations.append({"articleId": article_id, "tagName": tag_name})
         return relations
 
-    async def _fetch_rows(self, sql: str) -> List[Any]:
-        async with AsyncSessionLocal() as session:
-            result = await session.execute(text(sql))
-            return list(result.fetchall())
-
-    def _build_incremental_sql(
-        self,
-        base_sql: str,
-        timestamp_column: Optional[str],
-        last_sync_time: Optional[datetime],
-    ) -> str:
-        if last_sync_time is None or not timestamp_column:
-            return base_sql
-        sync_time_text = last_sync_time.strftime("%Y-%m-%d %H:%M:%S")
-        return Scripts.NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(
-            base_sql,
-            timestamp_column,
-            sync_time_text,
-        )
-
-    async def _fetch_all_users(
+    async def _fetch_snapshot(
         self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_USERS,
-                "update_at",
-                last_sync_time,
-            )
-        )
+    ) -> Dict[str, List[Dict[str, Any]]]:
+        """通过Spring获取业务表快照，避免FastAPI直连MySQL。"""
+        updated_after = last_sync_time.isoformat() if last_sync_time else None
+        return await self.spring_client.get_neo4j_sync_snapshot(updated_after)
+
+    def _normalize_users(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
             {
-                "id": int(row[0]),
-                "name": row[1] or "",
-                "email": row[2] or "",
-                "role": row[3] or "user",
-                "img": row[4] or "",
-                "signature": row[5] or "",
-                "createdAt": self._format_datetime(row[6]),
-                "updatedAt": self._format_datetime(row[7]),
+                "id": int(row.get("id")),
+                "name": row.get("name") or "",
+                "email": row.get("email") or "",
+                "role": row.get("role") or "user",
+                "img": row.get("img") or "",
+                "signature": row.get("signature") or "",
+                "createdAt": self._format_datetime(row.get("created_at")),
+                "updatedAt": self._format_datetime(row.get("updated_at")),
             }
             for row in rows
+            if row.get("id") is not None
         ]
 
-    async def _fetch_all_categories(
-        self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_CATEGORIES,
-                "update_time",
-                last_sync_time,
-            )
-        )
+    def _normalize_categories(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
             {
-                "id": int(row[0]),
-                "name": row[1] or "",
-                "updatedAt": self._format_datetime(row[2]),
+                "id": int(row["id"]),
+                "name": row.get("name") or "",
+                "updatedAt": self._format_datetime(row.get("update_time")),
             }
             for row in rows
+            if row.get("id") is not None
         ]
 
-    async def _fetch_all_sub_categories(
-        self, last_sync_time: Optional[datetime] = None
+    def _normalize_sub_categories(
+        self, rows: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_SUB_CATEGORIES,
-                "update_time",
-                last_sync_time,
-            )
-        )
         return [
             {
-                "id": int(row[0]),
-                "name": row[1] or "",
-                "categoryId": int(row[2]) if row[2] is not None else None,
-                "updatedAt": self._format_datetime(row[3]),
+                "id": int(row["id"]),
+                "name": row.get("name") or "",
+                "categoryId": int(row["category_id"])
+                if row.get("category_id") is not None
+                else None,
+                "updatedAt": self._format_datetime(row.get("update_time")),
             }
             for row in rows
+            if row.get("id") is not None
         ]
 
-    async def _fetch_all_articles(
-        self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_ARTICLES,
-                "update_at",
-                last_sync_time,
-            )
-        )
+    def _normalize_articles(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
             {
-                "id": int(row[0]),
-                "title": row[1] or "",
-                "tags": row[2] or "",
-                "status": str(row[3]) if row[3] is not None else "",
-                "views": int(row[4] or 0),
-                "userId": int(row[5]) if row[5] is not None else None,
-                "subCategoryId": int(row[6]) if row[6] is not None else None,
-                "createAt": self._format_datetime(row[7]),
-                "updateAt": self._format_datetime(row[8]),
-                "contentHash": self._compute_content_hash(row[1], row[9], row[2]),
-                "updatedAt": self._format_datetime(row[8]),
+                "id": int(row["id"]),
+                "title": row.get("title") or "",
+                "tags": row.get("tags") or "",
+                "status": str(row.get("status") or ""),
+                "views": int(row.get("views") or 0),
+                "userId": int(row["user_id"])
+                if row.get("user_id") is not None
+                else None,
+                "subCategoryId": int(row["sub_category_id"])
+                if row.get("sub_category_id") is not None
+                else None,
+                "createAt": self._format_datetime(row.get("create_at")),
+                "updateAt": self._format_datetime(row.get("update_at")),
+                "contentHash": self._compute_content_hash(
+                    row.get("title"), row.get("content"), row.get("tags")
+                ),
+                "updatedAt": self._format_datetime(row.get("update_at")),
             }
             for row in rows
+            if row.get("id") is not None
         ]
 
-    async def _fetch_all_likes(
-        self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_LIKES,
-                "created_time",
-                last_sync_time,
-            )
-        )
+    def _normalize_likes(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
             {
-                "userId": int(row[0]),
-                "articleId": int(row[1]),
-                "createdAt": self._format_datetime(row[2]),
+                "userId": int(row["user_id"]),
+                "articleId": int(row["article_id"]),
+                "createdAt": self._format_datetime(row.get("created_time")),
             }
             for row in rows
+            if row.get("user_id") is not None and row.get("article_id") is not None
         ]
 
-    async def _fetch_all_collects(
-        self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_COLLECTS,
-                "created_time",
-                last_sync_time,
-            )
-        )
+    def _normalize_collects(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return self._normalize_likes(rows)
+
+    def _normalize_comments(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
             {
-                "userId": int(row[0]),
-                "articleId": int(row[1]),
-                "createdAt": self._format_datetime(row[2]),
+                "commentId": int(row["id"]),
+                "userId": int(row["user_id"]),
+                "articleId": int(row["article_id"]),
+                "createdAt": self._format_datetime(row.get("create_time")),
             }
             for row in rows
+            if row.get("id") is not None
         ]
 
-    async def _fetch_all_comments(
-        self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_COMMENTS,
-                "update_time",
-                last_sync_time,
-            )
-        )
+    def _normalize_focus(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
             {
-                "commentId": int(row[0]),
-                "userId": int(row[1]),
-                "articleId": int(row[2]),
-                "createdAt": self._format_datetime(row[3]),
+                "followerId": int(row["user_id"]),
+                "followedId": int(row["focus_id"]),
+                "createdAt": self._format_datetime(row.get("created_time")),
             }
             for row in rows
-        ]
-
-    async def _fetch_all_focus(
-        self, last_sync_time: Optional[datetime] = None
-    ) -> List[Dict[str, Any]]:
-        rows = await self._fetch_rows(
-            self._build_incremental_sql(
-                Scripts.NEO4J_SQL_SELECT_FOCUS,
-                "created_time",
-                last_sync_time,
-            )
-        )
-        return [
-            {
-                "followerId": int(row[0]),
-                "followedId": int(row[1]),
-                "createdAt": self._format_datetime(row[2]),
-            }
-            for row in rows
+            if row.get("user_id") is not None and row.get("focus_id") is not None
         ]
 
     async def _ensure_schema(self) -> None:
@@ -297,31 +222,32 @@ class KnowledgeGraphSyncService:
         """按 MySQL 当前完整快照删除 Neo4j 中已经不存在的节点和关系"""
         self.logger.info(Messages.NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE)
 
-        fetched_data = await asyncio.gather(
-            self._fetch_all_users()
+        snapshot = await self._fetch_snapshot()
+        fetched_data = (
+            self._normalize_users(snapshot.get("users", []))
             if users is None
-            else asyncio.sleep(0, result=users),
-            self._fetch_all_categories()
+            else users,
+            self._normalize_categories(snapshot.get("categories", []))
             if categories is None
-            else asyncio.sleep(0, result=categories),
-            self._fetch_all_sub_categories()
+            else categories,
+            self._normalize_sub_categories(snapshot.get("sub_categories", []))
             if sub_categories is None
-            else asyncio.sleep(0, result=sub_categories),
-            self._fetch_all_articles()
+            else sub_categories,
+            self._normalize_articles(snapshot.get("articles", []))
             if articles is None
-            else asyncio.sleep(0, result=articles),
-            self._fetch_all_likes()
+            else articles,
+            self._normalize_likes(snapshot.get("likes", []))
             if likes is None
-            else asyncio.sleep(0, result=likes),
-            self._fetch_all_collects()
+            else likes,
+            self._normalize_collects(snapshot.get("collects", []))
             if collects is None
-            else asyncio.sleep(0, result=collects),
-            self._fetch_all_comments()
+            else collects,
+            self._normalize_comments(snapshot.get("comments", []))
             if comments is None
-            else asyncio.sleep(0, result=comments),
-            self._fetch_all_focus()
+            else comments,
+            self._normalize_focus(snapshot.get("focus", []))
             if focus is None
-            else asyncio.sleep(0, result=focus),
+            else focus,
         )
         (
             users,
@@ -479,25 +405,17 @@ class KnowledgeGraphSyncService:
 
         result: Dict[str, int] = {}
 
-        (
-            users,
-            categories,
-            sub_categories,
-            articles,
-            likes,
-            collects,
-            comments,
-            focus,
-        ) = await asyncio.gather(
-            self._fetch_all_users(),
-            self._fetch_all_categories(),
-            self._fetch_all_sub_categories(),
-            self._fetch_all_articles(),
-            self._fetch_all_likes(),
-            self._fetch_all_collects(),
-            self._fetch_all_comments(),
-            self._fetch_all_focus(),
+        snapshot = await self._fetch_snapshot()
+        users = self._normalize_users(snapshot.get("users", []))
+        categories = self._normalize_categories(snapshot.get("categories", []))
+        sub_categories = self._normalize_sub_categories(
+            snapshot.get("sub_categories", [])
         )
+        articles = self._normalize_articles(snapshot.get("articles", []))
+        likes = self._normalize_likes(snapshot.get("likes", []))
+        collects = self._normalize_collects(snapshot.get("collects", []))
+        comments = self._normalize_comments(snapshot.get("comments", []))
+        focus = self._normalize_focus(snapshot.get("focus", []))
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )
@@ -633,25 +551,17 @@ class KnowledgeGraphSyncService:
 
         result: Dict[str, int] = {}
 
-        (
-            users,
-            categories,
-            sub_categories,
-            articles,
-            likes,
-            collects,
-            comments,
-            focus,
-        ) = await asyncio.gather(
-            self._fetch_all_users(last_sync_time),
-            self._fetch_all_categories(last_sync_time),
-            self._fetch_all_sub_categories(last_sync_time),
-            self._fetch_all_articles(last_sync_time),
-            self._fetch_all_likes(last_sync_time),
-            self._fetch_all_collects(last_sync_time),
-            self._fetch_all_comments(last_sync_time),
-            self._fetch_all_focus(last_sync_time),
+        snapshot = await self._fetch_snapshot(last_sync_time)
+        users = self._normalize_users(snapshot.get("users", []))
+        categories = self._normalize_categories(snapshot.get("categories", []))
+        sub_categories = self._normalize_sub_categories(
+            snapshot.get("sub_categories", [])
         )
+        articles = self._normalize_articles(snapshot.get("articles", []))
+        likes = self._normalize_likes(snapshot.get("likes", []))
+        collects = self._normalize_collects(snapshot.get("collects", []))
+        comments = self._normalize_comments(snapshot.get("comments", []))
+        focus = self._normalize_focus(snapshot.get("focus", []))
         result["users"] = await self._batch_write(
             users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
         )

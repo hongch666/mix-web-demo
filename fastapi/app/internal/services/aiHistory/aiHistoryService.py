@@ -5,11 +5,10 @@ from typing import Any, Dict, List, Optional
 
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.internal.clients import SpringClient
 from app.internal.crud import (
     AiHistoryMapper,
-    UserMapper,
     get_ai_history_mapper,
-    get_user_mapper,
 )
 from app.internal.models import AiHistory
 
@@ -22,10 +21,9 @@ class AiHistoryService:
     def __init__(
         self,
         ai_history_mapper: Optional[AiHistoryMapper] = None,
-        user_mapper: Optional[UserMapper] = None,
     ) -> None:
         self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
-        self.user_mapper: Optional[UserMapper] = user_mapper
+        self._spring_client: SpringClient = SpringClient()
         # 用于短时间去重的缓存
         self._request_cache: Dict[str, float] = {}
 
@@ -72,9 +70,9 @@ class AiHistoryService:
         return [self._serialize_ai_history(item) for item in data]
 
     async def delete_ai_history_by_userid(self, user_id: int, db: Any) -> None:
-        # 检查用户是否存在
-        user = await self.user_mapper.get_user_by_id_async(user_id, db)
-        if not user:
+        # 检查用户是否存在（通过SpringClient远程查询）
+        users = await self._spring_client.get_users_by_ids([user_id])
+        if not users:
             raise BusinessException(
                 Messages.USER_NOT_EXISTS_ERROR,
                 HttpCode.NOT_FOUND,
@@ -166,6 +164,5 @@ class AiHistoryService:
 @lru_cache
 def get_ai_history_service(
     ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
-    user_mapper: UserMapper = Depends(get_user_mapper),
 ) -> AiHistoryService:
-    return AiHistoryService(ai_history_mapper, user_mapper)
+    return AiHistoryService(ai_history_mapper)

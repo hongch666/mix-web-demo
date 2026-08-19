@@ -3,12 +3,6 @@ from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.internal.crud import (
-    ArticleMapper,
-    CommentsMapper,
-    get_article_mapper,
-    get_comments_mapper,
-)
 from app.internal.services import (
     AiHistoryService,
     AlgorithmService,
@@ -56,7 +50,3 @@ DeepseekServiceDep = Annotated[DeepseekService, Depends(get_deepseek_service)]
 VectorSearchServiceDep = Annotated[
     VectorSearchService, Depends(get_vector_search_service)
 ]
-
-# CRUD Mapper 依赖
-ArticleMapperDep = Annotated[ArticleMapper, Depends(get_article_mapper)]
-CommentsMapperDep = Annotated[CommentsMapper, Depends(get_comments_mapper)]

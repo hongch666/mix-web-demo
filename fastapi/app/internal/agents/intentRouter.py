@@ -48,7 +48,6 @@ class IntentRouter:
         llm: Any,
         db: Optional[Session] = None,
         user_id: Optional[int] = None,
-        user_mapper: Optional[Any] = None,
     ) -> None:
         """
         初始化路由器
@@ -57,7 +56,6 @@ class IntentRouter:
             llm: LangChain LLM实例
             db: 数据库会话（用于权限检查）
             user_id: 当前用户ID（用于权限检查）
-            user_mapper: 用户 Mapper 实例（用于权限检查）
         """
 
         self.logger = Logger
@@ -65,7 +63,6 @@ class IntentRouter:
         self.llm: Any = llm
         self.db: Optional[Session] = db
         self.user_id: Optional[int] = user_id
-        self.user_mapper: Optional[Any] = user_mapper
 
         # 创建意图识别提示词
         self.intent_prompt = ChatPromptTemplate.from_messages(
@@ -204,7 +201,7 @@ class IntentRouter:
                 )
             return intent, True, "", resolution
 
-        perm_manager: UserPermissionManager = UserPermissionManager(self.user_mapper)
+        perm_manager: UserPermissionManager = UserPermissionManager()
 
         if intent == "database_query":
             try:

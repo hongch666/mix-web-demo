@@ -22,18 +22,10 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
-from app.internal.clients import NestjsClient
+from app.internal.clients import NestjsClient, SpringClient
 from app.internal.crud import (
     ArticleMapper,
-    CategoryMapper,
-    CollectMapper,
-    LikeMapper,
-    UserMapper,
     get_article_mapper,
-    get_category_mapper,
-    get_collect_mapper,
-    get_like_mapper,
-    get_user_mapper,
 )
 from dateutil.relativedelta import relativedelta
 from openpyxl import Workbook
@@ -49,10 +41,6 @@ class AnalyzeService:
     def __init__(
         self,
         articleMapper: Optional[ArticleMapper] = None,
-        userMapper: Optional[UserMapper] = None,
-        categoryMapper: Optional[CategoryMapper] = None,
-        likeMapper: Optional[LikeMapper] = None,
-        collectMapper: Optional[CollectMapper] = None,
         article_cache: Optional[ArticleCache] = None,
         category_cache: Optional[CategoryCache] = None,
         publish_time_cache: Optional[PublishTimeCache] = None,
@@ -60,10 +48,6 @@ class AnalyzeService:
         wordcloud_cache: Optional[WordcloudCache] = None,
     ) -> None:
         self.articleMapper: Optional[ArticleMapper] = articleMapper
-        self.userMapper: Optional[UserMapper] = userMapper
-        self.categoryMapper: Optional[CategoryMapper] = categoryMapper
-        self.likeMapper: Optional[LikeMapper] = likeMapper
-        self.collectMapper: Optional[CollectMapper] = collectMapper
         # 注入缓存对象
         self._article_cache: Optional[ArticleCache] = article_cache
         self._category_cache: Optional[CategoryCache] = category_cache
@@ -74,6 +58,7 @@ class AnalyzeService:
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
         # 初始化远程服务客户端
         self._nestjs_client: NestjsClient = NestjsClient()
+        self._spring_client: SpringClient = SpringClient()
 
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
@@ -210,10 +195,6 @@ class AnalyzeService:
         """为调度器创建 AnalyzeService 实例（手动注入所有依赖）"""
         return cls(
             articleMapper=get_article_mapper(),
-            userMapper=get_user_mapper(),
-            categoryMapper=get_category_mapper(),
-            likeMapper=get_like_mapper(),
-            collectMapper=get_collect_mapper(),
             article_cache=get_article_cache(),
             category_cache=get_category_cache(),
             publish_time_cache=get_publish_time_cache(),
@@ -221,7 +202,9 @@ class AnalyzeService:
             wordcloud_cache=get_wordcloud_cache(),
         )
 
-    async def get_top10_articles_service(self, db: AsyncSession) -> List[Dict[str, Any]]:
+    async def get_top10_articles_service(
+        self, db: AsyncSession
+    ) -> List[Dict[str, Any]]:
         """
         获取 Top10 文章服务
 
@@ -266,9 +249,8 @@ class AnalyzeService:
                 )
 
             if not articles or len(articles) == 0:
-                articles = await self.articleMapper.get_top10_articles_db_mapper_async(
-                    db
-                )
+                # 通过SpringClient远程查询DB作为降级
+                articles = await self._spring_client.get_top10_articles()
                 data_source = "DB"
                 Logger.info(Messages.TOP10_DB_SOURCE)
 
@@ -280,12 +262,10 @@ class AnalyzeService:
                 ]
                 if user_ids:
                     users: List[
-                        Any
-                    ] = await self.userMapper.get_users_by_ids_mapper_async(
-                        user_ids, db
-                    )
+                        Dict[str, Any]
+                    ] = await self._spring_client.get_users_by_ids(user_ids)
                     user_id_to_name: Dict[int, str] = {
-                        user.id: user.name for user in users
+                        user["id"]: user["name"] for user in users
                     }
                     for article in articles:
                         article["username"] = user_id_to_name.get(
@@ -304,31 +284,8 @@ class AnalyzeService:
 
                 result: List[Dict[str, Any]] = articles
             else:
-                user_ids: List[int] = [article.user_id for article in articles]
-                users: List[Any] = await self.userMapper.get_users_by_ids_mapper_async(
-                    user_ids, db
-                )
-                user_id_to_name: Dict[int, str] = {user.id: user.name for user in users}
-                result = [
-                    {
-                        "id": article.id,
-                        "title": article.title,
-                        "content": article.content,
-                        "user_id": article.user_id,
-                        "username": user_id_to_name.get(article.user_id),
-                        "tags": article.tags,
-                        "status": article.status,
-                        "create_at": article.create_at.isoformat()
-                        if article.create_at
-                        else None,
-                        "update_at": article.update_at.isoformat()
-                        if article.update_at
-                        else None,
-                        "views": article.views,
-                        "sub_category_id": getattr(article, "sub_category_id", None),
-                    }
-                    for article in articles
-                ]
+                # 远程调用始终返回 dict，此处兜底处理
+                result = articles if articles else []
 
             if ch_conn and result:
                 try:
@@ -486,8 +443,16 @@ class AnalyzeService:
         total_rows: int = 0
         rows: List[
             Dict[str, Any]
-        ] = await self.articleMapper.get_articles_for_excel_export_mapper_async(db)
+        ] = await self._spring_client.get_articles_for_excel_export()
         for item in rows:
+            # 处理日期格式
+            create_at = item.get("create_at")
+            update_at = item.get("update_at")
+            if create_at and hasattr(create_at, "isoformat"):
+                create_at = create_at.isoformat()
+            if update_at and hasattr(update_at, "isoformat"):
+                update_at = update_at.isoformat()
+
             worksheet.append(
                 [
                     item.get("id"),
@@ -496,12 +461,8 @@ class AnalyzeService:
                     item.get("username"),
                     item.get("tags"),
                     item.get("status"),
-                    item.get("create_at").isoformat()
-                    if item.get("create_at")
-                    else None,
-                    item.get("update_at").isoformat()
-                    if item.get("update_at")
-                    else None,
+                    create_at,
+                    update_at,
                     item.get("views"),
                     item.get("sub_category_name"),
                     item.get("category_name"),
@@ -524,9 +485,7 @@ class AnalyzeService:
         )
         return oss_url
 
-    async def get_article_statistics_service(
-        self, db: AsyncSession
-    ) -> Dict[str, Any]:
+    async def get_article_statistics_service(self, db: AsyncSession) -> Dict[str, Any]:
         """
         获取文章统计信息服务
         合并 mapper 层的方法，返回完整的统计数据
@@ -561,17 +520,27 @@ class AnalyzeService:
         except Exception as cache_e:
             Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
-        # ========== 步骤2: 缓存未命中，串行查询DB（同一 AsyncSession 不支持并发操作） ==========
+        # ========== 步骤2: 缓存未命中，通过SpringClient远程查询 ==========
         Logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
-        total_views = await self.articleMapper.get_total_views_mapper_async(db)
-        total_articles = await self.articleMapper.get_total_articles_mapper_async(db)
-        active_authors = await self.articleMapper.get_active_authors_mapper_async(db)
-        average_views = await self.articleMapper.get_average_views_mapper_async(db)
-        total_likes = await self.likeMapper.get_total_likes_mapper_async(db)
-        average_likes = await self.likeMapper.get_average_likes_mapper_async(db)
-        total_collects = await self.collectMapper.get_total_collects_mapper_async(db)
-        average_collects = await self.collectMapper.get_average_collects_mapper_async(
-            db
+        # 并行调用Spring远程接口获取统计数据
+        (
+            total_views,
+            total_articles,
+            active_authors,
+            average_views,
+            total_likes,
+            average_likes,
+            total_collects,
+            average_collects,
+        ) = await asyncio.gather(
+            self._spring_client.get_total_views(),
+            self._spring_client.get_total_articles(),
+            self._spring_client.get_active_authors(),
+            self._spring_client.get_average_views(),
+            self._spring_client.get_total_likes(),
+            self._spring_client.get_average_likes(),
+            self._spring_client.get_total_collects(),
+            self._spring_client.get_average_collects(),
         )
 
         statistics: Dict[str, Any] = {
@@ -654,30 +623,29 @@ class AnalyzeService:
                 local_data_source = "DB"
 
             if not local_category_data:
+                # 通过SpringClient远程查询DB作为降级
                 local_category_data = (
-                    await self.articleMapper.get_category_article_count_db_mapper_async(
-                        db
-                    )
+                    await self._spring_client.get_category_article_count()
                 )
                 local_data_source = "DB"
                 Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
 
-            # 两个分类查询在同一 AsyncSession 上串行执行，避免并发错误
+            # 使用SpringClient远程获取分类信息
             all_categories: List[
-                Any
-            ] = await self.categoryMapper.get_all_categories_mapper_async(db)
+                Dict[str, Any]
+            ] = await self._spring_client.get_all_categories()
             subcategories: List[
                 Dict[str, Any]
-            ] = await self.categoryMapper.get_subcategories_with_parent_mapper_async(db)
+            ] = await self._spring_client.get_subcategories_with_parent()
             sub_cat_map: Dict[int, Dict[str, Any]] = {
                 sc["id"]: sc for sc in subcategories
             }
 
             parent_category_count: Dict[int, Dict[str, Any]] = {}
             for category in all_categories:
-                parent_category_count[category.id] = {
-                    "category_id": category.id,
-                    "category_name": category.name,
+                parent_category_count[category["id"]] = {
+                    "category_id": category["id"],
+                    "category_name": category["name"],
                     "article_count": 0,
                 }
 
@@ -769,10 +737,9 @@ class AnalyzeService:
                 )
 
             if not local_publish_data:
+                # 通过SpringClient远程查询DB作为降级
                 local_publish_data = (
-                    await self.articleMapper.get_monthly_publish_count_db_mapper_async(
-                        db
-                    )
+                    await self._spring_client.get_monthly_publish_count()
                 )
                 local_data_source = "DB"
                 Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
@@ -821,10 +788,6 @@ class AnalyzeService:
 @lru_cache()
 def get_analyze_service(
     articleMapper: ArticleMapper = Depends(get_article_mapper),
-    userMapper: UserMapper = Depends(get_user_mapper),
-    categoryMapper: CategoryMapper = Depends(get_category_mapper),
-    likeMapper: LikeMapper = Depends(get_like_mapper),
-    collectMapper: CollectMapper = Depends(get_collect_mapper),
     article_cache: ArticleCache = Depends(get_article_cache),
     category_cache: CategoryCache = Depends(get_category_cache),
     publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache),
@@ -833,10 +796,6 @@ def get_analyze_service(
 ) -> AnalyzeService:
     return AnalyzeService(
         articleMapper,
-        userMapper,
-        categoryMapper,
-        likeMapper,
-        collectMapper,
         article_cache,
         category_cache,
         publish_time_cache,

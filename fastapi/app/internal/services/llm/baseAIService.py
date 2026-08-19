@@ -102,7 +102,6 @@ class BaseAiService:
         service_name: str = "AI",
         config_section: str = "closeai",
         model_config_key: str = "model_name",
-        user_mapper: Optional[Any] = None,
         temperature: float = 0.7,
     ) -> None:
         self._normalize_proxy_env()
@@ -121,7 +120,7 @@ class BaseAiService:
         self._base_url: str = ""
         self._timeout: int = 30
 
-        self._initialize_llm_service(user_mapper=user_mapper)
+        self._initialize_llm_service()
 
     @staticmethod
     def _normalize_proxy_env() -> None:
@@ -291,13 +290,11 @@ class BaseAiService:
             return Messages.REQUEST_TIMEOUT_ERROR
         return Messages.LLM_SERVICE_ERROR(self.service_name, error_message)
 
-    def _initialize_agent_stack(
-        self, user_mapper: Optional[Any], max_iterations: int = 5
-    ) -> None:
+    def _initialize_agent_stack(self, max_iterations: int = 5) -> None:
         """初始化工具、意图路由器和 Agent"""
         try:
             _, _, _, self.all_tools = initialize_ai_tools()
-            self.intent_router = IntentRouter(self.llm, user_mapper=user_mapper)
+            self.intent_router = IntentRouter(self.llm)
 
             agent_prompt = get_agent_prompt()
             self.agent = create_tool_calling_agent(
@@ -319,7 +316,7 @@ class BaseAiService:
             self.agent_executor = None
             self.intent_router = None
 
-    def _initialize_llm_service(self, user_mapper: Optional[Any] = None) -> None:
+    def _initialize_llm_service(self) -> None:
         """从配置中初始化 CloseAI 客户端和 Agent 能力"""
         try:
             service_cfg: Dict[str, Any] = (load_config("agent") or {}).get(
@@ -344,9 +341,7 @@ class BaseAiService:
                     temperature=self.temperature,
                     timeout=self._timeout,
                 )
-                self._initialize_agent_stack(
-                    user_mapper=user_mapper, max_iterations=agent_max_iterations
-                )
+                self._initialize_agent_stack(max_iterations=agent_max_iterations)
                 Logger.info(self._build_initialization_success_message())
             else:
                 self._reset_runtime_state()

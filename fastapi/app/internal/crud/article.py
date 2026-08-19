@@ -1,29 +1,13 @@
 import asyncio
 import time
 import traceback
-from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, Dict, List
 
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Scripts
-from app.core.db import (
-    AsyncSessionLocal,
-    ClickhouseConnectionPool,
-    get_clickhouse_connection_pool,
-)
-from app.internal.models import (
-    Article,
-    Category,
-    Collect,
-    Focus,
-    Like,
-    SubCategory,
-    User,
-)
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.db import ClickhouseConnectionPool, get_clickhouse_connection_pool
 
 
 class ArticleMapper:
@@ -109,25 +93,15 @@ class ArticleMapper:
         except AttributeError as ae:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
-            # 降级到 DB
-            async with AsyncSessionLocal() as db:
-                return await self.get_top10_articles_db_mapper_async(db)
+            raise
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
-            # 降级到 DB
-            async with AsyncSessionLocal() as db:
-                return await self.get_top10_articles_db_mapper_async(db)
+            raise
         finally:
             # 归还连接到池
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
-
-    async def get_top10_articles_db_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Article]:
-        statement = select(Article).order_by(Article.views.desc()).limit(10)
-        return (await db.execute(statement)).scalars().all()
 
     async def get_clickhouse_connection_async(self) -> Any:
         """获取 ClickHouse 连接（用于缓存版本检查）"""
@@ -136,197 +110,6 @@ class ArticleMapper:
     async def return_clickhouse_connection_async(self, conn: Any) -> None:
         """归还 ClickHouse 连接"""
         await asyncio.to_thread(self._clickhouse_pool.return_connection, conn)
-
-    async def get_all_articles_mapper_async(self, db: AsyncSession) -> List[Article]:
-        statement = select(Article)
-        return (await db.execute(statement)).scalars().all()
-
-    async def _iter_all_articles_mapper_sync(
-        self, db: AsyncSession, batch_size: int = 500
-    ) -> AsyncGenerator[List[Article], None]:
-        """按批获取文章，避免一次性加载整表"""
-        if batch_size <= 0:
-            batch_size = 500
-
-        last_id: int = 0
-        while True:
-            statement = (
-                select(Article)
-                .where(Article.id > last_id)
-                .order_by(Article.id.asc())
-                .limit(batch_size)
-            )
-            articles = (await db.execute(statement)).scalars().all()
-            if not articles:
-                break
-
-            yield articles
-            last_id = articles[-1].id
-
-    async def get_articles_for_excel_export_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
-        """获取导出Excel所需文章数据（连表聚合）"""
-        result: List[Dict[str, Any]] = []
-        async for batch in self._iter_articles_for_excel_export_mapper_sync(db):
-            result.extend(batch)
-        return result
-
-    async def _iter_articles_for_excel_export_mapper_sync(
-        self, db: AsyncSession, batch_size: int = 200
-    ) -> AsyncGenerator[List[Dict[str, Any]], None]:
-        """分批获取导出Excel所需文章数据，避免大结果集一次性堆积在内存中
-
-        优化策略：先查询文章基础信息（仅LEFT JOIN分类/用户小表），
-        再单独查询点赞/收藏/关注数，避免整表 GROUP BY 子查询。
-        """
-        if batch_size <= 0:
-            batch_size = 200
-
-        last_id = 0
-        while True:
-            # 第1步：查询文章基础信息（只做简单的 FK 关联）
-            base_statement = (
-                select(
-                    Article.id.label("id"),
-                    Article.title.label("title"),
-                    Article.content.label("content"),
-                    Article.user_id.label("user_id"),
-                    User.name.label("username"),
-                    Article.tags.label("tags"),
-                    Article.status.label("status"),
-                    Article.create_at.label("create_at"),
-                    Article.update_at.label("update_at"),
-                    Article.views.label("views"),
-                    SubCategory.name.label("sub_category_name"),
-                    Category.name.label("category_name"),
-                )
-                .select_from(Article)
-                .outerjoin(User, User.id == Article.user_id)
-                .outerjoin(SubCategory, SubCategory.id == Article.sub_category_id)
-                .outerjoin(Category, Category.id == SubCategory.category_id)
-                .where(Article.id > last_id)
-                .order_by(Article.id.asc())
-                .limit(batch_size)
-            )
-            base_rows = (await db.execute(base_statement)).all()
-            if not base_rows:
-                break
-
-            # 收集当前批次的文章ID和用户ID
-            article_ids: List[int] = [row.id for row in base_rows]
-            user_ids: List[int] = [
-                row.user_id for row in base_rows if row.user_id is not None
-            ]
-
-            # 第2步：批量查询点赞数
-            like_statement = (
-                select(
-                    Like.article_id.label("article_id"),
-                    func.count(Like.id).label("like_count"),
-                )
-                .where(Like.article_id.in_(article_ids))
-                .group_by(Like.article_id)
-            )
-            like_rows = (await db.execute(like_statement)).all()
-            like_map: Dict[int, int] = {
-                row.article_id: row.like_count for row in like_rows
-            }
-
-            # 第3步：批量查询收藏数
-            collect_statement = (
-                select(
-                    Collect.article_id.label("article_id"),
-                    func.count(Collect.id).label("collect_count"),
-                )
-                .where(Collect.article_id.in_(article_ids))
-                .group_by(Collect.article_id)
-            )
-            collect_rows = (await db.execute(collect_statement)).all()
-            collect_map: Dict[int, int] = {
-                row.article_id: row.collect_count for row in collect_rows
-            }
-
-            # 第4步：批量查询作者关注数（按作者分别统计）
-            follow_map: Dict[int, int] = {}
-            if user_ids:
-                # 去重 user_ids 减少查询范围
-                unique_user_ids: List[int] = list(set(user_ids))
-                follow_statement = (
-                    select(
-                        Focus.focus_id.label("author_id"),
-                        func.count(Focus.id).label("author_follow_count"),
-                    )
-                    .where(Focus.focus_id.in_(unique_user_ids))
-                    .group_by(Focus.focus_id)
-                )
-                follow_rows = (await db.execute(follow_statement)).all()
-                follow_map = {
-                    row.author_id: row.author_follow_count for row in follow_rows
-                }
-
-            result: List[Dict[str, Any]] = []
-            for row in base_rows:
-                result.append(
-                    {
-                        "id": row.id,
-                        "title": row.title,
-                        "content": row.content,
-                        "username": row.username,
-                        "tags": row.tags,
-                        "status": row.status,
-                        "create_at": row.create_at,
-                        "update_at": row.update_at,
-                        "views": row.views,
-                        "sub_category_name": row.sub_category_name,
-                        "category_name": row.category_name,
-                        "like_count": like_map.get(row.id, 0),
-                        "collect_count": collect_map.get(row.id, 0),
-                        "author_follow_count": follow_map.get(row.user_id, 0)
-                        if row.user_id
-                        else 0,
-                    }
-                )
-
-            yield result
-            last_id = base_rows[-1].id
-
-    async def get_article_by_id_mapper_async(
-        self, article_id: int, db: AsyncSession
-    ) -> Optional[Article]:
-        statement = select(Article).where(Article.id == article_id)
-        return (await db.execute(statement)).scalars().first()
-
-    async def get_articles_by_ids_mapper_async(
-        self, article_ids: List[int], db: AsyncSession
-    ) -> Dict[int, Article]:
-        """批量获取文章信息，返回 {article_id: Article} 字典"""
-        if not article_ids:
-            return {}
-        statement = select(Article).where(Article.id.in_(article_ids))
-        articles = (await db.execute(statement)).scalars().all()
-        return {article.id: article for article in articles}
-
-    async def get_total_views_mapper_async(self, db: AsyncSession) -> int:
-        """获取所有文章的总阅读量"""
-        statement = select(func.coalesce(func.sum(Article.views), 0))
-        return (await db.execute(statement)).scalar_one()
-
-    async def get_total_articles_mapper_async(self, db: AsyncSession) -> int:
-        """获取文章总数"""
-        statement = select(func.count(Article.id))
-        return (await db.execute(statement)).scalar_one()
-
-    async def get_active_authors_mapper_async(self, db: AsyncSession) -> int:
-        """获取活跃作者数（所有有文章的用户）"""
-        statement = select(func.count(func.distinct(Article.user_id)))
-        return (await db.execute(statement)).scalar_one()
-
-    async def get_average_views_mapper_async(self, db: AsyncSession) -> float:
-        """获取平均阅读次数"""
-        statement = select(func.coalesce(func.avg(Article.views), 0))
-        average_views: float = (await db.execute(statement)).scalar_one()
-        return round(float(average_views), 2)
 
     async def get_category_article_count_clickhouse_mapper_async(
         self,
@@ -371,48 +154,14 @@ class ArticleMapper:
         except AttributeError as ae:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
-            # 降级到 DB
-            async with AsyncSessionLocal() as db:
-                return await self.get_category_article_count_db_mapper_async(db)
+            raise
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
-            # 降级到 DB
-            async with AsyncSessionLocal() as db:
-                return await self.get_category_article_count_db_mapper_async(db)
+            raise
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
-
-    async def get_category_article_count_db_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
-        """
-        从DB获取按父分类排序的文章数量
-        """
-        count_expr: Any = func.count(Article.id)
-        statement = (
-            select(
-                Article.sub_category_id.label("sub_category_id"),
-                count_expr.label("count"),
-            )
-            .where(Article.status == 1)
-            .group_by(Article.sub_category_id)
-            .order_by(count_expr.desc())
-        )
-        rows = (await db.execute(statement)).all()
-
-        return [
-            {
-                "sub_category_id": row._mapping["sub_category_id"],
-                "count": (
-                    int(row._mapping["count"])
-                    if row._mapping["count"] is not None
-                    else 0
-                ),
-            }
-            for row in rows
-        ]
 
     async def get_monthly_publish_count_clickhouse_mapper_async(
         self,
@@ -460,55 +209,14 @@ class ArticleMapper:
         except AttributeError as ae:
             Logger.error(Messages.CLICKHOUSE_ATTR_ERROR(ae))
             Logger.error(Messages.CLICKHOUSE_DETAIL_ERROR(traceback.format_exc()))
-            # 降级到 DB
-            async with AsyncSessionLocal() as db:
-                return await self.get_monthly_publish_count_db_mapper_async(db)
+            raise
         except Exception as e:
             Logger.error(Messages.CLICKHOUSE_DEGRADE_TO_DB(type(e).__name__, e))
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
-            # 降级到 DB
-            async with AsyncSessionLocal() as db:
-                return await self.get_monthly_publish_count_db_mapper_async(db)
+            raise
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
-
-    async def get_monthly_publish_count_db_mapper_async(
-        self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
-        """
-        从DB获取最近24个月的文章发布数量统计（包含零值月份）
-        说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
-        """
-
-        months_ago: datetime = datetime.now() - timedelta(days=730)
-        year_month: Any = func.date_format(Article.create_at, "%Y-%m")
-        count_expr: Any = func.count(Article.id)
-        statement = (
-            select(
-                year_month.label("year_month"),
-                count_expr.label("count"),
-            )
-            .where(
-                Article.status == 1,
-                Article.create_at >= months_ago,
-            )
-            .group_by(year_month)
-            .order_by(year_month.desc())
-        )
-        rows = (await db.execute(statement)).all()
-
-        return [
-            {
-                "year_month": row._mapping["year_month"],
-                "count": (
-                    int(row._mapping["count"])
-                    if row._mapping["count"] is not None
-                    else 0
-                ),
-            }
-            for row in rows
-        ]
 
 
 @lru_cache()

@@ -1,47 +1,21 @@
 import asyncio
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from app.core.db import AsyncSessionLocal
-from app.internal.clients import NestjsClient
-from app.internal.crud import (
-    ArticleMapper,
-    CollectMapper,
-    CommentsMapper,
-    FocusMapper,
-    LikeMapper,
-    get_article_mapper,
-    get_collect_mapper,
-    get_comments_mapper,
-    get_focus_mapper,
-    get_like_mapper,
-)
+from app.internal.clients import NestjsClient, SpringClient
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from fastapi import Depends
 
 
 class UserService:
     """用户数据分析 Service"""
 
-    def __init__(
-        self,
-        focusMapper: Optional[FocusMapper] = None,
-        likeMapper: Optional[LikeMapper] = None,
-        collectMapper: Optional[CollectMapper] = None,
-        articleMapper: Optional[ArticleMapper] = None,
-        commentsMapper: Optional[CommentsMapper] = None,
-    ) -> None:
-        self.focusMapper: Optional[FocusMapper] = focusMapper
-        self.likeMapper: Optional[LikeMapper] = likeMapper
-        self.collectMapper: Optional[CollectMapper] = collectMapper
-        self.articleMapper: Optional[ArticleMapper] = articleMapper
-        self.commentsMapper: Optional[CommentsMapper] = commentsMapper
+    def __init__(self) -> None:
         self._nestjs_client: NestjsClient = NestjsClient()
+        self._spring_client: SpringClient = SpringClient()
 
     async def get_new_followers_service(
         self, db: AsyncSession, user_id: int, period: str = "day"
@@ -55,7 +29,6 @@ class UserService:
 
             if period == "day":
                 # 7个独立时间窗口查询改为 asyncio.gather 并行
-                # 每个协程使用独立的 AsyncSession，避免同一个 session 并发操作
                 async def _one_day(days_ago: int) -> Dict[str, Any]:
                     date: datetime = datetime.now() - timedelta(days=days_ago)
                     start_date: datetime = date.replace(
@@ -64,12 +37,9 @@ class UserService:
                     end_date: datetime = date.replace(
                         hour=23, minute=59, second=59, microsecond=999999
                     )
-                    async with AsyncSessionLocal() as session:
-                        count: int = (
-                            await self.focusMapper.get_followers_in_period_mapper_async(
-                                session, user_id, start_date, end_date
-                            )
-                        )
+                    count: int = await self._spring_client.get_followers_in_period(
+                        user_id, start_date.isoformat(), end_date.isoformat()
+                    )
                     return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
                 timeline = await asyncio.gather(
@@ -85,12 +55,9 @@ class UserService:
                     end_date = (date.replace(day=1) + relativedelta(months=1)).replace(
                         hour=0, minute=0, second=0, microsecond=0
                     ) - timedelta(seconds=1)
-                    async with AsyncSessionLocal() as session:
-                        count: int = (
-                            await self.focusMapper.get_followers_in_period_mapper_async(
-                                session, user_id, start_date, end_date
-                            )
-                        )
+                    count: int = await self._spring_client.get_followers_in_period(
+                        user_id, start_date.isoformat(), end_date.isoformat()
+                    )
                     return {"month": date.strftime("%Y-%m"), "count": count}
 
                 timeline = await asyncio.gather(
@@ -111,12 +78,9 @@ class UserService:
                         second=59,
                         microsecond=999999,
                     )
-                    async with AsyncSessionLocal() as session:
-                        count: int = (
-                            await self.focusMapper.get_followers_in_period_mapper_async(
-                                session, user_id, start_date, end_date
-                            )
-                        )
+                    count: int = await self._spring_client.get_followers_in_period(
+                        user_id, start_date.isoformat(), end_date.isoformat()
+                    )
                     return {"year": date.strftime("%Y"), "count": count}
 
                 timeline = await asyncio.gather(
@@ -151,20 +115,17 @@ class UserService:
                 end_date = date.replace(
                     hour=23, minute=59, second=59, microsecond=999999
                 )
-                count = 0
-                async with AsyncSessionLocal() as session:
-                    results = await self.focusMapper.get_daily_follows_mapper_async(
-                        session, user_id, start_date, end_date
-                    )
-                if results and len(results) > 0:
-                    count = results[0][1]
+                result = await self._spring_client.get_daily_follows(
+                    user_id, start_date.isoformat(), end_date.isoformat()
+                )
+                daily_follows_list = result.get("daily_follows", [])
+                count = (
+                    daily_follows_list[0].get("count", 0) if daily_follows_list else 0
+                )
                 return {"date": date.strftime("%Y-%m-%d"), "count": count}
 
             async def _total_follows() -> int:
-                async with AsyncSessionLocal() as session:
-                    return await self.focusMapper.get_total_follows_mapper_async(
-                        session, user_id
-                    )
+                return await self._spring_client.get_total_follows(user_id)
 
             total_authors, *daily_follows = await asyncio.gather(
                 _total_follows(),
@@ -181,9 +142,7 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户本月评论的趋势"""
         try:
-            return await self.commentsMapper.get_monthly_comment_trend_mapper_async(
-                db, user_id
-            )
+            return await self._spring_client.get_monthly_comment_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_COMMENT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
@@ -193,9 +152,7 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户本月点赞的趋势"""
         try:
-            return await self.likeMapper.get_monthly_like_trend_mapper_async(
-                db, user_id
-            )
+            return await self._spring_client.get_monthly_like_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_LIKE_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
@@ -205,27 +162,13 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户本月收藏的趋势"""
         try:
-            return await self.collectMapper.get_monthly_collect_trend_mapper_async(
-                db, user_id
-            )
+            return await self._spring_client.get_monthly_collect_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_COLLECT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
 
 @lru_cache()
-def get_user_service(
-    focusMapper: FocusMapper = Depends(get_focus_mapper),
-    likeMapper: LikeMapper = Depends(get_like_mapper),
-    collectMapper: CollectMapper = Depends(get_collect_mapper),
-    articleMapper: ArticleMapper = Depends(get_article_mapper),
-    commentsMapper: CommentsMapper = Depends(get_comments_mapper),
-) -> UserService:
+def get_user_service() -> UserService:
     """获取 UserService 单例实例"""
-    return UserService(
-        focusMapper,
-        likeMapper,
-        collectMapper,
-        articleMapper,
-        commentsMapper,
-    )
+    return UserService()

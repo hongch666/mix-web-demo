@@ -3,6 +3,7 @@ from typing import Any, Optional, Tuple
 
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
+from app.internal.clients import SpringClient
 from sqlalchemy.orm import Session
 
 
@@ -17,18 +18,19 @@ class UserPermissionManager:
             user_mapper: 用户 Mapper 实例
         """
         self.user_mapper: Optional[Any] = user_mapper
+        self._spring_client: SpringClient = SpringClient()
 
     async def get_user_role_async(self, user_id: int, db: Session) -> Optional[str]:
         """异步获取用户角色"""
         try:
-            if not self.user_mapper:
+            # 使用SpringClient远程获取用户信息
+            users = await self._spring_client.get_users_by_ids([user_id])
+            if not users:
                 Logger.warning(Messages.USER_ROLE_MAPPER_UNINITIALIZED(user_id))
                 return Messages.ROLE_USER
 
-            role: Optional[str] = await self.user_mapper.get_user_role_async(
-                user_id, db
-            )
-            role = role or Messages.ROLE_USER
+            user_data = users[0]
+            role: Optional[str] = user_data.get("role") or Messages.ROLE_USER
             Logger.info(Messages.USER_ROLE_LOADED(user_id, role))
             return role
         except Exception as e:
