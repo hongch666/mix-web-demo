@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from app.core.client import call_remote_service
 from app.core.config import load_config
@@ -35,6 +35,31 @@ class NestjsClient:
             method="GET",
         )
         return result.get("data", {"total_views": 0, "articles": []})
+
+    async def list_mongodb_collections(self) -> Any:
+        """远程调用 NestJS 列出日志集合"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/mongo-tools/collections",
+            method="GET",
+        )
+        return result.get("data", [])
+
+    async def query_mongodb(
+        self, collection_name: str, filter_dict: Optional[Dict[str, Any]], limit: int
+    ) -> Any:
+        """远程调用 NestJS 查询日志集合"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/mongo-tools/query",
+            method="POST",
+            json={
+                "collection_name": collection_name,
+                "filter": filter_dict or {},
+                "limit": limit,
+            },
+        )
+        return result.get("data", [])
 
     async def upload_file(self, file_path: str, oss_path: str) -> Dict[str, Any]:
         """远程调用 NestJS 上传文件到 OSS"""

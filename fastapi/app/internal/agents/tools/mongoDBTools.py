@@ -1,63 +1,28 @@
 import json
-from datetime import datetime
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
 from app.core.base import Logger
-from app.core.config import load_config
 from app.core.constants import Messages, Prompts
-from app.core.db import async_db
-from bson import ObjectId
+from app.internal.clients import NestjsClient
 from langchain_core.tools import StructuredTool
 from pydantic import BaseModel, Field
 
 
 class MongoDBTools:
-    """MongoDB 日志查询工具集"""
+    """MongoDB 日志查询工具集（通过 NestJS 内部接口远程查询）"""
 
     def __init__(self) -> None:
         """初始化 MongoDB 日志工具"""
-        self.db = async_db
         self.logger = Logger
-        # 获取日志集合名称（默认为 api_logs）
-        self.logs_collection_name: str = (
-            load_config("database").get("mongodb", {}).get("logs_collection")
-        )
-
-    async def get_logs_collection(self) -> Optional[Any]:
-        """获取日志集合"""
-        try:
-            return self.db[self.logs_collection_name]
-        except Exception as e:
-            self.logger.error(Messages.MONGODB_LOG_COLLECTION_GET_FAILED(e))
-            return None
+        self._nestjs_client: NestjsClient = NestjsClient()
 
     async def list_mongodb_collections(self) -> str:
         """列出 MongoDB 数据库中的所有 collection 及其基本信息"""
         try:
-            collections_info: List[Dict[str, Any]] = []
-            for collection_name in await self.db.list_collection_names():
-                try:
-                    collection = self.db[collection_name]
-                    doc_count = await collection.count_documents({})
-
-                    # 获取一个样本文档以了解结构
-                    sample_doc = await collection.find_one()
-                    sample_keys = list(sample_doc.keys()) if sample_doc else []
-
-                    collections_info.append(
-                        {
-                            "name": collection_name,
-                            "document_count": doc_count,
-                            "sample_fields": sample_keys[:10],  # 只显示前10个字段
-                        }
-                    )
-                except Exception as e:
-                    self.logger.warning(
-                        Messages.MONGODB_COLLECTION_INFO_GET_FAILED(collection_name, e)
-                    )
-                    collections_info.append({"name": collection_name, "error": str(e)})
-
+            collections_info: List[Dict[str, Any]] = (
+                await self._nestjs_client.list_mongodb_collections()
+            )
             return json.dumps(collections_info, ensure_ascii=False, indent=2)
         except Exception as e:
             error_msg = Messages.MONGODB_COLLECTION_LIST_FAILED(e)
@@ -79,21 +44,14 @@ class MongoDBTools:
             # 确保 limit 是整数
             limit_int = int(limit)
 
-            # 确保 filter_dict 是字典
-            filter_obj = filter_dict if filter_dict else {}
-
-            # 获取 collection
-            collection = self.db[collection_name]
-
-            # 执行查询
-            cursor = collection.find(filter_obj).limit(limit_int)
-            docs = await cursor.to_list(length=limit_int if limit_int > 0 else None)
-            results: List[Dict[str, Any]] = [
-                self._convert_datetime_to_string(doc) for doc in docs
-            ]
+            results: List[Dict[str, Any]] = await self._nestjs_client.query_mongodb(
+                collection_name, filter_dict, limit_int
+            )
 
             self.logger.info(
-                Messages.MONGODB_QUERY_RESULT(collection_name, filter_obj, len(results))
+                Messages.MONGODB_QUERY_RESULT(
+                    collection_name, filter_dict or {}, len(results)
+                )
             )
             return json.dumps(results, ensure_ascii=False, indent=2)
 
@@ -136,44 +94,6 @@ class MongoDBTools:
                 args_schema=QueryMongoInput,
             ),
         ]
-
-    def _convert_datetime_to_string(self, obj: Any) -> Any:
-        """递归转换所有 datetime 对象为 ISO 格式字符串"""
-
-        if isinstance(obj, dict):
-            # 处理字典中的所有值
-            result: Dict[str, Any] = {}
-            for key, value in obj.items():
-                if isinstance(value, ObjectId):
-                    result[key] = str(value)
-                elif isinstance(value, datetime):
-                    result[key] = value.isoformat()
-                elif isinstance(value, dict):
-                    result[key] = self._convert_datetime_to_string(value)
-                elif isinstance(value, list):
-                    result[key] = self._convert_datetime_to_string(value)
-                else:
-                    result[key] = value
-            return result
-        elif isinstance(obj, list):
-            # 处理列表中的所有元素
-            return [self._convert_datetime_to_string(item) for item in obj]
-        elif isinstance(obj, datetime):
-            # 直接转换 datetime
-            return obj.isoformat()
-        elif isinstance(obj, ObjectId):
-            # 转换 ObjectId
-            return str(obj)
-        else:
-            # 返回原值
-            return obj
-
-    def _format_results(self, results: Any) -> str:
-        """将结果格式化为字符串"""
-        try:
-            return json.dumps(results, ensure_ascii=False, indent=2)
-        except Exception:
-            return str(results)
 
 
 @lru_cache
