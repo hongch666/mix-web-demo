@@ -1,5 +1,8 @@
 package com.hcsy.spring.api.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -123,5 +126,14 @@ public class ArticleCollectController {
     @ApiLog("内部获取用户月度收藏趋势")
     public Mono<Result<java.util.Map<String, Object>>> getMonthlyCollectTrend(@PathVariable Long userId) {
         return articleCollectService.getMonthlyCollectTrend(userId).map(Result::success);
+    }
+
+    @GetMapping("/neo4j-sync")
+    @Operation(summary = "获取收藏表数据用于Neo4j同步（内部）", description = "获取收藏表数据，支持增量同步，供FastAPI同步Neo4j使用")
+    @RequireInternalToken
+    @ApiLog("内部获取Neo4j同步收藏数据")
+    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncCollects(
+        @RequestParam(required = false) String updatedAfter) {
+        return articleCollectService.getNeo4jSyncCollects(updatedAfter).map(Result::success);
     }
 }

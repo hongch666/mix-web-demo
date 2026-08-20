@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -17,6 +19,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -250,5 +253,35 @@ public class CategoryServiceImpl implements CategoryService {
                     "category_name", "未分类",
                     "create_time", subCategory.getCreateTime(),
                     "update_time", subCategory.getUpdateTime())));
+    }
+
+    @Override
+    public Mono<List<java.util.Map<String, Object>>> getNeo4jSyncCategories(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return categoryRepository.findAll()
+                .map(Neo4jSyncMapUtil::categoryToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return categoryRepository.findByUpdateTimeAfter(after)
+            .map(Neo4jSyncMapUtil::categoryToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    @Override
+    public Mono<List<java.util.Map<String, Object>>> getNeo4jSyncSubCategories(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return subCategoryRepository.findAll()
+                .map(Neo4jSyncMapUtil::subCategoryToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return subCategoryRepository.findByUpdateTimeAfter(after)
+            .map(Neo4jSyncMapUtil::subCategoryToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

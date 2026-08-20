@@ -35,4 +35,10 @@ public interface ArticleCollectRepository extends ReactiveCrudRepository<Article
         @Param("userId") Long userId,
         @Param("firstDay") LocalDateTime firstDay,
         @Param("lastDay") LocalDateTime lastDay);
+
+    /**
+     * 查询 created_time > :after 的收藏记录，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM collects WHERE created_time > :after")
+    Flux<ArticleCollect> findByCreatedTimeAfter(@Param("after") LocalDateTime after);
 }

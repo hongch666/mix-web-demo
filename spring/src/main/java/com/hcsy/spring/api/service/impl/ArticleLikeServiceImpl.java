@@ -2,6 +2,7 @@ package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.hcsy.spring.api.repository.ArticleLikeRepository;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
@@ -150,5 +152,20 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
                 result.put("total", total);
                 return result;
             });
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getNeo4jSyncLikes(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return articleLikeRepository.findAll()
+                .map(Neo4jSyncMapUtil::likeToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return articleLikeRepository.findByCreatedTimeAfter(after)
+            .map(Neo4jSyncMapUtil::likeToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

@@ -200,6 +200,15 @@ public class CommentsController {
             .map(Result::success);
     }
 
+    @GetMapping("/neo4j-sync")
+    @Operation(summary = "获取评论表数据用于Neo4j同步（内部）", description = "获取评论表数据，支持增量同步，供FastAPI同步Neo4j使用")
+    @RequireInternalToken
+    @ApiLog("内部获取Neo4j同步评论数据")
+    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncComments(
+        @RequestParam(required = false) String updatedAfter) {
+        return commentsService.getNeo4jSyncComments(updatedAfter).map(Result::success);
+    }
+
     private Mono<Result<Void>> saveComment(CommentCreateDTO dto, Article article, User user) {
         Comments comment = BeanUtil.toBean(dto, Comments.class);
         comment.setArticleId(article.getId());

@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -110,5 +111,14 @@ public class UserInternalController {
     public Mono<Result<Boolean>> isAdminUser(@PathVariable Long id) {
         return userService.isAdminUser(id)
             .map(Result::success);
+    }
+
+    @GetMapping("/neo4j-sync")
+    @Operation(summary = "获取用户表数据用于Neo4j同步（内部）", description = "获取用户表数据，支持增量同步，供FastAPI同步Neo4j使用")
+    @RequireInternalToken
+    @ApiLog("内部获取Neo4j同步用户数据")
+    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncUsers(
+        @RequestParam(required = false) String updatedAfter) {
+        return userService.getNeo4jSyncUsers(updatedAfter).map(Result::success);
     }
 }

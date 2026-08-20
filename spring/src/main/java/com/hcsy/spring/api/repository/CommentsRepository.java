@@ -45,4 +45,10 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
         @Param("userId") Long userId,
         @Param("firstDay") LocalDateTime firstDay,
         @Param("lastDay") LocalDateTime lastDay);
+
+    /**
+     * 查询 update_time > :after 的评论，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM comments WHERE update_time > :after")
+    Flux<Comments> findByUpdateTimeAfter(@Param("after") LocalDateTime after);
 }

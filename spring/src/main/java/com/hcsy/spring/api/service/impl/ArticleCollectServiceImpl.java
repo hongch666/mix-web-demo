@@ -2,6 +2,7 @@ package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.hcsy.spring.api.repository.ArticleCollectRepository;
 import com.hcsy.spring.api.service.ArticleCollectService;
 import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
@@ -151,5 +153,20 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
                 result.put("total", total);
                 return result;
             });
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getNeo4jSyncCollects(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return articleCollectRepository.findAll()
+                .map(Neo4jSyncMapUtil::collectToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return articleCollectRepository.findByCreatedTimeAfter(after)
+            .map(Neo4jSyncMapUtil::collectToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

@@ -1,5 +1,6 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.EntityMapUtil;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
@@ -371,6 +373,21 @@ public class ArticleServiceImpl implements ArticleService {
                 map.put("count", row.getCount());
                 return map;
             })
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getNeo4jSyncArticles(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return articleRepository.findAll()
+                .map(Neo4jSyncMapUtil::articleToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return articleRepository.findByUpdateAtAfter(after)
+            .map(Neo4jSyncMapUtil::articleToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }

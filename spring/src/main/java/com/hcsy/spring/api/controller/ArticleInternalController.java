@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -75,5 +76,14 @@ public class ArticleInternalController {
                 .map(article -> BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))
                 .collect(Collectors.toList()))
             .map(Result::success);
+    }
+
+    @GetMapping("/neo4j-sync")
+    @Operation(summary = "获取文章表数据用于Neo4j同步（内部）", description = "获取文章表数据，支持增量同步，供FastAPI同步Neo4j使用")
+    @RequireInternalToken
+    @ApiLog("内部获取Neo4j同步文章数据")
+    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncArticles(
+        @RequestParam(required = false) String updatedAfter) {
+        return articleService.getNeo4jSyncArticles(updatedAfter).map(Result::success);
     }
 }

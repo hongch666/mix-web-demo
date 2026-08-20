@@ -61,4 +61,10 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         @Param("userId") Long userId,
         @Param("firstDay") LocalDateTime firstDay,
         @Param("lastDay") LocalDateTime lastDay);
+
+    /**
+     * 查询 created_time > :after 的关注记录，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM focus WHERE created_time > :after")
+    Flux<Focus> findByCreatedTimeAfter(@Param("after") LocalDateTime after);
 }

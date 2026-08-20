@@ -1,9 +1,11 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.core.annotation.Neo4jSync;
@@ -470,6 +473,21 @@ public class UserServiceImpl implements UserService {
     @Override
     public Flux<User> listByIds(Collection<Long> ids) {
         return userRepository.findAllById(ids);
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getNeo4jSyncUsers(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return userRepository.findAll()
+                .map(Neo4jSyncMapUtil::userToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return userRepository.findByUpdateAtAfter(after)
+            .map(Neo4jSyncMapUtil::userToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     private Mono<Void> markLastLoginTime(User user) {

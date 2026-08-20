@@ -2,6 +2,7 @@ package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -290,5 +292,20 @@ public class CommentsServiceImpl implements CommentsService {
                 result.put("total", total);
                 return result;
             });
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getNeo4jSyncComments(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return commentsRepository.findAll()
+                .map(Neo4jSyncMapUtil::commentToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return commentsRepository.findByUpdateTimeAfter(after)
+            .map(Neo4jSyncMapUtil::commentToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

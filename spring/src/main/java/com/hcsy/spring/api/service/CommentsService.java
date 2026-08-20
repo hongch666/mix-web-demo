@@ -52,4 +52,12 @@ public interface CommentsService {
      * 获取用户本月评论的趋势
      */
     Mono<Map<String, Object>> getMonthlyCommentTrend(Long userId);
+
+    /**
+     * 获取评论数据，用于Neo4j同步
+     *
+     * @param updatedAfter
+     *                         增量同步时间（ISO格式），为空则全量
+     */
+    Mono<List<Map<String, Object>>> getNeo4jSyncComments(String updatedAfter);
 }

@@ -2,6 +2,7 @@ package com.hcsy.spring.api.service.impl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +21,7 @@ import com.hcsy.spring.api.service.FocusService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
@@ -203,5 +205,20 @@ public class FocusServiceImpl implements FocusService {
                 result.put("total", total);
                 return result;
             });
+    }
+
+    @Override
+    public Mono<List<Map<String, Object>>> getNeo4jSyncFocus(String updatedAfter) {
+        if (updatedAfter == null || updatedAfter.isBlank()) {
+            return focusRepository.findAll()
+                .map(Neo4jSyncMapUtil::focusToMap)
+                .collectList()
+                .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+        }
+        LocalDateTime after = LocalDateTime.parse(updatedAfter);
+        return focusRepository.findByCreatedTimeAfter(after)
+            .map(Neo4jSyncMapUtil::focusToMap)
+            .collectList()
+            .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 }

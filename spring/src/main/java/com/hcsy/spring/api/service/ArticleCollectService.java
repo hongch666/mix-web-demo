@@ -1,5 +1,6 @@
 package com.hcsy.spring.api.service;
 
+import java.util.List;
 import java.util.Map;
 
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -34,4 +35,12 @@ public interface ArticleCollectService {
      * 获取用户本月收藏的趋势
      */
     Mono<Map<String, Object>> getMonthlyCollectTrend(Long userId);
+
+    /**
+     * 获取收藏数据，用于Neo4j同步
+     *
+     * @param updatedAfter
+     *                         增量同步时间（ISO格式），为空则全量
+     */
+    Mono<List<Map<String, Object>>> getNeo4jSyncCollects(String updatedAfter);
 }

@@ -94,4 +94,10 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
         ORDER BY yearMonth DESC
         """)
     Flux<MonthlyCountRow> countMonthlyPublished();
+
+    /**
+     * 查询 update_at > :after 的文章，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM articles WHERE update_at > :after")
+    Flux<Article> findByUpdateAtAfter(@Param("after") LocalDateTime after);
 }

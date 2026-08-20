@@ -220,4 +220,22 @@ public class CategoryController {
             .map(Result::success)
             .defaultIfEmpty(Result.<com.hcsy.spring.entity.vo.CategoryReferenceVO>success(null));
     }
+
+    @GetMapping("/internal/neo4j-sync")
+    @Operation(summary = "获取分类表数据用于Neo4j同步（内部）", description = "获取分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
+    @RequireInternalToken
+    @ApiLog("内部获取Neo4j同步分类数据")
+    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncCategories(
+        @RequestParam(required = false) String updatedAfter) {
+        return categoryService.getNeo4jSyncCategories(updatedAfter).map(Result::success);
+    }
+
+    @GetMapping("/internal/sub/neo4j-sync")
+    @Operation(summary = "获取子分类表数据用于Neo4j同步（内部）", description = "获取子分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
+    @RequireInternalToken
+    @ApiLog("内部获取Neo4j同步子分类数据")
+    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncSubCategories(
+        @RequestParam(required = false) String updatedAfter) {
+        return categoryService.getNeo4jSyncSubCategories(updatedAfter).map(Result::success);
+    }
 }

@@ -2,6 +2,7 @@ package com.hcsy.spring.api.service;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -80,4 +81,12 @@ public interface UserService {
     Mono<User> getById(Long id);
 
     Flux<User> listByIds(Collection<Long> ids);
+
+    /**
+     * 获取用户数据，用于Neo4j同步
+     *
+     * @param updatedAfter
+     *                         增量同步时间（ISO格式），为空则全量
+     */
+    Mono<List<Map<String, Object>>> getNeo4jSyncUsers(String updatedAfter);
 }

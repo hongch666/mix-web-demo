@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.repository;
 
+import java.time.LocalDateTime;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
@@ -45,4 +47,10 @@ public interface UserRepository extends ReactiveCrudRepository<User, Long> {
     @Modifying
     @Query("UPDATE user SET password = :password")
     Mono<Integer> updateAllPasswords(@Param("password") String password);
+
+    /**
+     * 查询 updated_at > :after 的用户，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM user WHERE updated_at > :after")
+    Flux<User> findByUpdateAtAfter(@Param("after") LocalDateTime after);
 }

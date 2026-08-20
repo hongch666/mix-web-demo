@@ -44,4 +44,20 @@ public interface CategoryService {
     Flux<Category> listAllCategories();
 
     Flux<java.util.Map<String, Object>> listAllSubCategoriesWithParent();
+
+    /**
+     * 获取分类数据，用于Neo4j同步
+     *
+     * @param updatedAfter
+     *                         增量同步时间（ISO格式），为空则全量
+     */
+    Mono<List<java.util.Map<String, Object>>> getNeo4jSyncCategories(String updatedAfter);
+
+    /**
+     * 获取子分类数据，用于Neo4j同步
+     *
+     * @param updatedAfter
+     *                         增量同步时间（ISO格式），为空则全量
+     */
+    Mono<List<java.util.Map<String, Object>>> getNeo4jSyncSubCategories(String updatedAfter);
 }
