@@ -5,21 +5,22 @@ import (
 	"fmt"
 
 	"app/common/client"
+	"app/common/constants"
 )
 
 // parseData 从 client.Result 中解析 Data 字段到目标类型
 func parseData[T any](result client.Result) (T, error) {
 	var zero T
 	if result.Data == nil {
-		return zero, fmt.Errorf("响应数据为空")
+		return zero, fmt.Errorf(constants.RESPONSE_DATA_EMPTY)
 	}
 	jsonBytes, err := json.Marshal(result.Data)
 	if err != nil {
-		return zero, fmt.Errorf("序列化响应数据失败: %w", err)
+		return zero, fmt.Errorf(constants.RESPONSE_DATA_SERIALIZE, err)
 	}
 	var target T
 	if err := json.Unmarshal(jsonBytes, &target); err != nil {
-		return zero, fmt.Errorf("反序列化响应数据失败: %w", err)
+		return zero, fmt.Errorf(constants.RESPONSE_DATA_DESERIALIZE, err)
 	}
 	return target, nil
 }

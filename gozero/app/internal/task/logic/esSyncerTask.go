@@ -190,7 +190,7 @@ func buildArticleESBatchFromRemote(
 		result, err := springCli.GetUsersByIDs(ctx, missingUserIDs)
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf("批量查询用户失败: %v", err))
+				svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_USER_FAIL, err))
 			}
 		} else {
 			users, err := springClient.ParseUserVOs(result)
@@ -213,7 +213,7 @@ func buildArticleESBatchFromRemote(
 		result, err := springCli.GetSubCategoriesByIDs(ctx, missingSubCategoryIDs)
 		if err != nil {
 			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf("批量查询子分类失败: %v", err))
+				svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_SUBCATEGORY_FAIL, err))
 			}
 		} else {
 			subCategories, err := springClient.ParseSubCategoryVOs(result)

@@ -212,6 +212,13 @@ const (
 	SEARCH_HISTORY_FAIL             = "获取搜索历史失败"
 	USER_ID_LESS                    = "缺少用户ID"
 
+	// 远程调用响应解析错误
+	RESPONSE_DATA_EMPTY          = "响应数据为空"
+	RESPONSE_DATA_SERIALIZE      = "序列化响应数据失败: %w"
+	RESPONSE_DATA_DESERIALIZE    = "反序列化响应数据失败: %w"
+	BATCH_QUERY_USER_FAIL        = "批量查询用户失败: %v"
+	BATCH_QUERY_SUBCATEGORY_FAIL = "批量查询子分类失败: %v"
+
 	// Redis 分布式锁
 	REDIS_LOCK_ACQUIRE_ERROR   = "获取分布式锁错误: %v"
 	REDIS_LOCK_ACQUIRE_FAIL    = "[分布式锁] 获取锁失败，跳过本次执行，key: %s"
