@@ -250,7 +250,7 @@ public class CategoryServiceImpl implements CategoryService {
                     "id", subCategory.getId(),
                     "name", subCategory.getName(),
                     "category_id", subCategory.getCategoryId(),
-                    "category_name", "未分类",
+                    "category_name", Messages.UNCATEGORIZED,
                     "create_time", subCategory.getCreateTime(),
                     "update_time", subCategory.getUpdateTime())));
     }

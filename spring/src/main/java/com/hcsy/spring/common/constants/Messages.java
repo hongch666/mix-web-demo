@@ -27,6 +27,7 @@ public class Messages {
     public static final String UNDEFINED_CATEGORIES = "部分或全部分类不存在";
     public static final String UNDEFINED_SUB_CATEGORIES = "部分或全部子分类不存在";
     public static final String UNDEFINED_COMMENTS = "部分或全部评论不存在";
+    public static final String UNCATEGORIZED = "未分类";
     public static final String SORT_WAY = "不支持的排序方式: ";
 
     // ===== 登录/验证码 =====
