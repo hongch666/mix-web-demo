@@ -11,7 +11,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -24,6 +23,7 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
+import com.hcsy.spring.common.utils.EntityMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
@@ -46,7 +46,6 @@ public class ArticleServiceImpl implements ArticleService {
     private final SubCategoryRepository subCategoryRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionalOperator transactionalOperator;
-    private final DatabaseClient databaseClient;
 
     @Override
     public Flux<Article> listPublishedArticles() {
@@ -298,11 +297,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Mono<Long> getActiveAuthors() {
-        String sql = "SELECT COUNT(DISTINCT user_id) FROM articles";
-        return databaseClient.sql(sql)
-            .map((row, metadata) -> row.get(0, Long.class))
-            .one()
-            .defaultIfEmpty(0L);
+        return articleRepository.countDistinctUserId().defaultIfEmpty(0L);
     }
 
     @Override
@@ -321,116 +316,61 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public Mono<List<Map<String, Object>>> getArticlesForExcelExport() {
-        String sql = """
-            SELECT
-                a.id, a.title, a.content, a.user_id, u.name as username,
-                a.tags, a.status, a.create_at, a.update_at, a.views,
-                a.sub_category_id, sc.name as sub_category_name,
-                c.id as category_id, c.name as category_name,
-                (SELECT COUNT(*) FROM likes l WHERE l.article_id = a.id) as like_count,
-                (SELECT COUNT(*) FROM collects cl WHERE cl.article_id = a.id) as collect_count
-            FROM articles a
-            LEFT JOIN users u ON a.user_id = u.id
-            LEFT JOIN sub_categories sc ON a.sub_category_id = sc.id
-            LEFT JOIN categories c ON sc.category_id = c.id
-            ORDER BY a.id
-            """;
-
-        return databaseClient.sql(sql)
-            .map((row, metadata) -> {
+        return articleRepository.findArticlesForExcelExport()
+            .map(row -> {
                 Map<String, Object> map = new HashMap<>();
-                map.put("id", row.get("id"));
-                map.put("title", row.get("title"));
-                map.put("content", row.get("content"));
-                map.put("user_id", row.get("user_id"));
-                map.put("username", row.get("username"));
-                map.put("tags", row.get("tags"));
-                map.put("status", row.get("status"));
-                map.put("create_at", row.get("create_at"));
-                map.put("update_at", row.get("update_at"));
-                map.put("views", row.get("views"));
-                map.put("sub_category_id", row.get("sub_category_id"));
-                map.put("sub_category_name", row.get("sub_category_name"));
-                map.put("category_id", row.get("category_id"));
-                map.put("category_name", row.get("category_name"));
-                map.put("like_count", row.get("like_count"));
-                map.put("collect_count", row.get("collect_count"));
+                map.put("id", row.getId());
+                map.put("title", row.getTitle());
+                map.put("content", row.getContent());
+                map.put("user_id", row.getUser_id());
+                map.put("username", row.getUsername());
+                map.put("tags", row.getTags());
+                map.put("status", row.getStatus());
+                map.put("create_at", row.getCreate_at());
+                map.put("update_at", row.getUpdate_at());
+                map.put("views", row.getViews());
+                map.put("sub_category_id", row.getSub_category_id());
+                map.put("sub_category_name", row.getSub_category_name());
+                map.put("category_id", row.getCategory_id());
+                map.put("category_name", row.getCategory_name());
+                map.put("like_count", row.getLike_count());
+                map.put("collect_count", row.getCollect_count());
                 return map;
             })
-            .all()
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
     public Mono<List<Map<String, Object>>> getTop10Articles() {
-        String sql = """
-            SELECT id, title, tags, status, views, create_at, update_at, content, user_id, sub_category_id
-            FROM articles
-            ORDER BY views DESC
-            LIMIT 10
-            """;
-
-        return databaseClient.sql(sql)
-            .map((row, metadata) -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("id", row.get("id"));
-                map.put("title", row.get("title"));
-                map.put("tags", row.get("tags"));
-                map.put("status", row.get("status"));
-                map.put("views", row.get("views"));
-                map.put("create_at", row.get("create_at"));
-                map.put("update_at", row.get("update_at"));
-                map.put("content", row.get("content"));
-                map.put("user_id", row.get("user_id"));
-                map.put("sub_category_id", row.get("sub_category_id"));
-                return map;
-            })
-            .all()
+        return articleRepository.findTop10ByStatusOrderByViewsDesc(1)
+            .map(EntityMapUtil::articleToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
     public Mono<List<Map<String, Object>>> getCategoryArticleCount() {
-        String sql = """
-            SELECT sub_category_id, COUNT(*) as count
-            FROM articles
-            WHERE status = 1
-            GROUP BY sub_category_id
-            ORDER BY count DESC
-            """;
-
-        return databaseClient.sql(sql)
-            .map((row, metadata) -> {
+        return articleRepository.countBySubCategoryIdGroupBy()
+            .map(row -> {
                 Map<String, Object> map = new HashMap<>();
-                map.put("sub_category_id", row.get("sub_category_id"));
-                map.put("count", row.get("count"));
+                map.put("sub_category_id", row.getSubCategoryId());
+                map.put("count", row.getCount());
                 return map;
             })
-            .all()
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
     public Mono<List<Map<String, Object>>> getMonthlyPublishCount() {
-        String sql = """
-            SELECT DATE_FORMAT(create_at, '%Y-%m') as year_month, COUNT(*) as count
-            FROM articles
-            WHERE status = 1 AND create_at >= DATE_SUB(NOW(), INTERVAL 24 MONTH)
-            GROUP BY year_month
-            ORDER BY year_month DESC
-            """;
-
-        return databaseClient.sql(sql)
-            .map((row, metadata) -> {
+        return articleRepository.countMonthlyPublished()
+            .map(row -> {
                 Map<String, Object> map = new HashMap<>();
-                map.put("year_month", row.get("year_month"));
-                map.put("count", row.get("count"));
+                map.put("year_month", row.getYearMonth());
+                map.put("count", row.getCount());
                 return map;
             })
-            .all()
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }

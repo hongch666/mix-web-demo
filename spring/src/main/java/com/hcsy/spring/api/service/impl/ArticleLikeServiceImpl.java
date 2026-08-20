@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -32,7 +31,6 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     private final ArticleInteractionAssembler assembler;
     private final TransactionalOperator transactionalOperator;
     private final ArticleService articleService;
-    private final DatabaseClient databaseClient;
 
     @Override
     @ArticleSync(action = "like", description = "点赞了1篇文章")
@@ -135,25 +133,13 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
             lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
         }
 
-        String sql = """
-            SELECT DATE(created_time) as date, COUNT(*) as count
-            FROM likes
-            WHERE user_id = :userId AND created_time >= :firstDay AND created_time < :lastDay
-            GROUP BY DATE(created_time)
-            ORDER BY DATE(created_time)
-            """;
-
-        return databaseClient.sql(sql)
-            .bind("userId", userId)
-            .bind("firstDay", firstDay)
-            .bind("lastDay", lastDay)
-            .map((row, metadata) -> {
+        return articleLikeRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
+            .map(row -> {
                 Map<String, Object> trend = new HashMap<>();
-                trend.put("date", row.get("date").toString());
-                trend.put("count", row.get("count"));
+                trend.put("date", row.getDate().toString());
+                trend.put("count", row.getCount());
                 return trend;
             })
-            .all()
             .collectList()
             .map(dailyTrends -> {
                 Map<String, Object> result = new HashMap<>();

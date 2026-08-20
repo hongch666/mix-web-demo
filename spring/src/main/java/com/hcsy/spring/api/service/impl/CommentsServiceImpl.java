@@ -11,7 +11,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -43,7 +42,6 @@ public class CommentsServiceImpl implements CommentsService {
     private final UserRepository userRepository;
     private final R2dbcEntityTemplate entityTemplate;
     private final TransactionalOperator transactionalOperator;
-    private final DatabaseClient databaseClient;
 
     @Override
     public Mono<PageDTO<Comments>> listCommentsWithFilter(long page, long size, CommentsQueryDTO queryDTO) {
@@ -256,26 +254,12 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Override
     public Mono<Long> getAiCommentsNumByArticleId(Long articleId) {
-        String sql = """
-            SELECT COUNT(*) FROM comments
-            WHERE article_id = :articleId AND user_id IN (SELECT id FROM users WHERE role = 'ai')
-            """;
-        return databaseClient.sql(sql)
-            .bind("articleId", articleId)
-            .map((row, metadata) -> row.get(0, Long.class))
-            .one()
-            .defaultIfEmpty(0L);
+        return commentsRepository.countAiCommentsByArticleId(articleId).defaultIfEmpty(0L);
     }
 
     @Override
     public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
-        String sql = """
-            DELETE FROM comments
-            WHERE article_id = :articleId AND user_id IN (SELECT id FROM users WHERE role = 'ai')
-            """;
-        return databaseClient.sql(sql)
-            .bind("articleId", articleId)
-            .then();
+        return commentsRepository.deleteAiCommentsByArticleId(articleId).then();
     }
 
     @Override
@@ -289,25 +273,13 @@ public class CommentsServiceImpl implements CommentsService {
             lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
         }
 
-        String sql = """
-            SELECT DATE(create_time) as date, COUNT(*) as count
-            FROM comments
-            WHERE user_id = :userId AND create_time >= :firstDay AND create_time < :lastDay
-            GROUP BY DATE(create_time)
-            ORDER BY DATE(create_time)
-            """;
-
-        return databaseClient.sql(sql)
-            .bind("userId", userId)
-            .bind("firstDay", firstDay)
-            .bind("lastDay", lastDay)
-            .map((row, metadata) -> {
+        return commentsRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
+            .map(row -> {
                 Map<String, Object> trend = new HashMap<>();
-                trend.put("date", row.get("date").toString());
-                trend.put("count", row.get("count"));
+                trend.put("date", row.getDate().toString());
+                trend.put("count", row.getCount());
                 return trend;
             })
-            .all()
             .collectList()
             .map(dailyTrends -> {
                 Map<String, Object> result = new HashMap<>();

@@ -11,7 +11,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.springframework.data.domain.PageRequest;
-import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -39,7 +38,6 @@ public class FocusServiceImpl implements FocusService {
     private final FocusRepository focusRepository;
     private final UserRepository userRepository;
     private final TransactionalOperator transactionalOperator;
-    private final DatabaseClient databaseClient;
 
     @Override
     @ArticleSync(action = "focus", description = "关注了1个用户")
@@ -152,39 +150,18 @@ public class FocusServiceImpl implements FocusService {
 
     @Override
     public Mono<Long> getFollowersInPeriod(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
-        String sql = """
-            SELECT COUNT(*) FROM focus
-            WHERE focus_id = :userId AND created_time >= :startDate AND created_time <= :endDate
-            """;
-        return databaseClient.sql(sql)
-            .bind("userId", userId)
-            .bind("startDate", startDate)
-            .bind("endDate", endDate)
-            .map((row, metadata) -> row.get(0, Long.class))
-            .one()
-            .defaultIfEmpty(0L);
+        return focusRepository.countFollowersInPeriod(userId, startDate, endDate).defaultIfEmpty(0L);
     }
 
     @Override
     public Mono<Map<String, Object>> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
-        String sql = """
-            SELECT DATE(created_time) as date, COUNT(*) as count
-            FROM focus
-            WHERE user_id = :userId AND created_time >= :startDate AND created_time <= :endDate
-            GROUP BY DATE(created_time)
-            ORDER BY DATE(created_time)
-            """;
-        return databaseClient.sql(sql)
-            .bind("userId", userId)
-            .bind("startDate", startDate)
-            .bind("endDate", endDate)
-            .map((row, metadata) -> {
+        return focusRepository.countDailyFollowsByUserIdAndPeriod(userId, startDate, endDate)
+            .map(row -> {
                 Map<String, Object> daily = new HashMap<>();
-                daily.put("date", row.get("date").toString());
-                daily.put("count", row.get("count"));
+                daily.put("date", row.getDate().toString());
+                daily.put("count", row.getCount());
                 return daily;
             })
-            .all()
             .collectList()
             .map(list -> {
                 Map<String, Object> result = new HashMap<>();
@@ -195,12 +172,7 @@ public class FocusServiceImpl implements FocusService {
 
     @Override
     public Mono<Long> getTotalFollows(Long userId) {
-        String sql = "SELECT COUNT(*) FROM focus WHERE user_id = :userId";
-        return databaseClient.sql(sql)
-            .bind("userId", userId)
-            .map((row, metadata) -> row.get(0, Long.class))
-            .one()
-            .defaultIfEmpty(0L);
+        return focusRepository.countTotalFollowsByUserId(userId).defaultIfEmpty(0L);
     }
 
     @Override
@@ -214,25 +186,13 @@ public class FocusServiceImpl implements FocusService {
             lastDay = LocalDate.of(today.getYear(), today.getMonthValue() + 1, 1).atStartOfDay();
         }
 
-        String sql = """
-            SELECT DATE(created_time) as date, COUNT(*) as count
-            FROM focus
-            WHERE user_id = :userId AND created_time >= :firstDay AND created_time < :lastDay
-            GROUP BY DATE(created_time)
-            ORDER BY DATE(created_time)
-            """;
-
-        return databaseClient.sql(sql)
-            .bind("userId", userId)
-            .bind("firstDay", firstDay)
-            .bind("lastDay", lastDay)
-            .map((row, metadata) -> {
+        return focusRepository.countMonthlyByUserIdGroupByDate(userId, firstDay, lastDay)
+            .map(row -> {
                 Map<String, Object> trend = new HashMap<>();
-                trend.put("date", row.get("date").toString());
-                trend.put("count", row.get("count"));
+                trend.put("date", row.getDate().toString());
+                trend.put("count", row.getCount());
                 return trend;
             })
-            .all()
             .collectList()
             .map(dailyTrends -> {
                 Map<String, Object> result = new HashMap<>();
