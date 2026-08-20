@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/mongoose";
 import { Connection } from "mongoose";
-import { HttpCode } from "src/common/constants";
+import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 
 // 允许查询的 collection 白名单，仅开放日志相关集合
@@ -67,9 +67,9 @@ export class MongoToolsService {
   ): Promise<unknown[]> {
     if (!ALLOWED_COLLECTIONS.has(collectionName)) {
       throw new BusinessException(
-        `不允许查询集合: ${collectionName}`,
+        Messages.MONGO_COLLECTION_NOT_ALLOWED_MSG(collectionName),
         HttpCode.BAD_REQUEST,
-        "MONGO_COLLECTION_NOT_ALLOWED",
+        ErrorIds.MONGO_COLLECTION_NOT_ALLOWED,
       );
     }
 
@@ -99,9 +99,9 @@ export class MongoToolsService {
         )) {
           if (key.startsWith("$") && FORBIDDEN_OPERATORS.has(key)) {
             throw new BusinessException(
-              `不允许使用操作符: ${key}`,
+              Messages.MONGO_FORBIDDEN_OPERATOR_MSG(key),
               HttpCode.BAD_REQUEST,
-              "MONGO_FORBIDDEN_OPERATOR",
+              ErrorIds.MONGO_FORBIDDEN_OPERATOR,
             );
           }
           check(value);

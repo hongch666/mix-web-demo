@@ -36,4 +36,8 @@ export class ErrorIds {
   // ===== 503 Service Unavailable =====
   static readonly NO_AVAILABLE_SERVICE_INSTANCE =
     "NO_AVAILABLE_SERVICE_INSTANCE";
+
+  // ===== MongoDB 工具 =====
+  static readonly MONGO_COLLECTION_NOT_ALLOWED = "MONGO_COLLECTION_NOT_ALLOWED";
+  static readonly MONGO_FORBIDDEN_OPERATOR = "MONGO_FORBIDDEN_OPERATOR";
 }

@@ -11,14 +11,16 @@ import {
 } from "class-validator";
 import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
+import { Messages } from "src/common/constants/messages.constants";
+
 export class QueryMongoDto {
   @ApiProperty({
     description: "集合名称（仅限白名单内的日志集合）",
     example: "articlelogs",
   })
   @ExposeName()
-  @IsString({ message: "集合名称必须是字符串" })
-  @IsNotEmpty({ message: "集合名称不能为空" })
+  @IsString({ message: Messages.VALIDATION_COLLECTION_NAME_STRING })
+  @IsNotEmpty({ message: Messages.VALIDATION_COLLECTION_NAME_NOT_EMPTY })
   collectionName!: string;
 
   @ApiPropertyOptional({
@@ -26,7 +28,7 @@ export class QueryMongoDto {
     example: { action: "view" },
   })
   @IsOptional()
-  @IsObject({ message: "过滤条件必须是对象" })
+  @IsObject({ message: Messages.VALIDATION_FILTER_OBJECT })
   filter?: Record<string, unknown>;
 
   @ApiPropertyOptional({
@@ -36,8 +38,8 @@ export class QueryMongoDto {
   })
   @Type(() => Number)
   @IsOptional()
-  @IsInt({ message: "返回条数必须是整数" })
-  @Min(1, { message: "返回条数最小为1" })
-  @Max(50, { message: "返回条数最大为50" })
+  @IsInt({ message: Messages.VALIDATION_LIMIT_INT })
+  @Min(1, { message: Messages.VALIDATION_LIMIT_MIN })
+  @Max(50, { message: Messages.VALIDATION_LIMIT_MAX })
   limit?: number;
 }

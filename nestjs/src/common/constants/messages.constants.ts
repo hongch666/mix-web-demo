@@ -345,6 +345,15 @@ export class Messages {
 
   static readonly UNKNOWN_ARTICLE = "未知文章";
 
+  // ===== DTO 校验消息 =====
+
+  static readonly VALIDATION_COLLECTION_NAME_STRING = "集合名称必须是字符串";
+  static readonly VALIDATION_COLLECTION_NAME_NOT_EMPTY = "集合名称不能为空";
+  static readonly VALIDATION_FILTER_OBJECT = "过滤条件必须是对象";
+  static readonly VALIDATION_LIMIT_INT = "返回条数必须是整数";
+  static readonly VALIDATION_LIMIT_MIN = "返回条数最小为1";
+  static readonly VALIDATION_LIMIT_MAX = "返回条数最大为50";
+
   // ===== 日志模块消息 =====
 
   static readonly ARTICLE_LOG_NOT_FOUND = "文章日志记录不存在";
@@ -510,4 +519,13 @@ export class Messages {
   static readonly REDIS_LOCK_RELEASE_SUCCESS = "释放分布式锁成功，key: %s";
 
   static readonly REDIS_LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
+
+  // ===== MongoDB 工具消息 =====
+
+  static readonly MONGO_COLLECTION_NOT_ALLOWED_MSG = (
+    collectionName: string,
+  ): string => `不允许查询集合: ${collectionName}`;
+
+  static readonly MONGO_FORBIDDEN_OPERATOR_MSG = (key: string): string =>
+    `不允许使用操作符: ${key}`;
 }
