@@ -2110,6 +2110,10 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 3. 上述的 API_KEY 应写在 `.env`中
 4. LangSmith 为 LLM 链路观测平台，`LANGSMITH_API_KEY` 同样配置在 `.env` 中，未配置时追踪自动关闭，详见下方"LangSmith 可观测性说明"
 
+### LangSmith 可观测性说明
+
+1. FastAPI 部分集成 [LangSmith](https://smith.langchain.com/) 作为 LLM 链路可观测性平台，对 AI 聊天（普通 + SSE 流式）、RAG 检索、向量搜索、意图路由和向量同步任务进行全链路 Trace 记录，追踪功能默认关闭，不影响既有业务
+
 ### 用户聊天相关说明
 
 1. GoZero 部分的用户聊天相关模块的用户 id 都是字符串，包括数据库存储，请求参数和返回参数
@@ -2253,11 +2257,7 @@ $$
 - ES 查询失败：搜索请求失败，不使用向量或图谱单独兜底，避免改变主搜索语义。
 - 向量增强失败：记录 warning，保留 ES + Graph 或纯 ES 结果。
 - 图谱增强失败：记录 warning，保留 ES + Vector 或纯 ES 结果。
-- 向量和图谱都无结果或都失败：返回 ES 当前页原始排序，并补齐 `esScore` 和 `finalScore`。
-
-### LangSmith 可观测性说明
-
-1. FastAPI 部分集成 [LangSmith](https://smith.langchain.com/) 作为 LLM 链路可观测性平台，对 AI 聊天（普通 + SSE 流式）、RAG 检索、向量搜索、意图路由和向量同步任务进行全链路 Trace 记录，追踪功能默认关闭，不影响既有业务
+- 向量和图谱都无结果或都失败：返回 ES 当前页原始排序，并补齐 `esScore` 和 `finalScore`
 
 ## 许可证
 
