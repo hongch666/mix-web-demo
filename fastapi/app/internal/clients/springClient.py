@@ -375,15 +375,106 @@ class SpringClient:
         )
         return result.get("data", {})
 
-    async def get_neo4j_sync_snapshot(
+    async def get_neo4j_sync_users(
         self, updated_after: Optional[str] = None
-    ) -> Dict[str, List[Dict[str, Any]]]:
-        """获取Neo4j同步所需的业务数据快照"""
+    ) -> List[Dict[str, Any]]:
+        """获取用户表数据用于Neo4j同步"""
         params = {"updatedAfter": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
-            path="/neo4j-sync/internal/snapshot",
+            path="/users/internal/neo4j-sync",
             method="GET",
             params=params,
         )
-        return result.get("data", {})
+        return result.get("data", [])
+
+    async def get_neo4j_sync_categories(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取分类表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/category/internal/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def get_neo4j_sync_sub_categories(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取子分类表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/category/internal/sub/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def get_neo4j_sync_articles(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取文章表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/articles/internal/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def get_neo4j_sync_likes(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取点赞表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/likes/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def get_neo4j_sync_collects(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取收藏表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/collects/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def get_neo4j_sync_comments(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取评论表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/comments/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def get_neo4j_sync_focus(
+        self, updated_after: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """获取关注表数据用于Neo4j同步"""
+        params = {"updatedAfter": updated_after} if updated_after else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/focus/neo4j-sync",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])

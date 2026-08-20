@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 from datetime import datetime
 from functools import lru_cache
@@ -58,9 +59,37 @@ class KnowledgeGraphSyncService:
     async def _fetch_snapshot(
         self, last_sync_time: Optional[datetime] = None
     ) -> Dict[str, List[Dict[str, Any]]]:
-        """通过Spring获取业务表快照，避免FastAPI直连MySQL。"""
+        """通过Spring各模块独立接口并行获取业务表数据，避免直连MySQL。"""
         updated_after = last_sync_time.isoformat() if last_sync_time else None
-        return await self.spring_client.get_neo4j_sync_snapshot(updated_after)
+        (
+            users,
+            categories,
+            sub_categories,
+            articles,
+            likes,
+            collects,
+            comments,
+            focus,
+        ) = await asyncio.gather(
+            self.spring_client.get_neo4j_sync_users(updated_after),
+            self.spring_client.get_neo4j_sync_categories(updated_after),
+            self.spring_client.get_neo4j_sync_sub_categories(updated_after),
+            self.spring_client.get_neo4j_sync_articles(updated_after),
+            self.spring_client.get_neo4j_sync_likes(updated_after),
+            self.spring_client.get_neo4j_sync_collects(updated_after),
+            self.spring_client.get_neo4j_sync_comments(updated_after),
+            self.spring_client.get_neo4j_sync_focus(updated_after),
+        )
+        return {
+            "users": users,
+            "categories": categories,
+            "sub_categories": sub_categories,
+            "articles": articles,
+            "likes": likes,
+            "collects": collects,
+            "comments": comments,
+            "focus": focus,
+        }
 
     def _normalize_users(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [
