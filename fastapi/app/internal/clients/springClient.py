@@ -142,7 +142,7 @@ class SpringClient:
         """根据子分类ID获取权威参考文本"""
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
-            path=f"/category/internal/reference/sub/{sub_category_id}",
+            path=f"/category/reference/sub/{sub_category_id}",
             method="GET",
         )
         return result.get("data")
@@ -382,7 +382,7 @@ class SpringClient:
         params = {"updatedAfter": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
-            path="/users/internal/neo4j-sync",
+            path="/users/neo4j-sync",
             method="GET",
             params=params,
         )
@@ -421,7 +421,7 @@ class SpringClient:
         params = {"updatedAfter": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
-            path="/articles/internal/neo4j-sync",
+            path="/articles/neo4j-sync",
             method="GET",
             params=params,
         )
