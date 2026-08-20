@@ -630,13 +630,11 @@ class AnalyzeService:
                 local_data_source = "DB"
                 Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
 
-            # 使用SpringClient远程获取分类信息
-            all_categories: List[
-                Dict[str, Any]
-            ] = await self._spring_client.get_all_categories()
-            subcategories: List[
-                Dict[str, Any]
-            ] = await self._spring_client.get_subcategories_with_parent()
+            # 使用SpringClient远程获取分类信息（两个独立请求并行）
+            all_categories, subcategories = await asyncio.gather(
+                self._spring_client.get_all_categories(),
+                self._spring_client.get_subcategories_with_parent(),
+            )
             sub_cat_map: Dict[int, Dict[str, Any]] = {
                 sc["id"]: sc for sc in subcategories
             }

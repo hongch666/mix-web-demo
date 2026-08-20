@@ -71,12 +71,15 @@ class GenerateService:
         ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
             article_id
         )
+        # 2. 获取文章信息（与删除AI评论并行，互不依赖）
         if ai_comments_count > 0:
             Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
-            await self._spring_client.delete_ai_comments_by_article_id(article_id)
-        # 2. 调用大模型生成AI评论
-        # 2.1 获取文章标题,tags和内容
-        articles = await self._spring_client.get_articles_by_ids([article_id])
+            _, articles = await asyncio.gather(
+                self._spring_client.delete_ai_comments_by_article_id(article_id),
+                self._spring_client.get_articles_by_ids([article_id]),
+            )
+        else:
+            articles = await self._spring_client.get_articles_by_ids([article_id])
         if not articles:
             raise BusinessException(
                 Messages.ARTICLE_NOT_EXISTS_ERROR,
@@ -238,12 +241,15 @@ class GenerateService:
         ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
             article_id
         )
+        # 2. 获取文章信息（与删除AI评论并行，互不依赖）
         if ai_comments_count > 0:
             Logger.info(Messages.ARTICLE_AI_COMMENT_EXISTS_DELETING(article_id))
-            await self._spring_client.delete_ai_comments_by_article_id(article_id)
-
-        # 2. 获取文章信息
-        articles = await self._spring_client.get_articles_by_ids([article_id])
+            _, articles = await asyncio.gather(
+                self._spring_client.delete_ai_comments_by_article_id(article_id),
+                self._spring_client.get_articles_by_ids([article_id]),
+            )
+        else:
+            articles = await self._spring_client.get_articles_by_ids([article_id])
         if not articles:
             Logger.error(Messages.ARTICLE_NOT_FOUND_WITH_ID(article_id))
             return
