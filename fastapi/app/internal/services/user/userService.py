@@ -7,7 +7,6 @@ from app.core.base import Logger
 from app.core.constants import Messages
 from app.internal.clients import NestjsClient, SpringClient
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class UserService:
@@ -18,7 +17,7 @@ class UserService:
         self._spring_client: SpringClient = SpringClient()
 
     async def get_new_followers_service(
-        self, db: AsyncSession, user_id: int, period: str = "day"
+        self, user_id: int, period: str = "day"
     ) -> Dict[str, Any]:
         """
         获取新增粉丝数统计
@@ -103,12 +102,11 @@ class UserService:
             return {"total_views": 0, "articles": []}
 
     async def get_author_follow_statistics_service(
-        self, db: AsyncSession, user_id: int
+        self, user_id: int
     ) -> Dict[str, Any]:
         """获取用户关注作者的统计"""
         try:
             # 总数查询与7天循环查询相互独立，gather 并行降低延迟
-            # 每个协程使用独立的 AsyncSession，避免同一个 session 并发操作
             async def _one_day_follow(days_ago: int) -> Dict[str, Any]:
                 date = datetime.now() - timedelta(days=days_ago)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -138,7 +136,7 @@ class UserService:
             return {"total_authors": 0, "daily_follows": []}
 
     async def get_monthly_comment_trend_service(
-        self, db: AsyncSession, user_id: int
+        self, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月评论的趋势"""
         try:
@@ -148,7 +146,7 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_like_trend_service(
-        self, db: AsyncSession, user_id: int
+        self, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月点赞的趋势"""
         try:
@@ -158,7 +156,7 @@ class UserService:
             return {"total": 0, "daily_trends": []}
 
     async def get_monthly_collect_trend_service(
-        self, db: AsyncSession, user_id: int
+        self, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月收藏的趋势"""
         try:

@@ -29,7 +29,7 @@ async def get_new_followers(
     """获取新增粉丝数统计"""
 
     result: Dict[str, Any] = await userService.get_new_followers_service(
-        db, userId, period
+        userId, period
     )
     return success(result)
 
@@ -70,7 +70,7 @@ async def get_author_follow_statistics(
     """获取关注作者统计"""
 
     result: Dict[str, Any] = await userService.get_author_follow_statistics_service(
-        db, userId
+        userId
     )
     return success(result)
 
@@ -91,7 +91,7 @@ async def get_monthly_comment_trend(
     """获取本月评论趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_comment_trend_service(
-        db, userId
+        userId
     )
     return success(result)
 
@@ -112,7 +112,7 @@ async def get_monthly_like_trend(
     """获取本月点赞趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_like_trend_service(
-        db, userId
+        userId
     )
     return success(result)
 
@@ -133,6 +133,6 @@ async def get_monthly_collect_trend(
     """获取本月收藏趋势"""
 
     result: Dict[str, Any] = await userService.get_monthly_collect_trend_service(
-        db, userId
+        userId
     )
     return success(result)

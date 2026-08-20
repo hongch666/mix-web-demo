@@ -8,7 +8,6 @@ from typing import Any, Dict, Optional
 import jieba.analyse
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages, Prompts
-from app.core.db import AsyncSessionLocal
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.clients import SpringClient
@@ -66,7 +65,7 @@ class GenerateService:
             "updateTime": now,
         }
 
-    async def generate_ai_comments(self, article_id: int, db: Any) -> None:
+    async def generate_ai_comments(self, article_id: int) -> None:
 
         # 1. 判断是否需要生成AI评论
         ai_comments_count = await self._spring_client.get_ai_comments_num_by_article_id(
@@ -188,9 +187,8 @@ class GenerateService:
         Logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_ai_comments_in_background(self, article_id: int) -> None:
-        """后台生成 AI 评论，并使用独立的数据库会话。"""
-        async with AsyncSessionLocal() as db:
-            await self.generate_ai_comments(article_id, db)
+        """后台生成 AI 评论。"""
+        await self.generate_ai_comments(article_id)
 
     # 定义工具函数解析大模型返回结果
     def _parse_ai_comment_response(self, response: str) -> tuple[str, float]:
@@ -226,7 +224,7 @@ class GenerateService:
         return content, star
 
     async def generate_ai_comments_with_reference(
-        self, article_id: int, db: Any
+        self, article_id: int
     ) -> None:
         """
         基于权威参考文本生成AI评论
@@ -646,9 +644,8 @@ class GenerateService:
     async def generate_ai_comments_with_reference_in_background(
         self, article_id: int
     ) -> None:
-        """后台生成带参考文本的 AI 评论，并使用独立的数据库会话。"""
-        async with AsyncSessionLocal() as db:
-            await self.generate_ai_comments_with_reference(article_id, db)
+        """后台生成带参考文本的 AI 评论。"""
+        await self.generate_ai_comments_with_reference(article_id)
 
 
 @lru_cache()
