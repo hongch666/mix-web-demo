@@ -528,4 +528,35 @@ export class Messages {
 
   static readonly MONGO_FORBIDDEN_OPERATOR_MSG = (key: string): string =>
     `不允许使用操作符: ${key}`;
+
+  // ===== SQL 代理工具消息 =====
+
+  static readonly SQL_PROXY_QUERY_MUST_BE_STRING = "SQL查询语句必须是字符串";
+
+  static readonly SQL_PROXY_QUERY_NOT_EMPTY = "SQL查询语句不能为空";
+
+  static readonly SQL_PROXY_PARAMS_MUST_BE_OBJECT = "参数必须是对象";
+
+  static readonly SQL_PROXY_FORBIDDEN_STATEMENT =
+    "安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）";
+
+  static readonly SQL_PROXY_TABLE_NOT_ALLOWED = (tableName: string): string =>
+    `安全限制：表 '${tableName}' 不在白名单内`;
+
+  static readonly SQL_PROXY_LIMIT_REQUIRED =
+    "安全限制：SQL查询必须包含LIMIT子句";
+
+  static readonly SQL_PROXY_LIMIT_EXCEEDED = "安全限制：LIMIT超过最大限制100";
+
+  static readonly SQL_PROXY_MULTIPLE_STATEMENTS =
+    "安全限制：禁止执行多条SQL语句";
+
+  static readonly SQL_PROXY_PARAM_REQUIRED =
+    "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值";
+
+  static readonly SQL_PROXY_QUERY_FAILED = (message: string): string =>
+    `执行SQL查询失败: ${message}`;
+
+  static readonly SQL_PROXY_TABLE_SCHEMA_FAILED = (message: string): string =>
+    `获取表结构信息失败: ${message}`;
 }
