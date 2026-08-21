@@ -251,4 +251,15 @@ const (
 
 	// 异步任务描述（SafeGo）
 	SAFE_GO_SYNC_ES_DATA = "同步ES数据"
+
+	// ===== SQL 工具安全约束消息 =====
+	SQL_TOOLS_QUERY_EMPTY         = "SQL查询语句不能为空"
+	SQL_TOOLS_FORBIDDEN_STATEMENT = "安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）"
+	SQL_TOOLS_MULTIPLE_STATEMENTS = "安全限制：禁止执行多条SQL语句"
+	SQL_TOOLS_LIMIT_REQUIRED      = "安全限制：SQL查询必须包含LIMIT子句"
+	SQL_TOOLS_LIMIT_EXCEEDED      = "安全限制：LIMIT超过最大限制100"
+	SQL_TOOLS_PARAM_REQUIRED      = "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值"
+	SQL_TOOLS_TABLE_NOT_ALLOWED   = "安全限制：表 '%s' 不在白名单内"
+	SQL_TOOLS_QUERY_FAILED        = "执行SQL查询失败"
+	SQL_TOOLS_TABLE_SCHEMA_FAILED = "获取表结构信息失败"
 )

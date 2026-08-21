@@ -6,6 +6,7 @@ package sqlTools
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"app/common/constants"
@@ -42,8 +43,8 @@ func (l *SqlToolsQueryLogic) SqlToolsQuery(req *types.SqlToolsQueryReq) (resp *t
 	// 执行查询
 	var rows []map[string]interface{}
 	if err := l.svcCtx.MySQLConn.QueryRowsCtx(l.ctx, &rows, replacedQuery, args...); err != nil {
-		l.Error("执行SQL查询失败: " + err.Error())
-		return nil, exceptions.NewInternalServerError("执行SQL查询失败", err.Error())
+		l.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + err.Error())
+		return nil, exceptions.NewInternalServerError(constants.SQL_TOOLS_QUERY_FAILED, err.Error())
 	}
 
 	if len(rows) == 0 {
@@ -98,15 +99,21 @@ func (l *SqlToolsQueryLogic) stringifyValue(v interface{}) string {
 func (l *SqlToolsQueryLogic) validateQuery(query string) (string, error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
-		return "", exceptions.NewBadRequestErrorSame("SQL查询语句不能为空")
+		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_QUERY_EMPTY)
 	}
 
-	// 去除尾部封号
-	query = strings.TrimSuffix(query, ";")
+	// 标准化空白字符
+	query = constants.SqlToolsWhitespaceRegex.ReplaceAllString(query, " ")
 
-	// 1. 检查多条语句
-	if strings.Contains(query, ";") {
-		return "", exceptions.NewBadRequestErrorSame("安全限制：禁止执行多条SQL语句")
+	// 1. 检查多条语句（先移除字符串字面量，避免字符串内的 ; 被误判）
+	withoutLiterals := constants.SqlToolsStringLiteralRegex.ReplaceAllString(query, "")
+	if strings.Contains(withoutLiterals, ";") {
+		withoutTrailing := constants.SqlToolsTrailingSemicolonRegex.ReplaceAllString(query, "")
+		withoutTrailingLiterals := constants.SqlToolsStringLiteralRegex.ReplaceAllString(withoutTrailing, "")
+		if strings.Contains(withoutTrailingLiterals, ";") {
+			return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_MULTIPLE_STATEMENTS)
+		}
+		query = withoutTrailing
 	}
 
 	upperQuery := strings.ToUpper(query)
@@ -120,7 +127,7 @@ func (l *SqlToolsQueryLogic) validateQuery(query string) (string, error) {
 		}
 	}
 	if !allowed {
-		return "", exceptions.NewBadRequestErrorSame("安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）")
+		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_FORBIDDEN_STATEMENT)
 	}
 
 	// 3. 检查表名白名单
@@ -128,19 +135,25 @@ func (l *SqlToolsQueryLogic) validateQuery(query string) (string, error) {
 	for _, match := range matches {
 		tableName := strings.ToLower(match[1])
 		if !constants.SqlToolsTableWhitelist[tableName] {
-			return "", exceptions.NewBadRequestErrorSame("安全限制：表 '" + tableName + "' 不在白名单内")
+			return "", exceptions.NewBadRequestErrorSame(
+				fmt.Sprintf(constants.SQL_TOOLS_TABLE_NOT_ALLOWED, tableName),
+			)
 		}
 	}
 
-	// 4. 检查 LIMIT
+	// 4. 检查 LIMIT（含上限校验）
 	limitMatch := constants.SqlToolsLimitRegex.FindStringSubmatch(query)
 	if limitMatch == nil {
-		return "", exceptions.NewBadRequestErrorSame("安全限制：SQL查询必须包含LIMIT子句")
+		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_LIMIT_REQUIRED)
+	}
+	limit, _ := strconv.Atoi(limitMatch[1])
+	if limit > constants.SqlToolsMaxLimit {
+		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_LIMIT_EXCEEDED)
 	}
 
-	// 5. 检查参数化占位符
-	if !strings.Contains(query, ":") {
-		return "", exceptions.NewBadRequestErrorSame("安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值")
+	// 5. 检查参数化占位符（使用正则匹配 :paramName 模式，避免字符串内 : 误判）
+	if !constants.SqlToolsNamedParamRegex.MatchString(query) {
+		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_PARAM_REQUIRED)
 	}
 
 	return query, nil
