@@ -39,6 +39,18 @@ log_error() {
 
 # 检测操作系统
 detect_os() {
+    local kernel_name
+    kernel_name="$(uname -s 2>/dev/null)"
+
+    # 检测 Windows (Git Bash / MSYS / MinGW / Cygwin)
+    case "$kernel_name" in
+        MINGW*|MSYS*|CYGWIN*)
+            OS="windows"
+            return 0
+            ;;
+    esac
+
+    # 检测 Linux
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS=$ID
@@ -55,10 +67,16 @@ command_exists() {
 
 # 检查并安装系统依赖
 check_and_install_system_deps() {
+    # Windows 系统无需 Linux 系统依赖 (libpq-dev/python3-dev/gcc)
+    if [ "$OS" = "windows" ]; then
+        log_info "Windows 系统，跳过 Linux 系统依赖检查"
+        return 0
+    fi
+
     log_info "检查系统依赖..."
-    
+
     local packages_to_install=()
-    
+
     # 检查 libpq-dev (PostgreSQL 开发库)
     if ! dpkg -l | grep -q libpq-dev 2>/dev/null && ! rpm -q postgresql-devel 2>/dev/null; then
         case "$OS" in
@@ -73,7 +91,7 @@ check_and_install_system_deps() {
                 ;;
         esac
     fi
-    
+
     # 检查 python3-dev
     if ! dpkg -l | grep -q python3-dev 2>/dev/null && ! rpm -q python3-devel 2>/dev/null; then
         case "$OS" in
@@ -88,7 +106,7 @@ check_and_install_system_deps() {
                 ;;
         esac
     fi
-    
+
     # 检查 gcc
     if ! command_exists gcc; then
         case "$OS" in
@@ -103,12 +121,12 @@ check_and_install_system_deps() {
                 ;;
         esac
     fi
-    
+
     if [ ${#packages_to_install[@]} -ne 0 ]; then
         log_warn "需要安装以下系统依赖: ${packages_to_install[*]}"
         echo "是否现在安装? (需要 sudo 权限) [y/N]"
         read -p "请输入: " install_deps
-        
+
         if [[ "$install_deps" =~ ^[Yy]$ ]]; then
             case "$OS" in
                 ubuntu|debian)
@@ -147,12 +165,12 @@ check_and_install_system_deps() {
 # 1. Spring 部分配置
 setup_spring() {
     log_info "开始配置 Spring 部分..."
-    
+
     cd "$WORKDIR/spring"
-    
+
     # 同时使用 Gradle 和 Maven 安装依赖
     local spring_build_success=false
-    
+
     if command_exists gradle; then
         log_info "使用 Gradle 构建 Spring..."
         if gradle clean build -x test; then
@@ -162,7 +180,7 @@ setup_spring() {
             log_warn "Gradle 构建失败，尝试使用 Maven"
         fi
     fi
-    
+
     if command_exists mvn; then
         log_info "使用 Maven 安装 Spring 依赖..."
         mvn clean install
@@ -172,12 +190,12 @@ setup_spring() {
         chmod +x mvnw
         ./mvnw clean install
     fi
-    
+
     cd "$WORKDIR/gateway"
-    
+
     # Gateway 同样同时使用 Gradle 和 Maven
     local gateway_build_success=false
-    
+
     if command_exists gradle; then
         log_info "使用 Gradle 构建 Gateway..."
         if gradle clean build -x test; then
@@ -187,7 +205,7 @@ setup_spring() {
             log_warn "Gradle 构建失败，尝试使用 Maven"
         fi
     fi
-    
+
     if command_exists mvn; then
         log_info "使用 Maven 安装 Gateway 依赖..."
         mvn clean install
@@ -197,7 +215,7 @@ setup_spring() {
         chmod +x mvnw
         ./mvnw clean install
     fi
-    
+
     cd "$WORKDIR"
     log_info "Spring 部分配置完成!"
 }
@@ -205,19 +223,19 @@ setup_spring() {
 # 2. GoZero 部分配置
 setup_gozero() {
     log_info "开始配置 GoZero 部分..."
-    
+
     cd "$WORKDIR/gozero/app"
-    
+
     # 安装依赖
     log_info "安装 Go 依赖..."
     go mod tidy
-    
+
     # 安装 goctl 工具
     if ! command_exists goctl; then
         log_info "安装 goctl 工具..."
         go install github.com/zeromicro/go-zero/tools/goctl@latest
     fi
-    
+
     # 安装 fresh 工具 (热重载)
     if ! command_exists fresh; then
         log_info "安装 fresh 工具..."
@@ -225,7 +243,7 @@ setup_gozero() {
     else
         log_info "fresh 工具已安装"
     fi
-    
+
     cd "$WORKDIR"
     log_info "GoZero 部分配置完成!"
 }
@@ -233,9 +251,9 @@ setup_gozero() {
 # 3. NestJS 部分配置
 setup_nestjs() {
     log_info "开始配置 NestJS 部分..."
-    
+
     cd "$WORKDIR/nestjs"
-    
+
     # 检查并安装 Bun (可选)
     log_info "检查 NestJS 运行环境..."
     if command_exists bun; then
@@ -245,7 +263,7 @@ setup_nestjs() {
         log_info "使用 npm 安装依赖..."
         npm install
     fi
-    
+
     cd "$WORKDIR"
     log_info "NestJS 部分配置完成!"
 }
@@ -253,36 +271,48 @@ setup_nestjs() {
 # 4. FastAPI 部分配置
 setup_fastapi() {
     log_info "开始配置 FastAPI 部分..."
-    
+
     # 检查并安装系统依赖
     check_and_install_system_deps
-    
+
     cd "$WORKDIR/fastapi"
-    
+
     # 检查 uv 是否已安装
     if ! command_exists uv; then
         log_info "安装 uv 包管理工具..."
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        export PATH="$HOME/.cargo/bin:$PATH"
-        
-        # 添加 uv 到 shell 配置文件
-        log_info "配置 PATH 环境变量..."
-        if [ -f "$HOME/.bashrc" ]; then
-            if ! grep -q "\.cargo/bin" "$HOME/.bashrc"; then
-                echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.bashrc"
-                log_info "已添加 uv PATH 到 ~/.bashrc"
+        if [ "$OS" = "windows" ]; then
+            # Windows 使用 pip 安装 uv
+            if command_exists python; then
+                python -m pip install uv
+            elif command_exists python3; then
+                python3 -m pip install uv
+            else
+                log_error "未检测到 Python，请先安装 Python 3.12+"
+                exit 1
             fi
-        fi
-        if [ -f "$HOME/.zshrc" ]; then
-            if ! grep -q "\.cargo/bin" "$HOME/.zshrc"; then
-                echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.zshrc"
-                log_info "已添加 uv PATH 到 ~/.zshrc"
+        else
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            export PATH="$HOME/.cargo/bin:$PATH"
+
+            # 添加 uv 到 shell 配置文件
+            log_info "配置 PATH 环境变量..."
+            if [ -f "$HOME/.bashrc" ]; then
+                if ! grep -q "\.cargo/bin" "$HOME/.bashrc"; then
+                    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.bashrc"
+                    log_info "已添加 uv PATH 到 ~/.bashrc"
+                fi
+            fi
+            if [ -f "$HOME/.zshrc" ]; then
+                if ! grep -q "\.cargo/bin" "$HOME/.zshrc"; then
+                    echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> "$HOME/.zshrc"
+                    log_info "已添加 uv PATH 到 ~/.zshrc"
+                fi
             fi
         fi
     else
         log_info "uv 工具已安装"
     fi
-    
+
     # 配置国内镜像源
     log_info "配置 uv 镜像源..."
     mkdir -p ~/.config/uv
@@ -292,13 +322,13 @@ name = "aliyun"
 url = "https://mirrors.aliyun.com/pypi/simple"
 default = true
 EOF
-    
+
     # 检查是否已有虚拟环境
     if [ -d ".venv" ]; then
         log_warn "检测到现有虚拟环境 .venv"
         echo "是否更新虚拟环境中的依赖? [y/N]"
         read -p "请输入: " update_venv
-        
+
         if [[ "$update_venv" =~ ^[Yy]$ ]]; then
 
             log_info "同步依赖到虚拟环境..."
@@ -313,7 +343,7 @@ EOF
         log_info "使用 uv 同步依赖（创建新虚拟环境）..."
         uv sync
     fi
-    
+
     cd "$WORKDIR"
     log_info "FastAPI 部分配置完成!"
 }
@@ -321,17 +351,20 @@ EOF
 # 检查必要的工具是否已安装
 check_prerequisites() {
     log_info "检查系统环境..."
-    
+
     local missing_tools=()
-    
-    # 检查 Python
-    if ! command_exists python3; then
-        missing_tools+=("Python 3.12+")
-    else
+
+    # 检查 Python (Windows 使用 python，Linux/macOS 使用 python3)
+    if command_exists python3; then
         python_version=$(python3 --version | awk '{print $2}')
         log_info "Python 版本: $python_version"
+    elif command_exists python; then
+        python_version=$(python --version | awk '{print $2}')
+        log_info "Python 版本: $python_version"
+    else
+        missing_tools+=("Python 3.12+")
     fi
-    
+
     # 检查 Go
     if ! command_exists go; then
         missing_tools+=("Go 1.23+")
@@ -339,7 +372,7 @@ check_prerequisites() {
         go_version=$(go version | awk '{print $3}')
         log_info "Go 版本: $go_version"
     fi
-    
+
     # 检查 Java
     if ! command_exists java; then
         missing_tools+=("Java 17+")
@@ -347,7 +380,7 @@ check_prerequisites() {
         java_version=$(java -version 2>&1 | head -n 1 | awk -F '"' '{print $2}')
         log_info "Java 版本: $java_version"
     fi
-    
+
     # 检查 Node.js
     if ! command_exists node; then
         missing_tools+=("Node.js 20+")
@@ -355,7 +388,7 @@ check_prerequisites() {
         node_version=$(node --version)
         log_info "Node.js 版本: $node_version"
     fi
-    
+
     # 检查 npm
     if ! command_exists npm; then
         missing_tools+=("npm")
@@ -363,7 +396,7 @@ check_prerequisites() {
         npm_version=$(npm --version)
         log_info "npm 版本: $npm_version"
     fi
-    
+
     # 检查 Maven 或 Gradle (至少需要一个)
     if ! command_exists mvn && ! command_exists gradle; then
         missing_tools+=("Maven 或 Gradle (至少安装其中一个)")
@@ -373,7 +406,7 @@ check_prerequisites() {
             log_info "$mvn_version"
         fi
     fi
-    
+
     # 检查 Bun (可选)
     if ! command_exists bun; then
         log_warn "Bun 未安装"
@@ -381,7 +414,7 @@ check_prerequisites() {
         bun_version=$(bun --version)
         log_info "Bun 版本: $bun_version"
     fi
-    
+
     if [ ${#missing_tools[@]} -ne 0 ]; then
         log_error "以下工具未安装:"
         for tool in "${missing_tools[@]}"; do
@@ -390,14 +423,14 @@ check_prerequisites() {
         log_error "请先安装必要的工具后再运行此脚本"
         exit 1
     fi
-    
+
     log_info "环境检查通过!"
 }
 
 # 检查 Gradle
 check_gradle() {
     log_info "检查 Gradle..."
-    
+
     if ! command_exists gradle; then
         log_warn "未检测到全局 Gradle (可选)"
         log_info "Gradle 用于加速 Spring/Gateway 构建"
@@ -420,7 +453,7 @@ check_gradle() {
         log_warn "未安装 Gradle 时将使用 Maven 进行构建"
         return 0
     fi
-    
+
     local gradle_version=$(gradle --version | head -n 1)
     log_info "Gradle 已安装: $gradle_version"
     return 0
@@ -432,20 +465,20 @@ check_and_install_bun() {
         log_info "Bun 已安装,版本: $(bun --version)"
         return 0
     fi
-    
+
     log_warn "未检测到 Bun,是否现在安装? [y/N]"
     read -p "请输入: " install_bun
-    
+
     if [[ "$install_bun" =~ ^[Yy]$ ]]; then
         log_info "开始安装 Bun..."
-        
+
         # 使用官方安装脚本
         curl -fsSL https://bun.sh/install | bash
-        
+
         # 添加 Bun 到 PATH
         export BUN_INSTALL="$HOME/.bun"
         export PATH="$BUN_INSTALL/bin:$PATH"
-        
+
         # 添加到 shell 配置文件
         if [ -f "$HOME/.bashrc" ]; then
             if ! grep -q "\.bun/bin" "$HOME/.bashrc"; then
@@ -454,7 +487,7 @@ check_and_install_bun() {
                 log_info "已添加 Bun PATH 到 ~/.bashrc"
             fi
         fi
-        
+
         if [ -f "$HOME/.zshrc" ]; then
             if ! grep -q "\.bun/bin" "$HOME/.zshrc"; then
                 echo 'export BUN_INSTALL="$HOME/.bun"' >> "$HOME/.zshrc"
@@ -462,7 +495,7 @@ check_and_install_bun() {
                 log_info "已添加 Bun PATH 到 ~/.zshrc"
             fi
         fi
-        
+
         # 验证安装
         if command_exists bun; then
             log_info "Bun 安装成功! 版本: $(bun --version)"
@@ -480,7 +513,7 @@ check_and_install_bun() {
 # 创建必要的目录
 create_directories() {
     log_info "创建必要的目录..."
-    
+
     mkdir -p logs/spring
     mkdir -p logs/gozero
     mkdir -p logs/nestjs
@@ -488,7 +521,7 @@ create_directories() {
     mkdir -p static/pic
     mkdir -p static/excel
     mkdir -p static/word
-    
+
     log_info "目录创建完成!"
 }
 
@@ -498,28 +531,28 @@ main() {
     log_info "多语言技术栈系统 - 依赖安装配置脚本"
     log_info "========================================"
     echo ""
-    
+
     # 检测操作系统
     detect_os
     log_info "检测到操作系统: $OS"
     echo ""
-    
+
     # 检查前置条件
     check_prerequisites
     echo ""
-    
+
     # 检查 Gradle (可选)
     check_gradle
     echo ""
-    
+
     # 创建目录
     create_directories
     echo ""
-    
+
     # 检查并安装 Bun (可选)
     check_and_install_bun
     echo ""
-    
+
     # 询问用户要配置哪些模块
     echo "请选择要配置的模块 (可多选,用空格分隔,例如: 1 2 3 4):"
     echo "1) Spring"
@@ -528,9 +561,9 @@ main() {
     echo "4) FastAPI"
     echo "5) 全部"
     read -p "请输入选项: " choices
-    
+
     echo ""
-    
+
     # 处理用户选择
     if [[ "$choices" == *"5"* ]]; then
         setup_spring
@@ -558,7 +591,7 @@ main() {
             echo ""
         fi
     fi
-    
+
     echo ""
     log_info "========================================"
     log_info "所有配置完成!"

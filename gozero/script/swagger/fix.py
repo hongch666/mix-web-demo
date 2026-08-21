@@ -172,7 +172,7 @@ if __name__ == "__main__":
     if json_success and yaml_success:
         sys.exit(0)
     elif json_success:
-        print("JSON文件处理成功，YAML文件处理失败")
-        sys.exit(1)
+        print("JSON文件处理成功，YAML文件处理失败（可忽略，不影响主流程）")
+        sys.exit(0)  # YAML 失败不视为致命错误
     else:
         sys.exit(1)
