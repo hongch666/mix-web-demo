@@ -48,4 +48,8 @@ class SwaggerConfig:
             "name": "算法模块",
             "description": "算法相关API，包括提供ES复合打分和融合排序所需的全量权重参数",
         },
+        {
+            "name": "定时任务模块",
+            "description": "定时任务相关API，包括手动触发同步ES等任务操作",
+        },
     ]

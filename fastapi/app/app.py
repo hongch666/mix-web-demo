@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
             openapi_version=SwaggerConfig.OPENAPI_VERSION,
             description=app.description,
             routes=app.routes,
+            tags=SwaggerConfig.OPENAPI_TAGS,
         )
         app.openapi_schema = openapi_schema
         return app.openapi_schema
