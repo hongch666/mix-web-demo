@@ -1488,6 +1488,10 @@ class Messages:
         return f"安全限制：表 '{table_name}' 不在白名单内"
 
     @staticmethod
+    def SQL_TOOL_TABLE_SCHEMA_NOT_FOUND(table_name: str) -> str:
+        return f"未找到表 '{table_name}' 的结构信息"
+
+    @staticmethod
     def SQL_TOOL_TABLE_SCHEMA_FAILED(service_name: str, error: Exception) -> str:
         return f"获取 {service_name} 表结构失败: {error}"
 
@@ -2328,6 +2332,17 @@ class Messages:
 
     # SQL 查询最大返回行数（LIMIT 上限）
     SQL_TOOL_MAX_LIMIT: int = 100
+
+    # ===== SQL 代理工具（本地直连 FastAPI）正则约束 =====
+
+    # 表名匹配正则（FROM / JOIN 后跟表名）
+    SQL_TOOL_TABLE_NAME_REGEX: str = r"\b(?:FROM|JOIN)\s+`?(\w+)`?"
+
+    # LIMIT 匹配正则
+    SQL_TOOL_LIMIT_REGEX: str = r"\bLIMIT\s+(\d+)"
+
+    # 命名参数占位符匹配正则（:paramName）
+    SQL_TOOL_NAMED_PARAM_REGEX: str = r":\w+"
 
     # FastAPI 本地表结构信息（硬编码，避免每次查 information_schema）
     SQL_TOOL_FASTAPI_TABLE_SCHEMAS: Dict[str, List[Dict[str, str]]] = {

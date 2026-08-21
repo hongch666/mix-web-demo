@@ -42,7 +42,7 @@ class FastapiSqlTool:
                         ensure_ascii=False,
                         indent=2,
                     )
-                return f"未找到表 '{name}' 的结构信息"
+                return Messages.SQL_TOOL_TABLE_SCHEMA_NOT_FOUND(name)
 
             # 返回所有白名单表
             tables = [{"table": t, "columns": schemas.get(t, [])} for t in whitelist]
@@ -72,21 +72,23 @@ class FastapiSqlTool:
             # 检查表名白名单
             whitelist = set(Messages.SQL_TOOL_FASTAPI_TABLE_WHITELIST)
             table_matches = re.findall(
-                r"\b(?:FROM|JOIN)\s+`?(\w+)`?", normalized, re.IGNORECASE
+                Messages.SQL_TOOL_TABLE_NAME_REGEX, normalized, re.IGNORECASE
             )
             for t in table_matches:
                 if t.lower() not in whitelist:
                     return Messages.SQL_TOOL_TABLE_NOT_IN_WHITELIST(t)
 
             # 检查 LIMIT
-            limit_match = re.search(r"\bLIMIT\s+(\d+)", normalized, re.IGNORECASE)
+            limit_match = re.search(
+                Messages.SQL_TOOL_LIMIT_REGEX, normalized, re.IGNORECASE
+            )
             if not limit_match:
                 return Messages.SQL_TOOL_LIMIT_REQUIRED
             if int(limit_match.group(1)) > Messages.SQL_TOOL_MAX_LIMIT:
                 return Messages.SQL_TOOL_LIMIT_EXCEEDED
 
-            # 检查参数化
-            if ":" not in normalized:
+            # 检查参数化（使用正则匹配 :paramName 模式，避免字符串内 : 误判）
+            if not re.search(Messages.SQL_TOOL_NAMED_PARAM_REGEX, normalized):
                 return Messages.SQL_TOOL_PARAM_REQUIRED
 
             # 执行查询

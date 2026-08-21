@@ -7,9 +7,12 @@ from app.core.constants import Messages, Prompts
 from app.internal.agents import (
     IntentRouter,
     get_fastapi_sql_tool,
+    get_gozero_sql_tool,
     get_mongodb_tools,
     get_neo4j_tools,
+    get_nestjs_sql_tool,
     get_rag_tools,
+    get_spring_sql_tool,
 )
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -51,15 +54,30 @@ def initialize_ai_tools(
     mongodb_tools_instance: Optional[Any] = None
     all_tools: List[Any] = []
 
-    # 获取 SQL 工具
+    # 获取 SQL 工具（FastAPI 本地直连 + Spring/GoZero/NestJS 远程代理）
     if include_sql:
-        try:
-            sql_tools_instance = get_fastapi_sql_tool()
-            sql_tools: List[Any] = sql_tools_instance.get_langchain_tools()
-            all_tools.extend(sql_tools)
-            Logger.info(Messages.LLM_TOOL_LOADED("SQL", len(sql_tools)))
-        except Exception as e:
-            Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("SQL", e))
+        # 按服务依次加载 SQL 工具，单个服务加载失败不影响其他服务
+        sql_tool_factories: List[Tuple[str, Any]] = [
+            ("FastAPI", get_fastapi_sql_tool),
+            ("Spring", get_spring_sql_tool),
+            ("GoZero", get_gozero_sql_tool),
+            ("NestJS", get_nestjs_sql_tool),
+        ]
+        for service_name, factory in sql_tool_factories:
+            try:
+                tool_instance: Any = factory()
+                sql_tools: List[Any] = tool_instance.get_langchain_tools()
+                all_tools.extend(sql_tools)
+                # 保留 FastAPI 实例作为主 SQL 工具实例，其余仅扩展工具列表
+                if sql_tools_instance is None:
+                    sql_tools_instance = tool_instance
+                Logger.info(
+                    Messages.LLM_TOOL_LOADED(f"{service_name} SQL", len(sql_tools))
+                )
+            except Exception as e:
+                Logger.warning(
+                    Messages.LLM_TOOL_LOAD_FAILED(f"{service_name} SQL", e)
+                )
 
     # 获取 RAG 工具
     try:
