@@ -6,10 +6,18 @@ import { DataSource } from "typeorm";
 
 const TABLE_WHITELIST = new Set<string>(SqlTools.TABLE_WHITELIST);
 const ALLOWED_PREFIXES = SqlTools.ALLOWED_PREFIXES;
-const TABLE_NAME_REGEX = SqlTools.TABLE_NAME_REGEX;
-const LIMIT_REGEX = SqlTools.LIMIT_REGEX;
-const NAMED_PARAM_REGEX = SqlTools.NAMED_PARAM_REGEX;
 const MAX_LIMIT = SqlTools.MAX_LIMIT;
+
+// 每次调用时创建新的局部正则，避免全局标志的 lastIndex 状态残留
+function createTableNameRegex(): RegExp {
+  return new RegExp(SqlTools.TABLE_NAME_REGEX.source, "gi");
+}
+function createLimitRegex(): RegExp {
+  return new RegExp(SqlTools.LIMIT_REGEX.source, "i");
+}
+function createNamedParamRegex(): RegExp {
+  return new RegExp(SqlTools.NAMED_PARAM_REGEX.source, "g");
+}
 
 interface TableInfo {
   table: string;
@@ -84,13 +92,24 @@ export class SqlToolsService {
       );
     }
 
-    let normalized = query.trim().replace(/\s+/g, " ");
+    let normalized = query.trim().replace(SqlTools.SQL_WHITESPACE_REGEX, " ");
     const upperNormalized = () => normalized.toUpperCase();
 
-    // 1. 检查多条语句
-    if (normalized.includes(";")) {
-      const withoutTrailing = normalized.replace(/;\s*$/, "");
-      if (withoutTrailing.includes(";")) {
+    // 1. 检查多条语句：先移除字符串字面量，避免字符串内的 ; 被误判
+    const withoutStringLiterals = normalized.replace(
+      SqlTools.SQL_STRING_LITERAL_REGEX,
+      "",
+    );
+    if (withoutStringLiterals.includes(";")) {
+      const withoutTrailing = normalized.replace(
+        SqlTools.SQL_TRAILING_SEMICOLON_REGEX,
+        "",
+      );
+      const withoutTrailingLiterals = withoutTrailing.replace(
+        SqlTools.SQL_STRING_LITERAL_REGEX,
+        "",
+      );
+      if (withoutTrailingLiterals.includes(";")) {
         throw new BusinessException(
           Messages.SQL_PROXY_MULTIPLE_STATEMENTS,
           HttpCode.BAD_REQUEST,
@@ -112,11 +131,11 @@ export class SqlToolsService {
       );
     }
 
-    // 3. 检查表名白名单
-    TABLE_NAME_REGEX.lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = TABLE_NAME_REGEX.exec(normalized)) !== null) {
-      const tableName = match[1]!.toLowerCase();
+    // 3. 检查表名白名单（使用局部正则，避免全局标志 lastIndex 残留）
+    const tableNameRegex = createTableNameRegex();
+    const tableMatches = [...normalized.matchAll(tableNameRegex)];
+    for (const m of tableMatches) {
+      const tableName = m[1]!.toLowerCase();
       if (!TABLE_WHITELIST.has(tableName)) {
         throw new BusinessException(
           Messages.SQL_PROXY_TABLE_NOT_ALLOWED(tableName),
@@ -126,8 +145,9 @@ export class SqlToolsService {
       }
     }
 
-    // 4. 检查 LIMIT
-    const limitMatch = normalized.match(LIMIT_REGEX);
+    // 4. 检查 LIMIT（使用局部正则）
+    const limitRegex = createLimitRegex();
+    const limitMatch = normalized.match(limitRegex);
     if (!limitMatch) {
       throw new BusinessException(
         Messages.SQL_PROXY_LIMIT_REQUIRED,
@@ -144,8 +164,9 @@ export class SqlToolsService {
       );
     }
 
-    // 5. 检查参数化占位符
-    if (!normalized.includes(":")) {
+    // 5. 检查参数化占位符：使用正则匹配 :paramName 模式，避免字符串内 : 误判
+    const namedParamRegex = createNamedParamRegex();
+    if (!namedParamRegex.test(normalized)) {
       throw new BusinessException(
         Messages.SQL_PROXY_PARAM_REQUIRED,
         HttpCode.BAD_REQUEST,
@@ -164,7 +185,7 @@ export class SqlToolsService {
     params: Record<string, unknown>,
   ): { query: string; values: unknown[] } {
     const values: unknown[] = [];
-    const pattern = NAMED_PARAM_REGEX;
+    const pattern = createNamedParamRegex();
     const replaced = query.replace(pattern, (_, name) => {
       values.push(params[name]);
       return "?";
@@ -186,7 +207,7 @@ export class SqlToolsService {
 
     try {
       const columns = await this.dataSource.query(
-        "SHOW COLUMNS FROM `user_table_settings`",
+        SqlTools.SHOW_COLUMNS_SQL(tableName),
       );
       const columnList = columns.map((col: Record<string, unknown>) => ({
         name: col.Field,
@@ -205,9 +226,21 @@ export class SqlToolsService {
   }
 
   /**
-   * 获取所有白名单表
+   * 获取所有白名单表基本信息和行数
    */
   private async getAllTableSchemas(): Promise<TableInfo[]> {
-    return [{ table: "user_table_settings" }];
+    const result: TableInfo[] = [];
+    for (const tableName of TABLE_WHITELIST) {
+      try {
+        const [row] = await this.dataSource.query(
+          SqlTools.COUNT_ROWS_SQL(tableName),
+        );
+        const rowCount = row && typeof row.cnt === "number" ? row.cnt : -1;
+        result.push({ table: tableName, rowCount });
+      } catch {
+        result.push({ table: tableName, rowCount: -1 });
+      }
+    }
+    return result;
   }
 }
