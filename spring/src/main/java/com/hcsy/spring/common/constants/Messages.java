@@ -172,6 +172,17 @@ public class Messages {
     public static final String TASK_END = "定时清理过期 Token 任务执行完成";
     public static final String TASK_EXCEPTION = "定时清理过期 Token 任务执行异常: ";
 
+    // ===== 内部SQL代理 =====
+    public static final String SQL_PROXY_FORBIDDEN_STATEMENT = "安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）";
+    public static final String SQL_PROXY_TABLE_NOT_IN_WHITELIST = "安全限制：表 '%s' 不在白名单内";
+    public static final String SQL_PROXY_LIMIT_REQUIRED = "安全限制：SQL查询必须包含LIMIT子句";
+    public static final String SQL_PROXY_LIMIT_EXCEEDED = "安全限制：LIMIT超过最大限制100";
+    public static final String SQL_PROXY_MULTIPLE_STATEMENTS = "安全限制：禁止执行多条SQL语句";
+    public static final String SQL_PROXY_PARAM_REQUIRED = "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值";
+    public static final String SQL_PROXY_QUERY_TIMEOUT = "SQL查询超时（10秒）";
+    public static final String SQL_PROXY_TABLE_SCHEMA_ERROR = "获取表结构信息失败: %s";
+    public static final String SQL_PROXY_QUERY_ERROR = "执行SQL查询失败: %s";
+
     // ===== 内部令牌 =====
     public static final String INTERNAL_TOKEN_NOT_NULL = "内部服务令牌密钥不能为 null 或者为空";
     public static final String INTERNAL_TOKEN_INIT = "内部服务令牌密钥初始化完成";
