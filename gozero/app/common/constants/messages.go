@@ -239,6 +239,8 @@ const (
 	API_LOG_GET_CHAT_HISTORY         = "获取聊天历史"
 	API_LOG_SEND_MESSAGE             = "发送消息"
 	API_LOG_JOIN_QUEUE               = "加入队列"
+	API_LOG_SQL_TOOLS_GET_TABLES     = "获取SQL工具表结构信息"
+	API_LOG_SQL_TOOLS_EXECUTE_QUERY  = "执行SQL工具只读查询"
 
 	// Swagger
 	SWAGGER_PAGE_FETCH_FAIL = "获取 Swagger 页面失败"

@@ -99,7 +99,8 @@ type ChatSSEConnectReq struct {
 	UserId *string `form:"user_id,optional"`
 }
 
-type ChatSSEConnectResp struct{}
+type ChatSSEConnectResp struct {
+}
 
 type ChatSendMessageReq struct {
 	SenderId   string `json:"sender_id"`
@@ -115,7 +116,8 @@ type ChatWsConnectReq struct {
 	UserId *string `form:"user_id,optional"`
 }
 
-type ChatWsConnectResp struct{}
+type ChatWsConnectResp struct {
+}
 
 type GetSearchHistoryReq struct {
 	UserId string `path:"user_id"`
@@ -161,23 +163,48 @@ type SearchArticlesResp struct {
 	List  []ArticleEsItem `json:"list"`
 }
 
-type SyncESReq struct{}
+type SqlToolsColumnInfo struct {
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+	Key     string `json:"key"`
+	Comment string `json:"comment"`
+}
 
-type SyncESResp struct{}
+type SqlToolsGetTablesReq struct {
+	Table string `json:"table,optional"`
+}
 
-type TestFastAPIResp struct {
-	Data string `json:"data"`
+type SqlToolsGetTablesResp struct {
+	Data []SqlToolsTableInfo `json:"data"`
+}
+
+type SqlToolsQueryReq struct {
+	Query  string            `json:"query"`
+	Params map[string]string `json:"params,optional"`
+}
+
+type SqlToolsQueryResp struct {
+	Data SqlToolsQueryResult `json:"data"`
+}
+
+type SqlToolsQueryResult struct {
+	Columns  []string   `json:"columns"`
+	Rows     [][]string `json:"rows"`
+	RowCount int        `json:"rowCount"`
+}
+
+type SqlToolsTableInfo struct {
+	Table   string               `json:"table"`
+	Columns []SqlToolsColumnInfo `json:"columns,optional"`
+}
+
+type SyncESReq struct {
+}
+
+type SyncESResp struct {
 }
 
 type TestGoZeroResp struct {
-	Data string `json:"data"`
-}
-
-type TestNestJSResp struct {
-	Data string `json:"data"`
-}
-
-type TestSpringResp struct {
 	Data string `json:"data"`
 }
 

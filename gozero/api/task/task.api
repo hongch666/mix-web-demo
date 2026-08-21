@@ -14,3 +14,9 @@ service App {
 	@handler SyncESHandler
 	post /syncer (SyncESReq) returns (SyncESResp)
 }
+
+type (
+	SyncESReq  {}
+	SyncESResp  {}
+)
+

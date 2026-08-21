@@ -1,0 +1,55 @@
+syntax = "v2"
+
+@server (
+	group:      sqlTools
+	tags:       sqlTools
+	prefix:     /sql-tools
+	middleware: UserContextMiddleware,RecoveryMiddleware,InternalServiceMiddleware
+)
+service App {
+	@doc (
+		summary:     "获取表结构信息"
+		description: "获取白名单内MySQL表的结构信息，可选指定表名"
+	)
+	@handler SqlToolsGetTablesHandler
+	get /tables (SqlToolsGetTablesReq) returns (SqlToolsGetTablesResp)
+
+	@doc (
+		summary:     "执行只读参数化SQL查询"
+		description: "执行受限的只读参数化SQL查询，表名白名单控制，强制参数化占位符和LIMIT"
+	)
+	@handler SqlToolsQueryHandler
+	post /query (SqlToolsQueryReq) returns (SqlToolsQueryResp)
+}
+
+type (
+	SqlToolsGetTablesReq {
+		Table string `json:"table,optional"`
+	}
+	SqlToolsTableInfo {
+		Table   string               `json:"table"`
+		Columns []SqlToolsColumnInfo `json:"columns,optional"`
+	}
+	SqlToolsColumnInfo {
+		Name    string `json:"name"`
+		Type    string `json:"type"`
+		Key     string `json:"key"`
+		Comment string `json:"comment"`
+	}
+	SqlToolsGetTablesResp {
+		Data []SqlToolsTableInfo `json:"data"`
+	}
+	SqlToolsQueryReq {
+		Query  string            `json:"query"`
+		Params map[string]string `json:"params,optional"`
+	}
+	SqlToolsQueryResult {
+		Columns  []string   `json:"columns"`
+		Rows     [][]string `json:"rows"`
+		RowCount int        `json:"rowCount"`
+	}
+	SqlToolsQueryResp {
+		Data SqlToolsQueryResult `json:"data"`
+	}
+)
+

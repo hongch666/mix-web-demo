@@ -8,6 +8,7 @@ import (
 
 	chat "app/internal/handler/chat"
 	search "app/internal/handler/search"
+	sqlTools "app/internal/handler/sqlTools"
 	task "app/internal/handler/task"
 	test "app/internal/handler/test"
 	"app/internal/svc"
@@ -16,26 +17,6 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
-			[]rest.Route{
-				{
-					// SSE消息通知连接
-					Method:  http.MethodGet,
-					Path:    "/sse/chat",
-					Handler: chat.ChatSSEHandler(serverCtx),
-				},
-				{
-					// WebSocket聊天连接
-					Method:  http.MethodGet,
-					Path:    "/ws/chat",
-					Handler: chat.ChatWebsocketHandler(serverCtx),
-				},
-			}...,
-		),
-	)
-
 	server.AddRoutes(
 		rest.WithMiddlewares(
 			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
@@ -92,6 +73,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
 			[]rest.Route{
 				{
+					// SSE消息通知连接
+					Method:  http.MethodGet,
+					Path:    "/sse/chat",
+					Handler: chat.ChatSSEHandler(serverCtx),
+				},
+				{
+					// WebSocket聊天连接
+					Method:  http.MethodGet,
+					Path:    "/ws/chat",
+					Handler: chat.ChatWebsocketHandler(serverCtx),
+				},
+			}...,
+		),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
+			[]rest.Route{
+				{
 					// 搜索文章
 					Method:  http.MethodGet,
 					Path:    "/",
@@ -110,17 +111,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware, serverCtx.InternalServiceMiddleware},
 			[]rest.Route{
 				{
-					// 测试GoZero服务
+					// 执行只读参数化SQL查询
+					Method:  http.MethodPost,
+					Path:    "/query",
+					Handler: sqlTools.SqlToolsQueryHandler(serverCtx),
+				},
+				{
+					// 获取表结构信息
 					Method:  http.MethodGet,
-					Path:    "/gozero",
-					Handler: test.TestGoZeroHandler(serverCtx),
+					Path:    "/tables",
+					Handler: sqlTools.SqlToolsGetTablesHandler(serverCtx),
 				},
 			}...,
 		),
-		rest.WithPrefix("/test"),
+		rest.WithPrefix("/sql-tools"),
 	)
 
 	server.AddRoutes(
@@ -136,5 +143,20 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithPrefix("/task"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
+			[]rest.Route{
+				{
+					// 测试GoZero服务
+					Method:  http.MethodGet,
+					Path:    "/gozero",
+					Handler: test.TestGoZeroHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithPrefix("/test"),
 	)
 }

@@ -116,3 +116,4 @@ type (
 		Data map[string]int64 `json:"data"`
 	}
 )
+
