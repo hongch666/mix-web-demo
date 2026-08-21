@@ -51,13 +51,15 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             throw new BusinessException(Messages.SQL_PROXY_FORBIDDEN_STATEMENT);
         }
 
-        String normalized = query.trim().replaceAll("\\s+", " ");
+        String normalized = query.trim().replaceAll(SqlTools.WHITESPACE_PATTERN.pattern(), " ");
         String upperNormalized = normalized.toUpperCase();
 
-        // 1. 检查多条语句
-        if (normalized.contains(";")) {
-            String withoutTrailing = normalized.replaceAll(";\\s*$", "");
-            if (withoutTrailing.contains(";")) {
+        // 1. 检查多条语句（先移除字符串字面量，避免字符串内的 ; 被误判）
+        String withoutStringLiterals = SqlTools.STRING_LITERAL_PATTERN.matcher(normalized).replaceAll("");
+        if (withoutStringLiterals.contains(";")) {
+            String withoutTrailing = SqlTools.TRAILING_SEMICOLON_PATTERN.matcher(normalized).replaceAll("");
+            String withoutTrailingLiterals = SqlTools.STRING_LITERAL_PATTERN.matcher(withoutTrailing).replaceAll("");
+            if (withoutTrailingLiterals.contains(";")) {
                 throw new BusinessException(HttpCode.BAD_REQUEST, Messages.SQL_PROXY_MULTIPLE_STATEMENTS);
             }
             normalized = withoutTrailing;
@@ -96,8 +98,8 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             throw new BusinessException(HttpCode.BAD_REQUEST, Messages.SQL_PROXY_LIMIT_EXCEEDED);
         }
 
-        // 5. 检查参数化占位符
-        if (!normalized.contains(":")) {
+        // 5. 检查参数化占位符（使用正则匹配 :paramName 模式，避免字符串内 : 误判）
+        if (!SqlTools.NAMED_PARAM_PATTERN.matcher(normalized).find()) {
             throw new BusinessException(HttpCode.BAD_REQUEST, Messages.SQL_PROXY_PARAM_REQUIRED);
         }
 
@@ -157,11 +159,11 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             info.put("table", tableName);
             result.add(info);
         }
-        // 异步获取每个表的行数
+        // 异步获取每个表的行数（表名来自白名单，使用反引号包裹避免保留字冲突）
         return Flux.fromIterable(result)
             .flatMap(info -> {
                 String tableName = (String) info.get("table");
-                return databaseClient.sql("SELECT COUNT(*) AS cnt FROM " + tableName + " LIMIT 1")
+                return databaseClient.sql(SqlTools.countRowsSql(tableName))
                     .fetch()
                     .one()
                     .map(row -> {
@@ -182,7 +184,7 @@ public class SqlToolsServiceImpl implements SqlToolsService {
                 String.format(Messages.SQL_PROXY_TABLE_NOT_IN_WHITELIST, tableName));
         }
 
-        return databaseClient.sql("DESCRIBE " + tableName)
+        return databaseClient.sql(SqlTools.describeTableSql(tableName))
             .fetch()
             .all()
             .collectList()
