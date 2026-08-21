@@ -34,6 +34,14 @@ def add_chinese_tags_to_dict(swagger_data):
             "name": "测试模块",
             "description": "服务测试相关API，用于验证各个微服务是否正常运行",
         },
+        "task": {
+            "name": "定时任务模块",
+            "description": "定时任务相关API，包括手动触发同步ES等任务操作",
+        },
+        "sqlTools": {
+            "name": "SQL工具模块",
+            "description": "SQL 执行工具相关API，包括表结构查询与只读参数化SQL查询",
+        },
     }
 
     # 添加info的描述字段和版本
