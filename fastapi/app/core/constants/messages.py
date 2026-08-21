@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class Messages:
@@ -512,6 +512,27 @@ class Messages:
         return f"写操作意图检测失败，继续执行权限校验: {error}"
 
     @staticmethod
+    def is_dangerous_nl_request(question: str) -> bool:
+        """检测自然语言请求是否包含数据库写操作意图
+
+        检查用户的自然语言问题中是否包含危险关键词（INSERT/UPDATE/DELETE/DROP等）
+        或危险模式（INTO OUTFILE/FOR UPDATE/LOCK IN SHARE MODE等）。
+
+        Returns:
+            True 如果检测到写操作意图，False 如果安全
+        """
+        if not question:
+            return False
+        upper_question: str = question.upper()
+        for keyword in Messages.SQL_DANGEROUS_KEYWORDS:
+            if f" {keyword} " in f" {upper_question} ":
+                return True
+        for pattern in Messages.SQL_DANGEROUS_PATTERNS:
+            if pattern.upper() in upper_question:
+                return True
+        return False
+
+    @staticmethod
     def LANGSMITH_CLIENT_INITIALIZED(project: str, endpoint: str) -> str:
         return f"LangSmith 客户端初始化成功，项目: {project}，端点: {endpoint}"
 
@@ -764,30 +785,6 @@ class Messages:
     @staticmethod
     def RAG_CONTEXT_FETCH_FAILED(error: Exception) -> str:
         return f"获取文章上下文失败: {error}"
-
-    @staticmethod
-    def SQL_TOOL_USER_ID_SET(user_id: int) -> str:
-        return f"设置SQL工具用户ID: {user_id}"
-
-    @staticmethod
-    def SQL_TOOL_TABLE_NOT_FOUND(table_name: str) -> str:
-        return f"表 '{table_name}' 不存在"
-
-    @staticmethod
-    def SQL_TOOL_GET_SCHEMA_FAILED(error: Exception) -> str:
-        return f"获取表结构失败: {str(error)}"
-
-    @staticmethod
-    def SQL_TOOL_ADD_USER_FILTER(current_user_id: int) -> str:
-        return f"[SQL工具] 为用户 {current_user_id} 的查询添加用户ID过滤"
-
-    @staticmethod
-    def SQL_TOOL_QUERY_SUCCESS(row_count: int) -> str:
-        return f"SQL查询成功，返回 {row_count} 行"
-
-    @staticmethod
-    def SQL_TOOL_QUERY_FAILED(error: Exception) -> str:
-        return f"SQL查询失败: {str(error)}"
 
     @staticmethod
     def CATEGORY_REFERENCE_QUERY_STARTED(sub_category_id: int) -> str:
@@ -1485,6 +1482,18 @@ class Messages:
     @staticmethod
     def REDIS_LOCK_RELEASE_SUCCESS_MESSAGE(lock_key: str) -> str:
         return f"[分布式锁] 释放锁成功，key: {lock_key}"
+
+    @staticmethod
+    def SQL_TOOL_TABLE_NOT_IN_WHITELIST(table_name: str) -> str:
+        return f"安全限制：表 '{table_name}' 不在白名单内"
+
+    @staticmethod
+    def SQL_TOOL_TABLE_SCHEMA_FAILED(service_name: str, error: Exception) -> str:
+        return f"获取 {service_name} 表结构失败: {error}"
+
+    @staticmethod
+    def SQL_TOOL_QUERY_FAILED(service_name: str, error: Exception) -> str:
+        return f"{service_name} SQL查询失败: {error}"
 
     INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
 
@@ -2262,9 +2271,87 @@ class Messages:
 
     SQL_TABLE_TOOL_NAME: str = "get_table_schema"
 
-    SQL_TOOL_INITIALIZATION_SUCCESS: str = "SQL工具初始化成功"
+    # ===== SQL 代理工具（多数据源）通用安全约束消息 =====
 
-    SQL_TOOL_LIMIT: str = "安全限制：只允许执行SELECT查询语句"
+    SQL_TOOL_QUERY_EMPTY: str = "SQL查询语句不能为空"
+
+    SQL_TOOL_FORBIDDEN_STATEMENT: str = (
+        "安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）"
+    )
+
+    SQL_TOOL_MULTIPLE_STATEMENTS: str = "安全限制：禁止执行多条SQL语句"
+
+    SQL_TOOL_LIMIT_REQUIRED: str = "安全限制：SQL查询必须包含LIMIT子句"
+
+    SQL_TOOL_LIMIT_EXCEEDED: str = "安全限制：LIMIT超过最大限制100"
+
+    SQL_TOOL_PARAM_REQUIRED: str = (
+        "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值"
+    )
+
+    SQL_TOOL_NO_TABLE_SCHEMA: str = "未找到表结构信息"
+
+    SQL_TOOL_DB_SESSION_UNAVAILABLE: str = "数据库会话不可用"
+
+    # ===== SQL 代理工具输入参数描述 =====
+
+    SQL_TOOL_TABLE_SCHEMA_INPUT_DESC: str = "表名，留空则返回所有白名单表"
+
+    SQL_TOOL_QUERY_INPUT_DESC: str = "完整的只读 SQL 查询语句"
+
+    SQL_TOOL_PARAMS_INPUT_DESC: str = "参数化查询参数，键值对形式"
+
+    # ===== SQL 代理工具名 =====
+
+    SQL_TOOL_FASTAPI_TABLE_TOOL_NAME: str = "get_fastapi_table_schema"
+    SQL_TOOL_FASTAPI_QUERY_TOOL_NAME: str = "execute_fastapi_sql_query"
+    SQL_TOOL_SPRING_TABLE_TOOL_NAME: str = "get_spring_table_schema"
+    SQL_TOOL_SPRING_QUERY_TOOL_NAME: str = "execute_spring_sql_query"
+    SQL_TOOL_NESTJS_TABLE_TOOL_NAME: str = "get_nestjs_table_schema"
+    SQL_TOOL_NESTJS_QUERY_TOOL_NAME: str = "execute_nestjs_sql_query"
+    SQL_TOOL_GOZERO_TABLE_TOOL_NAME: str = "get_gozero_table_schema"
+    SQL_TOOL_GOZERO_QUERY_TOOL_NAME: str = "execute_gozero_sql_query"
+
+    SQL_TOOL_FASTAPI_TABLE_WHITELIST: List[str] = ["ai_history"]
+
+    # ===== SQL 代理工具（本地直连 FastAPI）安全约束配置 =====
+
+    # 只读语句前缀白名单
+    SQL_TOOL_ALLOWED_PREFIXES: List[str] = [
+        "SELECT",
+        "WITH",
+        "SHOW",
+        "DESC",
+        "DESCRIBE",
+        "EXPLAIN",
+    ]
+
+    # SQL 查询最大返回行数（LIMIT 上限）
+    SQL_TOOL_MAX_LIMIT: int = 100
+
+    # FastAPI 本地表结构信息（硬编码，避免每次查 information_schema）
+    SQL_TOOL_FASTAPI_TABLE_SCHEMAS: Dict[str, List[Dict[str, str]]] = {
+        "ai_history": [
+            {"name": "id", "type": "bigint", "key": "PRI", "comment": "主键ID"},
+            {"name": "user_id", "type": "bigint", "key": "MUL", "comment": "用户ID"},
+            {"name": "ask", "type": "text", "key": "", "comment": "用户提问内容"},
+            {"name": "reply", "type": "text", "key": "", "comment": "AI回复内容"},
+            {"name": "thinking", "type": "text", "key": "", "comment": "AI思考过程"},
+            {"name": "ai_type", "type": "varchar(50)", "key": "", "comment": "AI类型"},
+            {
+                "name": "created_at",
+                "type": "datetime",
+                "key": "",
+                "comment": "创建时间",
+            },
+            {
+                "name": "updated_at",
+                "type": "datetime",
+                "key": "",
+                "comment": "更新时间",
+            },
+        ],
+    }
 
     START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE: str = (
         "开始初始化文章内容 hash 缓存..."

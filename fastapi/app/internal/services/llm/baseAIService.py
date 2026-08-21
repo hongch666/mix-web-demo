@@ -6,10 +6,10 @@ from app.core.config import load_config
 from app.core.constants import Messages, Prompts
 from app.internal.agents import (
     IntentRouter,
+    get_fastapi_sql_tool,
     get_mongodb_tools,
     get_neo4j_tools,
     get_rag_tools,
-    get_sql_tools,
 )
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -54,7 +54,7 @@ def initialize_ai_tools(
     # 获取 SQL 工具
     if include_sql:
         try:
-            sql_tools_instance = get_sql_tools()
+            sql_tools_instance = get_fastapi_sql_tool()
             sql_tools: List[Any] = sql_tools_instance.get_langchain_tools()
             all_tools.extend(sql_tools)
             Logger.info(Messages.LLM_TOOL_LOADED("SQL", len(sql_tools)))
@@ -505,7 +505,7 @@ class BaseAiService:
 
                 if normalized_user_id is not None:
                     try:
-                        sql_tools = get_sql_tools()
+                        sql_tools = get_fastapi_sql_tool()
                         sql_tools.set_user_id(normalized_user_id)
                         Logger.info(Messages.SQL_TOOL_SET_USER_ID(normalized_user_id))
                     except Exception as error:
@@ -676,7 +676,7 @@ class BaseAiService:
 
                 if normalized_user_id is not None:
                     try:
-                        sql_tools = get_sql_tools()
+                        sql_tools = get_fastapi_sql_tool()
                         sql_tools.set_user_id(normalized_user_id)
                         Logger.info(Messages.SQL_TOOL_SET_USER_ID(normalized_user_id))
                     except Exception as error:

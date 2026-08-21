@@ -7,7 +7,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from .tools.sqlTools import SQLTools, get_sql_tools
 from .userPermissionManager import UserPermissionManager
 
 IntentType = Literal[
@@ -205,8 +204,7 @@ class IntentRouter:
 
         if intent == "database_query":
             try:
-                sql_tools: SQLTools = get_sql_tools()
-                if sql_tools.is_dangerous_nl_request(question):
+                if Messages.is_dangerous_nl_request(question):
                     self.logger.warning(Messages.INTENT_WRITE_SQL_BLOCKED(question))
                     return (
                         intent,

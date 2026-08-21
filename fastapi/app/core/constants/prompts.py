@@ -12,11 +12,16 @@ class Prompts:
 
         规则：
         1. 需要查询数据时优先使用工具，不要凭空猜测。
-        2. 数据库统计和业务数据查询优先使用 SQL 工具，并尽量加上时间范围、用户范围、状态条件或 limit。
-        3. 查询数据库表结构时，先确认真实表名，再执行查询；例如用户表是 user，不是 users。
-        4. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
-        5. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
-        6. 最终回答必须使用中文，简洁明确。
+        2. 系统数据分布在多个服务的数据库，SQL 工具按服务划分，使用前先确认数据属于哪个服务：
+           - FastAPI 数据（AI 对话历史 ai_history）用 fastapi 工具
+           - 业务数据（文章、用户、评论、点赞、收藏、关注、分类等）用 spring 工具
+           - 设置数据（用户表格列设置 user_table_settings）用 nestjs 工具
+           - 消息数据（聊天记录 chat_messages）用 gozero 工具
+        3. 查询前先用对应的 get_*_table_schema 工具确认表结构，再执行查询。
+        4. 执行 SQL 必须使用参数化占位符（:paramName）并包含 LIMIT（最大 100），禁止拼接值。
+        5. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
+        6. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
+        7. 最终回答必须使用中文，简洁明确。
 
         当前问题：{input}
         """
@@ -165,6 +170,74 @@ class Prompts:
     示例: "SELECT * FROM articles WHERE status=1 LIMIT 10"
     使用场景: 需要查询系统数据、业务数据、统计分析、获取具体记录时使用。
     如果涉及大表或可能返回大量数据，必须主动加上时间范围、用户范围、状态条件或 LIMIT。
+    """
+
+    # ===== FastAPI 本地 SQL 工具描述 =====
+    FASTAPI_SQL_TABLE_TOOL_DESC: str = """获取 FastAPI 本地 MySQL 数据库的表结构信息。
+    可查表: ai_history (AI对话历史记录)
+    参数格式: 表名(字符串)，如 'ai_history'，留空则返回所有表。
+    使用场景: 查询AI对话记录、对话统计分析前，先了解表结构。
+    """
+
+    FASTAPI_SQL_QUERY_TOOL_DESC: str = """执行 FastAPI 本地 MySQL 只读 SQL 查询。
+    可查表: ai_history (AI对话历史记录)
+    必须使用参数化占位符（:paramName），禁止拼接值。
+    必须包含 LIMIT 子句（最大 100 行）。
+    参数格式: query 为完整只读SQL，params 为参数字典。
+    示例: query="SELECT * FROM ai_history WHERE user_id = :uid LIMIT 10", params={"uid": 123}
+    使用场景: 查询AI对话历史、对话统计分析。
+    """
+
+    # ===== Spring SQL 代理工具描述 =====
+    SPRING_SQL_TABLE_TOOL_DESC: str = """获取 Spring 服务的 MySQL 业务数据库表结构信息。
+    可查表: articles(文章), user(用户), comments(评论), likes(点赞),
+            collects(收藏), focus(关注), category(分类), sub_category(子分类),
+            category_reference(权威参考文本)
+    参数格式: 表名(字符串)，如 'articles'，留空则返回所有表。
+    使用场景: 查询文章统计、用户信息、排行榜、分类统计、互动数据前，先了解表结构。
+    """
+
+    SPRING_SQL_QUERY_TOOL_DESC: str = """执行 Spring 服务的 MySQL 业务数据库只读 SQL 查询。
+    可查表: articles(文章), user(用户), comments(评论), likes(点赞),
+            collects(收藏), focus(关注), category(分类), sub_category(子分类),
+            category_reference(权威参考文本)
+    必须使用参数化占位符（:paramName），禁止拼接值。
+    必须包含 LIMIT 子句（最大 100 行）。
+    参数格式: query 为完整只读SQL，params 为参数字典。
+    示例: query="SELECT * FROM articles WHERE user_id = :uid LIMIT 10", params={"uid": 123}
+    使用场景: 查询文章统计、用户信息、排行榜、分类统计、互动数据。
+    """
+
+    # ===== NestJS SQL 代理工具描述 =====
+    NESTJS_SQL_TABLE_TOOL_DESC: str = """获取 NestJS 服务的 MySQL 设置数据库表结构信息。
+    可查表: user_table_settings(用户表格列设置)
+    参数格式: 表名(字符串)，如 'user_table_settings'，留空则返回所有表。
+    使用场景: 查询用户自定义的表格列配置前，先了解表结构。
+    """
+
+    NESTJS_SQL_QUERY_TOOL_DESC: str = """执行 NestJS 服务的 MySQL 设置数据库只读 SQL 查询。
+    可查表: user_table_settings(用户表格列设置)
+    必须使用参数化占位符（:paramName），禁止拼接值。
+    必须包含 LIMIT 子句（最大 100 行）。
+    参数格式: query 为完整只读SQL，params 为参数字典。
+    示例: query="SELECT * FROM user_table_settings WHERE user_id = :uid LIMIT 10", params={"uid": 123}
+    使用场景: 查询用户自定义的表格列配置。
+    """
+
+    # ===== GoZero SQL 代理工具描述 =====
+    GOZERO_SQL_TABLE_TOOL_DESC: str = """获取 GoZero 服务的 MySQL 消息数据库表结构信息。
+    可查表: chat_messages(聊天消息)
+    参数格式: 表名(字符串)，如 'chat_messages'，留空则返回所有表。
+    使用场景: 查询聊天记录、消息统计分析前，先了解表结构。
+    """
+
+    GOZERO_SQL_QUERY_TOOL_DESC: str = """执行 GoZero 服务的 MySQL 消息数据库只读 SQL 查询。
+    可查表: chat_messages(聊天消息)
+    必须使用参数化占位符（:paramName），禁止拼接值。
+    必须包含 LIMIT 子句（最大 100 行）。
+    参数格式: query 为完整只读SQL，params 为参数字典。
+    示例: query="SELECT * FROM chat_messages WHERE sender_id = :sid LIMIT 10", params={"sid": "u123"}
+    使用场景: 查询聊天记录、消息统计分析。
     """
 
     # ===== Neo4j 工具描述 =====

@@ -86,3 +86,28 @@ class NestjsClient:
             retries=max_retries,
             timeout=upload_timeout,
         )
+
+    # ==================== SQL 代理接口（供 FastAPI Agent 远程调用） ====================
+
+    async def get_tables(self, table: Optional[str] = None) -> Any:
+        """获取 MySQL 表结构信息"""
+        params = {"table": table} if table else None
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/sql-tools/tables",
+            method="GET",
+            params=params,
+        )
+        return result.get("data", [])
+
+    async def execute_query(
+        self, query: str, params: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """执行只读参数化 SQL 查询"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/sql-tools/query",
+            method="POST",
+            json={"query": query, "params": params or {}},
+        )
+        return result.get("data", {})
