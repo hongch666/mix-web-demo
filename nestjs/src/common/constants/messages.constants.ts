@@ -414,8 +414,6 @@ export class Messages {
 
   // ===== 熔断器 =====
 
-  static readonly CIRCUIT_BREAKER_OPEN = "熔断器已打开";
-
   static readonly SERVICE_CIRCUIT_BREAKER_OPEN = (
     serviceName: string,
   ): string => `服务 ${serviceName} 的熔断器已打开`;
@@ -506,8 +504,6 @@ export class Messages {
 
   static readonly MAIL_SERVICE_CONFIG_INCORRECT =
     "邮件服务未正确配置，请检查 SMTP 配置";
-
-  static readonly EMAIL_VERIFICATION_CODE_SEND_FAILED = "验证码邮件发送失败";
 
   // ===== Redis 分布式锁消息 =====
 

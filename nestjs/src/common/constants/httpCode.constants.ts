@@ -10,7 +10,6 @@ export class HttpCode {
   static readonly NOT_FOUND = 404;
   static readonly CONFLICT = 409;
   static readonly UNPROCESSABLE_ENTITY = 422;
-  static readonly TOO_MANY_REQUESTS = 429;
   static readonly INTERNAL_SERVER_ERROR = 500;
   static readonly BAD_GATEWAY = 502;
   static readonly SERVICE_UNAVAILABLE = 503;
