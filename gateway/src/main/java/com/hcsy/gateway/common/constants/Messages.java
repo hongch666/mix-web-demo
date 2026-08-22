@@ -45,7 +45,6 @@ public class Messages {
     public static final String SERVICE_UNAVAILABLE = "服务不可用";
     public static final String SERVICE_CALL_FAILED = "服务调用失败";
     public static final String REQUEST_TIMEOUT = "请求超时，请稍后重试";
-    public static final String GATEWAY_INTERNAL_ERROR = "网关内部错误 - 路径: {}";
 
     // ===== 结果序列化 =====
     public static final String RESULT_SERIALIZE_FAIL = "序列化响应结果失败";
