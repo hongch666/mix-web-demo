@@ -16,45 +16,6 @@ const (
 		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
 	`
 
-	// comments 联表评分查询
-	COMMENT_RATING_QUERY = `
-		SELECT
-			c.article_id,
-			CASE WHEN u.role = 'ai' THEN 'ai' ELSE 'user' END as role_type,
-			AVG(c.star) as avg_star,
-			COUNT(*) as comment_count
-		FROM comments c
-		LEFT JOIN user u ON c.user_id = u.id
-		WHERE c.article_id IN (?) AND c.star > 0
-		GROUP BY c.article_id, role_type
-	`
-
-	// ES 搜索算法脚本 (Painless)
-	ES_SEARCH_SCRIPT = `
-		double esScore = 1.0 / (1.0 + Math.exp(-_score));
-		double score = params.esWeight * esScore;
-
-		double aiBoost = params.aiWeight * (doc['ai_score'].size() > 0 ? doc['ai_score'].value / 10.0 : 0);
-
-		double userBoost = params.userWeight * (doc['user_score'].size() > 0 ? doc['user_score'].value / 10.0 : 0);
-
-		double viewsBoost = params.viewsWeight * Math.min((double)doc['views'].value / params.maxViewsNormalized, 1.0);
-
-		double likesBoost = params.likesWeight * (doc['like_count'].size() > 0 ? Math.min((double)doc['like_count'].value / params.maxLikesNormalized, 1.0) : 0);
-
-		double collectsBoost = params.collectsWeight * (doc['collect_count'].size() > 0 ? Math.min((double)doc['collect_count'].value / params.maxCollectsNormalized, 1.0) : 0);
-
-		double followBoost = params.followWeight * (doc['author_follow_count'].size() > 0 ? Math.min((double)doc['author_follow_count'].value / params.maxFollowsNormalized, 1.0) : 0);
-
-		long now = System.currentTimeMillis();
-		long articleTime = doc['create_at'].value.getMillis();
-		long daysDiff = (now - articleTime) / (1000L * 86400L);
-		double recencyScore = Math.exp(-1.0 * (daysDiff * daysDiff) / (2.0 * params.decayDaysSq));
-		double recencyBoost = params.recencyWeight * recencyScore;
-
-		return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
-	`
-
 	// ES 索引 Mapping 定义
 	ES_INDEX_MAPPING = `{
 		"mappings": {

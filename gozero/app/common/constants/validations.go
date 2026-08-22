@@ -3,7 +3,6 @@ package constants
 // 参数校验类 — 校验错误消息
 const (
 	PARAM_ERR                     = "参数错误"
-	USER_ID_ERR                   = "用户ID格式错误"
 	FIELD_EMPTY_ERROR             = "%s不能为空"
 	FIELD_POSITIVE_INT_ERROR      = "%s必须是正整数"
 	FIELD_GREATER_THAN_ZERO_ERROR = "%s必须大于0"

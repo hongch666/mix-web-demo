@@ -39,9 +39,6 @@ const (
 	WS_HEARTBEAT_RESPONSE_FAIL               = "序列化WebSocket心跳响应失败: %v"
 	MESSAGE_SEND_ERROR                       = "消息发送失败"
 	MARK_READ_FAIL                           = "标记消息 %d 为已读失败"
-	USER_JOINED_QUEUE                        = "用户 %s 已加入聊天队列"
-	USER_LEFT_QUEUE                          = "用户 %s 已离开聊天队列"
-	USER_IN_QUEUE_NOT_CONNECTED              = "用户 %s 在队列中但没有WebSocket连接，无法发送实时消息"
 	WS_ERROR                                 = "WebSocket 错误: %v"
 	PARSE_MESSAGE_FAIL                       = "解析消息失败: %v"
 	WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE = "WebSocket 连接已建立"
@@ -55,15 +52,6 @@ const (
 	HEARTBEAT_RESPONSE                       = "pong"
 
 	// SSE
-	SSE_REGISTER_SUCCESS               = "SSE客户端 %s 已注册"
-	SSE_UNREGISTER_SUCCESS             = "SSE客户端 %s 已注销"
-	SSE_SEND_EMPTY_WARNING             = "尝试发送空通知给用户 %s"
-	SSE_CLIENT_NOT_FOUND_WARNING       = "用户 %s 的SSE客户端未找到"
-	SSE_SEND_SUCCESS                   = "SSE通知已发送给用户 %s"
-	SSE_SEND_FAIL_WARNING              = "无法发送SSE通知给用户 %s,通道已满"
-	SSE_BROADCAST_SUCCESS              = "广播消息已发送给用户 %s"
-	SSE_BROADCAST_FAIL_WARNING         = "无法广播消息给用户 %s，通道已满"
-	SSE_SERIALIZE_MESSAGE_ERROR        = "序列化SSE消息错误: %v"
 	SSE_SERIALIZE_MESSAGE_EMPTY        = "序列化后的SSE消息为null"
 	SSE_CONNECTION_ESTABLISHED_MESSAGE = "SSE 连接已建立"
 	SSE_HEARTBEAT_WRITE_FAIL           = "SSE心跳写入失败: "
@@ -100,19 +88,12 @@ const (
 	SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE    = "序列化SSE消息错误"
 
 	// 查询错误
-	ARTICLE_QUERY_ERROR     = "文章查询错误"
-	CATEGORY_QUERY_ERROR    = "分类查询错误"
 	COLLECT_QUERY_ERROR     = "收藏查询错误"
 	FOCUS_QUERY_ERROR       = "关注查询错误"
 	LIKE_QUERY_ERROR        = "点赞查询错误"
-	QUERY_USER_ERROR        = "查询用户 %d 失败: %v"
-	QUERY_SUBCATEGORY_ERROR = "查询子分类 %d 失败: %v"
-	QUERY_CATEGORY_ERROR    = "查询分类 %d 失败: %v"
 
 	// 初始化
-	GET_WORKING_DIR_ERROR                    = "获取当前工作目录失败"
 	LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR       = "未找到本机可用的 IPv4 地址"
-	CREATE_LOG_DIR_ERROR                     = "创建日志目录失败"
 	ZERO_LOGGER_INIT_FAIL                    = "初始化日志失败: %v"
 	ES_CLIENT_INIT_FAIL                      = "初始化 ES 客户端失败: %v"
 	RABBITMQ_CONNECTION_INIT_FAIL            = "初始化 RabbitMQ 连接失败: %v"
@@ -128,8 +109,6 @@ const (
 	ENSURE_CHAT_MESSAGES_TABLE_SUCCESS       = "已确保 chat_messages 表存在"
 
 	// 日志文件
-	OPEN_LOG_FILE_ERROR      = "打开日志文件失败"
-	WRITE_LOG_FILE_ERROR     = "写入日志文件失败"
 	LOGGER_GET_WORKDIR_ERROR = "获取工作目录失败: %w"
 	LOGGER_CREATE_DIR_ERROR  = "创建日志目录失败: %w"
 	LOGGER_OPEN_FILE_ERROR   = "打开日志文件失败: %v"
@@ -145,7 +124,6 @@ const (
 	GOZERO_LOG_SETUP_FAIL = "初始化 go-zero 日志配置失败: %v"
 
 	// 序列化/HTTP
-	JSON_SERIALIZATION_ERROR = "JSON序列化失败"
 	UNEXPECTED_STATUS_CODE   = "异常状态码: %d, 响应内容: %s"
 
 	// 服务发现/调用
@@ -155,10 +133,8 @@ const (
 	SERVICE_BUSINESS_ERROR_LOG             = "服务 %s 返回业务错误: code=%d, msg=%s"
 	DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE = "下游服务 %s 暂不可用，已触发熔断降级: %w"
 	GRAPH_ENHANCE_CALL_FAILED              = "图谱增强服务调用失败: %w"
-	GRAPH_ENHANCE_RESPONSE_FORMAT_ERROR    = "图谱增强响应格式异常"
 	GRAPH_ENHANCE_DEGRADE_LOG              = "图谱增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
 	VECTOR_ENHANCE_CALL_FAILED             = "向量增强服务调用失败: %w"
-	VECTOR_ENHANCE_RESPONSE_FORMAT_ERROR   = "向量增强响应格式异常"
 	VECTOR_ENHANCE_DEGRADE_LOG             = "向量增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
 	SCRIPT_PARAMS_FETCH_DEGRADE_LOG        = "获取脚本参数名映射失败，降级使用weightKey作为参数名: %v"
 
@@ -171,33 +147,24 @@ const (
 	SERIALIZE_API_LOG_FAIL_MESSAGE                = "序列化 API 日志消息失败: %v"
 	SEND_API_LOG_FAIL_MESSAGE                     = "发送 API 日志到队列失败: %v"
 	SEND_API_LOG_SUCCESS_MESSAGE                  = "API 日志已发送到队列"
-	SEND_API_LOG_RABBITMQ_NOT_INITIALIZED_MESSAGE = "RabbitMQ 未初始化，无法发送 API 日志"
-	API_LOG_SEND_FAIL_MESSAGE                     = "[API日志发送失败] 队列: api-log-queue, 错误: %v"
-	API_LOG_SEND_SUCCESS_MESSAGE_LONG             = "[API日志发送成功] 队列: api-log-queue, 消息: %s"
 
 	// ES同步
 	ES_CLIENT_NOT_INITIALIZED_MESSAGE                   = "ES 客户端未初始化，跳过 ES 同步"
-	BULK_FETCH_ARTICLE_RATINGS_COMPLETED_MESSAGE        = "批量获取 %d 篇文章的评分信息完成"
 	ES_BULK_SYNC_ERROR_MESSAGE                          = "ES批量同步错误"
 	ES_SYNC_HAS_FAILURES_MESSAGE                        = "ES同步有失败项"
 	ES_SYNC_FAILURE_DETAILS_MESSAGE                     = "ES同步失败: %+v"
-	ES_SYNC_BATCH_SUBMISSION_COMPLETED_MESSAGE          = "第 %d/%d 批提交完成，共 %d 条记录"
 	ES_SYNC_BATCH_COMPLETED_MESSAGE                     = "第 %d 批同步完成，新增 %d 条，更新 %d 条"
 	ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE               = "ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条"
 	TASK_SYNC_ES_STARTED_MESSAGE                        = "[定时任务] 开始同步文章到 ElasticSearch"
 	TASK_SYNC_ES_COMPLETED_MESSAGE                      = "[定时任务] 同步成功"
 	TASK_SYNC_ES_FAILED_MESSAGE                         = "[定时任务] 注册同步任务失败：%v"
 	TASK_SCHEDULER_STARTED_MESSAGE                      = "[定时任务] 已启动"
-	BULK_FETCH_ARTICLE_LIKES_COLLECTS_COMPLETED_MESSAGE = "批量获取 %d 篇文章的点赞和收藏信息完成"
-	BULK_FETCH_AUTHOR_FOLLOWS_COMPLETED_MESSAGE         = "批量获取 %d 个作者的关注信息完成"
 	NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE               = "没有已发布的文章可同步"
 	INDEX_CHECK_ERROR_MESSAGE                           = "索引判断错误"
 	INDEX_CREATION_ERROR_MESSAGE                        = "索引创建错误"
-	INDEX_DELETION_ERROR_MESSAGE                        = "索引删除错误"
 
 	// 内部令牌日志
 	INTERNAL_TOKEN_HEADER_MISSING_LOG   = "[内部令牌验证] 缺少 %s 请求头，路径: %s"
-	INTERNAL_TOKEN_EMPTY_LOG            = "[内部令牌验证] 令牌为空，路径: %s"
 	INTERNAL_TOKEN_VALIDATE_FAIL_LOG    = "[内部令牌验证] 令牌验证失败: %v, 路径: %s"
 	INTERNAL_TOKEN_EXPIRED_LOG          = "[内部令牌验证] 令牌已过期，路径: %s"
 	INTERNAL_TOKEN_SERVICE_MISMATCH_LOG = "[内部令牌验证] 服务名不匹配，期望: %s, 实际: %s, 路径: %s"
@@ -208,7 +175,6 @@ const (
 	STACK_ERROR_MESSAGE             = "堆栈错误信息: %v\n%s"
 	SAFE_GO_PANIC_RECOVERED_MESSAGE = "异步任务 %s 执行时发生 panic，已自动恢复: %v\n堆栈信息:\n%s"
 	UNIFIED_ERROR_RESPONSE_MESSAGE  = "服务器错误"
-	PARSE_ERR                       = "解析错误"
 	SEARCH_HISTORY_FAIL             = "获取搜索历史失败"
 	USER_ID_LESS                    = "缺少用户ID"
 
@@ -261,5 +227,4 @@ const (
 	SQL_TOOLS_PARAM_REQUIRED      = "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值"
 	SQL_TOOLS_TABLE_NOT_ALLOWED   = "安全限制：表 '%s' 不在白名单内"
 	SQL_TOOLS_QUERY_FAILED        = "执行SQL查询失败"
-	SQL_TOOLS_TABLE_SCHEMA_FAILED = "获取表结构信息失败"
 )
