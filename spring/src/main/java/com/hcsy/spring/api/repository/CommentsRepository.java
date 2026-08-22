@@ -1,6 +1,7 @@
 package com.hcsy.spring.api.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Modifying;
@@ -21,18 +22,10 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
 
     Flux<Comments> findByArticleIdOrderByCreateTimeDesc(Long articleId);
 
-    @Query("""
-        SELECT COUNT(*) FROM comments
-        WHERE article_id = :articleId AND user_id IN (SELECT id FROM users WHERE role = 'ai')
-        """)
-    Mono<Long> countAiCommentsByArticleId(@Param("articleId") Long articleId);
+    Mono<Long> countByArticleIdAndUserIdIn(@Param("articleId") Long articleId, @Param("userIds") List<Long> userIds);
 
     @Modifying
-    @Query("""
-        DELETE FROM comments
-        WHERE article_id = :articleId AND user_id IN (SELECT id FROM users WHERE role = 'ai')
-        """)
-    Mono<Integer> deleteAiCommentsByArticleId(@Param("articleId") Long articleId);
+    Mono<Integer> deleteByArticleIdAndUserIdIn(@Param("articleId") Long articleId, @Param("userIds") List<Long> userIds);
 
     @Query("""
         SELECT DATE(create_time) AS date, COUNT(*) AS count
@@ -47,8 +40,16 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
         @Param("lastDay") LocalDateTime lastDay);
 
     /**
-     * 查询 update_time > :after 的评论，用于Neo4j增量同步
+     * 查询最近 :limit 条评论（按 id 倒序），用于Neo4j同步全量抓取。
+     * 评论表数据量较大，一次性全量加载会耗时过长并拖垮同步任务。
      */
-    @Query("SELECT * FROM comments WHERE update_time > :after")
-    Flux<Comments> findByUpdateTimeAfter(@Param("after") LocalDateTime after);
+    @Query("SELECT * FROM comments ORDER BY id DESC LIMIT :limit")
+    Flux<Comments> findLatestForSync(@Param("limit") int limit);
+
+    /**
+     * 查询 update_time > :after 且不超过 :limit 条的评论，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM comments WHERE update_time > :after ORDER BY id DESC LIMIT :limit")
+    Flux<Comments> findLatestAfterForSync(
+        @Param("after") LocalDateTime after, @Param("limit") int limit);
 }

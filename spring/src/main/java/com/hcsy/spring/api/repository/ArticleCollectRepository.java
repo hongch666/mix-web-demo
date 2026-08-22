@@ -37,8 +37,16 @@ public interface ArticleCollectRepository extends ReactiveCrudRepository<Article
         @Param("lastDay") LocalDateTime lastDay);
 
     /**
-     * 查询 created_time > :after 的收藏记录，用于Neo4j增量同步
+     * 查询最近 :limit 条收藏记录（按 id 倒序），用于Neo4j同步全量抓取。
+     * 收藏表数据量可达百万级，一次性全量加载会耗时过长并拖垮同步任务。
      */
-    @Query("SELECT * FROM collects WHERE created_time > :after")
-    Flux<ArticleCollect> findByCreatedTimeAfter(@Param("after") LocalDateTime after);
+    @Query("SELECT * FROM collects ORDER BY id DESC LIMIT :limit")
+    Flux<ArticleCollect> findLatestForSync(@Param("limit") int limit);
+
+    /**
+     * 查询 created_time > :after 且不超过 :limit 条的收藏记录，用于Neo4j增量同步
+     */
+    @Query("SELECT * FROM collects WHERE created_time > :after ORDER BY id DESC LIMIT :limit")
+    Flux<ArticleCollect> findLatestAfterForSync(
+        @Param("after") LocalDateTime after, @Param("limit") int limit);
 }

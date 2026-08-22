@@ -17,6 +17,12 @@ import com.hcsy.spring.entity.po.User;
  */
 public final class Neo4jSyncMapUtil {
 
+    /**
+     * Neo4j 同步单次抓取上限。点赞/收藏等表数据量可达百万级，
+     * 全量同步仅取最近若干条，避免一次性加载全部导致耗时过长。
+     */
+    public static final int NEO4J_SYNC_LIMIT = 10_000;
+
     private Neo4jSyncMapUtil() {
     }
 

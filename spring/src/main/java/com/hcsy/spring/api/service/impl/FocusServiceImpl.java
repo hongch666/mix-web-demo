@@ -209,14 +209,16 @@ public class FocusServiceImpl implements FocusService {
 
     @Override
     public Mono<List<Map<String, Object>>> getNeo4jSyncFocus(String updatedAfter) {
+        // 关注表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
+        // 避免一次性加载全部导致耗时过长、连接/令牌超时。
         if (updatedAfter == null || updatedAfter.isBlank()) {
-            return focusRepository.findAll()
+            return focusRepository.findLatestForSync(Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
                 .map(Neo4jSyncMapUtil::focusToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return focusRepository.findByCreatedTimeAfter(after)
+        return focusRepository.findLatestAfterForSync(after, Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
             .map(Neo4jSyncMapUtil::focusToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);

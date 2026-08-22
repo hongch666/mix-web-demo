@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
@@ -90,13 +91,22 @@ public class ArticleController {
     @ApiLog("获取文章详情")
     public Mono<Result<ArticleWithCategoryVO>> getArticleById(@PathVariable Long id) {
         return articleService.getById(id)
-            .flatMap(article -> userService.getById(article.getUserId())
-                .map(user -> {
+            .flatMap(article -> {
+                Long userId = article.getUserId();
+                if (userId == null) {
+                    // 文章未关联作者（userId 为空）时直接返回，避免 userRepository.findById(null) 抛异常导致 500
                     ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
-                    vo.setUsername(user.getName());
-                    return Result.success(vo);
-                })
-                .defaultIfEmpty(Result.success(BeanUtil.copyProperties(article, ArticleWithCategoryVO.class))))
+                    vo.setUsername(Defaults.DEFAULT_USER);
+                    return Mono.just(Result.success(vo));
+                }
+                return userService.getById(userId)
+                    .map(user -> {
+                        ArticleWithCategoryVO vo = BeanUtil.copyProperties(article, ArticleWithCategoryVO.class);
+                        vo.setUsername(user == null ? Defaults.DEFAULT_USER : user.getName());
+                        return Result.success(vo);
+                    })
+                    .defaultIfEmpty(Result.success(BeanUtil.copyProperties(article, ArticleWithCategoryVO.class)));
+            })
             .defaultIfEmpty(Result.<ArticleWithCategoryVO>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE));
     }
 

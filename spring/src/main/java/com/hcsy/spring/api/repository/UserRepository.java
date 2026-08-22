@@ -49,8 +49,8 @@ public interface UserRepository extends ReactiveCrudRepository<User, Long> {
     Mono<Integer> updateAllPasswords(@Param("password") String password);
 
     /**
-     * 查询 updated_at > :after 的用户，用于Neo4j增量同步
+     * 查询 update_at > :after 的用户，用于Neo4j增量同步（user表列名为update_at）
      */
-    @Query("SELECT * FROM user WHERE updated_at > :after")
+    @Query("SELECT * FROM user WHERE update_at > :after")
     Flux<User> findByUpdateAtAfter(@Param("after") LocalDateTime after);
 }

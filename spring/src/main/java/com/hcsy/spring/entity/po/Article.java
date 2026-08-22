@@ -19,6 +19,8 @@ public class Article {
     private Integer status; // 0=草稿，1=已发布
     private Integer views; // 浏览量
     private Integer subCategoryId; // 子分类ID
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createAt;
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateAt;
 }

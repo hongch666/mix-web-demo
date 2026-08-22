@@ -209,59 +209,72 @@ public class CommentsServiceImpl implements CommentsService {
             return Mono.just(Map.of());
         }
         // 批量查询评论评分，按角色（ai/user）分组，与 gozero COMMENT_RATING_QUERY 逻辑一致
-        return Flux.fromIterable(articleIds)
-            .flatMap(articleId -> {
-                Criteria criteria = Criteria.where("article_id").is(articleId).and("star").greaterThan(0);
-                Query query = Query.query(criteria);
-                return entityTemplate.select(Comments.class).matching(query).all()
-                    .collectList()
-                    .flatMap(comments -> {
-                        if (comments.isEmpty()) {
-                            return Mono.just(Map.entry(articleId, Map.<String, CommentScoreDTO>of()));
+        // 优化：一次 in 查询拉取所有文章的相关评论，避免逐篇文章发起查询导致的 N+1 性能问题
+        Criteria criteria = Criteria.where("article_id").in(articleIds).and("star").greaterThan(0);
+        Query query = Query.query(criteria);
+        return entityTemplate.select(Comments.class).matching(query).all()
+            .collectList()
+            .flatMap(comments -> {
+                if (comments.isEmpty()) {
+                    return Mono.just(Map.of());
+                }
+                List<Long> userIds = comments.stream().map(Comments::getUserId).distinct().toList();
+                return userRepository.findAllById(userIds)
+                    .collectMap(User::getId, User::getRole)
+                    .map(userRoleMap -> {
+                        Map<Long, Map<String, CommentScoreDTO>> result = new HashMap<>();
+                        // 按文章、角色分组累加评分与数量
+                        for (Comments c : comments) {
+                            long aid = c.getArticleId();
+                            double star = c.getStar() != null ? c.getStar() : 0;
+                            String role = "ai".equals(userRoleMap.getOrDefault(c.getUserId(), "user")) ? "ai" : "user";
+                            Map<String, CommentScoreDTO> roleScores =
+                                result.computeIfAbsent(aid, k -> new HashMap<>());
+                            CommentScoreDTO dto = roleScores.get(role);
+                            if (dto == null) {
+                                dto = new CommentScoreDTO(0.0, 0L);
+                                roleScores.put(role, dto);
+                            }
+                            dto.setAverageScore(dto.getAverageScore() + star);
+                            dto.setCount(dto.getCount() + 1);
                         }
-                        List<Long> userIds = comments.stream().map(Comments::getUserId).distinct().toList();
-                        return userRepository.findAllById(userIds)
-                            .collectMap(User::getId, User::getRole)
-                            .map(userRoleMap -> {
-                                Map<String, CommentScoreDTO> roleScores = new HashMap<>();
-                                // 按角色分组计算平均分和数量
-                                double aiSum = 0;
-                                long aiCount = 0;
-                                double userSum = 0;
-                                long userCount = 0;
-                                for (Comments c : comments) {
-                                    String role = userRoleMap.getOrDefault(c.getUserId(), "user");
-                                    if ("ai".equals(role)) {
-                                        aiSum += c.getStar() != null ? c.getStar() : 0;
-                                        aiCount++;
-                                    } else {
-                                        userSum += c.getStar() != null ? c.getStar() : 0;
-                                        userCount++;
-                                    }
+                        // 计算各角色平均分
+                        for (Map<String, CommentScoreDTO> roleScores : result.values()) {
+                            for (CommentScoreDTO d : roleScores.values()) {
+                                if (d.getCount() > 0) {
+                                    d.setAverageScore(d.getAverageScore() / d.getCount());
                                 }
-                                if (aiCount > 0) {
-                                    roleScores.put("ai", new CommentScoreDTO(aiSum / aiCount, aiCount));
-                                }
-                                if (userCount > 0) {
-                                    roleScores.put("user", new CommentScoreDTO(userSum / userCount, userCount));
-                                }
-                                return Map.entry(articleId, roleScores);
-                            });
+                            }
+                        }
+                        return result;
                     });
-            })
-            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+            });
     }
 
     // ==================== 统计方法 ====================
 
     @Override
     public Mono<Long> getAiCommentsNumByArticleId(Long articleId) {
-        return commentsRepository.countAiCommentsByArticleId(articleId).defaultIfEmpty(0L);
+        return userRepository.findIdsByRole(Defaults.AI_ROLE)
+                .collectList()
+                .flatMap(aiUserIds -> {
+                    if (aiUserIds.isEmpty()) {
+                        return Mono.just(0L);
+                    }
+                    return commentsRepository.countByArticleIdAndUserIdIn(articleId, aiUserIds).defaultIfEmpty(0L);
+                });
     }
 
     @Override
     public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
-        return commentsRepository.deleteAiCommentsByArticleId(articleId).then();
+        return userRepository.findIdsByRole(Defaults.AI_ROLE)
+                .collectList()
+                .flatMap(aiUserIds -> {
+                    if (aiUserIds.isEmpty()) {
+                        return Mono.empty();
+                    }
+                    return commentsRepository.deleteByArticleIdAndUserIdIn(articleId, aiUserIds).then();
+                });
     }
 
     @Override
@@ -296,14 +309,16 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Override
     public Mono<List<Map<String, Object>>> getNeo4jSyncComments(String updatedAfter) {
+        // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
+        // 避免一次性加载全部导致耗时过长、连接/令牌超时。
         if (updatedAfter == null || updatedAfter.isBlank()) {
-            return commentsRepository.findAll()
+            return commentsRepository.findLatestForSync(Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
                 .map(Neo4jSyncMapUtil::commentToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return commentsRepository.findByUpdateTimeAfter(after)
+        return commentsRepository.findLatestAfterForSync(after, Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
             .map(Neo4jSyncMapUtil::commentToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
