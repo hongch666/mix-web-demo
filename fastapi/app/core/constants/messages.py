@@ -2068,6 +2068,8 @@ class Messages:
 
     NEO4J_INCREMENTAL_SKIP_CLEANUP_MESSAGE: str = "增量同步跳过全图清理：已删除数据的清理由每周全量同步兜底，避免用增量快照误删全图"
 
+    NEO4J_FULL_SYNC_SKIP_CLEANUP_MESSAGE: str = "全量同步跳过全图清理：以全量快照 MERGE 重建图，清理冗余且曾出现误删；历史脏数据通过清空 Neo4j + 全量同步重建兜底"
+
     NEO4J_PREDEFINED_QUERY_TOOL_NAME: str = "execute_knowledge_graph_query"
 
     NEO4J_QUERY_NAME_INPUT_DESC: str = "预定义查询名称，可选值: "

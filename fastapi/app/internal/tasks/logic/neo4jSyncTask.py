@@ -564,19 +564,8 @@ class KnowledgeGraphSyncService:
             Messages.NEO4J_LABEL_FOLLOW_RELATION,
         )
 
-        cleanup_result = await self._cleanup_deleted_graph_data(
-            users=users,
-            categories=categories,
-            sub_categories=sub_categories,
-            articles=articles,
-            likes=likes,
-            collects=collects,
-            comments=comments,
-            focus=focus,
-        )
-        result.update(
-            {f"cleanup_{key}": value for key, value in cleanup_result.items()}
-        )
+        # 全量同步以全量快照 MERGE 重建图，cleanup 冗余且有误删风险，历史脏数据通过清空重建兜底
+        self.logger.info(Messages.NEO4J_FULL_SYNC_SKIP_CLEANUP_MESSAGE)
 
         self.logger.info(Messages.NEO4J_SYNC_FULL_COMPLETE(result))
         return result
