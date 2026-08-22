@@ -19,13 +19,13 @@ interface RemoteArticle {
   id: number;
   title: string;
   content: string;
-  userId: number;
+  user_id: number;
   username: string;
   tags: string;
   status: number;
   views: number;
-  createAt: string | null;
-  updateAt: string | null;
+  create_at: string | null;
+  update_at: string | null;
 }
 
 /**
@@ -57,22 +57,26 @@ export class DownloadService {
     }
     const htmlContent: string = marked.parse(article.content || "");
 
-    // 并行获取用户信息
+    // 并行获取用户信息；文章未关联作者（user_id 为空）时跳过，避免调用 GET /users/null 触发 spring 路径变量类型转换 400
     const [userRes] = await Promise.all([
-      this.springClient.getUserById(article.userId),
+      article.user_id != null
+        ? this.springClient.getUserById(article.user_id)
+        : Promise.resolve(null),
     ]);
-    const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
+    const user: RemoteUser | null = userRes
+      ? SpringClientService.extractData<RemoteUser | null>(userRes)
+      : null;
 
     const data: Record<string, unknown> = {
       title: article.title,
       content: htmlContent,
       tags: article.tags,
       username: user?.name || Messages.UNKNOWN_USER,
-      create_at: article.createAt
-        ? dayjs(article.createAt).format("YYYY-MM-DD HH:mm:ss")
+      create_at: article.create_at
+        ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
         : "",
-      update_at: article.updateAt
-        ? dayjs(article.updateAt).format("YYYY-MM-DD HH:mm:ss")
+      update_at: article.update_at
+        ? dayjs(article.update_at).format("YYYY-MM-DD HH:mm:ss")
         : "",
     };
     const filePath: string | undefined =
@@ -122,10 +126,10 @@ export class DownloadService {
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.userId);
+    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.user_id);
     const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
     markdown += `\n**作者：** ${user?.name || "未知"}\n`;
-    markdown += `\n**创作时间：** ${article.createAt ? dayjs(article.createAt).format("YYYY-MM-DD HH:mm:ss") : ""}\n`;
+    markdown += `\n**创作时间：** ${article.create_at ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss") : ""}\n`;
     markdown += "\n---\n";
     markdown += article.content || "";
     // 保存到本地临时文件
@@ -157,7 +161,7 @@ export class DownloadService {
       );
     }
 
-    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.userId);
+    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.user_id);
     const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
 
     // 获取文件保存路径
@@ -211,8 +215,8 @@ export class DownloadService {
 
   // 生成 PDF 的 HTML 内容
   private generatePdfHtml(article: RemoteArticle, user: RemoteUser | { name: string }): string {
-    const createTime: string = article.createAt
-      ? dayjs(article.createAt).format("YYYY-MM-DD HH:mm:ss")
+    const createTime: string = article.create_at
+      ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
       : "";
 
     // 使用 marked 解析 Markdown 内容为 HTML

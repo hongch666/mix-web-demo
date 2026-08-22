@@ -151,13 +151,13 @@ export class GithubService {
         githubProfile.email || githubEmailFallback;
       const userResult: Record<string, unknown> =
         await this.springClientService.findOrCreateGithubUser({
-          githubId: String(githubProfile.id),
-          githubLogin: githubProfile.login,
-          githubName: githubProfile.name?.trim() || githubProfile.login,
-          githubUrl:
+          github_id: String(githubProfile.id),
+          github_login: githubProfile.login,
+          github_name: githubProfile.name?.trim() || githubProfile.login,
+          github_url:
             githubProfile.html_url ||
             `https://github.com/${githubProfile.login}`,
-          avatarUrl: githubProfile.avatar_url ?? null,
+          avatar_url: githubProfile.avatar_url ?? null,
           email: githubEmail,
         });
       const user: { id: number; name: string } =
