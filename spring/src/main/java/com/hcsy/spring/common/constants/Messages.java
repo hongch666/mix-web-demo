@@ -62,7 +62,6 @@ public class Messages {
     public static final String SYNC_ES_SUCCESS = "ES 同步完成";
     public static final String SYNC_VECTOR_SUCCESS = "Vector 同步完成";
     public static final String SYNC_ALL_SUCCESS = "所有同步任务执行完毕";
-    public static final String SYNC_TASK_RETRY = "同步任务重试，第%d次: %s";
     public static final String SYNC_PARALLEL_SUCCESS = "%s 并行同步完成，总耗时: %dms";
     public static final String SYNC_PARALLEL_FAIL = "%s 并行同步失败，耗时: %dms, 错误: %s";
 
@@ -74,17 +73,10 @@ public class Messages {
     public static final String NEO4J_SYNC_CALL_EMPTY_MESSAGE = "Neo4j 同步调用返回空结果，方法: %s，操作: %s";
 
     // ===== 缓存清理 =====
-    public static final String CATEGORY_CACHE = "缓存未命中，从数据库加载 category";
-    public static final String CATEGORY_CACHE_PAGE = "缓存未命中，从数据库加载分页数据";
-    public static final String CATEGORY_CACHE_EVICT_ALL_FAILED = "分类缓存批量清除失败: %s";
-    public static final String CATEGORY_CACHE_EVICT_FAILED = "分类缓存清除失败，key=%s: %s";
     public static final String CACHE_WRITE_FAILED = "缓存写入失败，key=%s: %s";
     public static final String CACHE_DESERIALIZE_FAILED = "缓存反序列化失败，key=%s: %s";
     public static final String CACHE_READ_FAILED = "缓存读取失败，key=%s: %s";
     public static final String CACHE_L2_CLEAR_FAILED = "L2缓存清除失败: %s";
-    public static final String USER_LIST_CACHE_READ_FAILED = "用户列表缓存读取失败: %s";
-    public static final String USER_LIST_CACHE_WRITE_FAILED = "用户列表缓存写入失败: %s";
-    public static final String USER_LIST_CACHE_EVICT_FAILED = "用户列表缓存清除失败: %s";
     public static final String CACHE_INVALIDATION_PUBLISH_FAILED = "发布本地缓存失效消息失败，频道=%s: %s";
     public static final String CACHE_INVALIDATION_SUBSCRIBE_FAILED = "订阅本地缓存失效消息失败，频道=%s: %s";
     public static final String CLEAR_CACHE_SUCCESS = "成功清除分析相关缓存";
@@ -179,7 +171,6 @@ public class Messages {
     public static final String SQL_PROXY_LIMIT_EXCEEDED = "安全限制：LIMIT超过最大限制100";
     public static final String SQL_PROXY_MULTIPLE_STATEMENTS = "安全限制：禁止执行多条SQL语句";
     public static final String SQL_PROXY_PARAM_REQUIRED = "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值";
-    public static final String SQL_PROXY_QUERY_TIMEOUT = "SQL查询超时（10秒）";
     public static final String SQL_PROXY_TABLE_SCHEMA_ERROR = "获取表结构信息失败: %s";
     public static final String SQL_PROXY_QUERY_ERROR = "执行SQL查询失败: %s";
 
@@ -199,7 +190,6 @@ public class Messages {
     public static final String ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE = "分析缓存清理服务暂时不可用，已触发降级";
     public static final String NEO4J_SYNC_SERVICE_UNAVAILABLE = "Neo4j同步服务暂时不可用，已触发降级";
     public static final String ES_SERVICE_UNAVAILABLE = "ES 同步服务暂时不可用，已触发降级";
-    public static final String NESTJS_EMAIL_SERVICE_UNAVAILABLE = "NestJS 邮件服务调用触发降级: ";
     public static final String NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG = "邮件服务暂时不可用，请稍后再试";
 
     // ===== AI 初始化 =====
