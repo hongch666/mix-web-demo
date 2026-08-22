@@ -28,6 +28,35 @@ type esSyncStats struct {
 	Deleted int
 }
 
+// normalizeESDate 将日期统一格式化为 ES mapping 要求的 yyyy-MM-dd HH:mm:ss。
+// Spring 默认以 ISO 格式返回 LocalDateTime（2025-07-16T23:00:50），与 ES 字段格式不符，
+// 此处兜底转换，兼容 ISO（带 T）与目标（空格）两种输入，避免 date_time_parse_exception。
+func normalizeESDate(raw string) string {
+	if raw == "" {
+		return raw
+	}
+	for _, layout := range []string{
+		"2006-01-02T15:04:05",
+		time.RFC3339,
+		constants.DateTimeFormat,
+	} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t.Format(constants.DateTimeFormat)
+		}
+	}
+	return raw
+}
+
+// toESDatePtr 将日期字符串归一化为 ES 所需的 *string 指针。空串返回 nil，
+// 让 olivere 不写入该字段，避免 ES date 类型收到空串报 cannot parse empty date。
+func toESDatePtr(raw string) *string {
+	formatted := normalizeESDate(raw)
+	if formatted == "" {
+		return nil
+	}
+	return &formatted
+}
+
 // SyncArticlesToES 增量同步文章到 ElasticSearch
 func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	if svcCtx.ESClient == nil {
@@ -306,8 +335,8 @@ func buildArticleESBatchFromRemote(
 			AuthorFollowCount: int(authorFollowCounts[article.UserID]),
 			CategoryName:      categoryMap[int64(article.SubCategoryID)],
 			SubCategoryName:   subCategoryMap[int64(article.SubCategoryID)],
-			CreateAt:          article.CreateAt,
-			UpdateAt:          article.UpdateAt,
+			CreateAt:          toESDatePtr(article.CreateAt),
+			UpdateAt:          toESDatePtr(article.UpdateAt),
 			AIScore:           aiScore,
 			UserScore:         userScore,
 			AICommentCount:    aiCount,

@@ -40,8 +40,8 @@ type ArticleES struct {
 	AuthorFollowCount int     `json:"author_follow_count"`
 	CategoryName      string  `json:"category_name"`
 	SubCategoryName   string  `json:"sub_category_name"`
-	CreateAt          string  `json:"create_at"`
-	UpdateAt          string  `json:"update_at"`
+	CreateAt          *string `json:"create_at"`
+	UpdateAt          *string `json:"update_at"`
 	AIScore           float64 `json:"ai_score"`
 	UserScore         float64 `json:"user_score"`
 	AICommentCount    int     `json:"ai_comment_count"`

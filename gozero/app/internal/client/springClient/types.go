@@ -30,17 +30,17 @@ type ArticleVO struct {
 	ID              int64  `json:"id"`
 	Title           string `json:"title"`
 	Content         string `json:"content"`
-	UserID          int64  `json:"userId"`
+	UserID          int64  `json:"user_id"`
 	Username        string `json:"username"`
 	Tags            string `json:"tags"`
 	Status          int    `json:"status"`
 	Views           int    `json:"views"`
-	SubCategoryID   int    `json:"subCategoryId"`
-	SubCategoryName string `json:"subCategoryName"`
-	CategoryID      int64  `json:"categoryId"`
-	CategoryName    string `json:"categoryName"`
-	CreateAt        string `json:"createAt"`
-	UpdateAt        string `json:"updateAt"`
+	SubCategoryID   int    `json:"sub_category_id"`
+	SubCategoryName string `json:"sub_category_name"`
+	CategoryID      int64  `json:"category_id"`
+	CategoryName    string `json:"category_name"`
+	CreateAt        string `json:"create_at"`
+	UpdateAt        string `json:"update_at"`
 }
 
 // UserVO 用户视图对象
@@ -54,7 +54,7 @@ type UserVO struct {
 
 // CommentScoreVO 评论评分
 type CommentScoreVO struct {
-	AverageScore float64 `json:"averageScore"`
+	AverageScore float64 `json:"average_score"`
 	Count        int64   `json:"count"`
 }
 
@@ -68,13 +68,13 @@ type CategoryVO struct {
 type SubCategoryVO struct {
 	ID         int64  `json:"id"`
 	Name       string `json:"name"`
-	CategoryID int64  `json:"categoryId"`
+	CategoryID int64  `json:"category_id"`
 }
 
 // PageVO 分页视图对象
 type PageVO[T any] struct {
 	Total   int64 `json:"total"`
-	Records []T   `json:"records"`
+	Records []T   `json:"list"`
 }
 
 // ParseArticlePage 解析分页文章列表

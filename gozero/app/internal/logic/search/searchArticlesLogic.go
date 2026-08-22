@@ -142,8 +142,8 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 			AuthorFollowCount: article.AuthorFollowCount,
 			CategoryName:      article.CategoryName,
 			SubCategoryName:   article.SubCategoryName,
-			CreateAt:          article.CreateAt,
-			UpdateAt:          article.UpdateAt,
+			CreateAt:          derefString(article.CreateAt),
+			UpdateAt:          derefString(article.UpdateAt),
 			AiScore:           article.AIScore,
 			UserScore:         article.UserScore,
 			AiCommentCount:    article.AICommentCount,
@@ -239,6 +239,14 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	}
 
 	return
+}
+
+// derefString 将 *string 安全解引用为 string，nil 时返回空串。
+func derefString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // fetchVectorEnhance 调用向量增强
