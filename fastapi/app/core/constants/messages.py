@@ -823,6 +823,10 @@ class Messages:
         return f"[知识图谱] 已清理 {label}: {deleted_count}"
 
     @staticmethod
+    def NEO4J_CLEANUP_SKIP_EMPTY(label: str) -> str:
+        return f"[知识图谱] 跳过清理 {label}: 待保留键集合为空，不执行删除（增量同步窗口内无变更或上游快照为空，已避免误删全图）"
+
+    @staticmethod
     def NEO4J_SYNC_TIME_SAVED(sync_time: str) -> str:
         return f"[知识图谱] 已保存同步时间戳到 Redis: {sync_time}"
 
@@ -2061,6 +2065,8 @@ class Messages:
     )
 
     NEO4J_NO_INCREMENTAL_DATA_MESSAGE: str = "没有检测到需要同步的 Neo4j 增量数据"
+
+    NEO4J_INCREMENTAL_SKIP_CLEANUP_MESSAGE: str = "增量同步跳过全图清理：已删除数据的清理由每周全量同步兜底，避免用增量快照误删全图"
 
     NEO4J_PREDEFINED_QUERY_TOOL_NAME: str = "execute_knowledge_graph_query"
 

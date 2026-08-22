@@ -212,7 +212,7 @@ async def _export_article_vectors_to_postgres(
             page_size: int = 100
             while True:
                 page_result: Any = await spring_client.get_published_articles(
-                    page=page, size=page_size
+                    page=page, size=page_size, timeout=30
                 )
                 records: List[Any] = (
                     page_result.get("records", [])
@@ -419,7 +419,7 @@ async def _initialize_article_content_hash_cache(
             page_size: int = 100
             while True:
                 page_result: Any = await spring_client.get_published_articles(
-                    page=page, size=page_size
+                    page=page, size=page_size, timeout=30
                 )
                 records: List[Any] = (
                     page_result.get("records", [])

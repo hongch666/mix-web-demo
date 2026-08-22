@@ -16,7 +16,7 @@ from app.internal.tasks import (
     update_analyze_caches_async,
 )
 
-from fastapi import APIRouter, BackgroundTasks, Request
+from fastapi import APIRouter, BackgroundTasks, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/task",
@@ -110,15 +110,20 @@ async def task_clear_analyze_caches(
 @router.post(
     "/sync-neo4j",
     summary="手动触发同步 MySQL 到 Neo4j 知识图谱任务",
-    description="手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务",
+    description="手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务。"
+    "force_full=true 时执行全量同步（含安全清理，用于兜底清理 MySQL 已删除数据）。",
     response_model=ApiResponse,
 )
 @requireInternalToken
 @log("手动触发同步 MySQL 到 Neo4j 知识图谱任务")
 async def task_sync_neo4j(
-    request: Request, background_tasks: BackgroundTasks
+    request: Request,
+    background_tasks: BackgroundTasks,
+    force_full: bool = Query(
+        default=False, description="是否全量同步（含清理），默认增量同步"
+    ),
 ) -> ApiResponse:
     """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口"""
 
-    background_tasks.add_task(sync_mysql_to_neo4j_async)
+    background_tasks.add_task(sync_mysql_to_neo4j_async, force_full=force_full)
     return success()

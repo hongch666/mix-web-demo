@@ -54,15 +54,15 @@ class GenerateService:
     def _build_comment_data(
         article_id: int, user_id: int, content: str, star: float
     ) -> Dict[str, Any]:
-        """构造Spring评论接口请求数据"""
+        """构造Spring评论接口请求数据（Spring使用SNAKE_CASE反序列化，键名需下划线）"""
         now = datetime.now().isoformat()
         return {
-            "articleId": article_id,
-            "userId": user_id,
+            "article_id": article_id,
+            "user_id": user_id,
             "content": content,
             "star": star,
-            "createTime": now,
-            "updateTime": now,
+            "create_time": now,
+            "update_time": now,
         }
 
     async def generate_ai_comments(self, article_id: int) -> None:

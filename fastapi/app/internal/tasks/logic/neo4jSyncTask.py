@@ -13,6 +13,14 @@ from app.internal.clients import SpringClient
 class KnowledgeGraphSyncService:
     """知识图谱同步服务：将 MySQL 业务数据同步到 Neo4j"""
 
+    # 同步抓取专用超时（秒）：全量数据行较多，且需与并发批量评分/文章列表等
+    # 任务抢占 spring R2DBC 连接池，故单独使用较大超时，避免命中默认 5s 读取超时。
+    SYNC_FETCH_TIMEOUT: int = 30
+
+    # 清理分批大小：每批单独提交事务，避免单事务 DELETE 过多关系击穿
+    # Neo4j 事务内存上限（dbms.memory.transaction.total.max）。
+    CLEANUP_BATCH_SIZE: int = 1000
+
     def __init__(self) -> None:
         self.logger = Logger
         self.client = get_neo4j_client()
@@ -61,6 +69,15 @@ class KnowledgeGraphSyncService:
     ) -> Dict[str, List[Dict[str, Any]]]:
         """通过Spring各模块独立接口并行获取业务表数据，避免直连MySQL。"""
         updated_after = last_sync_time.isoformat() if last_sync_time else None
+        # 同步类抓取返回数据量可能较大（全量几千行），使用专用大超时避免命中
+        # 远程调用默认 5s 读取超时；与并发批量评分/文章列表等任务抢占 spring
+        # R2DBC 连接池时尤为必要。
+        fetch_timeout = self.SYNC_FETCH_TIMEOUT
+        # 分类/子分类是基础维度，数据量小（通常数十~数百条）且极少变更。
+        # 增量同步窗口内它们常无更新，若走 updated_after 会导致快照为空、
+        # 基础节点永远无法写入 Neo4j。故始终全量抓取，确保基础维度完整。
+        categories_after = None
+        sub_categories_after = None
         (
             users,
             categories,
@@ -71,14 +88,14 @@ class KnowledgeGraphSyncService:
             comments,
             focus,
         ) = await asyncio.gather(
-            self.spring_client.get_neo4j_sync_users(updated_after),
-            self.spring_client.get_neo4j_sync_categories(updated_after),
-            self.spring_client.get_neo4j_sync_sub_categories(updated_after),
-            self.spring_client.get_neo4j_sync_articles(updated_after),
-            self.spring_client.get_neo4j_sync_likes(updated_after),
-            self.spring_client.get_neo4j_sync_collects(updated_after),
-            self.spring_client.get_neo4j_sync_comments(updated_after),
-            self.spring_client.get_neo4j_sync_focus(updated_after),
+            self.spring_client.get_neo4j_sync_users(updated_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_categories(categories_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_sub_categories(sub_categories_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_articles(updated_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_likes(updated_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_collects(updated_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_comments(updated_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_focus(updated_after, timeout=fetch_timeout),
         )
         return {
             "users": users,
@@ -222,10 +239,35 @@ class KnowledgeGraphSyncService:
     async def _cleanup_write(
         self, cypher: str, params: Dict[str, Any], label: str
     ) -> int:
-        summary = await self.client.run_write_query(cypher, params)
-        deleted_count = self._extract_deleted_count(summary)
-        self.logger.info(Messages.NEO4J_SYNC_CLEANUP(label, deleted_count))
-        return deleted_count
+        # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`
+        # 会等价于 `WHERE true`，从而误删图中全部对应关系/节点。这通常意味着
+        # 上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除。
+        keep_keys = params.get("keys") or params.get("ids") or params.get("names")
+        if not keep_keys:
+            self.logger.warning(
+                Messages.NEO4J_CLEANUP_SKIP_EMPTY(label)
+            )
+            return 0
+        total_deleted = 0
+        if "keys" in params:
+            # 关系类清理（`DELETE r`，通过 `WHERE NOT key IN $keys` 删关系）：
+            # 可分批执行，每批单独提交事务，避免单事务内删除过多关系击穿
+            # Neo4j 事务内存上限（dbms.memory.transaction.total.max）。
+            batch_size = self.CLEANUP_BATCH_SIZE
+            for start in range(0, len(keep_keys), batch_size):
+                batch = keep_keys[start : start + batch_size]
+                batch_params = {**params, "keys": batch}
+                summary = await self.client.run_write_query(cypher, batch_params)
+                total_deleted += self._extract_deleted_count(summary)
+        else:
+            # 节点类清理（`DETACH DELETE n`，通过 `WHERE NOT n.id IN $ids` 删节点）：
+            # 语义是"删除不在该集合中的所有节点"。若分批切小 $ids，每批都会
+            # 误删集合之外的全部节点（灾难+OOM）。因此必须一次传入完整集合，
+            # 确保只删除真正不存在的节点。若集合为空则由上面的保护直接跳过。
+            summary = await self.client.run_write_query(cypher, params)
+            total_deleted += self._extract_deleted_count(summary)
+        self.logger.info(Messages.NEO4J_SYNC_CLEANUP(label, total_deleted))
+        return total_deleted
 
     async def _has_graph_data(self) -> bool:
         records = await self.client.run_query(Messages.NEO4J_GRAPH_COUNT_CYPHER)
@@ -248,46 +290,24 @@ class KnowledgeGraphSyncService:
         comments: Optional[List[Dict[str, Any]]] = None,
         focus: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, int]:
-        """按 MySQL 当前完整快照删除 Neo4j 中已经不存在的节点和关系"""
+        """按 MySQL 当前完整快照删除 Neo4j 中已经不存在的节点和关系
+
+        注意：调用方（sync_all / sync_incremental）已经在第一阶段抓取并归一化了
+        完整快照，这里必须复用传入的归一化数据，禁止再次调用 _fetch_snapshot，
+        否则会触发第二次 8 并发远程抓取，叠加占用 spring R2DBC 连接池导致超时。
+        """
         self.logger.info(Messages.NEO4J_CLEANUP_DELETED_DATA_START_MESSAGE)
 
-        snapshot = await self._fetch_snapshot()
-        fetched_data = (
-            self._normalize_users(snapshot.get("users", []))
-            if users is None
-            else users,
-            self._normalize_categories(snapshot.get("categories", []))
-            if categories is None
-            else categories,
-            self._normalize_sub_categories(snapshot.get("sub_categories", []))
-            if sub_categories is None
-            else sub_categories,
-            self._normalize_articles(snapshot.get("articles", []))
-            if articles is None
-            else articles,
-            self._normalize_likes(snapshot.get("likes", []))
-            if likes is None
-            else likes,
-            self._normalize_collects(snapshot.get("collects", []))
-            if collects is None
-            else collects,
-            self._normalize_comments(snapshot.get("comments", []))
-            if comments is None
-            else comments,
-            self._normalize_focus(snapshot.get("focus", []))
-            if focus is None
-            else focus,
-        )
-        (
-            users,
-            categories,
-            sub_categories,
-            articles,
-            likes,
-            collects,
-            comments,
-            focus,
-        ) = fetched_data
+        # 直接复用调用方传入的归一化快照（同步任务第一阶段已抓取并归一化），
+        # 不再二次远程抓取，避免并发占用 spring R2DBC 连接池导致超时。
+        users = users or []
+        categories = categories or []
+        sub_categories = sub_categories or []
+        articles = articles or []
+        likes = likes or []
+        collects = collects or []
+        comments = comments or []
+        focus = focus or []
         article_tag_relations = self._build_article_tag_relations(articles)
 
         cleanup_result: Dict[str, int] = {}
@@ -690,10 +710,13 @@ class KnowledgeGraphSyncService:
             Messages.NEO4J_LABEL_FOLLOW_RELATION,
         )
 
-        cleanup_result = await self._cleanup_deleted_graph_data()
-        result.update(
-            {f"cleanup_{key}": value for key, value in cleanup_result.items()}
-        )
+        # 增量同步不做"按快照删全图"的清理：增量快照仅含窗口内变更记录，
+        # 不含已删除的记录，无法安全判断哪些节点/关系应从图中移除。若用
+        # 增量快照执行清理（如 articles 仅 1 篇时 `WHERE NOT id IN [1篇]`），
+        # 会误删全图绝大部分节点并击穿 Neo4j 事务内存上限（OOM）。
+        # 全图清理仅由全量同步 sync_all 在安全快照下执行；已删除数据的清理
+        # 由周期性全量同步兜底。
+        self.logger.info(Messages.NEO4J_INCREMENTAL_SKIP_CLEANUP_MESSAGE)
 
         if not any(result.values()):
             self.logger.info(Messages.NEO4J_NO_INCREMENTAL_DATA_MESSAGE)
@@ -729,15 +752,24 @@ async def _get_last_sync_time() -> Optional[datetime]:
     return None
 
 
-async def _sync_mysql_to_neo4j() -> Dict[str, int]:
-    """同步 MySQL 数据到 Neo4j"""
+async def _sync_mysql_to_neo4j(force_full: bool = False) -> Dict[str, int]:
+    """同步 MySQL 数据到 Neo4j
+
+    force_full=False（默认，增量同步）：仅同步窗口内变更的数据，不做全图清理，
+        避免用增量快照误删全图（见 sync_incremental 说明）。
+    force_full=True（全量同步）：拉取全量快照并安全执行清理，用于周期性兜底
+        清理 MySQL 中已删除的记录。
+    """
     sync_start_time = datetime.now()
     Logger.info(Messages.NEO4J_TASK_START_MESSAGE)
 
     try:
         sync_service = get_knowledge_graph_sync_service()
-        last_sync_time = await _get_last_sync_time()
-        result = await sync_service.sync_incremental(last_sync_time)
+        if force_full:
+            result = await sync_service.sync_all()
+        else:
+            last_sync_time = await _get_last_sync_time()
+            result = await sync_service.sync_incremental(last_sync_time)
         if any(result.values()):
             await _save_sync_time(sync_start_time)
         Logger.info(Messages.NEO4J_TASK_FINISH_MESSAGE(result))
@@ -747,8 +779,11 @@ async def _sync_mysql_to_neo4j() -> Dict[str, int]:
         return {}
 
 
-async def sync_mysql_to_neo4j_async() -> None:
-    """同步 MySQL 数据到 Neo4j，使用 Redis 分布式锁避免多实例重复执行"""
+async def sync_mysql_to_neo4j_async(force_full: bool = False) -> None:
+    """同步 MySQL 数据到 Neo4j，使用 Redis 分布式锁避免多实例重复执行
+
+    force_full=True 时执行全量同步（含安全清理），用于周期性兜底清理已删除数据。
+    """
     lock_key: str = RedisKeys.LOCK_TASK_NEO4J_SYNC
     lock_expire: int = RedisKeys.LOCK_TASK_NEO4J_SYNC_EXPIRE
 
@@ -760,7 +795,7 @@ async def sync_mysql_to_neo4j_async() -> None:
     Logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE(lock_key))
 
     try:
-        await _sync_mysql_to_neo4j()
+        await _sync_mysql_to_neo4j(force_full=force_full)
     finally:
         released = await redis_client.unlock(lock_key, lock_value)
         if released:

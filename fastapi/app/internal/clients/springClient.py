@@ -45,7 +45,7 @@ class SpringClient:
         return result.get("data", [])
 
     async def get_comment_scores_by_article_ids(
-        self, ids: List[int]
+        self, ids: List[int], timeout: Optional[int] = None
     ) -> Dict[int, Dict[str, Any]]:
         """批量查询评论评分（按角色分组）"""
         if not ids:
@@ -55,6 +55,7 @@ class SpringClient:
             path="/comments/scores/batch",
             method="POST",
             json={"ids": ids},
+            timeout=timeout,
         )
         return result.get("data", {})
 
@@ -148,7 +149,7 @@ class SpringClient:
         return result.get("data")
 
     async def get_published_articles(
-        self, page: int = 1, size: int = 10
+        self, page: int = 1, size: int = 10, timeout: Optional[int] = None
     ) -> Dict[str, Any]:
         """分页获取已发布文章列表"""
         result: Dict[str, Any] = await call_remote_service(
@@ -156,8 +157,15 @@ class SpringClient:
             path="/articles/list",
             method="GET",
             params={"page": page, "size": size},
+            timeout=timeout,
         )
-        return result.get("data", {"total": 0, "records": []})
+        data: Dict[str, Any] = result.get("data") or {}
+        # spring 的 PageVO 序列化后字段为 total/list；统一归一化为
+        # {total, records}，方便各调用方（vector/neo4j 同步等）直接读取。
+        return {
+            "total": int(data.get("total") or 0),
+            "records": data.get("list") or data.get("records") or [],
+        }
 
     # ==================== 统计接口 ====================
 
@@ -301,7 +309,7 @@ class SpringClient:
             service_name=self.SERVICE_NAME,
             path=f"/focus/statistics/followers-in-period/{user_id}",
             method="GET",
-            params={"startDate": start_date, "endDate": end_date},
+            params={"start_date": start_date, "end_date": end_date},
         )
         return result.get("data", 0)
 
@@ -313,7 +321,7 @@ class SpringClient:
             service_name=self.SERVICE_NAME,
             path=f"/focus/statistics/daily-follows/{user_id}",
             method="GET",
-            params={"startDate": start_date, "endDate": end_date},
+            params={"start_date": start_date, "end_date": end_date},
         )
         return result.get("data", {"daily_follows": []})
 
@@ -376,106 +384,114 @@ class SpringClient:
         return result.get("data", {})
 
     async def get_neo4j_sync_users(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取用户表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/users/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_categories(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取分类表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/category/internal/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_sub_categories(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取子分类表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/category/internal/sub/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_articles(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取文章表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/articles/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_likes(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取点赞表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/likes/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_collects(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取收藏表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/collects/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_comments(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取评论表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/comments/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
     async def get_neo4j_sync_focus(
-        self, updated_after: Optional[str] = None
+        self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """获取关注表数据用于Neo4j同步"""
-        params = {"updatedAfter": updated_after} if updated_after else None
+        params = {"updated_after": updated_after} if updated_after else None
         result: Dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/focus/neo4j-sync",
             method="GET",
             params=params,
+            timeout=timeout,
         )
         return result.get("data", [])
 
