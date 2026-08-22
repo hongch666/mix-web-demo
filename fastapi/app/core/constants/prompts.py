@@ -13,14 +13,14 @@ class Prompts:
         规则：
         1. 需要查询数据时优先使用工具，不要凭空猜测。
         2. 系统数据分布在多个服务的数据库，SQL 工具按服务划分，使用前先确认数据属于哪个服务：
-           - FastAPI 数据（AI 对话历史 ai_history）用 fastapi 工具
+           - AI 对话历史数据 (ai_history) 用 fastapi 工具
            - 业务数据（文章、用户、评论、点赞、收藏、关注、分类等）用 spring 工具
-           - 设置数据（用户表格列设置 user_table_settings）用 nestjs 工具
-           - 消息数据（聊天记录 chat_messages）用 gozero 工具
+           - 用户列设置数据（用户表格列设置 user_table_settings）用 nestjs 工具
+           - 用户对话消息数据（聊天记录 chat_messages）用 gozero 工具
         3. 查询前先用对应的 get_*_table_schema 工具确认表结构，再执行查询。
         4. 执行 SQL 必须使用参数化占位符（:paramName）并包含 LIMIT（最大 100），禁止拼接值。
         5. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
-        6. MongoDB 工具只用于日志相关查询，查询前先确认 collection 名称。
+        6. MongoDB 工具只用于日志相关查询(文章日志/API日志)，查询前先确认 collection 名称。
         7. 最终回答必须使用中文，简洁明确。
 
         当前问题：{input}
@@ -91,13 +91,20 @@ class Prompts:
     分析用户问题，判断应该使用哪种方式处理：
 
     1. **database_query** - 需要查询数据库统计数据、获取记录列表、数据分析时选择
-    - 关键词：多少、统计、列表、查询、总数、排行、最新、用户信息等
+    - 关键词：多少、统计、列表、查询、总数、排行、最新、用户信息、聊天记录、对话历史等
+    - 系统数据分布在多个服务，SQL工具按服务划分：
+        * Spring 业务数据：文章、用户、评论、点赞、收藏、关注、分类等
+        * FastAPI 本地数据：AI对话历史(ai_history)
+        * NestJS 设置数据：用户表格列设置(user_table_settings)
+        * GoZero 消息数据：聊天消息(chat_messages)
     - 示例：
         * "有多少篇文章？"
         * "最近发布的10篇文章"
-        * "user_id为123的用户信息"
         * "各分类的文章数量统计"
         * "浏览量最高的文章"
+        * "查询user_id为123的AI对话记录"
+        * "用户最近的聊天消息有哪些"
+        * "查看用户的表格列设置"
 
     2. **article_search** - 需要搜索文章内容、技术知识、教程等时选择
     - 关键词：如何、怎么做、教程、学习、介绍、什么是、原理等
@@ -152,24 +159,6 @@ class Prompts:
     参数必须是 JSON 字符串，支持 collection_name、filter_dict、limit 三个字段。
     参数示例: {"collection_name": "api_logs", "limit": 10}使用场景: 已明确 collection 后，按条件查询 API 日志、错误日志、操作日志等数据时使用。
     如果日志量可能较大，必须加上时间范围、用户范围、状态条件或 limit。
-    """
-
-    # ===== SQL 工具描述 =====
-    SQL_TABLE_TOOL_DESC: str = """获取MySQL数据库表结构信息。
-    如果提供表名参数，返回该表的详细结构（列名、类型、主键、索引等）。
-    如果不提供参数，返回所有表的列表和基本信息。
-    参数格式: 表名(字符串)，如 'articles' 或 'users'，留空获取所有表。
-    使用场景: 需要了解数据库结构、查询某表有哪些字段时使用。
-    """
-
-    SQL_QUERY_TOOL_DESC: str = """执行只读SQL查询并返回结果。
-    只允许单条只读语句，例如 SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN。
-    不允许 INSERT/UPDATE/DELETE/DDL/锁表/多语句 等任何修改或高风险操作。
-    返回最多20行数据，以表格形式展示。
-    参数格式: 完整的只读SQL语句。
-    示例: "SELECT * FROM articles WHERE status=1 LIMIT 10"
-    使用场景: 需要查询系统数据、业务数据、统计分析、获取具体记录时使用。
-    如果涉及大表或可能返回大量数据，必须主动加上时间范围、用户范围、状态条件或 LIMIT。
     """
 
     # ===== FastAPI 本地 SQL 工具描述 =====
