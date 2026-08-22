@@ -1,19 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { InjectConnection } from "@nestjs/mongoose";
-import type { Connection } from "mongoose/types/connection";
-import { ErrorIds, HttpCode, Messages } from "src/common/constants";
+import type { Connection } from "mongoose";
+import { ErrorIds, HttpCode, Messages, MongoTools } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-
-// 允许查询的 collection 白名单，仅开放日志相关集合
-const ALLOWED_COLLECTIONS = new Set<string>(["apilogs", "articlelogs"]);
-
-// 禁止使用的 MongoDB 危险操作符，防止任意代码执行或高开销查询
-const FORBIDDEN_OPERATORS = new Set<string>([
-  "$where",
-  "$function",
-  "$accumulator",
-  "$expr",
-]);
 
 interface MongoCollectionInfo {
   name: string;
@@ -37,7 +26,7 @@ export class MongoToolsService {
     const collections = await this.connection.db!.listCollections().toArray();
 
     for (const col of collections) {
-      if (!ALLOWED_COLLECTIONS.has(col.name)) {
+      if (!MongoTools.ALLOWED_COLLECTIONS.has(col.name)) {
         continue;
       }
       const collection = this.connection.db!.collection(col.name);
@@ -65,7 +54,7 @@ export class MongoToolsService {
     filter: Record<string, unknown>,
     limit: number,
   ): Promise<unknown[]> {
-    if (!ALLOWED_COLLECTIONS.has(collectionName)) {
+    if (!MongoTools.ALLOWED_COLLECTIONS.has(collectionName)) {
       throw new BusinessException(
         Messages.MONGO_COLLECTION_NOT_ALLOWED_MSG(collectionName),
         HttpCode.BAD_REQUEST,
@@ -97,7 +86,7 @@ export class MongoToolsService {
         for (const [key, value] of Object.entries(
           obj as Record<string, unknown>,
         )) {
-          if (key.startsWith("$") && FORBIDDEN_OPERATORS.has(key)) {
+          if (key.startsWith("$") && MongoTools.FORBIDDEN_OPERATORS.has(key)) {
             throw new BusinessException(
               Messages.MONGO_FORBIDDEN_OPERATOR_MSG(key),
               HttpCode.BAD_REQUEST,
