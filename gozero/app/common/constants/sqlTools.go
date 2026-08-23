@@ -64,10 +64,9 @@ type SqlToolsColumnInfo struct {
 var SqlToolsTableSchemas = map[string][]SqlToolsColumnInfo{
 	"chat_messages": {
 		{Name: "id", Type: "bigint(20) unsigned", Key: "PRI", Comment: "主键ID"},
-		{Name: "sender_id", Type: "varchar(64)", Key: "MUL", Comment: "发送者ID"},
-		{Name: "receiver_id", Type: "varchar(64)", Key: "MUL", Comment: "接收者ID"},
+		{Name: "sender_id", Type: "bigint", Key: "MUL", Comment: "发送者ID"},
+		{Name: "receiver_id", Type: "bigint", Key: "MUL", Comment: "接收者ID"},
 		{Name: "content", Type: "text", Key: "", Comment: "消息内容"},
-		{Name: "message_type", Type: "varchar(32)", Key: "", Comment: "消息类型"},
 		{Name: "is_read", Type: "tinyint(1)", Key: "", Comment: "是否已读"},
 		{Name: "created_at", Type: "datetime", Key: "", Comment: "创建时间"},
 		{Name: "updated_at", Type: "datetime", Key: "", Comment: "更新时间"},
