@@ -103,6 +103,8 @@ const (
 	NACOS_REGISTER_FAIL                      = "Nacos 注册失败: service=%s, address=%s:%d, group=%s, err=%v"
 	REDIS_INIT_FAIL                          = "初始化 Redis 客户端失败: %v"
 	REDIS_CONNECT_SUCCESS                    = "Redis 连接成功: %s:%d (DB: %d)"
+	MYSQL_CLOSE_FAIL                         = "关闭 MySQL 连接失败: %v"
+	REDIS_CLOSE_FAIL                         = "关闭 Redis 连接失败: %v"
 	FASTAPI_WEIGHTS_FORMAT_ERROR             = "FastAPI 响应格式异常"
 	SEARCH_WEIGHTS_FETCH_FAIL                = "获取搜索参数失败: %v"
 	ENSURE_CHAT_MESSAGES_TABLE_FAIL          = "确保 chat_messages 表存在失败: %v"
@@ -143,10 +145,27 @@ const (
 	USER_LOG_MESSAGE           = "用户%d:%s %s %s: %s"
 	ANONYMOUS_USER_LOG_MESSAGE = "匿名用户 %s %s: %s"
 
+	// 搜索校验字段名
+	SEARCH_START_TIME_FIELD = "开始时间"
+	SEARCH_END_TIME_FIELD   = "结束时间"
+
 	// API日志
 	SERIALIZE_API_LOG_FAIL_MESSAGE                = "序列化 API 日志消息失败: %v"
 	SEND_API_LOG_FAIL_MESSAGE                     = "发送 API 日志到队列失败: %v"
 	SEND_API_LOG_SUCCESS_MESSAGE                  = "API 日志已发送到队列"
+	API_LOG_USER_ID_FIELD            = "用户ID"
+	API_LOG_USERNAME_FIELD           = "用户名"
+	API_LOG_SESSION_ID_FIELD         = "会话ID"
+	API_LOG_REQUEST_METHOD_FIELD     = "请求方法"
+	API_LOG_REQUEST_PATH_FIELD       = "请求路径"
+	API_LOG_DESCRIPTION_FIELD        = "描述"
+	API_LOG_QUERY_PARAMS_FIELD       = "查询参数"
+	API_LOG_REQUEST_BODY_FIELD       = "请求体"
+	API_LOG_QUERY_PARAMS_PREFIX      = "查询参数: "
+	API_LOG_REQUEST_BODY_PREFIX      = "请求体: "
+	LOG_TRUNCATED_SUFFIX             = "...[截断]"
+	API_LOG_WEBSOCKET_CONNECTION     = "WebSocket连接"
+	API_LOG_SSE_CONNECTION           = "SSE连接"
 
 	// ES同步
 	ES_CLIENT_NOT_INITIALIZED_MESSAGE                   = "ES 客户端未初始化，跳过 ES 同步"
@@ -224,7 +243,8 @@ const (
 	SQL_TOOLS_MULTIPLE_STATEMENTS = "安全限制：禁止执行多条SQL语句"
 	SQL_TOOLS_LIMIT_REQUIRED      = "安全限制：SQL查询必须包含LIMIT子句"
 	SQL_TOOLS_LIMIT_EXCEEDED      = "安全限制：LIMIT超过最大限制100"
-	SQL_TOOLS_PARAM_REQUIRED      = "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值"
 	SQL_TOOLS_TABLE_NOT_ALLOWED   = "安全限制：表 '%s' 不在白名单内"
 	SQL_TOOLS_QUERY_FAILED        = "执行SQL查询失败"
+	SQL_TOOLS_MYSQL_UNINITIALIZED = "MySQL 连接未初始化"
+	SQL_TOOLS_MYSQL_DRIVER        = "mysql"
 )

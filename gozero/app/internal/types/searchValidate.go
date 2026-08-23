@@ -24,11 +24,11 @@ func (r *SearchArticlesReq) Validate() error {
 		return exceptions.NewBadRequestErrorSame(constants.SEARCH_SIZE_GREATER_THAN_ZERO_ERROR)
 	}
 
-	if err := validateSearchArticlesTime(r.StartDate, "开始时间"); err != nil {
+	if err := validateSearchArticlesTime(r.StartDate, constants.SEARCH_START_TIME_FIELD); err != nil {
 		return err
 	}
 
-	if err := validateSearchArticlesTime(r.EndDate, "结束时间"); err != nil {
+	if err := validateSearchArticlesTime(r.EndDate, constants.SEARCH_END_TIME_FIELD); err != nil {
 		return err
 	}
 

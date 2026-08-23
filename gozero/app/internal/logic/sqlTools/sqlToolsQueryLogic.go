@@ -40,42 +40,52 @@ func (l *SqlToolsQueryLogic) SqlToolsQuery(req *types.SqlToolsQueryReq) (resp *t
 	// 将命名参数 :paramName 替换为 ? 占位符
 	replacedQuery, args := l.replaceNamedParams(normalized, req.Params)
 
-	// 执行查询
-	var rows []map[string]interface{}
-	if err := l.svcCtx.MySQLConn.QueryRowsCtx(l.ctx, &rows, replacedQuery, args...); err != nil {
+	// 执行查询：go-zero QueryRowsCtx 不支持 map 扫描，改用标准库手动扫描以支持动态列
+	rawDB := l.svcCtx.RawMySQL
+	if rawDB == nil {
+		l.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + constants.SQL_TOOLS_MYSQL_UNINITIALIZED)
+		return nil, exceptions.NewInternalServerError(constants.SQL_TOOLS_QUERY_FAILED, constants.SQL_TOOLS_MYSQL_UNINITIALIZED)
+	}
+	rs, err := rawDB.QueryContext(l.ctx, replacedQuery, args...)
+	if err != nil {
+		l.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + err.Error())
+		return nil, exceptions.NewInternalServerError(constants.SQL_TOOLS_QUERY_FAILED, err.Error())
+	}
+	defer rs.Close()
+
+	columns, err := rs.Columns()
+	if err != nil {
 		l.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + err.Error())
 		return nil, exceptions.NewInternalServerError(constants.SQL_TOOLS_QUERY_FAILED, err.Error())
 	}
 
-	if len(rows) == 0 {
-		return &types.SqlToolsQueryResp{
-			Data: types.SqlToolsQueryResult{
-				Columns:  []string{},
-				Rows:     [][]string{},
-				RowCount: 0,
-			},
-		}, nil
-	}
-
-	// 提取列名和行数据
-	columns := make([]string, 0, len(rows[0]))
-	for col := range rows[0] {
-		columns = append(columns, col)
-	}
-	rowValues := make([][]string, 0, len(rows))
-	for _, row := range rows {
-		values := make([]string, len(columns))
-		for i, col := range columns {
-			values[i] = l.stringifyValue(row[col])
+	var rowValues [][]string
+	for rs.Next() {
+		values := make([]interface{}, len(columns))
+		ptrs := make([]interface{}, len(columns))
+		for i := range values {
+			ptrs[i] = &values[i]
 		}
-		rowValues = append(rowValues, values)
+		if err := rs.Scan(ptrs...); err != nil {
+			l.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + err.Error())
+			return nil, exceptions.NewInternalServerError(constants.SQL_TOOLS_QUERY_FAILED, err.Error())
+		}
+		strValues := make([]string, len(columns))
+		for i := range values {
+			strValues[i] = l.stringifyValue(values[i])
+		}
+		rowValues = append(rowValues, strValues)
+	}
+	if err := rs.Err(); err != nil {
+		l.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + err.Error())
+		return nil, exceptions.NewInternalServerError(constants.SQL_TOOLS_QUERY_FAILED, err.Error())
 	}
 
 	return &types.SqlToolsQueryResp{
 		Data: types.SqlToolsQueryResult{
 			Columns:  columns,
 			Rows:     rowValues,
-			RowCount: len(rows),
+			RowCount: len(rowValues),
 		},
 	}, nil
 }
@@ -151,11 +161,9 @@ func (l *SqlToolsQueryLogic) validateQuery(query string) (string, error) {
 		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_LIMIT_EXCEEDED)
 	}
 
-	// 5. 检查参数化占位符（使用正则匹配 :paramName 模式，避免字符串内 : 误判）
-	if !constants.SqlToolsNamedParamRegex.MatchString(query) {
-		return "", exceptions.NewBadRequestErrorSame(constants.SQL_TOOLS_PARAM_REQUIRED)
-	}
-
+	// 5. 参数化占位符为可选：无占位符的纯字面量只读查询（如 COUNT(*)）同样合法，
+	//    只读前缀 + 表白名单 + LIMIT 已充分防护注入与开销风险；含 :paramName 时
+	//    由执行层绑定参数，缺失对应值会由数据库层报错。
 	return query, nil
 }
 

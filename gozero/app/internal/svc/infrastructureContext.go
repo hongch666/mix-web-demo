@@ -2,6 +2,7 @@ package svc
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"app/common/utils"
 	"app/internal/config"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
@@ -32,6 +34,7 @@ func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *Infras
 
 	return &InfrastructureContext{
 		MySQLConn:         mysqlConn,
+		RawMySQL:          initRawMysql(c, logger),
 		ESClient:          initES(c, logger),
 		RabbitMQPublisher: initRabbitMQ(c, logger),
 		RedisClient:       initRedis(c, logger),
@@ -39,11 +42,33 @@ func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *Infras
 	}
 }
 
+// initRawMysql 初始化标准库 MySQL 连接（供 SQL 工具等动态列查询手动扫描结果）
+func initRawMysql(c config.Config, logger *utils.ZeroLogger) *sql.DB {
+	dsn := buildMysqlDsn(c)
+	if dsn == "" {
+		return nil
+	}
+	rawDB, err := sql.Open(constants.SQL_TOOLS_MYSQL_DRIVER, dsn)
+	if err != nil {
+		logger.Error(constants.SQL_TOOLS_QUERY_FAILED + ": " + err.Error())
+		return nil
+	}
+	rawDB.SetMaxOpenConns(10)
+	rawDB.SetMaxIdleConns(5)
+	return rawDB
+}
+
 // Close 关闭基础设施连接
 func (ic *InfrastructureContext) Close() {
+	if ic.RawMySQL != nil {
+		if err := ic.RawMySQL.Close(); err != nil {
+			logx.Errorf(constants.MYSQL_CLOSE_FAIL, err)
+		}
+	}
+
 	if ic.RedisClient != nil {
 		if err := ic.RedisClient.Close(); err != nil {
-			logx.Errorf("关闭 Redis 连接失败: %v", err)
+			logx.Errorf(constants.REDIS_CLOSE_FAIL, err)
 		}
 	}
 

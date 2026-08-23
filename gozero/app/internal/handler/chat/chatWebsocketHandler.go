@@ -58,5 +58,5 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		utils.SafeGo(svcCtx.Logger, "websocket_read_pump", func() {
 			client.ReadPump()
 		})
-	}, "WebSocket连接")
+	}, constants.API_LOG_WEBSOCKET_CONNECTION)
 }

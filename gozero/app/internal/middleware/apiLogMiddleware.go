@@ -56,18 +56,18 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 构建基础日志信息
 		logInfo := map[string]any{
-			"用户ID": userID,
-			"用户名":  username,
-			"会话ID": sessionID,
-			"请求方法": method,
-			"请求路径": path,
-			"描述":   m.description,
+			constants.API_LOG_USER_ID_FIELD:       userID,
+			constants.API_LOG_USERNAME_FIELD:      username,
+			constants.API_LOG_SESSION_ID_FIELD:    sessionID,
+			constants.API_LOG_REQUEST_METHOD_FIELD: method,
+			constants.API_LOG_REQUEST_PATH_FIELD:  path,
+			constants.API_LOG_DESCRIPTION_FIELD:   m.description,
 		}
 
 		// 获取查询参数
 		queryParams := extractQueryParams(r)
 		if len(queryParams) > 0 {
-			logInfo["查询参数"] = queryParams
+			logInfo[constants.API_LOG_QUERY_PARAMS_FIELD] = queryParams
 		}
 
 		// 获取请求体（仅对POST、PUT、PATCH请求）
@@ -75,7 +75,7 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		if method == "POST" || method == "PUT" || method == "PATCH" {
 			requestBody = extractRequestBody(r)
 			if requestBody != nil {
-				logInfo["请求体"] = requestBody
+				logInfo[constants.API_LOG_REQUEST_BODY_FIELD] = requestBody
 			}
 		}
 
@@ -152,7 +152,7 @@ func extractRequestBody(r *http.Request) any {
 	// 如果都不是，返回原始字符串（截断过长的内容）
 	bodyStr := string(bodyBytes)
 	if len(bodyStr) > 1000 {
-		bodyStr = bodyStr[:1000] + "...[截断]"
+		bodyStr = bodyStr[:1000] + constants.LOG_TRUNCATED_SUFFIX
 	}
 	return bodyStr
 }
@@ -189,15 +189,15 @@ func formatLogMessage(method, path, description string, userID int64, username s
 	// 添加参数信息
 	var details []string
 
-	if queryParams, ok := logInfo["查询参数"].(map[string]any); ok && len(queryParams) > 0 {
+	if queryParams, ok := logInfo[constants.API_LOG_QUERY_PARAMS_FIELD].(map[string]any); ok && len(queryParams) > 0 {
 		if paramsJSON, err := json.Marshal(queryParams); err == nil {
-			details = append(details, "查询参数: "+string(paramsJSON))
+			details = append(details, constants.API_LOG_QUERY_PARAMS_PREFIX+string(paramsJSON))
 		}
 	}
 
-	if requestBody := logInfo["请求体"]; requestBody != nil {
+	if requestBody := logInfo[constants.API_LOG_REQUEST_BODY_FIELD]; requestBody != nil {
 		if bodyJSON, err := json.Marshal(requestBody); err == nil {
-			details = append(details, "请求体: "+string(bodyJSON))
+			details = append(details, constants.API_LOG_REQUEST_BODY_PREFIX+string(bodyJSON))
 		}
 	}
 
