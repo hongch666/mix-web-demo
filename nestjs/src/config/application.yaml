@@ -18,7 +18,6 @@ database:
     username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
     database: ${DB_DATABASE:demo}
-    synchronize: ${DB_SYNCHRONIZE:false}
     logging: ${DB_LOGGING:false}
     entities:
       - src/**/*.entity.js
