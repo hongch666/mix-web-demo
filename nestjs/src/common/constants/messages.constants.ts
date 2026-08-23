@@ -547,9 +547,6 @@ export class Messages {
   static readonly SQL_PROXY_MULTIPLE_STATEMENTS =
     "安全限制：禁止执行多条SQL语句";
 
-  static readonly SQL_PROXY_PARAM_REQUIRED =
-    "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值";
-
   static readonly SQL_PROXY_QUERY_FAILED = (message: string): string =>
     `执行SQL查询失败: ${message}`;
 

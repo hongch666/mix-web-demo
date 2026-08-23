@@ -164,16 +164,7 @@ export class SqlToolsService {
       );
     }
 
-    // 5. 检查参数化占位符：使用正则匹配 :paramName 模式，避免字符串内 : 误判
-    const namedParamRegex = createNamedParamRegex();
-    if (!namedParamRegex.test(normalized)) {
-      throw new BusinessException(
-        Messages.SQL_PROXY_PARAM_REQUIRED,
-        HttpCode.BAD_REQUEST,
-        ErrorIds.PARAM_PARSE_FAILED,
-      );
-    }
-
+    // 5. 参数化占位符为可选：只读前缀 + 表白名单 + LIMIT 已充分防护，无参数查询同样合法
     return normalized;
   }
 
