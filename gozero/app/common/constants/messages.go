@@ -33,7 +33,7 @@ const (
 
 	// WebSocket
 	WS_SEND_SUCCESS                          = "消息 %d 通过WebSocket发送成功，已标记为已读"
-	WS_SEND_FAIL                             = "用户 %s 不在线，消息 %d 已保存为未读"
+	WS_SEND_FAIL                             = "用户 %d 不在线，消息 %d 已保存为未读"
 	WS_SERIALIZE_MESSAGE_ERROR               = "序列化WebSocket消息失败: %v"
 	WS_CLOSE_FRAME_SEND_FAIL                 = "发送WebSocket关闭帧失败: %v"
 	WS_HEARTBEAT_RESPONSE_FAIL               = "序列化WebSocket心跳响应失败: %v"

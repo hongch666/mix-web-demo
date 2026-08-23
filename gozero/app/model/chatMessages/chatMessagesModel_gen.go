@@ -40,8 +40,8 @@ type (
 
 	ChatMessages struct {
 		Id         uint64    `db:"id"`          // 消息ID，主键
-		SenderId   string    `db:"sender_id"`   // 发送者ID
-		ReceiverId string    `db:"receiver_id"` // 接收者ID
+		SenderId   int64     `db:"sender_id"`   // 发送者ID
+		ReceiverId int64     `db:"receiver_id"` // 接收者ID
 		Content    string    `db:"content"`     // 消息内容
 		IsRead     int64     `db:"is_read"`     // 是否已读，0未读，1已读
 		CreatedAt  time.Time `db:"created_at"`  // 创建时间

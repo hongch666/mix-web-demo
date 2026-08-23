@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"app/common/constants"
@@ -88,18 +87,8 @@ func (r *ChatLeaveQueueReq) Validate() error {
 	return nil
 }
 
-func validatePositiveID(value string, fieldName string) error {
-	trimmedValue := strings.TrimSpace(value)
-	if trimmedValue == "" {
-		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(constants.FIELD_EMPTY_ERROR, fieldName))
-	}
-
-	parsedValue, err := strconv.ParseInt(trimmedValue, 10, 64)
-	if err != nil {
-		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(constants.FIELD_POSITIVE_INT_ERROR, fieldName))
-	}
-
-	if parsedValue <= 0 {
+func validatePositiveID(value int64, fieldName string) error {
+	if value <= 0 {
 		return exceptions.NewBadRequestErrorSame(fmt.Sprintf(constants.FIELD_GREATER_THAN_ZERO_ERROR, fieldName))
 	}
 

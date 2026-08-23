@@ -23,11 +23,11 @@ service App {
 
 type (
 	ChatSSEConnectReq {
-		UserId *string `form:"user_id,optional"`
+		UserId *int64 `form:"user_id,optional"`
 	}
 	ChatSSEConnectResp  {}
 	ChatWsConnectReq {
-		UserId *string `form:"user_id,optional"`
+		UserId *int64 `form:"user_id,optional"`
 	}
 	ChatWsConnectResp  {}
 )

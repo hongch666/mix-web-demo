@@ -14,7 +14,7 @@ import (
 
 // SSE客户端
 type SSEClient struct {
-	UserID       string
+	UserID       int64
 	ConnectionID string
 	SendCh       chan any
 	CloseCh      chan bool
@@ -22,7 +22,7 @@ type SSEClient struct {
 
 // SSE中心管理
 type SSEHubManager struct {
-	clients map[string]map[string]*SSEClient // userID -> connectionID -> SSEClient
+	clients map[int64]map[string]*SSEClient // userID -> connectionID -> SSEClient
 	mu      sync.RWMutex
 	*utils.ZeroLogger
 }
@@ -36,14 +36,14 @@ var (
 func GetSSEHub() *SSEHubManager {
 	once.Do(func() {
 		sseHubInstance = &SSEHubManager{
-			clients: make(map[string]map[string]*SSEClient),
+			clients: make(map[int64]map[string]*SSEClient),
 		}
 	})
 	return sseHubInstance
 }
 
 // RegisterClient 注册SSE客户端
-func (hub *SSEHubManager) RegisterClient(userID string, connectionID string, sendCh chan any, closeCh chan bool) {
+func (hub *SSEHubManager) RegisterClient(userID int64, connectionID string, sendCh chan any, closeCh chan bool) {
 	if connectionID == "" {
 		return
 	}
@@ -68,7 +68,7 @@ func (hub *SSEHubManager) RegisterClient(userID string, connectionID string, sen
 
 // UnregisterClient 注销SSE客户端
 // 通过 connectionID 进行身份校验，防止旧连接的 defer 误关闭新连接
-func (hub *SSEHubManager) UnregisterClient(userID string, connectionID string) {
+func (hub *SSEHubManager) UnregisterClient(userID int64, connectionID string) {
 	if connectionID == "" {
 		return
 	}
@@ -92,7 +92,7 @@ func (hub *SSEHubManager) UnregisterClient(userID string, connectionID string) {
 }
 
 // SendNotificationToUser 发送通知给特定用户
-func (hub *SSEHubManager) SendNotificationToUser(userID string, notification *SSEMessageNotification) {
+func (hub *SSEHubManager) SendNotificationToUser(userID int64, notification *SSEMessageNotification) {
 	if notification == nil {
 		if hub.ZeroLogger != nil {
 			hub.Warning(constants.SSE_SEND_EMPTY_WARNING_MESSAGE)
@@ -160,7 +160,7 @@ func (hub *SSEHubManager) BroadcastNotification(notification any) {
 // HandleConnection 处理 SSE 连接的完整生命周期
 // 包括：注册客户端、发送初始化消息、事件循环（心跳+消息分发）
 // Handler 层只需调用此方法，无需关心 SSE 协议细节
-func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Request, userID string) {
+func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Request, userID int64) {
 	// 设置SSE响应头
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -179,7 +179,7 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 	initMessage := &SSEMessageNotification{
 		Type:         "connected",
 		UserID:       userID,
-		UnreadCounts: make(map[string]int64),
+		UnreadCounts: make(map[int64]int64),
 	}
 	sseMessage := FormatSSEMessage(initMessage)
 	if _, err := io.WriteString(w, sseMessage); err != nil {

@@ -35,18 +35,18 @@ type ArticleEsItem struct {
 }
 
 type ChatGetAllUnreadCountsReq struct {
-	UserId string `json:"user_id"`
+	UserId int64 `json:"user_id"`
 }
 
 type ChatGetAllUnreadCountsResp struct {
-	Data map[string]int64 `json:"data"`
+	Data map[int64]int64 `json:"data"`
 }
 
 type ChatGetHistoryReq struct {
-	UserId  string `json:"user_id"`
-	OtherId string `json:"other_id"`
-	Page    int    `json:"page,optional"`
-	Size    int    `json:"size,optional"`
+	UserId  int64 `json:"user_id"`
+	OtherId int64 `json:"other_id"`
+	Page    int   `json:"page,optional"`
+	Size    int   `json:"size,optional"`
 }
 
 type ChatGetHistoryResp struct {
@@ -55,13 +55,13 @@ type ChatGetHistoryResp struct {
 }
 
 type ChatGetQueueStatusResp struct {
-	OnlineUsers []string `json:"online_users"`
-	Count       int      `json:"count"`
+	OnlineUsers []int64 `json:"online_users"`
+	Count       int     `json:"count"`
 }
 
 type ChatGetUnreadCountReq struct {
-	UserId  string `json:"user_id"`
-	OtherId string `json:"other_id"`
+	UserId  int64 `json:"user_id"`
+	OtherId int64 `json:"other_id"`
 }
 
 type ChatGetUnreadCountResp struct {
@@ -69,42 +69,42 @@ type ChatGetUnreadCountResp struct {
 }
 
 type ChatJoinQueueReq struct {
-	UserId string `json:"user_id"`
+	UserId int64 `json:"user_id"`
 }
 
 type ChatJoinQueueResp struct {
-	UserId string `json:"user_id"`
+	UserId int64  `json:"user_id"`
 	Status string `json:"status"`
 }
 
 type ChatLeaveQueueReq struct {
-	UserId string `json:"user_id"`
+	UserId int64 `json:"user_id"`
 }
 
 type ChatLeaveQueueResp struct {
-	UserId string `json:"user_id"`
+	UserId int64  `json:"user_id"`
 	Status string `json:"status"`
 }
 
 type ChatMessageItem struct {
 	Id         uint64 `json:"id"`
-	SenderId   string `json:"sender_id"`
-	ReceiverId string `json:"receiver_id"`
+	SenderId   int64  `json:"sender_id"`
+	ReceiverId int64  `json:"receiver_id"`
 	Content    string `json:"content"`
 	IsRead     int8   `json:"is_read"`
 	CreatedAt  string `json:"created_at"`
 }
 
 type ChatSSEConnectReq struct {
-	UserId *string `form:"user_id,optional"`
+	UserId *int64 `form:"user_id,optional"`
 }
 
 type ChatSSEConnectResp struct {
 }
 
 type ChatSendMessageReq struct {
-	SenderId   string `json:"sender_id"`
-	ReceiverId string `json:"receiver_id"`
+	SenderId   int64  `json:"sender_id"`
+	ReceiverId int64  `json:"receiver_id"`
 	Content    string `json:"content"`
 }
 
@@ -113,7 +113,7 @@ type ChatSendMessageResp struct {
 }
 
 type ChatWsConnectReq struct {
-	UserId *string `form:"user_id,optional"`
+	UserId *int64 `form:"user_id,optional"`
 }
 
 type ChatWsConnectResp struct {

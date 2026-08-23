@@ -5,6 +5,7 @@ package chat
 
 import (
 	"net/http"
+	"strconv"
 
 	"app/common/constants"
 	"app/common/hub"
@@ -24,13 +25,14 @@ var upgrader = websocket.Upgrader{
 // WebSocket连接
 func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
-		userID := r.URL.Query().Get("user_id")
-		if userID == "" {
+		userIDStr := r.URL.Query().Get("user_id")
+		if userIDStr == "" {
 			// 尝试从Header获取（网关传递的用户信息）
-			userID = r.Header.Get("X-User-Id")
+			userIDStr = r.Header.Get("X-User-Id")
 		}
 
-		if userID == "" {
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil || userID <= 0 {
 			svcCtx.Logger.Error(constants.USER_ID_LESS)
 			utils.Error(w, constants.HttpBadRequest, constants.USER_ID_LESS)
 			return

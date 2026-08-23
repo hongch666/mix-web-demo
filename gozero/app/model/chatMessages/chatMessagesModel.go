@@ -16,11 +16,11 @@ type (
 		Update(context.Context, *ChatMessages) error
 		Delete(context.Context, uint64) error
 		CreateChatMessage(context.Context, *ChatMessages) error
-		GetChatHistory(context.Context, string, string, int, int) ([]*ChatMessages, int64, error)
-		GetUnreadCount(context.Context, string, string) (int64, error)
-		GetAllUnreadCounts(context.Context, string) (map[string]int64, error)
+		GetChatHistory(context.Context, int64, int64, int, int) ([]*ChatMessages, int64, error)
+		GetUnreadCount(context.Context, int64, int64) (int64, error)
+		GetAllUnreadCounts(context.Context, int64) (map[int64]int64, error)
 		MarkAsRead(context.Context, uint64) error
-		MarkChatHistoryAsRead(context.Context, string, string) error
+		MarkChatHistoryAsRead(context.Context, int64, int64) error
 	}
 	customChatMessagesModel struct {
 		conn      sqlx.SqlConn
@@ -53,7 +53,7 @@ func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message
 	return m.Insert(ctx, message)
 }
 
-func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, otherID string, offset, limit int) ([]*ChatMessages, int64, error) {
+func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, otherID int64, offset, limit int) ([]*ChatMessages, int64, error) {
 	var total int64
 	where := "(sender_id = ? and receiver_id = ?) or (sender_id = ? and receiver_id = ?)"
 	countQuery := fmt.Sprintf("select count(*) from %s where %s", m.baseModel.table, where)
@@ -72,22 +72,22 @@ func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, ot
 	return result, total, nil
 }
 
-func (m *customChatMessagesModel) GetUnreadCount(ctx context.Context, userID, otherID string) (int64, error) {
+func (m *customChatMessagesModel) GetUnreadCount(ctx context.Context, userID, otherID int64) (int64, error) {
 	var count int64
 	err := m.conn.QueryRowCtx(ctx, &count, fmt.Sprintf("select count(*) from %s where receiver_id = ? and sender_id = ? and is_read = 0", m.baseModel.table), userID, otherID)
 	return count, err
 }
 
-func (m *customChatMessagesModel) GetAllUnreadCounts(ctx context.Context, userID string) (map[string]int64, error) {
+func (m *customChatMessagesModel) GetAllUnreadCounts(ctx context.Context, userID int64) (map[int64]int64, error) {
 	var rows []struct {
-		SenderID string `db:"sender_id"`
-		Count    int64  `db:"count"`
+		SenderID int64 `db:"sender_id"`
+		Count    int64 `db:"count"`
 	}
 	query := fmt.Sprintf("select sender_id, count(*) as count from %s where receiver_id = ? and is_read = 0 group by sender_id", m.baseModel.table)
 	if err := m.conn.QueryRowsCtx(ctx, &rows, query, userID); err != nil {
 		return nil, err
 	}
-	result := make(map[string]int64)
+	result := make(map[int64]int64)
 	for _, row := range rows {
 		result[row.SenderID] = row.Count
 	}
@@ -99,7 +99,7 @@ func (m *customChatMessagesModel) MarkAsRead(ctx context.Context, messageID uint
 	return err
 }
 
-func (m *customChatMessagesModel) MarkChatHistoryAsRead(ctx context.Context, userID, otherID string) error {
+func (m *customChatMessagesModel) MarkChatHistoryAsRead(ctx context.Context, userID, otherID int64) error {
 	_, err := m.conn.ExecCtx(ctx, fmt.Sprintf("update %s set is_read = 1 where receiver_id = ? and sender_id = ?", m.baseModel.table), userID, otherID)
 	return err
 }

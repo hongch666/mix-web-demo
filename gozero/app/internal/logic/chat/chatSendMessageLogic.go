@@ -85,7 +85,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 }
 
 // notifyUnreadMessage 通知用户有新的未读消息
-func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ string, message *chatMessages.ChatMessages) {
+func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ int64, message *chatMessages.ChatMessages) {
 	// 获取该用户的所有未读消息数
 	unreadCounts, err := l.svcCtx.ChatMessagesModel.GetAllUnreadCounts(l.ctx, userID)
 	if err != nil {
