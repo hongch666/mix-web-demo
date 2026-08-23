@@ -170,7 +170,6 @@ public class Messages {
     public static final String SQL_PROXY_LIMIT_REQUIRED = "安全限制：SQL查询必须包含LIMIT子句";
     public static final String SQL_PROXY_LIMIT_EXCEEDED = "安全限制：LIMIT超过最大限制100";
     public static final String SQL_PROXY_MULTIPLE_STATEMENTS = "安全限制：禁止执行多条SQL语句";
-    public static final String SQL_PROXY_PARAM_REQUIRED = "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值";
     public static final String SQL_PROXY_TABLE_SCHEMA_ERROR = "获取表结构信息失败: %s";
     public static final String SQL_PROXY_QUERY_ERROR = "执行SQL查询失败: %s";
 

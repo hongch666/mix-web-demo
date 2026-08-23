@@ -42,12 +42,6 @@ public final class SqlTools {
         Pattern.CASE_INSENSITIVE);
 
     /**
-     * 命名参数占位符匹配正则（:paramName）
-     */
-    public static final Pattern NAMED_PARAM_PATTERN = Pattern.compile(
-        ":\\w+");
-
-    /**
      * 用于移除 SQL 字符串字面量，避免字符串内的 ; 被误判
      */
     public static final Pattern STRING_LITERAL_PATTERN = Pattern.compile(

@@ -98,11 +98,7 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             throw new BusinessException(HttpCode.BAD_REQUEST, Messages.SQL_PROXY_LIMIT_EXCEEDED);
         }
 
-        // 5. 检查参数化占位符（使用正则匹配 :paramName 模式，避免字符串内 : 误判）
-        if (!SqlTools.NAMED_PARAM_PATTERN.matcher(normalized).find()) {
-            throw new BusinessException(HttpCode.BAD_REQUEST, Messages.SQL_PROXY_PARAM_REQUIRED);
-        }
-
+        // 5. 参数化占位符为可选：只读前缀 + 表白名单 + LIMIT 已充分防护，无参数查询同样合法
         return normalized;
     }
 
