@@ -6,8 +6,6 @@ class Scripts:
     脚本类 — SQL 语句、Cypher 语句、安全规则（SQL / 数据脱敏）
     """
 
-    # ===== SQL 建表 =====
-
     @staticmethod
     def NEO4J_SQL_INCREMENTAL_SUFFIX_FORMAT(
         base_sql: str, timestamp_column: str, sync_time_text: str
@@ -26,23 +24,6 @@ class Scripts:
     @staticmethod
     def MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(table: str) -> str:
         return f"SELECT formatDateTime(create_at, '%Y-%m') as year_month, count() as count FROM {table} WHERE status = 1 AND create_at >= subtractMonths(now(), 24) GROUP BY year_month ORDER BY year_month DESC"
-
-    AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
-
-    AI_CHAT_SQL_TABLE_CREATION_MESSAGE: str = """
-        CREATE TABLE `ai_history` (
-            `id` BIGINT NOT NULL AUTO_INCREMENT,
-            `user_id` BIGINT,
-            `ask` TEXT NOT NULL,
-            `reply` TEXT NOT NULL,
-            `thinking` TEXT,
-            `ai_type` VARCHAR(30),
-            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-            `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (`id`),
-            KEY `idx_user_id` (`user_id`)
-        ) COMMENT='AI聊天记录' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    """
 
     # ===== Neo4j 同步 SQL =====
     NEO4J_SQL_SELECT_USERS: str = (

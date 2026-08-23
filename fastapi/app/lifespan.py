@@ -24,6 +24,7 @@ from app.internal.agents.langsmith import (
     load_langsmith_config,
     shutdown_langsmith,
 )
+from app.internal.models import AiHistory
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
 from fastapi import FastAPI
@@ -33,6 +34,9 @@ server_config: Dict[str, Any] = load_config("server")
 IP: str = Messages.INIT_IP
 PORT: int = server_config["port"]
 
+# 导入并保留实体引用，确保模型已注册到 Base.metadata
+SQLALCHEMY_MODELS: tuple[type[AiHistory], ...] = (AiHistory,)
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
@@ -41,7 +45,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     langsmith_config = load_langsmith_config()
     init_langsmith(langsmith_config)
 
-    await create_tables_async(["ai_history"])
+    await create_tables_async()
     start_nacos(ip=IP, port=PORT)
     Logger.info(Messages.NACOS_REGISTER_SUCCESS)
 

@@ -1,6 +1,6 @@
 import traceback
 from collections.abc import AsyncGenerator
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from urllib.parse import quote_plus
 
 from app.core.base import Logger
@@ -69,32 +69,17 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def create_tables_async(tables: Optional[List[str]] = None) -> None:
+async def create_tables_async() -> None:
     """
-    使用异步 MySQL 连接创建数据库表。
+    根据已注册的 SQLAlchemy 实体创建不存在的数据库表。
 
-    Args:
-        tables: 要创建的表名列表，如 ['ai_history']
+    SQLAlchemy 的 create_all 只负责创建缺失的表，不会执行已有表的结构迁移。
     """
 
     try:
-        if tables and "ai_history" in tables:
-            async with async_engine.begin() as connection:
-                result = await connection.exec_driver_sql(
-                    Messages.AI_CHAT_SQL_TABLE_EXISTENCE_CHECK,
-                    (DATABASE,),
-                )
-                table_exists: bool = result.fetchone() is not None
-
-                if not table_exists:
-                    await connection.exec_driver_sql(
-                        Messages.AI_CHAT_SQL_TABLE_CREATION_MESSAGE
-                    )
-                    Logger.info(Messages.AI_CHAT_TABLE_CREATION_MESSAGE)
-                else:
-                    Logger.info(Messages.AI_CHAT_TABLE_EXISTS_MESSAGE)
-        else:
-            Logger.warning(Messages.AI_CHAT_TABLE_UNSUPPORTED_MESSAGE)
+        async with async_engine.begin() as connection:
+            await connection.run_sync(Base.metadata.create_all)
+        Logger.info(Messages.DATABASE_TABLE_INITIALIZATION_SUCCESS)
     except Exception as e:
         Logger.error(Messages.DATABASE_TABLE_CREATION_FAILED(e))
         Logger.error(traceback.format_exc())

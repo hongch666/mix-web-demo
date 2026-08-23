@@ -1674,13 +1674,7 @@ class Messages:
 
     AIO_PKA_EVENT_LOOP_ERROR: str = "检测到运行中的事件循环，跳过 RabbitMQ 同步关闭"
 
-    AI_CHAT_SQL_TABLE_EXISTENCE_CHECK: str = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'ai_history'"
-
-    AI_CHAT_TABLE_CREATION_MESSAGE: str = "ai_history 表创建完成"
-
-    AI_CHAT_TABLE_EXISTS_MESSAGE: str = "ai_history 表已存在"
-
-    AI_CHAT_TABLE_UNSUPPORTED_MESSAGE: str = "仅支持创建 ai_history 表"
+    DATABASE_TABLE_INITIALIZATION_SUCCESS: str = "数据库表结构初始化完成"
 
     APILOG_ASYNC_ERROR: str = "apiLog 装饰器只支持异步函数"
 
