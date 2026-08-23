@@ -87,10 +87,6 @@ class FastapiSqlTool:
             if int(limit_match.group(1)) > Messages.SQL_TOOL_MAX_LIMIT:
                 return Messages.SQL_TOOL_LIMIT_EXCEEDED
 
-            # 检查参数化（使用正则匹配 :paramName 模式，避免字符串内 : 误判）
-            if not re.search(Messages.SQL_TOOL_NAMED_PARAM_REGEX, normalized):
-                return Messages.SQL_TOOL_PARAM_REQUIRED
-
             # 执行查询
             async for session in get_db():
                 result = await session.execute(text(normalized), params or {})

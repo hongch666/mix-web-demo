@@ -2297,10 +2297,6 @@ class Messages:
 
     SQL_TOOL_LIMIT_EXCEEDED: str = "安全限制：LIMIT超过最大限制100"
 
-    SQL_TOOL_PARAM_REQUIRED: str = (
-        "安全限制：必须使用参数化占位符（:paramName），禁止在SQL中拼接值"
-    )
-
     SQL_TOOL_NO_TABLE_SCHEMA: str = "未找到表结构信息"
 
     SQL_TOOL_DB_SESSION_UNAVAILABLE: str = "数据库会话不可用"
