@@ -1,6 +1,7 @@
 import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
-import { Injectable } from "@nestjs/common";
-import { Messages } from "src/common/constants";
+import { Injectable, OnApplicationShutdown } from "@nestjs/common";
+import { Defaults, Messages } from "src/common/constants";
+import { BatchBuffer } from "src/common/utils/batchBuffer";
 import { logger } from "src/common/utils/writeLog";
 import { ApiLogService } from "./apiLog.service";
 import { ApiLogMessage, ApiMethod, CreateApiLogDto } from "./dto/apiLog.dto";
@@ -17,29 +18,41 @@ type RawApiLogMessage = Partial<ApiLogMessage> & {
 };
 
 @Injectable()
-export class ApiLogConsumerService {
-  constructor(private readonly apiLogService: ApiLogService) {}
+export class ApiLogConsumerService implements OnApplicationShutdown {
+  private readonly batchBuffer: BatchBuffer<CreateApiLogDto>;
+
+  constructor(private readonly apiLogService: ApiLogService) {
+    this.batchBuffer = new BatchBuffer<CreateApiLogDto>(
+      "ApiLog",
+      {
+        batchSize: Defaults.LOG_BATCH_SIZE,
+        flushIntervalMs: Defaults.LOG_BATCH_FLUSH_INTERVAL_MS,
+        maxBufferSize: Defaults.LOG_BATCH_MAX_BUFFER_SIZE,
+      },
+      async (batch) => {
+        await this.apiLogService.insertMany(batch);
+      },
+    );
+  }
+
+  async onApplicationShutdown(): Promise<void> {
+    await this.batchBuffer.shutdown();
+  }
 
   @RabbitSubscribe({
     queue: "api-log-queue",
   })
   async handleApiLog(msg: unknown): Promise<void> {
     try {
-      logger.info(Messages.API_RABBITMQ_START);
-
       // 处理两种消息格式：
       // 1. 对象
       // 2. JSON 字符串
       let apiLogData: RawApiLogMessage;
 
       if (typeof msg === "string") {
-        // 如果是字符串，尝试解析为 JSON
         apiLogData = JSON.parse(msg) as RawApiLogMessage;
-        logger.info(Messages.API_LOG_SPRING_MESSAGE(String(msg)));
       } else {
-        // 如果已是对象，直接使用
         apiLogData = msg as RawApiLogMessage;
-        logger.info(Messages.API_LOG_MESSAGE(JSON.stringify(apiLogData)));
       }
 
       const normalizedData: ApiLogMessage = {
@@ -57,16 +70,12 @@ export class ApiLogConsumerService {
 
       // 验证消息是否为 API 日志格式（必须包含 apiPath 和 apiMethod）
       if (!normalizedData.apiPath || !normalizedData.apiMethod) {
-        logger.info(
-          Messages.API_LOG_IGNORED_MESSAGE(JSON.stringify(apiLogData)),
-        );
         return;
       }
 
       // 转换为 DTO 格式
       let responseTime: number = normalizedData.responseTime;
       if (responseTime < 0) {
-        logger.warning(Messages.API_LOG_RESPONSE_TIME_CORRECTED(responseTime));
         responseTime = 0;
       }
 
@@ -85,9 +94,8 @@ export class ApiLogConsumerService {
         responseTime: responseTime,
       };
 
-      // 保存到数据库
-      await this.apiLogService.create(dto);
-      logger.info(Messages.API_SAVE);
+      // 入队攒批
+      this.batchBuffer.enqueue(dto);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

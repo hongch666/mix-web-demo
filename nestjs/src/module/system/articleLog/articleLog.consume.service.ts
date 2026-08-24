@@ -1,7 +1,7 @@
 import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
-import { Injectable } from "@nestjs/common";
-import { Messages } from "src/common/constants";
-import { BusinessException } from "src/common/exceptions/business.exception";
+import { Injectable, OnApplicationShutdown } from "@nestjs/common";
+import { Defaults, Messages } from "src/common/constants";
+import { BatchBuffer } from "src/common/utils/batchBuffer";
 import { logger } from "src/common/utils/writeLog";
 import { ArticleLogService } from "./articleLog.service";
 import {
@@ -16,31 +16,42 @@ type RawArticleLogMessage = Partial<ArticleLogMessage> & {
 };
 
 @Injectable()
-export class LogConsumerService {
-  constructor(private readonly articleLogService: ArticleLogService) {}
+export class LogConsumerService implements OnApplicationShutdown {
+  private readonly batchBuffer: BatchBuffer<CreateArticleLogDto>;
+
+  constructor(private readonly articleLogService: ArticleLogService) {
+    this.batchBuffer = new BatchBuffer<CreateArticleLogDto>(
+      "ArticleLog",
+      {
+        batchSize: Defaults.LOG_BATCH_SIZE,
+        flushIntervalMs: Defaults.LOG_BATCH_FLUSH_INTERVAL_MS,
+        maxBufferSize: Defaults.LOG_BATCH_MAX_BUFFER_SIZE,
+      },
+      async (batch) => {
+        await this.articleLogService.insertMany(batch);
+      },
+    );
+  }
+
+  async onApplicationShutdown(): Promise<void> {
+    await this.batchBuffer.shutdown();
+  }
 
   @RabbitSubscribe({
     queue: "article-log-queue",
   })
   async handleArticleLog(msg: unknown): Promise<void> {
     try {
-      logger.info(Messages.ARTICLE_RABBITMQ_START);
-
       // 处理两种消息格式：1.对象, 2.JSON 字符串
       let logData: RawArticleLogMessage;
 
       if (typeof msg === "string") {
-        // 如果是字符串，尝试解析为 JSON
         logData = JSON.parse(msg) as RawArticleLogMessage;
-        logger.info(Messages.ARTICLE_LOG_SPRING_MESSAGE(String(msg)));
       } else {
-        // 如果已是对象，直接使用
         logData = msg as RawArticleLogMessage;
-        logger.info(Messages.ARTICLE_LOG_MESSAGE(JSON.stringify(logData)));
       }
 
-      // 处理消息
-      await this.handleMessage({
+      const dto = this.buildDto({
         action: logData.action!,
         content: logData.content!,
         msg: logData.msg,
@@ -48,7 +59,9 @@ export class LogConsumerService {
         articleId: logData.articleId ?? logData.article_id ?? -1,
       });
 
-      logger.info(Messages.ARTICLE_HANDLER);
+      if (dto) {
+        this.batchBuffer.enqueue(dto);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -56,27 +69,26 @@ export class LogConsumerService {
     }
   }
 
-  private async handleMessage(msg: ArticleLogMessage): Promise<void> {
+  /**
+   * 校验消息并构建 DTO，无效消息返回 null
+   */
+  private buildDto(msg: ArticleLogMessage): CreateArticleLogDto | null {
     // 验证必填字段
     if (!msg.action) {
       logger.error(Messages.ARTICLE_LOG_MISSING_ACTION(JSON.stringify(msg)));
-      throw BusinessException.unprocessableEntity(Messages.ARTICLE_LESS_ACTION);
+      return null;
     }
 
     if (!msg.content) {
       logger.error(Messages.ARTICLE_LOG_MISSING_CONTENT(JSON.stringify(msg)));
-      throw BusinessException.unprocessableEntity(
-        Messages.ARTICLE_LESS_CONTNET,
-      );
+      return null;
     }
 
     // 验证 action 是否是有效的枚举值
     const validActions: ArticleAction[] = Object.values(ArticleAction);
     if (!validActions.includes(msg.action)) {
       logger.error(Messages.ARTICLE_LOG_INVALID_ACTION_DETAIL(msg.action));
-      throw BusinessException.unprocessableEntity(
-        Messages.ARTICLE_LOG_INVALID_ACTION(msg.action),
-      );
+      return null;
     }
 
     // 解析 content 为对象（如果是 JSON 字符串）
@@ -91,16 +103,12 @@ export class LogConsumerService {
       contentObj = msg.content;
     }
 
-    const dto: CreateArticleLogDto = {
+    return {
       articleId: msg.articleId ? msg.articleId : -1,
       userId: msg.userId ? msg.userId : -1,
       action: msg.action,
       msg: msg.msg ? msg.msg : undefined,
       content: contentObj,
     };
-
-    logger.info(Messages.ARTICLE_LOG_PREPARE_SAVE(JSON.stringify(dto)));
-    await this.articleLogService.create(dto);
-    logger.info(Messages.ARTICLE_SAVE);
   }
 }

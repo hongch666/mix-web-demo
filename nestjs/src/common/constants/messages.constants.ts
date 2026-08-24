@@ -291,6 +291,17 @@ export class Messages {
     tableKey: string,
   ): string => `用户 ${userId} 删除了页面 ${tableKey} 的列设置`;
 
+  // ===== 日志攒批 =====
+
+  static readonly API_LOG_BATCH_ENQUEUED = (size: number): string =>
+    `ApiLog 已入队攒批，当前缓冲区: ${size} 条`;
+
+  static readonly ARTICLE_LOG_BATCH_ENQUEUED = (size: number): string =>
+    `ArticleLog 已入队攒批，当前缓冲区: ${size} 条`;
+
+  static readonly BATCH_FLUSH_FAILED = (error: string): string =>
+    `攒批写入失败: ${error}`;
+
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
 
   static readonly INTERNAL_TOKEN_MISSING = "请求头中缺少内部令牌";

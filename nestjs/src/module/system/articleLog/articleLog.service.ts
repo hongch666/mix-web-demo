@@ -10,9 +10,9 @@ import { BusinessException } from "src/common/exceptions/business.exception";
 import { logger } from "src/common/utils/writeLog";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import {
-    ArticleAction,
-    CreateArticleLogDto,
-    QueryArticleLogDto,
+  ArticleAction,
+  CreateArticleLogDto,
+  QueryArticleLogDto,
 } from "./dto/articleLog.dto";
 import { ArticleLog, ArticleLogDocument } from "./schema/articleLog.schema";
 
@@ -112,6 +112,16 @@ export class ArticleLogService {
     await this.logModel.create(dto);
   }
 
+  /**
+   * 批量创建文章操作日志（攒批写入）
+   * 使用 ordered:false 让单条错误文档不影响整批写入
+   * @param dtos 日志DTO数组
+   */
+  async insertMany(dtos: CreateArticleLogDto[]): Promise<void> {
+    if (dtos.length === 0) return;
+    await this.logModel.insertMany(dtos, { ordered: false });
+  }
+
   async removeById(id: string): Promise<ArticleLogDocument | null> {
     const existingLog: ArticleLogDocument | null = await this.logModel
       .findById(id)
@@ -172,10 +182,13 @@ export class ArticleLogService {
       ]);
 
       const users: Array<{ id: number }> = userResult
-        ? (SpringClientService.extractData<Array<{ id: number }>>(userResult) ?? [])
+        ? (SpringClientService.extractData<Array<{ id: number }>>(userResult) ??
+          [])
         : [];
       const articles: Array<{ id: number }> = articleResult
-        ? (SpringClientService.extractData<Array<{ id: number }>>(articleResult) ?? [])
+        ? (SpringClientService.extractData<Array<{ id: number }>>(
+            articleResult,
+          ) ?? [])
         : [];
 
       if (username) {
@@ -243,10 +256,14 @@ export class ArticleLogService {
     ]);
 
     const users: Array<{ id: number; name: string }> = userResult
-      ? (SpringClientService.extractData<Array<{ id: number; name: string }>>(userResult) ?? [])
+      ? (SpringClientService.extractData<Array<{ id: number; name: string }>>(
+          userResult,
+        ) ?? [])
       : [];
     const articles: Array<{ id: number; title: string }> = articleResult
-      ? (SpringClientService.extractData<Array<{ id: number; title: string }>>(articleResult) ?? [])
+      ? (SpringClientService.extractData<Array<{ id: number; title: string }>>(
+          articleResult,
+        ) ?? [])
       : [];
 
     // 构建 userId → username 和 articleId → title 的映射表
@@ -339,7 +356,10 @@ export class ArticleLogService {
 
     const articleIds: number[] = results.map((doc) => doc._id as number);
     const articleResult = await this.springClient.getArticleByIds(articleIds);
-    const articles: Array<{ id: number; title: string }> = SpringClientService.extractData<Array<{ id: number; title: string }>>(articleResult) ?? [];
+    const articles: Array<{ id: number; title: string }> =
+      SpringClientService.extractData<Array<{ id: number; title: string }>>(
+        articleResult,
+      ) ?? [];
     const articleMap: Map<number, string> = new Map(
       articles.map((article) => [article.id, article.title]),
     );

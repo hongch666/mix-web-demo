@@ -107,6 +107,16 @@ export class ApiLogService {
   }
 
   /**
+   * 批量创建API日志（攒批写入）
+   * 使用 ordered:false 让单条错误文档不影响整批写入
+   * @param dtos 日志DTO数组
+   */
+  async insertMany(dtos: CreateApiLogDto[]): Promise<void> {
+    if (dtos.length === 0) return;
+    await this.apiLogModel.insertMany(dtos, { ordered: false });
+  }
+
+  /**
    * 根据ID删除日志
    * @param id 日志ID
    */
