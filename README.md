@@ -79,23 +79,23 @@
 
 ### Spring 服务（端口 8081）
 
-| 项目     | 说明                                                                                      |
-| -------- | ----------------------------------------------------------------------------------------- |
-| 框架     | Spring Boot 3.x + WebFlux + Spring Data R2DBC                                             |
-| 数据库   | MySQL（demo 库，user/article/category/comment 等核心表）                                  |
-| 缓存     | 响应式 Redis（ReactiveStringRedisTemplate）                                               |
-| 消息队列 | RabbitMQ                                                                                  |
-| 注册中心 | Nacos（服务发现与配置管理）                                                               |
-| 构建工具 | Maven / Gradle                                                                            |
-| 主要功能 | 用户认证（密码登录/邮箱登录/Token 管理）、文章 CRUD、分类管理、评论点赞收藏关注、权限校验 |
-| 代码位置 | `spring/`                                                                                 |
+| 项目     | 说明                                                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------ |
+| 框架     | Spring Boot 3.x + WebFlux + Spring Data R2DBC                                                          |
+| 数据库   | MySQL（user/articles/category/sub_category/category_reference/comments/likes/collects/focus 等核心表） |
+| 缓存     | 响应式 Redis（ReactiveStringRedisTemplate）                                                            |
+| 消息队列 | RabbitMQ                                                                                               |
+| 注册中心 | Nacos（服务发现与配置管理）                                                                            |
+| 构建工具 | Maven / Gradle                                                                                         |
+| 主要功能 | 用户认证（密码登录/邮箱登录/Token 管理）、文章 CRUD、分类管理、评论点赞收藏关注、权限校验              |
+| 代码位置 | `spring/`                                                                                              |
 
 ### GoZero 服务（端口 8082）
 
 | 项目     | 说明                                              |
 | -------- | ------------------------------------------------- |
 | 框架     | GoZero                                            |
-| 数据库   | MySQL（同步 Spring 数据）                         |
+| 数据库   | MySQL（chat_messages 表，聊天消息存储）           |
 | 搜索引擎 | Elasticsearch（文章搜索）                         |
 | 实时通信 | WebSocket（用户聊天）/ SSE（消息通知）            |
 | 注册中心 | Nacos                                             |
@@ -108,7 +108,7 @@
 | 项目     | 说明                                                                                                 |
 | -------- | ---------------------------------------------------------------------------------------------------- |
 | 框架     | NestJS + Fastify                                                                                     |
-| 数据库   | MySQL（TypeORM 用户/文章/下载）、MongoDB（Mongoose 文章日志/API 日志）                               |
+| 数据库   | MySQL（TypeORM user_table_settings）、MongoDB（Mongoose 文章日志/API 日志）                          |
 | 缓存     | Redis（ioredis）                                                                                     |
 | 消息队列 | RabbitMQ                                                                                             |
 | 注册中心 | Nacos                                                                                                |
@@ -126,7 +126,7 @@ NestJS 模块按职责划分为两层：
 | 项目     | 说明                                                                                                                                               |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 框架     | FastAPI + SQLAlchemy                                                                                                                               |
-| 数据库   | MySQL（数据同步）、ClickHouse（数据分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（知识图谱）                                                |
+| 数据库   | MySQL（ai_history 表）、ClickHouse（数据分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（知识图谱）                                           |
 | 消息队列 | RabbitMQ                                                                                                                                           |
 | 注册中心 | Nacos                                                                                                                                              |
 | 运行时   | Python 3.12+                                                                                                                                       |
@@ -1496,7 +1496,11 @@ docker system prune -af
 
 项目的 SQL 初始化脚本已经统一迁移到根目录的 `db/` 目录下，按数据库类型拆分管理。
 
-- `db/mysql/`：MySQL 建表脚本，按表拆分为独立文件
+- `db/mysql/`：MySQL 建表脚本，按服务拆分为子目录（spring/gozero/nestjs/fastapi），每个服务只管理自己的表，每个表独立一个 SQL 文件：
+  - `spring/`：user、articles、category、sub_category、category_reference、comments、likes、collects、focus
+  - `gozero/`：chat_messages
+  - `nestjs/`：user_table_settings
+  - `fastapi/`：ai_history
 - `db/postgresql/`：PostgreSQL 初始化脚本，主要用于扩展启用
 - `db/clickhouse/`：ClickHouse 初始化脚本，主要用于映射库和物化视图
 - `db/mongodb/`：MongoDB 初始化脚本，主要用于集合和索引创建
@@ -1507,7 +1511,7 @@ docker system prune -af
 
 ### MySQL 表创建
 
-系统服务会自动创建，也可以先执行 `db/mysql/` 下的SQL脚步创建数据库和基础表结构
+系统服务会自动创建，也可以先执行 `db/mysql/` 下的 SQL 脚本创建数据库和基础表结构。
 
 ### PostgreSQL 表创建
 
@@ -1995,12 +1999,30 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 #### 1.SQL 数据库工具
 
-通过 MySQL 数据库进行数据查询和分析：
+SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载独立的 SQL 工具，每个工具只允许查询该服务自己归属的表（表名白名单控制）。AI 模型可根据问题自动选择合适的服务工具：
 
-| 工具名称            | 功能          | 参数            | 说明                                                                             |
-| ------------------- | ------------- | --------------- | -------------------------------------------------------------------------------- |
-| `get_table_schema`  | 获取表结构    | 表名(可选)      | 返回表的详细结构信息，包括列名、类型、主键、索引等；不提供表名则返回所有表的列表 |
-| `execute_sql_query` | 执行 SQL 查询 | SQL SELECT 语句 | 仅支持 SELECT 查询，自动进行用户隔离过滤，返回最多 500 行数据                    |
+| 工具名称                    | 所属服务 | 功能          | 可访问表                                                                                     |
+| --------------------------- | -------- | ------------- | -------------------------------------------------------------------------------------------- |
+| `get_fastapi_table_schema`  | FastAPI  | 获取表结构    | `ai_history`                                                                                 |
+| `execute_fastapi_sql_query` | FastAPI  | 执行 SQL 查询 | `ai_history`                                                                                 |
+| `get_spring_table_schema`   | Spring   | 获取表结构    | articles、user、comments、likes、collects、focus、category、sub_category、category_reference |
+| `execute_spring_sql_query`  | Spring   | 执行 SQL 查询 | 同上                                                                                         |
+| `get_gozero_table_schema`   | GoZero   | 获取表结构    | `chat_messages`                                                                              |
+| `execute_gozero_sql_query`  | GoZero   | 执行 SQL 查询 | `chat_messages`                                                                              |
+| `get_nestjs_table_schema`   | NestJS   | 获取表结构    | `user_table_settings`                                                                        |
+| `execute_nestjs_sql_query`  | NestJS   | 执行 SQL 查询 | `user_table_settings`                                                                        |
+
+安全约束（所有服务统一生效）：
+
+- 仅支持只读语句（`SELECT`/`WITH`/`SHOW`/`DESC`/`DESCRIBE`/`EXPLAIN`）
+- 表名必须在该服务对应的白名单内，否则拒绝执行
+- 强制 `LIMIT` 子句，且上限为 100 行
+- 支持参数化占位符（`:paramName`），先移除字符串字面量再做校验，避免误判
+
+其中：
+
+- FastAPI 工具本地直连自己的 `ai_history` 表
+- Spring、GoZero、NestJS 工具通过各服务暴露的内部 SQL 代理接口远程执行，表结构信息在对应服务侧维护
 
 #### 2.RAG 向量搜索工具
 
@@ -2120,7 +2142,29 @@ FastAPI 部分提供了基于 LangChain 的 AI Agent 工具，AI 模型可以通
 
 ### AI 用户说明
 
-1. AI 服务目前只有三种，对应数据库 `user` 表里面 `role` 为 `ai` 的用户，并且代码目前写死用户 id 为 1001/1002/1003；`db/mysql/user.sql` 里也已补充这三条 AI 用户初始化数据，重复执行会按 `id` 跳过已有记录。
+1. AI 服务目前只有三种，对应数据库 `user` 表里面 `role` 为 `ai` 的用户，并且代码目前写死用户 id 为 1001/1002/1003；`db/mysql/spring/user.sql` 里也已补充这三条 AI 用户初始化数据，重复执行会按 `id` 跳过已有记录。
+
+### 分库分表说明
+
+项目采用分库分表策略——按服务拆分为独立的数据库和表，每个服务只操作自己归属的库和表，互不交叉。
+
+设计原则：
+
+1. **表级隔离**：每个服务拥有独立的数据库和表集合，服务之间不共享。例如 Spring 管理 `articles`/`user`/`comments` 等核心业务表，GoZero 管理 `chat_messages` 聊天表，NestJS 管理 `user_table_settings` 配置表，FastAPI 管理 `ai_history` AI 聊天记录表。
+2. **SQL 工具白名单**：每个服务内置的 SQL Tools 均通过表名白名单限制访问范围，仅允许查询本服务归属的表，实现查询层面的隔离。
+3. **DDL 脚本组织**：建表脚本按服务拆分到 `db/mysql/<service>/` 子目录下，每个表一个独立 `.sql` 文件，文件名即表名，便于按服务独立初始化和维护。
+4. **跨服务数据访问**：服务间不直接访问对方的表，数据交互通过 REST API 或消息队列完成，保持服务边界清晰。
+
+当前分表策略：
+
+| 服务    | 归属表（共 12 张）                                                                                      | 说明           |
+| ------- | ------------------------------------------------------------------------------------------------------- | -------------- |
+| Spring  | user、articles、category、sub_category、category_reference、comments、likes、collects、focus（共 9 张） | 核心业务数据   |
+| GoZero  | chat_messages（共 1 张）                                                                                | 聊天消息存储   |
+| NestJS  | user_table_settings（共 1 张）                                                                          | 用户表格列设置 |
+| FastAPI | ai_history（共 1 张）                                                                                   | AI 聊天记录    |
+
+> 各服务通过独立的数据库连接配置指向各自的库，DDL 脚本已按服务划分到 `db/mysql/<service>/` 子目录，拆分后只需修改各服务的数据库连接配置即可。
 
 ### 邮箱说明
 
