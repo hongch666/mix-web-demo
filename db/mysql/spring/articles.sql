@@ -2,7 +2,7 @@
 -- Spring 服务 - 文章表
 -- ============================================================
 
-CREATE TABLE IF NOT EXISTS `article` (
+CREATE TABLE IF NOT EXISTS `articles` (
     `id` BIGINT NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(255) NOT NULL,
     `content` TEXT NOT NULL,
