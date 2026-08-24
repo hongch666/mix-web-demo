@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from app.core.base import Logger
@@ -35,14 +36,52 @@ def get_agent_prompt() -> ChatPromptTemplate:
     )
 
 
+def _load_sql_tools(
+    sql_tool_factories: List[Tuple[str, Any]],
+) -> Tuple[Optional[Any], List[Any]]:
+    """加载 SQL 工具（在独立线程中执行）"""
+    sql_tools_instance: Optional[Any] = None
+    tools: List[Any] = []
+    for service_name, factory in sql_tool_factories:
+        try:
+            tool_instance: Any = factory()
+            sql_tools: List[Any] = tool_instance.get_langchain_tools()
+            tools.extend(sql_tools)
+            if sql_tools_instance is None:
+                sql_tools_instance = tool_instance
+            Logger.info(
+                Messages.LLM_TOOL_LOADED(f"{service_name} SQL", len(sql_tools))
+            )
+        except Exception as e:
+            Logger.warning(
+                Messages.LLM_TOOL_LOAD_FAILED(f"{service_name} SQL", e)
+            )
+    return sql_tools_instance, tools
+
+
+def _load_tool_group(
+    group_name: str, factory: Any
+) -> Tuple[Optional[Any], List[Any]]:
+    """加载单个工具组（RAG / Neo4j / MongoDB）"""
+    try:
+        instance: Any = factory()
+        tools: List[Any] = instance.get_langchain_tools()
+        Logger.info(Messages.LLM_TOOL_LOADED(group_name, len(tools)))
+        return instance, tools
+    except Exception as e:
+        Logger.warning(Messages.LLM_TOOL_LOAD_FAILED(group_name, e))
+        return None, []
+
+
 def initialize_ai_tools(
     include_sql: bool = True, include_logs: bool = True
 ) -> Tuple[Optional[Any], Optional[Any], Optional[Any], List[Any]]:
     """初始化AI工具，支持基于权限的工具选择
 
+    各组独立工具（SQL/RAG/Neo4j/MongoDB）通过线程池并行加载，
+    单个工具组加载失败不影响其他组。
+
     Args:
-        user_id: 用户ID（用于权限检查）
-        db: 数据库会话（用于权限检查）
         include_sql: 是否包含 SQL 工具
         include_logs: 是否包含 MongoDB 日志工具
 
@@ -54,58 +93,48 @@ def initialize_ai_tools(
     mongodb_tools_instance: Optional[Any] = None
     all_tools: List[Any] = []
 
-    # 获取 SQL 工具（FastAPI 本地直连 + Spring/GoZero/NestJS 远程代理）
-    if include_sql:
-        # 按服务依次加载 SQL 工具，单个服务加载失败不影响其他服务
-        sql_tool_factories: List[Tuple[str, Any]] = [
-            ("FastAPI", get_fastapi_sql_tool),
-            ("Spring", get_spring_sql_tool),
-            ("GoZero", get_gozero_sql_tool),
-            ("NestJS", get_nestjs_sql_tool),
-        ]
-        for service_name, factory in sql_tool_factories:
-            try:
-                tool_instance: Any = factory()
-                sql_tools: List[Any] = tool_instance.get_langchain_tools()
-                all_tools.extend(sql_tools)
-                # 保留 FastAPI 实例作为主 SQL 工具实例，其余仅扩展工具列表
-                if sql_tools_instance is None:
-                    sql_tools_instance = tool_instance
-                Logger.info(
-                    Messages.LLM_TOOL_LOADED(f"{service_name} SQL", len(sql_tools))
-                )
-            except Exception as e:
-                Logger.warning(
-                    Messages.LLM_TOOL_LOAD_FAILED(f"{service_name} SQL", e)
-                )
+    # 构建任务列表，每组工具独立加载
+    sql_tool_factories: List[Tuple[str, Any]] = [
+        ("FastAPI", get_fastapi_sql_tool),
+        ("Spring", get_spring_sql_tool),
+        ("GoZero", get_gozero_sql_tool),
+        ("NestJS", get_nestjs_sql_tool),
+    ]
 
-    # 获取 RAG 工具
-    try:
-        rag_tools_instance = get_rag_tools()
-        rag_tools: List[Any] = rag_tools_instance.get_langchain_tools()
-        all_tools.extend(rag_tools)
-        Logger.info(Messages.LLM_TOOL_LOADED("RAG", len(rag_tools)))
-    except Exception as e:
-        Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("RAG", e))
+    # 并行加载所有独立工具组
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures: Dict[str, Any] = {}
 
-    # 获取 Neo4j 知识图谱工具
-    try:
-        neo4j_tools_instance = get_neo4j_tools()
-        neo4j_tools: List[Any] = neo4j_tools_instance.get_langchain_tools()
-        all_tools.extend(neo4j_tools)
-        Logger.info(Messages.LLM_TOOL_LOADED("Neo4j 知识图谱", len(neo4j_tools)))
-    except Exception as e:
-        Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("Neo4j 知识图谱", e))
+        if include_sql:
+            futures["sql"] = executor.submit(
+                _load_sql_tools, sql_tool_factories
+            )
+        futures["rag"] = executor.submit(_load_tool_group, "RAG", get_rag_tools)
+        futures["neo4j"] = executor.submit(
+            _load_tool_group, "Neo4j 知识图谱", get_neo4j_tools
+        )
+        if include_logs:
+            futures["mongodb"] = executor.submit(
+                _load_tool_group, "MongoDB 日志", get_mongodb_tools
+            )
 
-    # 获取 MongoDB 日志工具
-    if include_logs:
-        try:
-            mongodb_tools_instance = get_mongodb_tools()
-            mongodb_tools: List[Any] = mongodb_tools_instance.get_langchain_tools()
-            all_tools.extend(mongodb_tools)
-            Logger.info(Messages.LLM_TOOL_LOADED("MongoDB 日志", len(mongodb_tools)))
-        except Exception as e:
-            Logger.warning(Messages.LLM_TOOL_LOAD_FAILED("MongoDB 日志", e))
+        # 按完成顺序收集结果
+        for future in as_completed(futures.values()):
+            pass  # 结果通过闭包变量收集，异常已在子函数内部处理
+
+        # 按固定顺序合并结果，确保 tool 列表顺序一致
+        if "sql" in futures:
+            sql_tools_instance, sql_tools = futures["sql"].result()
+            all_tools.extend(sql_tools)
+        if "rag" in futures:
+            rag_tools_instance, rag_tools = futures["rag"].result()
+            all_tools.extend(rag_tools)
+        if "neo4j" in futures:
+            _, neo4j_tools = futures["neo4j"].result()
+            all_tools.extend(neo4j_tools)
+        if "mongodb" in futures:
+            mongodb_tools_instance, mongo_tools = futures["mongodb"].result()
+            all_tools.extend(mongo_tools)
 
     Logger.info(Messages.LLM_TOOLS_LOADED_TOTAL(len(all_tools)))
     return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
