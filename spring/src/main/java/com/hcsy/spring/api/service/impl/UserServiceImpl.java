@@ -155,7 +155,10 @@ public class UserServiceImpl implements UserService {
             .then(findByUsername(loginDTO.getName())
                 .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN))))
             .flatMap(user -> validatePassword(loginDTO.getPassword(), user).then(loginUser(user)))
-            .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login));
+            .flatMap(login -> {
+                imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).subscribe();
+                return Mono.just(login);
+            });
     }
 
     @Override
@@ -319,8 +322,9 @@ public class UserServiceImpl implements UserService {
                 }
                 return transactionalOperator.transactional(userRepository.save(user));
             })
-            .flatMap(saved -> redisUtil.set(RedisKeys.userStatus(saved.getId()), "0").thenReturn(saved))
-            .flatMap(saved -> evictAllUsersCache().thenReturn(saved));
+            .flatMap(saved -> Mono.when(
+                redisUtil.set(RedisKeys.userStatus(saved.getId()), "0"),
+                evictAllUsersCache()).thenReturn(saved));
     }
 
     @Override

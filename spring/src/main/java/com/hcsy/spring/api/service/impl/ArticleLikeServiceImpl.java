@@ -22,7 +22,6 @@ import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -86,10 +85,10 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
         if (articleIds == null || articleIds.isEmpty()) {
             return Mono.just(Map.of());
         }
-        return Flux.fromIterable(articleIds)
-            .flatMap(id -> articleLikeRepository.countByArticleId(id)
-                .map(count -> Map.entry(id, count)))
-            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+        return articleLikeRepository.countGroupByArticleIdIn(articleIds)
+            .collectMap(
+                row -> ((Number) row.get("article_id")).longValue(),
+                row -> ((Number) row.get("cnt")).longValue());
     }
 
     private PageRequest pageRequest(long page, long size) {
@@ -114,13 +113,14 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
 
     @Override
     public Mono<Double> getAverageLikes() {
-        return articleService.getTotalArticles()
-            .flatMap(totalArticles -> {
+        return Mono.zip(articleService.getTotalArticles(), getTotalLikes())
+            .flatMap(result -> {
+                long totalArticles = result.getT1();
+                long totalLikes = result.getT2();
                 if (totalArticles == 0) {
                     return Mono.just(0.0);
                 }
-                return getTotalLikes()
-                    .map(totalLikes -> Math.round(totalLikes * 100.0 / totalArticles) / 100.0);
+                return Mono.just(Math.round(totalLikes * 100.0 / totalArticles) / 100.0);
             });
     }
 

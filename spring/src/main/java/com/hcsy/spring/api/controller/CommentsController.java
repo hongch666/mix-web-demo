@@ -64,9 +64,10 @@ public class CommentsController {
     @Neo4jSync(description = "新增评论后同步 Neo4j")
     @ApiLog("新增评论")
     public Mono<Result<Void>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
-        return articleService.findByArticleTitle(dto.getArticleTitle())
-            .flatMap(article -> userService.findByUsername(dto.getUsername())
-                .flatMap(user -> saveComment(dto, article, user)))
+        return Mono.zip(
+            articleService.findByArticleTitle(dto.getArticleTitle()),
+            userService.findByUsername(dto.getUsername()))
+            .flatMap(result -> saveComment(dto, result.getT1(), result.getT2()))
             .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
     }
 
@@ -77,14 +78,15 @@ public class CommentsController {
     @Neo4jSync(description = "修改评论后同步 Neo4j")
     @ApiLog("修改评论")
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
-        return articleService.findByArticleTitle(dto.getArticleTitle())
-            .flatMap(article -> userService.findByUsername(dto.getUsername())
-                .flatMap(user -> {
-                    Comments comment = BeanUtil.toBean(dto, Comments.class);
-                    comment.setArticleId(article.getId());
-                    comment.setUserId(user.getId());
-                    return commentsService.update(comment).thenReturn(Result.<Void>success());
-                }))
+        return Mono.zip(
+            articleService.findByArticleTitle(dto.getArticleTitle()),
+            userService.findByUsername(dto.getUsername()))
+            .flatMap(result -> {
+                Comments comment = BeanUtil.toBean(dto, Comments.class);
+                comment.setArticleId(result.getT1().getId());
+                comment.setUserId(result.getT2().getId());
+                return commentsService.update(comment).thenReturn(Result.<Void>success());
+            })
             .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
     }
 

@@ -235,24 +235,27 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public Flux<java.util.Map<String, Object>> listAllSubCategoriesWithParent() {
         return subCategoryRepository.findAll()
-            .flatMap(subCategory -> categoryRepository.findById(subCategory.getCategoryId())
-                .map(category -> {
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
-                    map.put("id", subCategory.getId());
-                    map.put("name", subCategory.getName());
-                    map.put("category_id", subCategory.getCategoryId());
-                    map.put("category_name", category.getName());
-                    map.put("create_time", subCategory.getCreateTime());
-                    map.put("update_time", subCategory.getUpdateTime());
-                    return map;
-                })
-                .defaultIfEmpty(java.util.Map.of(
-                    "id", subCategory.getId(),
-                    "name", subCategory.getName(),
-                    "category_id", subCategory.getCategoryId(),
-                    "category_name", Messages.UNCATEGORIZED,
-                    "create_time", subCategory.getCreateTime(),
-                    "update_time", subCategory.getUpdateTime())));
+            .collectList()
+            .flatMapMany(subCategories -> {
+                // 收集所有分类ID，批量查询，避免 N+1 问题
+                java.util.Set<Long> categoryIds = subCategories.stream()
+                    .map(SubCategory::getCategoryId)
+                    .collect(java.util.stream.Collectors.toSet());
+                return categoryRepository.findAllById(categoryIds)
+                    .collectMap(Category::getId, java.util.function.Function.identity())
+                    .flatMapMany(categoryMap -> Flux.fromIterable(subCategories)
+                        .map(subCategory -> {
+                            java.util.Map<String, Object> map = new java.util.HashMap<>();
+                            Category category = categoryMap.get(subCategory.getCategoryId());
+                            map.put("id", subCategory.getId());
+                            map.put("name", subCategory.getName());
+                            map.put("category_id", subCategory.getCategoryId());
+                            map.put("category_name", category != null ? category.getName() : Messages.UNCATEGORIZED);
+                            map.put("create_time", subCategory.getCreateTime());
+                            map.put("update_time", subCategory.getUpdateTime());
+                            return map;
+                        }));
+            });
     }
 
     @Override

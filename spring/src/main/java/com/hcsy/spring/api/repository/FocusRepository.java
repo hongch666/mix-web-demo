@@ -1,6 +1,8 @@
 package com.hcsy.spring.api.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Map;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
@@ -25,6 +27,17 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
     Mono<Long> countByUserId(Long userId);
 
     Mono<Long> countByFocusId(Long focusId);
+
+    /**
+     * 批量统计多个用户的被关注数，避免 N+1 查询
+     */
+    @Query("""
+        SELECT focus_id, COUNT(*) AS cnt
+        FROM focus
+        WHERE focus_id IN (:ids)
+        GROUP BY focus_id
+        """)
+    Flux<Map<String, Object>> countGroupByFocusIdIn(@Param("ids") Collection<Long> userIds);
 
     @Query("""
         SELECT COUNT(*) FROM focus

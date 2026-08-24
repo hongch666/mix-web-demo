@@ -22,7 +22,6 @@ import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -87,10 +86,10 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
         if (articleIds == null || articleIds.isEmpty()) {
             return Mono.just(Map.of());
         }
-        return Flux.fromIterable(articleIds)
-            .flatMap(id -> articleCollectRepository.countByArticleId(id)
-                .map(count -> Map.entry(id, count)))
-            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+        return articleCollectRepository.countGroupByArticleIdIn(articleIds)
+            .collectMap(
+                row -> ((Number) row.get("article_id")).longValue(),
+                row -> ((Number) row.get("cnt")).longValue());
     }
 
     private PageRequest pageRequest(long page, long size) {
@@ -115,13 +114,14 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
 
     @Override
     public Mono<Double> getAverageCollects() {
-        return articleService.getTotalArticles()
-            .flatMap(totalArticles -> {
+        return Mono.zip(articleService.getTotalArticles(), getTotalCollects())
+            .flatMap(result -> {
+                long totalArticles = result.getT1();
+                long totalCollects = result.getT2();
                 if (totalArticles == 0) {
                     return Mono.just(0.0);
                 }
-                return getTotalCollects()
-                    .map(totalCollects -> Math.round(totalCollects * 100.0 / totalArticles) / 100.0);
+                return Mono.just(Math.round(totalCollects * 100.0 / totalArticles) / 100.0);
             });
     }
 

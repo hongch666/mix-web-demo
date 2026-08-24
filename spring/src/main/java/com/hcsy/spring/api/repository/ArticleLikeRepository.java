@@ -1,6 +1,8 @@
 package com.hcsy.spring.api.repository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Map;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
@@ -23,6 +25,17 @@ public interface ArticleLikeRepository extends ReactiveCrudRepository<ArticleLik
     Mono<Long> countByUserId(Long userId);
 
     Mono<Long> countByArticleId(Long articleId);
+
+    /**
+     * 批量统计多篇文章的点赞数，避免 N+1 查询
+     */
+    @Query("""
+        SELECT article_id, COUNT(*) AS cnt
+        FROM likes
+        WHERE article_id IN (:ids)
+        GROUP BY article_id
+        """)
+    Flux<Map<String, Object>> countGroupByArticleIdIn(@Param("ids") Collection<Long> articleIds);
 
     @Query("""
         SELECT DATE(created_time) AS date, COUNT(*) AS count

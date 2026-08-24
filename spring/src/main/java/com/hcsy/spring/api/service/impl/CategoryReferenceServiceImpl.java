@@ -32,11 +32,16 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
             return Mono.error(validationError);
         }
 
-        Mono<CategoryReference> operation = subCategoryRepository.findById(dto.getSubCategoryId())
-            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-            .then(categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
-                .flatMap(existing -> Mono.<CategoryReference>error(conflict(Messages.REFERENCE_EXIST)))
-                .switchIfEmpty(Mono.defer(() -> categoryReferenceRepository.save(toEntity(dto)))));
+        Mono<CategoryReference> operation = Mono.zip(
+            subCategoryRepository.findById(dto.getSubCategoryId())
+                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY))),
+            categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId()))
+            .flatMap(result -> {
+                if (result.getT2() != null) {
+                    return Mono.<CategoryReference>error(conflict(Messages.REFERENCE_EXIST));
+                }
+                return categoryReferenceRepository.save(toEntity(dto));
+            });
 
         return transactionalOperator.transactional(operation).map(CategoryReference::getId);
     }
@@ -48,14 +53,16 @@ public class CategoryReferenceServiceImpl implements CategoryReferenceService {
             return Mono.error(validationError);
         }
 
-        Mono<Void> operation = subCategoryRepository.findById(dto.getSubCategoryId())
-            .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY)))
-            .then(categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
-                .switchIfEmpty(Mono.error(conflict(Messages.REFERENCE_EXIST)))
-                .flatMap(reference -> {
-                    applyContent(reference, dto.getType(), dto.getLink(), dto.getPdf());
-                    return categoryReferenceRepository.save(reference);
-                }))
+        Mono<Void> operation = Mono.zip(
+            subCategoryRepository.findById(dto.getSubCategoryId())
+                .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_SUB_CATEGORY))),
+            categoryReferenceRepository.findBySubCategoryId(dto.getSubCategoryId())
+                .switchIfEmpty(Mono.error(conflict(Messages.REFERENCE_EXIST))))
+            .flatMap(result -> {
+                CategoryReference reference = result.getT2();
+                applyContent(reference, dto.getType(), dto.getLink(), dto.getPdf());
+                return categoryReferenceRepository.save(reference);
+            })
             .then();
         return transactionalOperator.transactional(operation);
     }

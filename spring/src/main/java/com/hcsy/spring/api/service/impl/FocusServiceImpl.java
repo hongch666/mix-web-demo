@@ -100,10 +100,10 @@ public class FocusServiceImpl implements FocusService {
         if (userIds == null || userIds.isEmpty()) {
             return Mono.just(Map.of());
         }
-        return Flux.fromIterable(userIds)
-            .flatMap(id -> focusRepository.countByFocusId(id)
-                .map(count -> Map.entry(id, count)))
-            .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+        return focusRepository.countGroupByFocusIdIn(userIds)
+            .collectMap(
+                row -> ((Number) row.get("focus_id")).longValue(),
+                row -> ((Number) row.get("cnt")).longValue());
     }
 
     private Mono<PageDTO<FocusUserVO>> buildPage(
