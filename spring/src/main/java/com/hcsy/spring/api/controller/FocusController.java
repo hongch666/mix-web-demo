@@ -23,7 +23,9 @@ import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.vo.CountVO;
 import com.hcsy.spring.entity.vo.FocusCheckVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -117,7 +119,7 @@ public class FocusController {
     @Operation(summary = "批量查询粉丝数（内部）", description = "根据用户ID列表批量查询粉丝数，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部批量查询粉丝数")
-    public Mono<Result<java.util.Map<Long, Long>>> getFollowCountsByUserIds(@Valid @RequestBody BatchIdsDTO dto) {
+    public Mono<Result<BatchCountVO>> getFollowCountsByUserIds(@Valid @RequestBody BatchIdsDTO dto) {
         return focusService.getFollowCountsByUserIds(dto.getIds())
             .map(Result::success);
     }
@@ -139,7 +141,7 @@ public class FocusController {
     @Operation(summary = "获取每日关注数（内部）", description = "获取指定时间段内每天的关注数，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取每日关注数")
-    public Mono<Result<java.util.Map<String, Object>>> getDailyFollows(
+    public Mono<Result<MapDataVO>> getDailyFollows(
         @PathVariable Long userId,
         @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
         @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
@@ -158,7 +160,7 @@ public class FocusController {
     @Operation(summary = "获取用户月度关注趋势（内部）", description = "获取用户本月关注的趋势，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取用户月度关注趋势")
-    public Mono<Result<java.util.Map<String, Object>>> getMonthlyFollowTrend(@PathVariable Long userId) {
+    public Mono<Result<MapDataVO>> getMonthlyFollowTrend(@PathVariable Long userId) {
         return focusService.getMonthlyFollowTrend(userId).map(Result::success);
     }
 

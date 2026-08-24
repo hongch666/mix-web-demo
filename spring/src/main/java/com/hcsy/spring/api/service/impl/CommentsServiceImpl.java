@@ -26,6 +26,8 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
+import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
@@ -204,9 +206,9 @@ public class CommentsServiceImpl implements CommentsService {
     }
 
     @Override
-    public Mono<Map<Long, Map<String, CommentScoreDTO>>> getCommentScoresByArticleIds(Collection<Long> articleIds) {
+    public Mono<List<ArticleCommentScoresVO>> getCommentScoresByArticleIds(Collection<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
-            return Mono.just(Map.of());
+            return Mono.just(List.of());
         }
         // 批量查询评论评分，按角色（ai/user）分组，与 gozero COMMENT_RATING_QUERY 逻辑一致
         // 优化：一次 in 查询拉取所有文章的相关评论，避免逐篇文章发起查询导致的 N+1 性能问题
@@ -216,7 +218,7 @@ public class CommentsServiceImpl implements CommentsService {
             .collectList()
             .flatMap(comments -> {
                 if (comments.isEmpty()) {
-                    return Mono.just(Map.of());
+                    return Mono.just(List.of());
                 }
                 List<Long> userIds = comments.stream().map(Comments::getUserId).distinct().toList();
                 return userRepository.findAllById(userIds)
@@ -246,7 +248,11 @@ public class CommentsServiceImpl implements CommentsService {
                                 }
                             }
                         }
-                        return result;
+                        // 转为具名 VO 列表，避免 Map<Long, Map<...>> 泛型擦除导致 Jackson 序列化失败
+                        List<ArticleCommentScoresVO> voList = new ArrayList<>(result.size());
+                        result.forEach((articleId, scores) ->
+                            voList.add(new ArticleCommentScoresVO(articleId, scores)));
+                        return voList;
                     });
             });
     }
@@ -278,7 +284,7 @@ public class CommentsServiceImpl implements CommentsService {
     }
 
     @Override
-    public Mono<Map<String, Object>> getMonthlyCommentTrend(Long userId) {
+    public Mono<MapDataVO> getMonthlyCommentTrend(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime lastDay;
@@ -303,7 +309,7 @@ public class CommentsServiceImpl implements CommentsService {
                     .mapToLong(t -> ((Number) t.get("count")).longValue())
                     .sum();
                 result.put("total", total);
-                return result;
+                return new MapDataVO(result);
             });
     }
 

@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Mono;
 
@@ -19,7 +21,7 @@ public interface ArticleCollectService {
 
     Mono<Long> getCollectCountByArticleId(Long articleId);
 
-    Mono<Map<Long, Long>> getCollectCountsByArticleIds(java.util.Collection<Long> articleIds);
+    Mono<BatchCountVO> getCollectCountsByArticleIds(java.util.Collection<Long> articleIds);
 
     /**
      * 获取所有文章的总收藏数
@@ -34,7 +36,7 @@ public interface ArticleCollectService {
     /**
      * 获取用户本月收藏的趋势
      */
-    Mono<Map<String, Object>> getMonthlyCollectTrend(Long userId);
+    Mono<MapDataVO> getMonthlyCollectTrend(Long userId);
 
     /**
      * 获取收藏数据，用于Neo4j同步

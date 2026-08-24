@@ -22,7 +22,9 @@ import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.CollectCheckVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.CollectCountVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
@@ -97,7 +99,7 @@ public class ArticleCollectController {
     @Operation(summary = "批量查询收藏数（内部）", description = "根据文章ID列表批量查询收藏数，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部批量查询收藏数")
-    public Mono<Result<java.util.Map<Long, Long>>> getCollectCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
+    public Mono<Result<BatchCountVO>> getCollectCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
         return articleCollectService.getCollectCountsByArticleIds(dto.getIds())
             .map(Result::success);
     }
@@ -124,7 +126,7 @@ public class ArticleCollectController {
     @Operation(summary = "获取用户月度收藏趋势（内部）", description = "获取用户本月收藏的趋势，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取用户月度收藏趋势")
-    public Mono<Result<java.util.Map<String, Object>>> getMonthlyCollectTrend(@PathVariable Long userId) {
+    public Mono<Result<MapDataVO>> getMonthlyCollectTrend(@PathVariable Long userId) {
         return articleCollectService.getMonthlyCollectTrend(userId).map(Result::success);
     }
 

@@ -6,6 +6,7 @@ import java.util.List;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,7 +47,7 @@ public interface ArticleService {
 
     Flux<Article> listByIds(Collection<Long> ids);
 
-    Mono<java.util.Map<Long, Integer>> getArticleViewsByIDs(Collection<Long> ids);
+    Mono<List<IdCountVO>> getArticleViewsByIDs(Collection<Long> ids);
 
     /**
      * 获取文章总数

@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Mono;
 
@@ -19,7 +21,7 @@ public interface ArticleLikeService {
 
     Mono<Long> getLikeCountByArticleId(Long articleId);
 
-    Mono<Map<Long, Long>> getLikeCountsByArticleIds(java.util.Collection<Long> articleIds);
+    Mono<BatchCountVO> getLikeCountsByArticleIds(java.util.Collection<Long> articleIds);
 
     /**
      * 获取所有文章的总点赞数
@@ -34,7 +36,7 @@ public interface ArticleLikeService {
     /**
      * 获取用户本月点赞的趋势
      */
-    Mono<Map<String, Object>> getMonthlyLikeTrend(Long userId);
+    Mono<MapDataVO> getMonthlyLikeTrend(Long userId);
 
     /**
      * 获取点赞数据，用于Neo4j同步

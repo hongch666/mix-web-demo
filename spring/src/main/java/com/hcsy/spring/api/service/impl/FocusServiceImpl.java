@@ -26,7 +26,10 @@ import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
@@ -96,14 +99,14 @@ public class FocusServiceImpl implements FocusService {
     }
 
     @Override
-    public Mono<Map<Long, Long>> getFollowCountsByUserIds(Collection<Long> userIds) {
+    public Mono<BatchCountVO> getFollowCountsByUserIds(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
-            return Mono.just(Map.of());
+            return Mono.just(new BatchCountVO(List.of()));
         }
         return focusRepository.countGroupByFocusIdIn(userIds)
-            .collectMap(
-                row -> ((Number) row.get("focus_id")).longValue(),
-                row -> ((Number) row.get("cnt")).longValue());
+            .map(row -> new IdCountVO(row.getId(), row.getCount()))
+            .collectList()
+            .map(BatchCountVO::new);
     }
 
     private Mono<PageDTO<FocusUserVO>> buildPage(
@@ -156,7 +159,7 @@ public class FocusServiceImpl implements FocusService {
     }
 
     @Override
-    public Mono<Map<String, Object>> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
+    public Mono<MapDataVO> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate) {
         return focusRepository.countDailyFollowsByUserIdAndPeriod(userId, startDate, endDate)
             .map(row -> {
                 Map<String, Object> daily = new HashMap<>();
@@ -168,7 +171,7 @@ public class FocusServiceImpl implements FocusService {
             .map(list -> {
                 Map<String, Object> result = new HashMap<>();
                 result.put("daily_follows", list);
-                return result;
+                return new MapDataVO(result);
             });
     }
 
@@ -178,7 +181,7 @@ public class FocusServiceImpl implements FocusService {
     }
 
     @Override
-    public Mono<Map<String, Object>> getMonthlyFollowTrend(Long userId) {
+    public Mono<MapDataVO> getMonthlyFollowTrend(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime lastDay;
@@ -203,7 +206,7 @@ public class FocusServiceImpl implements FocusService {
                     .mapToLong(t -> ((Number) t.get("count")).longValue())
                     .sum();
                 result.put("total", total);
-                return result;
+                return new MapDataVO(result);
             });
     }
 

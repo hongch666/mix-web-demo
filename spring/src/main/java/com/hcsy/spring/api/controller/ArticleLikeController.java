@@ -22,7 +22,9 @@ import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.LikeCheckVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.LikeCountVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
@@ -97,7 +99,7 @@ public class ArticleLikeController {
     @Operation(summary = "批量查询点赞数（内部）", description = "根据文章ID列表批量查询点赞数，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部批量查询点赞数")
-    public Mono<Result<java.util.Map<Long, Long>>> getLikeCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
+    public Mono<Result<BatchCountVO>> getLikeCountsByArticleIds(@Valid @RequestBody BatchIdsDTO dto) {
         return articleLikeService.getLikeCountsByArticleIds(dto.getIds())
             .map(Result::success);
     }
@@ -124,7 +126,7 @@ public class ArticleLikeController {
     @Operation(summary = "获取用户月度点赞趋势（内部）", description = "获取用户本月点赞的趋势，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取用户月度点赞趋势")
-    public Mono<Result<java.util.Map<String, Object>>> getMonthlyLikeTrend(@PathVariable Long userId) {
+    public Mono<Result<MapDataVO>> getMonthlyLikeTrend(@PathVariable Long userId) {
         return articleLikeService.getMonthlyLikeTrend(userId).map(Result::success);
     }
 

@@ -20,6 +20,9 @@ import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -81,14 +84,14 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     }
 
     @Override
-    public Mono<Map<Long, Long>> getLikeCountsByArticleIds(Collection<Long> articleIds) {
+    public Mono<BatchCountVO> getLikeCountsByArticleIds(Collection<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
-            return Mono.just(Map.of());
+            return Mono.just(new BatchCountVO(List.of()));
         }
         return articleLikeRepository.countGroupByArticleIdIn(articleIds)
-            .collectMap(
-                row -> ((Number) row.get("article_id")).longValue(),
-                row -> ((Number) row.get("cnt")).longValue());
+            .map(row -> new IdCountVO(row.getId(), row.getCount()))
+            .collectList()
+            .map(BatchCountVO::new);
     }
 
     private PageRequest pageRequest(long page, long size) {
@@ -125,7 +128,7 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     }
 
     @Override
-    public Mono<Map<String, Object>> getMonthlyLikeTrend(Long userId) {
+    public Mono<MapDataVO> getMonthlyLikeTrend(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime lastDay;
@@ -150,7 +153,7 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
                     .mapToLong(t -> ((Number) t.get("count")).longValue())
                     .sum();
                 result.put("total", total);
-                return result;
+                return new MapDataVO(result);
             });
     }
 

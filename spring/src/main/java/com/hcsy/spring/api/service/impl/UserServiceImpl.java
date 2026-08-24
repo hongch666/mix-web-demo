@@ -155,10 +155,7 @@ public class UserServiceImpl implements UserService {
             .then(findByUsername(loginDTO.getName())
                 .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN))))
             .flatMap(user -> validatePassword(loginDTO.getPassword(), user).then(loginUser(user)))
-            .flatMap(login -> {
-                imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).subscribe();
-                return Mono.just(login);
-            });
+            .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login));
     }
 
     @Override

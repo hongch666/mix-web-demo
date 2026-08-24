@@ -2,7 +2,6 @@ package com.hcsy.spring.api.repository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.Map;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.r2dbc.repository.Query;
@@ -11,6 +10,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.projection.DateCountRow;
+import com.hcsy.spring.entity.projection.IdCountRow;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,12 +30,12 @@ public interface ArticleCollectRepository extends ReactiveCrudRepository<Article
      * 批量统计多篇文章的收藏数，避免 N+1 查询
      */
     @Query("""
-        SELECT article_id, COUNT(*) AS cnt
+        SELECT article_id AS id, COUNT(*) AS count
         FROM collects
         WHERE article_id IN (:ids)
         GROUP BY article_id
         """)
-    Flux<Map<String, Object>> countGroupByArticleIdIn(@Param("ids") Collection<Long> articleIds);
+    Flux<IdCountRow> countGroupByArticleIdIn(@Param("ids") Collection<Long> articleIds);
 
     @Query("""
         SELECT DATE(created_time) AS date, COUNT(*) AS count

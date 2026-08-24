@@ -3,10 +3,11 @@ package com.hcsy.spring.api.service;
 import java.util.List;
 import java.util.Map;
 
-import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Comments;
+import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,7 +36,7 @@ public interface CommentsService {
     /**
      * 批量查询文章评论评分，按角色（ai/user）分组
      */
-    Mono<Map<Long, Map<String, CommentScoreDTO>>> getCommentScoresByArticleIds(
+    Mono<List<ArticleCommentScoresVO>> getCommentScoresByArticleIds(
         java.util.Collection<Long> articleIds);
 
     /**
@@ -51,7 +52,7 @@ public interface CommentsService {
     /**
      * 获取用户本月评论的趋势
      */
-    Mono<Map<String, Object>> getMonthlyCommentTrend(Long userId);
+    Mono<MapDataVO> getMonthlyCommentTrend(Long userId);
 
     /**
      * 获取评论数据，用于Neo4j同步

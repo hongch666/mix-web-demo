@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.hcsy.spring.entity.dto.PageDTO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Mono;
 
@@ -24,7 +26,7 @@ public interface FocusService {
 
     Mono<Long> getFollowerCountByUserId(Long userId);
 
-    Mono<Map<Long, Long>> getFollowCountsByUserIds(java.util.Collection<Long> userIds);
+    Mono<BatchCountVO> getFollowCountsByUserIds(java.util.Collection<Long> userIds);
 
     /**
      * 获取指定时间段内的新增粉丝数
@@ -34,7 +36,7 @@ public interface FocusService {
     /**
      * 获取指定时间段内每天的关注数
      */
-    Mono<Map<String, Object>> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate);
+    Mono<MapDataVO> getDailyFollows(Long userId, LocalDateTime startDate, LocalDateTime endDate);
 
     /**
      * 获取用户的总关注数
@@ -44,7 +46,7 @@ public interface FocusService {
     /**
      * 获取用户本月关注的趋势
      */
-    Mono<Map<String, Object>> getMonthlyFollowTrend(Long userId);
+    Mono<MapDataVO> getMonthlyFollowTrend(Long userId);
 
     /**
      * 获取关注数据，用于Neo4j同步

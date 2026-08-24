@@ -30,6 +30,7 @@ import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -210,7 +211,7 @@ public class ArticleController {
     @Operation(summary = "批量查询文章阅读量（内部）", description = "根据ID列表批量查询文章阅读量，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部批量查询文章阅读量")
-    public Mono<Result<Map<Long, Integer>>> getArticleViewsByIds(@Valid @RequestBody BatchIdsDTO dto) {
+    public Mono<Result<List<IdCountVO>>> getArticleViewsByIds(@Valid @RequestBody BatchIdsDTO dto) {
         return articleService.getArticleViewsByIDs(dto.getIds())
             .map(Result::success);
     }

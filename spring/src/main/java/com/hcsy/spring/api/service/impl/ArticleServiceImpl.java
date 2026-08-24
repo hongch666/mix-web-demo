@@ -33,6 +33,7 @@ import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
@@ -195,12 +196,13 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public Mono<Map<Long, Integer>> getArticleViewsByIDs(Collection<Long> ids) {
+    public Mono<List<IdCountVO>> getArticleViewsByIDs(Collection<Long> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Mono.just(Collections.emptyMap());
+            return Mono.just(List.of());
         }
         return articleRepository.findAllById(ids)
-            .collectMap(Article::getId, Article::getViews);
+            .map(article -> new IdCountVO(article.getId(), article.getViews() == null ? 0L : article.getViews().longValue()))
+            .collectList();
     }
 
     @Override

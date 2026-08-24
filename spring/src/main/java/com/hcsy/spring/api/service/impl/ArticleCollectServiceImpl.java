@@ -20,6 +20,9 @@ import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.IdCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -82,14 +85,14 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     }
 
     @Override
-    public Mono<Map<Long, Long>> getCollectCountsByArticleIds(Collection<Long> articleIds) {
+    public Mono<BatchCountVO> getCollectCountsByArticleIds(Collection<Long> articleIds) {
         if (articleIds == null || articleIds.isEmpty()) {
-            return Mono.just(Map.of());
+            return Mono.just(new BatchCountVO(List.of()));
         }
         return articleCollectRepository.countGroupByArticleIdIn(articleIds)
-            .collectMap(
-                row -> ((Number) row.get("article_id")).longValue(),
-                row -> ((Number) row.get("cnt")).longValue());
+            .map(row -> new IdCountVO(row.getId(), row.getCount()))
+            .collectList()
+            .map(BatchCountVO::new);
     }
 
     private PageRequest pageRequest(long page, long size) {
@@ -126,7 +129,7 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     }
 
     @Override
-    public Mono<Map<String, Object>> getMonthlyCollectTrend(Long userId) {
+    public Mono<MapDataVO> getMonthlyCollectTrend(Long userId) {
         LocalDate today = LocalDate.now();
         LocalDateTime firstDay = today.withDayOfMonth(1).atStartOfDay();
         LocalDateTime lastDay;
@@ -151,7 +154,7 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
                     .mapToLong(t -> ((Number) t.get("count")).longValue())
                     .sum();
                 result.put("total", total);
-                return result;
+                return new MapDataVO(result);
             });
     }
 

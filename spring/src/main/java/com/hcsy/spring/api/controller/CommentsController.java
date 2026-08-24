@@ -32,7 +32,6 @@ import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.CommentCreateDTO;
-import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentUpdateDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -40,7 +39,9 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.AICommentsVO;
+import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -196,7 +197,7 @@ public class CommentsController {
     @Operation(summary = "批量查询评论评分（内部）", description = "根据文章ID列表批量查询评论评分，按角色分组，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部批量查询评论评分")
-    public Mono<Result<Map<Long, Map<String, CommentScoreDTO>>>> getCommentScoresByArticleIds(
+    public Mono<Result<List<ArticleCommentScoresVO>>> getCommentScoresByArticleIds(
         @Valid @RequestBody BatchIdsDTO dto) {
         return commentsService.getCommentScoresByArticleIds(dto.getIds())
             .map(Result::success);
@@ -280,7 +281,7 @@ public class CommentsController {
     @Operation(summary = "获取用户月度评论趋势（内部）", description = "获取用户本月评论的趋势，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取用户月度评论趋势")
-    public Mono<Result<Map<String, Object>>> getMonthlyCommentTrend(@PathVariable Long userId) {
+    public Mono<Result<MapDataVO>> getMonthlyCommentTrend(@PathVariable Long userId) {
         return commentsService.getMonthlyCommentTrend(userId).map(Result::success);
     }
 }
