@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"app/common/client"
 	"app/common/constants"
 	"app/internal/client/springClient"
 
 	"github.com/olivere/elastic/v7"
+	"github.com/zeromicro/go-zero/core/mr"
 )
 
 const (
@@ -148,15 +150,32 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	}
 
 	if len(articles) > 0 && m.springClient != nil {
-		viewsResult, viewsErr := m.springClient.GetArticleViewsByIDs(ctx, articleIDs)
-		likeResult, likeErr := m.springClient.GetLikeCountsByArticleIDs(ctx, articleIDs)
-		collectResult, collectErr := m.springClient.GetCollectCountsByArticleIDs(ctx, articleIDs)
-
 		authorUserIDs := make([]int64, 0, len(articles))
 		for _, article := range articles {
 			authorUserIDs = append(authorUserIDs, article.UserID)
 		}
-		followResult, followErr := m.springClient.GetFollowCountsByUserIDs(ctx, authorUserIDs)
+
+		var viewsResult, likeResult, collectResult, followResult client.Result
+		var viewsErr, likeErr, collectErr, followErr error
+
+		_ = mr.Finish(
+			func() error {
+				viewsResult, viewsErr = m.springClient.GetArticleViewsByIDs(ctx, articleIDs)
+				return viewsErr
+			},
+			func() error {
+				likeResult, likeErr = m.springClient.GetLikeCountsByArticleIDs(ctx, articleIDs)
+				return likeErr
+			},
+			func() error {
+				collectResult, collectErr = m.springClient.GetCollectCountsByArticleIDs(ctx, articleIDs)
+				return collectErr
+			},
+			func() error {
+				followResult, followErr = m.springClient.GetFollowCountsByUserIDs(ctx, authorUserIDs)
+				return followErr
+			},
+		)
 
 		if viewsErr != nil {
 			return nil, 0, viewsErr

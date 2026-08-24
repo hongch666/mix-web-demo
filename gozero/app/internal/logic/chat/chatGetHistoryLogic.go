@@ -12,6 +12,9 @@ import (
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
+	"app/model/chatMessages"
+
+	"github.com/zeromicro/go-zero/core/mr"
 )
 
 type ChatGetHistoryLogic struct {
@@ -42,16 +45,29 @@ func (l *ChatGetHistoryLogic) ChatGetHistory(req *types.ChatGetHistoryReq) (resp
 
 	offset := (page - 1) * size
 
-	// 获取聊天历史
-	messages, total, err := l.svcCtx.ChatMessagesModel.GetChatHistory(l.ctx, req.UserId, req.OtherId, offset, size)
-	if err != nil {
-		l.Error(fmt.Sprintf(constants.GET_HISTORY_MESSAGE_ERROR+": %v", err))
-		return nil, exceptions.NewInternalServerError(constants.GET_HISTORY_MESSAGE_ERROR, err.Error())
+	// 获取聊天历史与标记已读是两个独立的 MySQL 操作，并行执行降低延迟
+	var messages []*chatMessages.ChatMessages
+	var total int64
+	var getErr, markErr error
+
+	_ = mr.Finish(
+		func() error {
+			messages, total, getErr = l.svcCtx.ChatMessagesModel.GetChatHistory(l.ctx, req.UserId, req.OtherId, offset, size)
+			return getErr
+		},
+		func() error {
+			markErr = l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.UserId, req.OtherId)
+			return markErr
+		},
+	)
+
+	if getErr != nil {
+		l.Error(fmt.Sprintf(constants.GET_HISTORY_MESSAGE_ERROR+": %v", getErr))
+		return nil, exceptions.NewInternalServerError(constants.GET_HISTORY_MESSAGE_ERROR, getErr.Error())
 	}
 
-	// 标记消息为已读
-	if err := l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.UserId, req.OtherId); err != nil {
-		l.Error(fmt.Sprintf(constants.MARK_READ_FAIL, err))
+	if markErr != nil {
+		l.Error(fmt.Sprintf(constants.MARK_READ_FAIL, markErr))
 	}
 
 	// 转换为ChatMessageItem

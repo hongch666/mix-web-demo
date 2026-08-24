@@ -9,12 +9,14 @@ import (
 	"io"
 	"time"
 
+	"app/common/client"
 	"app/common/constants"
 	"app/internal/client/springClient"
 	"app/internal/svc"
 	"app/model/search"
 
 	"github.com/olivere/elastic/v7"
+	"github.com/zeromicro/go-zero/core/mr"
 )
 
 const (
@@ -278,11 +280,28 @@ func buildArticleESBatchFromRemote(
 		}
 	}
 
-	// 批量查询评论评分、点赞数、收藏数、粉丝数
-	commentResult, commentErr := springCli.GetCommentScoresByArticleIDs(ctx, articleIDs)
-	likeResult, likeErr := springCli.GetLikeCountsByArticleIDs(ctx, articleIDs)
-	collectResult, collectErr := springCli.GetCollectCountsByArticleIDs(ctx, articleIDs)
-	followResult, followErr := springCli.GetFollowCountsByUserIDs(ctx, userIDs)
+	// 批量查询评论评分、点赞数、收藏数、粉丝数（四个独立远程调用并行执行）
+	var commentResult, likeResult, collectResult, followResult client.Result
+	var commentErr, likeErr, collectErr, followErr error
+
+	_ = mr.Finish(
+		func() error {
+			commentResult, commentErr = springCli.GetCommentScoresByArticleIDs(ctx, articleIDs)
+			return commentErr
+		},
+		func() error {
+			likeResult, likeErr = springCli.GetLikeCountsByArticleIDs(ctx, articleIDs)
+			return likeErr
+		},
+		func() error {
+			collectResult, collectErr = springCli.GetCollectCountsByArticleIDs(ctx, articleIDs)
+			return collectErr
+		},
+		func() error {
+			followResult, followErr = springCli.GetFollowCountsByUserIDs(ctx, userIDs)
+			return followErr
+		},
+	)
 
 	if commentErr != nil {
 		return nil, logAndWrapError(svcCtx, constants.CREATE_MESSAGE_ERROR, commentErr)
