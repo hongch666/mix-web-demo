@@ -302,6 +302,39 @@ export class Messages {
   static readonly BATCH_FLUSH_FAILED = (error: string): string =>
     `攒批写入失败: ${error}`;
 
+  static readonly BATCH_INITIALIZED = (
+    name: string,
+    batchSize: number,
+    intervalMs: number,
+  ): string =>
+    `[攒批] ${name} 初始化完成 (batchSize=${batchSize}, interval=${intervalMs}ms)`;
+
+  static readonly BATCH_DISCARDED_AFTER_SHUTDOWN = (
+    name: string,
+  ): string => `[攒批] ${name} 已关闭，丢弃数据`;
+
+  static readonly BATCH_FORCE_FLUSH_MAX_CAPACITY = (
+    name: string,
+    maxBufferSize: number,
+  ): string => `[攒批] ${name} 缓冲区达到最大容量 ${maxBufferSize}，强制 flush`;
+
+  static readonly BATCH_FLUSH_SUCCESS = (name: string, batchSize: number): string =>
+    `[攒批] ${name} flush 成功，批次大小: ${batchSize}`;
+
+  static readonly BATCH_FLUSH_FAILED_DETAIL = (
+    name: string,
+    batchSize: number,
+    errorMessage: string,
+  ): string => `[攒批] ${name} flush 失败，批次大小: ${batchSize}，错误: ${errorMessage}`;
+
+  static readonly BATCH_SHUTDOWN_FLUSH_REMAINING = (
+    name: string,
+    remaining: number,
+  ): string => `[攒批] ${name} 优雅关闭，flush 剩余 ${remaining} 条数据`;
+
+  static readonly BATCH_SHUTDOWN_COMPLETED = (name: string): string =>
+    `[攒批] ${name} 已关闭`;
+
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
 
   static readonly INTERNAL_TOKEN_MISSING = "请求头中缺少内部令牌";

@@ -1,3 +1,4 @@
+import { Messages } from "src/common/constants";
 import { logger } from "src/common/utils/writeLog";
 
 /**
@@ -6,7 +7,7 @@ import { logger } from "src/common/utils/writeLog";
 export interface BatchBufferOptions {
   /** 批量大小：达到此数量立即 flush */
   batchSize: number;
-  /** flush 间隔（毫秒）：超过此时间未 flush 则自动触发 */
+  /** flush 间隔（毫秒）：由外部定时任务按此间隔触发 flush */
   flushIntervalMs: number;
   /** 缓冲区最大容量：超过后强制 flush 防止 OOM */
   maxBufferSize: number;
@@ -22,26 +23,16 @@ const DEFAULT_OPTIONS: BatchBufferOptions = {
  * 通用攒批缓冲区
  *
  * 触发 flush 条件（满足其一）：
- * 1. 缓冲区数量 >= batchSize
- * 2. 距上次 flush 时间 >= flushIntervalMs
+ * 1. 缓冲区数量 >= batchSize（enqueue 时立即触发）
+ * 2. 距上次 flush 时间 >= flushIntervalMs（由外部定时任务统一触发）
  * 3. 缓冲区数量 >= maxBufferSize（强制 flush 防止 OOM）
  *
- * 使用方式：
- * ```
- * const buffer = new BatchBuffer<MyDto>({
- *   batchSize: 100,
- *   flushIntervalMs: 1000,
- * }, async (batch) => { await service.insertMany(batch); });
- *
- * buffer.enqueue(dto1);
- * buffer.enqueue(dto2);
- * // ...
- * await buffer.shutdown(); // 优雅关闭时调用
- * ```
+ * 说明：本类不内置 setTimeout 定时器，定时 flush 由外部定时任务
+ * （如 @nestjs/schedule 的 @Interval）调用 flush() 完成，避免内部定时器
+ * 生命周期维护带来的"定时器耗尽后不再重启"问题。
  */
 export class BatchBuffer<T> {
   private buffer: T[] = [];
-  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private isFlushing = false;
   private isShutdown = false;
   private readonly options: BatchBufferOptions;
@@ -56,9 +47,12 @@ export class BatchBuffer<T> {
     this.name = name;
     this.options = { ...DEFAULT_OPTIONS, ...options };
     this.onFlush = onFlush;
-    this.startTimer();
     logger.info(
-      `[攒批] ${this.name} 初始化完成 (batchSize=${this.options.batchSize}, interval=${this.options.flushIntervalMs}ms)`,
+      Messages.BATCH_INITIALIZED(
+        this.name,
+        this.options.batchSize,
+        this.options.flushIntervalMs,
+      ),
     );
   }
 
@@ -67,7 +61,7 @@ export class BatchBuffer<T> {
    */
   enqueue(item: T): void {
     if (this.isShutdown) {
-      logger.warning(`[攒批] ${this.name} 已关闭，丢弃数据`);
+      logger.warning(Messages.BATCH_DISCARDED_AFTER_SHUTDOWN(this.name));
       return;
     }
     this.buffer.push(item);
@@ -81,48 +75,47 @@ export class BatchBuffer<T> {
     // 超过最大容量，强制 flush 防止 OOM
     if (this.buffer.length >= this.options.maxBufferSize) {
       logger.warning(
-        `[攒批] ${this.name} 缓冲区达到最大容量 ${this.options.maxBufferSize}，强制 flush`,
+        Messages.BATCH_FORCE_FLUSH_MAX_CAPACITY(
+          this.name,
+          this.options.maxBufferSize,
+        ),
       );
       this.scheduleFlush();
     }
   }
 
   /**
-   * 立即 flush 缓冲区（由 enqueue 触发或外部调用）
+   * 立即 flush 缓冲区（由外部定时任务按 flushIntervalMs 周期调用）
    */
   async flush(): Promise<void> {
-    if (this.isFlushing || this.buffer.length === 0) return;
+    if (this.isShutdown || this.isFlushing || this.buffer.length === 0) {
+      return;
+    }
 
     this.isFlushing = true;
-    this.clearTimer();
 
     const batch = this.buffer.splice(0, this.buffer.length);
     const batchSize = batch.length;
 
     try {
       await this.onFlush(batch);
-      logger.info(`[攒批] ${this.name} flush 成功，批次大小: ${batchSize}`);
+      logger.info(Messages.BATCH_FLUSH_SUCCESS(this.name, batchSize));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       logger.error(
-        `[攒批] ${this.name} flush 失败，批次大小: ${batchSize}，错误: ${errorMessage}`,
+        Messages.BATCH_FLUSH_FAILED_DETAIL(this.name, batchSize, errorMessage),
       );
     } finally {
       this.isFlushing = false;
-      // 如果 flush 期间有新数据入队，启动定时器
-      if (this.buffer.length > 0) {
-        this.startTimer();
-      }
     }
   }
 
   /**
-   * 优雅关闭：flush 剩余数据并停止定时器
+   * 优雅关闭：flush 剩余数据
    */
   async shutdown(): Promise<void> {
     this.isShutdown = true;
-    this.clearTimer();
     // 等待当前正在进行的 flush 完成
     while (this.isFlushing) {
       await new Promise((resolve) => setTimeout(resolve, 50));
@@ -130,11 +123,11 @@ export class BatchBuffer<T> {
     // flush 剩余数据
     if (this.buffer.length > 0) {
       logger.info(
-        `[攒批] ${this.name} 优雅关闭，flush 剩余 ${this.buffer.length} 条数据`,
+        Messages.BATCH_SHUTDOWN_FLUSH_REMAINING(this.name, this.buffer.length),
       );
       await this.flush();
     }
-    logger.info(`[攒批] ${this.name} 已关闭`);
+    logger.info(Messages.BATCH_SHUTDOWN_COMPLETED(this.name));
   }
 
   /**
@@ -151,19 +144,5 @@ export class BatchBuffer<T> {
     setImmediate(() => {
       void this.flush();
     });
-  }
-
-  private startTimer(): void {
-    if (this.isShutdown || this.flushTimer) return;
-    this.flushTimer = setTimeout(() => {
-      void this.flush();
-    }, this.options.flushIntervalMs);
-  }
-
-  private clearTimer(): void {
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-      this.flushTimer = null;
-    }
   }
 }

@@ -1,5 +1,6 @@
 import { RabbitSubscribe } from "@golevelup/nestjs-rabbitmq";
 import { Injectable, OnApplicationShutdown } from "@nestjs/common";
+import { Interval } from "@nestjs/schedule";
 import { Defaults, Messages } from "src/common/constants";
 import { BatchBuffer } from "src/common/utils/batchBuffer";
 import { logger } from "src/common/utils/writeLog";
@@ -33,6 +34,15 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
         await this.apiLogService.insertMany(batch);
       },
     );
+  }
+
+  /**
+   * 定时 flush 攒批缓冲：按 flushIntervalMs 周期触发，保证低并发下数据也能及时落库。
+   * buffer 为空时 flush() 会快速返回，无副作用。
+   */
+  @Interval(Defaults.LOG_BATCH_FLUSH_INTERVAL_MS)
+  async flushPendingLogs(): Promise<void> {
+    await this.batchBuffer.flush();
   }
 
   async onApplicationShutdown(): Promise<void> {
