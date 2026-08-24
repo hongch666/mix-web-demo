@@ -22,23 +22,25 @@ export class MongoToolsService {
    * 列出白名单内所有 collection 及其基本信息
    */
   async listCollections(): Promise<MongoCollectionInfo[]> {
-    const infos: MongoCollectionInfo[] = [];
     const collections = await this.connection.db!.listCollections().toArray();
+    const allowedCollections = collections.filter((col) =>
+      MongoTools.ALLOWED_COLLECTIONS.has(col.name),
+    );
 
-    for (const col of collections) {
-      if (!MongoTools.ALLOWED_COLLECTIONS.has(col.name)) {
-        continue;
-      }
-      const collection = this.connection.db!.collection(col.name);
-      const documentCount = await collection.countDocuments({});
-      const sample = await collection.findOne({});
-      const sampleFields = sample ? Object.keys(sample).slice(0, 10) : [];
-      infos.push({
-        name: col.name,
-        document_count: documentCount,
-        sample_fields: sampleFields,
-      });
-    }
+    const infos = await Promise.all(
+      allowedCollections.map(async (col) => {
+        const collection = this.connection.db!.collection(col.name);
+        const [documentCount, sample] = await Promise.all([
+          collection.countDocuments({}),
+          collection.findOne({}),
+        ]);
+        return {
+          name: col.name,
+          document_count: documentCount,
+          sample_fields: sample ? Object.keys(sample).slice(0, 10) : [],
+        };
+      }),
+    );
 
     return infos;
   }

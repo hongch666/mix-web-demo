@@ -217,21 +217,24 @@ export class SqlToolsService {
   }
 
   /**
-   * 获取所有白名单表基本信息和行数
+   * 获取所有白名单表基本信息和行数，并行执行所有 COUNT 查询
    */
   private async getAllTableSchemas(): Promise<TableInfo[]> {
-    const result: TableInfo[] = [];
-    for (const tableName of TABLE_WHITELIST) {
-      try {
+    const tableNames: string[] = Array.from(TABLE_WHITELIST);
+    const results = await Promise.allSettled(
+      tableNames.map(async (tableName) => {
         const [row] = await this.dataSource.query(
           SqlTools.COUNT_ROWS_SQL(tableName),
         );
         const rowCount = row && typeof row.cnt === "number" ? row.cnt : -1;
-        result.push({ table: tableName, rowCount });
-      } catch {
-        result.push({ table: tableName, rowCount: -1 });
-      }
-    }
-    return result;
+        return { table: tableName, rowCount };
+      }),
+    );
+    return results.map(
+      (r, i): TableInfo =>
+        r.status === "fulfilled"
+          ? r.value
+          : { table: tableNames[i]!, rowCount: -1 },
+    );
   }
 }
