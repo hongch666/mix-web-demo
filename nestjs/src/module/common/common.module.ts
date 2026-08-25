@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ClientModule } from "./client/client.module";
 import { GithubModule } from "./github/github.module";
 import { MailModule } from "./mail/mail.module";
 import { NacosModule } from "./nacos/nacos.module";
@@ -8,6 +9,7 @@ import { WordModule } from "./word/word.module";
 
 @Module({
   imports: [
+    ClientModule,
     GithubModule,
     MailModule,
     NacosModule,
@@ -16,6 +18,7 @@ import { WordModule } from "./word/word.module";
     OssModule,
   ],
   exports: [
+    ClientModule,
     GithubModule,
     MailModule,
     NacosModule,

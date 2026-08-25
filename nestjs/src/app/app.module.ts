@@ -13,7 +13,6 @@ import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
 import { CommonModule } from "src/module/common/common.module";
-import { ClientModule } from "src/module/common/client/client.module";
 import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
 import { InternalTokenUtil } from "../common/utils/internalToken.util";
@@ -126,7 +125,6 @@ interface MongoDbConfig {
       },
     }),
     CommonModule,
-    ClientModule,
     SystemModule,
   ],
   controllers: [],
