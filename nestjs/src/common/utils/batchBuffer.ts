@@ -35,6 +35,8 @@ export class BatchBuffer<T> {
   private buffer: T[] = [];
   private isFlushing = false;
   private isShutdown = false;
+  private flushCompleteResolver: (() => void) | null = null;
+  private flushCompletePromise: Promise<void> | null = null;
   private readonly options: BatchBufferOptions;
   private readonly onFlush: (batch: T[]) => Promise<void>;
   private readonly name: string;
@@ -91,24 +93,7 @@ export class BatchBuffer<T> {
     if (this.isShutdown || this.isFlushing || this.buffer.length === 0) {
       return;
     }
-
-    this.isFlushing = true;
-
-    const batch = this.buffer.splice(0, this.buffer.length);
-    const batchSize = batch.length;
-
-    try {
-      await this.onFlush(batch);
-      logger.info(Messages.BATCH_FLUSH_SUCCESS(this.name, batchSize));
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.error(
-        Messages.BATCH_FLUSH_FAILED_DETAIL(this.name, batchSize, errorMessage),
-      );
-    } finally {
-      this.isFlushing = false;
-    }
+    await this.doFlush();
   }
 
   /**
@@ -116,16 +101,16 @@ export class BatchBuffer<T> {
    */
   async shutdown(): Promise<void> {
     this.isShutdown = true;
-    // 等待当前正在进行的 flush 完成
-    while (this.isFlushing) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
+    // 等待当前正在进行的 flush 完成（使用 Promise 通知，避免轮询）
+    if (this.isFlushing) {
+      await this.flushCompletePromise;
     }
-    // flush 剩余数据
+    // flush 剩余数据（直接调用 doFlush，绕过 flush() 的 isShutdown 检查）
     if (this.buffer.length > 0) {
       logger.info(
         Messages.BATCH_SHUTDOWN_FLUSH_REMAINING(this.name, this.buffer.length),
       );
-      await this.flush();
+      await this.doFlush();
     }
     logger.info(Messages.BATCH_SHUTDOWN_COMPLETED(this.name));
   }
@@ -138,6 +123,38 @@ export class BatchBuffer<T> {
   }
 
   // ========== 私有方法 ==========
+
+  /**
+   * 执行 flush 核心逻辑（不含前置守卫检查）
+   * 由 flush() 和 shutdown() 调用
+   */
+  private async doFlush(): Promise<void> {
+    this.isFlushing = true;
+    // 创建 Promise 用于通知 flush 完成
+    this.flushCompletePromise = new Promise((resolve) => {
+      this.flushCompleteResolver = resolve;
+    });
+
+    const batch = this.buffer.splice(0, this.buffer.length);
+    const batchSize = batch.length;
+    try {
+      await this.onFlush(batch);
+      logger.info(Messages.BATCH_FLUSH_SUCCESS(this.name, batchSize));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error(
+        Messages.BATCH_FLUSH_FAILED_DETAIL(this.name, batchSize, errorMessage),
+      );
+    } finally {
+      this.isFlushing = false;
+      // 通知等待者 flush 已完成
+      if (this.flushCompleteResolver) {
+        this.flushCompleteResolver();
+        this.flushCompleteResolver = null;
+      }
+    }
+  }
 
   private scheduleFlush(): void {
     // 使用 setImmediate 避免在 enqueue 调用栈中同步 flush
