@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS `sub_category` (
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    KEY `idx_category_id` (`category_id`)
+    KEY `idx_category_id` (`category_id`),
+    FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE CASCADE
 ) COMMENT '文章子分类表';
