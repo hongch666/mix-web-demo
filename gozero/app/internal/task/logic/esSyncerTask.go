@@ -210,71 +210,86 @@ func buildArticleESBatchFromRemote(
 		articleIDs = append(articleIDs, article.ID)
 	}
 
-	// 批量补齐缺失的用户名
+	// 批量补齐缺失的用户名和子分类名（两个独立远程调用并行执行）
 	missingUserIDs := make([]int64, 0)
 	for _, uid := range userIDs {
 		if _, ok := userMap[uid]; !ok {
 			missingUserIDs = append(missingUserIDs, uid)
 		}
 	}
-	if len(missingUserIDs) > 0 {
-		result, err := springCli.GetUsersByIDs(ctx, missingUserIDs)
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_USER_FAIL, err))
-			}
-		} else {
-			users, err := springClient.ParseUserVOs(result)
-			if err == nil {
-				for _, u := range users {
-					userMap[u.ID] = u.Name
-				}
-			}
-		}
-	}
-
-	// 批量补齐缺失的子分类名和分类名
 	missingSubCategoryIDs := make([]int64, 0)
 	for sid := range subCategoryIDSet {
 		if _, ok := subCategoryMap[sid]; !ok {
 			missingSubCategoryIDs = append(missingSubCategoryIDs, sid)
 		}
 	}
-	if len(missingSubCategoryIDs) > 0 {
-		result, err := springCli.GetSubCategoriesByIDs(ctx, missingSubCategoryIDs)
-		if err != nil {
-			if svcCtx.Logger != nil {
-				svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_SUBCATEGORY_FAIL, err))
+
+	var userResult, subCategoryResult client.Result
+	var userErr, subCategoryErr error
+	var getUserCalled, getSubCategoryCalled bool
+
+	_ = mr.Finish(
+		func() error {
+			if len(missingUserIDs) > 0 {
+				getUserCalled = true
+				userResult, userErr = springCli.GetUsersByIDs(ctx, missingUserIDs)
 			}
-		} else {
-			subCategories, err := springClient.ParseSubCategoryVOs(result)
-			if err == nil {
-				for _, sc := range subCategories {
-					subCategoryMap[sc.ID] = sc.Name
+			return userErr
+		},
+		func() error {
+			if len(missingSubCategoryIDs) > 0 {
+				getSubCategoryCalled = true
+				subCategoryResult, subCategoryErr = springCli.GetSubCategoriesByIDs(ctx, missingSubCategoryIDs)
+			}
+			return subCategoryErr
+		},
+	)
+
+	if getUserCalled && userErr != nil {
+		if svcCtx.Logger != nil {
+			svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_USER_FAIL, userErr))
+		}
+	} else if getUserCalled {
+		users, err := springClient.ParseUserVOs(userResult)
+		if err == nil {
+			for _, u := range users {
+				userMap[u.ID] = u.Name
+			}
+		}
+	}
+
+	if getSubCategoryCalled && subCategoryErr != nil {
+		if svcCtx.Logger != nil {
+			svcCtx.Logger.Error(fmt.Sprintf(constants.BATCH_QUERY_SUBCATEGORY_FAIL, subCategoryErr))
+		}
+	} else if getSubCategoryCalled {
+		subCategories, err := springClient.ParseSubCategoryVOs(subCategoryResult)
+		if err == nil {
+			for _, sc := range subCategories {
+				subCategoryMap[sc.ID] = sc.Name
+			}
+			// 收集需要查询的分类ID（依赖子分类结果，必须串行）
+			categoryIDs := make([]int64, 0, len(subCategories))
+			for _, sc := range subCategories {
+				if _, ok := categoryMap[sc.CategoryID]; !ok {
+					categoryIDs = append(categoryIDs, sc.CategoryID)
 				}
-				// 收集需要查询的分类ID
-				categoryIDs := make([]int64, 0, len(subCategories))
-				for _, sc := range subCategories {
-					if _, ok := categoryMap[sc.CategoryID]; !ok {
-						categoryIDs = append(categoryIDs, sc.CategoryID)
-					}
-				}
-				if len(categoryIDs) > 0 {
-					catResult, catErr := springCli.GetCategoriesByIDs(ctx, categoryIDs)
-					if catErr == nil {
-						categories, parseErr := springClient.ParseCategoryVOs(catResult)
-						if parseErr == nil {
-							for _, c := range categories {
-								categoryMap[c.ID] = c.Name
-							}
+			}
+			if len(categoryIDs) > 0 {
+				catResult, catErr := springCli.GetCategoriesByIDs(ctx, categoryIDs)
+				if catErr == nil {
+					categories, parseErr := springClient.ParseCategoryVOs(catResult)
+					if parseErr == nil {
+						for _, c := range categories {
+							categoryMap[c.ID] = c.Name
 						}
 					}
 				}
-				// 建立子分类ID到分类ID的映射，用于后续填充categoryMap
-				for _, sc := range subCategories {
-					if catName, ok := categoryMap[sc.CategoryID]; ok {
-						categoryMap[sc.ID] = catName
-					}
+			}
+			// 建立子分类ID到分类ID的映射，用于后续填充categoryMap
+			for _, sc := range subCategories {
+				if catName, ok := categoryMap[sc.CategoryID]; ok {
+					categoryMap[sc.ID] = catName
 				}
 			}
 		}
