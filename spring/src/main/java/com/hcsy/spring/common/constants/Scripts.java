@@ -19,7 +19,7 @@ public final class Scripts {
             github_login VARCHAR(255) COMMENT 'GitHub登录名',
             github_url VARCHAR(255) COMMENT 'GitHub主页地址',
             name VARCHAR(255) NOT NULL UNIQUE COMMENT '用户名',
-            password VARCHAR(255) NOT NULL COMMENT '密码',
+            password VARCHAR(255) COMMENT '密码',
             email VARCHAR(255) UNIQUE COMMENT '邮箱',
             age INT COMMENT '年龄',
             role VARCHAR(255) NOT NULL COMMENT '用户权限',
