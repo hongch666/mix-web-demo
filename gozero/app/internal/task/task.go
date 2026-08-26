@@ -28,8 +28,8 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 
 		// 尝试获取分布式锁
 		if svcCtx.RedisClient == nil {
-			// Redis 未配置，直接执行（单实例模式）
-			executeESSync(ctx, logger, svcCtx)
+			// Redis 未配置时无法保证分布式互斥，跳过本次任务
+			logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_FAIL, lockKey))
 			return
 		}
 
