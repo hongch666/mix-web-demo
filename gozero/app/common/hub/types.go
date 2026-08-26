@@ -25,3 +25,11 @@ type SSEMessageNotification struct {
 	UnreadCounts map[int64]int64  `json:"unread_counts"` // key: otherUserId, value: unreadCount
 	Message      *ChatMessageItem `json:"message,omitempty"`
 }
+
+// ChatRealtimeEvent 跨 Pod 传递的聊天实时事件
+type ChatRealtimeEvent struct {
+	Type             string                  `json:"type"`
+	ReceiverID       int64                   `json:"receiver_id"`
+	WebSocketMessage *WebSocketMessage       `json:"websocket_message,omitempty"`
+	SSENotification  *SSEMessageNotification `json:"sse_notification,omitempty"`
+}

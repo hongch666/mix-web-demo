@@ -59,22 +59,45 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		Timestamp:  time.Now().Format(constants.DateTimeFormat),
 	}
 
-	messageBytes, err := json.Marshal(wsMessage)
+	unreadCounts, err := l.svcCtx.ChatMessagesModel.GetAllUnreadCounts(l.ctx, req.ReceiverId)
+	if err != nil {
+		l.Error(fmt.Sprintf(constants.GET_UNREAD_COUNT_MESSAGE_ERROR, err))
+		unreadCounts = make(map[int64]int64)
+	}
+
+	notification := &hub.SSEMessageNotification{
+		Type:         "message",
+		UserID:       req.ReceiverId,
+		UnreadCounts: unreadCounts,
+		Message: &hub.ChatMessageItem{
+			ID:         uint(message.Id),
+			SenderID:   message.SenderId,
+			ReceiverID: message.ReceiverId,
+			Content:    message.Content,
+			IsRead:     int8(message.IsRead),
+			CreatedAt:  message.CreatedAt.Format(constants.DateTimeFormat),
+		},
+	}
+
+	event := &hub.ChatRealtimeEvent{
+		Type:             "chat.message",
+		ReceiverID:       req.ReceiverId,
+		WebSocketMessage: wsMessage,
+		SSENotification:  notification,
+	}
+	eventBytes, err := json.Marshal(event)
 	if err != nil {
 		l.Error(fmt.Sprintf(constants.WS_SERIALIZE_MESSAGE_ERROR, err))
 		return nil, exceptions.NewInternalServerError(constants.MESSAGE_SEND_ERROR, err.Error())
 	}
 
-	if l.svcCtx.ChatHub.SendMessageToQueue(req.ReceiverId, messageBytes) {
-		// 发送成功，消息已读
-		l.svcCtx.ChatMessagesModel.MarkChatHistoryAsRead(l.ctx, req.SenderId, req.ReceiverId)
-		l.Info(fmt.Sprintf(constants.WS_SEND_SUCCESS, message.Id))
+	if l.svcCtx.RealtimeBus == nil {
+		l.svcCtx.RealtimeDispatcher.Handle(eventBytes)
 	} else {
-		l.Error(fmt.Sprintf(constants.WS_SEND_FAIL, req.ReceiverId, message.Id))
-		// 触发SSE通知发送未读消息
-		utils.SafeGo(l.ZeroLogger, "notifyUnreadMessage", func() {
-			l.notifyUnreadMessage(req.ReceiverId, req.SenderId, message)
-		})
+		if err := l.svcCtx.RealtimeBus.Publish(l.ctx, eventBytes); err != nil {
+			l.Error(fmt.Sprintf(constants.REDIS_REALTIME_PUBLISH_ERROR, err))
+			l.svcCtx.RealtimeDispatcher.Handle(eventBytes)
+		}
 	}
 
 	resp = &types.ChatSendMessageResp{

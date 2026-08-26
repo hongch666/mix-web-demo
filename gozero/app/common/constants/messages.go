@@ -88,9 +88,9 @@ const (
 	SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE    = "序列化SSE消息错误"
 
 	// 查询错误
-	COLLECT_QUERY_ERROR     = "收藏查询错误"
-	FOCUS_QUERY_ERROR       = "关注查询错误"
-	LIKE_QUERY_ERROR        = "点赞查询错误"
+	COLLECT_QUERY_ERROR = "收藏查询错误"
+	FOCUS_QUERY_ERROR   = "关注查询错误"
+	LIKE_QUERY_ERROR    = "点赞查询错误"
 
 	// 初始化
 	LOCAL_IPV4_ADDRESS_NOT_FOUND_ERROR       = "未找到本机可用的 IPv4 地址"
@@ -126,7 +126,7 @@ const (
 	GOZERO_LOG_SETUP_FAIL = "初始化 go-zero 日志配置失败: %v"
 
 	// 序列化/HTTP
-	UNEXPECTED_STATUS_CODE   = "异常状态码: %d, 响应内容: %s"
+	UNEXPECTED_STATUS_CODE = "异常状态码: %d, 响应内容: %s"
 
 	// 服务发现/调用
 	SERVICE_DISCOVERY_ERROR                = "服务发现失败"
@@ -150,37 +150,37 @@ const (
 	SEARCH_END_TIME_FIELD   = "结束时间"
 
 	// API日志
-	SERIALIZE_API_LOG_FAIL_MESSAGE                = "序列化 API 日志消息失败: %v"
-	SEND_API_LOG_FAIL_MESSAGE                     = "发送 API 日志到队列失败: %v"
-	SEND_API_LOG_SUCCESS_MESSAGE                  = "API 日志已发送到队列"
-	API_LOG_USER_ID_FIELD            = "用户ID"
-	API_LOG_USERNAME_FIELD           = "用户名"
-	API_LOG_SESSION_ID_FIELD         = "会话ID"
-	API_LOG_REQUEST_METHOD_FIELD     = "请求方法"
-	API_LOG_REQUEST_PATH_FIELD       = "请求路径"
-	API_LOG_DESCRIPTION_FIELD        = "描述"
-	API_LOG_QUERY_PARAMS_FIELD       = "查询参数"
-	API_LOG_REQUEST_BODY_FIELD       = "请求体"
-	API_LOG_QUERY_PARAMS_PREFIX      = "查询参数: "
-	API_LOG_REQUEST_BODY_PREFIX      = "请求体: "
-	LOG_TRUNCATED_SUFFIX             = "...[截断]"
-	API_LOG_WEBSOCKET_CONNECTION     = "WebSocket连接"
-	API_LOG_SSE_CONNECTION           = "SSE连接"
+	SERIALIZE_API_LOG_FAIL_MESSAGE = "序列化 API 日志消息失败: %v"
+	SEND_API_LOG_FAIL_MESSAGE      = "发送 API 日志到队列失败: %v"
+	SEND_API_LOG_SUCCESS_MESSAGE   = "API 日志已发送到队列"
+	API_LOG_USER_ID_FIELD          = "用户ID"
+	API_LOG_USERNAME_FIELD         = "用户名"
+	API_LOG_SESSION_ID_FIELD       = "会话ID"
+	API_LOG_REQUEST_METHOD_FIELD   = "请求方法"
+	API_LOG_REQUEST_PATH_FIELD     = "请求路径"
+	API_LOG_DESCRIPTION_FIELD      = "描述"
+	API_LOG_QUERY_PARAMS_FIELD     = "查询参数"
+	API_LOG_REQUEST_BODY_FIELD     = "请求体"
+	API_LOG_QUERY_PARAMS_PREFIX    = "查询参数: "
+	API_LOG_REQUEST_BODY_PREFIX    = "请求体: "
+	LOG_TRUNCATED_SUFFIX           = "...[截断]"
+	API_LOG_WEBSOCKET_CONNECTION   = "WebSocket连接"
+	API_LOG_SSE_CONNECTION         = "SSE连接"
 
 	// ES同步
-	ES_CLIENT_NOT_INITIALIZED_MESSAGE                   = "ES 客户端未初始化，跳过 ES 同步"
-	ES_BULK_SYNC_ERROR_MESSAGE                          = "ES批量同步错误"
-	ES_SYNC_HAS_FAILURES_MESSAGE                        = "ES同步有失败项"
-	ES_SYNC_FAILURE_DETAILS_MESSAGE                     = "ES同步失败: %+v"
-	ES_SYNC_BATCH_COMPLETED_MESSAGE                     = "第 %d 批同步完成，新增 %d 条，更新 %d 条"
-	ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE               = "ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条"
-	TASK_SYNC_ES_STARTED_MESSAGE                        = "[定时任务] 开始同步文章到 ElasticSearch"
-	TASK_SYNC_ES_COMPLETED_MESSAGE                      = "[定时任务] 同步成功"
-	TASK_SYNC_ES_FAILED_MESSAGE                         = "[定时任务] 注册同步任务失败：%v"
-	TASK_SCHEDULER_STARTED_MESSAGE                      = "[定时任务] 已启动"
-	NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE               = "没有已发布的文章可同步"
-	INDEX_CHECK_ERROR_MESSAGE                           = "索引判断错误"
-	INDEX_CREATION_ERROR_MESSAGE                        = "索引创建错误"
+	ES_CLIENT_NOT_INITIALIZED_MESSAGE     = "ES 客户端未初始化，跳过 ES 同步"
+	ES_BULK_SYNC_ERROR_MESSAGE            = "ES批量同步错误"
+	ES_SYNC_HAS_FAILURES_MESSAGE          = "ES同步有失败项"
+	ES_SYNC_FAILURE_DETAILS_MESSAGE       = "ES同步失败: %+v"
+	ES_SYNC_BATCH_COMPLETED_MESSAGE       = "第 %d 批同步完成，新增 %d 条，更新 %d 条"
+	ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE = "ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条"
+	TASK_SYNC_ES_STARTED_MESSAGE          = "[定时任务] 开始同步文章到 ElasticSearch"
+	TASK_SYNC_ES_COMPLETED_MESSAGE        = "[定时任务] 同步成功"
+	TASK_SYNC_ES_FAILED_MESSAGE           = "[定时任务] 注册同步任务失败：%v"
+	TASK_SCHEDULER_STARTED_MESSAGE        = "[定时任务] 已启动"
+	NO_PUBLISHED_ARTICLES_TO_SYNC_MESSAGE = "没有已发布的文章可同步"
+	INDEX_CHECK_ERROR_MESSAGE             = "索引判断错误"
+	INDEX_CREATION_ERROR_MESSAGE          = "索引创建错误"
 
 	// 内部令牌日志
 	INTERNAL_TOKEN_HEADER_MISSING_LOG   = "[内部令牌验证] 缺少 %s 请求头，路径: %s"
@@ -211,6 +211,14 @@ const (
 	REDIS_LOCK_RELEASE_ERROR   = "释放分布式锁错误: %v"
 	REDIS_LOCK_RELEASE_FAIL    = "[分布式锁] 释放锁失败，key: %s"
 	REDIS_LOCK_RELEASE_SUCCESS = "[分布式锁] 释放锁成功，key: %s"
+
+	// Redis 实时消息
+	REDIS_REALTIME_SUBSCRIBE_ERROR              = "订阅 Redis 实时消息失败: %v"
+	REDIS_REALTIME_PUBLISH_ERROR                = "发布 Redis 实时消息失败: %v"
+	REDIS_REALTIME_MESSAGE_ERROR                = "处理 Redis 实时消息失败: %v"
+	REDIS_REALTIME_BUS_NOT_INITIALIZED_ERROR    = "Redis 实时消息总线未初始化"
+	REDIS_REALTIME_INVALID_MESSAGE_FORMAT_ERROR = "处理 Redis 实时消息失败: 消息格式无效"
+	MARK_MESSAGE_READ_ERROR                     = "标记聊天消息已读失败: %v"
 
 	// API日志操作描述（ApplyApiLog 的接口描述参数）
 	API_LOG_TEST_GOZERO_SERVICE      = "测试GoZero服务"

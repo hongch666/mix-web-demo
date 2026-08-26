@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"app/common/constants"
+	"app/common/realtime"
 	"app/common/utils"
 	"app/internal/config"
 
@@ -22,6 +23,8 @@ type ServiceContext struct {
 	*ClientContext
 	*LoggerContext
 	*MiddlewareContext
+	RealtimeBus        *realtime.RedisPubSub
+	RealtimeDispatcher *realtime.ChatRealtimeDispatcher
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -43,7 +46,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall)
 	models := newModelContext(c, infrastructure, clientCtx)
 
-	return &ServiceContext{
+	serviceCtx := &ServiceContext{
 		RuntimeContext:        &RuntimeContext{Context: serviceContext, Cancel: cancel, Config: c},
 		InfrastructureContext: infrastructure,
 		ModelContext:          models,
@@ -52,15 +55,32 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LoggerContext:         newLoggerContext(zLogger),
 		MiddlewareContext:     newMiddlewareContext(zLogger),
 	}
+	serviceCtx.RealtimeDispatcher = realtime.NewChatRealtimeDispatcher(
+		serviceContext,
+		serviceCtx.ChatHub,
+		serviceCtx.SSEHub,
+		serviceCtx.ChatMessagesModel,
+		zLogger,
+	)
+
+	if infrastructure.RedisClient != nil {
+		serviceCtx.RealtimeBus = realtime.NewRedisPubSub(infrastructure.RedisClient, zLogger)
+		serviceCtx.RealtimeBus.Start(serviceContext, serviceCtx.RealtimeDispatcher.Handle)
+	}
+
+	return serviceCtx
 }
 
-// Close 释放 ServiceContext 持有的所有资源。
+// Close 释放 ServiceContext 持有的所有资源
 func (sc *ServiceContext) Close() {
 	if sc == nil {
 		return
 	}
 	if sc.RuntimeContext != nil && sc.Cancel != nil {
 		sc.Cancel()
+	}
+	if sc.RealtimeBus != nil {
+		sc.RealtimeBus.Close()
 	}
 	if sc.InfrastructureContext != nil {
 		sc.InfrastructureContext.Close()
