@@ -37,7 +37,7 @@ spring:
             - Path=/test/spring,/users/**,/articles/**,/category/**,/comments/**,/collects/**,/likes/**,/focus/**,/task/clean
 
         - id: gozero-ws
-          uri: ws://${GOZERO_HOST:localhost}:${GOZERO_PORT:8082}
+          uri: lb:ws://gozero
           predicates:
             - Path=/ws/**
           metadata:
@@ -46,7 +46,7 @@ spring:
             response-timeout: 60000
 
         - id: gozero-sse
-          uri: http://${GOZERO_HOST:localhost}:${GOZERO_PORT:8082}
+          uri: lb://gozero
           predicates:
             - Path=/sse/**
           metadata:
