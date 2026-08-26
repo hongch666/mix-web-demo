@@ -21,9 +21,9 @@ import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.FocusDTO;
+import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.CountVO;
 import com.hcsy.spring.entity.vo.FocusCheckVO;
-import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
@@ -123,8 +123,6 @@ public class FocusController {
         return focusService.getFollowCountsByUserIds(dto.getIds())
             .map(Result::success);
     }
-
-    // ==================== 统计接口 ====================
 
     @GetMapping("/statistics/followers-in-period/{userId}")
     @Operation(summary = "获取时间段内粉丝数（内部）", description = "获取指定时间段内的新增粉丝数，供内部服务远程调用")

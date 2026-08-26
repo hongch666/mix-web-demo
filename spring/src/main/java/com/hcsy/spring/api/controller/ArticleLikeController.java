@@ -24,8 +24,8 @@ import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.LikeCheckVO;
-import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.LikeCountVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -103,8 +103,6 @@ public class ArticleLikeController {
         return articleLikeService.getLikeCountsByArticleIds(dto.getIds())
             .map(Result::success);
     }
-
-    // ==================== 统计接口 ====================
 
     @GetMapping("/statistics/total")
     @Operation(summary = "获取总点赞数（内部）", description = "获取所有文章的总点赞数，供内部服务远程调用")

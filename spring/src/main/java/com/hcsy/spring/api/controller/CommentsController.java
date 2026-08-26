@@ -212,6 +212,38 @@ public class CommentsController {
         return commentsService.getNeo4jSyncComments(updatedAfter).map(Result::success);
     }
 
+    @PostMapping("/internal/create")
+    @Operation(summary = "创建评论（内部）", description = "创建评论，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部创建评论")
+    public Mono<Result<Comments>> createCommentInternal(@RequestBody Comments comments) {
+        return commentsService.save(comments).map(Result::success);
+    }
+
+    @GetMapping("/statistics/ai-count/{articleId}")
+    @Operation(summary = "获取文章AI评论数（内部）", description = "获取文章的AI评论数，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取文章AI评论数")
+    public Mono<Result<Long>> getAiCommentsNumByArticleId(@PathVariable Long articleId) {
+        return commentsService.getAiCommentsNumByArticleId(articleId).map(Result::success);
+    }
+
+    @PostMapping("/statistics/delete-ai/{articleId}")
+    @Operation(summary = "删除文章AI评论（内部）", description = "删除文章的AI评论，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部删除文章AI评论")
+    public Mono<Result<Void>> deleteAiCommentsByArticleId(@PathVariable Long articleId) {
+        return commentsService.deleteAiCommentsByArticleId(articleId).then(Mono.just(Result.success()));
+    }
+
+    @GetMapping("/statistics/monthly-trend/{userId}")
+    @Operation(summary = "获取用户月度评论趋势（内部）", description = "获取用户本月评论的趋势，供内部服务远程调用")
+    @RequireInternalToken
+    @ApiLog("内部获取用户月度评论趋势")
+    public Mono<Result<MapDataVO>> getMonthlyCommentTrend(@PathVariable Long userId) {
+        return commentsService.getMonthlyCommentTrend(userId).map(Result::success);
+    }
+
     private Mono<Result<Void>> saveComment(CommentCreateDTO dto, Article article, User user) {
         Comments comment = BeanUtil.toBean(dto, Comments.class);
         comment.setArticleId(article.getId());
@@ -247,41 +279,5 @@ public class CommentsController {
         vo.setArticleTitle(
             article == null || article.getTitle() == null ? Defaults.DEFAULT_ARTICLE : article.getTitle());
         return vo;
-    }
-
-    // ==================== 内部接口 ====================
-
-    @PostMapping("/internal/create")
-    @Operation(summary = "创建评论（内部）", description = "创建评论，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部创建评论")
-    public Mono<Result<Comments>> createCommentInternal(@RequestBody Comments comments) {
-        return commentsService.save(comments).map(Result::success);
-    }
-
-    // ==================== 统计接口 ====================
-
-    @GetMapping("/statistics/ai-count/{articleId}")
-    @Operation(summary = "获取文章AI评论数（内部）", description = "获取文章的AI评论数，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部获取文章AI评论数")
-    public Mono<Result<Long>> getAiCommentsNumByArticleId(@PathVariable Long articleId) {
-        return commentsService.getAiCommentsNumByArticleId(articleId).map(Result::success);
-    }
-
-    @PostMapping("/statistics/delete-ai/{articleId}")
-    @Operation(summary = "删除文章AI评论（内部）", description = "删除文章的AI评论，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部删除文章AI评论")
-    public Mono<Result<Void>> deleteAiCommentsByArticleId(@PathVariable Long articleId) {
-        return commentsService.deleteAiCommentsByArticleId(articleId).then(Mono.just(Result.success()));
-    }
-
-    @GetMapping("/statistics/monthly-trend/{userId}")
-    @Operation(summary = "获取用户月度评论趋势（内部）", description = "获取用户本月评论的趋势，供内部服务远程调用")
-    @RequireInternalToken
-    @ApiLog("内部获取用户月度评论趋势")
-    public Mono<Result<MapDataVO>> getMonthlyCommentTrend(@PathVariable Long userId) {
-        return commentsService.getMonthlyCommentTrend(userId).map(Result::success);
     }
 }

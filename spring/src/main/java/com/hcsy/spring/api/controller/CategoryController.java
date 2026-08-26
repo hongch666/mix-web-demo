@@ -181,8 +181,6 @@ public class CategoryController {
             .map(Result::success);
     }
 
-    // ==================== 内部接口 ====================
-
     @GetMapping("/internal/all")
     @Operation(summary = "获取所有分类（内部）", description = "获取所有分类列表，供内部服务远程调用")
     @RequireInternalToken
