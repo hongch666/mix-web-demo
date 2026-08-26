@@ -22,15 +22,15 @@ export class RedisService {
    * 尝试获取分布式锁
    * @param lockKey 锁的 Redis key
    * @param expireSeconds 锁的过期时间（秒），应大于任务执行时间，防止死锁
-   * @returns 锁的唯一标识（UUID），获取失败返回 null（Redis 未配置时返回空字符串表示直接执行）
+   * @returns 锁的唯一标识（UUID），获取失败或 Redis 未配置时返回 null
    */
   async tryLock(
     lockKey: string,
     expireSeconds: number,
   ): Promise<string | null> {
     if (!this.redis) {
-      // Redis 未配置，返回空字符串表示单实例模式可直接执行
-      return "";
+      // Redis 未配置时无法保证分布式互斥，直接判定加锁失败
+      return null;
     }
 
     const lockValue = uuidv4();
