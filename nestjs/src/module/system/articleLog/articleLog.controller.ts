@@ -21,48 +21,6 @@ import { CreateArticleLogDto, QueryArticleLogDto } from "./dto/articleLog.dto";
 export class ArticleLogController {
   constructor(private readonly logService: ArticleLogService) {}
 
-  @Get("search-history/:userId")
-  @ApiOperation({
-    summary: "获取搜索历史",
-    description: "根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用",
-  })
-  @RequireInternalToken()
-  async getSearchHistory(
-    @Param("userId") userId: string,
-  ): Promise<ApiResponse<{ keywords: string[] }>> {
-    const keywords: string[] = await this.logService.getSearchHistory(
-      Number(userId),
-    );
-    return success({ keywords });
-  }
-
-  @Get("view-distribution/:userId")
-  @ApiOperation({
-    summary: "获取文章浏览分布",
-    description:
-      "根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用",
-  })
-  @RequireInternalToken()
-  async getViewDistribution(
-    @Param("userId") userId: string,
-  ): Promise<ApiResponse<unknown>> {
-    const data: unknown = await this.logService.getViewDistribution(
-      Number(userId),
-    );
-    return success(data);
-  }
-
-  @Get("search-keywords")
-  @ApiOperation({
-    summary: "获取搜索关键词",
-    description: "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
-  })
-  @RequireInternalToken()
-  async getSearchKeywords(): Promise<ApiResponse<unknown>> {
-    const data: unknown = await this.logService.getSearchKeywords();
-    return success(data);
-  }
-
   @Post()
   @HttpCode(200)
   @ApiOperation({
@@ -116,5 +74,47 @@ export class ArticleLogController {
       .filter(Boolean);
     await this.logService.removeByIds(idArr);
     return success(null);
+  }
+
+  @Get("search-history/:userId")
+  @ApiOperation({
+    summary: "获取搜索历史",
+    description: "根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用",
+  })
+  @RequireInternalToken()
+  async getSearchHistory(
+    @Param("userId") userId: string,
+  ): Promise<ApiResponse<{ keywords: string[] }>> {
+    const keywords: string[] = await this.logService.getSearchHistory(
+      Number(userId),
+    );
+    return success({ keywords });
+  }
+
+  @Get("view-distribution/:userId")
+  @ApiOperation({
+    summary: "获取文章浏览分布",
+    description:
+      "根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用",
+  })
+  @RequireInternalToken()
+  async getViewDistribution(
+    @Param("userId") userId: string,
+  ): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.logService.getViewDistribution(
+      Number(userId),
+    );
+    return success(data);
+  }
+
+  @Get("search-keywords")
+  @ApiOperation({
+    summary: "获取搜索关键词",
+    description: "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
+  })
+  @RequireInternalToken()
+  async getSearchKeywords(): Promise<ApiResponse<unknown>> {
+    const data: unknown = await this.logService.getSearchKeywords();
+    return success(data);
   }
 }
