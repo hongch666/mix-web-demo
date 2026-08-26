@@ -50,7 +50,22 @@ func (m *customChatMessagesModel) Delete(ctx context.Context, id uint64) error {
 }
 
 func (m *customChatMessagesModel) CreateChatMessage(ctx context.Context, message *ChatMessages) error {
-	return m.Insert(ctx, message)
+	result, err := m.baseModel.Insert(ctx, message)
+	if err != nil {
+		return err
+	}
+	// 回填自增主键，用于后续查询完整记录
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	created, err := m.FindOne(ctx, uint64(id))
+	if err != nil {
+		return err
+	}
+	// 将数据库生成的字段（id、created_at 等）回写到入参对象，避免调用方拿到零值
+	*message = *created
+	return nil
 }
 
 func (m *customChatMessagesModel) GetChatHistory(ctx context.Context, userID, otherID int64, offset, limit int) ([]*ChatMessages, int64, error) {
