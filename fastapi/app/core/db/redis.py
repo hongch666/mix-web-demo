@@ -223,13 +223,13 @@ class RedisClient:
             expire_seconds: 锁的过期时间（秒），应大于任务执行时间，防止死锁
 
         Returns:
-            锁的唯一标识（UUID），获取失败返回 None（Redis 不可用时返回空字符串表示直接执行）
+            锁的唯一标识（UUID），获取失败或 Redis 不可用时返回 None
         """
         try:
             client: Optional[Any] = await self._ensure_client()
             if not client:
-                # Redis 未配置，返回空字符串表示单实例模式可直接执行
-                return ""
+                # Redis 未配置时无法保证分布式互斥，直接判定加锁失败
+                return None
             lock_value: str = str(uuid.uuid4())
             result: Optional[bool] = await client.set(
                 lock_key, lock_value, ex=expire_seconds, nx=True
