@@ -30,17 +30,18 @@ class InternalTokenUtilTest {
 
     @BeforeEach
     void setUp() {
-        InternalTokenProperties internalTokenProperties = new InternalTokenProperties();
         Map<String, String> envValues = loadDotEnvValues();
 
-        internalTokenProperties.setSecret(resolveConfigValue(
-            envValues,
-            "INTERNAL_TOKEN_SECRET",
-            DEFAULT_INTERNAL_TOKEN_SECRET));
-        internalTokenProperties.setExpiration(Long.parseLong(resolveConfigValue(
-            envValues,
-            "INTERNAL_TOKEN_EXPIRATION",
-            String.valueOf(DEFAULT_INTERNAL_TOKEN_EXPIRATION))));
+        // Properties 已迁移为不可变 record，改用全参构造器装配
+        InternalTokenProperties internalTokenProperties = new InternalTokenProperties(
+            resolveConfigValue(
+                envValues,
+                "INTERNAL_TOKEN_SECRET",
+                DEFAULT_INTERNAL_TOKEN_SECRET),
+            Long.parseLong(resolveConfigValue(
+                envValues,
+                "INTERNAL_TOKEN_EXPIRATION",
+                String.valueOf(DEFAULT_INTERNAL_TOKEN_EXPIRATION))));
 
         internalTokenUtil = new InternalTokenUtil(internalTokenProperties, new SimpleLogger());
         internalTokenUtil.initKey();

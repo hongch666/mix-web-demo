@@ -1,37 +1,14 @@
 package com.hcsy.spring.core.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 
-@Configuration
+/**
+ * JWT 配置属性（构造器绑定，不可变）
+ *
+ * @param secret            签名密钥
+ * @param accessExpiration  访问令牌有效期（毫秒）
+ * @param refreshExpiration 刷新令牌有效期（毫秒）
+ */
 @ConfigurationProperties(prefix = "jwt")
-public class JwtProperties {
-
-    private String secret;
-    private long accessExpiration;
-    private long refreshExpiration;
-
-    public String getSecret() {
-        return secret;
-    }
-
-    public void setSecret(String secret) {
-        this.secret = secret;
-    }
-
-    public long getAccessExpiration() {
-        return accessExpiration;
-    }
-
-    public void setAccessExpiration(long accessExpiration) {
-        this.accessExpiration = accessExpiration;
-    }
-
-    public long getRefreshExpiration() {
-        return refreshExpiration;
-    }
-
-    public void setRefreshExpiration(long refreshExpiration) {
-        this.refreshExpiration = refreshExpiration;
-    }
+public record JwtProperties(String secret, long accessExpiration, long refreshExpiration) {
 }

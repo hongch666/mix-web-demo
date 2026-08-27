@@ -33,11 +33,11 @@ public class InternalTokenUtil {
 
     @PostConstruct
     public void initKey() {
-        if (internalTokenProperties.getSecret() == null || internalTokenProperties.getSecret().isEmpty()) {
+        if (internalTokenProperties.secret() == null || internalTokenProperties.secret().isEmpty()) {
             throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
                 .errorMessage(Messages.INTERNAL_TOKEN_NOT_NULL).build();
         }
-        key = Keys.hmacShaKeyFor(internalTokenProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        key = Keys.hmacShaKeyFor(internalTokenProperties.secret().getBytes(StandardCharsets.UTF_8));
         log.info(Messages.INTERNAL_TOKEN_INIT);
     }
 
@@ -55,7 +55,7 @@ public class InternalTokenUtil {
             .setClaims(claims)
             .setSubject("internal_service_token")
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + internalTokenProperties.getExpiration()))
+            .setExpiration(new Date(System.currentTimeMillis() + internalTokenProperties.expiration()))
             .signWith(key, SignatureAlgorithm.HS256)
             .compact();
     }

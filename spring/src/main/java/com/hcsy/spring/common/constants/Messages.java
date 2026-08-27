@@ -40,6 +40,8 @@ public class Messages {
     public static final String VERIFY_CODE_UNSUPPORT = "不支持的类型，请使用 register、login 或 reset";
     public static final String EMAIL = "邮箱格式不正确";
     public static final String PASSWORD_NO_USER = "没有用户可重置";
+    public static final String USER_DEFAULT_PASSWORD_NOT_BLANK = "默认密码不能为空";
+    public static final String USER_RESET_PASSWORD_NOT_BLANK = "重置密码不能为空";
 
     // ===== GitHub 登录 =====
     public static final String GITHUB_ACCOUNT_PASSWORD_LOGIN_BLOCKED = "该账号通过 GitHub 登录创建，请使用 GitHub 登录或先设置密码";

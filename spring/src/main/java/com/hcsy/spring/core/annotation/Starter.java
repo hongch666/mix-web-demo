@@ -7,6 +7,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
@@ -18,6 +19,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootApplication
+@ConfigurationPropertiesScan
 @EnableScheduling
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 public @interface Starter {

@@ -341,7 +341,7 @@ public class UserServiceImpl implements UserService {
         user.setRole("user");
         user.setAuthProvider("local");
         String rawPassword = hasText(user.getPassword()) ? user.getPassword()
-            : userPasswordProperties.getDefaultPassword();
+            : userPasswordProperties.defaultPassword();
         return encryptPassword(rawPassword)
             .flatMap(password -> {
                 user.setPassword(password);
@@ -394,7 +394,7 @@ public class UserServiceImpl implements UserService {
             .filter(count -> count > 0)
             .switchIfEmpty(Mono.error(BusinessException.builder().httpStatus(HttpCode.UNPROCESSABLE_ENTITY)
                 .errorMessage(Messages.PASSWORD_NO_USER).build()))
-            .then(encryptPassword(userPasswordProperties.getResetPassword()))
+            .then(encryptPassword(userPasswordProperties.resetPassword()))
             .flatMap(userRepository::updateAllPasswords)
             .then();
     }
@@ -403,7 +403,7 @@ public class UserServiceImpl implements UserService {
     public Mono<Void> resetUserPassword(Long userId) {
         return userRepository.findById(userId)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
-            .flatMap(user -> encryptPassword(userPasswordProperties.getResetPassword()).flatMap(password -> {
+            .flatMap(user -> encryptPassword(userPasswordProperties.resetPassword()).flatMap(password -> {
                 user.setPassword(password);
                 return transactionalOperator.transactional(userRepository.save(user));
             }))
@@ -447,7 +447,7 @@ public class UserServiceImpl implements UserService {
                 newUser.setRole("user");
                 newUser.setAuthProvider("github");
                 newUser.setLastLoginAt(LocalDateTime.now());
-                return encryptPassword(userPasswordProperties.getDefaultPassword())
+                return encryptPassword(userPasswordProperties.defaultPassword())
                     .flatMap(password -> {
                         newUser.setPassword(password);
                         return saveUserAndStatus(newUser);

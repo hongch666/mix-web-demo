@@ -57,7 +57,7 @@ public class ServiceWebClient {
         ServiceRequestOptions options,
         String fallbackMessage) {
         return request(method, serviceName, path, options,
-            serviceClientProperties.getTimeout(), fallbackMessage);
+            serviceClientProperties.timeout(), fallbackMessage);
     }
 
     public Mono<Result<?>> request(

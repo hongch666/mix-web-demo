@@ -34,11 +34,11 @@ public class JwtUtil {
 
     @PostConstruct
     public void initKey() {
-        if (jwtProperties.getSecret() == null || jwtProperties.getSecret().isEmpty()) {
+        if (jwtProperties.secret() == null || jwtProperties.secret().isEmpty()) {
             throw BusinessException.builder().httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
                 .errorMessage(Messages.JWT_NOT_NULL).build();
         }
-        key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        key = Keys.hmacShaKeyFor(jwtProperties.secret().getBytes(StandardCharsets.UTF_8));
         log.info(Messages.JWT_INIT);
     }
 
@@ -56,7 +56,7 @@ public class JwtUtil {
             .setClaims(claims)
             .setSubject(username)
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getAccessExpiration()))
+            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.accessExpiration()))
             .signWith(key, SignatureAlgorithm.HS256)
             .compact();
     }
@@ -75,7 +75,7 @@ public class JwtUtil {
             .setClaims(claims)
             .setSubject(username)
             .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getRefreshExpiration()))
+            .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.refreshExpiration()))
             .signWith(key, SignatureAlgorithm.HS256)
             .compact();
     }
@@ -166,19 +166,19 @@ public class JwtUtil {
     }
 
     public long getAccessExpiration() {
-        return jwtProperties.getAccessExpiration();
+        return jwtProperties.accessExpiration();
     }
 
     public long getRefreshExpiration() {
-        return jwtProperties.getRefreshExpiration();
+        return jwtProperties.refreshExpiration();
     }
 
     public long getAccessExpirationSeconds() {
-        return jwtProperties.getAccessExpiration() / 1000;
+        return jwtProperties.accessExpiration() / 1000;
     }
 
     public long getRefreshExpirationSeconds() {
-        return jwtProperties.getRefreshExpiration() / 1000;
+        return jwtProperties.refreshExpiration() / 1000;
     }
 
     public long getRemainingTime(String token) {
