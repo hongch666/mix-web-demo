@@ -19,14 +19,24 @@ public class DotenvInitializer {
     private static final String DOT_ENV_FILE = ".env";
 
     /**
+     * .env 文件候选路径：依次尝试当前目录、spring 子目录、上级目录，
+     * 兼容从项目根目录、spring 目录或 IDE 默认工作目录启动的情况
+     */
+    private static final String[] CANDIDATE_PATHS = {
+        DOT_ENV_FILE,
+        "spring/" + DOT_ENV_FILE,
+        "../" + DOT_ENV_FILE,
+    };
+
+    /**
      * 加载.env文件中的环境变量到系统属性
      */
     public static void loadEnv() {
         try {
-            // 查找.env文件（从当前工作目录开始）
-            File envFile = new File(DOT_ENV_FILE);
+            // 按候选路径顺序查找.env文件
+            File envFile = findEnvFile();
 
-            if (!envFile.exists()) {
+            if (envFile == null) {
                 log.info(Messages.DOTENV_FILE_NOT_EXIST);
                 return;
             }
@@ -50,6 +60,21 @@ public class DotenvInitializer {
         } catch (Exception e) {
             log.error(Messages.DOTENV_LOAD_FAIL + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 按候选路径顺序查找存在的.env文件
+     *
+     * @return 找到的.env文件，未找到返回 null
+     */
+    private static File findEnvFile() {
+        for (String candidate : CANDIDATE_PATHS) {
+            File file = new File(candidate);
+            if (file.exists()) {
+                return file;
+            }
+        }
+        return null;
     }
 
     /**
