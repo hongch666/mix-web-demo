@@ -3,7 +3,7 @@ import { Injectable, OnApplicationShutdown } from "@nestjs/common";
 import { Interval } from "@nestjs/schedule";
 import { Defaults, Messages } from "src/common/constants";
 import { BatchBuffer } from "src/common/utils/batchBuffer";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { ApiLogService } from "./apiLog.service";
 import { ApiLogMessage, ApiMethod, CreateApiLogDto } from "./dto/apiLog.dto";
 
@@ -22,7 +22,10 @@ type RawApiLogMessage = Partial<ApiLogMessage> & {
 export class ApiLogConsumerService implements OnApplicationShutdown {
   private readonly batchBuffer: BatchBuffer<CreateApiLogDto>;
 
-  constructor(private readonly apiLogService: ApiLogService) {
+  constructor(
+    private readonly apiLogService: ApiLogService,
+    private readonly logger: LoggerService,
+  ) {
     this.batchBuffer = new BatchBuffer<CreateApiLogDto>(
       "ApiLog",
       {
@@ -33,6 +36,7 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
       async (batch) => {
         await this.apiLogService.insertMany(batch);
       },
+      logger,
     );
   }
 
@@ -109,7 +113,7 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.API_LOG_PROCESS_FAILED(errorMessage));
+      this.logger.error(Messages.API_LOG_PROCESS_FAILED(errorMessage));
     }
   }
 }

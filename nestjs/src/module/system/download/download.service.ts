@@ -7,7 +7,7 @@ import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
 import { ErrorIds, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { OssService } from "src/module/common/oss/oss.service";
 import { WordService } from "src/module/common/word/word.service";
@@ -43,6 +43,7 @@ export class DownloadService {
     private readonly wordService: WordService,
     private readonly ossService: OssService,
     private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
   ) {}
 
   // 生成word并保存到指定位置
@@ -421,7 +422,7 @@ export class DownloadService {
     } catch (error: unknown) {
       const message: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.OSS_UPLOAD_ERROR_MESSAGE(message));
+      this.logger.error(Messages.OSS_UPLOAD_ERROR_MESSAGE(message));
       throw BusinessException.internalServerError(
         Messages.OSS_UPLOAD_ERR,
         ErrorIds.OSS_UPLOAD_ERROR,

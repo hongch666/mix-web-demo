@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { ApiLogService } from "src/module/system/apiLog/apiLog.service";
 import { ArticleLogService } from "src/module/system/articleLog/articleLog.service";
 import { RedisService } from "../redis/redis.service";
@@ -12,6 +12,7 @@ export class TaskService {
     private readonly apiLogService: ApiLogService,
     private readonly articleLogService: ArticleLogService,
     private readonly redisService: RedisService,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -29,13 +30,13 @@ export class TaskService {
     const lockValue = await this.redisService.tryLock(lockKey, lockExpire);
     if (lockValue === null) {
       // 获取锁失败，其他实例正在执行
-      logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
+      this.logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
       return;
     }
-    logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey));
+    this.logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey));
 
     try {
-      logger.info(Messages.TASK_CLEAN);
+      this.logger.info(Messages.TASK_CLEAN);
 
       // 计算1个月前的日期
       const oneMonthAgo: Date = new Date();
@@ -45,17 +46,17 @@ export class TaskService {
       const deletedCount: number =
         await this.apiLogService.cleanupOldLogs(oneMonthAgo);
 
-      logger.info(Messages.API_LOG_CLEANUP_COMPLETED(deletedCount));
+      this.logger.info(Messages.API_LOG_CLEANUP_COMPLETED(deletedCount));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.API_LOG_CLEANUP_FAILED(errorMessage));
+      this.logger.error(Messages.API_LOG_CLEANUP_FAILED(errorMessage));
     } finally {
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
-        logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey));
+        this.logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey));
       } else {
-        logger.info(Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey));
+        this.logger.info(Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey));
       }
     }
   }
@@ -75,13 +76,13 @@ export class TaskService {
     const lockValue = await this.redisService.tryLock(lockKey, lockExpire);
     if (lockValue === null) {
       // 获取锁失败，其他实例正在执行
-      logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
+      this.logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
       return;
     }
-    logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey));
+    this.logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey));
 
     try {
-      logger.info(Messages.TASK_ARTICLE_CLEAN);
+      this.logger.info(Messages.TASK_ARTICLE_CLEAN);
 
       // 计算1个月前的日期
       const oneMonthAgo: Date = new Date();
@@ -91,17 +92,17 @@ export class TaskService {
       const deletedCount: number =
         await this.articleLogService.cleanupOldLogs(oneMonthAgo);
 
-      logger.info(Messages.ARTICLE_LOG_CLEANUP_COMPLETED(deletedCount));
+      this.logger.info(Messages.ARTICLE_LOG_CLEANUP_COMPLETED(deletedCount));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.ARTICLE_LOG_CLEANUP_FAILED(errorMessage));
+      this.logger.error(Messages.ARTICLE_LOG_CLEANUP_FAILED(errorMessage));
     } finally {
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
-        logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey));
+        this.logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey));
       } else {
-        logger.info(Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey));
+        this.logger.info(Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey));
       }
     }
   }

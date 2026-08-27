@@ -3,7 +3,15 @@ import * as path from "node:path";
 
 import { ConfigService } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { OssService } from "./oss.service";
+
+const mockLoggerService = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warning: jest.fn(),
+  debug: jest.fn(),
+};
 
 const LOCAL_TEST_FILE_NAME = "search_keywords_wordcloud.png";
 const OSS_TEST_FILE_NAME = "test/search_keywords_wordcloud.png";
@@ -19,6 +27,10 @@ describe("OssService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OssService,
+        {
+          provide: LoggerService,
+          useValue: mockLoggerService,
+        },
         {
           provide: ConfigService,
           useValue: {

@@ -3,19 +3,23 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
+  Injectable,
 } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { error } from "src/common/utils/response";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 
 interface HttpExceptionResponse {
   message?: string | string[];
 }
 
 @Catch()
+@Injectable()
 export class AllExceptionsFilter implements ExceptionFilter {
+  constructor(private readonly logger: LoggerService) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response: FastifyReply = ctx.getResponse<FastifyReply>();
@@ -59,7 +63,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const exceptionStack = exception instanceof Error ? exception.stack : "";
 
     // 打印错误日志（所有异常都记录详细信息）
-    logger.error(
+    this.logger.error(
       Messages.EXCEPTION_LOG(
         request.method,
         request.url,

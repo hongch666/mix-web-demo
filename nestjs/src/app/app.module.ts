@@ -9,6 +9,7 @@ import type { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ClsModule } from "nestjs-cls";
 import config from "src/config";
+import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
 import { InternalTokenGuard } from "src/framework/guards/internalToken.guard";
 import { RequireAdminGuard } from "src/framework/guards/requireAdmin.guard";
 import { ApiLogInterceptor } from "src/framework/interceptors/apiLog.interceptor";
@@ -130,6 +131,7 @@ interface MongoDbConfig {
   controllers: [],
   providers: [
     InternalTokenUtil,
+    AllExceptionsFilter,
     {
       provide: APP_INTERCEPTOR,
       useClass: ApiLogInterceptor,

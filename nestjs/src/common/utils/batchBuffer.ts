@@ -1,5 +1,5 @@
 import { Messages } from "src/common/constants";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 
 /**
  * 攒批配置选项
@@ -40,16 +40,19 @@ export class BatchBuffer<T> {
   private readonly options: BatchBufferOptions;
   private readonly onFlush: (batch: T[]) => Promise<void>;
   private readonly name: string;
+  private readonly logger: LoggerService;
 
   constructor(
     name: string,
     options: Partial<BatchBufferOptions>,
     onFlush: (batch: T[]) => Promise<void>,
+    logger: LoggerService,
   ) {
     this.name = name;
     this.options = { ...DEFAULT_OPTIONS, ...options };
     this.onFlush = onFlush;
-    logger.info(
+    this.logger = logger;
+    this.logger.info(
       Messages.BATCH_INITIALIZED(
         this.name,
         this.options.batchSize,
@@ -63,7 +66,7 @@ export class BatchBuffer<T> {
    */
   enqueue(item: T): void {
     if (this.isShutdown) {
-      logger.warning(Messages.BATCH_DISCARDED_AFTER_SHUTDOWN(this.name));
+      this.logger.warning(Messages.BATCH_DISCARDED_AFTER_SHUTDOWN(this.name));
       return;
     }
     this.buffer.push(item);
@@ -76,7 +79,7 @@ export class BatchBuffer<T> {
 
     // 超过最大容量，强制 flush 防止 OOM
     if (this.buffer.length >= this.options.maxBufferSize) {
-      logger.warning(
+      this.logger.warning(
         Messages.BATCH_FORCE_FLUSH_MAX_CAPACITY(
           this.name,
           this.options.maxBufferSize,
@@ -107,12 +110,12 @@ export class BatchBuffer<T> {
     }
     // flush 剩余数据（直接调用 doFlush，绕过 flush() 的 isShutdown 检查）
     if (this.buffer.length > 0) {
-      logger.info(
+      this.logger.info(
         Messages.BATCH_SHUTDOWN_FLUSH_REMAINING(this.name, this.buffer.length),
       );
       await this.doFlush();
     }
-    logger.info(Messages.BATCH_SHUTDOWN_COMPLETED(this.name));
+    this.logger.info(Messages.BATCH_SHUTDOWN_COMPLETED(this.name));
   }
 
   /**
@@ -139,11 +142,11 @@ export class BatchBuffer<T> {
     const batchSize = batch.length;
     try {
       await this.onFlush(batch);
-      logger.info(Messages.BATCH_FLUSH_SUCCESS(this.name, batchSize));
+      this.logger.info(Messages.BATCH_FLUSH_SUCCESS(this.name, batchSize));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error(
+      this.logger.error(
         Messages.BATCH_FLUSH_FAILED_DETAIL(this.name, batchSize, errorMessage),
       );
     } finally {

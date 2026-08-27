@@ -7,7 +7,7 @@ import utc from "dayjs/plugin/utc";
 import { Model } from "mongoose";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { CreateApiLogDto, QueryApiLogDto } from "./dto/apiLog.dto";
 import { ApiLog, ApiLogDocument } from "./schema/apiLog.schema";
 
@@ -46,6 +46,7 @@ export class ApiLogService {
   constructor(
     @InjectModel(ApiLog.name)
     private readonly apiLogModel: Model<ApiLogDocument>,
+    private readonly logger: LoggerService,
   ) {
     this.ensureIndexes();
   }
@@ -93,7 +94,7 @@ export class ApiLogService {
         ),
       );
       missingIndexes.forEach((indexConfig) => {
-        logger.info(Messages.API_LOG_INDEX_CREATED(indexConfig.options.name));
+        this.logger.info(Messages.API_LOG_INDEX_CREATED(indexConfig.options.name));
       });
     }
   }

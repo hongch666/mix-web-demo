@@ -16,9 +16,9 @@ import {
 } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { applySwaggerSnakeCase } from "src/common/utils/swaggerSnakeCase";
-import { logger } from "src/common/utils/writeLog";
 import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
 import { FieldNamingInterceptor } from "src/framework/interceptors/fieldNaming.interceptor";
+import { LoggerService } from "src/module/common/logger/logger.service";
 
 import { AppModule } from "./app.module";
 
@@ -88,8 +88,8 @@ export async function createApp(): Promise<NestFastifyApplication> {
   );
   SwaggerModule.setup(SwaggerConfig.SWAGGER_PATH, app, document);
 
-  // 注册全局异常过滤器
-  app.useGlobalFilters(new AllExceptionsFilter());
+  // 注册全局异常过滤器（从容器获取以支持依赖注入）
+  app.useGlobalFilters(app.get(AllExceptionsFilter));
   // 全局转换对外字段命名：请求下划线转内部驼峰，响应内部驼峰转下划线
   app.useGlobalInterceptors(new FieldNamingInterceptor());
   // 全局启用校验管道
@@ -111,7 +111,8 @@ export async function createApp(): Promise<NestFastifyApplication> {
   const configService: ConfigService<unknown, boolean> = app.get(ConfigService);
   const port: number = configService.get<number>("server.port")!;
   const ip: string = Defaults.INIT_IP;
-  // 输出启动信息和Swagger地址
+  // 输出启动信息和Swagger地址（从容器获取日志服务）
+  const logger: LoggerService = app.get(LoggerService);
   logger.info(Messages.START_WELCOME);
   logger.info(Messages.STARTUP_SERVICE_ADDRESS(ip, port));
   logger.info(Messages.STARTUP_SWAGGER_ADDRESS(ip, port));

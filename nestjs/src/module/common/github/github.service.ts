@@ -4,7 +4,7 @@ import axios, { AxiosResponse } from "axios";
 import { randomUUID } from "crypto";
 import { ErrorIds, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { RedisService } from "src/module/common/redis/redis.service";
 import {
@@ -70,6 +70,7 @@ export class GithubService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly springClientService: SpringClientService,
+    private readonly logger: LoggerService,
   ) {
     this.githubConfig = this.buildGithubConfig();
   }
@@ -167,7 +168,7 @@ export class GithubService {
       const ticket: string = await this.createLoginTicket(user.id, user.name);
       return this.buildSuccessRedirectUrl(ticket, statePayload.redirect);
     } catch (error) {
-      logger.error(
+      this.logger.error(
         `${Messages.GITHUB_LOGIN_PROCESS_FAILED_PREFIX}${error instanceof Error ? error.message : String(error)}`,
       );
       return this.buildFailureRedirectUrl();

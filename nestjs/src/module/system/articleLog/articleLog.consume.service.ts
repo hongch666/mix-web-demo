@@ -3,7 +3,7 @@ import { Injectable, OnApplicationShutdown } from "@nestjs/common";
 import { Interval } from "@nestjs/schedule";
 import { Defaults, Messages } from "src/common/constants";
 import { BatchBuffer } from "src/common/utils/batchBuffer";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { ArticleLogService } from "./articleLog.service";
 import {
   ArticleAction,
@@ -20,7 +20,10 @@ type RawArticleLogMessage = Partial<ArticleLogMessage> & {
 export class LogConsumerService implements OnApplicationShutdown {
   private readonly batchBuffer: BatchBuffer<CreateArticleLogDto>;
 
-  constructor(private readonly articleLogService: ArticleLogService) {
+  constructor(
+    private readonly articleLogService: ArticleLogService,
+    private readonly logger: LoggerService,
+  ) {
     this.batchBuffer = new BatchBuffer<CreateArticleLogDto>(
       "ArticleLog",
       {
@@ -31,6 +34,7 @@ export class LogConsumerService implements OnApplicationShutdown {
       async (batch) => {
         await this.articleLogService.insertMany(batch);
       },
+      logger,
     );
   }
 
@@ -75,7 +79,7 @@ export class LogConsumerService implements OnApplicationShutdown {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.ARTICLE_LOG_PROCESS_FAILED(errorMessage));
+      this.logger.error(Messages.ARTICLE_LOG_PROCESS_FAILED(errorMessage));
     }
   }
 
@@ -85,19 +89,19 @@ export class LogConsumerService implements OnApplicationShutdown {
   private buildDto(msg: ArticleLogMessage): CreateArticleLogDto | null {
     // 验证必填字段
     if (!msg.action) {
-      logger.error(Messages.ARTICLE_LOG_MISSING_ACTION(JSON.stringify(msg)));
+      this.logger.error(Messages.ARTICLE_LOG_MISSING_ACTION(JSON.stringify(msg)));
       return null;
     }
 
     if (!msg.content) {
-      logger.error(Messages.ARTICLE_LOG_MISSING_CONTENT(JSON.stringify(msg)));
+      this.logger.error(Messages.ARTICLE_LOG_MISSING_CONTENT(JSON.stringify(msg)));
       return null;
     }
 
     // 验证 action 是否是有效的枚举值
     const validActions: ArticleAction[] = Object.values(ArticleAction);
     if (!validActions.includes(msg.action)) {
-      logger.error(Messages.ARTICLE_LOG_INVALID_ACTION_DETAIL(msg.action));
+      this.logger.error(Messages.ARTICLE_LOG_INVALID_ACTION_DETAIL(msg.action));
       return null;
     }
 

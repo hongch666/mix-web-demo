@@ -11,7 +11,7 @@ import qs from "qs";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 
 interface CallOptions {
   serviceName: string;
@@ -53,6 +53,7 @@ export class NacosService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly cls: ClsService,
     private readonly internalTokenUtil: InternalTokenUtil,
+    private readonly logger: LoggerService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -78,7 +79,7 @@ export class NacosService implements OnModuleInit {
         );
       },
       onRetry: (retryCount, error) => {
-        logger.warning(
+        this.logger.warning(
           Messages.SERVICE_RETRY(
             error.config?.url || "unknown",
             retryCount,
@@ -136,7 +137,7 @@ export class NacosService implements OnModuleInit {
     let registrationIp = this.configService.get<string>("server.ip")!;
     if (serverMode === "dev") {
       registrationIp = "127.0.0.1";
-      logger.info(Messages.REGISTER_NACOS_DEV_MODE);
+      this.logger.info(Messages.REGISTER_NACOS_DEV_MODE);
     } else if (
       !registrationIp ||
       registrationIp === "127.0.0.1" ||
@@ -144,7 +145,7 @@ export class NacosService implements OnModuleInit {
     ) {
       // 自动解析
       registrationIp = this.getLocalIp();
-      logger.info(Messages.LOCAL_IP_CONVERTED(registrationIp));
+      this.logger.info(Messages.LOCAL_IP_CONVERTED(registrationIp));
     }
 
     // 注册当前服务
@@ -165,7 +166,7 @@ export class NacosService implements OnModuleInit {
       },
     );
 
-    logger.info(Messages.REGISTER_NACOS);
+    this.logger.info(Messages.REGISTER_NACOS);
   }
 
   /**
@@ -226,19 +227,19 @@ export class NacosService implements OnModuleInit {
 
     // 监听熔断器事件
     breaker.on("open", () => {
-      logger.warning(Messages.SERVICE_CIRCUIT_BREAKER_OPEN(serviceName));
+      this.logger.warning(Messages.SERVICE_CIRCUIT_BREAKER_OPEN(serviceName));
     });
 
     breaker.on("halfOpen", () => {
-      logger.info(Messages.SERVICE_CIRCUIT_BREAKER_HALF_OPEN(serviceName));
+      this.logger.info(Messages.SERVICE_CIRCUIT_BREAKER_HALF_OPEN(serviceName));
     });
 
     breaker.on("close", () => {
-      logger.info(Messages.SERVICE_CIRCUIT_BREAKER_CLOSE(serviceName));
+      this.logger.info(Messages.SERVICE_CIRCUIT_BREAKER_CLOSE(serviceName));
     });
 
     breaker.on("fallback", (result: unknown) => {
-      logger.warning(
+      this.logger.warning(
         Messages.SERVICE_CIRCUIT_BREAKER_FALLBACK(serviceName, result),
       );
     });
@@ -327,7 +328,7 @@ export class NacosService implements OnModuleInit {
         if (responseData.code !== HttpCode.OK) {
           const errorMsg: string =
             (responseData.msg as string) || Messages.UNKNOWN_ERROR;
-          logger.error(
+          this.logger.error(
             Messages.SERVICE_BUSINESS_ERROR_DETAIL(
               opts.serviceName,
               String(responseData.code),
@@ -347,7 +348,7 @@ export class NacosService implements OnModuleInit {
     } catch (err) {
       // 熔断器降级处理
       if (err instanceof Error && err.message === "Breaker is open") {
-        logger.warning(
+        this.logger.warning(
           Messages.SERVICE_CIRCUIT_BREAKER_TRIGGERED(opts.serviceName),
         );
         return {
@@ -357,7 +358,7 @@ export class NacosService implements OnModuleInit {
         };
       }
 
-      logger.error(
+      this.logger.error(
         Messages.SERVICE_CALL_ERROR(
           opts.serviceName,
           err instanceof Error ? err.message : String(err),

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Messages } from "src/common/constants";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { Repository } from "typeorm";
 import { TableSettings } from "./entities/tableSettings.entity";
 
@@ -10,6 +10,7 @@ export class TableSettingsService {
   constructor(
     @InjectRepository(TableSettings)
     private readonly tableSettingsRepository: Repository<TableSettings>,
+    private readonly logger: LoggerService,
   ) {}
 
   /**
@@ -50,7 +51,7 @@ export class TableSettingsService {
       existing.columns = columns;
       const saved: TableSettings =
         await this.tableSettingsRepository.save(existing);
-      logger.info(Messages.TABLE_SETTINGS_UPDATED(userId, tableKey));
+      this.logger.info(Messages.TABLE_SETTINGS_UPDATED(userId, tableKey));
       return saved;
     }
 
@@ -61,7 +62,7 @@ export class TableSettingsService {
     });
     const saved: TableSettings =
       await this.tableSettingsRepository.save(entity);
-    logger.info(Messages.TABLE_SETTINGS_CREATED(userId, tableKey));
+    this.logger.info(Messages.TABLE_SETTINGS_CREATED(userId, tableKey));
     return saved;
   }
 
@@ -73,6 +74,6 @@ export class TableSettingsService {
       user_id: userId,
       table_key: tableKey,
     });
-    logger.info(Messages.TABLE_SETTINGS_DELETED(userId, tableKey));
+    this.logger.info(Messages.TABLE_SETTINGS_DELETED(userId, tableKey));
   }
 }

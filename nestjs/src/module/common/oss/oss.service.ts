@@ -4,7 +4,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 
 import type OSS from "ali-oss";
 
@@ -24,7 +24,10 @@ export class OssService implements OnModuleInit {
   private accessKeySecret!: string;
   private putTimeout!: number;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     const config: Record<string, unknown> =
@@ -60,7 +63,7 @@ export class OssService implements OnModuleInit {
     this.putTimeout = Math.max(putTimeoutSec, 10) * 1000; // 最少 10 秒
 
     if (this.isBunRuntime()) {
-      logger.info(Messages.OSS_BUN_RUNTIME_COMPAT_MESSAGE);
+      this.logger.info(Messages.OSS_BUN_RUNTIME_COMPAT_MESSAGE);
       return;
     }
 
@@ -81,13 +84,13 @@ export class OssService implements OnModuleInit {
    */
   async uploadFile(localFile: string, ossFile: string): Promise<string> {
     try {
-      logger.info(Messages.OSS_UPLOAD_START_DETAIL(localFile, ossFile));
-      logger.info(
+      this.logger.info(Messages.OSS_UPLOAD_START_DETAIL(localFile, ossFile));
+      this.logger.info(
         Messages.OSS_CLIENT_CONFIG_INFO(this.bucketName, this.endpoint),
       );
 
       // 检查文件是否存在
-      logger.info(Messages.OSS_CHECK_FILE_EXISTS(localFile));
+      this.logger.info(Messages.OSS_CHECK_FILE_EXISTS(localFile));
       try {
         await fs.promises.access(localFile);
       } catch {
@@ -95,29 +98,29 @@ export class OssService implements OnModuleInit {
           Messages.OSS_LOCAL_FILE_NOT_FOUND(localFile),
         );
       }
-      logger.info(Messages.OSS_FILE_EXISTS_RESULT(true));
+      this.logger.info(Messages.OSS_FILE_EXISTS_RESULT(true));
 
       // 获取文件大小
       const stats = await fs.promises.stat(localFile);
-      logger.info(Messages.OSS_LOCAL_FILE_SIZE(stats.size));
+      this.logger.info(Messages.OSS_LOCAL_FILE_SIZE(stats.size));
 
       // 添加超时控制
-      logger.info(Messages.OSS_PUT_OPERATION_START);
+      this.logger.info(Messages.OSS_PUT_OPERATION_START);
       const result = this.isBunRuntime()
         ? await this.uploadFileWithBun(localFile, ossFile)
         : await this.uploadFileWithAliOss(localFile, ossFile);
 
-      logger.info(Messages.OSS_PUT_RESULT_INFO(JSON.stringify(result)));
+      this.logger.info(Messages.OSS_PUT_RESULT_INFO(JSON.stringify(result)));
 
       const url: string = this.getFileUrl(ossFile);
-      logger.info(Messages.OSS_FILE_UPLOAD_SUCCESS(url));
+      this.logger.info(Messages.OSS_FILE_UPLOAD_SUCCESS(url));
       return url;
     } catch (error: unknown) {
       const message: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.OSS_UPLOAD_ERROR_LOG(message));
-      logger.error(Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile));
-      logger.error(
+      this.logger.error(Messages.OSS_UPLOAD_ERROR_LOG(message));
+      this.logger.error(Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile));
+      this.logger.error(
         Messages.OSS_UPLOAD_ERROR_STACK_INFO(
           error instanceof Error ? error.stack || "" : "",
         ),

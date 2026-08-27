@@ -7,7 +7,7 @@ import utc from "dayjs/plugin/utc";
 import { DeleteResult, Model } from "mongoose";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import {
   ArticleAction,
@@ -50,6 +50,7 @@ export class ArticleLogService {
     @InjectModel(ArticleLog.name)
     private readonly logModel: Model<ArticleLogDocument>,
     private readonly springClient: SpringClientService,
+    private readonly logger: LoggerService,
   ) {
     this.ensureIndexes();
   }
@@ -101,7 +102,7 @@ export class ArticleLogService {
         ),
       );
       missingIndexes.forEach((indexConfig) => {
-        logger.info(
+        this.logger.info(
           Messages.ARTICLE_LOG_INDEX_CREATED(indexConfig.options.name),
         );
       });

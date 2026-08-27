@@ -10,7 +10,7 @@ import { ClsService } from "nestjs-cls";
 import { Observable } from "rxjs";
 import { finalize } from "rxjs/operators";
 import { Messages } from "src/common/constants";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { API_LOG_KEY, ApiLogOptions } from "../decorators/apiLog.decorator";
 
 @Injectable()
@@ -19,6 +19,7 @@ export class ApiLogInterceptor implements NestInterceptor {
     private readonly reflector: Reflector,
     private readonly cls: ClsService,
     private readonly amqpConnection: AmqpConnection,
+    private readonly logger: LoggerService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -80,10 +81,12 @@ export class ApiLogInterceptor implements NestInterceptor {
 
     // 记录日志
     const logLevel: string = logConfig.logLevel || "info";
-    if (logLevel in logger) {
-      (logger[logLevel as keyof typeof logger] as (message: string) => void)(
-        logMessage,
-      );
+    if (logLevel in this.logger) {
+      (
+        this.logger[logLevel as keyof typeof this.logger] as (
+          message: string,
+        ) => void
+      )(logMessage);
     }
 
     // 开始计时
@@ -99,9 +102,9 @@ export class ApiLogInterceptor implements NestInterceptor {
           responseTime,
         );
         const timeLogLevel: string = logConfig.logLevel || "info";
-        if (timeLogLevel in logger) {
+        if (timeLogLevel in this.logger) {
           (
-            logger[timeLogLevel as keyof typeof logger] as (
+            this.logger[timeLogLevel as keyof typeof this.logger] as (
               message: string,
             ) => void
           )(timeMessage);
@@ -120,7 +123,7 @@ export class ApiLogInterceptor implements NestInterceptor {
         ).catch((error: unknown) => {
           const errorMessage: string =
             error instanceof Error ? error.message : String(error);
-          logger.error(Messages.API_LOG_QUEUE_SEND_FAILED(errorMessage));
+          this.logger.error(Messages.API_LOG_QUEUE_SEND_FAILED(errorMessage));
         });
       }),
     );
@@ -195,11 +198,11 @@ export class ApiLogInterceptor implements NestInterceptor {
       // 发送到消息队列
       this.amqpConnection.publish("", "api-log-queue", apiLogMessage);
 
-      logger.info(Messages.API_LOG_QUEUE_SENT(JSON.stringify(apiLogMessage)));
+      this.logger.info(Messages.API_LOG_QUEUE_SENT(JSON.stringify(apiLogMessage)));
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      logger.error(Messages.API_LOG_QUEUE_ERROR(errorMessage));
+      this.logger.error(Messages.API_LOG_QUEUE_ERROR(errorMessage));
       // 不要抛出异常，避免影响业务逻辑
     }
   }

@@ -4,7 +4,7 @@ import { ClsService } from "nestjs-cls";
 import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
-import { logger } from "src/common/utils/writeLog";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import {
   REQUIRE_INTERNAL_TOKEN_KEY,
   REQUIRE_INTERNAL_TOKEN_SERVICE_NAME_KEY,
@@ -20,6 +20,7 @@ export class InternalTokenGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly cls: ClsService,
     private readonly internalTokenUtil: InternalTokenUtil,
+    private readonly logger: LoggerService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -38,7 +39,7 @@ export class InternalTokenGuard implements CanActivate {
     const internalToken: string = this.cls.get<string>("internalToken") || "";
 
     if (!internalToken) {
-      logger.error(Messages.INTERNAL_TOKEN_MISSING);
+      this.logger.error(Messages.INTERNAL_TOKEN_MISSING);
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_MISSING,
         HttpCode.UNAUTHORIZED,
@@ -59,7 +60,7 @@ export class InternalTokenGuard implements CanActivate {
         );
 
       if (requiredServiceName && requiredServiceName !== claims.serviceName) {
-        logger.error(
+        this.logger.error(
           Messages.INTERNAL_TOKEN_SERVICE_NAME_MISMATCH(
             requiredServiceName,
             claims.serviceName,
@@ -72,7 +73,7 @@ export class InternalTokenGuard implements CanActivate {
         );
       }
 
-      logger.debug(
+      this.logger.debug(
         Messages.INTERNAL_TOKEN_VERIFICATION_SUCCESS(
           claims.userId,
           claims.serviceName,
@@ -84,7 +85,7 @@ export class InternalTokenGuard implements CanActivate {
         throw error;
       }
       const message = error instanceof Error ? error.message : String(error);
-      logger.error(Messages.INTERNAL_TOKEN_VERIFICATION_FAILED(message));
+      this.logger.error(Messages.INTERNAL_TOKEN_VERIFICATION_FAILED(message));
       throw new BusinessException(
         Messages.INTERNAL_TOKEN_INVALID,
         HttpCode.UNAUTHORIZED,
