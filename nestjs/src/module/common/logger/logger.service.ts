@@ -21,6 +21,18 @@ export class LoggerService implements OnModuleInit {
    * 模块初始化时加载日志配置
    */
   onModuleInit(): void {
+    this.ensureConfigLoaded();
+  }
+
+  /**
+   * 确保日志配置已加载
+   * 使用惰性加载：构造函数阶段（如 BatchBuffer 初始化）可能早于 onModuleInit，
+   * 此时首次写日志会触发加载，避免 logPath 为 undefined
+   */
+  private ensureConfigLoaded(): void {
+    if (this.logPath) {
+      return;
+    }
     this.loadConfig();
   }
 
@@ -50,6 +62,9 @@ export class LoggerService implements OnModuleInit {
    * @param level 日志级别
    */
   private writeFileLog(message: string, level: string): void {
+    // 惰性加载配置，保证构造阶段调用（如 BatchBuffer 初始化）也能正常写日志
+    this.ensureConfigLoaded();
+
     // 确保日志目录存在
     if (!fs.existsSync(this.logPath)) {
       fs.mkdirSync(this.logPath, { recursive: true });
@@ -73,9 +88,10 @@ export class LoggerService implements OnModuleInit {
     try {
       fs.appendFileSync(logFile, logEntry, "utf8");
     } catch (error: unknown) {
+      // 文件写入失败不应中断应用运行，仅通过控制台输出错误
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
-      throw new Error(Messages.LOG_WRITE_FAILED(errorMessage));
+      this.nestLogger.error(Messages.LOG_WRITE_FAILED(errorMessage));
     }
   }
 
