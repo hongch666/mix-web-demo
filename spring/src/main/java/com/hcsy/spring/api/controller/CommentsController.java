@@ -216,8 +216,8 @@ public class CommentsController {
     @Operation(summary = "创建评论（内部）", description = "创建评论，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部创建评论")
-    public Mono<Result<Comments>> createCommentInternal(@RequestBody Comments comments) {
-        return commentsService.save(comments).map(Result::success);
+    public Mono<Result<Void>> createCommentInternal(@RequestBody Comments comments) {
+        return commentsService.save(comments).thenReturn(Result.<Void>success());
     }
 
     @GetMapping("/statistics/ai-count/{articleId}")
