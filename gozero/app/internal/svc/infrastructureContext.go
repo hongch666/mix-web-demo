@@ -29,7 +29,7 @@ var detectLocalIP = getLocalIPv4Address
 
 // 初始化基础设施上下文
 func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *InfrastructureContext {
-	mysqlConn := initSqlx(c)
+	mysqlConn := initSqlx(c, logger)
 	initChatMessagesTable(logger, mysqlConn)
 
 	return &InfrastructureContext{
@@ -46,6 +46,7 @@ func newInfrastructureContext(c config.Config, logger *utils.ZeroLogger) *Infras
 func initRawMysql(c config.Config, logger *utils.ZeroLogger) *sql.DB {
 	dsn := buildMysqlDsn(c)
 	if dsn == "" {
+		logger.Warning(constants.RAW_MYSQL_CONFIG_MISSING_DEGRADE)
 		return nil
 	}
 	rawDB, err := sql.Open(constants.SQL_TOOLS_MYSQL_DRIVER, dsn)
@@ -78,9 +79,10 @@ func (ic *InfrastructureContext) Close() {
 }
 
 // 初始化MySQL连接
-func initSqlx(c config.Config) sqlx.SqlConn {
+func initSqlx(c config.Config, logger *utils.ZeroLogger) sqlx.SqlConn {
 	dsn := buildMysqlDsn(c)
 	if dsn == "" {
+		logger.Warning(constants.MYSQL_CONFIG_MISSING_DEGRADE)
 		return nil
 	}
 
@@ -142,6 +144,7 @@ func buildMysqlDsn(c config.Config) string {
 func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 	esConf := c.Database.ES
 	if esConf.Host == "" || esConf.Port == 0 {
+		logger.Warning(constants.ES_CONFIG_MISSING_DEGRADE)
 		return nil
 	}
 
@@ -172,6 +175,7 @@ func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher {
 	mqConf := c.MQ
 	if mqConf.Host == "" || mqConf.Port == 0 {
+		logger.Warning(constants.RABBITMQ_CONFIG_MISSING_DEGRADE)
 		return nil
 	}
 
@@ -207,6 +211,7 @@ func initRabbitMQ(c config.Config, logger *utils.ZeroLogger) *rabbitmq.Publisher
 func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingClient {
 	nacosConf := c.Nacos
 	if nacosConf.IpAddr == "" || nacosConf.Port == 0 {
+		logger.Warning(constants.NACOS_CONFIG_MISSING_DEGRADE)
 		return nil
 	}
 
@@ -275,6 +280,7 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 func initRedis(c config.Config, logger *utils.ZeroLogger) *redis.Client {
 	redisConf := c.Database.Redis
 	if redisConf.Host == "" || redisConf.Port == 0 {
+		logger.Warning(constants.REDIS_CONFIG_MISSING_DEGRADE)
 		return nil
 	}
 

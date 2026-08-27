@@ -10,6 +10,14 @@ const (
 	SERVER_START_SUCCESS = "服务启动成功"
 	GET_SWAGGER_FAIL     = "获取 Swagger 文档失败"
 
+	// 基础设施降级
+	MYSQL_CONFIG_MISSING_DEGRADE     = "MySQL 配置缺失(host/port/username/dbname 为空)，服务将以无 MySQL 连接模式降级运行"
+	RAW_MYSQL_CONFIG_MISSING_DEGRADE = "MySQL 配置缺失，标准库 MySQL 连接不可用，SQL 工具动态查询能力降级"
+	ES_CONFIG_MISSING_DEGRADE        = "ElasticSearch 地址未配置，搜索相关功能将不可用"
+	RABBITMQ_CONFIG_MISSING_DEGRADE  = "RabbitMQ 地址未配置，API 日志投递功能将不可用"
+	REDIS_CONFIG_MISSING_DEGRADE     = "Redis 地址未配置，分布式锁与实时广播功能将不可用"
+	NACOS_CONFIG_MISSING_DEGRADE     = "Nacos 地址未配置，服务发现、注册与服务间调用将不可用"
+
 	// Nacos
 	REGISTER_NACOS_DEV_MODE_MESSAGE = "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
 	NACOS_CACHE_DIR_CREATE_FAIL     = "创建Nacos缓存目录失败: %v, 路径: %s"
