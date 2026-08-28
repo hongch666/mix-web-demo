@@ -12,10 +12,10 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// MessageHandler 处理跨 Pod 实时消息。
+// MessageHandler 处理跨 Pod 实时消息
 type MessageHandler func(payload []byte)
 
-// RedisPubSub 基于 Redis Pub/Sub 的实时消息总线。
+// RedisPubSub 基于 Redis Pub/Sub 的实时消息总线
 type RedisPubSub struct {
 	client *redis.Client
 	logger *utils.ZeroLogger
@@ -25,12 +25,12 @@ type RedisPubSub struct {
 	closed bool
 }
 
-// NewRedisPubSub 创建 Redis 实时消息总线。
+// NewRedisPubSub 创建 Redis 实时消息总线
 func NewRedisPubSub(client *redis.Client, logger *utils.ZeroLogger) *RedisPubSub {
 	return &RedisPubSub{client: client, logger: logger}
 }
 
-// Publish 发布一条跨 Pod 实时消息。
+// Publish 发布一条跨 Pod 实时消息
 func (p *RedisPubSub) Publish(ctx context.Context, payload []byte) error {
 	if p == nil || p.client == nil {
 		return fmt.Errorf(constants.REDIS_REALTIME_BUS_NOT_INITIALIZED_ERROR)
@@ -85,7 +85,7 @@ func (p *RedisPubSub) run(ctx context.Context, handler MessageHandler) {
 	}
 }
 
-// Close 停止订阅并关闭当前 Redis Pub/Sub 连接。
+// Close 停止订阅并关闭当前 Redis Pub/Sub 连接
 func (p *RedisPubSub) Close() {
 	if p == nil {
 		return

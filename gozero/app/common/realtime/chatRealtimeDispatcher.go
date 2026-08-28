@@ -16,7 +16,7 @@ type chatHistoryReader interface {
 	MarkChatHistoryAsRead(context.Context, int64, int64) error
 }
 
-// ChatRealtimeDispatcher 负责处理跨 Pod 的聊天实时事件。
+// ChatRealtimeDispatcher 负责处理跨 Pod 的聊天实时事件
 type ChatRealtimeDispatcher struct {
 	ctx               context.Context
 	chatHub           *hub.ChatHub
@@ -25,7 +25,7 @@ type ChatRealtimeDispatcher struct {
 	logger            *utils.ZeroLogger
 }
 
-// NewChatRealtimeDispatcher 创建聊天实时事件分发器。
+// NewChatRealtimeDispatcher 创建聊天实时事件分发器
 func NewChatRealtimeDispatcher(
 	ctx context.Context,
 	chatHub *hub.ChatHub,
@@ -42,7 +42,7 @@ func NewChatRealtimeDispatcher(
 	}
 }
 
-// Handle 处理一条聊天实时事件，并投递到当前 Pod 的连接。
+// Handle 处理一条聊天实时事件，并投递到当前 Pod 的连接
 func (d *ChatRealtimeDispatcher) Handle(payload []byte) {
 	if d == nil {
 		return
