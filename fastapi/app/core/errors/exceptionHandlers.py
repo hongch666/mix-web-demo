@@ -6,8 +6,8 @@ from fastapi.responses import JSONResponse, Response
 
 from fastapi import Request
 
+from ..base import Logger
 from ..base.response import error
-from ..base.writeLog import Logger
 from .exceptions import BusinessException
 
 
