@@ -1,10 +1,12 @@
 package com.hcsy.spring.api.service.impl;
 
+import com.hcsy.spring.common.constants.Defaults;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,7 +17,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.hcsy.spring.api.repository.ArticleLikeRepository;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.api.service.ArticleService;
-import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
@@ -162,15 +163,26 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
         // 点赞表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
         // 避免一次性加载全部导致耗时过长、连接/令牌超时。
         if (updatedAfter == null || updatedAfter.isBlank()) {
-            return articleLikeRepository.findLatestForSync(Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
-                .map(Neo4jSyncMapUtil::likeToMap)
+            return articleLikeRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
+                .map(this::likeToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return articleLikeRepository.findLatestAfterForSync(after, Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
-            .map(Neo4jSyncMapUtil::likeToMap)
+        return articleLikeRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
+            .map(this::likeToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 点赞实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     */
+    private Map<String, Object> likeToMap(ArticleLike like) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("user_id", like.getUserId());
+        map.put("article_id", like.getArticleId());
+        map.put("created_time", like.getCreatedTime());
+        return map;
     }
 }

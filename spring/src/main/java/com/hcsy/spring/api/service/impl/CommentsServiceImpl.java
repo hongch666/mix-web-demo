@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +24,6 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
@@ -318,15 +318,28 @@ public class CommentsServiceImpl implements CommentsService {
         // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
         // 避免一次性加载全部导致耗时过长、连接/令牌超时。
         if (updatedAfter == null || updatedAfter.isBlank()) {
-            return commentsRepository.findLatestForSync(Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
-                .map(Neo4jSyncMapUtil::commentToMap)
+            return commentsRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
+                .map(this::commentToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return commentsRepository.findLatestAfterForSync(after, Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
-            .map(Neo4jSyncMapUtil::commentToMap)
+        return commentsRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
+            .map(this::commentToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 评论实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     */
+    private Map<String, Object> commentToMap(Comments comment) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", comment.getId());
+        map.put("user_id", comment.getUserId());
+        map.put("article_id", comment.getArticleId());
+        map.put("create_time", comment.getCreateTime());
+        map.put("update_time", comment.getUpdateTime());
+        return map;
     }
 }

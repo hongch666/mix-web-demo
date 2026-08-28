@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,10 +19,10 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.hcsy.spring.api.repository.FocusRepository;
 import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.api.service.FocusService;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
@@ -215,15 +216,26 @@ public class FocusServiceImpl implements FocusService {
         // 关注表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
         // 避免一次性加载全部导致耗时过长、连接/令牌超时。
         if (updatedAfter == null || updatedAfter.isBlank()) {
-            return focusRepository.findLatestForSync(Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
-                .map(Neo4jSyncMapUtil::focusToMap)
+            return focusRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
+                .map(this::focusToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
-        return focusRepository.findLatestAfterForSync(after, Neo4jSyncMapUtil.NEO4J_SYNC_LIMIT)
-            .map(Neo4jSyncMapUtil::focusToMap)
+        return focusRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
+            .map(this::focusToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 关注实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     */
+    private Map<String, Object> focusToMap(Focus focus) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("user_id", focus.getUserId());
+        map.put("focus_id", focus.getFocusId());
+        map.put("created_time", focus.getCreatedTime());
+        return map;
     }
 }

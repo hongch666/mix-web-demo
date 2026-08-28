@@ -3,7 +3,9 @@ package com.hcsy.spring.api.service.impl;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.PageRequest;
@@ -19,7 +21,6 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
-import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
@@ -262,13 +263,13 @@ public class CategoryServiceImpl implements CategoryService {
     public Mono<List<java.util.Map<String, Object>>> getNeo4jSyncCategories(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return categoryRepository.findAll()
-                .map(Neo4jSyncMapUtil::categoryToMap)
+                .map(this::categoryToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return categoryRepository.findByUpdateTimeAfter(after)
-            .map(Neo4jSyncMapUtil::categoryToMap)
+            .map(this::categoryToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -277,14 +278,37 @@ public class CategoryServiceImpl implements CategoryService {
     public Mono<List<java.util.Map<String, Object>>> getNeo4jSyncSubCategories(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return subCategoryRepository.findAll()
-                .map(Neo4jSyncMapUtil::subCategoryToMap)
+                .map(this::subCategoryToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return subCategoryRepository.findByUpdateTimeAfter(after)
-            .map(Neo4jSyncMapUtil::subCategoryToMap)
+            .map(this::subCategoryToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 分类实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     */
+    private Map<String, Object> categoryToMap(Category category) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", category.getId());
+        map.put("name", category.getName());
+        map.put("update_time", category.getUpdateTime());
+        return map;
+    }
+
+    /**
+     * 子分类实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     */
+    private Map<String, Object> subCategoryToMap(SubCategory subCategory) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", subCategory.getId());
+        map.put("name", subCategory.getName());
+        map.put("category_id", subCategory.getCategoryId());
+        map.put("update_time", subCategory.getUpdateTime());
+        return map;
     }
 }

@@ -24,8 +24,6 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.common.utils.EntityMapUtil;
-import com.hcsy.spring.common.utils.Neo4jSyncMapUtil;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
@@ -201,7 +199,8 @@ public class ArticleServiceImpl implements ArticleService {
             return Mono.just(List.of());
         }
         return articleRepository.findAllById(ids)
-            .map(article -> new IdCountVO(article.getId(), article.getViews() == null ? 0L : article.getViews().longValue()))
+            .map(article -> new IdCountVO(article.getId(),
+                article.getViews() == null ? 0L : article.getViews().longValue()))
             .collectList();
     }
 
@@ -348,9 +347,27 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public Mono<List<Map<String, Object>>> getTop10Articles() {
         return articleRepository.findTop10ByStatusOrderByViewsDesc(1)
-            .map(EntityMapUtil::articleToMap)
+            .map(this::articleToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
+    }
+
+    /**
+     * 文章实体转 Map，用于内部接口返回通用数据
+     */
+    private Map<String, Object> articleToMap(Article article) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", article.getId());
+        map.put("title", article.getTitle());
+        map.put("content", article.getContent());
+        map.put("user_id", article.getUserId());
+        map.put("tags", article.getTags());
+        map.put("status", article.getStatus());
+        map.put("views", article.getViews());
+        map.put("sub_category_id", article.getSubCategoryId());
+        map.put("create_at", article.getCreateAt());
+        map.put("update_at", article.getUpdateAt());
+        return map;
     }
 
     @Override
@@ -383,13 +400,13 @@ public class ArticleServiceImpl implements ArticleService {
     public Mono<List<Map<String, Object>>> getNeo4jSyncArticles(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return articleRepository.findAll()
-                .map(Neo4jSyncMapUtil::articleToMap)
+                .map(this::articleToMap)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return articleRepository.findByUpdateAtAfter(after)
-            .map(Neo4jSyncMapUtil::articleToMap)
+            .map(this::articleToMap)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }

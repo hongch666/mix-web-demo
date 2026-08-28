@@ -8,6 +8,14 @@ public final class Scripts {
     private Scripts() {
     }
 
+    // ===== Redis Lua 脚本 =====
+
+    /**
+     * 分布式锁释放脚本：仅当锁值与持有者一致时才删除，防止误删他人锁
+     */
+    public static final String REDIS_UNLOCK = "if redis.call('get', KEYS[1]) == ARGV[1] "
+        + "then return redis.call('del', KEYS[1]) else return 0 end";
+
     public static final String INSERT_AI_USER = "INSERT IGNORE INTO user "
         + "(id, name, password, email, role, img, create_at, update_at) "
         + "VALUES (?, ?, ?, ?, 'ai', ?, NOW(), NOW())";
