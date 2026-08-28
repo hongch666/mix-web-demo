@@ -5,10 +5,10 @@ import * as fs from "fs";
 import * as marked from "marked";
 import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
-import { ErrorIds, Messages } from "src/common/constants";
+import { ErrorIds, Messages, PdfTemplate } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
+import { LoggerService } from "src/module/common/logger/logger.service";
 import { OssService } from "src/module/common/oss/oss.service";
 import { WordService } from "src/module/common/word/word.service";
 
@@ -48,8 +48,10 @@ export class DownloadService {
 
   // 生成word并保存到指定位置
   async exportToWordAndSave(id: number): Promise<string> {
-    const res: Record<string, unknown> = await this.springClient.getArticleById(id);
-    const article: RemoteArticle | null = SpringClientService.extractData<RemoteArticle | null>(res);
+    const res: Record<string, unknown> =
+      await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null =
+      SpringClientService.extractData<RemoteArticle | null>(res);
     if (!article) {
       throw BusinessException.notFound(
         Messages.ARTICLE_NOT_FOUND_BY_ID(id),
@@ -108,7 +110,10 @@ export class DownloadService {
     // 保存文件到指定路径
     await fs.promises.writeFile(savePath, buffer);
     try {
-      return await this.uploadFileToOSS(savePath, `articles/article-${id}.docx`);
+      return await this.uploadFileToOSS(
+        savePath,
+        `articles/article-${id}.docx`,
+      );
     } finally {
       await fs.promises.unlink(savePath).catch(() => undefined);
     }
@@ -116,8 +121,10 @@ export class DownloadService {
 
   // 生成markdown文件并上传到OSS，返回下载链接
   async exportMarkdownAndUpload(id: number): Promise<string> {
-    const res: Record<string, unknown> = await this.springClient.getArticleById(id);
-    const article: RemoteArticle | null = SpringClientService.extractData<RemoteArticle | null>(res);
+    const res: Record<string, unknown> =
+      await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null =
+      SpringClientService.extractData<RemoteArticle | null>(res);
     if (!article) {
       throw BusinessException.notFound(
         Messages.ARTICLE_NOT_FOUND_BY_ID(id),
@@ -127,8 +134,10 @@ export class DownloadService {
     // 拼接markdown内容
     let markdown: string = `# ${article.title}\n`;
     markdown += `\n**标签：** ${article.tags}\n`;
-    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.user_id);
-    const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
+    const userRes: Record<string, unknown> =
+      await this.springClient.getUserById(article.user_id);
+    const user: RemoteUser | null =
+      SpringClientService.extractData<RemoteUser | null>(userRes);
     markdown += `\n**作者：** ${user?.name || "未知"}\n`;
     markdown += `\n**创作时间：** ${article.create_at ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss") : ""}\n`;
     markdown += "\n---\n";
@@ -153,8 +162,10 @@ export class DownloadService {
 
   // 生成PDF文件并保存到指定位置
   async exportToPdfAndSave(id: number): Promise<string> {
-    const res: Record<string, unknown> = await this.springClient.getArticleById(id);
-    const article: RemoteArticle | null = SpringClientService.extractData<RemoteArticle | null>(res);
+    const res: Record<string, unknown> =
+      await this.springClient.getArticleById(id);
+    const article: RemoteArticle | null =
+      SpringClientService.extractData<RemoteArticle | null>(res);
     if (!article) {
       throw BusinessException.notFound(
         Messages.ARTICLE_NOT_FOUND_BY_ID(id),
@@ -162,8 +173,10 @@ export class DownloadService {
       );
     }
 
-    const userRes: Record<string, unknown> = await this.springClient.getUserById(article.user_id);
-    const user: RemoteUser | null = SpringClientService.extractData<RemoteUser | null>(userRes);
+    const userRes: Record<string, unknown> =
+      await this.springClient.getUserById(article.user_id);
+    const user: RemoteUser | null =
+      SpringClientService.extractData<RemoteUser | null>(userRes);
 
     // 获取文件保存路径
     const filePath: string = this.configService.get<string>("files.word")!;
@@ -194,12 +207,12 @@ export class DownloadService {
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
         await page.pdf({
           path: savePath,
-          format: "A4",
+          format: PdfTemplate.PAGE_SIZE,
           margin: {
-            top: "15mm",
-            bottom: "15mm",
-            left: "15mm",
-            right: "15mm",
+            top: PdfTemplate.PAGE_MARGIN,
+            bottom: PdfTemplate.PAGE_MARGIN,
+            left: PdfTemplate.PAGE_MARGIN,
+            right: PdfTemplate.PAGE_MARGIN,
           },
           printBackground: true,
         });
@@ -215,7 +228,10 @@ export class DownloadService {
   }
 
   // 生成 PDF 的 HTML 内容
-  private generatePdfHtml(article: RemoteArticle, user: RemoteUser | { name: string }): string {
+  private generatePdfHtml(
+    article: RemoteArticle,
+    user: RemoteUser | { name: string },
+  ): string {
     const createTime: string = article.create_at
       ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
       : "";
@@ -223,195 +239,14 @@ export class DownloadService {
     // 使用 marked 解析 Markdown 内容为 HTML
     const htmlContent: string = marked.parse(article.content || "");
 
-    return `
-      <!DOCTYPE html>
-      <html lang="zh-CN">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${article.title}</title>
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          html, body {
-            margin: 0;
-            padding: 0;
-            height: auto;
-          }
-          body {
-            font-family: 'Segoe UI', 'SimSun', '微软雅黑', '宋体', sans-serif;
-            line-height: 1.8;
-            color: #333;
-            background: white;
-          }
-          @page {
-            size: A4;
-            margin: 15mm 15mm 15mm 15mm;
-          }
-          .container {
-            max-width: 100%;
-            margin: 0;
-            padding: 0;
-          }
-          .title {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 12px;
-            color: #000;
-          }
-          .meta-info {
-            text-align: center;
-            font-size: 11px;
-            color: #666;
-            margin-bottom: 8px;
-            line-height: 1.4;
-          }
-          .tags {
-            text-align: center;
-            font-size: 11px;
-            color: #0066cc;
-            margin-bottom: 12px;
-          }
-          .divider {
-            border-top: 1px solid #999;
-            margin: 12px 0;
-          }
-          .content {
-            font-size: 14px;
-            line-height: 1.8;
-            margin-bottom: 10px;
-          }
-          .content h1 {
-            font-size: 22px;
-            font-weight: bold;
-            margin: 12px 0 6px 0;
-          }
-          .content h2 {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 10px 0 6px 0;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 3px;
-          }
-          .content h3 {
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 0 4px 0;
-          }
-          .content h4,
-          .content h5,
-          .content h6 {
-            font-size: 14px;
-            font-weight: bold;
-            margin: 8px 0 4px 0;
-          }
-          .content p {
-            margin: 4px 0;
-            text-align: justify;
-          }
-          .content ul,
-          .content ol {
-            margin: 6px 0 6px 20px;
-          }
-          .content li {
-            margin: 2px 0;
-          }
-          .content blockquote {
-            border-left: 4px solid #d0d0d0;
-            margin: 6px 0;
-            padding-left: 12px;
-            color: #666;
-            font-size: 13px;
-          }
-          .content code {
-            background-color: #f5f5f5;
-            padding: 1px 4px;
-            border-radius: 2px;
-            font-family: 'Courier New', 'Consolas', monospace;
-            font-size: 12px;
-          }
-          .content pre {
-            background-color: #f8f8f8;
-            border: 1px solid #ddd;
-            padding: 8px;
-            border-radius: 3px;
-            overflow-x: auto;
-            margin: 8px 0;
-            line-height: 1.3;
-            font-size: 11px;
-          }
-          .content pre code {
-            background-color: transparent;
-            padding: 0;
-            border-radius: 0;
-            font-size: 11px;
-          }
-          .content table {
-            border-collapse: collapse;
-            margin: 8px 0;
-            width: 100%;
-            font-size: 12px;
-          }
-          .content table th,
-          .content table td {
-            border: 1px solid #ddd;
-            padding: 4px 6px;
-            text-align: left;
-          }
-          .content table th {
-            background-color: #f5f5f5;
-            font-weight: bold;
-          }
-          .content hr {
-            border: none;
-            border-top: 1px solid #ddd;
-            margin: 10px 0;
-          }
-          .footer {
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-            margin-top: 12px;
-            padding: 10px 12px;
-            border-top: 1px solid #e0e0e0;
-            background-color: #f9f9f9;
-            line-height: 1.6;
-          }
-          .footer-line {
-            font-size: 11px;
-            color: #555;
-            font-weight: 500;
-          }
-          .footer-detail {
-            font-size: 9px;
-            color: #999;
-            margin-top: 4px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="title">${article.title}</div>
-
-          <div class="meta-info">
-            <div>作者: ${user?.name || "未知"}</div>
-            <div>创作时间: ${createTime}</div>
-          </div>
-
-          ${article.tags ? `<div class="tags">标签: ${article.tags}</div>` : ""}
-
-          <div class="divider"></div>
-
-          <div class="content">${htmlContent}</div>
-
-        </div>
-      </body>
-      </html>
-    `;
+    // 模板与样式统一由 PdfTemplate 常量类提供
+    return PdfTemplate.renderArticleHtml(
+      article.title,
+      user?.name,
+      createTime,
+      article.tags,
+      htmlContent,
+    );
   }
 
   // 上传Word文件到OSS
