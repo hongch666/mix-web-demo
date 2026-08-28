@@ -26,10 +26,6 @@ const DEFAULT_OPTIONS: BatchBufferOptions = {
  * 1. 缓冲区数量 >= batchSize（enqueue 时立即触发）
  * 2. 距上次 flush 时间 >= flushIntervalMs（由外部定时任务统一触发）
  * 3. 缓冲区数量 >= maxBufferSize（强制 flush 防止 OOM）
- *
- * 说明：本类不内置 setTimeout 定时器，定时 flush 由外部定时任务
- * （如 @nestjs/schedule 的 @Interval）调用 flush() 完成，避免内部定时器
- * 生命周期维护带来的"定时器耗尽后不再重启"问题。
  */
 export class BatchBuffer<T> {
   private buffer: T[] = [];
