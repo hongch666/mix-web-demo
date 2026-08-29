@@ -1,5 +1,3 @@
-import hashlib
-import time
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
@@ -24,32 +22,12 @@ class AiHistoryService:
     ) -> None:
         self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
         self._spring_client: SpringClient = SpringClient()
-        # 用于短时间去重的缓存
-        self._request_cache: Dict[str, float] = {}
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         data: Dict[str, Any] = self._normalize_ai_history_data(ai_history)
         thinking: Optional[Any] = data.get("thinking")
         if thinking == "":
             thinking = None
-
-        # 方案1：基于内容和用户ID生成唯一键进行去重（5秒内相同请求只处理一次）
-        request_key: str = hashlib.md5(
-            f"{data['user_id']}:{data['ask']}:{data['reply']}".encode()
-        ).hexdigest()
-
-        current_time: float = time.time()
-        if request_key in self._request_cache:
-            last_time: float = self._request_cache[request_key]
-            if current_time - last_time < 5:  # 5秒内的重复请求
-                return {"status": "duplicate", "message": Messages.REQUEST_PROCESSING}
-
-        self._request_cache[request_key] = current_time
-
-        # 清理过期缓存（保留最近10秒的记录）
-        self._request_cache = {
-            k: v for k, v in self._request_cache.items() if current_time - v < 10
-        }
 
         history: AiHistory = AiHistory(
             user_id=data["user_id"],
