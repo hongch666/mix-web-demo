@@ -8,7 +8,7 @@ from app.internal.services import (
     AlgorithmService,
     AnalyzeService,
     ApiLogService,
-    DeepseekService,
+    GlmService,
     GeminiService,
     GenerateService,
     GptService,
@@ -19,7 +19,7 @@ from app.internal.services import (
     get_algorithm_service,
     get_analyze_service,
     get_apilog_service,
-    get_deepseek_service,
+    get_glm_service,
     get_gemini_service,
     get_generate_service,
     get_gpt_service,
@@ -44,7 +44,7 @@ UserServiceDep = Annotated[UserService, Depends(get_user_service)]
 # AI 服务依赖
 GptServiceDep = Annotated[GptService, Depends(get_gpt_service)]
 GeminiServiceDep = Annotated[GeminiService, Depends(get_gemini_service)]
-DeepseekServiceDep = Annotated[DeepseekService, Depends(get_deepseek_service)]
+GlmServiceDep = Annotated[GlmService, Depends(get_glm_service)]
 
 # 搜索服务依赖
 VectorSearchServiceDep = Annotated[

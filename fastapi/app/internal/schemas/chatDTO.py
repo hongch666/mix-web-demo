@@ -13,7 +13,7 @@ class AIServiceType(str, Enum):
 
     GPT = "GPT"
     GEMINI = "Gemini"
-    DEEPSEEK = "DeepSeek"
+    GLM = "GLM"
 
 
 class ChatRequest(BaseModel):
@@ -27,7 +27,7 @@ class ChatRequest(BaseModel):
         "conversationId", default=None, description="会话ID"
     )
     service: AIServiceType = Field(
-        default=AIServiceType.GPT, description="AI服务类型：gpt、gemini或deepseek"
+        default=AIServiceType.GPT, description="AI服务类型：gpt、gemini或glm"
     )
 
     @field_validator("message")
@@ -43,14 +43,14 @@ class ChatRequest(BaseModel):
         allowed_values = {
             AIServiceType.GPT.value,
             AIServiceType.GEMINI.value,
-            AIServiceType.DEEPSEEK.value,
+            AIServiceType.GLM.value,
         }
         if isinstance(value, AIServiceType):
             return value
         if not isinstance(value, str) or value not in allowed_values:
             raise PydanticCustomError(
                 "service_invalid",
-                "AI服务类型必须是gpt、gemini或deepseek",
+                "AI服务类型必须是gpt、gemini或glm",
             )
         return value
 

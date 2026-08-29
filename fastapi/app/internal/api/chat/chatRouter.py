@@ -14,7 +14,7 @@ from app.core.db import get_db
 from app.dependencies import (
     AiHistoryServiceDep,
     DbSession,
-    DeepseekServiceDep,
+    GlmServiceDep,
     GeminiServiceDep,
     GptServiceDep,
 )
@@ -50,7 +50,7 @@ def _resolve_model_info(service: AIServiceType) -> dict:
     model_map = {
         AIServiceType.GPT: ("gpt", agent_cfg["gpt_model_name"]),
         AIServiceType.GEMINI: ("gemini", agent_cfg["gemini_model_name"]),
-        AIServiceType.DEEPSEEK: ("deepseek", agent_cfg["deepseek_model_name"]),
+        AIServiceType.GLM: ("glm", agent_cfg["glm_model_name"]),
     }
     provider, model_name = model_map.get(service, ("unknown", ""))
     return {
@@ -74,7 +74,7 @@ async def send_message(
     db: DbSession,
     gptService: GptServiceDep,
     geminiService: GeminiServiceDep,
-    deepseekService: DeepseekServiceDep,
+    glmService: GlmServiceDep,
     aiHistoryService: AiHistoryServiceDep,
 ) -> JSONResponse:
     """普通发送聊天消息"""
@@ -154,9 +154,9 @@ async def send_message(
             )
         else:
             Logger.info(
-                Messages.CHAT_SERVICE_PROCESSING("DeepSeek", actual_user_id, False)
+                Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, False)
             )
-            response_message = await deepseekService.simple_chat(
+            response_message = await glmService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
                 db=db,
@@ -207,7 +207,7 @@ async def stream_message(
     request: ChatRequest,
     gptService: GptServiceDep,
     geminiService: GeminiServiceDep,
-    deepseekService: DeepseekServiceDep,
+    glmService: GlmServiceDep,
     aiHistoryService: AiHistoryServiceDep,
 ) -> StreamingResponse:
     """流式发送聊天消息"""
@@ -291,10 +291,10 @@ async def stream_message(
                 else:
                     Logger.info(
                         Messages.CHAT_SERVICE_PROCESSING(
-                            "DeepSeek", actual_user_id, True
+                            "GLM", actual_user_id, True
                         )
                     )
-                    stream_generator = deepseekService.stream_chat(
+                    stream_generator = glmService.stream_chat(
                         message=request.message,
                         user_id=actual_user_id,
                         db=db,

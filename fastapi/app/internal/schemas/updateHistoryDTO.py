@@ -31,7 +31,7 @@ class UpdateHistoryDTO(BaseModel):
     aiType: Optional[str] = Alias(
         "aiType",
         default=None,
-        description="AI类型（例：gpt、gemini、deepseek等）",
+        description="AI类型（例：gpt、gemini、glm等）",
     )
 
     @field_validator("userId")

@@ -27,7 +27,7 @@ class CreateHistoryDTO(BaseModel):
     )
     aiType: str = Alias(
         "aiType",
-        description="AI类型（例：gpt、gemini、deepseek等）",
+        description="AI类型（例：gpt、gemini、glm等）",
     )
 
     @field_validator("userId")

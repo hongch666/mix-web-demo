@@ -11,8 +11,8 @@ from fastapi import Depends
 from ..baseAIService import BaseAiService
 
 
-class DeepseekService(BaseAiService):
-    """DeepSeek 模型服务"""
+class GlmService(BaseAiService):
+    """GLM 模型服务"""
 
     def __init__(
         self,
@@ -20,16 +20,16 @@ class DeepseekService(BaseAiService):
     ) -> None:
         super().__init__(
             ai_history_mapper,
-            service_name="DeepSeek",
+            service_name="GLM",
             config_section="closeai",
-            model_config_key="deepseek_model_name",
+            model_config_key="glm_model_name",
         )
         self._spring_client: SpringClient = SpringClient()
 
 
 @lru_cache()
-def get_deepseek_service(
+def get_glm_service(
     ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
-) -> DeepseekService:
-    """获取 DeepSeek 服务单例实例"""
-    return DeepseekService(ai_history_mapper)
+) -> GlmService:
+    """获取 GLM 服务单例实例"""
+    return GlmService(ai_history_mapper)

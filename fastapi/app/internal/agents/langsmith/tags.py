@@ -17,7 +17,7 @@ def build_chat_tags(
     Args:
         env: 部署环境标识 (dev/test/prod)
         route: 路由标识 (chat_send/chat_stream)
-        model_provider: 模型提供商 (gpt/gemini/deepseek)
+        model_provider: 模型提供商 (gpt/gemini/glm)
         mode: 对话模式 (agent/direct)
         streaming: 是否流式
         rag_enabled: 是否启用 RAG

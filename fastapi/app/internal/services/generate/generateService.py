@@ -14,7 +14,7 @@ from app.internal.clients import SpringClient
 
 from fastapi import Depends
 
-from ..llm.extend.deepseekService import DeepseekService, get_deepseek_service
+from ..llm.extend.glmService import GlmService, get_glm_service
 from ..llm.extend.geminiService import GeminiService, get_gemini_service
 from ..llm.extend.gptService import GptService, get_gpt_service
 
@@ -24,11 +24,11 @@ class GenerateService:
 
     def __init__(
         self,
-        deepseek_service: Optional[DeepseekService] = None,
+        glm_service: Optional[GlmService] = None,
         gemini_service: Optional[GeminiService] = None,
         gpt_service: Optional[GptService] = None,
     ) -> None:
-        self.deepseek_service: Optional[DeepseekService] = deepseek_service
+        self.glm_service: Optional[GlmService] = glm_service
         self.gpt_service: Optional[GptService] = gpt_service
         self.gemini_service: Optional[GeminiService] = gemini_service
         self._spring_client: SpringClient = SpringClient()
@@ -100,16 +100,16 @@ class GenerateService:
         total_start_time = time.time()
 
         # 为每个模型创建带计时的包装函数
-        async def timed_deepseek_call() -> Any:
+        async def timed_glm_call() -> Any:
             start = time.time()
             try:
-                result = await self.deepseek_service.basic_chat(prompt)
+                result = await self.glm_service.basic_chat(prompt)
                 elapsed = time.time() - start
-                Logger.info(Messages.LLM_CALL_COMPLETED("DeepSeek", elapsed))
+                Logger.info(Messages.LLM_CALL_COMPLETED("GLM", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
-                Logger.error(Messages.LLM_CALL_FAILED_TIMED("DeepSeek", elapsed, e))
+                Logger.error(Messages.LLM_CALL_FAILED_TIMED("GLM", elapsed, e))
                 return e
 
         async def timed_gemini_call() -> Any:
@@ -138,7 +138,7 @@ class GenerateService:
 
         # 使用 asyncio.gather 并发执行三个异步调用
         responses = await asyncio.gather(
-            timed_deepseek_call(),
+            timed_glm_call(),
             timed_gemini_call(),
             timed_gpt_call(),
             return_exceptions=True,  # 即使查个调用失败，其他调用仍继续
@@ -148,12 +148,12 @@ class GenerateService:
         total_elapsed = time.time() - total_start_time
         Logger.info(Messages.CONCURRENT_LLM_ALL_COMPLETED(total_elapsed, article_id))
 
-        response_deepseek, response_gemini, response_gpt = responses
+        response_glm, response_gemini, response_gpt = responses
 
         # 检查是否有异常返回
-        if isinstance(response_deepseek, Exception):
-            Logger.error(Messages.LLM_FINAL_FAILED("DeepSeek", response_deepseek))
-            response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
+        if isinstance(response_glm, Exception):
+            Logger.error(Messages.LLM_FINAL_FAILED("GLM", response_glm))
+            response_glm = Messages.GLM_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(Messages.LLM_FINAL_FAILED("Gemini", response_gemini))
             response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
@@ -162,14 +162,14 @@ class GenerateService:
             response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 2.4 解析大模型返回结果
-        content_deepseek, star_deepseek = self._parse_ai_comment_response(
-            response_deepseek
+        content_glm, star_glm = self._parse_ai_comment_response(
+            response_glm
         )
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
         content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
         # 3. 构建AI评论对象
-        deepseek_ai_comment: Dict[str, Any] = self._build_comment_data(
-            article_id, 1001, content_deepseek, star_deepseek
+        glm_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1001, content_glm, star_glm
         )
         gemini_ai_comment: Dict[str, Any] = self._build_comment_data(
             article_id, 1002, content_gemini, star_gemini
@@ -183,7 +183,7 @@ class GenerateService:
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(
-            _insert_comment(deepseek_ai_comment),
+            _insert_comment(glm_ai_comment),
             _insert_comment(gemini_ai_comment),
             _insert_comment(gpt_ai_comment),
         )
@@ -291,13 +291,13 @@ class GenerateService:
                     )
 
                 # 定义三个大模型的总结函数
-                async def summarize_with_deepseek(content: str) -> str:
+                async def summarize_with_glm(content: str) -> str:
                     try:
-                        return await self.deepseek_service.summarize_content(
+                        return await self.glm_service.summarize_content(
                             content, max_length=1500
                         )
                     except Exception as e:
-                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("DeepSeek", e))
+                        Logger.error(Messages.LLM_SUMMARIZE_FAILED("GLM", e))
                         return content[:1500]
 
                 async def summarize_with_gemini(content: str) -> str:
@@ -321,7 +321,7 @@ class GenerateService:
                 # 并发调用三个大模型对提取的内容进行总结
                 summarize_tasks = [
                     extractor.extract_reference_content(
-                        ref_type, ref_value, 3000, summarize_with_deepseek
+                        ref_type, ref_value, 3000, summarize_with_glm
                     ),
                     extractor.extract_reference_content(
                         ref_type, ref_value, 3000, summarize_with_gemini
@@ -340,7 +340,7 @@ class GenerateService:
                 if isinstance(summary_results[0], str) and summary_results[0]:
                     summaries.append(
                         Messages.LLM_SUMMARY_RESULT_ENTRY(
-                            "DeepSeek", summary_results[0]
+                            "GLM", summary_results[0]
                         )
                     )
                 if isinstance(summary_results[1], str) and summary_results[1]:
@@ -388,19 +388,19 @@ class GenerateService:
 
         total_start_time = time.time()
 
-        async def timed_deepseek_ref_call() -> Any:
+        async def timed_glm_ref_call() -> Any:
             start = time.time()
             try:
-                result = await self.deepseek_service.with_reference_chat(
+                result = await self.glm_service.with_reference_chat(
                     article_content, reference_content
                 )
                 elapsed = time.time() - start
-                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("DeepSeek", elapsed))
+                Logger.info(Messages.LLM_REFERENCE_CALL_COMPLETED("GLM", elapsed))
                 return result
             except Exception as e:
                 elapsed = time.time() - start
                 Logger.error(
-                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("DeepSeek", elapsed, e)
+                    Messages.LLM_REFERENCE_CALL_FAILED_TIMED("GLM", elapsed, e)
                 )
                 return e
 
@@ -438,7 +438,7 @@ class GenerateService:
 
         # 并发执行三个调用
         responses = await asyncio.gather(
-            timed_deepseek_ref_call(),
+            timed_glm_ref_call(),
             timed_gemini_ref_call(),
             timed_gpt_ref_call(),
             return_exceptions=True,
@@ -449,14 +449,14 @@ class GenerateService:
             Messages.CONCURRENT_LLM_REFERENCE_ALL_COMPLETED(total_elapsed, article_id)
         )
 
-        response_deepseek, response_gemini, response_gpt = responses
+        response_glm, response_gemini, response_gpt = responses
 
         # 检查异常返回
-        if isinstance(response_deepseek, Exception):
+        if isinstance(response_glm, Exception):
             Logger.error(
-                Messages.LLM_REFERENCE_FINAL_FAILED("DeepSeek", response_deepseek)
+                Messages.LLM_REFERENCE_FINAL_FAILED("GLM", response_glm)
             )
-            response_deepseek = Messages.DEEPSEEK_CALL_FAILED_ERROR
+            response_glm = Messages.GLM_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("Gemini", response_gemini))
             response_gemini = Messages.GEMINI_CALL_FAILED_ERROR
@@ -465,15 +465,15 @@ class GenerateService:
             response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 7. 解析大模型返回结果
-        content_deepseek, star_deepseek = self._parse_ai_comment_response(
-            response_deepseek
+        content_glm, star_glm = self._parse_ai_comment_response(
+            response_glm
         )
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
         content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
 
         # 8. 构建AI评论对象
-        deepseek_ai_comment: Dict[str, Any] = self._build_comment_data(
-            article_id, 1001, content_deepseek, star_deepseek
+        glm_ai_comment: Dict[str, Any] = self._build_comment_data(
+            article_id, 1001, content_glm, star_glm
         )
         gemini_ai_comment: Dict[str, Any] = self._build_comment_data(
             article_id, 1002, content_gemini, star_gemini
@@ -487,7 +487,7 @@ class GenerateService:
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(
-            _insert_comment_ref(deepseek_ai_comment),
+            _insert_comment_ref(glm_ai_comment),
             _insert_comment_ref(gemini_ai_comment),
             _insert_comment_ref(gpt_ai_comment),
         )
@@ -544,23 +544,23 @@ class GenerateService:
             Logger.info(Messages.CONCURRENT_SUMMARY_MESSAGE)
             total_start_time = time.time()
 
-            async def timed_deepseek_summarize() -> Optional[str]:
+            async def timed_glm_summarize() -> Optional[str]:
                 start = time.time()
                 try:
-                    result = await self.deepseek_service.summarize_content(
+                    result = await self.glm_service.summarize_content(
                         raw_content, max_length=1500
                     )
                     elapsed = time.time() - start
                     Logger.info(
                         Messages.LLM_SUMMARIZE_COMPLETED(
-                            "DeepSeek", elapsed, len(result) if result else 0
+                            "GLM", elapsed, len(result) if result else 0
                         )
                     )
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
                     Logger.error(
-                        Messages.LLM_SUMMARIZE_FAILED_TIMED("DeepSeek", elapsed, e)
+                        Messages.LLM_SUMMARIZE_FAILED_TIMED("GLM", elapsed, e)
                     )
                     return None
 
@@ -604,7 +604,7 @@ class GenerateService:
 
             # 并发执行三个总结任务
             summaries = await asyncio.gather(
-                timed_deepseek_summarize(),
+                timed_glm_summarize(),
                 timed_gemini_summarize(),
                 timed_gpt_summarize(),
                 return_exceptions=False,
@@ -621,7 +621,7 @@ class GenerateService:
                 "raw_content_length": len(raw_content),
                 "raw_content_preview": raw_content[:500] if raw_content else "",
                 "summaries": {
-                    "deepseek": {
+                    "glm": {
                         "content": summaries[0],
                         "length": len(summaries[0]) if summaries[0] else 0,
                     },
@@ -656,12 +656,12 @@ class GenerateService:
 
 @lru_cache()
 def get_generate_service(
-    deepseek_service: DeepseekService = Depends(get_deepseek_service),
+    glm_service: GlmService = Depends(get_glm_service),
     gemini_service: GeminiService = Depends(get_gemini_service),
     gpt_service: GptService = Depends(get_gpt_service),
 ) -> GenerateService:
     return GenerateService(
-        deepseek_service,
+        glm_service,
         gemini_service,
         gpt_service,
     )
