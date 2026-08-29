@@ -29,28 +29,32 @@ INSERT IGNORE INTO
     `user` (
         `id`,
         `name`,
+        `password`,
+        `email`,
         `role`,
-        `img`,
-        `signature`
+        `img`
     )
 VALUES (
         1001,
-        '豆包AI',
+        'GLM',
+        '******',
+        'glm@example.com',
         'ai',
-        '/pic/ai/doubao.png',
-        '字节跳动豆包大模型'
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/glm.png'
     ),
     (
         1002,
-        '通义千问',
+        'Gemini',
+        '******',
+        'gemini@example.com',
         'ai',
-        '/pic/ai/qwen.png',
-        '阿里云通义千问大模型'
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gemini.jpeg'
     ),
     (
         1003,
-        'Gemini',
+        'GPT',
+        '******',
+        'gpt@example.com',
         'ai',
-        '/pic/ai/gemini.png',
-        'Google Gemini 大模型'
+        'https://mix-web-demo.oss-cn-guangzhou.aliyuncs.com/pic/gpt.png'
     );
