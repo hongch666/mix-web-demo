@@ -45,8 +45,8 @@ public class DatabaseInitializer {
             .then(execute(Scripts.CREATE_SUBCATEGORY_TABLE))
             .then(execute(Scripts.CREATE_CATEGORY_REFERENCE_TABLE))
             .thenMany(Flux.concat(
-                insertAIUserIfNotExists(Defaults.DEEPSEEK_ID, Defaults.DEEPSEEK_NAME,
-                    Defaults.DEEPSEEK_EMAIL, Defaults.DEEPSEEK_IMG),
+                insertAIUserIfNotExists(Defaults.GLM_ID, Defaults.GLM_NAME,
+                    Defaults.GLM_EMAIL, Defaults.GLM_IMG),
                 insertAIUserIfNotExists(Defaults.GEMINI_ID, Defaults.GEMINI_NAME,
                     Defaults.GEMINI_EMAIL, Defaults.GEMINI_IMG),
                 insertAIUserIfNotExists(Defaults.GPT_ID, Defaults.GPT_NAME,
