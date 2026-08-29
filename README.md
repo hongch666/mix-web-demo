@@ -70,7 +70,7 @@
 12. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
 13. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
 14. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
-15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j，支持 **GPT/Gemini/DeepSeek** 进行多模型选择
+15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j，支持 **GPT/Gemini/GLM** 进行多模型选择
 16. 基于 FastAPI 和 Neo4j 实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
 17. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
 18. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
@@ -2127,7 +2127,7 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 ### AI 说明
 
-1. GPT/Gemini/DeepSeek 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
+1. GPT/Gemini/GLM 服务目前使用第三方平台 [Close AI](https://platform.closeai-asia.com/dashboard) ，根据说明文档进行配置
 2. 嵌入模型使用的是[阿里云百炼平台](https://bailian.console.aliyun.com/)的嵌入模型
 3. 上述的 API_KEY 应写在 `.env`中
 4. LangSmith 为 LLM 链路观测平台，`LANGSMITH_API_KEY` 同样配置在 `.env` 中，未配置时追踪自动关闭，详见下方"LangSmith 可观测性说明"
