@@ -47,6 +47,7 @@ class IntentRouter:
         llm: Any,
         db: Optional[Session] = None,
         user_id: Optional[int] = None,
+        use_structured_output: bool = True,
     ) -> None:
         """
         初始化路由器
@@ -62,6 +63,7 @@ class IntentRouter:
         self.llm: Any = llm
         self.db: Optional[Session] = db
         self.user_id: Optional[int] = user_id
+        self._use_structured_output = use_structured_output
 
         # 创建意图识别提示词
         self.intent_prompt = ChatPromptTemplate.from_messages(
@@ -75,17 +77,18 @@ class IntentRouter:
         self.chain = self.intent_prompt | self.llm | StrOutputParser()
 
         # 优先使用结构化输出，不可用时降级为文本匹配
-        try:
-            self.structured_chain = (
-                self.intent_prompt | self.llm.with_structured_output(StructuredIntent)
-            )
-            self._use_structured_output = True
-            self.logger.info(
-                "意图路由器初始化成功：使用 with_structured_output 结构化模式"
-            )
-        except Exception as e:
-            self._use_structured_output = False
-            self.logger.warning(Messages.INTENT_STRUCTURED_OUTPUT_UNAVAILABLE(e))
+        if self._use_structured_output:
+            try:
+                self.structured_chain = (
+                    self.intent_prompt
+                    | self.llm.with_structured_output(StructuredIntent)
+                )
+                self.logger.info(
+                    Messages.INTENT_ROUTER_STRUCTURED_OUTPUT_READY
+                )
+            except Exception as e:
+                self._use_structured_output = False
+                self.logger.warning(Messages.INTENT_STRUCTURED_OUTPUT_UNAVAILABLE(e))
 
     def set_user_context(self, user_id: int, db: Session) -> None:
         """
@@ -127,9 +130,11 @@ class IntentRouter:
     ) -> tuple[IntentType, IntentResolution]:
         """通过 with_structured_output 链识别意图"""
         try:
-            result: StructuredIntent = await self.structured_chain.ainvoke(
+            result: Any = await self.structured_chain.ainvoke(
                 {"question": question}, config=config
             )
+            if isinstance(result, str):
+                return self._resolve_text_intent(result), "text_fallback"
             self.logger.info(
                 Messages.INTENT_STRUCTURED_RESULT(
                     question, result.type, result.confidence
@@ -148,29 +153,37 @@ class IntentRouter:
         result: Any = await self.chain.ainvoke({"question": question}, config=config)
         result_text: str = str(result).strip().lower()
 
-        if "database" in result_text or "数据库" in result_text:
-            intent: IntentType = "database_query"
-        elif (
-            "article" in result_text or "文章" in result_text or "search" in result_text
-        ):
-            intent = "article_search"
-        elif "log" in result_text or "日志" in result_text or "活动" in result_text:
-            intent = "log_analysis"
-        elif (
-            "knowledge" in result_text
-            or "知识" in result_text
-            or "图谱" in result_text
-            or "推荐" in result_text
-            or "关系" in result_text
-        ):
-            intent = "knowledge_query"
-        elif "general" in result_text or "chat" in result_text or "闲聊" in result_text:
-            intent = "general_chat"
-        else:
-            intent = "article_search"
+        intent = self._resolve_text_intent(result_text)
 
         self.logger.info(Messages.INTENT_TEXT_RESULT(question, intent))
         return intent, "text_fallback"
+
+    @staticmethod
+    def _resolve_text_intent(result_text: str) -> IntentType:
+        """将模型返回的意图文本转换为系统支持的意图类型"""
+        normalized_text = result_text.strip().lower()
+
+        if "database" in normalized_text or "数据库" in normalized_text:
+            return "database_query"
+        elif (
+            "article" in normalized_text
+            or "文章" in normalized_text
+            or "search" in normalized_text
+        ):
+            return "article_search"
+        elif "log" in normalized_text or "日志" in normalized_text or "活动" in normalized_text:
+            return "log_analysis"
+        elif (
+            "knowledge" in normalized_text
+            or "知识" in normalized_text
+            or "图谱" in normalized_text
+            or "推荐" in normalized_text
+            or "关系" in normalized_text
+        ):
+            return "knowledge_query"
+        elif "general" in normalized_text or "chat" in normalized_text or "闲聊" in normalized_text:
+            return "general_chat"
+        return "article_search"
 
     async def route_with_permission_check_async(
         self,

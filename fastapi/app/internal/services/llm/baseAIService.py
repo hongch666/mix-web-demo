@@ -150,6 +150,7 @@ class BaseAiService:
         config_section: str = "closeai",
         model_config_key: str = "model_name",
         temperature: float = 0.7,
+        use_structured_output: bool = True,
     ) -> None:
         self._normalize_proxy_env()
         self.ai_history_mapper: Any = ai_history_mapper
@@ -157,6 +158,7 @@ class BaseAiService:
         self.config_section: str = config_section
         self.model_config_key: str = model_config_key
         self.temperature: float = temperature
+        self.use_structured_output: bool = use_structured_output
         self.llm: Optional[Any] = None
         self.agent: Optional[Any] = None
         self.agent_executor: Optional[Any] = None
@@ -295,6 +297,58 @@ class BaseAiService:
             Logger.warning(Messages.LLM_INVALID_USER_ID(user_id))
             return None
 
+    @staticmethod
+    def _extract_message_content(content: Any) -> str:
+        """兼容字符串和内容块，提取可展示的正文"""
+        if content is None:
+            return ""
+        if hasattr(content, "content"):
+            message_content = BaseAiService._extract_message_content(content.content)
+            if message_content:
+                return message_content
+            additional_kwargs = getattr(content, "additional_kwargs", {}) or {}
+            for key in ("content", "text"):
+                extra_content = BaseAiService._extract_message_content(
+                    additional_kwargs.get(key)
+                )
+                if extra_content:
+                    return extra_content
+            return ""
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            text_parts: list[str] = []
+            for block in content:
+                if isinstance(block, str):
+                    text_parts.append(block)
+                elif isinstance(block, dict) and block.get("type") == "text":
+                    text_parts.append(str(block.get("text") or ""))
+            return "".join(text_parts)
+        return str(content)
+
+    def _final_stream_options(self) -> Dict[str, Any]:
+        """获取最终答案流式输出参数"""
+        if self.service_name == "GLM":
+            return {
+                "extra_body": {
+                    "thinking": {
+                        "type": "enabled",
+                        "reasoning_effort": "low",
+                    }
+                }
+            }
+        return {}
+
+    def _build_agent_fallback_result(
+        self, intermediate_steps: List[IntermediateStep]
+    ) -> str:
+        """从 Agent 工具结果构建非空兜底回答"""
+        for _, observation in reversed(intermediate_steps):
+            observation_text = self._extract_message_content(observation)
+            if observation_text.strip():
+                return observation_text
+        return Messages.MESSAGE_RETRIEVAL_ERROR
+
     def _reset_runtime_state(self) -> None:
         """重置运行时状态，方便配置初始化失败后的降级"""
         self.llm = None
@@ -341,7 +395,10 @@ class BaseAiService:
         """初始化工具、意图路由器和 Agent"""
         try:
             _, _, _, self.all_tools = initialize_ai_tools()
-            self.intent_router = IntentRouter(self.llm)
+            self.intent_router = IntentRouter(
+                self.llm,
+                use_structured_output=self.use_structured_output,
+            )
 
             agent_prompt = get_agent_prompt()
             self.agent = create_tool_calling_agent(
@@ -621,15 +678,22 @@ class BaseAiService:
                 config.setdefault("run_name", "chat.direct")
 
                 try:
-                    async for chunk in self.llm.astream(messages, config=config):
+                    async for chunk in self.llm.astream(
+                        messages,
+                        config=config,
+                        **self._final_stream_options(),
+                    ):
                         try:
-                            if chunk.content:
+                            chunk_content = self._extract_message_content(
+                                chunk
+                            )
+                            if chunk_content:
                                 Logger.debug(
                                     Messages.STREAM_CHUNK_RECEIVED_LENGTH(
-                                        len(chunk.content)
+                                        len(chunk_content)
                                     )
                                 )
-                                yield {"type": "content", "content": chunk.content}
+                                yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
                             Logger.error(
                                 Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
@@ -701,10 +765,17 @@ class BaseAiService:
                 ]
 
                 try:
-                    async for chunk in self.llm.astream(messages, config=config):
+                    async for chunk in self.llm.astream(
+                        messages,
+                        config=config,
+                        **self._final_stream_options(),
+                    ):
                         try:
-                            if chunk.content:
-                                yield {"type": "content", "content": chunk.content}
+                            chunk_content = self._extract_message_content(
+                                chunk
+                            )
+                            if chunk_content:
+                                yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
                             Logger.error(
                                 Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
@@ -746,8 +817,8 @@ class BaseAiService:
                         },
                         config=config,
                     )
-                    agent_result = agent_response.get(
-                        "output", Messages.MESSAGE_RETRIEVAL_ERROR
+                    agent_result = self._extract_message_content(
+                        agent_response.get("output", Messages.MESSAGE_RETRIEVAL_ERROR)
                     )
                 except Exception as agent_error:
                     error_msg = str(agent_error)
@@ -800,10 +871,19 @@ class BaseAiService:
                 ]
 
                 try:
-                    async for chunk in self.llm.astream(stream_messages, config=config):
+                    final_content_emitted = False
+                    async for chunk in self.llm.astream(
+                        stream_messages,
+                        config=config,
+                        **self._final_stream_options(),
+                    ):
                         try:
-                            if chunk.content:
-                                yield {"type": "content", "content": chunk.content}
+                            chunk_content = self._extract_message_content(
+                                chunk
+                            )
+                            if chunk_content:
+                                final_content_emitted = True
+                                yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
                             Logger.error(
                                 Messages.STREAM_CHUNK_EXCEPTION(str(chunk_error))
@@ -815,6 +895,30 @@ class BaseAiService:
                     yield {
                         "type": "content",
                         "content": self._resolve_service_error_message(error_msg),
+                    }
+                if not final_content_emitted:
+                    Logger.warning(Messages.FINAL_STREAM_EMPTY_FALLBACK)
+                    try:
+                        fallback_response = await self.llm.ainvoke(
+                            stream_messages,
+                            config=config,
+                            **self._final_stream_options(),
+                        )
+                        fallback_content = self._extract_message_content(
+                            fallback_response
+                        )
+                    except Exception as fallback_error:
+                        Logger.error(Messages.FINAL_STREAM_OUTPUT_FAILED(fallback_error))
+                        fallback_content = ""
+
+                    fallback_content = (
+                        fallback_content
+                        or agent_result
+                        or self._build_agent_fallback_result(intermediate_steps)
+                    )
+                    yield {
+                        "type": "content",
+                        "content": fallback_content,
                     }
 
         except Exception as error:

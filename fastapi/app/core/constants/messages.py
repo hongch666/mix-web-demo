@@ -1672,6 +1672,12 @@ class Messages:
 
     AGENT_START_STREAMING_MESSAGE: str = "Agent思考完成,开始流式输出优化后的答案"
 
+    FINAL_STREAM_EMPTY_FALLBACK: str = "最终流式回答为空，使用Agent结果兜底"
+
+    INTENT_ROUTER_STRUCTURED_OUTPUT_READY: str = (
+        "意图路由器初始化成功：使用 with_structured_output 结构化模式"
+    )
+
     AIO_PKA_EVENT_LOOP_ERROR: str = "检测到运行中的事件循环，跳过 RabbitMQ 同步关闭"
 
     DATABASE_TABLE_INITIALIZATION_SUCCESS: str = "数据库表结构初始化完成"

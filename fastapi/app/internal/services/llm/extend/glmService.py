@@ -23,6 +23,7 @@ class GlmService(BaseAiService):
             service_name="GLM",
             config_section="closeai",
             model_config_key="glm_model_name",
+            use_structured_output=False,
         )
         self._spring_client: SpringClient = SpringClient()
 
