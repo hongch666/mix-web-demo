@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { DeleteResult, Model } from "mongoose";
+import { DeleteResult, Model, Types } from "mongoose";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
@@ -42,6 +42,15 @@ interface ArticleLogListItem {
 interface ArticleLogPageResult {
   total: number;
   list: ArticleLogListItem[];
+}
+
+interface ArticleLogSyncItem {
+  _id: unknown;
+  userId: number;
+  articleId: number;
+  action: string;
+  content: Record<string, unknown>;
+  createdAt?: Date;
 }
 
 @Injectable()
@@ -295,6 +304,41 @@ export class ArticleLogService {
       }),
     );
     return { total, list: resultList };
+  }
+
+  async findByCursor(
+    cursor: string | null,
+    limit: number,
+  ): Promise<{ list: ArticleLogSyncItem[]; nextCursor: string | null }> {
+    const safeLimit: number = Math.min(Math.max(limit || 1000, 1), 5000);
+    const filter =
+      cursor && Types.ObjectId.isValid(cursor)
+        ? { _id: { $gt: new Types.ObjectId(cursor) } }
+        : {};
+    const list: ArticleLogDocument[] = await this.logModel
+      .find(filter)
+      .sort({ _id: 1 })
+      .limit(safeLimit + 1)
+      .lean<ArticleLogDocument[]>()
+      .exec();
+    const hasMore: boolean = list.length > safeLimit;
+    const page: ArticleLogDocument[] = hasMore
+      ? list.slice(0, safeLimit)
+      : list;
+    const lastItem: ArticleLogDocument | undefined = page[page.length - 1];
+    return {
+      list: page.map(
+        (item: ArticleLogDocument): ArticleLogSyncItem => ({
+          _id: item._id,
+          userId: item.userId,
+          articleId: item.articleId,
+          action: item.action,
+          content: item.content,
+          createdAt: item.createdAt,
+        }),
+      ),
+      nextCursor: hasMore && lastItem ? String(lastItem._id) : null,
+    };
   }
 
   /**

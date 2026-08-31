@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
+import { Messages } from "src/common/constants";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
@@ -48,6 +49,24 @@ export class ArticleLogController {
     const data: unknown = await this.logService.findByFilter(query);
     return success(data);
   }
+
+  @Get("sync")
+  @ApiOperation({
+    summary: Messages.ARTICLE_LOG_SYNC_SUMMARY,
+    description: Messages.ARTICLE_LOG_SYNC_DESCRIPTION,
+  })
+  @RequireInternalToken()
+  async sync(
+    @Query("cursor") cursor: string | undefined,
+    @Query("limit") limit: string | undefined,
+  ): Promise<ApiResponse<unknown>> {
+    const data = await this.logService.findByCursor(
+      cursor || null,
+      Number(limit) || 1000,
+    );
+    return success(data);
+  }
+
   @Delete(":id")
   @ApiOperation({
     summary: "删除文章日志",

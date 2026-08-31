@@ -2,6 +2,10 @@
  * 消息常量类
  */
 export class Messages {
+  static readonly ARTICLE_LOG_SYNC_SUMMARY = "游标同步文章日志";
+  static readonly ARTICLE_LOG_SYNC_DESCRIPTION =
+    "供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志";
+
   static readonly INTERNAL_TOKEN_SERVICE_NAME_MISMATCH = (
     requiredServiceName: string,
     actualServiceName: string,
