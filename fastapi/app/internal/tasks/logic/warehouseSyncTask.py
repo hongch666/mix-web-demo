@@ -123,27 +123,32 @@ async def _sync_article_logs(conn: Any, nestjs_client: NestjsClient) -> None:
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
     while True:
         page = await nestjs_client.sync_article_logs(
-            cursor, WarehouseScripts.BATCH_SIZE
+            cursor, WarehouseScripts.ARTICLE_LOG_BATCH_SIZE
         )
         items = page.get("list", []) if isinstance(page, dict) else []
         if not items:
             break
         rows = [
             (
-                str(item.get("_id", "")),
-                int(item.get("userId") or 0),
-                int(item.get("articleId") or 0),
+                str(item.get("_id") or item.get("id") or ""),
+                int(item.get("userId") or item.get("user_id") or 0),
+                int(item.get("articleId") or item.get("article_id") or 0),
                 str(item.get("action") or ""),
-                json.dumps(item.get("content") or {}, ensure_ascii=False, default=str),
-                _to_datetime(item.get("createdAt")),
+                json.dumps(
+                    item.get("content") or {}, ensure_ascii=False, default=str
+                ),
+                _to_datetime(item.get("createdAt") or item.get("created_at")),
             )
             for item in items
         ]
         await asyncio.to_thread(
             conn.execute, WarehouseScripts.ODS_ARTICLE_LOG_INSERT, rows
         )
-        cursor = page.get("nextCursor")
-        if not cursor:
+        next_cursor = page.get("nextCursor") or page.get("next_cursor")
+        if next_cursor:
+            cursor = next_cursor
+        else:
+            cursor = rows[-1][0]
             break
     if cursor:
         await asyncio.to_thread(

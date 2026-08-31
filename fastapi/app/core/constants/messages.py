@@ -1503,6 +1503,22 @@ class Messages:
     def SQL_TOOL_QUERY_FAILED(service_name: str, error: Exception) -> str:
         return f"{service_name} SQL查询失败: {error}"
 
+    @staticmethod
+    def WAREHOUSE_ODS_SYNC_SUCCESS(table_name: str, count: int) -> str:
+        return f"ClickHouse ODS 同步完成: {table_name}, rows={count}"
+
+    @staticmethod
+    def WAREHOUSE_REFRESH_FAILED(error: Exception) -> str:
+        return f"ClickHouse 数仓同步失败: {error}"
+
+    WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
+        "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
+    )
+
+    @staticmethod
+    def USER_ANALYSIS_METRIC_UNSUPPORTED(metric: str) -> str:
+        return f"不支持的用户分析指标: {metric}"
+
     INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
 
     INTERNAL_TOKEN_MISSING: str = "请求头中缺少内部令牌"
@@ -1683,18 +1699,6 @@ class Messages:
     DATABASE_TABLE_INITIALIZATION_SUCCESS: str = "数据库表结构初始化完成"
 
     WAREHOUSE_REFRESH_SUCCESS: str = "ClickHouse 数仓同步与汇总刷新完成"
-
-    @staticmethod
-    def WAREHOUSE_ODS_SYNC_SUCCESS(table_name: str, count: int) -> str:
-        return f"ClickHouse ODS 同步完成: {table_name}, rows={count}"
-
-    @staticmethod
-    def WAREHOUSE_REFRESH_FAILED(error: Exception) -> str:
-        return f"ClickHouse 数仓同步失败: {error}"
-
-    WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
-        "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
-    )
 
     SCHEDULER_WAREHOUSE_SYNC_MESSAGE: str = "已启动 ClickHouse 数仓同步任务"
 

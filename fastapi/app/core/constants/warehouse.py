@@ -11,6 +11,40 @@ class WarehouseScripts:
         "FROM warehouse.ads_platform_stats FINAL ORDER BY stat_time DESC LIMIT 1"
     )
 
+    USER_FOLLOWERS_BY_DAY_QUERY: Final[str] = """
+        SELECT toDate(action_time) AS stat_date, count() AS count
+        FROM warehouse.dwd_user_action FINAL
+        WHERE action_type = 'focus' AND article_id = %(user_id)s
+          AND action_time >= %(start_date)s AND action_time < %(end_date)s
+        GROUP BY stat_date ORDER BY stat_date
+    """
+    USER_VIEW_DISTRIBUTION_QUERY: Final[str] = """
+        SELECT action.article_id, any(article.title), count() AS views
+        FROM warehouse.dwd_user_action AS action FINAL
+        LEFT JOIN warehouse.dwd_article_event AS article FINAL
+          ON action.article_id = article.id
+        WHERE action.user_id = %(user_id)s AND action.action_type = 'view'
+          AND action.article_id > 0
+        GROUP BY action.article_id ORDER BY views DESC
+    """
+    USER_TOTAL_FOLLOWS_QUERY: Final[str] = (
+        "SELECT count() FROM warehouse.ods_focus FINAL WHERE user_id = %(user_id)s"
+    )
+    USER_DAILY_FOLLOW_QUERY: Final[str] = """
+        SELECT stat_date, focus_count
+        FROM warehouse.dws_user_day
+        WHERE user_id = %(user_id)s
+          AND stat_date >= %(start_date)s AND stat_date < %(end_date)s
+        ORDER BY stat_date
+    """
+    USER_MONTHLY_ACTION_QUERY: Final[str] = """
+        SELECT stat_date, %(metric)s
+        FROM warehouse.dws_user_day
+        WHERE user_id = %(user_id)s
+          AND stat_date >= %(start_date)s AND stat_date < %(end_date)s
+        ORDER BY stat_date
+    """
+
     ODS_ARTICLE_LOG_TABLE: Final[str] = "ods_article_log"
     ODS_ARTICLE_LOG_INSERT: Final[str] = (
         "INSERT INTO warehouse.ods_article_log "
@@ -18,6 +52,7 @@ class WarehouseScripts:
     )
 
     BATCH_SIZE: Final[int] = 1000
+    ARTICLE_LOG_BATCH_SIZE: Final[int] = 5000
     EPOCH_WATERMARK: Final[str] = "1970-01-01 00:00:00"
     EPOCH_DATETIME: Final[datetime] = datetime(1970, 1, 1)
     REMOTE_SOURCES: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (

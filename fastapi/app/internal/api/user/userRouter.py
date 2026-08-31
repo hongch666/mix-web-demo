@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from app.common.decorators import log
 from app.core.base import ApiResponse, success
-from app.dependencies import DbSession, UserServiceDep
+from app.dependencies import UserServiceDep
 
 from fastapi import APIRouter, Query, Request
 
@@ -21,7 +21,6 @@ router: APIRouter = APIRouter(
 @log("获取新增粉丝数统计")
 async def get_new_followers(
     request: Request,
-    db: DbSession,
     userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
     period: str = "day",
@@ -63,7 +62,6 @@ async def get_article_view_distribution(
 @log("获取关注作者统计")
 async def get_author_follow_statistics(
     request: Request,
-    db: DbSession,
     userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
 ) -> ApiResponse:
@@ -84,7 +82,6 @@ async def get_author_follow_statistics(
 @log("获取本月评论趋势")
 async def get_monthly_comment_trend(
     request: Request,
-    db: DbSession,
     userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
 ) -> ApiResponse:
@@ -105,7 +102,6 @@ async def get_monthly_comment_trend(
 @log("获取本月点赞趋势")
 async def get_monthly_like_trend(
     request: Request,
-    db: DbSession,
     userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
 ) -> ApiResponse:
@@ -126,7 +122,6 @@ async def get_monthly_like_trend(
 @log("获取本月收藏趋势")
 async def get_monthly_collect_trend(
     request: Request,
-    db: DbSession,
     userService: UserServiceDep,
     userId: int = Query(alias="user_id"),
 ) -> ApiResponse:

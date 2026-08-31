@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from app.core.base import Logger
 from app.core.constants import Messages
+from app.internal.crud import UserAnalysisMapper
 from app.internal.clients import NestjsClient, SpringClient
 from dateutil.relativedelta import relativedelta
 
@@ -15,6 +16,40 @@ class UserService:
     def __init__(self) -> None:
         self._nestjs_client: NestjsClient = NestjsClient()
         self._spring_client: SpringClient = SpringClient()
+        self._user_analysis_mapper: UserAnalysisMapper = UserAnalysisMapper()
+
+    @staticmethod
+    def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
+        now = datetime.now()
+        if period == "day":
+            start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            return start, now + timedelta(days=1), 7, "date"
+        if period == "month":
+            start = (now - relativedelta(months=5)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return start, now + relativedelta(months=1), 6, "month"
+        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0) - relativedelta(years=2)
+        return start, now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0) + relativedelta(years=1), 3, "year"
+
+    @staticmethod
+    def _build_period_timeline(
+        period: str, start: datetime, count: int, rows: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        values = {str(row["date"]): int(row["count"]) for row in rows}
+        timeline: List[Dict[str, Any]] = []
+        for index in range(count - 1, -1, -1):
+            if period == "day":
+                date = start + timedelta(days=index)
+                key = date.strftime("%Y-%m-%d")
+                timeline.append({"date": key, "count": values.get(key, 0)})
+            elif period == "month":
+                date = start + relativedelta(months=index)
+                key = date.strftime("%Y-%m")
+                timeline.append({"month": key, "count": values.get(key, 0)})
+            else:
+                date = start + relativedelta(years=index)
+                key = date.strftime("%Y")
+                timeline.append({"year": key, "count": values.get(key, 0)})
+        return timeline
 
     async def get_new_followers_service(
         self, user_id: int, period: str = "day"
@@ -23,6 +58,20 @@ class UserService:
         获取新增粉丝数统计
         period: "day" 前7天, "month" 前6个月, "year" 前3年
         """
+        try:
+            start, end, count, _ = self._period_dates(period)
+            rows = await self._user_analysis_mapper.get_new_followers_by_day(user_id, start, end)
+            if period != "day":
+                for row in rows:
+                    value = row["date"]
+                    row["date"] = value.strftime("%Y-%m" if period == "month" else "%Y")
+                grouped: Dict[str, int] = {}
+                for row in rows:
+                    grouped[str(row["date"])] = grouped.get(str(row["date"]), 0) + int(row["count"])
+                rows = [{"date": key, "count": value} for key, value in grouped.items()]
+            return {"period": period, "timeline": self._build_period_timeline(period, start, count, rows)}
+        except Exception as ch_error:
+            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_new_followers_service", ch_error))
         try:
             timeline: List[Dict[str, Any]] = []
 
@@ -96,6 +145,10 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户的文章浏览分布"""
         try:
+            return await self._user_analysis_mapper.get_article_view_distribution(user_id)
+        except Exception as ch_error:
+            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_article_view_distribution_service", ch_error))
+        try:
             return await self._nestjs_client.get_article_view_distribution(user_id)
         except Exception as e:
             Logger.error(Messages.ARTICLE_VIEW_DISTRIBUTION_FAILED(e), exc_info=True)
@@ -105,6 +158,13 @@ class UserService:
         self, user_id: int
     ) -> Dict[str, Any]:
         """获取用户关注作者的统计"""
+        try:
+            now = datetime.now()
+            start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            end = now + timedelta(days=1)
+            return await self._user_analysis_mapper.get_author_follow_statistics(user_id, start, end)
+        except Exception as ch_error:
+            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_author_follow_statistics_service", ch_error))
         try:
             # 总数查询与7天循环查询相互独立，gather 并行降低延迟
             async def _one_day_follow(days_ago: int) -> Dict[str, Any]:
@@ -140,6 +200,13 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户本月评论的趋势"""
         try:
+            return await self._user_analysis_mapper.get_monthly_action_trend(
+                user_id, "comment_count", datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+                datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) + relativedelta(months=1)
+            )
+        except Exception as ch_error:
+            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_comment_trend_service", ch_error))
+        try:
             return await self._spring_client.get_monthly_comment_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_COMMENT_TREND_FAILED(e))
@@ -150,6 +217,13 @@ class UserService:
     ) -> Dict[str, Any]:
         """获取用户本月点赞的趋势"""
         try:
+            start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return await self._user_analysis_mapper.get_monthly_action_trend(
+                user_id, "like_count", start, start + relativedelta(months=1)
+            )
+        except Exception as ch_error:
+            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_like_trend_service", ch_error))
+        try:
             return await self._spring_client.get_monthly_like_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_LIKE_TREND_FAILED(e))
@@ -159,6 +233,13 @@ class UserService:
         self, user_id: int
     ) -> Dict[str, Any]:
         """获取用户本月收藏的趋势"""
+        try:
+            start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            return await self._user_analysis_mapper.get_monthly_action_trend(
+                user_id, "collect_count", start, start + relativedelta(months=1)
+            )
+        except Exception as ch_error:
+            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_collect_trend_service", ch_error))
         try:
             return await self._spring_client.get_monthly_collect_trend(user_id)
         except Exception as e:
