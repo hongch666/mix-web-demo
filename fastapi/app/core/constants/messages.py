@@ -1682,6 +1682,28 @@ class Messages:
 
     DATABASE_TABLE_INITIALIZATION_SUCCESS: str = "数据库表结构初始化完成"
 
+    WAREHOUSE_REFRESH_SUCCESS: str = "ClickHouse 数仓同步与汇总刷新完成"
+
+    @staticmethod
+    def WAREHOUSE_ODS_SYNC_SUCCESS(table_name: str, count: int) -> str:
+        return f"ClickHouse ODS 同步完成: {table_name}, rows={count}"
+
+    @staticmethod
+    def WAREHOUSE_REFRESH_FAILED(error: Exception) -> str:
+        return f"ClickHouse 数仓同步失败: {error}"
+
+    WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
+        "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
+    )
+
+    SCHEDULER_WAREHOUSE_SYNC_MESSAGE: str = "已启动 ClickHouse 数仓同步任务"
+
+    STATISTICS_CLICKHOUSE_SOURCE: str = "文章统计使用 ClickHouse ADS 数据源"
+
+    ARTICLE_STATISTICS_SERVICE_NAME: str = "get_article_statistics_service"
+
+    CLICKHOUSE_PLATFORM_STATS_EMPTY: str = "ClickHouse 平台统计表暂无数据"
+
     APILOG_ASYNC_ERROR: str = "apiLog 装饰器只支持异步函数"
 
     ARTICLE_MAPPER_METHOD_MISSING_ERROR: str = "ArticleMapper 未提供获取文章的方法"
@@ -2449,3 +2471,5 @@ class Messages:
     WORDCLOUD_GENERATION_SUCCESS: str = (
         "词云图生成成功，保存为 search_keywords_wordcloud.png"
     )
+
+    LANGSMITH_CLIENT_CLOSED: str = "LangSmith 客户端已关闭"

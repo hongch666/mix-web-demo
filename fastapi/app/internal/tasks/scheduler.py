@@ -4,6 +4,7 @@ from typing import Any, Callable, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages
+from app.internal.clients import NestjsClient, SpringClient
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.schedulers.base import BaseScheduler
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .logic.analyzeCacheTask import update_analyze_caches_async
 from .logic.neo4jSyncTask import sync_mysql_to_neo4j_async
 from .logic.vectorSyncTask import export_article_vectors_to_postgres_async
+from .logic.warehouseSyncTask import sync_warehouse_async
 
 
 def start_scheduler(
@@ -19,6 +21,8 @@ def start_scheduler(
     db_factory: Optional[Callable[[], AsyncSession]] = None,
     mysql_db_factory: Optional[Callable[[], AsyncSession]] = None,
     analyze_service: Optional[Any] = None,
+    nestjs_client: Optional[NestjsClient] = None,
+    spring_client: Optional[SpringClient] = None,
 ) -> BaseScheduler:
     """
     启动调度器，可把依赖注入进来（用于测试或容器式管理）。
@@ -68,9 +72,24 @@ def start_scheduler(
         neo4j_full_sync_job_func, "interval", days=7, id="sync_neo4j_full"
     )
 
+    # 任务5：同步 MySQL/MongoDB 到 ClickHouse 并刷新数仓
+    warehouse_sync_job_func = partial(
+        sync_warehouse_async,
+        spring_client=spring_client,
+        nestjs_client=nestjs_client,
+    )
+    scheduler.add_job(
+        warehouse_sync_job_func,
+        "interval",
+        minutes=5,
+        id="sync_clickhouse_warehouse",
+        next_run_time=datetime.now(),
+    )
+
     scheduler.start()
     Logger.info(Messages.SCHEDULER_STARTED)
     Logger.info(Messages.SCHEDULER_VECTOR_SYNC_MESSAGE)
     Logger.info(Messages.SCHEDULER_ANALYZE_CACHE_UPDATE_MESSAGE)
     Logger.info(Messages.SCHEDULER_NEO4J_SYNC_MESSAGE)
+    Logger.info(Messages.SCHEDULER_WAREHOUSE_SYNC_MESSAGE)
     return scheduler

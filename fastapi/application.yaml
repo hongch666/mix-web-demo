@@ -46,8 +46,8 @@ database:
     port: ${DB_CLICKHOUSE_PORT:9000}
     username: ${DB_CLICKHOUSE_USERNAME:default}
     password: ${DB_CLICKHOUSE_PASSWORD:}
-    database: ${DB_CLICKHOUSE_DATABASE:default}
-    table: ${DB_CLICKHOUSE_TABLE:articles}
+    database: ${DB_CLICKHOUSE_DATABASE:warehouse}
+    table: ${DB_CLICKHOUSE_TABLE:ads_top10_articles}
   redis:
     host: ${DB_REDIS_HOST:127.0.0.1}
     port: ${DB_REDIS_PORT:6379}

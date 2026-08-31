@@ -520,8 +520,21 @@ class AnalyzeService:
         except Exception as cache_e:
             Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
-        # ========== 步骤2: 缓存未命中，通过SpringClient远程查询 ==========
+        # ========== 步骤2: 缓存未命中，优先查询 ClickHouse ADS ==========
         Logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
+        try:
+            statistics = await self.articleMapper.get_platform_stats_clickhouse_mapper_async()
+            await self._statistics_cache.set(statistics)
+            Logger.info(Messages.STATISTICS_CLICKHOUSE_SOURCE)
+            return statistics
+        except Exception as ch_e:
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    Messages.ARTICLE_STATISTICS_SERVICE_NAME, ch_e
+                )
+            )
+
+        # ========== 步骤3: ClickHouse 不可用，降级到 Spring ==========
         # 并行调用Spring远程接口获取统计数据
         (
             total_views,
@@ -554,7 +567,7 @@ class AnalyzeService:
             "average_collects": average_collects,
         }
 
-        # ========== 步骤3: 更新缓存 ==========
+        # ========== 步骤4: 更新缓存 ==========
         try:
             await self._statistics_cache.set(statistics)
             total_time: float = time.time() - start
@@ -629,6 +642,23 @@ class AnalyzeService:
                 )
                 local_data_source = "DB"
                 Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
+
+            if (
+                local_data_source == "ClickHouse"
+                and local_category_data
+                and "category_id" in local_category_data[0]
+            ):
+                result = [
+                    {
+                        "category_id": item["category_id"],
+                        "category_name": item.get("category_name", ""),
+                        "article_count": item.get("article_count", 0),
+                    }
+                    for item in local_category_data
+                ]
+                result.sort(key=lambda item: item["article_count"], reverse=True)
+                await self._category_cache.set(result, ch_conn)
+                return result
 
             # 使用SpringClient远程获取分类信息（两个独立请求并行）
             all_categories, subcategories = await asyncio.gather(

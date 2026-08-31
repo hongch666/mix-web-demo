@@ -24,6 +24,7 @@ from app.internal.agents.langsmith import (
     load_langsmith_config,
     shutdown_langsmith,
 )
+from app.internal.clients import NestjsClient, SpringClient
 from app.internal.models import AiHistory
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
@@ -61,7 +62,12 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     def db_factory() -> AsyncSession:
         return AsyncSessionLocal()
 
-    scheduler = start_scheduler(analyze_service=analyze_service, db_factory=db_factory)
+    scheduler = start_scheduler(
+        analyze_service=analyze_service,
+        db_factory=db_factory,
+        nestjs_client=NestjsClient(),
+        spring_client=SpringClient(),
+    )
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
     remote_call_config: Dict[str, Any] = load_config("remote_call")

@@ -53,3 +53,7 @@ class RedisKeys:
     LOCK_TASK_VECTOR_SYNC: str = "lock:task:vector:sync"
 
     LOCK_TASK_VECTOR_SYNC_EXPIRE: int = 86400
+
+    LOCK_TASK_WAREHOUSE: str = "lock:task:warehouse"
+
+    LOCK_TASK_WAREHOUSE_EXPIRE: int = 600

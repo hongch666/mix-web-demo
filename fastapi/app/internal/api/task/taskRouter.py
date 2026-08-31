@@ -9,10 +9,12 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
+from app.internal.clients import NestjsClient, SpringClient
 from app.internal.tasks import (
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
     sync_mysql_to_neo4j_async,
+    sync_warehouse_async,
     update_analyze_caches_async,
 )
 
@@ -126,4 +128,26 @@ async def task_sync_neo4j(
     """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口"""
 
     background_tasks.add_task(sync_mysql_to_neo4j_async, force_full=force_full)
+    return success()
+
+
+# 手动触发同步业务数据到 ClickHouse 数仓任务接口
+@router.post(
+    "/sync-warehouse",
+    summary="手动触发 ClickHouse 数仓同步任务",
+    description="通过 Spring 和 NestJS 内部接口同步业务数据到 ClickHouse，并刷新数仓汇总表",
+    response_model=ApiResponse,
+)
+@requireInternalToken
+@log("手动触发 ClickHouse 数仓同步任务")
+async def task_sync_warehouse(
+    request: Request, background_tasks: BackgroundTasks
+) -> ApiResponse:
+    """手动触发 ClickHouse 数仓同步任务接口"""
+
+    background_tasks.add_task(
+        sync_warehouse_async,
+        spring_client=SpringClient(),
+        nestjs_client=NestjsClient(),
+    )
     return success()

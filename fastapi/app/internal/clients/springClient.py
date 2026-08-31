@@ -4,9 +4,29 @@ from app.core.client import call_remote_service
 
 
 class SpringClient:
-    """Spring 服务客户端，提供 MySQL 数据查询能力"""
+    """Spring 服务客户端，提供业务数据查询和数仓同步能力"""
 
     SERVICE_NAME: str = "spring"
+
+    async def sync_warehouse_data(
+        self,
+        resource: str,
+        updated_after: str,
+        page: int = 1,
+        size: int = 1000,
+    ) -> Dict[str, Any]:
+        """通过 Spring 内部接口分页获取数仓源数据。"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/warehouse/sync/{resource}",
+            method="GET",
+            params={
+                "updatedAfter": updated_after,
+                "page": page,
+                "size": size,
+            },
+        )
+        return result.get("data") or {}
 
     async def get_articles_by_ids(self, ids: List[int]) -> List[Dict[str, Any]]:
         """批量查询文章"""

@@ -5,8 +5,7 @@ from functools import lru_cache
 from typing import Any, Dict, List
 
 from app.core.base import Logger
-from app.core.config import load_config
-from app.core.constants import Messages, Scripts
+from app.core.constants import Messages, Scripts, WarehouseScripts
 from app.core.db import ClickhouseConnectionPool, get_clickhouse_connection_pool
 
 
@@ -58,7 +57,6 @@ class ArticleMapper:
             "views",
             "create_at",
             "update_at",
-            "content",
             "user_id",
             "sub_category_id",
         ]
@@ -72,7 +70,7 @@ class ArticleMapper:
         # 查询 ClickHouse
         Logger.info(Messages.TOP10_CLICKHOUSE_QUERY)
         query_start: float = time.time()
-        ch_table: str = load_config("database")["clickhouse"]["table"]
+        ch_table: str = "warehouse.ads_top10_articles"
         query = Scripts.TOP10_ARTICLES_CLICKHOUSE_QUERY(", ".join(columns), ch_table)
 
         try:
@@ -122,8 +120,7 @@ class ArticleMapper:
 
         Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
-        ch_table: str = load_config("database")["clickhouse"]["table"]
-        query = Scripts.CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY(ch_table)
+        query = Scripts.CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY
 
         try:
             results: Any = await asyncio.to_thread(ch_conn.execute, query)
@@ -135,8 +132,9 @@ class ArticleMapper:
                 try:
                     result.append(
                         {
-                            "sub_category_id": int(r[0]) if r[0] is not None else None,
-                            "count": int(r[1]) if r[1] is not None else 0,
+                            "category_id": int(r[0]) if r[0] is not None else None,
+                            "category_name": str(r[1]) if r[1] is not None else "",
+                            "article_count": int(r[2]) if r[2] is not None else 0,
                         }
                     )
                 except (ValueError, TypeError) as e:
@@ -175,10 +173,8 @@ class ArticleMapper:
 
         Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
-        ch_table: str = load_config("database")["clickhouse"]["table"]
-
         # 使用 ClickHouse 的日期函数
-        query = Scripts.MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(ch_table)
+        query = Scripts.MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY
 
         try:
             results: Any = await asyncio.to_thread(ch_conn.execute, query)
@@ -217,6 +213,28 @@ class ArticleMapper:
         finally:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
+
+    async def get_platform_stats_clickhouse_mapper_async(self) -> Dict[str, Any]:
+        """从 ADS 平台统计表获取汇总指标"""
+        ch_conn: Any = self._clickhouse_pool.get_connection()
+        query = WarehouseScripts.PLATFORM_STATS_QUERY
+        try:
+            results = await asyncio.to_thread(ch_conn.execute, query)
+            if not results:
+                raise RuntimeError(Messages.CLICKHOUSE_PLATFORM_STATS_EMPTY)
+            row = results[0]
+            return {
+                "total_views": int(row[0] or 0),
+                "total_articles": int(row[1] or 0),
+                "active_authors": int(row[2] or 0),
+                "average_views": float(row[3] or 0),
+                "total_likes": int(row[4] or 0),
+                "average_likes": float(row[5] or 0),
+                "total_collects": int(row[6] or 0),
+                "average_collects": float(row[7] or 0),
+            }
+        finally:
+            self._clickhouse_pool.return_connection(ch_conn)
 
 
 @lru_cache()

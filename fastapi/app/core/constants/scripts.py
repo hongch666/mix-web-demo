@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, Final, List, Tuple
 
 
 class Scripts:
@@ -17,13 +17,16 @@ class Scripts:
     def TOP10_ARTICLES_CLICKHOUSE_QUERY(columns: str, table: str) -> str:
         return f"SELECT {columns} FROM {table} ORDER BY views DESC LIMIT 10"
 
-    @staticmethod
-    def CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY(table: str) -> str:
-        return f"SELECT sub_category_id, count() as count FROM {table} WHERE status = 1 GROUP BY sub_category_id ORDER BY count DESC"
+    CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY: Final[str] = (
+        "SELECT parent_category_id, category_name, article_count "
+        "FROM warehouse.ads_category_stats FINAL ORDER BY article_count DESC"
+    )
 
-    @staticmethod
-    def MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY(table: str) -> str:
-        return f"SELECT formatDateTime(create_at, '%Y-%m') as year_month, count() as count FROM {table} WHERE status = 1 AND create_at >= subtractMonths(now(), 24) GROUP BY year_month ORDER BY year_month DESC"
+    MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY: Final[str] = (
+        "SELECT year_month, article_count FROM warehouse.ads_monthly_publish FINAL "
+        "WHERE year_month >= formatDateTime(subtractMonths(now(), 24), '%Y-%m') "
+        "ORDER BY year_month DESC"
+    )
 
     # ===== Neo4j 同步 SQL =====
     NEO4J_SQL_SELECT_USERS: str = (

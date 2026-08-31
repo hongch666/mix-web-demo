@@ -7,6 +7,7 @@ from .logic.vectorSyncTask import (
     initialize_article_content_hash_cache_async,
 )
 from .scheduler import start_scheduler
+from .logic.warehouseSyncTask import sync_warehouse_async
 
 __all__: List[str] = [
     "update_analyze_caches_async",
@@ -14,4 +15,5 @@ __all__: List[str] = [
     "export_article_vectors_to_postgres_async",
     "initialize_article_content_hash_cache_async",
     "start_scheduler",
+    "sync_warehouse_async",
 ]
