@@ -67,6 +67,12 @@ public class Messages {
     public static final String SYNC_PARALLEL_SUCCESS = "%s 并行同步完成，总耗时: %dms";
     public static final String SYNC_PARALLEL_FAIL = "%s 并行同步失败，耗时: %dms, 错误: %s";
 
+    // ===== ClickHouse 数仓同步 =====
+    public static final String WAREHOUSE_SYNC_TAG = "数仓同步模块";
+    public static final String WAREHOUSE_SYNC_SUMMARY = "分页获取数仓源数据";
+    public static final String WAREHOUSE_SYNC_DESCRIPTION = "供 FastAPI 数仓任务通过内部接口分页同步 Spring 业务数据";
+    public static final String WAREHOUSE_UNSUPPORTED_RESOURCE = "不支持的数仓同步资源: %s";
+
     // ===== Neo4j 同步任务描述 =====
     public static final String NEO4J_SYNC_TASK_START_MESSAGE = "Neo4j 同步任务开始执行，方法: %s，操作: %s";
     public static final String NEO4J_SYNC_TASK_SUBMIT_SUCCESS_MESSAGE = "Neo4j 同步异步任务已提交，方法: %s，操作: %s";
