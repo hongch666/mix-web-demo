@@ -1,4 +1,4 @@
-from typing import Dict, Final, List, Tuple
+from typing import Final
 
 
 class Scripts:
@@ -56,7 +56,7 @@ class Scripts:
     # ===== SQL 安全规则 =====
     SQL_QUERY_PREFIX: str = "SELECT"
 
-    SQL_READONLY_ALLOWED_PREFIXES: List[str] = [
+    SQL_READONLY_ALLOWED_PREFIXES: list[str] = [
         "SELECT",
         "WITH",
         "SHOW",
@@ -65,7 +65,7 @@ class Scripts:
         "EXPLAIN",
     ]
 
-    SQL_DANGEROUS_KEYWORDS: List[str] = [
+    SQL_DANGEROUS_KEYWORDS: list[str] = [
         "INSERT",
         "UPDATE",
         "DELETE",
@@ -93,18 +93,18 @@ class Scripts:
         "KILL",
     ]
 
-    SQL_DANGEROUS_PATTERNS: List[str] = [
+    SQL_DANGEROUS_PATTERNS: list[str] = [
         "INTO OUTFILE",
         "INTO DUMPFILE",
         "FOR UPDATE",
         "LOCK IN SHARE MODE",
     ]
 
-    DANGEROUS_SQL_REQUEST_PATTERNS: List[str] = [
+    DANGEROUS_SQL_REQUEST_PATTERNS: list[str] = [
         r"\b(update|delete|insert|drop|alter|truncate|create|replace|merge)\b",
     ]
 
-    SAFE_SQL_QUERY_REQUEST_PATTERNS: List[str] = [
+    SAFE_SQL_QUERY_REQUEST_PATTERNS: list[str] = [
         r"^(查询|查看|统计|列出|展示|获取|分析).*(最近|最新|已)?(更新|新增)的",
     ]
 
@@ -116,7 +116,7 @@ class Scripts:
     SANITIZER_MAX_DICT_DEPTH: int = 5  # 字典最大递归深度
 
     # 敏感字段键名模式（不区分大小写匹配）
-    SENSITIVE_KEY_PATTERNS: Tuple[str, ...] = (
+    SENSITIVE_KEY_PATTERNS: tuple[str, ...] = (
         "api_key",
         "apikey",
         "api-key",
@@ -137,7 +137,7 @@ class Scripts:
     )
 
     # ===== Neo4j 约束 =====
-    NEO4J_CREATE_CONSTRAINTS: List[str] = [
+    NEO4J_CREATE_CONSTRAINTS: list[str] = [
         "CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
         "CREATE CONSTRAINT category_id_unique IF NOT EXISTS FOR (c:Category) REQUIRE c.id IS UNIQUE",
         "CREATE CONSTRAINT sub_category_id_unique IF NOT EXISTS FOR (s:SubCategory) REQUIRE s.id IS UNIQUE",
@@ -429,7 +429,7 @@ class Scripts:
         return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
     """
 
-    INTENT_TO_CYPHER: Dict[str, str] = {
+    INTENT_TO_CYPHER: dict[str, str] = {
         "article_detail": (
             "MATCH (a:Article {id: $id}) "
             "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User) "

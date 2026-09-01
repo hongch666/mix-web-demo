@@ -1,13 +1,14 @@
 import json
 import re
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts, Scripts
 from app.core.db import get_neo4j_client
-from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
 
 
 class Neo4jQueryTools:
@@ -27,7 +28,7 @@ class Neo4jQueryTools:
             self.logger.warning(Messages.NEO4J_QUERY_TOOL_INITIALIZATION_FAILED(e))
 
     @staticmethod
-    def _normalize_limit(params: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_limit(params: dict[str, Any]) -> dict[str, Any]:
         normalized = dict(params)
         try:
             limit = int(normalized.get("limit", 10))
@@ -37,7 +38,7 @@ class Neo4jQueryTools:
         return normalized
 
     async def execute_predefined_query(
-        self, query_name: str, params: Optional[Dict[str, Any]] = None
+        self, query_name: str, params: Optional[dict[str, Any]] = None
     ) -> str:
         """执行预定义的知识图谱查询"""
         if self.client is None:
@@ -99,7 +100,7 @@ class Neo4jQueryTools:
             return Messages.NEO4J_QUERY_EMPTY_MESSAGE
         return json.dumps(records, ensure_ascii=False, indent=2, default=str)
 
-    def get_langchain_tools(self) -> List[StructuredTool]:
+    def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain 工具对象"""
 
         class PredefinedQueryInput(BaseModel):
@@ -107,7 +108,7 @@ class Neo4jQueryTools:
                 description=Messages.NEO4J_QUERY_NAME_INPUT_DESC
                 + ", ".join(Scripts.INTENT_TO_CYPHER)
             )
-            params: Dict[str, Any] = Field(
+            params: dict[str, Any] = Field(
                 default_factory=dict,
                 description=Messages.NEO4J_QUERY_PARAMS_INPUT_DESC,
             )

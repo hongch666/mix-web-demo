@@ -1,11 +1,13 @@
 import random
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, AsyncGenerator, Dict, Generator, Optional
+from typing import Any, Optional
+
+from langsmith import Client as LangSmithClient
+from langsmith.run_trees import RunTree
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from langsmith import Client as LangSmithClient
-from langsmith.run_trees import RunTree
 
 from .config import LangSmithConfig, load_langsmith_config
 
@@ -100,7 +102,7 @@ def get_langsmith_config() -> Optional[LangSmithConfig]:
 def get_langsmith_context(
     name: str,
     tags: Optional[list] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: Optional[dict[str, Any]] = None,
     parent_run: Optional[Any] = None,
 ) -> Generator[Optional[Any], None, None]:
     """创建 LangSmith 根 Run 上下文管理器（同步版本）
@@ -150,7 +152,7 @@ def get_langsmith_context(
 async def get_langsmith_context_async(
     name: str,
     tags: Optional[list] = None,
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: Optional[dict[str, Any]] = None,
     parent_run: Optional[Any] = None,
 ) -> AsyncGenerator[Optional[Any], None]:
     """创建 LangSmith 根 Run 上下文管理器（异步版本）

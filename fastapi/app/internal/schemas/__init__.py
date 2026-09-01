@@ -1,5 +1,3 @@
-from typing import List
-
 from .algorithmDTO import ScoreWeightItem, ScriptParamItem, SearchScriptResponse
 from .chatDTO import AIServiceType, ChatRequest, ChatResponse, ChatResponseData
 from .createHistoryDTO import CreateHistoryDTO
@@ -19,7 +17,7 @@ from .vectorSearchDTO import (
     VectorSearchEnhanceResp,
 )
 
-__all__: List[str] = [
+__all__: list[str] = [
     "ChatRequest",
     "ChatResponse",
     "ChatResponseData",

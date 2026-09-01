@@ -1,5 +1,3 @@
-from typing import List
-
 from .extractor import ReferenceContentExtractor, get_reference_content_extractor
 from .intentRouter import IntentRouter
 from .tools.fastapiSqlTool import FastapiSqlTool, get_fastapi_sql_tool
@@ -11,7 +9,7 @@ from .tools.ragTools import RAGTools, get_rag_tools
 from .tools.springSqlTool import SpringSqlTool, get_spring_sql_tool
 from .userPermissionManager import UserPermissionManager, get_user_permission_manager
 
-__all__: List[str] = [
+__all__: list[str] = [
     "FastapiSqlTool",
     "get_fastapi_sql_tool",
     "GozeroSqlTool",

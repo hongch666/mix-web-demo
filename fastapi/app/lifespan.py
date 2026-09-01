@@ -1,9 +1,10 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
@@ -28,10 +29,9 @@ from app.internal.clients import NestjsClient, SpringClient
 from app.internal.models import AiHistory
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
-from fastapi import FastAPI
 
 # 加载服务器配置
-server_config: Dict[str, Any] = load_config("server")
+server_config: dict[str, Any] = load_config("server")
 IP: str = Messages.INIT_IP
 PORT: int = server_config["port"]
 
@@ -70,7 +70,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     )
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
-    remote_call_config: Dict[str, Any] = load_config("remote_call")
+    remote_call_config: dict[str, Any] = load_config("remote_call")
     default_timeout: float = float(remote_call_config["timeout"])
     shared_http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(default_timeout, connect=min(5.0, default_timeout)),

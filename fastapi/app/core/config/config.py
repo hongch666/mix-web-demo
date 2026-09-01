@@ -2,11 +2,12 @@ import os
 import re
 from io import StringIO
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import yaml
-from app.core.constants import Messages
 from dotenv import load_dotenv
+
+from app.core.constants import Messages
 
 # 在应用启动时加载 .env 文件
 load_dotenv()
@@ -57,7 +58,7 @@ def load_config(section: Optional[str] = None, key: Optional[str] = None) -> Any
     content = resolve_env_vars_in_string(content)
 
     # 用替换后的内容解析 YAML
-    config: Dict[str, Any] = yaml.safe_load(StringIO(content))
+    config: dict[str, Any] = yaml.safe_load(StringIO(content))
 
     if section is None:
         return config

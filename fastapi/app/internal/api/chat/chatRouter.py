@@ -2,8 +2,12 @@ import datetime
 import json
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import aclosing
-from typing import Any, AsyncGenerator, Dict, Optional
+from typing import Any, Optional
+
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
@@ -14,8 +18,8 @@ from app.core.db import get_db
 from app.dependencies import (
     AiHistoryServiceDep,
     DbSession,
-    GlmServiceDep,
     GeminiServiceDep,
+    GlmServiceDep,
     GptServiceDep,
 )
 from app.internal.agents.langsmith import (
@@ -31,9 +35,6 @@ from app.internal.schemas import (
     ChatResponse,
     ChatResponseData,
 )
-from fastapi.responses import JSONResponse, StreamingResponse
-
-from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/chat",
@@ -153,9 +154,7 @@ async def send_message(
                 runnable_config=runnable_config,
             )
         else:
-            Logger.info(
-                Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, False)
-            )
+            Logger.info(Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, False))
             response_message = await glmService.simple_chat(
                 message=request.message,
                 user_id=actual_user_id,
@@ -290,9 +289,7 @@ async def stream_message(
                     )
                 else:
                     Logger.info(
-                        Messages.CHAT_SERVICE_PROCESSING(
-                            "GLM", actual_user_id, True
-                        )
+                        Messages.CHAT_SERVICE_PROCESSING("GLM", actual_user_id, True)
                     )
                     stream_generator = glmService.stream_chat(
                         message=request.message,
@@ -324,7 +321,7 @@ async def stream_message(
                         message_acc += chunk_content
 
                     # 构建响应数据 - 确保chunk_content完整输出
-                    data: Dict[str, Any] = success(
+                    data: dict[str, Any] = success(
                         {
                             "message": message_acc,
                             "conversation_id": conversation_id,

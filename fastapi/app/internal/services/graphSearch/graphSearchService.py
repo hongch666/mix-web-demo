@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from functools import lru_cache
-from typing import Dict, List
 
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages, Scripts
@@ -71,7 +70,7 @@ class GraphSearchService:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # 解析结果
-        signal_results: List[Dict[int, dict]] = []
+        signal_results: list[dict[int, dict]] = []
         for r in results:
             if isinstance(r, Exception):
                 Logger.warning(Messages.GRAPH_SEARCH_QUERY_EXCEPTION_LOG(r))
@@ -80,7 +79,7 @@ class GraphSearchService:
                 signal_results.append(r)
 
         # 合并分数
-        article_scores: Dict[int, dict] = {}
+        article_scores: dict[int, dict] = {}
         for article_id in article_ids:
             article_scores[article_id] = {
                 "graphScore": 0.0,
@@ -129,13 +128,13 @@ class GraphSearchService:
 
         return GraphSearchEnhanceResp(items=items)
 
-    async def _empty_result(self, article_ids: List[int]) -> Dict[int, dict]:
+    async def _empty_result(self, article_ids: list[int]) -> dict[int, dict]:
         """空结果 (不依赖用户行为时使用)"""
         return {}
 
     async def _query_tag_interest(
-        self, user_id: int, article_ids: List[int]
-    ) -> Dict[int, dict]:
+        self, user_id: int, article_ids: list[int]
+    ) -> dict[int, dict]:
         """信号1: 用户兴趣标签"""
         rows = await self._safe_query(
             Scripts.GRAPH_SEARCH_TAG_INTEREST_CYPHER,
@@ -145,7 +144,7 @@ class GraphSearchService:
             },
         )
 
-        result: Dict[int, dict] = {}
+        result: dict[int, dict] = {}
         for row in rows:
             aid = row.get("articleId")
             if aid is None:
@@ -170,8 +169,8 @@ class GraphSearchService:
         return result
 
     async def _query_followed_author(
-        self, user_id: int, article_ids: List[int]
-    ) -> Dict[int, dict]:
+        self, user_id: int, article_ids: list[int]
+    ) -> dict[int, dict]:
         """信号2: 关注作者"""
         rows = await self._safe_query(
             Scripts.GRAPH_SEARCH_FOLLOWED_AUTHOR_CYPHER,
@@ -181,7 +180,7 @@ class GraphSearchService:
             },
         )
 
-        result: Dict[int, dict] = {}
+        result: dict[int, dict] = {}
         for row in rows:
             aid = row.get("articleId")
             if aid is None:
@@ -204,8 +203,8 @@ class GraphSearchService:
         return result
 
     async def _query_same_sub_category(
-        self, user_id: int, article_ids: List[int]
-    ) -> Dict[int, dict]:
+        self, user_id: int, article_ids: list[int]
+    ) -> dict[int, dict]:
         """信号3: 同子分类"""
         rows = await self._safe_query(
             Scripts.GRAPH_SEARCH_SAME_SUB_CATEGORY_CYPHER,
@@ -215,7 +214,7 @@ class GraphSearchService:
             },
         )
 
-        result: Dict[int, dict] = {}
+        result: dict[int, dict] = {}
         for row in rows:
             aid = row.get("articleId")
             if aid is None:
@@ -240,8 +239,8 @@ class GraphSearchService:
         return result
 
     async def _query_candidate_similarity(
-        self, article_ids: List[int]
-    ) -> Dict[int, dict]:
+        self, article_ids: list[int]
+    ) -> dict[int, dict]:
         """信号4: 候选间相似标签"""
         rows = await self._safe_query(
             Scripts.GRAPH_SEARCH_CANDIDATE_SIMILARITY_CYPHER,
@@ -250,7 +249,7 @@ class GraphSearchService:
             },
         )
 
-        result: Dict[int, dict] = {}
+        result: dict[int, dict] = {}
         for row in rows:
             aid = row.get("articleId")
             if aid is None:
@@ -274,8 +273,8 @@ class GraphSearchService:
         return result
 
     async def _query_keyword_tag(
-        self, article_ids: List[int], keyword: str
-    ) -> Dict[int, dict]:
+        self, article_ids: list[int], keyword: str
+    ) -> dict[int, dict]:
         """信号5: 关键词标签命中"""
         if not keyword:
             return {}
@@ -288,7 +287,7 @@ class GraphSearchService:
             },
         )
 
-        result: Dict[int, dict] = {}
+        result: dict[int, dict] = {}
         for row in rows:
             aid = row.get("articleId")
             if aid is None:
@@ -312,7 +311,7 @@ class GraphSearchService:
             }
         return result
 
-    async def _safe_query(self, cypher: str, params: dict) -> List[dict]:
+    async def _safe_query(self, cypher: str, params: dict) -> list[dict]:
         """安全执行 Neo4j 查询, 失败时返回空列表"""
         try:
             neo4j = get_neo4j_client()
@@ -321,7 +320,7 @@ class GraphSearchService:
             Logger.warning(Messages.GRAPH_SEARCH_NEO4J_EXCEPTION_LOG(e))
             return []
 
-    def _generate_reason(self, relations: List[GraphRelationDTO]) -> str:
+    def _generate_reason(self, relations: list[GraphRelationDTO]) -> str:
         """根据关系优先级生成推荐原因"""
         priority_map = {
             "followed_author": ("来自你关注的作者 {name}", 1),

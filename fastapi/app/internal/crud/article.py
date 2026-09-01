@@ -2,7 +2,7 @@ import asyncio
 import time
 import traceback
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any
 
 from app.core.base import Logger
 from app.core.constants import Messages, Scripts, WarehouseScripts
@@ -18,10 +18,10 @@ class ArticleMapper:
         )
 
     def _safe_convert_to_list_of_dicts(
-        self, results: Any, columns: List[str]
-    ) -> List[Dict[str, Any]]:
+        self, results: Any, columns: list[str]
+    ) -> list[dict[str, Any]]:
         """安全转换 ClickHouse 查询结果为字典列表"""
-        result: List[Dict[str, Any]] = []
+        result: list[dict[str, Any]] = []
         for row in results:
             try:
                 row_dict = {}
@@ -45,11 +45,11 @@ class ArticleMapper:
 
     async def get_top10_articles_clickhouse_mapper_async(
         self,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """获取前10篇文章 - ClickHouse 查表"""
 
         # ClickHouse 表中实际存在的字段（不包含 username）
-        columns: List[str] = [
+        columns: list[str] = [
             "id",
             "title",
             "tags",
@@ -74,11 +74,11 @@ class ArticleMapper:
         query = Scripts.TOP10_ARTICLES_CLICKHOUSE_QUERY(", ".join(columns), ch_table)
 
         try:
-            results: List[tuple] = await asyncio.to_thread(ch_conn.execute, query)
+            results: list[tuple] = await asyncio.to_thread(ch_conn.execute, query)
             query_time: float = time.time() - query_start
 
             # 安全转换为字典
-            result: List[Dict[str, Any]] = self._safe_convert_to_list_of_dicts(
+            result: list[dict[str, Any]] = self._safe_convert_to_list_of_dicts(
                 results, columns
             )
 
@@ -111,7 +111,7 @@ class ArticleMapper:
 
     async def get_category_article_count_clickhouse_mapper_async(
         self,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         从ClickHouse获取按父分类排序的文章数量
         """
@@ -127,7 +127,7 @@ class ArticleMapper:
             query_time: float = time.time() - query_start
 
             # 安全转换为字典列表
-            result: List[Dict[str, Any]] = []
+            result: list[dict[str, Any]] = []
             for r in results:
                 try:
                     result.append(
@@ -163,7 +163,7 @@ class ArticleMapper:
 
     async def get_monthly_publish_count_clickhouse_mapper_async(
         self,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         从ClickHouse获取最近24个月的文章发布数量统计（包含零值月份）
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
@@ -181,7 +181,7 @@ class ArticleMapper:
             query_time: float = time.time() - query_start
 
             # 安全转换为字典列表
-            result: List[Dict[str, Any]] = []
+            result: list[dict[str, Any]] = []
             for r in results:
                 try:
                     result.append(
@@ -214,7 +214,7 @@ class ArticleMapper:
             if ch_conn:
                 self._clickhouse_pool.return_connection(ch_conn)
 
-    async def get_platform_stats_clickhouse_mapper_async(self) -> Dict[str, Any]:
+    async def get_platform_stats_clickhouse_mapper_async(self) -> dict[str, Any]:
         """从 ADS 平台统计表获取汇总指标"""
         ch_conn: Any = self._clickhouse_pool.get_connection()
         query = WarehouseScripts.PLATFORM_STATS_QUERY

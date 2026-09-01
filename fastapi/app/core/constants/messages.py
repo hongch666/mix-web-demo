@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 
 class Messages:
@@ -1720,7 +1720,7 @@ class Messages:
         "同步方法不能在运行中的事件循环里直接调用"
     )
 
-    BLOCKED_KEYWORDS: List[str] = [
+    BLOCKED_KEYWORDS: list[str] = [
         "CREATE",
         "MERGE",
         "SET",
@@ -1766,7 +1766,7 @@ class Messages:
 
     CONCURRENT_SUMMARY_MESSAGE: str = "开始并发调用三个大模型进行总结"
 
-    DANGEROUS_SQL_REQUEST_PATTERNS: List[str] = [
+    DANGEROUS_SQL_REQUEST_PATTERNS: list[str] = [
         r"\b(update|delete|insert|drop|alter|truncate|create|replace|merge)\b",
         r"(把|将).*(修改|更新|删除|新增|插入|写入|创建|清空|重置|下架|发布|设为|设置为|改成|改为)",
         r"(帮我|请|给我|直接|批量).*(修改|更新|删除|新增|插入|写入|创建|清空|重置|下架|发布|设为|设置为|改成|改为).*(数据库|数据|表|记录|文章|用户|评论|点赞|收藏|status|状态|字段)",
@@ -1799,7 +1799,7 @@ class Messages:
     ]
 
     # ===== 参考资料提取器 =====
-    KEY_POINT_KEYWORDS: List[str] = [
+    KEY_POINT_KEYWORDS: list[str] = [
         "定义",
         "概念",
         "原理",
@@ -2038,7 +2038,7 @@ class Messages:
 
     NEO4J_CLEANUP_LABEL_USER: str = "失效用户节点"
 
-    NEO4J_CREATE_CONSTRAINTS: List[str] = [
+    NEO4J_CREATE_CONSTRAINTS: list[str] = [
         "CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
         "CREATE CONSTRAINT category_id_unique IF NOT EXISTS FOR (c:Category) REQUIRE c.id IS UNIQUE",
         "CREATE CONSTRAINT sub_category_id_unique IF NOT EXISTS FOR (s:SubCategory) REQUIRE s.id IS UNIQUE",
@@ -2226,7 +2226,7 @@ class Messages:
 
     ROLE_USER: str = "user"
 
-    SAFE_SQL_QUERY_REQUEST_PATTERNS: List[str] = [
+    SAFE_SQL_QUERY_REQUEST_PATTERNS: list[str] = [
         r"^(查询|查看|统计|列出|展示|获取|分析).*(最近|最新|已)?(更新|新增)的",
         r"^(查询|查看|统计|列出|展示|获取|分析).*(列表|数量|总数|排行|明细)",
     ]
@@ -2245,7 +2245,7 @@ class Messages:
 
     SKIP_VERSION_CHECK: str = "[缓存] 获取当前版本号失败，跳过版本检测"
 
-    SQL_DANGEROUS_KEYWORDS: List[str] = [
+    SQL_DANGEROUS_KEYWORDS: list[str] = [
         "INSERT",
         "UPDATE",
         "DELETE",
@@ -2273,7 +2273,7 @@ class Messages:
         "KILL",
     ]
 
-    SQL_DANGEROUS_PATTERNS: List[str] = [
+    SQL_DANGEROUS_PATTERNS: list[str] = [
         "INTO OUTFILE",
         "INTO DUMPFILE",
         "FOR UPDATE",
@@ -2298,7 +2298,7 @@ class Messages:
         "安全限制：检测到 SQL 包含写操作或锁表行为，只允许执行只读查询。"
     )
 
-    SQL_READONLY_ALLOWED_PREFIXES: List[str] = [
+    SQL_READONLY_ALLOWED_PREFIXES: list[str] = [
         "SELECT",
         "WITH",
         "SHOW",
@@ -2348,12 +2348,12 @@ class Messages:
     SQL_TOOL_GOZERO_TABLE_TOOL_NAME: str = "get_gozero_table_schema"
     SQL_TOOL_GOZERO_QUERY_TOOL_NAME: str = "execute_gozero_sql_query"
 
-    SQL_TOOL_FASTAPI_TABLE_WHITELIST: List[str] = ["ai_history"]
+    SQL_TOOL_FASTAPI_TABLE_WHITELIST: list[str] = ["ai_history"]
 
     # ===== SQL 代理工具（本地直连 FastAPI）安全约束配置 =====
 
     # 只读语句前缀白名单
-    SQL_TOOL_ALLOWED_PREFIXES: List[str] = [
+    SQL_TOOL_ALLOWED_PREFIXES: list[str] = [
         "SELECT",
         "WITH",
         "SHOW",
@@ -2377,7 +2377,7 @@ class Messages:
     SQL_TOOL_NAMED_PARAM_REGEX: str = r":\w+"
 
     # FastAPI 本地表结构信息（硬编码，避免每次查 information_schema）
-    SQL_TOOL_FASTAPI_TABLE_SCHEMAS: Dict[str, List[Dict[str, str]]] = {
+    SQL_TOOL_FASTAPI_TABLE_SCHEMAS: dict[str, list[dict[str, str]]] = {
         "ai_history": [
             {"name": "id", "type": "bigint", "key": "PRI", "comment": "主键ID"},
             {"name": "user_id", "type": "bigint", "key": "MUL", "comment": "用户ID"},
@@ -2448,7 +2448,7 @@ class Messages:
 
     USER_NO_ADMIN_PERMISSION_MESSAGE: str = "权限不足，仅管理员可访问"
 
-    USER_RELATED_TABLE: List[str] = [
+    USER_RELATED_TABLE: list[str] = [
         "likes",
         "collects",
         "comments",

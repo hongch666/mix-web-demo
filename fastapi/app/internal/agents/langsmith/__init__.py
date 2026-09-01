@@ -1,5 +1,3 @@
-from typing import List
-
 from .client import (
     get_langsmith_client,
     get_langsmith_context,
@@ -16,7 +14,7 @@ from .sanitizer import (
 )
 from .tags import build_chat_metadata, build_chat_tags
 
-__all__: List[str] = [
+__all__: list[str] = [
     "LangSmithConfig",
     "load_langsmith_config",
     "get_langsmith_client",

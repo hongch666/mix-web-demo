@@ -1,10 +1,10 @@
-from typing import Callable, Dict, List, Type
+from collections.abc import Callable
 
-from app.core.constants import HttpCode, Messages
+from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 
-from fastapi import Request
+from app.core.constants import HttpCode, Messages
 
 from ..base import Logger
 from ..base.response import error
@@ -67,7 +67,7 @@ async def request_validation_exception_handler(
         Response: JSON 格式的错误响应
     """
 
-    validation_message_parts: List[str] = []
+    validation_message_parts: list[str] = []
     for item in exc.errors():
         message = item.get("msg")
         if message:
@@ -90,13 +90,13 @@ async def request_validation_exception_handler(
     )
 
 
-exception_handlers: Dict[Type[Exception], Callable] = {
+exception_handlers: dict[type[Exception], Callable] = {
     BusinessException: business_exception_handler,
     RequestValidationError: request_validation_exception_handler,
     Exception: global_exception_handler,
 }
 
-__all__: List[str] = [
+__all__: list[str] = [
     "global_exception_handler",
     "business_exception_handler",
     "request_validation_exception_handler",

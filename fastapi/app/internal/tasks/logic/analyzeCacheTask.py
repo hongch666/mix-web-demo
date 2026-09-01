@@ -1,10 +1,12 @@
 import traceback
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any, Optional
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
 from app.core.db import get_redis_client
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def _update_analyze_caches_async(

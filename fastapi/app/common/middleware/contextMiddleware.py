@@ -1,9 +1,9 @@
 import contextvars
-from typing import Awaitable, Callable, Optional
-
-from starlette.middleware.base import BaseHTTPMiddleware
+from collections.abc import Awaitable, Callable
+from typing import Optional
 
 from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 user_id_ctx_var: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(
     "user_id", default=None

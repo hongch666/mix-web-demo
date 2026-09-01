@@ -1,9 +1,10 @@
 import socket
 import threading
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 import nacos
+
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
@@ -11,7 +12,7 @@ from app.core.errors import BusinessException
 from ..config.config import load_config
 
 # Nacos 配置
-nacos_config: Dict[str, Any] = load_config("nacos")
+nacos_config: dict[str, Any] = load_config("nacos")
 
 SERVER_ADDRESSES: str = nacos_config["server_addresses"]
 NAMESPACE: str = nacos_config["namespace"]
@@ -23,14 +24,14 @@ HEARTBEAT_INTERVAL: int = int(nacos_config["heartbeat_interval"])
 REGISTER_RETRIES: int = int(nacos_config["register_retries"])
 RETRY_INTERVAL: int = int(nacos_config["retry_interval"])
 
-server_config: Dict[str, Any] = load_config("server")
+server_config: dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 PORT: int = server_config["port"]
 
 
 def _build_client() -> nacos.NacosClient:
-    kwargs: Dict[str, Any] = {"namespace": NAMESPACE}
+    kwargs: dict[str, Any] = {"namespace": NAMESPACE}
     if USERNAME:
         kwargs["username"] = USERNAME
     if PASSWORD:
@@ -97,16 +98,16 @@ def register_instance(ip: str = IP, port: int = PORT) -> None:
 
 
 # 轮询负载均衡计数器
-_round_robin_counters: Dict[str, int] = {}
+_round_robin_counters: dict[str, int] = {}
 _round_robin_lock = threading.Lock()
 
 
-def get_service_instance(service_name: str) -> Dict[str, Any]:
+def get_service_instance(service_name: str) -> dict[str, Any]:
     """获取服务实例，使用轮询负载均衡策略"""
-    instances: Dict[str, Any] = client.list_naming_instance(
+    instances: dict[str, Any] = client.list_naming_instance(
         service_name, group_name=GROUP_NAME
     )
-    hosts: List[Dict[str, Any]] = instances.get("hosts", [])
+    hosts: list[dict[str, Any]] = instances.get("hosts", [])
     if not hosts:
         raise BusinessException(
             Messages.AI_CHAT_NO_INSTANCE_MESSAGE,

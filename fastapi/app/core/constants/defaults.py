@@ -1,6 +1,3 @@
-from typing import List
-
-
 class Defaults:
     """
     配置默认值类 — TTL、权重、超时
@@ -80,7 +77,7 @@ class Defaults:
     }
 
     # 噪音元素过滤正则（HTML 注释、脚本、样式、导航、广告、版权标记等）
-    EXTRACTOR_NOISE_PATTERNS: List[str] = [
+    EXTRACTOR_NOISE_PATTERNS: list[str] = [
         r"<!--.*?-->",
         r"<script.*?</script>",
         r"<style.*?</style>",

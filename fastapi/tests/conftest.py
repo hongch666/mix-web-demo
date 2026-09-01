@@ -1,7 +1,7 @@
 """测试全局配置，统一管理单例缓存的重置逻辑。"""
 
 import inspect
-from typing import Generator
+from collections.abc import Generator
 
 import pytest
 

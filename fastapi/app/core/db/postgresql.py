@@ -1,12 +1,12 @@
 from functools import lru_cache
-from typing import Any, Dict
+from typing import Any
 
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages
 
 
-def get_postgres_config() -> Dict[str, Any]:
+def get_postgres_config() -> dict[str, Any]:
     """获取 PostgreSQL 配置"""
     return load_config("database")["postgres"]
 

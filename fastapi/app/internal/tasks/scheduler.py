@@ -1,13 +1,15 @@
+from collections.abc import Callable
 from datetime import datetime
 from functools import partial
-from typing import Any, Callable, Optional
+from typing import Any, Optional
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.base import BaseScheduler
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
 from app.core.constants import Messages
 from app.internal.clients import NestjsClient, SpringClient
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.schedulers.base import BaseScheduler
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from .logic.analyzeCacheTask import update_analyze_caches_async
 from .logic.neo4jSyncTask import sync_mysql_to_neo4j_async

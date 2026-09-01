@@ -1,5 +1,3 @@
-from typing import List
-
 from app.core.db import get_redis_client
 
 from .baseCache import BaseCache
@@ -10,7 +8,7 @@ from .extend.statisticsCache import StatisticsCache, get_statistics_cache
 from .extend.wordcloudCache import WordcloudCache, get_wordcloud_cache
 from .versionedCache import VersionedCache
 
-__all__: List[str] = [
+__all__: list[str] = [
     "BaseCache",
     "ArticleCache",
     "get_article_cache",

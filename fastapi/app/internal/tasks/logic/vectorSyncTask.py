@@ -1,7 +1,7 @@
 import asyncio
 import hashlib
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages, RedisKeys
@@ -108,8 +108,8 @@ async def _save_sync_time(sync_time: datetime) -> None:
 
 
 async def _get_changed_articles(
-    articles: List[Any], last_sync_time: Optional[datetime]
-) -> List[Any]:
+    articles: list[Any], last_sync_time: Optional[datetime]
+) -> list[Any]:
     """
     筛选出内容实际变化的已发布文章（基于hash对比）
 
@@ -121,7 +121,7 @@ async def _get_changed_articles(
         内容有变化的已发布文章列表
     """
     # 先筛选已发布的文章
-    published_articles: List[Any] = [
+    published_articles: list[Any] = [
         a for a in articles if _get_article_field(a, "status", 0) == 1
     ]
 
@@ -137,7 +137,7 @@ async def _get_changed_articles(
                     await _save_article_content_hash(article_id, current_hash)
         return published_articles
 
-    changed_articles: List[Any] = []
+    changed_articles: list[Any] = []
     for article in published_articles:
         article_id = _get_article_field(article, "id", 0)
         if not article_id:
@@ -207,14 +207,14 @@ async def _export_article_vectors_to_postgres(
 
         # 1. 通过SpringClient分页远程获取所有已发布文章
         try:
-            articles: List[Any] = []
+            articles: list[Any] = []
             page: int = 1
             page_size: int = 100
             while True:
                 page_result: Any = await spring_client.get_published_articles(
                     page=page, size=page_size, timeout=30
                 )
-                records: List[Any] = (
+                records: list[Any] = (
                     page_result.get("records", [])
                     if isinstance(page_result, dict)
                     else []
@@ -239,7 +239,7 @@ async def _export_article_vectors_to_postgres(
         # 2. 增量同步：筛选出变更的文章
         if enable_incremental_sync:
             last_sync_time: Optional[datetime] = await _get_last_sync_time()
-            changed_articles: List[Any] = await _get_changed_articles(
+            changed_articles: list[Any] = await _get_changed_articles(
                 articles, last_sync_time
             )
 
@@ -248,23 +248,23 @@ async def _export_article_vectors_to_postgres(
                 return
 
             Logger.info(Messages.VECTOR_INCREMENTAL_SYNC_CHANGED(len(changed_articles)))
-            sync_articles: List[Any] = changed_articles
+            sync_articles: list[Any] = changed_articles
         else:
             # 全量同步模式（列表接口已返回已发布文章）
-            published_articles: List[Any] = [
+            published_articles: list[Any] = [
                 a for a in articles if _get_article_field(a, "status", 0) == 1
             ]
             if not published_articles:
                 Logger.info(Messages.NO_PUBLISHED_ARTICLES_MESSAGE)
                 return
             Logger.info(Messages.VECTOR_FULL_SYNC_FOUND(len(published_articles)))
-            sync_articles: List[Any] = published_articles
+            sync_articles: list[Any] = published_articles
 
         # 3. 批量处理文章
         batch_size: int = 10  # 每批处理 10 篇文章
         total_synced: int = 0
         total_errors: int = 0
-        failed_articles: List[int] = []
+        failed_articles: list[int] = []
         max_retries: int = 3
         retry_delay: int = 2  # 秒
 
@@ -273,12 +273,12 @@ async def _export_article_vectors_to_postgres(
             batch_num = i // batch_size + 1
 
             # 提取文章信息
-            article_ids: List[int] = [_get_article_field(a, "id", 0) for a in batch]
-            titles: List[str] = [_get_article_field(a, "title", "") for a in batch]
-            contents: List[str] = [_get_article_field(a, "content", "") for a in batch]
+            article_ids: list[int] = [_get_article_field(a, "id", 0) for a in batch]
+            titles: list[str] = [_get_article_field(a, "title", "") for a in batch]
+            contents: list[str] = [_get_article_field(a, "content", "") for a in batch]
 
             # 构建元数据
-            metadata_list: List[dict] = []
+            metadata_list: list[dict] = []
             for a in batch:
                 metadata_list.append(
                     {
@@ -414,14 +414,14 @@ async def _initialize_article_content_hash_cache(
 
         # 1. 通过SpringClient分页远程获取所有已发布文章
         try:
-            articles: List[Any] = []
+            articles: list[Any] = []
             page: int = 1
             page_size: int = 100
             while True:
                 page_result: Any = await spring_client.get_published_articles(
                     page=page, size=page_size, timeout=30
                 )
-                records: List[Any] = (
+                records: list[Any] = (
                     page_result.get("records", [])
                     if isinstance(page_result, dict)
                     else []
@@ -444,7 +444,7 @@ async def _initialize_article_content_hash_cache(
             return
 
         # 2. 筛选已发布的文章
-        published_articles: List[Any] = [
+        published_articles: list[Any] = [
             a for a in articles if _get_article_field(a, "status", 0) == 1
         ]
 

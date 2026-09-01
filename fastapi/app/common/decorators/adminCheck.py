@@ -1,5 +1,6 @@
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from app.common.middleware import get_current_user_id
 from app.core.base import Logger

@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
@@ -25,7 +25,7 @@ class ArticleCache(VersionedCache):
     REDIS_VERSION_KEY: str = RedisKeys.ARTICLE_TOP10_VERSION
     L1_CACHE_TTL: int = 300  # 5分钟
 
-    async def get(self, ch_conn: Any) -> Optional[List[Dict[str, Any]]]:
+    async def get(self, ch_conn: Any) -> Optional[list[dict[str, Any]]]:
         """
         获取缓存（二级缓存）
 
@@ -54,7 +54,7 @@ class ArticleCache(VersionedCache):
         Logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
-    async def set(self, data: List[Dict[str, Any]], ch_conn: Any) -> None:
+    async def set(self, data: list[dict[str, Any]], ch_conn: Any) -> None:
         """
         设置缓存（二级缓存）
 

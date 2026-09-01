@@ -1,10 +1,8 @@
-from typing import List
-
 from .adminCheck import requireAdmin
 from .apiLog import ApiLogConfig, apiLog, log, logWithConfig
 from .requireInternalToken import requireInternalToken
 
-__all__: List[str] = [
+__all__: list[str] = [
     "apiLog",
     "log",
     "logWithConfig",

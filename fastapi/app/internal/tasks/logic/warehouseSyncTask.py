@@ -1,8 +1,9 @@
 import asyncio
 import json
 import traceback
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, WarehouseScripts
@@ -55,7 +56,7 @@ async def _write_watermark(conn: Any, table_name: str, value: datetime) -> None:
     )
 
 
-def _normalize_row(item: Dict[str, Any], columns: Sequence[str]) -> tuple[Any, ...]:
+def _normalize_row(item: dict[str, Any], columns: Sequence[str]) -> tuple[Any, ...]:
     row: list[Any] = []
     for column in columns:
         value = item.get(column)
@@ -136,9 +137,7 @@ async def _sync_article_logs(conn: Any, nestjs_client: NestjsClient) -> None:
                 int(item.get("userId") or item.get("user_id") or 0),
                 int(item.get("articleId") or item.get("article_id") or 0),
                 str(item.get("action") or ""),
-                json.dumps(
-                    item.get("content") or {}, ensure_ascii=False, default=str
-                ),
+                json.dumps(item.get("content") or {}, ensure_ascii=False, default=str),
                 _to_datetime(item.get("createdAt") or item.get("created_at")),
             )
             for item in items

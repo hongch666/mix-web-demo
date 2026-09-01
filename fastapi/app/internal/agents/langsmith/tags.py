@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from .sanitizer import sanitize_metadata, sanitize_user_id
 
@@ -10,8 +10,8 @@ def build_chat_tags(
     mode: str,
     streaming: bool = False,
     rag_enabled: bool = False,
-    extra_tags: Optional[List[str]] = None,
-) -> List[str]:
+    extra_tags: Optional[list[str]] = None,
+) -> list[str]:
     """构建聊天请求的 LangSmith tags
 
     Args:
@@ -55,13 +55,13 @@ def build_chat_metadata(
     intent_resolution: Optional[str] = None,
     deployment_env: str = "dev",
     release_version: Optional[str] = None,
-    extra_metadata: Optional[Dict[str, Any]] = None,
-) -> Optional[Dict[str, Any]]:
+    extra_metadata: Optional[dict[str, Any]] = None,
+) -> Optional[dict[str, Any]]:
     """构建聊天请求的 LangSmith metadata
 
     返回的 metadata 已通过脱敏器处理，不包含原始用户 ID、对话内容等敏感信息。
     """
-    metadata: Dict[str, Any] = {
+    metadata: dict[str, Any] = {
         "request_id": request_id,
         "user_hash": sanitize_user_id(user_id),
         "conversation_id": conversation_id[:64] if conversation_id else "",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,10 +14,10 @@ class VectorSearchEnhanceReq(BaseModel):
 
     userId: Optional[int] = Alias("userId", default=None)
     keyword: str = ""
-    articleIds: List[int] = Alias("articleIds", default_factory=list)
+    articleIds: list[int] = Alias("articleIds", default_factory=list)
     categoryName: str = Alias("categoryName", default="")
     subCategoryName: str = Alias("subCategoryName", default="")
-    tags: List[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     limit: int = 50
     topK: int = Alias("topK", default=50)
     mode: str = "hybrid"
@@ -43,7 +43,7 @@ class VectorSearchEnhanceItemDTO(BaseModel):
     articleId: int = Alias("articleId")
     vectorScore: float = Alias("vectorScore")
     reason: str = ""
-    matchedChunks: List[VectorMatchedChunkDTO] = Alias(
+    matchedChunks: list[VectorMatchedChunkDTO] = Alias(
         "matchedChunks", default_factory=list
     )
 
@@ -51,4 +51,4 @@ class VectorSearchEnhanceItemDTO(BaseModel):
 class VectorSearchEnhanceResp(BaseModel):
     """向量搜索增强响应"""
 
-    items: List[VectorSearchEnhanceItemDTO] = Field(default_factory=list)
+    items: list[VectorSearchEnhanceItemDTO] = Field(default_factory=list)

@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import time
 from functools import lru_cache
-from typing import Any, Dict, List, Tuple
+from typing import Any
+
+from langchain_core.documents import Document
 
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
@@ -15,9 +17,8 @@ from app.internal.schemas import (
     VectorSearchEnhanceReq,
     VectorSearchEnhanceResp,
 )
-from langchain_core.documents import Document
 
-DocScore = Tuple[Document, float]
+DocScore = tuple[Document, float]
 
 
 class VectorSearchService:
@@ -80,8 +81,8 @@ class VectorSearchService:
         )
 
         article_id_set = set(article_ids)
-        grouped_chunks: Dict[int, List[VectorMatchedChunkDTO]] = {}
-        best_scores: Dict[int, float] = {}
+        grouped_chunks: dict[int, list[VectorMatchedChunkDTO]] = {}
+        best_scores: dict[int, float] = {}
 
         for doc, raw_score in docs_with_scores:
             article_id = self._to_int(doc.metadata.get("article_id"))
@@ -131,13 +132,13 @@ class VectorSearchService:
         return VectorSearchEnhanceResp(items=items)
 
     def _normalize_article_ids(
-        self, article_ids: List[int], req_limit: int
-    ) -> List[int]:
+        self, article_ids: list[int], req_limit: int
+    ) -> list[int]:
         limit = self.candidate_limit
         if req_limit > 0:
             limit = min(limit, req_limit)
 
-        normalized: List[int] = []
+        normalized: list[int] = []
         seen = set()
         for article_id in article_ids:
             aid = self._to_int(article_id)

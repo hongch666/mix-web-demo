@@ -1,8 +1,9 @@
 import asyncio
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import aio_pika
+
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages
@@ -17,7 +18,7 @@ class RabbitMQClient:
 
     def _build_url(self) -> Optional[str]:
         """构建 AMQP 连接 URL"""
-        config: Dict[str, Any] = load_config("rabbitmq")
+        config: dict[str, Any] = load_config("rabbitmq")
         if not config:
             Logger.warning(Messages.RABBITMQ_CONFIG_NOT_FOUND_MESSAGE)
             return None

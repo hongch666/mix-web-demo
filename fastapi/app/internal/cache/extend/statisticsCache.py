@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
@@ -23,7 +23,7 @@ class StatisticsCache(BaseCache):
     REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_STATISTICS
     L1_CACHE_TTL: int = 600  # 10分钟
 
-    async def get(self) -> Optional[Dict[str, Any]]:
+    async def get(self) -> Optional[dict[str, Any]]:
         """
         获取缓存（二级缓存）
 
@@ -46,7 +46,7 @@ class StatisticsCache(BaseCache):
         Logger.info(Messages.DB_CACHE_MISS_QUERY_DB_MESSAGE)
         return None
 
-    async def set(self, data: Dict[str, Any]) -> None:
+    async def set(self, data: dict[str, Any]) -> None:
         """
         设置缓存（二级缓存）
 

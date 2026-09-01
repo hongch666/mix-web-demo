@@ -1,12 +1,13 @@
 import json
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.internal.clients import NestjsClient
-from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
 
 
 class MongoDBTools:
@@ -20,9 +21,9 @@ class MongoDBTools:
     async def list_mongodb_collections(self) -> str:
         """列出 MongoDB 数据库中的所有 collection 及其基本信息"""
         try:
-            collections_info: List[Dict[str, Any]] = (
-                await self._nestjs_client.list_mongodb_collections()
-            )
+            collections_info: list[
+                dict[str, Any]
+            ] = await self._nestjs_client.list_mongodb_collections()
             return json.dumps(collections_info, ensure_ascii=False, indent=2)
         except Exception as e:
             error_msg = Messages.MONGODB_COLLECTION_LIST_FAILED(e)
@@ -32,7 +33,7 @@ class MongoDBTools:
     async def query_mongodb(
         self,
         collection_name: str,
-        filter_dict: Optional[Dict[str, Any]] = None,
+        filter_dict: Optional[dict[str, Any]] = None,
         limit: int = 10,
     ) -> str:
         """通用的 MongoDB 查询工具，可以查询任意 collection"""
@@ -44,7 +45,7 @@ class MongoDBTools:
             # 确保 limit 是整数
             limit_int = int(limit)
 
-            results: List[Dict[str, Any]] = await self._nestjs_client.query_mongodb(
+            results: list[dict[str, Any]] = await self._nestjs_client.query_mongodb(
                 collection_name, filter_dict, limit_int
             )
 
@@ -60,7 +61,7 @@ class MongoDBTools:
             self.logger.error(error_msg)
             return error_msg
 
-    def get_langchain_tools(self) -> List[StructuredTool]:
+    def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
 
         class EmptyInput(BaseModel):
@@ -70,7 +71,7 @@ class MongoDBTools:
             collection_name: str = Field(
                 description=Messages.MONGODB_COLLECTION_NAME_INPUT_DESC
             )
-            filter_dict: Dict[str, Any] = Field(
+            filter_dict: dict[str, Any] = Field(
                 default_factory=dict,
                 description=Messages.MONGODB_FILTER_INPUT_DESC,
             )

@@ -1,5 +1,7 @@
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from fastapi import Depends
 
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
@@ -9,8 +11,6 @@ from app.internal.crud import (
     get_ai_history_mapper,
 )
 from app.internal.models import AiHistory
-
-from fastapi import Depends
 
 
 class AiHistoryService:
@@ -24,7 +24,7 @@ class AiHistoryService:
         self._spring_client: SpringClient = SpringClient()
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
-        data: Dict[str, Any] = self._normalize_ai_history_data(ai_history)
+        data: dict[str, Any] = self._normalize_ai_history_data(ai_history)
         thinking: Optional[Any] = data.get("thinking")
         if thinking == "":
             thinking = None
@@ -39,9 +39,9 @@ class AiHistoryService:
 
         return await self.ai_history_mapper.create_ai_history_async(history, db)
 
-    async def get_all_ai_history(self, user_id: int, db: Any) -> list[Dict[str, Any]]:
-        data: List[
-            Dict[str, Any]
+    async def get_all_ai_history(self, user_id: int, db: Any) -> list[dict[str, Any]]:
+        data: list[
+            dict[str, Any]
         ] = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
             db, user_id, None
         )
@@ -59,7 +59,7 @@ class AiHistoryService:
 
         await self.ai_history_mapper.delete_ai_history_by_userid_async(db, user_id)
 
-    async def get_ai_history_by_id(self, id: int, db: Any) -> Optional[Dict[str, Any]]:
+    async def get_ai_history_by_id(self, id: int, db: Any) -> Optional[dict[str, Any]]:
         """根据ID查询AI历史记录"""
         history = await self.ai_history_mapper.get_ai_history_by_id_async(db, id)
         if not history:
@@ -68,7 +68,7 @@ class AiHistoryService:
 
     async def update_ai_history(
         self, id: int, data: Any, db: Any
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """更新AI历史记录"""
         history = await self.ai_history_mapper.get_ai_history_by_id_async(db, id)
         if not history:
@@ -100,7 +100,7 @@ class AiHistoryService:
         return True
 
     @staticmethod
-    def _serialize_ai_history(ai_history: AiHistory) -> Dict[str, Any]:
+    def _serialize_ai_history(ai_history: AiHistory) -> dict[str, Any]:
         """将 ORM 对象转换为可序列化的响应字典"""
         fmt = "%Y-%m-%d %H:%M:%S"
         return {
@@ -119,7 +119,7 @@ class AiHistoryService:
         }
 
     @staticmethod
-    def _normalize_ai_history_data(ai_history: Any) -> Dict[str, Any]:
+    def _normalize_ai_history_data(ai_history: Any) -> dict[str, Any]:
         """统一兼容 ORM 实体、Pydantic 模型和字典对象"""
         if isinstance(ai_history, AiHistory):
             return {

@@ -3,19 +3,19 @@ import re
 import time
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import jieba.analyse
+from fastapi import Depends
+
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.clients import SpringClient
 
-from fastapi import Depends
-
-from ..llm.extend.glmService import GlmService, get_glm_service
 from ..llm.extend.geminiService import GeminiService, get_gemini_service
+from ..llm.extend.glmService import GlmService, get_glm_service
 from ..llm.extend.gptService import GptService, get_gpt_service
 
 
@@ -53,7 +53,7 @@ class GenerateService:
     @staticmethod
     def _build_comment_data(
         article_id: int, user_id: int, content: str, star: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """构造Spring评论接口请求数据（Spring使用SNAKE_CASE反序列化，键名需下划线）"""
         now = datetime.now().isoformat()
         return {
@@ -162,24 +162,22 @@ class GenerateService:
             response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 2.4 解析大模型返回结果
-        content_glm, star_glm = self._parse_ai_comment_response(
-            response_glm
-        )
+        content_glm, star_glm = self._parse_ai_comment_response(response_glm)
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
         content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
         # 3. 构建AI评论对象
-        glm_ai_comment: Dict[str, Any] = self._build_comment_data(
+        glm_ai_comment: dict[str, Any] = self._build_comment_data(
             article_id, 1001, content_glm, star_glm
         )
-        gemini_ai_comment: Dict[str, Any] = self._build_comment_data(
+        gemini_ai_comment: dict[str, Any] = self._build_comment_data(
             article_id, 1002, content_gemini, star_gemini
         )
-        gpt_ai_comment: Dict[str, Any] = self._build_comment_data(
+        gpt_ai_comment: dict[str, Any] = self._build_comment_data(
             article_id, 1003, content_gpt, star_gpt
         )
 
         # 4. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
-        async def _insert_comment(comment: Dict[str, Any]) -> None:
+        async def _insert_comment(comment: dict[str, Any]) -> None:
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(
@@ -226,9 +224,7 @@ class GenerateService:
 
         return content, star
 
-    async def generate_ai_comments_with_reference(
-        self, article_id: int
-    ) -> None:
+    async def generate_ai_comments_with_reference(self, article_id: int) -> None:
         """
         基于权威参考文本生成AI评论
         获取文章的子分类权威参考文本，提取内容，然后调用AI服务进行评价
@@ -339,9 +335,7 @@ class GenerateService:
                 summaries = []
                 if isinstance(summary_results[0], str) and summary_results[0]:
                     summaries.append(
-                        Messages.LLM_SUMMARY_RESULT_ENTRY(
-                            "GLM", summary_results[0]
-                        )
+                        Messages.LLM_SUMMARY_RESULT_ENTRY("GLM", summary_results[0])
                     )
                 if isinstance(summary_results[1], str) and summary_results[1]:
                     summaries.append(
@@ -453,9 +447,7 @@ class GenerateService:
 
         # 检查异常返回
         if isinstance(response_glm, Exception):
-            Logger.error(
-                Messages.LLM_REFERENCE_FINAL_FAILED("GLM", response_glm)
-            )
+            Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("GLM", response_glm))
             response_glm = Messages.GLM_CALL_FAILED_ERROR
         if isinstance(response_gemini, Exception):
             Logger.error(Messages.LLM_REFERENCE_FINAL_FAILED("Gemini", response_gemini))
@@ -465,25 +457,23 @@ class GenerateService:
             response_gpt = Messages.GPT_CALL_FAILED_ERROR
 
         # 7. 解析大模型返回结果
-        content_glm, star_glm = self._parse_ai_comment_response(
-            response_glm
-        )
+        content_glm, star_glm = self._parse_ai_comment_response(response_glm)
         content_gemini, star_gemini = self._parse_ai_comment_response(response_gemini)
         content_gpt, star_gpt = self._parse_ai_comment_response(response_gpt)
 
         # 8. 构建AI评论对象
-        glm_ai_comment: Dict[str, Any] = self._build_comment_data(
+        glm_ai_comment: dict[str, Any] = self._build_comment_data(
             article_id, 1001, content_glm, star_glm
         )
-        gemini_ai_comment: Dict[str, Any] = self._build_comment_data(
+        gemini_ai_comment: dict[str, Any] = self._build_comment_data(
             article_id, 1002, content_gemini, star_gemini
         )
-        gpt_ai_comment: Dict[str, Any] = self._build_comment_data(
+        gpt_ai_comment: dict[str, Any] = self._build_comment_data(
             article_id, 1003, content_gpt, star_gpt
         )
 
         # 9. 保存AI评论到数据库（通过Spring远程调用并行插入，互不干扰）
-        async def _insert_comment_ref(comment: Dict[str, Any]) -> None:
+        async def _insert_comment_ref(comment: dict[str, Any]) -> None:
             await self._spring_client.create_comment(comment)
 
         await asyncio.gather(
@@ -495,7 +485,7 @@ class GenerateService:
 
     async def generate_authority_article_with_ai_summaries(
         self, reference_type: str, reference_value: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         生成权威文章 - 使用三个大模型并发对提取的内容进行总结
 
@@ -559,9 +549,7 @@ class GenerateService:
                     return result
                 except Exception as e:
                     elapsed = time.time() - start
-                    Logger.error(
-                        Messages.LLM_SUMMARIZE_FAILED_TIMED("GLM", elapsed, e)
-                    )
+                    Logger.error(Messages.LLM_SUMMARIZE_FAILED_TIMED("GLM", elapsed, e))
                     return None
 
             async def timed_gemini_summarize() -> Optional[str]:

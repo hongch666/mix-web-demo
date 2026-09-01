@@ -1,11 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any
+
+from fastapi import APIRouter, Request
 
 from app.common.decorators import log, requireAdmin
 from app.core.base import ApiResponse, success
 from app.dependencies import AnalyzeServiceDep, DbSession
 from app.internal.schemas import ListResponse
-
-from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze",
@@ -27,7 +27,7 @@ async def get_top10_articles(
 ) -> ApiResponse:
     """获取前10篇文章接口"""
 
-    articles: List[Dict[str, Any]] = await analyzeService.get_top10_articles_service_sf(
+    articles: list[dict[str, Any]] = await analyzeService.get_top10_articles_service_sf(
         db
     )
     return success(ListResponse(total=len(articles), list=articles))
@@ -83,7 +83,7 @@ async def get_article_statistics(
 ) -> ApiResponse:
     """获取文章统计信息"""
 
-    result: Dict[str, Any] = await analyzeService.get_article_statistics_service_sf(db)
+    result: dict[str, Any] = await analyzeService.get_article_statistics_service_sf(db)
     return success(result)
 
 
@@ -101,8 +101,8 @@ async def get_article_count_by_category(
 ) -> ApiResponse:
     """按大分类统计文章数量"""
 
-    result: List[
-        Dict[str, Any]
+    result: list[
+        dict[str, Any]
     ] = await analyzeService.get_category_article_count_service_sf(db)
     return success(ListResponse(total=len(result), list=result))
 
@@ -121,7 +121,7 @@ async def get_monthly_publish_count(
 ) -> ApiResponse:
     """获取月度文章发布统计"""
 
-    result: List[
-        Dict[str, Any]
+    result: list[
+        dict[str, Any]
     ] = await analyzeService.get_monthly_publish_count_service_sf(db)
     return success(ListResponse(total=len(result), list=result))

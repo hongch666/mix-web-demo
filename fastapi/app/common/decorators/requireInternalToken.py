@@ -1,14 +1,15 @@
 import inspect
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Optional, TypeVar
+
+from fastapi import Request
 
 from app.common.middleware import get_current_internal_token
 from app.core.auth import InternalTokenUtil
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
-
-from fastapi import Request
 
 T = TypeVar("T", bound=Callable[..., Any])
 
@@ -65,7 +66,7 @@ def requireInternalToken(
             try:
                 # 验证令牌
                 internal_token_util: InternalTokenUtil = InternalTokenUtil()
-                claims: Dict[str, Any] = internal_token_util.validate_internal_token(
+                claims: dict[str, Any] = internal_token_util.validate_internal_token(
                     token
                 )
 
@@ -116,7 +117,7 @@ def requireInternalToken(
 
 
 def _get_request_from_args(
-    args: tuple[Any, ...], kwargs: Dict[str, Any]
+    args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> Optional[Request]:
     """
     从函数参数中提取 Request 对象

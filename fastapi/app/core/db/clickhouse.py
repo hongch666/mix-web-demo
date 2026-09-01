@@ -1,19 +1,20 @@
 import asyncio
 import time
 from threading import Condition, Lock
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from clickhouse_driver import Client
 
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages
-from clickhouse_driver import Client
 
 
 class ClickhouseConnectionPool:
     """ClickHouse 连接池 - 单例模式"""
 
     _instance: Optional["ClickhouseConnectionPool"] = None
-    _connections: List[Any] = []
+    _connections: list[Any] = []
     _max_connections: int = 10
     _conn_count: int = 0  # 统计创建的连接数
     _active_connections: int = 0
@@ -54,7 +55,7 @@ class ClickhouseConnectionPool:
                 return conn
 
         # 如果池为空，创建新连接
-        clickhouse_config: Dict[str, Any] = load_config("database")["clickhouse"]
+        clickhouse_config: dict[str, Any] = load_config("database")["clickhouse"]
         ch_host: str = str(clickhouse_config["host"])
         ch_port: int = int(clickhouse_config["port"])
         ch_database: str = str(clickhouse_config["database"])

@@ -1,5 +1,3 @@
-from typing import List, Type
-
 from .contextMiddleware import (
     ContextMiddleware,
     get_current_internal_token,
@@ -9,9 +7,9 @@ from .contextMiddleware import (
     get_current_username,
 )
 
-middlewares: List[Type[ContextMiddleware]] = [ContextMiddleware]
+middlewares: list[type[ContextMiddleware]] = [ContextMiddleware]
 
-__all__: List[str] = [
+__all__: list[str] = [
     "ContextMiddleware",
     "get_current_user_id",
     "get_current_username",

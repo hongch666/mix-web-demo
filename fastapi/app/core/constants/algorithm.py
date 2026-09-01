@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from .defaults import Defaults
 
 
@@ -7,7 +5,7 @@ class AlgorithmConstants:
     """搜索排序算法相关常量。"""
 
     # 权重定义表：权重键、默认值、说明
-    WEIGHT_DEFINITIONS: Tuple[tuple[str, float | int, str], ...] = (
+    WEIGHT_DEFINITIONS: tuple[tuple[str, float | int, str], ...] = (
         # ES 传统8项权重
         ("es_score_weight", Defaults.SEARCH_ES_SCORE_WEIGHT, "ES BM25 相关度权重"),
         ("ai_rating_weight", Defaults.SEARCH_AI_RATING_WEIGHT, "AI 评分权重"),
@@ -67,7 +65,7 @@ class AlgorithmConstants:
     )
 
     # 脚本参数映射表：权重键、脚本参数名、说明
-    SCRIPT_PARAM_MAPPINGS: Tuple[tuple[str, str, str], ...] = (
+    SCRIPT_PARAM_MAPPINGS: tuple[tuple[str, str, str], ...] = (
         # ES 传统8项权重
         ("es_score_weight", "esWeight", "ES BM25 相关度权重"),
         ("ai_rating_weight", "aiWeight", "AI 评分权重"),

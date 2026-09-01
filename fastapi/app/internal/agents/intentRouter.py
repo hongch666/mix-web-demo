@@ -1,11 +1,12 @@
-from typing import Any, Literal, Optional, Tuple
+from typing import Any, Literal, Optional
 
-from app.core.base import Logger
-from app.core.constants import Messages, Prompts
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+
+from app.core.base import Logger
+from app.core.constants import Messages, Prompts
 
 from .userPermissionManager import UserPermissionManager
 
@@ -83,9 +84,7 @@ class IntentRouter:
                     self.intent_prompt
                     | self.llm.with_structured_output(StructuredIntent)
                 )
-                self.logger.info(
-                    Messages.INTENT_ROUTER_STRUCTURED_OUTPUT_READY
-                )
+                self.logger.info(Messages.INTENT_ROUTER_STRUCTURED_OUTPUT_READY)
             except Exception as e:
                 self._use_structured_output = False
                 self.logger.warning(Messages.INTENT_STRUCTURED_OUTPUT_UNAVAILABLE(e))
@@ -171,7 +170,11 @@ class IntentRouter:
             or "search" in normalized_text
         ):
             return "article_search"
-        elif "log" in normalized_text or "日志" in normalized_text or "活动" in normalized_text:
+        elif (
+            "log" in normalized_text
+            or "日志" in normalized_text
+            or "活动" in normalized_text
+        ):
             return "log_analysis"
         elif (
             "knowledge" in normalized_text
@@ -181,7 +184,11 @@ class IntentRouter:
             or "关系" in normalized_text
         ):
             return "knowledge_query"
-        elif "general" in normalized_text or "chat" in normalized_text or "闲聊" in normalized_text:
+        elif (
+            "general" in normalized_text
+            or "chat" in normalized_text
+            or "闲聊" in normalized_text
+        ):
             return "general_chat"
         return "article_search"
 
@@ -191,7 +198,7 @@ class IntentRouter:
         user_id: Optional[int] = None,
         db: Optional[Session] = None,
         runnable_config: Optional[dict] = None,
-    ) -> Tuple[IntentType, bool, str, IntentResolution]:
+    ) -> tuple[IntentType, bool, str, IntentResolution]:
         """异步路由用户问题并检查权限
 
         Returns:

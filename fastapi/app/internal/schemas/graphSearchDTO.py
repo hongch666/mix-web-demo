@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -14,10 +14,10 @@ class GraphSearchEnhanceReq(BaseModel):
 
     userId: Optional[int] = Alias("userId", default=None)
     keyword: str = ""
-    articleIds: List[int] = Alias("articleIds", default_factory=list)
+    articleIds: list[int] = Alias("articleIds", default_factory=list)
     categoryName: str = Alias("categoryName", default="")
     subCategoryName: str = Alias("subCategoryName", default="")
-    tags: List[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
     limit: int = 50
     mode: str = "hybrid"
 
@@ -39,12 +39,12 @@ class GraphSearchEnhanceItemDTO(BaseModel):
     articleId: int = Alias("articleId")
     graphScore: float = Alias("graphScore")
     reason: str
-    relations: List[GraphRelationDTO] = Field(default_factory=list)
-    matchedTags: List[str] = Alias("matchedTags", default_factory=list)
-    matchedPaths: List[str] = Alias("matchedPaths", default_factory=list)
+    relations: list[GraphRelationDTO] = Field(default_factory=list)
+    matchedTags: list[str] = Alias("matchedTags", default_factory=list)
+    matchedPaths: list[str] = Alias("matchedPaths", default_factory=list)
 
 
 class GraphSearchEnhanceResp(BaseModel):
     """图谱搜索增强响应"""
 
-    items: List[GraphSearchEnhanceItemDTO] = Field(default_factory=list)
+    items: list[GraphSearchEnhanceItemDTO] = Field(default_factory=list)

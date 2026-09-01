@@ -1,5 +1,3 @@
-from typing import List
-
 from .logger import (
     Logger,
     SimpleLogger,
@@ -12,7 +10,7 @@ from .logger import (
 )
 from .response import ApiResponse, error, success
 
-__all__: List[str] = [
+__all__: list[str] = [
     "logger",
     "success",
     "error",

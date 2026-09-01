@@ -1,11 +1,8 @@
 import traceback
 from collections.abc import AsyncGenerator
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import quote_plus
 
-from app.core.base import Logger
-from app.core.config import load_config
-from app.core.constants import Messages
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -14,10 +11,14 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import declarative_base
 
+from app.core.base import Logger
+from app.core.config import load_config
+from app.core.constants import Messages
+
 Base = declarative_base()
 
-server_config: Dict[str, Any] = load_config("server")
-mysql_config: Dict[str, Any] = load_config("database")["mysql"]
+server_config: dict[str, Any] = load_config("server")
+mysql_config: dict[str, Any] = load_config("database")["mysql"]
 SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 HOST: str = mysql_config["host"]
 PORT: int = mysql_config["port"]

@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import APIRouter
 
 from .aiHistory.aiHistoryRouter import router as aiHistoryRouter
@@ -15,7 +13,7 @@ from .user.userRouter import router as userRouter
 from .vectorSearch.vectorSearchRouter import router as vectorSearchRouter
 
 # 所有路由列表
-routers: List[APIRouter] = [
+routers: list[APIRouter] = [
     analyzeRouter,
     apiLogRouter,
     chatRouter,
@@ -29,7 +27,7 @@ routers: List[APIRouter] = [
     algorithmRouter,
 ]
 
-__all__: List[str] = [
+__all__: list[str] = [
     "routers",
     "userRouter",
     "chatRouter",

@@ -2,7 +2,7 @@ import asyncio
 import hashlib
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
@@ -54,9 +54,9 @@ class KnowledgeGraphSyncService:
 
     @staticmethod
     def _build_article_tag_relations(
-        articles: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        relations: List[Dict[str, Any]] = []
+        articles: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        relations: list[dict[str, Any]] = []
         for article in articles:
             article_id = article.get("id")
             tags = str(article.get("tags") or "")
@@ -66,7 +66,7 @@ class KnowledgeGraphSyncService:
 
     async def _fetch_snapshot(
         self, last_sync_time: Optional[datetime] = None
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """通过Spring各模块独立接口并行获取业务表数据，避免直连MySQL。"""
         updated_after = last_sync_time.isoformat() if last_sync_time else None
         # 同步类抓取返回数据量可能较大（全量几千行），使用专用大超时避免命中
@@ -88,14 +88,30 @@ class KnowledgeGraphSyncService:
             comments,
             focus,
         ) = await asyncio.gather(
-            self.spring_client.get_neo4j_sync_users(updated_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_categories(categories_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_sub_categories(sub_categories_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_articles(updated_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_likes(updated_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_collects(updated_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_comments(updated_after, timeout=fetch_timeout),
-            self.spring_client.get_neo4j_sync_focus(updated_after, timeout=fetch_timeout),
+            self.spring_client.get_neo4j_sync_users(
+                updated_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_categories(
+                categories_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_sub_categories(
+                sub_categories_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_articles(
+                updated_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_likes(
+                updated_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_collects(
+                updated_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_comments(
+                updated_after, timeout=fetch_timeout
+            ),
+            self.spring_client.get_neo4j_sync_focus(
+                updated_after, timeout=fetch_timeout
+            ),
         )
         return {
             "users": users,
@@ -108,7 +124,7 @@ class KnowledgeGraphSyncService:
             "focus": focus,
         }
 
-    def _normalize_users(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_users(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "id": int(row.get("id")),
@@ -124,7 +140,7 @@ class KnowledgeGraphSyncService:
             if row.get("id") is not None
         ]
 
-    def _normalize_categories(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_categories(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "id": int(row["id"]),
@@ -136,8 +152,8 @@ class KnowledgeGraphSyncService:
         ]
 
     def _normalize_sub_categories(
-        self, rows: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, rows: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         return [
             {
                 "id": int(row["id"]),
@@ -151,7 +167,7 @@ class KnowledgeGraphSyncService:
             if row.get("id") is not None
         ]
 
-    def _normalize_articles(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_articles(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "id": int(row["id"]),
@@ -176,7 +192,7 @@ class KnowledgeGraphSyncService:
             if row.get("id") is not None
         ]
 
-    def _normalize_likes(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_likes(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "userId": int(row["user_id"]),
@@ -187,10 +203,10 @@ class KnowledgeGraphSyncService:
             if row.get("user_id") is not None and row.get("article_id") is not None
         ]
 
-    def _normalize_collects(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_collects(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return self._normalize_likes(rows)
 
-    def _normalize_comments(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_comments(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "commentId": int(row["id"]),
@@ -202,7 +218,7 @@ class KnowledgeGraphSyncService:
             if row.get("id") is not None
         ]
 
-    def _normalize_focus(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _normalize_focus(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
             {
                 "followerId": int(row["user_id"]),
@@ -219,7 +235,7 @@ class KnowledgeGraphSyncService:
 
     async def _batch_write(
         self,
-        rows: List[Dict[str, Any]],
+        rows: list[dict[str, Any]],
         cypher: str,
         label: str,
         batch_size: int = 500,
@@ -237,16 +253,14 @@ class KnowledgeGraphSyncService:
         return total
 
     async def _cleanup_write(
-        self, cypher: str, params: Dict[str, Any], label: str
+        self, cypher: str, params: dict[str, Any], label: str
     ) -> int:
         # 防御性保护：当待保留的键集合为空时，Cypher 的 `WHERE NOT key IN []`
         # 会等价于 `WHERE true`，从而误删图中全部对应关系/节点。这通常意味着
         # 上游快照抓取失败（返回空），属于异常情况，必须跳过而非执行全量删除。
         keep_keys = params.get("keys") or params.get("ids") or params.get("names")
         if not keep_keys:
-            self.logger.warning(
-                Messages.NEO4J_CLEANUP_SKIP_EMPTY(label)
-            )
+            self.logger.warning(Messages.NEO4J_CLEANUP_SKIP_EMPTY(label))
             return 0
         total_deleted = 0
         if "keys" in params:
@@ -281,15 +295,15 @@ class KnowledgeGraphSyncService:
 
     async def _cleanup_deleted_graph_data(
         self,
-        users: Optional[List[Dict[str, Any]]] = None,
-        categories: Optional[List[Dict[str, Any]]] = None,
-        sub_categories: Optional[List[Dict[str, Any]]] = None,
-        articles: Optional[List[Dict[str, Any]]] = None,
-        likes: Optional[List[Dict[str, Any]]] = None,
-        collects: Optional[List[Dict[str, Any]]] = None,
-        comments: Optional[List[Dict[str, Any]]] = None,
-        focus: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, int]:
+        users: Optional[list[dict[str, Any]]] = None,
+        categories: Optional[list[dict[str, Any]]] = None,
+        sub_categories: Optional[list[dict[str, Any]]] = None,
+        articles: Optional[list[dict[str, Any]]] = None,
+        likes: Optional[list[dict[str, Any]]] = None,
+        collects: Optional[list[dict[str, Any]]] = None,
+        comments: Optional[list[dict[str, Any]]] = None,
+        focus: Optional[list[dict[str, Any]]] = None,
+    ) -> dict[str, int]:
         """按 MySQL 当前完整快照删除 Neo4j 中已经不存在的节点和关系
 
         注意：调用方（sync_all / sync_incremental）已经在第一阶段抓取并归一化了
@@ -310,7 +324,7 @@ class KnowledgeGraphSyncService:
         focus = focus or []
         article_tag_relations = self._build_article_tag_relations(articles)
 
-        cleanup_result: Dict[str, int] = {}
+        cleanup_result: dict[str, int] = {}
 
         cleanup_result["published_by"] = await self._cleanup_write(
             Scripts.NEO4J_CLEANUP_PUBLISHED_BY_CYPHER,
@@ -447,12 +461,12 @@ class KnowledgeGraphSyncService:
         self.logger.info(Messages.NEO4J_SYNC_CLEANUP_COMPLETE(cleanup_result))
         return cleanup_result
 
-    async def sync_all(self) -> Dict[str, int]:
+    async def sync_all(self) -> dict[str, int]:
         """全量同步 MySQL 数据到 Neo4j"""
         self.logger.info(Messages.NEO4J_SYNC_START_MESSAGE)
         await self._ensure_schema()
 
-        result: Dict[str, int] = {}
+        result: dict[str, int] = {}
 
         snapshot = await self._fetch_snapshot()
         users = self._normalize_users(snapshot.get("users", []))
@@ -487,8 +501,8 @@ class KnowledgeGraphSyncService:
             Messages.NEO4J_LABEL_ARTICLE,
         )
 
-        tag_names: Set[str] = set()
-        article_tag_relations: List[Dict[str, Any]] = []
+        tag_names: set[str] = set()
+        article_tag_relations: list[dict[str, Any]] = []
         for article in articles:
             tags = str(article.get("tags") or "")
             for tag_name in [item.strip() for item in tags.split(",") if item.strip()]:
@@ -572,7 +586,7 @@ class KnowledgeGraphSyncService:
 
     async def sync_incremental(
         self, last_sync_time: Optional[datetime]
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         """增量同步 MySQL 数据到 Neo4j，如果图为空则退化为全量同步"""
         await self._ensure_schema()
 
@@ -587,7 +601,7 @@ class KnowledgeGraphSyncService:
 
         self.logger.info(Messages.NEO4J_INCREMENTAL_SYNC_START_MESSAGE)
 
-        result: Dict[str, int] = {}
+        result: dict[str, int] = {}
 
         snapshot = await self._fetch_snapshot(last_sync_time)
         users = self._normalize_users(snapshot.get("users", []))
@@ -622,8 +636,8 @@ class KnowledgeGraphSyncService:
             Messages.NEO4J_LABEL_ARTICLE,
         )
 
-        tag_names: Set[str] = set()
-        article_tag_relations: List[Dict[str, Any]] = []
+        tag_names: set[str] = set()
+        article_tag_relations: list[dict[str, Any]] = []
         for article in articles:
             tags = str(article.get("tags") or "")
             for tag_name in [item.strip() for item in tags.split(",") if item.strip()]:
@@ -741,7 +755,7 @@ async def _get_last_sync_time() -> Optional[datetime]:
     return None
 
 
-async def _sync_mysql_to_neo4j(force_full: bool = False) -> Dict[str, int]:
+async def _sync_mysql_to_neo4j(force_full: bool = False) -> dict[str, int]:
     """同步 MySQL 数据到 Neo4j
 
     force_full=False（默认，增量同步）：仅同步窗口内变更的数据，不做全图清理，

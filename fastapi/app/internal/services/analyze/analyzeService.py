@@ -2,9 +2,16 @@ import asyncio
 import os
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Optional
+
+from dateutil.relativedelta import relativedelta
+from fastapi import Depends
+from openpyxl import Workbook
+from sqlalchemy.ext.asyncio import AsyncSession
+from wordcloud import WordCloud
 
 from app.core.base import Logger
 from app.core.config import load_config
@@ -27,12 +34,6 @@ from app.internal.crud import (
     ArticleMapper,
     get_article_mapper,
 )
-from dateutil.relativedelta import relativedelta
-from openpyxl import Workbook
-from sqlalchemy.ext.asyncio import AsyncSession
-from wordcloud import WordCloud
-
-from fastapi import Depends
 
 
 class AnalyzeService:
@@ -54,7 +55,7 @@ class AnalyzeService:
         self._publish_time_cache: Optional[PublishTimeCache] = publish_time_cache
         self._statistics_cache: Optional[StatisticsCache] = statistics_cache
         self._wordcloud_cache: Optional[WordcloudCache] = wordcloud_cache
-        self._singleflight_locks: Dict[str, asyncio.Lock] = {}
+        self._singleflight_locks: dict[str, asyncio.Lock] = {}
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
         # 初始化远程服务客户端
         self._nestjs_client: NestjsClient = NestjsClient()
@@ -89,7 +90,7 @@ class AnalyzeService:
             Logger.info(Messages.SINGLEFLIGHT_KEY_START(key))
             return await loader()
 
-    async def _get_top10_cached(self) -> Optional[List[Dict[str, Any]]]:
+    async def _get_top10_cached(self) -> Optional[list[dict[str, Any]]]:
         ch_conn: Optional[Any] = None
         try:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
@@ -108,7 +109,7 @@ class AnalyzeService:
             Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_wordcloud_cached", e))
             return None
 
-    async def _get_statistics_cached(self) -> Optional[Dict[str, Any]]:
+    async def _get_statistics_cached(self) -> Optional[dict[str, Any]]:
         try:
             return await self._statistics_cache.get()
         except Exception as e:
@@ -117,7 +118,7 @@ class AnalyzeService:
 
     async def _get_category_article_count_cached(
         self,
-    ) -> Optional[List[Dict[str, Any]]]:
+    ) -> Optional[list[dict[str, Any]]]:
         ch_conn: Optional[Any] = None
         try:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
@@ -133,7 +134,7 @@ class AnalyzeService:
             if ch_conn:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
-    async def _get_monthly_publish_count_cached(self) -> Optional[List[Dict[str, Any]]]:
+    async def _get_monthly_publish_count_cached(self) -> Optional[list[dict[str, Any]]]:
         ch_conn: Optional[Any] = None
         try:
             ch_conn = await self.articleMapper.get_clickhouse_connection_async()
@@ -149,7 +150,7 @@ class AnalyzeService:
 
     async def get_top10_articles_service_sf(
         self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:top10",
             self._get_top10_cached,
@@ -165,7 +166,7 @@ class AnalyzeService:
 
     async def get_article_statistics_service_sf(
         self, db: AsyncSession
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return await self._run_with_singleflight(
             "analyze:statistics",
             self._get_statistics_cached,
@@ -174,7 +175,7 @@ class AnalyzeService:
 
     async def get_category_article_count_service_sf(
         self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:category_article_count",
             self._get_category_article_count_cached,
@@ -183,7 +184,7 @@ class AnalyzeService:
 
     async def get_monthly_publish_count_service_sf(
         self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         return await self._run_with_singleflight(
             "analyze:monthly_publish_count",
             self._get_monthly_publish_count_cached,
@@ -204,7 +205,7 @@ class AnalyzeService:
 
     async def get_top10_articles_service(
         self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         获取 Top10 文章服务
 
@@ -213,7 +214,7 @@ class AnalyzeService:
         2. 缓存未命中时，按优先级查询: ClickHouse → DB
         3. 查询成功后更新缓存
         """
-        articles: Optional[List[Any]] = None
+        articles: Optional[list[Any]] = None
         ch_conn: Optional[Any] = None
         data_source: Optional[str] = None
         start: float = time.time()
@@ -221,7 +222,7 @@ class AnalyzeService:
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
                 cached_result: Optional[
-                    List[Dict[str, Any]]
+                    list[dict[str, Any]]
                 ] = await self._article_cache.get(ch_conn)
                 if cached_result:
                     total_time: float = time.time() - start
@@ -255,16 +256,16 @@ class AnalyzeService:
                 Logger.info(Messages.TOP10_DB_SOURCE)
 
             if articles and isinstance(articles[0], dict):
-                user_ids: List[int] = [
+                user_ids: list[int] = [
                     article.get("user_id")
                     for article in articles
                     if article.get("user_id")
                 ]
                 if user_ids:
-                    users: List[
-                        Dict[str, Any]
+                    users: list[
+                        dict[str, Any]
                     ] = await self._spring_client.get_users_by_ids(user_ids)
-                    user_id_to_name: Dict[int, str] = {
+                    user_id_to_name: dict[int, str] = {
                         user["id"]: user["name"] for user in users
                     }
                     for article in articles:
@@ -282,7 +283,7 @@ class AnalyzeService:
                     ):
                         article["update_at"] = article["update_at"].isoformat()
 
-                result: List[Dict[str, Any]] = articles
+                result: list[dict[str, Any]] = articles
             else:
                 # 远程调用始终返回 dict，此处兜底处理
                 result = articles if articles else []
@@ -304,9 +305,9 @@ class AnalyzeService:
             if ch_conn:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
-    async def get_keywords_dic(self) -> Dict[str, int]:
-        all_keywords: List[str] = await self._nestjs_client.get_search_keywords()
-        keywords_dic: Dict[str, int] = {}
+    async def get_keywords_dic(self) -> dict[str, int]:
+        all_keywords: list[str] = await self._nestjs_client.get_search_keywords()
+        keywords_dic: dict[str, int] = {}
         for keyword in all_keywords:
             if keyword in keywords_dic:
                 keywords_dic[keyword] += 1
@@ -314,14 +315,14 @@ class AnalyzeService:
                 keywords_dic[keyword] = 1
         return keywords_dic
 
-    def generate_wordcloud(self, keywords_dic: Dict[str, int]) -> None:
+    def generate_wordcloud(self, keywords_dic: dict[str, int]) -> None:
         if len(keywords_dic) == 0:
             raise BusinessException(
                 Messages.KEYWORDS_EMPTY,
                 HttpCode.BAD_REQUEST,
                 Messages.ERROR_PARAM_PARSE_FAILED,
             )
-        wc_config: Dict[str, Any] = load_config("wordcloud")
+        wc_config: dict[str, Any] = load_config("wordcloud")
         FONT_PATH: str = wc_config["font_path"]
         WIDTH: int = wc_config["width"]
         HEIGHT: int = wc_config["height"]
@@ -345,7 +346,7 @@ class AnalyzeService:
         """远程调用 NestJS 上传文件到 OSS"""
 
         try:
-            result: Dict[str, Any] = await self._nestjs_client.upload_file(
+            result: dict[str, Any] = await self._nestjs_client.upload_file(
                 file_path, oss_path
             )
             oss_url: str = str(result.get("data", ""))
@@ -394,7 +395,7 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，生成词云图并上传 ==========
         Logger.info(Messages.WORDCLOUD_CACHE_FETCH_FAILED)
         # 获取关键词字典
-        keywords_dic: Dict[str, int] = await self.get_keywords_dic()
+        keywords_dic: dict[str, int] = await self.get_keywords_dic()
         # 生成词云图
         await asyncio.to_thread(self.generate_wordcloud, keywords_dic)
         # 上传到OSS
@@ -441,8 +442,8 @@ class AnalyzeService:
         worksheet.append(headers)
 
         total_rows: int = 0
-        rows: List[
-            Dict[str, Any]
+        rows: list[
+            dict[str, Any]
         ] = await self._spring_client.get_articles_for_excel_export()
         for item in rows:
             # 处理日期格式
@@ -485,7 +486,7 @@ class AnalyzeService:
         )
         return oss_url
 
-    async def get_article_statistics_service(self, db: AsyncSession) -> Dict[str, Any]:
+    async def get_article_statistics_service(self, db: AsyncSession) -> dict[str, Any]:
         """
         获取文章统计信息服务
         合并 mapper 层的方法，返回完整的统计数据
@@ -508,7 +509,7 @@ class AnalyzeService:
         start: float = time.time()
         # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            cached_result: Optional[Dict[str, Any]] = await self._statistics_cache.get()
+            cached_result: Optional[dict[str, Any]] = await self._statistics_cache.get()
             if cached_result:
                 total_time: float = time.time() - start
                 Logger.info(
@@ -523,7 +524,9 @@ class AnalyzeService:
         # ========== 步骤2: 缓存未命中，优先查询 ClickHouse ADS ==========
         Logger.info(Messages.STATISTICS_CACHE_FETCH_FAILED)
         try:
-            statistics = await self.articleMapper.get_platform_stats_clickhouse_mapper_async()
+            statistics = (
+                await self.articleMapper.get_platform_stats_clickhouse_mapper_async()
+            )
             await self._statistics_cache.set(statistics)
             Logger.info(Messages.STATISTICS_CLICKHOUSE_SOURCE)
             return statistics
@@ -556,7 +559,7 @@ class AnalyzeService:
             self._spring_client.get_average_collects(),
         )
 
-        statistics: Dict[str, Any] = {
+        statistics: dict[str, Any] = {
             "total_views": total_views,
             "total_articles": total_articles,
             "active_authors": active_authors,
@@ -584,7 +587,7 @@ class AnalyzeService:
 
     async def get_category_article_count_service(
         self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         获取按大分类统计的文章数量服务
 
@@ -605,7 +608,7 @@ class AnalyzeService:
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
                 cached_result: Optional[
-                    List[Dict[str, Any]]
+                    list[dict[str, Any]]
                 ] = await self._category_cache.get(ch_conn)
                 if cached_result:
                     total_time: float = time.time() - start
@@ -620,7 +623,7 @@ class AnalyzeService:
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
-            local_category_data: Optional[List[Dict[str, Any]]] = None
+            local_category_data: Optional[list[dict[str, Any]]] = None
             local_data_source: str = "DB"
 
             try:
@@ -665,11 +668,11 @@ class AnalyzeService:
                 self._spring_client.get_all_categories(),
                 self._spring_client.get_subcategories_with_parent(),
             )
-            sub_cat_map: Dict[int, Dict[str, Any]] = {
+            sub_cat_map: dict[int, dict[str, Any]] = {
                 sc["id"]: sc for sc in subcategories
             }
 
-            parent_category_count: Dict[int, Dict[str, Any]] = {}
+            parent_category_count: dict[int, dict[str, Any]] = {}
             for category in all_categories:
                 parent_category_count[category["id"]] = {
                     "category_id": category["id"],
@@ -685,7 +688,7 @@ class AnalyzeService:
                 if parent_id and parent_id in parent_category_count:
                     parent_category_count[parent_id]["article_count"] += item["count"]
 
-            result: List[Dict[str, Any]] = list(parent_category_count.values())
+            result: list[dict[str, Any]] = list(parent_category_count.values())
             result.sort(key=lambda x: x["article_count"], reverse=True)
 
             non_zero_count: int = len([c for c in result if c["article_count"] > 0])
@@ -717,7 +720,7 @@ class AnalyzeService:
 
     async def get_monthly_publish_count_service(
         self, db: AsyncSession
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         获取按月份统计的文章发布数量服务
 
@@ -735,7 +738,7 @@ class AnalyzeService:
             try:
                 ch_conn = await self.articleMapper.get_clickhouse_connection_async()
                 cached_result: Optional[
-                    List[Dict[str, Any]]
+                    list[dict[str, Any]]
                 ] = await self._publish_time_cache.get(ch_conn)
                 if cached_result:
                     total_time: float = time.time() - start
@@ -750,7 +753,7 @@ class AnalyzeService:
 
             # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
             Logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
-            local_publish_data: Optional[List[Dict[str, Any]]] = None
+            local_publish_data: Optional[list[dict[str, Any]]] = None
             local_data_source: str = "DB"
 
             try:
@@ -773,16 +776,16 @@ class AnalyzeService:
                 Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
 
             now: datetime = datetime.now()
-            expected_months: List[str] = []
+            expected_months: list[str] = []
             for i in range(5, -1, -1):
                 month_date = now - relativedelta(months=i)
                 expected_months.append(month_date.strftime("%Y-%m"))
 
-            data_dict: Dict[str, int] = {
+            data_dict: dict[str, int] = {
                 item["year_month"]: item["count"] for item in local_publish_data
             }
 
-            result: List[Dict[str, Any]] = []
+            result: list[dict[str, Any]] = []
             for month in expected_months:
                 result.append({"year_month": month, "count": data_dict.get(month, 0)})
 

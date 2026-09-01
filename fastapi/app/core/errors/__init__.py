@@ -1,5 +1,3 @@
-from typing import List
-
 from .exceptionHandlers import (
     business_exception_handler,
     exception_handlers,
@@ -7,7 +5,7 @@ from .exceptionHandlers import (
 )
 from .exceptions import BusinessException
 
-__all__: List[str] = [
+__all__: list[str] = [
     "BusinessException",
     "global_exception_handler",
     "business_exception_handler",

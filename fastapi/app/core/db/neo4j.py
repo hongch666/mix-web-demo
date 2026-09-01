@@ -1,11 +1,12 @@
 import asyncio
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from neo4j import AsyncGraphDatabase, AsyncSession
 
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages
-from neo4j import AsyncGraphDatabase, AsyncSession
 
 
 class Neo4jClient:
@@ -17,13 +18,13 @@ class Neo4jClient:
         self.user: str = ""
         self.password: str = ""
         self.auth: Optional[tuple[str, str]] = None
-        self._drivers: Dict[int, Any] = {}
+        self._drivers: dict[int, Any] = {}
         self._initialize_config()
 
     def _initialize_config(self) -> None:
         """根据配置初始化 Neo4j 连接参数"""
         try:
-            neo4j_cfg: Dict[str, Any] = (load_config("database") or {}).get(
+            neo4j_cfg: dict[str, Any] = (load_config("database") or {}).get(
                 "neo4j"
             ) or {}
             self.uri = str(neo4j_cfg["uri"]).strip()
@@ -69,8 +70,8 @@ class Neo4jClient:
         return driver.session()
 
     async def run_query(
-        self, cypher: str, params: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        self, cypher: str, params: Optional[dict[str, Any]] = None
+    ) -> list[dict[str, Any]]:
         """执行只读 Cypher 查询"""
         session: Optional[AsyncSession] = await self.get_session()
         if session is None:
@@ -86,7 +87,7 @@ class Neo4jClient:
             await session.close()
 
     async def run_write_query(
-        self, cypher: str, params: Optional[Dict[str, Any]] = None
+        self, cypher: str, params: Optional[dict[str, Any]] = None
     ) -> Optional[Any]:
         """执行写入类 Cypher 语句"""
         session: Optional[AsyncSession] = await self.get_session()
@@ -109,7 +110,7 @@ class Neo4jClient:
         except RuntimeError:
             current_loop_id = None
 
-        drivers: List[Any] = list(self._drivers.values())
+        drivers: list[Any] = list(self._drivers.values())
         self._drivers.clear()
         for driver in drivers:
             await driver.close()

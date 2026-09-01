@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import os
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 from app.core.constants import Messages, Scripts
@@ -57,8 +57,8 @@ def _sanitize_string(value: str) -> str:
 
 
 def sanitize_metadata(
-    metadata: Optional[Dict[str, Any]],
-) -> Optional[Dict[str, Any]]:
+    metadata: Optional[dict[str, Any]],
+) -> Optional[dict[str, Any]]:
     """递归脱敏 metadata 字典，删除敏感键、截断长值
 
     Args:
@@ -105,16 +105,16 @@ def sanitize_tool_output(output: Any) -> str:
 
 
 def _sanitize_dict(
-    data: Dict[str, Any],
+    data: dict[str, Any],
     depth: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """递归脱敏字典"""
     if depth > Scripts.SANITIZER_MAX_DICT_DEPTH:
         return {
             "_truncated": Messages.SANITIZED_MAX_DEPTH(Scripts.SANITIZER_MAX_DICT_DEPTH)
         }
 
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     for key, value in data.items():
         if _is_sensitive_key(key):
             result[key] = "***已脱敏***"
@@ -134,14 +134,14 @@ def _sanitize_dict(
 
 
 def _sanitize_list(
-    data: List[Any],
+    data: list[Any],
     depth: int,
-) -> List[Any]:
+) -> list[Any]:
     """递归脱敏列表，限制最大长度"""
     if depth > Scripts.SANITIZER_MAX_DICT_DEPTH:
         return [Messages.SANITIZED_LIST_MAX_DEPTH(Scripts.SANITIZER_MAX_DICT_DEPTH)]
 
-    result: List[Any] = []
+    result: list[Any] = []
     for i, item in enumerate(data):
         if i >= Scripts.SANITIZER_MAX_LIST_LENGTH:
             result.append(Messages.SANITIZED_LIST_TRUNCATED(len(data)))

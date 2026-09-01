@@ -1,10 +1,11 @@
 from functools import lru_cache
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
+
+from sqlalchemy.orm import Session
 
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
 from app.internal.clients import SpringClient
-from sqlalchemy.orm import Session
 
 
 class UserPermissionManager:
@@ -67,19 +68,19 @@ class UserPermissionManager:
 
     async def can_access_sql_tools_async(
         self, user_id: int, db: Session, question: str = ""
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """异步检查用户是否有权使用 SQL 工具"""
         return await self.can_use_tool_async(user_id, db, "sql", question)
 
     async def can_access_mongodb_logs_async(
         self, user_id: int, db: Session, question: str = ""
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """异步检查用户是否有权查询 MongoDB 日志"""
         return await self.can_use_tool_async(user_id, db, "mongodb", question)
 
     async def can_use_tool_async(
         self, user_id: int, db: Session, tool_type: str, question: str = ""
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """异步检查用户是否有权使用指定工具"""
         if not user_id:
             tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
@@ -106,7 +107,7 @@ class UserPermissionManager:
 
     async def validate_database_query_permission_async(
         self, user_id: int, db: Session, question: str = ""
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """异步验证用户是否有权执行数据库查询"""
         return await self.can_use_tool_async(user_id, db, "sql", question)
 

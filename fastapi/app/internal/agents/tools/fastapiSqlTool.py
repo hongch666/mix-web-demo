@@ -1,14 +1,15 @@
 import json
 import re
 from functools import lru_cache
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from langchain_core.tools import StructuredTool
+from pydantic import BaseModel, Field
+from sqlalchemy import text
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.core.db import get_db
-from langchain_core.tools import StructuredTool
-from pydantic import BaseModel, Field
-from sqlalchemy import text
 
 
 class FastapiSqlTool:
@@ -53,7 +54,7 @@ class FastapiSqlTool:
             return error_msg
 
     async def execute_query(
-        self, query: str, params: Optional[Dict[str, Any]] = None
+        self, query: str, params: Optional[dict[str, Any]] = None
     ) -> str:
         """执行 FastAPI 本地 MySQL 只读 SQL 查询"""
         try:
@@ -116,7 +117,7 @@ class FastapiSqlTool:
             self.logger.error(error_msg)
             return error_msg
 
-    def get_langchain_tools(self) -> List[StructuredTool]:
+    def get_langchain_tools(self) -> list[StructuredTool]:
         """获取 LangChain Tool 对象列表"""
 
         class GetFastapiTableSchemaInput(BaseModel):
@@ -127,7 +128,7 @@ class FastapiSqlTool:
 
         class ExecuteFastapiSqlQueryInput(BaseModel):
             query: str = Field(description=Messages.SQL_TOOL_QUERY_INPUT_DESC)
-            params: Dict[str, Any] = Field(
+            params: dict[str, Any] = Field(
                 default_factory=dict,
                 description=Messages.SQL_TOOL_PARAMS_INPUT_DESC,
             )

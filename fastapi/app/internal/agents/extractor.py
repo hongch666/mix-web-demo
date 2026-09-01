@@ -1,15 +1,17 @@
 import os
 import re
+from collections.abc import Awaitable, Callable
 from functools import lru_cache
-from typing import Awaitable, Callable, List, Optional
+from typing import Optional
 
 import httpx
-from app.core.base import Logger
-from app.core.client import get_shared_http_client
-from app.core.constants import Defaults, Messages
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from app.core.base import Logger
+from app.core.client import get_shared_http_client
+from app.core.constants import Defaults, Messages
 
 
 class ReferenceContentExtractor:
@@ -34,7 +36,9 @@ class ReferenceContentExtractor:
                 )
             except Exception as e:
                 Logger.warning(
-                    Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_INIT_SPLITTER, e)
+                    Messages.REFERENCE_EXTRACTOR_ERROR(
+                        Messages.REFERENCE_ERR_INIT_SPLITTER, e
+                    )
                 )
 
     @staticmethod
@@ -81,7 +85,7 @@ class ReferenceContentExtractor:
 
         # 简单的关键要点提取策略
         sentences = re.split(r"[。！？]", text)
-        key_points: List[str] = []
+        key_points: list[str] = []
 
         # 优先选择包含关键词的句子
         keywords = Messages.KEY_POINT_KEYWORDS
@@ -117,7 +121,11 @@ class ReferenceContentExtractor:
             if not pdf_url:
                 return ""
 
-            Logger.info(Messages.REFERENCE_CONTENT_STARTED(Messages.REFERENCE_STEP_DOWNLOAD_PDF, pdf_url))
+            Logger.info(
+                Messages.REFERENCE_CONTENT_STARTED(
+                    Messages.REFERENCE_STEP_DOWNLOAD_PDF, pdf_url
+                )
+            )
 
             # 异步下载PDF到临时文件（PDF较大，使用独立客户端避免阻塞共享连接池超时）
             temp_pdf_path = Defaults.TEMP_PDF_PATH_TEMPLATE.format(hash(pdf_url))
@@ -130,7 +138,7 @@ class ReferenceContentExtractor:
 
             # 使用PyPDFLoader加载PDF
             loader: PyPDFLoader = PyPDFLoader(temp_pdf_path)
-            documents: List[Document] = loader.load()
+            documents: list[Document] = loader.load()
 
             # 提取文本内容
             full_text: str = ""
@@ -144,12 +152,18 @@ class ReferenceContentExtractor:
             key_points: str = cls._extract_key_points(full_text, max_length)
 
             Logger.info(
-                Messages.REFERENCE_CONTENT_COMPLETED(Messages.REFERENCE_STEP_EXTRACT_PDF, len(key_points))
+                Messages.REFERENCE_CONTENT_COMPLETED(
+                    Messages.REFERENCE_STEP_EXTRACT_PDF, len(key_points)
+                )
             )
             return key_points
 
         except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_EXTRACT_PDF, e))
+            Logger.error(
+                Messages.REFERENCE_EXTRACTOR_ERROR(
+                    Messages.REFERENCE_ERR_EXTRACT_PDF, e
+                )
+            )
             return ""
         finally:
             # 清理临时文件
@@ -166,7 +180,11 @@ class ReferenceContentExtractor:
             if not link_url:
                 return ""
 
-            Logger.info(Messages.REFERENCE_CONTENT_STARTED(Messages.REFERENCE_STEP_EXTRACT_LINK, link_url))
+            Logger.info(
+                Messages.REFERENCE_CONTENT_STARTED(
+                    Messages.REFERENCE_STEP_EXTRACT_LINK, link_url
+                )
+            )
 
             # 构造浏览器请求头，避免被反爬虫机制拒绝
             headers = Defaults.EXTRACTOR_REQUEST_HEADERS
@@ -194,12 +212,18 @@ class ReferenceContentExtractor:
             key_points: str = cls._extract_key_points(full_text, max_length)
 
             Logger.info(
-                Messages.REFERENCE_CONTENT_COMPLETED(Messages.REFERENCE_STEP_EXTRACT_LINK_CONTENT, len(key_points))
+                Messages.REFERENCE_CONTENT_COMPLETED(
+                    Messages.REFERENCE_STEP_EXTRACT_LINK_CONTENT, len(key_points)
+                )
             )
             return key_points
 
         except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_EXTRACT_LINK, e))
+            Logger.error(
+                Messages.REFERENCE_EXTRACTOR_ERROR(
+                    Messages.REFERENCE_ERR_EXTRACT_LINK, e
+                )
+            )
             return ""
 
     @classmethod
@@ -249,11 +273,15 @@ class ReferenceContentExtractor:
                 return raw_content
 
         except Exception as e:
-            Logger.error(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_EXTRACT_CONTENT, e))
+            Logger.error(
+                Messages.REFERENCE_EXTRACTOR_ERROR(
+                    Messages.REFERENCE_ERR_EXTRACT_CONTENT, e
+                )
+            )
             return ""
 
     @classmethod
-    def split_text(cls, text: str) -> List[str]:
+    def split_text(cls, text: str) -> list[str]:
         """分割长文本为多个块"""
         cls._init_text_splitter()
         if cls.TEXT_SPLITTER is None:
@@ -263,10 +291,12 @@ class ReferenceContentExtractor:
         try:
             # 创建文档对象
             doc: Document = Document(page_content=text)
-            chunks: List[Document] = cls.TEXT_SPLITTER.split_documents([doc])
+            chunks: list[Document] = cls.TEXT_SPLITTER.split_documents([doc])
             return [chunk.page_content for chunk in chunks]
         except Exception as e:
-            Logger.warning(Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_SPLIT_TEXT, e))
+            Logger.warning(
+                Messages.REFERENCE_EXTRACTOR_ERROR(Messages.REFERENCE_ERR_SPLIT_TEXT, e)
+            )
             return [text] if text else []
 
 

@@ -1,7 +1,15 @@
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import httpx
+from tenacity import (
+    AsyncRetrying,
+    RetryCallState,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
+
 from app.common.middleware import (
     get_current_session_id,
     get_current_token,
@@ -13,13 +21,6 @@ from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
-from tenacity import (
-    AsyncRetrying,
-    RetryCallState,
-    retry_if_exception,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from .nacos import get_service_instance
 
@@ -27,10 +28,10 @@ from .nacos import get_service_instance
 _shared_http_client: Optional[httpx.AsyncClient] = None
 
 # 远程调用配置（从 application.yaml 加载）
-_remote_call_config: Optional[Dict[str, Any]] = None
+_remote_call_config: Optional[dict[str, Any]] = None
 
 
-def _get_remote_call_config() -> Dict[str, Any]:
+def _get_remote_call_config() -> dict[str, Any]:
     """获取远程调用配置"""
     global _remote_call_config
     if _remote_call_config is None:
@@ -87,7 +88,7 @@ class SimpleCircuitBreaker:
             self.open_until = time.monotonic() + self.recovery_timeout
 
 
-_SERVICE_BREAKERS: Dict[str, SimpleCircuitBreaker] = {}
+_SERVICE_BREAKERS: dict[str, SimpleCircuitBreaker] = {}
 
 
 def _get_service_breaker(service_name: str) -> SimpleCircuitBreaker:
@@ -98,13 +99,13 @@ def _get_service_breaker(service_name: str) -> SimpleCircuitBreaker:
     return breaker
 
 
-def _build_default_headers() -> Dict[str, str]:
+def _build_default_headers() -> dict[str, str]:
     """构建基础用户上下文请求头"""
     user_id: Optional[int] = get_current_user_id()
     username: str = get_current_username() or ""
     session_id: str = get_current_session_id() or ""
     token: Optional[str] = get_current_token()
-    headers: Dict[str, str] = {
+    headers: dict[str, str] = {
         "X-User-Id": str(user_id) if user_id is not None else "",
         "X-Username": username,
         "X-Session-Id": session_id,
@@ -114,13 +115,13 @@ def _build_default_headers() -> Dict[str, str]:
     return headers
 
 
-def _build_internal_token_header(user_id: str) -> Dict[str, str]:
+def _build_internal_token_header(user_id: str) -> dict[str, str]:
     """构建内部服务令牌请求头"""
     try:
         internal_token_util: InternalTokenUtil = InternalTokenUtil()
         user_id_num: int = int(user_id) if user_id else -1
         final_user_id: int = user_id_num if user_id_num > 0 else -1
-        service_config: Dict[str, Any] = load_config("nacos")
+        service_config: dict[str, Any] = load_config("nacos")
         service_name_config: str = service_config["service_name"]
         internal_token: str = internal_token_util.generate_internal_token(
             final_user_id, service_name_config
@@ -131,17 +132,17 @@ def _build_internal_token_header(user_id: str) -> Dict[str, str]:
         return {}
 
 
-def _merge_headers(headers: Optional[Dict[str, str]]) -> Dict[str, str]:
+def _merge_headers(headers: Optional[dict[str, str]]) -> dict[str, str]:
     """合并默认请求头与调用方自定义请求头"""
-    default_headers: Dict[str, str] = _build_default_headers()
+    default_headers: dict[str, str] = _build_default_headers()
     default_headers.update(_build_internal_token_header(default_headers["X-User-Id"]))
-    merged_headers: Dict[str, str] = {**default_headers, **(headers or {})}
+    merged_headers: dict[str, str] = {**default_headers, **(headers or {})}
     return merged_headers
 
 
 def _resolve_service_url(service_name: str, path: str) -> str:
     """通过服务发现生成远程调用 URL"""
-    instance: Dict[str, Any] = get_service_instance(service_name)
+    instance: dict[str, Any] = get_service_instance(service_name)
     return f"http://{instance['ip']}:{instance['port']}{path}"
 
 
@@ -167,10 +168,10 @@ async def _request_remote_service(
     client: httpx.AsyncClient,
     method: str,
     url: str,
-    headers: Dict[str, str],
-    params: Optional[Dict[str, Any]],
-    data: Optional[Dict[str, Any]],
-    json: Optional[Dict[str, Any]],
+    headers: dict[str, str],
+    params: Optional[dict[str, Any]],
+    data: Optional[dict[str, Any]],
+    json: Optional[dict[str, Any]],
     timeout: Any,
 ) -> Any:
     """执行一次真正的异步远程请求
@@ -227,10 +228,10 @@ async def call_remote_service(
     service_name: str,
     path: str,
     method: str = "GET",
-    headers: Optional[Dict[str, str]] = None,
-    params: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    json: Optional[Dict[str, Any]] = None,
+    headers: Optional[dict[str, str]] = None,
+    params: Optional[dict[str, Any]] = None,
+    data: Optional[dict[str, Any]] = None,
+    json: Optional[dict[str, Any]] = None,
     retries: Optional[int] = None,
     timeout: Optional[int] = None,
 ) -> Any:
@@ -247,7 +248,7 @@ async def call_remote_service(
     if timeout is None:
         timeout = config.get("timeout")
 
-    merged_headers: Dict[str, str] = _merge_headers(headers)
+    merged_headers: dict[str, str] = _merge_headers(headers)
     breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
 
     # 优先使用共享长连接池，不可用时创建临时客户端
@@ -288,10 +289,10 @@ async def _call_with_client(
     service_name: str,
     path: str,
     method: str,
-    headers: Dict[str, str],
-    params: Optional[Dict[str, Any]],
-    data: Optional[Dict[str, Any]],
-    json: Optional[Dict[str, Any]],
+    headers: dict[str, str],
+    params: Optional[dict[str, Any]],
+    data: Optional[dict[str, Any]],
+    json: Optional[dict[str, Any]],
     retries: int,
     breaker: SimpleCircuitBreaker,
     timeout: int,

@@ -1,9 +1,10 @@
 from functools import lru_cache
-from typing import List, Optional
+from typing import Optional
 
-from app.internal.models import AiHistory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.internal.models import AiHistory
 
 
 class AiHistoryMapper:
@@ -19,7 +20,7 @@ class AiHistoryMapper:
 
     async def get_all_ai_history_by_userid_async(
         self, db: AsyncSession, user_id: int, limit: Optional[int]
-    ) -> List[AiHistory]:
+    ) -> list[AiHistory]:
         if limit is None:
             statement = (
                 select(AiHistory)

@@ -4,9 +4,10 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from threading import Lock
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import redis.asyncio as redis
+
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages
@@ -39,8 +40,8 @@ class RedisClient:
             self._init_lock = Lock()
 
     def _build_pool_params(self) -> dict[str, Any]:
-        redis_config: Dict[str, Any] = self._redis_config or {}
-        pool_params: Dict[str, Any] = {
+        redis_config: dict[str, Any] = self._redis_config or {}
+        pool_params: dict[str, Any] = {
             "host": redis_config["host"],
             "port": redis_config["port"],
             "db": redis_config["db"],
@@ -73,7 +74,7 @@ class RedisClient:
             if self._client is not None and self._client_loop_id == loop_id:
                 return self._client
 
-            pool_params: Dict[str, Any] = self._build_pool_params()
+            pool_params: dict[str, Any] = self._build_pool_params()
             self._pool = redis.ConnectionPool(**pool_params)
             self._client = redis.Redis(connection_pool=self._pool)
             self._client_loop_id = loop_id

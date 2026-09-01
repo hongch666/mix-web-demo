@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from app.core.client import call_remote_service
 from app.core.config import load_config
@@ -11,7 +11,7 @@ class NestjsClient:
 
     async def get_api_average_speed(self) -> Any:
         """远程调用 NestJS 获取所有接口的平均响应速度"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/api-logs/average-speed",
             method="GET",
@@ -20,7 +20,7 @@ class NestjsClient:
 
     async def get_called_count(self) -> Any:
         """远程调用 NestJS 获取接口调用次数"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/api-logs/called-count",
             method="GET",
@@ -29,7 +29,7 @@ class NestjsClient:
 
     async def get_article_view_distribution(self, user_id: int) -> Any:
         """远程调用 NestJS 获取用户文章浏览分布"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path=f"/article-logs/view-distribution/{user_id}",
             method="GET",
@@ -38,7 +38,7 @@ class NestjsClient:
 
     async def get_search_keywords(self) -> Any:
         """远程调用 NestJS 获取所有搜索关键词"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/article-logs/search-keywords",
             method="GET",
@@ -47,7 +47,7 @@ class NestjsClient:
 
     async def list_mongodb_collections(self) -> Any:
         """远程调用 NestJS 列出日志集合"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/mongo-tools/collections",
             method="GET",
@@ -55,10 +55,10 @@ class NestjsClient:
         return result.get("data", [])
 
     async def query_mongodb(
-        self, collection_name: str, filter_dict: Optional[Dict[str, Any]], limit: int
+        self, collection_name: str, filter_dict: Optional[dict[str, Any]], limit: int
     ) -> Any:
         """远程调用 NestJS 查询日志集合"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/mongo-tools/query",
             method="POST",
@@ -72,9 +72,9 @@ class NestjsClient:
 
     async def sync_article_logs(
         self, cursor: str = "", limit: int = 1000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """通过 NestJS 内部接口按 MongoDB ID 游标同步文章日志"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/article-logs/sync",
             method="GET",
@@ -82,9 +82,9 @@ class NestjsClient:
         )
         return result.get("data", {"list": [], "nextCursor": None})
 
-    async def upload_file(self, file_path: str, oss_path: str) -> Dict[str, Any]:
+    async def upload_file(self, file_path: str, oss_path: str) -> dict[str, Any]:
         """远程调用 NestJS 上传文件到 OSS"""
-        remote_call_config: Dict[str, Any] = load_config("remote_call")
+        remote_call_config: dict[str, Any] = load_config("remote_call")
         upload_timeout: int = int(remote_call_config.get("upload_timeout", 300))
         max_retries: int = int(remote_call_config.get("max_retries", 3))
         return await call_remote_service(
@@ -104,7 +104,7 @@ class NestjsClient:
     async def get_tables(self, table: Optional[str] = None) -> Any:
         """获取 MySQL 表结构信息"""
         params = {"table": table} if table else None
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/sql-tools/tables",
             method="GET",
@@ -113,10 +113,10 @@ class NestjsClient:
         return result.get("data", [])
 
     async def execute_query(
-        self, query: str, params: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        self, query: str, params: Optional[dict[str, Any]] = None
+    ) -> dict[str, Any]:
         """执行只读参数化 SQL 查询"""
-        result: Dict[str, Any] = await call_remote_service(
+        result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path="/sql-tools/query",
             method="POST",

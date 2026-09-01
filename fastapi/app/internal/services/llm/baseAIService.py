@@ -1,6 +1,13 @@
 import os
+from collections.abc import AsyncGenerator
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
+from typing import Any, Optional
+
+from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
+from sqlalchemy.orm import Session
 
 from app.core.base import Logger
 from app.core.config import load_config
@@ -15,14 +22,9 @@ from app.internal.agents import (
     get_rag_tools,
     get_spring_sql_tool,
 )
-from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_openai import ChatOpenAI
-from sqlalchemy.orm import Session
 
-ChatHistoryItem = Tuple[str, str]
-IntermediateStep = Tuple[Any, Any]
+ChatHistoryItem = tuple[str, str]
+IntermediateStep = tuple[Any, Any]
 
 
 def get_agent_prompt() -> ChatPromptTemplate:
@@ -37,35 +39,29 @@ def get_agent_prompt() -> ChatPromptTemplate:
 
 
 def _load_sql_tools(
-    sql_tool_factories: List[Tuple[str, Any]],
-) -> Tuple[Optional[Any], List[Any]]:
+    sql_tool_factories: list[tuple[str, Any]],
+) -> tuple[Optional[Any], list[Any]]:
     """加载 SQL 工具（在独立线程中执行）"""
     sql_tools_instance: Optional[Any] = None
-    tools: List[Any] = []
+    tools: list[Any] = []
     for service_name, factory in sql_tool_factories:
         try:
             tool_instance: Any = factory()
-            sql_tools: List[Any] = tool_instance.get_langchain_tools()
+            sql_tools: list[Any] = tool_instance.get_langchain_tools()
             tools.extend(sql_tools)
             if sql_tools_instance is None:
                 sql_tools_instance = tool_instance
-            Logger.info(
-                Messages.LLM_TOOL_LOADED(f"{service_name} SQL", len(sql_tools))
-            )
+            Logger.info(Messages.LLM_TOOL_LOADED(f"{service_name} SQL", len(sql_tools)))
         except Exception as e:
-            Logger.warning(
-                Messages.LLM_TOOL_LOAD_FAILED(f"{service_name} SQL", e)
-            )
+            Logger.warning(Messages.LLM_TOOL_LOAD_FAILED(f"{service_name} SQL", e))
     return sql_tools_instance, tools
 
 
-def _load_tool_group(
-    group_name: str, factory: Any
-) -> Tuple[Optional[Any], List[Any]]:
+def _load_tool_group(group_name: str, factory: Any) -> tuple[Optional[Any], list[Any]]:
     """加载单个工具组（RAG / Neo4j / MongoDB）"""
     try:
         instance: Any = factory()
-        tools: List[Any] = instance.get_langchain_tools()
+        tools: list[Any] = instance.get_langchain_tools()
         Logger.info(Messages.LLM_TOOL_LOADED(group_name, len(tools)))
         return instance, tools
     except Exception as e:
@@ -75,7 +71,7 @@ def _load_tool_group(
 
 def initialize_ai_tools(
     include_sql: bool = True, include_logs: bool = True
-) -> Tuple[Optional[Any], Optional[Any], Optional[Any], List[Any]]:
+) -> tuple[Optional[Any], Optional[Any], Optional[Any], list[Any]]:
     """初始化AI工具，支持基于权限的工具选择
 
     各组独立工具（SQL/RAG/Neo4j/MongoDB）通过线程池并行加载，
@@ -91,10 +87,10 @@ def initialize_ai_tools(
     sql_tools_instance: Optional[Any] = None
     rag_tools_instance: Optional[Any] = None
     mongodb_tools_instance: Optional[Any] = None
-    all_tools: List[Any] = []
+    all_tools: list[Any] = []
 
     # 构建任务列表，每组工具独立加载
-    sql_tool_factories: List[Tuple[str, Any]] = [
+    sql_tool_factories: list[tuple[str, Any]] = [
         ("FastAPI", get_fastapi_sql_tool),
         ("Spring", get_spring_sql_tool),
         ("GoZero", get_gozero_sql_tool),
@@ -103,12 +99,10 @@ def initialize_ai_tools(
 
     # 并行加载所有独立工具组
     with ThreadPoolExecutor(max_workers=4) as executor:
-        futures: Dict[str, Any] = {}
+        futures: dict[str, Any] = {}
 
         if include_sql:
-            futures["sql"] = executor.submit(
-                _load_sql_tools, sql_tool_factories
-            )
+            futures["sql"] = executor.submit(_load_sql_tools, sql_tool_factories)
         futures["rag"] = executor.submit(_load_tool_group, "RAG", get_rag_tools)
         futures["neo4j"] = executor.submit(
             _load_tool_group, "Neo4j 知识图谱", get_neo4j_tools
@@ -163,7 +157,7 @@ class BaseAiService:
         self.agent: Optional[Any] = None
         self.agent_executor: Optional[Any] = None
         self.intent_router: Optional[Any] = None
-        self.all_tools: List[Any] = []
+        self.all_tools: list[Any] = []
         self.model_name: str = ""
         self._api_key: str = ""
         self._base_url: str = ""
@@ -214,13 +208,13 @@ class BaseAiService:
 
     async def _load_chat_history(
         self, user_id: int, db: Session
-    ) -> List[ChatHistoryItem]:
+    ) -> list[ChatHistoryItem]:
         """从数据库加载聊天历史"""
         try:
             histories = await self.ai_history_mapper.get_all_ai_history_by_userid_async(
                 db, user_id, 5
             )
-            chat_history: List[ChatHistoryItem] = []
+            chat_history: list[ChatHistoryItem] = []
             for h in histories:
                 chat_history.append((h.ask, h.reply))
             return chat_history
@@ -229,7 +223,7 @@ class BaseAiService:
             return []
 
     def _build_complete_thinking_text(
-        self, intermediate_steps: List[IntermediateStep], final_result: str = ""
+        self, intermediate_steps: list[IntermediateStep], final_result: str = ""
     ) -> str:
         """构建完整的思考过程文本（包含最终结果）
 
@@ -263,7 +257,7 @@ class BaseAiService:
         complete_text = "".join(thinking_parts)
         return complete_text
 
-    def _build_chat_context(self, chat_history: List[ChatHistoryItem]) -> str:
+    def _build_chat_context(self, chat_history: list[ChatHistoryItem]) -> str:
         """构建聊天历史上下文
 
         Args:
@@ -326,7 +320,7 @@ class BaseAiService:
             return "".join(text_parts)
         return str(content)
 
-    def _final_stream_options(self) -> Dict[str, Any]:
+    def _final_stream_options(self) -> dict[str, Any]:
         """获取最终答案流式输出参数"""
         if self.service_name == "GLM":
             return {
@@ -340,7 +334,7 @@ class BaseAiService:
         return {}
 
     def _build_agent_fallback_result(
-        self, intermediate_steps: List[IntermediateStep]
+        self, intermediate_steps: list[IntermediateStep]
     ) -> str:
         """从 Agent 工具结果构建非空兜底回答"""
         for _, observation in reversed(intermediate_steps):
@@ -423,7 +417,7 @@ class BaseAiService:
     def _initialize_llm_service(self) -> None:
         """从配置中初始化 CloseAI 客户端和 Agent 能力"""
         try:
-            service_cfg: Dict[str, Any] = (load_config("agent") or {}).get(
+            service_cfg: dict[str, Any] = (load_config("agent") or {}).get(
                 self.config_section
             ) or {}
             self._api_key = str(service_cfg.get("api_key") or "").strip()
@@ -585,7 +579,7 @@ class BaseAiService:
                 }
             )
 
-            chat_history: List[ChatHistoryItem] = []
+            chat_history: list[ChatHistoryItem] = []
             if db and normalized_user_id is not None:
                 chat_history = await self._load_chat_history(normalized_user_id, db)
 
@@ -659,7 +653,7 @@ class BaseAiService:
                 return
 
             if not self.agent_executor:
-                chat_history: List[ChatHistoryItem] = []
+                chat_history: list[ChatHistoryItem] = []
                 if db and normalized_user_id is not None:
                     chat_history = await self._load_chat_history(normalized_user_id, db)
 
@@ -684,9 +678,7 @@ class BaseAiService:
                         **self._final_stream_options(),
                     ):
                         try:
-                            chunk_content = self._extract_message_content(
-                                chunk
-                            )
+                            chunk_content = self._extract_message_content(chunk)
                             if chunk_content:
                                 Logger.debug(
                                     Messages.STREAM_CHUNK_RECEIVED_LENGTH(
@@ -771,9 +763,7 @@ class BaseAiService:
                         **self._final_stream_options(),
                     ):
                         try:
-                            chunk_content = self._extract_message_content(
-                                chunk
-                            )
+                            chunk_content = self._extract_message_content(chunk)
                             if chunk_content:
                                 yield {"type": "content", "content": chunk_content}
                         except Exception as chunk_error:
@@ -878,9 +868,7 @@ class BaseAiService:
                         **self._final_stream_options(),
                     ):
                         try:
-                            chunk_content = self._extract_message_content(
-                                chunk
-                            )
+                            chunk_content = self._extract_message_content(chunk)
                             if chunk_content:
                                 final_content_emitted = True
                                 yield {"type": "content", "content": chunk_content}
@@ -908,7 +896,9 @@ class BaseAiService:
                             fallback_response
                         )
                     except Exception as fallback_error:
-                        Logger.error(Messages.FINAL_STREAM_OUTPUT_FAILED(fallback_error))
+                        Logger.error(
+                            Messages.FINAL_STREAM_OUTPUT_FAILED(fallback_error)
+                        )
                         fallback_content = ""
 
                     fallback_content = (

@@ -1,13 +1,14 @@
 import asyncio
 from datetime import datetime, timedelta
 from functools import lru_cache
-from typing import Any, Dict, List
+from typing import Any
+
+from dateutil.relativedelta import relativedelta
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from app.internal.crud import UserAnalysisMapper
 from app.internal.clients import NestjsClient, SpringClient
-from dateutil.relativedelta import relativedelta
+from app.internal.crud import UserAnalysisMapper
 
 
 class UserService:
@@ -22,20 +23,32 @@ class UserService:
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
         now = datetime.now()
         if period == "day":
-            start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            start = (now - timedelta(days=6)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             return start, now + timedelta(days=1), 7, "date"
         if period == "month":
-            start = (now - relativedelta(months=5)).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            start = (now - relativedelta(months=5)).replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
             return start, now + relativedelta(months=1), 6, "month"
-        start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0) - relativedelta(years=2)
-        return start, now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0) + relativedelta(years=1), 3, "year"
+        start = now.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        ) - relativedelta(years=2)
+        return (
+            start,
+            now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            + relativedelta(years=1),
+            3,
+            "year",
+        )
 
     @staticmethod
     def _build_period_timeline(
-        period: str, start: datetime, count: int, rows: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        period: str, start: datetime, count: int, rows: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         values = {str(row["date"]): int(row["count"]) for row in rows}
-        timeline: List[Dict[str, Any]] = []
+        timeline: list[dict[str, Any]] = []
         for index in range(count - 1, -1, -1):
             if period == "day":
                 date = start + timedelta(days=index)
@@ -53,31 +66,42 @@ class UserService:
 
     async def get_new_followers_service(
         self, user_id: int, period: str = "day"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         获取新增粉丝数统计
         period: "day" 前7天, "month" 前6个月, "year" 前3年
         """
         try:
             start, end, count, _ = self._period_dates(period)
-            rows = await self._user_analysis_mapper.get_new_followers_by_day(user_id, start, end)
+            rows = await self._user_analysis_mapper.get_new_followers_by_day(
+                user_id, start, end
+            )
             if period != "day":
                 for row in rows:
                     value = row["date"]
                     row["date"] = value.strftime("%Y-%m" if period == "month" else "%Y")
-                grouped: Dict[str, int] = {}
+                grouped: dict[str, int] = {}
                 for row in rows:
-                    grouped[str(row["date"])] = grouped.get(str(row["date"]), 0) + int(row["count"])
+                    grouped[str(row["date"])] = grouped.get(str(row["date"]), 0) + int(
+                        row["count"]
+                    )
                 rows = [{"date": key, "count": value} for key, value in grouped.items()]
-            return {"period": period, "timeline": self._build_period_timeline(period, start, count, rows)}
+            return {
+                "period": period,
+                "timeline": self._build_period_timeline(period, start, count, rows),
+            }
         except Exception as ch_error:
-            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_new_followers_service", ch_error))
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_new_followers_service", ch_error
+                )
+            )
         try:
-            timeline: List[Dict[str, Any]] = []
+            timeline: list[dict[str, Any]] = []
 
             if period == "day":
                 # 7个独立时间窗口查询改为 asyncio.gather 并行
-                async def _one_day(days_ago: int) -> Dict[str, Any]:
+                async def _one_day(days_ago: int) -> dict[str, Any]:
                     date: datetime = datetime.now() - timedelta(days=days_ago)
                     start_date: datetime = date.replace(
                         hour=0, minute=0, second=0, microsecond=0
@@ -95,7 +119,7 @@ class UserService:
                 )
             elif period == "month":
                 # 6个独立月份窗口查询改为 asyncio.gather 并行
-                async def _one_month(months_ago: int) -> Dict[str, Any]:
+                async def _one_month(months_ago: int) -> dict[str, Any]:
                     date = datetime.now() - relativedelta(months=months_ago)
                     start_date = date.replace(
                         day=1, hour=0, minute=0, second=0, microsecond=0
@@ -113,7 +137,7 @@ class UserService:
                 )
             elif period == "year":
                 # 3个独立年份窗口查询改为 asyncio.gather 并行
-                async def _one_year(years_ago: int) -> Dict[str, Any]:
+                async def _one_year(years_ago: int) -> dict[str, Any]:
                     date = datetime.now() - relativedelta(years=years_ago)
                     start_date = date.replace(
                         month=1, day=1, hour=0, minute=0, second=0, microsecond=0
@@ -142,12 +166,18 @@ class UserService:
 
     async def get_article_view_distribution_service(
         self, user_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """获取用户的文章浏览分布"""
         try:
-            return await self._user_analysis_mapper.get_article_view_distribution(user_id)
+            return await self._user_analysis_mapper.get_article_view_distribution(
+                user_id
+            )
         except Exception as ch_error:
-            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_article_view_distribution_service", ch_error))
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_article_view_distribution_service", ch_error
+                )
+            )
         try:
             return await self._nestjs_client.get_article_view_distribution(user_id)
         except Exception as e:
@@ -156,18 +186,26 @@ class UserService:
 
     async def get_author_follow_statistics_service(
         self, user_id: int
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """获取用户关注作者的统计"""
         try:
             now = datetime.now()
-            start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            start = (now - timedelta(days=6)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             end = now + timedelta(days=1)
-            return await self._user_analysis_mapper.get_author_follow_statistics(user_id, start, end)
+            return await self._user_analysis_mapper.get_author_follow_statistics(
+                user_id, start, end
+            )
         except Exception as ch_error:
-            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_author_follow_statistics_service", ch_error))
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_author_follow_statistics_service", ch_error
+                )
+            )
         try:
             # 总数查询与7天循环查询相互独立，gather 并行降低延迟
-            async def _one_day_follow(days_ago: int) -> Dict[str, Any]:
+            async def _one_day_follow(days_ago: int) -> dict[str, Any]:
                 date = datetime.now() - timedelta(days=days_ago)
                 start_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
                 end_date = date.replace(
@@ -195,58 +233,73 @@ class UserService:
             Logger.error(Messages.USER_AUTHOR_FOLLOW_STATS_FAILED(e))
             return {"total_authors": 0, "daily_follows": []}
 
-    async def get_monthly_comment_trend_service(
-        self, user_id: int
-    ) -> Dict[str, Any]:
+    async def get_monthly_comment_trend_service(self, user_id: int) -> dict[str, Any]:
         """获取用户本月评论的趋势"""
         try:
             return await self._user_analysis_mapper.get_monthly_action_trend(
-                user_id, "comment_count", datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0),
-                datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0) + relativedelta(months=1)
+                user_id,
+                "comment_count",
+                datetime.now().replace(
+                    day=1, hour=0, minute=0, second=0, microsecond=0
+                ),
+                datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                + relativedelta(months=1),
             )
         except Exception as ch_error:
-            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_comment_trend_service", ch_error))
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_monthly_comment_trend_service", ch_error
+                )
+            )
         try:
             return await self._spring_client.get_monthly_comment_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_COMMENT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
-    async def get_monthly_like_trend_service(
-        self, user_id: int
-    ) -> Dict[str, Any]:
+    async def get_monthly_like_trend_service(self, user_id: int) -> dict[str, Any]:
         """获取用户本月点赞的趋势"""
         try:
-            start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            start = datetime.now().replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
             return await self._user_analysis_mapper.get_monthly_action_trend(
                 user_id, "like_count", start, start + relativedelta(months=1)
             )
         except Exception as ch_error:
-            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_like_trend_service", ch_error))
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_monthly_like_trend_service", ch_error
+                )
+            )
         try:
             return await self._spring_client.get_monthly_like_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_LIKE_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
-    async def get_monthly_collect_trend_service(
-        self, user_id: int
-    ) -> Dict[str, Any]:
+    async def get_monthly_collect_trend_service(self, user_id: int) -> dict[str, Any]:
         """获取用户本月收藏的趋势"""
         try:
-            start = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            start = datetime.now().replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0
+            )
             return await self._user_analysis_mapper.get_monthly_action_trend(
                 user_id, "collect_count", start, start + relativedelta(months=1)
             )
         except Exception as ch_error:
-            Logger.warning(Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB("get_monthly_collect_trend_service", ch_error))
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_monthly_collect_trend_service", ch_error
+                )
+            )
         try:
             return await self._spring_client.get_monthly_collect_trend(user_id)
         except Exception as e:
             Logger.error(Messages.USER_COLLECT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
-    async def get_user_profile_service(self, user_id: int) -> Dict[str, Any]:
+    async def get_user_profile_service(self, user_id: int) -> dict[str, Any]:
         """获取用户画像总览（优先 ClickHouse ADS，降级为远程组装）"""
         try:
             return await self._user_analysis_mapper.get_user_profile(user_id)

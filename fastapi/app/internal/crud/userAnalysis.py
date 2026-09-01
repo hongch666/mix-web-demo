@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 from app.core.constants import Messages, WarehouseScripts
 from app.core.db import ClickhouseConnectionPool, get_clickhouse_connection_pool
@@ -10,9 +10,13 @@ class UserAnalysisMapper:
     """用户分析数仓查询 Mapper"""
 
     def __init__(self) -> None:
-        self._clickhouse_pool: ClickhouseConnectionPool = get_clickhouse_connection_pool()
+        self._clickhouse_pool: ClickhouseConnectionPool = (
+            get_clickhouse_connection_pool()
+        )
 
-    async def _execute(self, query: str, params: Dict[str, Any]) -> List[tuple[Any, ...]]:
+    async def _execute(
+        self, query: str, params: dict[str, Any]
+    ) -> list[tuple[Any, ...]]:
         conn: Any = self._clickhouse_pool.get_connection()
         try:
             return await asyncio.to_thread(conn.execute, query, params)
@@ -21,14 +25,14 @@ class UserAnalysisMapper:
 
     async def get_new_followers_by_day(
         self, user_id: int, start_date: datetime, end_date: datetime
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         rows = await self._execute(
             WarehouseScripts.USER_FOLLOWERS_BY_DAY_QUERY,
             {"user_id": user_id, "start_date": start_date, "end_date": end_date},
         )
         return [{"date": row[0], "count": int(row[1] or 0)} for row in rows]
 
-    async def get_article_view_distribution(self, user_id: int) -> Dict[str, Any]:
+    async def get_article_view_distribution(self, user_id: int) -> dict[str, Any]:
         rows = await self._execute(
             WarehouseScripts.USER_VIEW_DISTRIBUTION_QUERY, {"user_id": user_id}
         )
@@ -47,9 +51,11 @@ class UserAnalysisMapper:
 
     async def get_author_follow_statistics(
         self, user_id: int, start_date: datetime, end_date: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         total_rows, daily_rows = await asyncio.gather(
-            self._execute(WarehouseScripts.USER_TOTAL_FOLLOWS_QUERY, {"user_id": user_id}),
+            self._execute(
+                WarehouseScripts.USER_TOTAL_FOLLOWS_QUERY, {"user_id": user_id}
+            ),
             self._execute(
                 WarehouseScripts.USER_DAILY_FOLLOW_QUERY,
                 {"user_id": user_id, "start_date": start_date, "end_date": end_date},
@@ -64,7 +70,7 @@ class UserAnalysisMapper:
 
     async def get_monthly_action_trend(
         self, user_id: int, metric: str, start_date: datetime, end_date: datetime
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         allowed_metrics = {"comment_count", "like_count", "collect_count"}
         if metric not in allowed_metrics:
             raise ValueError(Messages.USER_ANALYSIS_METRIC_UNSUPPORTED(metric))
@@ -76,7 +82,7 @@ class UserAnalysisMapper:
         trends = [{"date": row[0], "count": int(row[1] or 0)} for row in rows]
         return {"total": sum(item["count"] for item in trends), "daily_trends": trends}
 
-    async def get_user_profile(self, user_id: int) -> Dict[str, Any]:
+    async def get_user_profile(self, user_id: int) -> dict[str, Any]:
         """从 ADS 层获取用户画像总览（作为观众与作为作者的累计指标）"""
         rows = await self._execute(
             WarehouseScripts.USER_PROFILE_QUERY, {"user_id": user_id}

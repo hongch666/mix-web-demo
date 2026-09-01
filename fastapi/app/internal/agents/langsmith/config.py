@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from app.core.config import load_config
 from app.core.constants import Scripts
@@ -33,7 +33,7 @@ def load_langsmith_config() -> LangSmithConfig:
     application.yaml 中的 ${VAR:default} 由 load_config 解析环境变量。
     默认关闭追踪，API Key 缺失时强制禁用。
     """
-    cfg: Dict[str, Any] = load_config("langsmith") or {}
+    cfg: dict[str, Any] = load_config("langsmith") or {}
 
     enabled = str(cfg["enabled"]).lower() == "true"
     api_key = str(cfg["api_key"]).strip()

@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import jwt
+
 from app.core.constants import HttpCode, Messages
 
 from ..config.config import load_config
@@ -24,7 +25,7 @@ class InternalTokenUtil:
     def __init__(self) -> None:
         """初始化 JWT 密钥和过期时间"""
         if not InternalTokenUtil._initialized:
-            config: Dict[str, Any] = load_config("internal_token")
+            config: dict[str, Any] = load_config("internal_token")
             InternalTokenUtil._secret = config.get("secret")
             InternalTokenUtil._expiration = config.get("expiration")
 
@@ -55,7 +56,7 @@ class InternalTokenUtil:
         }
         return jwt.encode(payload, InternalTokenUtil._secret, algorithm="HS256")
 
-    def validate_internal_token(self, token: str) -> Dict[str, Any]:
+    def validate_internal_token(self, token: str) -> dict[str, Any]:
         """
         验证内部服务令牌
 
@@ -85,7 +86,7 @@ class InternalTokenUtil:
         :param token: JWT令牌字符串
         :return: 用户ID
         """
-        claims: Dict[str, Any] = self.validate_internal_token(token)
+        claims: dict[str, Any] = self.validate_internal_token(token)
         return claims.get("userId")
 
     def extract_service_name(self, token: str) -> Optional[str]:
@@ -95,5 +96,5 @@ class InternalTokenUtil:
         :param token: JWT令牌字符串
         :return: 服务名称
         """
-        claims: Dict[str, Any] = self.validate_internal_token(token)
+        claims: dict[str, Any] = self.validate_internal_token(token)
         return claims.get("serviceName")

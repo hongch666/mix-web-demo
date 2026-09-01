@@ -1,17 +1,18 @@
 import inspect
 import json
 import time
+from collections.abc import AsyncGenerator, Callable
 from functools import wraps
-from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Union
+from typing import Any, Optional, Union
+
+from fastapi import Request
+from fastapi.responses import StreamingResponse
 
 from app.common.middleware import get_current_user_id, get_current_username
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.db import send_to_queue_async
 from app.core.errors import BusinessException
-from fastapi.responses import StreamingResponse
-
-from fastapi import Request
 
 
 class ApiLogConfig:
@@ -22,12 +23,12 @@ class ApiLogConfig:
         message: str,
         include_params: bool = True,
         log_level: str = "info",
-        exclude_fields: Optional[List[str]] = None,
+        exclude_fields: Optional[list[str]] = None,
     ) -> None:
         self.message: str = message
         self.include_params: bool = include_params
         self.log_level: str = log_level
-        self.exclude_fields: List[str] = exclude_fields or []
+        self.exclude_fields: list[str] = exclude_fields or []
 
 
 def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
@@ -80,15 +81,19 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                 path = f"/{func.__name__}"
 
             # 构建基础日志消息
-            log_lines: List[str] = [
+            log_lines: list[str] = [
                 Messages.API_LOG_REQUEST_MESSAGE(
-                    str(user_id) if user_id is not None else "0", username, method, path, log_config.message
+                    str(user_id) if user_id is not None else "0",
+                    username,
+                    method,
+                    path,
+                    log_config.message,
                 )
             ]
 
             # 添加查询参数
             if request and request.query_params:
-                query_params: Dict[str, Any] = dict(request.query_params)
+                query_params: dict[str, Any] = dict(request.query_params)
                 log_lines.append(
                     Messages.API_LOG_QUERY_PARAMS(
                         json.dumps(query_params, ensure_ascii=False)
@@ -97,7 +102,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
 
             # 添加路径参数
             if request and hasattr(request, "path_params") and request.path_params:
-                path_params: Dict[str, Any] = dict(request.path_params)
+                path_params: dict[str, Any] = dict(request.path_params)
                 log_lines.append(
                     Messages.API_LOG_PATH_PARAMS(
                         json.dumps(path_params, ensure_ascii=False)
@@ -132,7 +137,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
 
                     # 提前提取请求体信息，避免在生成器执行时丢失上下文
                     captured_func: Callable = func
-                    captured_kwargs: Dict[str, Any] = kwargs.copy()
+                    captured_kwargs: dict[str, Any] = kwargs.copy()
                     captured_log_config: ApiLogConfig = log_config
 
                     async def tracked_generator() -> AsyncGenerator[bytes, None]:
@@ -210,7 +215,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
 
 
 def _get_request_from_args(
-    args: tuple[Any, ...], kwargs: Dict[str, Any]
+    args: tuple[Any, ...], kwargs: dict[str, Any]
 ) -> Optional[Request]:
     """
     从函数参数中提取 Request 对象
@@ -238,8 +243,8 @@ def _get_request_from_args(
 def _extract_params_info(
     func: Callable,
     args: tuple[Any, ...],
-    kwargs: Dict[str, Any],
-    exclude_fields: List[str],
+    kwargs: dict[str, Any],
+    exclude_fields: list[str],
 ) -> str:
     """
     提取参数信息
@@ -256,9 +261,9 @@ def _extract_params_info(
     try:
         # 获取函数签名
         sig: inspect.Signature = inspect.signature(func)
-        param_names: List[str] = list(sig.parameters.keys())
+        param_names: list[str] = list(sig.parameters.keys())
 
-        filtered_params: Dict[str, str] = {}
+        filtered_params: dict[str, str] = {}
 
         # 处理位置参数
         for i, arg in enumerate(args):
@@ -317,7 +322,7 @@ def _extract_params_info(
 
         # 格式化输出
         if filtered_params:
-            param_info: List[str] = []
+            param_info: list[str] = []
             for key, value in filtered_params.items():
                 param_info.append(Messages.API_LOG_PARAM_LINE(key, value))
             return "\n".join(param_info)
@@ -344,7 +349,7 @@ def _serialize_for_json(obj: Any) -> Any:
         return obj
     elif isinstance(obj, dict):
         # 递归处理字典中的每个值
-        result: Dict[str, Any] = {}
+        result: dict[str, Any] = {}
         for key, value in obj.items():
             result[key] = _serialize_for_json(value)
         return result
@@ -395,8 +400,8 @@ def _serialize_param(param: Any) -> str:
 
 
 def _extract_request_body_for_queue(
-    func: Callable, kwargs: Dict[str, Any], exclude_fields: List[str]
-) -> Optional[Dict[str, Any]]:
+    func: Callable, kwargs: dict[str, Any], exclude_fields: list[str]
+) -> Optional[dict[str, Any]]:
     """
     从函数参数中提取请求体信息用于发送到队列
 
@@ -409,7 +414,7 @@ def _extract_request_body_for_queue(
         dict: 请求体信息，如果没有则返回 None
     """
     try:
-        request_body_dict: Dict[str, Any] = {}
+        request_body_dict: dict[str, Any] = {}
 
         # 需要排除的参数名称（依赖注入 - 注意：不包括 'request'，因为它可能是 Pydantic 模型）
         exclude_param_names: set = {"db", "session", "httpRequest"}
@@ -469,7 +474,7 @@ def _extract_request_body_for_queue(
                 request_body_dict.update(value.dict())
             elif isinstance(value, dict):
                 # 如果已经是字典，需要检查其中是否有 UploadFile
-                processed_dict: Dict[str, Any] = {}
+                processed_dict: dict[str, Any] = {}
                 for dict_key, dict_value in value.items():
                     # 检查是否是 UploadFile 对象
                     if hasattr(dict_value, "filename") and hasattr(dict_value, "file"):
@@ -542,7 +547,7 @@ async def _send_api_log_to_queue_async(
     response_time_ms: int,
     log_config: ApiLogConfig,
     func: Callable,
-    kwargs: Optional[Dict[str, Any]] = None,
+    kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     """
     发送 API 日志到 RabbitMQ
@@ -565,12 +570,12 @@ async def _send_api_log_to_queue_async(
 
     try:
         # 提取查询参数
-        query_params: Optional[Dict[str, Any]] = None
+        query_params: Optional[dict[str, Any]] = None
         if request and request.query_params:
             query_params = dict(request.query_params)
 
         # 提取路径参数
-        path_params: Optional[Dict[str, Any]] = None
+        path_params: Optional[dict[str, Any]] = None
         if request and hasattr(request, "path_params") and request.path_params:
             path_params = dict(request.path_params)
 
@@ -578,7 +583,7 @@ async def _send_api_log_to_queue_async(
         normalized_path: str = _normalize_path_with_params(path, request)
 
         # 提取请求体 - 从参数中提取业务参数（需要传入 func 以检查参数注解）
-        request_body: Optional[Dict[str, Any]] = None
+        request_body: Optional[dict[str, Any]] = None
         if log_config.include_params:
             request_body = _extract_request_body_for_queue(
                 func, kwargs, log_config.exclude_fields
@@ -596,7 +601,7 @@ async def _send_api_log_to_queue_async(
         final_username: str = username if username else "匿名用户"
 
         # 构建 API 日志消息（统一格式：camelCase）
-        api_log_message: Dict[str, Any] = {
+        api_log_message: dict[str, Any] = {
             "userId": final_user_id,
             "username": final_username,
             "apiDescription": description,
@@ -642,7 +647,7 @@ def logWithConfig(
     message: str,
     include_params: bool = True,
     log_level: str = "info",
-    exclude_fields: Optional[List[str]] = None,
+    exclude_fields: Optional[list[str]] = None,
 ) -> Callable:
     """
     带配置的日志装饰器

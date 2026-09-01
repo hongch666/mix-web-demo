@@ -2,14 +2,8 @@ import os
 import re
 import warnings
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
-from app.core.base import Logger
-from app.core.config import load_config
-from app.core.constants import HttpCode, Messages, Prompts
-from app.core.db import get_pgvector_connection_string
-from app.core.errors import BusinessException
-from app.internal.agents.langsmith import get_langsmith_context
 from langchain_community.cache import InMemoryCache
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
@@ -19,13 +13,20 @@ from langchain_core.tools import Tool
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from app.core.base import Logger
+from app.core.config import load_config
+from app.core.constants import HttpCode, Messages, Prompts
+from app.core.db import get_pgvector_connection_string
+from app.core.errors import BusinessException
+from app.internal.agents.langsmith import get_langsmith_context
+
 # 抑制 PGVector 弃用警告
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-DocScore = Tuple[Document, float]
+DocScore = tuple[Document, float]
 
 # Prompt 注入防御模式（用于过滤 RAG 检索内容中的恶意文本）
-_INJECTION_PATTERNS: List[str] = [
+_INJECTION_PATTERNS: list[str] = [
     r"ignore\s+(all\s+)?(previous|prior|above)\s+instructions?",
     r"you\s+are\s+(now\s+)?DAN",
     r"from\s+now\s+on\s+you\s+are",
@@ -112,7 +113,7 @@ class RAGTools:
 
         # 1.5 初始化 HyDE LLM（复用已配置的模型，用于生成假设性文档增强检索精度）
         self.hyde_llm: Optional[Any] = None
-        agent_cfg: Dict[str, Any] = (load_config("agent") or {}).get("closeai", {})
+        agent_cfg: dict[str, Any] = (load_config("agent") or {}).get("closeai", {})
         if agent_cfg.get("api_key") and agent_cfg.get("base_url"):
             try:
                 self.hyde_llm = ChatOpenAI(
@@ -148,7 +149,7 @@ class RAGTools:
         self.logger.info(Messages.VECTOR_STORE_INITIALIZATION_SUCCESS)
 
     @staticmethod
-    def _resolve_embedding_api_key(embedding_cfg: Dict[str, Any]) -> str:
+    def _resolve_embedding_api_key(embedding_cfg: dict[str, Any]) -> str:
         """优先从配置读取 embedding key，再回退到常见环境变量"""
         candidates = [
             embedding_cfg.get("api_key"),
@@ -166,10 +167,10 @@ class RAGTools:
 
     async def add_articles_to_vector_store(
         self,
-        article_ids: List[int],
-        titles: List[str],
-        contents: List[str],
-        metadata_list: Optional[List[Dict[str, Any]]] = None,
+        article_ids: list[int],
+        titles: list[str],
+        contents: list[str],
+        metadata_list: Optional[list[dict[str, Any]]] = None,
     ) -> str:
         """
         将文章添加到向量存储
@@ -184,7 +185,7 @@ class RAGTools:
             操作结果描述
         """
         try:
-            documents: List[Document] = []
+            documents: list[Document] = []
 
             for i, (article_id, title, content) in enumerate(
                 zip(article_ids, titles, contents)
@@ -224,8 +225,8 @@ class RAGTools:
             return error_msg
 
     def _deduplicate_articles(
-        self, docs_with_scores: List[DocScore], k: int
-    ) -> List[DocScore]:
+        self, docs_with_scores: list[DocScore], k: int
+    ) -> list[DocScore]:
         """
         对相似文章进行去重处理，保留相近相似度下的不同文章片段
 
@@ -239,7 +240,7 @@ class RAGTools:
         if not docs_with_scores:
             return []
 
-        result: List[DocScore] = []
+        result: list[DocScore] = []
         seen_articles: set[Any] = set()
         last_score: Optional[float] = None
 
@@ -274,7 +275,7 @@ class RAGTools:
         query: str,
         k: int = 5,
         use_hyde: bool = True,
-        tags_filter: Optional[List[str]] = None,
+        tags_filter: Optional[list[str]] = None,
         user_id_filter: Optional[int] = None,
     ) -> str:
         """
@@ -327,9 +328,9 @@ class RAGTools:
                         search_query = query
 
             # 构建元数据过滤器（pgvector JSONB 过滤）
-            pgvector_filter: Optional[Dict[str, Any]] = None
+            pgvector_filter: Optional[dict[str, Any]] = None
             if tags_filter or user_id_filter is not None:
-                conditions: List[Dict[str, Any]] = []
+                conditions: list[dict[str, Any]] = []
                 if tags_filter:
                     conditions.append({"tags": {"$in": tags_filter}})
                 if user_id_filter is not None:
@@ -344,7 +345,7 @@ class RAGTools:
             )
 
             # 根据相似度阈值过滤结果
-            filtered_docs: List[DocScore] = [
+            filtered_docs: list[DocScore] = [
                 (doc, score)
                 for doc, score in docs
                 if score >= self.similarity_threshold
@@ -404,7 +405,7 @@ class RAGTools:
             self.logger.error(error_msg)
             return error_msg
 
-    async def get_article_context(self, query: str, k: int = 3) -> List[Document]:
+    async def get_article_context(self, query: str, k: int = 3) -> list[Document]:
         """
         获取文章上下文（供Chain使用）
 
@@ -451,7 +452,7 @@ class RAGTools:
             self.logger.error(Messages.RAG_CONTEXT_FETCH_FAILED(e))
             return []
 
-    def get_langchain_tools(self) -> List[Tool]:
+    def get_langchain_tools(self) -> list[Tool]:
         """
         获取LangChain Tool对象列表
 

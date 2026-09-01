@@ -1,10 +1,10 @@
-from typing import Any, Dict
+from typing import Any
+
+from fastapi import APIRouter, Query, Request
 
 from app.common.decorators import log
 from app.core.base import ApiResponse, success
 from app.dependencies import UserServiceDep
-
-from fastapi import APIRouter, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/analyze/user",
@@ -27,9 +27,7 @@ async def get_new_followers(
 ) -> ApiResponse:
     """获取新增粉丝数统计"""
 
-    result: Dict[str, Any] = await userService.get_new_followers_service(
-        userId, period
-    )
+    result: dict[str, Any] = await userService.get_new_followers_service(userId, period)
     return success(result)
 
 
@@ -47,7 +45,7 @@ async def get_article_view_distribution(
 ) -> ApiResponse:
     """获取文章浏览分布"""
 
-    result: Dict[str, Any] = await userService.get_article_view_distribution_service(
+    result: dict[str, Any] = await userService.get_article_view_distribution_service(
         userId
     )
     return success(result)
@@ -67,7 +65,7 @@ async def get_author_follow_statistics(
 ) -> ApiResponse:
     """获取关注作者统计"""
 
-    result: Dict[str, Any] = await userService.get_author_follow_statistics_service(
+    result: dict[str, Any] = await userService.get_author_follow_statistics_service(
         userId
     )
     return success(result)
@@ -87,9 +85,7 @@ async def get_monthly_comment_trend(
 ) -> ApiResponse:
     """获取本月评论趋势"""
 
-    result: Dict[str, Any] = await userService.get_monthly_comment_trend_service(
-        userId
-    )
+    result: dict[str, Any] = await userService.get_monthly_comment_trend_service(userId)
     return success(result)
 
 
@@ -107,9 +103,7 @@ async def get_monthly_like_trend(
 ) -> ApiResponse:
     """获取本月点赞趋势"""
 
-    result: Dict[str, Any] = await userService.get_monthly_like_trend_service(
-        userId
-    )
+    result: dict[str, Any] = await userService.get_monthly_like_trend_service(userId)
     return success(result)
 
 
@@ -127,9 +121,7 @@ async def get_monthly_collect_trend(
 ) -> ApiResponse:
     """获取本月收藏趋势"""
 
-    result: Dict[str, Any] = await userService.get_monthly_collect_trend_service(
-        userId
-    )
+    result: dict[str, Any] = await userService.get_monthly_collect_trend_service(userId)
     return success(result)
 
 
@@ -147,5 +139,5 @@ async def get_user_profile(
 ) -> ApiResponse:
     """获取用户画像总览"""
 
-    result: Dict[str, Any] = await userService.get_user_profile_service(userId)
+    result: dict[str, Any] = await userService.get_user_profile_service(userId)
     return success(result)
