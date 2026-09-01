@@ -52,3 +52,13 @@ ignore = [
   "I001",   # 导入块未排序
   "BLE001", # 捕获裸 Exception
 ]
+
+[tool.pyright]
+# 让 Pylance 把 fastapi 目录作为独立执行环境，固定版本与虚拟环境，
+# 避免回退到全局解释器导致 PEP 585 泛型（dict[str, Any]）与第三方导入解析失败
+include = ["app", "tests", "main.py"]
+exclude = ["**/__pycache__", ".venv"]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "basic"
