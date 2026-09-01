@@ -63,6 +63,8 @@ def _normalize_row(item: Dict[str, Any], columns: Sequence[str]) -> tuple[Any, .
             value = _to_datetime(value)
         elif column in WarehouseScripts.STRING_COLUMNS:
             value = str(value or "")
+        elif column in WarehouseScripts.FLOAT_COLUMNS:
+            value = float(value or 0.0)
         elif column in WarehouseScripts.INTEGER_COLUMNS:
             value = int(value or 0)
         row.append(value)

@@ -72,8 +72,9 @@ class WarehouseScripts:
         {"tags", "role", "img", "signature", "title", "name"}
     )
     INTEGER_COLUMNS: Final[frozenset[str]] = frozenset(
-        {"status", "views", "star", "id", "user_id", "article_id", "sub_category_id", "category_id", "focus_id"}
+        {"status", "views", "id", "user_id", "article_id", "sub_category_id", "category_id", "focus_id"}
     )
+    FLOAT_COLUMNS: Final[frozenset[str]] = frozenset({"star"})
 
     WATERMARK_SELECT: Final[str] = (
         "SELECT last_watermark FROM warehouse.sync_watermark FINAL "
@@ -120,37 +121,53 @@ class WarehouseScripts:
     """
     REFRESH_DWD_ACTION: Final[str] = """
         INSERT INTO warehouse.dwd_user_action
+        -- 主数据源：MongoDB 事件流（12 类行为，含 view 与 unlike 等负信号）
+        SELECT event_id, 'article_log', 0, action, user_id, article_id,
+               toDate(created_at), created_at FROM warehouse.ods_article_log FINAL
+        UNION ALL
+        -- 补充数据源：仅取事件流起点之前的关系表存量，避免与事件流重复计数
         SELECT concat('like:', toString(id)), 'likes', id, 'like', user_id,
                article_id, toDate(created_time), created_time FROM warehouse.ods_likes FINAL
+        WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
         UNION ALL
         SELECT concat('collect:', toString(id)), 'collects', id, 'collect', user_id,
                article_id, toDate(created_time), created_time FROM warehouse.ods_collects FINAL
+        WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
         UNION ALL
         SELECT concat('comment:', toString(id)), 'comments', id, 'comment', user_id,
                article_id, toDate(create_time), create_time FROM warehouse.ods_comments FINAL
+        WHERE create_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
         UNION ALL
         SELECT concat('focus:', toString(id)), 'focus', id, 'focus', user_id,
                focus_id, toDate(created_time), created_time FROM warehouse.ods_focus FINAL
-        UNION ALL
-        SELECT event_id, 'article_log', 0, action, user_id, article_id,
-               toDate(created_at), created_at FROM warehouse.ods_article_log FINAL
+        WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
     """
     REFRESH_DWS_ARTICLE: Final[str] = """
         INSERT INTO warehouse.dws_article_day
-        SELECT a.create_date, a.id, a.user_id, a.parent_category_id, a.views,
-               ifNull(x.like_count, 0), ifNull(x.collect_count, 0),
-               ifNull(x.comment_count, 0)
-        FROM warehouse.dwd_article_event AS a FINAL
-        LEFT JOIN
+        -- 行为按日聚合为主驱动（不依赖文章发布日），文章维度 LEFT JOIN 补齐
+        -- views 为文章当前累计浏览量冗余；每日新增浏览由 view_count 列体现
+        SELECT
+            x.stat_date,
+            x.article_id,
+            ifNull(a.user_id, 0) AS user_id,
+            ifNull(a.parent_category_id, 0) AS parent_category_id,
+            ifNull(a.views, 0) AS views,
+            x.like_count,
+            x.collect_count,
+            x.comment_count,
+            x.view_count
+        FROM
         (
-            SELECT action_date, article_id,
+            SELECT action_date AS stat_date, article_id,
                    countIf(action_type = 'like') AS like_count,
                    countIf(action_type = 'collect') AS collect_count,
-                   countIf(action_type = 'comment') AS comment_count
+                   countIf(action_type = 'comment') AS comment_count,
+                   countIf(action_type = 'view') AS view_count
             FROM warehouse.dwd_user_action FINAL
             WHERE article_id > 0
             GROUP BY action_date, article_id
-        ) AS x ON a.create_date = x.action_date AND a.id = x.article_id
+        ) AS x
+        LEFT JOIN warehouse.dwd_article_event AS a FINAL ON x.article_id = a.id
     """
     REFRESH_DWS_USER: Final[str] = """
         INSERT INTO warehouse.dws_user_day
