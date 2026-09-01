@@ -131,3 +131,21 @@ async def get_monthly_collect_trend(
         userId
     )
     return success(result)
+
+
+@router.get(
+    "/profile",
+    summary="获取用户画像总览",
+    description="获取用户的发文数、获赞、获藏、粉丝数等累计指标总览",
+    response_model=ApiResponse,
+)
+@log("获取用户画像总览")
+async def get_user_profile(
+    request: Request,
+    userService: UserServiceDep,
+    userId: int = Query(alias="user_id"),
+) -> ApiResponse:
+    """获取用户画像总览"""
+
+    result: Dict[str, Any] = await userService.get_user_profile_service(userId)
+    return success(result)

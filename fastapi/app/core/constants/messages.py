@@ -1708,6 +1708,8 @@ class Messages:
 
     CLICKHOUSE_PLATFORM_STATS_EMPTY: str = "ClickHouse 平台统计表暂无数据"
 
+    CLICKHOUSE_USER_PROFILE_EMPTY: str = "ClickHouse 用户画像表暂无该用户数据"
+
     APILOG_ASYNC_ERROR: str = "apiLog 装饰器只支持异步函数"
 
     ARTICLE_MAPPER_METHOD_MISSING_ERROR: str = "ArticleMapper 未提供获取文章的方法"

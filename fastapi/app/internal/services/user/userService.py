@@ -246,6 +246,45 @@ class UserService:
             Logger.error(Messages.USER_COLLECT_TREND_FAILED(e))
             return {"total": 0, "daily_trends": []}
 
+    async def get_user_profile_service(self, user_id: int) -> Dict[str, Any]:
+        """获取用户画像总览（优先 ClickHouse ADS，降级为远程组装）"""
+        try:
+            return await self._user_analysis_mapper.get_user_profile(user_id)
+        except Exception as ch_error:
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_user_profile_service", ch_error
+                )
+            )
+        # 降级：并行调用 Spring 远程接口组装画像数据
+        (
+            total_articles,
+            total_views_received,
+            total_likes_received,
+            total_collects_received,
+            total_followers,
+        ) = await asyncio.gather(
+            self._spring_client.get_user_article_count(user_id),
+            self._spring_client.get_user_total_views(user_id),
+            self._spring_client.get_user_total_likes(user_id),
+            self._spring_client.get_user_total_collects(user_id),
+            self._spring_client.get_user_total_followers(user_id),
+        )
+        return {
+            "user_id": user_id,
+            "user_name": "",
+            "total_articles": int(total_articles or 0),
+            "total_views_received": int(total_views_received or 0),
+            "total_likes_received": int(total_likes_received or 0),
+            "total_collects_received": int(total_collects_received or 0),
+            "total_followers": int(total_followers or 0),
+            "total_likes_given": 0,
+            "total_collects_given": 0,
+            "total_comments": 0,
+            "total_focus": 0,
+            "last_active_time": None,
+        }
+
 
 @lru_cache()
 def get_user_service() -> UserService:

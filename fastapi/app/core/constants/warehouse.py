@@ -28,6 +28,16 @@ class WarehouseScripts:
         "SELECT total_followers FROM warehouse.ads_user_stats FINAL "
         "WHERE user_id = %(user_id)s"
     )
+    USER_PROFILE_QUERY: Final[str] = """
+        SELECT s.user_id, ifNull(u.name, ''), s.total_articles,
+               s.total_views_received, s.total_likes_received,
+               s.total_collects_received, s.total_followers,
+               s.total_likes_given, s.total_collects_given,
+               s.total_comments, s.total_focus, s.last_active_time
+        FROM warehouse.ads_user_stats AS s FINAL
+        LEFT JOIN warehouse.dim_user AS u FINAL ON s.user_id = u.id
+        WHERE s.user_id = %(user_id)s
+    """
     USER_DAILY_FOLLOW_QUERY: Final[str] = """
         SELECT stat_date, focus_count
         FROM warehouse.ads_user_day FINAL
@@ -93,7 +103,6 @@ class WarehouseScripts:
         "TRUNCATE TABLE warehouse.ads_category_stats",
         "TRUNCATE TABLE warehouse.ads_monthly_publish",
         "TRUNCATE TABLE warehouse.ads_platform_stats",
-        "TRUNCATE TABLE warehouse.ads_user_profile",
         "TRUNCATE TABLE warehouse.ads_user_day",
         "TRUNCATE TABLE warehouse.ads_user_view_articles",
         "TRUNCATE TABLE warehouse.ads_user_stats",
@@ -206,22 +215,6 @@ class WarehouseScripts:
                (SELECT count() FROM warehouse.dwd_user_action FINAL WHERE action_type = 'collect'),
                if(count() = 0, 0, (SELECT count() FROM warehouse.dwd_user_action FINAL WHERE action_type = 'collect') / count())
         FROM warehouse.dwd_article_event FINAL
-        """,
-        """
-        INSERT INTO warehouse.ads_user_profile
-        SELECT u.id, u.name,
-               countIf(a.action_type = 'like'), countIf(a.action_type = 'collect'),
-               countIf(a.action_type = 'comment'), countIf(a.action_type = 'focus'),
-               ifNull(p.total_articles, 0), ifNull(p.total_views, 0),
-               ifNull(max(a.action_time), toDateTime('1970-01-01 00:00:00')), now()
-        FROM warehouse.dim_user AS u FINAL
-        LEFT JOIN warehouse.dwd_user_action AS a FINAL ON u.id = a.user_id
-        LEFT JOIN
-        (
-            SELECT user_id, count() AS total_articles, sum(views) AS total_views
-            FROM warehouse.dwd_article_event FINAL GROUP BY user_id
-        ) AS p ON u.id = p.user_id
-        GROUP BY u.id, u.name, p.total_articles, p.total_views
         """,
     )
 

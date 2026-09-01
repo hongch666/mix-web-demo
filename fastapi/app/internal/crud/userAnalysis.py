@@ -75,3 +75,26 @@ class UserAnalysisMapper:
         )
         trends = [{"date": row[0], "count": int(row[1] or 0)} for row in rows]
         return {"total": sum(item["count"] for item in trends), "daily_trends": trends}
+
+    async def get_user_profile(self, user_id: int) -> Dict[str, Any]:
+        """从 ADS 层获取用户画像总览（作为观众与作为作者的累计指标）"""
+        rows = await self._execute(
+            WarehouseScripts.USER_PROFILE_QUERY, {"user_id": user_id}
+        )
+        if not rows:
+            raise RuntimeError(Messages.CLICKHOUSE_USER_PROFILE_EMPTY)
+        row = rows[0]
+        return {
+            "user_id": int(row[0]),
+            "user_name": str(row[1] or ""),
+            "total_articles": int(row[2] or 0),
+            "total_views_received": int(row[3] or 0),
+            "total_likes_received": int(row[4] or 0),
+            "total_collects_received": int(row[5] or 0),
+            "total_followers": int(row[6] or 0),
+            "total_likes_given": int(row[7] or 0),
+            "total_collects_given": int(row[8] or 0),
+            "total_comments": int(row[9] or 0),
+            "total_focus": int(row[10] or 0),
+            "last_active_time": row[11],
+        }

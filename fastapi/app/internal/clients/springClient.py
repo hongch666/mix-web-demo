@@ -354,6 +354,63 @@ class SpringClient:
         )
         return result.get("data", 0)
 
+    async def get_user_article_count(self, user_id: int) -> int:
+        """获取用户的发文数（复用用户文章分页接口的 total）"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/articles/user/{user_id}",
+            method="GET",
+            params={"page": 1, "size": 1, "published": 1},
+        )
+        data: Dict[str, Any] = result.get("data") or {}
+        return int(data.get("total") or 0)
+
+    async def get_user_total_views(self, user_id: int) -> int:
+        """获取用户文章的总阅读量（通过用户文章列表汇总）"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/articles/user/{user_id}",
+            method="GET",
+            params={"page": 1, "size": 1, "published": 1},
+        )
+        data: Dict[str, Any] = result.get("data") or {}
+        records = data.get("list") or data.get("records") or []
+        return sum(int(item.get("views") or 0) for item in records)
+
+    async def get_user_total_likes(self, user_id: int) -> int:
+        """获取用户获赞数（复用用户点赞分页接口的 total）"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/likes/user/{user_id}",
+            method="GET",
+            params={"page": 1, "size": 1},
+        )
+        data: Dict[str, Any] = result.get("data") or {}
+        return int(data.get("total") or 0)
+
+    async def get_user_total_collects(self, user_id: int) -> int:
+        """获取用户获藏数（复用用户收藏分页接口的 total）"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/collects/user/{user_id}",
+            method="GET",
+            params={"page": 1, "size": 1},
+        )
+        data: Dict[str, Any] = result.get("data") or {}
+        return int(data.get("total") or 0)
+
+    async def get_user_total_followers(self, user_id: int) -> int:
+        """获取用户的粉丝数"""
+        result: Dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path=f"/focus/count/follower/{user_id}",
+            method="GET",
+        )
+        data = result.get("data")
+        if isinstance(data, dict):
+            return int(data.get("count") or 0)
+        return int(data or 0)
+
     async def get_monthly_follow_trend(self, user_id: int) -> Dict[str, Any]:
         """获取用户本月关注的趋势"""
         result: Dict[str, Any] = await call_remote_service(
