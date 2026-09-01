@@ -167,6 +167,48 @@ CREATE TABLE IF NOT EXISTS warehouse.dws_user_day (
 ) ENGINE = MergeTree
 ORDER BY (stat_date, user_id);
 
+-- 用户分析 ADS 层：按用户聚合的日粒度行为汇总，供用户分析接口直接查询
+CREATE TABLE IF NOT EXISTS warehouse.ads_user_day (
+    stat_date Date,
+    user_id Int64,
+    like_count Int64,
+    collect_count Int64,
+    comment_count Int64,
+    focus_count Int64,
+    view_count Int64,
+    last_active_time DateTime,
+    stat_time DateTime
+) ENGINE = ReplacingMergeTree (stat_time)
+ORDER BY (stat_date, user_id);
+
+-- 用户分析 ADS 层：用户浏览过的文章分布（预聚合，消除查询期 JOIN）
+CREATE TABLE IF NOT EXISTS warehouse.ads_user_view_articles (
+    user_id Int64,
+    article_id Int64,
+    article_title String,
+    view_count Int64,
+    stat_time DateTime
+) ENGINE = ReplacingMergeTree (stat_time)
+ORDER BY (user_id, article_id);
+
+-- 用户分析 ADS 层：按用户聚合的累计指标（含作为作者的获赞获藏与作为观众的浏览分布）
+CREATE TABLE IF NOT EXISTS warehouse.ads_user_stats (
+    user_id Int64,
+    total_likes_given Int64,
+    total_collects_given Int64,
+    total_comments Int64,
+    total_focus Int64,
+    total_views_given Int64,
+    total_articles Int64,
+    total_views_received Int64,
+    total_likes_received Int64,
+    total_collects_received Int64,
+    total_followers Int64,
+    last_active_time DateTime,
+    stat_time DateTime
+) ENGINE = ReplacingMergeTree (stat_time)
+ORDER BY user_id;
+
 CREATE TABLE IF NOT EXISTS warehouse.ads_top10_articles (
     id Int64,
     title String,
