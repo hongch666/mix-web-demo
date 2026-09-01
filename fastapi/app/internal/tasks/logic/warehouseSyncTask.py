@@ -171,6 +171,9 @@ async def _refresh_warehouse(conn: Any) -> None:
         WarehouseScripts.REFRESH_DWS_ARTICLE,
         WarehouseScripts.REFRESH_DWS_USER,
         *WarehouseScripts.REFRESH_ADS,
+        WarehouseScripts.REFRESH_ADS_USER_DAY,
+        WarehouseScripts.REFRESH_ADS_USER_VIEW_ARTICLES,
+        WarehouseScripts.REFRESH_ADS_USER_STATS,
     ):
         await asyncio.to_thread(conn.execute, sql)
 

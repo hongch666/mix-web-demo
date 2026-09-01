@@ -12,34 +12,32 @@ class WarehouseScripts:
     )
 
     USER_FOLLOWERS_BY_DAY_QUERY: Final[str] = """
-        SELECT toDate(action_time) AS stat_date, count() AS count
-        FROM warehouse.dwd_user_action FINAL
-        WHERE action_type = 'focus' AND article_id = %(user_id)s
-          AND action_time >= %(start_date)s AND action_time < %(end_date)s
-        GROUP BY stat_date ORDER BY stat_date
+        SELECT stat_date, focus_count
+        FROM warehouse.ads_user_day FINAL
+        WHERE user_id = %(user_id)s
+          AND stat_date >= %(start_date)s AND stat_date < %(end_date)s
+        ORDER BY stat_date
     """
     USER_VIEW_DISTRIBUTION_QUERY: Final[str] = """
-        SELECT action.article_id, any(article.title), count() AS views
-        FROM warehouse.dwd_user_action AS action FINAL
-        LEFT JOIN warehouse.dwd_article_event AS article FINAL
-          ON action.article_id = article.id
-        WHERE action.user_id = %(user_id)s AND action.action_type = 'view'
-          AND action.article_id > 0
-        GROUP BY action.article_id ORDER BY views DESC
+        SELECT article_id, article_title, view_count
+        FROM warehouse.ads_user_view_articles FINAL
+        WHERE user_id = %(user_id)s AND article_id > 0
+        ORDER BY view_count DESC
     """
     USER_TOTAL_FOLLOWS_QUERY: Final[str] = (
-        "SELECT count() FROM warehouse.ods_focus FINAL WHERE user_id = %(user_id)s"
+        "SELECT total_followers FROM warehouse.ads_user_stats FINAL "
+        "WHERE user_id = %(user_id)s"
     )
     USER_DAILY_FOLLOW_QUERY: Final[str] = """
         SELECT stat_date, focus_count
-        FROM warehouse.dws_user_day
+        FROM warehouse.ads_user_day FINAL
         WHERE user_id = %(user_id)s
           AND stat_date >= %(start_date)s AND stat_date < %(end_date)s
         ORDER BY stat_date
     """
     USER_MONTHLY_ACTION_QUERY: Final[str] = """
         SELECT stat_date, %(metric)s
-        FROM warehouse.dws_user_day
+        FROM warehouse.ads_user_day FINAL
         WHERE user_id = %(user_id)s
           AND stat_date >= %(start_date)s AND stat_date < %(end_date)s
         ORDER BY stat_date
@@ -96,6 +94,9 @@ class WarehouseScripts:
         "TRUNCATE TABLE warehouse.ads_monthly_publish",
         "TRUNCATE TABLE warehouse.ads_platform_stats",
         "TRUNCATE TABLE warehouse.ads_user_profile",
+        "TRUNCATE TABLE warehouse.ads_user_day",
+        "TRUNCATE TABLE warehouse.ads_user_view_articles",
+        "TRUNCATE TABLE warehouse.ads_user_stats",
     )
 
     REFRESH_DIM_USER: Final[str] = """
@@ -223,3 +224,91 @@ class WarehouseScripts:
         GROUP BY u.id, u.name, p.total_articles, p.total_views
         """,
     )
+
+    # 用户分析 ADS 层刷新：日粒度行为汇总（含作为观众的行为）
+    REFRESH_ADS_USER_DAY: Final[str] = """
+        INSERT INTO warehouse.ads_user_day
+        SELECT action_date, user_id,
+               countIf(action_type = 'like'), countIf(action_type = 'collect'),
+               countIf(action_type = 'comment'), countIf(action_type = 'focus'),
+               countIf(action_type = 'view'), max(action_time), now()
+        FROM warehouse.dwd_user_action FINAL
+        GROUP BY action_date, user_id
+    """
+
+    # 用户分析 ADS 层刷新：用户浏览的文章分布（预聚合浏览事件，消除查询期 JOIN）
+    REFRESH_ADS_USER_VIEW_ARTICLES: Final[str] = """
+        INSERT INTO warehouse.ads_user_view_articles
+        SELECT v.user_id, v.article_id, ifNull(a.title, ''), v.view_count, now()
+        FROM
+        (
+            SELECT user_id, article_id, count() AS view_count
+            FROM warehouse.dwd_user_action FINAL
+            WHERE action_type = 'view' AND article_id > 0
+            GROUP BY user_id, article_id
+        ) AS v
+        LEFT JOIN warehouse.dwd_article_event AS a FINAL ON v.article_id = a.id
+    """
+
+    # 用户分析 ADS 层刷新：用户累计指标（作为观众的主动行为 + 作为作者的被动数据）
+    REFRESH_ADS_USER_STATS: Final[str] = """
+        INSERT INTO warehouse.ads_user_stats
+        SELECT
+            u.id AS user_id,
+            ifNull(g.total_likes_given, 0),
+            ifNull(g.total_collects_given, 0),
+            ifNull(g.total_comments, 0),
+            ifNull(g.total_focus, 0),
+            ifNull(g.total_views_given, 0),
+            ifNull(p.total_articles, 0),
+            ifNull(p.total_views_received, 0),
+            ifNull(p.total_likes_received, 0),
+            ifNull(p.total_collects_received, 0),
+            ifNull(f.total_followers, 0),
+            ifNull(g.last_active_time, toDateTime('1970-01-01 00:00:00')),
+            now()
+        FROM warehouse.dim_user AS u FINAL
+        LEFT JOIN
+        (
+            SELECT user_id,
+                   countIf(action_type = 'like') AS total_likes_given,
+                   countIf(action_type = 'collect') AS total_collects_given,
+                   countIf(action_type = 'comment') AS total_comments,
+                   countIf(action_type = 'focus') AS total_focus,
+                   countIf(action_type = 'view') AS total_views_given,
+                   max(action_time) AS last_active_time
+            FROM warehouse.dwd_user_action FINAL
+            GROUP BY user_id
+        ) AS g ON u.id = g.user_id
+        LEFT JOIN
+        (
+            SELECT a.user_id AS author_id,
+                   count() AS total_articles,
+                   sum(a.views) AS total_views_received,
+                   ifNull(l.like_count, 0) AS total_likes_received,
+                   ifNull(c.collect_count, 0) AS total_collects_received
+            FROM warehouse.dwd_article_event AS a FINAL
+            LEFT JOIN
+            (
+                SELECT article_id, countIf(action_type = 'like') AS like_count
+                FROM warehouse.dwd_user_action FINAL
+                WHERE article_id > 0
+                GROUP BY article_id
+            ) AS l ON a.id = l.article_id
+            LEFT JOIN
+            (
+                SELECT article_id, countIf(action_type = 'collect') AS collect_count
+                FROM warehouse.dwd_user_action FINAL
+                WHERE article_id > 0
+                GROUP BY article_id
+            ) AS c ON a.id = c.article_id
+            GROUP BY a.user_id, l.like_count, c.collect_count
+        ) AS p ON u.id = p.author_id
+        LEFT JOIN
+        (
+            SELECT focus_id AS author_id, count() AS total_followers
+            FROM warehouse.dwd_user_action FINAL
+            WHERE action_type = 'focus' AND article_id > 0
+            GROUP BY focus_id
+        ) AS f ON u.id = f.author_id
+    """
