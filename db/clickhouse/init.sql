@@ -252,20 +252,6 @@ CREATE TABLE IF NOT EXISTS warehouse.ads_platform_stats (
 ) ENGINE = ReplacingMergeTree (stat_time)
 ORDER BY id;
 
-CREATE TABLE IF NOT EXISTS warehouse.ads_user_profile (
-    user_id Int64,
-    user_name String,
-    total_likes_given Int64,
-    total_collects_given Int64,
-    total_comments Int64,
-    total_focus Int64,
-    total_articles Int64,
-    total_views Int64,
-    last_active_time DateTime,
-    stat_time DateTime
-) ENGINE = ReplacingMergeTree (stat_time)
-ORDER BY user_id;
-
 INSERT INTO warehouse.sync_watermark (table_name, last_watermark, updated_at)
 SELECT table_name, '1970-01-01 00:00:00', now()
 FROM (SELECT arrayJoin([
