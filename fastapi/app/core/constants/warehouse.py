@@ -299,9 +299,9 @@ class WarehouseScripts:
         ) AS p ON u.id = p.author_id
         LEFT JOIN
         (
-            SELECT focus_id AS author_id, count() AS total_followers
+            SELECT article_id AS author_id, count() AS total_followers
             FROM warehouse.dwd_user_action FINAL
             WHERE action_type = 'focus' AND article_id > 0
-            GROUP BY focus_id
+            GROUP BY article_id
         ) AS f ON u.id = f.author_id
     """
