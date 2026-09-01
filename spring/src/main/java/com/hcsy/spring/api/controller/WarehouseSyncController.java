@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.hcsy.spring.api.service.WarehouseSyncService;
 import com.hcsy.spring.api.service.WarehouseSyncService.SyncPage;
-import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 
@@ -23,18 +22,17 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping("/warehouse")
 @RequiredArgsConstructor
-@Tag(name = Messages.WAREHOUSE_SYNC_TAG)
+@Tag(name = "数仓同步模块")
 public class WarehouseSyncController {
 
     private final WarehouseSyncService warehouseSyncService;
 
     @GetMapping("/sync/{resource}")
     @RequireInternalToken
-    @Operation(summary = Messages.WAREHOUSE_SYNC_SUMMARY, description = Messages.WAREHOUSE_SYNC_DESCRIPTION)
+    @Operation(summary = "分页获取数仓源数据", description = "供 FastAPI 数仓任务通过内部接口分页同步 Spring 业务数据")
     public Mono<Result<SyncPage>> sync(
         @PathVariable String resource,
-        @RequestParam(defaultValue = "1970-01-01 00:00:00")
-        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime updatedAfter,
+        @RequestParam(defaultValue = "1970-01-01 00:00:00") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime updatedAfter,
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "1000") int size) {
         return warehouseSyncService.sync(resource, updatedAfter, page, size)
