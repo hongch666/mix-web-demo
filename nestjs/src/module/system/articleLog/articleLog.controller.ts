@@ -10,7 +10,6 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
-import { Messages } from "src/common/constants";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
@@ -52,8 +51,8 @@ export class ArticleLogController {
 
   @Get("sync")
   @ApiOperation({
-    summary: Messages.ARTICLE_LOG_SYNC_SUMMARY,
-    description: Messages.ARTICLE_LOG_SYNC_DESCRIPTION,
+    summary: "游标同步文章日志",
+    description: "供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志",
   })
   @RequireInternalToken()
   async sync(

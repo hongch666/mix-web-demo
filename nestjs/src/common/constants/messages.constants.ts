@@ -2,10 +2,6 @@
  * 消息常量类
  */
 export class Messages {
-  static readonly ARTICLE_LOG_SYNC_SUMMARY = "游标同步文章日志";
-  static readonly ARTICLE_LOG_SYNC_DESCRIPTION =
-    "供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志";
-
   static readonly INTERNAL_TOKEN_SERVICE_NAME_MISMATCH = (
     requiredServiceName: string,
     actualServiceName: string,
@@ -313,23 +309,25 @@ export class Messages {
   ): string =>
     `[攒批] ${name} 初始化完成 (batchSize=${batchSize}, interval=${intervalMs}ms)`;
 
-  static readonly BATCH_DISCARDED_AFTER_SHUTDOWN = (
-    name: string,
-  ): string => `[攒批] ${name} 已关闭，丢弃数据`;
+  static readonly BATCH_DISCARDED_AFTER_SHUTDOWN = (name: string): string =>
+    `[攒批] ${name} 已关闭，丢弃数据`;
 
   static readonly BATCH_FORCE_FLUSH_MAX_CAPACITY = (
     name: string,
     maxBufferSize: number,
   ): string => `[攒批] ${name} 缓冲区达到最大容量 ${maxBufferSize}，强制 flush`;
 
-  static readonly BATCH_FLUSH_SUCCESS = (name: string, batchSize: number): string =>
-    `[攒批] ${name} flush 成功，批次大小: ${batchSize}`;
+  static readonly BATCH_FLUSH_SUCCESS = (
+    name: string,
+    batchSize: number,
+  ): string => `[攒批] ${name} flush 成功，批次大小: ${batchSize}`;
 
   static readonly BATCH_FLUSH_FAILED_DETAIL = (
     name: string,
     batchSize: number,
     errorMessage: string,
-  ): string => `[攒批] ${name} flush 失败，批次大小: ${batchSize}，错误: ${errorMessage}`;
+  ): string =>
+    `[攒批] ${name} flush 失败，批次大小: ${batchSize}，错误: ${errorMessage}`;
 
   static readonly BATCH_SHUTDOWN_FLUSH_REMAINING = (
     name: string,
