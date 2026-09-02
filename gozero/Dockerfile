@@ -69,8 +69,8 @@ RUN mkdir -p /app/logs/gozero && \
 
 USER appuser
 
-# 暴露端口（默认8082）
-EXPOSE 8082
+# 暴露 HTTP 和 gRPC 端口
+EXPOSE 8082 9082
 
 # 运行应用
 ENTRYPOINT ["./gozero-app", "-f", "etc/application.yaml"]

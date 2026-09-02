@@ -48,8 +48,8 @@ RUN mkdir -p /app/logs/nestjs && \
     mkdir -p /app/static/upload && \
     chown -R node:node /app/logs/nestjs /app/static
 
-# 暴露端口（默认8083）
-EXPOSE 8083
+# 暴露 HTTP 和 gRPC 端口
+EXPOSE 8083 9083
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

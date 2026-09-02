@@ -11,6 +11,8 @@ from app.core.base import Logger
 from app.core.client import set_shared_http_client, start_nacos
 from app.core.config import load_config
 from app.core.constants import Messages
+from app.core.grpc import GrpcServerManager
+from app.core.grpc.server import create_grpc_server_manager
 from app.core.db import (
     AsyncSessionLocal,
     RabbitMQClient,
@@ -42,6 +44,7 @@ SQLALCHEMY_MODELS: tuple[type[AiHistory], ...] = (AiHistory,)
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     scheduler: Optional[AsyncIOScheduler] = None
+    grpc_server: GrpcServerManager = create_grpc_server_manager()
     # LangSmith 初始化（追踪关闭或失败时均不阻断业务启动）
     langsmith_config = load_langsmith_config()
     init_langsmith(langsmith_config)
@@ -78,6 +81,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     )
     set_shared_http_client(shared_http_client)
     Logger.info(Messages.HTTP_CLIENT_POOL_INITIALIZED)
+    await grpc_server.start()
 
     Logger.info(Messages.STARTUP_MESSAGE)
     Logger.info(Messages.STARTUP_SERVICE_ADDRESS(IP, PORT))
@@ -89,6 +93,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     if scheduler:
         scheduler.shutdown(wait=False)
         Logger.info(Messages.SCHEDULER_STOPPED)
+
+    await grpc_server.stop()
 
     await get_neo4j_client().close()
     await get_clickhouse_connection_pool().close_all_async()

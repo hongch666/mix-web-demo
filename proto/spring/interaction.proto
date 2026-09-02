@@ -1,0 +1,19 @@
+// Server: spring
+// Consumers: gozero,fastapi
+syntax = "proto3";
+package spring.v1;
+option go_package = "app/proto/springv1";
+option java_package = "com.hcsy.spring.proto.interaction.v1";
+option java_multiple_files = true;
+import "common/result.proto";
+
+service Interaction {
+  rpc CommentScores(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc LikeCounts(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc CollectCounts(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc FollowCounts(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc UserLikes(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc UserCollects(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc UserFollowerCount(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc CommentsCreate(common.v1.JsonRequest) returns (common.v1.Result);
+}

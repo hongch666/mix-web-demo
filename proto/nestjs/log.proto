@@ -1,0 +1,15 @@
+// Server: nestjs
+// Consumers: gozero,fastapi
+syntax = "proto3";
+package nestjs.v1;
+option go_package = "app/proto/nestjsv1";
+option java_package = "com.hcsy.nestjs.proto.log.v1";
+import "common/result.proto";
+
+service Log {
+  rpc SearchHistory (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ViewDistribution (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc SearchKeywords (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ApiAverageSpeed (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ApiCalledCount (common.v1.JsonRequest) returns (common.v1.Result);
+}

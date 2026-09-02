@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { Method } from "axios";
 import axiosRetry from "axios-retry";
+import * as grpc from "@grpc/grpc-js";
 import type { NacosInstance } from "nacos";
 import { NacosNamingClient } from "nacos";
 import { ClsService } from "nestjs-cls";
@@ -12,6 +13,9 @@ import { ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
+import { ArticleService } from "src/proto/spring/article";
+import { UserService } from "src/proto/spring/user";
+import { JsonRequest, Result } from "src/proto/common/result";
 
 interface CallOptions {
   serviceName: string;
@@ -162,6 +166,12 @@ export class NacosService implements OnModuleInit {
         healthy: true,
         metadata: {
           version: "1.0.0",
+          ...(this.configService.get<boolean>("grpc.enabled")
+            ? {
+                grpc_port: String(this.configService.get<number>("grpc.port")),
+                protocols: "grpc,http",
+              }
+            : { protocols: "http" }),
         },
       },
     );
@@ -249,6 +259,10 @@ export class NacosService implements OnModuleInit {
   }
 
   async call(opts: CallOptions): Promise<Record<string, unknown>> {
+    const grpcResult: Record<string, unknown> | null = await this.callGrpc(opts);
+    if (grpcResult !== null) {
+      return grpcResult;
+    }
     const breaker = this.getBreaker(opts.serviceName);
 
     const instances: NacosInstance[] = await this.getServiceInstances(
@@ -370,4 +384,122 @@ export class NacosService implements OnModuleInit {
       );
     }
   }
+
+  /**
+   * 调用已登记的 Spring gRPC 查询接口。返回 null 表示该路由或实例不支持，
+   * 由上层继续使用原 HTTP 调用；业务错误不会静默降级。
+   */
+  private async callGrpc(
+    opts: CallOptions,
+  ): Promise<Record<string, unknown> | null> {
+    const grpcEnabled: boolean = this.configService.get<boolean>("grpc.enabled") ?? false;
+    const route = this.springGrpcRoute(opts.method, opts.path);
+    if (!grpcEnabled || route === null) return null;
+
+    let instances: NacosInstance[];
+    try {
+      instances = await this.getServiceInstances(opts.serviceName);
+    } catch (error) {
+      this.logger.warning(Messages.GRPC_CALL_FALLBACK(opts.serviceName, opts.path));
+      return null;
+    }
+    const instance: NacosInstance | undefined = instances.find((item) => {
+      const metadata = item.metadata as Record<string, string> | undefined;
+      return Boolean(metadata?.grpc_port && metadata.protocols?.includes("grpc"));
+    });
+    if (!instance) return null;
+
+    const metadata = new grpc.Metadata();
+    const userId: number = this.cls.get<number>("userId") || 0;
+    const username: string = this.cls.get<string>("username") || "";
+    const sessionId: string = this.cls.get<string>("sessionId") || "";
+    metadata.set("x-user-id", String(userId));
+    metadata.set("x-username", username.replace(/[^\x20-\x7E]/g, "").trim());
+    metadata.set("x-session-id", sessionId);
+    const internalToken: string = await this.internalTokenUtil.generateInternalToken(
+      userId > 0 ? userId : -1,
+      this.configService.get<string>("server.serviceName")!,
+    );
+    metadata.set("x-internal-token", `Bearer ${internalToken}`);
+    const grpcPort: string = (instance.metadata as Record<string, string> | undefined)?.grpc_port || "";
+    const client = new grpc.Client(`${instance.ip}:${grpcPort}`, grpc.credentials.createInsecure());
+    const payload: JsonRequest = {
+      payload: Buffer.from(JSON.stringify({
+        method: opts.method,
+        route: opts.path,
+        query: opts.queryParams || {},
+        body: opts.body || null,
+      }), "utf8"),
+    };
+    try {
+      const response: Result = await new Promise<Result>((resolve, reject) => {
+        client.makeUnaryRequest(
+          route.path,
+          (value: JsonRequest) => Buffer.from(JsonRequest.encode(value).finish()),
+          (value: Buffer) => Result.decode(value),
+          payload,
+          metadata,
+          { deadline: Date.now() + this.remoteCallConfig.timeout },
+          (error: grpc.ServiceError | null, value?: Result) => error ? reject(error) : resolve(value!),
+        );
+      });
+      const data: unknown = response.data?.length
+        ? JSON.parse(Buffer.from(response.data).toString("utf8"))
+        : null;
+      const result: Record<string, unknown> = {
+        code: response.code,
+        msg: response.message,
+        data,
+      };
+      if (response.code !== HttpCode.OK) {
+        throw BusinessException.badGateway(
+          Messages.SERVICE_CALL_FAILED_WITH_MSG(opts.serviceName, response.message),
+          ErrorIds.SERVICE_CALL_FAILED,
+        );
+      }
+      this.logger.info(Messages.GRPC_CALL_SUCCESS(opts.serviceName, opts.path));
+      return result;
+    } catch (error) {
+      const code = (error as grpc.ServiceError).code;
+      if (code === grpc.status.UNAVAILABLE || code === grpc.status.DEADLINE_EXCEEDED) {
+        this.logger.warning(Messages.GRPC_CALL_FALLBACK(opts.serviceName, opts.path));
+        return null;
+      }
+      throw error;
+    } finally {
+      client.close();
+    }
+  }
+
+  private springGrpcRoute(method: Method, path: string): { path: string } | null {
+    if (optsMethodIsGet(method) && /^\/articles\/[^/]+$/.test(path)) {
+      return { path: "/spring.v1.Article/Get" };
+    }
+    if (method === "POST" && path === "/articles/batch") {
+      return { path: "/spring.v1.Article/Batch" };
+    }
+    if (optsMethodIsGet(method) && path === "/articles/by-title") {
+      return { path: "/spring.v1.Article/ByTitle" };
+    }
+    if (optsMethodIsGet(method) && /^\/users\/[0-9]+$/.test(path)) {
+      return { path: UserService.get.path };
+    }
+    if (method === "POST" && path === "/users/batch") return { path: UserService.batch.path };
+    if (optsMethodIsGet(method) && path === "/users/by-name") return { path: UserService.byName.path };
+    if (optsMethodIsGet(method) && /^\/users\/by-github-id\/.+/.test(path)) {
+      return { path: UserService.byGithubId.path };
+    }
+    if (method === "POST" && path === "/users/github-user") return { path: UserService.githubUser.path };
+    if (optsMethodIsGet(method) && /^\/users\/[0-9]+\/is-admin$/.test(path)) {
+      return { path: UserService.isAdmin.path };
+    }
+    if (method === "POST" && path === "/users/github/token-ticket") {
+      return { path: UserService.tokenTicket.path };
+    }
+    return null;
+  }
+}
+
+function optsMethodIsGet(method: Method): boolean {
+  return method.toUpperCase() === "GET";
 }

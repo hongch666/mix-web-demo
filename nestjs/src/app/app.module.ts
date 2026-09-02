@@ -18,6 +18,7 @@ import { RedisModule } from "src/module/common/redis/redis.module";
 import { SystemModule } from "src/module/system/system.module";
 import { InternalTokenUtil } from "../common/utils/internalToken.util";
 import { ClsMiddleware } from "../framework/middleware/cls.middleware";
+import { GrpcController } from "../module/common/grpc/grpc.controller";
 
 interface DatabaseConfig {
   type: "mysql";
@@ -128,7 +129,7 @@ interface MongoDbConfig {
     CommonModule,
     SystemModule,
   ],
-  controllers: [],
+  controllers: [GrpcController],
   providers: [
     InternalTokenUtil,
     AllExceptionsFilter,

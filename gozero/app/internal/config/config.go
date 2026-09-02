@@ -18,6 +18,12 @@ type Config struct {
 	Logs          LogsConfig          `json:"logs"`
 	InternalToken InternalTokenConfig `json:"internal-token"`
 	RemoteCall    RemoteCallConfig    `json:"remote-call"`
+	Grpc          GrpcConfig          `json:"grpc"`
+}
+
+type GrpcConfig struct {
+	Enabled bool `json:"enabled"`
+	Port    int  `json:"port"`
 }
 
 type NacosConfig struct {
@@ -96,6 +102,7 @@ type RemoteCallConfig struct {
 	InitialBackoff int                  `json:"initialBackoff"` // 初始退避时间（毫秒）
 	MaxBackoff     int                  `json:"maxBackoff"`     // 最大退避时间（毫秒）
 	CircuitBreaker CircuitBreakerConfig `json:"circuitBreaker"` // 熔断器配置
+	Protocol       string               `json:"protocol"`       // grpc-first 或 http-only
 }
 
 type CircuitBreakerConfig struct {

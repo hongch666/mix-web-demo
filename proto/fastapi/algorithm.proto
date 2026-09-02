@@ -1,0 +1,20 @@
+// Server: fastapi
+// Consumers: gozero
+// 生成范围：fastapi(Python) + gozero(Go)
+syntax = "proto3";
+
+package fastapi.v1;
+
+option go_package = "app/proto/fastapiv1";
+option java_package = "com.hcsy.spring.proto.fastapi.v1";
+option java_multiple_files = true;
+
+import "common/result.proto";
+
+service Algorithm {
+  rpc GetSearchWeights (EmptyRequest) returns (common.v1.Result);
+  rpc GetSearchScript (EmptyRequest) returns (common.v1.Result);
+  rpc GetSearchScriptParams (EmptyRequest) returns (common.v1.Result);
+}
+
+message EmptyRequest {}

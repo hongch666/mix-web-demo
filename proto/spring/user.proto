@@ -1,0 +1,18 @@
+// Server: spring
+// Consumers: gozero,fastapi,nestjs
+syntax = "proto3";
+package spring.v1;
+option go_package = "app/proto/springv1";
+option java_package = "com.hcsy.spring.proto.user.v1";
+option java_multiple_files = true;
+import "common/result.proto";
+
+service User {
+  rpc Get(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc Batch(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ByName(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ByGithubId(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc GithubUser(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc IsAdmin(common.v1.JsonRequest) returns (common.v1.Result);
+  rpc TokenTicket(common.v1.JsonRequest) returns (common.v1.Result);
+}

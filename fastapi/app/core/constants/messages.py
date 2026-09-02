@@ -2,9 +2,37 @@ from typing import Any, Optional
 
 
 class Messages:
+    GRPC_RESULT_SUCCESS: str = "success"
+    GRPC_CALL_FALLBACK: str = "gRPC 调用不可用，降级 HTTP: service=%s path=%s error=%s"
+
     """
     消息类常量 — 日志消息、用户提示、RabbitMQ/Redis/Nacos 消息
     """
+
+    GRPC_SERVER_DISABLED = "gRPC 服务已禁用"
+    GRPC_SERVER_STOPPED = "gRPC 服务已停止"
+    GRPC_INTERNAL_TOKEN_MISSING = "缺少内部服务令牌"
+    GRPC_INTERNAL_TOKEN_INVALID_MESSAGE = "内部服务令牌无效"
+
+    @staticmethod
+    def GRPC_CONTEXT_RECEIVED(user_id: Any) -> str:
+        return f"gRPC 请求上下文已接收，用户ID: {user_id}"
+
+    @staticmethod
+    def GRPC_INTERNAL_TOKEN_INVALID(error: Exception) -> str:
+        return f"gRPC 内部服务令牌校验失败: {error}"
+
+    @staticmethod
+    def GRPC_REQUEST_HANDLED(method: str) -> str:
+        return f"gRPC 请求处理完成: {method}"
+
+    @staticmethod
+    def GRPC_SERVER_BIND_FAILED(port: int) -> str:
+        return f"gRPC 端口绑定失败: {port}"
+
+    @staticmethod
+    def GRPC_SERVER_STARTED(port: int) -> str:
+        return f"gRPC 服务已启动，监听端口: {port}"
 
     # ===== 内部令牌 =====
 

@@ -255,6 +255,14 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 	}
 
 	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
+		metadata := map[string]string{
+			"version":   "1.0.0",
+			"protocols": "http",
+		}
+		if c.Grpc.Enabled && c.Grpc.Port > 0 {
+			metadata["grpc_port"] = strconv.Itoa(c.Grpc.Port)
+			metadata["protocols"] = "grpc,http"
+		}
 		_, err = namingClient.RegisterInstance(vo.RegisterInstanceParam{
 			Ip:          registerIP,
 			Port:        uint64(c.Port),
@@ -265,6 +273,7 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 			Enable:      true,
 			Healthy:     true,
 			Ephemeral:   true,
+			Metadata:    metadata,
 		})
 		if err != nil {
 			logger.Errorf(constants.NACOS_REGISTER_FAIL,

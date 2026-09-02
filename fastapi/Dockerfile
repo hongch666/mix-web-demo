@@ -26,8 +26,8 @@ RUN mkdir -p /app/logs/fastapi \
     && mkdir -p /app/static/pic \
     && mkdir -p /app/static/excel
 
-# 暴露端口（默认8084）
-EXPOSE 8084
+# 暴露 HTTP 和 gRPC 端口
+EXPOSE 8084 9084
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

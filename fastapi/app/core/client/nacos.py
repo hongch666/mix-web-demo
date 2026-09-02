@@ -1,6 +1,7 @@
 import socket
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 import nacos
@@ -28,6 +29,9 @@ server_config: dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
 SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 PORT: int = server_config["port"]
+grpc_config: dict[str, Any] = load_config("grpc")
+GRPC_PORT: int = int(grpc_config["port"])
+GRPC_ENABLED: bool = bool(grpc_config.get("enabled", True))
 
 
 def _build_client() -> nacos.NacosClient:
@@ -36,6 +40,9 @@ def _build_client() -> nacos.NacosClient:
         kwargs["username"] = USERNAME
     if PASSWORD:
         kwargs["password"] = PASSWORD
+    log_path = Path(load_config("logs").get("path", "../logs/fastapi"))
+    log_path.mkdir(parents=True, exist_ok=True)
+    kwargs["logDir"] = str(log_path)
     return nacos.NacosClient(SERVER_ADDRESSES, **kwargs)
 
 
@@ -79,7 +86,19 @@ def register_instance(ip: str = IP, port: int = PORT) -> None:
     for attempt in range(1, REGISTER_RETRIES + 1):
         try:
             client.add_naming_instance(
-                SERVICE_NAME, registration_ip, port, group_name=GROUP_NAME
+                SERVICE_NAME,
+                registration_ip,
+                port,
+                metadata=(
+                    {
+                        "version": "1.0.0",
+                        "grpc_port": str(GRPC_PORT),
+                        "protocols": "grpc,http",
+                    }
+                    if GRPC_ENABLED
+                    else {"version": "1.0.0", "protocols": "http"}
+                ),
+                group_name=GROUP_NAME,
             )
             Logger.info(
                 Messages.NACOS_REGISTERED(

@@ -1,0 +1,13 @@
+// Server: fastapi
+// Consumers: spring
+syntax = "proto3";
+package fastapi.v1;
+option go_package = "app/proto/fastapiv1";
+option java_package = "com.hcsy.fastapi.proto.v1";
+import "common/result.proto";
+
+service FastapiTask {
+  rpc SyncVector (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ClearAnalyzeCaches (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc SyncNeo4j (common.v1.JsonRequest) returns (common.v1.Result);
+}

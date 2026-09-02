@@ -79,6 +79,7 @@ show_help() {
     echo "  swag                     - Generate Swagger API documentation"
     echo "  goctl-api [args...]      - Generate GoZero API code"
     echo "  goctl-orm [args...]      - Generate GoZero ORM code"
+    echo "  grpc-proto [args...]     - Generate gRPC proto code"
     echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
@@ -95,6 +96,9 @@ show_help() {
     echo "  ./mix swag                     # Generate Swagger API documentation"
     echo "  ./mix goctl-api                # Generate GoZero API code"
     echo "  ./mix goctl-orm                # Generate GoZero ORM code"
+    echo "  ./mix grpc-proto               # 自动安装工具并生成全部试点 proto 代码"
+    echo "  ./mix grpc-proto -l            # 查看 proto 生成矩阵，不安装工具"
+    echo "  ./mix grpc-proto -p search_enhance.proto"
     echo "  ./mix dev multi                # Multi-pane tmux layout (dev)"
     echo "  ./mix dev seq                  # Sequential window layout (dev, default config)"
     echo "  ./mix dev seq -i               # Sequential layout with interactive mode"
@@ -249,6 +253,10 @@ case $COMMAND in
     goctl-orm)
         echo "Generating GoZero ORM code..."
         bash "$SCRIPTS_DIR/goctl-orm-init.sh" "${@:2}"
+        ;;
+    grpc-proto)
+        echo "Generating gRPC proto code..."
+        bash "$SCRIPTS_DIR/grpc-proto-gen.sh" "${@:2}"
         ;;
     dev)
         run_dev_command "${@:2}"

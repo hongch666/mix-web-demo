@@ -2,9 +2,21 @@ server:
   address: ${SERVER_ADDRESS:0.0.0.0}
   mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8081}
+
+grpc:
+  server:
+    enabled: ${GRPC_ENABLED:true}
+    port: ${GRPC_PORT:9081}
 spring:
   application:
     name: spring
+  cloud:
+    nacos:
+      discovery:
+        metadata:
+          version: 1.0.0
+          grpc_port: ${GRPC_PORT:9081}
+          protocols: grpc,http
   jackson:
     property-naming-strategy: SNAKE_CASE
   r2dbc:
@@ -65,6 +77,7 @@ internal-token:
 # 微服务间调用统一超时时间（所有 client 共用，默认 30 秒）
 service-client:
   timeout: 30s
+  protocol: ${REMOTE_CALL_PROTOCOL:http-only}
 
 user:
   default-password: ${USER_DEFAULT_PASSWORD:}

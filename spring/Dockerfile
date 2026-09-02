@@ -36,8 +36,8 @@ RUN mkdir -p /app/logs/spring && \
     mkdir -p /app/static/excel && \
     mkdir -p /app/static/upload
 
-# 暴露端口（默认8081）
-EXPOSE 8081
+# 暴露 HTTP 和 gRPC 端口
+EXPOSE 8081 9081
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \

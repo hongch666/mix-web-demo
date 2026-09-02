@@ -5,6 +5,10 @@ Timeout: ${SERVER_TIMEOUT:0}
 Mode: ${SERVER_MODE:dev}
 Prefix: ${SERVER_PREFIX:/}
 
+grpc:
+  enabled: ${GRPC_ENABLED:true}
+  port: ${GRPC_PORT:9082}
+
 nacos:
   ipAddr: ${NACOS_IP:127.0.0.1}
   port: ${NACOS_PORT:8848}
@@ -59,6 +63,7 @@ remote-call:
   maxRetries: 3 # 最大重试次数
   initialBackoff: 200 # 初始退避时间（毫秒）
   maxBackoff: 2000 # 最大退避时间（毫秒）
+  protocol: ${REMOTE_CALL_PROTOCOL:http-only} # grpc-first 或 http-only
   circuitBreaker:
     failureThreshold: 3 # 失败阈值（连续失败次数）
     recoveryTimeout: 15000 # 恢复超时时间（毫秒）

@@ -1,0 +1,17 @@
+// Server: spring
+// Consumers: gozero,fastapi,nestjs
+syntax = "proto3";
+package spring.v1;
+option go_package = "app/proto/springv1";
+option java_package = "com.hcsy.spring.proto.article.v1";
+option java_multiple_files = true;
+import "common/result.proto";
+
+service Article {
+  rpc List (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc Batch (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc Get (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ByTitle (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ViewsBatch (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc UserArticles (common.v1.JsonRequest) returns (common.v1.Result);
+}

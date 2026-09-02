@@ -38,6 +38,7 @@ func newClientContext(
 		MaxRetries:     remoteCallConfig.MaxRetries,
 		InitialBackoff: time.Duration(remoteCallConfig.InitialBackoff) * time.Millisecond,
 		MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
+		Protocol:       remoteCallConfig.Protocol,
 	}
 	return &ClientContext{
 		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg),

@@ -4,6 +4,10 @@ server:
   port: ${SERVER_PORT:8083}
   serviceName: ${SERVER_SERVICE_NAME:nestjs}
 
+grpc:
+  enabled: ${GRPC_ENABLED:true}
+  port: ${GRPC_PORT:9083}
+
 nacos:
   host: ${NACOS_SERVER:127.0.0.1}
   port: ${NACOS_PORT:8848}
@@ -84,6 +88,7 @@ internal-token:
 
 # 远程调用配置
 remote-call:
+  protocol: ${REMOTE_CALL_PROTOCOL:http-only}
   timeout: 3000 # 请求超时时间（毫秒）
   maxRetries: 3 # 最大重试次数
   initialBackoff: 200 # 初始退避时间（毫秒）

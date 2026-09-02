@@ -23,6 +23,7 @@ from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 
 from .nacos import get_service_instance
+from .grpc_client import call_grpc_if_supported
 
 # 共享 httpx 客户端实例（由 lifespan 初始化，复用连接池降低延迟）
 _shared_http_client: Optional[httpx.AsyncClient] = None
@@ -249,6 +250,19 @@ async def call_remote_service(
         timeout = config.get("timeout")
 
     merged_headers: dict[str, str] = _merge_headers(headers)
+    if str(config.get("protocol", "http-only")).lower() == "grpc-first":
+        grpc_result = await call_grpc_if_supported(
+            service_name=service_name,
+            path=path,
+            method=method,
+            headers=merged_headers,
+            params=params,
+            data=data,
+            body=json,
+            timeout=timeout,
+        )
+        if grpc_result is not None:
+            return grpc_result
     breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
 
     # 优先使用共享长连接池，不可用时创建临时客户端

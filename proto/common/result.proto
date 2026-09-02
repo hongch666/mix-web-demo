@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package common.v1;
+
+option go_package = "app/proto/commonv1";
+option java_package = "com.hcsy.spring.proto.common.v1";
+option java_multiple_files = true;
+
+// 通用响应，data 使用 JSON 字节承载，保持与现有 HTTP Result 结构一致。
+message Result {
+  int32 code = 1;
+  string message = 2;
+  bytes data = 3;
+}
+
+message JsonRequest {
+  bytes payload = 1;
+}

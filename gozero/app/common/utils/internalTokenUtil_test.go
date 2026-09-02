@@ -1,7 +1,6 @@
 package utils_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -48,20 +47,13 @@ func TestGenerateInternalToken(t *testing.T) {
 
 func TestValidateInternalToken(t *testing.T) {
 	tokenUtil := initTestInternalTokenUtil(t)
-	token := mustGetEnv(t, "INTERNAL_TOKEN_TEST_TOKEN")
+	token, err := tokenUtil.GenerateInternalToken(10001, "gozero")
+	if err != nil {
+		t.Fatalf("生成待校验Token失败: %v", err)
+	}
 
-	_, err := tokenUtil.ValidateInternalToken(token)
+	_, err = tokenUtil.ValidateInternalToken(token)
 	if err != nil {
 		t.Fatalf("校验内部Token失败: %v", err)
 	}
-}
-
-func mustGetEnv(t *testing.T, key string) string {
-	t.Helper()
-
-	value := os.Getenv(key)
-	if value == "" {
-		t.Fatalf("环境变量 %s 不能为空", key)
-	}
-	return value
 }

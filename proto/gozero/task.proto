@@ -1,0 +1,11 @@
+// Server: gozero
+// Consumers: spring
+syntax = "proto3";
+package gozero.v1;
+option go_package = "app/proto/gozerov1";
+option java_package = "com.hcsy.gozeroproto.v1";
+import "common/result.proto";
+
+service GozeroTask {
+  rpc Syncer (common.v1.JsonRequest) returns (common.v1.Result);
+}

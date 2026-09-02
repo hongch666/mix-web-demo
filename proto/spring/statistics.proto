@@ -1,0 +1,14 @@
+// Server: spring
+// Consumers: fastapi,nestjs
+syntax = "proto3";
+package spring.v1;
+option go_package = "app/proto/springv1";
+option java_package = "com.hcsy.spring.proto.statistics.v1";
+import "common/result.proto";
+
+service Statistics {
+  rpc Article (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc Interaction (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc Follow (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc UserPortrait (common.v1.JsonRequest) returns (common.v1.Result);
+}

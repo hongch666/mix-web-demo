@@ -31,6 +31,7 @@ type RemoteCallConfig struct {
 	MaxRetries     int
 	InitialBackoff time.Duration
 	MaxBackoff     time.Duration
+	Protocol       string
 }
 
 type ServiceDiscovery struct {
@@ -40,6 +41,7 @@ type ServiceDiscovery struct {
 	mu           sync.Mutex        // 保证线程安全
 	lbIndex      map[string]uint64 // 负载均衡轮询索引
 	config       RemoteCallConfig  // 远程调用配置
+	grpc         *grpcTransport
 }
 
 func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig) *ServiceDiscovery {
@@ -57,6 +59,7 @@ func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfi
 		},
 		lbIndex: make(map[string]uint64),
 		config:  cfg,
+		grpc:    newGrpcTransport(),
 	}
 }
 
@@ -95,6 +98,32 @@ type Result struct {
 
 // 增强版服务调用方法，始终添加默认请求体字段
 func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
+	if sd.config.Protocol == "grpc-first" && sd.grpc.supports(path) {
+		instance, err := sd.GetInstance(serviceName)
+		if err == nil {
+			var result Result
+			grpcErr := breaker.DoWithFallbackAcceptableCtx(
+				ctx,
+				"remote-grpc:"+serviceName,
+				func() error {
+					var err error
+					result, err = sd.grpc.invoke(ctx, instance, path, opts)
+					return err
+				},
+				func(error) error { return errGrpcUnavailable },
+				func(err error) bool { return err == nil },
+			)
+			if grpcErr == nil {
+				logx.Infof(constants.GRPC_CALL_SUCCESS, serviceName, path)
+				return result, nil
+			}
+			if !isGrpcChannelError(grpcErr) {
+				return Result{}, grpcErr
+			}
+			logGrpcFallback(serviceName, path, grpcErr)
+		}
+	}
+
 	var (
 		result  Result
 		callErr error

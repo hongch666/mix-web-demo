@@ -2,6 +2,18 @@
  * 消息常量类
  */
 export class Messages {
+  static readonly GRPC_RESULT_SUCCESS = "success";
+
+  static readonly GRPC_CALL_SUCCESS = (serviceName: string, path: string): string =>
+    `gRPC 调用成功: ${serviceName}${path}`;
+
+  static readonly GRPC_CALL_FALLBACK = (serviceName: string, path: string): string =>
+    `gRPC 不可用，回退 HTTP: ${serviceName}${path}`;
+
+  static readonly GRPC_REQUEST_INVALID_PAYLOAD = "gRPC 请求 payload 无效";
+
+  static readonly GRPC_REQUEST_FAILED = "gRPC 业务请求处理失败";
+
   static readonly INTERNAL_TOKEN_SERVICE_NAME_MISMATCH = (
     requiredServiceName: string,
     actualServiceName: string,

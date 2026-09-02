@@ -4,6 +4,10 @@ server:
   port: ${SERVER_PORT:8084}
   reload: ${SERVER_RELOAD:True}
 
+grpc:
+  enabled: ${GRPC_ENABLED:true}
+  port: ${GRPC_PORT:9084}
+
 nacos:
   server_addresses: ${NACOS_SERVER:127.0.0.1:8848}
   namespace: ${NACOS_NAMESPACE:public}
@@ -88,6 +92,7 @@ internal_token:
 # 远程调用配置
 remote_call:
   timeout: 15 # 请求超时时间（秒）
+  protocol: ${REMOTE_CALL_PROTOCOL:http-only} # grpc-first 或 http-only
   upload_timeout: 300 # 文件上传超时时间（秒），上传比普通接口耗时更长
   max_retries: 3 # 最大重试次数
   circuit_breaker:

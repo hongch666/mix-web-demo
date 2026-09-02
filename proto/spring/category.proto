@@ -1,0 +1,15 @@
+// Server: spring
+// Consumers: gozero,fastapi
+syntax = "proto3";
+package spring.v1;
+option go_package = "app/proto/springv1";
+option java_package = "com.hcsy.spring.proto.category.v1";
+import "common/result.proto";
+
+service Category {
+  rpc Batch (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc SubBatch (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc All (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc SubWithParent (common.v1.JsonRequest) returns (common.v1.Result);
+  rpc ReferenceSub (common.v1.JsonRequest) returns (common.v1.Result);
+}

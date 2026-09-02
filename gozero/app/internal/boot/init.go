@@ -36,10 +36,14 @@ func Run(configFile string) error {
 
 	// 创建并初始化服务器
 	server := CreateServer(cfg, ctx)
+	grpcServer := CreateGrpcServer(cfg)
 	defer func() {
 		task.StopTaskScheduler(ctx)
 		server.Stop()
+		grpcServer.Stop()
 	}()
+
+	go grpcServer.Start()
 
 	// 启动服务器
 	server.Start()
