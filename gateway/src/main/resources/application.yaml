@@ -155,7 +155,7 @@ rate-limit:
       message: "上传请求过于频繁，请稍后再试"
 
     # 发送验证码接口限流配置
-    "/api_spring/users/email/send":
+    "/users/email/send":
       message: "发送验证码请求过于频繁，请稍后再试"
 
     # 用户登录接口限流配置

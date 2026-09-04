@@ -28,7 +28,7 @@ public class RateLimitProperties {
 
     /**
      * 限流路径配置
-     * key: 路径模式 (如 /api_spring/**, /api_fastapi/*)
+     * key: 路径模式 (如 /test/**)
      * value: 限流配置
      */
     private Map<String, RateLimitPath> paths = new HashMap<>();

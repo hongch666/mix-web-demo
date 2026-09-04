@@ -47,24 +47,9 @@
       "description": "A description for 'rate-limit.paths./upload/**.message'"
     },
     {
-      "name": "rate-limit.paths./api_spring/users/email/send.capacity",
+      "name": "rate-limit.paths./users/email/send.message",
       "type": "java.lang.String",
-      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.capacity'"
-    },
-    {
-      "name": "rate-limit.paths./api_spring/users/email/send.refill-rate",
-      "type": "java.lang.String",
-      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.refill-rate'"
-    },
-    {
-      "name": "rate-limit.paths./api_spring/users/email/send.enabled",
-      "type": "java.lang.String",
-      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.enabled'"
-    },
-    {
-      "name": "rate-limit.paths./api_spring/users/email/send.message",
-      "type": "java.lang.String",
-      "description": "A description for 'rate-limit.paths./api_spring/users/email/send.message'"
+      "description": "A description for 'rate-limit.paths./users/email/send.message'"
     },
     {
       "name": "server.mode",
