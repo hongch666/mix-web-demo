@@ -11,16 +11,20 @@ import {
 } from "class-validator";
 import { ExposeName } from "src/framework/serializer/snakeCase.serializer";
 
-import { Messages } from "src/common/constants/messages.constants";
-
+/**
+ * MongoDB 查询 DTO
+ *
+ * 说明：class-validator 注解内的校验消息使用内联字符串，
+ * 保证注解与消息就地可读，不走常量类
+ */
 export class QueryMongoDto {
   @ApiProperty({
     description: "集合名称（仅限白名单内的日志集合）",
     example: "articlelogs",
   })
   @ExposeName()
-  @IsString({ message: Messages.VALIDATION_COLLECTION_NAME_STRING })
-  @IsNotEmpty({ message: Messages.VALIDATION_COLLECTION_NAME_NOT_EMPTY })
+  @IsString({ message: "集合名称必须是字符串" })
+  @IsNotEmpty({ message: "集合名称不能为空" })
   collectionName!: string;
 
   @ApiPropertyOptional({
@@ -28,7 +32,7 @@ export class QueryMongoDto {
     example: { action: "view" },
   })
   @IsOptional()
-  @IsObject({ message: Messages.VALIDATION_FILTER_OBJECT })
+  @IsObject({ message: "过滤条件必须是对象" })
   filter?: Record<string, unknown>;
 
   @ApiPropertyOptional({
@@ -38,8 +42,8 @@ export class QueryMongoDto {
   })
   @Type(() => Number)
   @IsOptional()
-  @IsInt({ message: Messages.VALIDATION_LIMIT_INT })
-  @Min(1, { message: Messages.VALIDATION_LIMIT_MIN })
-  @Max(50, { message: Messages.VALIDATION_LIMIT_MAX })
+  @IsInt({ message: "返回条数必须是整数" })
+  @Min(1, { message: "返回条数最小为1" })
+  @Max(50, { message: "返回条数最大为50" })
   limit?: number;
 }

@@ -1,16 +1,19 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as nodemailer from "nodemailer";
 import { Messages } from "src/common/constants";
+import { LoggerService } from "../logger/logger.service";
 import { InternalEmailCodeSendDto } from "./dto/mail.dto";
 import { buildEmailContent } from "./templates/mail.template";
 
 @Injectable()
 export class MailService {
-  private readonly logger = new Logger(MailService.name);
   private transporter!: nodemailer.Transporter;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
+  ) {
     const host: string | undefined =
       this.configService.get<string>("mail.host");
     const port: string | undefined =
@@ -23,7 +26,7 @@ export class MailService {
       this.configService.get<string>("mail.password");
 
     if (!username || !password) {
-      this.logger.warn(Messages.MAIL_SERVICE_CONFIG_INCOMPLETE);
+      this.logger.warning(Messages.MAIL_SERVICE_CONFIG_INCOMPLETE);
       return;
     }
 
@@ -43,7 +46,7 @@ export class MailService {
 
     // 脱敏记录日志，不打印完整验证码
     const maskedEmail: string = email.replace(/(.{3}).+(.{2}@)/, "$1***$2");
-    this.logger.log(
+    this.logger.info(
       Messages.VERIFICATION_CODE_EMAIL_SENDING(maskedEmail, type),
     );
 
@@ -64,12 +67,13 @@ export class MailService {
         html: buildEmailContent(code, type, expireMinutes),
       })
       .then((): void => {
-        this.logger.log(Messages.VERIFICATION_CODE_EMAIL_SENT(maskedEmail));
+        this.logger.info(Messages.VERIFICATION_CODE_EMAIL_SENT(maskedEmail));
       })
       .catch((error: unknown) => {
+        const errorMessage: string =
+          error instanceof Error ? error.message : String(error);
         this.logger.error(
-          Messages.VERIFICATION_CODE_EMAIL_FAILED(maskedEmail),
-          error instanceof Error ? error.message : String(error),
+          `${Messages.VERIFICATION_CODE_EMAIL_FAILED(maskedEmail)}: ${errorMessage}`,
         );
       });
   }

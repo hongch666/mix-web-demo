@@ -1,12 +1,14 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { Messages } from "src/common/constants";
-import { ApiResponse, success } from "src/common/utils/response";
+import { ApiResponse } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
+import { TestService } from "./test.service";
 
 @Controller("test")
 @ApiTags("测试模块")
 export class TestController {
+  constructor(private readonly testService: TestService) {}
+
   @Get("nestjs")
   @ApiOperation({
     summary: "NestJS自己的测试",
@@ -14,6 +16,6 @@ export class TestController {
   })
   @ApiLog("测试NestJS服务")
   async getNestjs(): Promise<ApiResponse<string>> {
-    return success(Messages.TEST_WELCOME);
+    return this.testService.getWelcomeMessage();
   }
 }

@@ -5,7 +5,7 @@ import * as fs from "fs";
 import * as marked from "marked";
 import * as path from "path";
 import { Browser, launch, Page } from "puppeteer";
-import { ErrorIds, Messages, PdfTemplate } from "src/common/constants";
+import { ErrorIds, ExportTemplate, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { SpringClientService } from "src/module/common/client/springClient.service";
 import { LoggerService } from "src/module/common/logger/logger.service";
@@ -131,17 +131,22 @@ export class DownloadService {
         ErrorIds.ARTICLE_NOT_FOUND,
       );
     }
-    // 拼接markdown内容
-    let markdown: string = `# ${article.title}\n`;
-    markdown += `\n**标签：** ${article.tags}\n`;
+    // 获取作者信息（文章未关联作者时回退为未知用户）
     const userRes: Record<string, unknown> =
       await this.springClient.getUserById(article.user_id);
     const user: RemoteUser | null =
       SpringClientService.extractData<RemoteUser | null>(userRes);
-    markdown += `\n**作者：** ${user?.name || "未知"}\n`;
-    markdown += `\n**创作时间：** ${article.create_at ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss") : ""}\n`;
-    markdown += "\n---\n";
-    markdown += article.content || "";
+
+    // Markdown 结构模板统一由 ExportTemplate 常量类提供
+    const markdown: string = ExportTemplate.renderArticleMarkdown(
+      article.title,
+      article.tags,
+      user?.name || Messages.UNKNOWN_USER,
+      article.create_at
+        ? dayjs(article.create_at).format("YYYY-MM-DD HH:mm:ss")
+        : "",
+      article.content || "",
+    );
     // 保存到本地临时文件
     const filePath: string = this.configService.get<string>("files.word")!;
     if (!filePath) {
@@ -192,7 +197,7 @@ export class DownloadService {
     // 创建 HTML 内容
     const htmlContent: string = this.generatePdfHtml(
       article,
-      user || { name: "未知" },
+      user || { name: Messages.UNKNOWN_USER },
     );
 
     // 使用 puppeteer 生成 PDF
@@ -207,12 +212,12 @@ export class DownloadService {
         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
         await page.pdf({
           path: savePath,
-          format: PdfTemplate.PAGE_SIZE,
+          format: ExportTemplate.PAGE_SIZE,
           margin: {
-            top: PdfTemplate.PAGE_MARGIN,
-            bottom: PdfTemplate.PAGE_MARGIN,
-            left: PdfTemplate.PAGE_MARGIN,
-            right: PdfTemplate.PAGE_MARGIN,
+            top: ExportTemplate.PAGE_MARGIN,
+            bottom: ExportTemplate.PAGE_MARGIN,
+            left: ExportTemplate.PAGE_MARGIN,
+            right: ExportTemplate.PAGE_MARGIN,
           },
           printBackground: true,
         });
@@ -239,8 +244,8 @@ export class DownloadService {
     // 使用 marked 解析 Markdown 内容为 HTML
     const htmlContent: string = marked.parse(article.content || "");
 
-    // 模板与样式统一由 PdfTemplate 常量类提供
-    return PdfTemplate.renderArticleHtml(
+    // 模板与样式统一由 ExportTemplate 常量类提供
+    return ExportTemplate.renderArticleHtml(
       article.title,
       user?.name,
       createTime,

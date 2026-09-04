@@ -12,7 +12,11 @@ export class SqlToolsController {
   constructor(private readonly sqlToolsService: SqlToolsService) {}
 
   @Get("tables")
-  @ApiOperation({ summary: "获取表结构信息" })
+  @ApiOperation({
+    summary: "获取表结构信息",
+    description:
+      "查询白名单内 MySQL 表的结构信息，不传表名时返回所有白名单表列表，供内部服务远程调用",
+  })
   @ApiQuery({
     name: "table",
     required: false,
@@ -26,7 +30,11 @@ export class SqlToolsController {
   }
 
   @Post("query")
-  @ApiOperation({ summary: "执行只读参数化SQL" })
+  @ApiOperation({
+    summary: "执行只读参数化SQL",
+    description:
+      "在白名单表范围内执行参数化只读 SQL 查询并返回结果，供内部服务远程调用",
+  })
   @RequireInternalToken()
   @ApiLog("执行SQL工具只读查询")
   async executeQuery(@Body() dto: SqlQueryDto) {

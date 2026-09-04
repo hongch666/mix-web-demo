@@ -1,7 +1,11 @@
 /**
- * PDF 导出模板常量 — 文章转 PDF 使用的页面样式与结构模板
+ * 文章导出模板常量 — 文章转 PDF / Markdown 使用的结构与样式模板
+ *
+ * 说明：
+ * - PDF 的 HTML 模板对缩进不敏感，按常规缩进书写
+ * - Markdown 对换行与缩进敏感，模板体顶格书写
  */
-export class PdfTemplate {
+export class ExportTemplate {
   // ===== 页面设置 =====
   static readonly PAGE_SIZE = "A4";
   static readonly PAGE_MARGIN = "15mm";
@@ -208,5 +212,32 @@ export class PdfTemplate {
         </div>
       </body>
       </html>
+    `;
+
+  /**
+   * 渲染文章导出的完整 Markdown 内容
+   * @param title 文章标题
+   * @param tags 标签
+   * @param username 作者名
+   * @param createTime 创作时间（为空时渲染为空串）
+   * @param content 正文 Markdown
+   */
+  static readonly renderArticleMarkdown = (
+    title: string,
+    tags: string,
+    username: string,
+    createTime: string,
+    content: string,
+  ): string => `# ${title}
+
+        **标签：** ${tags}
+
+        **作者：** ${username}
+
+        **创作时间：** ${createTime}
+
+        ---
+
+        ${content}
     `;
 }
