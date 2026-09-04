@@ -2086,7 +2086,7 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 对应数据同步任务：
 
 - 定时任务文件：`fastapi/app/internal/services/tasks/neo4jSyncTask.py`
-- 手动触发接口：`POST /api_fastapi/task/sync-neo4j`
+- 手动触发接口：`POST /task/sync-neo4j`
 - Neo4j 客户端：`fastapi/app/core/db/neo4j.py`
 
 #### 5.其他工具
