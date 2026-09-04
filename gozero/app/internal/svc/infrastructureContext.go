@@ -149,6 +149,7 @@ func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 	}
 
 	esURL := fmt.Sprintf("http://%s:%d", esConf.Host, esConf.Port)
+	esLogger := &esLoggerAdapter{logger: logger}
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(esURL),
 		elastic.SetSniff(esConf.Sniff),
@@ -156,8 +157,8 @@ func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 		elastic.SetHealthcheckInterval(constants.ESHealthcheckInterval),
 		elastic.SetGzip(true),
 		elastic.SetHealthcheckTimeoutStartup(constants.ESHealthcheckTimeoutStartup),
-		elastic.SetErrorLog(&esLoggerAdapter{}),
-		elastic.SetInfoLog(&esLoggerAdapter{}),
+		elastic.SetErrorLog(esLogger),
+		elastic.SetInfoLog(esLogger),
 	}
 	if esConf.Username != "" {
 		opts = append(opts, elastic.SetBasicAuth(esConf.Username, esConf.Password))
@@ -369,8 +370,15 @@ func trimSlashPrefix(value string) string {
 	return value
 }
 
-type esLoggerAdapter struct{}
+type esLoggerAdapter struct {
+	logger *utils.ZeroLogger
+}
 
+// Printf 将 ES 客户端运行期日志路由到 ZeroLogger，未持有时退化为 logx
 func (l *esLoggerAdapter) Printf(format string, v ...interface{}) {
+	if l != nil && l.logger != nil {
+		l.logger.Infof(format, v...)
+		return
+	}
 	logx.Infof(format, v...)
 }

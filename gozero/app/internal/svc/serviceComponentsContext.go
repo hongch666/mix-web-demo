@@ -1,11 +1,13 @@
 package svc
 
 import (
+	"context"
 	"time"
 
 	"app/common/client"
 	"app/common/constants"
 	"app/common/hub"
+	"app/common/realtime"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
@@ -14,6 +16,7 @@ import (
 	"app/internal/middleware"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
+	"github.com/redis/go-redis/v9"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -32,6 +35,7 @@ func newHubContext(zLogger *utils.ZeroLogger) *HubContext {
 func newClientContext(
 	namingClient naming_client.INamingClient,
 	remoteCallConfig config.RemoteCallConfig,
+	zLogger *utils.ZeroLogger,
 ) *ClientContext {
 	remoteCallCfg := client.RemoteCallConfig{
 		Timeout:        time.Duration(remoteCallConfig.Timeout) * time.Millisecond,
@@ -40,9 +44,9 @@ func newClientContext(
 		MaxBackoff:     time.Duration(remoteCallConfig.MaxBackoff) * time.Millisecond,
 	}
 	return &ClientContext{
-		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg),
-		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg),
-		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg),
+		FastapiClient: fastapiClient.NewFastapiClient(namingClient, remoteCallCfg, zLogger),
+		NestjsClient:  nestjsClient.NewNestjsClient(namingClient, remoteCallCfg, zLogger),
+		SpringClient:  springClient.NewSpringClient(namingClient, remoteCallCfg, zLogger),
 	}
 }
 
@@ -67,5 +71,27 @@ func (lc *LoggerContext) Close() {
 	}
 	if err := lc.Logger.Close(); err != nil {
 		logx.Errorf(constants.LOGGER_CLOSE_FILE_ERROR, err)
+	}
+}
+
+// 组装实时通信组件并挂载到 HubContext 分域（RealtimeBus/RealtimeDispatcher 属实时通信域）
+func setupRealtime(
+	serviceCtx context.Context,
+	hubCtx *HubContext,
+	models *ModelContext,
+	redisClient *redis.Client,
+	zLogger *utils.ZeroLogger,
+) {
+	hubCtx.RealtimeDispatcher = realtime.NewChatRealtimeDispatcher(
+		serviceCtx,
+		hubCtx.ChatHub,
+		hubCtx.SSEHub,
+		models.ChatMessagesModel,
+		zLogger,
+	)
+
+	if redisClient != nil {
+		hubCtx.RealtimeBus = realtime.NewRedisPubSub(redisClient, zLogger)
+		hubCtx.RealtimeBus.Start(serviceCtx, hubCtx.RealtimeDispatcher.Handle)
 	}
 }

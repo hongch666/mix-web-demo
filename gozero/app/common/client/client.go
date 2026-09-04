@@ -40,9 +40,10 @@ type ServiceDiscovery struct {
 	mu           sync.Mutex        // 保证线程安全
 	lbIndex      map[string]uint64 // 负载均衡轮询索引
 	config       RemoteCallConfig  // 远程调用配置
+	logger       *utils.ZeroLogger // 运行期日志（可为 nil，nil 时退化为仅 logx）
 }
 
-func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig) *ServiceDiscovery {
+func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig, logger *utils.ZeroLogger) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		namingClient: client,
 		httpClient: &http.Client{
@@ -57,6 +58,7 @@ func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfi
 		},
 		lbIndex: make(map[string]uint64),
 		config:  cfg,
+		logger:  logger,
 	}
 }
 
@@ -234,7 +236,11 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 	}
 
 	if result.Code < constants.HttpOK || result.Code >= constants.HttpMultipleChoices {
-		logx.Errorf(constants.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
+		if sd.logger != nil {
+			sd.logger.Errorf(constants.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
+		} else {
+			logx.Errorf(constants.SERVICE_BUSINESS_ERROR_LOG, serviceName, result.Code, result.Msg)
+		}
 		errorMsg := fmt.Sprintf(constants.SERVICE_CALL_FAILED, result.Msg)
 		return Result{}, errors.New(errorMsg)
 	}

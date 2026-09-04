@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"app/common/hub"
+	"app/common/realtime"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
@@ -30,7 +31,7 @@ type RuntimeContext struct {
 
 // InfrastructureContext 保存数据库、消息队列和服务发现等基础设施依赖
 type InfrastructureContext struct {
-	MySQLConn         sqlx.SqlConn
+	MySQLConn sqlx.SqlConn
 	// RawMySQL 标准库 MySQL 连接，供动态列 SQL（如 SQL 工具）手动扫描结果。
 	RawMySQL          *sql.DB
 	ESClient          *elastic.Client
@@ -47,8 +48,10 @@ type ModelContext struct {
 
 // HubContext 保存实时通信相关依赖
 type HubContext struct {
-	ChatHub *hub.ChatHub
-	SSEHub  *hub.SSEHubManager
+	ChatHub            *hub.ChatHub
+	SSEHub             *hub.SSEHubManager
+	RealtimeBus        *realtime.RedisPubSub
+	RealtimeDispatcher *realtime.ChatRealtimeDispatcher
 }
 
 // ClientContext 保存内部服务客户端

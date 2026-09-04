@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"app/common/client"
+	"app/common/utils"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 )
@@ -20,11 +21,12 @@ type NestjsClient struct {
 func NewNestjsClient(
 	nc naming_client.INamingClient,
 	remoteCallConfig client.RemoteCallConfig,
+	logger *utils.ZeroLogger,
 ) *NestjsClient {
 	return &NestjsClient{
 		serviceName:  "nestjs",
 		namingClient: nc,
-		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig),
+		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger),
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"app/common/constants"
-	"app/common/realtime"
 	"app/common/utils"
 	"app/internal/config"
 
@@ -23,8 +22,6 @@ type ServiceContext struct {
 	*ClientContext
 	*LoggerContext
 	*MiddlewareContext
-	RealtimeBus        *realtime.RedisPubSub
-	RealtimeDispatcher *realtime.ChatRealtimeDispatcher
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -43,7 +40,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	infrastructure := newInfrastructureContext(c, zLogger)
-	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall)
+	clientCtx := newClientContext(infrastructure.NamingClient, c.RemoteCall, zLogger)
 	models := newModelContext(c, infrastructure, clientCtx)
 
 	serviceCtx := &ServiceContext{
@@ -55,18 +52,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		LoggerContext:         newLoggerContext(zLogger),
 		MiddlewareContext:     newMiddlewareContext(zLogger),
 	}
-	serviceCtx.RealtimeDispatcher = realtime.NewChatRealtimeDispatcher(
-		serviceContext,
-		serviceCtx.ChatHub,
-		serviceCtx.SSEHub,
-		serviceCtx.ChatMessagesModel,
-		zLogger,
-	)
 
-	if infrastructure.RedisClient != nil {
-		serviceCtx.RealtimeBus = realtime.NewRedisPubSub(infrastructure.RedisClient, zLogger)
-		serviceCtx.RealtimeBus.Start(serviceContext, serviceCtx.RealtimeDispatcher.Handle)
-	}
+	// 实时通信组件组装到 HubContext 分域
+	setupRealtime(serviceContext, serviceCtx.HubContext, models, infrastructure.RedisClient, zLogger)
 
 	return serviceCtx
 }
@@ -79,8 +67,8 @@ func (sc *ServiceContext) Close() {
 	if sc.RuntimeContext != nil && sc.Cancel != nil {
 		sc.Cancel()
 	}
-	if sc.RealtimeBus != nil {
-		sc.RealtimeBus.Close()
+	if sc.HubContext != nil && sc.HubContext.RealtimeBus != nil {
+		sc.HubContext.RealtimeBus.Close()
 	}
 	if sc.InfrastructureContext != nil {
 		sc.InfrastructureContext.Close()

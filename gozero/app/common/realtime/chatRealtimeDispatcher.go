@@ -8,8 +8,6 @@ import (
 	"app/common/constants"
 	"app/common/hub"
 	"app/common/utils"
-
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 type chatHistoryReader interface {
@@ -86,9 +84,8 @@ func (d *ChatRealtimeDispatcher) markChatHistoryAsRead(senderID, receiverID int6
 }
 
 func (d *ChatRealtimeDispatcher) logError(message string) {
-	if d.logger != nil {
-		d.logger.Error(message)
+	if d == nil || d.logger == nil {
 		return
 	}
-	logx.Error(message)
+	d.logger.Error(message)
 }

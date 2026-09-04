@@ -8,6 +8,7 @@ import (
 
 	"app/common/client"
 	"app/common/constants"
+	"app/common/utils"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 )
@@ -23,11 +24,12 @@ type FastapiClient struct {
 func NewFastapiClient(
 	nc naming_client.INamingClient,
 	remoteCallConfig client.RemoteCallConfig,
+	logger *utils.ZeroLogger,
 ) *FastapiClient {
 	return &FastapiClient{
 		serviceName:  "fastapi",
 		namingClient: nc,
-		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig),
+		serviceDisc:  client.NewServiceDiscovery(nc, remoteCallConfig, logger),
 	}
 }
 
