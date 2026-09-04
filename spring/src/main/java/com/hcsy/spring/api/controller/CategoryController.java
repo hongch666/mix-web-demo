@@ -45,7 +45,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @Operation(summary = "新增分类")
+    @Operation(summary = "新增分类", description = "管理员新增文章分类，分类信息同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping()
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = "新增分类后同步 Neo4j")
@@ -54,7 +54,7 @@ public class CategoryController {
         return categoryService.addCategory(dto).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "修改分类")
+    @Operation(summary = "修改分类", description = "管理员修改文章分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping()
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = "修改分类后同步 Neo4j")
@@ -63,7 +63,7 @@ public class CategoryController {
         return categoryService.updateCategory(dto).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "删除分类（级联删除子分类）")
+    @Operation(summary = "删除分类（级联删除子分类）", description = "管理员删除指定分类，级联删除其下所有子分类，并同步删除 Neo4j 图谱中的对应节点")
     @DeleteMapping("/{id}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
         "id" })
@@ -73,7 +73,7 @@ public class CategoryController {
         return categoryService.deleteCategory(id).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "批量删除分类（级联删除子分类）")
+    @Operation(summary = "批量删除分类（级联删除子分类）", description = "管理员按逗号分隔的ID列表批量删除分类，逐个级联删除子分类，并同步删除 Neo4j 图谱节点")
     @DeleteMapping("/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
         "ids" })
@@ -88,7 +88,7 @@ public class CategoryController {
         return categoryService.deleteCategories(idList).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "新增子分类")
+    @Operation(summary = "新增子分类", description = "管理员在指定分类下新增子分类，同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = "新增子分类后同步 Neo4j")
@@ -97,7 +97,7 @@ public class CategoryController {
         return categoryService.addSubCategory(dto).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "修改子分类")
+    @Operation(summary = "修改子分类", description = "管理员修改指定子分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
     @Neo4jSync(description = "修改子分类后同步 Neo4j")
@@ -106,7 +106,7 @@ public class CategoryController {
         return categoryService.updateSubCategory(dto).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "删除子分类")
+    @Operation(summary = "删除子分类", description = "管理员删除指定子分类，并同步删除 Neo4j 图谱中的对应节点")
     @DeleteMapping("/sub/{id}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
         "id" })
@@ -116,7 +116,7 @@ public class CategoryController {
         return categoryService.deleteSubCategory(id).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "批量删除子分类")
+    @Operation(summary = "批量删除子分类", description = "管理员按逗号分隔的ID列表批量删除子分类，并同步删除 Neo4j 图谱节点")
     @DeleteMapping("/sub/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
         "ids" })
@@ -131,7 +131,7 @@ public class CategoryController {
         return categoryService.deleteSubCategories(idList).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "分页查询分类（含子分类信息）")
+    @Operation(summary = "分页查询分类（含子分类信息）", description = "按页码与每页大小分页查询分类列表，返回分类及其子分类的层级结构信息")
     @GetMapping("/list")
     @ApiLog("分页查询分类")
     public Mono<Result<Map<String, Object>>> pageCategory(@RequestParam(defaultValue = "1") int page,
@@ -142,7 +142,7 @@ public class CategoryController {
                 "total", result.getTotal())));
     }
 
-    @Operation(summary = "根据ID查询分类（含子分类信息）")
+    @Operation(summary = "根据ID查询分类（含子分类信息）", description = "根据分类ID查询单个分类详情，返回分类及其子分类的层级结构信息，不存在时返回404")
     @GetMapping("/{id}")
     @ApiLog("根据ID查询分类")
     public Mono<Result<CategoryVO>> getCategoryById(@PathVariable Long id) {

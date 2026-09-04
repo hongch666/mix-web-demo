@@ -31,7 +31,7 @@ public class CategoryReferenceController {
 
     private final CategoryReferenceService categoryReferenceService;
 
-    @Operation(summary = "创建权威参考文本")
+    @Operation(summary = "创建权威参考文本", description = "管理员在指定子分类下创建权威参考文本内容")
     @PostMapping()
     @RequirePermission(roles = { "admin" }, businessType = "categoryReference", paramSource = "body", paramNames = {
         "id" })
@@ -40,7 +40,7 @@ public class CategoryReferenceController {
         return categoryReferenceService.addCategoryReference(dto).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "修改权威参考文本")
+    @Operation(summary = "修改权威参考文本", description = "管理员修改指定子分类下的权威参考文本内容")
     @PutMapping()
     @RequirePermission(roles = { "admin" }, businessType = "categoryReference", paramSource = "body", paramNames = {
         "id" })
@@ -49,7 +49,7 @@ public class CategoryReferenceController {
         return categoryReferenceService.updateCategoryReference(dto).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "删除权威参考文本")
+    @Operation(summary = "删除权威参考文本", description = "管理员删除指定子分类下的权威参考文本")
     @DeleteMapping("/sub/{sub_category_id}")
     @RequirePermission(roles = {
         "admin" }, businessType = "categoryReference", paramSource = "path_single", paramNames = { "id" })
@@ -58,7 +58,7 @@ public class CategoryReferenceController {
         return categoryReferenceService.deleteCategoryReference(subCategoryId).thenReturn(Result.<Void>success());
     }
 
-    @Operation(summary = "根据子分类ID获取权威参考文本")
+    @Operation(summary = "根据子分类ID获取权威参考文本", description = "根据子分类ID查询其关联的权威参考文本，不存在时返回空数据")
     @GetMapping("/sub/{sub_category_id}")
     @ApiLog("查询权威参考文本")
     public Mono<Result<CategoryReferenceVO>> getCategoryReferenceBySubCategoryId(
