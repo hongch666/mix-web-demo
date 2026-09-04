@@ -28,6 +28,17 @@ class Scripts:
         "ORDER BY year_month DESC"
     )
 
+    @staticmethod
+    def CACHE_VERSION_CLICKHOUSE_QUERY(table: str) -> str:
+        """缓存版本号统计查询：基于表行数、最新更新时间与最大 ID 生成版本信息"""
+        return (
+            "SELECT "
+            "count() AS total_rows, "
+            "ifNull(max(toUnixTimestamp(update_at)), 0) AS max_update_ts, "
+            "ifNull(max(id), 0) AS max_id "
+            f"FROM {table}"
+        )
+
     # ===== Neo4j 同步 SQL =====
     NEO4J_SQL_SELECT_USERS: str = (
         "SELECT id, name, email, role, img, signature, create_at, update_at FROM user"

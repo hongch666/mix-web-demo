@@ -96,9 +96,10 @@ async def _sync_remote_source(
             if not items:
                 break
             rows = [_normalize_row(item, columns) for item in items]
+            # INSERT 模板统一收敛在 core/constants/warehouse.py
             await asyncio.to_thread(
                 conn.execute,
-                f"INSERT INTO warehouse.{table_name} ({', '.join(columns)}) VALUES",
+                WarehouseScripts.ODS_REMOTE_INSERT(table_name, columns),
                 rows,
             )
             total += len(rows)

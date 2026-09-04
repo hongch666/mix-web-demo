@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 from collections.abc import Awaitable, Callable
@@ -136,9 +137,9 @@ class ReferenceContentExtractor:
                         async for chunk in response.aiter_bytes():
                             f.write(chunk)
 
-            # 使用PyPDFLoader加载PDF
+            # 使用PyPDFLoader加载PDF（解析为同步磁盘/CPU密集操作，放入线程池避免阻塞事件循环）
             loader: PyPDFLoader = PyPDFLoader(temp_pdf_path)
-            documents: list[Document] = loader.load()
+            documents: list[Document] = await asyncio.to_thread(loader.load)
 
             # 提取文本内容
             full_text: str = ""

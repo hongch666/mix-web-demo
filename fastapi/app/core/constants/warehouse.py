@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Final
+from typing import Final, Sequence
 
 
 class WarehouseScripts:
@@ -59,18 +59,49 @@ class WarehouseScripts:
         "(event_id, user_id, article_id, action, content, created_at) VALUES"
     )
 
+    @staticmethod
+    def ODS_REMOTE_INSERT(table_name: str, columns: Sequence[str]) -> str:
+        """远程数据源同步 INSERT 模板：表名与列名均来自 REMOTE_SOURCES 内部常量"""
+        return f"INSERT INTO warehouse.{table_name} ({', '.join(columns)}) VALUES"
+
     BATCH_SIZE: Final[int] = 1000
     ARTICLE_LOG_BATCH_SIZE: Final[int] = 5000
     EPOCH_WATERMARK: Final[str] = "1970-01-01 00:00:00"
     EPOCH_DATETIME: Final[datetime] = datetime(1970, 1, 1)
     REMOTE_SOURCES: Final[tuple[tuple[str, str, tuple[str, ...]], ...]] = (
-        ("ods_articles", "articles", ("id", "title", "user_id", "sub_category_id", "tags", "status", "views", "create_at", "update_at")),
-        ("ods_user", "user", ("id", "name", "role", "img", "signature", "create_at", "update_at")),
+        (
+            "ods_articles",
+            "articles",
+            (
+                "id",
+                "title",
+                "user_id",
+                "sub_category_id",
+                "tags",
+                "status",
+                "views",
+                "create_at",
+                "update_at",
+            ),
+        ),
+        (
+            "ods_user",
+            "user",
+            ("id", "name", "role", "img", "signature", "create_at", "update_at"),
+        ),
         ("ods_category", "category", ("id", "name", "create_time", "update_time")),
-        ("ods_sub_category", "sub_category", ("id", "name", "category_id", "create_time", "update_time")),
+        (
+            "ods_sub_category",
+            "sub_category",
+            ("id", "name", "category_id", "create_time", "update_time"),
+        ),
         ("ods_likes", "likes", ("id", "article_id", "user_id", "created_time")),
         ("ods_collects", "collects", ("id", "article_id", "user_id", "created_time")),
-        ("ods_comments", "comments", ("id", "user_id", "article_id", "star", "create_time", "update_time")),
+        (
+            "ods_comments",
+            "comments",
+            ("id", "user_id", "article_id", "star", "create_time", "update_time"),
+        ),
         ("ods_focus", "focus", ("id", "user_id", "focus_id", "created_time")),
     )
     DATETIME_COLUMNS: Final[frozenset[str]] = frozenset(
@@ -80,7 +111,16 @@ class WarehouseScripts:
         {"tags", "role", "img", "signature", "title", "name"}
     )
     INTEGER_COLUMNS: Final[frozenset[str]] = frozenset(
-        {"status", "views", "id", "user_id", "article_id", "sub_category_id", "category_id", "focus_id"}
+        {
+            "status",
+            "views",
+            "id",
+            "user_id",
+            "article_id",
+            "sub_category_id",
+            "category_id",
+            "focus_id",
+        }
     )
     FLOAT_COLUMNS: Final[frozenset[str]] = frozenset({"star"})
 

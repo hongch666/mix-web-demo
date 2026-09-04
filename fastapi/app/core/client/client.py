@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any, Optional
 
@@ -140,9 +141,15 @@ def _merge_headers(headers: Optional[dict[str, str]]) -> dict[str, str]:
     return merged_headers
 
 
-def _resolve_service_url(service_name: str, path: str) -> str:
-    """通过服务发现生成远程调用 URL"""
-    instance: dict[str, Any] = get_service_instance(service_name)
+async def _resolve_service_url(service_name: str, path: str) -> str:
+    """通过服务发现生成远程调用 URL
+
+    Nacos SDK 的实例查询为同步 HTTP 调用，使用 to_thread 放入线程池执行，
+    避免在重试循环中反复阻塞事件循环
+    """
+    instance: dict[str, Any] = await asyncio.to_thread(
+        get_service_instance, service_name
+    )
     return f"http://{instance['ip']}:{instance['port']}{path}"
 
 
@@ -308,7 +315,7 @@ async def _call_with_client(
             reraise=True,
         ):
             with attempt:
-                url: str = _resolve_service_url(service_name, path)
+                url: str = await _resolve_service_url(service_name, path)
                 Logger.info(
                     Messages.REMOTE_SERVICE_REQUEST(
                         service_name, method, url, attempt.retry_state.attempt_number

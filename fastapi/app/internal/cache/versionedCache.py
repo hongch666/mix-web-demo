@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.config import load_config
-from app.core.constants import Messages
+from app.core.constants import Messages, Scripts
 
 from .baseCache import BaseCache
 
@@ -31,13 +31,8 @@ class VersionedCache(BaseCache):
                 return None
             ch_table = load_config("database")["clickhouse"]["table"]
             ch_db = load_config("database")["clickhouse"]["database"]
-            query = f"""
-                SELECT
-                    count() AS total_rows,
-                    ifNull(max(toUnixTimestamp(update_at)), 0) AS max_update_ts,
-                    ifNull(max(id), 0) AS max_id
-                FROM {ch_db}.{ch_table}
-            """
+            # SQL 模板统一收敛在 core/constants/scripts.py
+            query = Scripts.CACHE_VERSION_CLICKHOUSE_QUERY(f"{ch_db}.{ch_table}")
             result = await asyncio.to_thread(ch_conn.execute, query)
             if not result:
                 return None

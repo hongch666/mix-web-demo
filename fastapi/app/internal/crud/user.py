@@ -1,12 +1,13 @@
 import asyncio
 from datetime import datetime
+from functools import lru_cache
 from typing import Any
 
 from app.core.constants import Messages, WarehouseScripts
 from app.core.db import ClickhouseConnectionPool, get_clickhouse_connection_pool
 
 
-class UserAnalysisMapper:
+class UserMapper:
     """用户分析数仓查询 Mapper"""
 
     def __init__(self) -> None:
@@ -17,11 +18,12 @@ class UserAnalysisMapper:
     async def _execute(
         self, query: str, params: dict[str, Any]
     ) -> list[tuple[Any, ...]]:
-        conn: Any = self._clickhouse_pool.get_connection()
+        # 连接获取与归还均为可能阻塞的池操作，统一走异步包装避免阻塞事件循环
+        conn: Any = await self._clickhouse_pool.get_connection_async()
         try:
             return await asyncio.to_thread(conn.execute, query, params)
         finally:
-            self._clickhouse_pool.return_connection(conn)
+            await self._clickhouse_pool.return_connection_async(conn)
 
     async def get_new_followers_by_day(
         self, user_id: int, start_date: datetime, end_date: datetime
@@ -104,3 +106,9 @@ class UserAnalysisMapper:
             "total_focus": int(row[10] or 0),
             "last_active_time": row[11],
         }
+
+
+@lru_cache()
+def get_user_mapper() -> UserMapper:
+    """获取 UserMapper 单例实例"""
+    return UserMapper()

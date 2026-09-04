@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from app.core.base import Logger
 from app.core.constants import Messages
 from app.internal.clients import NestjsClient, SpringClient
-from app.internal.crud import UserAnalysisMapper
+from app.internal.crud import UserMapper, get_user_mapper
 
 
 class UserService:
@@ -17,7 +17,7 @@ class UserService:
     def __init__(self) -> None:
         self._nestjs_client: NestjsClient = NestjsClient()
         self._spring_client: SpringClient = SpringClient()
-        self._user_analysis_mapper: UserAnalysisMapper = UserAnalysisMapper()
+        self._user_mapper: UserMapper = get_user_mapper()
 
     @staticmethod
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
@@ -73,9 +73,7 @@ class UserService:
         """
         try:
             start, end, count, _ = self._period_dates(period)
-            rows = await self._user_analysis_mapper.get_new_followers_by_day(
-                user_id, start, end
-            )
+            rows = await self._user_mapper.get_new_followers_by_day(user_id, start, end)
             if period != "day":
                 for row in rows:
                     value = row["date"]
@@ -169,9 +167,7 @@ class UserService:
     ) -> dict[str, Any]:
         """获取用户的文章浏览分布"""
         try:
-            return await self._user_analysis_mapper.get_article_view_distribution(
-                user_id
-            )
+            return await self._user_mapper.get_article_view_distribution(user_id)
         except Exception as ch_error:
             Logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
@@ -194,7 +190,7 @@ class UserService:
                 hour=0, minute=0, second=0, microsecond=0
             )
             end = now + timedelta(days=1)
-            return await self._user_analysis_mapper.get_author_follow_statistics(
+            return await self._user_mapper.get_author_follow_statistics(
                 user_id, start, end
             )
         except Exception as ch_error:
@@ -236,7 +232,7 @@ class UserService:
     async def get_monthly_comment_trend_service(self, user_id: int) -> dict[str, Any]:
         """获取用户本月评论的趋势"""
         try:
-            return await self._user_analysis_mapper.get_monthly_action_trend(
+            return await self._user_mapper.get_monthly_action_trend(
                 user_id,
                 "comment_count",
                 datetime.now().replace(
@@ -263,7 +259,7 @@ class UserService:
             start = datetime.now().replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
-            return await self._user_analysis_mapper.get_monthly_action_trend(
+            return await self._user_mapper.get_monthly_action_trend(
                 user_id, "like_count", start, start + relativedelta(months=1)
             )
         except Exception as ch_error:
@@ -284,7 +280,7 @@ class UserService:
             start = datetime.now().replace(
                 day=1, hour=0, minute=0, second=0, microsecond=0
             )
-            return await self._user_analysis_mapper.get_monthly_action_trend(
+            return await self._user_mapper.get_monthly_action_trend(
                 user_id, "collect_count", start, start + relativedelta(months=1)
             )
         except Exception as ch_error:
@@ -302,7 +298,7 @@ class UserService:
     async def get_user_profile_service(self, user_id: int) -> dict[str, Any]:
         """获取用户画像总览（优先 ClickHouse ADS，降级为远程组装）"""
         try:
-            return await self._user_analysis_mapper.get_user_profile(user_id)
+            return await self._user_mapper.get_user_profile(user_id)
         except Exception as ch_error:
             Logger.warning(
                 Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(

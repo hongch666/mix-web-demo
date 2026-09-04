@@ -62,9 +62,9 @@ class ArticleMapper:
         ]
 
         start: float = time.time()
-        # 从连接池获取连接
+        # 从连接池获取连接（异步包装，避免阻塞事件循环）
         pool_start: float = time.time()
-        ch_conn: Any = self._clickhouse_pool.get_connection()
+        ch_conn: Any = await self._clickhouse_pool.get_connection_async()
         pool_time: float = time.time() - pool_start
 
         # 查询 ClickHouse
@@ -97,9 +97,9 @@ class ArticleMapper:
             Logger.debug(Messages.CLICKHOUSE_DETAIL_EXCEPTION(traceback.format_exc()))
             raise
         finally:
-            # 归还连接到池
+            # 异步归还连接到池
             if ch_conn:
-                self._clickhouse_pool.return_connection(ch_conn)
+                await self._clickhouse_pool.return_connection_async(ch_conn)
 
     async def get_clickhouse_connection_async(self) -> Any:
         """获取 ClickHouse 连接（用于缓存版本检查）"""
@@ -116,7 +116,7 @@ class ArticleMapper:
         从ClickHouse获取按父分类排序的文章数量
         """
         start: float = time.time()
-        ch_conn: Any = self._clickhouse_pool.get_connection()
+        ch_conn: Any = await self._clickhouse_pool.get_connection_async()
 
         Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
@@ -159,7 +159,7 @@ class ArticleMapper:
             raise
         finally:
             if ch_conn:
-                self._clickhouse_pool.return_connection(ch_conn)
+                await self._clickhouse_pool.return_connection_async(ch_conn)
 
     async def get_monthly_publish_count_clickhouse_mapper_async(
         self,
@@ -169,7 +169,7 @@ class ArticleMapper:
         说明: 返回的是过去24个月内有数据的月份，缺失月份由service层补零
         """
         start: float = time.time()
-        ch_conn: Any = self._clickhouse_pool.get_connection()
+        ch_conn: Any = await self._clickhouse_pool.get_connection_async()
 
         Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_QUERY)
         query_start: float = time.time()
@@ -212,11 +212,11 @@ class ArticleMapper:
             raise
         finally:
             if ch_conn:
-                self._clickhouse_pool.return_connection(ch_conn)
+                await self._clickhouse_pool.return_connection_async(ch_conn)
 
     async def get_platform_stats_clickhouse_mapper_async(self) -> dict[str, Any]:
         """从 ADS 平台统计表获取汇总指标"""
-        ch_conn: Any = self._clickhouse_pool.get_connection()
+        ch_conn: Any = await self._clickhouse_pool.get_connection_async()
         query = WarehouseScripts.PLATFORM_STATS_QUERY
         try:
             results = await asyncio.to_thread(ch_conn.execute, query)
@@ -234,7 +234,8 @@ class ArticleMapper:
                 "average_collects": float(row[7] or 0),
             }
         finally:
-            self._clickhouse_pool.return_connection(ch_conn)
+            if ch_conn:
+                await self._clickhouse_pool.return_connection_async(ch_conn)
 
 
 @lru_cache()
