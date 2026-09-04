@@ -41,7 +41,7 @@ EXPOSE 8081
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -fsS http://localhost:8081/api_spring/spring >/dev/null || exit 1
+    CMD curl -fsS http://localhost:8081/test/spring >/dev/null || exit 1
 
 # 设置环境变量
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"
