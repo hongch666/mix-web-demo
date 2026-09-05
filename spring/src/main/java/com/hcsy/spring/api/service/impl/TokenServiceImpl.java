@@ -1,5 +1,7 @@
 package com.hcsy.spring.api.service.impl;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,6 +26,8 @@ import reactor.core.publisher.Mono;
 @Service
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
+    private static final String BEARER_PREFIX = "Bearer ";
+
 
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
@@ -60,6 +64,16 @@ public class TokenServiceImpl implements TokenService {
                     return Mono.just(new AuthIdentityDTO(userId, username, sessionId));
                 });
         });
+    }
+
+    @Override
+    public Mono<AuthIdentityDTO> validateGatewayAccessToken(
+        String authorization, String accessToken, String forwardedUri) {
+        String token = extractGatewayAccessToken(authorization, accessToken, forwardedUri);
+        if (token == null) {
+            return Mono.error(unauthorized(Messages.USER_NOT_LOGIN));
+        }
+        return validateAccessToken(token);
     }
 
     @Override
@@ -295,6 +309,32 @@ public class TokenServiceImpl implements TokenService {
             .flatMap(refreshToken -> redisUtil.get(RedisKeys.userRefresh(refreshToken))
                 .map(value -> value.equals(userId + ":" + sessionId)))
             .defaultIfEmpty(false);
+    }
+
+    private String extractGatewayAccessToken(String authorization, String accessToken, String forwardedUri) {
+        if (authorization != null && !authorization.isBlank()) {
+            return authorization.startsWith(BEARER_PREFIX)
+                ? authorization.substring(BEARER_PREFIX.length()).trim()
+                : authorization.trim();
+        }
+        if (accessToken != null && !accessToken.isBlank()) {
+            return accessToken.trim();
+        }
+        if (forwardedUri == null) {
+            return null;
+        }
+
+        int queryStart = forwardedUri.indexOf('?');
+        if (queryStart < 0 || queryStart == forwardedUri.length() - 1) {
+            return null;
+        }
+        for (String pair : forwardedUri.substring(queryStart + 1).split("&")) {
+            int separator = pair.indexOf('=');
+            if (separator > 0 && "token".equals(pair.substring(0, separator))) {
+                return URLDecoder.decode(pair.substring(separator + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return null;
     }
 
     private BusinessException unauthorized(String message) {

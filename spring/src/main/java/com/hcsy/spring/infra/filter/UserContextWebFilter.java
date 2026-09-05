@@ -6,6 +6,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.utils.UserContext;
 
 import reactor.core.publisher.Mono;
@@ -21,9 +22,9 @@ public class UserContextWebFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        Long userId = parseLong(request.getHeaders().getFirst("X-User-Id"));
-        String username = request.getHeaders().getFirst("X-Username");
-        String sessionId = request.getHeaders().getFirst("X-Session-Id");
+        Long userId = parseLong(request.getHeaders().getFirst(HeaderNames.USER_ID));
+        String username = request.getHeaders().getFirst(HeaderNames.USERNAME);
+        String sessionId = request.getHeaders().getFirst(HeaderNames.SESSION_ID);
         String token = extractToken(request.getHeaders().getFirst("Authorization"));
         String internalToken = extractToken(request.getHeaders().getFirst("X-Internal-Token"));
 

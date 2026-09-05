@@ -3,13 +3,11 @@ package com.hcsy.spring.api.controller;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
 
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -17,18 +15,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebExchange;
 
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.api.service.UserService;
+import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
-import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
@@ -58,7 +56,6 @@ import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -69,8 +66,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 @Tag(name = "用户模块", description = "用户管理功能相关API，包括用户注册、登录、信息管理、验证码等")
 public class UserController {
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final UserService userService;
     private final TokenService tokenService;
     private final EmailVerificationService emailVerificationService;
@@ -179,19 +174,17 @@ public class UserController {
         return userService.login(loginDTO).map(Result::success);
     }
 
-    @Hidden
     @GetMapping("/internal/auth/validate")
-    public Mono<ResponseEntity<Void>> validateGatewayAccessToken(ServerWebExchange exchange) {
-        String token = extractGatewayAccessToken(exchange);
-        if (token == null) {
-            return Mono.error(unauthorized());
-        }
-
-        return tokenService.validateAccessToken(token)
+    @Operation(summary = "校验网关访问令牌", description = "校验访问令牌并返回用户身份请求头")
+    public Mono<ResponseEntity<Void>> validateGatewayAccessToken(
+        @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+        @RequestHeader(value = HeaderNames.ACCESS_TOKEN, required = false) String accessToken,
+        @RequestHeader(value = HeaderNames.FORWARDED_URI, required = false) String forwardedUri) {
+        return tokenService.validateGatewayAccessToken(authorization, accessToken, forwardedUri)
             .map(identity -> ResponseEntity.ok()
-                .header("X-User-Id", String.valueOf(identity.getUserId()))
-                .header("X-Username", identity.getUsername())
-                .header("X-Session-Id", identity.getSessionId())
+                .header(HeaderNames.USER_ID, String.valueOf(identity.getUserId()))
+                .header(HeaderNames.USERNAME, identity.getUsername())
+                .header(HeaderNames.SESSION_ID, identity.getSessionId())
                 .build());
     }
 
@@ -408,42 +401,4 @@ public class UserController {
         return userService.getNeo4jSyncUsers(updatedAfter).map(Result::success);
     }
 
-    private String extractGatewayAccessToken(ServerWebExchange exchange) {
-        String authorization = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-        if (authorization != null && !authorization.isBlank()) {
-            return authorization.startsWith(BEARER_PREFIX)
-                ? authorization.substring(BEARER_PREFIX.length()).trim()
-                : authorization.trim();
-        }
-
-        String accessToken = exchange.getRequest().getHeaders().getFirst("X-Access-Token");
-        if (accessToken != null && !accessToken.isBlank()) {
-            return accessToken.trim();
-        }
-
-        String forwardedUri = exchange.getRequest().getHeaders().getFirst("X-Forwarded-Uri");
-        if (forwardedUri == null) {
-            return null;
-        }
-
-        int queryStart = forwardedUri.indexOf('?');
-        if (queryStart < 0 || queryStart == forwardedUri.length() - 1) {
-            return null;
-        }
-
-        for (String pair : forwardedUri.substring(queryStart + 1).split("&")) {
-            int separator = pair.indexOf('=');
-            if (separator > 0 && "token".equals(pair.substring(0, separator))) {
-                return URLDecoder.decode(pair.substring(separator + 1), StandardCharsets.UTF_8);
-            }
-        }
-        return null;
-    }
-
-    private BusinessException unauthorized() {
-        return BusinessException.builder()
-            .httpStatus(HttpCode.UNAUTHORIZED)
-            .errorMessage(Messages.USER_NOT_LOGIN)
-            .build();
-    }
 }

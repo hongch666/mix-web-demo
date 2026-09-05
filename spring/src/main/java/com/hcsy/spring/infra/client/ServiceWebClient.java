@@ -14,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 
+import com.hcsy.spring.common.constants.HeaderNames;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.Result;
@@ -33,8 +34,8 @@ import reactor.core.publisher.Mono;
 public class ServiceWebClient {
 
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Token";
-    private static final String USER_ID_HEADER = "X-User-Id";
-    private static final String USERNAME_HEADER = "X-Username";
+    private static final String USER_ID_HEADER = HeaderNames.USER_ID;
+    private static final String USERNAME_HEADER = HeaderNames.USERNAME;
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String SERVICE_NAME = "spring";
     private static final ParameterizedTypeReference<Result<Object>> RESULT_TYPE = new ParameterizedTypeReference<>() {

@@ -11,6 +11,9 @@ import reactor.core.publisher.Mono;
 public interface TokenService {
     Mono<AuthIdentityDTO> validateAccessToken(String accessToken);
 
+    Mono<AuthIdentityDTO> validateGatewayAccessToken(
+        String authorization, String accessToken, String forwardedUri);
+
     Mono<UserLoginVO> createLoginSession(Long userId, String username);
 
     Mono<TokenRefreshVO> refreshToken(String refreshToken);
