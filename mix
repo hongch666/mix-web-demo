@@ -85,7 +85,7 @@ show_help() {
     echo ""
     echo "Service Names (服务名称):"
     echo "  spring                   - Spring Boot 服务"
-    echo "  gateway                  - Spring Cloud Gateway 服务"
+    echo "  gateway                  - Apache APISIX 网关服务"
     echo "  fastapi                  - FastAPI 服务"
     echo "  gozero                   - GoZero 服务"
     echo "  nestjs                   - NestJS 服务"

@@ -9,14 +9,6 @@ set -o pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NETWORK_NAME="hcsy"
-SERVICES_CONFIG=(
-    "gateway:8080"
-    "spring:8081"
-    "gozero:8082"
-    "nestjs:8083"
-    "fastapi:8084"
-)
-
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -41,15 +33,6 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# 声明关联数组存储服务信息
-declare -A SERVICE_INFO=(
-    [gateway]="gateway:8080"
-    [spring]="spring:8081"
-    [gozero]="gozero:8082"
-    [nestjs]="nestjs:8083"
-    [fastapi]="fastapi:8084"
-)
-
 declare -A SERVICE_LANG=(
     [gozero]="go"
     [nestjs]="node"
@@ -58,7 +41,6 @@ declare -A SERVICE_LANG=(
 )
 
 declare -A SERVICE_PORT=(
-    [gateway]="8080"
     [spring]="8081"
     [gozero]="8082"
     [nestjs]="8083"
@@ -216,11 +198,6 @@ run_container() {
             append_env env_args "RABBITMQ_HOST" "mq"
             append_env env_args "LOGGING_PATH" "/app/logs/spring"
             ;;
-        gateway)
-            append_env env_args "NACOS_SERVER" "nacos:8848"
-            append_env env_args "REDIS_HOST" "redis"
-            append_env env_args "GOZERO_HOST" "gozero"
-            ;;
         fastapi)
             append_env env_args "SERVER_IP" "0.0.0.0"
             append_env env_args "NACOS_SERVER" "nacos:8848"
@@ -255,9 +232,6 @@ run_container() {
                 volume_args+=( -v "$service_dir/application.yaml:/app/application.yaml" )
             fi
             ;;
-        gateway)
-            # Gateway 仅需要 Docker 环境文件，不额外挂载 .env
-            ;;
     esac
 
     # 挂载日志目录
@@ -290,6 +264,12 @@ build_and_run() {
     local service=$1
     
     print_info "处理服务: $service"
+
+    if [ "$service" = "gateway" ]; then
+        print_info "通过 Docker Compose 启动 Apache APISIX 网关..."
+        (cd "$PROJECT_DIR/gateway" && docker compose up -d)
+        return
+    fi
     
     if [ "$start_only" = true ]; then
         if ! run_container "$service"; then
@@ -318,6 +298,7 @@ show_status() {
 # 清理所有服务容器
 cleanup_containers() {
     print_warning "清理所有 mix- 前缀的容器..."
+    (cd "$PROJECT_DIR/gateway" && docker compose down) || true
     
     docker ps -a --format "table {{.Names}}" | grep "mix-" | while read container; do
         print_info "停止容器: $container"
@@ -343,7 +324,7 @@ show_help() {
   --help          显示此帮助信息
 
 服务名称:
-  gateway  - Spring Cloud Gateway (端口 8080)
+  gateway  - Apache APISIX 网关 (端口 8080)
   spring   - Spring Boot 微服务 (端口 8081)
   gozero   - GoZero 微服务 (端口 8082)
   nestjs   - NestJS 微服务 (端口 8083)

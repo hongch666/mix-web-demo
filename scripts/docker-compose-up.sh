@@ -25,7 +25,7 @@ if ! docker network inspect hcsy >/dev/null 2>&1; then
 fi
 
 # 预创建日志目录并调整权限，避免 GoZero/NestJS 权限问题
-for d in spring gozero nestjs fastapi; do
+for d in gateway spring gozero nestjs fastapi; do
     mkdir -p "$WORKDIR/logs/$d"
     chmod -R 777 "$WORKDIR/logs/$d"
 done

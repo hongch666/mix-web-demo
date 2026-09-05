@@ -35,11 +35,69 @@ declare -A SERVICE_PORTS=(
 # 服务进程特征（用于 pgrep 匹配）
 declare -A SERVICE_PATTERNS=(
     ["spring"]="spring.jar"
-    ["gateway"]="gateway.jar"
     ["fastapi"]="fastapi.*main.py|uvicorn.*fastapi"
     ["gozero"]="gozero-app"
     ["nestjs"]="nestjs.*main.js|node.*nestjs"
 )
+
+declare -A SERVICE_MODES=(
+    ["spring"]="process"
+    ["gateway"]="container"
+    ["fastapi"]="process"
+    ["gozero"]="process"
+    ["nestjs"]="process"
+)
+
+container_status() {
+    if ! command -v docker >/dev/null 2>&1; then
+        echo "docker_unavailable"
+    elif [ "$(docker inspect -f '{{.State.Running}}' mix-gateway 2>/dev/null)" = "true" ]; then
+        echo "running:$(docker inspect -f '{{.State.Pid}}' mix-gateway):container"
+    elif docker inspect mix-gateway >/dev/null 2>&1; then
+        echo "stopped"
+    else
+        echo "not_found"
+    fi
+}
+
+wait_for_nacos_instance() {
+    local service=$1
+    local nacos_server="${NACOS_SERVER:-127.0.0.1:8848}"
+    local nacos_url="http://${nacos_server}/nacos/v1/ns/instance/list?serviceName=${service}&groupName=${NACOS_GROUP_NAME:-DEFAULT_GROUP}&healthyOnly=true"
+
+    if ! command -v curl >/dev/null 2>&1; then
+        print_error "未找到 curl，无法确认 Nacos 服务实例"
+        return 1
+    fi
+
+    for _ in $(seq 1 30); do
+        local response
+        response=$(curl --noproxy '*' --connect-timeout 2 --max-time 3 -fsS "$nacos_url" 2>/dev/null || true)
+        if echo "$response" | grep -q '"healthy":true'; then
+            print_info "$service 已注册到 Nacos"
+            return 0
+        fi
+        sleep 1
+    done
+
+    print_error "等待 $service 注册到 Nacos 超时，请检查服务日志和 Nacos 状态"
+    return 1
+}
+
+wait_for_gateway_ready() {
+    for _ in $(seq 1 30); do
+        local status_code
+        status_code=$(curl --noproxy '*' --connect-timeout 2 --max-time 3 -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${GATEWAY_PORT:-8080}/swagger/spring.json" 2>/dev/null || true)
+        if [ "$status_code" = "200" ]; then
+            print_info "gateway 已就绪"
+            return 0
+        fi
+        sleep 1
+    done
+
+    print_error "gateway 未在 30 秒内就绪，请执行 ./mix dist logs gateway 查看日志"
+    return 1
+}
 
 # 已知的良性端口占用进程（SSH隧道、Docker代理等），status 展示时忽略
 # 注意：这些进程虽然不会引起 status 告警，但端口确实被占用，start 时仍会拒绝启动
@@ -100,6 +158,16 @@ find_process_by_pattern() {
 check_service_status() {
     local service=$1
     local service_dir="$DIST_DIR/$service"
+    if [ "${SERVICE_MODES[$service]}" = "container" ]; then
+        local status
+        status=$(container_status)
+        if [ "$status" = "not_found" ] && [ -d "$service_dir" ]; then
+            echo "stopped"
+        else
+            echo "$status"
+        fi
+        return
+    fi
     local port="${SERVICE_PORTS[$service]}"
     local pattern="${SERVICE_PATTERNS[$service]}"
 
@@ -164,6 +232,24 @@ start_service() {
     local service=$1
     local service_dir="$DIST_DIR/$service"
 
+    if [ "${SERVICE_MODES[$service]}" = "container" ]; then
+        if [ ! -d "$service_dir" ]; then
+            print_error "服务目录不存在: $service_dir"
+            return 1
+        fi
+        if [[ $(container_status) == running:* ]]; then
+            print_warn "$service 服务已在运行中"
+            return 0
+        fi
+        print_info "启动 $service 服务（容器）..."
+        for dependency in spring fastapi gozero nestjs; do
+            wait_for_nacos_instance "$dependency"
+        done
+        (cd "$service_dir" && bash start.sh)
+        wait_for_gateway_ready
+        return
+    fi
+
     if [ ! -d "$service_dir" ]; then
         print_error "服务目录不存在: $service_dir"
         return 1
@@ -222,6 +308,14 @@ start_service() {
 stop_service() {
     local service=$1
     local service_dir="$DIST_DIR/$service"
+
+    if [ "${SERVICE_MODES[$service]}" = "container" ]; then
+        if [ -d "$service_dir" ]; then
+            print_info "停止 $service 服务（容器）..."
+            (cd "$service_dir" && bash stop.sh)
+        fi
+        return
+    fi
 
     if [ ! -d "$service_dir" ]; then
         print_error "服务目录不存在: $service_dir"
@@ -282,7 +376,7 @@ show_status() {
 
     if [ ${#services[@]} -eq 0 ]; then
         # 默认显示所有服务
-        services=("spring" "gateway" "fastapi" "gozero" "nestjs")
+        services=("spring" "fastapi" "gozero" "nestjs" "gateway")
     fi
 
     print_info "=========================================="
@@ -317,6 +411,9 @@ show_status() {
             not_found)
                 printf "%-15s ${YELLOW}%-15s${NC} %-10s %-10s\n" "$service" "未安装" "-" "-"
                 ;;
+            docker_unavailable)
+                printf "%-15s ${YELLOW}%-15s${NC} %-10s %-10s\n" "$service" "Docker 不可用" "-" "-"
+                ;;
         esac
     done
 
@@ -326,6 +423,16 @@ show_status() {
 # 查看日志
 view_logs() {
     local service=$1
+
+    if [ "${SERVICE_MODES[$service]}" = "container" ]; then
+        if ! command -v docker >/dev/null 2>&1; then
+            print_error "未找到 Docker"
+            return 1
+        fi
+        docker logs --tail 100 mix-gateway
+        return
+    fi
+
     local logs_dir="$DIST_DIR/logs/$service"
 
     if [ ! -d "$logs_dir" ]; then
@@ -361,7 +468,7 @@ show_usage() {
 
 服务名称（可选，不指定则操作所有服务）:
   spring      Spring Boot 服务
-  gateway     Spring Cloud Gateway 服务
+  gateway     Apache APISIX 网关服务
   fastapi     FastAPI 服务
   gozero         GoZero 服务
   nestjs      NestJS 服务
@@ -392,7 +499,7 @@ main() {
 
     # 如果没有指定服务，默认操作所有服务
     if [ ${#services[@]} -eq 0 ]; then
-        services=("spring" "gateway" "fastapi" "gozero" "nestjs")
+        services=("spring" "fastapi" "gozero" "nestjs" "gateway")
     fi
 
     case "$command" in

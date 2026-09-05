@@ -1,17 +1,27 @@
 version: "3.8"
 
 services:
+  gateway-log-init:
+    image: apache/apisix:3.11.0-debian
+    user: "0:0"
+    entrypoint: ["/bin/sh"]
+    command: ["-c", "chown -R 636:636 /logs"]
+    volumes:
+      - ./logs/gateway:/logs
+
   gateway:
-    image: mix-gateway:latest
+    image: apache/apisix:3.11.0-debian
     container_name: mix-gateway
-    env_file:
-      - ./gateway/.env.docker
+    depends_on:
+      gateway-log-init:
+        condition: service_completed_successfully
     ports:
-      - "8080:8080"
-    environment:
-      NACOS_SERVER: nacos:8848
-      REDIS_HOST: redis
-      GOZERO_HOST: gozero
+      - "8080:9080"
+    volumes:
+      - ./gateway/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./gateway/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - ./gateway/swagger-ui:/usr/local/apisix/html/swagger-ui:ro
+      - ./logs/gateway:/usr/local/apisix/logs
     networks:
       - hcsy
     deploy:
@@ -23,7 +33,7 @@ services:
           cpus: "0.5"
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:9080/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3

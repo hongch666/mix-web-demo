@@ -37,7 +37,7 @@ tmux select-pane -t "$FASTAPI_PANE" -T "4. FastAPI"
 
 # 创建 Gateway 在新窗口
 tmux new-window -t $SESSION -n gateway -c "$WORKDIR"
-tmux send-keys -t $SESSION:gateway "cd gateway && if [ -f .env ]; then set -a && . ./.env && set +a; fi && echo 'Starting Gateway...' && mvn spring-boot:run" C-m
+tmux send-keys -t $SESSION:gateway "cd gateway && echo 'Starting APISIX Gateway...' && docker compose up" C-m
 
 # 切回主服务窗口并聚焦 Spring
 tmux select-window -t $SESSION:services

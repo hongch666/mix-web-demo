@@ -126,85 +126,38 @@ EOF
 
 # ==================== Gateway 服务打包 ====================
 build_gateway() {
-    print_info "开始打包 Gateway 服务..."
+    print_info "开始打包 Gateway 服务(APISIX)..."
     cd "$PROJECT_ROOT/gateway"
-    
-    # Gradle 打包
-    if command -v gradle &> /dev/null; then
-        print_info "使用全局 Gradle 打包 Gateway..."
-        gradle clean build -x test
-    elif [ -f "./gradlew" ]; then
-        print_info "使用本地 Gradle Wrapper 打包 Gateway..."
-        ./gradlew clean build -x test
-    else
-        print_error "Gradle 未安装，跳过 Gateway 打包"
+
+    if [ ! -f "apisix/config.yaml" ] || [ ! -f "apisix/apisix.yaml" ]; then
+        print_error "缺少 APISIX 配置文件"
         return 1
     fi
-    
-    # 创建发布目录
+
     GATEWAY_DIST="$DIST_DIR/gateway"
     mkdir -p "$GATEWAY_DIST"
-    
-    # 复制 jar 文件（排除 plain jar，只复制可执行的 jar）
-    if [ -f "build/libs/gateway-1.0.0.jar" ]; then
-        cp "build/libs/gateway-1.0.0.jar" "$GATEWAY_DIST/gateway.jar"
-    elif ls build/libs/gateway-*.jar 1> /dev/null 2>&1; then
-        # 如果上面的文件不存在，使用通配符找到第一个 jar 文件
-        cp $(ls build/libs/gateway-*.jar | grep -v plain | head -1) "$GATEWAY_DIST/gateway.jar"
-    else
-        print_error "未找到 Gateway jar 文件"
-        return 1
-    fi
-    
-    # 复制配置文件
-    if [ -d "src/main/resources" ]; then
-        cp -r src/main/resources/* "$GATEWAY_DIST/"
-    fi
-    
-    # 复制 .env 文件
-    if [ -f ".env" ]; then
-        cp .env "$GATEWAY_DIST/"
-    fi
-    
-    # 创建启动脚本
+
+    cp -r apisix swagger-ui "$GATEWAY_DIST/"
+    cp docker-compose.yml "$GATEWAY_DIST/"
+
     cat > "$GATEWAY_DIST/start.sh" << 'EOF'
 #!/bin/bash
-JAVA_OPTS="-Xms512m -Xmx1024m"
-LOG_DIR="../logs/gateway"
-mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/app_$(date +%Y-%m-%d).log"
-
-# 加载 .env 文件
-if [ -f ".env" ]; then
-    set -a
-    . ./.env
-    set +a
-fi
-
-# 将环境变量转换为 Java 系统属性
-for var in $(cat .env | grep -v '^#' | cut -d= -f1); do
-    JAVA_OPTS="$JAVA_OPTS -D$var=${!var}"
-done
-
-nohup java $JAVA_OPTS -jar gateway.jar >> "$LOG_FILE" 2>&1 &
-echo $! > gateway.pid
-echo "Gateway 服务已启动，PID: $(cat gateway.pid)"
+set -e
+cd "$(dirname "$0")"
+mkdir -p ../logs/gateway
+docker compose up -d
 EOF
-    
+
     cat > "$GATEWAY_DIST/stop.sh" << 'EOF'
 #!/bin/bash
-if [ -f gateway.pid ]; then
-    kill $(cat gateway.pid)
-    rm gateway.pid
-    echo "Gateway 服务已停止"
-else
-    echo "未找到 PID 文件"
-fi
+set -e
+cd "$(dirname "$0")"
+docker compose down
 EOF
-    
+
     chmod +x "$GATEWAY_DIST/start.sh"
     chmod +x "$GATEWAY_DIST/stop.sh"
-    
+
     print_info "Gateway 服务打包完成: $GATEWAY_DIST"
 }
 

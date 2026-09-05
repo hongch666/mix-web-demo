@@ -98,7 +98,7 @@ if [ "$INTERACTIVE_MODE" = true ]; then
     echo ""
 
     # Java 构建工具选择
-    echo "【1】请选择 Java 构建工具 (Spring & Gateway):"
+    echo "【1】请选择 Java 构建工具 (Spring):"
     echo "    1) gradle"
     echo "    2) maven (默认)"
     read -p "请输入选择 [2]: " java_choice
@@ -195,7 +195,7 @@ tmux send-keys -t $SESSION:4 \
 # window 5: gateway
 tmux new-window -t $SESSION:5 -n gateway -c "$WORKDIR"
 tmux send-keys -t $SESSION:5 \
-"cd gateway && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $java_cmd" C-m
+"cd gateway && echo 'Starting APISIX Gateway...' && docker compose up" C-m
 
 # 选择 spring 窗口并附加
 tmux select-window -t $SESSION:1

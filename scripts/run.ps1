@@ -5,7 +5,7 @@ $workdir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Defini
 Start-Process powershell -ArgumentList "cd $workdir/spring; gradle bootRun"
 
 # 启动 gateway
-Start-Process powershell -ArgumentList "cd $workdir/gateway; gradle bootRun"
+Start-Process powershell -ArgumentList "cd $workdir/gateway; docker compose up"
 
 # 启动 gozero
 Start-Process powershell -ArgumentList "cd $workdir/gozero/app; fresh"
