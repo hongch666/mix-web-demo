@@ -1,0 +1,143 @@
+upstreams:
+  - id: spring
+    discovery_type: nacos
+    service_name: spring
+    type: roundrobin
+  - id: gozero
+    discovery_type: nacos
+    service_name: gozero
+    type: roundrobin
+  - id: gozero-long
+    discovery_type: nacos
+    service_name: gozero
+    type: roundrobin
+    timeout: { connect: 5, send: 60, read: 3600 }
+  - id: nestjs
+    discovery_type: nacos
+    service_name: nestjs
+    type: roundrobin
+    timeout: { connect: 5, send: 120, read: 120 }
+  - id: fastapi
+    discovery_type: nacos
+    service_name: fastapi
+    type: roundrobin
+    timeout: { connect: 5, send: 300, read: 300 }
+
+global_rules:
+  - id: global-cors
+    plugins:
+      cors:
+        allow_origins: "**"
+        allow_methods: "**"
+        allow_headers: "**"
+        allow_credential: false
+        max_age: 3600
+
+routes:
+  - id: health
+    uri: /healthz
+    priority: 200
+    plugins:
+      mocking:
+        content_type: application/json
+        response_status: 200
+        response_example: '{"code":200,"msg":"success","data":null}'
+  - id: block-internal
+    uris: [/articles/list, /task/*, /logs, /ai_history, /upload, /users/github/token-ticket, /email/send-code]
+    priority: 100
+    plugins:
+      mocking:
+        content_type: application/json
+        response_status: 403
+        response_example: '{"code":403,"msg":"内部接口禁止外部访问","data":null}'
+  - id: auth-public-login
+    uri: /users/login
+    upstream_id: spring
+    plugins: &login_limit
+      limit-req: { rate: 1, burst: 9, nodelay: true, key_type: var_combination, key: "$remote_addr$uri", rejected_code: 429, rejected_msg: '{"code":429,"msg":"登录请求过于频繁，请稍后再试","data":null}', policy: redis, redis_host: redis, redis_port: 6379, redis_database: 1, redis_timeout: 1000 }
+  - id: auth-public-register
+    uri: /users/register
+    upstream_id: spring
+    plugins: *login_limit
+  - id: auth-public-captcha
+    uri: /users/captcha
+    upstream_id: spring
+    plugins: *login_limit
+  - id: auth-public-email-send
+    uri: /users/email/send
+    upstream_id: spring
+    plugins: *login_limit
+  - id: auth-public-email-login
+    uri: /users/email-login
+    upstream_id: spring
+    plugins: *login_limit
+  - id: auth-public-token-refresh
+    uri: /users/token/refresh
+    upstream_id: spring
+    plugins: *login_limit
+  - id: auth-public-github-authorize
+    uri: /github/authorize
+    upstream_id: nestjs
+    plugins: *login_limit
+  - id: auth-public-github-callback
+    uri: /github/callback
+    upstream_id: nestjs
+    plugins: *login_limit
+  - id: auth-public-github-token
+    uri: /users/github/token
+    upstream_id: spring
+  - id: auth-public-upload
+    uri: /upload/*
+    upstream_id: nestjs
+    plugins: *login_limit
+  - id: swagger-spring
+    uri: /swagger/spring.json
+    upstream_id: spring
+    plugins:
+      proxy-rewrite: { uri: /v3/api-docs }
+      response-rewrite:
+        filters:
+          - { regex: '"http://localhost:[0-9]+"', scope: global, replace: '"http://localhost:8080"' }
+  - id: swagger-gozero
+    uri: /swagger/gozero.json
+    upstream_id: gozero
+    plugins: { proxy-rewrite: { uri: /swagger/doc.json } }
+  - id: swagger-nestjs
+    uri: /swagger/nestjs.json
+    upstream_id: nestjs
+    plugins: { proxy-rewrite: { uri: /api-docs-json } }
+  - id: swagger-fastapi
+    uri: /swagger/fastapi.json
+    upstream_id: fastapi
+    plugins: { proxy-rewrite: { uri: /openapi.json } }
+  - id: gozero-websocket
+    uri: /ws/*
+    enable_websocket: true
+    upstream_id: gozero-long
+    plugins: &auth
+      forward-auth:
+        uri: http://spring:8081/users/internal/auth/validate
+        request_headers: [Authorization, X-Access-Token]
+        upstream_headers: [X-User-Id, X-Username, X-Session-Id]
+  - id: gozero-sse
+    uri: /sse/*
+    upstream_id: gozero-long
+    plugins: *auth
+  - id: spring
+    uris: [/test/spring, /users, /users/*, /articles, /articles/*, /category, /category/*, /comments, /comments/*, /collects, /collects/*, /likes, /likes/*, /focus, /focus/*]
+    upstream_id: spring
+    plugins: *auth
+  - id: gozero
+    uris: [/test/gozero, /search, /search/*, /user-chat, /user-chat/*]
+    upstream_id: gozero
+    plugins: *auth
+  - id: nestjs
+    uris: [/test/nestjs, /article-logs, /article-logs/*, /api-logs, /api-logs/*, /download, /download/*, /github, /github/*, /email, /email/*, /table-settings, /table-settings/*]
+    upstream_id: nestjs
+    plugins: *auth
+  - id: fastapi
+    uris: [/test/fastapi, /analyze, /analyze/*, /generate, /generate/*, /chat, /chat/*, /ai_history, /ai_history/*]
+    upstream_id: fastapi
+    plugins: *auth
+
+#END

@@ -1,0 +1,27 @@
+services:
+  gateway-log-init:
+    image: apache/apisix:3.11.0-debian
+    user: "0:0"
+    entrypoint: ["/bin/sh"]
+    command: ["-c", "chown -R 636:636 /logs"]
+    volumes:
+      - ${LOGS_PATH:-../logs/gateway}:/logs
+
+  gateway:
+    image: apache/apisix:3.11.0-debian
+    container_name: mix-gateway
+    restart: unless-stopped
+    depends_on:
+      gateway-log-init:
+        condition: service_completed_successfully
+    extra_hosts:
+      - "nacos:host-gateway"
+      - "redis:host-gateway"
+      - "spring:host-gateway"
+    ports:
+      - "${GATEWAY_PORT:-8080}:9080"
+    volumes:
+      - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - ./swagger-ui:/usr/local/apisix/html/swagger-ui:ro
+      - ${LOGS_PATH:-../logs/gateway}:/usr/local/apisix/logs

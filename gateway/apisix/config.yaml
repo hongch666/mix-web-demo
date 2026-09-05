@@ -1,0 +1,35 @@
+apisix:
+  node_listen: 9080
+  enable_ipv6: false
+  proxy_mode: http
+  enable_dev_mode: false
+
+deployment:
+  role: data_plane
+  role_data_plane:
+    config_provider: yaml
+  admin:
+    enable_admin: false
+
+discovery:
+  nacos:
+    host:
+      - "http://nacos:8848"
+    prefix: "/nacos/v1/"
+    fetch_interval: 5
+    weight: 100
+    timeout:
+      connect: 2000
+      send: 2000
+      read: 5000
+
+nginx_config:
+  http_configuration_snippet: |
+    proxy_buffering off;
+  http_server_configuration_snippet: |
+    location /swagger-ui/ {
+        alias /usr/local/apisix/html/swagger-ui/;
+        index index.html;
+        try_files $uri $uri/ /swagger-ui/index.html;
+    }
+  error_log_level: warn
