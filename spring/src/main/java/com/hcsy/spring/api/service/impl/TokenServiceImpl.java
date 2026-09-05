@@ -15,6 +15,7 @@ import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
+import com.hcsy.spring.entity.dto.AuthIdentityDTO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -27,6 +28,39 @@ public class TokenServiceImpl implements TokenService {
     private final RedisUtil redisUtil;
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
+
+    @Override
+    public Mono<AuthIdentityDTO> validateAccessToken(String accessToken) {
+        return Mono.defer(() -> {
+            jwtUtil.validateAccessToken(accessToken);
+
+            Long userId = jwtUtil.extractUserId(accessToken);
+            String sessionId = jwtUtil.extractSessionId(accessToken);
+            String sessionKey = RedisKeys.userSession(userId, sessionId);
+            String expectedValue = userId + ":" + sessionId;
+
+            Mono<String> accessIndex = redisUtil.get(RedisKeys.userAccess(accessToken)).defaultIfEmpty("");
+            Mono<String> storedAccessToken = redisUtil.getHash(sessionKey, "accessToken").defaultIfEmpty("");
+            Mono<String> sessionUsername = redisUtil.getHash(sessionKey, "username").defaultIfEmpty("");
+            Mono<String> userStatus = redisUtil.get(RedisKeys.userStatus(userId)).defaultIfEmpty("");
+
+            return Mono.zip(accessIndex, storedAccessToken, sessionUsername, userStatus)
+                .flatMap(values -> {
+                    if (!expectedValue.equals(values.getT1())
+                        || !accessToken.equals(values.getT2())
+                        || "0".equals(values.getT4())) {
+                        logger.warning(Messages.USER_NOT_LOGIN);
+                        return Mono.error(unauthorized(Messages.USER_NOT_LOGIN));
+                    }
+
+                    String username = values.getT3().isEmpty()
+                        ? jwtUtil.extractUsername(accessToken)
+                        : values.getT3();
+                    logger.debug(Messages.AUTH_IDENTITY_RESOLVED, userId, sessionId);
+                    return Mono.just(new AuthIdentityDTO(userId, username, sessionId));
+                });
+        });
+    }
 
     @Override
     public Mono<UserLoginVO> createLoginSession(Long userId, String username) {

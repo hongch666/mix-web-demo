@@ -2,12 +2,15 @@ package com.hcsy.spring.api.service;
 
 import java.util.List;
 
+import com.hcsy.spring.entity.dto.AuthIdentityDTO;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
 
 import reactor.core.publisher.Mono;
 
 public interface TokenService {
+    Mono<AuthIdentityDTO> validateAccessToken(String accessToken);
+
     Mono<UserLoginVO> createLoginSession(Long userId, String username);
 
     Mono<TokenRefreshVO> refreshToken(String refreshToken);

@@ -114,6 +114,8 @@ public class Messages {
     public static final String REFRESH_TOKEN_INVALID = "Refresh Token 无效或已过期";
     public static final String REFRESH_TOKEN_SUCCESS = "Token 刷新成功";
     public static final String GET_USER_TOKEN_ID = "无法获取用户信息，请确保已登录";
+    public static final String USER_NOT_LOGIN = "用户未登录或登录已失效";
+    public static final String AUTH_IDENTITY_RESOLVED = "认证身份解析成功 - 用户: {}, 会话: {}";
     public static final String SESSION_NOT_FOUND = "登录会话不存在，请重新登录";
     public static final String LOGIN_SESSION_CREATED = "用户 %d 登录，创建会话 %s";
     public static final String LOGIN_SESSION_REMOVED = "用户 %d 登出，移除会话 %s";
