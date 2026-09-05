@@ -50,7 +50,7 @@
 - NestJS（Node.js）
 - FastAPI（Python）
 
-所有服务通过 SpringCloud Gateway 统一网关进行访问，实现了服务治理、认证授权等功能。
+所有服务通过 Apache APISIX 统一网关进行访问，实现路由、认证、限流和服务发现。
 
 [前端对应仓库地址](https://gitee.com/chu-shichao/react-web-demo)
 
@@ -60,8 +60,8 @@
 2. 基于 Spring Boot WebFlux 和 Spring Data R2DBC 实现用户、分类、评论、点赞、收藏、关注等业务模块
 3. 基于 Spring Boot WebFlux 和响应式 Redis 进行文章分类缓存、用户状态和 Token 管理
 4. 基于 SpringBoot 和 AOP 技术权限校验实现用户端和管理端
-5. 基于 SpringCloud Gateway 和 JWT 实现 API 网关的统一认证和权限控制
-6. 基于 Redis Token Bucket 算法在网关层实现 API 限流和防刷功能
+5. 基于 Apache APISIX 和 Spring 内部认证接口实现 API 网关的统一认证和用户信息透传
+6. 基于 APISIX `limit-req` 和 Redis 实现网关层限流和防刷功能
 7. 基于 WebClient、Nacos 服务发现和 Spring Cloud LoadBalancer 实现微服务间响应式 HTTP 调用
 8. 基于 GoZero 聚合 ElasticSearch、pgvector 向量检索和 Neo4j 图谱增强，实现关键词、语义和关系融合的文章搜索
 9. 基于 GoZero 和 sqlx 实现文章相关数据获取和同步
@@ -133,16 +133,16 @@ NestJS 模块按职责划分为两层：
 | 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/DeepSeek）、LangSmith LLM 链路追踪 |
 | 代码位置 | `fastapi/`                                                                                                                                         |
 
-### SpringCloud Gateway 网关（端口 8080）
+### Apache APISIX 网关（端口 8080）
 
-| 项目       | 说明                                                                           |
-| ---------- | ------------------------------------------------------------------------------ |
-| 框架       | SpringCloud Gateway                                                            |
-| 注册中心   | Nacos（服务发现 + 负载均衡）                                                   |
-| 缓存       | Redis                                                                          |
-| 主要功能   | 统一入口、JWT 认证鉴权、路径路由、API 限流（Redis Token Bucket）、用户信息透传 |
-| 网关白名单 | 登录/注册/验证码/GitHub OAuth 等无需认证的路径                                 |
-| 代码位置   | `gateway/`                                                                     |
+| 项目       | 说明                                                                                                      |
+| ---------- | --------------------------------------------------------------------------------------------------------- |
+| 框架       | Apache APISIX 3.11（Docker Compose）                                                                      |
+| 服务发现   | Nacos，按 `spring`、`gozero`、`nestjs`、`fastapi` 服务名发现上游实例                                      |
+| 认证       | `forward-auth` 调用 Spring 的 `/users/internal/auth/validate`，透传 `X-User-Id`、`X-Username`、`X-Session-Id` |
+| 限流       | APISIX `limit-req`，Redis 存储限流状态                                                                    |
+| 主要功能   | 统一入口、路径路由、公开路由、认证、限流、CORS、WebSocket/SSE、Swagger 聚合                               |
+| 配置位置   | `gateway/apisix/config.yaml`、`gateway/apisix/apisix.yaml`                                               |
 
 ## 登录相关
 
@@ -263,8 +263,9 @@ Body 参数：
 
       subgraph API网关层
           direction TB
-          JWT["JWT 校验"]
-          SCG["SpringCloud Gateway 网关路由"]
+          APISIX["Apache APISIX 网关路由"]
+          Auth["Spring 内部认证接口"]
+          GatewayRedis["Redis 限流"]
       end
 
       subgraph 微服务通信层
@@ -301,17 +302,16 @@ Body 参数：
           Email["邮件服务调用"]
       end
 
-      React <-->|请求/响应| JWT
-      JWT <-->|请求/响应| SCG
+      React <-->|请求/响应| APISIX
+      APISIX -->|服务发现| Nacos
+      APISIX -->|认证| Auth
+      APISIX -->|限流| GatewayRedis
+      Auth -->|校验 Token| SpringSvc
 
-      SCG -->|调度| Nacos
-      SCG -->|远程调用| RestfulAPI
-      SCG -->|异步消息| RabbitMQ
-
-      SCG -->|请求/响应| SpringSvc
-      SCG -->|请求/响应| GoZeroSvc
-      SCG -->|请求/响应| NestJSSvc
-      SCG -->|请求/响应| FastAPISvc
+      APISIX -->|请求/响应| SpringSvc
+      APISIX -->|请求/响应| GoZeroSvc
+      APISIX -->|请求/响应| NestJSSvc
+      APISIX -->|请求/响应| FastAPISvc
 
       SpringSvc <-.->|RPC| GoZeroSvc
       GoZeroSvc <-.->|RPC| NestJSSvc
@@ -480,12 +480,12 @@ Body 参数：
 
   ```mermaid
   flowchart LR
-    Client[客户端] --> Gateway[Gateway :8080]
+    Client[客户端] --> APISIX[Apache APISIX :8080]
 
-    Gateway --> Spring[Spring :8081]
-    Gateway --> GoZero[GoZero :8082]
-    Gateway --> Nest[NestJS :8083]
-    Gateway --> FastAPI[FastAPI :8084]
+    APISIX --> Spring[Spring :8081]
+    APISIX --> GoZero[GoZero :8082]
+    APISIX --> Nest[NestJS :8083]
+    APISIX --> FastAPI[FastAPI :8084]
 
     Spring --> MySQL[(MySQL)]
     GoZero --> MySQL
@@ -493,7 +493,7 @@ Body 参数：
     FastAPI --> MySQL
 
     Spring --> Redis[(Redis)]
-    Gateway --> Redis
+    APISIX --> Redis
     GoZero --> Redis
     Nest --> Redis
     FastAPI --> Redis
@@ -505,7 +505,7 @@ Body 参数：
     FastAPI --> Neo4j[(Neo4j)]
 
     Spring -.-> Nacos[Nacos]
-    Gateway -.-> Nacos
+    APISIX -.-> Nacos
     GoZero -.-> Nacos
     Nest -.-> Nacos
     FastAPI -.-> Nacos
@@ -522,7 +522,7 @@ Body 参数：
 - GoZero：Golang 后端框架，支持系统高并发服务
 - NestJS：Node.js 后端框架，支撑系统日志处理服务
 - FastAPI：Python 后端服务，支撑系统数据分析和 Agent 服务
-- Spring Cloud Gateway：API 网关
+- Apache APISIX：API 网关
 - JWT：身份验证
 - Nacos：服务发现与配置中心
 - MySQL：关系型数据库，系统核心数据库
@@ -575,9 +575,7 @@ Body 参数：
 
 ```bash
 cd spring # 进入文件夹
-cd gateway # 进入网关
 mvn clean install # 下载依赖
-gradle wrapper # 生成项目专用 Gradle，运行自动下载依赖
 ```
 
 ### GoZero 部分
@@ -672,7 +670,7 @@ default = true
 
 4. **智能判断**
    - Spring: 自动检测是否有全局 Gradle 和 Maven，优先使用 Gradle（若两者都存在）；同时安装两者的依赖以确保完整性
-   - Gateway: 支持 Gradle 和 Maven 两种构建工具
+   - Gateway: 通过 Docker Compose 运行 Apache APISIX，无需 Java 构建工具
    - GoZero: 自动安装 goctl（API/ORM 代码生成工具、API-First 方式代码生成和 Swagger 文档生成工具）
    - FastAPI: 自动安装 uv 并自动创建 uv 虚拟环境并使用阿里镜像源加速安装
 
@@ -803,7 +801,7 @@ NEO4J_PASSWORD=你的Neo4j密码        # Neo4j 密码
 
 > 每个服务都可以独立运行：
 
-### Spring 服务（包括 gateway 网关）
+### Spring 服务
 
 **使用 Maven 运行**：
 
@@ -813,22 +811,34 @@ cd spring
 mvn clean install # 构建项目
 mvn spring-boot:run # 启动项目
 
-# 运行网关服务
-cd gateway
-mvn clean install # 构建项目
-mvn spring-boot:run # 启动项目
 ```
 
-**使用 Gradle 运行（推荐）**：
+**使用 Gradle 运行（可选）**：
 
 ```bash
 # 运行Spring服务
 cd spring
 gradle bootRun # 启动项目
 
-# 网关服务
+```
+
+### APISIX 网关
+
+```bash
 cd gateway
-gradle bootRun # 启动项目
+docker compose up -d
+
+# 健康检查
+curl http://localhost:8080/healthz
+
+# 网关聚合后的 Swagger UI
+# http://localhost:8080/swagger-ui/
+
+# 查看网关日志
+docker compose logs -f gateway
+
+# 停止网关
+docker compose down
 ```
 
 ### GoZero 服务
@@ -1025,11 +1035,11 @@ pytest tests/core/auth/test_internal_token.py
 # 构建并启动特定服务容器
 ./mix docker up spring gozero
 
-# 仅构建镜像
-./mix docker build
+# 仅构建业务服务镜像
+./mix docker build spring gozero nestjs fastapi
 
-# 推送所有镜像到远程仓库
-./mix docker push --prefix docker.io/yourname
+# 推送业务服务镜像到远程仓库
+./mix docker push --prefix docker.io/yourname spring gozero nestjs fastapi
 
 # 推送指定服务镜像到远程仓库
 ./mix docker push --prefix registry.example.com/team --tag v1.0.0 spring gozero
@@ -1045,43 +1055,44 @@ pytest tests/core/auth/test_internal_token.py
 
 # ===== 生产环境 =====
 # 构建所有服务到 dist/ 目录
-./mix build
+./mix dist build
 
 # 启动所有已构建的服务（后台运行）
-./mix start
+./mix dist start
 
 # 启动指定的服务
-./mix start spring gateway
-./mix start fastapi gozero
+./mix dist start spring gateway
+./mix dist start fastapi gozero
 
 # 查看已构建服务的运行状态
-./mix status
+./mix dist status
 
 # 查看指定服务的运行状态
-./mix status spring gozero
+./mix dist status spring gozero
 
 # 重启所有已构建的服务
-./mix restart
+./mix dist restart
 
 # 重启指定的服务
-./mix restart fastapi
-./mix restart spring gateway nestjs
+./mix dist restart fastapi
+./mix dist restart spring gateway nestjs
 
 # 停止所有已构建的服务
-./mix stop-dist
+./mix dist stop
 
 # 停止指定的服务
-./mix stop-dist spring fastapi
+./mix dist stop spring fastapi
 
 # 查看服务的最新日志（只支持查看单个服务）
-./mix logs spring
-./mix logs fastapi
-./mix logs gozero
+./mix dist logs spring
+./mix dist logs fastapi
+./mix dist logs gozero
+./mix dist logs gateway
 ```
 
 **构建工具参数说明**：
 
-- `--java-build gradle|maven`：选择 Java 构建工具（Spring/Gateway）
+- `--java-build gradle|maven`：选择 Spring 的 Java 构建工具
   - `gradle`：使用 Gradle（推荐，更快）
   - `maven`：使用 Maven（可选）
   - 默认值：`gradle`（如果已安装）
@@ -1165,7 +1176,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 | 参数                   | 选项               | 说明                                             |
 | ---------------------- | ------------------ | ------------------------------------------------ |
-| `--java-build`         | `gradle` / `maven` | Java 项目构建工具（Spring/Gateway），默认 gradle |
+| `--java-build`         | `gradle` / `maven` | Spring Java 构建工具，默认 gradle                |
 | `--node-runtime`       | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun               |
 | `--python-runtime`     | `uv` / `python`    | Python 运行时（FastAPI），默认 uv                |
 | `-i` / `--interactive` | 无                 | 交互式模式，提示用户选择各服务的工具             |
@@ -1217,7 +1228,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 dist-control.sh 和 mix 支持以下服务名称：
 
 - `spring` - SpringBoot 服务
-- `gateway` - Spring Cloud Gateway 网关服务
+- `gateway` - Apache APISIX 网关服务
 - `fastapi` - FastAPI 服务
 - `gozero` - GoZero 服务
 - `nestjs` - NestJS 服务
@@ -1240,19 +1251,19 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 ```bash
 # 1. 一键打包所有服务
-./mix build
+./mix dist build
 
 # 2. 启动所有服务
-./mix start
+./mix dist start
 
 # 3. 查看服务状态
-./mix status
+./mix dist status
 
 # 4. 重启所有服务（代码更新后）
-./mix restart
+./mix dist restart
 
 # 5. 停止所有服务
-./mix stop-dist
+./mix dist stop
 ```
 
 **方法二：直接调用脚本**
@@ -1283,7 +1294,7 @@ dist-control.sh 和 mix 支持以下服务名称：
   - 支持开发环境和生产环境命令
 
 - **scripts/build.sh**
-  - 编译所有服务：Spring、Gateway、FastAPI、GoZero、NestJS
+  - 打包 Spring、FastAPI、GoZero、NestJS，并复制 APISIX 网关配置到 `dist/`
   - 将编译结果打包到 `dist/` 目录
   - 包含编译错误检查和日志输出
 
@@ -1311,7 +1322,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 ./mix docker stop
 ```
 
-Docker 环境会优先读取每个服务目录下的 `.env.docker`，不会自动创建该文件。请根据需要手动准备 Docker 专用环境变量文件，本地开发仍然使用 `.env`。
+Spring、GoZero、NestJS 和 FastAPI 的 Docker 环境会优先读取各自目录下的 `.env.docker`，不会自动创建该文件。APISIX 网关不需要 `.env` 文件。
 
 Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器间地址请使用服务名：
 
@@ -1336,7 +1347,7 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 
 | 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
 | ----------- | ---- | -------------------- | ----------------------- | ---------------- |
-| **Gateway** | 8080 | `mix-gateway:latest` | `mix-gateway-container` | Java 17 + Alpine |
+| **Gateway** | 8080 | `apache/apisix:3.11.0-debian` | `mix-gateway` | Apache APISIX |
 | **Spring**  | 8081 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
 | **GoZero**  | 8082 | `mix-gozero:latest`  | `mix-gozero-container`  | Go 1.23 + Alpine |
 | **NestJS**  | 8083 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
@@ -1381,14 +1392,20 @@ docker restart mix-spring-container
 
 第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
-应用容器镜像将由 `./mix docker build` 生成：
+Spring、GoZero、NestJS 和 FastAPI 的应用镜像可由 `./mix docker build` 生成：
 
 ```bash
-./mix docker build gateway spring gozero nestjs fastapi
+./mix docker build spring gozero nestjs fastapi
 ```
 
-为了与 `mix docker` 启动一致，`docker-compose` 会挂载以下配置与日志目录：
+网关使用官方 `apache/apisix:3.11.0-debian` 镜像，由 `gateway/docker-compose.yml` 挂载 APISIX 配置启动，不需要构建或推送自定义网关镜像。
 
+为了与 `mix docker` 启动一致，根目录 `docker-compose.yml` 会挂载以下配置与日志目录：
+
+- `gateway/apisix/config.yaml -> /usr/local/apisix/conf/config.yaml`
+- `gateway/apisix/apisix.yaml -> /usr/local/apisix/conf/apisix.yaml`
+- `gateway/swagger-ui -> /usr/local/apisix/html/swagger-ui`
+- `logs/gateway -> /usr/local/apisix/logs`
 - `spring/application.yaml -> /app/application.yaml`
 - `gozero/etc -> /app/etc`
 - `nestjs/src/config/application.yaml -> /app/dist/config/application.yaml`
@@ -1398,7 +1415,7 @@ docker restart mix-spring-container
 
 `./scripts/docker-compose-up.sh` 已自动创建目录并设置可写权限，避免 `ENOENT application.yaml` 与 `permission denied` 问题。
 
-建议先构建镜像，再启动 Compose。
+建议先构建业务服务镜像，再启动根目录 Compose；单独启动网关时使用 `cd gateway && docker compose up -d`。
 
 ### 前置要求
 
@@ -1452,7 +1469,9 @@ docker-compose down -v
 
 服务启动后可直接访问本地端口：
 
-- Gateway: http://localhost:8080
+- APISIX Gateway: http://localhost:8080
+- APISIX 健康检查: http://localhost:8080/healthz
+- APISIX Swagger: http://localhost:8080/swagger-ui/
 - Spring: http://localhost:8081
 - GoZero: http://localhost:8082
 - NestJS: http://localhost:8083
@@ -1555,7 +1574,6 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 - GoZero：`gozero/app/.env.example`、`gozero/app/.env.docker`
 - NestJS：`nestjs/.env.example`、`nestjs/.env.docker`
 - FastAPI：`fastapi/.env.example`、`fastapi/.env.docker`
-- Gateway：`gateway/.env.example`、`gateway/.env.docker`
 
 使用方式保持一致：
 
@@ -1740,19 +1758,14 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `RedisKeys.java`：Redis Key 常量（前缀与生成方法）
    - `Scripts.java`：数据库初始化 SQL 和 Redis 脚本常量
 
-2. Gateway 项目：`gateway/src/main/java/com/hcsy/gateway/common/constants/`
-   - `ErrorCodes.java`：错误标识常量（传给响应 `error` 字段）
-   - `HttpCode.java`：HTTP 状态码常量
-   - `RedisKeys.java`：Redis Key 常量（鉴权/限流 Key 前缀与生成方法，与 Spring 共享约定保持一致）
-
-3. GoZero 项目：`gozero/app/common/constants/`
+2. GoZero 项目：`gozero/app/common/constants/`
    - `defaults.go`：配置默认值（ES 权重名称、归一化参数名）
    - `messages.go`：消息类常量（日志消息、用户提示、状态描述）
    - `redisKeys.go`：Redis Key 常量（分布式锁 Key 及过期时间）
    - `scripts.go`：脚本类（SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping）
    - `validations.go`：参数校验类（校验错误消息）
 
-4. FastAPI 项目：`fastapi/app/core/constants/`
+3. FastAPI 项目：`fastapi/app/core/constants/`
    - `defaults.py`：配置默认值（TTL、权重、超时）
    - `errorCodes.py`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
    - `httpCode.py`：HTTP 状态码常量
