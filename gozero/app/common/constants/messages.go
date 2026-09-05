@@ -201,7 +201,7 @@ const (
 	BUSINESS_ERROR_MESSAGE          = "业务异常错误: %s\n错误详情: %s\n%s"
 	STACK_ERROR_MESSAGE             = "堆栈错误信息: %v\n%s"
 	SAFE_GO_PANIC_RECOVERED_MESSAGE = "异步任务 %s 执行时发生 panic，已自动恢复: %v\n堆栈信息:\n%s"
-	UNIFIED_ERROR_RESPONSE_MESSAGE  = "服务器错误"
+	UNIFIED_ERROR_RESPONSE_MESSAGE  = "GoZero服务器错误"
 	SEARCH_HISTORY_FAIL             = "获取搜索历史失败"
 	USER_ID_LESS                    = "缺少用户ID"
 
