@@ -154,36 +154,6 @@ spring/gradlew
 spring/gradlew.bat
 spring/.gradle/
 
-### gateway
-
-# 忽略项目中的 Maven 构建输出目录
-gateway/target/
-
-# 忽略项目中的 IntelliJ IDEA 配置文件
-gateway/.idea/
-gateway/.mvn/
-gateway/*.iml
-
-# 忽略编译后的 class 文件
-gateway/*.class
-
-# 忽略 mvnw 和 mvnw.cmd 文件
-gateway/mvnw
-gateway/mvnw.cmd
-
-# VSCode
-gateway/.vscode/
-
-# Environment files
-gateway/.env
-gateway/.env.docker
-
-gateway/build/
-gateway/gradle/
-gateway/gradlew
-gateway/gradlew.bat
-gateway/.gradle/
-
 ### FastAPI
 fastapi/**/__pycache__/
 fastapi/**/*.pyc
