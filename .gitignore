@@ -226,6 +226,4 @@ CLAUDE.md
 /package-lock.json
 /node_modules/
 
-loki-config
-
 eclipse-formatter.xml

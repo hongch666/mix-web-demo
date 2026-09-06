@@ -24,10 +24,11 @@ if ! docker network inspect hcsy >/dev/null 2>&1; then
     docker network create hcsy
 fi
 
-# 预创建日志目录并调整权限，避免 GoZero/NestJS 权限问题
+# 预创建日志目录。网关日志可能由 APISIX 用户创建，不能递归修改已有文件。
 for d in gateway spring gozero nestjs fastapi; do
     mkdir -p "$WORKDIR/logs/$d"
-    chmod -R 777 "$WORKDIR/logs/$d"
+    chmod 777 "$WORKDIR/logs/$d" 2>/dev/null || \
+        echo "警告：无法修改日志目录权限，将由容器初始化步骤处理: $WORKDIR/logs/$d"
 done
 
 # 预创建静态目录
@@ -36,10 +37,26 @@ for d in pic excel upload; do
     chmod -R 777 "$WORKDIR/static/$d"
 done
 
-echo "启动应用服务（5个服务：gateway、spring、gozero、nestjs、fastapi），不含第三方依赖组件。"
+app_services=(spring gozero nestjs fastapi)
+missing_images=()
+
+for service in "${app_services[@]}"; do
+    if ! docker image inspect "mix-${service}:latest" >/dev/null 2>&1; then
+        missing_images+=("$service")
+    fi
+done
+
+if [ ${#missing_images[@]} -gt 0 ]; then
+    echo "缺少应用镜像，使用 mix Docker 脚本构建: ${missing_images[*]}"
+    bash "$WORKDIR/mix" docker build "${missing_images[@]}"
+else
+    echo "应用镜像已存在，跳过镜像构建。"
+fi
+
+echo "启动应用与可观测性服务，不含第三方依赖组件。"
 
 echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖。"
 
-$COMPOSE_CMD -f "$COMPOSE_FILE" up -d --build
+$COMPOSE_CMD -f "$COMPOSE_FILE" up -d
 
 echo "应用服务已启动。使用 $COMPOSE_CMD -f $COMPOSE_FILE ps 查看状态。"

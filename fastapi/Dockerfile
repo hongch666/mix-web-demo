@@ -11,6 +11,11 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
     PIP_TRUSTED_HOST=mirrors.aliyun.com
 
+# 词云需使用中文字体，配置默认指向 Noto Sans CJK。
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
 # 先复制依赖清单，单独安装依赖，方便缓存复用
 COPY requirements.txt /app/
 

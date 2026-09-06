@@ -1,6 +1,78 @@
-version: "3.8"
-
 services:
+  loki-data-init:
+    image: grafana/loki:3.0.0
+    user: "0:0"
+    entrypoint: ["/bin/sh"]
+    command: ["-c", "mkdir -p /tmp/loki && chown -R 10001:10001 /tmp/loki"]
+    volumes:
+      - loki-data:/tmp/loki
+    networks:
+      - hcsy
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    command: ["-config.file=/etc/loki/config.yaml"]
+    depends_on:
+      loki-data-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./loki-config/loki.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/tmp/loki
+    networks:
+      - hcsy
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3100/ready | grep -q ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  promtail:
+    image: grafana/promtail:2.9.7
+    container_name: promtail
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    depends_on:
+      loki:
+        condition: service_healthy
+    volumes:
+      - ./loki-config/promtail.yaml:/etc/promtail/config.yaml:ro
+      - ./logs:/app/logs:ro
+      - promtail-data:/tmp/positions
+    networks:
+      - hcsy
+    healthcheck:
+      test: ["CMD-SHELL", "test -r /etc/promtail/config.yaml"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    depends_on:
+      loki:
+        condition: service_healthy
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./loki-config/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - hcsy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/health | grep -q ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
   gateway-log-init:
     image: apache/apisix:3.11.0-debian
     user: "0:0"
@@ -33,7 +105,7 @@ services:
           cpus: "0.5"
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9080/healthz"]
+      test: ["CMD-SHELL", "test -s /usr/local/apisix/logs/nginx.pid && kill -0 $(cat /usr/local/apisix/logs/nginx.pid)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,7 +124,7 @@ services:
       REDIS_HOST: redis
       RABBITMQ_HOST: mq
     volumes:
-      - ./spring/application.yaml:/app/application.yaml:ro
+      - ./spring/src/main/resources/application.yaml:/app/application.yaml:ro
       - ./logs/spring:/app/logs/spring
       - ./static/pic:/app/static/pic
       - ./static/excel:/app/static/excel
@@ -184,7 +256,7 @@ services:
           cpus: "0.5"
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/test/fastapi"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8084/test/fastapi', timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -193,3 +265,8 @@ services:
 networks:
   hcsy:
     external: true
+
+volumes:
+  loki-data:
+  promtail-data:
+  grafana-data:

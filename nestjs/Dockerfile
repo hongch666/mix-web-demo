@@ -6,14 +6,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
 # 复制package文件
 COPY package*.json ./
 COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
-# 安装依赖
+# 安装构建依赖
 # package.json 和 package-lock.json 当前不同步，使用 npm install 保持构建可用
-RUN npm install --prefer-offline --no-audit
+RUN npm install --include=dev --prefer-offline --no-audit
 
 # 复制源代码
 COPY src ./src
@@ -25,6 +27,8 @@ RUN npm run node:build
 FROM node:20-alpine
 
 WORKDIR /app
+
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 # 安装基础工具
 RUN apk add --no-cache curl ca-certificates

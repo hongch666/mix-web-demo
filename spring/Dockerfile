@@ -6,17 +6,11 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# 复制pom.xml
+# 复制构建描述与源代码。dependency:go-offline 会额外下载大量插件依赖，
+# 直接打包并复用 Maven 缓存可缩短首次镜像构建时间。
 COPY pom.xml .
-
-# 下载依赖（这一步会被缓存）
-RUN mvn dependency:go-offline -B
-
-# 复制源代码
 COPY src ./src
-
-# 构建应用
-RUN mvn clean package -DskipTests -q
+RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -q
 
 # 阶段2：运行阶段
 FROM eclipse-temurin:17-jre-alpine
