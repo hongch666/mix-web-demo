@@ -315,6 +315,10 @@ class Messages:
         return f"Nacos 心跳错误: {error}"
 
     @staticmethod
+    def NACOS_LOG_DIR_UNAVAILABLE(candidate_dirs: str) -> str:
+        return f"Nacos 日志目录均不可写，已尝试: {candidate_dirs}"
+
+    @staticmethod
     def CONFIG_FILE_NOT_FOUND(searched_paths: str) -> str:
         return f"未找到 application.yaml，请确认配置文件存在。已搜索路径:\n{searched_paths}"
 

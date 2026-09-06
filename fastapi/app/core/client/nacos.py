@@ -1,4 +1,6 @@
+import os
 import socket
+import tempfile
 import threading
 import time
 from typing import Any
@@ -30,12 +32,39 @@ SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 PORT: int = server_config["port"]
 
 
+def _resolve_nacos_log_dir() -> str:
+    """
+    解析 Nacos SDK 的日志目录
+
+    SDK 默认写入 ~/logs/nacos/，容器中 HOME 可能指向 /（如以非 root 用户运行时
+    Docker 未配置 HOME），会因无权限在 / 下创建目录导致导入期失败。
+    因此显式指定到应用日志目录下，不可写时回退到系统临时目录
+    """
+
+    logs_path: str = str(load_config("logs")["path"])
+    candidates: list[str] = [
+        os.path.join(logs_path, "nacos"),
+        os.path.join(tempfile.gettempdir(), "nacos"),
+    ]
+
+    for candidate in candidates:
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            if os.access(candidate, os.W_OK):
+                return candidate
+        except OSError:
+            continue
+
+    raise RuntimeError(Messages.NACOS_LOG_DIR_UNAVAILABLE(", ".join(candidates)))
+
+
 def _build_client() -> nacos.NacosClient:
     kwargs: dict[str, Any] = {"namespace": NAMESPACE}
     if USERNAME:
         kwargs["username"] = USERNAME
     if PASSWORD:
         kwargs["password"] = PASSWORD
+    kwargs["logDir"] = _resolve_nacos_log_dir()
     return nacos.NacosClient(SERVER_ADDRESSES, **kwargs)
 
 
