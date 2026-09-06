@@ -81,6 +81,17 @@ services:
     volumes:
       - ./logs/gateway:/logs
 
+  # 修正业务服务日志目录属主，避免容器以 root/内置用户创建日志文件后，宿主机开发模式（./mix dev seq）因无写权限导致 FileNotFoundException，宿主 uid/gid 与宿主机不一致时，通过环境变量 HOST_UID / HOST_GID 覆盖
+  logs-owner-init:
+    image: alpine:3.20
+    user: "0:0"
+    entrypoint: ["/bin/sh"]
+    command:
+      - "-c"
+      - "mkdir -p /logs/spring /logs/gozero /logs/nestjs /logs/fastapi && chown -R ${HOST_UID:-1000}:${HOST_GID:-1000} /logs/spring /logs/gozero /logs/nestjs /logs/fastapi"
+    volumes:
+      - ./logs:/logs
+
   gateway:
     image: apache/apisix:3.11.0-debian
     container_name: mix-gateway
@@ -114,11 +125,16 @@ services:
   spring:
     image: mix-spring:latest
     container_name: mix-spring
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    depends_on:
+      logs-owner-init:
+        condition: service_completed_successfully
     env_file:
       - ./spring/.env.docker
     ports:
       - "8081:8081"
     environment:
+      HOME: /tmp
       NACOS_SERVER: nacos:8848
       DB_HOST: mysql
       REDIS_HOST: redis
@@ -149,11 +165,16 @@ services:
   gozero:
     image: mix-gozero:latest
     container_name: mix-gozero
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    depends_on:
+      logs-owner-init:
+        condition: service_completed_successfully
     env_file:
       - ./gozero/app/.env.docker
     ports:
       - "8082:8082"
     environment:
+      HOME: /tmp
       SERVER_IP: 0.0.0.0
       NACOS_IP: nacos
       DB_MYSQL_HOST: mysql
@@ -187,11 +208,16 @@ services:
   nestjs:
     image: mix-nestjs:latest
     container_name: mix-nestjs
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    depends_on:
+      logs-owner-init:
+        condition: service_completed_successfully
     env_file:
       - ./nestjs/.env.docker
     ports:
       - "8083:8083"
     environment:
+      HOME: /tmp
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos
       NACOS_PORT: 8848
@@ -225,11 +251,16 @@ services:
   fastapi:
     image: mix-fastapi:latest
     container_name: mix-fastapi
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    depends_on:
+      logs-owner-init:
+        condition: service_completed_successfully
     env_file:
       - ./fastapi/.env.docker
     ports:
       - "8084:8084"
     environment:
+      HOME: /tmp
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos:8848
       RABBITMQ_HOST: mq

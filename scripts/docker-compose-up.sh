@@ -53,6 +53,10 @@ else
     echo "应用镜像已存在，跳过镜像构建。"
 fi
 
+# 清理 dev 模式残留的网关容器。根 compose 与 gateway/docker-compose.yml 共用
+# container_name: mix-gateway，不清理会因容器名冲突导致本次启动失败
+bash "$WORKDIR/scripts/gateway-cleanup.sh"
+
 echo "启动应用与可观测性服务，不含第三方依赖组件。"
 
 echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖。"

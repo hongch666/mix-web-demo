@@ -245,6 +245,10 @@ run_container() {
         volume_args+=( -v "$PROJECT_DIR/static/$dir:/app/static/$dir" )
     done
 
+    # 使用宿主机当前用户的 uid/gid 运行容器，避免挂载目录被 root 占用后，
+    # 宿主机开发模式（./mix dev seq）写入日志时出现 Permission denied
+    run_args+=( --user "$(id -u):$(id -g)" )
+
     # 创建并启动容器
     run_args+=( "${env_args[@]}" )
     run_args+=( "${volume_args[@]}" )

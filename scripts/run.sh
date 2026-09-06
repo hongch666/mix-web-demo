@@ -193,6 +193,10 @@ tmux send-keys -t $SESSION:4 \
 "cd fastapi && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $python_cmd" C-m
 
 # window 5: gateway
+# 先清理残留网关容器。dev 模式（gateway/docker-compose.yml）与根 compose 共用
+# container_name: mix-gateway，若之前通过 ./mix compose up 启动过会报容器名冲突
+bash "$WORKDIR/scripts/gateway-cleanup.sh"
+
 tmux new-window -t $SESSION:5 -n gateway -c "$WORKDIR"
 tmux send-keys -t $SESSION:5 \
 "cd gateway && echo 'Starting APISIX Gateway...' && docker compose up" C-m
