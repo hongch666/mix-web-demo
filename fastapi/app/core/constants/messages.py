@@ -1508,16 +1508,36 @@ class Messages:
         return f"ClickHouse ODS 同步完成: {table_name}, rows={count}"
 
     @staticmethod
+    def WAREHOUSE_API_LOG_SYNC_SUCCESS(table_name: str, count: int) -> str:
+        return f"ClickHouse API日志 ODS 同步完成: {table_name}, rows={count}"
+
+    @staticmethod
+    def WAREHOUSE_SCHEMA_CREATED(tables: str) -> str:
+        return f"ClickHouse 数仓缺失表已自动创建: {tables}"
+
+    WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
+
+    @staticmethod
+    def APILOG_CLICKHOUSE_QUERY_FAILED(error: Exception) -> str:
+        return f"ClickHouse API日志 ADS 查询失败: {error}"
+
+    APILOG_ADS_SOURCE: str = "API日志分析使用 ClickHouse ADS 数据源"
+
+    APILOG_ADS_EMPTY_FALLBACK_REMOTE: str = (
+        "ClickHouse API日志 ADS 层暂无数据，降级为远程查询"
+    )
+
+    @staticmethod
     def WAREHOUSE_REFRESH_FAILED(error: Exception) -> str:
         return f"ClickHouse 数仓同步失败: {error}"
-
-    WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
-        "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
-    )
 
     @staticmethod
     def USER_ANALYSIS_METRIC_UNSUPPORTED(metric: str) -> str:
         return f"不支持的用户分析指标: {metric}"
+
+    WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
+        "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
+    )
 
     INTERNAL_TOKEN_SECRET_NOT_NULL: str = "内部令牌密钥未配置"
 

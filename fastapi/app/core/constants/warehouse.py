@@ -59,6 +59,301 @@ class WarehouseScripts:
         "(event_id, user_id, article_id, action, content, created_at) VALUES"
     )
 
+    ODS_API_LOG_TABLE: Final[str] = "ods_api_log"
+    ODS_API_LOG_COLUMNS: Final[tuple[str, ...]] = (
+        "event_id",
+        "user_id",
+        "username",
+        "api_description",
+        "api_path",
+        "api_method",
+        "response_time",
+        "created_at",
+    )
+    ODS_API_LOG_INSERT: Final[str] = (
+        "INSERT INTO warehouse.ods_api_log "
+        "(event_id, user_id, username, api_description, api_path, api_method, "
+        "response_time, created_at) VALUES"
+    )
+
+    API_AVERAGE_SPEED_QUERY: Final[str] = """
+        SELECT api_path, api_method, api_description, avg_response_time, call_count
+        FROM warehouse.ads_api_average_speed FINAL
+        ORDER BY avg_response_time DESC
+    """
+    API_CALLED_COUNT_QUERY: Final[str] = """
+        SELECT api_path, api_method, api_description, call_count, avg_response_time
+        FROM warehouse.ads_api_called_count FINAL
+        ORDER BY call_count DESC
+    """
+
+    # ========== 数仓库表自动初始化（定时任务前置检查，幂等） ==========
+    WAREHOUSE_DATABASE_DDL: Final[str] = "CREATE DATABASE IF NOT EXISTS warehouse"
+    WAREHOUSE_TABLE_EXISTS_QUERY: Final[str] = "EXISTS TABLE {table}"
+
+    WAREHOUSE_DDL: Final[tuple[tuple[str, str], ...]] = (
+        (
+            "sync_watermark",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.sync_watermark (
+                table_name String,
+                last_watermark String,
+                updated_at DateTime
+            ) ENGINE = ReplacingMergeTree (updated_at)
+            ORDER BY table_name
+            """,
+        ),
+        (
+            "ods_articles",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_articles (
+                id Int64, title String, user_id Int64, sub_category_id Int64,
+                tags String, status Int8, views Int32,
+                create_at DateTime, update_at DateTime
+            ) ENGINE = ReplacingMergeTree (update_at) ORDER BY id
+            """,
+        ),
+        (
+            "ods_user",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_user (
+                id Int64, name String, role String, img String, signature String,
+                create_at DateTime, update_at DateTime
+            ) ENGINE = ReplacingMergeTree (update_at) ORDER BY id
+            """,
+        ),
+        (
+            "ods_category",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_category (
+                id Int64, name String,
+                create_time DateTime, update_time DateTime
+            ) ENGINE = ReplacingMergeTree (update_time) ORDER BY id
+            """,
+        ),
+        (
+            "ods_sub_category",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_sub_category (
+                id Int64, name String, category_id Int64,
+                create_time DateTime, update_time DateTime
+            ) ENGINE = ReplacingMergeTree (update_time) ORDER BY id
+            """,
+        ),
+        (
+            "ods_likes",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_likes (
+                id Int64, article_id Int64, user_id Int64, created_time DateTime
+            ) ENGINE = ReplacingMergeTree (created_time) ORDER BY id
+            """,
+        ),
+        (
+            "ods_collects",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_collects (
+                id Int64, article_id Int64, user_id Int64, created_time DateTime
+            ) ENGINE = ReplacingMergeTree (created_time) ORDER BY id
+            """,
+        ),
+        (
+            "ods_comments",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_comments (
+                id Int64, user_id Int64, article_id Int64, star Float64,
+                create_time DateTime, update_time DateTime
+            ) ENGINE = ReplacingMergeTree (update_time) ORDER BY id
+            """,
+        ),
+        (
+            "ods_focus",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_focus (
+                id Int64, user_id Int64, focus_id Int64, created_time DateTime
+            ) ENGINE = ReplacingMergeTree (created_time) ORDER BY id
+            """,
+        ),
+        (
+            "ods_article_log",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_article_log (
+                event_id String, user_id Int64, article_id Int64,
+                action String, content String, created_at DateTime
+            ) ENGINE = ReplacingMergeTree (created_at) ORDER BY event_id
+            """,
+        ),
+        (
+            "ods_api_log",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ods_api_log (
+                event_id String, user_id Int64, username String,
+                api_description String, api_path String, api_method String,
+                response_time Float64, created_at DateTime
+            ) ENGINE = ReplacingMergeTree (created_at) ORDER BY event_id
+            """,
+        ),
+        (
+            "dim_user",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.dim_user (
+                id Int64, name String, role String, img String, signature String,
+                create_at DateTime, update_at DateTime
+            ) ENGINE = ReplacingMergeTree (update_at) ORDER BY id
+            """,
+        ),
+        (
+            "dim_category",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.dim_category (
+                sub_category_id Int64, sub_category_name String,
+                parent_category_id Int64, parent_category_name String,
+                update_time DateTime
+            ) ENGINE = ReplacingMergeTree (update_time) ORDER BY sub_category_id
+            """,
+        ),
+        (
+            "dwd_article_event",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.dwd_article_event (
+                id Int64, title String, user_id Int64, views Int32, status Int8,
+                sub_category_id Int64, parent_category_id Int64,
+                parent_category_name String, create_date Date,
+                create_at DateTime, update_at DateTime
+            ) ENGINE = ReplacingMergeTree (update_at) ORDER BY id
+            """,
+        ),
+        (
+            "dwd_user_action",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.dwd_user_action (
+                event_id String, source_type String, source_id Int64,
+                action_type String, user_id Int64, article_id Int64,
+                action_date Date, action_time DateTime
+            ) ENGINE = ReplacingMergeTree (action_time) ORDER BY event_id
+            """,
+        ),
+        (
+            "dws_article_day",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.dws_article_day (
+                stat_date Date, article_id Int64, user_id Int64,
+                parent_category_id Int64, views Int64, like_count Int64,
+                collect_count Int64, comment_count Int64, view_count Int64
+            ) ENGINE = MergeTree ORDER BY (stat_date, article_id)
+            """,
+        ),
+        (
+            "dws_user_day",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.dws_user_day (
+                stat_date Date, user_id Int64, like_count Int64,
+                collect_count Int64, comment_count Int64, focus_count Int64,
+                liked_articles UInt64, last_active_time DateTime
+            ) ENGINE = MergeTree ORDER BY (stat_date, user_id)
+            """,
+        ),
+        (
+            "ads_user_day",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_user_day (
+                stat_date Date, user_id Int64, like_count Int64,
+                collect_count Int64, comment_count Int64, focus_count Int64,
+                view_count Int64, last_active_time DateTime, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY (stat_date, user_id)
+            """,
+        ),
+        (
+            "ads_user_view_articles",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_user_view_articles (
+                user_id Int64, article_id Int64, article_title String,
+                view_count Int64, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY (user_id, article_id)
+            """,
+        ),
+        (
+            "ads_user_stats",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_user_stats (
+                user_id Int64, total_likes_given Int64, total_collects_given Int64,
+                total_comments Int64, total_focus Int64, total_views_given Int64,
+                total_articles Int64, total_views_received Int64,
+                total_likes_received Int64, total_collects_received Int64,
+                total_followers Int64, last_active_time DateTime, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY user_id
+            """,
+        ),
+        (
+            "ads_top10_articles",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_top10_articles (
+                id Int64, title String, tags String, status Int8, views Int32,
+                create_at DateTime, update_at DateTime, user_id Int64,
+                sub_category_id Int64, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY id
+            """,
+        ),
+        (
+            "ads_category_stats",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_category_stats (
+                parent_category_id Int64, category_name String,
+                article_count Int64, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY parent_category_id
+            """,
+        ),
+        (
+            "ads_monthly_publish",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_monthly_publish (
+                year_month String, article_count Int64, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY year_month
+            """,
+        ),
+        (
+            "ads_platform_stats",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_platform_stats (
+                id UInt8, stat_time DateTime, total_views Int64,
+                total_articles Int64, active_authors UInt64, average_views Float64,
+                total_likes Int64, average_likes Float64, total_collects Int64,
+                average_collects Float64
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY id
+            """,
+        ),
+        (
+            "ads_api_average_speed",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_api_average_speed (
+                api_path String, api_method String, api_description String,
+                avg_response_time Float64, call_count Int64, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time)
+            ORDER BY (api_path, api_method, api_description)
+            """,
+        ),
+        (
+            "ads_api_called_count",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_api_called_count (
+                api_path String, api_method String, api_description String,
+                call_count Int64, avg_response_time Float64, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time)
+            ORDER BY (api_path, api_method, api_description)
+            """,
+        ),
+    )
+
+    # 水位线初始化：仅为首次出现的表写入纪元水位（与 init.sql 逻辑一致）
+    WAREHOUSE_WATERMARK_INIT: Final[str] = (
+        "INSERT INTO warehouse.sync_watermark (table_name, last_watermark, updated_at) "
+        "SELECT table_name, '1970-01-01 00:00:00', now() "
+        "FROM (SELECT arrayJoin(['ods_articles', 'ods_user', 'ods_category', "
+        "'ods_sub_category', 'ods_likes', 'ods_collects', 'ods_comments', "
+        "'ods_focus', 'ods_article_log', 'ods_api_log']) AS table_name) "
+        "WHERE table_name NOT IN "
+        "(SELECT table_name FROM warehouse.sync_watermark FINAL)"
+    )
+
     @staticmethod
     def ODS_REMOTE_INSERT(table_name: str, columns: Sequence[str]) -> str:
         """远程数据源同步 INSERT 模板：表名与列名均来自 REMOTE_SOURCES 内部常量"""
@@ -146,6 +441,10 @@ class WarehouseScripts:
         "TRUNCATE TABLE warehouse.ads_user_day",
         "TRUNCATE TABLE warehouse.ads_user_view_articles",
         "TRUNCATE TABLE warehouse.ads_user_stats",
+        "TRUNCATE TABLE warehouse.dwd_api_call",
+        "TRUNCATE TABLE warehouse.dws_api_day",
+        "TRUNCATE TABLE warehouse.ads_api_average_speed",
+        "TRUNCATE TABLE warehouse.ads_api_called_count",
     )
 
     REFRESH_DIM_USER: Final[str] = """
@@ -345,3 +644,40 @@ class WarehouseScripts:
             GROUP BY article_id
         ) AS f ON u.id = f.author_id
     """
+
+    # API 日志 DWD 层：ODS 明细补齐日期维度
+    REFRESH_DWD_API_CALL: Final[str] = """
+        INSERT INTO warehouse.dwd_api_call
+        SELECT event_id, api_path, api_method, api_description, user_id, username,
+               response_time, toDate(created_at), created_at
+        FROM warehouse.ods_api_log FINAL
+    """
+
+    # API 日志 DWS 层：按日 + 接口维度轻度聚合
+    REFRESH_DWS_API_DAY: Final[str] = """
+        INSERT INTO warehouse.dws_api_day
+        SELECT action_date, api_path, api_method, api_description,
+               count(), sum(response_time), max(response_time)
+        FROM warehouse.dwd_api_call FINAL
+        GROUP BY action_date, api_path, api_method, api_description
+    """
+
+    # API 日志 ADS 层刷新：平均响应速度与调用次数（与远程聚合接口输出同构）
+    REFRESH_ADS_API: Final[tuple[str, ...]] = (
+        """
+        INSERT INTO warehouse.ads_api_average_speed
+        SELECT api_path, api_method, api_description,
+               round(sum(total_response_time) / greatest(sum(call_count), 1), 2),
+               sum(call_count), now()
+        FROM warehouse.dws_api_day
+        GROUP BY api_path, api_method, api_description
+        """,
+        """
+        INSERT INTO warehouse.ads_api_called_count
+        SELECT api_path, api_method, api_description,
+               sum(call_count),
+               round(sum(total_response_time) / greatest(sum(call_count), 1), 2), now()
+        FROM warehouse.dws_api_day
+        GROUP BY api_path, api_method, api_description
+        """,
+    )

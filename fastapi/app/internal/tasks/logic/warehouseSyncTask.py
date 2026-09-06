@@ -117,6 +117,58 @@ async def _sync_remote_source(
             await get_clickhouse_connection_pool().return_connection_async(conn)
 
 
+async def _sync_api_logs(conn: Any, nestjs_client: NestjsClient) -> None:
+    """按 MongoDB ID 游标增量同步 NestJS API 日志到 ClickHouse ODS 层"""
+    last_cursor_rows = await asyncio.to_thread(
+        conn.execute,
+        WarehouseScripts.WATERMARK_SELECT,
+        {"table_name": WarehouseScripts.ODS_API_LOG_TABLE},
+    )
+    stored_cursor = str(last_cursor_rows[0][0]) if last_cursor_rows else ""
+    cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
+    total = 0
+    while True:
+        page = await nestjs_client.sync_api_logs(
+            cursor, WarehouseScripts.ARTICLE_LOG_BATCH_SIZE
+        )
+        items = page.get("list", []) if isinstance(page, dict) else []
+        if not items:
+            break
+        rows = [
+            (
+                str(item.get("_id") or item.get("id") or ""),
+                int(item.get("userId") or item.get("user_id") or 0),
+                str(item.get("username") or ""),
+                str(item.get("apiDescription") or item.get("api_description") or ""),
+                str(item.get("apiPath") or item.get("api_path") or ""),
+                str(item.get("apiMethod") or item.get("api_method") or ""),
+                float(item.get("responseTime") or item.get("response_time") or 0.0),
+                _to_datetime(item.get("createdAt") or item.get("created_at")),
+            )
+            for item in items
+        ]
+        await asyncio.to_thread(conn.execute, WarehouseScripts.ODS_API_LOG_INSERT, rows)
+        total += len(rows)
+        next_cursor = page.get("nextCursor") or page.get("next_cursor")
+        if next_cursor:
+            cursor = next_cursor
+        else:
+            cursor = rows[-1][0]
+            break
+    if cursor:
+        await asyncio.to_thread(
+            conn.execute,
+            WarehouseScripts.WATERMARK_UPSERT,
+            [(WarehouseScripts.ODS_API_LOG_TABLE, cursor, datetime.now())],
+        )
+    if total:
+        Logger.info(
+            Messages.WAREHOUSE_API_LOG_SYNC_SUCCESS(
+                WarehouseScripts.ODS_API_LOG_TABLE, total
+            )
+        )
+
+
 async def _sync_article_logs(conn: Any, nestjs_client: NestjsClient) -> None:
     last_cursor_rows = await asyncio.to_thread(
         conn.execute,
@@ -174,13 +226,45 @@ async def _refresh_warehouse(conn: Any) -> None:
         WarehouseScripts.REFRESH_ADS_USER_DAY,
         WarehouseScripts.REFRESH_ADS_USER_VIEW_ARTICLES,
         WarehouseScripts.REFRESH_ADS_USER_STATS,
+        WarehouseScripts.REFRESH_DWD_API_CALL,
+        WarehouseScripts.REFRESH_DWS_API_DAY,
+        *WarehouseScripts.REFRESH_ADS_API,
     ):
         await asyncio.to_thread(conn.execute, sql)
+
+
+async def _ensure_warehouse_schema(conn: Any) -> None:
+    """定时任务前置检查：库表不存在则自动创建（幂等，与 init.sql 保持一致）"""
+    await asyncio.to_thread(conn.execute, WarehouseScripts.WAREHOUSE_DATABASE_DDL)
+    created: list[str] = []
+    for table_name, ddl in WarehouseScripts.WAREHOUSE_DDL:
+        exists_rows = await asyncio.to_thread(
+            conn.execute,
+            WarehouseScripts.WAREHOUSE_TABLE_EXISTS_QUERY.format(
+                table=f"warehouse.{table_name}"
+            ),
+        )
+        if not exists_rows or not int(exists_rows[0][0]):
+            await asyncio.to_thread(conn.execute, ddl)
+            created.append(table_name)
+    await asyncio.to_thread(conn.execute, WarehouseScripts.WAREHOUSE_WATERMARK_INIT)
+    if created:
+        Logger.info(Messages.WAREHOUSE_SCHEMA_CREATED(", ".join(created)))
+    else:
+        Logger.info(Messages.WAREHOUSE_SCHEMA_READY)
 
 
 async def _sync_warehouse(
     spring_client: SpringClient, nestjs_client: Optional[NestjsClient] = None
 ) -> None:
+    conn: Any = None
+    try:
+        conn = await get_clickhouse_connection_pool().get_connection_async()
+        # 前置检查：缺表则自动建表，再开始 ODS 同步与分层刷新
+        await _ensure_warehouse_schema(conn)
+    finally:
+        if conn:
+            await get_clickhouse_connection_pool().return_connection_async(conn)
     await asyncio.gather(
         *(
             _sync_remote_source(spring_client, *source)
@@ -192,6 +276,7 @@ async def _sync_warehouse(
         conn = await get_clickhouse_connection_pool().get_connection_async()
         if nestjs_client:
             await _sync_article_logs(conn, nestjs_client)
+            await _sync_api_logs(conn, nestjs_client)
         await _refresh_warehouse(conn)
         Logger.info(Messages.WAREHOUSE_REFRESH_SUCCESS)
     except Exception as error:

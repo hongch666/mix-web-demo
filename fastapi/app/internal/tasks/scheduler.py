@@ -83,9 +83,8 @@ def start_scheduler(
     scheduler.add_job(
         warehouse_sync_job_func,
         "interval",
-        minutes=5,
+        minutes=30,
         id="sync_clickhouse_warehouse",
-        next_run_time=datetime.now(),
     )
 
     scheduler.start()
