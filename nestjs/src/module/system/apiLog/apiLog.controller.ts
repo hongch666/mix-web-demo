@@ -88,6 +88,26 @@ export class ApiLogController {
   }
 
   /**
+   * 游标同步API日志（供 FastAPI 数仓增量同步）
+   */
+  @Get("sync")
+  @ApiOperation({
+    summary: "游标同步API日志",
+    description: "供 FastAPI 数仓按 MongoDB ID 游标增量同步API日志",
+  })
+  @RequireInternalToken()
+  async sync(
+    @Query("cursor") cursor: string | undefined,
+    @Query("limit") limit: string | undefined,
+  ): Promise<ApiResponse<unknown>> {
+    const data = await this.apiLogService.findByCursor(
+      cursor || null,
+      Number(limit) || 1000,
+    );
+    return success(data);
+  }
+
+  /**
    * 获取所有接口的平均响应速度（供 FastAPI 内部远程调用）
    */
   @Get("average-speed")

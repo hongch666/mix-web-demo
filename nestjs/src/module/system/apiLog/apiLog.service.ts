@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import isLeapYear from "dayjs/plugin/isLeapYear";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
@@ -39,6 +39,17 @@ interface ApiLogListItem {
 interface ApiLogPageResult {
   total: number;
   list: ApiLogListItem[];
+}
+
+interface ApiLogSyncItem {
+  _id: unknown;
+  userId: number;
+  username: string;
+  apiDescription: string;
+  apiPath: string;
+  apiMethod: string;
+  responseTime: number;
+  createdAt?: string;
 }
 
 @Injectable()
@@ -94,7 +105,9 @@ export class ApiLogService {
         ),
       );
       missingIndexes.forEach((indexConfig) => {
-        this.logger.info(Messages.API_LOG_INDEX_CREATED(indexConfig.options.name));
+        this.logger.info(
+          Messages.API_LOG_INDEX_CREATED(indexConfig.options.name),
+        );
       });
     }
   }
@@ -231,6 +244,48 @@ export class ApiLogService {
       .deleteMany({ createdAt: { $lt: before } })
       .exec();
     return result.deletedCount;
+  }
+
+  /**
+   * 游标同步API日志（供 FastAPI 数仓按 MongoDB ID 游标增量同步）
+   * @param cursor 上一次同步的最后一个 MongoDB ID
+   * @param limit 单页数量
+   */
+  async findByCursor(
+    cursor: string | null,
+    limit: number,
+  ): Promise<{ list: ApiLogSyncItem[]; nextCursor: string | null }> {
+    const safeLimit: number = Math.min(Math.max(limit || 1000, 1), 5000);
+    const filter =
+      cursor && Types.ObjectId.isValid(cursor)
+        ? { _id: { $gt: new Types.ObjectId(cursor) } }
+        : {};
+    const list: ApiLogDocument[] = await this.apiLogModel
+      .find(filter)
+      .sort({ _id: 1 })
+      .limit(safeLimit + 1)
+      .lean<ApiLogDocument[]>()
+      .exec();
+    const hasMore: boolean = list.length > safeLimit;
+    const page: ApiLogDocument[] = hasMore ? list.slice(0, safeLimit) : list;
+    const lastItem: ApiLogDocument | undefined = page[page.length - 1];
+    return {
+      list: page.map(
+        (item: ApiLogDocument): ApiLogSyncItem => ({
+          _id: item._id,
+          userId: item.userId,
+          username: item.username,
+          apiDescription: item.apiDescription,
+          apiPath: item.apiPath,
+          apiMethod: item.apiMethod,
+          responseTime: item.responseTime,
+          createdAt: item.createdAt
+            ? dayjs(item.createdAt).tz(TIMEZONE).format("YYYY-MM-DD HH:mm:ss")
+            : undefined,
+        }),
+      ),
+      nextCursor: hasMore && lastItem ? String(lastItem._id) : null,
+    };
   }
 
   /**
