@@ -95,6 +95,73 @@ CREATE TABLE IF NOT EXISTS warehouse.ods_article_log (
 ) ENGINE = ReplacingMergeTree (created_at)
 ORDER BY event_id;
 
+-- API 日志 ODS 层：NestJS MongoDB api_logs 按游标同步的原始事件
+CREATE TABLE IF NOT EXISTS warehouse.ods_api_log (
+    event_id String,
+    user_id Int64,
+    username String,
+    api_description String,
+    api_path String,
+    api_method String,
+    response_time Float64,
+    created_at DateTime
+) ENGINE = ReplacingMergeTree (created_at)
+ORDER BY event_id;
+
+-- API 日志 DWD 层：明细事件（补齐日期维度）
+CREATE TABLE IF NOT EXISTS warehouse.dwd_api_call (
+    event_id String,
+    api_path String,
+    api_method String,
+    api_description String,
+    user_id Int64,
+    username String,
+    response_time Float64,
+    action_date Date,
+    action_time DateTime
+) ENGINE = ReplacingMergeTree (action_time)
+ORDER BY event_id;
+
+-- API 日志 DWS 层：按日 + 接口聚合的轻度汇总
+CREATE TABLE IF NOT EXISTS warehouse.dws_api_day (
+    stat_date Date,
+    api_path String,
+    api_method String,
+    api_description String,
+    call_count Int64,
+    total_response_time Float64,
+    max_response_time Float64
+) ENGINE = MergeTree
+ORDER BY (
+        stat_date, api_path, api_method, api_description
+    );
+
+-- API 日志 ADS 层：接口平均响应速度（与远程聚合结果同构，供分析接口直接查询）
+CREATE TABLE IF NOT EXISTS warehouse.ads_api_average_speed (
+    api_path String,
+    api_method String,
+    api_description String,
+    avg_response_time Float64,
+    call_count Int64,
+    stat_time DateTime
+) ENGINE = ReplacingMergeTree (stat_time)
+ORDER BY (
+        api_path, api_method, api_description
+    );
+
+-- API 日志 ADS 层：接口调用次数（与远程聚合结果同构，供分析接口直接查询）
+CREATE TABLE IF NOT EXISTS warehouse.ads_api_called_count (
+    api_path String,
+    api_method String,
+    api_description String,
+    call_count Int64,
+    avg_response_time Float64,
+    stat_time DateTime
+) ENGINE = ReplacingMergeTree (stat_time)
+ORDER BY (
+        api_path, api_method, api_description
+    );
+
 CREATE TABLE IF NOT EXISTS warehouse.dim_user (
     id Int64,
     name String,
@@ -252,10 +319,22 @@ CREATE TABLE IF NOT EXISTS warehouse.ads_platform_stats (
 ) ENGINE = ReplacingMergeTree (stat_time)
 ORDER BY id;
 
-INSERT INTO warehouse.sync_watermark (table_name, last_watermark, updated_at)
+INSERT INTO
+    warehouse.sync_watermark (
+        table_name,
+        last_watermark,
+        updated_at
+    )
 SELECT table_name, '1970-01-01 00:00:00', now()
-FROM (SELECT arrayJoin([
-    'ods_articles', 'ods_user', 'ods_category', 'ods_sub_category',
-    'ods_likes', 'ods_collects', 'ods_comments', 'ods_focus', 'ods_article_log'
-]) AS table_name)
-WHERE table_name NOT IN (SELECT table_name FROM warehouse.sync_watermark FINAL);
+FROM (
+        SELECT arrayJoin (
+                [
+                    'ods_articles', 'ods_user', 'ods_category', 'ods_sub_category', 'ods_likes', 'ods_collects', 'ods_comments', 'ods_focus', 'ods_article_log', 'ods_api_log'
+                ]
+            ) AS table_name
+    )
+WHERE
+    table_name NOT IN (
+        SELECT table_name
+        FROM warehouse.sync_watermark FINAL
+    );
