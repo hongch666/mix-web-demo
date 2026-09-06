@@ -1382,17 +1382,20 @@ docker restart mix-spring-container
 
 ## Docker Compose 部署
 
-目前 `docker-compose.yml` 仅包含 5 个应用服务：
+根目录 `docker-compose.yml` 编排 5 个应用服务和日志观测组件：
 
 - gateway
 - spring
 - gozero
 - nestjs
 - fastapi
+- loki
+- promtail
+- grafana
 
 第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
-Spring、GoZero、NestJS 和 FastAPI 的应用镜像可由 `./mix docker build` 生成：
+Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 
 ```bash
 ./mix docker build spring gozero nestjs fastapi
@@ -1400,22 +1403,26 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像可由 `./mix docker build` 
 
 网关使用官方 `apache/apisix:3.11.0-debian` 镜像，由 `gateway/docker-compose.yml` 挂载 APISIX 配置启动，不需要构建或推送自定义网关镜像。
 
-为了与 `mix docker` 启动一致，根目录 `docker-compose.yml` 会挂载以下配置与日志目录：
+根 Compose 只使用已有的 `mix-*` 镜像。`./mix compose up` 会检查镜像，仅对缺失镜像调用 `./mix docker build`，然后启动 Compose，不会重复构建已有镜像。
+
+根目录 `docker-compose.yml` 会挂载以下配置与日志目录：
 
 - `gateway/apisix/config.yaml -> /usr/local/apisix/conf/config.yaml`
 - `gateway/apisix/apisix.yaml -> /usr/local/apisix/conf/apisix.yaml`
 - `gateway/swagger-ui -> /usr/local/apisix/html/swagger-ui`
 - `logs/gateway -> /usr/local/apisix/logs`
-- `spring/application.yaml -> /app/application.yaml`
-- `gozero/etc -> /app/etc`
+- `spring/src/main/resources/application.yaml -> /app/application.yaml`
+- `gozero/app/etc -> /app/etc`
 - `nestjs/src/config/application.yaml -> /app/dist/config/application.yaml`
 - `fastapi/application.yaml -> /app/application.yaml`
 - `logs/<service> -> /app/logs/<service>`
 - `static/pic`, `static/excel`, `static/upload`
 
-`./scripts/docker-compose-up.sh` 已自动创建目录并设置可写权限，避免 `ENOENT application.yaml` 与 `permission denied` 问题。
+此外，`loki-config/` 提供 Loki、Promtail 与 Grafana Loki 数据源配置；日志目录由 Promtail 读取并写入 Loki。Grafana 数据保存在 Compose 命名卷中。
 
-建议先构建业务服务镜像，再启动根目录 Compose；单独启动网关时使用 `cd gateway && docker compose up -d`。
+`./scripts/docker-compose-up.sh` 会自动创建运行所需的日志与静态目录；网关日志权限由 Compose 初始化容器处理。
+
+通常直接执行 `./mix compose up` 即可；若要预先构建镜像，可使用 `./mix docker build`。
 
 ### 前置要求
 
@@ -1428,7 +1435,7 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像可由 `./mix docker build` 
 # 启动依赖服务（如果尚未启动）
 ./scripts/docker-services.sh
 
-# 启动应用服务（5 个）
+# 启动应用、网关与可观测性服务
 ./mix compose up
 ```
 
@@ -1453,13 +1460,14 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像可由 `./mix docker build` 
 ### 手动命令（可选）
 
 ```bash
-docker-compose up -d --build
-docker-compose down -v
+./mix docker build spring gozero nestjs fastapi
+docker compose up -d
+docker compose down -v
 ```
 
 ### 文件说明
 
-- `docker-compose.yml`：整套应用编排（数据库、缓存、消息队列、服务容器）
+- `docker-compose.yml`：应用、网关和 Loki/Promtail/Grafana 编排；数据库、缓存与消息队列由基础服务脚本管理
 - `scripts/docker-compose-up.sh`：快速启动脚本
 - `scripts/docker-compose-down.sh`：快速停止脚本
 - `scripts/docker-services.sh`：创建和管理基础中间件容器
@@ -1476,6 +1484,8 @@ docker-compose down -v
 - GoZero: http://localhost:8082
 - NestJS: http://localhost:8083
 - FastAPI: http://localhost:8084
+- Loki: http://localhost:3100
+- Grafana: http://localhost:3000
 
 ### 高级用法
 
