@@ -92,6 +92,157 @@ class WarehouseScripts:
         ORDER BY keyword
     """
 
+    # Agent 数仓工具使用的固定 ADS 查询，避免模型直接拼接 ClickHouse SQL
+    WAREHOUSE_AGENT_QUERIES: Final[dict[str, str]] = {
+        "platform_stats": PLATFORM_STATS_QUERY,
+        "top_articles": """
+            SELECT id, title, tags, status, views, create_at, update_at, user_id,
+                   sub_category_id
+            FROM warehouse.ads_top10_articles FINAL
+            ORDER BY views DESC
+            LIMIT %(limit)s
+        """,
+        "category_stats": """
+            SELECT parent_category_id, category_name, article_count
+            FROM warehouse.ads_category_stats FINAL
+            ORDER BY article_count DESC
+            LIMIT %(limit)s
+        """,
+        "monthly_publish": """
+            SELECT year_month, article_count
+            FROM warehouse.ads_monthly_publish FINAL
+            ORDER BY year_month DESC
+            LIMIT %(limit)s
+        """,
+        "api_average_speed": """
+            SELECT api_path, api_method, api_description, avg_response_time, call_count
+            FROM warehouse.ads_api_average_speed FINAL
+            ORDER BY avg_response_time DESC
+            LIMIT %(limit)s
+        """,
+        "api_called_count": """
+            SELECT api_path, api_method, api_description, call_count, avg_response_time
+            FROM warehouse.ads_api_called_count FINAL
+            ORDER BY call_count DESC
+            LIMIT %(limit)s
+        """,
+        "search_keywords": """
+            SELECT keyword
+            FROM warehouse.ads_search_keywords FINAL
+            ORDER BY keyword
+            LIMIT %(limit)s
+        """,
+        "user_profile": """
+            SELECT s.user_id, ifNull(u.name, ''), s.total_articles,
+                   s.total_views_received, s.total_likes_received,
+                   s.total_collects_received, s.total_followers,
+                   s.total_likes_given, s.total_collects_given,
+                   s.total_comments, s.total_focus, s.last_active_time
+            FROM warehouse.ads_user_stats AS s FINAL
+            LEFT JOIN warehouse.dim_user AS u FINAL ON s.user_id = u.id
+            WHERE s.user_id = %(user_id)s
+            LIMIT %(limit)s
+        """,
+        "user_daily_actions": """
+            SELECT stat_date, like_count, collect_count, comment_count,
+                   focus_count, view_count, last_active_time
+            FROM warehouse.ads_user_day FINAL
+            WHERE user_id = %(user_id)s
+              AND stat_date >= %(start_date)s AND stat_date < %(end_date)s
+            ORDER BY stat_date DESC
+            LIMIT %(limit)s
+        """,
+        "user_view_articles": """
+            SELECT article_id, article_title, view_count
+            FROM warehouse.ads_user_view_articles FINAL
+            WHERE user_id = %(user_id)s
+            ORDER BY view_count DESC
+            LIMIT %(limit)s
+        """,
+    }
+    WAREHOUSE_AGENT_DATASETS: Final[tuple[str, ...]] = tuple(
+        WAREHOUSE_AGENT_QUERIES.keys()
+    )
+    WAREHOUSE_AGENT_USER_DATASETS: Final[frozenset[str]] = frozenset(
+        {"user_profile", "user_daily_actions", "user_view_articles"}
+    )
+    WAREHOUSE_AGENT_DATASET_DESCRIPTIONS: Final[dict[str, str]] = {
+        "platform_stats": "平台总浏览量、文章数、作者数、点赞和收藏",
+        "top_articles": "阅读量最高的文章榜单",
+        "category_stats": "分类文章数量",
+        "monthly_publish": "月度文章发布趋势",
+        "api_average_speed": "接口平均响应时间",
+        "api_called_count": "接口调用次数",
+        "search_keywords": "搜索关键词集合",
+        "user_profile": "指定用户的累计画像指标",
+        "user_daily_actions": "指定用户的日行为汇总",
+        "user_view_articles": "指定用户浏览文章及次数",
+    }
+    WAREHOUSE_AGENT_RESULT_COLUMNS: Final[dict[str, list[str]]] = {
+        "platform_stats": [
+            "total_views",
+            "total_articles",
+            "active_authors",
+            "average_views",
+            "total_likes",
+            "average_likes",
+            "total_collects",
+            "average_collects",
+        ],
+        "top_articles": [
+            "id",
+            "title",
+            "tags",
+            "status",
+            "views",
+            "create_at",
+            "update_at",
+            "user_id",
+            "sub_category_id",
+        ],
+        "category_stats": ["parent_category_id", "category_name", "article_count"],
+        "monthly_publish": ["year_month", "article_count"],
+        "api_average_speed": [
+            "api_path",
+            "api_method",
+            "api_description",
+            "avg_response_time",
+            "call_count",
+        ],
+        "api_called_count": [
+            "api_path",
+            "api_method",
+            "api_description",
+            "call_count",
+            "avg_response_time",
+        ],
+        "search_keywords": ["keyword"],
+        "user_profile": [
+            "user_id",
+            "user_name",
+            "total_articles",
+            "total_views_received",
+            "total_likes_received",
+            "total_collects_received",
+            "total_followers",
+            "total_likes_given",
+            "total_collects_given",
+            "total_comments",
+            "total_focus",
+            "last_active_time",
+        ],
+        "user_daily_actions": [
+            "stat_date",
+            "like_count",
+            "collect_count",
+            "comment_count",
+            "focus_count",
+            "view_count",
+            "last_active_time",
+        ],
+        "user_view_articles": ["article_id", "article_title", "view_count"],
+    }
+
     # ========== 数仓库表自动初始化（定时任务前置检查，幂等） ==========
     WAREHOUSE_DATABASE_DDL: Final[str] = "CREATE DATABASE IF NOT EXISTS warehouse"
     WAREHOUSE_TABLE_EXISTS_QUERY: Final[str] = "EXISTS TABLE {table}"

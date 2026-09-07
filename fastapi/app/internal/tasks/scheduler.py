@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Optional
 
@@ -85,6 +85,7 @@ def start_scheduler(
         "interval",
         minutes=30,
         id="sync_clickhouse_warehouse",
+        start_date=datetime.now() + timedelta(minutes=30),
     )
 
     scheduler.start()

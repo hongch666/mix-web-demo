@@ -17,11 +17,20 @@ class Prompts:
            - 业务数据（文章、用户、评论、点赞、收藏、关注、分类等）用 spring 工具
            - 用户列设置数据（用户表格列设置 user_table_settings）用 nestjs 工具
            - 用户对话消息数据（聊天记录 chat_messages）用 gozero 工具
-        3. 查询前先用对应的 get_*_table_schema 工具确认表结构，再执行查询。
-        4. 执行 SQL 必须使用参数化占位符（:paramName）并包含 LIMIT（最大 100），禁止拼接值。
-        5. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
-        6. MongoDB 工具只用于日志相关查询(文章日志/API日志)，查询前先确认 collection 名称。
-        7. 最终回答必须使用中文，简洁明确。
+           - 已有聚合统计（平台统计、文章榜单、分类统计、月度发布、用户画像/行为、API统计、搜索关键词）用 ClickHouse 数仓工具
+        3. 数仓工具只用于其列出的 ADS 聚合数据集；需要原始明细、自定义条件或未列出的业务表时，使用对应的 SQL 工具。
+        4. 使用 SQL 工具查询前先用对应的 get_*_table_schema 工具确认表结构，再执行查询。
+        5. 执行 SQL 必须使用参数化占位符（:paramName）并包含 LIMIT（最大 100），禁止拼接值。
+        6. 涉及文章、用户、分类、标签之间的关系、相似文章和推荐时，优先使用 Neo4j 知识图谱工具。
+        7. MongoDB 工具只用于日志相关查询(文章日志/API日志)，查询前先确认 collection 名称。
+        8. 最终回答必须使用中文，简洁明确。
+
+        数仓工具选择示例：
+        - "平台总浏览量和文章数" -> query_clickhouse_warehouse(dataset="platform_stats")
+        - "文章阅读量排行榜" -> query_clickhouse_warehouse(dataset="top_articles", limit=10)
+        - "各分类文章数量" -> query_clickhouse_warehouse(dataset="category_stats")
+        - "用户123的累计画像" -> query_clickhouse_warehouse(dataset="user_profile", user_id=123)
+        - "查询文章表中标题包含某词的原始记录" -> 先用 Spring SQL 工具，不使用数仓工具
 
         当前问题：{input}
         """
@@ -97,10 +106,13 @@ class Prompts:
         * FastAPI 本地数据：AI对话历史(ai_history)
         * NestJS 设置数据：用户表格列设置(user_table_settings)
         * GoZero 消息数据：聊天消息(chat_messages)
+        * ClickHouse 数仓数据：平台/文章/分类/月度/API/用户聚合统计
     - 示例：
         * "有多少篇文章？"
         * "最近发布的10篇文章"
         * "各分类的文章数量统计"
+        * "平台总浏览量和文章数"
+        * "用户123最近30天的行为趋势"
         * "浏览量最高的文章"
         * "查询user_id为123的AI对话记录"
         * "用户最近的聊天消息有哪些"
@@ -239,4 +251,22 @@ class Prompts:
     NEO4J_CUSTOM_CYPHER_TOOL_DESC: str = """执行自定义只读 Cypher 查询。
     图谱包含 User、Article、Category、SubCategory、Tag 节点，以及 PUBLISHED_BY、BELONGS_TO、BELONGS_TO_CATEGORY、TAGGED_AS、LIKES、COLLECTS、COMMENTED_ON、FOLLOWS 关系。
     仅允许 MATCH、OPTIONAL MATCH、WITH、RETURN 或 CALL db.* 类型的只读查询。
+    """
+
+    # ===== ClickHouse 数仓工具描述 =====
+    CLICKHOUSE_WAREHOUSE_LIST_TOOL_DESC: str = """列出当前可用的 ClickHouse 数仓 ADS 数据集及字段说明。
+    数仓数据是由 ODS/DWD/DWS 定时汇总生成的分析数据，适合平台统计、排行榜、趋势、用户画像和 API 统计。
+    使用场景：不确定应该查询哪个 ADS 数据集时先调用此工具。
+    不包含原始文章明细、任意业务表或自定义 SQL；这些场景请使用对应服务的 SQL 工具。
+    """
+
+    CLICKHOUSE_WAREHOUSE_QUERY_TOOL_DESC: str = """查询 ClickHouse 数仓中的预定义 ADS 聚合数据集。
+    支持数据集：platform_stats（平台汇总）、top_articles（文章榜单）、category_stats（分类统计）、
+    monthly_publish（月度发布）、api_average_speed（接口平均响应）、api_called_count（接口调用次数）、
+    search_keywords（搜索关键词）、user_profile（用户画像）、user_daily_actions（用户日行为）、
+    user_view_articles（用户浏览文章）。
+    适用场景：用户询问上述汇总统计、排行榜、趋势或用户分析。
+    user_profile、user_daily_actions、user_view_articles 必须提供 user_id。
+    这不是通用 SQL 工具：不要传 SQL，不要用它查询原始明细或未列出的表；普通业务查询请使用 Spring/FastAPI/NestJS/GoZero SQL 工具。
+    示例：dataset="platform_stats"；dataset="top_articles", limit=10；dataset="user_profile", user_id=123。
     """

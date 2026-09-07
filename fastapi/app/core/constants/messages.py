@@ -2382,6 +2382,23 @@ class Messages:
     SQL_TOOL_GOZERO_TABLE_TOOL_NAME: str = "get_gozero_table_schema"
     SQL_TOOL_GOZERO_QUERY_TOOL_NAME: str = "execute_gozero_sql_query"
 
+    WAREHOUSE_LIST_DATASETS_TOOL_NAME: str = "list_clickhouse_warehouse_datasets"
+    WAREHOUSE_QUERY_TOOL_NAME: str = "query_clickhouse_warehouse"
+    WAREHOUSE_DATASET_INPUT_DESC: str = (
+        "ADS 数据集名称，例如 platform_stats、top_articles、user_profile"
+    )
+    WAREHOUSE_USER_ID_INPUT_DESC: str = (
+        "用户 ID；查询 user_profile、user_daily_actions、user_view_articles 时必填"
+    )
+    WAREHOUSE_DATE_INPUT_DESC: str = (
+        "用户日行为查询的日期范围，格式 YYYY-MM-DD（左闭右开）"
+    )
+    WAREHOUSE_LIMIT_INPUT_DESC: str = "最多返回的记录数，范围 1-100"
+    WAREHOUSE_QUERY_FAILED: str = "ClickHouse 数仓查询失败: {error}"
+    WAREHOUSE_DATASET_UNSUPPORTED: str = "不支持的数仓数据集: {dataset}"
+    WAREHOUSE_USER_ID_REQUIRED: str = "查询数仓用户数据时必须提供 user_id"
+    WAREHOUSE_DATE_INVALID: str = "日期格式必须为 YYYY-MM-DD"
+
     SQL_TOOL_FASTAPI_TABLE_WHITELIST: list[str] = ["ai_history"]
 
     # ===== SQL 代理工具（本地直连 FastAPI）安全约束配置 =====

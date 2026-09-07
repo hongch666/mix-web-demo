@@ -21,6 +21,7 @@ from app.internal.agents import (
     get_nestjs_sql_tool,
     get_rag_tools,
     get_spring_sql_tool,
+    get_warehouse_tools,
 )
 
 ChatHistoryItem = tuple[str, str]
@@ -98,7 +99,7 @@ def initialize_ai_tools(
     ]
 
     # 并行加载所有独立工具组
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=5) as executor:
         futures: dict[str, Any] = {}
 
         if include_sql:
@@ -111,6 +112,9 @@ def initialize_ai_tools(
             futures["mongodb"] = executor.submit(
                 _load_tool_group, "MongoDB 日志", get_mongodb_tools
             )
+        futures["warehouse"] = executor.submit(
+            _load_tool_group, "ClickHouse 数仓", get_warehouse_tools
+        )
 
         # 按完成顺序收集结果
         for future in as_completed(futures.values()):
@@ -129,6 +133,9 @@ def initialize_ai_tools(
         if "mongodb" in futures:
             mongodb_tools_instance, mongo_tools = futures["mongodb"].result()
             all_tools.extend(mongo_tools)
+        if "warehouse" in futures:
+            _, warehouse_tools = futures["warehouse"].result()
+            all_tools.extend(warehouse_tools)
 
     Logger.info(Messages.LLM_TOOLS_LOADED_TOTAL(len(all_tools)))
     return sql_tools_instance, rag_tools_instance, mongodb_tools_instance, all_tools
