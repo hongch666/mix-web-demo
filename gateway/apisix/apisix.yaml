@@ -22,6 +22,11 @@ upstreams:
     service_name: fastapi
     type: roundrobin
     timeout: { connect: 5, send: 300, read: 300 }
+  - id: fastapi-stream
+    discovery_type: nacos
+    service_name: fastapi
+    type: roundrobin
+    timeout: { connect: 5, send: 3600, read: 3600 }
 
 global_rules:
   - id: global-cors
@@ -119,6 +124,17 @@ routes:
         uri: http://spring:8081/users/internal/auth/validate
         request_headers: [Authorization, X-Access-Token]
         upstream_headers: [X-User-Id, X-Username, X-Session-Id]
+        timeout: 30000
+
+  - id: fastapi-chat-stream
+    uri: /chat/stream
+    upstream_id: fastapi-stream
+    plugins:
+      forward-auth:
+        uri: http://spring:8081/users/internal/auth/validate
+        request_headers: [Authorization, X-Access-Token]
+        upstream_headers: [X-User-Id, X-Username, X-Session-Id]
+        timeout: 30000
   - id: gozero-sse
     uri: /sse/*
     upstream_id: gozero-long
