@@ -229,6 +229,7 @@ async def _refresh_warehouse(conn: Any) -> None:
         WarehouseScripts.REFRESH_DWD_API_CALL,
         WarehouseScripts.REFRESH_DWS_API_DAY,
         *WarehouseScripts.REFRESH_ADS_API,
+        WarehouseScripts.REFRESH_ADS_SEARCH_KEYWORDS,
     ):
         await asyncio.to_thread(conn.execute, sql)
 

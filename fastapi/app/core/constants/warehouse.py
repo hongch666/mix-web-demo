@@ -86,6 +86,11 @@ class WarehouseScripts:
         FROM warehouse.ads_api_called_count FINAL
         ORDER BY call_count DESC
     """
+    SEARCH_KEYWORDS_QUERY: Final[str] = """
+        SELECT keyword
+        FROM warehouse.ads_search_keywords FINAL
+        ORDER BY keyword
+    """
 
     # ========== 数仓库表自动初始化（定时任务前置检查，幂等） ==========
     WAREHOUSE_DATABASE_DDL: Final[str] = "CREATE DATABASE IF NOT EXISTS warehouse"
@@ -341,6 +346,14 @@ class WarehouseScripts:
             ORDER BY (api_path, api_method, api_description)
             """,
         ),
+        (
+            "ads_search_keywords",
+            """
+            CREATE TABLE IF NOT EXISTS warehouse.ads_search_keywords (
+                keyword String, stat_time DateTime
+            ) ENGINE = ReplacingMergeTree (stat_time) ORDER BY keyword
+            """,
+        ),
     )
 
     # 水位线初始化：仅为首次出现的表写入纪元水位（与 init.sql 逻辑一致）
@@ -445,6 +458,7 @@ class WarehouseScripts:
         "TRUNCATE TABLE warehouse.dws_api_day",
         "TRUNCATE TABLE warehouse.ads_api_average_speed",
         "TRUNCATE TABLE warehouse.ads_api_called_count",
+        "TRUNCATE TABLE warehouse.ads_search_keywords",
     )
 
     REFRESH_DIM_USER: Final[str] = """
@@ -681,3 +695,21 @@ class WarehouseScripts:
         GROUP BY api_path, api_method, api_description
         """,
     )
+
+    # 搜索关键词 ADS 层刷新：与 NestJS 词云接口保持相同的去重、排序语义
+    REFRESH_ADS_SEARCH_KEYWORDS: Final[str] = """
+        INSERT INTO warehouse.ads_search_keywords
+        SELECT keyword, now()
+        FROM
+        (
+            SELECT if(
+                       JSONExtractString(content, 'Keyword') != '',
+                       JSONExtractString(content, 'Keyword'),
+                       JSONExtractString(content, '_keyword')
+                   ) AS keyword
+            FROM warehouse.ods_article_log FINAL
+            WHERE action = 'search'
+        )
+        WHERE keyword != ''
+        GROUP BY keyword
+    """

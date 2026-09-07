@@ -1409,6 +1409,16 @@ class Messages:
     def WORDCLOUD_CACHE_URL_FAILED(error: Exception) -> str:
         return f"缓存词云图URL失败: {error}"
 
+    WORDCLOUD_ADS_SOURCE: str = "词云关键词使用 ClickHouse ADS 数据源"
+
+    WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS: str = (
+        "ClickHouse 词云关键词 ADS 层暂无数据，降级为 NestJS 查询"
+    )
+
+    @staticmethod
+    def WORDCLOUD_ADS_QUERY_FAILED(error: Exception) -> str:
+        return f"ClickHouse 词云关键词 ADS 查询失败，降级为 NestJS: {error}"
+
     @staticmethod
     def EXPORT_ARTICLES_SUCCESS(file_path: str, total_rows: int) -> str:
         return f"文章表已导出到 {file_path}，共写入 {total_rows} 条记录"

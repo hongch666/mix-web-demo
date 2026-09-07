@@ -109,6 +109,17 @@ class ArticleMapper:
         """归还 ClickHouse 连接"""
         await asyncio.to_thread(self._clickhouse_pool.return_connection, conn)
 
+    async def get_search_keywords_clickhouse_mapper_async(self) -> list[str]:
+        """从 ADS 层获取已去重的搜索关键词。"""
+        ch_conn: Any = await self._clickhouse_pool.get_connection_async()
+        try:
+            results: list[tuple[Any, ...]] = await asyncio.to_thread(
+                ch_conn.execute, WarehouseScripts.SEARCH_KEYWORDS_QUERY
+            )
+            return [str(row[0]) for row in results if row and row[0]]
+        finally:
+            await self._clickhouse_pool.return_connection_async(ch_conn)
+
     async def get_category_article_count_clickhouse_mapper_async(
         self,
     ) -> list[dict[str, Any]]:

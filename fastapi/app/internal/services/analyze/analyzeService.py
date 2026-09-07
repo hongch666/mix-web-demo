@@ -306,14 +306,21 @@ class AnalyzeService:
                 await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_keywords_dic(self) -> dict[str, int]:
-        all_keywords: list[str] = await self._nestjs_client.get_search_keywords()
-        keywords_dic: dict[str, int] = {}
-        for keyword in all_keywords:
-            if keyword in keywords_dic:
-                keywords_dic[keyword] += 1
-            else:
-                keywords_dic[keyword] = 1
-        return keywords_dic
+        """优先从数仓 ADS 层获取搜索关键词，失败或无数据时降级 NestJS。"""
+        all_keywords: list[str]
+        try:
+            all_keywords = (
+                await self.articleMapper.get_search_keywords_clickhouse_mapper_async()
+            )
+            if all_keywords:
+                Logger.info(Messages.WORDCLOUD_ADS_SOURCE)
+                return {keyword: 1 for keyword in all_keywords}
+            Logger.info(Messages.WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS)
+        except Exception as error:
+            Logger.warning(Messages.WORDCLOUD_ADS_QUERY_FAILED(error))
+
+        all_keywords = await self._nestjs_client.get_search_keywords()
+        return {keyword: 1 for keyword in all_keywords}
 
     def generate_wordcloud(self, keywords_dic: dict[str, int]) -> None:
         if len(keywords_dic) == 0:
