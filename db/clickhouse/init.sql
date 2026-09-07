@@ -319,6 +319,13 @@ CREATE TABLE IF NOT EXISTS warehouse.ads_platform_stats (
 ) ENGINE = ReplacingMergeTree (stat_time)
 ORDER BY id;
 
+-- 搜索关键词 ADS 层：从文章日志中提取并去重，供 FastAPI 词云接口查询
+CREATE TABLE IF NOT EXISTS warehouse.ads_search_keywords (
+    keyword String,
+    stat_time DateTime
+) ENGINE = ReplacingMergeTree (stat_time)
+ORDER BY keyword;
+
 INSERT INTO
     warehouse.sync_watermark (
         table_name,
