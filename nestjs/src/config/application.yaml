@@ -32,7 +32,7 @@ database:
     port: ${REDIS_PORT:6379}
     username: ${REDIS_USERNAME:}
     password: ${REDIS_PASSWORD:}
-    db: ${REDIS_DB:0}
+    db: ${REDIS_DB:3}
 
 rabbitmq:
   host: ${RABBITMQ_HOST:localhost}

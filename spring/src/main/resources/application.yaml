@@ -22,7 +22,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      database: ${REDIS_DATABASE:0}
+      database: ${REDIS_DATABASE:1}
       username: ${REDIS_USERNAME:} # 可选：Redis 用户名
       password: ${REDIS_PASSWORD:} # 可选：Redis 密码
       lettuce:

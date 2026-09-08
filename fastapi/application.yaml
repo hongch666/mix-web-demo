@@ -53,7 +53,7 @@ database:
     port: ${DB_REDIS_PORT:6379}
     username: ${DB_REDIS_USERNAME:} # 可选：Redis 用户名
     password: ${DB_REDIS_PASSWORD:} # 可选：Redis 密码
-    db: ${DB_REDIS_DB:6}
+    db: ${DB_REDIS_DB:4}
     decode_responses: True
     max_connections: 10
   neo4j:
