@@ -48,7 +48,16 @@ routes:
         response_status: 200
         response_example: '{"code":200,"msg":"success","data":null}'
   - id: block-internal
-    uris: [/articles/list, /task/*, /logs, /ai_history, /upload, /users/github/token-ticket, /email/send-code]
+    uris:
+      [
+        /articles/list,
+        /task/*,
+        /logs,
+        /ai_history,
+        /upload,
+        /users/github/token-ticket,
+        /email/send-code,
+      ]
     priority: 100
     plugins:
       mocking:
@@ -59,7 +68,21 @@ routes:
     uri: /users/login
     upstream_id: spring
     plugins: &login_limit
-      limit-req: { rate: 1, burst: 9, nodelay: true, key_type: var_combination, key: "$remote_addr$uri", rejected_code: 429, rejected_msg: '{"code":429,"msg":"登录请求过于频繁，请稍后再试","data":null}', policy: redis, redis_host: redis, redis_port: 6379, redis_database: 1, redis_timeout: 1000 }
+      limit-req:
+        {
+          rate: 1,
+          burst: 9,
+          nodelay: true,
+          key_type: var_combination,
+          key: "$remote_addr$uri",
+          rejected_code: 429,
+          rejected_msg: '{"code":429,"msg":"登录请求过于频繁，请稍后再试","data":null}',
+          policy: redis,
+          redis_host: redis,
+          redis_port: 6379,
+          redis_database: 5,
+          redis_timeout: 1000,
+        }
   - id: auth-public-register
     uri: /users/register
     upstream_id: spring
@@ -102,7 +125,11 @@ routes:
       proxy-rewrite: { uri: /v3/api-docs }
       response-rewrite:
         filters:
-          - { regex: '"http://localhost:[0-9]+"', scope: global, replace: '"http://localhost:8080"' }
+          - {
+              regex: '"http://localhost:[0-9]+"',
+              scope: global,
+              replace: '"http://localhost:8080"',
+            }
   - id: swagger-gozero
     uri: /swagger/gozero.json
     upstream_id: gozero
@@ -140,7 +167,24 @@ routes:
     upstream_id: gozero-long
     plugins: *auth
   - id: spring
-    uris: [/test/spring, /users, /users/*, /articles, /articles/*, /category, /category/*, /comments, /comments/*, /collects, /collects/*, /likes, /likes/*, /focus, /focus/*]
+    uris:
+      [
+        /test/spring,
+        /users,
+        /users/*,
+        /articles,
+        /articles/*,
+        /category,
+        /category/*,
+        /comments,
+        /comments/*,
+        /collects,
+        /collects/*,
+        /likes,
+        /likes/*,
+        /focus,
+        /focus/*,
+      ]
     upstream_id: spring
     plugins: *auth
   - id: gozero
@@ -148,11 +192,37 @@ routes:
     upstream_id: gozero
     plugins: *auth
   - id: nestjs
-    uris: [/test/nestjs, /article-logs, /article-logs/*, /api-logs, /api-logs/*, /download, /download/*, /github, /github/*, /email, /email/*, /table-settings, /table-settings/*]
+    uris:
+      [
+        /test/nestjs,
+        /article-logs,
+        /article-logs/*,
+        /api-logs,
+        /api-logs/*,
+        /download,
+        /download/*,
+        /github,
+        /github/*,
+        /email,
+        /email/*,
+        /table-settings,
+        /table-settings/*,
+      ]
     upstream_id: nestjs
     plugins: *auth
   - id: fastapi
-    uris: [/test/fastapi, /analyze, /analyze/*, /generate, /generate/*, /chat, /chat/*, /ai_history, /ai_history/*]
+    uris:
+      [
+        /test/fastapi,
+        /analyze,
+        /analyze/*,
+        /generate,
+        /generate/*,
+        /chat,
+        /chat/*,
+        /ai_history,
+        /ai_history/*,
+      ]
     upstream_id: fastapi
     plugins: *auth
 
