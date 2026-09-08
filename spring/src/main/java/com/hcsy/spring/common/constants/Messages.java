@@ -188,7 +188,7 @@ public class Messages {
     public static final String INTERNAL_TOKEN_EXPIRED = "内部服务令牌已过期";
     public static final String INTERNAL_TOKEN_INVALID = "内部服务令牌无效";
     public static final String INTERNAL_TOKEN_VALIDATION_FAIL = "内部服务令牌验证失败: ";
-    public static final String SERVICE_NAME_MISMATCH = "服务名称不匹配";
+    public static final String SERVICE_NAME_MISMATCH = "服务名称不匹配，期望: %s，获得: %s";
     public static final String INTERNAL_TOKEN_VALIDATE_METHOD = "内部服务令牌验证成功，方法: ";
 
     // ===== 服务降级 =====

@@ -57,10 +57,11 @@ public class InternalTokenAspect {
             if (requiredServiceName != null && !requiredServiceName.isEmpty()) {
                 String tokenServiceName = internalTokenUtil.extractServiceName(internalToken);
                 if (!requiredServiceName.equals(tokenServiceName)) {
-                    logger.error(Messages.SERVICE_NAME_MISMATCH + ". 期望: " + requiredServiceName + ", 获得: "
-                        + tokenServiceName);
+                    String mismatchMessage =
+                        String.format(Messages.SERVICE_NAME_MISMATCH, requiredServiceName, tokenServiceName);
+                    logger.error(Messages.SERVICE_NAME_MISMATCH, requiredServiceName, tokenServiceName);
                     return Mono.error(BusinessException.builder().httpStatus(HttpCode.FORBIDDEN)
-                        .errorMessage(Messages.SERVICE_NAME_MISMATCH).build());
+                        .errorMessage(mismatchMessage).build());
                 }
             }
             logger.debug(Messages.INTERNAL_TOKEN_VALIDATE_METHOD + pjp.getSignature().getName());
