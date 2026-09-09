@@ -18,7 +18,7 @@ from app.internal.agents import (
     get_gozero_sql_tool,
     get_mongodb_tools,
     get_neo4j_tools,
-    get_nestjs_sql_tool,
+    NestjsSqlTool,
     get_rag_tools,
     get_spring_sql_tool,
     get_warehouse_tools,
@@ -95,7 +95,7 @@ def initialize_ai_tools(
         ("FastAPI", get_fastapi_sql_tool),
         ("Spring", get_spring_sql_tool),
         ("GoZero", get_gozero_sql_tool),
-        ("NestJS", get_nestjs_sql_tool),
+        ("NestJS", NestjsSqlTool),
     ]
 
     # 并行加载所有独立工具组

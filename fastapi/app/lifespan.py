@@ -16,6 +16,8 @@ from app.core.db import (
     RabbitMQClient,
     async_engine,
     create_tables_async,
+    create_warehouse_tables_async,
+    dispose_clickhouse_async_engine,
     get_clickhouse_connection_pool,
     get_neo4j_client,
     get_rabbitmq_client,
@@ -47,6 +49,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     init_langsmith(langsmith_config)
 
     await create_tables_async()
+    await create_warehouse_tables_async()
     start_nacos(ip=IP, port=PORT)
     Logger.info(Messages.NACOS_REGISTER_SUCCESS)
 
@@ -92,6 +95,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     await get_neo4j_client().close()
     await get_clickhouse_connection_pool().close_all_async()
+    await dispose_clickhouse_async_engine()
     await async_engine.dispose()
 
     # 应用关闭时清理 httpx 连接池

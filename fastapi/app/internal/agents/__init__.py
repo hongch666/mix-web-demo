@@ -4,7 +4,7 @@ from .tools.fastapiSqlTool import FastapiSqlTool, get_fastapi_sql_tool
 from .tools.gozeroSqlTool import GozeroSqlTool, get_gozero_sql_tool
 from .tools.mongoDBTools import MongoDBTools, get_mongodb_tools
 from .tools.neo4jTools import Neo4jQueryTools, get_neo4j_tools
-from .tools.nestjsSqlTool import NestjsSqlTool, get_nestjs_sql_tool
+from .tools.nestjsSqlTool import NestjsSqlTool
 from .tools.ragTools import RAGTools, get_rag_tools
 from .tools.springSqlTool import SpringSqlTool, get_spring_sql_tool
 from .tools.warehouseTools import ClickHouseWarehouseTools, get_warehouse_tools
@@ -20,7 +20,6 @@ __all__: list[str] = [
     "Neo4jQueryTools",
     "get_neo4j_tools",
     "NestjsSqlTool",
-    "get_nestjs_sql_tool",
     "RAGTools",
     "get_rag_tools",
     "SpringSqlTool",

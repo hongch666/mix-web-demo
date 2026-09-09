@@ -1,5 +1,4 @@
 import json
-from functools import lru_cache
 from typing import Any, Optional
 
 from langchain_core.tools import StructuredTool
@@ -74,9 +73,3 @@ class NestjsSqlTool:
                 args_schema=ExecuteNestjsSqlQueryInput,
             ),
         ]
-
-
-@lru_cache
-def get_nestjs_sql_tool() -> NestjsSqlTool:
-    """获取 NestJS SQL 工具实例"""
-    return NestjsSqlTool()

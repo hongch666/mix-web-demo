@@ -5,10 +5,41 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, Optional
 
+from sqlalchemy import insert, select
+
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, WarehouseScripts
-from app.core.db import get_clickhouse_connection_pool, get_redis_client
+from app.core.db import (
+    clickhouse_async_engine,
+    create_warehouse_tables_async,
+    get_clickhouse_connection_pool,
+    get_redis_client,
+)
 from app.internal.clients import NestjsClient, SpringClient
+from app.internal.models import (
+    OdsApiLog,
+    OdsArticle,
+    OdsArticleLog,
+    OdsCategory,
+    OdsCollect,
+    OdsComment,
+    OdsFocus,
+    OdsLike,
+    OdsSubCategory,
+    OdsUser,
+    SyncWatermark,
+)
+
+REMOTE_MODELS: dict[str, type[Any]] = {
+    "ods_articles": OdsArticle,
+    "ods_user": OdsUser,
+    "ods_category": OdsCategory,
+    "ods_sub_category": OdsSubCategory,
+    "ods_likes": OdsLike,
+    "ods_collects": OdsCollect,
+    "ods_comments": OdsComment,
+    "ods_focus": OdsFocus,
+}
 
 
 def _parse_watermark(value: Optional[str]) -> datetime:
@@ -39,25 +70,47 @@ def _is_mongo_cursor(value: Any) -> bool:
     )
 
 
-async def _read_watermark(conn: Any, table_name: str) -> datetime:
-    rows = await asyncio.to_thread(
-        conn.execute, WarehouseScripts.WATERMARK_SELECT, {"table_name": table_name}
+async def _read_watermark(table_name: str) -> datetime:
+    value = await _read_watermark_value(table_name)
+    return _parse_watermark(value) if value else WarehouseScripts.EPOCH_DATETIME
+
+
+async def _read_watermark_value(table_name: str) -> str:
+    statement = select(SyncWatermark.last_watermark).where(
+        SyncWatermark.table_name == table_name
     )
-    return (
-        _parse_watermark(str(rows[0][0])) if rows else WarehouseScripts.EPOCH_DATETIME
-    )
+    async with clickhouse_async_engine.connect() as connection:
+        result = await connection.execute(statement)
+        value = result.scalar_one_or_none()
+    return str(value or "")
 
 
-async def _write_watermark(conn: Any, table_name: str, value: datetime) -> None:
-    await asyncio.to_thread(
-        conn.execute,
-        WarehouseScripts.WATERMARK_UPSERT,
-        [(table_name, _format_watermark(value), datetime.now())],
-    )
+async def _write_watermark(table_name: str, value: datetime) -> None:
+    await _write_watermark_value(table_name, _format_watermark(value))
 
 
-def _normalize_row(item: dict[str, Any], columns: Sequence[str]) -> tuple[Any, ...]:
-    row: list[Any] = []
+async def _write_watermark_value(table_name: str, value: str) -> None:
+    statement = insert(SyncWatermark)
+    async with clickhouse_async_engine.connect() as connection:
+        await connection.execute(
+            statement,
+            {
+                "table_name": table_name,
+                "last_watermark": value,
+                "updated_at": datetime.now(),
+            },
+        )
+
+
+async def _insert_rows(model: type[Any], rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        return
+    async with clickhouse_async_engine.connect() as connection:
+        await connection.execute(insert(model), rows)
+
+
+def _normalize_row(item: dict[str, Any], columns: Sequence[str]) -> dict[str, Any]:
+    row: dict[str, Any] = {}
     for column in columns:
         value = item.get(column)
         if column in WarehouseScripts.DATETIME_COLUMNS:
@@ -68,8 +121,8 @@ def _normalize_row(item: dict[str, Any], columns: Sequence[str]) -> tuple[Any, .
             value = float(value or 0.0)
         elif column in WarehouseScripts.INTEGER_COLUMNS:
             value = int(value or 0)
-        row.append(value)
-    return tuple(row)
+        row[column] = value
+    return row
 
 
 async def _sync_remote_source(
@@ -78,53 +131,36 @@ async def _sync_remote_source(
     resource: str,
     columns: Sequence[str],
 ) -> None:
-    conn: Any = None
     total = 0
-    try:
-        conn = await get_clickhouse_connection_pool().get_connection_async()
-        watermark = await _read_watermark(conn, table_name)
-        page_number = 1
-        upper_watermark = watermark
-        while True:
-            page = await spring_client.sync_warehouse_data(
-                resource,
-                _format_watermark(watermark),
-                page_number,
-                WarehouseScripts.BATCH_SIZE,
-            )
-            items = page.get("list", []) if isinstance(page, dict) else []
-            if not items:
-                break
-            rows = [_normalize_row(item, columns) for item in items]
-            # INSERT 模板统一收敛在 core/constants/warehouse.py
-            await asyncio.to_thread(
-                conn.execute,
-                WarehouseScripts.ODS_REMOTE_INSERT(table_name, columns),
-                rows,
-            )
-            total += len(rows)
-            upper_watermark = max(
-                upper_watermark, _to_datetime(page.get("upperWatermark"))
-            )
-            if not page.get("hasMore", False):
-                break
-            page_number += 1
-        if upper_watermark > watermark:
-            await _write_watermark(conn, table_name, upper_watermark)
-        Logger.info(Messages.WAREHOUSE_ODS_SYNC_SUCCESS(table_name, total))
-    finally:
-        if conn:
-            await get_clickhouse_connection_pool().return_connection_async(conn)
+    watermark = await _read_watermark(table_name)
+    page_number = 1
+    upper_watermark = watermark
+    model = REMOTE_MODELS[table_name]
+    while True:
+        page = await spring_client.sync_warehouse_data(
+            resource,
+            _format_watermark(watermark),
+            page_number,
+            WarehouseScripts.BATCH_SIZE,
+        )
+        items = page.get("list", []) if isinstance(page, dict) else []
+        if not items:
+            break
+        rows = [_normalize_row(item, columns) for item in items]
+        await _insert_rows(model, rows)
+        total += len(rows)
+        upper_watermark = max(upper_watermark, _to_datetime(page.get("upperWatermark")))
+        if not page.get("hasMore", False):
+            break
+        page_number += 1
+    if upper_watermark > watermark:
+        await _write_watermark(table_name, upper_watermark)
+    Logger.info(Messages.WAREHOUSE_ODS_SYNC_SUCCESS(table_name, total))
 
 
-async def _sync_api_logs(conn: Any, nestjs_client: NestjsClient) -> None:
+async def _sync_api_logs(nestjs_client: NestjsClient) -> None:
     """按 MongoDB ID 游标增量同步 NestJS API 日志到 ClickHouse ODS 层"""
-    last_cursor_rows = await asyncio.to_thread(
-        conn.execute,
-        WarehouseScripts.WATERMARK_SELECT,
-        {"table_name": WarehouseScripts.ODS_API_LOG_TABLE},
-    )
-    stored_cursor = str(last_cursor_rows[0][0]) if last_cursor_rows else ""
+    stored_cursor = await _read_watermark_value(WarehouseScripts.ODS_API_LOG_TABLE)
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
     total = 0
     while True:
@@ -147,7 +183,19 @@ async def _sync_api_logs(conn: Any, nestjs_client: NestjsClient) -> None:
             )
             for item in items
         ]
-        await asyncio.to_thread(conn.execute, WarehouseScripts.ODS_API_LOG_INSERT, rows)
+        await _insert_rows(
+            OdsApiLog,
+            [
+                dict(
+                    zip(
+                        WarehouseScripts.ODS_API_LOG_COLUMNS,
+                        row,
+                        strict=True,
+                    )
+                )
+                for row in rows
+            ],
+        )
         total += len(rows)
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
@@ -156,11 +204,7 @@ async def _sync_api_logs(conn: Any, nestjs_client: NestjsClient) -> None:
             cursor = rows[-1][0]
             break
     if cursor:
-        await asyncio.to_thread(
-            conn.execute,
-            WarehouseScripts.WATERMARK_UPSERT,
-            [(WarehouseScripts.ODS_API_LOG_TABLE, cursor, datetime.now())],
-        )
+        await _write_watermark_value(WarehouseScripts.ODS_API_LOG_TABLE, cursor)
     if total:
         Logger.info(
             Messages.WAREHOUSE_API_LOG_SYNC_SUCCESS(
@@ -169,13 +213,8 @@ async def _sync_api_logs(conn: Any, nestjs_client: NestjsClient) -> None:
         )
 
 
-async def _sync_article_logs(conn: Any, nestjs_client: NestjsClient) -> None:
-    last_cursor_rows = await asyncio.to_thread(
-        conn.execute,
-        WarehouseScripts.WATERMARK_SELECT,
-        {"table_name": WarehouseScripts.ODS_ARTICLE_LOG_TABLE},
-    )
-    stored_cursor = str(last_cursor_rows[0][0]) if last_cursor_rows else ""
+async def _sync_article_logs(nestjs_client: NestjsClient) -> None:
+    stored_cursor = await _read_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE)
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
     while True:
         page = await nestjs_client.sync_article_logs(
@@ -195,8 +234,25 @@ async def _sync_article_logs(conn: Any, nestjs_client: NestjsClient) -> None:
             )
             for item in items
         ]
-        await asyncio.to_thread(
-            conn.execute, WarehouseScripts.ODS_ARTICLE_LOG_INSERT, rows
+        await _insert_rows(
+            OdsArticleLog,
+            [
+                dict(
+                    zip(
+                        (
+                            "event_id",
+                            "user_id",
+                            "article_id",
+                            "action",
+                            "content",
+                            "created_at",
+                        ),
+                        row,
+                        strict=True,
+                    )
+                )
+                for row in rows
+            ],
         )
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
@@ -205,11 +261,7 @@ async def _sync_article_logs(conn: Any, nestjs_client: NestjsClient) -> None:
             cursor = rows[-1][0]
             break
     if cursor:
-        await asyncio.to_thread(
-            conn.execute,
-            WarehouseScripts.WATERMARK_UPSERT,
-            [(WarehouseScripts.ODS_ARTICLE_LOG_TABLE, cursor, datetime.now())],
-        )
+        await _write_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE, cursor)
 
 
 async def _refresh_warehouse(conn: Any) -> None:
@@ -234,38 +286,10 @@ async def _refresh_warehouse(conn: Any) -> None:
         await asyncio.to_thread(conn.execute, sql)
 
 
-async def _ensure_warehouse_schema(conn: Any) -> None:
-    """定时任务前置检查：库表不存在则自动创建（幂等，与 init.sql 保持一致）"""
-    await asyncio.to_thread(conn.execute, WarehouseScripts.WAREHOUSE_DATABASE_DDL)
-    created: list[str] = []
-    for table_name, ddl in WarehouseScripts.WAREHOUSE_DDL:
-        exists_rows = await asyncio.to_thread(
-            conn.execute,
-            WarehouseScripts.WAREHOUSE_TABLE_EXISTS_QUERY.format(
-                table=f"warehouse.{table_name}"
-            ),
-        )
-        if not exists_rows or not int(exists_rows[0][0]):
-            await asyncio.to_thread(conn.execute, ddl)
-            created.append(table_name)
-    await asyncio.to_thread(conn.execute, WarehouseScripts.WAREHOUSE_WATERMARK_INIT)
-    if created:
-        Logger.info(Messages.WAREHOUSE_SCHEMA_CREATED(", ".join(created)))
-    else:
-        Logger.info(Messages.WAREHOUSE_SCHEMA_READY)
-
-
 async def _sync_warehouse(
     spring_client: SpringClient, nestjs_client: Optional[NestjsClient] = None
 ) -> None:
-    conn: Any = None
-    try:
-        conn = await get_clickhouse_connection_pool().get_connection_async()
-        # 前置检查：缺表则自动建表，再开始 ODS 同步与分层刷新
-        await _ensure_warehouse_schema(conn)
-    finally:
-        if conn:
-            await get_clickhouse_connection_pool().return_connection_async(conn)
+    await create_warehouse_tables_async()
     await asyncio.gather(
         *(
             _sync_remote_source(spring_client, *source)
@@ -276,8 +300,8 @@ async def _sync_warehouse(
     try:
         conn = await get_clickhouse_connection_pool().get_connection_async()
         if nestjs_client:
-            await _sync_article_logs(conn, nestjs_client)
-            await _sync_api_logs(conn, nestjs_client)
+            await _sync_article_logs(nestjs_client)
+            await _sync_api_logs(nestjs_client)
         await _refresh_warehouse(conn)
         Logger.info(Messages.WAREHOUSE_REFRESH_SUCCESS)
     except Exception as error:

@@ -1532,6 +1532,10 @@ class Messages:
     WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
 
     @staticmethod
+    def WAREHOUSE_SCHEMA_CREATION_FAILED(error: Any) -> str:
+        return f"ClickHouse 数仓 ORM 表初始化失败: {error}"
+
+    @staticmethod
     def APILOG_CLICKHOUSE_QUERY_FAILED(error: Exception) -> str:
         return f"ClickHouse API日志 ADS 查询失败: {error}"
 

@@ -1,16 +1,17 @@
 from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import get_db
+from app.core.db import get_clickhouse_db, get_db
 from app.internal.services import (
     AiHistoryService,
     AlgorithmService,
     AnalyzeService,
     ApiLogService,
-    GlmService,
     GeminiService,
     GenerateService,
+    GlmService,
     GptService,
     GraphSearchService,
     UserService,
@@ -19,18 +20,18 @@ from app.internal.services import (
     get_algorithm_service,
     get_analyze_service,
     get_apilog_service,
-    get_glm_service,
     get_gemini_service,
     get_generate_service,
+    get_glm_service,
     get_gpt_service,
     get_graph_search_service,
     get_user_service,
     get_vector_search_service,
 )
-from fastapi import Depends
 
 # 数据库会话依赖
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+ClickhouseSession = Annotated[AsyncSession, Depends(get_clickhouse_db)]
 
 # 服务层依赖
 AlgorithmServiceDep = Annotated[AlgorithmService, Depends(get_algorithm_service)]

@@ -1,4 +1,16 @@
-from .clickhouse import ClickhouseConnectionPool, get_clickhouse_connection_pool
+from .clickhouse import (
+    CLICKHOUSE_ASYNC_DATABASE_URL,
+    ClickhouseConnectionPool,
+    ClickHouseAsyncSessionLocal,
+    ClickHouseBase,
+    ClickhouseAsyncSessionLocal,
+    ClickhouseBase,
+    clickhouse_async_engine,
+    create_warehouse_tables_async,
+    dispose_clickhouse_async_engine,
+    get_clickhouse_connection_pool,
+    get_clickhouse_db,
+)
 from .mysql import (
     AsyncSessionLocal,
     Base,
@@ -28,6 +40,15 @@ __all__: list[str] = [
     "_rabbitmq_client",
     "ClickhouseConnectionPool",
     "get_clickhouse_connection_pool",
+    "get_clickhouse_db",
+    "clickhouse_async_engine",
+    "create_warehouse_tables_async",
+    "ClickHouseBase",
+    "ClickhouseBase",
+    "ClickHouseAsyncSessionLocal",
+    "ClickhouseAsyncSessionLocal",
+    "CLICKHOUSE_ASYNC_DATABASE_URL",
+    "dispose_clickhouse_async_engine",
     "RedisClient",
     "get_redis_client",
     "get_pgvector_connection_string",
