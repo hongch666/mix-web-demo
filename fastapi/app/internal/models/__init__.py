@@ -28,6 +28,8 @@ from .warehouse.ods.like import OdsLike
 from .warehouse.ods.subCategory import OdsSubCategory
 from .warehouse.ods.syncWatermark import SyncWatermark
 from .warehouse.ods.user import OdsUser
+from .warehouse.base import WarehouseModel, WAREHOUSE_ENGINE_CONFIG, configure_warehouse_engines
+
 __all__: list[str] = [
     "AiHistory",
     "SyncWatermark",
@@ -59,4 +61,7 @@ __all__: list[str] = [
     "AdsApiAverageSpeed",
     "AdsApiCalledCount",
     "AdsSearchKeyword",
+    "WarehouseModel",
+    "WAREHOUSE_ENGINE_CONFIG",
+    "configure_warehouse_engines",
 ]

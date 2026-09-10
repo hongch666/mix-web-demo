@@ -95,6 +95,7 @@ async def execute_clickhouse_query(
 async def create_warehouse_tables_async() -> None:
     """根据数仓 ORM 元数据创建缺失的 ClickHouse 表。"""
 
+    # 延迟导入避免 app.core.db 与 app.internal.models 循环依赖。
     from app.internal.models import (  # noqa: F401
         AdsApiAverageSpeed,
         AdsApiCalledCount,
@@ -125,8 +126,8 @@ async def create_warehouse_tables_async() -> None:
         OdsSubCategory,
         OdsUser,
         SyncWatermark,
+        configure_warehouse_engines,
     )
-    from app.internal.models.warehouse.base import configure_warehouse_engines
 
     try:
         configure_warehouse_engines(ClickHouseBase.metadata)

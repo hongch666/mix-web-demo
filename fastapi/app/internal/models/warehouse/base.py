@@ -49,7 +49,7 @@ WAREHOUSE_ENGINE_CONFIG: Mapping[str, tuple[type[Any], dict[str, Any]]] = {
 
 
 def configure_warehouse_engines(metadata: Any) -> None:
-    """为已导入的数仓模型附加 ClickHouse ENGINE 定义。"""
+    """为已导入的数仓模型附加 ClickHouse ENGINE 定义"""
 
     for table_name, (engine_type, options) in WAREHOUSE_ENGINE_CONFIG.items():
         table = metadata.tables.get(f"warehouse.{table_name}")
