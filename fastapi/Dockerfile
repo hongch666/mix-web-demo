@@ -1,5 +1,11 @@
 # 使用官方Python运行时作为基础镜像
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
+
+# 构建时接收代理，供 RUN 里的 apt / pip 使用
+ARG http_proxy
+ARG https_proxy
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
 
 # 设置工作目录
 WORKDIR /app
@@ -7,20 +13,31 @@ WORKDIR /app
 # 设置环境变量
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
     PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
     PIP_TRUSTED_HOST=mirrors.aliyun.com
 
-# 词云需使用中文字体，配置默认指向 Noto Sans CJK。
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends fonts-noto-cjk \
-    && rm -rf /var/lib/apt/lists/*
+# 词云需使用中文字体。
+# 源改为 HTTPS（走代理稳定），保留代理环境变量。
+RUN set -eux; \
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+    sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|http://|https://|g' /etc/apt/sources.list.d/debian.sources; \
+    fi; \
+    if [ -f /etc/apt/sources.list ]; then \
+    sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|http://|https://|g' /etc/apt/sources.list; \
+    fi; \
+    apt-get -o Acquire::Retries=5 update; \
+    apt-get -o Acquire::Retries=5 \
+    -o Acquire::http::Timeout=30 \
+    -o Acquire::https::Timeout=30 \
+    install -y --no-install-recommends fonts-noto-cjk; \
+    rm -rf /var/lib/apt/lists/*
 
 # 先复制依赖清单，单独安装依赖，方便缓存复用
 COPY requirements.txt /app/
 
 # 安装Python依赖
-RUN pip install --upgrade pip setuptools && \
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip setuptools && \
     pip install -r requirements.txt
 
 # 再复制项目代码，避免代码改动触发依赖重装
