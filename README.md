@@ -68,10 +68,10 @@
 10. 基于 GoZero 和 WebSocket/SSE 实现用户实时聊天功能和消息通知
 11. 基于 NestJS 和 Mongoose 进行文章操作日志和 API 日志的查看和分析
 12. 基于 NestJS 和 TypeORM 实现文章下载的文章和用户数据获取
-13. 基于 FastAPI 和 ClickHouse 技术栈实现系统数据的相关分析
+13. 基于 FastAPI、ClickHouse 和 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）实现系统数据的相关分析
 14. 基于 FastAPI 和 SQLAlchemy 进行文章相关数据的获取和同步
 15. 基于 FastAPI 和 LangChain 实现 RAG 文章检索增强和 Tools 调用 SQL、MongoDB、Neo4j，支持 **GPT/Gemini/GLM** 进行多模型选择
-16. 基于 FastAPI 和 Neo4j 实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
+16. 基于 FastAPI、Neo4j 和 neomodel（异步 OGM）实现文章、用户、分类、标签、点赞、收藏、评论、关注等实体关系图谱，用于关系查询和图谱推荐
 17. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
 18. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
 
@@ -123,26 +123,26 @@ NestJS 模块按职责划分为两层：
 
 ### FastAPI 服务（端口 8084）
 
-| 项目     | 说明                                                                                                                                               |
-| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 框架     | FastAPI + SQLAlchemy                                                                                                                               |
-| 数据库   | MySQL（ai_history 表）、ClickHouse（数据分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（知识图谱）                                           |
-| 消息队列 | RabbitMQ                                                                                                                                           |
-| 注册中心 | Nacos                                                                                                                                              |
-| 运行时   | Python 3.12+                                                                                                                                       |
-| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/DeepSeek）、LangSmith LLM 链路追踪 |
-| 代码位置 | `fastapi/`                                                                                                                                         |
+| 项目     | 说明                                                                                                                                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                 |
+| 数据库   | MySQL（SQLAlchemy，ai_history 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）              |
+| 消息队列 | RabbitMQ                                                                                                                                                           |
+| 注册中心 | Nacos                                                                                                                                                              |
+| 运行时   | Python 3.12+                                                                                                                                                       |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/DeepSeek）、LangSmith LLM 链路追踪 |
+| 代码位置 | `fastapi/`                                                                                                                                                         |
 
 ### Apache APISIX 网关（端口 8080）
 
-| 项目       | 说明                                                                                                      |
-| ---------- | --------------------------------------------------------------------------------------------------------- |
-| 框架       | Apache APISIX 3.11（Docker Compose）                                                                      |
-| 服务发现   | Nacos，按 `spring`、`gozero`、`nestjs`、`fastapi` 服务名发现上游实例                                      |
-| 认证       | `forward-auth` 调用 Spring 的 `/users/internal/auth/validate`，透传 `X-User-Id`、`X-Username`、`X-Session-Id` |
-| 限流       | APISIX `limit-req`，Redis 存储限流状态                                                                    |
-| 主要功能   | 统一入口、路径路由、公开路由、认证、限流、CORS、WebSocket/SSE、Swagger 聚合                               |
-| 配置位置   | `gateway/apisix/config.yaml`、`gateway/apisix/apisix.yaml`                                               |
+| 项目     | 说明                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------- |
+| 框架     | Apache APISIX 3.11（Docker Compose）                                                                          |
+| 服务发现 | Nacos，按 `spring`、`gozero`、`nestjs`、`fastapi` 服务名发现上游实例                                          |
+| 认证     | `forward-auth` 调用 Spring 的 `/users/internal/auth/validate`，透传 `X-User-Id`、`X-Username`、`X-Session-Id` |
+| 限流     | APISIX `limit-req`，Redis 存储限流状态                                                                        |
+| 主要功能 | 统一入口、路径路由、公开路由、认证、限流、CORS、WebSocket/SSE、Swagger 聚合                                   |
+| 配置位置 | `gateway/apisix/config.yaml`、`gateway/apisix/apisix.yaml`                                                    |
 
 ## 登录相关
 
@@ -528,11 +528,11 @@ Body 参数：
 - MySQL：关系型数据库，系统核心数据库
 - PostgreSQL：RAG 向量数据库
 - MongoDB：非关系型数据库，系统日志数据库
-- Neo4j：图数据库，存储文章、用户、分类、标签等实体关系
+- Neo4j：图数据库，存储文章、用户、分类、标签等实体关系，FastAPI 侧通过 neomodel 异步 OGM 访问
 - ElasticSearch：搜索引擎，系统搜索优化
 - Redis：缓存服务和状态管理，Spring 服务使用响应式 Redis 客户端
 - RabbitMQ：异步消息队列
-- ClickHouse：大数据存储与分析
+- ClickHouse：大数据存储与分析，FastAPI 侧通过 SQLAlchemy ORM（clickhouse-sqlalchemy + asynch 异步驱动）访问数仓分层表
 - WebSocket：用户实时聊天
 - SSE：实时通知未读消息
 - LangChain：大模型调用和 RAG 框架
@@ -1174,13 +1174,13 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 **run.sh 脚本参数**：
 
-| 参数                   | 选项               | 说明                                             |
-| ---------------------- | ------------------ | ------------------------------------------------ |
-| `--java-build`         | `gradle` / `maven` | Spring Java 构建工具，默认 gradle                |
-| `--node-runtime`       | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun               |
-| `--python-runtime`     | `uv` / `python`    | Python 运行时（FastAPI），默认 uv                |
-| `-i` / `--interactive` | 无                 | 交互式模式，提示用户选择各服务的工具             |
-| `-h` / `--help`        | 无                 | 显示帮助信息                                     |
+| 参数                   | 选项               | 说明                                 |
+| ---------------------- | ------------------ | ------------------------------------ |
+| `--java-build`         | `gradle` / `maven` | Spring Java 构建工具，默认 gradle    |
+| `--node-runtime`       | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun   |
+| `--python-runtime`     | `uv` / `python`    | Python 运行时（FastAPI），默认 uv    |
+| `-i` / `--interactive` | 无                 | 交互式模式，提示用户选择各服务的工具 |
+| `-h` / `--help`        | 无                 | 显示帮助信息                         |
 
 示例：
 
@@ -1345,13 +1345,13 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 
 ### 微服务容器说明
 
-| 服务        | 端口 | 镜像名称             | 容器名称                | 技术栈           |
-| ----------- | ---- | -------------------- | ----------------------- | ---------------- |
-| **Gateway** | 8080 | `apache/apisix:3.11.0-debian` | `mix-gateway` | Apache APISIX |
-| **Spring**  | 8081 | `mix-spring:latest`  | `mix-spring-container`  | Java 17 + Alpine |
-| **GoZero**  | 8082 | `mix-gozero:latest`  | `mix-gozero-container`  | Go 1.23 + Alpine |
-| **NestJS**  | 8083 | `mix-nestjs:latest`  | `mix-nestjs-container`  | Node 20 + Alpine |
-| **FastAPI** | 8084 | `mix-fastapi:latest` | `mix-fastapi-container` | Python 3.12      |
+| 服务        | 端口 | 镜像名称                      | 容器名称                | 技术栈           |
+| ----------- | ---- | ----------------------------- | ----------------------- | ---------------- |
+| **Gateway** | 8080 | `apache/apisix:3.11.0-debian` | `mix-gateway`           | Apache APISIX    |
+| **Spring**  | 8081 | `mix-spring:latest`           | `mix-spring-container`  | Java 17 + Alpine |
+| **GoZero**  | 8082 | `mix-gozero:latest`           | `mix-gozero-container`  | Go 1.23 + Alpine |
+| **NestJS**  | 8083 | `mix-nestjs:latest`           | `mix-nestjs-container`  | Node 20 + Alpine |
+| **FastAPI** | 8084 | `mix-fastapi:latest`          | `mix-fastapi-container` | Python 3.12      |
 
 ### 高级用法
 
@@ -1705,6 +1705,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，脚本放置在 `/scripts`文件夹下，生成的代码放置在 `/app`文件夹下，`/app` 下采用GoZero的设计方式，`/model`下放置数据库实体和操作，`/common`下放置通用代码模块，`/internal`下放置业务相关的代码模块，`/etc`下放配置文件，`/internal`文件夹下按照 `/handler`、`/logic`等GoZero的设计方式进行划分
 3. NestJS 项目的非 module 通用工具放置在 `/common` 下，和系统相关的框架能力放置在 `/framework` 下，如 `filters`、`guards`、`interceptors` 等，业务 module 放置在 `/module` 下，其中 `module/system` 放置系统业务模块，`module/common` 放置通用能力模块
 4. FastAPI 项目的核心代码放置在 `/app`下，`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`core`下放置核心功能模块，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
+   - `/models` 目录说明：`aiHistory.py` 为 MySQL 的 SQLAlchemy 模型；`warehouse/` 为 ClickHouse 数仓的 SQLAlchemy ORM 模型（按 `ods`、`dwd`、`dws`、`dim`、`ads` 分层，每张表一个文件）；`graph/` 为 Neo4j 的 neomodel 异步 OGM 模型（每个类一个文件）
 5. 其他相关的文件夹命名尽可能沿用当前项目的设计
 
 ### 项目文件命名说明
@@ -1787,7 +1788,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `swaggerConfig.py`：Swagger/OpenAPI 配置类
    - `__init__.py`：统一导出入口
 
-5. NestJS 项目：`nestjs/src/common/constants/`
+4. NestJS 项目：`nestjs/src/common/constants/`
    - `defaults.constants.ts`：配置默认值常量
    - `errorIds.constants.ts`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
    - `httpCode.constants.ts`：HTTP 状态码常量
@@ -2085,16 +2086,16 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 预定义查询名称：
 
-| 查询名称                         | 说明                               |
-| -------------------------------- | ---------------------------------- |
-| `article_detail`                 | 查询文章详情，包括作者、分类、标签 |
-| `category_articles`              | 查询某个子分类下的热门文章         |
-| `user_articles`                  | 查询某个作者发布的文章             |
-| `similar_articles_same_category` | 查询同分类下的相似热门文章         |
-| `user_interest_chain`            | 查询用户关注链上的兴趣文章         |
-| `top_viewed_articles`            | 查询浏览量最高的文章               |
-| `tag_graph`                      | 查询标签关联文章数量排行           |
-| `user_recommendation`            | 基于用户点赞/收藏标签做个性化推荐  |
+| 查询名称                         | 说明                               | 访问方式    |
+| -------------------------------- | ---------------------------------- | ----------- |
+| `article_detail`                 | 查询文章详情，包括作者、分类、标签 | OGM         |
+| `category_articles`              | 查询某个子分类下的热门文章         | OGM         |
+| `user_articles`                  | 查询某个作者发布的文章             | OGM         |
+| `similar_articles_same_category` | 查询同分类下的相似热门文章         | OGM         |
+| `top_viewed_articles`            | 查询浏览量最高的文章               | OGM         |
+| `user_interest_chain`            | 查询用户关注链上的兴趣文章         | 原始 Cypher |
+| `tag_graph`                      | 查询标签关联文章数量排行           | 原始 Cypher |
+| `user_recommendation`            | 基于用户点赞/收藏标签做个性化推荐  | 原始 Cypher |
 
 适合触发知识图谱工具的问题示例：
 
@@ -2108,9 +2109,12 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 
 对应数据同步任务：
 
-- 定时任务文件：`fastapi/app/internal/services/tasks/neo4jSyncTask.py`
+- 定时任务文件：`fastapi/app/internal/tasks/logic/neo4jSyncTask.py`
 - 手动触发接口：`POST /task/sync-neo4j`
 - Neo4j 客户端：`fastapi/app/core/db/neo4j.py`
+- OGM 图谱模型：`fastapi/app/internal/models/graph/`
+
+批量同步仍使用 `UNWIND` 批量写入等原始 Cypher（逐对象 OGM 写入会导致数量级性能退化），约束创建同样保留原始 Cypher。
 
 #### 5.其他工具
 
