@@ -11,7 +11,7 @@ class WarehouseScripts:
 
     # 水位线旧行清理：ClickHouse 没有行级 UPSERT，写入新水位前先删除同表旧行
     WATERMARK_DELETE_BY_TABLE: Final[str] = (
-        "ALTER TABLE warehouse.sync_watermark DELETE WHERE table_name = :table_name"
+        "ALTER TABLE warehouse.sync_watermark DELETE WHERE table_name = %(table_name)s"
     )
 
     # Agent 数仓工具使用的固定 ADS 查询，避免模型直接拼接 ClickHouse SQL

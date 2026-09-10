@@ -2,7 +2,6 @@ from collections.abc import AsyncGenerator
 from typing import Any, Optional
 from urllib.parse import quote_plus
 
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -74,11 +73,13 @@ async def dispose_clickhouse_async_engine() -> None:
     await clickhouse_async_engine.dispose()
 
 
-async def execute_clickhouse_sql(sql: str, parameters: Optional[dict[str, Any]] = None) -> None:
+async def execute_clickhouse_sql(
+    sql: str, parameters: Optional[dict[str, Any]] = None
+) -> None:
     """通过 SQLAlchemy 异步引擎执行无需返回结果的 ClickHouse SQL。"""
 
     async with clickhouse_async_engine.connect() as connection:
-        await connection.execute(text(sql), parameters or {})
+        await connection.exec_driver_sql(sql, parameters or {})
 
 
 async def execute_clickhouse_query(
@@ -88,7 +89,7 @@ async def execute_clickhouse_query(
     """通过 SQLAlchemy 异步引擎执行 ClickHouse 查询并返回行元组列表。"""
 
     async with clickhouse_async_engine.connect() as connection:
-        result = await connection.execute(text(sql), parameters or {})
+        result = await connection.exec_driver_sql(sql, parameters or {})
         return [tuple(row) for row in result.fetchall()]
 
 
