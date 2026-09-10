@@ -343,6 +343,18 @@ class Messages:
         return f"Neo4j 驱动初始化成功: {uri}"
 
     @staticmethod
+    def NEO4J_CONNECTION_FAILED(error: Exception) -> str:
+        return f"Neo4j 连接建立失败: {error}"
+
+    @staticmethod
+    def NEO4J_CONNECTION_CLOSE_FAILED(error: Exception) -> str:
+        return f"Neo4j 连接关闭失败: {error}"
+
+    @staticmethod
+    def NEO4J_OGM_QUERY_FAILED(query_name: str, error: Exception) -> str:
+        return f"Neo4j 图谱函数查询失败: {query_name}, 错误: {error}"
+
+    @staticmethod
     def CYPHER_QUERY_FAILED(error: Exception, cypher: str, params: Any) -> str:
         return f"Cypher 查询失败: {error}\nCypher: {cypher}\nParams: {params}"
 

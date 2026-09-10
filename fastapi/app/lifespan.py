@@ -52,6 +52,9 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     start_nacos(ip=IP, port=PORT)
     Logger.info(Messages.NACOS_REGISTER_SUCCESS)
 
+    # 初始化 Neo4j（neomodel 全进程单连接；失败不阻断启动，查询时按需重连）
+    await get_neo4j_client().connect()
+
     # 初始化 RabbitMQ 连接（RobustConnection 后续自动处理重连）
     rabbitmq_client: Optional[RabbitMQClient] = get_rabbitmq_client()
     if rabbitmq_client:

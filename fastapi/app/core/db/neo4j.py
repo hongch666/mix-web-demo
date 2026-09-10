@@ -1,8 +1,8 @@
-import asyncio
 from functools import lru_cache
 from typing import Any, Optional
+from urllib.parse import quote
 
-from neo4j import AsyncGraphDatabase, AsyncSession
+from neomodel import adb
 
 from app.core.base import Logger
 from app.core.config import load_config
@@ -10,15 +10,18 @@ from app.core.constants import Messages
 
 
 class Neo4jClient:
-    """Neo4j 异步客户端封装"""
+    """基于 neomodel 的 Neo4j 异步客户端
+
+    连接的创建、持有与关闭全部交给 neomodel 的全局 AsyncDatabase（adb），
+    整个进程只维护一条连接（驱动 + 连接池），OGM 对象操作与原始 Cypher
+    共用同一连接，不再各自建立驱动。
+    """
 
     def __init__(self) -> None:
         self.logger = Logger
         self.uri: str = ""
         self.user: str = ""
         self.password: str = ""
-        self.auth: Optional[tuple[str, str]] = None
-        self._drivers: dict[int, Any] = {}
         self._initialize_config()
 
     def _initialize_config(self) -> None:
@@ -30,94 +33,91 @@ class Neo4jClient:
             self.uri = str(neo4j_cfg["uri"]).strip()
             self.user = str(neo4j_cfg["user"]).strip()
             self.password = str(neo4j_cfg["password"]).strip()
-            self.auth = (self.user, self.password) if self.password else None
             self.logger.info(Messages.NEO4J_CONFIG_INITIALIZED(self.uri))
         except Exception as e:
             self.uri = ""
-            self.auth = None
             self.logger.error(Messages.NEO4J_CONFIG_INITIALIZATION_FAILED(e))
 
-    def _get_driver(self) -> Optional[Any]:
-        """获取当前事件循环对应的 Neo4j 驱动"""
+    def _build_connection_url(self) -> str:
+        """拼装 neomodel 所需的连接 URL（账号密码做 URL 编码）
+
+        neomodel 要求 URL 形如 ``protocol://user:password@host:port``，即使密码为空
+        也要保留分隔用的冒号。
+        """
+        scheme, separator, host = self.uri.partition("://")
+        if not separator or not scheme or not host:
+            return self.uri
+        username: str = quote(self.user, safe="")
+        password: str = quote(self.password, safe="")
+        return f"{scheme}://{username}:{password}@{host}"
+
+    async def connect(self) -> bool:
+        """建立 neomodel 连接（幂等），全进程复用同一条连接"""
+        if adb.driver is not None:
+            return True
+
         if not self.uri:
             self.logger.warning(Messages.NEO4J_CONFIG_NOT_INITIALIZED_MESSAGE)
-            return None
+            return False
 
         try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self.logger.warning(Messages.NEO4J_LOOP_NOT_RUNNING_MESSAGE)
-            return None
-
-        loop_id: int = id(loop)
-        driver: Optional[Any] = self._drivers.get(loop_id)
-        if driver is None:
-            driver = AsyncGraphDatabase.driver(
-                self.uri,
-                auth=self.auth,
-                max_connection_lifetime=3600,
-            )
-            self._drivers[loop_id] = driver
+            # 驱动创建、连接池、事务管理全部交给 neomodel
+            await adb.set_connection(url=self._build_connection_url())
             self.logger.info(Messages.NEO4J_DRIVER_INITIALIZED(self.uri))
-        return driver
-
-    async def get_session(self) -> Optional[AsyncSession]:
-        """获取 Neo4j 异步会话"""
-        driver: Optional[Any] = self._get_driver()
-        if driver is None:
-            self.logger.warning(Messages.NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE)
-            return None
-        return driver.session()
+            return True
+        except Exception as e:
+            self.logger.error(Messages.NEO4J_CONNECTION_FAILED(e))
+            return False
 
     async def run_query(
         self, cypher: str, params: Optional[dict[str, Any]] = None
     ) -> list[dict[str, Any]]:
-        """执行只读 Cypher 查询"""
-        session: Optional[AsyncSession] = await self.get_session()
-        if session is None:
+        """执行只读 Cypher 查询，返回字典列表"""
+        if not await self.connect():
             return []
 
         try:
-            result: Any = await session.run(cypher, params or {})
-            return await result.data()
+            # neomodel 的 cypher_query 返回 (行值列表, 列名元组)，这里还原为字典列表
+            records: list[Any]
+            columns: Any
+            records, columns = await adb.cypher_query(cypher, params or {})
+            headers: list[str] = list(columns)
+            return [dict(zip(headers, row)) for row in records]
         except Exception as e:
             self.logger.error(Messages.CYPHER_QUERY_FAILED(e, cypher, params))
             return []
-        finally:
-            await session.close()
 
     async def run_write_query(
         self, cypher: str, params: Optional[dict[str, Any]] = None
     ) -> Optional[Any]:
-        """执行写入类 Cypher 语句"""
-        session: Optional[AsyncSession] = await self.get_session()
-        if session is None:
+        """执行写入类 Cypher 语句，返回查询摘要（含删除计数）
+
+        写入需要 Neo4j 的 counters 摘要，而 neomodel 的 cypher_query 不返回摘要，
+        故复用 neomodel 持有的同一个驱动执行，不额外建立连接。
+        """
+        if not await self.connect():
+            return None
+
+        driver: Any = adb.driver
+        if driver is None:
+            self.logger.warning(Messages.NEO4J_DRIVER_NOT_INITIALIZED_MESSAGE)
             return None
 
         try:
-            result: Any = await session.run(cypher, params or {})
-            return await result.consume()
+            async with driver.session() as session:
+                result: Any = await session.run(cypher, params or {})
+                return await result.consume()
         except Exception as e:
             self.logger.error(Messages.CYPHER_WRITE_FAILED(e, cypher, params))
             return None
-        finally:
-            await session.close()
 
     async def close(self) -> None:
-        """关闭 Neo4j 驱动连接"""
+        """关闭 neomodel 持有的连接"""
         try:
-            current_loop_id: Optional[int] = id(asyncio.get_running_loop())
-        except RuntimeError:
-            current_loop_id = None
-
-        drivers: list[Any] = list(self._drivers.values())
-        self._drivers.clear()
-        for driver in drivers:
-            await driver.close()
-        if current_loop_id is not None:
-            self.logger.info(Messages.NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE)
-        else:
+            await adb.close_connection()
             self.logger.info(Messages.NEO4J_DRIVER_CLOSED_MESSAGE)
+        except Exception as e:
+            self.logger.error(Messages.NEO4J_CONNECTION_CLOSE_FAILED(e))
 
 
 @lru_cache

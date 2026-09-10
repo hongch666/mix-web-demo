@@ -1,4 +1,16 @@
 from .aiHistory import AiHistory
+from .graph.article import Article
+from .graph.belongsToRel import BelongsToRel
+from .graph.category import Category
+from .graph.collectRel import CollectRel
+from .graph.commentRel import CommentRel
+from .graph.followRel import FollowRel
+from .graph.likeRel import LikeRel
+from .graph.publishedByRel import PublishedByRel
+from .graph.subCategory import SubCategory
+from .graph.tag import Tag
+from .graph.taggedAsRel import TaggedAsRel
+from .graph.user import User
 from .warehouse.ads.apiAverageSpeed import AdsApiAverageSpeed
 from .warehouse.ads.apiCalledCount import AdsApiCalledCount
 from .warehouse.ads.categoryStats import AdsCategoryStats
@@ -32,6 +44,18 @@ from .warehouse.base import WarehouseModel, WAREHOUSE_ENGINE_CONFIG, configure_w
 
 __all__: list[str] = [
     "AiHistory",
+    "User",
+    "Category",
+    "SubCategory",
+    "Article",
+    "Tag",
+    "PublishedByRel",
+    "BelongsToRel",
+    "TaggedAsRel",
+    "LikeRel",
+    "CollectRel",
+    "CommentRel",
+    "FollowRel",
     "SyncWatermark",
     "OdsArticle",
     "OdsUser",

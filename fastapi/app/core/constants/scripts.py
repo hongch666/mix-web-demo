@@ -400,8 +400,6 @@ class Scripts:
         RETURN articleId, size(names) AS rawScore, names
     """
 
-    # ===== Neo4j 意图到 Cypher 查询映射 =====
-    # 预定义查询，Agent 通过 query_name 参数调用
     # ===== ES 搜索排序脚本（Painless） =====
     # 该脚本通过 params.xxx 占位符接收权重参数，由 GoZero 调用方在运行时传入具体的权重值
     # GoZero 获取此脚本后使用 elastic.NewScript(script).Param(name, value) 方式组装执行
@@ -422,54 +420,22 @@ class Scripts:
         return score + aiBoost + userBoost + viewsBoost + likesBoost + collectsBoost + followBoost + recencyBoost;
     """
 
+    # ===== Neo4j 意图到 Cypher 查询映射 =====
     INTENT_TO_CYPHER: dict[str, str] = {
-        "article_detail": (
-            "MATCH (a:Article {id: $id}) "
-            "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User) "
-            "OPTIONAL MATCH (a)-[:BELONGS_TO]->(s:SubCategory) "
-            "OPTIONAL MATCH (s)-[:BELONGS_TO_CATEGORY]->(c:Category) "
-            "OPTIONAL MATCH (a)-[:TAGGED_AS]->(t:Tag) "
-            "RETURN a.id AS id, a.title AS title, a.views AS views, "
-            "u.name AS author, s.name AS subCategory, c.name AS category, "
-            "collect(DISTINCT t.name) AS tags"
-        ),
-        "category_articles": (
-            "MATCH (s:SubCategory {name: $name})<-[:BELONGS_TO]-(a:Article) "
-            "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(u:User) "
-            "RETURN a.id AS id, a.title AS title, a.views AS views, "
-            "a.createAt AS createAt, u.name AS author "
-            "ORDER BY a.views DESC LIMIT $limit"
-        ),
-        "user_articles": (
-            "MATCH (a:Article)-[:PUBLISHED_BY]->(u:User {name: $name}) "
-            "RETURN a.id AS id, a.title AS title, a.views AS views, a.createAt AS createAt "
-            "ORDER BY a.createAt DESC LIMIT $limit"
-        ),
-        "similar_articles_same_category": (
-            "MATCH (a:Article {id: $articleId})-[:BELONGS_TO]->(s:SubCategory) "
-            "MATCH (other:Article)-[:BELONGS_TO]->(s) "
-            "WHERE other.id <> a.id "
-            "OPTIONAL MATCH (other)-[:PUBLISHED_BY]->(u:User) "
-            "RETURN other.id AS id, other.title AS title, other.views AS views, "
-            "u.name AS author "
-            "ORDER BY other.views DESC LIMIT $limit"
-        ),
+        # 关注链（User-FOLLOWS-User-LIKES-Article）跨两跳，且 LIMIT 必须作用在展开后的文章流上；改用 OGM 只能先取出全部文章再在应用侧截断，结果集会随关注用户数放大，故保留库内 LIMIT
         "user_interest_chain": (
             "MATCH (u:User {id: $userId})-[:FOLLOWS]->(:User)-[:LIKES]->(a:Article) "
             "OPTIONAL MATCH (a)-[:PUBLISHED_BY]->(author:User) "
             "RETURN a.id AS id, a.title AS title, a.views AS views, author.name AS author "
             "ORDER BY a.views DESC LIMIT $limit"
         ),
-        "top_viewed_articles": (
-            "MATCH (a:Article) "
-            "RETURN a.id AS id, a.title AS title, a.views AS views "
-            "ORDER BY a.views DESC LIMIT $limit"
-        ),
+        # 库内聚合统计（按标签分组计数），OGM 无法表达聚合
         "tag_graph": (
             "MATCH (t:Tag)<-[:TAGGED_AS]-(a:Article) "
             "RETURN t.name AS tag, count(a) AS articleCount "
             "ORDER BY articleCount DESC LIMIT $limit"
         ),
+        # 多跳聚合：按共同标签分组计数、排除已互动文章并按相关度排序，且需 `collect(DISTINCT t.name)` 聚集标签，OGM 无法表达
         "user_recommendation": (
             "MATCH (u:User {id: $userId})-[:LIKES|COLLECTS]->(interest:Article) "
             "MATCH (interest)-[:TAGGED_AS]->(t:Tag) "
