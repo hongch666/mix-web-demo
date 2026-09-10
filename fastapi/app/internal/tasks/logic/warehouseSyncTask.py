@@ -5,14 +5,14 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any, Optional
 
-from sqlalchemy import insert, select
+from sqlalchemy import desc, insert, select
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, WarehouseScripts
 from app.core.db import (
     clickhouse_async_engine,
     create_warehouse_tables_async,
-    get_clickhouse_connection_pool,
+    execute_clickhouse_sql,
     get_redis_client,
 )
 from app.internal.clients import NestjsClient, SpringClient
@@ -76,8 +76,12 @@ async def _read_watermark(table_name: str) -> datetime:
 
 
 async def _read_watermark_value(table_name: str) -> str:
-    statement = select(SyncWatermark.last_watermark).where(
-        SyncWatermark.table_name == table_name
+    # ReplacingMergeTree 后台合并前可能同时存在新旧水位，按更新时间取最新一行。
+    statement = (
+        select(SyncWatermark.last_watermark)
+        .where(SyncWatermark.table_name == table_name)
+        .order_by(desc(SyncWatermark.updated_at))
+        .limit(1)
     )
     async with clickhouse_async_engine.connect() as connection:
         result = await connection.execute(statement)
@@ -90,10 +94,14 @@ async def _write_watermark(table_name: str, value: datetime) -> None:
 
 
 async def _write_watermark_value(table_name: str, value: str) -> None:
-    statement = insert(SyncWatermark)
+    # ClickHouse 没有行级 UPSERT，先清理同一张源表的旧水位，再插入唯一新水位。
+    await execute_clickhouse_sql(
+        WarehouseScripts.WATERMARK_DELETE_BY_TABLE,
+        {"table_name": table_name},
+    )
     async with clickhouse_async_engine.connect() as connection:
         await connection.execute(
-            statement,
+            insert(SyncWatermark),
             {
                 "table_name": table_name,
                 "last_watermark": value,
@@ -171,37 +179,33 @@ async def _sync_api_logs(nestjs_client: NestjsClient) -> None:
         if not items:
             break
         rows = [
-            (
-                str(item.get("_id") or item.get("id") or ""),
-                int(item.get("userId") or item.get("user_id") or 0),
-                str(item.get("username") or ""),
-                str(item.get("apiDescription") or item.get("api_description") or ""),
-                str(item.get("apiPath") or item.get("api_path") or ""),
-                str(item.get("apiMethod") or item.get("api_method") or ""),
-                float(item.get("responseTime") or item.get("response_time") or 0.0),
-                _to_datetime(item.get("createdAt") or item.get("created_at")),
-            )
+            {
+                "event_id": str(item.get("_id") or item.get("id") or ""),
+                "user_id": int(item.get("userId") or item.get("user_id") or 0),
+                "username": str(item.get("username") or ""),
+                "api_description": str(
+                    item.get("apiDescription") or item.get("api_description") or ""
+                ),
+                "api_path": str(item.get("apiPath") or item.get("api_path") or ""),
+                "api_method": str(
+                    item.get("apiMethod") or item.get("api_method") or ""
+                ),
+                "response_time": float(
+                    item.get("responseTime") or item.get("response_time") or 0.0
+                ),
+                "created_at": _to_datetime(
+                    item.get("createdAt") or item.get("created_at")
+                ),
+            }
             for item in items
         ]
-        await _insert_rows(
-            OdsApiLog,
-            [
-                dict(
-                    zip(
-                        WarehouseScripts.ODS_API_LOG_COLUMNS,
-                        row,
-                        strict=True,
-                    )
-                )
-                for row in rows
-            ],
-        )
+        await _insert_rows(OdsApiLog, rows)
         total += len(rows)
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
             cursor = next_cursor
         else:
-            cursor = rows[-1][0]
+            cursor = str(rows[-1]["event_id"])
             break
     if cursor:
         await _write_watermark_value(WarehouseScripts.ODS_API_LOG_TABLE, cursor)
@@ -224,49 +228,36 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> None:
         if not items:
             break
         rows = [
-            (
-                str(item.get("_id") or item.get("id") or ""),
-                int(item.get("userId") or item.get("user_id") or 0),
-                int(item.get("articleId") or item.get("article_id") or 0),
-                str(item.get("action") or ""),
-                json.dumps(item.get("content") or {}, ensure_ascii=False, default=str),
-                _to_datetime(item.get("createdAt") or item.get("created_at")),
-            )
+            {
+                "event_id": str(item.get("_id") or item.get("id") or ""),
+                "user_id": int(item.get("userId") or item.get("user_id") or 0),
+                "article_id": int(
+                    item.get("articleId") or item.get("article_id") or 0
+                ),
+                "action": str(item.get("action") or ""),
+                "content": json.dumps(
+                    item.get("content") or {}, ensure_ascii=False, default=str
+                ),
+                "created_at": _to_datetime(
+                    item.get("createdAt") or item.get("created_at")
+                ),
+            }
             for item in items
         ]
-        await _insert_rows(
-            OdsArticleLog,
-            [
-                dict(
-                    zip(
-                        (
-                            "event_id",
-                            "user_id",
-                            "article_id",
-                            "action",
-                            "content",
-                            "created_at",
-                        ),
-                        row,
-                        strict=True,
-                    )
-                )
-                for row in rows
-            ],
-        )
+        await _insert_rows(OdsArticleLog, rows)
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
             cursor = next_cursor
         else:
-            cursor = rows[-1][0]
+            cursor = str(rows[-1]["event_id"])
             break
     if cursor:
         await _write_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE, cursor)
 
 
-async def _refresh_warehouse(conn: Any) -> None:
+async def _refresh_warehouse() -> None:
     for sql in WarehouseScripts.REFRESH_DERIVED_TABLES:
-        await asyncio.to_thread(conn.execute, sql)
+        await execute_clickhouse_sql(sql)
     for sql in (
         WarehouseScripts.REFRESH_DIM_USER,
         WarehouseScripts.REFRESH_DIM_CATEGORY,
@@ -283,7 +274,7 @@ async def _refresh_warehouse(conn: Any) -> None:
         *WarehouseScripts.REFRESH_ADS_API,
         WarehouseScripts.REFRESH_ADS_SEARCH_KEYWORDS,
     ):
-        await asyncio.to_thread(conn.execute, sql)
+        await execute_clickhouse_sql(sql)
 
 
 async def _sync_warehouse(
@@ -296,20 +287,15 @@ async def _sync_warehouse(
             for source in WarehouseScripts.REMOTE_SOURCES
         )
     )
-    conn: Any = None
     try:
-        conn = await get_clickhouse_connection_pool().get_connection_async()
         if nestjs_client:
             await _sync_article_logs(nestjs_client)
             await _sync_api_logs(nestjs_client)
-        await _refresh_warehouse(conn)
+        await _refresh_warehouse()
         Logger.info(Messages.WAREHOUSE_REFRESH_SUCCESS)
     except Exception as error:
         Logger.error(Messages.WAREHOUSE_REFRESH_FAILED(error))
         Logger.debug(traceback.format_exc())
-    finally:
-        if conn:
-            await get_clickhouse_connection_pool().return_connection_async(conn)
 
 
 async def sync_warehouse_async(

@@ -1,15 +1,10 @@
-import asyncio
 from functools import lru_cache
 from typing import Any
 
 from sqlalchemy import desc, select
 
 from app.core.constants import Messages
-from app.core.db import (
-    ClickHouseAsyncSessionLocal,
-    ClickhouseConnectionPool,
-    get_clickhouse_connection_pool,
-)
+from app.core.db import ClickHouseAsyncSessionLocal
 from app.internal.models import (
     AdsCategoryStats,
     AdsMonthlyPublish,
@@ -21,12 +16,6 @@ from app.internal.models import (
 
 class ArticleMapper:
     """文章数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM。"""
-
-    def __init__(self) -> None:
-        # 这两个方法仍供现有缓存版本检查使用，该缓存依赖 clickhouse-driver 连接。
-        self._clickhouse_pool: ClickhouseConnectionPool = (
-            get_clickhouse_connection_pool()
-        )
 
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
         async with ClickHouseAsyncSessionLocal() as session:
@@ -116,16 +105,6 @@ class ArticleMapper:
             "total_collects": int(row.get("total_collects") or 0),
             "average_collects": float(row.get("average_collects") or 0),
         }
-
-    async def get_clickhouse_connection_async(self) -> Any:
-        """兼容旧缓存实现：获取 clickhouse-driver 连接。"""
-
-        return await asyncio.to_thread(self._clickhouse_pool.get_connection)
-
-    async def return_clickhouse_connection_async(self, conn: Any) -> None:
-        """兼容旧缓存实现：归还 clickhouse-driver 连接。"""
-
-        await asyncio.to_thread(self._clickhouse_pool.return_connection, conn)
 
 
 @lru_cache()

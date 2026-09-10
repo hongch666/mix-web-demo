@@ -25,7 +25,7 @@ class PublishTimeCache(VersionedCache):
     REDIS_VERSION_KEY: str = RedisKeys.PUBLISH_MONTHLY_COUNT_VERSION
     L1_CACHE_TTL: int = 300  # 5分钟
 
-    async def get(self, ch_conn: Any) -> Optional[list[dict[str, Any]]]:
+    async def get(self) -> Optional[list[dict[str, Any]]]:
         """
         获取缓存（二级缓存）
 
@@ -35,7 +35,7 @@ class PublishTimeCache(VersionedCache):
         3. 返回 None（需要查询 ClickHouse）
         """
         # 检查版本号是否变化
-        if await self.is_version_changed(ch_conn):
+        if await self.is_version_changed():
             Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
             await self.clear_all()
             return None
@@ -54,7 +54,7 @@ class PublishTimeCache(VersionedCache):
         Logger.info(Messages.CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE)
         return None
 
-    async def set(self, data: list[dict[str, Any]], ch_conn: Any) -> None:
+    async def set(self, data: list[dict[str, Any]]) -> None:
         """
         设置缓存（二级缓存）
 
@@ -68,7 +68,7 @@ class PublishTimeCache(VersionedCache):
         await self.update_redis_cache(data)
 
         # 更新版本号
-        await self.update_version(ch_conn)
+        await self.update_version()
 
 
 @lru_cache()

@@ -1,4 +1,3 @@
-import asyncio
 import json
 from datetime import date
 from functools import lru_cache
@@ -9,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts, WarehouseScripts
-from app.core.db import ClickhouseConnectionPool, get_clickhouse_connection_pool
+from app.core.db import execute_clickhouse_query
 
 WarehouseDataset = str
 
@@ -21,9 +20,6 @@ class ClickHouseWarehouseTools:
 
     def __init__(self) -> None:
         self.logger = Logger
-        self._clickhouse_pool: ClickhouseConnectionPool = (
-            get_clickhouse_connection_pool()
-        )
 
     async def list_datasets(self) -> str:
         """返回数仓工具支持的数据集和适用范围。"""
@@ -61,11 +57,8 @@ class ClickHouseWarehouseTools:
             "limit": safe_limit,
         }
         query: str = WarehouseScripts.WAREHOUSE_AGENT_QUERIES[dataset]
-        conn: Any = await self._clickhouse_pool.get_connection_async()
         try:
-            rows: list[tuple[Any, ...]] = await asyncio.to_thread(
-                conn.execute, query, params
-            )
+            rows: list[Any] = await execute_clickhouse_query(query, params)
             columns: list[str] = self._result_columns(dataset)
             return json.dumps(
                 {
@@ -81,8 +74,6 @@ class ClickHouseWarehouseTools:
         except Exception as error:
             self.logger.error(Messages.WAREHOUSE_QUERY_FAILED.format(error=error))
             return Messages.WAREHOUSE_QUERY_FAILED.format(error=error)
-        finally:
-            await self._clickhouse_pool.return_connection_async(conn)
 
     @staticmethod
     def _result_columns(dataset: str) -> list[str]:

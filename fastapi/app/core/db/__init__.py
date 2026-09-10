@@ -1,6 +1,5 @@
 from .clickhouse import (
     CLICKHOUSE_ASYNC_DATABASE_URL,
-    ClickhouseConnectionPool,
     ClickHouseAsyncSessionLocal,
     ClickHouseBase,
     ClickhouseAsyncSessionLocal,
@@ -8,7 +7,8 @@ from .clickhouse import (
     clickhouse_async_engine,
     create_warehouse_tables_async,
     dispose_clickhouse_async_engine,
-    get_clickhouse_connection_pool,
+    execute_clickhouse_query,
+    execute_clickhouse_sql,
     get_clickhouse_db,
 )
 from .mysql import (
@@ -38,11 +38,11 @@ __all__: list[str] = [
     "get_rabbitmq_client",
     "send_to_queue_async",
     "_rabbitmq_client",
-    "ClickhouseConnectionPool",
-    "get_clickhouse_connection_pool",
     "get_clickhouse_db",
     "clickhouse_async_engine",
     "create_warehouse_tables_async",
+    "execute_clickhouse_query",
+    "execute_clickhouse_sql",
     "ClickHouseBase",
     "ClickhouseBase",
     "ClickHouseAsyncSessionLocal",

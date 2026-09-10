@@ -8,15 +8,10 @@ class WarehouseScripts:
     ODS_ARTICLE_LOG_TABLE: Final[str] = "ods_article_log"
 
     ODS_API_LOG_TABLE: Final[str] = "ods_api_log"
-    ODS_API_LOG_COLUMNS: Final[tuple[str, ...]] = (
-        "event_id",
-        "user_id",
-        "username",
-        "api_description",
-        "api_path",
-        "api_method",
-        "response_time",
-        "created_at",
+
+    # 水位线旧行清理：ClickHouse 没有行级 UPSERT，写入新水位前先删除同表旧行
+    WATERMARK_DELETE_BY_TABLE: Final[str] = (
+        "ALTER TABLE warehouse.sync_watermark DELETE WHERE table_name = :table_name"
     )
 
     # Agent 数仓工具使用的固定 ADS 查询，避免模型直接拼接 ClickHouse SQL

@@ -91,16 +91,11 @@ class AnalyzeService:
             return await loader()
 
     async def _get_top10_cached(self) -> Optional[list[dict[str, Any]]]:
-        ch_conn: Optional[Any] = None
         try:
-            ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-            return await self._article_cache.get(ch_conn)
+            return await self._article_cache.get()
         except Exception as e:
             Logger.debug(Messages.CACHE_GET_FAILED_DETAIL("_get_top10_cached", e))
             return None
-        finally:
-            if ch_conn:
-                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def _get_wordcloud_cached(self) -> Optional[str]:
         try:
@@ -119,10 +114,8 @@ class AnalyzeService:
     async def _get_category_article_count_cached(
         self,
     ) -> Optional[list[dict[str, Any]]]:
-        ch_conn: Optional[Any] = None
         try:
-            ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-            return await self._category_cache.get(ch_conn)
+            return await self._category_cache.get()
         except Exception as e:
             Logger.debug(
                 Messages.CACHE_GET_FAILED_DETAIL(
@@ -130,23 +123,15 @@ class AnalyzeService:
                 )
             )
             return None
-        finally:
-            if ch_conn:
-                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def _get_monthly_publish_count_cached(self) -> Optional[list[dict[str, Any]]]:
-        ch_conn: Optional[Any] = None
         try:
-            ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-            return await self._publish_time_cache.get(ch_conn)
+            return await self._publish_time_cache.get()
         except Exception as e:
             Logger.debug(
                 Messages.CACHE_GET_FAILED_DETAIL("_get_monthly_publish_count_cached", e)
             )
             return None
-        finally:
-            if ch_conn:
-                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
 
     async def get_top10_articles_service_sf(
         self, db: AsyncSession
@@ -215,95 +200,89 @@ class AnalyzeService:
         3. 查询成功后更新缓存
         """
         articles: Optional[list[Any]] = None
-        ch_conn: Optional[Any] = None
         data_source: Optional[str] = None
         start: float = time.time()
         try:
-            try:
-                ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result: Optional[
-                    list[dict[str, Any]]
-                ] = await self._article_cache.get(ch_conn)
-                if cached_result:
-                    total_time: float = time.time() - start
-                    Logger.info(
-                        Messages.SERVICE_CACHE_HIT(
-                            "get_top10_articles_service", total_time
-                        )
-                    )
-                    return cached_result
-            except Exception as cache_e:
-                Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
-
-            Logger.info(Messages.TOP10_CACHE_MISS)
-
-            try:
-                articles = await self.articleMapper.get_top10_articles_clickhouse_mapper_async()
-                if articles and isinstance(articles[0], dict):
-                    data_source = "ClickHouse"
-                    Logger.info(Messages.TOP10_CLICKHOUSE_GET)
-            except Exception as ch_e:
-                Logger.warning(
-                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
-                        "get_top10_articles_service", ch_e
+            cached_result: Optional[
+                list[dict[str, Any]]
+            ] = await self._article_cache.get()
+            if cached_result:
+                total_time: float = time.time() - start
+                Logger.info(
+                    Messages.SERVICE_CACHE_HIT(
+                        "get_top10_articles_service", total_time
                     )
                 )
+                return cached_result
+        except Exception as cache_e:
+            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
-            if not articles or len(articles) == 0:
-                # 通过SpringClient远程查询DB作为降级
-                articles = await self._spring_client.get_top10_articles()
-                data_source = "DB"
-                Logger.info(Messages.TOP10_DB_SOURCE)
+        Logger.info(Messages.TOP10_CACHE_MISS)
 
+        try:
+            articles = await self.articleMapper.get_top10_articles_clickhouse_mapper_async()
             if articles and isinstance(articles[0], dict):
-                user_ids: list[int] = [
-                    article.get("user_id")
-                    for article in articles
-                    if article.get("user_id")
-                ]
-                if user_ids:
-                    users: list[
-                        dict[str, Any]
-                    ] = await self._spring_client.get_users_by_ids(user_ids)
-                    user_id_to_name: dict[int, str] = {
-                        user["id"]: user["name"] for user in users
-                    }
-                    for article in articles:
-                        article["username"] = user_id_to_name.get(
-                            article.get("user_id")
-                        )
+                data_source = "ClickHouse"
+                Logger.info(Messages.TOP10_CLICKHOUSE_GET)
+        except Exception as ch_e:
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_top10_articles_service", ch_e
+                )
+            )
 
+        if not articles or len(articles) == 0:
+            # 通过SpringClient远程查询DB作为降级
+            articles = await self._spring_client.get_top10_articles()
+            data_source = "DB"
+            Logger.info(Messages.TOP10_DB_SOURCE)
+
+        if articles and isinstance(articles[0], dict):
+            user_ids: list[int] = [
+                article.get("user_id")
+                for article in articles
+                if article.get("user_id")
+            ]
+            if user_ids:
+                users: list[
+                    dict[str, Any]
+                ] = await self._spring_client.get_users_by_ids(user_ids)
+                user_id_to_name: dict[int, str] = {
+                    user["id"]: user["name"] for user in users
+                }
                 for article in articles:
-                    if article.get("create_at") and hasattr(
-                        article["create_at"], "isoformat"
-                    ):
-                        article["create_at"] = article["create_at"].isoformat()
-                    if article.get("update_at") and hasattr(
-                        article["update_at"], "isoformat"
-                    ):
-                        article["update_at"] = article["update_at"].isoformat()
-
-                result: list[dict[str, Any]] = articles
-            else:
-                # 远程调用始终返回 dict，此处兜底处理
-                result = articles if articles else []
-
-            if ch_conn and result:
-                try:
-                    await self._article_cache.set(result, ch_conn)
-                    total_time: float = time.time() - start
-                    Logger.info(
-                        Messages.SERVICE_CACHE_UPDATED(
-                            "get_top10_articles_service", data_source, total_time
-                        )
+                    article["username"] = user_id_to_name.get(
+                        article.get("user_id")
                     )
-                except Exception as cache_e:
-                    Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
-            return result
-        finally:
-            if ch_conn:
-                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
+            for article in articles:
+                if article.get("create_at") and hasattr(
+                    article["create_at"], "isoformat"
+                ):
+                    article["create_at"] = article["create_at"].isoformat()
+                if article.get("update_at") and hasattr(
+                    article["update_at"], "isoformat"
+                ):
+                    article["update_at"] = article["update_at"].isoformat()
+
+            result: list[dict[str, Any]] = articles
+        else:
+            # 远程调用始终返回 dict，此处兜底处理
+            result = articles if articles else []
+
+        if result:
+            try:
+                await self._article_cache.set(result)
+                total_time: float = time.time() - start
+                Logger.info(
+                    Messages.SERVICE_CACHE_UPDATED(
+                        "get_top10_articles_service", data_source, total_time
+                    )
+                )
+            except Exception as cache_e:
+                Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+
+        return result
 
     async def get_keywords_dic(self) -> dict[str, int]:
         """优先从数仓 ADS 层获取搜索关键词，失败或无数据时降级 NestJS。"""
@@ -607,123 +586,117 @@ class AnalyzeService:
 
         返回: 所有大分类及其文章总数（从多到少排序）
         """
-        ch_conn: Optional[Any] = None
         data_source: Optional[str] = None
         start: float = time.time()
+        # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            # ========== 步骤1: 尝试从缓存获取 ==========
-            try:
-                ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result: Optional[
-                    list[dict[str, Any]]
-                ] = await self._category_cache.get(ch_conn)
-                if cached_result:
-                    total_time: float = time.time() - start
-                    Logger.info(
-                        Messages.SERVICE_CACHE_HIT(
-                            "get_category_article_count_service", total_time
-                        )
-                    )
-                    return cached_result
-            except Exception as cache_e:
-                Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
-
-            # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            Logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
-            local_category_data: Optional[list[dict[str, Any]]] = None
-            local_data_source: str = "DB"
-
-            try:
-                local_category_data = await self.articleMapper.get_category_article_count_clickhouse_mapper_async()
-                local_data_source = "ClickHouse"
-                Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
-            except Exception as ch_e:
-                Logger.warning(
-                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
-                        "get_category_article_count_service", ch_e
+            cached_result: Optional[
+                list[dict[str, Any]]
+            ] = await self._category_cache.get()
+            if cached_result:
+                total_time: float = time.time() - start
+                Logger.info(
+                    Messages.SERVICE_CACHE_HIT(
+                        "get_category_article_count_service", total_time
                     )
                 )
-                local_data_source = "DB"
+                return cached_result
+        except Exception as cache_e:
+            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
-            if not local_category_data:
-                # 通过SpringClient远程查询DB作为降级
-                local_category_data = (
-                    await self._spring_client.get_category_article_count()
+        # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
+        Logger.info(Messages.CATEGORY_STATISTICS_CACHE_FETCH_FAILED)
+        local_category_data: Optional[list[dict[str, Any]]] = None
+        local_data_source: str = "DB"
+
+        try:
+            local_category_data = await self.articleMapper.get_category_article_count_clickhouse_mapper_async()
+            local_data_source = "ClickHouse"
+            Logger.info(Messages.CATEGORY_STATISTICS_CLICKHOUSE_GET)
+        except Exception as ch_e:
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_category_article_count_service", ch_e
                 )
-                local_data_source = "DB"
-                Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
-
-            if (
-                local_data_source == "ClickHouse"
-                and local_category_data
-                and "category_id" in local_category_data[0]
-            ):
-                result = [
-                    {
-                        "category_id": item["category_id"],
-                        "category_name": item.get("category_name", ""),
-                        "article_count": item.get("article_count", 0),
-                    }
-                    for item in local_category_data
-                ]
-                result.sort(key=lambda item: item["article_count"], reverse=True)
-                await self._category_cache.set(result, ch_conn)
-                return result
-
-            # 使用SpringClient远程获取分类信息（两个独立请求并行）
-            all_categories, subcategories = await asyncio.gather(
-                self._spring_client.get_all_categories(),
-                self._spring_client.get_subcategories_with_parent(),
             )
-            sub_cat_map: dict[int, dict[str, Any]] = {
-                sc["id"]: sc for sc in subcategories
+            local_data_source = "DB"
+
+        if not local_category_data:
+            # 通过SpringClient远程查询DB作为降级
+            local_category_data = (
+                await self._spring_client.get_category_article_count()
+            )
+            local_data_source = "DB"
+            Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
+
+        if (
+            local_data_source == "ClickHouse"
+            and local_category_data
+            and "category_id" in local_category_data[0]
+        ):
+            result = [
+                {
+                    "category_id": item["category_id"],
+                    "category_name": item.get("category_name", ""),
+                    "article_count": item.get("article_count", 0),
+                }
+                for item in local_category_data
+            ]
+            result.sort(key=lambda item: item["article_count"], reverse=True)
+            await self._category_cache.set(result)
+            return result
+
+        # 使用SpringClient远程获取分类信息（两个独立请求并行）
+        all_categories, subcategories = await asyncio.gather(
+            self._spring_client.get_all_categories(),
+            self._spring_client.get_subcategories_with_parent(),
+        )
+        sub_cat_map: dict[int, dict[str, Any]] = {
+            sc["id"]: sc for sc in subcategories
+        }
+
+        parent_category_count: dict[int, dict[str, Any]] = {}
+        for category in all_categories:
+            parent_category_count[category["id"]] = {
+                "category_id": category["id"],
+                "category_name": category["name"],
+                "article_count": 0,
             }
 
-            parent_category_count: dict[int, dict[str, Any]] = {}
-            for category in all_categories:
-                parent_category_count[category["id"]] = {
-                    "category_id": category["id"],
-                    "category_name": category["name"],
-                    "article_count": 0,
-                }
+        for item in local_category_data:
+            sub_cat_id = item["sub_category_id"]
+            sub_cat_info = sub_cat_map.get(sub_cat_id, {})
 
-            for item in local_category_data:
-                sub_cat_id = item["sub_category_id"]
-                sub_cat_info = sub_cat_map.get(sub_cat_id, {})
+            parent_id = sub_cat_info.get("category_id")
+            if parent_id and parent_id in parent_category_count:
+                parent_category_count[parent_id]["article_count"] += item["count"]
 
-                parent_id = sub_cat_info.get("category_id")
-                if parent_id and parent_id in parent_category_count:
-                    parent_category_count[parent_id]["article_count"] += item["count"]
+        result: list[dict[str, Any]] = list(parent_category_count.values())
+        result.sort(key=lambda x: x["article_count"], reverse=True)
 
-            result: list[dict[str, Any]] = list(parent_category_count.values())
-            result.sort(key=lambda x: x["article_count"], reverse=True)
+        non_zero_count: int = len([c for c in result if c["article_count"] > 0])
+        Logger.info(
+            Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count)
+        )
 
-            non_zero_count: int = len([c for c in result if c["article_count"] > 0])
-            Logger.info(
-                Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count)
-            )
+        data_source = local_data_source
 
-            data_source: str = local_data_source
-
-            # ========== 步骤7: 更新缓存 ==========
-            if ch_conn and result:
-                try:
-                    await self._category_cache.set(result, ch_conn)
-                    total_time = time.time() - start
-                    Logger.info(
-                        Messages.SERVICE_CACHE_UPDATED(
-                            "get_category_article_count_service",
-                            data_source,
-                            total_time,
-                        )
+        # ========== 步骤7: 更新缓存 ==========
+        if result:
+            try:
+                await self._category_cache.set(result)
+                total_time = time.time() - start
+                Logger.info(
+                    Messages.SERVICE_CACHE_UPDATED(
+                        "get_category_article_count_service",
+                        data_source,
+                        total_time,
                     )
-                except Exception as cache_e:
-                    Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+                )
+            except Exception as cache_e:
+                Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
-            return result
-        finally:
-            if ch_conn:
-                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
+        return result
 
     async def get_monthly_publish_count_service(
         self, db: AsyncSession
@@ -737,90 +710,84 @@ class AnalyzeService:
         3. 按月份排序
         4. 使用缓存优化性能
         """
-        ch_conn: Optional[Any] = None
         data_source: Optional[str] = None
         start: float = time.time()
+        # ========== 步骤1: 尝试从缓存获取 ==========
         try:
-            # ========== 步骤1: 尝试从缓存获取 ==========
-            try:
-                ch_conn = await self.articleMapper.get_clickhouse_connection_async()
-                cached_result: Optional[
-                    list[dict[str, Any]]
-                ] = await self._publish_time_cache.get(ch_conn)
-                if cached_result:
-                    total_time: float = time.time() - start
-                    Logger.info(
-                        Messages.SERVICE_CACHE_HIT(
-                            "get_monthly_publish_count_service", total_time
-                        )
-                    )
-                    return cached_result
-            except Exception as cache_e:
-                Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
-
-            # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
-            Logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
-            local_publish_data: Optional[list[dict[str, Any]]] = None
-            local_data_source: str = "DB"
-
-            try:
-                local_publish_data = await self.articleMapper.get_monthly_publish_count_clickhouse_mapper_async()
-                local_data_source = "ClickHouse"
-                Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
-            except Exception as ch_e:
-                Logger.warning(
-                    Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
-                        "get_monthly_publish_count_service", ch_e
+            cached_result: Optional[
+                list[dict[str, Any]]
+            ] = await self._publish_time_cache.get()
+            if cached_result:
+                total_time: float = time.time() - start
+                Logger.info(
+                    Messages.SERVICE_CACHE_HIT(
+                        "get_monthly_publish_count_service", total_time
                     )
                 )
+                return cached_result
+        except Exception as cache_e:
+            Logger.debug(Messages.CACHE_FETCH_FAILED_WILL_QUERY_SOURCE(cache_e))
 
-            if not local_publish_data:
-                # 通过SpringClient远程查询DB作为降级
-                local_publish_data = (
-                    await self._spring_client.get_monthly_publish_count()
-                )
-                local_data_source = "DB"
-                Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
+        # ========== 步骤2: 缓存未命中，按优先级查询数据源 ==========
+        Logger.info(Messages.MONTHLY_STATISTICS_CACHE_FETCH_FAILED)
+        local_publish_data: Optional[list[dict[str, Any]]] = None
+        local_data_source: str = "DB"
 
-            now: datetime = datetime.now()
-            expected_months: list[str] = []
-            for i in range(5, -1, -1):
-                month_date = now - relativedelta(months=i)
-                expected_months.append(month_date.strftime("%Y-%m"))
-
-            data_dict: dict[str, int] = {
-                item["year_month"]: item["count"] for item in local_publish_data
-            }
-
-            result: list[dict[str, Any]] = []
-            for month in expected_months:
-                result.append({"year_month": month, "count": data_dict.get(month, 0)})
-
-            result.sort(key=lambda x: x["year_month"], reverse=False)
-            Logger.info(
-                Messages.MONTHLY_PUBLISH_COUNT_RESULT(
-                    len(result), len([r for r in result if r["count"] > 0])
+        try:
+            local_publish_data = await self.articleMapper.get_monthly_publish_count_clickhouse_mapper_async()
+            local_data_source = "ClickHouse"
+            Logger.info(Messages.MONTHLY_STATISTICS_CLICKHOUSE_GET)
+        except Exception as ch_e:
+            Logger.warning(
+                Messages.SERVICE_CLICKHOUSE_DEGRADE_TO_DB(
+                    "get_monthly_publish_count_service", ch_e
                 )
             )
-            data_source: str = local_data_source
 
-            # ========== 步骤5: 更新缓存 ==========
-            if ch_conn and result:
-                try:
-                    await self._publish_time_cache.set(result, ch_conn)
-                    total_time: float = time.time() - start
-                    Logger.info(
-                        Messages.SERVICE_CACHE_UPDATED(
-                            "get_monthly_publish_count_service", data_source, total_time
-                        )
+        if not local_publish_data:
+            # 通过SpringClient远程查询DB作为降级
+            local_publish_data = (
+                await self._spring_client.get_monthly_publish_count()
+            )
+            local_data_source = "DB"
+            Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
+
+        now: datetime = datetime.now()
+        expected_months: list[str] = []
+        for i in range(5, -1, -1):
+            month_date = now - relativedelta(months=i)
+            expected_months.append(month_date.strftime("%Y-%m"))
+
+        data_dict: dict[str, int] = {
+            item["year_month"]: item["count"] for item in local_publish_data
+        }
+
+        result: list[dict[str, Any]] = []
+        for month in expected_months:
+            result.append({"year_month": month, "count": data_dict.get(month, 0)})
+
+        result.sort(key=lambda x: x["year_month"], reverse=False)
+        Logger.info(
+            Messages.MONTHLY_PUBLISH_COUNT_RESULT(
+                len(result), len([r for r in result if r["count"] > 0])
+            )
+        )
+        data_source = local_data_source
+
+        # ========== 步骤5: 更新缓存 ==========
+        if result:
+            try:
+                await self._publish_time_cache.set(result)
+                total_time: float = time.time() - start
+                Logger.info(
+                    Messages.SERVICE_CACHE_UPDATED(
+                        "get_monthly_publish_count_service", data_source, total_time
                     )
-                except Exception as cache_e:
-                    Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
+                )
+            except Exception as cache_e:
+                Logger.warning(Messages.CACHE_UPDATE_FAILED_DETAIL(cache_e))
 
-            return result
-        finally:
-            if ch_conn:
-                await self.articleMapper.return_clickhouse_connection_async(ch_conn)
+        return result
 
 
 @lru_cache()

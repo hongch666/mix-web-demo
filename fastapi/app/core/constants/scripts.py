@@ -1,6 +1,3 @@
-from typing import Final
-
-
 class Scripts:
     """
     脚本类 — SQL 语句、Cypher 语句、安全规则（SQL / 数据脱敏）
@@ -13,21 +10,6 @@ class Scripts:
         return f"{base_sql} WHERE {timestamp_column} >= '{sync_time_text}' ORDER BY {timestamp_column} ASC"
 
     # ===== ClickHouse SQL 模板 =====
-    @staticmethod
-    def TOP10_ARTICLES_CLICKHOUSE_QUERY(columns: str, table: str) -> str:
-        return f"SELECT {columns} FROM {table} ORDER BY views DESC LIMIT 10"
-
-    CATEGORY_ARTICLE_COUNT_CLICKHOUSE_QUERY: Final[str] = (
-        "SELECT parent_category_id, category_name, article_count "
-        "FROM warehouse.ads_category_stats FINAL ORDER BY article_count DESC"
-    )
-
-    MONTHLY_PUBLISH_COUNT_CLICKHOUSE_QUERY: Final[str] = (
-        "SELECT year_month, article_count FROM warehouse.ads_monthly_publish FINAL "
-        "WHERE year_month >= formatDateTime(subtractMonths(now(), 24), '%Y-%m') "
-        "ORDER BY year_month DESC"
-    )
-
     @staticmethod
     def CACHE_VERSION_CLICKHOUSE_QUERY(table: str) -> str:
         """缓存版本号统计查询：基于表行数、最新更新时间与最大 ID 生成版本信息"""

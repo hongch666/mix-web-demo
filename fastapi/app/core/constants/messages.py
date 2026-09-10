@@ -323,84 +323,8 @@ class Messages:
         return f"未找到 application.yaml，请确认配置文件存在。已搜索路径:\n{searched_paths}"
 
     @staticmethod
-    def CLICKHOUSE_POOL_REUSED(remaining: int) -> str:
-        return f"[ClickHouse连接池] 从池中获取复用连接，池内剩余: {remaining}个"
-
-    @staticmethod
-    def CLICKHOUSE_POOL_EXHAUSTED(active: int, maximum: int) -> str:
-        return f"[ClickHouse连接池] 连接池已耗尽，等待可用连接 (活跃连接: {active}/{maximum})"
-
-    @staticmethod
-    def CLICKHOUSE_POOL_REUSED_AFTER_WAIT(remaining: int) -> str:
-        return f"[ClickHouse连接池] 等待后获取复用连接，池内剩余: {remaining}个"
-
-    @staticmethod
-    def CLICKHOUSE_CONNECTION_CREATING(index: int) -> str:
-        return f"[ClickHouse连接池] 创建新连接 (第{index}个)"
-
-    @staticmethod
-    def CLICKHOUSE_CONNECTION_CONFIG(
-        host: str, port: int, database: str, user: str
-    ) -> str:
-        return f"[ClickHouse连接池] 连接配置 - Host: {host}, Port: {port}, DB: {database}, User: {user}"
-
-    @staticmethod
-    def CLICKHOUSE_CONNECTION_CREATED(duration: float) -> str:
-        return f"[ClickHouse连接池] 连接建立耗时 {duration:.3f}s"
-
-    @staticmethod
-    def CLICKHOUSE_CONNECTION_CREATE_FAILED(error: Exception) -> str:
-        return f"[ClickHouse连接池] 创建连接失败: {error}"
-
-    @staticmethod
-    def CLICKHOUSE_VALUE_CONVERSION_FAILED(col: str, val: Any, error: Exception) -> str:
-        return f"值转换失败 {col}={val}: {error}"
-
-    @staticmethod
-    def CLICKHOUSE_ROW_CONVERSION_FAILED(error: Exception) -> str:
-        return f"行数据转换失败: {error}"
-
-    @staticmethod
-    def CLICKHOUSE_QUERY_TIMING(
-        pool_time: float, query_time: float, total_time: float
-    ) -> str:
-        return f"获取连接耗时 {pool_time:.3f}s, 查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s"
-
-    @staticmethod
-    def CLICKHOUSE_ATTR_ERROR(error: Exception) -> str:
-        return f"ClickHouse 查询失败，属性错误: {error}"
-
-    @staticmethod
-    def CLICKHOUSE_QUERY_ROW_CONVERSION_FAILED(error: Exception) -> str:
-        return f"行转换失败: {error}，跳过此行"
-
-    @staticmethod
-    def CLICKHOUSE_CATEGORY_QUERY_RESULT(
-        query_time: float, total_time: float, result_count: int
-    ) -> str:
-        return f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取 {result_count} 个分类"
-
-    @staticmethod
-    def CLICKHOUSE_MONTHLY_QUERY_RESULT(
-        query_time: float, total_time: float, result_count: int
-    ) -> str:
-        return f"查询耗时 {query_time:.3f}s, 总耗时 {total_time:.3f}s, 获取过去24个月中 {result_count} 个有数据的月份"
-
-    @staticmethod
     def CLICKHOUSE_DEGRADE_TO_DB(error_type: str, error: Exception) -> str:
         return f"ClickHouse 查询失败，降级为 DB: {error_type}: {error}"
-
-    @staticmethod
-    def CLICKHOUSE_DETAIL_ERROR(traceback_text: str) -> str:
-        return f"详细错误: {traceback_text}"
-
-    @staticmethod
-    def CLICKHOUSE_DETAIL_EXCEPTION(traceback_text: str) -> str:
-        return f"详细异常: {traceback_text}"
-
-    @staticmethod
-    def CLICKHOUSE_CONNECTION_RETURNED(count: int) -> str:
-        return f"[ClickHouse连接池] 连接已归还到池，池内现有: {count}个"
 
     @staticmethod
     def DATABASE_TABLE_CREATION_FAILED(error: Exception) -> str:
@@ -1525,10 +1449,6 @@ class Messages:
     def WAREHOUSE_API_LOG_SYNC_SUCCESS(table_name: str, count: int) -> str:
         return f"ClickHouse API日志 ODS 同步完成: {table_name}, rows={count}"
 
-    @staticmethod
-    def WAREHOUSE_SCHEMA_CREATED(tables: str) -> str:
-        return f"ClickHouse 数仓缺失表已自动创建: {tables}"
-
     WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
 
     @staticmethod
@@ -1791,12 +1711,6 @@ class Messages:
     )
 
     CLICKHOUSE_CACHE_MISS_QUERY_MESSAGE: str = "ClickHouse缓存未命中，将查询数据源"
-
-    CLICKHOUSE_CONNECTION_POOL_CLOSED_MESSAGE: str = "[ClickHouse连接池] 所有连接已关闭"
-
-    CLICKHOUSE_CONNECTION_POOL_FULL_MESSAGE: str = (
-        "[ClickHouse连接池] 连接池已满，连接已关闭"
-    )
 
     COLLECTION_NAME_VALIDATION_ERROR: str = "错误: 必须提供 collection_name 参数"
 
@@ -2490,8 +2404,6 @@ class Messages:
     TOP10_CACHE_MISS: str = "get_top10_articles_service: [缓存未命中] 开始查询数据源"
 
     TOP10_CLICKHOUSE_GET: str = "从ClickHouse获取Top10文章"
-
-    TOP10_CLICKHOUSE_QUERY: str = "从ClickHouse查询Top10文章数据"
 
     TOP10_DB_SOURCE: str = "get_top10_articles_service: 使用 DB 数据源"
 

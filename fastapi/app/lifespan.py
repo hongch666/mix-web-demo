@@ -18,7 +18,6 @@ from app.core.db import (
     create_tables_async,
     create_warehouse_tables_async,
     dispose_clickhouse_async_engine,
-    get_clickhouse_connection_pool,
     get_neo4j_client,
     get_rabbitmq_client,
 )
@@ -94,7 +93,6 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
         Logger.info(Messages.SCHEDULER_STOPPED)
 
     await get_neo4j_client().close()
-    await get_clickhouse_connection_pool().close_all_async()
     await dispose_clickhouse_async_engine()
     await async_engine.dispose()
 

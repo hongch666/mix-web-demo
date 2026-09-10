@@ -1,10 +1,10 @@
-import asyncio
 import hashlib
-from typing import Any, Optional
+from typing import Optional
 
 from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Scripts
+from app.core.db import execute_clickhouse_query
 
 from .baseCache import BaseCache
 
@@ -24,16 +24,14 @@ class VersionedCache(BaseCache):
         # 版本号
         self._cache_version: Optional[str] = None
 
-    async def get_cache_version(self, ch_conn: Any) -> Optional[str]:
+    async def get_cache_version(self) -> Optional[str]:
         """基于 ClickHouse 表内容生成稳定版本号"""
         try:
-            if ch_conn is None:
-                return None
             ch_table = load_config("database")["clickhouse"]["table"]
             ch_db = load_config("database")["clickhouse"]["database"]
             # SQL 模板统一收敛在 core/constants/scripts.py
             query = Scripts.CACHE_VERSION_CLICKHOUSE_QUERY(f"{ch_db}.{ch_table}")
-            result = await asyncio.to_thread(ch_conn.execute, query)
+            result = await execute_clickhouse_query(query)
             if not result:
                 return None
 
@@ -49,10 +47,10 @@ class VersionedCache(BaseCache):
         self._cache_version = version
         await self._redis.set(self.REDIS_VERSION_KEY, version, ex=self._redis_ttl)
 
-    async def is_version_changed(self, ch_conn: Any) -> bool:
+    async def is_version_changed(self) -> bool:
         """检查版本号是否变化"""
         try:
-            current_version = await self.get_cache_version(ch_conn)
+            current_version = await self.get_cache_version()
             if not current_version:
                 Logger.debug(Messages.SKIP_VERSION_CHECK)
                 return False
@@ -96,10 +94,10 @@ class VersionedCache(BaseCache):
             Logger.warning(Messages.CACHE_VERSION_CHECK_FAILED(e))
             return False
 
-    async def update_version(self, ch_conn: Any) -> None:
+    async def update_version(self) -> None:
         """更新版本号"""
         try:
-            version = await self.get_cache_version(ch_conn)
+            version = await self.get_cache_version()
             if version:
                 await self._persist_version(version)
                 Logger.info(Messages.CACHE_VERSION_UPDATED(version))
