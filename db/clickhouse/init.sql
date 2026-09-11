@@ -1,5 +1,5 @@
 -- ClickHouse 数仓初始化脚本
--- MySQL 是业务主库，ClickHouse 只保存分析所需字段和汇总结果。
+-- MySQL 是业务主库，ClickHouse 只保存分析所需字段和汇总结果
 
 CREATE DATABASE IF NOT EXISTS warehouse;
 
