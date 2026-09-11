@@ -5,15 +5,15 @@
 #   ./mix loki start --dist   采集 dist/logs（./mix dist start）
 #   docker compose -f loki-config/docker-compose.yml -p loki up -d
 #
-# 根目录 docker-compose.yml 中内联了同一套观测组件，供 ./mix compose up 使用。
+# 根目录 docker-compose.yml 中内联了同一套观测组件，供 ./mix compose up 使用
 # 两者容器名相同但属于不同 compose 项目，交叉启动时由 scripts/loki-control.sh
-# 自动清理对方的同名容器；修改镜像版本或挂载路径时两处需要同步。
+# 自动清理对方的同名容器；修改镜像版本或挂载路径时两处需要同步
 #
 # 两套日志目录各自独立、互不导入，实际采集哪一套由 Promtail 配置决定
-# （LOKI_PROMTAIL_CONFIG，见 promtail 服务的 volumes 说明）。
+# （LOKI_PROMTAIL_CONFIG，见 promtail 服务的 volumes 说明）
 #
 # 观测栈内部通过服务名互相访问（Grafana -> http://loki:3100），
-# 因此不强制加入 hcsy 网络，独立启动时不依赖任何外部网络。
+# 因此不强制加入 hcsy 网络，独立启动时不依赖任何外部网络
 services:
   loki-data-init:
     image: grafana/loki:3.0.0

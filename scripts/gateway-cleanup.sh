@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 清理网关容器 mix-gateway。
+# 清理网关容器 mix-gateway
 # dev 模式使用 gateway/docker-compose.yml（项目名 gateway），根 compose 使用
 # docker-compose.yml（项目名 mix-web-demo），两者的网关服务都硬编码了
-# container_name: mix-gateway。由于不属于同一个 compose 项目，任何一方残留
-# 都会导致另一方启动时报 "container name already in use"。
-# 在启动网关前、或 dev 停止后调用本脚本即可避免该冲突。
+# container_name: mix-gateway，由于不属于同一个 compose 项目，任何一方残留
+# 都会导致另一方启动时报 "container name already in use"
+# 在启动网关前、或 dev 停止后调用本脚本即可避免该冲突
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GATEWAY_CONTAINER="mix-gateway"

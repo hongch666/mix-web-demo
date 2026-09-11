@@ -24,7 +24,7 @@ if ! docker network inspect hcsy >/dev/null 2>&1; then
     docker network create hcsy
 fi
 
-# 预创建日志目录。网关日志可能由 APISIX 用户创建，不能递归修改已有文件。
+# 预创建日志目录，网关日志可能由 APISIX 用户创建，不能递归修改已有文件
 for d in gateway spring gozero nestjs fastapi; do
     mkdir -p "$WORKDIR/logs/$d"
     chmod 777 "$WORKDIR/logs/$d" 2>/dev/null || \
@@ -50,22 +50,22 @@ if [ ${#missing_images[@]} -gt 0 ]; then
     echo "缺少应用镜像，使用 mix Docker 脚本构建: ${missing_images[*]}"
     bash "$WORKDIR/mix" docker build "${missing_images[@]}"
 else
-    echo "应用镜像已存在，跳过镜像构建。"
+    echo "应用镜像已存在，跳过镜像构建"
 fi
 
-# 清理 dev 模式残留的网关容器。根 compose 与 gateway/docker-compose.yml 共用
+# 清理 dev 模式残留的网关容器，根 compose 与 gateway/docker-compose.yml 共用
 # container_name: mix-gateway，不清理会因容器名冲突导致本次启动失败
 bash "$WORKDIR/scripts/gateway-cleanup.sh"
 
-# 清理 ./mix loki start 独立启动的观测栈容器。观测栈（Loki/Promtail/Grafana）在本编排中
+# 清理 ./mix loki start 独立启动的观测栈容器，观测栈（Loki/Promtail/Grafana）在本编排中
 # 内联定义，loki-config/docker-compose.yml 是其独立启动版本，两者容器名相同但属于不同
 # compose 项目，独立栈残留会因容器名冲突导致本次启动失败
 bash "$WORKDIR/scripts/loki-control.sh" cleanup || true
 
-echo "启动应用与可观测性服务，不含第三方依赖组件。"
+echo "启动应用与可观测性服务，不含第三方依赖组件"
 
-echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖。"
+echo "请先通过 ./scripts/docker-services.sh 启动 MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse 等依赖"
 
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d
 
-echo "应用服务已启动。使用 $COMPOSE_CMD -f $COMPOSE_FILE ps 查看状态。"
+echo "应用服务已启动，使用 $COMPOSE_CMD -f $COMPOSE_FILE ps 查看状态"

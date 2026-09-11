@@ -24,4 +24,4 @@ $COMPOSE_CMD -f "$COMPOSE_FILE" down -v
 # 清理 dev 模式残留的网关容器，避免下次启动报容器名冲突
 bash "$WORKDIR/scripts/gateway-cleanup.sh"
 
-echo "服务已停止并清理卷。"
+echo "服务已停止并清理卷"

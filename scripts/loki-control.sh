@@ -62,7 +62,7 @@ compose() {
     $COMPOSE_CMD -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT" "$@"
 }
 
-# 准备日志目录。两套日志目录（logs/ 与 dist/logs/）都可能被挂载，
+# 准备日志目录，两套日志目录（logs/ 与 dist/logs/）都可能被挂载，
 # 目录不存在时容器挂载会产生 root 属主的空目录，这里提前创建以保证权限一致
 prepare_dirs() {
     log_info "准备日志目录..."
@@ -71,9 +71,9 @@ prepare_dirs() {
     done
 }
 
-# 清理其他编排栈占用的同名容器。
+# 清理其他编排栈占用的同名容器
 # 根目录 docker-compose.yml 内联了同一套观测组件，容器名与本栈相同（loki/promtail/grafana），
-# 但属于不同 compose 项目，任何一方残留都会导致另一方启动时报名称冲突。
+# 但属于不同 compose 项目，任何一方残留都会导致另一方启动时报名称冲突
 # 参数 keep_project: 需要保留容器的编排项目名，默认为本栈
 cleanup_conflicts() {
     local keep_project=${1:-$COMPOSE_PROJECT}
@@ -92,9 +92,9 @@ cleanup_conflicts() {
     done
 }
 
-# 移除本栈（./mix loki start 独立启动）占用的同名容器。
+# 移除本栈（./mix loki start 独立启动）占用的同名容器
 # 供根目录 docker-compose.yml 启动前调用：此时保留容器的是根编排项目，
-# 本栈容器必须让位。只清理属于本栈项目的容器，不会误删根编排自身的容器
+# 本栈容器必须让位，只清理属于本栈项目的容器，不会误删根编排自身的容器
 remove_standalone_containers() {
     for name in "${NAMED_CONTAINERS[@]}"; do
         if ! docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$name"; then
@@ -171,7 +171,7 @@ stop_all() {
     log_info "停止日志观测组件（保留数据卷）..."
     compose down --remove-orphans || log_warn "停止过程中出现异常，请检查容器状态"
 
-    # down 只作用于本栈项目名下的容器。若同名容器仍然存在，说明它们由其他编排栈
+    # down 只作用于本栈项目名下的容器，若同名容器仍然存在，说明它们由其他编排栈
     # （根目录 docker-compose.yml 的 ./mix compose up）创建，需要由对应入口停止
     local remaining=()
     for name in "${NAMED_CONTAINERS[@]}"; do
@@ -257,9 +257,9 @@ show_help() {
     local -> promtail.yaml      采集 /app/logs      （根目录 logs/）
     dist  -> promtail-dist.yaml 采集 /app/dist-logs （dist/logs）
   切换来源会重建 promtail 容器；进入 Loki 的数据带 mode=local 或 mode=dist 标签，
-  可用 {service="spring", mode="dist"} 精确查询。
-  根编排（./mix compose up）固定使用 local 配置。
-  本栈与根编排的容器同名但属于不同 compose 项目，交叉启动时会自动清理对方容器。
+  可用 {service="spring", mode="dist"} 精确查询
+  根编排（./mix compose up）固定使用 local 配置
+  本栈与根编排的容器同名但属于不同 compose 项目，交叉启动时会自动清理对方容器
 
 示例:
   ./mix loki start              # 启动观测栈并采集根目录 logs/
