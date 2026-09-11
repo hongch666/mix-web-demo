@@ -1,4 +1,4 @@
-from .aiHistory import AiHistory
+from .mysql.aiHistory import AiHistory
 from .graph.article import Article
 from .graph.belongsToRel import BelongsToRel
 from .graph.category import Category
