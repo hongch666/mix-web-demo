@@ -41,8 +41,8 @@ export class ApiLogConsumerService implements OnApplicationShutdown {
   }
 
   /**
-   * 定时 flush 攒批缓冲：按 flushIntervalMs 周期触发，保证低并发下数据也能及时落库。
-   * buffer 为空时 flush() 会快速返回，无副作用。
+   * 定时 flush 攒批缓冲：按 flushIntervalMs 周期触发，保证低并发下数据也能及时落库
+   * buffer 为空时 flush() 会快速返回，无副作用
    */
   @Interval(Defaults.LOG_BATCH_FLUSH_INTERVAL_MS)
   async flushPendingLogs(): Promise<void> {
