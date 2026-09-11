@@ -1,0 +1,20 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+scrape_configs:
+  # 采集 dist/logs/<service>/ 的日志：./mix dist start 的宿主机进程模式写入
+  # 由 ./mix loki start --dist 选用，与 promtail.yaml 采集的日志互不导入
+  - job_name: dist_service_logs
+    static_configs:
+      - targets: [localhost]
+        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/spring/app_*.log, service: spring}
+      - targets: [localhost]
+        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/gozero/app_*.log, service: gozero}
+      - targets: [localhost]
+        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/nestjs/app_*.log, service: nestjs}
+      - targets: [localhost]
+        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/fastapi/app_*.log, service: fastapi}
+      - targets: [localhost]
+        labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/gateway/*.log, service: gateway}

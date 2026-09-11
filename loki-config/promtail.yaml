@@ -4,15 +4,17 @@ server:
 clients:
   - url: http://loki:3100/loki/api/v1/push
 scrape_configs:
+  # 采集根目录 logs/<service>/ 的日志：容器编排（./mix compose up）与 ./mix dev seq 写入
+  # dist 模式的日志由 promtail-dist.yaml 独立采集，两套互不导入
   - job_name: service_logs
     static_configs:
       - targets: [localhost]
-        labels: {job: service-logs, __path__: /app/logs/spring/app_*.log, service: spring}
+        labels: {job: service-logs, mode: local, __path__: /app/logs/spring/app_*.log, service: spring}
       - targets: [localhost]
-        labels: {job: service-logs, __path__: /app/logs/gozero/app_*.log, service: gozero}
+        labels: {job: service-logs, mode: local, __path__: /app/logs/gozero/app_*.log, service: gozero}
       - targets: [localhost]
-        labels: {job: service-logs, __path__: /app/logs/nestjs/app_*.log, service: nestjs}
+        labels: {job: service-logs, mode: local, __path__: /app/logs/nestjs/app_*.log, service: nestjs}
       - targets: [localhost]
-        labels: {job: service-logs, __path__: /app/logs/fastapi/app_*.log, service: fastapi}
+        labels: {job: service-logs, mode: local, __path__: /app/logs/fastapi/app_*.log, service: fastapi}
       - targets: [localhost]
-        labels: {job: service-logs, __path__: /app/logs/gateway/*.log, service: gateway}
+        labels: {job: service-logs, mode: local, __path__: /app/logs/gateway/*.log, service: gateway}

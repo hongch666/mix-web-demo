@@ -1,0 +1,92 @@
+# 日志观测组件（Loki + Promtail + Grafana）编排文件
+#
+# 本文件用于独立启动观测栈，适用于 ./mix dist start 的宿主机进程模式：
+#   ./mix loki start          采集根目录 logs/（容器与 dev 模式）
+#   ./mix loki start --dist   采集 dist/logs（./mix dist start）
+#   docker compose -f loki-config/docker-compose.yml -p loki up -d
+#
+# 根目录 docker-compose.yml 中内联了同一套观测组件，供 ./mix compose up 使用。
+# 两者容器名相同但属于不同 compose 项目，交叉启动时由 scripts/loki-control.sh
+# 自动清理对方的同名容器；修改镜像版本或挂载路径时两处需要同步。
+#
+# 两套日志目录各自独立、互不导入，实际采集哪一套由 Promtail 配置决定
+# （LOKI_PROMTAIL_CONFIG，见 promtail 服务的 volumes 说明）。
+#
+# 观测栈内部通过服务名互相访问（Grafana -> http://loki:3100），
+# 因此不强制加入 hcsy 网络，独立启动时不依赖任何外部网络。
+services:
+  loki-data-init:
+    image: grafana/loki:3.0.0
+    user: "0:0"
+    entrypoint: ["/bin/sh"]
+    command: ["-c", "mkdir -p /tmp/loki && chown -R 10001:10001 /tmp/loki"]
+    volumes:
+      - loki-data:/tmp/loki
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    command: ["-config.file=/etc/loki/config.yaml"]
+    depends_on:
+      loki-data-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./loki.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/tmp/loki
+    ports:
+      - "3100:3100"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3100/ready | grep -q ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  promtail:
+    image: grafana/promtail:2.9.7
+    container_name: promtail
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    depends_on:
+      loki:
+        condition: service_healthy
+    volumes:
+      # 采集哪套日志由配置决定，两套日志互不导入：
+      #   promtail.yaml      采集 /app/logs      （根目录 logs/，容器与 dev 模式，根编排默认）
+      #   promtail-dist.yaml 采集 /app/dist-logs （dist/logs，./mix dist start）
+      # 由 ./mix loki start [--dist] 通过 LOKI_PROMTAIL_CONFIG 切换，切换会重建 promtail 容器
+      - ./${LOKI_PROMTAIL_CONFIG:-promtail.yaml}:/etc/promtail/config.yaml:ro
+      - ../logs:/app/logs:ro
+      - ../dist/logs:/app/dist-logs:ro
+      - promtail-data:/tmp/positions
+    healthcheck:
+      test: ["CMD-SHELL", "test -r /etc/promtail/config.yaml"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    depends_on:
+      loki:
+        condition: service_healthy
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/health | grep -q ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  loki-data:
+  promtail-data:
+  grafana-data:
