@@ -2,7 +2,7 @@ from .defaults import Defaults
 
 
 class AlgorithmConstants:
-    """搜索排序算法相关常量。"""
+    """搜索排序算法相关常量"""
 
     # 权重定义表：权重键、默认值、说明
     WEIGHT_DEFINITIONS: tuple[tuple[str, float | int, str], ...] = (

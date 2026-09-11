@@ -19,7 +19,7 @@ class Neo4jQueryTools:
     预定义查询分两类：
     - 能用 neomodel OGM 函数表达的查询，走 ``_ogm_handlers``（对象遍历 + traverse 预加载）；
     - 库内聚合统计、多跳集合并等 OGM 无法表达（或改写后需放弃库内 LIMIT、
-      造成结果集放大）的查询，保留原始 Cypher。
+      造成结果集放大）的查询，保留原始 Cypher
     """
 
     def __init__(self) -> None:
@@ -62,7 +62,7 @@ class Neo4jQueryTools:
     def _first_related(node: Any, relation: str) -> Optional[Any]:
         """读取 traverse/resolve_subgraph 预加载结果中的单个关联节点
 
-        neomodel 把预加载的关系存放在节点的 ``_relations`` 上（值为节点列表）。
+        neomodel 把预加载的关系存放在节点的 ``_relations`` 上（值为节点列表）
         """
         related = getattr(node, "_relations", {}).get(relation)
         if isinstance(related, list):

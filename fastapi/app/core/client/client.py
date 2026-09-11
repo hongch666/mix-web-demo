@@ -184,7 +184,7 @@ async def _request_remote_service(
     """执行一次真正的异步远程请求
 
     timeout 透传到 client.request，确保即使使用 lifespan 中创建的共享客户端，
-    也能按配置默认超时（remote_call.timeout）或调用方显式传入的超时覆盖客户端级默认值。
+    也能按配置默认超时（remote_call.timeout）或调用方显式传入的超时覆盖客户端级默认值
     """
     response: httpx.Response = await client.request(
         method=method,
@@ -246,7 +246,7 @@ async def call_remote_service(
     通过 Nacos 服务发现并调用远程服务
 
     优先使用 lifespan 中创建的共享 httpx.AsyncClient（长连接池复用），
-    不可用时才创建临时客户端。
+    不可用时才创建临时客户端
     """
     # 从配置文件读取默认值
     config = _get_remote_call_config()

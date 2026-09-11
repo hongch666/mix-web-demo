@@ -76,7 +76,7 @@ def initialize_ai_tools(
     """初始化AI工具，支持基于权限的工具选择
 
     各组独立工具（SQL/RAG/Neo4j/MongoDB）通过线程池并行加载，
-    单个工具组加载失败不影响其他组。
+    单个工具组加载失败不影响其他组
 
     Args:
         include_sql: 是否包含 SQL 工具

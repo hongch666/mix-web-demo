@@ -399,9 +399,9 @@ async def _initialize_article_content_hash_cache(
     mysql_db_factory: Optional[Any] = None,
 ) -> None:
     """
-    为所有已发布的文章初始化内容 hash 缓存。
-    用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景。
-    此操作只生成 hash，不进行向量同步。
+    为所有已发布的文章初始化内容 hash 缓存
+    用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景
+    此操作只生成 hash，不进行向量同步
 
     Args:
         article_mapper: ArticleMapper 实例（已废弃，保留参数以兼容旧调用）

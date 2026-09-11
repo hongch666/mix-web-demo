@@ -59,7 +59,7 @@ def build_chat_metadata(
 ) -> Optional[dict[str, Any]]:
     """构建聊天请求的 LangSmith metadata
 
-    返回的 metadata 已通过脱敏器处理，不包含原始用户 ID、对话内容等敏感信息。
+    返回的 metadata 已通过脱敏器处理，不包含原始用户 ID、对话内容等敏感信息
     """
     metadata: dict[str, Any] = {
         "request_id": request_id,

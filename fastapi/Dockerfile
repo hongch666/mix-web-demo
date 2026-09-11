@@ -16,8 +16,8 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
     PIP_TRUSTED_HOST=mirrors.aliyun.com
 
-# 词云需使用中文字体。
-# 源改为 HTTPS（走代理稳定），保留代理环境变量。
+# 词云需使用中文字体
+# 源改为 HTTPS（走代理稳定），保留代理环境变量
 RUN set -eux; \
     if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
     sed -i 's|deb.debian.org|mirrors.aliyun.com|g; s|http://|https://|g' /etc/apt/sources.list.d/debian.sources; \

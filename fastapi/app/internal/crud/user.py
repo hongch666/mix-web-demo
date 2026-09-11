@@ -11,13 +11,13 @@ from app.internal.models import AdsUserDay, AdsUserStats, AdsUserViewArticle, Di
 
 
 def _date_value(value: datetime) -> Any:
-    """ClickHouse Date 列不能直接比较带时间的 datetime。"""
+    """ClickHouse Date 列不能直接比较带时间的 datetime"""
 
     return value.date()
 
 
 class UserMapper:
-    """用户分析数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM。"""
+    """用户分析数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
         async with ClickHouseAsyncSessionLocal() as session:

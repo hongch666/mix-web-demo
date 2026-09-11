@@ -27,7 +27,7 @@ def start_scheduler(
     spring_client: Optional[SpringClient] = None,
 ) -> BaseScheduler:
     """
-    启动调度器，可把依赖注入进来（用于测试或容器式管理）。
+    启动调度器，可把依赖注入进来（用于测试或容器式管理）
     例如：
       start_scheduler(
           article_mapper=get_article_mapper(),
@@ -67,8 +67,7 @@ def start_scheduler(
     neo4j_sync_job_func = partial(sync_mysql_to_neo4j_async, force_full=False)
     scheduler.add_job(neo4j_sync_job_func, "interval", hours=24, id="sync_neo4j")
 
-    # 任务4：Neo4j 知识图谱全量同步（每周一次，兜底清理 MySQL 已删除数据）。
-    # 增量同步为避免用增量快照误删全图，不执行清理；已删除记录需靠全量同步清理。
+    # 任务4：Neo4j 知识图谱全量同步（每周一次，兜底清理 MySQL 已删除数据），增量同步为避免用增量快照误删全图，不执行清理；已删除记录需靠全量同步清理
     neo4j_full_sync_job_func = partial(sync_mysql_to_neo4j_async, force_full=True)
     scheduler.add_job(
         neo4j_full_sync_job_func, "interval", days=7, id="sync_neo4j_full"

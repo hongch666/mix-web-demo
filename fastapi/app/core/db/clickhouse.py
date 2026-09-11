@@ -26,7 +26,7 @@ _password: str = str(_clickhouse_config.get("password", "") or "")
 _encoded_username: str = quote_plus(_username)
 _encoded_password: str = quote_plus(_password)
 
-# clickhouse-sqlalchemy 的 asynch 驱动实现了 SQLAlchemy asyncio 适配器。
+# clickhouse-sqlalchemy 的 asynch 驱动实现了 SQLAlchemy asyncio 适配器
 CLICKHOUSE_ASYNC_DATABASE_URL: str = (
     f"clickhouse+asynch://{_encoded_username}:{_encoded_password}"
     f"@{_host}:{_port}/{_database}"
@@ -76,7 +76,7 @@ async def dispose_clickhouse_async_engine() -> None:
 async def execute_clickhouse_sql(
     sql: str, parameters: Optional[dict[str, Any]] = None
 ) -> None:
-    """通过 SQLAlchemy 异步引擎执行无需返回结果的 ClickHouse SQL。"""
+    """通过 SQLAlchemy 异步引擎执行无需返回结果的 ClickHouse SQL"""
 
     async with clickhouse_async_engine.connect() as connection:
         await connection.exec_driver_sql(sql, parameters or {})
@@ -86,7 +86,7 @@ async def execute_clickhouse_query(
     sql: str,
     parameters: Optional[dict[str, Any]] = None,
 ) -> list[Any]:
-    """通过 SQLAlchemy 异步引擎执行 ClickHouse 查询并返回行元组列表。"""
+    """通过 SQLAlchemy 异步引擎执行 ClickHouse 查询并返回行元组列表"""
 
     async with clickhouse_async_engine.connect() as connection:
         result = await connection.exec_driver_sql(sql, parameters or {})
@@ -94,9 +94,9 @@ async def execute_clickhouse_query(
 
 
 async def create_warehouse_tables_async() -> None:
-    """根据数仓 ORM 元数据创建缺失的 ClickHouse 表。"""
+    """根据数仓 ORM 元数据创建缺失的 ClickHouse 表"""
 
-    # 延迟导入避免 app.core.db 与 app.internal.models 循环依赖。
+    # 延迟导入避免 app.core.db 与 app.internal.models 循环依赖
     from app.internal.models import (  # noqa: F401
         AdsApiAverageSpeed,
         AdsApiCalledCount,
@@ -132,7 +132,7 @@ async def create_warehouse_tables_async() -> None:
 
     try:
         configure_warehouse_engines(ClickHouseBase.metadata)
-        # ClickHouse 不支持事务提交，DDL 通过独立连接执行即可。
+        # ClickHouse 不支持事务提交，DDL 通过独立连接执行即可
         async with clickhouse_async_engine.connect() as connection:
             await connection.run_sync(ClickHouseBase.metadata.create_all)
         Logger.info(Messages.WAREHOUSE_SCHEMA_READY)
@@ -140,6 +140,6 @@ async def create_warehouse_tables_async() -> None:
         Logger.error(Messages.WAREHOUSE_SCHEMA_CREATION_FAILED(error))
 
 
-# 与项目现有 Clickhouse 命名风格保持兼容。
+# 与项目现有 Clickhouse 命名风格保持兼容
 ClickhouseBase = ClickHouseBase
 ClickhouseAsyncSessionLocal = ClickHouseAsyncSessionLocal

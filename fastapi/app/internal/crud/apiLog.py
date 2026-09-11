@@ -9,7 +9,7 @@ from app.internal.models import AdsApiAverageSpeed, AdsApiCalledCount
 
 
 class ApiLogMapper:
-    """API 日志数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM。"""
+    """API 日志数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
         async with ClickHouseAsyncSessionLocal() as session:

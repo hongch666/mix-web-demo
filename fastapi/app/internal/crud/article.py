@@ -15,7 +15,7 @@ from app.internal.models import (
 
 
 class ArticleMapper:
-    """文章数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM。"""
+    """文章数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
         async with ClickHouseAsyncSessionLocal() as session:

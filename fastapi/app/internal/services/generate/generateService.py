@@ -188,7 +188,7 @@ class GenerateService:
         Logger.info(Messages.AI_COMMENT_GENERATED_AND_SAVED(article_id))
 
     async def generate_ai_comments_in_background(self, article_id: int) -> None:
-        """后台生成 AI 评论。"""
+        """后台生成 AI 评论"""
         await self.generate_ai_comments(article_id)
 
     # 定义工具函数解析大模型返回结果
@@ -638,7 +638,7 @@ class GenerateService:
     async def generate_ai_comments_with_reference_in_background(
         self, article_id: int
     ) -> None:
-        """后台生成带参考文本的 AI 评论。"""
+        """后台生成带参考文本的 AI 评论"""
         await self.generate_ai_comments_with_reference(article_id)
 
 

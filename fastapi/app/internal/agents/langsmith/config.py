@@ -9,7 +9,7 @@ from app.core.constants import Scripts
 class LangSmithConfig:
     """LangSmith 可观测性配置
 
-    所有配置项通过 application.yaml + 环境变量加载，遵循项目统一配置规范。
+    所有配置项通过 application.yaml + 环境变量加载，遵循项目统一配置规范
     """
 
     enabled: bool
@@ -30,8 +30,9 @@ class LangSmithConfig:
 def load_langsmith_config() -> LangSmithConfig:
     """从 application.yaml 加载 LangSmith 配置
 
-    application.yaml 中的 ${VAR:default} 由 load_config 解析环境变量。
-    默认关闭追踪，API Key 缺失时强制禁用。
+    application.yaml 中的 ${VAR:default} 由 load_config 解析环境变量
+
+    默认关闭追踪，API Key 缺失时强制禁用
     """
     cfg: dict[str, Any] = load_config("langsmith") or {}
 

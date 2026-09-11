@@ -64,7 +64,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """获取数据库异步会话（aiomysql 驱动，不阻塞 asyncio 事件循环）
 
     使用 AsyncSessionLocal + aiomysql 异步驱动，所有数据库操作均通过
-    await 执行，完全释放 asyncio 事件循环。
+    await 执行，完全释放 asyncio 事件循环
     """
     async with AsyncSessionLocal() as session:
         yield session
@@ -72,9 +72,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def create_tables_async() -> None:
     """
-    根据已注册的 SQLAlchemy 实体创建不存在的数据库表。
+    根据已注册的 SQLAlchemy 实体创建不存在的数据库表
 
-    SQLAlchemy 的 create_all 只负责创建缺失的表，不会执行已有表的结构迁移。
+    SQLAlchemy 的 create_all 只负责创建缺失的表，不会执行已有表的结构迁移
     """
 
     try:

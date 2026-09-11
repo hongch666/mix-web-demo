@@ -14,7 +14,7 @@ class Neo4jClient:
 
     连接的创建、持有与关闭全部交给 neomodel 的全局 AsyncDatabase（adb），
     整个进程只维护一条连接（驱动 + 连接池），OGM 对象操作与原始 Cypher
-    共用同一连接，不再各自建立驱动。
+    共用同一连接，不再各自建立驱动
     """
 
     def __init__(self) -> None:
@@ -42,7 +42,7 @@ class Neo4jClient:
         """拼装 neomodel 所需的连接 URL（账号密码做 URL 编码）
 
         neomodel 要求 URL 形如 ``protocol://user:password@host:port``，即使密码为空
-        也要保留分隔用的冒号。
+        也要保留分隔用的冒号
         """
         scheme, separator, host = self.uri.partition("://")
         if not separator or not scheme or not host:
@@ -93,7 +93,7 @@ class Neo4jClient:
         """执行写入类 Cypher 语句，返回查询摘要（含删除计数）
 
         写入需要 Neo4j 的 counters 摘要，而 neomodel 的 cypher_query 不返回摘要，
-        故复用 neomodel 持有的同一个驱动执行，不额外建立连接。
+        故复用 neomodel 持有的同一个驱动执行，不额外建立连接
         """
         if not await self.connect():
             return None

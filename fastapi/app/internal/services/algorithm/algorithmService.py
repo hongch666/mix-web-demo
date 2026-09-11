@@ -24,16 +24,16 @@ class AlgorithmService:
         """获取 ES Painless 搜索脚本
 
         返回使用 params.xxx 占位符的脚本模板，由 GoZero 调用方在运行时通过
-        elastic.NewScript(script).Param(name, value) 方式传入具体的权重值后使用。
+        elastic.NewScript(script).Param(name, value) 方式传入具体的权重值后使用
         """
         return {"es_script": Scripts.ES_SEARCH_SCRIPT}
 
     def get_script_params(self) -> dict[str, Any]:
         """获取脚本参数名映射
 
-        返回每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名。
+        返回每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名
         GoZero 调用方根据此映射关系使用 elastic.NewScript(script).Param(paramName, value)
-        组装 ES 脚本查询，无需在 GoZero 端硬编码参数名常量。
+        组装 ES 脚本查询，无需在 GoZero 端硬编码参数名常量
         """
         params: list[ScriptParamItem] = []
         for weight_key, param_name, desc in AlgorithmConstants.SCRIPT_PARAM_MAPPINGS:

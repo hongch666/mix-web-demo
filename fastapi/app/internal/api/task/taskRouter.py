@@ -66,7 +66,7 @@ async def task_export_vector(
 @router.post(
     "/init-hash-cache",
     summary="初始化文章内容 hash 缓存",
-    description="为所有已发布的文章初始化内容 hash 缓存。用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景。此操作只生成 hash，不进行向量同步。",
+    description="为所有已发布的文章初始化内容 hash 缓存，用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景，此操作只生成 hash，不进行向量同步",
     response_model=ApiResponse,
 )
 @requireInternalToken
@@ -112,8 +112,7 @@ async def task_clear_analyze_caches(
 @router.post(
     "/sync-neo4j",
     summary="手动触发同步 MySQL 到 Neo4j 知识图谱任务",
-    description="手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务。"
-    "force_full=true 时执行全量同步（含安全清理，用于兜底清理 MySQL 已删除数据）。",
+    description="手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务，force_full=true 时执行全量同步（含安全清理，用于兜底清理 MySQL 已删除数据）",
     response_model=ApiResponse,
 )
 @requireInternalToken

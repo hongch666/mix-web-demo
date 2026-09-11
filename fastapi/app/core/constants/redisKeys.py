@@ -14,7 +14,7 @@ class RedisKeys:
 
     @staticmethod
     def article_content_hash(article_id: int) -> str:
-        """文章内容 hash 的完整 key。"""
+        """文章内容 hash 的完整 key"""
         return f"{RedisKeys.ARTICLE_CONTENT_HASH_PREFIX}{article_id}"
 
     ARTICLE_TOP10: str = "article:top10"

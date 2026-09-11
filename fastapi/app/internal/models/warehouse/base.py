@@ -7,14 +7,15 @@ from app.core.db import ClickHouseBase
 
 
 class WarehouseModel(ClickHouseBase):
-    """数仓模型基类，不参与表创建。"""
+    """数仓模型基类，不参与表创建"""
 
     __abstract__ = True
     __table_args__ = {"schema": "warehouse"}
 
-
-# ClickHouse 的 ENGINE/ORDER BY 不是标准 SQLAlchemy 表参数，统一在元数据
-# 注册完成后补充，既可保持模型定义简洁，也能让 metadata.create_all 生成正确 DDL。
+"""
+ClickHouse 的 ENGINE/ORDER BY 不是标准 SQLAlchemy 表参数，统一在元数据
+注册完成后补充，既可保持模型定义简洁，也能让 metadata.create_all 生成正确 DDL
+"""
 WAREHOUSE_ENGINE_CONFIG: Mapping[str, tuple[type[Any], dict[str, Any]]] = {
     "sync_watermark": (engines.ReplacingMergeTree, {"version": "updated_at", "order_by": "table_name"}),
     "ods_articles": (engines.ReplacingMergeTree, {"version": "update_at", "order_by": "id"}),

@@ -14,7 +14,7 @@ WarehouseDataset = str
 
 
 class ClickHouseWarehouseTools:
-    """ClickHouse 数仓 ADS 查询工具，仅允许访问预定义聚合数据集。"""
+    """ClickHouse 数仓 ADS 查询工具，仅允许访问预定义聚合数据集"""
 
     _USER_DATASETS: frozenset[str] = WarehouseScripts.WAREHOUSE_AGENT_USER_DATASETS
 
@@ -22,7 +22,7 @@ class ClickHouseWarehouseTools:
         self.logger = Logger
 
     async def list_datasets(self) -> str:
-        """返回数仓工具支持的数据集和适用范围。"""
+        """返回数仓工具支持的数据集和适用范围"""
         datasets: dict[str, str] = WarehouseScripts.WAREHOUSE_AGENT_DATASET_DESCRIPTIONS
         return json.dumps(datasets, ensure_ascii=False, indent=2)
 
@@ -34,7 +34,7 @@ class ClickHouseWarehouseTools:
         end_date: Optional[str] = None,
         limit: int = 20,
     ) -> str:
-        """执行固定 ADS 查询并返回结构化 JSON 结果。"""
+        """执行固定 ADS 查询并返回结构化 JSON 结果"""
         if dataset not in WarehouseScripts.WAREHOUSE_AGENT_DATASETS:
             return Messages.WAREHOUSE_DATASET_UNSUPPORTED.format(dataset=dataset)
         if dataset in self._USER_DATASETS and user_id is None:
@@ -80,7 +80,7 @@ class ClickHouseWarehouseTools:
         return WarehouseScripts.WAREHOUSE_AGENT_RESULT_COLUMNS[dataset]
 
     def get_langchain_tools(self) -> list[StructuredTool]:
-        """获取 LangChain 数仓工具对象列表。"""
+        """获取 LangChain 数仓工具对象列表"""
 
         class EmptyInput(BaseModel):
             pass
@@ -127,5 +127,5 @@ class ClickHouseWarehouseTools:
 
 @lru_cache
 def get_warehouse_tools() -> ClickHouseWarehouseTools:
-    """获取 ClickHouse 数仓工具单例。"""
+    """获取 ClickHouse 数仓工具单例"""
     return ClickHouseWarehouseTools()

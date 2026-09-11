@@ -75,7 +75,7 @@ class AnalyzeService:
         cache_getter: Callable[[], Any],
         loader: Callable[[], Awaitable[Any]],
     ) -> Any:
-        """使用 asyncio.Lock 合并同 key 的并发缓存回源请求，避免缓存雪崩时同时打到数据库。"""
+        """使用 asyncio.Lock 合并同 key 的并发缓存回源请求，避免缓存雪崩时同时打到数据库"""
         cached_result: Any = await cache_getter()
         if cached_result is not None:
             return cached_result
@@ -285,7 +285,7 @@ class AnalyzeService:
         return result
 
     async def get_keywords_dic(self) -> dict[str, int]:
-        """优先从数仓 ADS 层获取搜索关键词，失败或无数据时降级 NestJS。"""
+        """优先从数仓 ADS 层获取搜索关键词，失败或无数据时降级 NestJS"""
         all_keywords: list[str]
         try:
             all_keywords = (

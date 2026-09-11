@@ -73,7 +73,7 @@ class RabbitMQClient:
     ) -> bool:
         """异步发送消息到队列
 
-        依赖 RobustConnection 自动处理断连恢复，此处只做发送和错误记录。
+        依赖 RobustConnection 自动处理断连恢复，此处只做发送和错误记录
         """
         try:
             if (

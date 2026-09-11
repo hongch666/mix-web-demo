@@ -31,7 +31,7 @@ def _is_tracing_enabled() -> bool:
 def init_langsmith(config: Optional[LangSmithConfig] = None) -> None:
     """初始化 LangSmith 客户端
 
-    在应用启动时调用一次。初始化失败只记录日志，不抛出异常。
+    在应用启动时调用一次，初始化失败只记录日志，不抛出异常
 
     Args:
         config: LangSmith 配置，不传则从环境变量自动加载
@@ -68,7 +68,7 @@ def init_langsmith(config: Optional[LangSmithConfig] = None) -> None:
 def shutdown_langsmith() -> None:
     """关闭 LangSmith 客户端，flush 缓冲区
 
-    在应用关闭时调用。失败只记录日志。
+    在应用关闭时调用，失败只记录日志
     """
     global _client
 
@@ -107,7 +107,7 @@ def get_langsmith_context(
 ) -> Generator[Optional[Any], None, None]:
     """创建 LangSmith 根 Run 上下文管理器（同步版本）
 
-    用于非 Runnable 边界的手工追踪，如 HTTP 根节点、同步任务。
+    用于非 Runnable 边界的手工追踪，如 HTTP 根节点、同步任务
 
     Args:
         name: Run 名称 (如 chat.send, chat.stream)
@@ -157,7 +157,7 @@ async def get_langsmith_context_async(
 ) -> AsyncGenerator[Optional[Any], None]:
     """创建 LangSmith 根 Run 上下文管理器（异步版本）
 
-    用于流式生成器的根 Trace，支持 SSE 完成、异常和断连收尾。
+    用于流式生成器的根 Trace，支持 SSE 完成、异常和断连收尾
 
     Args:
         name: Run 名称 (如 chat.send, chat.stream)

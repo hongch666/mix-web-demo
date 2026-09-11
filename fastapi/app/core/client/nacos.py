@@ -37,7 +37,7 @@ def _resolve_nacos_log_dir() -> str:
     解析 Nacos SDK 的日志目录
 
     SDK 默认写入 ~/logs/nacos/，容器中 HOME 可能指向 /（如以非 root 用户运行时
-    Docker 未配置 HOME），会因无权限在 / 下创建目录导致导入期失败。
+    Docker 未配置 HOME），会因无权限在 / 下创建目录导致导入期失败
     因此显式指定到应用日志目录下，不可写时回退到系统临时目录
     """
 

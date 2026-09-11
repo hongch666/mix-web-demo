@@ -35,7 +35,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
     """
     API 日志装饰器
 
-    填充跟踪 API 调用情况，记录用户操作、请求方法、更加方便确保系统可控性。
+    填充跟踪 API 调用情况，记录用户操作、请求方法、更加方便确保系统可控性
 
     Args:
         config: 日志配置，可以是字符串（消息）或 ApiLogConfig 对象

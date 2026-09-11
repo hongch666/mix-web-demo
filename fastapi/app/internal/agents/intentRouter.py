@@ -40,7 +40,7 @@ class StructuredIntent(BaseModel):
 class IntentRouter:
     """意图识别路由器，支持权限检查
 
-    优先使用 with_structured_output 结构化输出，不可用时降级为文本匹配。
+    优先使用 with_structured_output 结构化输出，不可用时降级为文本匹配
     """
 
     def __init__(

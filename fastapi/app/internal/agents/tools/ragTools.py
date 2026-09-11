@@ -62,7 +62,7 @@ def sanitize_retrieved_content(text: str) -> str:
 class RAGTools:
     """RAG工具类 - 基于LangChain实现
 
-    支持 HyDE 检索增强、Prompt 注入防御、元数据过滤、Embedding 缓存。
+    支持 HyDE 检索增强、Prompt 注入防御、元数据过滤、Embedding 缓存
     """
 
     def __init__(self) -> None:

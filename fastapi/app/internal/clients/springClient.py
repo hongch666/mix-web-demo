@@ -15,7 +15,7 @@ class SpringClient:
         page: int = 1,
         size: int = 1000,
     ) -> dict[str, Any]:
-        """通过 Spring 内部接口分页获取数仓源数据。"""
+        """通过 Spring 内部接口分页获取数仓源数据"""
         result: dict[str, Any] = await call_remote_service(
             service_name=self.SERVICE_NAME,
             path=f"/warehouse/sync/{resource}",
@@ -181,7 +181,7 @@ class SpringClient:
         )
         data: dict[str, Any] = result.get("data") or {}
         # spring 的 PageVO 序列化后字段为 total/list；统一归一化为
-        # {total, records}，方便各调用方（vector/neo4j 同步等）直接读取。
+        # {total, records}，方便各调用方（vector/neo4j 同步等）直接读取
         return {
             "total": int(data.get("total") or 0),
             "records": data.get("list") or data.get("records") or [],
