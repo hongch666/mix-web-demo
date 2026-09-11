@@ -1,4 +1,4 @@
-// Global type declarations for packages without @types packages
+// 全局类型声明：为缺少 @types 包的依赖补充类型定义
 /// <reference path="./aliOss.d.ts" />
 /// <reference path="./fastifyMultipart.d.ts" />
 /// <reference path="./nacos.d.ts" />
@@ -8,7 +8,7 @@
 /// <reference path="./marked.d.ts" />
 /// <reference path="./qs.d.ts" />
 
-// Re-export for convenience
+// 统一再导出，便于按包名引用
 export * from "./aliOss";
 export * from "./docxTemplates";
 export * from "./fastifyMultipart";
