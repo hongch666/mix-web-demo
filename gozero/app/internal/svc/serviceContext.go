@@ -13,7 +13,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// ServiceContext 聚合各业务边界的服务依赖，通过匿名嵌入保持原有字段访问方式不变。
+// ServiceContext 聚合各业务边界的服务依赖，通过匿名嵌入保持原有字段访问方式不变
 type ServiceContext struct {
 	*RuntimeContext
 	*InfrastructureContext

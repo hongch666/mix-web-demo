@@ -32,7 +32,7 @@ type RuntimeContext struct {
 // InfrastructureContext 保存数据库、消息队列和服务发现等基础设施依赖
 type InfrastructureContext struct {
 	MySQLConn sqlx.SqlConn
-	// RawMySQL 标准库 MySQL 连接，供动态列 SQL（如 SQL 工具）手动扫描结果。
+	// RawMySQL 标准库 MySQL 连接，供动态列 SQL（如 SQL 工具）手动扫描结果
 	RawMySQL          *sql.DB
 	ESClient          *elastic.Client
 	RabbitMQPublisher *rabbitmq.Publisher

@@ -104,7 +104,7 @@ func getLineIndent(line string) int {
 	return count
 }
 
-// normalizeModeValue 将生产环境别名统一为 go-zero 识别的模式值。
+// normalizeModeValue 将生产环境别名统一为 go-zero 识别的模式值
 func normalizeModeValue(fieldName, value string) string {
 	if !strings.EqualFold(strings.TrimSpace(fieldName), "mode") {
 		return value

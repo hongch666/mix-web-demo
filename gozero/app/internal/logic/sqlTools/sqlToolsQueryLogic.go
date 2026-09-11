@@ -163,7 +163,7 @@ func (l *SqlToolsQueryLogic) validateQuery(query string) (string, error) {
 
 	// 5. 参数化占位符为可选：无占位符的纯字面量只读查询（如 COUNT(*)）同样合法，
 	//    只读前缀 + 表白名单 + LIMIT 已充分防护注入与开销风险；含 :paramName 时
-	//    由执行层绑定参数，缺失对应值会由数据库层报错。
+	//    由执行层绑定参数，缺失对应值会由数据库层报错
 	return query, nil
 }
 

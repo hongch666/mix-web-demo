@@ -73,7 +73,7 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 	}
 }
 
-// StopTaskScheduler 停止定时任务并取消服务级后台上下文。
+// StopTaskScheduler 停止定时任务并取消服务级后台上下文
 func StopTaskScheduler(svcCtx *svc.ServiceContext) {
 	if TaskScheduler != nil {
 		TaskScheduler.Stop()

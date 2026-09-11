@@ -241,7 +241,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	return
 }
 
-// derefString 将 *string 安全解引用为 string，nil 时返回空串。
+// derefString 将 *string 安全解引用为 string，nil 时返回空串
 func derefString(s *string) string {
 	if s == nil {
 		return ""
