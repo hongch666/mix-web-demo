@@ -1,6 +1,5 @@
 package com.hcsy.spring.api.service.impl;
 
-import com.hcsy.spring.common.constants.Defaults;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -17,6 +16,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.hcsy.spring.api.repository.ArticleLikeRepository;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.api.service.ArticleService;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
@@ -160,8 +160,7 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
 
     @Override
     public Mono<List<Map<String, Object>>> getNeo4jSyncLikes(String updatedAfter) {
-        // 点赞表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
-        // 避免一次性加载全部导致耗时过长、连接/令牌超时。
+        // 点赞表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return articleLikeRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
                 .map(this::likeToMap)

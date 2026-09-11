@@ -9,8 +9,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 文章评论评分视图对象，用于批量查询评论评分结果。
- * 使用具体元素类型承载，避免 Map<Long, Map<String, CommentScoreDTO>> 泛型擦除导致 Jackson 序列化失败。
+ * 文章评论评分视图对象，用于批量查询评论评分结果
+ * 使用具体元素类型承载，避免 Map<Long, Map<String, CommentScoreDTO>> 泛型擦除导致 Jackson 序列化失败
  */
 @Data
 @AllArgsConstructor

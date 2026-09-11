@@ -25,7 +25,8 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
     Mono<Long> countByArticleIdAndUserIdIn(@Param("articleId") Long articleId, @Param("userIds") List<Long> userIds);
 
     @Modifying
-    Mono<Integer> deleteByArticleIdAndUserIdIn(@Param("articleId") Long articleId, @Param("userIds") List<Long> userIds);
+    Mono<Integer> deleteByArticleIdAndUserIdIn(@Param("articleId") Long articleId,
+        @Param("userIds") List<Long> userIds);
 
     @Query("""
         SELECT DATE(create_time) AS date, COUNT(*) AS count
@@ -40,8 +41,8 @@ public interface CommentsRepository extends ReactiveCrudRepository<Comments, Lon
         @Param("lastDay") LocalDateTime lastDay);
 
     /**
-     * 查询最近 :limit 条评论（按 id 倒序），用于Neo4j同步全量抓取。
-     * 评论表数据量较大，一次性全量加载会耗时过长并拖垮同步任务。
+     * 查询最近 :limit 条评论（按 id 倒序），用于Neo4j同步全量抓取
+     * 评论表数据量较大，一次性全量加载会耗时过长并拖垮同步任务
      */
     @Query("SELECT * FROM comments ORDER BY id DESC LIMIT :limit")
     Flux<Comments> findLatestForSync(@Param("limit") int limit);

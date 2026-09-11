@@ -76,8 +76,8 @@ public interface FocusRepository extends ReactiveCrudRepository<Focus, Long> {
         @Param("lastDay") LocalDateTime lastDay);
 
     /**
-     * 查询最近 :limit 条关注记录（按 id 倒序），用于Neo4j同步全量抓取。
-     * 关注表数据量较大，一次性全量加载会耗时过长并拖垮同步任务。
+     * 查询最近 :limit 条关注记录（按 id 倒序），用于Neo4j同步全量抓取
+     * 关注表数据量较大，一次性全量加载会耗时过长并拖垮同步任务
      */
     @Query("SELECT * FROM focus ORDER BY id DESC LIMIT :limit")
     Flux<Focus> findLatestForSync(@Param("limit") int limit);

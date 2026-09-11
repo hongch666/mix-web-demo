@@ -213,8 +213,7 @@ public class FocusServiceImpl implements FocusService {
 
     @Override
     public Mono<List<Map<String, Object>>> getNeo4jSyncFocus(String updatedAfter) {
-        // 关注表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
-        // 避免一次性加载全部导致耗时过长、连接/令牌超时。
+        // 关注表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return focusRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
                 .map(this::focusToMap)

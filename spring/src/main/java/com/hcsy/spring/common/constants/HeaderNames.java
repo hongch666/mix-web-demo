@@ -1,7 +1,7 @@
 package com.hcsy.spring.common.constants;
 
 /**
- * 网关与微服务间透传的自定义 HTTP 请求头。
+ * 网关与微服务间透传的自定义 HTTP 请求头
  */
 public final class HeaderNames {
     public static final String ACCESS_TOKEN = "X-Access-Token";

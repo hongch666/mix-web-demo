@@ -16,6 +16,7 @@ import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.Messages;
+
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import reactor.core.Disposable;
@@ -24,7 +25,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 /**
- * 通用响应式多级缓存工具，统一管理 Caffeine、Redis 与多实例失效通知。
+ * 通用响应式多级缓存工具，统一管理 Caffeine、Redis 与多实例失效通知
  */
 @Component
 @RequiredArgsConstructor
@@ -128,26 +129,26 @@ public class CacheUtil {
 
     private Mono<Void> evictLocal(CacheOptions<?>... options) {
         return Mono.fromRunnable(() -> {
-                for (CacheOptions<?> option : options) {
-                    AsyncCache<Object, Object> localCache = localCaches.get(option.name());
-                    if (localCache != null) {
-                        localCache.synchronous().invalidateAll();
-                    }
+            for (CacheOptions<?> option : options) {
+                AsyncCache<Object, Object> localCache = localCaches.get(option.name());
+                if (localCache != null) {
+                    localCache.synchronous().invalidateAll();
                 }
-            })
+            }
+        })
             .subscribeOn(Schedulers.boundedElastic())
             .then();
     }
 
     private Mono<Void> evictLocalByChannel(String channel) {
         return Mono.fromRunnable(() -> {
-                cacheNamesByChannel.getOrDefault(channel, Set.of()).forEach(cacheName -> {
-                    AsyncCache<Object, Object> localCache = localCaches.get(cacheName);
-                    if (localCache != null) {
-                        localCache.synchronous().invalidateAll();
-                    }
-                });
-            })
+            cacheNamesByChannel.getOrDefault(channel, Set.of()).forEach(cacheName -> {
+                AsyncCache<Object, Object> localCache = localCaches.get(cacheName);
+                if (localCache != null) {
+                    localCache.synchronous().invalidateAll();
+                }
+            });
+        })
             .subscribeOn(Schedulers.boundedElastic())
             .then();
     }
@@ -255,7 +256,7 @@ public class CacheUtil {
             }
         }
 
-        /** 全参版本：显式指定 L1/L2 TTL（特殊场景使用）。 */
+        // 全参版本：显式指定 L1/L2 TTL（特殊场景使用）
         public static <V> CacheOptions<V> fixed(
             String name,
             String invalidationChannel,
@@ -265,10 +266,7 @@ public class CacheUtil {
             return new CacheOptions<>(name, invalidationChannel, maximumSize, l1TtlSeconds, l2TtlSeconds);
         }
 
-        /**
-         * 简化版本：自动使用全局统一 TTL（L1=5min / L2=24h），
-         * 业务方无需再引用 Defaults 或自行定义 TTL 中转常量。
-         */
+        // 简化版本：自动使用全局统一 TTL（L1=5min / L2=24h），业务方无需再引用 Defaults 或自行定义 TTL 中转常量
         public static <V> CacheOptions<V> fixed(
             String name,
             String invalidationChannel,

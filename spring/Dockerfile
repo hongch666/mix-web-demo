@@ -6,8 +6,8 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# 复制构建描述与源代码。dependency:go-offline 会额外下载大量插件依赖，
-# 直接打包并复用 Maven 缓存可缩短首次镜像构建时间。
+# 复制构建描述与源代码，dependency:go-offline 会额外下载大量插件依赖，
+# 直接打包并复用 Maven 缓存可缩短首次镜像构建时间
 COPY pom.xml .
 COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -q

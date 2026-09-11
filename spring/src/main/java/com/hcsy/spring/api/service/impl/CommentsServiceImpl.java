@@ -26,12 +26,12 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
-import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
-import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
+import com.hcsy.spring.entity.vo.MapDataVO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -230,8 +230,7 @@ public class CommentsServiceImpl implements CommentsService {
                             long aid = c.getArticleId();
                             double star = c.getStar() != null ? c.getStar() : 0;
                             String role = "ai".equals(userRoleMap.getOrDefault(c.getUserId(), "user")) ? "ai" : "user";
-                            Map<String, CommentScoreDTO> roleScores =
-                                result.computeIfAbsent(aid, k -> new HashMap<>());
+                            Map<String, CommentScoreDTO> roleScores = result.computeIfAbsent(aid, k -> new HashMap<>());
                             CommentScoreDTO dto = roleScores.get(role);
                             if (dto == null) {
                                 dto = new CommentScoreDTO(0.0, 0L);
@@ -250,8 +249,8 @@ public class CommentsServiceImpl implements CommentsService {
                         }
                         // 转为具名 VO 列表，避免 Map<Long, Map<...>> 泛型擦除导致 Jackson 序列化失败
                         List<ArticleCommentScoresVO> voList = new ArrayList<>(result.size());
-                        result.forEach((articleId, scores) ->
-                            voList.add(new ArticleCommentScoresVO(articleId, scores)));
+                        result
+                            .forEach((articleId, scores) -> voList.add(new ArticleCommentScoresVO(articleId, scores)));
                         return voList;
                     });
             });
@@ -262,25 +261,25 @@ public class CommentsServiceImpl implements CommentsService {
     @Override
     public Mono<Long> getAiCommentsNumByArticleId(Long articleId) {
         return userRepository.findIdsByRole(Defaults.AI_ROLE)
-                .collectList()
-                .flatMap(aiUserIds -> {
-                    if (aiUserIds.isEmpty()) {
-                        return Mono.just(0L);
-                    }
-                    return commentsRepository.countByArticleIdAndUserIdIn(articleId, aiUserIds).defaultIfEmpty(0L);
-                });
+            .collectList()
+            .flatMap(aiUserIds -> {
+                if (aiUserIds.isEmpty()) {
+                    return Mono.just(0L);
+                }
+                return commentsRepository.countByArticleIdAndUserIdIn(articleId, aiUserIds).defaultIfEmpty(0L);
+            });
     }
 
     @Override
     public Mono<Void> deleteAiCommentsByArticleId(Long articleId) {
         return userRepository.findIdsByRole(Defaults.AI_ROLE)
-                .collectList()
-                .flatMap(aiUserIds -> {
-                    if (aiUserIds.isEmpty()) {
-                        return Mono.empty();
-                    }
-                    return commentsRepository.deleteByArticleIdAndUserIdIn(articleId, aiUserIds).then();
-                });
+            .collectList()
+            .flatMap(aiUserIds -> {
+                if (aiUserIds.isEmpty()) {
+                    return Mono.empty();
+                }
+                return commentsRepository.deleteByArticleIdAndUserIdIn(articleId, aiUserIds).then();
+            });
     }
 
     @Override
@@ -315,8 +314,7 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Override
     public Mono<List<Map<String, Object>>> getNeo4jSyncComments(String updatedAfter) {
-        // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，
-        // 避免一次性加载全部导致耗时过长、连接/令牌超时。
+        // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return commentsRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
                 .map(this::commentToMap)

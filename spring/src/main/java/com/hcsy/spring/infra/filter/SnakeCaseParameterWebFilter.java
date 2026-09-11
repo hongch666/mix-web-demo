@@ -40,8 +40,8 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
     }
 
     /**
-     * 处理 query 参数：保留原始下划线参数，同时补充驼峰别名。
-     * 若无需转换则返回原请求，避免额外包装。
+     * 处理 query 参数：保留原始下划线参数，同时补充驼峰别名
+     * 若无需转换则返回原请求，避免额外包装
      */
     private ServerHttpRequest decorateQueryParams(ServerHttpRequest request) {
         MultiValueMap<String, String> queryParams = request.getQueryParams();
@@ -59,8 +59,8 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
     }
 
     /**
-     * 处理 form 参数：仅对 application/x-www-form-urlencoded 请求生效。
-     * 通过装饰器异步缓冲 body，解码为表单参数，补充下划线驼峰别名后重新编码返回。
+     * 处理 form 参数：仅对 application/x-www-form-urlencoded 请求生效
+     * 通过装饰器异步缓冲 body，解码为表单参数，补充下划线驼峰别名后重新编码返回
      */
     private Mono<ServerHttpRequest> decorateFormParams(ServerWebExchange exchange, ServerHttpRequest request) {
         MediaType contentType = request.getHeaders().getContentType();
@@ -97,7 +97,7 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
     }
 
     /**
-     * 解码 form body 数据为参数集合（key -> List<value>）。
+     * 解码 form body 数据为参数集合（key -> List<value>）
      */
     private MultiValueMap<String, String> decodeFormBody(DataBuffer buffer) {
         byte[] bytes = new byte[buffer.readableByteCount()];
@@ -119,7 +119,7 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
     }
 
     /**
-     * 将参数集合重新编码为 form body 字符串。
+     * 将参数集合重新编码为 form body 字符串
      */
     private String encodeFormBody(MultiValueMap<String, String> params) {
         StringBuilder sb = new StringBuilder();
@@ -137,8 +137,8 @@ public class SnakeCaseParameterWebFilter implements WebFilter {
     }
 
     /**
-     * 合并参数集合：保留原始下划线参数，同时补充驼峰别名。
-     * 已存在显式驼峰参数时不覆盖。
+     * 合并参数集合：保留原始下划线参数，同时补充驼峰别名
+     * 已存在显式驼峰参数时不覆盖
      */
     private MultiValueMap<String, String> mergeParams(MultiValueMap<String, String> source) {
         MultiValueMap<String, String> merged = new LinkedMultiValueMap<>();

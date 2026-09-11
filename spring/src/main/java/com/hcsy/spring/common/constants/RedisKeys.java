@@ -1,9 +1,8 @@
 package com.hcsy.spring.common.constants;
 
 /**
- * Redis Key 统一管理类（single source of truth）。
- * 所有 Redis key 的前缀、完整 key 生成方法，以及用于批量扫描的 pattern 都集中在此，
- * 避免 key 前缀在多处硬编码导致漂移 / 失配。
+ * Redis Key 统一管理类（single source of truth）
+ * 所有 Redis key 的前缀、完整 key 生成方法，以及用于批量扫描的 pattern 都集中在此，避免 key 前缀在多处硬编码导致漂移 / 失配
  */
 public final class RedisKeys {
     private RedisKeys() {
