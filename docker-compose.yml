@@ -1,3 +1,14 @@
+# 代理排除项：Docker CLI 会把宿主机代理（~/.docker/config.json 的 proxies 配置）
+# 注入到容器，默认 NO_PROXY 只含 localhost，导致容器间访问被转发到宿主代理而失败：
+#   - Loki 单机模式组件间 gRPC 直连容器 IP（如 172.20.0.2:9095）被代理
+#     → push 返回 500、查询报 unable to get stream rates from ingester、Grafana 无数据
+#   - Grafana 访问 http://loki:3100 同理
+#   - Go/Node/Python 服务通过容器名访问 nacos/mysql/redis 等中间件同理
+# 注意 NO_PROXY 与 no_proxy 是两个独立变量，必须同时设置才能完全覆盖 Docker 注入值
+x-no-proxy: &no-proxy-env
+  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
 services:
   loki-data-init:
     image: grafana/loki:3.0.0
@@ -13,6 +24,8 @@ services:
     image: grafana/loki:3.0.0
     container_name: loki
     command: ["-config.file=/etc/loki/config.yaml"]
+    environment:
+      <<: *no-proxy-env
     depends_on:
       loki-data-init:
         condition: service_completed_successfully
@@ -34,6 +47,8 @@ services:
     image: grafana/promtail:2.9.7
     container_name: promtail
     command: ["-config.file=/etc/promtail/config.yaml"]
+    environment:
+      <<: *no-proxy-env
     depends_on:
       loki:
         condition: service_healthy
@@ -57,6 +72,7 @@ services:
       loki:
         condition: service_healthy
     environment:
+      <<: *no-proxy-env
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
     ports:
@@ -134,6 +150,7 @@ services:
     ports:
       - "8081:8081"
     environment:
+      <<: *no-proxy-env
       HOME: /tmp
       NACOS_SERVER: nacos:8848
       DB_HOST: mysql
@@ -174,6 +191,7 @@ services:
     ports:
       - "8082:8082"
     environment:
+      <<: *no-proxy-env
       HOME: /tmp
       SERVER_IP: 0.0.0.0
       NACOS_IP: nacos
@@ -217,6 +235,7 @@ services:
     ports:
       - "8083:8083"
     environment:
+      <<: *no-proxy-env
       HOME: /tmp
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos
@@ -260,6 +279,7 @@ services:
     ports:
       - "8084:8084"
     environment:
+      <<: *no-proxy-env
       HOME: /tmp
       SERVER_IP: 0.0.0.0
       NACOS_SERVER: nacos:8848

@@ -62,12 +62,91 @@ compose() {
     $COMPOSE_CMD -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT" "$@"
 }
 
+# ==================== 日志目录准备 ====================
+# 与 scripts/build.sh 保持一致，用于以 root 身份操作宿主机日志目录（chown）
+FORCE_CLEAN_IMAGE="${FORCE_CLEAN_IMAGE:-alpine:3.20}"
+
+# gateway 日志目录的属主由 gateway-log-init 统一设为 636（APISIX 运行用户），
+# 不参与宿主属主修正，否则运行中的 APISIX 会因目录属主变更而无法写日志
+HOST_LOG_SERVICES=(spring gozero nestjs fastapi)
+
+# 读取目录属主 uid；stat 不支持 -c 时返回空，调用方按“无需修正”处理
+dir_owner_uid() {
+    stat -c '%u' "$1" 2>/dev/null || true
+}
+
+# Docker 挂载宿主机目录时，目录不存在会以 root 创建，导致后续
+# ./mix dist start 或 dev 模式以宿主用户写日志时报 Permission denied。
+# 这里把属主为 root(0) 的日志目录改回当前用户：父目录只改自身，服务子目录递归修改
+fix_log_dir_owner() {
+    local owner
+    owner="$(id -u):$(id -g)"
+    local parent_dirs=()
+    local tree_dirs=()
+    local dir d
+
+    for dir in "$WORKDIR/logs" "$WORKDIR/dist" "$WORKDIR/dist/logs"; do
+        if [ "$(dir_owner_uid "$dir")" = "0" ]; then
+            parent_dirs+=("$dir")
+        fi
+    done
+
+    for d in "${HOST_LOG_SERVICES[@]}"; do
+        for dir in "$WORKDIR/logs/$d" "$WORKDIR/dist/logs/$d"; do
+            if [ "$(dir_owner_uid "$dir")" = "0" ]; then
+                tree_dirs+=("$dir")
+            fi
+        done
+    done
+
+    if [ ${#parent_dirs[@]} -eq 0 ] && [ ${#tree_dirs[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    log_warn "检测到 Docker 以 root 创建的日志目录，修正属主为 $owner ..."
+
+    local container_parents=()
+    local container_trees=()
+    for dir in "${parent_dirs[@]}"; do
+        container_parents+=("${dir/#$WORKDIR//work}")
+    done
+    for dir in "${tree_dirs[@]}"; do
+        container_trees+=("${dir/#$WORKDIR//work}")
+    done
+
+    local cmds=""
+    if [ ${#container_parents[@]} -gt 0 ]; then
+        cmds="chown $owner ${container_parents[*]}"
+    fi
+    if [ ${#container_trees[@]} -gt 0 ]; then
+        if [ -n "$cmds" ]; then
+            cmds="$cmds; "
+        fi
+        cmds="${cmds}chown -R $owner ${container_trees[*]}"
+    fi
+
+    if command -v docker >/dev/null 2>&1 && \
+        docker run --rm -v "$WORKDIR:/work" "$FORCE_CLEAN_IMAGE" sh -c "$cmds" >/dev/null 2>&1; then
+        log_info "日志目录属主修正完成"
+    else
+        log_warn "日志目录属主修正失败，请手动执行:"
+        log_warn "  sudo chown -R $owner ${parent_dirs[*]} ${tree_dirs[*]}"
+    fi
+}
+
 # 准备日志目录，两套日志目录（logs/ 与 dist/logs/）都可能被挂载，
-# 目录不存在时容器挂载会产生 root 属主的空目录，这里提前创建以保证权限一致
+# 目录不存在时容器挂载会产生 root 属主的空目录，这里提前创建并纠正属主
 prepare_dirs() {
     log_info "准备日志目录..."
+
+    # 必须先修正属主：父目录若被 Docker 以 root 创建，mkdir 会因无写权限失败，
+    # 在 set -e 下直接中断启动
+    fix_log_dir_owner
+
+    local d
     for d in spring gozero nestjs fastapi gateway; do
-        mkdir -p "$WORKDIR/logs/$d" "$WORKDIR/dist/logs/$d"
+        mkdir -p "$WORKDIR/logs/$d" "$WORKDIR/dist/logs/$d" 2>/dev/null || \
+            log_warn "创建日志目录失败: logs/$d 或 dist/logs/$d（属主或权限异常）"
     done
 }
 

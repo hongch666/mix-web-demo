@@ -35,9 +35,84 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# ==================== 强制清理（Docker 兜底） ====================
+# 容器写入宿主机挂载目录后，文件属主是容器内的用户，与当前登录用户不一致：
+#   - gateway(APISIX) 以 uid 636 写入 dist/logs/gateway，其它服务若以 root 运行同理
+#   - 切回常规打包（dist build）时，rm -rf 无权删除，配合 set -e 会直接中断
+# 因此清理分两级：先尝试普通 rm，仍有残留时用一次性 root 容器删除
+FORCE_CLEAN_IMAGE="${FORCE_CLEAN_IMAGE:-alpine:3.20}"
+
+# 使用 root 容器删除项目根目录下的相对路径（挂在 /work 上删除子路径，可连同目录本身一起删除）
+docker_force_remove() {
+    local rel_paths=("$@")
+    local targets=()
+    local rel
+
+    command -v docker >/dev/null 2>&1 || return 1
+    if ! docker image inspect "$FORCE_CLEAN_IMAGE" >/dev/null 2>&1; then
+        docker pull "$FORCE_CLEAN_IMAGE" >/dev/null 2>&1 || return 1
+    fi
+
+    for rel in "${rel_paths[@]}"; do
+        targets+=("/work/$rel")
+    done
+
+    docker run --rm -v "$PROJECT_ROOT:/work" "$FORCE_CLEAN_IMAGE" \
+        rm -rf -- "${targets[@]}" >/dev/null 2>&1
+}
+
+# 删除项目根目录下的相对路径；返回 0 表示已清理干净，返回 1 表示仍有残留
+force_remove_project_paths() {
+    local rel_paths=("$@")
+    local existing=()
+    local rm_targets=()
+    local leftovers=()
+    local rel
+
+    for rel in "${rel_paths[@]}"; do
+        if [ -e "$PROJECT_ROOT/$rel" ]; then
+            existing+=("$rel")
+        fi
+    done
+    if [ ${#existing[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    for rel in "${existing[@]}"; do
+        rm_targets+=("$PROJECT_ROOT/$rel")
+    done
+    rm -rf -- "${rm_targets[@]}" 2>/dev/null || true
+
+    for rel in "${existing[@]}"; do
+        if [ -e "$PROJECT_ROOT/$rel" ]; then
+            leftovers+=("$rel")
+        fi
+    done
+    if [ ${#leftovers[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    print_warn "检测到容器写入的非当前用户属主文件，改用 Docker 强制清理: ${leftovers[*]}"
+    docker_force_remove "${leftovers[@]}" || return 1
+
+    for rel in "${leftovers[@]}"; do
+        if [ -e "$PROJECT_ROOT/$rel" ]; then
+            return 1
+        fi
+    done
+    return 0
+}
+
 # 清理并创建dist目录
+# dist/logs/<service> 可能由容器（APISIX uid 636、其他镜像 root）写入并保留在 dist 下，
+# 普通 rm 无权删除，这里统一走 Docker 兜底，避免 set -e 中断打包
 print_info "清理并创建 dist 目录..."
-rm -rf "$DIST_DIR"
+if [ -d "$DIST_DIR" ]; then
+    if ! force_remove_project_paths "dist"; then
+        print_error "dist 目录未能完全清理（残留文件属主非当前用户，且 Docker 不可用或清理失败）"
+        print_error "请手动执行: sudo rm -rf \"$DIST_DIR\""
+    fi
+fi
 mkdir -p "$DIST_DIR"
 
 # ==================== Spring 服务打包 ====================

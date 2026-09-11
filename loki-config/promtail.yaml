@@ -3,18 +3,86 @@ server:
   grpc_listen_port: 0
 clients:
   - url: http://loki:3100/loki/api/v1/push
+# 采集位点必须持久化到卷 promtail-data（挂载点 /tmp/positions）：
+# 不配置时 promtail 使用默认路径 /var/log/positions.yaml（容器内），容器重建即丢失，
+# 导致每次重启都把 logs/ 下的历史文件全量重读一遍
+positions:
+  filename: /tmp/positions/positions.yaml
 scrape_configs:
   # 采集根目录 logs/<service>/ 的日志：容器编排（./mix compose up）与 ./mix dev seq 写入
   # dist 模式的日志由 promtail-dist.yaml 独立采集，两套互不导入
-  - job_name: service_logs
+  #
+  # 每个服务单独解析日志行首的时间戳。不解析时 Loki 记录的是采集时间，
+  # 历史日志回灌后会全部落在「当前时间」，按时间检索会失真；
+  # 解析失败时 action_on_failure: skip 保留采集时间，且正则不匹配不会丢弃日志
+  - job_name: service_logs_spring
     static_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: local, __path__: /app/logs/spring/app_*.log, service: spring}
+    pipeline_stages:
+      # 2026-09-10T20:29:20.540+08:00
+      - regex:
+          expression: '^(?P<ts>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))'
+      - timestamp:
+          source: ts
+          format: RFC3339Nano
+          action_on_failure: skip
+
+  - job_name: service_logs_gozero
+    static_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: local, __path__: /app/logs/gozero/app_*.log, service: gozero}
+    pipeline_stages:
+      # 2026-09-12 00:03:11
+      - regex:
+          expression: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      - timestamp:
+          source: ts
+          format: '2006-01-02 15:04:05'
+          action_on_failure: skip
+
+  - job_name: service_logs_nestjs
+    static_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: local, __path__: /app/logs/nestjs/app_*.log, service: nestjs}
+    pipeline_stages:
+      # 2026-09-11 00:20:12
+      - regex:
+          expression: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      - timestamp:
+          source: ts
+          format: '2006-01-02 15:04:05'
+          action_on_failure: skip
+
+  - job_name: service_logs_fastapi
+    static_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: local, __path__: /app/logs/fastapi/app_*.log, service: fastapi}
+    pipeline_stages:
+      # 2026-09-11 00:20:17
+      - regex:
+          expression: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+      - timestamp:
+          source: ts
+          format: '2006-01-02 15:04:05'
+          action_on_failure: skip
+
+  - job_name: service_logs_gateway
+    static_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: local, __path__: /app/logs/gateway/*.log, service: gateway}
+    pipeline_stages:
+      # access.log: 172.19.0.1 - - [05/Sep/2026:06:59:19 +0000] ...
+      - regex:
+          expression: '\[(?P<ts>\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2} [+-]\d{4})\]'
+      - timestamp:
+          source: ts
+          format: '02/Jan/2006:15:04:05 -0700'
+          action_on_failure: skip
+      # error.log: 2026/09/05 06:59:19 [error] ...
+      - regex:
+          expression: '^(?P<ts>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2})'
+      - timestamp:
+          source: ts
+          format: '2006/01/02 15:04:05'
+          action_on_failure: skip
