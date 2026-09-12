@@ -3,35 +3,48 @@ from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
+from app.internal.models import AdsPlatformStats
 
-from ..baseCache import BaseCache
+from ..versionedCache import VersionedCache
 
 # 全局单例实例
 _statistics_cache_instance = None
 
 
-class StatisticsCache(BaseCache):
+class StatisticsCache(VersionedCache):
     """
-    文章统计信息缓存 - 二级缓存架构
+    文章统计信息缓存 - 二级缓存架构（带版本控制）
 
     缓存策略：
     1. L1 缓存（本地内存）- 10分钟 TTL
     2. L2 缓存（Redis）- 1天 TTL
+    3. 版本号检测 - ClickHouse 平台统计表变化时自动失效
     """
 
     # Redis 键前缀
     REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_STATISTICS
+    REDIS_VERSION_KEY: str = RedisKeys.ARTICLE_STATISTICS_VERSION
     L1_CACHE_TTL: int = 600  # 10分钟
+
+    # 版本号校验依据：平台统计数仓表
+    VERSION_MODEL: type[AdsPlatformStats] = AdsPlatformStats
 
     async def get(self) -> Optional[dict[str, Any]]:
         """
         获取缓存（二级缓存）
 
         查找顺序：
-        1. 本地内存缓存（L1）
-        2. Redis 缓存（L2）
-        3. 返回 None（需要查询 DB）
+        1. 版本号校验，数仓平台统计表变化时缓存失效
+        2. 本地内存缓存（L1）
+        3. Redis 缓存（L2）
+        4. 返回 None（需要查询 DB）
         """
+        # 检查版本号是否变化
+        if await self.is_version_changed():
+            Logger.info(Messages.VERSION_CHANGED_CLEAR_CACHE)
+            await self.clear_all()
+            return None
+
         # 1. 先查本地缓存
         local_data = await self.get_from_local()
         if local_data:
@@ -53,9 +66,14 @@ class StatisticsCache(BaseCache):
         同时更新：
         1. 本地内存缓存（L1）
         2. Redis 缓存（L2）
+        3. 版本号
         """
+        # 更新两级缓存
         await self.update_local_cache(data)
         await self.update_redis_cache(data)
+
+        # 更新版本号
+        await self.update_version()
 
 
 @lru_cache()

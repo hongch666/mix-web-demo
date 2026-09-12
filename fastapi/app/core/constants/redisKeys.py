@@ -31,7 +31,11 @@ class RedisKeys:
 
     ARTICLE_STATISTICS: str = "article:statistics"
 
+    ARTICLE_STATISTICS_VERSION: str = "article:statistics:version"
+
     WORDCLOUD_URL: str = "wordcloud:url"
+
+    WORDCLOUD_URL_VERSION: str = "wordcloud:url:version"
 
     # ===== 同步时间 key =====
     VECTOR_SYNC_TIME: str = "vector_sync:last_sync_time"

@@ -1,5 +1,7 @@
 import asyncio
 
+from fastapi import APIRouter, BackgroundTasks, Query, Request
+
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.internal.cache import (
@@ -17,8 +19,6 @@ from app.internal.tasks import (
     sync_warehouse_async,
     update_analyze_caches_async,
 )
-
-from fastapi import APIRouter, BackgroundTasks, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/task",
@@ -101,7 +101,7 @@ async def task_clear_analyze_caches(
             get_category_cache().clear_all(),
             get_publish_time_cache().clear_all(),
             get_statistics_cache().clear_all(),
-            get_wordcloud_cache().delete(),
+            get_wordcloud_cache().clear_all(),
         )
 
     background_tasks.add_task(_clear_caches)

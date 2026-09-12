@@ -1,4 +1,5 @@
 import hashlib
+from contextvars import ContextVar
 from typing import Any, Optional
 
 from app.core.base import Logger
@@ -6,6 +7,12 @@ from app.core.constants import Messages, Scripts
 from app.core.db import execute_clickhouse_query
 
 from .baseCache import BaseCache
+
+# 按版本键记录本次读取缓存时观察到的数仓版本，供写缓存时提交
+# 缓存实例是单例，用实例属性会在并发请求间交叉覆盖，因此用 ContextVar 按协程隔离
+_READ_VERSIONS: ContextVar[Optional[dict[str, str]]] = ContextVar(
+    "cache_read_versions", default=None
+)
 
 
 class VersionedCache(BaseCache):
@@ -25,6 +32,19 @@ class VersionedCache(BaseCache):
         super().__init__()
         # 版本号
         self._cache_version: Optional[str] = None
+
+    def _remember_read_version(self, version: str) -> None:
+        """记录本次读取观察到的版本，供写缓存时提交"""
+        versions: dict[str, str] = dict(_READ_VERSIONS.get() or {})
+        versions[self.REDIS_VERSION_KEY] = version
+        _READ_VERSIONS.set(versions)
+
+    def _take_read_version(self) -> Optional[str]:
+        """取出并清除本次读取观察到的版本，避免被后续无关写入复用"""
+        versions: dict[str, str] = dict(_READ_VERSIONS.get() or {})
+        version: Optional[str] = versions.pop(self.REDIS_VERSION_KEY, None)
+        _READ_VERSIONS.set(versions)
+        return version
 
     async def get_cache_version(self) -> Optional[str]:
         """基于版本号校验模型对应表的内容生成稳定版本号"""
@@ -61,6 +81,9 @@ class VersionedCache(BaseCache):
             if not current_version:
                 Logger.debug(Messages.SKIP_VERSION_CHECK)
                 return False
+
+            # 记录本次读取观察到的版本，写缓存时以此为版本号，避免旧数据被绑定新版本
+            self._remember_read_version(current_version)
 
             # 从 Redis 获取旧版本号（优先级最高）
             old_version = None
@@ -102,9 +125,16 @@ class VersionedCache(BaseCache):
             return False
 
     async def update_version(self) -> None:
-        """更新版本号"""
+        """提交缓存数据的版本号
+
+        读取数据到写入缓存之间数仓可能已完成刷新，此时若取当前最新版本，会把刷新前
+        读到的旧数据与刷新后的新版本绑定，导致版本校验长期判定为未变化而缓存无法失效，
+        因此优先提交读取时观察到的版本，仅在缺少读取上下文（如预热直接写缓存）时回退实时计算
+        """
         try:
-            version = await self.get_cache_version()
+            version: Optional[str] = self._take_read_version()
+            if not version:
+                version = await self.get_cache_version()
             if version:
                 await self._persist_version(version)
                 Logger.info(Messages.CACHE_VERSION_UPDATED(version))

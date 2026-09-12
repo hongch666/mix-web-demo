@@ -1,9 +1,9 @@
+from fastapi import APIRouter, Request
+
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import GraphSearchServiceDep
 from app.internal.schemas import GraphSearchEnhanceReq, GraphSearchEnhanceResp
-
-from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/graph-search",
