@@ -1,0 +1,14 @@
+{
+  // 该文件仅供工作区根目录下的 TS/JS 工具链使用
+  // 例如 VS Code 的 Bun 测试扩展默认在根目录执行 bun test
+  // Bun 只读取当前工作目录的 tsconfig.json，缺少装饰器元数据会导致 NestJS 依赖注入失败
+  // 各服务自身的编译仍以各自目录下的 tsconfig.json 为准
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "src/*": ["./nestjs/src/*"]
+    }
+  }
+}
