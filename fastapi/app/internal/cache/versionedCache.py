@@ -1,8 +1,7 @@
 import hashlib
-from typing import Optional
+from typing import Any, Optional
 
 from app.core.base import Logger
-from app.core.config import load_config
 from app.core.constants import Messages, Scripts
 from app.core.db import execute_clickhouse_query
 
@@ -13,11 +12,14 @@ class VersionedCache(BaseCache):
     """
     带版本控制的缓存模板类
 
-    在基础缓存上增加版本号检测，表变化时自动失效
+    在基础缓存上增加版本号检测，数仓表变化时自动失效
     """
 
-    # 子类需要定义这个常量
+    # 子类需要定义这两个常量
     REDIS_VERSION_KEY: str = ""
+
+    # 版本号校验依据的数仓模型，直接取模型对应表（如 AdsTop10Article 对应 warehouse.ads_top10_articles）
+    VERSION_MODEL: Optional[type[Any]] = None
 
     def __init__(self) -> None:
         super().__init__()
@@ -25,18 +27,23 @@ class VersionedCache(BaseCache):
         self._cache_version: Optional[str] = None
 
     async def get_cache_version(self) -> Optional[str]:
-        """基于 ClickHouse 表内容生成稳定版本号"""
+        """基于版本号校验模型对应表的内容生成稳定版本号"""
+        if self.VERSION_MODEL is None:
+            Logger.warning(
+                Messages.CACHE_VERSION_MODEL_NOT_SET(type(self).__name__)
+            )
+            return None
+
         try:
-            ch_table = load_config("database")["clickhouse"]["table"]
-            ch_db = load_config("database")["clickhouse"]["database"]
+            ch_table: str = self.VERSION_MODEL.__table__.fullname
             # SQL 模板统一收敛在 core/constants/scripts.py
-            query = Scripts.CACHE_VERSION_CLICKHOUSE_QUERY(f"{ch_db}.{ch_table}")
+            query = Scripts.CACHE_VERSION_CLICKHOUSE_QUERY(ch_table)
             result = await execute_clickhouse_query(query)
             if not result:
                 return None
 
-            total_rows, max_update_ts, max_id = result[0]
-            version_str = f"{ch_db}.{ch_table}:{int(total_rows)}:{int(max_update_ts)}:{int(max_id)}"
+            total_rows, max_stat_ts = result[0]
+            version_str = f"{ch_table}:{int(total_rows)}:{int(max_stat_ts)}"
             return hashlib.md5(version_str.encode()).hexdigest()[:8]
         except Exception as e:
             Logger.debug(Messages.CACHE_VERSION_GET_FAILED(e))

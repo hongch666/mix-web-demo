@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
-from app.core.client import set_shared_http_client, start_nacos
+from app.core.client import set_internal_http_client, set_shared_http_client, start_nacos
 from app.core.config import load_config
 from app.core.constants import Messages
 from app.core.db import (
@@ -77,6 +77,16 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）
     remote_call_config: dict[str, Any] = load_config("remote_call")
     default_timeout: float = float(remote_call_config["timeout"])
+    # 内网服务间调用固定 trust_env=False，忽略容器内由 Docker CLI 注入的 HTTP(S)_PROXY
+    internal_http_client = httpx.AsyncClient(
+        trust_env=False,
+        timeout=httpx.Timeout(default_timeout, connect=min(5.0, default_timeout)),
+        limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+    )
+    set_internal_http_client(internal_http_client)
+    Logger.info(Messages.HTTP_CLIENT_INTERNAL_POOL_INITIALIZED)
+
+    # 外部资源抓取（网页、PDF 等）保留环境代理
     shared_http_client = httpx.AsyncClient(
         timeout=httpx.Timeout(default_timeout, connect=min(5.0, default_timeout)),
         limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
@@ -100,6 +110,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     await async_engine.dispose()
 
     # 应用关闭时清理 httpx 连接池
+    await internal_http_client.aclose()
+    Logger.info(Messages.HTTP_CLIENT_INTERNAL_POOL_CLOSED)
     await shared_http_client.aclose()
     Logger.info(Messages.HTTP_CLIENT_POOL_CLOSED)
 

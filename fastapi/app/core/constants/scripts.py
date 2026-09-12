@@ -12,12 +12,11 @@ class Scripts:
     # ===== ClickHouse SQL 模板 =====
     @staticmethod
     def CACHE_VERSION_CLICKHOUSE_QUERY(table: str) -> str:
-        """缓存版本号统计查询：基于表行数、最新更新时间与最大 ID 生成版本信息"""
+        """缓存版本号统计查询：基于表行数与最新统计时间生成版本信息"""
         return (
             "SELECT "
             "count() AS total_rows, "
-            "ifNull(max(toUnixTimestamp(update_at)), 0) AS max_update_ts, "
-            "ifNull(max(id), 0) AS max_id "
+            "ifNull(max(toUnixTimestamp(stat_time)), 0) AS max_stat_ts "
             f"FROM {table}"
         )
 

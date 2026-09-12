@@ -238,22 +238,26 @@ class AnalyzeService:
             Logger.info(Messages.TOP10_DB_SOURCE)
 
         if articles and isinstance(articles[0], dict):
-            user_ids: list[int] = [
-                article.get("user_id")
+            # 数仓 ADS 层已直接产出作者名，只有 DB 降级路径缺作者名时才远程补全
+            missing_name_user_ids: list[int] = [
+                article["user_id"]
                 for article in articles
-                if article.get("user_id")
+                if article.get("user_id") and not article.get("username")
             ]
-            if user_ids:
+            if missing_name_user_ids:
                 users: list[
                     dict[str, Any]
-                ] = await self._spring_client.get_users_by_ids(user_ids)
+                ] = await self._spring_client.get_users_by_ids(
+                    missing_name_user_ids
+                )
                 user_id_to_name: dict[int, str] = {
                     user["id"]: user["name"] for user in users
                 }
                 for article in articles:
-                    article["username"] = user_id_to_name.get(
-                        article.get("user_id")
-                    )
+                    if not article.get("username"):
+                        article["username"] = user_id_to_name.get(
+                            article.get("user_id")
+                        )
 
             for article in articles:
                 if article.get("create_at") and hasattr(

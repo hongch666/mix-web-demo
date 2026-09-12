@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
+from app.internal.models import AdsTop10Article
 
 from ..versionedCache import VersionedCache
 
@@ -24,6 +25,9 @@ class ArticleCache(VersionedCache):
     REDIS_KEY_PREFIX: str = RedisKeys.ARTICLE_TOP10
     REDIS_VERSION_KEY: str = RedisKeys.ARTICLE_TOP10_VERSION
     L1_CACHE_TTL: int = 300  # 5分钟
+
+    # 版本号校验依据：文章 Top10 数仓表
+    VERSION_MODEL: type[AdsTop10Article] = AdsTop10Article
 
     async def get(self) -> Optional[list[dict[str, Any]]]:
         """

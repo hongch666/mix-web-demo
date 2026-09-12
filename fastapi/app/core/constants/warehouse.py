@@ -334,21 +334,25 @@ class WarehouseScripts:
     REFRESH_ADS: Final[tuple[str, ...]] = (
         """
         INSERT INTO warehouse.ads_top10_articles
-        SELECT id, title, '', status, views, create_at, update_at, user_id,
-               sub_category_id, now()
-        FROM warehouse.dwd_article_event FINAL ORDER BY views DESC LIMIT 10
+        SELECT a.id, a.title, '', a.status, a.views, a.create_at, a.update_at,
+               a.user_id, ifNull(u.name, ''), a.sub_category_id, now()
+        FROM warehouse.dwd_article_event AS a FINAL
+        LEFT JOIN warehouse.dim_user AS u FINAL ON a.user_id = u.id
+        ORDER BY a.views DESC LIMIT 10
         """,
         """
         INSERT INTO warehouse.ads_category_stats
         SELECT parent_category_id, any(parent_category_name), count(), now()
         FROM warehouse.dwd_article_event FINAL GROUP BY parent_category_id
         """,
+        # 不能用 formatDateTime(create_at, '%Y-%m')：SQL 走驱动 pyformat 参数化，
+        # % 会被当成占位符导致 unsupported format character 报错，改等价字符串截取
         """
         INSERT INTO warehouse.ads_monthly_publish
-        SELECT formatDateTime(create_at, '%Y-%m'), count(), now()
+        SELECT substring(toString(create_at), 1, 7), count(), now()
         FROM warehouse.dwd_article_event FINAL
         WHERE create_at >= subtractMonths(now(), 24)
-        GROUP BY formatDateTime(create_at, '%Y-%m')
+        GROUP BY substring(toString(create_at), 1, 7)
         """,
         """
         INSERT INTO warehouse.ads_platform_stats

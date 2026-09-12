@@ -47,7 +47,6 @@ database:
     username: ${DB_CLICKHOUSE_USERNAME:default}
     password: ${DB_CLICKHOUSE_PASSWORD:}
     database: ${DB_CLICKHOUSE_DATABASE:warehouse}
-    table: ${DB_CLICKHOUSE_TABLE:ads_top10_articles}
     pool_size: 10
     max_overflow: 20
     pool_recycle: 3600

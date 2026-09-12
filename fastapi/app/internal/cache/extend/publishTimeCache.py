@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys
+from app.internal.models import AdsMonthlyPublish
 
 from ..versionedCache import VersionedCache
 
@@ -24,6 +25,9 @@ class PublishTimeCache(VersionedCache):
     REDIS_KEY_PREFIX: str = RedisKeys.PUBLISH_MONTHLY_COUNT
     REDIS_VERSION_KEY: str = RedisKeys.PUBLISH_MONTHLY_COUNT_VERSION
     L1_CACHE_TTL: int = 300  # 5分钟
+
+    # 版本号校验依据：月度发布数数仓表
+    VERSION_MODEL: type[AdsMonthlyPublish] = AdsMonthlyPublish
 
     async def get(self) -> Optional[list[dict[str, Any]]]:
         """

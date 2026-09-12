@@ -575,6 +575,10 @@ class Messages:
         return f"[缓存] 首次初始化，当前版本: {version}"
 
     @staticmethod
+    def CACHE_VERSION_MODEL_NOT_SET(cache_name: str) -> str:
+        return f"[缓存] {cache_name} 未配置版本号校验模型，跳过版本检测"
+
+    @staticmethod
     def CACHE_VERSION_CHANGED(old_version: str, new_version: str) -> str:
         return f"[缓存] 表版本已变化 (旧: {old_version} → 新: {new_version})"
 
@@ -1919,6 +1923,10 @@ class Messages:
     GRAPH_SEARCH_REASON_KEYWORD: str = "命中图谱标签"
 
     GRAPH_SEARCH_REASON_SUB_CATEGORY: str = "属于你常看的分类"
+
+    HTTP_CLIENT_INTERNAL_POOL_CLOSED: str = "httpx 内网连接池已关闭"
+
+    HTTP_CLIENT_INTERNAL_POOL_INITIALIZED: str = "httpx 内网连接池已初始化"
 
     HTTP_CLIENT_POOL_CLOSED: str = "httpx 共享连接池已关闭"
 
