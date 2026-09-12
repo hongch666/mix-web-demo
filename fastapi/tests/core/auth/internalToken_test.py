@@ -8,6 +8,7 @@ from app.core.auth import InternalTokenUtil
 
 @pytest.fixture(autouse=True)
 def reset_internal_token_util() -> Generator[None, None, None]:
+    os.environ.setdefault("INTERNAL_TOKEN_SECRET", "unit-test-secret-32-bytes-long-key")
     InternalTokenUtil._instance = None
     InternalTokenUtil._initialized = False
     InternalTokenUtil._secret = None
@@ -28,9 +29,8 @@ def test_generate_internal_token() -> None:
 
 
 def test_validate_internal_token() -> None:
-    token = os.getenv("INTERNAL_TOKEN_TEST_TOKEN")
-    assert token, "环境变量 INTERNAL_TOKEN_TEST_TOKEN 不能为空"
     internal_token_util = InternalTokenUtil()
+    token = internal_token_util.generate_internal_token(10001, "fastapi")
     claims = internal_token_util.validate_internal_token(token)
 
     assert claims

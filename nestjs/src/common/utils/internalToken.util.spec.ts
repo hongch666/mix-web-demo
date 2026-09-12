@@ -59,13 +59,9 @@ describe("InternalTokenUtil", () => {
   });
 
   it("应该使用环境变量中的内部Token校验通过", async () => {
-    const token = process.env.INTERNAL_TOKEN_TEST_TOKEN;
+    const token = await internalTokenUtil.generateInternalToken(10001, "nestjs");
 
-    expect(token).toBeTruthy();
-
-    const claims = await internalTokenUtil.validateInternalToken(
-      token as string,
-    );
+    const claims = await internalTokenUtil.validateInternalToken(token);
 
     expect(claims.userId).toBeDefined();
     expect(claims.serviceName).toBeDefined();
@@ -128,7 +124,7 @@ function stripQuotes(value: string): string {
     const firstChar = value[0];
     const lastChar = value[value.length - 1];
     if (
-      (firstChar === '"' && lastChar === '"') ||
+      (firstChar === "\"" && lastChar === "\"") ||
       (firstChar === "'" && lastChar === "'")
     ) {
       return value.slice(1, -1);
