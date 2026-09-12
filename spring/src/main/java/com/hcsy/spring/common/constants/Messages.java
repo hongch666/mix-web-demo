@@ -59,8 +59,8 @@ public class Messages {
     public static final String UNPUBLISH_ADD_VIEW = "文章未发布，无法增加阅读量";
     public static final String ADD_VIEW_ARTICLE = "增加阅读量失败：文章不存在或更新失败";
 
-    // ===== ES/Vector/Neo4j 同步 =====
-    public static final String SYNC = "触发同步 ES 和 Vector...";
+    // ===== ES/Vector/数仓同步 =====
+    public static final String SYNC = "触发同步 ES、向量库和数仓...";
     public static final String SYNC_ES_SUCCESS = "ES 同步完成";
     public static final String SYNC_VECTOR_SUCCESS = "Vector 同步完成";
     public static final String SYNC_ALL_SUCCESS = "所有同步任务执行完毕";
@@ -68,6 +68,7 @@ public class Messages {
     public static final String SYNC_PARALLEL_FAIL = "%s 并行同步失败，耗时: %dms, 错误: %s";
 
     // ===== ClickHouse 数仓同步 =====
+    public static final String WAREHOUSE_SYNC_SUCCESS = "ClickHouse 数仓同步已触发";
     public static final String WAREHOUSE_UNSUPPORTED_RESOURCE = "不支持的数仓同步资源: %s";
 
     // ===== Neo4j 同步任务描述 =====
@@ -84,7 +85,6 @@ public class Messages {
     public static final String CACHE_L2_CLEAR_FAILED = "L2缓存清除失败: %s";
     public static final String CACHE_INVALIDATION_PUBLISH_FAILED = "发布本地缓存失效消息失败，频道=%s: %s";
     public static final String CACHE_INVALIDATION_SUBSCRIBE_FAILED = "订阅本地缓存失效消息失败，频道=%s: %s";
-    public static final String CLEAR_CACHE_SUCCESS = "成功清除分析相关缓存";
     public static final String REFERENCE_EXIST = "该子分类已存在权威参考文本";
     public static final String PDF_EMPTY = "PDF类型必须提供pdf链接";
     public static final String LINK_EMPTY = "link类型必须提供link链接";
@@ -193,7 +193,7 @@ public class Messages {
 
     // ===== 服务降级 =====
     public static final String VECTOR_SYNC_SERVICE_UNAVAILABLE = "向量同步服务暂时不可用，已触发降级";
-    public static final String ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE = "分析缓存清理服务暂时不可用，已触发降级";
+    public static final String WAREHOUSE_SYNC_SERVICE_UNAVAILABLE = "数仓同步服务暂时不可用，已触发降级";
     public static final String NEO4J_SYNC_SERVICE_UNAVAILABLE = "Neo4j同步服务暂时不可用，已触发降级";
     public static final String ES_SERVICE_UNAVAILABLE = "ES 同步服务暂时不可用，已触发降级";
     public static final String NESTJS_EMAIL_SERVICE_UNAVAILABLE_MSG = "邮件服务暂时不可用，请稍后再试";

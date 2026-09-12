@@ -20,9 +20,9 @@ public class FastAPIClient {
             Messages.VECTOR_SYNC_SERVICE_UNAVAILABLE);
     }
 
-    public Mono<Result<?>> clearAnalyzeCaches() {
-        return serviceWebClient.request(HttpMethod.POST, "fastapi", "/task/clear-analyze-caches",
-            ServiceRequestOptions.empty(), Messages.ANALYSIS_CACHE_CLEANUP_SERVICE_UNAVAILABLE);
+    public Mono<Result<?>> syncWarehouse() {
+        return serviceWebClient.request(HttpMethod.POST, "fastapi", "/task/sync-warehouse",
+            ServiceRequestOptions.empty(), Messages.WAREHOUSE_SYNC_SERVICE_UNAVAILABLE);
     }
 
     public Mono<Result<?>> syncNeo4j() {

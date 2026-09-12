@@ -4,12 +4,12 @@ import reactor.core.publisher.Mono;
 
 /**
  * 异步同步服务接口
- * 用于在后台异步执行 ES、Hive、Vector 同步操作
+ * 用于在后台异步执行 ES、向量库和 ClickHouse 数仓同步操作
  */
 public interface AsyncSyncService {
 
     /**
-     * 异步同步 ES、Hive 和 Vector
+     * 异步同步 ES、向量库和 ClickHouse 数仓
      * 此方法会在后台线程池中执行，不阻塞主流程
      *
      * @param userId

@@ -34,9 +34,9 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
         // 重试与熔断统一由底层 ServiceWebClient 的 resilience4j 处理，此处不再叠加重试，避免重复重试放大调用次数与耗时
         Mono<Void> es = reactiveCall(goZeroClient::syncES, Messages.SYNC_ES_SUCCESS);
         Mono<Void> vector = reactiveCall(fastAPIClient::syncVector, Messages.SYNC_VECTOR_SUCCESS);
-        Mono<Void> cache = reactiveCall(fastAPIClient::clearAnalyzeCaches, Messages.CLEAR_CACHE_SUCCESS);
+        Mono<Void> warehouse = reactiveCall(fastAPIClient::syncWarehouse, Messages.WAREHOUSE_SYNC_SUCCESS);
 
-        return Mono.when(es, vector, cache)
+        return Mono.when(es, vector, warehouse)
             .doOnSuccess(ignored -> {
                 long duration = System.currentTimeMillis() - startTime;
                 logger.info(Messages.SYNC_PARALLEL_SUCCESS, user, duration);
