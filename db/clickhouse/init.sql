@@ -285,6 +285,7 @@ CREATE TABLE IF NOT EXISTS warehouse.ads_top10_articles (
     create_at DateTime,
     update_at DateTime,
     user_id Int64,
+    user_name String,
     sub_category_id Int64,
     stat_time DateTime
 ) ENGINE = ReplacingMergeTree (stat_time)
