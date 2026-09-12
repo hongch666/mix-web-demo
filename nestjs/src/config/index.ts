@@ -24,7 +24,7 @@ if (fs.existsSync(dotenvPath)) {
  * 递归解析 YAML 中的环境变量占位符
  * 支持格式：${VAR_NAME:default_value} 或 ${VAR_NAME}
  */
-function resolveEnvVars(obj: unknown): unknown {
+export function resolveEnvVars(obj: unknown): unknown {
   if (typeof obj === "string") {
     const resolved: string = obj.replace(
       /\$\{([^:}]+)(?::([^}]*))?\}/g,
