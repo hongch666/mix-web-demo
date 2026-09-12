@@ -1531,7 +1531,7 @@ docker system prune -af
   - `nestjs/`：user_table_settings
   - `fastapi/`：ai_history
 - `db/postgresql/`：PostgreSQL 初始化脚本，主要用于扩展启用
-- `db/clickhouse/`：ClickHouse 初始化脚本，主要用于映射库和物化视图
+- `db/clickhouse/`：ClickHouse 初始化脚本，按数仓分层拆分为子目录（ods/dwd/dws/dim/ads），每个表独立一个 SQL 文件
 - `db/mongodb/`：MongoDB 初始化脚本，主要用于集合和索引创建
 - `db/es/`：Elasticsearch 初始化脚本，主要用于索引和映射创建
 - `db/neo4j/`：Neo4j 初始化脚本，主要用于创建唯一约束
@@ -1556,7 +1556,7 @@ LangChain 会自动创建，但需要先执行 `db/postgresql/extensions.sql` �
 
 ### ClickHouse 创建
 
-需要先执行 `db/clickhouse/init.sql`，其中包含 MySQL 映射库、本地表和物化视图的创建语句，MySQL 映射库需要修改为实际的 MySQL 连接信息
+需要先在 `db/clickhouse/` 下按数仓分层目录（`ods`、`dwd`、`dws`、`dim`、`ads`）依次执行单表建表脚本，脚本中不包含库前缀，执行前先切换到目标数据库（`CREATE DATABASE` 与 `USE` 由使用方按需自行执行）
 
 ### Neo4j 初始化
 
