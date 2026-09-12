@@ -9,12 +9,11 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.hcsy.spring.core.properties.InternalTokenProperties;
 
@@ -43,7 +42,9 @@ class InternalTokenUtilTest {
                 "INTERNAL_TOKEN_EXPIRATION",
                 String.valueOf(DEFAULT_INTERNAL_TOKEN_EXPIRATION))));
 
-        internalTokenUtil = new InternalTokenUtil(internalTokenProperties, new SimpleLogger());
+        SimpleLogger logger = new SimpleLogger();
+        ReflectionTestUtils.setField(logger, "logPath", "target/test-logs");
+        internalTokenUtil = new InternalTokenUtil(internalTokenProperties, logger);
         internalTokenUtil.initKey();
     }
 
@@ -60,9 +61,7 @@ class InternalTokenUtilTest {
     @Test
     @DisplayName("应该使用内部代码和配置校验内部Token")
     void shouldValidateInternalToken() {
-        String internalToken = System.getenv("INTERNAL_TOKEN_TEST_TOKEN");
-        Assumptions.assumeTrue(Objects.nonNull(internalToken) && !internalToken.isEmpty(),
-            "环境变量 INTERNAL_TOKEN_TEST_TOKEN 不能为空");
+        String internalToken = internalTokenUtil.generateInternalToken(10001L, "spring");
 
         assertTrue(internalTokenUtil.validateInternalToken(internalToken));
     }
