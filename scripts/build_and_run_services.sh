@@ -110,6 +110,12 @@ build_image() {
     local service=$1
     local service_dir="${PROJECT_DIR}/${service}"
 
+    # 网关使用官方 apache/apisix 镜像，仅通过 compose 启动，不构建本地镜像
+    if [ "$service" = "gateway" ]; then
+        print_info "gateway 使用官方 apache/apisix 镜像，跳过镜像构建"
+        return 0
+    fi
+
     if [ ! -d "$service_dir" ]; then
         print_error "服务目录不存在: $service_dir"
         return 1

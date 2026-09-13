@@ -191,30 +191,7 @@ setup_spring() {
         ./mvnw clean install
     fi
 
-    cd "$WORKDIR/gateway"
-
-    # Gateway 同样同时使用 Gradle 和 Maven
-    local gateway_build_success=false
-
-    if command_exists gradle; then
-        log_info "使用 Gradle 构建 Gateway..."
-        if gradle clean build -x test; then
-            log_info "Gradle 构建成功"
-            gateway_build_success=true
-        else
-            log_warn "Gradle 构建失败，尝试使用 Maven"
-        fi
-    fi
-
-    if command_exists mvn; then
-        log_info "使用 Maven 安装 Gateway 依赖..."
-        mvn clean install
-        gateway_build_success=true
-    elif [ "$gateway_build_success" = false ]; then
-        log_info "使用 mvnw 构建 Gateway..."
-        chmod +x mvnw
-        ./mvnw clean install
-    fi
+    # 网关已迁移至 Apache APISIX，通过官方 Docker 镜像运行，无需 Java 构建工具
 
     cd "$WORKDIR"
     log_info "Spring 部分配置完成!"
@@ -433,7 +410,7 @@ check_gradle() {
 
     if ! command_exists gradle; then
         log_warn "未检测到全局 Gradle (可选)"
-        log_info "Gradle 用于加速 Spring/Gateway 构建"
+        log_info "Gradle 用于加速 Spring 构建"
         echo ""
         echo "安装 Gradle 的方法:"
         echo "  macOS (使用 Homebrew):"
