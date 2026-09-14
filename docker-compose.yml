@@ -147,8 +147,8 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./spring/.env.docker
-    ports:
-      - "8081:8081"
+    # 业务服务不映射宿主机端口，容器间调用经 Nacos 服务发现与 hcsy 网络直连
+    # 对外入口只有 gateway 的 8080，宿主机直连调试改用 docker exec 或 override 文件
     environment:
       <<: *no-proxy-env
       HOME: /tmp
@@ -188,8 +188,6 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./gozero/app/.env.docker
-    ports:
-      - "8082:8082"
     environment:
       <<: *no-proxy-env
       HOME: /tmp
@@ -232,8 +230,6 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./nestjs/.env.docker
-    ports:
-      - "8083:8083"
     environment:
       <<: *no-proxy-env
       HOME: /tmp
@@ -276,8 +272,6 @@ services:
         condition: service_completed_successfully
     env_file:
       - ./fastapi/.env.docker
-    ports:
-      - "8084:8084"
     environment:
       <<: *no-proxy-env
       HOME: /tmp

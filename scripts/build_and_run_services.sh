@@ -180,8 +180,8 @@ run_container() {
 
     print_info "启动 ${service} 容器..."
 
-    # 构建启动参数
-    local run_args=(docker run -d --name "$container_name" --network "$NETWORK_NAME" -p "$port:$port")
+    # 构建启动参数，不映射宿主机端口，容器间经 Nacos 发现与 hcsy 网络直连，对外统一走 gateway 的 8080
+    local run_args=(docker run -d --name "$container_name" --network "$NETWORK_NAME")
     local env_args=()
     local volume_args=()
     env_file="$(get_env_file_path "$service")"
