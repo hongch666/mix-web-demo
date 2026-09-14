@@ -8,7 +8,6 @@ from functools import lru_cache
 from typing import Any, Optional
 
 from dateutil.relativedelta import relativedelta
-from fastapi import Depends
 from openpyxl import Workbook
 from sqlalchemy.ext.asyncio import AsyncSession
 from wordcloud import WordCloud
@@ -216,9 +215,7 @@ class AnalyzeService:
             if cached_result:
                 total_time: float = time.time() - start
                 Logger.info(
-                    Messages.SERVICE_CACHE_HIT(
-                        "get_top10_articles_service", total_time
-                    )
+                    Messages.SERVICE_CACHE_HIT("get_top10_articles_service", total_time)
                 )
                 return cached_result
         except Exception as cache_e:
@@ -227,7 +224,9 @@ class AnalyzeService:
         Logger.info(Messages.TOP10_CACHE_MISS)
 
         try:
-            articles = await self.articleMapper.get_top10_articles_clickhouse_mapper_async()
+            articles = (
+                await self.articleMapper.get_top10_articles_clickhouse_mapper_async()
+            )
             if articles and isinstance(articles[0], dict):
                 data_source = "ClickHouse"
                 Logger.info(Messages.TOP10_CLICKHOUSE_GET)
@@ -254,9 +253,7 @@ class AnalyzeService:
             if missing_name_user_ids:
                 users: list[
                     dict[str, Any]
-                ] = await self._spring_client.get_users_by_ids(
-                    missing_name_user_ids
-                )
+                ] = await self._spring_client.get_users_by_ids(missing_name_user_ids)
                 user_id_to_name: dict[int, str] = {
                     user["id"]: user["name"] for user in users
                 }
@@ -634,9 +631,7 @@ class AnalyzeService:
 
         if not local_category_data:
             # 通过SpringClient远程查询DB作为降级
-            local_category_data = (
-                await self._spring_client.get_category_article_count()
-            )
+            local_category_data = await self._spring_client.get_category_article_count()
             local_data_source = "DB"
             Logger.info(Messages.CATEGORY_STATISTICS_DB_SOURCE)
 
@@ -662,9 +657,7 @@ class AnalyzeService:
             self._spring_client.get_all_categories(),
             self._spring_client.get_subcategories_with_parent(),
         )
-        sub_cat_map: dict[int, dict[str, Any]] = {
-            sc["id"]: sc for sc in subcategories
-        }
+        sub_cat_map: dict[int, dict[str, Any]] = {sc["id"]: sc for sc in subcategories}
 
         parent_category_count: dict[int, dict[str, Any]] = {}
         for category in all_categories:
@@ -686,9 +679,7 @@ class AnalyzeService:
         result.sort(key=lambda x: x["article_count"], reverse=True)
 
         non_zero_count: int = len([c for c in result if c["article_count"] > 0])
-        Logger.info(
-            Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count)
-        )
+        Logger.info(Messages.CATEGORY_ARTICLE_COUNT_RESULT(len(result), non_zero_count))
 
         data_source = local_data_source
 
@@ -757,9 +748,7 @@ class AnalyzeService:
 
         if not local_publish_data:
             # 通过SpringClient远程查询DB作为降级
-            local_publish_data = (
-                await self._spring_client.get_monthly_publish_count()
-            )
+            local_publish_data = await self._spring_client.get_monthly_publish_count()
             local_data_source = "DB"
             Logger.info(Messages.MONTHLY_STATISTICS_DB_SOURCE)
 
@@ -803,12 +792,14 @@ class AnalyzeService:
 
 @lru_cache()
 def get_analyze_service(
-    articleMapper: ArticleMapper = Depends(get_article_mapper),
-    article_cache: ArticleCache = Depends(get_article_cache),
-    category_cache: CategoryCache = Depends(get_category_cache),
-    publish_time_cache: PublishTimeCache = Depends(get_publish_time_cache),
-    statistics_cache: StatisticsCache = Depends(get_statistics_cache),
-    wordcloud_cache: WordcloudCache = Depends(get_wordcloud_cache),
+    articleMapper: ArticleMapper,
+    article_cache: ArticleCache,
+    category_cache: CategoryCache,
+    publish_time_cache: PublishTimeCache,
+    statistics_cache: StatisticsCache,
+    wordcloud_cache: WordcloudCache,
+    spring_client: SpringClient,
+    nestjs_client: NestjsClient,
 ) -> AnalyzeService:
     return AnalyzeService(
         articleMapper,
@@ -817,6 +808,6 @@ def get_analyze_service(
         publish_time_cache,
         statistics_cache,
         wordcloud_cache,
-        get_spring_client(),
-        get_nestjs_client(),
+        spring_client,
+        nestjs_client,
     )

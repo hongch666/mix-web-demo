@@ -6,7 +6,7 @@ from app.common.middleware import get_current_user_id
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
-from app.internal.clients import SpringClient
+from app.internal.clients import get_spring_client
 
 
 def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -24,7 +24,7 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
             )
 
         try:
-            users = await SpringClient().get_users_by_ids([int(user_id)])
+            users = await get_spring_client().get_users_by_ids([int(user_id)])
             user_role: str = (
                 users[0].get("role") or Messages.ROLE_USER
                 if users

@@ -1,14 +1,11 @@
 from functools import lru_cache
 from typing import Any, Optional
 
-from fastapi import Depends
-
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import (
     AiHistoryMapper,
-    get_ai_history_mapper,
 )
 from app.internal.models import AiHistory
 
@@ -142,9 +139,10 @@ class AiHistoryService:
 
 @lru_cache
 def get_ai_history_service(
-    ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
+    ai_history_mapper: AiHistoryMapper,
+    spring_client: SpringClient,
 ) -> AiHistoryService:
     return AiHistoryService(
         ai_history_mapper,
-        get_spring_client(),
+        spring_client,
     )

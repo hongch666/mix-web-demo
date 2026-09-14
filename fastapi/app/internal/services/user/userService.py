@@ -10,10 +10,8 @@ from app.core.constants import Messages
 from app.internal.clients import (
     NestjsClient,
     SpringClient,
-    get_nestjs_client,
-    get_spring_client,
 )
-from app.internal.crud import UserMapper, get_user_mapper
+from app.internal.crud import UserMapper
 
 
 class UserService:
@@ -346,10 +344,14 @@ class UserService:
 
 
 @lru_cache()
-def get_user_service() -> UserService:
+def get_user_service(
+    spring_client: SpringClient,
+    nestjs_client: NestjsClient,
+    user_mapper: UserMapper,
+) -> UserService:
     """获取 UserService 单例实例"""
     return UserService(
-        get_spring_client(),
-        get_nestjs_client(),
-        get_user_mapper(),
+        spring_client,
+        nestjs_client,
+        user_mapper,
     )

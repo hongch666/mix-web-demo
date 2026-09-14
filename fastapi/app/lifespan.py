@@ -8,7 +8,11 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
-from app.core.client import set_internal_http_client, set_shared_http_client, start_nacos
+from app.core.client import (
+    set_internal_http_client,
+    set_shared_http_client,
+    start_nacos,
+)
 from app.core.config import load_config
 from app.core.constants import Messages
 from app.core.db import (
@@ -26,7 +30,7 @@ from app.internal.agents.langsmith import (
     load_langsmith_config,
     shutdown_langsmith,
 )
-from app.internal.clients import NestjsClient, SpringClient
+from app.internal.clients import get_nestjs_client, get_spring_client
 from app.internal.models import AiHistory
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
@@ -70,8 +74,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     scheduler = start_scheduler(
         analyze_service=analyze_service,
         db_factory=db_factory,
-        nestjs_client=NestjsClient(),
-        spring_client=SpringClient(),
+        nestjs_client=get_nestjs_client(),
+        spring_client=get_spring_client(),
     )
 
     # 初始化跨服务调用的 httpx 长连接池（复用连接，降低延迟）

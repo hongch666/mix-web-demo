@@ -4,7 +4,7 @@ from typing import Any
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from app.internal.clients import NestjsClient, get_nestjs_client
+from app.internal.clients import NestjsClient
 from app.internal.crud import ApiLogMapper, get_api_log_mapper
 
 
@@ -52,5 +52,7 @@ class ApiLogService:
 
 
 @lru_cache()
-def get_apilog_service() -> ApiLogService:
-    return ApiLogService(get_nestjs_client())
+def get_apilog_service(
+    nestjs_client: NestjsClient,
+) -> ApiLogService:
+    return ApiLogService(nestjs_client)

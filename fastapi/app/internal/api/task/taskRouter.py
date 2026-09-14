@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Query, Request
 
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
+from app.dependencies import NestjsClientDep, SpringClientDep
 from app.internal.cache import (
     get_article_cache,
     get_category_cache,
@@ -11,7 +12,6 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
-from app.internal.clients import NestjsClient, SpringClient
 from app.internal.tasks import (
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
@@ -140,13 +140,16 @@ async def task_sync_neo4j(
 @requireInternalToken
 @log("手动触发 ClickHouse 数仓同步任务")
 async def task_sync_warehouse(
-    request: Request, background_tasks: BackgroundTasks
+    request: Request,
+    background_tasks: BackgroundTasks,
+    spring_client: SpringClientDep,
+    nestjs_client: NestjsClientDep,
 ) -> ApiResponse:
     """手动触发 ClickHouse 数仓同步任务接口"""
 
     background_tasks.add_task(
         sync_warehouse_async,
-        spring_client=SpringClient(),
-        nestjs_client=NestjsClient(),
+        spring_client=spring_client,
+        nestjs_client=nestjs_client,
     )
     return success()

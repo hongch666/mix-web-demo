@@ -6,7 +6,6 @@ from functools import lru_cache
 from typing import Any, Optional
 
 import jieba.analyse
-from fastapi import Depends
 
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages, Prompts
@@ -14,9 +13,9 @@ from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
 from app.internal.clients import SpringClient, get_spring_client
 
-from ..llm.extend.geminiService import GeminiService, get_gemini_service
-from ..llm.extend.glmService import GlmService, get_glm_service
-from ..llm.extend.gptService import GptService, get_gpt_service
+from ..llm.extend.geminiService import GeminiService
+from ..llm.extend.glmService import GlmService
+from ..llm.extend.gptService import GptService
 
 
 class GenerateService:
@@ -645,13 +644,14 @@ class GenerateService:
 
 @lru_cache()
 def get_generate_service(
-    glm_service: GlmService = Depends(get_glm_service),
-    gemini_service: GeminiService = Depends(get_gemini_service),
-    gpt_service: GptService = Depends(get_gpt_service),
+    glm_service: GlmService,
+    gemini_service: GeminiService,
+    gpt_service: GptService,
+    spring_client: SpringClient,
 ) -> GenerateService:
     return GenerateService(
         glm_service,
         gemini_service,
         gpt_service,
-        get_spring_client(),
+        spring_client,
     )

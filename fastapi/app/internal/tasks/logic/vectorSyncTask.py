@@ -9,7 +9,7 @@ from app.core.errors import BusinessException
 from app.internal.agents import get_rag_tools
 from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.cache import get_redis_client
-from app.internal.clients import SpringClient
+from app.internal.clients import SpringClient, get_spring_client
 
 
 def _get_redis_client() -> Optional[Any]:
@@ -195,7 +195,7 @@ async def _export_article_vectors_to_postgres(
         mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
         enable_incremental_sync: 是否启用增量同步（仅同步有变更的文章）
     """
-    spring_client: SpringClient = SpringClient()
+    spring_client: SpringClient = get_spring_client()
 
     rag_tools: Any = get_rag_tools()
 
@@ -407,7 +407,7 @@ async def _initialize_article_content_hash_cache(
         article_mapper: ArticleMapper 实例（已废弃，保留参数以兼容旧调用）
         mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
     """
-    spring_client: SpringClient = SpringClient()
+    spring_client: SpringClient = get_spring_client()
 
     try:
         Logger.info(Messages.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)

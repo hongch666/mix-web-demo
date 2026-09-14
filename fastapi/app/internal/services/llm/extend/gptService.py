@@ -4,10 +4,7 @@ from typing import Optional
 from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import (
     AiHistoryMapper,
-    get_ai_history_mapper,
 )
-
-from fastapi import Depends
 
 from ..baseAIService import BaseAiService
 
@@ -31,7 +28,8 @@ class GptService(BaseAiService):
 
 @lru_cache()
 def get_gpt_service(
-    ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
+    ai_history_mapper: AiHistoryMapper,
+    spring_client: SpringClient,
 ) -> GptService:
     """获取 GPT 服务单例实例"""
-    return GptService(ai_history_mapper, get_spring_client())
+    return GptService(ai_history_mapper, spring_client)

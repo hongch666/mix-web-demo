@@ -7,7 +7,7 @@ from typing import Any, Optional
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
 from app.core.db import get_neo4j_client, get_redis_client
-from app.internal.clients import SpringClient
+from app.internal.clients import get_spring_client
 
 
 class KnowledgeGraphSyncService:
@@ -24,7 +24,7 @@ class KnowledgeGraphSyncService:
     def __init__(self) -> None:
         self.logger = Logger
         self.client = get_neo4j_client()
-        self.spring_client = SpringClient()
+        self.spring_client = get_spring_client()
 
     @staticmethod
     def _format_datetime(value: Any) -> str:
