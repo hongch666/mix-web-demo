@@ -114,6 +114,7 @@ routes:
   - id: auth-public-github-token
     uri: /users/github/token
     upstream_id: spring
+    plugins: *login_limit
   - id: auth-public-upload
     uri: /upload/*
     upstream_id: nestjs
