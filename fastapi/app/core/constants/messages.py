@@ -1084,10 +1084,22 @@ class Messages:
         return "Agent 执行过程:\n"
 
     @staticmethod
+    def AGENT_EXECUTION_STEP_START(
+        step_num: int, tool_name: str, tool_input: str
+    ) -> str:
+        return f"\n步骤 {step_num}:\n  工具: {tool_name}\n  输入: {tool_input}\n"
+
+    @staticmethod
+    def AGENT_EXECUTION_STEP_RESULT(observation: str) -> str:
+        return f"  结果: {observation}\n"
+
+    @staticmethod
     def AGENT_EXECUTION_STEP(
         step_num: int, tool_name: str, tool_input: str, observation: str
     ) -> str:
-        return f"\n步骤 {step_num}:\n  工具: {tool_name}\n  输入: {tool_input}\n  结果: {observation}\n"
+        return Messages.AGENT_EXECUTION_STEP_START(
+            step_num, tool_name, tool_input
+        ) + Messages.AGENT_EXECUTION_STEP_RESULT(observation)
 
     @staticmethod
     def AGENT_FINAL_RESULT(result: str) -> str:

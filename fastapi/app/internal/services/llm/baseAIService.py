@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Optional
 
 from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.agents import AgentAction
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
@@ -245,7 +246,7 @@ class BaseAiService:
 
         # 构建中间步骤
         if intermediate_steps:
-            thinking_parts.append("Agent 执行过程:\n")
+            thinking_parts.append(Messages.AGENT_EXECUTION_PROCESS_HEADER())
             for i, (action, observation) in enumerate(intermediate_steps, 1):
                 tool_name = action.tool if hasattr(action, "tool") else str(action)
                 tool_input = action.tool_input if hasattr(action, "tool_input") else ""
@@ -796,17 +797,84 @@ class BaseAiService:
                 full_input = context + user_info + Messages.CURRENT_QUESTION(message)
 
                 Logger.info(Messages.AGENT_START_PROCESSING_MESSAGE)
+
+                # 事件流驱动的中间结果，工具步骤完成即推送思考片段
+                intermediate_steps: list[IntermediateStep] = []
+                agent_result: str = ""
+                # run_id 关联工具事件，保证并行工具调用也能正确回填步骤
+                pending_tool_runs: dict[str, tuple[str, Any]] = {}
+                step_counter: int = 0
+                thinking_header_sent: bool = False
+
                 try:
-                    agent_response = await self.agent_executor.ainvoke(
+                    async for event in self.agent_executor.astream_events(
                         {
                             "input": full_input,
                             "system_message": Messages.STREAMING_CHAT_THINKING_SYSTEM_MESSAGE,
                         },
                         config=config,
-                    )
-                    agent_result = self._extract_message_content(
-                        agent_response.get("output", Messages.MESSAGE_RETRIEVAL_ERROR)
-                    )
+                        version="v2",
+                    ):
+                        event_name = str(event.get("event") or "")
+                        event_data: dict[str, Any] = event.get("data") or {}
+
+                        if event_name == "on_tool_start":
+                            if not thinking_header_sent:
+                                thinking_header_sent = True
+                                yield {
+                                    "type": "thinking",
+                                    "content": Messages.AGENT_EXECUTION_PROCESS_HEADER(),
+                                }
+
+                            step_counter += 1
+                            tool_name = str(event.get("name") or "")
+                            tool_input = event_data.get("input", "")
+                            pending_tool_runs[str(event.get("run_id"))] = (
+                                tool_name,
+                                tool_input,
+                            )
+                            yield {
+                                "type": "thinking",
+                                "content": Messages.AGENT_EXECUTION_STEP_START(
+                                    step_counter, tool_name, str(tool_input)
+                                ),
+                            }
+                            continue
+
+                        if event_name == "on_tool_end":
+                            tool_name, tool_input = pending_tool_runs.pop(
+                                str(event.get("run_id")),
+                                (str(event.get("name") or ""), ""),
+                            )
+                            observation = event_data.get("output", "")
+                            intermediate_steps.append(
+                                (
+                                    AgentAction(
+                                        tool=tool_name, tool_input=tool_input, log=""
+                                    ),
+                                    observation,
+                                )
+                            )
+                            yield {
+                                "type": "thinking",
+                                "content": Messages.AGENT_EXECUTION_STEP_RESULT(
+                                    self._extract_message_content(observation)
+                                ),
+                            }
+                            continue
+
+                        if event_name == "on_chain_end":
+                            chain_output = event_data.get("output")
+                            if isinstance(chain_output, dict) and "output" in chain_output:
+                                agent_result = (
+                                    self._extract_message_content(
+                                        chain_output.get("output")
+                                    )
+                                    or agent_result
+                                )
+                                collected_steps = chain_output.get("intermediate_steps")
+                                if isinstance(collected_steps, list) and collected_steps:
+                                    intermediate_steps = collected_steps
                 except Exception as agent_error:
                     error_msg = str(agent_error)
                     Logger.error(Messages.AGENT_EXECUTION_FAILED(error_msg))
@@ -816,7 +884,11 @@ class BaseAiService:
                     }
                     return
 
-                intermediate_steps = agent_response.get("intermediate_steps", [])
+                # 事件流未携带最终结果时，从工具观测值兜底
+                agent_result = agent_result or self._build_agent_fallback_result(
+                    intermediate_steps
+                )
+
                 thinking_text = self._build_complete_thinking_text(
                     intermediate_steps, agent_result
                 )
@@ -840,7 +912,10 @@ class BaseAiService:
                 else:
                     Logger.debug(Messages.COMPLETE_THINKING_PROCESS_TEXT(thinking_text))
 
-                yield {"type": "thinking", "content": thinking_text}
+                yield {
+                    "type": "thinking",
+                    "content": Messages.AGENT_FINAL_RESULT(agent_result),
+                }
 
                 Logger.info(Messages.AGENT_START_STREAMING_MESSAGE)
 
