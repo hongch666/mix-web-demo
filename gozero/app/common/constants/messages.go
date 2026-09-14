@@ -114,7 +114,6 @@ const (
 	MYSQL_CLOSE_FAIL                         = "关闭 MySQL 连接失败: %v"
 	REDIS_CLOSE_FAIL                         = "关闭 Redis 连接失败: %v"
 	FASTAPI_WEIGHTS_FORMAT_ERROR             = "FastAPI 响应格式异常"
-	SEARCH_WEIGHTS_FETCH_FAIL                = "获取搜索参数失败: %v"
 	ENSURE_CHAT_MESSAGES_TABLE_FAIL          = "确保 chat_messages 表存在失败: %v"
 	ENSURE_CHAT_MESSAGES_TABLE_SUCCESS       = "已确保 chat_messages 表存在"
 
@@ -146,7 +145,8 @@ const (
 	GRAPH_ENHANCE_DEGRADE_LOG              = "图谱增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
 	VECTOR_ENHANCE_CALL_FAILED             = "向量增强服务调用失败: %w"
 	VECTOR_ENHANCE_DEGRADE_LOG             = "向量增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
-	SCRIPT_PARAMS_FETCH_DEGRADE_LOG        = "获取脚本参数名映射失败，降级使用weightKey作为参数名: %v"
+	SEARCH_SCRIPTS_FETCH_DEGRADE_LOG       = "获取搜索脚本、权重与脚本参数名映射失败，降级为普通 ES 条件分页查询: script=%v, weights=%v, scriptParams=%v"
+	SEARCH_RECALL_DEGRADE_LOG              = "深分页超出召回上限，退化为窗口内重排: page=%d, size=%d, recallLimit=%d"
 
 	// 用户日志
 	RECORD_DURATION_MESSAGE    = "%s %s 使用了%dms"

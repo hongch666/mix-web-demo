@@ -46,6 +46,46 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		size = 10
 	}
 
+	// 并行从 FastAPI 拉取 ES 搜索脚本三件套：脚本模板、权重与参数名映射（各自缓存 60s）
+	var script search.SearchScript
+	var weights search.SearchWeights
+	var paramMap search.ScriptParamMapping
+	var scriptErr, weightsErr, paramErr error
+	_ = mr.Finish(
+		func() error {
+			script, scriptErr = l.svcCtx.FastapiClient.GetSearchScript(l.ctx)
+			return nil
+		},
+		func() error {
+			weights, weightsErr = l.svcCtx.FastapiClient.GetSearchWeights(l.ctx)
+			return nil
+		},
+		func() error {
+			paramMap, paramErr = l.svcCtx.FastapiClient.GetSearchScriptParams(l.ctx)
+			return nil
+		},
+	)
+
+	// 脚本模板、权重与脚本参数名映射任一失败都降级为普通 ES 条件分页查询
+	// 权重缺失后无法计算融合权重，故降级路径同时放弃召回放大与向量、图谱增强
+	degraded := scriptErr != nil || weightsErr != nil || paramErr != nil
+	if degraded {
+		l.Warningf(constants.SEARCH_SCRIPTS_FETCH_DEGRADE_LOG, scriptErr, weightsErr, paramErr)
+	}
+
+	// 解析 ES 召回窗口：浅页放大召回后由业务层切页，深页维持窗口内重排
+	// 降级路径不做融合重排，直接按请求页码与页大小查询
+	queryPage, querySize := page, size
+	amplified := false
+	if !degraded {
+		var recallSize int
+		queryPage, recallSize, amplified = resolveRecallWindow(page, size)
+		querySize = recallSize
+		if !amplified {
+			l.Warningf(constants.SEARCH_RECALL_DEGRADE_LOG, page, size, constants.SEARCH_RECALL_MAX_SIZE)
+		}
+	}
+
 	// 构建搜索DTO
 	keyword := ""
 	if req.Keyword != nil {
@@ -75,57 +115,24 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		SubCategoryName: subCategoryName,
 		StartDate:       req.StartDate,
 		EndDate:         req.EndDate,
-		Page:            page,
-		Size:            size,
+		Page:            queryPage,
+		Size:            querySize,
 	}
 
-	// 并行从 FastAPI 获取 ES 搜索脚本模板、权重参数和脚本参数名映射（各自缓存 60s）
-	var script search.SearchScript
-	var weights search.SearchWeights
-	var paramMap search.ScriptParamMapping
-	var scriptErr, weightsErr, paramErr error
-	_ = mr.Finish(
-		func() error {
-			script, scriptErr = l.svcCtx.FastapiClient.GetSearchScript(l.ctx)
-			if scriptErr != nil {
-				return scriptErr
-			}
-			return nil
-		},
-		func() error {
-			weights, weightsErr = l.svcCtx.FastapiClient.GetSearchWeights(l.ctx)
-			if weightsErr != nil {
-				return weightsErr
-			}
-			return nil
-		},
-		func() error {
-			paramMap, paramErr = l.svcCtx.FastapiClient.GetSearchScriptParams(l.ctx)
-			if paramErr != nil {
-				// 脚本参数名映射获取失败时可降级，使用 weightKey 作为参数名回退
-				l.Warningf(constants.SCRIPT_PARAMS_FETCH_DEGRADE_LOG, paramErr)
-				return nil
-			}
-			return nil
-		},
-	)
-	if scriptErr != nil || weightsErr != nil {
-		errMsg := scriptErr
-		if errMsg == nil {
-			errMsg = weightsErr
-		}
-		l.Error(fmt.Sprintf(constants.SEARCH_WEIGHTS_FETCH_FAIL, errMsg))
-		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, errMsg.Error())
+	// 执行ES搜索：降级路径不传脚本模板与权重，由 es.go 走普通条件查询
+	var esScript string
+	var searchWeights *search.SearchWeights
+	if !degraded {
+		esScript = script.EsScript
+		searchWeights = &weights
 	}
-
-	// 执行ES搜索：传入脚本模板、权重参数和参数名映射，由 es.go 组装 ScriptScoreQuery
-	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, script.EsScript, &weights, paramMap)
+	articles, total, err := l.svcCtx.SearchModel.SearchArticle(l.ctx, searchDTO, esScript, searchWeights, paramMap)
 	if err != nil {
 		l.Error(fmt.Sprintf(constants.SEARCH_EXECUTION_ERROR+": %v", err))
 		return nil, exceptions.NewInternalServerError(constants.SEARCH_EXECUTION_ERROR, err.Error())
 	}
 
-	// 转换为ArticleEsItem
+	// 转换为ArticleEsItem，此时 items 是召回候选集，切出目标页在融合重排之后进行
 	items := make([]types.ArticleEsItem, len(articles))
 	for i, article := range articles {
 		items[i] = types.ArticleEsItem{
@@ -159,11 +166,14 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		List:  items,
 	}
 
-	mode := types.NormalizeSearchMode(req)
-	vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword)
-	graphEnabled := types.IsGraphEnhanceEnabled(req)
+	if degraded {
+		// 降级路径不启用向量与图谱增强，仅归一化 ES 分用于展示
+		FillDefaultScores(resp.List)
+	} else if len(items) > 0 {
+		mode := types.NormalizeSearchMode(req)
+		vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword)
+		graphEnabled := types.IsGraphEnhanceEnabled(req)
 
-	if len(items) > 0 {
 		articleIDs := extractArticleIDsFromItems(items)
 		tagList := extractTagsFromItems(items)
 		vectorItems := make([]fastapiClient.VectorEnhanceItem, 0)
@@ -200,6 +210,11 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		} else {
 			FillDefaultScores(resp.List)
 		}
+	}
+
+	// 融合重排作用于召回候选集，此处按分页窗口切出目标页
+	if amplified {
+		resp.List = pageSlice(resp.List, page, size)
 	}
 
 	if !types.IsExplainEnabled(req) {
@@ -370,6 +385,39 @@ func limitArticleIDs(articleIDs []int64, limit int) []int64 {
 		limit = len(articleIDs)
 	}
 	return articleIDs[:limit]
+}
+
+// resolveRecallWindow 解析 ES 召回窗口
+// 返回 ES 查询使用的页码、条数以及是否开启召回放大
+// 放大开启时 ES 从第 1 页按档位取 recallSize 条，融合重排后由 pageSlice 切出目标页
+// page*size 超出召回上限或档位取整结果无法覆盖目标页时退化为窗口内重排
+func resolveRecallWindow(page int, size int) (queryPage int, recallSize int, amplified bool) {
+	windowSize := page * size
+	step := constants.SEARCH_RECALL_STEP_SIZE
+	recallLimit := min(
+		constants.SEARCH_RECALL_MAX_SIZE,
+		constants.SEARCH_VECTOR_CANDIDATE_LIMIT,
+		constants.SEARCH_GRAPH_CANDIDATE_LIMIT,
+	)
+
+	// 按档位向上取整，使同一档位内各页召回同一批候选，归一化分母因此保持一致
+	recallSize = ((windowSize + step - 1) / step) * step
+	if windowSize > recallLimit || recallSize > recallLimit || recallSize < windowSize {
+		return page, size, false
+	}
+
+	return 1, recallSize, true
+}
+
+// pageSlice 从融合重排后的候选集中切出目标页
+func pageSlice(items []types.ArticleEsItem, page int, size int) []types.ArticleEsItem {
+	start := (page - 1) * size
+	if start >= len(items) {
+		return make([]types.ArticleEsItem, 0)
+	}
+
+	end := min(start+size, len(items))
+	return items[start:end]
 }
 
 func clearExplainFields(items []types.ArticleEsItem) {

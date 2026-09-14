@@ -92,8 +92,38 @@ func NewFusionEngine(cfg FusionConfig) *FusionEngine {
 	}
 }
 
+// meanOfVectorItems 计算向量增强结果的均值
+// 该均值用于填充未被向量召回的候选，避免把「未匹配」当成零分
+func meanOfVectorItems(items []fastapiClient.VectorEnhanceItem) float64 {
+	if len(items) == 0 {
+		return 0
+	}
+
+	sum := 0.0
+	for i := range items {
+		sum += clamp01(items[i].VectorScore)
+	}
+	return sum / float64(len(items))
+}
+
+// meanOfGraphItems 计算图谱增强结果的均值
+// 该均值用于填充未被图谱召回的候选，避免把「无关系」当成零分
+func meanOfGraphItems(items []fastapiClient.GraphEnhanceItem) float64 {
+	if len(items) == 0 {
+		return 0
+	}
+
+	sum := 0.0
+	for i := range items {
+		sum += clamp01(items[i].GraphScore)
+	}
+	return sum / float64(len(items))
+}
+
 // MergeAndRerank 融合 ES、向量和图谱结果并重排
-// 只对当前页候选进行重排，不改变 total
+// 入参为整个召回候选集，重排结果由调用方按分页窗口切出目标页，total 始终由 ES 决定
+// 归一化分母取候选集内最大 ES 分，故同一召回档位内各页的 FinalScore 可比较
+// 未被向量或图谱召回的候选用候选集均值填充，使全部候选处于同一评分量纲
 func MergeAndRerank(
 	articles []types.ArticleEsItem,
 	vectorItems []fastapiClient.VectorEnhanceItem,
@@ -128,6 +158,10 @@ func MergeAndRerank(
 
 	engine := NewFusionEngine(cfg)
 
+	// 未被向量或图谱召回的候选用候选集均值填充，避免信号缺失被当成零分而系统性压低排序
+	vectorMean := meanOfVectorItems(vectorItems)
+	graphMean := meanOfGraphItems(graphItems)
+
 	// 为每篇文章计算最终分
 	for i := range articles {
 		article := &articles[i]
@@ -136,7 +170,7 @@ func MergeAndRerank(
 			normalizedEsScore = article.EsScore / maxEsScore
 		}
 
-		vectorScore := 0.0
+		vectorScore := vectorMean
 		semanticReason := ""
 		matchedChunks := make([]types.VectorMatchedChunk, 0)
 		if vItem, ok := vectorMap[article.Id]; ok {
@@ -153,7 +187,7 @@ func MergeAndRerank(
 			}
 		}
 
-		graphScore := 0.0
+		graphScore := graphMean
 		reason := ""
 		relations := make([]types.GraphRelation, 0)
 		if gItem, ok := graphMap[article.Id]; ok {
@@ -200,7 +234,8 @@ func MergeAndRerank(
 	return articles
 }
 
-// FillDefaultScores 保留 ES 原排序时也填充分数字段，便于前端统一展示
+// FillDefaultScores 未启用增强时保留 ES 原排序，同时填充分数字段便于前端统一展示
+// 归一化分母同样取候选集内最大 ES 分，与 MergeAndRerank 保持一致
 func FillDefaultScores(articles []types.ArticleEsItem) {
 	maxEsScore := 0.0
 	for _, article := range articles {

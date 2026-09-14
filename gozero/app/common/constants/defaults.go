@@ -11,8 +11,15 @@ const (
 // 配置默认值类 — 锁过期时间等
 const (
 	// 搜索增强控制
-	SEARCH_VECTOR_CANDIDATE_LIMIT = 50
-	SEARCH_GRAPH_CANDIDATE_LIMIT  = 50
+	// 召回放大档位：浅页按该粒度向上取整召回，使同一档位内各页共享同一候选集
+	// 归一化分母因此保持一致，跨页 FinalScore 可比较
+	SEARCH_RECALL_STEP_SIZE = 100
+	// 召回放大上限：page*size 超出该值时退化为窗口内重排，避免深分页拖垮 ES 与增强服务
+	SEARCH_RECALL_MAX_SIZE = 200
+	// 向量增强候选上限，需不小于召回放大上限，否则未参与增强的候选会缺失语义分
+	SEARCH_VECTOR_CANDIDATE_LIMIT = 200
+	// 图谱增强候选上限，需不小于召回放大上限
+	SEARCH_GRAPH_CANDIDATE_LIMIT = 200
 )
 
 // WebSocket 相关默认值

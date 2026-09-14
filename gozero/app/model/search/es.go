@@ -73,31 +73,38 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 	}
 	from := (page - 1) * size
 
-	// 使用从 FastAPI 获取的 ES Painless 脚本模板，通过 Param 传入权重值
-	// 参数名从 FastAPI 的脚本参数映射动态获取
-	scoreScript := elastic.NewScript(esScript).
-		Param(getParamName(paramMap, "es_score_weight"), weights.ESScoreWeight).
-		Param(getParamName(paramMap, "ai_rating_weight"), weights.AIRatingWeight).
-		Param(getParamName(paramMap, "user_rating_weight"), weights.UserRatingWeight).
-		Param(getParamName(paramMap, "views_weight"), weights.ViewsWeight).
-		Param(getParamName(paramMap, "likes_weight"), weights.LikesWeight).
-		Param(getParamName(paramMap, "collects_weight"), weights.CollectsWeight).
-		Param(getParamName(paramMap, "author_follow_weight"), weights.AuthorFollowWeight).
-		Param(getParamName(paramMap, "recency_weight"), weights.RecencyWeight).
-		Param(getParamName(paramMap, "recency_decay_days"), float64(weights.RecencyDecayDays)*float64(weights.RecencyDecayDays)).
-		Param(getParamName(paramMap, "max_views_normalized"), weights.MaxViewsNormalized).
-		Param(getParamName(paramMap, "max_likes_normalized"), weights.MaxLikesNormalized).
-		Param(getParamName(paramMap, "max_collects_normalized"), weights.MaxCollectsNormalized).
-		Param(getParamName(paramMap, "max_follows_normalized"), weights.MaxFollowsNormalized)
-
-	scriptScoreQuery := elastic.NewScriptScoreQuery(boolQuery, scoreScript)
+	// 脚本模板与权重齐备时走 ScriptScoreQuery 复合打分
+	// 任一缺失说明 FastAPI 侧脚本三件套获取失败，此处退化为普通条件查询，只依赖 BM25 相关度
+	var finalQuery elastic.Query = boolQuery
+	if esScript != "" && weights != nil {
+		scoreScript := elastic.NewScript(esScript).
+			Param(getParamName(paramMap, "es_score_weight"), weights.ESScoreWeight).
+			Param(getParamName(paramMap, "ai_rating_weight"), weights.AIRatingWeight).
+			Param(getParamName(paramMap, "user_rating_weight"), weights.UserRatingWeight).
+			Param(getParamName(paramMap, "views_weight"), weights.ViewsWeight).
+			Param(getParamName(paramMap, "likes_weight"), weights.LikesWeight).
+			Param(getParamName(paramMap, "collects_weight"), weights.CollectsWeight).
+			Param(getParamName(paramMap, "author_follow_weight"), weights.AuthorFollowWeight).
+			Param(getParamName(paramMap, "recency_weight"), weights.RecencyWeight).
+			Param(getParamName(paramMap, "recency_decay_days"), float64(weights.RecencyDecayDays)*float64(weights.RecencyDecayDays)).
+			Param(getParamName(paramMap, "max_views_normalized"), weights.MaxViewsNormalized).
+			Param(getParamName(paramMap, "max_likes_normalized"), weights.MaxLikesNormalized).
+			Param(getParamName(paramMap, "max_collects_normalized"), weights.MaxCollectsNormalized).
+			Param(getParamName(paramMap, "max_follows_normalized"), weights.MaxFollowsNormalized)
+		finalQuery = elastic.NewScriptScoreQuery(boolQuery, scoreScript)
+	}
 
 	searchService := m.esClient.Search().
 		Index(articlesIndexName).
-		Query(scriptScoreQuery).
+		Query(finalQuery).
 		From(from).
 		Size(size).
 		RequestCache(true)
+
+	// 无关键词时 boolQuery 只含过滤条件，_score 恒为 0，需显式按创建时间倒序保证顺序确定
+	if searchDTO.Keyword == "" {
+		searchService = searchService.Sort("create_at", false)
+	}
 
 	if searchDTO.Keyword != "" {
 		highlight := elastic.NewHighlight().PreTags("<em>").PostTags("</em>").
