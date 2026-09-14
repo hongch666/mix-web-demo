@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"app/internal/client/springClient"
 
 	"github.com/olivere/elastic/v7"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/mr"
 )
 
@@ -184,17 +186,32 @@ func (m *searchModel) SearchArticle(ctx context.Context, searchDTO ArticleSearch
 			},
 		)
 
+		// 回填失败的指标跳过覆盖，保留 ES 文档原值作为降级，不阻断搜索主链路
+		degraded := make([]string, 0, 4)
 		if viewsErr != nil {
-			return nil, 0, viewsErr
+			degraded = append(degraded, "views")
 		}
 		if likeErr != nil {
-			return nil, 0, likeErr
+			degraded = append(degraded, "likes")
 		}
 		if collectErr != nil {
-			return nil, 0, collectErr
+			degraded = append(degraded, "collects")
 		}
 		if followErr != nil {
-			return nil, 0, followErr
+			degraded = append(degraded, "author_follows")
+		}
+		if len(degraded) > 0 {
+			degradeErr := viewsErr
+			if degradeErr == nil {
+				degradeErr = likeErr
+			}
+			if degradeErr == nil {
+				degradeErr = collectErr
+			}
+			if degradeErr == nil {
+				degradeErr = followErr
+			}
+			logx.WithContext(ctx).Slow("[WARN] " + fmt.Sprintf(constants.SEARCH_STATS_FILL_DEGRADE_LOG, strings.Join(degraded, ","), degradeErr))
 		}
 
 		viewsMap, _ := springClient.ParseArticleViewsMap(viewsResult)

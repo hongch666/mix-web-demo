@@ -147,6 +147,7 @@ const (
 	VECTOR_ENHANCE_DEGRADE_LOG             = "向量增强失败，降级为ES搜索: keyword=%s, userId=%d, articleCount=%d, err=%v"
 	SEARCH_SCRIPTS_FETCH_DEGRADE_LOG       = "获取搜索脚本、权重与脚本参数名映射失败，降级为普通 ES 条件分页查询: script=%v, weights=%v, scriptParams=%v"
 	SEARCH_RECALL_DEGRADE_LOG              = "深分页超出召回上限，退化为窗口内重排: page=%d, size=%d, recallLimit=%d"
+	SEARCH_STATS_FILL_DEGRADE_LOG          = "文章统计回填失败，对应指标降级为 ES 文档原值: metrics=%s, error=%v"
 
 	// 用户日志
 	RECORD_DURATION_MESSAGE    = "%s %s 使用了%dms"
