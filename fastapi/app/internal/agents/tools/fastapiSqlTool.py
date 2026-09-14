@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.core.db import get_db
+from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
 
 
 class FastapiSqlTool:
@@ -87,6 +88,12 @@ class FastapiSqlTool:
                 return Messages.SQL_TOOL_LIMIT_REQUIRED
             if int(limit_match.group(1)) > Messages.SQL_TOOL_MAX_LIMIT:
                 return Messages.SQL_TOOL_LIMIT_EXCEEDED
+
+            # 行级范围校验：非 admin 仅允许查询本人数据
+            denial = enforce_sql_row_scope(normalized, params)
+            if denial:
+                log_scope_denial("FastapiSqlTool", denial)
+                return denial
 
             # 执行查询
             async for session in get_db():

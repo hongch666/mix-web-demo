@@ -143,32 +143,47 @@ class Messages:
         return f"获取用户 {user_id} 的角色失败: {error}，使用默认角色 'user'"
 
     @staticmethod
-    def PERSONAL_INFO_KEYWORD_DETECTED(keyword: str) -> str:
-        return f"[权限] 检测到个人信息查询关键字: '{keyword}'"
-
-    @staticmethod
     def TOOL_ACCESS_LOGIN_REQUIRED(tool_name: str) -> str:
         return f"权限拒绝：请先登录才能访问{tool_name}功能。您当前可以使用文章搜索和闲聊功能。"
 
     @staticmethod
-    def PERSONAL_TOOL_ACCESS_GRANTED(user_id: int, tool_type: str) -> str:
-        return f"用户 {user_id} 查询个人信息，允许访问 {tool_type} 工具"
+    def SQL_TOOL_SCOPE_MISSING() -> str:
+        return (
+            "权限拒绝：缺少工具权限作用域，无法校验数据归属。"
+            "请通过正常对话流程发起查询。"
+        )
+
+    @staticmethod
+    def SQL_TOOL_ROW_SCOPE_REQUIRED(user_id: int) -> str:
+        return (
+            f"权限拒绝：当前账户仅允许查询本人数据。请在 SQL 中增加 user_id 条件，"
+            f"并使用绑定参数 :user_id 值为 {user_id}，例如 "
+            f"\"WHERE user_id = :user_id\"，params 传入 {{\"user_id\": {user_id}}}。"
+            "修改后重新执行同一查询即可。"
+        )
+
+    @staticmethod
+    def SQL_TOOL_ROW_SCOPE_FOREIGN_USER(user_id: int) -> str:
+        return (
+            f"权限拒绝：查询绑定的 user_id 与当前用户不一致。"
+            f"当前账户仅允许查询 user_id = {user_id} 的数据，"
+            "请修正绑定参数后重新执行。"
+        )
+
+    @staticmethod
+    def MONGODB_ROW_SCOPE_REQUIRED(user_id: int) -> str:
+        return (
+            f"权限拒绝：当前账户仅允许查询本人日志。"
+            f"请在 filter_dict 中增加 {{\"userId\": {user_id}}} 后重新执行查询。"
+        )
 
     @staticmethod
     def ADMIN_TOOL_ACCESS_GRANTED(user_id: int, role: str, tool_type: str) -> str:
         return f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具"
 
     @staticmethod
-    def TOOL_ACCESS_DENIED_REASON(tool_name: str) -> str:
-        return f"权限拒绝：您的账户权限不足，无法访问{tool_name}功能。仅管理员账户可以使用此功能。如需查询个人信息（如'我的点赞文章'），请在问题中包含相关关键词。"
-
-    @staticmethod
-    def TOOL_ACCESS_DENIED_LOG(
-        user_id: int, role: Optional[str], tool_type: str, question: str
-    ) -> str:
-        return (
-            f"用户 {user_id} (角色: {role}) 尝试访问 {tool_type} 工具被拒绝：{question}"
-        )
+    def TOOL_ACCESS_SCOPED_GRANTED(user_id: int, role: str, tool_type: str) -> str:
+        return f"用户 {user_id} (角色: {role}) 有权访问 {tool_type} 工具，限定本人数据行级范围"
 
     @staticmethod
     def CHAT_SERVICE_PROCESSING(

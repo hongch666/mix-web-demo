@@ -222,6 +222,10 @@ class IntentRouter:
 
         perm_manager: UserPermissionManager = UserPermissionManager()
 
+        # 所有意图统一建立工具作用域：admin 全量数据，非 admin 限定本人行级范围
+        role = await perm_manager.get_user_role_async(self.user_id, self.db)
+        perm_manager.apply_tool_scope(self.user_id, role)
+
         if intent == "database_query":
             try:
                 if Messages.is_dangerous_nl_request(question):
@@ -236,7 +240,7 @@ class IntentRouter:
                 self.logger.warning(Messages.INTENT_WRITE_CHECK_FAILED(e))
 
             has_permission, msg = await perm_manager.can_access_sql_tools_async(
-                self.user_id, self.db, question
+                self.user_id, self.db, question, role=role
             )
             if not has_permission:
                 return intent, False, msg, resolution
@@ -247,7 +251,7 @@ class IntentRouter:
 
         if intent == "log_analysis":
             has_permission, msg = await perm_manager.can_access_mongodb_logs_async(
-                self.user_id, self.db, question
+                self.user_id, self.db, question, role=role
             )
             if not has_permission:
                 return intent, False, msg, resolution

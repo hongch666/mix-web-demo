@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
+from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
 from app.internal.clients import NestjsClient
 
 
@@ -36,6 +37,11 @@ class NestjsSqlTool:
         try:
             if not query or not query.strip():
                 return Messages.SQL_TOOL_QUERY_EMPTY
+            # 行级范围校验：非 admin 仅允许查询本人数据
+            denial = enforce_sql_row_scope(query, params)
+            if denial:
+                log_scope_denial("NestjsSqlTool", denial)
+                return denial
             result: dict[str, Any] = await self._client.execute_query(query, params)
             return json.dumps(result, ensure_ascii=False, indent=2)
         except Exception as e:

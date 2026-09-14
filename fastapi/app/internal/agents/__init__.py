@@ -8,6 +8,14 @@ from .tools.nestjsSqlTool import NestjsSqlTool
 from .tools.ragTools import RAGTools, get_rag_tools
 from .tools.springSqlTool import SpringSqlTool, get_spring_sql_tool
 from .tools.warehouseTools import ClickHouseWarehouseTools, get_warehouse_tools
+from .toolScope import (
+    ToolScope,
+    clear_tool_scope,
+    enforce_mongodb_row_scope,
+    enforce_sql_row_scope,
+    get_tool_scope,
+    set_tool_scope,
+)
 from .userPermissionManager import UserPermissionManager, get_user_permission_manager
 
 __all__: list[str] = [
@@ -31,4 +39,10 @@ __all__: list[str] = [
     "get_user_permission_manager",
     "ReferenceContentExtractor",
     "get_reference_content_extractor",
+    "ToolScope",
+    "set_tool_scope",
+    "get_tool_scope",
+    "clear_tool_scope",
+    "enforce_sql_row_scope",
+    "enforce_mongodb_row_scope",
 ]

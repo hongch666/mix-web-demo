@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
+from app.internal.agents.toolScope import enforce_mongodb_row_scope, log_scope_denial
 from app.internal.clients import NestjsClient
 
 
@@ -41,6 +42,12 @@ class MongoDBTools:
             # 验证必需参数
             if not collection_name:
                 return Messages.COLLECTION_NAME_VALIDATION_ERROR
+
+            # 行级范围校验：非 admin 仅允许查询本人日志
+            denial = enforce_mongodb_row_scope(filter_dict)
+            if denial:
+                log_scope_denial("MongoDBTools", denial)
+                return denial
 
             # 确保 limit 是整数
             limit_int = int(limit)

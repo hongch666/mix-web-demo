@@ -4,7 +4,8 @@ from typing import Any, Optional
 from sqlalchemy.orm import Session
 
 from app.core.base import Logger
-from app.core.constants import Defaults, Messages
+from app.core.constants import Messages
+from app.internal.agents.toolScope import clear_tool_scope, set_tool_scope
 from app.internal.clients import SpringClient
 
 
@@ -42,74 +43,58 @@ class UserPermissionManager:
         role: Optional[str] = await self.get_user_role_async(user_id, db)
         return role == Messages.ROLE_ADMIN
 
-    async def is_personal_info_query(self, question: str) -> bool:
-        """
-        判断问题是否涉及个人信息查询
-
-        Args:
-            question: 用户问题
-
-        Returns:
-            True 如果是个人信息查询，否则 False
-        """
-        if not question:
-            return False
-
-        # 转换为小写便于匹配
-        question_lower: str = question.lower()
-
-        # 检查是否包含个人信息查询的关键字
-        for keyword in Defaults.PERSONAL_INFO_KEYWORDS:
-            if keyword in question_lower:
-                Logger.debug(Messages.PERSONAL_INFO_KEYWORD_DETECTED(keyword))
-                return True
-
-        return False
+    def apply_tool_scope(self, user_id: int, role: Optional[str]) -> None:
+        """写入当前请求的工具作用域：admin 不限行范围，其他用户限定本人数据"""
+        set_tool_scope(user_id, role == Messages.ROLE_ADMIN)
 
     async def can_access_sql_tools_async(
-        self, user_id: int, db: Session, question: str = ""
+        self, user_id: int, db: Session, question: str = "", role: Optional[str] = None
     ) -> tuple[bool, str]:
         """异步检查用户是否有权使用 SQL 工具"""
-        return await self.can_use_tool_async(user_id, db, "sql", question)
+        return await self.can_use_tool_async(user_id, db, "sql", role=role)
 
     async def can_access_mongodb_logs_async(
-        self, user_id: int, db: Session, question: str = ""
+        self, user_id: int, db: Session, question: str = "", role: Optional[str] = None
     ) -> tuple[bool, str]:
         """异步检查用户是否有权查询 MongoDB 日志"""
-        return await self.can_use_tool_async(user_id, db, "mongodb", question)
+        return await self.can_use_tool_async(user_id, db, "mongodb", role=role)
 
     async def can_use_tool_async(
-        self, user_id: int, db: Session, tool_type: str, question: str = ""
+        self,
+        user_id: int,
+        db: Session,
+        tool_type: str,
+        role: Optional[str] = None,
     ) -> tuple[bool, str]:
-        """异步检查用户是否有权使用指定工具"""
+        """异步检查用户是否有权使用指定工具
+
+        权限语义：登录用户一律可用，admin 全量数据，非 admin 由工具层强制
+        user_id = 当前用户 的行级范围（作用域写入本请求的 contextvars）
+        """
         if not user_id:
+            clear_tool_scope()
             tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
             return (
                 False,
                 Messages.TOOL_ACCESS_LOGIN_REQUIRED(tool_name),
             )
 
-        if question and await self.is_personal_info_query(question):
-            Logger.info(Messages.PERSONAL_TOOL_ACCESS_GRANTED(user_id, tool_type))
-            return True, ""
+        if role is None:
+            role = await self.get_user_role_async(user_id, db)
 
-        role: Optional[str] = await self.get_user_role_async(user_id, db)
+        self.apply_tool_scope(user_id, role)
+
         if role == Messages.ROLE_ADMIN:
             Logger.info(Messages.ADMIN_TOOL_ACCESS_GRANTED(user_id, role, tool_type))
-            return True, ""
-
-        tool_name: str = "数据库查询" if tool_type == "sql" else "日志查询"
-        reason: str = Messages.TOOL_ACCESS_DENIED_REASON(tool_name)
-        Logger.warning(
-            Messages.TOOL_ACCESS_DENIED_LOG(user_id, role, tool_type, question)
-        )
-        return False, reason
+        else:
+            Logger.info(Messages.TOOL_ACCESS_SCOPED_GRANTED(user_id, role, tool_type))
+        return True, ""
 
     async def validate_database_query_permission_async(
-        self, user_id: int, db: Session, question: str = ""
+        self, user_id: int, db: Session, question: str = "", role: Optional[str] = None
     ) -> tuple[bool, str]:
         """异步验证用户是否有权执行数据库查询"""
-        return await self.can_use_tool_async(user_id, db, "sql", question)
+        return await self.can_use_tool_async(user_id, db, "sql", role=role)
 
 
 @lru_cache

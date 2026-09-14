@@ -32,22 +32,6 @@ class Defaults:
     VECTOR_SEARCH_MIN_SCORE: float = 0.3
     VECTOR_SEARCH_SCORE_MODE: str = "similarity"
 
-    # ===== 权限关键词 =====
-    PERSONAL_INFO_KEYWORDS: list = [
-        "我的",
-        "个人",
-        "自己的",
-        "本人的",
-        "我",
-        "自己",
-        "点赞",
-        "收藏",
-        "喜欢",
-        "评论",
-        "互动",
-        "关注",
-    ]
-
     # ===== 搜索权重=====
     SEARCH_ES_SCORE_WEIGHT: float = 0.25
     SEARCH_AI_RATING_WEIGHT: float = 0.15
