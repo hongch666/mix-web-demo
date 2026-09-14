@@ -24,20 +24,27 @@ class GraphSearchService:
         same_sub_category_weight: float = 0.20,
         candidate_similarity_weight: float = 0.20,
         keyword_tag_weight: float = 0.20,
+        candidate_limit: int = 200,
     ) -> None:
         self.TAG_INTEREST_WEIGHT: float = tag_interest_weight
         self.FOLLOWED_AUTHOR_WEIGHT: float = followed_author_weight
         self.SAME_SUB_CATEGORY_WEIGHT: float = same_sub_category_weight
         self.CANDIDATE_SIMILARITY_WEIGHT: float = candidate_similarity_weight
         self.KEYWORD_TAG_WEIGHT: float = keyword_tag_weight
+        self.candidate_limit: int = max(candidate_limit, 1)
 
     async def enhance(self, req: GraphSearchEnhanceReq) -> GraphSearchEnhanceResp:
         """执行图谱增强, 返回候选文章的图谱分和推荐原因"""
         if not req.articleIds:
             return GraphSearchEnhanceResp()
 
-        # 限制参数
-        article_ids = req.articleIds[: min(req.limit, 50)]
+        # 候选上限与 GoZero 侧召回上限对齐，请求未指定 limit 时按服务上限截断
+        limit = (
+            min(req.limit, self.candidate_limit)
+            if req.limit > 0
+            else self.candidate_limit
+        )
+        article_ids = req.articleIds[:limit]
         keyword = req.keyword[:100] if req.keyword else ""
 
         # 并行执行多个图谱信号查询
@@ -365,4 +372,5 @@ def get_graph_search_service() -> GraphSearchService:
         same_sub_category_weight=Defaults.GRAPH_SAME_SUB_CATEGORY_WEIGHT,
         candidate_similarity_weight=Defaults.GRAPH_CANDIDATE_SIMILARITY_WEIGHT,
         keyword_tag_weight=Defaults.GRAPH_KEYWORD_TAG_WEIGHT,
+        candidate_limit=Defaults.GRAPH_SEARCH_CANDIDATE_LIMIT,
     )
