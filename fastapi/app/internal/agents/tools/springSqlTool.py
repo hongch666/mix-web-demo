@@ -8,15 +8,15 @@ from pydantic import BaseModel, Field
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
-from app.internal.clients import SpringClient
+from app.internal.clients import SpringClient, get_spring_client
 
 
 class SpringSqlTool:
     """Spring 服务 SQL 查询工具（远程代理）"""
 
-    def __init__(self) -> None:
+    def __init__(self, spring_client: Optional[SpringClient] = None) -> None:
         self.logger = Logger
-        self._client: SpringClient = SpringClient()
+        self._client: SpringClient = spring_client or get_spring_client()
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 Spring 侧 MySQL 表结构"""

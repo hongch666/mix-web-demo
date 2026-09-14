@@ -1024,14 +1024,6 @@ class Messages:
         return f"识别意图: {intent}"
 
     @staticmethod
-    def SQL_TOOL_SET_USER_ID(user_id: int) -> str:
-        return f"为SQL工具设置用户ID: {user_id}"
-
-    @staticmethod
-    def SQL_TOOL_SET_USER_ID_FAILED(error: Exception) -> str:
-        return f"设置SQL工具用户ID失败: {error}"
-
-    @staticmethod
     def CURRENT_USER_ID_INFO(user_id: int) -> str:
         return f"当前用户ID: {user_id}\n"
 

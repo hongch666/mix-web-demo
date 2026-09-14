@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Optional
 
 from app.core.client import call_remote_service
@@ -596,3 +597,9 @@ class SpringClient:
             json={"query": query, "params": params or {}},
         )
         return result.get("data", {})
+
+
+@lru_cache
+def get_spring_client() -> SpringClient:
+    """获取 Spring 客户端单例"""
+    return SpringClient()

@@ -8,16 +8,16 @@ from pydantic import BaseModel, Field
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.internal.agents.toolScope import enforce_mongodb_row_scope, log_scope_denial
-from app.internal.clients import NestjsClient
+from app.internal.clients import NestjsClient, get_nestjs_client
 
 
 class MongoDBTools:
     """MongoDB 日志查询工具集（通过 NestJS 内部接口远程查询）"""
 
-    def __init__(self) -> None:
+    def __init__(self, nestjs_client: Optional[NestjsClient] = None) -> None:
         """初始化 MongoDB 日志工具"""
         self.logger = Logger
-        self._nestjs_client: NestjsClient = NestjsClient()
+        self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
 
     async def list_mongodb_collections(self) -> str:
         """列出 MongoDB 数据库中的所有 collection 及其基本信息"""

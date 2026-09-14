@@ -8,15 +8,15 @@ from pydantic import BaseModel, Field
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
-from app.internal.clients import GozeroClient
+from app.internal.clients import GozeroClient, get_gozero_client
 
 
 class GozeroSqlTool:
     """GoZero 服务 SQL 查询工具（远程代理）"""
 
-    def __init__(self) -> None:
+    def __init__(self, gozero_client: Optional[GozeroClient] = None) -> None:
         self.logger = Logger
-        self._client: GozeroClient = GozeroClient()
+        self._client: GozeroClient = gozero_client or get_gozero_client()
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 GoZero 侧 MySQL 表结构"""

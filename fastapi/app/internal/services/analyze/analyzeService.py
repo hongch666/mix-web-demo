@@ -29,7 +29,12 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
-from app.internal.clients import NestjsClient, SpringClient
+from app.internal.clients import (
+    NestjsClient,
+    SpringClient,
+    get_nestjs_client,
+    get_spring_client,
+)
 from app.internal.crud import (
     ArticleMapper,
     get_article_mapper,
@@ -47,6 +52,8 @@ class AnalyzeService:
         publish_time_cache: Optional[PublishTimeCache] = None,
         statistics_cache: Optional[StatisticsCache] = None,
         wordcloud_cache: Optional[WordcloudCache] = None,
+        spring_client: Optional[SpringClient] = None,
+        nestjs_client: Optional[NestjsClient] = None,
     ) -> None:
         self.articleMapper: Optional[ArticleMapper] = articleMapper
         # 注入缓存对象
@@ -57,9 +64,9 @@ class AnalyzeService:
         self._wordcloud_cache: Optional[WordcloudCache] = wordcloud_cache
         self._singleflight_locks: dict[str, asyncio.Lock] = {}
         self._singleflight_guard: asyncio.Lock = asyncio.Lock()
-        # 初始化远程服务客户端
-        self._nestjs_client: NestjsClient = NestjsClient()
-        self._spring_client: SpringClient = SpringClient()
+        # 远程服务客户端由工厂装配，缺省时取共享单例
+        self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
+        self._spring_client: SpringClient = spring_client or get_spring_client()
 
     async def _get_singleflight_lock(self, key: str) -> asyncio.Lock:
         async with self._singleflight_guard:
@@ -810,4 +817,6 @@ def get_analyze_service(
         publish_time_cache,
         statistics_cache,
         wordcloud_cache,
+        get_spring_client(),
+        get_nestjs_client(),
     )

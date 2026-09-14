@@ -7,17 +7,27 @@ from dateutil.relativedelta import relativedelta
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from app.internal.clients import NestjsClient, SpringClient
+from app.internal.clients import (
+    NestjsClient,
+    SpringClient,
+    get_nestjs_client,
+    get_spring_client,
+)
 from app.internal.crud import UserMapper, get_user_mapper
 
 
 class UserService:
     """用户数据分析 Service"""
 
-    def __init__(self) -> None:
-        self._nestjs_client: NestjsClient = NestjsClient()
-        self._spring_client: SpringClient = SpringClient()
-        self._user_mapper: UserMapper = get_user_mapper()
+    def __init__(
+        self,
+        spring_client: SpringClient,
+        nestjs_client: NestjsClient,
+        user_mapper: UserMapper,
+    ) -> None:
+        self._spring_client: SpringClient = spring_client
+        self._nestjs_client: NestjsClient = nestjs_client
+        self._user_mapper: UserMapper = user_mapper
 
     @staticmethod
     def _period_dates(period: str) -> tuple[datetime, datetime, int, str]:
@@ -338,4 +348,8 @@ class UserService:
 @lru_cache()
 def get_user_service() -> UserService:
     """获取 UserService 单例实例"""
-    return UserService()
+    return UserService(
+        get_spring_client(),
+        get_nestjs_client(),
+        get_user_mapper(),
+    )

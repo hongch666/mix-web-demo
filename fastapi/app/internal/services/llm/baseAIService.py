@@ -608,13 +608,8 @@ class BaseAiService:
                 Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
                 config.setdefault("run_name", "agent.execute")
 
-                if normalized_user_id is not None:
-                    try:
-                        sql_tools = get_fastapi_sql_tool()
-                        sql_tools.set_user_id(normalized_user_id)
-                        Logger.info(Messages.SQL_TOOL_SET_USER_ID(normalized_user_id))
-                    except Exception as error:
-                        Logger.warning(Messages.SQL_TOOL_SET_USER_ID_FAILED(error))
+                # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
+                # 单例工具不再持有可变用户字段
 
                 context = self._build_chat_context(chat_history)
                 user_info = (
@@ -789,13 +784,8 @@ class BaseAiService:
                 Logger.info(Messages.AGENT_PROCESSING_MESSAGE)
                 config.setdefault("run_name", "agent.execute")
 
-                if normalized_user_id is not None:
-                    try:
-                        sql_tools = get_fastapi_sql_tool()
-                        sql_tools.set_user_id(normalized_user_id)
-                        Logger.info(Messages.SQL_TOOL_SET_USER_ID(normalized_user_id))
-                    except Exception as error:
-                        Logger.warning(Messages.SQL_TOOL_SET_USER_ID_FAILED(error))
+                # 用户身份经 contextvars（ToolScope）随请求传递给工具层，
+                # 单例工具不再持有可变用户字段
 
                 context = self._build_chat_context(chat_history)
                 user_info = (

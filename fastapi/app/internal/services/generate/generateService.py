@@ -12,7 +12,7 @@ from app.core.base import Logger
 from app.core.constants import HttpCode, Messages, Prompts
 from app.core.errors import BusinessException
 from app.internal.agents import get_reference_content_extractor
-from app.internal.clients import SpringClient
+from app.internal.clients import SpringClient, get_spring_client
 
 from ..llm.extend.geminiService import GeminiService, get_gemini_service
 from ..llm.extend.glmService import GlmService, get_glm_service
@@ -27,11 +27,12 @@ class GenerateService:
         glm_service: Optional[GlmService] = None,
         gemini_service: Optional[GeminiService] = None,
         gpt_service: Optional[GptService] = None,
+        spring_client: Optional[SpringClient] = None,
     ) -> None:
         self.glm_service: Optional[GlmService] = glm_service
         self.gpt_service: Optional[GptService] = gpt_service
         self.gemini_service: Optional[GeminiService] = gemini_service
-        self._spring_client: SpringClient = SpringClient()
+        self._spring_client: SpringClient = spring_client or get_spring_client()
 
     async def extract_tags(self, text: str, topK: int = 5) -> str:
         """
@@ -652,4 +653,5 @@ def get_generate_service(
         glm_service,
         gemini_service,
         gpt_service,
+        get_spring_client(),
     )

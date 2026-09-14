@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Optional
 
 from app.core.client import call_remote_service
@@ -30,3 +31,9 @@ class GozeroClient:
             json={"query": query, "params": params or {}},
         )
         return result.get("data", {})
+
+
+@lru_cache
+def get_gozero_client() -> GozeroClient:
+    """获取 GoZero 客户端单例"""
+    return GozeroClient()

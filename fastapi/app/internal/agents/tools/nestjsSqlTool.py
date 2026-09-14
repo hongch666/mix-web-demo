@@ -7,15 +7,15 @@ from pydantic import BaseModel, Field
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 from app.internal.agents.toolScope import enforce_sql_row_scope, log_scope_denial
-from app.internal.clients import NestjsClient
+from app.internal.clients import NestjsClient, get_nestjs_client
 
 
 class NestjsSqlTool:
     """NestJS 服务 SQL 查询工具（远程代理）"""
 
-    def __init__(self) -> None:
+    def __init__(self, nestjs_client: Optional[NestjsClient] = None) -> None:
         self.logger = Logger
-        self._client: NestjsClient = NestjsClient()
+        self._client: NestjsClient = nestjs_client or get_nestjs_client()
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 NestJS 侧 MySQL 表结构"""

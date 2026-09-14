@@ -8,7 +8,10 @@ from sqlalchemy.orm import Session
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 
-from .userPermissionManager import UserPermissionManager
+from .userPermissionManager import (
+    UserPermissionManager,
+    get_user_permission_manager,
+)
 
 IntentType = Literal[
     "database_query",
@@ -220,7 +223,7 @@ class IntentRouter:
                 )
             return intent, True, "", resolution
 
-        perm_manager: UserPermissionManager = UserPermissionManager()
+        perm_manager: UserPermissionManager = get_user_permission_manager()
 
         # 所有意图统一建立工具作用域：admin 全量数据，非 admin 限定本人行级范围
         role = await perm_manager.get_user_role_async(self.user_id, self.db)

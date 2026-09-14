@@ -22,11 +22,6 @@ class FastapiSqlTool:
 
     def __init__(self) -> None:
         self.logger = Logger
-        self._user_id: Optional[int] = None
-
-    def set_user_id(self, user_id: Optional[int]) -> None:
-        """设置当前用户ID（用于权限上下文）"""
-        self._user_id = user_id
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 FastAPI 本地 MySQL 表结构"""

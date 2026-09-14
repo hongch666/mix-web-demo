@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Any, Optional
 
 from app.core.client import call_remote_service
@@ -135,3 +136,9 @@ class NestjsClient:
             json={"query": query, "params": params or {}},
         )
         return result.get("data", {})
+
+
+@lru_cache
+def get_nestjs_client() -> NestjsClient:
+    """获取 NestJS 客户端单例"""
+    return NestjsClient()

@@ -5,7 +5,7 @@ from fastapi import Depends
 
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
-from app.internal.clients import SpringClient
+from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import (
     AiHistoryMapper,
     get_ai_history_mapper,
@@ -19,9 +19,10 @@ class AiHistoryService:
     def __init__(
         self,
         ai_history_mapper: Optional[AiHistoryMapper] = None,
+        spring_client: Optional[SpringClient] = None,
     ) -> None:
         self.ai_history_mapper: Optional[AiHistoryMapper] = ai_history_mapper
-        self._spring_client: SpringClient = SpringClient()
+        self._spring_client: SpringClient = spring_client or get_spring_client()
 
     async def create_ai_history(self, ai_history: Any, db: Any) -> Any:
         data: dict[str, Any] = self._normalize_ai_history_data(ai_history)
@@ -143,4 +144,7 @@ class AiHistoryService:
 def get_ai_history_service(
     ai_history_mapper: AiHistoryMapper = Depends(get_ai_history_mapper),
 ) -> AiHistoryService:
-    return AiHistoryService(ai_history_mapper)
+    return AiHistoryService(
+        ai_history_mapper,
+        get_spring_client(),
+    )
