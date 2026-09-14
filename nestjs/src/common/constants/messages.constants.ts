@@ -322,12 +322,29 @@ export class Messages {
     batchSize: number,
   ): string => `[攒批] ${name} flush 成功，批次大小: ${batchSize}`;
 
-  static readonly BATCH_FLUSH_FAILED_DETAIL = (
+  static readonly BATCH_FLUSH_RETRY_SCHEDULED = (
+    name: string,
+    batchSize: number,
+    retryCount: number,
+    maxRetries: number,
+    errorMessage: string,
+  ): string =>
+    `[攒批] ${name} flush 失败，批次大小: ${batchSize}，已放回缓冲区头部等待第 ${retryCount}/${maxRetries} 次重试，错误: ${errorMessage}`;
+
+  static readonly BATCH_FLUSH_DROPPED_AFTER_RETRIES = (
+    name: string,
+    batchSize: number,
+    retryCount: number,
+    errorMessage: string,
+  ): string =>
+    `[攒批] ${name} flush 连续失败 ${retryCount} 次，丢弃批次大小: ${batchSize}，错误: ${errorMessage}`;
+
+  static readonly BATCH_FLUSH_DROPPED_ON_SHUTDOWN = (
     name: string,
     batchSize: number,
     errorMessage: string,
   ): string =>
-    `[攒批] ${name} flush 失败，批次大小: ${batchSize}，错误: ${errorMessage}`;
+    `[攒批] ${name} 关闭期间 flush 失败，丢弃批次大小: ${batchSize}，错误: ${errorMessage}`;
 
   static readonly BATCH_SHUTDOWN_FLUSH_REMAINING = (
     name: string,

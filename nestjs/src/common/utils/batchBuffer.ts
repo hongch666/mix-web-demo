@@ -11,12 +11,15 @@ export interface BatchBufferOptions {
   flushIntervalMs: number;
   /** 缓冲区最大容量：超过后强制 flush 防止 OOM */
   maxBufferSize: number;
+  /** flush 失败后的最大重试次数：超过后丢弃该批并记录错误 */
+  maxRetries: number;
 }
 
 const DEFAULT_OPTIONS: BatchBufferOptions = {
   batchSize: 100,
   flushIntervalMs: 2000,
   maxBufferSize: 5000,
+  maxRetries: 3,
 };
 
 /**
@@ -26,11 +29,15 @@ const DEFAULT_OPTIONS: BatchBufferOptions = {
  * 1. 缓冲区数量 >= batchSize（enqueue 时立即触发）
  * 2. 距上次 flush 时间 >= flushIntervalMs（由外部定时任务统一触发）
  * 3. 缓冲区数量 >= maxBufferSize（强制 flush 防止 OOM）
+ *
+ * flush 失败时该批数据放回缓冲区头部等待下次 flush 重试，
+ * 连续失败达到 maxRetries 后丢弃并记录错误日志
  */
 export class BatchBuffer<T> {
   private buffer: T[] = [];
   private isFlushing = false;
   private isShutdown = false;
+  private retryCount = 0;
   private flushCompleteResolver: (() => void) | null = null;
   private flushCompletePromise: Promise<void> | null = null;
   private readonly options: BatchBufferOptions;
@@ -138,13 +145,12 @@ export class BatchBuffer<T> {
     const batchSize = batch.length;
     try {
       await this.onFlush(batch);
+      this.retryCount = 0;
       this.logger.info(Messages.BATCH_FLUSH_SUCCESS(this.name, batchSize));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        Messages.BATCH_FLUSH_FAILED_DETAIL(this.name, batchSize, errorMessage),
-      );
+      this.handleFlushFailure(batch, batchSize, errorMessage);
     } finally {
       this.isFlushing = false;
       // 通知等待者 flush 已完成
@@ -153,6 +159,53 @@ export class BatchBuffer<T> {
         this.flushCompleteResolver = null;
       }
     }
+  }
+
+  /**
+   * flush 失败处理：未关闭时把该批放回缓冲区头部等待重试，
+   * 重试次数达到 maxRetries 后丢弃该批并记录错误
+   */
+  private handleFlushFailure(
+    batch: T[],
+    batchSize: number,
+    errorMessage: string,
+  ): void {
+    if (this.isShutdown) {
+      this.logger.error(
+        Messages.BATCH_FLUSH_DROPPED_ON_SHUTDOWN(
+          this.name,
+          batchSize,
+          errorMessage,
+        ),
+      );
+      return;
+    }
+
+    this.retryCount += 1;
+    if (this.retryCount >= this.options.maxRetries) {
+      this.logger.error(
+        Messages.BATCH_FLUSH_DROPPED_AFTER_RETRIES(
+          this.name,
+          batchSize,
+          this.retryCount,
+          errorMessage,
+        ),
+      );
+      this.retryCount = 0;
+      return;
+    }
+
+    // 放回缓冲区头部，保证与后续新数据相比的原始顺序
+    this.buffer.unshift(...batch);
+    this.logger.warning(
+      Messages.BATCH_FLUSH_RETRY_SCHEDULED(
+        this.name,
+        batchSize,
+        this.retryCount,
+        this.options.maxRetries,
+        errorMessage,
+      ),
+    );
   }
 
   private scheduleFlush(): void {
