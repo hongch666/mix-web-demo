@@ -21,9 +21,18 @@ storage_config:
     directory: /tmp/loki/chunks
 compactor:
   working_directory: /tmp/loki/compactor
+ingester:
+  # ingester 只接受「不太旧」的样本，实测可接受下限约为 max_chunk_age 的一半
+  # （默认 2h → 可接受 1h，超出报错 entry too far behind）。logs/ 下存在约一年前的
+  # 历史文件，为让这些日志按内容时间正常入库，放宽到 3 年（可接受范围约 1.5 年）；
+  # chunk 仍受 chunk_target_size 控制不会无限增长，本地开发栈可接受
+  max_chunk_age: 26280h
 limits_config:
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h
+  # 历史日志回灌：logs/ 下存在数月前的日志文件，promtail 解析日志内容时间后
+  # 这些样本会「很旧」，沿用默认 7 天限制会被整批拒绝（HTTP 400 且数据丢失），故关闭
+  reject_old_samples: false
+  # 历史文件与实时新日志混合回灌时，同一流的时间戳天然乱序，需允许乱序写入
+  unordered_writes: true
   max_entries_limit_per_query: 5000
   ingestion_rate_mb: 32
   ingestion_burst_size_mb: 64

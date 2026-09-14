@@ -1,9 +1,9 @@
+from fastapi import APIRouter, Request
+
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import VectorSearchServiceDep
 from app.internal.schemas import VectorSearchEnhanceReq, VectorSearchEnhanceResp
-
-from fastapi import APIRouter, Request
 
 router: APIRouter = APIRouter(
     prefix="/vector-search",

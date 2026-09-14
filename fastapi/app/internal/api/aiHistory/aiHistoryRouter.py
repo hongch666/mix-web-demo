@@ -1,11 +1,11 @@
 from typing import Any
 
+from fastapi import APIRouter, Path, Query, Request
+
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import AiHistoryServiceDep, DbSession
 from app.internal.schemas import CreateHistoryDTO, UpdateHistoryDTO
-
-from fastapi import APIRouter, Path, Query, Request
 
 router: APIRouter = APIRouter(
     prefix="/ai_history",

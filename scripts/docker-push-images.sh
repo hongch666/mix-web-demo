@@ -2,12 +2,13 @@
 
 # 微服务 Docker 镜像推送脚本
 # 用途：将已构建的项目镜像推送到远程镜像仓库
+# 说明：网关使用官方 apache/apisix 镜像，不构建也不推送自定义镜像，故不在推送范围内
 # 用法：./scripts/docker-push-images.sh --prefix <远程前缀> [--tag <tag>] [service1] [service2] ...
 
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEFAULT_SERVICES=(gateway spring gozero nestjs fastapi)
+DEFAULT_SERVICES=(spring gozero nestjs fastapi)
 
 IMAGE_PREFIX="${DOCKER_IMAGE_PREFIX:-}"
 IMAGE_TAG="${DOCKER_IMAGE_TAG:-latest}"
@@ -46,9 +47,10 @@ Docker 镜像推送脚本
   --tag <tag>       推送到远程仓库时使用的 tag，默认 latest
 
 说明:
-  - 不传 service 时，默认推送 gateway spring gozero nestjs fastapi
+  - 不传 service 时，默认推送 spring gozero nestjs fastapi
   - 本地镜像默认读取 mix-<service>:latest
   - 远程镜像会被重新打标签为 <prefix>/mix-<service>:<tag>
+  - 网关使用官方 apache/apisix 镜像，无需构建与推送
 
 示例:
   ./mix docker push --prefix docker.io/yourname
@@ -148,7 +150,11 @@ main() {
 
     for service in "${services[@]}"; do
         case $service in
-            gateway|spring|gozero|nestjs|fastapi)
+            gateway)
+                # 网关直接使用官方 apache/apisix 镜像，无需构建与推送
+                log_warning "gateway 使用官方镜像，无需推送，已跳过"
+                ;;
+            spring|gozero|nestjs|fastapi)
                 push_service "$service"
                 ;;
             *)

@@ -14,5 +14,6 @@ class AdsTop10Article(WarehouseModel):
     create_at = Column(types.DateTime)
     update_at = Column(types.DateTime)
     user_id = Column(types.Int64)
+    user_name = Column(types.String)
     sub_category_id = Column(types.Int64)
     stat_time = Column(types.DateTime)

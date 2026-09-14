@@ -25,8 +25,14 @@ from app.core.errors import BusinessException
 
 from .nacos import get_service_instance
 
-# 共享 httpx 客户端实例（由 lifespan 初始化，复用连接池降低延迟）
+# 共享 httpx 客户端实例（由 lifespan 初始化，供外部资源抓取复用连接池）
 _shared_http_client: Optional[httpx.AsyncClient] = None
+
+# 内网服务调用专用的 httpx 客户端实例（由 lifespan 初始化）
+# 必须设置 trust_env=False：容器运行时 Docker CLI 会把宿主代理注入 HTTP(S)_PROXY，
+# 而 httpx 对 no_proxy 的 CIDR 写法（如 172.16.0.0/12）不识别，会导致按实例 IP
+# 发起的内网请求被转发到宿主代理并返回 502
+_internal_http_client: Optional[httpx.AsyncClient] = None
 
 # 远程调用配置（从 application.yaml 加载）
 _remote_call_config: Optional[dict[str, Any]] = None
@@ -49,6 +55,17 @@ def set_shared_http_client(client: httpx.AsyncClient) -> None:
 def get_shared_http_client() -> Optional[httpx.AsyncClient]:
     """获取共享的 httpx 客户端"""
     return _shared_http_client
+
+
+def set_internal_http_client(client: httpx.AsyncClient) -> None:
+    """由 lifespan 设置内网服务调用使用的 httpx 客户端"""
+    global _internal_http_client
+    _internal_http_client = client
+
+
+def get_internal_http_client() -> Optional[httpx.AsyncClient]:
+    """获取内网服务调用使用的 httpx 客户端"""
+    return _internal_http_client
 
 
 class CircuitBreakerOpenError(Exception):
@@ -245,8 +262,8 @@ async def call_remote_service(
     """
     通过 Nacos 服务发现并调用远程服务
 
-    优先使用 lifespan 中创建的共享 httpx.AsyncClient（长连接池复用），
-    不可用时才创建临时客户端
+    优先使用 lifespan 中创建的内网专用 httpx.AsyncClient（长连接池复用，
+    且 trust_env=False 不走环境代理），不可用时才创建临时客户端
     """
     # 从配置文件读取默认值
     config = _get_remote_call_config()
@@ -258,11 +275,11 @@ async def call_remote_service(
     merged_headers: dict[str, str] = _merge_headers(headers)
     breaker: SimpleCircuitBreaker = _get_service_breaker(service_name)
 
-    # 优先使用共享长连接池，不可用时创建临时客户端
-    shared_client: Optional[httpx.AsyncClient] = get_shared_http_client()
-    if shared_client is not None:
+    # 优先使用内网长连接池，不可用时创建临时客户端
+    internal_client: Optional[httpx.AsyncClient] = get_internal_http_client()
+    if internal_client is not None:
         return await _call_with_client(
-            shared_client,
+            internal_client,
             service_name,
             path,
             method,
@@ -275,7 +292,7 @@ async def call_remote_service(
             timeout,
         )
     else:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, trust_env=False) as client:
             return await _call_with_client(
                 client,
                 service_name,

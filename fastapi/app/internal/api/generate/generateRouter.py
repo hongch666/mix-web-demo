@@ -1,10 +1,10 @@
+from fastapi import APIRouter, BackgroundTasks, Path, Request
+
 from app.common.decorators import log
 from app.core.base import ApiResponse, success
 from app.core.constants import Messages
 from app.dependencies import GenerateServiceDep
 from app.internal.schemas import GenerateDTO
-
-from fastapi import APIRouter, BackgroundTasks, Path, Request
 
 router: APIRouter = APIRouter(
     prefix="/generate",

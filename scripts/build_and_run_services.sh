@@ -47,6 +47,12 @@ declare -A SERVICE_PORT=(
     [fastapi]="8084"
 )
 
+# 代理排除项：Docker CLI 会把宿主机代理（~/.docker/config.json 的 proxies 配置）注入容器，
+# 默认 NO_PROXY 只含 localhost，Go/Node/Python 服务通过容器名访问 nacos/mysql/redis 等
+# 会被转发到宿主代理而失败；注意 NO_PROXY 与 no_proxy 是两个独立变量，必须同时设置
+# 取值与根目录 docker-compose.yml 的 x-no-proxy 保持一致
+NO_PROXY_VALUE="localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
 ensure_network() {
     if ! docker network inspect "$NETWORK_NAME" > /dev/null 2>&1; then
         print_info "创建 Docker 网络: $NETWORK_NAME"
@@ -103,6 +109,12 @@ start_only=false
 build_image() {
     local service=$1
     local service_dir="${PROJECT_DIR}/${service}"
+
+    # 网关使用官方 apache/apisix 镜像，仅通过 compose 启动，不构建本地镜像
+    if [ "$service" = "gateway" ]; then
+        print_info "gateway 使用官方 apache/apisix 镜像，跳过镜像构建"
+        return 0
+    fi
 
     if [ ! -d "$service_dir" ]; then
         print_error "服务目录不存在: $service_dir"
@@ -250,6 +262,9 @@ run_container() {
     # 使用宿主机当前用户的 uid/gid 运行容器，避免挂载目录被 root 占用后，
     # 宿主机开发模式（./mix dev seq）写入日志时出现 Permission denied
     run_args+=( --user "$(id -u):$(id -g)" )
+
+    # 排除代理，避免服务通过容器名访问中间件（nacos/mysql/redis 等）时被转发到宿主代理
+    run_args+=( -e "NO_PROXY=$NO_PROXY_VALUE" -e "no_proxy=$NO_PROXY_VALUE" )
 
     # 创建并启动容器
     run_args+=( "${env_args[@]}" )

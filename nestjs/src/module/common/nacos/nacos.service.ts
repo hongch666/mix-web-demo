@@ -321,6 +321,13 @@ export class NacosService implements OnModuleInit {
           data: opts.body,
           headers,
           timeout: this.remoteCallConfig.timeout,
+          /*
+           * 内网服务间调用必须直连，禁止走环境变量注入的 HTTP(S)_PROXY
+           * Docker CLI 会把宿主代理写入容器，而 axios 依赖的 proxy-from-env 做 no_proxy
+           * 匹配时只支持主机名与通配后缀，不支持 CIDR（如 172.16.0.0/12）
+           * 且此处 URL 用的 Nacos 实例 IP 而非服务名，会被转发到宿主代理返回 502/超时
+           */
+          proxy: false,
         });
 
         // 校验业务响应码

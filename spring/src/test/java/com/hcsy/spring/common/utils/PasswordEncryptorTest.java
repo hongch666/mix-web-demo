@@ -1,5 +1,7 @@
 package com.hcsy.spring.common.utils;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
@@ -11,22 +13,27 @@ import lombok.extern.slf4j.Slf4j;
 class PasswordEncryptorTest {
 
     private static final String RAW_PASSWORD = "123456";
-    private static final String ENCODED_PASSWORD = "$2a$10$6YU.1pYb5mfPxQJolVOnOegqYE9KsohbOST/SDCdwNxZ0HpS70t2u";
+    private static final String WRONG_PASSWORD = "654321";
 
     private final PasswordEncryptor passwordEncryptor = new PasswordEncryptor();
 
     @Test
-    @DisplayName("应该输出写死明文密码的加密结果")
-    void shouldPrintEncodedPassword() {
+    @DisplayName("应该先生成密文再使用同一明文校验通过")
+    void shouldEncryptThenMatchPassword() {
+        // 先生成密文再校验，避免依赖写死的密文结果
         String encodedPassword = passwordEncryptor.encryptPassword(RAW_PASSWORD);
+
+        assertNotNull(encodedPassword);
+        assertTrue(encodedPassword.length() > 0);
+        assertTrue(passwordEncryptor.matchPassword(RAW_PASSWORD, encodedPassword));
         log.info("明文密码加密结果: {}", encodedPassword);
-        assertTrue(encodedPassword != null && !encodedPassword.isBlank());
     }
 
     @Test
-    @DisplayName("应该校验写死的密文密码和明文密码匹配")
-    void shouldMatchEncodedPassword() {
-        boolean matched = passwordEncryptor.matchPassword(RAW_PASSWORD, ENCODED_PASSWORD);
-        assertTrue(matched, "写死的密文密码和明文密码不匹配");
+    @DisplayName("错误明文密码应该校验失败")
+    void shouldRejectWrongPassword() {
+        String encodedPassword = passwordEncryptor.encryptPassword(RAW_PASSWORD);
+
+        assertFalse(passwordEncryptor.matchPassword(WRONG_PASSWORD, encodedPassword));
     }
 }

@@ -227,3 +227,7 @@ CLAUDE.md
 /node_modules/
 
 eclipse-formatter.xml
+
+.workbuddy/*
+
+_*.txt

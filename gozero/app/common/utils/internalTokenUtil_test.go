@@ -1,7 +1,6 @@
 package utils_test
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -19,6 +18,10 @@ func initTestInternalTokenUtil(t *testing.T) *utils.InternalTokenUtil {
 
 	configFile := filepath.Join("..", "..", "etc", "application.yaml")
 	c := boot.LoadConfig(configFile)
+	if c.InternalToken.Secret == "" {
+		c.InternalToken.Secret = "unit-test-secret"
+		c.InternalToken.Expiration = 60000
+	}
 
 	if err := utils.InitInternalTokenUtil(c.InternalToken.Secret, c.InternalToken.Expiration); err != nil {
 		t.Fatalf("初始化内部令牌工具失败: %v", err)
@@ -48,20 +51,13 @@ func TestGenerateInternalToken(t *testing.T) {
 
 func TestValidateInternalToken(t *testing.T) {
 	tokenUtil := initTestInternalTokenUtil(t)
-	token := mustGetEnv(t, "INTERNAL_TOKEN_TEST_TOKEN")
+	token, err := tokenUtil.GenerateInternalToken(10001, "gozero")
+	if err != nil {
+		t.Fatalf("生成测试Token失败: %v", err)
+	}
 
-	_, err := tokenUtil.ValidateInternalToken(token)
+	_, err = tokenUtil.ValidateInternalToken(token)
 	if err != nil {
 		t.Fatalf("校验内部Token失败: %v", err)
 	}
-}
-
-func mustGetEnv(t *testing.T, key string) string {
-	t.Helper()
-
-	value := os.Getenv(key)
-	if value == "" {
-		t.Fatalf("环境变量 %s 不能为空", key)
-	}
-	return value
 }

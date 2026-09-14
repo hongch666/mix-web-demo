@@ -32,6 +32,8 @@ class ArticleMapper:
             AdsTop10Article.create_at,
             AdsTop10Article.update_at,
             AdsTop10Article.user_id,
+            # 数仓 ADS 层已带作者名，对外统一按 username 字段返回
+            AdsTop10Article.user_name.label("username"),
             AdsTop10Article.sub_category_id,
         )
         statement = select(*columns).order_by(desc(AdsTop10Article.views)).limit(10)
