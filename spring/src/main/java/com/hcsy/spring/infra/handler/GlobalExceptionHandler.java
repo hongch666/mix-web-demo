@@ -2,10 +2,13 @@ package com.hcsy.spring.infra.handler;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.server.ServerWebInputException;
 
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
@@ -36,8 +39,13 @@ public class GlobalExceptionHandler {
 
     /**
      * 处理参数校验异常
+     *
+     * WebFlux 下 @Valid 失败抛的是 WebExchangeBindException，请求体格式错误或参数类型不匹配抛
+     * ServerWebInputException，二者都不是 MVC 的 MethodArgumentNotValidException/BindException，
+     * 必须在此显式声明，否则会被兜底分支吞成 500 并丢失字段级消息
      */
-    @ExceptionHandler({ MethodArgumentNotValidException.class, BindException.class,
+    @ExceptionHandler({ WebExchangeBindException.class, ServerWebInputException.class,
+        MethodArgumentNotValidException.class, BindException.class,
         ConstraintViolationException.class })
     public Mono<ResponseEntity<Result<?>>> handleValidationException(Exception ex) {
         String message = extractValidationMessage(ex);
@@ -59,22 +67,16 @@ public class GlobalExceptionHandler {
     }
 
     private String extractValidationMessage(Exception ex) {
+        if (ex instanceof WebExchangeBindException webExchangeBindException) {
+            return extractFieldMessage(webExchangeBindException.getBindingResult());
+        }
+
         if (ex instanceof MethodArgumentNotValidException methodArgumentNotValidException) {
-            FieldError fieldError = methodArgumentNotValidException.getBindingResult().getFieldError();
-            String message = fieldError == null ? null : fieldError.getDefaultMessage();
-            if (message != null && !message.isBlank()) {
-                return message;
-            }
-            return Messages.SYSTEM_EXCEPTION_BACK;
+            return extractFieldMessage(methodArgumentNotValidException.getBindingResult());
         }
 
         if (ex instanceof BindException bindException) {
-            FieldError fieldError = bindException.getBindingResult().getFieldError();
-            String message = fieldError == null ? null : fieldError.getDefaultMessage();
-            if (message != null && !message.isBlank()) {
-                return message;
-            }
-            return Messages.SYSTEM_EXCEPTION_BACK;
+            return extractFieldMessage(bindException.getBindingResult());
         }
 
         if (ex instanceof ConstraintViolationException constraintViolationException) {
@@ -83,6 +85,25 @@ public class GlobalExceptionHandler {
                 .filter(message -> message != null && !message.isBlank())
                 .findFirst()
                 .orElse(Messages.SYSTEM_EXCEPTION_BACK);
+        }
+
+        // 请求体格式错误、参数类型不匹配等，不向前端暴露框架细节
+        if (ex instanceof ServerWebInputException) {
+            return Messages.REQUEST_BODY_INVALID;
+        }
+
+        return Messages.SYSTEM_EXCEPTION_BACK;
+    }
+
+    private String extractFieldMessage(BindingResult bindingResult) {
+        if (bindingResult == null) {
+            return Messages.SYSTEM_EXCEPTION_BACK;
+        }
+
+        FieldError fieldError = bindingResult.getFieldError();
+        String message = fieldError == null ? null : fieldError.getDefaultMessage();
+        if (message != null && !message.isBlank()) {
+            return message;
         }
 
         return Messages.SYSTEM_EXCEPTION_BACK;

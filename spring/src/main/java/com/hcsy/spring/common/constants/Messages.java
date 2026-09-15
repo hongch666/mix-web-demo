@@ -165,6 +165,7 @@ public class Messages {
     public static final String BUSINESS_EXCEPTION = "捕获到业务异常: ";
     public static final String SYSTEM_EXCEPTION = "捕获到业系统异常: ";
     public static final String SYSTEM_EXCEPTION_BACK = "Spring服务器错误";
+    public static final String REQUEST_BODY_INVALID = "请求体格式不正确或参数类型不匹配";
 
     // ===== 定时任务 =====
     public static final String TASK_START = "开始执行定时清理过期 Token 任务";
