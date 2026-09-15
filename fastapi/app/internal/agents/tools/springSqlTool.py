@@ -14,9 +14,9 @@ from app.internal.clients import SpringClient, get_spring_client
 class SpringSqlTool:
     """Spring 服务 SQL 查询工具（远程代理）"""
 
-    def __init__(self, spring_client: Optional[SpringClient] = None) -> None:
+    def __init__(self, spring_client: SpringClient) -> None:
         self.logger = Logger
-        self._client: SpringClient = spring_client or get_spring_client()
+        self._client: SpringClient = spring_client
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 Spring 侧 MySQL 表结构"""
@@ -83,6 +83,6 @@ class SpringSqlTool:
 
 
 @lru_cache
-def get_spring_sql_tool() -> SpringSqlTool:
+def get_spring_sql_tool(spring_client: Optional[SpringClient] = None) -> SpringSqlTool:
     """获取 Spring SQL 工具实例"""
-    return SpringSqlTool()
+    return SpringSqlTool(spring_client or get_spring_client())

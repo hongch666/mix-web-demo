@@ -14,10 +14,10 @@ from app.internal.clients import NestjsClient, get_nestjs_client
 class MongoDBTools:
     """MongoDB 日志查询工具集（通过 NestJS 内部接口远程查询）"""
 
-    def __init__(self, nestjs_client: Optional[NestjsClient] = None) -> None:
+    def __init__(self, nestjs_client: NestjsClient) -> None:
         """初始化 MongoDB 日志工具"""
         self.logger = Logger
-        self._nestjs_client: NestjsClient = nestjs_client or get_nestjs_client()
+        self._nestjs_client: NestjsClient = nestjs_client
 
     async def list_mongodb_collections(self) -> str:
         """列出 MongoDB 数据库中的所有 collection 及其基本信息"""
@@ -105,6 +105,6 @@ class MongoDBTools:
 
 
 @lru_cache
-def get_mongodb_tools() -> MongoDBTools:
+def get_mongodb_tools(nestjs_client: Optional[NestjsClient] = None) -> MongoDBTools:
     """获取 MongoDB 日志工具实例"""
-    return MongoDBTools()
+    return MongoDBTools(nestjs_client or get_nestjs_client())

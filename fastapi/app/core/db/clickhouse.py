@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any, Optional
 from urllib.parse import quote_plus
 
@@ -60,10 +61,25 @@ ClickHouseAsyncSessionLocal = async_sessionmaker(
 )
 
 
-async def get_clickhouse_db() -> AsyncGenerator[AsyncSession, None]:
-    """获取 ClickHouse ORM 异步会话"""
+@asynccontextmanager
+async def clickhouse_session() -> AsyncGenerator[AsyncSession, None]:
+    """ClickHouse ORM 会话上下文管理器
+
+    ClickHouse ORM 访问的唯一入口：请求链路内的数仓 Mapper 与依赖注入
+    （get_clickhouse_db）都由此获取会话，保证创建方式与生命周期一致
+
+    注意会话粒度仍是每次查询一个，因为数仓查询存在 asyncio.gather 并发，
+    而 AsyncSession 不支持并发复用
+    """
 
     async with ClickHouseAsyncSessionLocal() as session:
+        yield session
+
+
+async def get_clickhouse_db() -> AsyncGenerator[AsyncSession, None]:
+    """获取 ClickHouse ORM 异步会话（FastAPI 依赖形式）"""
+
+    async with clickhouse_session() as session:
         yield session
 
 

@@ -14,15 +14,9 @@ from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import Messages, Prompts
 from app.internal.agents import (
+    AgentToolFactories,
     IntentRouter,
-    get_fastapi_sql_tool,
-    get_gozero_sql_tool,
-    get_mongodb_tools,
-    get_neo4j_tools,
-    NestjsSqlTool,
-    get_rag_tools,
-    get_spring_sql_tool,
-    get_warehouse_tools,
+    default_agent_tool_factories,
 )
 
 ChatHistoryItem = tuple[str, str]
@@ -72,7 +66,9 @@ def _load_tool_group(group_name: str, factory: Any) -> tuple[Optional[Any], list
 
 
 def initialize_ai_tools(
-    include_sql: bool = True, include_logs: bool = True
+    include_sql: bool = True,
+    include_logs: bool = True,
+    tool_factories: Optional[AgentToolFactories] = None,
 ) -> tuple[Optional[Any], Optional[Any], Optional[Any], list[Any]]:
     """初始化AI工具，支持基于权限的工具选择
 
@@ -82,6 +78,8 @@ def initialize_ai_tools(
     Args:
         include_sql: 是否包含 SQL 工具
         include_logs: 是否包含 MongoDB 日志工具
+        tool_factories: 工具组装配工厂集合，由依赖图注入；
+            缺省时使用进程内默认装配（各工具工厂自行解析客户端单例）
 
     Returns:
         tuple: (sql_tools_instance, rag_tools_instance, mongodb_log_tools_instance, all_tools)
@@ -91,31 +89,19 @@ def initialize_ai_tools(
     mongodb_tools_instance: Optional[Any] = None
     all_tools: list[Any] = []
 
-    # 构建任务列表，每组工具独立加载
-    sql_tool_factories: list[tuple[str, Any]] = [
-        ("FastAPI", get_fastapi_sql_tool),
-        ("Spring", get_spring_sql_tool),
-        ("GoZero", get_gozero_sql_tool),
-        ("NestJS", NestjsSqlTool),
-    ]
+    factories: AgentToolFactories = tool_factories or default_agent_tool_factories()
 
     # 并行加载所有独立工具组
     with ThreadPoolExecutor(max_workers=5) as executor:
         futures: dict[str, Any] = {}
 
         if include_sql:
-            futures["sql"] = executor.submit(_load_sql_tools, sql_tool_factories)
-        futures["rag"] = executor.submit(_load_tool_group, "RAG", get_rag_tools)
-        futures["neo4j"] = executor.submit(
-            _load_tool_group, "Neo4j 知识图谱", get_neo4j_tools
-        )
+            futures["sql"] = executor.submit(_load_sql_tools, list(factories.sql_tools))
+        futures["rag"] = executor.submit(_load_tool_group, *factories.rag)
+        futures["neo4j"] = executor.submit(_load_tool_group, *factories.neo4j)
         if include_logs:
-            futures["mongodb"] = executor.submit(
-                _load_tool_group, "MongoDB 日志", get_mongodb_tools
-            )
-        futures["warehouse"] = executor.submit(
-            _load_tool_group, "ClickHouse 数仓", get_warehouse_tools
-        )
+            futures["mongodb"] = executor.submit(_load_tool_group, *factories.mongodb)
+        futures["warehouse"] = executor.submit(_load_tool_group, *factories.warehouse)
 
         # 按完成顺序收集结果
         for future in as_completed(futures.values()):
@@ -153,6 +139,7 @@ class BaseAiService:
         model_config_key: str = "model_name",
         temperature: float = 0.7,
         use_structured_output: bool = True,
+        tool_factories: Optional[AgentToolFactories] = None,
     ) -> None:
         self._normalize_proxy_env()
         self.ai_history_mapper: Any = ai_history_mapper
@@ -161,6 +148,8 @@ class BaseAiService:
         self.model_config_key: str = model_config_key
         self.temperature: float = temperature
         self.use_structured_output: bool = use_structured_output
+        # 工具组装配工厂由依赖图注入，缺省时回退进程内默认装配
+        self._tool_factories: Optional[AgentToolFactories] = tool_factories
         self.llm: Optional[Any] = None
         self.agent: Optional[Any] = None
         self.agent_executor: Optional[Any] = None
@@ -396,7 +385,9 @@ class BaseAiService:
     def _initialize_agent_stack(self, max_iterations: int = 5) -> None:
         """初始化工具、意图路由器和 Agent"""
         try:
-            _, _, _, self.all_tools = initialize_ai_tools()
+            _, _, _, self.all_tools = initialize_ai_tools(
+                tool_factories=self._tool_factories
+            )
             self.intent_router = IntentRouter(
                 self.llm,
                 use_structured_output=self.use_structured_output,

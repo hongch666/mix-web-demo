@@ -2,15 +2,24 @@ from typing import Annotated
 
 from fastapi import Depends
 
+from app.internal.cache import (
+    get_article_cache,
+    get_category_cache,
+    get_publish_time_cache,
+    get_statistics_cache,
+    get_wordcloud_cache,
+)
+from app.internal.clients import (
+    get_nestjs_client,
+    get_spring_client,
+)
+from app.internal.crud import get_article_mapper
 from app.internal.services import (
     AiHistoryService,
     AlgorithmService,
     AnalyzeService,
     ApiLogService,
-    GeminiService,
     GenerateService,
-    GlmService,
-    GptService,
     GraphSearchService,
     UserService,
     VectorSearchService,
@@ -18,10 +27,7 @@ from app.internal.services import (
     get_algorithm_service,
     get_analyze_service,
     get_apilog_service,
-    get_gemini_service,
     get_generate_service,
-    get_glm_service,
-    get_gpt_service,
     get_graph_search_service,
     get_user_service,
     get_vector_search_service,
@@ -35,7 +41,9 @@ from .caches import (
     WordcloudCacheDep,
 )
 from .clients import NestjsClientDep, SpringClientDep
+from .llm import GeminiServiceDep, GlmServiceDep, GptServiceDep
 from .mappers import AiHistoryMapperDep, ArticleMapperDep, UserMapperDep
+from .tools import RAGToolsDep
 
 
 def provide_algorithm_service() -> AlgorithmService:
@@ -64,10 +72,28 @@ def provide_analyze_service(
     )
 
 
+def resolve_analyze_service() -> AnalyzeService:
+    """请求外（调度器等）通过依赖图解析 AnalyzeService
+
+    参数取自与 provide_analyze_service 相同的单例工厂，
+    因此返回的是与请求路径完全相同的实例，singleflight 锁等内部状态共享
+    """
+    return get_analyze_service(
+        get_article_mapper(),
+        get_article_cache(),
+        get_category_cache(),
+        get_publish_time_cache(),
+        get_statistics_cache(),
+        get_wordcloud_cache(),
+        get_spring_client(),
+        get_nestjs_client(),
+    )
+
+
 def provide_generate_service(
-    glm_service: "GlmServiceDep",
-    gemini_service: "GeminiServiceDep",
-    gpt_service: "GptServiceDep",
+    glm_service: GlmServiceDep,
+    gemini_service: GeminiServiceDep,
+    gpt_service: GptServiceDep,
     spring_client: SpringClientDep,
 ) -> GenerateService:
     return get_generate_service(
@@ -101,29 +127,8 @@ def provide_user_service(
     return get_user_service(spring_client, nestjs_client, user_mapper)
 
 
-def provide_gpt_service(
-    ai_history_mapper: AiHistoryMapperDep,
-    spring_client: SpringClientDep,
-) -> GptService:
-    return get_gpt_service(ai_history_mapper, spring_client)
-
-
-def provide_gemini_service(
-    ai_history_mapper: AiHistoryMapperDep,
-    spring_client: SpringClientDep,
-) -> GeminiService:
-    return get_gemini_service(ai_history_mapper, spring_client)
-
-
-def provide_glm_service(
-    ai_history_mapper: AiHistoryMapperDep,
-    spring_client: SpringClientDep,
-) -> GlmService:
-    return get_glm_service(ai_history_mapper, spring_client)
-
-
-def provide_vector_search_service() -> VectorSearchService:
-    return get_vector_search_service()
+def provide_vector_search_service(rag_tools: RAGToolsDep) -> VectorSearchService:
+    return get_vector_search_service(rag_tools)
 
 
 AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]
@@ -135,9 +140,6 @@ GraphSearchServiceDep = Annotated[
     GraphSearchService, Depends(provide_graph_search_service)
 ]
 UserServiceDep = Annotated[UserService, Depends(provide_user_service)]
-GptServiceDep = Annotated[GptService, Depends(provide_gpt_service)]
-GeminiServiceDep = Annotated[GeminiService, Depends(provide_gemini_service)]
-GlmServiceDep = Annotated[GlmService, Depends(provide_glm_service)]
 VectorSearchServiceDep = Annotated[
     VectorSearchService, Depends(provide_vector_search_service)
 ]

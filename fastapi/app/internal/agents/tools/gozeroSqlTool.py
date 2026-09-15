@@ -14,9 +14,9 @@ from app.internal.clients import GozeroClient, get_gozero_client
 class GozeroSqlTool:
     """GoZero 服务 SQL 查询工具（远程代理）"""
 
-    def __init__(self, gozero_client: Optional[GozeroClient] = None) -> None:
+    def __init__(self, gozero_client: GozeroClient) -> None:
         self.logger = Logger
-        self._client: GozeroClient = gozero_client or get_gozero_client()
+        self._client: GozeroClient = gozero_client
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 GoZero 侧 MySQL 表结构"""
@@ -83,6 +83,6 @@ class GozeroSqlTool:
 
 
 @lru_cache
-def get_gozero_sql_tool() -> GozeroSqlTool:
+def get_gozero_sql_tool(gozero_client: Optional[GozeroClient] = None) -> GozeroSqlTool:
     """获取 GoZero SQL 工具实例"""
-    return GozeroSqlTool()
+    return GozeroSqlTool(gozero_client or get_gozero_client())

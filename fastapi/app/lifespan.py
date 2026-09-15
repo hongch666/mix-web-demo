@@ -31,6 +31,7 @@ from app.internal.agents.langsmith import (
     shutdown_langsmith,
 )
 from app.internal.clients import get_nestjs_client, get_spring_client
+from app.dependencies import resolve_analyze_service
 from app.internal.models import AiHistory
 from app.internal.services import AnalyzeService
 from app.internal.tasks import start_scheduler
@@ -66,7 +67,7 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     else:
         Logger.warning(Messages.RABBITMQ_CLIENT_NOT_INITIALIZED_MESSAGE)
 
-    analyze_service: AnalyzeService = AnalyzeService.create_for_scheduler()
+    analyze_service: AnalyzeService = resolve_analyze_service()
 
     def db_factory() -> AsyncSession:
         return AsyncSessionLocal()

@@ -22,9 +22,6 @@ from app.internal.cache import (
     PublishTimeCache,
     StatisticsCache,
     WordcloudCache,
-    get_article_cache,
-    get_category_cache,
-    get_publish_time_cache,
     get_statistics_cache,
     get_wordcloud_cache,
 )
@@ -34,10 +31,7 @@ from app.internal.clients import (
     get_nestjs_client,
     get_spring_client,
 )
-from app.internal.crud import (
-    ArticleMapper,
-    get_article_mapper,
-)
+from app.internal.crud import ArticleMapper
 
 
 class AnalyzeService:
@@ -180,18 +174,6 @@ class AnalyzeService:
             "analyze:monthly_publish_count",
             self._get_monthly_publish_count_cached,
             lambda: self.get_monthly_publish_count_service(db),
-        )
-
-    @classmethod
-    def create_for_scheduler(cls) -> "AnalyzeService":
-        """为调度器创建 AnalyzeService 实例（手动注入所有依赖）"""
-        return cls(
-            articleMapper=get_article_mapper(),
-            article_cache=get_article_cache(),
-            category_cache=get_category_cache(),
-            publish_time_cache=get_publish_time_cache(),
-            statistics_cache=get_statistics_cache(),
-            wordcloud_cache=get_wordcloud_cache(),
         )
 
     async def get_top10_articles_service(

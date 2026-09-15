@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import desc, select
 
 from app.core.constants import Messages
-from app.core.db import ClickHouseAsyncSessionLocal
+from app.core.db import clickhouse_session
 from app.internal.models import AdsApiAverageSpeed, AdsApiCalledCount
 
 
@@ -12,7 +12,7 @@ class ApiLogMapper:
     """API 日志数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
-        async with ClickHouseAsyncSessionLocal() as session:
+        async with clickhouse_session() as session:
             result = await session.execute(statement)
             return [dict(row) for row in result.mappings().all()]
 

@@ -3,13 +3,13 @@ from __future__ import annotations
 import asyncio
 import time
 from functools import lru_cache
-from typing import Any
+from typing import Any, Optional
 
 from langchain_core.documents import Document
 
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
-from app.internal.agents import get_rag_tools
+from app.internal.agents import RAGTools, get_rag_tools
 from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.schemas import (
     VectorMatchedChunkDTO,
@@ -26,12 +26,13 @@ class VectorSearchService:
 
     def __init__(
         self,
-        enabled: bool = True,
-        candidate_limit: int = 50,
-        fetch_multiplier: int = 4,
-        max_matched_chunks: int = 2,
-        min_score: float = 0.3,
-        score_mode: str = "similarity",
+        enabled: bool = Defaults.VECTOR_SEARCH_ENABLED,
+        candidate_limit: int = Defaults.VECTOR_SEARCH_CANDIDATE_LIMIT,
+        fetch_multiplier: int = Defaults.VECTOR_SEARCH_FETCH_MULTIPLIER,
+        max_matched_chunks: int = Defaults.VECTOR_SEARCH_MAX_MATCHED_CHUNKS,
+        min_score: float = Defaults.VECTOR_SEARCH_MIN_SCORE,
+        score_mode: str = Defaults.VECTOR_SEARCH_SCORE_MODE,
+        rag_tools: RAGTools | None = None,
     ) -> None:
         self.enabled = enabled
         self.candidate_limit = max(candidate_limit, 1)
@@ -41,6 +42,8 @@ class VectorSearchService:
         self.score_mode = (
             score_mode if score_mode in {"similarity", "distance"} else "similarity"
         )
+        # 由依赖图注入；缺省时回退到工厂单例，保持手工构造可用
+        self._rag_tools: RAGTools | None = rag_tools
 
     async def enhance(self, req: VectorSearchEnhanceReq) -> VectorSearchEnhanceResp:
         """执行向量增强, 返回候选文章的语义分和命中片段"""
@@ -59,7 +62,7 @@ class VectorSearchService:
         fetch_k = self._resolve_fetch_k(req.topK, len(article_ids))
 
         search_start = time.time()
-        rag_tools = get_rag_tools()
+        rag_tools = self._rag_tools or get_rag_tools()
         with get_langsmith_context(
             name="vector.enhance",
             tags=["feature:vector_search"],
@@ -194,7 +197,9 @@ class VectorSearchService:
 
 
 @lru_cache
-def get_vector_search_service() -> VectorSearchService:
+def get_vector_search_service(
+    rag_tools: Optional[RAGTools] = None,
+) -> VectorSearchService:
     """获取 VectorSearchService 单例"""
     return VectorSearchService(
         enabled=Defaults.VECTOR_SEARCH_ENABLED,
@@ -203,4 +208,5 @@ def get_vector_search_service() -> VectorSearchService:
         max_matched_chunks=Defaults.VECTOR_SEARCH_MAX_MATCHED_CHUNKS,
         min_score=Defaults.VECTOR_SEARCH_MIN_SCORE,
         score_mode=Defaults.VECTOR_SEARCH_SCORE_MODE,
+        rag_tools=rag_tools,
     )

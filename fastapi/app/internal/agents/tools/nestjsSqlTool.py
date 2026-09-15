@@ -1,4 +1,5 @@
 import json
+from functools import lru_cache
 from typing import Any, Optional
 
 from langchain_core.tools import StructuredTool
@@ -13,9 +14,9 @@ from app.internal.clients import NestjsClient, get_nestjs_client
 class NestjsSqlTool:
     """NestJS 服务 SQL 查询工具（远程代理）"""
 
-    def __init__(self, nestjs_client: Optional[NestjsClient] = None) -> None:
+    def __init__(self, nestjs_client: NestjsClient) -> None:
         self.logger = Logger
-        self._client: NestjsClient = nestjs_client or get_nestjs_client()
+        self._client: NestjsClient = nestjs_client
 
     async def get_tables(self, table_name: str = "") -> str:
         """获取 NestJS 侧 MySQL 表结构"""
@@ -79,3 +80,9 @@ class NestjsSqlTool:
                 args_schema=ExecuteNestjsSqlQueryInput,
             ),
         ]
+
+
+@lru_cache
+def get_nestjs_sql_tool(nestjs_client: Optional[NestjsClient] = None) -> NestjsSqlTool:
+    """获取 NestJS SQL 工具实例"""
+    return NestjsSqlTool(nestjs_client or get_nestjs_client())
