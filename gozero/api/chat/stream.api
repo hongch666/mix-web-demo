@@ -8,27 +8,43 @@ syntax = "v2"
 service App {
 	@doc (
 		summary:     "SSE消息通知连接"
-		description: "建立SSE连接，用于接收实时消息通知"
+		description: "建立SSE连接。成功时以 text/event-stream 持续推送数据帧，帧结构见响应模型；参数非法时返回统一 JSON 错误体"
 	)
 	@handler ChatSSEHandler
-	get /sse/chat (ChatSSEConnectReq) returns (ChatSSEConnectResp)
+	get /sse/chat (ChatSSEConnectReq) returns (ChatSSEMessage)
 
 	@doc (
 		summary:     "WebSocket聊天连接"
-		description: "建立WebSocket连接，自动加入聊天队列"
+		description: "建立WebSocket连接，自动加入聊天队列。握手成功返回 101 升级协议，之后通过文本帧双向通信，帧结构见响应模型"
 	)
 	@handler ChatWebsocketHandler
-	get /ws/chat (ChatWsConnectReq) returns (ChatWsConnectResp)
+	get /ws/chat (ChatWsConnectReq) returns (ChatWsMessage)
 }
 
 type (
+	// SSE连接请求
 	ChatSSEConnectReq {
 		UserId *int64 `form:"user_id,optional"`
 	}
-	ChatSSEConnectResp  {}
+	// SSE数据帧，客户端在连接建立后持续接收（与连接时下发的首帧同构）
+	ChatSSEMessage {
+		Type         string           `json:"type"`
+		UserId       int64            `json:"user_id"`
+		UnreadCounts map[int64]int64  `json:"unread_counts"`
+		Message      *ChatMessageItem `json:"message,omitempty"`
+	}
+	// WebSocket连接请求
 	ChatWsConnectReq {
 		UserId *int64 `form:"user_id,optional"`
 	}
-	ChatWsConnectResp  {}
+	// WebSocket数据帧，包含 message/ping/pong 三种类型
+	ChatWsMessage {
+		Type       string `json:"type"`
+		SenderId   int64  `json:"sender_id,omitempty"`
+		ReceiverId int64  `json:"receiver_id,omitempty"`
+		Content    string `json:"content,omitempty"`
+		MessageId  uint64 `json:"message_id,omitempty"`
+		Timestamp  string `json:"timestamp,omitempty"`
+	}
 )
 

@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 
-	"app/common/hub"
 	"app/common/realtime"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
 	"app/internal/client/springClient"
 	"app/internal/config"
+	"app/internal/hub"
 	"app/model/chatMessages"
 	"app/model/search"
 
@@ -51,7 +51,7 @@ type HubContext struct {
 	ChatHub            *hub.ChatHub
 	SSEHub             *hub.SSEHubManager
 	RealtimeBus        *realtime.RedisPubSub
-	RealtimeDispatcher *realtime.ChatRealtimeDispatcher
+	RealtimeDispatcher *hub.ChatRealtimeDispatcher
 }
 
 // ClientContext 保存内部服务客户端

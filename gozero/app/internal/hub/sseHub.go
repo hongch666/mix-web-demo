@@ -10,6 +10,7 @@ import (
 
 	"app/common/constants"
 	"app/common/utils"
+	"app/internal/types"
 )
 
 // SSE客户端
@@ -92,7 +93,7 @@ func (hub *SSEHubManager) UnregisterClient(userID int64, connectionID string) {
 }
 
 // SendNotificationToUser 发送通知给特定用户
-func (hub *SSEHubManager) SendNotificationToUser(userID int64, notification *SSEMessageNotification) {
+func (hub *SSEHubManager) SendNotificationToUser(userID int64, notification *types.ChatSSEMessage) {
 	if notification == nil {
 		if hub.ZeroLogger != nil {
 			hub.Warning(constants.SSE_SEND_EMPTY_WARNING_MESSAGE)
@@ -176,9 +177,9 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 	defer hub.UnregisterClient(userID, connectionID)
 
 	// 发送初始化连接消息
-	initMessage := &SSEMessageNotification{
+	initMessage := &types.ChatSSEMessage{
 		Type:         "connected",
-		UserID:       userID,
+		UserId:       userID,
 		UnreadCounts: make(map[int64]int64),
 	}
 	sseMessage := FormatSSEMessage(initMessage)

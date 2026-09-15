@@ -25,6 +25,11 @@ func SyncESHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
+		if err := req.Validate(); err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+
 		l := task.NewSyncESLogic(r.Context(), svcCtx)
 		resp, err := l.SyncES(&req)
 		if err != nil {

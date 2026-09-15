@@ -1,4 +1,4 @@
-package realtime
+package hub
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"app/common/constants"
-	"app/common/hub"
 	"app/common/utils"
 )
 
@@ -17,8 +16,8 @@ type chatHistoryReader interface {
 // ChatRealtimeDispatcher 负责处理跨 Pod 的聊天实时事件
 type ChatRealtimeDispatcher struct {
 	ctx               context.Context
-	chatHub           *hub.ChatHub
-	sseHub            *hub.SSEHubManager
+	chatHub           *ChatHub
+	sseHub            *SSEHubManager
 	chatHistoryReader chatHistoryReader
 	logger            *utils.ZeroLogger
 }
@@ -26,8 +25,8 @@ type ChatRealtimeDispatcher struct {
 // NewChatRealtimeDispatcher 创建聊天实时事件分发器
 func NewChatRealtimeDispatcher(
 	ctx context.Context,
-	chatHub *hub.ChatHub,
-	sseHub *hub.SSEHubManager,
+	chatHub *ChatHub,
+	sseHub *SSEHubManager,
 	chatHistoryReader chatHistoryReader,
 	logger *utils.ZeroLogger,
 ) *ChatRealtimeDispatcher {
@@ -46,7 +45,7 @@ func (d *ChatRealtimeDispatcher) Handle(payload []byte) {
 		return
 	}
 
-	var event hub.ChatRealtimeEvent
+	var event ChatRealtimeEvent
 	if err := json.Unmarshal(payload, &event); err != nil {
 		d.logError(fmt.Sprintf(constants.REDIS_REALTIME_MESSAGE_ERROR, err))
 		return
@@ -64,7 +63,7 @@ func (d *ChatRealtimeDispatcher) Handle(payload []byte) {
 	}
 
 	if d.chatHub != nil && d.chatHub.SendMessageToQueue(event.ReceiverID, messageBytes) {
-		d.markChatHistoryAsRead(event.WebSocketMessage.SenderID, event.ReceiverID)
+		d.markChatHistoryAsRead(event.WebSocketMessage.SenderId, event.ReceiverID)
 		return
 	}
 

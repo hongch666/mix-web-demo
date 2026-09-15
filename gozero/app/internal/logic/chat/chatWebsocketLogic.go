@@ -5,8 +5,12 @@ package chat
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"app/common/constants"
+	"app/common/exceptions"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/types"
@@ -27,9 +31,24 @@ func NewChatWebsocketLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 	}
 }
 
-func (l *ChatWebsocketLogic) ChatWebsocket(req *types.ChatWsConnectReq) (resp *types.ChatWsConnectResp, err error) {
-	// WebSocket实时聊天实现
-	l.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
+// ResolveUserID 解析WebSocket连接的发起用户
+// WebSocket 握手无法自定义请求头，因此 user_id 优先取查询参数，缺省时回退网关注入的请求头
+func (l *ChatWebsocketLogic) ResolveUserID(req *types.ChatWsConnectReq, headerUserID string) (int64, error) {
+	if req.UserId != nil {
+		return *req.UserId, nil
+	}
 
-	return
+	trimmedUserID := strings.TrimSpace(headerUserID)
+	if trimmedUserID == "" {
+		l.Error(constants.USER_ID_LESS)
+		return 0, exceptions.NewBadRequestErrorSame(constants.USER_ID_LESS)
+	}
+
+	userID, err := strconv.ParseInt(trimmedUserID, 10, 64)
+	if err != nil || userID <= 0 {
+		l.Error(fmt.Sprintf(constants.USER_ID_LESS+": %v", trimmedUserID))
+		return 0, exceptions.NewBadRequestErrorSame(constants.USER_ID_LESS)
+	}
+
+	return userID, nil
 }

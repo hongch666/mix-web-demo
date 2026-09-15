@@ -11,8 +11,8 @@ import (
 
 	"app/common/constants"
 	"app/common/exceptions"
-	"app/common/hub"
 	"app/common/utils"
+	"app/internal/hub"
 	"app/internal/svc"
 	"app/internal/types"
 	"app/model/chatMessages"
@@ -50,12 +50,12 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 	l.Info(constants.CHAT_MESSAGE_SEND_SUCCESS)
 
 	// 2. 检查接收者的所有WebSocket连接，如果存在就统一投递
-	wsMessage := &hub.WebSocketMessage{
+	wsMessage := &types.ChatWsMessage{
 		Type:       "message",
-		SenderID:   req.SenderId,
-		ReceiverID: req.ReceiverId,
+		SenderId:   req.SenderId,
+		ReceiverId: req.ReceiverId,
 		Content:    req.Content,
-		MessageID:  uint(message.Id),
+		MessageId:  uint64(message.Id),
 		Timestamp:  time.Now().Format(constants.DateTimeFormat),
 	}
 
@@ -65,14 +65,14 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		unreadCounts = make(map[int64]int64)
 	}
 
-	notification := &hub.SSEMessageNotification{
+	notification := &types.ChatSSEMessage{
 		Type:         "message",
-		UserID:       req.ReceiverId,
+		UserId:       req.ReceiverId,
 		UnreadCounts: unreadCounts,
-		Message: &hub.ChatMessageItem{
-			ID:         uint(message.Id),
-			SenderID:   message.SenderId,
-			ReceiverID: message.ReceiverId,
+		Message: &types.ChatMessageItem{
+			Id:         uint64(message.Id),
+			SenderId:   message.SenderId,
+			ReceiverId: message.ReceiverId,
 			Content:    message.Content,
 			IsRead:     int8(message.IsRead),
 			CreatedAt:  message.CreatedAt.Format(constants.DateTimeFormat),
@@ -116,14 +116,14 @@ func (l *ChatSendMessageLogic) notifyUnreadMessage(userID, _ int64, message *cha
 		return
 	}
 
-	notification := &hub.SSEMessageNotification{
+	notification := &types.ChatSSEMessage{
 		Type:         "message",
-		UserID:       userID,
+		UserId:       userID,
 		UnreadCounts: unreadCounts,
-		Message: &hub.ChatMessageItem{
-			ID:         uint(message.Id),
-			SenderID:   message.SenderId,
-			ReceiverID: message.ReceiverId,
+		Message: &types.ChatMessageItem{
+			Id:         uint64(message.Id),
+			SenderId:   message.SenderId,
+			ReceiverId: message.ReceiverId,
 			Content:    message.Content,
 			IsRead:     int8(message.IsRead),
 			CreatedAt:  message.CreatedAt.Format(constants.DateTimeFormat),

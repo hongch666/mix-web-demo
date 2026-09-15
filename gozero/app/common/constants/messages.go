@@ -263,6 +263,8 @@ const (
 	SQL_TOOLS_LIMIT_REQUIRED      = "安全限制：SQL查询必须包含LIMIT子句"
 	SQL_TOOLS_LIMIT_EXCEEDED      = "安全限制：LIMIT超过最大限制100"
 	SQL_TOOLS_TABLE_NOT_ALLOWED   = "安全限制：表 '%s' 不在白名单内"
+	SQL_TOOLS_QUERY_TOO_LONG      = "SQL查询语句长度不能超过%d个字符"
+	SQL_TOOLS_TABLE_NAME_TOO_LONG = "表名长度不能超过%d个字符"
 	SQL_TOOLS_QUERY_FAILED        = "执行SQL查询失败"
 	SQL_TOOLS_MYSQL_UNINITIALIZED = "MySQL 连接未初始化"
 	SQL_TOOLS_MYSQL_DRIVER        = "mysql"

@@ -38,6 +38,12 @@ var SqlToolsWhitespaceRegex = regexp.MustCompile(`\s+`)
 // SqlToolsMaxLimit SQL 查询最大返回行数（LIMIT 上限）
 const SqlToolsMaxLimit = 100
 
+// SqlToolsMaxQueryLength SQL 查询语句最大字符数
+const SqlToolsMaxQueryLength = 8000
+
+// SqlToolsMaxTableNameLength 表名最大字符数
+const SqlToolsMaxTableNameLength = 64
+
 // ===== SQL 模板函数 =====
 
 // SqlToolsCountRowsSQL 统计表行数 SQL 模板（表名来自白名单，使用反引号包裹避免保留字冲突）

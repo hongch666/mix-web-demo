@@ -5,15 +5,17 @@ package chat
 
 import (
 	"net/http"
-	"strconv"
 
 	"app/common/constants"
-	"app/common/hub"
 	"app/common/utils"
+	"app/internal/hub"
+	"app/internal/logic/chat"
 	"app/internal/middleware"
 	"app/internal/svc"
+	"app/internal/types"
 
 	"github.com/gorilla/websocket"
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 var upgrader = websocket.Upgrader{
@@ -25,16 +27,21 @@ var upgrader = websocket.Upgrader{
 // WebSocket连接
 func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
-		userIDStr := r.URL.Query().Get("user_id")
-		if userIDStr == "" {
-			// 尝试从Header获取（网关传递的用户信息）
-			userIDStr = r.Header.Get("X-User-Id")
+		var req types.ChatWsConnectReq
+		if err := httpx.Parse(r, &req); err != nil {
+			utils.Error(w, constants.HttpBadRequest, err.Error())
+			return
 		}
 
-		userID, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil || userID <= 0 {
-			svcCtx.Logger.Error(constants.USER_ID_LESS)
-			utils.Error(w, constants.HttpBadRequest, constants.USER_ID_LESS)
+		if err := req.Validate(); err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+
+		l := chat.NewChatWebsocketLogic(r.Context(), svcCtx)
+		userID, err := l.ResolveUserID(&req, r.Header.Get("X-User-Id"))
+		if err != nil {
+			utils.HandleError(w, err)
 			return
 		}
 
@@ -43,6 +50,8 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			svcCtx.Logger.Error(constants.WS_CONNECT_FAIL + err.Error())
 			return
 		}
+
+		svcCtx.Logger.Info(constants.WEBSOCKET_CONNECTION_ESTABLISHED_MESSAGE)
 
 		// 创建新的客户端并加入队列
 		client := &hub.Client{

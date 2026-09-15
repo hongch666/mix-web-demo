@@ -25,6 +25,11 @@ func SqlToolsQueryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
+		if err := req.Validate(); err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+
 		l := sqlTools.NewSqlToolsQueryLogic(r.Context(), svcCtx)
 		resp, err := l.SqlToolsQuery(&req)
 		if err != nil {

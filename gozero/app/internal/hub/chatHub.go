@@ -11,6 +11,7 @@ import (
 
 	"app/common/constants"
 	"app/common/utils"
+	"app/internal/types"
 
 	"github.com/gorilla/websocket"
 )
@@ -248,7 +249,7 @@ func (c *Client) ReadPump() {
 		}
 
 		// 解析消息
-		var wsMessage WebSocketMessage
+		var wsMessage types.ChatWsMessage
 		if err := json.Unmarshal(messageBytes, &wsMessage); err != nil {
 			if c.ZeroLogger != nil {
 				c.Error(fmt.Sprintf(constants.PARSE_MESSAGE_FAIL, err))
@@ -258,7 +259,7 @@ func (c *Client) ReadPump() {
 
 		// 处理ping消息
 		if wsMessage.Type == constants.HEARTBEAT_MESSAGE {
-			pongMessage := WebSocketMessage{Type: constants.HEARTBEAT_RESPONSE}
+			pongMessage := types.ChatWsMessage{Type: constants.HEARTBEAT_RESPONSE}
 			pongBytes, err := json.Marshal(pongMessage)
 			if err != nil {
 				if c.ZeroLogger != nil {

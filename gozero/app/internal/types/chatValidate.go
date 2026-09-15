@@ -94,3 +94,27 @@ func validatePositiveID(value int64, fieldName string) error {
 
 	return nil
 }
+
+// Validate 校验SSE连接请求参数
+// user_id 允许缺省：EventSource 无法自定义请求头，身份可能来自网关透传的请求头
+// 因此这里只校验「提供了就必须是正整数」，身份来源的解析在 logic 层完成
+func (r *ChatSSEConnectReq) Validate() error {
+	return validateOptionalPositiveUserID(r.UserId)
+}
+
+// Validate 校验WebSocket连接请求参数
+// user_id 允许缺省，原因同 SSE：WebSocket 握手同样无法自定义请求头
+func (r *ChatWsConnectReq) Validate() error {
+	return validateOptionalPositiveUserID(r.UserId)
+}
+
+// validateOptionalPositiveUserID 校验可选的用户ID参数
+func validateOptionalPositiveUserID(userID *int64) error {
+	if userID != nil && *userID <= 0 {
+		return exceptions.NewBadRequestErrorSame(
+			fmt.Sprintf(constants.FIELD_GREATER_THAN_ZERO_ERROR, constants.USER_ID_FIELD),
+		)
+	}
+
+	return nil
+}

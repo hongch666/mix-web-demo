@@ -98,7 +98,64 @@ def add_chinese_tags_to_dict(swagger_data):
                     if "servers" in details:
                         del details["servers"]
 
+    # 修正长连接接口（SSE / WebSocket）的响应声明
+    fix_streaming_endpoints(swagger_data)
+
     return swagger_data
+
+
+def fix_streaming_endpoints(swagger_data):
+    """修正长连接接口的响应声明
+
+    /sse/chat 成功响应是 text/event-stream 持续数据帧，不是单次 JSON 响应
+    /ws/chat 成功响应是 101 协议升级，之后通过 WebSocket 文本帧双向通信
+    两者参数非法时返回统一 JSON 错误体，goctl 未生成该响应，此处补齐
+    """
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+
+    sse_operation = paths.get("/sse/chat") or {}
+    sse_get = sse_operation.get("get") if isinstance(sse_operation, dict) else None
+    if isinstance(sse_get, dict):
+        responses = sse_get.setdefault("responses", {})
+        original_200 = responses.pop("200", None) or {}
+        # goctl 已按 returns 类型生成 inline schema，这里直接复用，只把媒体类型换成事件流
+        # 该文档的 schema 全部为 inline（components 下无 schemas），不能改成 $ref
+        event_schema = None
+        for media_obj in (original_200.get("content") or {}).values():
+            if isinstance(media_obj, dict) and "schema" in media_obj:
+                event_schema = media_obj["schema"]
+                break
+        responses["200"] = {
+            "description": "连接建立成功，随后持续推送数据帧，每帧对应 ChatSSEMessage",
+            "content": (
+                {"text/event-stream": {"schema": event_schema}} if event_schema else {}
+            ),
+        }
+
+    ws_operation = paths.get("/ws/chat") or {}
+    ws_get = ws_operation.get("get") if isinstance(ws_operation, dict) else None
+    if isinstance(ws_get, dict):
+        responses = ws_get.setdefault("responses", {})
+        # 101 是协议升级响应，本身不带响应体，因此只写描述
+        responses.pop("200", None)
+        responses["101"] = {
+            "description": "协议升级成功（Switching Protocols），之后通过 WebSocket 文本帧双向通信，帧结构对应 ChatWsMessage",
+        }
+
+    for endpoint in ("/sse/chat", "/ws/chat"):
+        operation = paths.get(endpoint) or {}
+        get_operation = operation.get("get") if isinstance(operation, dict) else None
+        if isinstance(get_operation, dict):
+            responses = get_operation.setdefault("responses", {})
+            responses.setdefault(
+                "400",
+                {
+                    "description": "参数非法（如 user_id 非正整数）时返回统一 JSON 错误体",
+                    "content": {"application/json": {"schema": {"type": "object"}}},
+                },
+            )
 
 
 def add_chinese_tags_json(swagger_file):

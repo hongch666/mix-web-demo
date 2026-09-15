@@ -99,7 +99,11 @@ type ChatSSEConnectReq struct {
 	UserId *int64 `form:"user_id,optional"`
 }
 
-type ChatSSEConnectResp struct {
+type ChatSSEMessage struct {
+	Type         string           `json:"type"`
+	UserId       int64            `json:"user_id"`
+	UnreadCounts map[int64]int64  `json:"unread_counts"`
+	Message      *ChatMessageItem `json:"message,omitempty"`
 }
 
 type ChatSendMessageReq struct {
@@ -116,7 +120,13 @@ type ChatWsConnectReq struct {
 	UserId *int64 `form:"user_id,optional"`
 }
 
-type ChatWsConnectResp struct {
+type ChatWsMessage struct {
+	Type       string `json:"type"`
+	SenderId   int64  `json:"sender_id,omitempty"`
+	ReceiverId int64  `json:"receiver_id,omitempty"`
+	Content    string `json:"content,omitempty"`
+	MessageId  uint64 `json:"message_id,omitempty"`
+	Timestamp  string `json:"timestamp,omitempty"`
 }
 
 type GetSearchHistoryReq struct {

@@ -6,13 +6,13 @@ import (
 
 	"app/common/client"
 	"app/common/constants"
-	"app/common/hub"
 	"app/common/realtime"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
 	"app/internal/client/springClient"
 	"app/internal/config"
+	"app/internal/hub"
 	"app/internal/middleware"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -82,7 +82,7 @@ func setupRealtime(
 	redisClient *redis.Client,
 	zLogger *utils.ZeroLogger,
 ) {
-	hubCtx.RealtimeDispatcher = realtime.NewChatRealtimeDispatcher(
+	hubCtx.RealtimeDispatcher = hub.NewChatRealtimeDispatcher(
 		serviceCtx,
 		hubCtx.ChatHub,
 		hubCtx.SSEHub,

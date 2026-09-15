@@ -5,29 +5,39 @@ package chat
 
 import (
 	"net/http"
-	"strconv"
 
 	"app/common/constants"
 	"app/common/utils"
+	"app/internal/logic/chat"
 	"app/internal/middleware"
 	"app/internal/svc"
+	"app/internal/types"
+
+	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 // SSE连接
 func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
-		userIDStr := r.URL.Query().Get("user_id")
-		if userIDStr == "" {
-			// 尝试从Header获取（网关传递的用户信息）
-			userIDStr = r.Header.Get("X-User-Id")
-		}
-
-		userID, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil || userID <= 0 {
-			svcCtx.Logger.Error(constants.USER_ID_LESS)
-			utils.Error(w, constants.HttpBadRequest, constants.USER_ID_LESS)
+		var req types.ChatSSEConnectReq
+		if err := httpx.Parse(r, &req); err != nil {
+			utils.Error(w, constants.HttpBadRequest, err.Error())
 			return
 		}
+
+		if err := req.Validate(); err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+
+		l := chat.NewChatSSELogic(r.Context(), svcCtx)
+		userID, err := l.ResolveUserID(&req, r.Header.Get("X-User-Id"))
+		if err != nil {
+			utils.HandleError(w, err)
+			return
+		}
+
+		svcCtx.Logger.Info(constants.SSE_CONNECTION_ESTABLISHED_MESSAGE)
 
 		// 委托给 SSEHub 处理连接的完整生命周期
 		svcCtx.SSEHub.HandleConnection(w, r, userID)

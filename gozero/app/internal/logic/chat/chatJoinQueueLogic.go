@@ -7,8 +7,8 @@ import (
 	"context"
 
 	"app/common/constants"
-	"app/common/hub"
 	"app/common/utils"
+	"app/internal/hub"
 	"app/internal/svc"
 	"app/internal/types"
 )
