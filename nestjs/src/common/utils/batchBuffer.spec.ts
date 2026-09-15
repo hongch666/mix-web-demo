@@ -34,7 +34,8 @@ describe("BatchBuffer", () => {
     let attempts = 0;
     const buffer = new BatchBuffer<string>(
       "events",
-      { batchSize: 10, maxBufferSize: 10 },
+      // maxRetries 显式设为 1：本用例验证的是"首次 flush 失败即达到重试上限、丢弃该批并记录 error"
+      { batchSize: 10, maxBufferSize: 10, maxRetries: 1 },
       async (batch) => {
         attempts += 1;
         if (attempts === 1) throw new Error("temporary failure");
