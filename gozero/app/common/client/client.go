@@ -227,8 +227,7 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 	}
 
 	if resp.StatusCode < constants.HttpOK || resp.StatusCode >= constants.HttpMultipleChoices {
-		errorMsg := fmt.Sprintf(constants.UNEXPECTED_STATUS_CODE, resp.StatusCode, string(body1))
-		return Result{}, errors.New(errorMsg)
+		return Result{}, newHTTPStatusError(resp.StatusCode, string(body1))
 	}
 
 	if err := json.Unmarshal(body1, &result); err != nil {
@@ -271,22 +270,6 @@ func buildRequestBody(data any) ([]byte, string, error) {
 		}
 		return jsonData, "application/json", nil
 	}
-}
-
-func shouldRetry(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
-		return true
-	}
-
-	errMsg := err.Error()
-	return strings.Contains(errMsg, "异常状态码: 5") ||
-		strings.Contains(errMsg, "connection refused") ||
-		strings.Contains(errMsg, "timeout") ||
-		strings.Contains(errMsg, "EOF")
 }
 
 func calculateBackoff(attempt int, initialBackoff, maxBackoff time.Duration) time.Duration {
