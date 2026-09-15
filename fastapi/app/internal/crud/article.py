@@ -4,7 +4,7 @@ from typing import Any
 from sqlalchemy import desc, select
 
 from app.core.constants import Messages
-from app.core.db import clickhouse_session
+from app.core.db import ClickHouseSessionFactory
 from app.internal.models import (
     AdsCategoryStats,
     AdsMonthlyPublish,
@@ -17,8 +17,11 @@ from app.internal.models import (
 class ArticleMapper:
     """文章数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
+    def __init__(self, session_factory: ClickHouseSessionFactory) -> None:
+        self._session_factory = session_factory
+
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
-        async with clickhouse_session() as session:
+        async with self._session_factory() as session:
             result = await session.execute(statement)
             return [dict(row) for row in result.mappings().all()]
 
@@ -110,5 +113,5 @@ class ArticleMapper:
 
 
 @lru_cache()
-def get_article_mapper() -> ArticleMapper:
-    return ArticleMapper()
+def get_article_mapper(session_factory: ClickHouseSessionFactory) -> ArticleMapper:
+    return ArticleMapper(session_factory)

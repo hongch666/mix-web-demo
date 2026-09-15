@@ -1,5 +1,5 @@
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any, Optional
 from urllib.parse import quote_plus
 
@@ -60,6 +60,8 @@ ClickHouseAsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
 )
 
+ClickHouseSessionFactory = Callable[[], AbstractAsyncContextManager[AsyncSession]]
+
 
 @asynccontextmanager
 async def clickhouse_session() -> AsyncGenerator[AsyncSession, None]:
@@ -81,6 +83,11 @@ async def get_clickhouse_db() -> AsyncGenerator[AsyncSession, None]:
 
     async with clickhouse_session() as session:
         yield session
+
+
+def get_clickhouse_session_factory() -> ClickHouseSessionFactory:
+    """返回用于并发 ClickHouse 查询的独立会话工厂"""
+    return clickhouse_session
 
 
 async def dispose_clickhouse_async_engine() -> None:

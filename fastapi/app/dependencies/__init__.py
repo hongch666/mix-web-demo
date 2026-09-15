@@ -6,13 +6,14 @@ from .caches import (
     WordcloudCacheDep,
 )
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
-from .database import DbSession
+from .database import ClickHouseSession, ClickHouseSessionFactoryDep, DbSession
 from .llm import GeminiServiceDep, GlmServiceDep, GptServiceDep
 from .mappers import (
     AiHistoryMapperDep,
     ApiLogMapperDep,
     ArticleMapperDep,
     UserMapperDep,
+    resolve_article_mapper,
 )
 from .services import (
     AiHistoryServiceDep,
@@ -32,10 +33,13 @@ from .tools import (
 
 __all__: list[str] = [
     "DbSession",
+    "ClickHouseSession",
+    "ClickHouseSessionFactoryDep",
     "AiHistoryMapperDep",
     "ApiLogMapperDep",
     "ArticleMapperDep",
     "UserMapperDep",
+    "resolve_article_mapper",
     "ArticleCacheDep",
     "CategoryCacheDep",
     "PublishTimeCacheDep",

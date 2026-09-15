@@ -25,10 +25,6 @@ from app.internal.agents import (
 
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
 
-# Agent 工具装配注册表
-# 依赖方向固定为 dependencies -> internal，internal 层不得反向导入本包；
-# 工具实例由 initialize_ai_tools 按组并行构造，此处只声明装配关系
-
 
 def provide_fastapi_sql_tool() -> FastapiSqlTool:
     return get_fastapi_sql_tool()

@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import desc, func, select
 
 from app.core.constants import Messages
-from app.core.db import clickhouse_session
+from app.core.db import ClickHouseSessionFactory
 from app.internal.models import AdsUserDay, AdsUserStats, AdsUserViewArticle, DimUser
 
 
@@ -19,8 +19,11 @@ def _date_value(value: datetime) -> Any:
 class UserMapper:
     """用户分析数仓 Mapper，查询使用 SQLAlchemy ClickHouse ORM"""
 
+    def __init__(self, session_factory: ClickHouseSessionFactory) -> None:
+        self._session_factory = session_factory
+
     async def _execute_mappings(self, statement: Any) -> list[dict[str, Any]]:
-        async with clickhouse_session() as session:
+        async with self._session_factory() as session:
             result = await session.execute(statement)
             return [dict(row) for row in result.mappings().all()]
 
@@ -151,5 +154,5 @@ class UserMapper:
 
 
 @lru_cache()
-def get_user_mapper() -> UserMapper:
-    return UserMapper()
+def get_user_mapper(session_factory: ClickHouseSessionFactory) -> UserMapper:
+    return UserMapper(session_factory)

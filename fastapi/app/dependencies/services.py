@@ -13,7 +13,6 @@ from app.internal.clients import (
     get_nestjs_client,
     get_spring_client,
 )
-from app.internal.crud import get_article_mapper
 from app.internal.services import (
     AiHistoryService,
     AlgorithmService,
@@ -42,7 +41,13 @@ from .caches import (
 )
 from .clients import NestjsClientDep, SpringClientDep
 from .llm import GeminiServiceDep, GlmServiceDep, GptServiceDep
-from .mappers import AiHistoryMapperDep, ArticleMapperDep, UserMapperDep
+from .mappers import (
+    AiHistoryMapperDep,
+    ApiLogMapperDep,
+    ArticleMapperDep,
+    UserMapperDep,
+    resolve_article_mapper,
+)
 from .tools import RAGToolsDep
 
 
@@ -79,7 +84,7 @@ def resolve_analyze_service() -> AnalyzeService:
     因此返回的是与请求路径完全相同的实例，singleflight 锁等内部状态共享
     """
     return get_analyze_service(
-        get_article_mapper(),
+        resolve_article_mapper(),
         get_article_cache(),
         get_category_cache(),
         get_publish_time_cache(),
@@ -111,8 +116,11 @@ def provide_ai_history_service(
     return get_ai_history_service(ai_history_mapper, spring_client)
 
 
-def provide_api_log_service(nestjs_client: NestjsClientDep) -> ApiLogService:
-    return get_apilog_service(nestjs_client)
+def provide_api_log_service(
+    nestjs_client: NestjsClientDep,
+    api_log_mapper: ApiLogMapperDep,
+) -> ApiLogService:
+    return get_apilog_service(nestjs_client, api_log_mapper)
 
 
 def provide_graph_search_service() -> GraphSearchService:

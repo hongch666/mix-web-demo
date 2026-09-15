@@ -5,7 +5,7 @@ from typing import Any
 from app.core.base import Logger
 from app.core.constants import Messages
 from app.internal.clients import NestjsClient
-from app.internal.crud import ApiLogMapper, get_api_log_mapper
+from app.internal.crud import ApiLogMapper
 
 
 class ApiLogService:
@@ -14,10 +14,10 @@ class ApiLogService:
     def __init__(
         self,
         nestjs_client: NestjsClient,
-        apiLogMapper: ApiLogMapper | None = None,
+        api_log_mapper: ApiLogMapper,
     ) -> None:
         self._nestjs_client: NestjsClient = nestjs_client
-        self._apiLogMapper: ApiLogMapper = apiLogMapper or get_api_log_mapper()
+        self._apiLogMapper: ApiLogMapper = api_log_mapper
 
     async def _query_ads_with_fallback(
         self,
@@ -54,5 +54,6 @@ class ApiLogService:
 @lru_cache()
 def get_apilog_service(
     nestjs_client: NestjsClient,
+    api_log_mapper: ApiLogMapper,
 ) -> ApiLogService:
-    return ApiLogService(nestjs_client)
+    return ApiLogService(nestjs_client, api_log_mapper)
