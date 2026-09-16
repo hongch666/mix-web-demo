@@ -17,6 +17,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
 	"github.com/olivere/elastic/v7"
 	"github.com/redis/go-redis/v9"
+	"github.com/robfig/cron/v3"
 	rabbitmq "github.com/wagslane/go-rabbitmq"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 	"github.com/zeromicro/go-zero/rest"
@@ -27,6 +28,8 @@ type RuntimeContext struct {
 	Context context.Context
 	Cancel  context.CancelFunc
 	Config  config.Config
+	// TaskScheduler 定时任务调度器，随 ServiceContext 生命周期启停
+	TaskScheduler *cron.Cron
 }
 
 // InfrastructureContext 保存数据库、消息队列和服务发现等基础设施依赖

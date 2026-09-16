@@ -66,6 +66,9 @@ func (sc *ServiceContext) Close() {
 	if sc == nil {
 		return
 	}
+	if sc.RuntimeContext != nil && sc.RuntimeContext.TaskScheduler != nil {
+		sc.RuntimeContext.TaskScheduler.Stop()
+	}
 	if sc.RuntimeContext != nil && sc.Cancel != nil {
 		sc.Cancel()
 	}

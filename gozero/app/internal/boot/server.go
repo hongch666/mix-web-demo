@@ -26,8 +26,8 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	// 注册所有业务处理器
 	handler.RegisterHandlers(server, ctx)
 
-	// 初始化任务调度器
-	task.InitTaskScheduler(ctx)
+	// 初始化任务调度器并挂到运行时上下文，生命周期随 ServiceContext 管理
+	ctx.TaskScheduler = task.NewTaskScheduler(ctx)
 
 	// 输出启动信息
 	PrintStartupInfo(c)

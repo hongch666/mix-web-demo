@@ -5,7 +5,6 @@ import (
 
 	"app/common/constants"
 	"app/internal/svc"
-	"app/internal/task"
 )
 
 const (
@@ -37,7 +36,7 @@ func Run(configFile string) error {
 	// 创建并初始化服务器
 	server := CreateServer(cfg, ctx)
 	defer func() {
-		task.StopTaskScheduler(ctx)
+		ctx.Close()
 		server.Stop()
 	}()
 

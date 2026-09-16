@@ -13,14 +13,12 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-var TaskScheduler *cron.Cron
-
-// InitTaskScheduler 初始化任务调度器
-func InitTaskScheduler(svcCtx *svc.ServiceContext) {
-	TaskScheduler = cron.New()
+// NewTaskScheduler 创建并启动定时任务调度器，由调用方挂到 ServiceContext 上
+func NewTaskScheduler(svcCtx *svc.ServiceContext) *cron.Cron {
+	scheduler := cron.New()
 
 	// 每小时同步一次 ES
-	_, err := TaskScheduler.AddFunc("* * */1 * *", func() {
+	_, err := scheduler.AddFunc("0 * * * *", func() {
 		ctx, cancel := context.WithTimeout(svcCtx.Context, 30*time.Minute)
 		defer cancel()
 		logger := svcCtx.Logger.WithContext(ctx)
@@ -67,20 +65,11 @@ func InitTaskScheduler(svcCtx *svc.ServiceContext) {
 		}
 	}
 
-	TaskScheduler.Start()
+	scheduler.Start()
 	if svcCtx.Logger != nil {
 		svcCtx.Logger.Info(constants.TASK_SCHEDULER_STARTED_MESSAGE)
 	}
-}
-
-// StopTaskScheduler 停止定时任务并取消服务级后台上下文
-func StopTaskScheduler(svcCtx *svc.ServiceContext) {
-	if TaskScheduler != nil {
-		TaskScheduler.Stop()
-	}
-	if svcCtx != nil && svcCtx.Cancel != nil {
-		svcCtx.Cancel()
-	}
+	return scheduler
 }
 
 // executeESSync 执行 ES 同步任务
