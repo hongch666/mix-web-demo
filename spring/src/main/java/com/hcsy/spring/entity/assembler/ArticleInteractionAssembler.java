@@ -1,4 +1,4 @@
-package com.hcsy.spring.api.service.impl;
+package com.hcsy.spring.entity.assembler;
 
 import java.util.List;
 import java.util.Map;
@@ -30,21 +30,21 @@ import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
-class ArticleInteractionAssembler {
+public class ArticleInteractionAssembler {
 
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
     private final SubCategoryRepository subCategoryRepository;
     private final CategoryRepository categoryRepository;
 
-    Mono<List<ArticleCollectVO>> toCollectVOs(List<ArticleCollect> interactions) {
+    public Mono<List<ArticleCollectVO>> toCollectVOs(List<ArticleCollect> interactions) {
         return loadRelations(interactions.stream().map(ArticleCollect::getArticleId).collect(Collectors.toSet()))
             .map(relations -> interactions.stream()
                 .map(interaction -> toCollectVO(interaction, relations))
                 .toList());
     }
 
-    Mono<List<ArticleLikeVO>> toLikeVOs(List<ArticleLike> interactions) {
+    public Mono<List<ArticleLikeVO>> toLikeVOs(List<ArticleLike> interactions) {
         return loadRelations(interactions.stream().map(ArticleLike::getArticleId).collect(Collectors.toSet()))
             .map(relations -> interactions.stream()
                 .map(interaction -> toLikeVO(interaction, relations))

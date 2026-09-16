@@ -18,6 +18,7 @@ import com.hcsy.spring.api.service.ArticleCollectService;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.core.annotation.ArticleSync;
+import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;

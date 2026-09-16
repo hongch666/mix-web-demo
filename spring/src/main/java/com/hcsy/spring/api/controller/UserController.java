@@ -98,7 +98,7 @@ public class UserController {
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用配置中的默认密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
-    @ApiLog("新增用户")
+    @ApiLog(value = "新增用户", excludeFields = { "password" })
     public Mono<Result<Void>> addUser(@Valid @RequestBody UserCreateDTO userDto) {
         return userService.createUser(userDto).thenReturn(Result.<Void>success());
     }
@@ -169,7 +169,7 @@ public class UserController {
 
     @PostMapping("/login")
     @Operation(summary = "用户登录", description = "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis")
-    @ApiLog("用户登录")
+    @ApiLog(value = "用户登录", excludeFields = { "password" })
     public Mono<Result<UserLoginVO>> login(@Valid @RequestBody LoginDTO loginDTO) {
         return userService.login(loginDTO).map(Result::success);
     }
@@ -190,7 +190,7 @@ public class UserController {
 
     @PostMapping("/email-login")
     @Operation(summary = "邮箱验证码登录", description = "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis")
-    @ApiLog("邮箱验证码登录")
+    @ApiLog(value = "邮箱验证码登录", excludeFields = { "verificationCode" })
     public Mono<Result<UserLoginVO>> emailLogin(@Valid @RequestBody EmailLoginDTO emailLoginDTO) {
         return userService.emailLogin(emailLoginDTO).map(Result::success);
     }
@@ -206,7 +206,7 @@ public class UserController {
 
     @PostMapping("/github/token")
     @Operation(summary = "获取 GitHub 登录 Token", description = "前端使用一次性 ticket 换取本站登录 token，成功后立即删除 ticket")
-    @ApiLog("获取 GitHub 登录 Token")
+    @ApiLog(value = "获取 GitHub 登录 Token", excludeFields = { "ticket" })
     public Mono<Result<UserLoginVO>> exchangeGithubToken(@Valid @RequestBody GithubTokenExchangeDTO dto) {
         return userService.exchangeGithubTokenTicket(dto).map(Result::success);
     }
@@ -226,7 +226,7 @@ public class UserController {
 
     @PostMapping("/token/refresh")
     @Operation(summary = "刷新 Token", description = "使用 refresh token 刷新 access token 和 refresh token，支持 token 轮换")
-    @ApiLog("刷新 Token")
+    @ApiLog(value = "刷新 Token", excludeFields = { "refreshToken" })
     public Mono<Result<TokenRefreshVO>> refreshToken(@Valid @RequestBody RefreshTokenDTO refreshTokenDTO) {
         return tokenService.refreshToken(refreshTokenDTO.getRefreshToken()).map(Result::success);
     }
@@ -269,7 +269,7 @@ public class UserController {
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
-    @ApiLog("用户注册")
+    @ApiLog(value = "用户注册", excludeFields = { "password", "verificationCode" })
     public Mono<Result<Void>> registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
         return userService.registerUser(registerDto).thenReturn(Result.<Void>success());
     }
@@ -310,7 +310,7 @@ public class UserController {
 
     @PostMapping("/reset-password")
     @Operation(summary = "通过邮箱验证码重置密码", description = "用户通过邮箱验证码验证身份后重置密码")
-    @ApiLog("重置密码")
+    @ApiLog(value = "重置密码", excludeFields = { "newPassword", "verificationCode" })
     public Mono<Result<Void>> resetPassword(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
         return userService.resetPassword(resetPasswordDTO).thenReturn(Result.<Void>success());
     }
