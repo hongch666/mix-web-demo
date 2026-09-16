@@ -2,7 +2,7 @@
 
 ![Java](https://img.shields.io/badge/Java-17+-red?logo=java&logoColor=white)
 ![Spring](https://img.shields.io/badge/Spring-Boot-6DB33F?logo=spring&logoColor=white)
-![Go](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)
 ![GoZero](https://img.shields.io/badge/GoZero-Framework-00ADD8?logo=go&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-Framework-E0234E?logo=nestjs&logoColor=white)
@@ -123,15 +123,15 @@ NestJS 模块按职责划分为两层：
 
 ### FastAPI 服务（端口 8084）
 
-| 项目     | 说明                                                                                                                                                               |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                                 |
-| 数据库   | MySQL（SQLAlchemy，ai_history 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）              |
-| 消息队列 | RabbitMQ                                                                                                                                                           |
-| 注册中心 | Nacos                                                                                                                                                              |
-| 运行时   | Python 3.12+                                                                                                                                                       |
-| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/DeepSeek）、LangSmith LLM 链路追踪 |
-| 代码位置 | `fastapi/`                                                                                                                                                         |
+| 项目     | 说明                                                                                                                                                          |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 框架     | FastAPI + SQLAlchemy（MySQL、ClickHouse 异步 ORM）                                                                                                            |
+| 数据库   | MySQL（SQLAlchemy，ai_history 表）、ClickHouse（SQLAlchemy ORM 数仓分析）、PostgreSQL + pgvector（RAG 向量存储）、Neo4j（neomodel 异步 OGM 知识图谱）         |
+| 消息队列 | RabbitMQ                                                                                                                                                      |
+| 注册中心 | Nacos                                                                                                                                                         |
+| 运行时   | Python 3.12+                                                                                                                                                  |
+| 主要功能 | 数据分析与统计、RAG 文章检索增强、Neo4j 知识图谱（neomodel OGM）、AI Agent（SQL/MongoDB/向量搜索/图谱查询）、多模型（GPT/Gemini/GLM）、LangSmith LLM 链路追踪 |
+| 代码位置 | `fastapi/`                                                                                                                                                    |
 
 ### Apache APISIX 网关（端口 8080）
 
@@ -143,6 +143,13 @@ NestJS 模块按职责划分为两层：
 | 限流     | APISIX `limit-req`，Redis 存储限流状态                                                                        |
 | 主要功能 | 统一入口、路径路由、公开路由、认证、限流、CORS、WebSocket/SSE、Swagger 聚合                                   |
 | 配置位置 | `gateway/apisix/config.yaml`、`gateway/apisix/apisix.yaml`                                                    |
+
+网关的几条关键约束：
+
+1. **认证外置**：业务路由统一挂 `forward-auth`，回调 Spring 的 `/users/internal/auth/validate`，由网关注入 `X-User-Id`、`X-Username`、`X-Session-Id`，下游服务不自行解析 JWT。
+2. **内部接口黑名单**：`block-internal` 路由用 `mocking` 插件对内部接口直接返回 403，覆盖 `/articles/list`、`/task/*`、`/logs`、`/ai_history`、`/upload`、`/users/github/token-ticket`、`/email/send-code`。该路由的 `uri` 按精确匹配处理（只有以 `*` 结尾才是前缀匹配），新增内部接口时要确认黑名单条目能覆盖实际访问路径。
+3. **长连接**：`/ws/*`、`/sse/*` 与 `/chat/stream` 使用独立 upstream，读超时放宽到 3600 秒。
+4. **业务服务端口收敛**：根 `docker-compose.yml` 只给网关映射宿主机端口，四个业务服务只在容器网络内可达。
 
 ## 登录相关
 
@@ -551,7 +558,7 @@ Body 参数：
 - Java 17+
 - Maven 3.6+
 - Gradle 9.3+(可选，但推荐用于 Java 项目构建)
-- Go 1.23+
+- Go 1.24+
 - Node.js 20+
 - Bun 1.2+(可选)
 - Python 3.12+
@@ -609,7 +616,7 @@ pip install -r requirements.txt
 # 使用 uv 进行项目管理
 cd fastapi
 # 配置 uv 虚拟环境
-uv venv --python /usr/bin/python3.11 # 创建虚拟环境时指定 Python
+uv venv --python 3.12 # 创建虚拟环境时指定 Python
 # 激活虚拟环境
 source .venv/bin/activate
 # 同步依赖（可以使用国内镜像）
@@ -982,35 +989,35 @@ pytest tests/core/auth/test_internal_token.py
 
 # ===== 开发环境 =====
 # 使用多窗格 tmux 布局启动所有服务（推荐用于开发调试）
-./mix multi
+./mix dev multi
 
 # 使用顺序窗口模式启动所有服务
-./mix seq
+./mix dev seq
 
 # 停止所有 tmux 服务
-./mix stop
+./mix dev stop
 
 # ===== Seq 模式下使用指定构建工具启动服务 =====
 # 使用 Gradle 构建并启动 Java 服务（推荐，更快）
-./mix seq --java-build gradle
+./mix dev seq --java-build gradle
 
 # 使用 Maven 构建并启动 Java 服务
-./mix seq --java-build maven
+./mix dev seq --java-build maven
 
 # 使用 Bun 启动 NestJS 服务（推荐，比 npm 快）
-./mix seq --node-runtime bun
+./mix dev seq --node-runtime bun
 
 # 使用 npm 启动 NestJS 服务
-./mix seq --node-runtime npm
+./mix dev seq --node-runtime npm
 
 # 使用 UV 启动 FastAPI 服务（推荐，比 python 快）
-./mix seq --python-runtime uv
+./mix dev seq --python-runtime uv
 
 # 使用 Python 启动 FastAPI 服务
-./mix seq --python-runtime python
+./mix dev seq --python-runtime python
 
 # 交互式模式：让用户选择构建工具
-./mix seq -i
+./mix dev seq -i
 
 # ===== GoZero 代码生成 =====
 # 生成 GoZero API 代码（默认使用 gozero/template 模板）
@@ -1053,6 +1060,31 @@ pytest tests/core/auth/test_internal_token.py
 # 停止所有容器
 ./mix docker stop
 
+# 仅用已有镜像启动容器（不重新构建）
+./mix docker start
+
+# 删除所有容器
+./mix docker delete
+
+# ===== 日志观测组件（Loki / Promtail / Grafana）=====
+# 独立启动日志观测组件（默认采集根目录 logs/）
+./mix loki start
+
+# 切换到采集 dist/logs（配合 ./mix dist start 使用）
+./mix loki start --dist
+
+# 查看组件状态与当前采集配置
+./mix loki status
+
+# 查看组件日志（loki | promtail | grafana）
+./mix loki logs grafana
+
+# 停止组件（保留数据卷）
+./mix loki stop
+
+# 停止并删除容器与数据卷
+./mix loki delete
+
 # ===== 生产环境 =====
 # 构建所有服务到 dist/ 目录
 ./mix dist build
@@ -1093,9 +1125,9 @@ pytest tests/core/auth/test_internal_token.py
 **构建工具参数说明**：
 
 - `--java-build gradle|maven`：选择 Spring 的 Java 构建工具
-  - `gradle`：使用 Gradle（推荐，更快）
-  - `maven`：使用 Maven（可选）
-  - 默认值：`gradle`（如果已安装）
+  - `maven`：使用 Maven（默认）
+  - `gradle`：使用 Gradle（可选，构建更快）
+  - 默认值：`maven`
 
 - `--node-runtime bun|npm`：选择 Node.js 运行时（NestJS）
   - `bun`：使用 Bun（推荐，比 npm 快 4-8 倍）
@@ -1176,7 +1208,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 | 参数                   | 选项               | 说明                                 |
 | ---------------------- | ------------------ | ------------------------------------ |
-| `--java-build`         | `gradle` / `maven` | Spring Java 构建工具，默认 gradle    |
+| `--java-build`         | `gradle` / `maven` | Spring Java 构建工具，默认 maven     |
 | `--node-runtime`       | `bun` / `npm`      | Node.js 运行时（NestJS），默认 bun   |
 | `--python-runtime`     | `uv` / `python`    | Python 运行时（FastAPI），默认 uv    |
 | `-i` / `--interactive` | 无                 | 交互式模式，提示用户选择各服务的工具 |
@@ -1217,6 +1249,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `docker-compose-down.sh`    | scripts/   | 使用 Docker Compose 停止应用服务            | Linux/macOS |
 | `build_and_run_services.sh` | scripts/   | 构建并运行服务容器                          | Linux/macOS |
 | `docker-push-images.sh`     | scripts/   | 将已构建的 Docker 镜像推送到远程仓库        | Linux/macOS |
+| `loki-control.sh`           | scripts/   | 独立管理 Loki/Promtail/Grafana 日志观测组件 | Linux/macOS |
 | `setup.sh`                  | scripts/   | 环境初始化和依赖安装                        | Linux/macOS |
 | `swag-init.sh`              | scripts/   | 生成 GoZero Swagger 文档                    | Linux/macOS |
 | `goctl-api-init.sh`         | scripts/   | 生成 GoZero API 代码，参数透传给`genApi.sh` | Linux/macOS |
@@ -1240,7 +1273,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 1. **tmux 依赖**：Linux/macOS 脚本依赖 `tmux`，请确保已安装
 2. **执行权限**：Linux/macOS 脚本需要执行权限，可以通过 `chmod +x scripts/*.sh` 来设置
 3. **相对路径**：所有脚本都使用相对路径，可以在任何目录下调用项目的脚本
-4. **服务依赖**：启动前请确保 MySQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos 等基础服务已运行
+4. **服务依赖**：启动前请确保 MySQL、PostgreSQL（含 pgvector）、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos、ClickHouse、Neo4j 等基础服务已运行
 5. **logs 命令**：仅支持查看单个服务的日志，如需查看多个服务请依次调用
 
 ## 生产环境部署
@@ -1326,7 +1359,7 @@ Spring、GoZero、NestJS 和 FastAPI 的 Docker 环境会优先读取各自目�
 
 Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器间地址请使用服务名：
 
-- `gateway` -> `8080`
+- `gateway` -> `9080` -> `8080`（容器内端口 9080，宿主机映射 8080）
 - `spring` -> `8081`
 - `gozero` -> `8082`
 - `nestjs` -> `8083`
@@ -1345,13 +1378,13 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 
 ### 微服务容器说明
 
-| 服务        | 端口 | 镜像名称                      | 容器名称                | 技术栈           |
-| ----------- | ---- | ----------------------------- | ----------------------- | ---------------- |
-| **Gateway** | 8080 | `apache/apisix:3.11.0-debian` | `mix-gateway`           | Apache APISIX    |
-| **Spring**  | 8081 | `mix-spring:latest`           | `mix-spring-container`  | Java 17 + Alpine |
-| **GoZero**  | 8082 | `mix-gozero:latest`           | `mix-gozero-container`  | Go 1.23 + Alpine |
-| **NestJS**  | 8083 | `mix-nestjs:latest`           | `mix-nestjs-container`  | Node 20 + Alpine |
-| **FastAPI** | 8084 | `mix-fastapi:latest`          | `mix-fastapi-container` | Python 3.12      |
+| 服务        | 端口 | 镜像名称                      | 容器名称（docker / compose）            | 技术栈           |
+| ----------- | ---- | ----------------------------- | --------------------------------------- | ---------------- |
+| **Gateway** | 8080 | `apache/apisix:3.11.0-debian` | `mix-gateway`（两套编排一致）           | Apache APISIX    |
+| **Spring**  | 8081 | `mix-spring:latest`           | `mix-spring-container` / `mix-spring`   | Java 17 + Alpine |
+| **GoZero**  | 8082 | `mix-gozero:latest`           | `mix-gozero-container` / `mix-gozero`   | Go 1.24 + Alpine |
+| **NestJS**  | 8083 | `mix-nestjs:latest`           | `mix-nestjs-container` / `mix-nestjs`   | Node 20 + Alpine |
+| **FastAPI** | 8084 | `mix-fastapi:latest`          | `mix-fastapi-container` / `mix-fastapi` | Python 3.12      |
 
 ### 高级用法
 
@@ -1366,8 +1399,7 @@ Docker 启动时会把所有应用容器接入同一个 `hcsy` 网络，容器�
 docker run -d --name mix-spring-custom \
   --network hcsy \
   -p 8081:8081 \
-  -v $(pwd)/spring/application.yaml:/app/application.yaml \
-  -v $(pwd)/spring/application-secret.yaml:/app/application-secret.yaml \
+  -v $(pwd)/spring/src/main/resources/application.yaml:/app/application.yaml \
   mix-spring:latest
 
 # 查看容器日志
@@ -1393,7 +1425,7 @@ docker restart mix-spring-container
 - promtail
 - grafana
 
-第三方依赖（MySQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
+第三方依赖（MySQL/PostgreSQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
 
 Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 
@@ -1475,17 +1507,21 @@ docker compose down -v
 
 ### 访问服务
 
-服务启动后可直接访问本地端口：
+Compose 部署只把网关与观测组件映射到宿主机，业务服务不暴露端口：
 
 - APISIX Gateway: http://localhost:8080
 - APISIX 健康检查: http://localhost:8080/healthz
-- APISIX Swagger: http://localhost:8080/swagger-ui/
-- Spring: http://localhost:8081
-- GoZero: http://localhost:8082
-- NestJS: http://localhost:8083
-- FastAPI: http://localhost:8084
+- APISIX Swagger UI: http://localhost:8080/swagger-ui/
+- Spring: http://localhost:8081(本地开发模式)
+- GoZero: http://localhost:8082(本地开发模式)
+- NestJS: http://localhost:8083(本地开发模式)
+- FastAPI: http://localhost:8084(本地开发模式)
 - Loki: http://localhost:3100
 - Grafana: http://localhost:3000
+
+Spring（8081）、GoZero（8082）、NestJS（8083）、FastAPI（8084）在 Compose 下只在 `hcsy` 容器网络内可达，容器之间通过服务名互访。下游服务无条件信任网关注入的 `X-User-Id`，收敛端口暴露是防止绕过网关伪造身份的前提，因此不要给业务服务补 `ports` 映射。
+
+需要在宿主机直连业务服务时，使用 `./mix dev` 本地开发模式启动（各服务直接监听 8081-8084），或进入容器内调试。
 
 ### 高级用法
 
@@ -1496,9 +1532,8 @@ docker compose down -v
 # 查看所有服务状态
 ./mix compose status
 
-# 重启某个服务（可配合 docker-compose restart）
-cd /home/hongch666/mix-web-demo
-sudo docker-compose -f docker-compose.yml restart spring
+# 重启某个服务
+docker compose restart spring
 
 # 进入容器调试
 sudo docker exec -it mix-spring /bin/bash
@@ -1585,6 +1620,8 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 - NestJS：`nestjs/.env.example`、`nestjs/.env.docker`
 - FastAPI：`fastapi/.env.example`、`fastapi/.env.docker`
 
+> `.env.docker` 不会被脚本自动创建，需要从对应的 `.env.example` 复制后按容器环境填写（容器内主机名与本地不同，如 `mysql`、`redis`、`nacos`、`pgvector-db`）。
+
 使用方式保持一致：
 
 1. 先复制 `.env.example` 为本地 `.env`
@@ -1614,6 +1651,18 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 ## Swagger 说明
 
 > 启动时会显示对应的 swagger 地址
+
+网关把四个服务的 OpenAPI 文档聚合到同一入口，统一通过 APISIX 访问：
+
+| 文档       | 网关地址                                     | 转发目标            |
+| ---------- | -------------------------------------------- | ------------------- |
+| Swagger UI | `http://localhost:8080/swagger-ui/`          | 网关内置静态页面    |
+| Spring     | `http://localhost:8080/swagger/spring.json`  | `/v3/api-docs`      |
+| GoZero     | `http://localhost:8080/swagger/gozero.json`  | `/swagger/doc.json` |
+| NestJS     | `http://localhost:8080/swagger/nestjs.json`  | `/api-docs-json`    |
+| FastAPI    | `http://localhost:8080/swagger/fastapi.json` | `/openapi.json`     |
+
+在 Swagger UI 的地址栏填入上表中的地址即可查看对应服务的接口文档。
 
 ### Spring 部分
 
@@ -1651,7 +1700,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    ```
 
 4. 生成的 Swagger 文件位于 `gozero/app/docs/` 目录
-5. 目前 Swagger 文档的描述、作者、版本信息和中文分组等相关 Swagger 内容存在问题，使用 `/script/swager/fix.py` 脚本进行修复，修复后会覆盖原来的 Swagger 文件，如有需要可修改 `fix.py` 脚本中的相关内容
+5. 目前 Swagger 文档的描述、作者、版本信息和中文分组等相关 Swagger 内容存在问题，使用 `script/swagger/fix.py` 脚本进行修复，修复后会覆盖原来的 Swagger 文件，如有需要可修改 `fix.py` 脚本中的相关内容
 
 ### NestJS
 
@@ -1701,10 +1750,10 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 ### 项目文件夹结构说明
 
-1. Spring 项目将三层架构代码放置在 `/api`文件夹下，通用模块放置在 `/common`文件夹下，注解和配置相关放置在 `/core`文件夹下，基础设施相关放置在 `/infra`文件夹下，和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`
-2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，脚本放置在 `/scripts`文件夹下，生成的代码放置在 `/app`文件夹下，`/app` 下采用GoZero的设计方式，`/model`下放置数据库实体和操作，`/common`下放置通用代码模块，`/internal`下放置业务相关的代码模块，`/etc`下放配置文件，`/internal`文件夹下按照 `/handler`、`/logic`等GoZero的设计方式进行划分
+1. Spring 项目将三层架构代码放置在 `/api`文件夹下（`/api/controller`、`/api/service`、`/api/repository`），通用模块放置在 `/common`文件夹下（`/constants`、`/utils`、`/exceptions`），注解和配置相关放置在 `/core`文件夹下（`/annotation`、`/aspect`、`/config`、`/properties`），基础设施相关放置在 `/infra`文件夹下（`/client`、`/filter`、`/handler`、`/initializer`、`/task`），和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`、`/projection`
+2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，生成脚本放置在 `/script`文件夹下（项目级脚本另有根目录 `scripts/`），goctl 代码模板放置在 `/template`文件夹下，生成的代码放置在 `/app`文件夹下；`/app/model`下放置数据库实体和操作，`/app/common`下放置通用代码模块（`/constants`、`/client`、`/utils`、`/exceptions`、`/realtime`、`/keys`），`/app/internal`下放置业务相关的代码模块，按 `/handler`、`/logic`、`/middleware`、`/svc`、`/client`、`/hub`、`/boot`、`/task`、`/config`、`/types` 划分，`/app/etc`下放配置文件，`/app/docs`下放生成的 Swagger 产物
 3. NestJS 项目的非 module 通用工具放置在 `/common` 下，和系统相关的框架能力放置在 `/framework` 下，如 `filters`、`guards`、`interceptors` 等，业务 module 放置在 `/module` 下，其中 `module/system` 放置系统业务模块，`module/common` 放置通用能力模块
-4. FastAPI 项目的核心代码放置在 `/app`下，`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`core`下放置核心功能模块，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
+4. FastAPI 项目的核心代码放置在 `/app`下，业务代码统一在 `/app/internal`下：`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`clients`下放置按目标服务拆分的远程客户端，`cache`下放置两级缓存，`tasks`下放置 APScheduler 定时任务，`agents`下放置 LangChain Agent 与工具；`/app/core`下放置核心功能模块，`/app/common`下放置中间件与装饰器，`/app/dependencies`下集中定义依赖别名与装配函数，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
    - `/models` 目录说明：`aiHistory.py` 为 MySQL 的 SQLAlchemy 模型；`warehouse/` 为 ClickHouse 数仓的 SQLAlchemy ORM 模型（按 `ods`、`dwd`、`dws`、`dim`、`ads` 分层，每张表一个文件）；`graph/` 为 Neo4j 的 neomodel 异步 OGM 模型（每个类一个文件）
 5. 其他相关的文件夹命名尽可能沿用当前项目的设计
 
@@ -1757,7 +1806,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 1. Spring 项目使用全局异常处理类 `GlobalExceptionHandler.java` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 2. GoZero 项目使用返回值返回error，不再使用panic直接抛出异常，也可以使用中间件 `recoveryMiddleware.go` 进行异常捕获和处理，业务异常统一抛出 `BusinessError` 异常
-3. NestJS 项目使用全局异常过滤器 `all-exceptions.filter.ts` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
+3. NestJS 项目使用全局异常过滤器 `allException.filter.ts` 进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 4. FastAPI 项目使用 `exceptionHandlers.py` 下的全局异常处理函数进行异常捕获和处理，业务异常统一抛出 `BusinessException` 异常
 
 ### 常量说明
@@ -1768,32 +1817,41 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
    - `Messages.java`：消息类常量（日志消息、用户提示、状态描述）
    - `RedisKeys.java`：Redis Key 常量（前缀与生成方法）
    - `Scripts.java`：数据库初始化 SQL 和 Redis 脚本常量
+   - `SqlTools.java`：SQL 工具常量（表名白名单、只读前缀白名单、查询限制）
+   - `HeaderNames.java`：网关与微服务间透传的自定义请求头名称
+   - `WarehouseResources.java`：数仓同步的资源与字段映射
 
 2. GoZero 项目：`gozero/app/common/constants/`
    - `defaults.go`：配置默认值（ES 权重名称、归一化参数名）
    - `messages.go`：消息类常量（日志消息、用户提示、状态描述）
    - `redisKeys.go`：Redis Key 常量（分布式锁 Key 及过期时间）
+   - `httpCode.go`：HTTP 状态码常量
    - `scripts.go`：脚本类（SQL DDL/查询、ES 搜索脚本、ES 索引 Mapping）
+   - `sqlTools.go`：SQL 工具常量（表名白名单、只读前缀白名单、查询限制）
    - `validations.go`：参数校验类（校验错误消息）
 
 3. FastAPI 项目：`fastapi/app/core/constants/`
+   - `algorithm.py`：搜索排序算法常量（权重定义表与归一化参数）
    - `defaults.py`：配置默认值（TTL、权重、超时）
    - `errorCodes.py`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
    - `httpCode.py`：HTTP 状态码常量
-   - `initMessages.py`：启动/初始化消息类（客户端初始化日志）
-   - `messages.py`：消息类常量，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `NAME: str = "value"`，需要嵌入运行时上下文（如 serviceName、error）时用 `@staticmethod` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
+   - `messages.py`：消息类常量（含启动与初始化消息），采用**静态字符串与函数常量混合**方式：消息内容确定时用 `NAME: str = "value"`，需要嵌入运行时上下文（如 serviceName、error）时用 `@staticmethod` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
    - `prompts.py`：LLM 提示词模板类（Agent 的 System Prompt），同样采用静态字符串与 `@staticmethod` 混合方式
    - `redisKeys.py`：Redis Key 常量类（缓存 Key、同步时间 Key、分布式锁 Key 及过期时间，运行时拼接的 Key 用 `@staticmethod` 方法生成）
    - `scripts.py`：脚本类（SQL 语句、Cypher 语句、SQL 安全规则、LangSmith 脱敏规则与阈值）
+   - `warehouse.py`：ClickHouse 数仓同步与汇总 SQL 常量
    - `swaggerConfig.py`：Swagger/OpenAPI 配置类
    - `__init__.py`：统一导出入口
 
 4. NestJS 项目：`nestjs/src/common/constants/`
    - `defaults.constants.ts`：配置默认值常量
    - `errorIds.constants.ts`：错误标识常量（传给 `BusinessException` 的 `error` 参数）
+   - `exportTemplate.constants.ts`：文章导出模板常量（PDF / Markdown 结构与样式）
    - `httpCode.constants.ts`：HTTP 状态码常量
+   - `mongoTools.constants.ts`：MongoDB 工具常量（collection 白名单、危险操作符黑名单）
    - `messages.constants.ts`：消息常量类，采用**静态字符串与函数常量混合**方式：消息内容确定时用 `static readonly NAME = "value"`，需要嵌入运行时上下文（如 userId、serviceName）时用 `static` 方法，方法名同样全大写，统一通过 `Messages.XXX` 调用
    - `redisKey.constants.ts`：Redis 标识常量类 `RedisKeys`（锁 Key、客户端 Token、OAuth 状态 Key、Lua 脚本）
+   - `sqlTools.constants.ts`：SQL 工具常量类 `SqlTools`（表名白名单、只读前缀、SQL 模板、查询限制）
    - `swagger.constants.ts`：Swagger/OpenAPI 配置常量
    - `index.ts`：统一导出入口
 
@@ -1817,7 +1875,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 1. FastAPI 部分使用 `__init__.py`文件导出对应的函数/类，导入使用的时候以包为导入路径
 2. FastAPI 部分需要在 app 创建时添加的相关组件（如 router、中间件、异常处理器）在 `__init__.py`导出对应列表或者字典，用于 app 创建时遍历添加
 3. FastAPI 部分的 app 创建在 `app.py`的 `create_app`函数实现，lifespan 操作在 `lifespan.py`实现，主函数只进行调用和 `uvicorn`的启动
-4. GoZero 部分的初始化在 `internel/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
+4. GoZero 部分的初始化在 `internal/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
 5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
 6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `core/config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/initializer` 下通过响应式 `DatabaseClient` 执行
 
@@ -1837,7 +1895,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 - 机制: 通过 Reflector 读取装饰器元数据，拦截请求提取参数与耗时，调用 MQ 服务发送日志
 
-1. FastAPI 项目使用 `@log` 装饰器（支持 `ApiLogConfig`）记录请求日志，耗时统计并发送到 RabbitMQ
+4. FastAPI 项目使用 `@log` 装饰器（支持 `ApiLogConfig`）记录请求日志，耗时统计并发送到 RabbitMQ
 
 - 机制: 装饰器从 `Request` 提取方法/路径/参数，统计耗时，必要时包装流式响应并投递日志
 
@@ -1887,13 +1945,13 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 - 机制: 通过 Nacos 获取实例并轮询负载均衡，构建请求头后发起 HTTP 调用
 
-3. NestJS 项目使用 `NacosService.call`（Nacos 服务发现 + axios），自动注入用户信息与内部令牌
+3. NestJS 项目使用 `NacosService.call`（Nacos 服务发现 + axios + axios-retry 重试 + opossum 熔断），自动注入用户信息与内部令牌
 
-- 机制: Nacos 发现实例，自动拼装请求头并用 axios 请求下游服务
+- 机制: Nacos 发现实例，自动拼装请求头并用 axios 请求下游服务，失败按重试与熔断策略处理
 
-4. FastAPI 项目使用 `call_remote_service`（Nacos 服务发现 + requests），自动注入用户信息与内部令牌
+4. FastAPI 项目使用 `call_remote_service`（Nacos 服务发现 + httpx 共享连接池 + tenacity 重试 + 简易熔断），自动注入用户信息与内部令牌
 
-- 机制: 从 Nacos 获取服务实例，合并默认请求头后用 requests 发起调用
+- 机制: 从 Nacos 获取服务实例，合并默认请求头后用 httpx 发起调用，失败按 tenacity 策略重试
 
 ### 内部调用客户端（Client）规范
 
