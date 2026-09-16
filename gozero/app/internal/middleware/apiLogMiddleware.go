@@ -229,7 +229,7 @@ func sendApiLogToQueue(lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publishe
 	messageJSON, err := json.Marshal(apiLogMessage)
 	if err != nil {
 		if lgr != nil {
-			lgr.Error(constants.SERIALIZE_API_LOG_FAIL_MESSAGE)
+			lgr.Error(fmt.Sprintf(constants.SERIALIZE_API_LOG_FAIL_MESSAGE, err))
 		}
 		return
 	}
@@ -251,7 +251,7 @@ func sendApiLogToQueue(lgr *utils.ZeroLogger, rabbitPublisher *rabbitmq.Publishe
 	)
 
 	if err != nil {
-		lgr.Error(constants.SEND_API_LOG_FAIL_MESSAGE)
+		lgr.Error(fmt.Sprintf(constants.SEND_API_LOG_FAIL_MESSAGE, err))
 	} else {
 		lgr.Info(constants.SEND_API_LOG_SUCCESS_MESSAGE)
 	}
