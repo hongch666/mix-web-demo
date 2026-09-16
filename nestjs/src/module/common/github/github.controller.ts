@@ -34,7 +34,7 @@ export class GithubController {
     summary: "GitHub 回调处理",
     description: "处理 GitHub OAuth 回调，成功后重定向到前端成功页",
   })
-  @ApiLog("GitHub 回调处理")
+  @ApiLog({ message: "GitHub 回调处理", excludeFields: ["code"] })
   async callback(
     @Query() query: GithubCallbackQueryDto,
     @Res() reply: FastifyReply,

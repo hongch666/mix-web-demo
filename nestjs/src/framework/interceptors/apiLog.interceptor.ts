@@ -154,10 +154,13 @@ export class ApiLogInterceptor implements NestInterceptor {
           : "";
       const isMultipart: boolean = contentType.includes("multipart/form-data");
 
-      // 提取查询参数
+      // 提取查询参数，同样按 excludeFields 过滤，否则凭据会随 query 进入队列
       const queryParams: Record<string, unknown> | null =
         method === "GET" && request.query
-          ? (request.query as Record<string, unknown>)
+          ? this.filterFields(
+              request.query as Record<string, unknown>,
+              excludeFields,
+            )
           : null;
 
       // 提取路径参数
