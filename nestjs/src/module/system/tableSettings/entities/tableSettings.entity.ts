@@ -4,10 +4,12 @@ import {
   CreateDateColumn,
   Entity,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from "typeorm";
 
 @Entity("user_table_settings")
+@Unique("uk_user_table", ["user_id", "table_key"])
 export class TableSettings {
   @ApiProperty({ description: "设置ID", example: 1 })
   @PrimaryGeneratedColumn()
