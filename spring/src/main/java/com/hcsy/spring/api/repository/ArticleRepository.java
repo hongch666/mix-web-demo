@@ -70,9 +70,9 @@ public interface ArticleRepository extends ReactiveCrudRepository<Article, Long>
                (SELECT COUNT(*) FROM likes l WHERE l.article_id = a.id) AS like_count,
                (SELECT COUNT(*) FROM collects cl WHERE cl.article_id = a.id) AS collect_count
         FROM articles a
-        LEFT JOIN users u ON a.user_id = u.id
-        LEFT JOIN sub_categories sc ON a.sub_category_id = sc.id
-        LEFT JOIN categories c ON sc.category_id = c.id
+        LEFT JOIN user u ON a.user_id = u.id
+        LEFT JOIN sub_category sc ON a.sub_category_id = sc.id
+        LEFT JOIN category c ON sc.category_id = c.id
         ORDER BY a.id
         """)
     Flux<ArticleExcelRow> findArticlesForExcelExport();
