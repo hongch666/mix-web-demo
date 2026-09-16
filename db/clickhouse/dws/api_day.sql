@@ -1,6 +1,6 @@
 -- API 日志 DWS 层：按日 + 接口聚合的轻度汇总
 CREATE TABLE IF NOT EXISTS dws_api_day (
-    stat_date Date,
+    action_date Date,
     api_path String,
     api_method String,
     api_description String,
@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS dws_api_day (
     max_response_time Float64
 ) ENGINE = MergeTree
 ORDER BY (
-        stat_date, api_path, api_method, api_description
+        action_date, api_path, api_method, api_description
     );
