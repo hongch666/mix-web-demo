@@ -13,7 +13,7 @@ from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
 from app.core.base import Logger, success
 from app.core.config import load_config
-from app.core.constants import HttpCode, Messages
+from app.core.constants import Defaults, HttpCode, Messages
 from app.core.db import get_db
 from app.dependencies import (
     AiHistoryServiceDep,
@@ -42,25 +42,6 @@ router: APIRouter = APIRouter(
 )
 
 
-def _resolve_model_info(service: AIServiceType) -> dict:
-    """解析当前服务对应的模型信息，用于 LangSmith metadata"""
-    server_config = load_config("server") or {}
-    deployment_env = server_config["mode"]
-    agent_cfg = (load_config("agent") or {}).get("closeai", {})
-
-    model_map = {
-        AIServiceType.GPT: ("gpt", agent_cfg["gpt_model_name"]),
-        AIServiceType.GEMINI: ("gemini", agent_cfg["gemini_model_name"]),
-        AIServiceType.GLM: ("glm", agent_cfg["glm_model_name"]),
-    }
-    provider, model_name = model_map.get(service, ("unknown", ""))
-    return {
-        "provider": provider,
-        "model_name": model_name,
-        "deployment_env": str(deployment_env),
-    }
-
-
 @router.post(
     "/send",
     response_model=ChatResponse,
@@ -81,8 +62,10 @@ async def send_message(
     """普通发送聊天消息"""
 
     user_id: Optional[int] = get_current_user_id()
-    # 使用实际用户ID替代请求中的 user_id
-    actual_user_id: str = str(user_id) if user_id else "1"
+    # 使用实际用户ID替代请求中的 user_id，身份缺失时按系统调用处理
+    if user_id is None:
+        Logger.warning(Messages.USER_IDENTITY_FALLBACK_TO_SYSTEM("send_message"))
+    actual_user_id: str = _resolve_system_user_id()
     request_id: str = f"req_{uuid.uuid4().hex[:12]}"
 
     # 生成会话ID（如果没有提供）
@@ -212,7 +195,10 @@ async def stream_message(
     """流式发送聊天消息"""
 
     user_id: Optional[int] = get_current_user_id()
-    actual_user_id: str = str(user_id) if user_id else "1"
+    # 身份缺失时按系统调用处理，与 send_message 保持一致
+    if user_id is None:
+        Logger.warning(Messages.USER_IDENTITY_FALLBACK_TO_SYSTEM("stream_message"))
+    actual_user_id: str = _resolve_system_user_id()
     request_id: str = f"req_{uuid.uuid4().hex[:12]}"
     conversation_id: str = (
         request.conversationId
@@ -378,3 +364,28 @@ async def stream_message(
                     )
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+def _resolve_system_user_id() -> str:
+    """身份缺失时返回系统调用身份，供允许匿名访问的聊天接口使用"""
+    user_id: Optional[int] = get_current_user_id()
+    return str(user_id) if user_id is not None else str(Defaults.SYSTEM_USER_ID)
+
+
+def _resolve_model_info(service: AIServiceType) -> dict:
+    """解析当前服务对应的模型信息，用于 LangSmith metadata"""
+    server_config = load_config("server") or {}
+    deployment_env = server_config["mode"]
+    agent_cfg = (load_config("agent") or {}).get("closeai", {})
+
+    model_map = {
+        AIServiceType.GPT: ("gpt", agent_cfg["gpt_model_name"]),
+        AIServiceType.GEMINI: ("gemini", agent_cfg["gemini_model_name"]),
+        AIServiceType.GLM: ("glm", agent_cfg["glm_model_name"]),
+    }
+    provider, model_name = model_map.get(service, ("unknown", ""))
+    return {
+        "provider": provider,
+        "model_name": model_name,
+        "deployment_env": str(deployment_env),
+    }

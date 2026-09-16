@@ -73,6 +73,18 @@ class Messages:
         return f"检查管理员权限时出错: {error}"
 
     @staticmethod
+    def USER_SCOPE_DENIED(current_user_id: Any, target_user_id: int) -> str:
+        return f"越权访问被拒绝: 当前用户 {current_user_id} 尝试访问用户 {target_user_id} 的数据"
+
+    @staticmethod
+    def USER_SCOPE_ADMIN_ACCESS(current_user_id: Any, target_user_id: int) -> str:
+        return f"管理员 {current_user_id} 访问用户 {target_user_id} 的数据"
+
+    @staticmethod
+    def USER_IDENTITY_FALLBACK_TO_SYSTEM(route: str) -> str:
+        return f"{route}: 请求缺少用户身份，按系统调用处理"
+
+    @staticmethod
     def INTERNAL_TOKEN_SERVICE_NAME_MISMATCH(
         expected_service_name: str, actual_service_name: Any
     ) -> str:
@@ -158,7 +170,7 @@ class Messages:
         return (
             f"权限拒绝：当前账户仅允许查询本人数据。请在 SQL 中增加 user_id 条件，"
             f"并使用绑定参数 :user_id 值为 {user_id}，例如 "
-            f"\"WHERE user_id = :user_id\"，params 传入 {{\"user_id\": {user_id}}}。"
+            f'"WHERE user_id = :user_id"，params 传入 {{"user_id": {user_id}}}。'
             "修改后重新执行同一查询即可。"
         )
 
@@ -174,7 +186,7 @@ class Messages:
     def MONGODB_ROW_SCOPE_REQUIRED(user_id: int) -> str:
         return (
             f"权限拒绝：当前账户仅允许查询本人日志。"
-            f"请在 filter_dict 中增加 {{\"userId\": {user_id}}} 后重新执行查询。"
+            f'请在 filter_dict 中增加 {{"userId": {user_id}}} 后重新执行查询。'
         )
 
     @staticmethod
@@ -1885,6 +1897,10 @@ class Messages:
 
     ERROR_USER_NO_ADMIN_PERMISSION: str = "USER_NO_ADMIN_PERMISSION"
 
+    ERROR_USER_SCOPE_TARGET_MISSING: str = "USER_SCOPE_TARGET_MISSING"
+
+    ERROR_USER_SCOPE_FORBIDDEN: str = "USER_SCOPE_FORBIDDEN"
+
     EXPORT_ARTICLES_EXCEL_FILENAME: str = "articles.xlsx"
 
     EXPORT_ARTICLES_EXCEL_TIP: str = "文章表（本表导出自系统，包含所有文章数据）"
@@ -2028,14 +2044,6 @@ class Messages:
     NEO4J_CLEANUP_LABEL_TAGGED_AS_RELATION: str = "失效文章标签关系"
 
     NEO4J_CLEANUP_LABEL_USER: str = "失效用户节点"
-
-    NEO4J_CREATE_CONSTRAINTS: list[str] = [
-        "CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
-        "CREATE CONSTRAINT category_id_unique IF NOT EXISTS FOR (c:Category) REQUIRE c.id IS UNIQUE",
-        "CREATE CONSTRAINT sub_category_id_unique IF NOT EXISTS FOR (s:SubCategory) REQUIRE s.id IS UNIQUE",
-        "CREATE CONSTRAINT article_id_unique IF NOT EXISTS FOR (a:Article) REQUIRE a.id IS UNIQUE",
-        "CREATE CONSTRAINT tag_name_unique IF NOT EXISTS FOR (t:Tag) REQUIRE t.name IS UNIQUE",
-    ]
 
     NEO4J_CURRENT_LOOP_DRIVER_CLOSED_MESSAGE: str = "Neo4j 当前事件循环驱动已关闭"
 
@@ -2212,6 +2220,8 @@ class Messages:
     REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR: str = (
         "requireInternalToken 装饰器只支持异步函数"
     )
+
+    REQUIRE_SELF_ASYNC_ERROR: str = "requireSelf 装饰器只支持异步函数"
 
     ROLE_ADMIN: str = "admin"
 
@@ -2449,6 +2459,12 @@ class Messages:
     UNKNOWN_ARTICLE: str = "未知文章"
 
     USER_NOT_EXISTS_ERROR: str = "用户不存在"
+
+    USER_IDENTITY_MISSING_MESSAGE: str = "请求缺少用户身份，请确认请求经过网关转发"
+
+    USER_SCOPE_TARGET_MISSING_MESSAGE: str = "请求缺少目标用户标识"
+
+    USER_SCOPE_FORBIDDEN_MESSAGE: str = "无权访问其他用户的数据"
 
     USER_NOT_LOGGED_IN_MESSAGE: str = "用户未登录，请先登录"
 

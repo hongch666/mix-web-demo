@@ -1,6 +1,7 @@
 from .adminCheck import requireAdmin
 from .apiLog import ApiLogConfig, apiLog, log, logWithConfig
 from .requireInternalToken import requireInternalToken
+from .requireSelf import requireSelf
 
 __all__: list[str] = [
     "apiLog",
@@ -9,4 +10,5 @@ __all__: list[str] = [
     "ApiLogConfig",
     "requireAdmin",
     "requireInternalToken",
+    "requireSelf",
 ]

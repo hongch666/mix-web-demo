@@ -2,7 +2,7 @@ from typing import Any
 
 from fastapi import APIRouter, Query, Request
 
-from app.common.decorators import log
+from app.common.decorators import log, requireSelf
 from app.core.base import ApiResponse, success
 from app.dependencies import UserServiceDep
 
@@ -18,16 +18,19 @@ router: APIRouter = APIRouter(
     description="获取指定周期内的新增粉丝数（支持按日/月/年统计）",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取新增粉丝数统计")
 async def get_new_followers(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
     period: str = "day",
 ) -> ApiResponse:
     """获取新增粉丝数统计"""
 
-    result: dict[str, Any] = await userService.get_new_followers_service(userId, period)
+    result: dict[str, Any] = await userService.get_new_followers_service(
+        user_id, period
+    )
     return success(result)
 
 
@@ -37,16 +40,17 @@ async def get_new_followers(
     description="查询用户浏览过的文章及其浏览次数分布",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取文章浏览分布")
 async def get_article_view_distribution(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
 ) -> ApiResponse:
     """获取文章浏览分布"""
 
     result: dict[str, Any] = await userService.get_article_view_distribution_service(
-        userId
+        user_id
     )
     return success(result)
 
@@ -57,16 +61,17 @@ async def get_article_view_distribution(
     description="获取用户的总关注数和前7天每天关注的作者数",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取关注作者统计")
 async def get_author_follow_statistics(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
 ) -> ApiResponse:
     """获取关注作者统计"""
 
     result: dict[str, Any] = await userService.get_author_follow_statistics_service(
-        userId
+        user_id
     )
     return success(result)
 
@@ -77,15 +82,18 @@ async def get_author_follow_statistics(
     description="按天统计用户本月的评论数量趋势",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取本月评论趋势")
 async def get_monthly_comment_trend(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
 ) -> ApiResponse:
     """获取本月评论趋势"""
 
-    result: dict[str, Any] = await userService.get_monthly_comment_trend_service(userId)
+    result: dict[str, Any] = await userService.get_monthly_comment_trend_service(
+        user_id
+    )
     return success(result)
 
 
@@ -95,15 +103,16 @@ async def get_monthly_comment_trend(
     description="按天统计用户本月的点赞数量趋势",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取本月点赞趋势")
 async def get_monthly_like_trend(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
 ) -> ApiResponse:
     """获取本月点赞趋势"""
 
-    result: dict[str, Any] = await userService.get_monthly_like_trend_service(userId)
+    result: dict[str, Any] = await userService.get_monthly_like_trend_service(user_id)
     return success(result)
 
 
@@ -113,15 +122,18 @@ async def get_monthly_like_trend(
     description="按天统计用户本月的收藏数量趋势",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取本月收藏趋势")
 async def get_monthly_collect_trend(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
 ) -> ApiResponse:
     """获取本月收藏趋势"""
 
-    result: dict[str, Any] = await userService.get_monthly_collect_trend_service(userId)
+    result: dict[str, Any] = await userService.get_monthly_collect_trend_service(
+        user_id
+    )
     return success(result)
 
 
@@ -131,13 +143,14 @@ async def get_monthly_collect_trend(
     description="获取用户的发文数、获赞、获藏、粉丝数等累计指标总览",
     response_model=ApiResponse,
 )
+@requireSelf
 @log("获取用户画像总览")
 async def get_user_profile(
     request: Request,
     userService: UserServiceDep,
-    userId: int = Query(alias="user_id"),
+    user_id: int = Query(alias="user_id"),
 ) -> ApiResponse:
     """获取用户画像总览"""
 
-    result: dict[str, Any] = await userService.get_user_profile_service(userId)
+    result: dict[str, Any] = await userService.get_user_profile_service(user_id)
     return success(result)
