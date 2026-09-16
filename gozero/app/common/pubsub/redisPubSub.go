@@ -1,4 +1,6 @@
-package realtime
+// Package pubsub 提供基于 Redis Pub/Sub 的跨实例消息总线
+// 单个 RedisPubSub 实例对应单一频道，频道在构造时确定
+package pubsub
 
 import (
 	"context"
@@ -12,35 +14,37 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// MessageHandler 处理跨 Pod 实时消息
+// MessageHandler 处理跨实例实时消息
 type MessageHandler func(payload []byte)
 
-// RedisPubSub 基于 Redis Pub/Sub 的实时消息总线
+// RedisPubSub 基于 Redis Pub/Sub 的跨实例消息总线
+// 每个实例只订阅并发布构造时绑定的那个频道
 type RedisPubSub struct {
-	client *redis.Client
-	logger *utils.ZeroLogger
+	client  *redis.Client
+	logger  *utils.ZeroLogger
+	channel string
 
 	mu     sync.Mutex
 	pubsub *redis.PubSub
 	closed bool
 }
 
-// NewRedisPubSub 创建 Redis 实时消息总线
-func NewRedisPubSub(client *redis.Client, logger *utils.ZeroLogger) *RedisPubSub {
-	return &RedisPubSub{client: client, logger: logger}
+// NewRedisPubSub 创建绑定到指定频道的 Redis 消息总线
+func NewRedisPubSub(client *redis.Client, logger *utils.ZeroLogger, channel string) *RedisPubSub {
+	return &RedisPubSub{client: client, logger: logger, channel: channel}
 }
 
-// Publish 发布一条跨 Pod 实时消息
+// Publish 向本实例绑定的频道发布一条消息
 func (p *RedisPubSub) Publish(ctx context.Context, payload []byte) error {
-	if p == nil || p.client == nil {
+	if p == nil || p.client == nil || p.channel == "" {
 		return fmt.Errorf(constants.REDIS_REALTIME_BUS_NOT_INITIALIZED_ERROR)
 	}
-	return p.client.Publish(ctx, constants.REALTIME_CHAT_CHANNEL, payload).Err()
+	return p.client.Publish(ctx, p.channel, payload).Err()
 }
 
-// Start 启动 Redis 实时消息订阅协程
+// Start 启动本实例绑定频道的订阅协程
 func (p *RedisPubSub) Start(ctx context.Context, handler MessageHandler) {
-	if p == nil || p.client == nil || handler == nil {
+	if p == nil || p.client == nil || p.channel == "" || handler == nil {
 		return
 	}
 	go p.run(ctx, handler)
@@ -52,7 +56,7 @@ func (p *RedisPubSub) run(ctx context.Context, handler MessageHandler) {
 			return
 		}
 
-		pubsub := p.client.Subscribe(ctx, constants.REALTIME_CHAT_CHANNEL)
+		pubsub := p.client.Subscribe(ctx, p.channel)
 		p.setPubSub(pubsub)
 		if _, err := pubsub.Receive(ctx); err != nil {
 			p.closeCurrentPubSub(pubsub)

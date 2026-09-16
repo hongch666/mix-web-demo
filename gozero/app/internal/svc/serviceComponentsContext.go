@@ -6,7 +6,7 @@ import (
 
 	"app/common/client"
 	"app/common/constants"
-	"app/common/realtime"
+	"app/common/pubsub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
@@ -91,7 +91,7 @@ func setupRealtime(
 	)
 
 	if redisClient != nil {
-		hubCtx.RealtimeBus = realtime.NewRedisPubSub(redisClient, zLogger)
+		hubCtx.RealtimeBus = pubsub.NewRedisPubSub(redisClient, zLogger, constants.REALTIME_CHAT_CHANNEL)
 		hubCtx.RealtimeBus.Start(serviceCtx, hubCtx.RealtimeDispatcher.Handle)
 	}
 }

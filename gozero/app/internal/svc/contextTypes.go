@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"app/common/realtime"
+	"app/common/pubsub"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/client/nestjsClient"
@@ -50,7 +50,7 @@ type ModelContext struct {
 type HubContext struct {
 	ChatHub            *hub.ChatHub
 	SSEHub             *hub.SSEHubManager
-	RealtimeBus        *realtime.RedisPubSub
+	RealtimeBus        *pubsub.RedisPubSub
 	RealtimeDispatcher *hub.ChatRealtimeDispatcher
 }
 
