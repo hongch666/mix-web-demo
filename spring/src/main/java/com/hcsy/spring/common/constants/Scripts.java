@@ -53,7 +53,10 @@ public final class Scripts {
             status TINYINT NOT NULL COMMENT '文章状态',
             views INT NOT NULL COMMENT '文章浏览量',
             create_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-            update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+            update_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            INDEX idx_user_id (user_id),
+            INDEX idx_sub_category_id (sub_category_id),
+            INDEX idx_status (status)
         ) COMMENT='文章表'
         """;
 
@@ -73,6 +76,7 @@ public final class Scripts {
             category_id BIGINT NOT NULL COMMENT '所属分类ID',
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            INDEX idx_category_id (category_id),
             FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE
         ) COMMENT='子分类表'
         """;
@@ -97,7 +101,9 @@ public final class Scripts {
             user_id BIGINT NOT NULL COMMENT '用户ID',
             article_id BIGINT NOT NULL COMMENT '文章ID',
             create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-            update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+            update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+            INDEX idx_user_id (user_id),
+            INDEX idx_article_id (article_id)
         ) COMMENT='文章评论表'
         """;
 
