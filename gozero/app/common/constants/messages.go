@@ -58,6 +58,11 @@ const (
 	USER_NOT_IN_QUEUE                        = "not_in_queue"
 	HEARTBEAT_MESSAGE                        = "ping"
 	HEARTBEAT_RESPONSE                       = "pong"
+	READ_RECEIPT_MESSAGE                     = "read"
+	READ_RECEIPT_ACK                         = "read_ack"
+	WS_READ_RECEIPT_INVALID                  = "已读回执缺少有效的发送者或消息ID"
+	WS_READ_RECEIPT_HANDLE_FAIL              = "处理WebSocket已读回执失败: %v"
+	WS_READ_RECEIPT_ACK_FAIL                 = "发送WebSocket已读确认失败"
 
 	// SSE
 	SSE_SERIALIZE_MESSAGE_EMPTY        = "序列化后的SSE消息为null"

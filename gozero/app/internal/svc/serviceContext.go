@@ -56,7 +56,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}
 
 	// 实时通信组件组装到 HubContext 分域
-	setupRealtime(serviceContext, serviceCtx.HubContext, models, infrastructure.RedisClient, zLogger)
+	setupRealtime(serviceContext, serviceCtx.HubContext, infrastructure.RedisClient, zLogger)
 
 	return serviceCtx
 }

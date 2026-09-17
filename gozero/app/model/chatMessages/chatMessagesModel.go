@@ -21,6 +21,7 @@ type (
 		GetAllUnreadCounts(context.Context, int64) (map[int64]int64, error)
 		MarkAsRead(context.Context, uint64) error
 		MarkChatHistoryAsRead(context.Context, int64, int64) error
+		MarkChatHistoryAsReadThrough(context.Context, int64, int64, uint64) error
 	}
 	customChatMessagesModel struct {
 		conn      sqlx.SqlConn
@@ -116,5 +117,19 @@ func (m *customChatMessagesModel) MarkAsRead(ctx context.Context, messageID uint
 
 func (m *customChatMessagesModel) MarkChatHistoryAsRead(ctx context.Context, userID, otherID int64) error {
 	_, err := m.conn.ExecCtx(ctx, fmt.Sprintf("update %s set is_read = 1 where receiver_id = ? and sender_id = ?", m.baseModel.table), userID, otherID)
+	return err
+}
+
+func (m *customChatMessagesModel) MarkChatHistoryAsReadThrough(
+	ctx context.Context,
+	userID int64,
+	otherID int64,
+	lastMessageID uint64,
+) error {
+	query := fmt.Sprintf(
+		"update %s set is_read = 1 where receiver_id = ? and sender_id = ? and id <= ? and is_read = 0",
+		m.baseModel.table,
+	)
+	_, err := m.conn.ExecCtx(ctx, query, userID, otherID, lastMessageID)
 	return err
 }

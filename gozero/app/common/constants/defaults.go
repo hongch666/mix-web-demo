@@ -28,6 +28,14 @@ const (
 	WebSocketReadLimit = 512
 	// WebSocket 发送通道缓冲区大小
 	WebSocketSendBufferSize = 256
+	// WebSocket 服务端主动 ping 间隔
+	WebSocketPingInterval = 30 * time.Second
+	// WebSocket 等待客户端 pong 的最大时长
+	WebSocketPongWait = 60 * time.Second
+	// WebSocket 单次写操作超时
+	WebSocketWriteWait = 10 * time.Second
+	// WebSocket 已读回执数据库操作超时
+	WebSocketReadReceiptTimeout = 5 * time.Second
 )
 
 // SSE 相关默认值

@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 
@@ -9,33 +8,23 @@ import (
 	"app/common/utils"
 )
 
-type chatHistoryReader interface {
-	MarkChatHistoryAsRead(context.Context, int64, int64) error
-}
-
 // ChatRealtimeDispatcher 负责处理跨 Pod 的聊天实时事件
 type ChatRealtimeDispatcher struct {
-	ctx               context.Context
-	chatHub           *ChatHub
-	sseHub            *SSEHubManager
-	chatHistoryReader chatHistoryReader
-	logger            *utils.ZeroLogger
+	chatHub *ChatHub
+	sseHub  *SSEHubManager
+	logger  *utils.ZeroLogger
 }
 
 // NewChatRealtimeDispatcher 创建聊天实时事件分发器
 func NewChatRealtimeDispatcher(
-	ctx context.Context,
 	chatHub *ChatHub,
 	sseHub *SSEHubManager,
-	chatHistoryReader chatHistoryReader,
 	logger *utils.ZeroLogger,
 ) *ChatRealtimeDispatcher {
 	return &ChatRealtimeDispatcher{
-		ctx:               ctx,
-		chatHub:           chatHub,
-		sseHub:            sseHub,
-		chatHistoryReader: chatHistoryReader,
-		logger:            logger,
+		chatHub: chatHub,
+		sseHub:  sseHub,
+		logger:  logger,
 	}
 }
 
@@ -63,22 +52,11 @@ func (d *ChatRealtimeDispatcher) Handle(payload []byte) {
 	}
 
 	if d.chatHub != nil && d.chatHub.SendMessageToQueue(event.ReceiverID, messageBytes) {
-		d.markChatHistoryAsRead(event.WebSocketMessage.SenderId, event.ReceiverID)
 		return
 	}
 
 	if d.sseHub != nil {
 		d.sseHub.SendNotificationToUser(event.ReceiverID, event.SSENotification)
-	}
-}
-
-func (d *ChatRealtimeDispatcher) markChatHistoryAsRead(senderID, receiverID int64) {
-	if d.chatHistoryReader == nil {
-		return
-	}
-
-	if err := d.chatHistoryReader.MarkChatHistoryAsRead(d.ctx, senderID, receiverID); err != nil {
-		d.logError(fmt.Sprintf(constants.MARK_MESSAGE_READ_ERROR, err))
 	}
 }
 

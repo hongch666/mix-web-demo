@@ -59,6 +59,7 @@ func ChatWebsocketHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			ConnectionID: hub.NewConnectionID("ws"),
 			Conn:         conn,
 			Send:         make(chan []byte, constants.WebSocketSendBufferSize),
+			MarkRead:     svcCtx.ChatMessagesModel.MarkChatHistoryAsReadThrough,
 		}
 		svcCtx.ChatHub.JoinQueue(userID, client)
 

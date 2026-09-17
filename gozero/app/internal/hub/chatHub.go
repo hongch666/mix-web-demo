@@ -22,6 +22,7 @@ type Client struct {
 	ConnectionID string
 	Conn         *websocket.Conn
 	Send         chan []byte
+	MarkRead     func(context.Context, int64, int64, uint64) error
 	closeOnce    sync.Once
 	*utils.ZeroLogger
 }
@@ -237,6 +238,10 @@ func (c *Client) ReadPump() {
 	}()
 
 	c.Conn.SetReadLimit(constants.WebSocketReadLimit)
+	_ = c.Conn.SetReadDeadline(time.Now().Add(constants.WebSocketPongWait))
+	c.Conn.SetPongHandler(func(string) error {
+		return c.Conn.SetReadDeadline(time.Now().Add(constants.WebSocketPongWait))
+	})
 	for {
 		_, messageBytes, err := c.Conn.ReadMessage()
 		if err != nil {
@@ -257,8 +262,8 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
-		// 处理ping消息
-		if wsMessage.Type == constants.HEARTBEAT_MESSAGE {
+		switch wsMessage.Type {
+		case constants.HEARTBEAT_MESSAGE:
 			pongMessage := types.ChatWsMessage{Type: constants.HEARTBEAT_RESPONSE}
 			pongBytes, err := json.Marshal(pongMessage)
 			if err != nil {
@@ -270,24 +275,68 @@ func (c *Client) ReadPump() {
 			if !c.SafeSend(pongBytes) {
 				return
 			}
+		case constants.READ_RECEIPT_MESSAGE:
+			if err := c.handleReadReceipt(&wsMessage); err != nil && c.ZeroLogger != nil {
+				c.Error(fmt.Sprintf(constants.WS_READ_RECEIPT_HANDLE_FAIL, err))
+			}
 		}
 	}
 }
 
+func (c *Client) handleReadReceipt(message *types.ChatWsMessage) error {
+	if message == nil || message.SenderId <= 0 || message.MessageId == 0 {
+		return fmt.Errorf("%s", constants.WS_READ_RECEIPT_INVALID)
+	}
+	if c.MarkRead == nil {
+		return fmt.Errorf("%s", constants.WS_READ_RECEIPT_INVALID)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), constants.WebSocketReadReceiptTimeout)
+	defer cancel()
+	if err := c.MarkRead(ctx, c.UserID, message.SenderId, message.MessageId); err != nil {
+		return err
+	}
+
+	ackBytes, err := json.Marshal(types.ChatWsMessage{
+		Type:       constants.READ_RECEIPT_ACK,
+		SenderId:   message.SenderId,
+		ReceiverId: c.UserID,
+		MessageId:  message.MessageId,
+	})
+	if err != nil {
+		return err
+	}
+	if !c.SafeSend(ackBytes) {
+		return fmt.Errorf("%s", constants.WS_READ_RECEIPT_ACK_FAIL)
+	}
+	return nil
+}
+
 func (c *Client) WritePump() {
 	defer c.Shutdown()
+	pingTicker := time.NewTicker(constants.WebSocketPingInterval)
+	defer pingTicker.Stop()
 
-	for message := range c.Send {
-		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-			if c.ZeroLogger != nil {
-				c.Error(fmt.Sprintf(constants.WS_WRITE_MESSAGE_FAIL, err))
+	for {
+		select {
+		case message, ok := <-c.Send:
+			if !ok {
+				return
 			}
-			break
-		}
-	}
-	if err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{}); err != nil {
-		if c.ZeroLogger != nil {
-			c.Error(fmt.Sprintf(constants.WS_CLOSE_FRAME_SEND_FAIL, err))
+			_ = c.Conn.SetWriteDeadline(time.Now().Add(constants.WebSocketWriteWait))
+			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				if c.ZeroLogger != nil {
+					c.Error(fmt.Sprintf(constants.WS_WRITE_MESSAGE_FAIL, err))
+				}
+				return
+			}
+		case <-pingTicker.C:
+			if err := c.Conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(constants.WebSocketWriteWait)); err != nil {
+				if c.ZeroLogger != nil {
+					c.Error(fmt.Sprintf(constants.WS_WRITE_MESSAGE_FAIL, err))
+				}
+				return
+			}
 		}
 	}
 }

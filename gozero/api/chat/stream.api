@@ -37,7 +37,7 @@ type (
 	ChatWsConnectReq {
 		UserId *int64 `form:"user_id,optional"`
 	}
-	// WebSocket数据帧，包含 message/ping/pong 三种类型
+	// WebSocket数据帧，包含 message/ping/pong/read/read_ack 类型
 	ChatWsMessage {
 		Type       string `json:"type"`
 		SenderId   int64  `json:"sender_id,omitempty"`

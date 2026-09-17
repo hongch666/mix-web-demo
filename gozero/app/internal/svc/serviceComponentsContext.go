@@ -78,15 +78,12 @@ func (lc *LoggerContext) Close() {
 func setupRealtime(
 	serviceCtx context.Context,
 	hubCtx *HubContext,
-	models *ModelContext,
 	redisClient *redis.Client,
 	zLogger *utils.ZeroLogger,
 ) {
 	hubCtx.RealtimeDispatcher = hub.NewChatRealtimeDispatcher(
-		serviceCtx,
 		hubCtx.ChatHub,
 		hubCtx.SSEHub,
-		models.ChatMessagesModel,
 		zLogger,
 	)
 
