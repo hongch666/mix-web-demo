@@ -94,3 +94,4 @@ resilience4j:
         retryExceptions:
           - java.io.IOException
           - java.util.concurrent.TimeoutException
+          - org.springframework.web.reactive.function.client.WebClientRequestException

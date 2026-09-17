@@ -8,12 +8,14 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.hcsy.spring.api.service.TokenService;
+import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.JwtUtil;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.common.utils.RedisDistributedLock;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
@@ -30,6 +32,7 @@ public class TokenServiceImpl implements TokenService {
 
 
     private final RedisUtil redisUtil;
+    private final RedisDistributedLock distributedLock;
     private final JwtUtil jwtUtil;
     private final SimpleLogger logger;
 
@@ -120,9 +123,22 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public Mono<TokenRefreshVO> refreshToken(String refreshToken) {
-        jwtUtil.validateRefreshToken(refreshToken);
-        Long userId = jwtUtil.extractUserId(refreshToken);
-        String sessionId = jwtUtil.extractSessionId(refreshToken);
+        return Mono.defer(() -> {
+            jwtUtil.validateRefreshToken(refreshToken);
+            Long userId = jwtUtil.extractUserId(refreshToken);
+            String sessionId = jwtUtil.extractSessionId(refreshToken);
+            String lockKey = RedisKeys.lockTokenRefresh(refreshToken);
+
+            return distributedLock.tryLock(lockKey, Defaults.LOCK_TOKEN_REFRESH_EXPIRE)
+                .switchIfEmpty(Mono.error(unauthorized(Messages.REFRESH_TOKEN_INVALID)))
+                .flatMap(lockValue -> releaseRefreshLockAfter(
+                    lockKey,
+                    lockValue,
+                    refreshTokenLocked(refreshToken, userId, sessionId)));
+        });
+    }
+
+    private Mono<TokenRefreshVO> refreshTokenLocked(String refreshToken, Long userId, String sessionId) {
         String sessionKey = RedisKeys.userSession(userId, sessionId);
         String expectedValue = userId + ":" + sessionId;
 
@@ -141,6 +157,14 @@ public class TokenServiceImpl implements TokenService {
                 }
                 return rotateTokens(userId, sessionId, values.getT3(), refreshToken, values.getT4());
             });
+    }
+
+    private <T> Mono<T> releaseRefreshLockAfter(String lockKey, String lockValue, Mono<T> operation) {
+        return operation
+            .flatMap(result -> distributedLock.unlock(lockKey, lockValue).thenReturn(result))
+            .onErrorResume(error -> distributedLock.unlock(lockKey, lockValue)
+                .onErrorResume(unlockError -> Mono.empty())
+                .then(Mono.error(error)));
     }
 
     private Mono<TokenRefreshVO> rotateTokens(

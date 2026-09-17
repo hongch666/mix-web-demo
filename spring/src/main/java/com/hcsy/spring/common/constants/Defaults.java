@@ -45,6 +45,7 @@ public class Defaults {
 
     // ===== 分布式锁配置 =====
     public static final long LOCK_TASK_TOKEN_CLEANUP_EXPIRE = 3600L;
+    public static final long LOCK_TOKEN_REFRESH_EXPIRE = 10L;
 
     // ===== 用户角色 =====
     public static final String AI_ROLE = "ai";

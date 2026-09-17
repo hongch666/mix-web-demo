@@ -173,6 +173,7 @@ public class ArticleController {
 
     @GetMapping("/unpublished/list")
     @Operation(summary = "获取所有未发布文章", description = "返回所有未发布的文章，支持分页")
+    @RequirePermission(roles = { "admin" }, businessType = "article")
     @ApiLog("获取未发布文章列表")
     public Mono<Result<PageVO<ArticleWithCategoryVO>>> getUnpublishedArticles(
         @RequestParam(defaultValue = "1") int page,

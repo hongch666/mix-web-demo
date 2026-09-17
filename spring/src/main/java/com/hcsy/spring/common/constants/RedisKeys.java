@@ -123,8 +123,13 @@ public final class RedisKeys {
 
     // ===== 分布式锁 =====
     private static final String LOCK_TASK_TOKEN_CLEANUP = "lock:task:token:cleanup";
+    private static final String LOCK_TOKEN_REFRESH_PREFIX = "lock:token:refresh:";
 
     public static String lockTaskTokenCleanup() {
         return LOCK_TASK_TOKEN_CLEANUP;
+    }
+
+    public static String lockTokenRefresh(String refreshToken) {
+        return LOCK_TOKEN_REFRESH_PREFIX + refreshToken;
     }
 }
