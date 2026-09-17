@@ -52,7 +52,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		HubContext:            newHubContext(zLogger),
 		ClientContext:         clientCtx,
 		LoggerContext:         newLoggerContext(zLogger),
-		MiddlewareContext:     newMiddlewareContext(zLogger),
+		MiddlewareContext:     newMiddlewareContext(zLogger, clientCtx.SpringClient),
 	}
 
 	// 实时通信组件组装到 HubContext 分域

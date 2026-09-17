@@ -51,9 +51,13 @@ func newClientContext(
 }
 
 // 创建 MiddlewareContext 实例，初始化服务级中间件依赖
-func newMiddlewareContext(zLogger *utils.ZeroLogger) *MiddlewareContext {
+func newMiddlewareContext(
+	zLogger *utils.ZeroLogger,
+	adminChecker middleware.AdminChecker,
+) *MiddlewareContext {
 	return &MiddlewareContext{
 		UserContextMiddleware:     middleware.NewUserContextMiddleware().Handle,
+		AllowSelfMiddleware:       middleware.NewAllowSelfMiddleware(adminChecker, zLogger).Handle,
 		RecoveryMiddleware:        middleware.NewRecoveryMiddleware(zLogger).Handle,
 		InternalServiceMiddleware: middleware.NewInternalServiceMiddleware(zLogger).Handle,
 	}

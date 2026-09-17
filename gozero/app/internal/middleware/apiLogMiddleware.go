@@ -56,12 +56,12 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 构建基础日志信息
 		logInfo := map[string]any{
-			constants.API_LOG_USER_ID_FIELD:       userID,
-			constants.API_LOG_USERNAME_FIELD:      username,
-			constants.API_LOG_SESSION_ID_FIELD:    sessionID,
+			constants.API_LOG_USER_ID_FIELD:        userID,
+			constants.API_LOG_USERNAME_FIELD:       username,
+			constants.API_LOG_SESSION_ID_FIELD:     sessionID,
 			constants.API_LOG_REQUEST_METHOD_FIELD: method,
-			constants.API_LOG_REQUEST_PATH_FIELD:  path,
-			constants.API_LOG_DESCRIPTION_FIELD:   m.description,
+			constants.API_LOG_REQUEST_PATH_FIELD:   path,
+			constants.API_LOG_DESCRIPTION_FIELD:    m.description,
 		}
 
 		// 获取查询参数
@@ -81,7 +81,9 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		// 记录日志（请求开始）
 		logMessage := formatLogMessage(method, path, m.description, userID, username, logInfo)
-		m.Info(logMessage)
+		if m.ZeroLogger != nil {
+			m.Info(logMessage)
+		}
 
 		// 继续处理请求
 		next(w, r)
@@ -89,7 +91,9 @@ func (m *ApiLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 		// 请求处理完成，记录耗时（毫秒）
 		durationMs := time.Since(start).Milliseconds()
 		timeMessage := fmt.Sprintf(constants.RECORD_DURATION_MESSAGE, method, path, durationMs)
-		m.Info(timeMessage)
+		if m.ZeroLogger != nil {
+			m.Info(timeMessage)
+		}
 
 		// 发送 API 日志到队列（异步，不阻塞主流程）
 		if m.ZeroLogger != nil {

@@ -72,6 +72,7 @@ type LoggerContext struct {
 // MiddlewareContext 保存服务级中间件依赖
 type MiddlewareContext struct {
 	UserContextMiddleware     rest.Middleware
+	AllowSelfMiddleware       rest.Middleware
 	RecoveryMiddleware        rest.Middleware
 	InternalServiceMiddleware rest.Middleware
 }

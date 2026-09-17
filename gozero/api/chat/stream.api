@@ -3,7 +3,7 @@ syntax = "v2"
 @server (
 	group:      chat
 	tags:       chat
-	middleware: UserContextMiddleware,RecoveryMiddleware
+	middleware: UserContextMiddleware,RecoveryMiddleware,AllowSelfMiddleware
 )
 service App {
 	@doc (

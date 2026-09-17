@@ -19,7 +19,7 @@ import (
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware, serverCtx.AllowSelfMiddleware},
 			[]rest.Route{
 				{
 					// 获取用户的所有未读消息数
@@ -70,7 +70,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 
 	server.AddRoutes(
 		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware},
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware, serverCtx.AllowSelfMiddleware},
 			[]rest.Route{
 				{
 					// SSE消息通知连接
@@ -98,6 +98,15 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/",
 					Handler: search.SearchArticlesHandler(serverCtx),
 				},
+			}...,
+		),
+		rest.WithPrefix("/search"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.UserContextMiddleware, serverCtx.RecoveryMiddleware, serverCtx.AllowSelfMiddleware},
+			[]rest.Route{
 				{
 					// 获取用户搜索历史
 					Method:  http.MethodGet,

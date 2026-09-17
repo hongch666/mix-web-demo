@@ -29,7 +29,7 @@ func TestResolveUserID(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "查询参数优先于请求头",
+			name:         "查询参数已由中间件校验并优先使用",
 			reqUserID:    &queryUserID,
 			headerUserID: "999",
 			want:         100,

@@ -1,5 +1,11 @@
 package constants
 
+const (
+	USER_IDENTITY_MISSING         = "缺少当前登录用户身份"
+	SELF_OR_ADMIN_REQUIRED        = "只能访问本人数据，或使用管理员权限"
+	ADMIN_PERMISSION_CHECK_FAILED = "管理员权限校验失败"
+)
+
 // 消息类常量 — 日志消息、用户提示、状态描述
 const (
 	// 测试/启动

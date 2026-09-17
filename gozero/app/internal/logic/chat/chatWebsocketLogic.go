@@ -32,7 +32,7 @@ func NewChatWebsocketLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Cha
 }
 
 // ResolveUserID 解析WebSocket连接的发起用户
-// WebSocket 握手无法自定义请求头，因此 user_id 优先取查询参数，缺省时回退网关注入的请求头
+// user_id 已由 AllowSelfMiddleware 校验，缺省时回退网关注入的请求头
 func (l *ChatWebsocketLogic) ResolveUserID(req *types.ChatWsConnectReq, headerUserID string) (int64, error) {
 	if req.UserId != nil {
 		return *req.UserId, nil

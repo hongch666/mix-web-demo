@@ -13,7 +13,15 @@ service App {
 	)
 	@handler SearchArticlesHandler
 	get / (SearchArticlesReq) returns (SearchArticlesResp)
+}
 
+@server (
+	group:      search
+	tags:       search
+	prefix:     /search
+	middleware: UserContextMiddleware,RecoveryMiddleware,AllowSelfMiddleware
+)
+service App {
 	@doc (
 		summary:     "获取用户搜索历史"
 		description: "获取指定用户最近10条搜索关键词列表"
