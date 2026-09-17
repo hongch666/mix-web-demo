@@ -166,6 +166,10 @@ class Messages:
         )
 
     @staticmethod
+    def NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN() -> str:
+        return "权限拒绝：当前账户不能执行任意数据查询。"
+
+    @staticmethod
     def SQL_TOOL_ROW_SCOPE_REQUIRED(user_id: int) -> str:
         return (
             f"权限拒绝：当前账户仅允许查询本人数据。请在 SQL 中增加 user_id 条件，"
