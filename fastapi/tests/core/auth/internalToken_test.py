@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from datetime import datetime, timedelta, timezone
 
@@ -24,9 +25,12 @@ def reset_internal_token_util() -> Generator[None, None, None]:
 
 
 def test_generate_and_validate_internal_token_claims() -> None:
+    InternalTokenUtil._secret = os.getenv("INTERNAL_TOKEN_SECRET") or TEST_SECRET
     token_util = InternalTokenUtil()
     token = token_util.generate_internal_token(10001, "fastapi")
     claims = token_util.validate_internal_token(token)
+
+    print(f"生成的内部Token: {token}")
 
     assert claims["userId"] == 10001
     assert claims["serviceName"] == "fastapi"

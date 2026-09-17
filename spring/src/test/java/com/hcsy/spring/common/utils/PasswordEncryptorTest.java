@@ -20,6 +20,8 @@ class PasswordEncryptorTest {
         // 先生成密文再校验，避免依赖写死的密文结果
         String encodedPassword = passwordEncryptor.encryptPassword(RAW_PASSWORD);
 
+        System.out.println("明文密码加密结果: " + encodedPassword);
+
         assertNotNull(encodedPassword);
         assertTrue(encodedPassword.length() > 0);
         assertTrue(passwordEncryptor.matchPassword(RAW_PASSWORD, encodedPassword));

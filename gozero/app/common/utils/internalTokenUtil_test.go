@@ -1,15 +1,25 @@
 package utils_test
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"app/common/utils"
+
+	"github.com/joho/godotenv"
 )
 
 const testInternalTokenSecret = "unit-test-internal-token-secret-32-bytes"
 
 func TestInternalTokenRoundTrip(t *testing.T) {
-	if err := utils.InitInternalTokenUtil(testInternalTokenSecret, 60000); err != nil {
+	_ = godotenv.Load(filepath.Join("..", "..", ".env"))
+	secret := os.Getenv("INTERNAL_TOKEN_SECRET")
+	if secret == "" {
+		secret = testInternalTokenSecret
+	}
+	if err := utils.InitInternalTokenUtil(secret, 60000); err != nil {
 		t.Fatalf("初始化内部令牌工具失败: %v", err)
 	}
 	tokenUtil, err := utils.GetTokenUtil()
@@ -21,6 +31,7 @@ func TestInternalTokenRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("生成内部令牌失败: %v", err)
 	}
+	fmt.Printf("生成的内部Token: %s\n", token)
 	claims, err := tokenUtil.ValidateInternalToken(token)
 	if err != nil {
 		t.Fatalf("验证内部令牌失败: %v", err)
