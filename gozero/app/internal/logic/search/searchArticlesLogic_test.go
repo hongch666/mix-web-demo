@@ -1,11 +1,17 @@
 package search
 
 import (
+	"context"
+	"errors"
 	"math"
 	"testing"
 
+	commonclient "app/common/client"
+	"app/common/utils"
 	"app/internal/client/fastapiClient"
+	"app/internal/svc"
 	"app/internal/types"
+	searchmodel "app/model/search"
 )
 
 // TestResolveRecallWindow 校验召回窗口解析与深分页降级边界
@@ -118,5 +124,149 @@ func TestFusionMeanFillAndWeights(t *testing.T) {
 
 	if engine.esWeight < 0.1-1e-9 {
 		t.Fatalf("ES 权重 %v 低于最小保护值 0.1", engine.esWeight)
+	}
+}
+
+func TestSearchArticlesUsesAmplifiedRecallThenSlicesRequestedPage(t *testing.T) {
+	mode := "keyword"
+	articles := make([]searchmodel.ArticleES, 25)
+	for i := range articles {
+		articles[i] = searchmodel.ArticleES{ID: int64(i + 1), ESScore: float64(25 - i)}
+	}
+	model := &searchModelStub{articles: articles, total: 25}
+	client := &fastapiClientStub{
+		script:   searchmodel.SearchScript{EsScript: "return 1"},
+		weights:  searchmodel.SearchWeights{ESScoreWeight: 1},
+		paramMap: searchmodel.ScriptParamMapping{"es_score_weight": "esWeight"},
+	}
+	logic, cleanup := newSearchLogicForTest(t, model, client)
+	defer cleanup()
+
+	response, err := logic.SearchArticles(&types.SearchArticlesReq{
+		Page: 2,
+		Size: 10,
+		Mode: &mode,
+	})
+	if err != nil {
+		t.Fatalf("搜索失败: %v", err)
+	}
+	if model.searchDTO.Page != 1 || model.searchDTO.Size != 100 {
+		t.Fatalf("ES 召回窗口 = page %d size %d, 期望 page 1 size 100", model.searchDTO.Page, model.searchDTO.Size)
+	}
+	if len(response.List) != 10 || response.List[0].Id != 11 || response.List[9].Id != 20 {
+		t.Fatalf("目标页切片错误: %+v", response.List)
+	}
+	if response.Total != 25 {
+		t.Fatalf("总数 = %d, 期望 25", response.Total)
+	}
+}
+
+func TestSearchArticlesDegradesToRequestedESPageWhenScriptFetchFails(t *testing.T) {
+	model := &searchModelStub{
+		articles: []searchmodel.ArticleES{{ID: 31, ESScore: 2}, {ID: 32, ESScore: 1}},
+		total:    12,
+	}
+	client := &fastapiClientStub{scriptErr: errors.New("script unavailable")}
+	logic, cleanup := newSearchLogicForTest(t, model, client)
+	defer cleanup()
+
+	response, err := logic.SearchArticles(&types.SearchArticlesReq{Page: 3, Size: 5})
+	if err != nil {
+		t.Fatalf("降级搜索失败: %v", err)
+	}
+	if model.searchDTO.Page != 3 || model.searchDTO.Size != 5 {
+		t.Fatalf("降级查询分页 = page %d size %d, 期望 page 3 size 5", model.searchDTO.Page, model.searchDTO.Size)
+	}
+	if model.esScript != "" || model.weights != nil {
+		t.Fatalf("降级查询不应传入脚本和权重: script=%q weights=%+v", model.esScript, model.weights)
+	}
+	if len(response.List) != 2 || response.List[0].Id != 31 {
+		t.Fatalf("降级结果不应再次切页: %+v", response.List)
+	}
+}
+
+type searchModelStub struct {
+	articles  []searchmodel.ArticleES
+	total     int
+	err       error
+	searchDTO searchmodel.ArticleSearchDTO
+	esScript  string
+	weights   *searchmodel.SearchWeights
+}
+
+func (s *searchModelStub) SearchArticle(
+	_ context.Context,
+	searchDTO searchmodel.ArticleSearchDTO,
+	esScript string,
+	weights *searchmodel.SearchWeights,
+	_ searchmodel.ScriptParamMapping,
+) ([]searchmodel.ArticleES, int, error) {
+	s.searchDTO = searchDTO
+	s.esScript = esScript
+	s.weights = weights
+	return s.articles, s.total, s.err
+}
+
+type fastapiClientStub struct {
+	script    searchmodel.SearchScript
+	weights   searchmodel.SearchWeights
+	paramMap  searchmodel.ScriptParamMapping
+	scriptErr error
+}
+
+func (s *fastapiClientStub) GetSearchScript(context.Context) (searchmodel.SearchScript, error) {
+	return s.script, s.scriptErr
+}
+
+func (s *fastapiClientStub) GetSearchWeights(context.Context) (searchmodel.SearchWeights, error) {
+	return s.weights, nil
+}
+
+func (s *fastapiClientStub) GetSearchScriptParams(context.Context) (searchmodel.ScriptParamMapping, error) {
+	return s.paramMap, nil
+}
+
+func (s *fastapiClientStub) EnhanceGraph(context.Context, *fastapiClient.GraphEnhanceRequest) (commonclient.Result, error) {
+	return commonclient.Result{}, nil
+}
+
+func (s *fastapiClientStub) EnhanceVector(context.Context, *fastapiClient.VectorEnhanceRequest) (commonclient.Result, error) {
+	return commonclient.Result{}, nil
+}
+
+func (s *fastapiClientStub) GetAiHistoryByID(context.Context, int64) (commonclient.Result, error) {
+	return commonclient.Result{}, nil
+}
+
+func (s *fastapiClientStub) UpdateAiHistory(context.Context, int64, *fastapiClient.UpdateAiHistoryRequest) (commonclient.Result, error) {
+	return commonclient.Result{}, nil
+}
+
+func (s *fastapiClientStub) DeleteAiHistory(context.Context, int64) (commonclient.Result, error) {
+	return commonclient.Result{}, nil
+}
+
+func newSearchLogicForTest(
+	t *testing.T,
+	model searchmodel.SearchModel,
+	client fastapiClient.Client,
+) (*SearchArticlesLogic, func()) {
+	t.Helper()
+	logger, err := utils.NewZeroLogger(t.TempDir())
+	if err != nil {
+		t.Fatalf("创建测试日志失败: %v", err)
+	}
+	serviceContext := &svc.ServiceContext{
+		ModelContext:  &svc.ModelContext{SearchModel: model},
+		ClientContext: &svc.ClientContext{FastapiClient: client},
+		LoggerContext: &svc.LoggerContext{Logger: logger},
+	}
+	logic := &SearchArticlesLogic{
+		ctx:        context.Background(),
+		svcCtx:     serviceContext,
+		ZeroLogger: logger,
+	}
+	return logic, func() {
+		_ = logger.Close()
 	}
 }

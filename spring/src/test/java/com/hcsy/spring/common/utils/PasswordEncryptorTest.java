@@ -7,9 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 class PasswordEncryptorTest {
 
     private static final String RAW_PASSWORD = "123456";
@@ -26,7 +23,6 @@ class PasswordEncryptorTest {
         assertNotNull(encodedPassword);
         assertTrue(encodedPassword.length() > 0);
         assertTrue(passwordEncryptor.matchPassword(RAW_PASSWORD, encodedPassword));
-        log.info("明文密码加密结果: {}", encodedPassword);
     }
 
     @Test

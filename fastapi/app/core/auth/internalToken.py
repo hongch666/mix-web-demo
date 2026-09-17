@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 import jwt
@@ -50,8 +50,8 @@ class InternalTokenUtil:
             "userId": user_id,
             "serviceName": service_name,
             "tokenType": "internal",
-            "iat": datetime.utcnow(),
-            "exp": datetime.utcnow()
+            "iat": datetime.now(timezone.utc),
+            "exp": datetime.now(timezone.utc)
             + timedelta(milliseconds=InternalTokenUtil._expiration),
         }
         return jwt.encode(payload, InternalTokenUtil._secret, algorithm="HS256")

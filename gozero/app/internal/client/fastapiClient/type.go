@@ -1,5 +1,24 @@
 package fastapiClient
 
+import (
+	"context"
+
+	"app/common/client"
+	"app/model/search"
+)
+
+// Client 定义 GoZero 使用的 FastAPI 调用契约，便于业务层隔离远程依赖
+type Client interface {
+	EnhanceGraph(context.Context, *GraphEnhanceRequest) (client.Result, error)
+	EnhanceVector(context.Context, *VectorEnhanceRequest) (client.Result, error)
+	GetAiHistoryByID(context.Context, int64) (client.Result, error)
+	UpdateAiHistory(context.Context, int64, *UpdateAiHistoryRequest) (client.Result, error)
+	DeleteAiHistory(context.Context, int64) (client.Result, error)
+	GetSearchWeights(context.Context) (search.SearchWeights, error)
+	GetSearchScript(context.Context) (search.SearchScript, error)
+	GetSearchScriptParams(context.Context) (search.ScriptParamMapping, error)
+}
+
 // GraphEnhanceRequest 图谱增强请求
 type GraphEnhanceRequest struct {
 	UserID          int64    `json:"user_id"`

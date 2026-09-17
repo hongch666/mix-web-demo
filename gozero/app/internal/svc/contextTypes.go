@@ -59,7 +59,7 @@ type HubContext struct {
 
 // ClientContext 保存内部服务客户端
 type ClientContext struct {
-	FastapiClient *fastapiClient.FastapiClient
+	FastapiClient fastapiClient.Client
 	NestjsClient  *nestjsClient.NestjsClient
 	SpringClient  *springClient.SpringClient
 }

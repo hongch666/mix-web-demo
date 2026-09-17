@@ -1,135 +1,52 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-
 import { ConfigService } from "@nestjs/config";
-import { Test, TestingModule } from "@nestjs/testing";
+import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "./internalToken.util";
 
+const SECRET = "unit-test-internal-token-secret-32-bytes";
+
 describe("InternalTokenUtil", () => {
-  let internalTokenUtil: InternalTokenUtil;
+  it("生成并解析内部令牌声明", async () => {
+    const tokenUtil = createTokenUtil(SECRET, 60_000);
 
-  const defaultInternalTokenSecret = "abcdefghijklmnopqrstuvwxyz123456";
-  const defaultInternalTokenExpiration = 60000;
+    const token = await tokenUtil.generateInternalToken(10001, "nestjs");
+    const claims = await tokenUtil.validateInternalToken(token);
 
-  beforeAll(() => {
-    loadDotEnv();
+    expect(claims).toMatchObject({
+      userId: 10001,
+      serviceName: "nestjs",
+      tokenType: "internal",
+    });
   });
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        InternalTokenUtil,
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string) => {
-              if (key === "internal-token.secret") {
-                return resolveConfigValue(
-                  "INTERNAL_TOKEN_SECRET",
-                  defaultInternalTokenSecret,
-                );
-              }
-              if (key === "internal-token.expiration") {
-                return Number(
-                  resolveConfigValue(
-                    "INTERNAL_TOKEN_EXPIRATION",
-                    String(defaultInternalTokenExpiration),
-                  ),
-                );
-              }
-              return undefined;
-            }),
-          },
-        },
-      ],
-    }).compile();
-
-    internalTokenUtil = module.get<InternalTokenUtil>(InternalTokenUtil);
-  });
-
-  it("应该生成可用的内部Token", async () => {
-    const token = await internalTokenUtil.generateInternalToken(
-      10001,
-      "nestjs",
+  it("拒绝使用其他密钥签名的令牌", async () => {
+    const issuer = createTokenUtil(SECRET, 60_000);
+    const verifier = createTokenUtil(
+      "another-unit-test-secret-with-32-bytes",
+      60_000,
     );
+    const token = await issuer.generateInternalToken(10001, "nestjs");
 
-    console.log(`生成的内部Token: ${token}`);
-    expect(token).toBeTruthy();
-    expect(token.length).toBeGreaterThan(0);
+    await expect(verifier.validateInternalToken(token)).rejects.toBeInstanceOf(
+      BusinessException,
+    );
   });
 
-  it("应该使用环境变量中的内部Token校验通过", async () => {
-    const token = await internalTokenUtil.generateInternalToken(10001, "nestjs");
-
-    const claims = await internalTokenUtil.validateInternalToken(token);
-
-    expect(claims.userId).toBeDefined();
-    expect(claims.serviceName).toBeDefined();
-    expect(claims.tokenType).toBe("internal");
+  it("缺少密钥时拒绝初始化", () => {
+    expect(() => createTokenUtil("", 60_000)).toThrow(BusinessException);
   });
 });
 
-function loadDotEnv(): void {
-  const candidates = [
-    path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "nestjs/.env"),
-    path.resolve(process.cwd(), "../.env"),
-  ];
-
-  for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
-      continue;
-    }
-
-    const content = fs.readFileSync(candidate, "utf8");
-    for (const line of content.split(/\r?\n/)) {
-      const trimmedLine = line.trim();
-      if (
-        !trimmedLine ||
-        trimmedLine.startsWith("#") ||
-        !trimmedLine.includes("=")
-      ) {
-        continue;
+function createTokenUtil(secret: string, expiration: number): InternalTokenUtil {
+  const configService = {
+    get: jest.fn((key: string) => {
+      if (key === "internal-token.secret") {
+        return secret;
       }
-
-      const keyValueParts = trimmedLine.split("=");
-      const rawKey = keyValueParts[0];
-      if (!rawKey) {
-        continue;
+      if (key === "internal-token.expiration") {
+        return expiration;
       }
-
-      const key = rawKey.trim();
-      const value = stripQuotes(keyValueParts.slice(1).join("=").trim());
-
-      if (key && process.env[key] === undefined) {
-        process.env[key] = value;
-      }
-    }
-
-    break;
-  }
-}
-
-function resolveConfigValue(key: string, defaultValue: string): string {
-  const envValue = process.env[key];
-  if (envValue && envValue.trim()) {
-    return envValue.trim();
-  }
-
-  return defaultValue;
-}
-
-function stripQuotes(value: string): string {
-  if (value.length >= 2) {
-    const firstChar = value[0];
-    const lastChar = value[value.length - 1];
-    if (
-      (firstChar === "\"" && lastChar === "\"") ||
-      (firstChar === "'" && lastChar === "'")
-    ) {
-      return value.slice(1, -1);
-    }
-  }
-
-  return value;
+      return undefined;
+    }),
+  } as unknown as ConfigService;
+  return new InternalTokenUtil(configService);
 }
