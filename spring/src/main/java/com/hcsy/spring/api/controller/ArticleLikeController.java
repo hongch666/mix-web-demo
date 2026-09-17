@@ -19,6 +19,7 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
+import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
@@ -47,6 +48,8 @@ public class ArticleLikeController {
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
     @Neo4jSync(description = "点赞文章后同步 Neo4j")
     @ApiLog("添加点赞")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
+        paramNames = { "userId" })
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
             .map(success -> success ? Result.<Void>success()
@@ -57,6 +60,8 @@ public class ArticleLikeController {
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
     @Neo4jSync(description = "取消点赞文章后同步 Neo4j")
     @ApiLog("取消点赞")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
+        paramNames = { "user_id" })
     public Mono<Result<Void>> removeLike(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
@@ -68,6 +73,8 @@ public class ArticleLikeController {
     @GetMapping("/user/{user_id}")
     @Operation(summary = "查询用户的所有点赞", description = "分页查询某个用户的所有点赞记录（包含文章详情）")
     @ApiLog("查询用户点赞")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "path_single",
+        paramNames = { "user_id" })
     public Mono<Result<PageVO<ArticleLikeVO>>> listUserLikes(
         @Parameter(description = "用户ID", required = true) @PathVariable("user_id") Long userId,
         @Parameter(description = "页码", required = false) @RequestParam(defaultValue = "1") int page,
@@ -79,6 +86,8 @@ public class ArticleLikeController {
     @GetMapping("/check")
     @Operation(summary = "检查用户是否点赞", description = "查询用户是否点赞过某篇文章")
     @ApiLog("检查点赞状态")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
+        paramNames = { "user_id" })
     public Mono<Result<LikeCheckVO>> isLiked(
         @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {

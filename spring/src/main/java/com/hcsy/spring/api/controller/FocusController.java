@@ -19,6 +19,7 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
+import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
@@ -47,6 +48,8 @@ public class FocusController {
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
     @Neo4jSync(description = "关注用户后同步 Neo4j")
     @ApiLog("新增关注")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
+        paramNames = { "userId" })
     public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
         return focusService.addFocus(dto.getUserId(), dto.getFocusId())
             .map(success -> success ? Result.<Void>success()
@@ -57,6 +60,8 @@ public class FocusController {
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
     @Neo4jSync(description = "取消关注用户后同步 Neo4j")
     @ApiLog("取消关注")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
+        paramNames = { "user_id" })
     public Mono<Result<Void>> removeFocus(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
         @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
@@ -68,6 +73,8 @@ public class FocusController {
     @GetMapping("/check")
     @Operation(summary = "检查关注状态", description = "查询用户是否关注了某个用户")
     @ApiLog("检查关注状态")
+    @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
+        paramNames = { "user_id" })
     public Mono<Result<FocusCheckVO>> isFocused(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
         @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {

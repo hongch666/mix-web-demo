@@ -13,6 +13,7 @@ import org.springframework.core.DefaultParameterNameDiscoverer;
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.api.service.CommentsService;
@@ -92,7 +93,27 @@ public class PermissionValidationAspect {
             Object body = getBody(joinPoint, parameterName);
             return extractTargetFromBody(body, parameterName);
         }
+        if ("query".equals(paramSource)) {
+            return Mono.justOrEmpty(toLong(getQueryParameter(joinPoint, parameterName)));
+        }
         return Mono.empty();
+    }
+
+    private Object getQueryParameter(ProceedingJoinPoint joinPoint, String requestedName) {
+        Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
+        Object[] arguments = joinPoint.getArgs();
+        Annotation[][] annotations = method.getParameterAnnotations();
+        for (int index = 0; index < annotations.length; index++) {
+            for (Annotation annotation : annotations[index]) {
+                if (annotation instanceof RequestParam requestParam) {
+                    String name = requestParam.value().isEmpty() ? requestParam.name() : requestParam.value();
+                    if (name.equals(requestedName)) {
+                        return arguments[index];
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     private Mono<Long> validateBatchOwnership(String ids, String businessType) {
