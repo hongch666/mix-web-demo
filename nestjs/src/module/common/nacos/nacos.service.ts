@@ -1,14 +1,16 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { Method } from "axios";
 import axiosRetry from "axios-retry";
+import * as http from "http";
+import * as https from "https";
 import type { NacosInstance } from "nacos";
 import { NacosNamingClient } from "nacos";
 import { ClsService } from "nestjs-cls";
 import CircuitBreaker from "opossum";
 import * as os from "os";
 import qs from "qs";
-import { ErrorIds, HttpCode, Messages } from "src/common/constants";
+import { Defaults, ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
@@ -36,9 +38,28 @@ interface RemoteCallConfig {
   };
 }
 
+/** 注册到 Nacos 的实例参数，注销时需要回传同一份 */
+type NacosInstancePayload = Parameters<
+  NacosNamingClient["registerInstance"]
+>[1];
+
 @Injectable()
-export class NacosService implements OnModuleInit {
+export class NacosService implements OnModuleInit, OnModuleDestroy {
   private client!: NacosNamingClient;
+
+  // 当前服务名与已注册实例，关闭时用于注销
+  private serviceName!: string;
+  private registeredInstance?: NacosInstancePayload;
+
+  // 内网调用专用连接池：显式持有 agent 才能在关闭时断开 keep-alive 连接
+  private readonly httpAgent = new http.Agent({
+    keepAlive: true,
+    maxSockets: Defaults.REMOTE_CALL_MAX_SOCKETS,
+  });
+  private readonly httpsAgent = new https.Agent({
+    keepAlive: true,
+    maxSockets: Defaults.REMOTE_CALL_MAX_SOCKETS,
+  });
 
   // 使用 opossum 熔断器
   private readonly breakers = new Map<string, CircuitBreaker>();
@@ -60,6 +81,7 @@ export class NacosService implements OnModuleInit {
     // 加载远程调用配置
     this.remoteCallConfig =
       this.configService.get<RemoteCallConfig>("remote-call")!;
+    this.serviceName = this.configService.get<string>("server.serviceName")!;
 
     // 配置 axios 重试机制
     axiosRetry(axios, {
@@ -148,25 +170,67 @@ export class NacosService implements OnModuleInit {
       this.logger.info(Messages.LOCAL_IP_CONVERTED(registrationIp));
     }
 
-    // 注册当前服务
-    await this.client.registerInstance(
-      this.configService.get<string>("server.serviceName")!,
-      {
-        ip: registrationIp,
-        port: this.configService.get<string>("server.port")!,
-        weight: 1,
-        ephemeral: true,
-        clusterName: this.configService.get<string>("nacos.clusterName")!,
-        serviceName: this.configService.get<string>("server.serviceName")!,
-        enabled: true,
-        healthy: true,
-        metadata: {
-          version: "1.0.0",
-        },
+    // 注册当前服务，实例参数留存一份用于关闭时注销
+    const instance: NacosInstancePayload = {
+      ip: registrationIp,
+      port: this.configService.get<string>("server.port")!,
+      weight: 1,
+      ephemeral: true,
+      clusterName: this.configService.get<string>("nacos.clusterName")!,
+      serviceName: this.serviceName,
+      enabled: true,
+      healthy: true,
+      metadata: {
+        version: "1.0.0",
       },
-    );
+    };
+    await this.client.registerInstance(this.serviceName, instance);
+    this.registeredInstance = instance;
 
     this.logger.info(Messages.REGISTER_NACOS);
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.deregisterFromNacos();
+    this.shutdownBreakers();
+    this.destroyAgents();
+  }
+
+  /**
+   * 从注册中心摘除当前实例，避免停机期间仍有流量被路由进来
+   * NacosNamingClient 的 _close() 是私有方法且内部调用了不存在的 close()，不能依赖它
+   */
+  private async deregisterFromNacos(): Promise<void> {
+    if (!this.client || !this.registeredInstance) {
+      return;
+    }
+
+    try {
+      await this.client.deregisterInstance(
+        this.serviceName,
+        this.registeredInstance,
+      );
+      this.logger.info(Messages.NACOS_DEREGISTER);
+    } catch (error) {
+      this.logger.warning(
+        Messages.NACOS_DEREGISTER_FAILED(
+          error instanceof Error ? error.message : String(error),
+        ),
+      );
+    }
+  }
+
+  /** 关闭熔断器，释放其内部定时器 */
+  private shutdownBreakers(): void {
+    this.breakers.forEach((breaker) => breaker.shutdown());
+    this.breakers.clear();
+  }
+
+  /** 断开 keep-alive 连接池 */
+  private destroyAgents(): void {
+    this.httpAgent.destroy();
+    this.httpsAgent.destroy();
+    this.logger.info(Messages.REMOTE_CALL_AGENT_DESTROYED);
   }
 
   /**
@@ -328,6 +392,9 @@ export class NacosService implements OnModuleInit {
            * 且此处 URL 用的 Nacos 实例 IP 而非服务名，会被转发到宿主代理返回 502/超时
            */
           proxy: false,
+          // 使用服务自持的 agent，停机时可主动断开 keep-alive 连接
+          httpAgent: this.httpAgent,
+          httpsAgent: this.httpsAgent,
         });
 
         // 校验业务响应码

@@ -20,4 +20,8 @@ export class Defaults {
   static readonly LOG_BATCH_FLUSH_INTERVAL_MS = 1000;
   /** 缓冲区最大容量：超过后强制 flush 防止 OOM */
   static readonly LOG_BATCH_MAX_BUFFER_SIZE = 5000;
+
+  // ===== 远程调用连接池 =====
+  /** 内网服务调用的最大并发连接数 */
+  static readonly REMOTE_CALL_MAX_SOCKETS = 50;
 }

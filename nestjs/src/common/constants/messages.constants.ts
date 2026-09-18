@@ -432,6 +432,13 @@ export class Messages {
 
   static readonly SERVER_MODE_NOT_CONFIGURED = "服务运行模式未配置";
 
+  static readonly NACOS_DEREGISTER = "从 nacos 注销实例成功";
+
+  static readonly NACOS_DEREGISTER_FAILED = (errorMessage: string): string =>
+    `从 nacos 注销实例失败: ${errorMessage}`;
+
+  static readonly REMOTE_CALL_AGENT_DESTROYED = "远程调用连接池已释放";
+
   // ===== GitHub 登录 =====
 
   static readonly GITHUB_LOGIN_PROCESS_FAILED_PREFIX = "GitHub 登录处理失败: ";

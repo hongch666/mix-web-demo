@@ -19,6 +19,10 @@ declare module "nacos" {
       serviceName: string,
       instance: NacosInstance,
     ): Promise<void>;
+    deregisterInstance(
+      serviceName: string,
+      instance: NacosInstance,
+    ): Promise<void>;
   }
 
   export { NacosNamingClient };
