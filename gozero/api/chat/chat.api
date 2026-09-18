@@ -59,18 +59,18 @@ service App {
 
 type (
 	ChatSendMessageReq {
-		SenderId   int64  `json:"sender_id"`
-		ReceiverId int64  `json:"receiver_id"`
-		Content    string `json:"content"`
+		SenderId   int64  `json:"sender_id" validate:"gt=0"`
+		ReceiverId int64  `json:"receiver_id" validate:"gt=0"`
+		Content    string `json:"content" validate:"notblank"`
 	}
 	ChatSendMessageResp {
 		MessageId uint64 `json:"message_id"`
 	}
 	ChatGetHistoryReq {
-		UserId  int64 `json:"user_id"`
-		OtherId int64 `json:"other_id"`
-		Page    int   `json:"page,optional"`
-		Size    int   `json:"size,optional"`
+		UserId  int64 `json:"user_id" validate:"gt=0"`
+		OtherId int64 `json:"other_id" validate:"gt=0"`
+		Page    int   `json:"page,optional" validate:"gt=0"`
+		Size    int   `json:"size,optional" validate:"gt=0"`
 	}
 	ChatGetHistoryResp {
 		Messages []ChatMessageItem `json:"messages"`
@@ -89,28 +89,28 @@ type (
 		Count       int     `json:"count"`
 	}
 	ChatJoinQueueReq {
-		UserId int64 `json:"user_id"`
+		UserId int64 `json:"user_id" validate:"gt=0"`
 	}
 	ChatJoinQueueResp {
 		UserId int64  `json:"user_id"`
 		Status string `json:"status"`
 	}
 	ChatLeaveQueueReq {
-		UserId int64 `json:"user_id"`
+		UserId int64 `json:"user_id" validate:"gt=0"`
 	}
 	ChatLeaveQueueResp {
 		UserId int64  `json:"user_id"`
 		Status string `json:"status"`
 	}
 	ChatGetUnreadCountReq {
-		UserId  int64 `json:"user_id"`
-		OtherId int64 `json:"other_id"`
+		UserId  int64 `json:"user_id" validate:"gt=0"`
+		OtherId int64 `json:"other_id" validate:"gt=0"`
 	}
 	ChatGetUnreadCountResp {
 		UnreadCount int64 `json:"unread_count"`
 	}
 	ChatGetAllUnreadCountsReq {
-		UserId int64 `json:"user_id"`
+		UserId int64 `json:"user_id" validate:"gt=0"`
 	}
 	ChatGetAllUnreadCountsResp {
 		Data map[int64]int64 `json:"data"`

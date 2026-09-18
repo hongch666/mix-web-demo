@@ -1,7 +1,10 @@
 package boot
 
 import (
+	"fmt"
+
 	"app/common/constants"
+	"app/common/validation"
 	"app/internal/config"
 	"app/internal/handler"
 	"app/internal/svc"
@@ -16,6 +19,11 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	// 初始化日志配置
 	if err := logx.SetUp(logx.LogConf{Mode: "console"}); err != nil {
 		logx.Errorf(constants.GOZERO_LOG_SETUP_FAIL, err)
+	}
+
+	// 注册请求参数校验器，缺失会让 httpx.Parse 静默跳过全部校验
+	if err := validation.InitValidator(); err != nil {
+		panic(fmt.Sprintf(constants.VALIDATOR_INIT_FAIL, err))
 	}
 
 	server := rest.MustNewServer(c.RestConf)

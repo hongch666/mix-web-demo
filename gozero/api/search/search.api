@@ -33,15 +33,15 @@ service App {
 type (
 	SearchArticlesReq {
 		Keyword         *string `form:"keyword,optional"`
-		UserId          *uint64 `form:"user_id,optional"`
+		UserId          *uint64 `form:"user_id,optional" validate:"omitempty,gt=0"`
 		Username        *string `form:"username,optional"`
 		CategoryName    *string `form:"category_name,optional"`
 		SubCategoryName *string `form:"sub_category_name,optional"`
-		StartDate       *string `form:"start_date,optional"`
-		EndDate         *string `form:"end_date,optional"`
-		Page            int     `form:"page,optional,default=1"`
-		Size            int     `form:"size,optional,default=10"`
-		Mode            *string `form:"mode,optional"`
+		StartDate       *string `form:"start_date,optional" validate:"omitempty,notblank,datetime"`
+		EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"`
+		Page            int     `form:"page,optional,default=1" validate:"gt=0"`
+		Size            int     `form:"size,optional,default=10" validate:"gt=0"`
+		Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"`
 		EnableVector    *bool   `form:"enable_vector,optional"`
 		EnableGraph     *bool   `form:"enable_graph,optional"`
 		Explain         *bool   `form:"explain,optional"`
@@ -104,7 +104,7 @@ type (
 
 type (
 	GetSearchHistoryReq {
-		UserId string `path:"user_id"`
+		UserId string `path:"user_id" validate:"notblank,positiveint"`
 	}
 	GetSearchHistoryResp {
 		Keywords []string `json:"keywords"`

@@ -24,7 +24,7 @@ service App {
 type (
 	// SSE连接请求
 	ChatSSEConnectReq {
-		UserId *int64 `form:"user_id,optional"`
+		UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
 	}
 	// SSE数据帧，客户端在连接建立后持续接收（与连接时下发的首帧同构）
 	ChatSSEMessage {
@@ -35,7 +35,7 @@ type (
 	}
 	// WebSocket连接请求
 	ChatWsConnectReq {
-		UserId *int64 `form:"user_id,optional"`
+		UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
 	}
 	// WebSocket数据帧，包含 message/ping/pong/read/read_ack 类型
 	ChatWsMessage {

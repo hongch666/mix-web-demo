@@ -34,9 +34,17 @@ type businessError interface {
 
 // HandleError 统一处理错误响应，如果是 BusinessError 则使用其状态码，否则返回 500
 func HandleError(w http.ResponseWriter, err error) {
+	HandleErrorWithCode(w, err, constants.HttpInternalServerError)
+}
+
+// HandleErrorWithCode 统一处理错误响应
+// 业务异常使用其自身状态码，其余错误使用调用方给定的状态码
+// 用于请求解析场景：畸形 JSON 与参数类型不匹配需要返回 400，而不是 500
+func HandleErrorWithCode(w http.ResponseWriter, err error, defaultCode int) {
 	if be, ok := err.(businessError); ok {
 		Error(w, be.BusinessCode(), be.BusinessMessage())
-	} else {
-		Error(w, constants.HttpInternalServerError, err.Error())
+		return
 	}
+
+	Error(w, defaultCode, err.Error())
 }

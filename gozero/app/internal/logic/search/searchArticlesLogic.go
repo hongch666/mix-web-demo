@@ -170,9 +170,9 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		// 降级路径不启用向量与图谱增强，仅归一化 ES 分用于展示
 		FillDefaultScores(resp.List)
 	} else if len(items) > 0 {
-		mode := types.NormalizeSearchMode(req)
-		vectorEnabled := types.IsVectorEnhanceEnabled(req, keyword)
-		graphEnabled := types.IsGraphEnhanceEnabled(req)
+		mode := normalizeSearchMode(req)
+		vectorEnabled := isVectorEnhanceEnabled(req, keyword)
+		graphEnabled := isGraphEnhanceEnabled(req)
 
 		articleIDs := extractArticleIDsFromItems(items)
 		tagList := extractTagsFromItems(items)
@@ -217,7 +217,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		resp.List = pageSlice(resp.List, page, size)
 	}
 
-	if !types.IsExplainEnabled(req) {
+	if !isExplainEnabled(req) {
 		clearExplainFields(resp.List)
 	}
 

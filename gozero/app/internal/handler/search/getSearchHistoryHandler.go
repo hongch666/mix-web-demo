@@ -21,12 +21,7 @@ func GetSearchHistoryHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		var req types.GetSearchHistoryReq
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, constants.HttpBadRequest, err.Error())
-			return
-		}
-
-		if err := req.Validate(); err != nil {
-			utils.HandleError(w, err)
+			utils.HandleErrorWithCode(w, err, constants.HttpBadRequest)
 			return
 		}
 

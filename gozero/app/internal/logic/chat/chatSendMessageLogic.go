@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"app/common/constants"
@@ -34,11 +35,14 @@ func NewChatSendMessageLogic(ctx context.Context, svcCtx *svc.ServiceContext) *C
 }
 
 func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (resp *types.ChatSendMessageResp, err error) {
+	// 校验器只负责边界检查，内容在此统一去除首尾空白后再落库与推送
+	content := strings.TrimSpace(req.Content)
+
 	// 创建聊天消息
 	message := &chatMessages.ChatMessages{
 		SenderId:   req.SenderId,
 		ReceiverId: req.ReceiverId,
-		Content:    req.Content,
+		Content:    content,
 		IsRead:     0, // 初始为未读
 	}
 
@@ -54,7 +58,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		Type:       "message",
 		SenderId:   req.SenderId,
 		ReceiverId: req.ReceiverId,
-		Content:    req.Content,
+		Content:    content,
 		MessageId:  uint64(message.Id),
 		Timestamp:  time.Now().Format(constants.DateTimeFormat),
 	}

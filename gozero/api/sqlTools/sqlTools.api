@@ -24,7 +24,8 @@ service App {
 
 type (
 	SqlToolsGetTablesReq {
-		Table string `json:"table,optional"`
+		// 长度上限与 constants.SqlToolsMaxTableNameLength 保持一致
+		Table string `json:"table,optional" validate:"maxrunes=64"`
 	}
 	SqlToolsTableInfo {
 		Table   string               `json:"table"`
@@ -40,7 +41,8 @@ type (
 		Data []SqlToolsTableInfo `json:"data"`
 	}
 	SqlToolsQueryReq {
-		Query  string            `json:"query"`
+		// 长度上限与 constants.SqlToolsMaxQueryLength 保持一致
+		Query  string            `json:"query" validate:"notblank,maxrunes=8000"`
 		Params map[string]string `json:"params,optional"`
 	}
 	SqlToolsQueryResult {

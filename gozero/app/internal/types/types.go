@@ -35,7 +35,7 @@ type ArticleEsItem struct {
 }
 
 type ChatGetAllUnreadCountsReq struct {
-	UserId int64 `json:"user_id"`
+	UserId int64 `json:"user_id" validate:"gt=0"`
 }
 
 type ChatGetAllUnreadCountsResp struct {
@@ -43,10 +43,10 @@ type ChatGetAllUnreadCountsResp struct {
 }
 
 type ChatGetHistoryReq struct {
-	UserId  int64 `json:"user_id"`
-	OtherId int64 `json:"other_id"`
-	Page    int   `json:"page,optional"`
-	Size    int   `json:"size,optional"`
+	UserId  int64 `json:"user_id" validate:"gt=0"`
+	OtherId int64 `json:"other_id" validate:"gt=0"`
+	Page    int   `json:"page,optional" validate:"gt=0"`
+	Size    int   `json:"size,optional" validate:"gt=0"`
 }
 
 type ChatGetHistoryResp struct {
@@ -60,8 +60,8 @@ type ChatGetQueueStatusResp struct {
 }
 
 type ChatGetUnreadCountReq struct {
-	UserId  int64 `json:"user_id"`
-	OtherId int64 `json:"other_id"`
+	UserId  int64 `json:"user_id" validate:"gt=0"`
+	OtherId int64 `json:"other_id" validate:"gt=0"`
 }
 
 type ChatGetUnreadCountResp struct {
@@ -69,7 +69,7 @@ type ChatGetUnreadCountResp struct {
 }
 
 type ChatJoinQueueReq struct {
-	UserId int64 `json:"user_id"`
+	UserId int64 `json:"user_id" validate:"gt=0"`
 }
 
 type ChatJoinQueueResp struct {
@@ -78,7 +78,7 @@ type ChatJoinQueueResp struct {
 }
 
 type ChatLeaveQueueReq struct {
-	UserId int64 `json:"user_id"`
+	UserId int64 `json:"user_id" validate:"gt=0"`
 }
 
 type ChatLeaveQueueResp struct {
@@ -96,7 +96,7 @@ type ChatMessageItem struct {
 }
 
 type ChatSSEConnectReq struct {
-	UserId *int64 `form:"user_id,optional"`
+	UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
 }
 
 type ChatSSEMessage struct {
@@ -107,9 +107,9 @@ type ChatSSEMessage struct {
 }
 
 type ChatSendMessageReq struct {
-	SenderId   int64  `json:"sender_id"`
-	ReceiverId int64  `json:"receiver_id"`
-	Content    string `json:"content"`
+	SenderId   int64  `json:"sender_id" validate:"gt=0"`
+	ReceiverId int64  `json:"receiver_id" validate:"gt=0"`
+	Content    string `json:"content" validate:"notblank"`
 }
 
 type ChatSendMessageResp struct {
@@ -117,7 +117,7 @@ type ChatSendMessageResp struct {
 }
 
 type ChatWsConnectReq struct {
-	UserId *int64 `form:"user_id,optional"`
+	UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
 }
 
 type ChatWsMessage struct {
@@ -130,7 +130,7 @@ type ChatWsMessage struct {
 }
 
 type GetSearchHistoryReq struct {
-	UserId string `path:"user_id"`
+	UserId string `path:"user_id" validate:"notblank,positiveint"`
 }
 
 type GetSearchHistoryResp struct {
@@ -154,15 +154,15 @@ type ScoreDetails struct {
 
 type SearchArticlesReq struct {
 	Keyword         *string `form:"keyword,optional"`
-	UserId          *uint64 `form:"user_id,optional"`
+	UserId          *uint64 `form:"user_id,optional" validate:"omitempty,gt=0"`
 	Username        *string `form:"username,optional"`
 	CategoryName    *string `form:"category_name,optional"`
 	SubCategoryName *string `form:"sub_category_name,optional"`
-	StartDate       *string `form:"start_date,optional"`
-	EndDate         *string `form:"end_date,optional"`
-	Page            int     `form:"page,optional,default=1"`
-	Size            int     `form:"size,optional,default=10"`
-	Mode            *string `form:"mode,optional"`
+	StartDate       *string `form:"start_date,optional" validate:"omitempty,notblank,datetime"`
+	EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"`
+	Page            int     `form:"page,optional,default=1" validate:"gt=0"`
+	Size            int     `form:"size,optional,default=10" validate:"gt=0"`
+	Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"`
 	EnableVector    *bool   `form:"enable_vector,optional"`
 	EnableGraph     *bool   `form:"enable_graph,optional"`
 	Explain         *bool   `form:"explain,optional"`
@@ -181,7 +181,7 @@ type SqlToolsColumnInfo struct {
 }
 
 type SqlToolsGetTablesReq struct {
-	Table string `json:"table,optional"`
+	Table string `json:"table,optional" validate:"maxrunes=64"`
 }
 
 type SqlToolsGetTablesResp struct {
@@ -189,7 +189,7 @@ type SqlToolsGetTablesResp struct {
 }
 
 type SqlToolsQueryReq struct {
-	Query  string            `json:"query"`
+	Query  string            `json:"query" validate:"notblank,maxrunes=8000"`
 	Params map[string]string `json:"params,optional"`
 }
 
