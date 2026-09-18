@@ -75,6 +75,9 @@ func (sc *ServiceContext) Close() {
 	if sc.HubContext != nil && sc.HubContext.RealtimeBus != nil {
 		sc.HubContext.RealtimeBus.Close()
 	}
+	if sc.ClientContext != nil {
+		sc.ClientContext.Close()
+	}
 	if sc.InfrastructureContext != nil {
 		sc.InfrastructureContext.Close()
 	}

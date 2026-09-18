@@ -68,6 +68,29 @@ func newLoggerContext(zLogger *utils.ZeroLogger) *LoggerContext {
 	return &LoggerContext{Logger: zLogger}
 }
 
+// resourceCloser 持有连接资源、需要随服务生命周期释放的客户端
+type resourceCloser interface {
+	Close()
+}
+
+// Close 释放三个远程客户端持有的连接池
+// FastapiClient 字段是业务契约接口（测试用 mock 实现），生命周期方法不并入该接口，故此处按需断言
+func (cc *ClientContext) Close() {
+	if cc == nil {
+		return
+	}
+
+	if closer, ok := cc.FastapiClient.(resourceCloser); ok {
+		closer.Close()
+	}
+	if cc.NestjsClient != nil {
+		cc.NestjsClient.Close()
+	}
+	if cc.SpringClient != nil {
+		cc.SpringClient.Close()
+	}
+}
+
 // Close 关闭日志文件句柄
 func (lc *LoggerContext) Close() {
 	if lc == nil || lc.Logger == nil {

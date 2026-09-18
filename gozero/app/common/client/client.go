@@ -108,6 +108,16 @@ func (sd *ServiceDiscovery) service(serviceName string) httpc.Service {
 	return svc
 }
 
+// Close 释放远程调用持有的连接资源
+// httpc 的 Service 接口不暴露底层客户端，只能在此关闭连接池中的空闲连接
+func (sd *ServiceDiscovery) Close() {
+	if sd == nil || sd.httpClient == nil {
+		return
+	}
+
+	sd.httpClient.CloseIdleConnections()
+}
+
 // injectContextHeaders 注入用户上下文与内部令牌，httpc 构建请求时已把调用上下文写入 request
 func injectContextHeaders(r *http.Request) *http.Request {
 	ctx := r.Context()

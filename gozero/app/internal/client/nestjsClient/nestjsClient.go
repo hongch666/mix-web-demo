@@ -30,6 +30,15 @@ func NewNestjsClient(
 	}
 }
 
+// Close 释放客户端持有的远程调用连接
+func (c *NestjsClient) Close() {
+	if c == nil {
+		return
+	}
+
+	c.serviceDisc.Close()
+}
+
 // GetSearchHistory 调用 NestJS 内部接口获取用户搜索历史，返回完整响应结果
 func (c *NestjsClient) GetSearchHistory(ctx context.Context, userID int64) (client.Result, error) {
 	return c.serviceDisc.CallService(ctx, c.serviceName, "/article-logs/search-history/:user_id", client.RequestOptions{

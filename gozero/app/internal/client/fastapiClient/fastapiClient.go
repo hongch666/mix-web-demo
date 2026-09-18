@@ -33,6 +33,15 @@ func NewFastapiClient(
 	}
 }
 
+// Close 释放客户端持有的远程调用连接
+func (c *FastapiClient) Close() {
+	if c == nil {
+		return
+	}
+
+	c.serviceDisc.Close()
+}
+
 // EnhanceGraph 调用 FastAPI 图谱增强接口，返回完整响应结果
 func (c *FastapiClient) EnhanceGraph(ctx context.Context, req *GraphEnhanceRequest) (client.Result, error) {
 	if len(req.ArticleIDs) == 0 {

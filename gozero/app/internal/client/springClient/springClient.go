@@ -30,6 +30,15 @@ func NewSpringClient(
 	}
 }
 
+// Close 释放客户端持有的远程调用连接
+func (c *SpringClient) Close() {
+	if c == nil {
+		return
+	}
+
+	c.serviceDisc.Close()
+}
+
 // GetPublishedArticles 分页获取已发布文章列表
 func (c *SpringClient) GetPublishedArticles(ctx context.Context, page, size int) (client.Result, error) {
 	return c.serviceDisc.CallService(ctx, c.serviceName, "/articles/list", client.RequestOptions{
