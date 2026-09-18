@@ -10,10 +10,6 @@ import (
 	"app/common/utils"
 )
 
-const (
-	InternalTokenHeader = "X-Internal-Token"
-)
-
 type InternalServiceMiddleware struct {
 	*utils.ZeroLogger
 }
@@ -33,7 +29,7 @@ func validateInternalToken(
 	// 从上下文中获取已解析的内部令牌（由 UserContextMiddleware 预先解析）
 	tokenString, _ := r.Context().Value(keys.InternalTokenKey).(string)
 	if tokenString == "" {
-		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_HEADER_MISSING_LOG, InternalTokenHeader, r.URL.Path))
+		m.Error(fmt.Sprintf(constants.INTERNAL_TOKEN_HEADER_MISSING_LOG, constants.HeaderInternalToken, r.URL.Path))
 		utils.Error(w, constants.HttpUnauthorized, constants.INTERNAL_TOKEN_MISSING)
 		return false
 	}

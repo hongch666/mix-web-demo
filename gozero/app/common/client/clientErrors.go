@@ -9,6 +9,8 @@ import (
 	"os"
 
 	"app/common/constants"
+
+	"github.com/zeromicro/go-zero/core/breaker"
 )
 
 // opDial net.OpError 中表示拨号操作的值
@@ -37,6 +39,11 @@ func newHTTPStatusError(statusCode int, body string) error {
 // 全部依据错误类型与状态码判定，不匹配错误文案，避免文案调整导致重试静默失效
 func shouldRetry(err error) bool {
 	if err == nil {
+		return false
+	}
+
+	// 熔断打开时请求并未发出，重试无意义且会持续冲击熔断器
+	if errors.Is(err, breaker.ErrServiceUnavailable) {
 		return false
 	}
 

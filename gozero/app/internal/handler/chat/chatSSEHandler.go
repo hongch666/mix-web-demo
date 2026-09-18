@@ -31,7 +31,7 @@ func ChatSSEHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 
 		l := chat.NewChatSSELogic(r.Context(), svcCtx)
-		userID, err := l.ResolveUserID(&req, r.Header.Get("X-User-Id"))
+		userID, err := l.ResolveUserID(&req, r.Header.Get(constants.HeaderUserID))
 		if err != nil {
 			utils.HandleError(w, err)
 			return

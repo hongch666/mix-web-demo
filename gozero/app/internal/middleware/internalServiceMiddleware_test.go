@@ -29,7 +29,7 @@ func TestInternalServiceMiddlewareAcceptsValidToken(t *testing.T) {
 	})
 	handler := NewUserContextMiddleware().Handle(internal)
 	request := httptest.NewRequest(http.MethodGet, "/internal", nil)
-	request.Header.Set(InternalTokenHeader, "Bearer "+token)
+	request.Header.Set("X-Internal-Token", "Bearer "+token)
 	handler(recorder, request)
 	if recorder.Code != http.StatusOK || !called {
 		t.Fatalf("状态码 = %d, called = %v", recorder.Code, called)
@@ -45,7 +45,7 @@ func TestInternalServiceMiddlewareRejectsServiceMismatch(t *testing.T) {
 	})
 	handler := NewUserContextMiddleware().Handle(internal)
 	request := httptest.NewRequest(http.MethodGet, "/internal", nil)
-	request.Header.Set(InternalTokenHeader, "Bearer "+token)
+	request.Header.Set("X-Internal-Token", "Bearer "+token)
 	handler(recorder, request)
 	if recorder.Code != http.StatusForbidden || called {
 		t.Fatalf("状态码 = %d, called = %v", recorder.Code, called)

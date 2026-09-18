@@ -23,6 +23,7 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/zeromicro/go-zero/core/breaker"
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/rest/httpc"
 )
 
 // RemoteCallConfig 远程调用配置
@@ -36,29 +37,37 @@ type RemoteCallConfig struct {
 type ServiceDiscovery struct {
 	namingClient naming_client.INamingClient
 	httpClient   *http.Client
-	serviceMap   sync.Map          // 服务实例缓存
-	mu           sync.Mutex        // 保证线程安全
-	lbIndex      map[string]uint64 // 负载均衡轮询索引
-	config       RemoteCallConfig  // 远程调用配置
-	logger       *utils.ZeroLogger // 运行期日志（可为 nil，nil 时退化为仅 logx）
+	services     map[string]httpc.Service // httpc 服务实例，熔断器与链路追踪均绑定服务名，故按服务缓存
+	servicesMu   sync.Mutex               // 保护 services 的并发创建
+	serviceMap   sync.Map                 // 服务实例缓存
+	mu           sync.Mutex               // 保证线程安全
+	lbIndex      map[string]uint64        // 负载均衡轮询索引
+	config       RemoteCallConfig         // 远程调用配置
+	logger       *utils.ZeroLogger        // 运行期日志（可为 nil，nil 时退化为仅 logx）
 }
 
 func NewServiceDiscovery(client naming_client.INamingClient, cfg RemoteCallConfig, logger *utils.ZeroLogger) *ServiceDiscovery {
 	return &ServiceDiscovery{
 		namingClient: client,
-		httpClient: &http.Client{
-			Timeout: cfg.Timeout,
-			Transport: &http.Transport{
-				MaxIdleConns:          100,
-				MaxIdleConnsPerHost:   20,
-				IdleConnTimeout:       90 * time.Second,
-				TLSHandshakeTimeout:   5 * time.Second,
-				ResponseHeaderTimeout: cfg.Timeout,
-			},
+		httpClient:   newHTTPClient(cfg),
+		services:     make(map[string]httpc.Service),
+		lbIndex:      make(map[string]uint64),
+		config:       cfg,
+		logger:       logger,
+	}
+}
+
+// newHTTPClient 构建远程调用共用的 HTTP 客户端，统一超时与连接池
+func newHTTPClient(cfg RemoteCallConfig) *http.Client {
+	return &http.Client{
+		Timeout: cfg.Timeout,
+		Transport: &http.Transport{
+			MaxIdleConns:          100,
+			MaxIdleConnsPerHost:   20,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   5 * time.Second,
+			ResponseHeaderTimeout: cfg.Timeout,
 		},
-		lbIndex: make(map[string]uint64),
-		config:  cfg,
-		logger:  logger,
 	}
 }
 
@@ -79,6 +88,61 @@ func (sd *ServiceDiscovery) GetInstance(serviceName string) (*model.Instance, er
 	return &instances[index], nil
 }
 
+// service 按目标服务获取 httpc 服务实例，熔断器与链路追踪均绑定服务名，故按服务缓存复用
+func (sd *ServiceDiscovery) service(serviceName string) httpc.Service {
+	sd.servicesMu.Lock()
+	defer sd.servicesMu.Unlock()
+
+	if svc, ok := sd.services[serviceName]; ok {
+		return svc
+	}
+
+	// 必须注入自定义客户端，httpc 默认使用的 http.DefaultClient 没有超时
+	svc := httpc.NewServiceWithClient(
+		constants.RemoteBreakerNamePrefix+serviceName,
+		sd.httpClient,
+		injectContextHeaders,
+	)
+	sd.services[serviceName] = svc
+
+	return svc
+}
+
+// injectContextHeaders 注入用户上下文与内部令牌，httpc 构建请求时已把调用上下文写入 request
+func injectContextHeaders(r *http.Request) *http.Request {
+	ctx := r.Context()
+
+	userID, _ := ctx.Value(keys.UserIDKey).(int64)
+	username, _ := ctx.Value(keys.UsernameKey).(string)
+	sessionID, _ := ctx.Value(keys.SessionIDKey).(string)
+	token, _ := ctx.Value(keys.TokenKey).(string)
+
+	r.Header.Set(constants.HeaderUserID, fmt.Sprintf("%d", userID))
+	r.Header.Set(constants.HeaderUsername, username)
+	r.Header.Set(constants.HeaderSessionID, sessionID)
+	if token != "" {
+		r.Header.Set(constants.HeaderAuthorization, constants.BearerPrefix+token)
+	}
+
+	tokenUtil, err := utils.GetTokenUtil()
+	if err != nil {
+		return r
+	}
+
+	// 无登录用户时以 -1 表示系统调用
+	finalUserID := userID
+	if finalUserID <= 0 {
+		finalUserID = -1
+	}
+	internalToken, err := tokenUtil.GenerateInternalToken(finalUserID, constants.InternalTokenServiceName)
+	if err != nil {
+		return r
+	}
+	r.Header.Set(constants.HeaderInternalToken, constants.BearerPrefix+internalToken)
+
+	return r
+}
+
 // 定义请求选项结构体
 type RequestOptions struct {
 	Method      string            // HTTP方法：GET/POST/PUT/DELETE等
@@ -95,25 +159,15 @@ type Result struct {
 	Data any    `json:"data"`
 }
 
-// 增强版服务调用方法，始终添加默认请求体字段
+// CallService 调用下游服务，熔断、链路追踪与耗时日志由 httpc 承担，服务发现与重试仍由本方法控制
 func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
-	var (
-		result  Result
-		callErr error
-	)
-
-	breakerName := "remote-http:" + serviceName
-	callErr = breaker.DoWithFallbackAcceptableCtx(ctx, breakerName, func() error {
-		var err error
-		result, err = sd.callWithRetry(ctx, serviceName, path, opts)
-		return err
-	}, func(err error) error {
-		return fmt.Errorf(constants.DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE, serviceName, err)
-	}, func(err error) bool {
-		return err == nil
-	})
-	if callErr != nil {
-		return Result{}, callErr
+	result, err := sd.callWithRetry(ctx, serviceName, path, opts)
+	if err != nil {
+		// httpc 在熔断打开时抢先返回该错误，统一转换为降级提示
+		if errors.Is(err, breaker.ErrServiceUnavailable) {
+			return Result{}, fmt.Errorf(constants.DOWNSTREAM_SERVICE_UNAVAILABLE_MESSAGE, serviceName, err)
+		}
+		return Result{}, err
 	}
 
 	return result, nil
@@ -187,35 +241,12 @@ func (sd *ServiceDiscovery) doCall(ctx context.Context, serviceName string, path
 			req.Header.Set(k, v)
 		}
 	}
-
-	userID, _ := ctx.Value(keys.UserIDKey).(int64)
-	username, _ := ctx.Value(keys.UsernameKey).(string)
-	sessionID, _ := ctx.Value(keys.SessionIDKey).(string)
-	token, _ := ctx.Value(keys.TokenKey).(string)
-	req.Header.Set("X-User-Id", fmt.Sprintf("%d", userID))
-	req.Header.Set("X-Username", username)
-	req.Header.Set("X-Session-Id", sessionID)
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+	if contentType != "" && req.Header.Get(constants.HeaderContentType) == "" {
+		req.Header.Set(constants.HeaderContentType, contentType)
 	}
 
-	tokenUtil, err := utils.GetTokenUtil()
-	if err == nil {
-		finalUserID := userID
-		if finalUserID <= 0 {
-			finalUserID = -1
-		}
-		internalToken, err := tokenUtil.GenerateInternalToken(finalUserID, "gozero")
-		if err == nil {
-			req.Header.Set("X-Internal-Token", "Bearer "+internalToken)
-		}
-	}
-
-	if contentType != "" && req.Header.Get("Content-Type") == "" {
-		req.Header.Set("Content-Type", contentType)
-	}
-
-	resp, err := sd.httpClient.Do(req)
+	// 用户上下文与内部令牌由 httpc 的请求选项注入，发送过程由 httpc 统一处理熔断与链路追踪
+	resp, err := sd.service(serviceName).DoRequest(req)
 	if err != nil {
 		return Result{}, err
 	}

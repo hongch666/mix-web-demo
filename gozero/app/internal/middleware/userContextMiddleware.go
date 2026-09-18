@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"app/common/constants"
 	"app/common/keys"
 )
 
@@ -17,11 +18,11 @@ func NewUserContextMiddleware() *UserContextMiddleware {
 // InjectUserContext 注入用户上下文信息
 func (m *UserContextMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userIDStr := r.Header.Get("X-User-Id")
-		username := r.Header.Get("X-Username")
-		sessionID := r.Header.Get("X-Session-Id")
-		token := extractBearerToken(r.Header.Get("Authorization"))
-		internalToken := extractBearerToken(r.Header.Get("X-Internal-Token"))
+		userIDStr := r.Header.Get(constants.HeaderUserID)
+		username := r.Header.Get(constants.HeaderUsername)
+		sessionID := r.Header.Get(constants.HeaderSessionID)
+		token := extractBearerToken(r.Header.Get(constants.HeaderAuthorization))
+		internalToken := extractBearerToken(r.Header.Get(constants.HeaderInternalToken))
 
 		var userID int64
 		if uid, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
@@ -44,9 +45,9 @@ func (m *UserContextMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 // extractBearerToken 从 Authorization 头中提取 Bearer token
 func extractBearerToken(header string) string {
-	const bearerPrefix = "Bearer "
-	if len(header) > len(bearerPrefix) && header[:len(bearerPrefix)] == bearerPrefix {
-		return header[len(bearerPrefix):]
+	const prefix = constants.BearerPrefix
+	if len(header) > len(prefix) && header[:len(prefix)] == prefix {
+		return header[len(prefix):]
 	}
 	return ""
 }
