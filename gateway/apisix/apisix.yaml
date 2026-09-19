@@ -37,6 +37,11 @@ global_rules:
         allow_headers: "**"
         allow_credential: false
         max_age: 3600
+  - id: global-otel
+    plugins:
+      opentelemetry:
+        sampler:
+          name: __APISIX_OTEL_SAMPLER__
 
 routes:
   - id: health

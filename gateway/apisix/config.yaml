@@ -23,7 +23,20 @@ discovery:
       send: 2000
       read: 5000
 
+plugins:
+  - mocking
+  - cors
+  - forward-auth
+  - limit-req
+  - proxy-rewrite
+  - response-rewrite
+  - opentelemetry
+
 nginx_config:
+  http:
+    enable_access_log: true
+    access_log_format: '{"time":"$time_iso8601","level":"INFO","trace_id":"$opentelemetry_trace_id","remote_addr":"$remote_addr","request":"$request","status":$status,"request_time":$request_time}'
+    access_log_format_escape: json
   http_configuration_snippet: |
     proxy_buffering off;
   http_server_configuration_snippet: |
@@ -33,3 +46,13 @@ nginx_config:
         try_files $uri $uri/ /swagger-ui/index.html;
     }
   error_log_level: warn
+
+plugin_attr:
+  opentelemetry:
+    resource:
+      service.name: apisix-gateway
+    collector:
+      address: otel-collector:4318
+      request_timeout: 3
+    enable_span_name_prefix: true
+    set_ngx_var: true

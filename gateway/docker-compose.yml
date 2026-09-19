@@ -11,6 +11,9 @@ services:
     image: apache/apisix:3.11.0-debian
     container_name: mix-gateway
     restart: unless-stopped
+    entrypoint: ["/bin/sh", "/usr/local/apisix/scripts/render-config.sh"]
+    environment:
+      APISIX_OTEL_ENABLED: ${APISIX_OTEL_ENABLED:-false}
     depends_on:
       gateway-log-init:
         condition: service_completed_successfully
@@ -22,6 +25,13 @@ services:
       - "${GATEWAY_PORT:-8080}:9080"
     volumes:
       - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - ./apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - ./apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml.template:ro
+      - ./apisix/render-config.sh:/usr/local/apisix/scripts/render-config.sh:ro
       - ./swagger-ui:/usr/local/apisix/html/swagger-ui:ro
       - ${LOGS_PATH:-../logs/gateway}:/usr/local/apisix/logs
+    networks:
+      - hcsy
+
+networks:
+  hcsy:
+    external: true
