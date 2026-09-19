@@ -1,3 +1,5 @@
+import "src/module/common/otel/instrumentation";
+
 import multipart from "@fastify/multipart";
 import { ValidationPipe } from "@nestjs/common";
 import type { ValidationError } from "class-validator";
@@ -52,6 +54,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
 
   const app: NestFastifyApplication =
     await NestFactory.create<NestFastifyApplication>(AppModule, fastifyAdapter);
+  app.enableShutdownHooks();
 
   // 支持 multipart/form-data 文件上传
   await app.register(multipart as unknown as FastifyRegisterPlugin, {

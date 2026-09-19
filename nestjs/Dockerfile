@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 # NestJS 应用 Dockerfile
 # 多阶段构建：构建阶段 + 运行阶段
 
@@ -14,14 +16,16 @@ COPY tsconfig*.json ./
 COPY nest-cli.json ./
 
 # 安装构建依赖
-# package.json 和 package-lock.json 当前不同步，使用 npm install 保持构建可用
-RUN npm install --include=dev --prefer-offline --no-audit
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --include=dev --prefer-offline --no-audit --no-fund \
+    --fetch-retries=5 --fetch-retry-factor=2 \
+    --fetch-retry-mintimeout=1000 --fetch-retry-maxtimeout=60000
 
 # 复制源代码
 COPY src ./src
 
 # 构建应用
-RUN npm run node:build
+RUN npm run node:build && npm prune --omit=dev --no-audit --no-fund
 
 # 阶段2：运行阶段
 FROM node:20-alpine
@@ -33,11 +37,9 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 # 安装基础工具
 RUN apk add --no-cache curl ca-certificates
 
-# 复制package文件
-COPY package*.json ./
-
-# 只安装生产依赖
-RUN npm install --omit=dev --prefer-offline --no-audit
+# 复制生产依赖和package文件
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
 # 从构建阶段复制构建产物
 COPY --from=builder /app/dist ./dist

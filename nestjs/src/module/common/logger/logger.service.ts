@@ -1,8 +1,9 @@
 import { Injectable, Logger as NestLogger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { context, isSpanContextValid, trace } from "@opentelemetry/api";
 import * as fs from "fs";
 import * as path from "path";
-import { Messages } from "src/common/constants";
+import { Messages, TelemetryConstants } from "src/common/constants";
 
 /**
  * 日志服务
@@ -83,7 +84,11 @@ export class LoggerService implements OnModuleInit {
     const minutes: string = String(now.getMinutes()).padStart(2, "0");
     const seconds: string = String(now.getSeconds()).padStart(2, "0");
     const timestamp: string = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    const logEntry: string = `${timestamp} - ${level} - ${message}\n`;
+    const spanContext = trace.getSpan(context.active())?.spanContext();
+    const traceId: string = spanContext && isSpanContextValid(spanContext)
+      ? spanContext.traceId
+      : TelemetryConstants.EMPTY_TRACE_ID;
+    const logEntry: string = `${timestamp} - ${level} - ${TelemetryConstants.TRACE_ID_FIELD}=${traceId} - ${message}\n`;
 
     try {
       fs.appendFileSync(logFile, logEntry, "utf8");

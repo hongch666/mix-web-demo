@@ -48,6 +48,13 @@ files:
 logs:
   path: ${LOGS_PATH:../logs/nestjs}
 
+telemetry:
+  enabled: ${OTEL_ENABLED:false}
+  serviceName: ${OTEL_SERVICE_NAME:nestjs}
+  tracesEndpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+  sampler: ${OTEL_TRACES_SAMPLER:always_on}
+  samplerArg: ${OTEL_TRACES_SAMPLER_ARG:1.0}
+
 mail:
   host: ${MAIL_HOST:smtp.qq.com}
   port: ${MAIL_PORT:465}

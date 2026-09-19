@@ -577,6 +577,14 @@ export class Messages {
 
   static readonly REDIS_LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
 
+  // ===== OpenTelemetry =====
+
+  static readonly OTEL_INVALID_SAMPLER_RATIO = (ratio: string): string =>
+    `无效的 OpenTelemetry 采样比例: ${ratio}`;
+
+  static readonly OTEL_UNSUPPORTED_SAMPLER = (sampler: string): string =>
+    `不支持的 OpenTelemetry 采样器: ${sampler}`;
+
   // ===== MongoDB 工具消息 =====
 
   static readonly MONGO_COLLECTION_NOT_ALLOWED_MSG = (

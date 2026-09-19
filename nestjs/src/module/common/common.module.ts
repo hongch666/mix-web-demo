@@ -4,9 +4,17 @@ import { GithubModule } from "./github/github.module";
 import { LoggerModule } from "./logger/logger.module";
 import { MailModule } from "./mail/mail.module";
 import { TaskModule } from "./task/task.module";
+import { TelemetryModule } from "./otel/telemetry.module";
 
 @Module({
-  imports: [LoggerModule, ClientModule, GithubModule, MailModule, TaskModule],
+  imports: [
+    TelemetryModule,
+    LoggerModule,
+    ClientModule,
+    GithubModule,
+    MailModule,
+    TaskModule,
+  ],
   exports: [ClientModule],
 })
 export class CommonModule {}

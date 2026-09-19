@@ -8,3 +8,4 @@ export { MongoTools } from "./mongoTools.constants";
 export { RedisKeys } from "./redisKey.constants";
 export { SqlTools } from "./sqlTools.constants";
 export { SwaggerConfig } from "./swagger.constants";
+export { TelemetryConstants } from "./telemetry.constants";
