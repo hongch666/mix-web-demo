@@ -186,6 +186,7 @@ static/**/*
 !static/word/template.docx
 
 logs/
+.otel/
 
 ### Root IDEA
 .idea/

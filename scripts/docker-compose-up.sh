@@ -57,7 +57,7 @@ fi
 # container_name: mix-gateway，不清理会因容器名冲突导致本次启动失败
 bash "$WORKDIR/scripts/gateway-cleanup.sh"
 
-# 清理 ./mix loki start 独立启动的观测栈容器，观测栈（Loki/Promtail/Grafana）在本编排中
+# 清理 ./mix loki start 独立启动的观测栈容器，观测栈在本编排中
 # 内联定义，loki-config/docker-compose.yml 是其独立启动版本，两者容器名相同但属于不同
 # compose 项目，独立栈残留会因容器名冲突导致本次启动失败
 bash "$WORKDIR/scripts/loki-control.sh" cleanup || true

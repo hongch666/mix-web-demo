@@ -175,22 +175,22 @@ fi
 tmux new-session -d -s $SESSION -n spring -c "$WORKDIR"
 tmux move-window -s $SESSION:0 -t $SESSION:1
 tmux send-keys -t $SESSION:1 \
-"cd spring && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $java_cmd" C-m
+"cd spring && if [ -f .env ]; then set -a && . ./.env && set +a; fi && source '$WORKDIR/scripts/otel-env.sh' spring && $java_cmd" C-m
 
 # window 2: gozero
 tmux new-window -t $SESSION:2 -n gozero -c "$WORKDIR"
 tmux send-keys -t $SESSION:2 \
-"cd gozero/app && if [ -f .env ]; then set -a && . ./.env && set +a; fi && fresh" C-m
+"cd gozero/app && if [ -f .env ]; then set -a && . ./.env && set +a; fi && source '$WORKDIR/scripts/otel-env.sh' gozero && fresh" C-m
 
 # window 3: nestjs
 tmux new-window -t $SESSION:3 -n nestjs -c "$WORKDIR"
 tmux send-keys -t $SESSION:3 \
-"cd nestjs && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $node_cmd" C-m
+"cd nestjs && if [ -f .env ]; then set -a && . ./.env && set +a; fi && source '$WORKDIR/scripts/otel-env.sh' nestjs && $node_cmd" C-m
 
 # window 4: fastapi
 tmux new-window -t $SESSION:4 -n fastapi -c "$WORKDIR"
 tmux send-keys -t $SESSION:4 \
-"cd fastapi && if [ -f .env ]; then set -a && . ./.env && set +a; fi && $python_cmd" C-m
+"cd fastapi && if [ -f .env ]; then set -a && . ./.env && set +a; fi && source '$WORKDIR/scripts/otel-env.sh' fastapi && $python_cmd" C-m
 
 # window 5: gateway
 # 先清理残留网关容器，dev 模式（gateway/docker-compose.yml）与根 compose 共用
@@ -199,7 +199,7 @@ bash "$WORKDIR/scripts/gateway-cleanup.sh"
 
 tmux new-window -t $SESSION:5 -n gateway -c "$WORKDIR"
 tmux send-keys -t $SESSION:5 \
-"cd gateway && echo 'Starting APISIX Gateway...' && docker compose up" C-m
+"source '$WORKDIR/scripts/otel-env.sh' gateway && cd gateway && echo 'Starting APISIX Gateway...' && docker compose up" C-m
 
 # 选择 spring 窗口并附加
 tmux select-window -t $SESSION:1

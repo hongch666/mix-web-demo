@@ -118,6 +118,7 @@ mkdir -p "$DIST_DIR"
 # ==================== Spring 服务打包 ====================
 build_spring() {
     print_info "开始打包 Spring 服务..."
+    OTEL_ENABLED=true bash "$PROJECT_ROOT/scripts/otel-env.sh" spring
     cd "$PROJECT_ROOT/spring"
     
     # Gradle 打包
@@ -156,6 +157,7 @@ build_spring() {
     if [ -f ".env" ]; then
         cp .env "$SPRING_DIST/"
     fi
+    cp "$PROJECT_ROOT/.otel/opentelemetry-javaagent.jar" "$SPRING_DIST/"
     
     # 创建启动脚本
     cat > "$SPRING_DIST/start.sh" << 'EOF'
@@ -170,6 +172,17 @@ if [ -f ".env" ]; then
     set -a
     . ./.env
     set +a
+fi
+
+if [ -z "${OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export OTEL_ENABLED=true || export OTEL_ENABLED=false
+fi
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-spring}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+export OTEL_EXPORTER_OTLP_PROTOCOL="${OTEL_EXPORTER_OTLP_PROTOCOL:-http/protobuf}"
+export OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER:-always_on}"
+if [ "$OTEL_ENABLED" = "true" ]; then
+    JAVA_OPTS="$JAVA_OPTS -javaagent:$(pwd)/opentelemetry-javaagent.jar"
 fi
 
 # 将环境变量转换为 Java 系统属性
@@ -220,6 +233,13 @@ build_gateway() {
 set -e
 cd "$(dirname "$0")"
 mkdir -p ../logs/gateway
+if [ -z "${APISIX_OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export APISIX_OTEL_ENABLED=true || export APISIX_OTEL_ENABLED=false
+fi
+if docker ps -a --format '{{.Names}}' | grep -qx mix-gateway; then
+    docker rm -f mix-gateway >/dev/null
+fi
+docker compose down --remove-orphans >/dev/null 2>&1 || true
 docker compose up -d
 EOF
 
@@ -240,6 +260,15 @@ EOF
 build_fastapi() {
     print_info "开始打包 FastAPI 服务..."
     cd "$PROJECT_ROOT/fastapi"
+
+    if command -v uv &> /dev/null; then
+        uv sync --frozen
+    elif [ -x ".venv/bin/pip" ]; then
+        .venv/bin/pip install -r requirements.txt
+    else
+        print_error "未找到 uv 或可用的 FastAPI 虚拟环境"
+        return 1
+    fi
     
     # 创建发布目录
     FASTAPI_DIST="$DIST_DIR/fastapi"
@@ -251,6 +280,7 @@ build_fastapi() {
     
     # 复制配置文件
     cp application.yaml "$FASTAPI_DIST/"
+    cp requirements.txt "$FASTAPI_DIST/"
     
     # 复制 .env 文件
     if [ -f ".env" ]; then
@@ -282,6 +312,14 @@ if [ -f ".env" ]; then
     set +a
 fi
 
+if [ -z "${OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export OTEL_ENABLED=true || export OTEL_ENABLED=false
+fi
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-fastapi}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-${OTEL_EXPORTER_OTLP_ENDPOINT%/}/v1/traces}"
+export OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER:-always_on}"
+
 # 激活虚拟环境
 source .venv/bin/activate
 
@@ -306,6 +344,14 @@ if [ -f ".env" ]; then
     . ./.env
     set +a
 fi
+
+if [ -z "${OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export OTEL_ENABLED=true || export OTEL_ENABLED=false
+fi
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-fastapi}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-${OTEL_EXPORTER_OTLP_ENDPOINT%/}/v1/traces}"
+export OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER:-always_on}"
 
 # 激活虚拟环境
 source .venv/bin/activate
@@ -385,6 +431,14 @@ if [ -f ".env" ]; then
     . ./.env
     set +a
 fi
+
+if [ -z "${OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export OTEL_ENABLED=true || export OTEL_ENABLED=false
+fi
+export OTEL_DISABLED="$([ "$OTEL_ENABLED" = "true" ] && echo false || echo true)"
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-gozero}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-127.0.0.1:4318}"
+export OTEL_TRACES_SAMPLER_RATIO="${OTEL_TRACES_SAMPLER_RATIO:-1.0}"
 
 nohup ./gozero >> "$LOG_FILE" 2>&1 &
 echo $! > gozero.pid
@@ -470,6 +524,14 @@ if [ -f ".env" ]; then
     set +a
 fi
 
+if [ -z "${OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export OTEL_ENABLED=true || export OTEL_ENABLED=false
+fi
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-nestjs}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-${OTEL_EXPORTER_OTLP_ENDPOINT%/}/v1/traces}"
+export OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER:-always_on}"
+
 # 优先使用 bun 启动
 if command -v bun &> /dev/null; then
     nohup bun run dist/main.js >> "$LOG_FILE" 2>&1 &
@@ -493,6 +555,14 @@ if [ -f ".env" ]; then
     . ./.env
     set +a
 fi
+
+if [ -z "${OTEL_ENABLED+x}" ]; then
+    [ -f "../../.otel/enabled" ] && export OTEL_ENABLED=true || export OTEL_ENABLED=false
+fi
+export OTEL_SERVICE_NAME="${OTEL_SERVICE_NAME:-nestjs}"
+export OTEL_EXPORTER_OTLP_ENDPOINT="${OTEL_EXPORTER_OTLP_ENDPOINT:-http://127.0.0.1:4318}"
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT="${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-${OTEL_EXPORTER_OTLP_ENDPOINT%/}/v1/traces}"
+export OTEL_TRACES_SAMPLER="${OTEL_TRACES_SAMPLER:-always_on}"
 
 nohup node dist/main.js >> "$LOG_FILE" 2>&1 &
 echo $! > nestjs.pid

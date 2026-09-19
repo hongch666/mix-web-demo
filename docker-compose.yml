@@ -6,10 +6,45 @@
 #   - Go/Node/Python 服务通过容器名访问 nacos/mysql/redis 等中间件同理
 # 注意 NO_PROXY 与 no_proxy 是两个独立变量，必须同时设置才能完全覆盖 Docker 注入值
 x-no-proxy: &no-proxy-env
-  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 
 services:
+  tempo:
+    image: grafana/tempo:2.6.0
+    container_name: mix-tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ./otel-config/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks:
+      - hcsy
+    expose:
+      - "3200"
+      - "4317"
+      - "4318"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.112.0
+    container_name: mix-otel-collector
+    command: ["--config=/etc/otel/config.yaml"]
+    environment:
+      <<: *no-proxy-env
+    depends_on:
+      - tempo
+    volumes:
+      - ./otel-config/otel-collector.yaml:/etc/otel/config.yaml:ro
+    networks:
+      - hcsy
+    expose:
+      - "4317"
+      - "4318"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
   loki-data-init:
     image: grafana/loki:3.0.0
     user: "0:0"
@@ -111,14 +146,20 @@ services:
   gateway:
     image: apache/apisix:3.11.0-debian
     container_name: mix-gateway
+    entrypoint: ["/bin/sh", "/usr/local/apisix/scripts/render-config.sh"]
+    environment:
+      APISIX_OTEL_ENABLED: "true"
     depends_on:
       gateway-log-init:
         condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
     ports:
       - "8080:9080"
     volumes:
       - ./gateway/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
-      - ./gateway/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml:ro
+      - ./gateway/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml.template:ro
+      - ./gateway/apisix/render-config.sh:/usr/local/apisix/scripts/render-config.sh:ro
       - ./gateway/swagger-ui:/usr/local/apisix/html/swagger-ui:ro
       - ./logs/gateway:/usr/local/apisix/logs
     networks:
@@ -156,6 +197,11 @@ services:
       DB_HOST: mysql
       REDIS_HOST: redis
       RABBITMQ_HOST: mq
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: spring
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_TRACES_SAMPLER: always_on
     volumes:
       - ./spring/src/main/resources/application.yaml:/app/application.yaml:ro
       - ./logs/spring:/app/logs/spring
@@ -198,6 +244,8 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/gozero
+      OTEL_ENABLED: "true"
+      OTEL_EXPORTER_OTLP_ENDPOINT: otel-collector:4318
     volumes:
       - ./gozero/app/etc:/app/etc:ro
       - ./logs/gozero:/app/logs/gozero
@@ -240,6 +288,10 @@ services:
       DB_MONGODB_HOST: mongodb
       RABBITMQ_HOST: mq
       LOGS_PATH: /app/logs/nestjs
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: nestjs
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_TRACES_SAMPLER: always_on
     volumes:
       - ./nestjs/src/config/application.yaml:/app/dist/config/application.yaml:ro
       - ./logs/nestjs:/app/logs/nestjs
@@ -284,6 +336,10 @@ services:
       DB_REDIS_HOST: redis
       DB_CLICKHOUSE_HOST: clickhouse
       LOGS_PATH: /app/logs/fastapi
+      OTEL_ENABLED: "true"
+      OTEL_SERVICE_NAME: fastapi
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_TRACES_SAMPLER: always_on
     volumes:
       - ./fastapi/application.yaml:/app/application.yaml:ro
       - ./logs/fastapi:/app/logs/fastapi
@@ -315,3 +371,4 @@ volumes:
   loki-data:
   promtail-data:
   grafana-data:
+  tempo-data:

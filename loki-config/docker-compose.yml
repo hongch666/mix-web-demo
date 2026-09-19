@@ -1,4 +1,4 @@
-# 日志观测组件（Loki + Promtail + Grafana）编排文件
+# 可观测性组件（Loki + Promtail + Grafana + Tempo + OpenTelemetry Collector）编排文件
 #
 # 本文件用于独立启动观测栈，适用于 ./mix dist start 的宿主机进程模式：
 #   ./mix loki start          采集根目录 logs/（容器与 dev 模式）
@@ -23,10 +23,47 @@
 # 取值与根目录 docker-compose.yml 的 x-no-proxy 保持一致，便于两处同步维护
 # 注意 NO_PROXY 与 no_proxy 是两个独立变量，必须同时设置才能完全覆盖 Docker 注入值
 x-no-proxy: &no-proxy-env
-  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 
 services:
+  tempo:
+    image: grafana/tempo:2.6.0
+    container_name: mix-tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ../otel-config/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks:
+      default:
+      hcsy:
+    expose:
+      - "3200"
+      - "4317"
+      - "4318"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.112.0
+    container_name: mix-otel-collector
+    command: ["--config=/etc/otel/config.yaml"]
+    environment:
+      <<: *no-proxy-env
+    depends_on:
+      - tempo
+    volumes:
+      - ../otel-config/otel-collector.yaml:/etc/otel/config.yaml:ro
+    networks:
+      default:
+      hcsy:
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
   loki-data-init:
     image: grafana/loki:3.0.0
     user: "0:0"
@@ -107,3 +144,8 @@ volumes:
   loki-data:
   promtail-data:
   grafana-data:
+  tempo-data:
+
+networks:
+  hcsy:
+    external: true

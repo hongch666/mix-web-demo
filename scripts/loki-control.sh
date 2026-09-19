@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 日志观测组件控制脚本 - 管理 Loki、Promtail、Grafana
+# 可观测性组件控制脚本 - 管理 Loki、Promtail、Grafana、Tempo 与 OpenTelemetry Collector
 # 用于 ./mix dist start（宿主机进程模式）下独立启动日志观测栈并查看日志
 # 使用方式: ./scripts/loki-control.sh [start|stop|restart|status|logs|delete|help] [--dist]
 #   --dist  采集 dist/logs（dist 模式），缺省采集根目录 logs/（容器与 dev 模式）
@@ -11,10 +11,12 @@ set -e
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$WORKDIR/loki-config/docker-compose.yml"
 COMPOSE_PROJECT="loki"
+OTEL_STATE_DIR="$WORKDIR/.otel"
+OTEL_ENABLED_MARKER="$OTEL_STATE_DIR/enabled"
 
 # 固定容器名（与 loki-config/docker-compose.yml 的 container_name 保持一致），
 # 用于检测并清理其他编排栈（如根目录 docker-compose.yml）占用的同名容器
-NAMED_CONTAINERS=(loki promtail grafana)
+NAMED_CONTAINERS=(loki promtail grafana mix-otel-collector mix-tempo)
 
 # 颜色输出
 RED='\033[0;31m'
@@ -32,6 +34,18 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# dev/dist 进程通过此标记与可选观测栈保持一致；显式 OTEL_ENABLED 仍可覆盖。
+enable_optional_telemetry() {
+    mkdir -p "$OTEL_STATE_DIR"
+    touch "$OTEL_ENABLED_MARKER"
+}
+
+disable_optional_telemetry() {
+    if [ -e "$OTEL_ENABLED_MARKER" ]; then
+        unlink "$OTEL_ENABLED_MARKER"
+    fi
 }
 
 # 查找可用的 compose 命令
@@ -150,6 +164,13 @@ prepare_dirs() {
     done
 }
 
+ensure_shared_network() {
+    if ! docker network inspect hcsy >/dev/null 2>&1; then
+        log_info "Docker 网络 hcsy 不存在，正在创建..."
+        docker network create hcsy >/dev/null
+    fi
+}
+
 # 清理其他编排栈占用的同名容器
 # 根目录 docker-compose.yml 内联了同一套观测组件，容器名与本栈相同（loki/promtail/grafana），
 # 但属于不同 compose 项目，任何一方残留都会导致另一方启动时报名称冲突
@@ -193,6 +214,8 @@ remove_standalone_containers() {
     if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -qx "$init_container"; then
         docker rm -f "$init_container" >/dev/null 2>&1 || true
     fi
+
+    disable_optional_telemetry
 }
 
 # 获取 promtail 当前实际挂载的采集配置文件名（容器未运行时输出空）
@@ -218,7 +241,7 @@ describe_config() {
 
 show_status() {
     echo ""
-    log_info "日志观测组件状态:"
+    log_info "可观测性组件状态:"
     echo ""
     compose ps
     echo ""
@@ -231,24 +254,33 @@ show_status() {
         log_info "当前采集配置: 未运行（--dist 采集 dist/logs，缺省采集根目录 logs/）"
     fi
 
-    log_info "访问地址: Loki http://localhost:3100，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
+    if [ -f "$OTEL_ENABLED_MARKER" ]; then
+        log_info "dev/dist OpenTelemetry: 已启用"
+    else
+        log_info "dev/dist OpenTelemetry: 未启用（执行 ./mix loki start 后启用）"
+    fi
+
+    log_info "访问地址: Loki http://localhost:3100，OTLP http://localhost:4318，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
     echo ""
 }
 
 # 启动观测栈
 start_all() {
-    log_info "启动日志观测组件 (Loki/Promtail/Grafana)..."
+    log_info "启动观测组件 (Loki/Promtail/Grafana/Tempo/OpenTelemetry Collector)..."
     log_info "日志来源: $LOG_SOURCE_DESC"
     prepare_dirs
+    ensure_shared_network
     cleanup_conflicts
     compose up -d
+    enable_optional_telemetry
     show_status
 }
 
 # 停止观测栈，保留数据卷（Grafana 面板与 Loki 索引数据不丢失）
 stop_all() {
-    log_info "停止日志观测组件（保留数据卷）..."
+    log_info "停止观测组件（保留 Loki、Tempo 与 Grafana 数据卷）..."
     compose down --remove-orphans || log_warn "停止过程中出现异常，请检查容器状态"
+    disable_optional_telemetry
 
     # down 只作用于本栈项目名下的容器，若同名容器仍然存在，说明它们由其他编排栈
     # （根目录 docker-compose.yml 的 ./mix compose up）创建，需要由对应入口停止
@@ -262,28 +294,31 @@ stop_all() {
         log_warn "同名容器仍由其他编排栈持有: ${remaining[*]}，请改为执行 ./mix compose down"
     fi
 
-    log_info "日志观测组件已停止，Loki 与 Grafana 数据卷保留"
+    log_info "观测组件已停止，Loki、Tempo 与 Grafana 数据卷保留"
 }
 
 # 删除观测栈及其数据卷
 delete_all() {
-    log_warn "停止并删除日志观测组件及其数据卷..."
-    read -p "确认删除 Loki/Grafana 数据卷? (y/n): " confirm
+    log_warn "停止并删除观测组件及其数据卷..."
+    read -p "确认删除 Loki/Tempo/Grafana 数据卷? (y/n): " confirm
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         log_warn "已取消删除操作"
         return 0
     fi
     compose down -v --remove-orphans || log_warn "删除过程中出现异常，请检查容器状态"
-    log_info "日志观测组件已删除"
+    disable_optional_telemetry
+    log_info "观测组件已删除"
 }
 
 # 重启观测栈（切换日志来源时相当于重建 promtail，使新配置生效）
 restart_all() {
-    log_info "重启日志观测组件..."
+    log_info "重启观测组件..."
     log_info "日志来源: $LOG_SOURCE_DESC"
     prepare_dirs
+    ensure_shared_network
     cleanup_conflicts
     compose up -d --force-recreate
+    enable_optional_telemetry
     show_status
 }
 
@@ -297,12 +332,12 @@ show_logs() {
     fi
 
     case $service in
-        loki|promtail|grafana)
+        loki|promtail|grafana|tempo|otel-collector)
             compose logs -f --tail 100 "$service"
             ;;
         *)
             log_error "未知的服务: $service"
-            echo "可用服务: loki, promtail, grafana"
+            echo "可用服务: loki, promtail, grafana, tempo, otel-collector"
             return 1
             ;;
     esac
@@ -311,17 +346,17 @@ show_logs() {
 # 显示帮助信息
 show_help() {
     cat << 'EOF'
-日志观测组件控制脚本
+可观测性组件控制脚本
 
 用法: ./scripts/loki-control.sh [命令] [参数]
       通常通过 ./mix loki [命令] [参数] 调用
 
 命令:
-  start           启动 Loki/Promtail/Grafana (默认)
-  stop            停止容器，保留 Loki 与 Grafana 数据卷
+  start           启动 Loki/Promtail/Grafana/Tempo/Collector，并为 dev/dist 启用 OTel (默认)
+  stop            停止容器并为 dev/dist 关闭 OTel，保留数据卷
   restart         重启容器
   status          查看容器状态与当前采集配置
-  logs [service]  查看容器日志 (loki|promtail|grafana)，不指定则查看全部
+  logs [service]  查看容器日志，不指定则查看全部
   delete          停止并删除容器及数据卷
   cleanup         清理本栈残留的同名容器（供根编排启动前调用）
   help            显示本帮助
@@ -338,6 +373,7 @@ show_help() {
   切换来源会重建 promtail 容器；进入 Loki 的数据带 mode=local 或 mode=dist 标签，
   可用 {service="spring", mode="dist"} 精确查询
   根编排（./mix compose up）固定使用 local 配置
+  dev/dist 默认不启用日志聚合与 OTel；先执行本脚本 start 后，两者同步启用
   本栈与根编排的容器同名但属于不同 compose 项目，交叉启动时会自动清理对方容器
 
 示例:
