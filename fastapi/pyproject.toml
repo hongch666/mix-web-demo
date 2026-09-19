@@ -35,6 +35,13 @@ dependencies = [
   "openpyxl >= 3.1.0",
   "neo4j>=5.28.0",
   "neomodel>=7.0.0",
+  "opentelemetry-api~=1.44.0",
+  "opentelemetry-sdk~=1.44.0",
+  "opentelemetry-exporter-otlp-proto-http~=1.44.0",
+  "opentelemetry-instrumentation-fastapi~=0.65b0",
+  "opentelemetry-instrumentation-httpx~=0.65b0",
+  "opentelemetry-instrumentation-sqlalchemy~=0.65b0",
+  "opentelemetry-instrumentation-redis~=0.65b0",
 ]
 description = "FastAPI微服务"
 license = {text = "MIT"}

@@ -3,6 +3,7 @@ from fastapi.openapi.utils import get_openapi
 from app.common.middleware import middlewares
 from app.core.constants import SwaggerConfig
 from app.core.errors import exception_handlers
+from app.core.telemetry import instrument_fastapi
 from app.internal.api import routers
 from fastapi import FastAPI
 
@@ -22,6 +23,7 @@ def create_app() -> FastAPI:
         openapi_tags=SwaggerConfig.OPENAPI_TAGS,
         lifespan=lifespan,
     )
+    instrument_fastapi(app)
 
     # 覆写 openapi 方法以设置 OpenAPI 版本
     def custom_openapi():

@@ -1,10 +1,13 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from opentelemetry import context, trace
+from opentelemetry.trace import NonRecordingSpan, SpanContext, TraceFlags, TraceState
 
 from app.common.middleware.contextMiddleware import (
     ContextMiddleware,
     _extract_bearer_token,
     get_current_internal_token,
+    get_current_trace_id,
     get_current_user_id,
     get_current_username,
 )
@@ -62,3 +65,21 @@ def test_context_middleware_handles_invalid_user_id() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"user_id": None}
+
+
+def test_get_current_trace_id_returns_active_span_trace_id() -> None:
+    trace_id = 0x0123456789ABCDEF0123456789ABCDEF
+    span_context = SpanContext(
+        trace_id=trace_id,
+        span_id=0x0123456789ABCDEF,
+        is_remote=False,
+        trace_flags=TraceFlags(TraceFlags.SAMPLED),
+        trace_state=TraceState(),
+    )
+    token = context.attach(
+        trace.set_span_in_context(NonRecordingSpan(span_context))
+    )
+    try:
+        assert get_current_trace_id() == format(trace_id, "032x")
+    finally:
+        context.detach(token)

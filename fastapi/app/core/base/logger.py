@@ -2,7 +2,9 @@ import logging
 import os
 from datetime import datetime
 
+from app.common.middleware import get_current_trace_id
 from app.core.config import load_config
+from app.core.constants import TelemetryConstants
 
 logger: logging.Logger = logging.getLogger("uvicorn")
 
@@ -22,7 +24,11 @@ def write_log(message: str, level: str = "INFO") -> None:
         LOG_PATH, f"app_{datetime.now().strftime('%Y-%m-%d')}.log"
     )
     timestamp: str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    log_entry: str = f"{timestamp} - {level} - {message}\n"
+    trace_id: str = get_current_trace_id() or TelemetryConstants.EMPTY_TRACE_ID
+    log_entry: str = (
+        f"{timestamp} - {level} - "
+        f"{TelemetryConstants.TRACE_ID_FIELD}={trace_id} - {message}\n"
+    )
     with open(log_file, "a", encoding="utf-8") as f:
         f.write(log_entry)
 

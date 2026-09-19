@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, Optional
@@ -15,6 +16,7 @@ from app.core.client import (
 )
 from app.core.config import load_config
 from app.core.constants import Messages
+from app.core.telemetry import shutdown_telemetry
 from app.core.db import (
     AsyncSessionLocal,
     RabbitMQClient,
@@ -127,3 +129,4 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
 
     # LangSmith 关闭（flush 缓冲区）
     shutdown_langsmith()
+    await asyncio.to_thread(shutdown_telemetry)

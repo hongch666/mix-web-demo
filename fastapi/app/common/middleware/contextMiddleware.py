@@ -3,6 +3,9 @@ from collections.abc import Awaitable, Callable
 from typing import Optional
 
 from fastapi import Request, Response
+from opentelemetry.trace import get_current_span
+
+from app.core.constants import TelemetryConstants
 from starlette.middleware.base import BaseHTTPMiddleware
 
 user_id_ctx_var: contextvars.ContextVar[Optional[int]] = contextvars.ContextVar(
@@ -40,6 +43,16 @@ def get_current_token() -> Optional[str]:
 
 def get_current_internal_token() -> Optional[str]:
     return internal_token_ctx_var.get()
+
+
+def get_current_trace_id() -> Optional[str]:
+    span_context = get_current_span().get_span_context()
+    if span_context.is_valid:
+        return format(
+            span_context.trace_id,
+            f"0{TelemetryConstants.TRACE_ID_HEX_WIDTH}x",
+        )
+    return None
 
 
 def _extract_bearer_token(header: Optional[str]) -> Optional[str]:

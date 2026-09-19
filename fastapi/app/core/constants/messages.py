@@ -6,6 +6,14 @@ class Messages:
     消息类常量 — 日志消息、用户提示、RabbitMQ/Redis/Nacos 消息
     """
 
+    @staticmethod
+    def OTEL_INVALID_SAMPLER_RATIO(ratio: object) -> str:
+        return f"无效的 OpenTelemetry 采样比例: {ratio}"
+
+    @staticmethod
+    def OTEL_UNSUPPORTED_SAMPLER(sampler: str) -> str:
+        return f"不支持的 OpenTelemetry 采样器: {sampler}"
+
     # ===== 内部令牌 =====
 
     @staticmethod

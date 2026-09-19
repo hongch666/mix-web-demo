@@ -7,6 +7,7 @@ from .prompts import Prompts
 from .redisKeys import RedisKeys
 from .scripts import Scripts
 from .swaggerConfig import SwaggerConfig
+from .telemetry import TelemetryConstants
 from .warehouse import WarehouseScripts
 
 __all__ = [
@@ -19,5 +20,6 @@ __all__ = [
     "RedisKeys",
     "SwaggerConfig",
     "HttpCode",
+    "TelemetryConstants",
     "WarehouseScripts",
 ]
