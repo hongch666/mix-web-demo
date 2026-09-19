@@ -15,10 +15,16 @@ RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -q
 # 阶段2：运行阶段
 FROM eclipse-temurin:17-jre-alpine
 
+ARG OTEL_JAVA_AGENT_VERSION=2.31.1
+
 WORKDIR /app
 
 # 安装基础工具
 RUN apk add --no-cache curl ca-certificates
+
+RUN curl -fsSL \
+    "https://maven.aliyun.com/repository/public/io/opentelemetry/javaagent/opentelemetry-javaagent/${OTEL_JAVA_AGENT_VERSION}/opentelemetry-javaagent-${OTEL_JAVA_AGENT_VERSION}.jar" \
+    -o /app/opentelemetry-javaagent.jar
 
 # 从构建阶段复制JAR文件
 # 兼容不同版本名，避免固定版本号导致构建失败
@@ -41,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"
 
 # 启动命令
-CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+CMD ["sh", "-c", "if [ \"$OTEL_ENABLED\" = \"true\" ]; then OTEL_AGENT_OPTS=-javaagent:/app/opentelemetry-javaagent.jar; fi; exec java $OTEL_AGENT_OPTS $JAVA_OPTS -jar app.jar"]

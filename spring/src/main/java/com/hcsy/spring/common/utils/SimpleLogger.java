@@ -11,7 +11,11 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.TelemetryConstants;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -97,7 +101,16 @@ public class SimpleLogger {
 
             // 格式化日志消息
             String timestamp = LocalDateTime.now().format(TIMESTAMP_FORMATTER);
-            String logEntry = String.format("%s - %s - %s%n", timestamp, level, message);
+            SpanContext spanContext = Span.current().getSpanContext();
+            String traceId = spanContext.isValid()
+                ? spanContext.getTraceId()
+                : TelemetryConstants.EMPTY_TRACE_ID;
+            String logEntry = String.format(
+                TelemetryConstants.LOG_ENTRY_FORMAT,
+                timestamp,
+                level,
+                traceId,
+                message);
 
             // 写入文件，指定UTF-8编码
             try (OutputStreamWriter writer = new OutputStreamWriter(
