@@ -6,6 +6,10 @@ import "time"
 const (
 	// DateTimeFormat 用于日志输出、ES 索引、API 响应等场景的标准日期时间格式
 	DateTimeFormat = "2006-01-02 15:04:05"
+	// EmptyTraceID 用于无活动链路上下文的日志
+	EmptyTraceID = "-"
+	// TraceLogFormat 统一文件日志中的 Trace ID 字段格式
+	TraceLogFormat = "%s - %s - trace_id=%s - %s\n"
 )
 
 // 配置默认值类 — 锁过期时间等

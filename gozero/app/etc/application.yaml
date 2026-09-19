@@ -5,6 +5,14 @@ Timeout: ${SERVER_TIMEOUT:0}
 Mode: ${SERVER_MODE:dev}
 Prefix: ${SERVER_PREFIX:/}
 
+Telemetry:
+  Name: ${OTEL_SERVICE_NAME:gozero}
+  Endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:127.0.0.1:4318}
+  Sampler: ${OTEL_TRACES_SAMPLER_RATIO:1.0}
+  Batcher: otlphttp
+  OtlpHttpPath: /v1/traces
+  Disabled: ${OTEL_DISABLED:false}
+
 nacos:
   ipAddr: ${NACOS_IP:127.0.0.1}
   port: ${NACOS_PORT:8848}

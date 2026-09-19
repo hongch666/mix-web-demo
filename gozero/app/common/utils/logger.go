@@ -12,6 +12,7 @@ import (
 	"app/common/constants"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	zerotrace "github.com/zeromicro/go-zero/core/trace"
 )
 
 // ZeroLogger 基于 go-zero logx 的日志工具，支持文件记录
@@ -66,7 +67,11 @@ func (z *ZeroLogger) writeToFile(message string, level string) {
 
 	// 格式化日志消息
 	timestamp := time.Now().Format(constants.DateTimeFormat)
-	logEntry := fmt.Sprintf("%s - %s - %s\n", timestamp, level, message)
+	traceID := zerotrace.TraceIDFromContext(z.ctx)
+	if traceID == "" {
+		traceID = constants.EmptyTraceID
+	}
+	logEntry := fmt.Sprintf(constants.TraceLogFormat, timestamp, level, traceID, message)
 
 	z.fileMu.Lock()
 	defer z.fileMu.Unlock()

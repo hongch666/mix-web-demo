@@ -23,6 +23,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.19.0
 	github.com/swaggo/files v1.0.1
+	go.opentelemetry.io/otel/trace v1.28.0
 )
 
 require (
@@ -93,7 +94,6 @@ require (
 	go.opentelemetry.io/otel/exporters/zipkin v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
-	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
