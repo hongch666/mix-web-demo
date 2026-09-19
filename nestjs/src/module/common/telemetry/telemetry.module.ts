@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { TelemetryLifecycleService } from "./telemetryLifecycle.service";
+import { TelemetryLifecycleService } from "./telemetry.lifecycle.service";
 
 @Module({
   providers: [TelemetryLifecycleService],

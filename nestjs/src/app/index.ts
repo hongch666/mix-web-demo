@@ -1,4 +1,4 @@
-import "src/module/common/otel/instrumentation";
+import "src/module/common/telemetry/instrumentation";
 
 import multipart from "@fastify/multipart";
 import { ValidationPipe } from "@nestjs/common";

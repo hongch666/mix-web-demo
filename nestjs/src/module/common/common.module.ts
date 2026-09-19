@@ -4,7 +4,7 @@ import { GithubModule } from "./github/github.module";
 import { LoggerModule } from "./logger/logger.module";
 import { MailModule } from "./mail/mail.module";
 import { TaskModule } from "./task/task.module";
-import { TelemetryModule } from "./otel/telemetry.module";
+import { TelemetryModule } from "./telemetry/telemetry.module";
 
 @Module({
   imports: [
