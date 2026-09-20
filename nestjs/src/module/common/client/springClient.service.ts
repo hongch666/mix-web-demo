@@ -13,7 +13,7 @@ export class SpringClientService {
    * 从 Spring 统一响应中提取 data 字段
    */
   static extractData<T>(response: Record<string, unknown>): T {
-    return (response.data ?? response) as T;
+    return response.data as T;
   }
 
   // ==================== 用户相关 ====================
