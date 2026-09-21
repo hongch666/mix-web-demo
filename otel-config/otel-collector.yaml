@@ -19,19 +19,22 @@ processors:
         action: delete
       - key: http.request.header.x_internal_token
         action: delete
-  tail_sampling:
-    decision_wait: 10s
-    num_traces: 50000
-    expected_new_traces_per_sec: 1000
-    policies:
-      - name: errors-policy
-        type: status_code
-        status_code:
-          status_codes: [ERROR]
-      - name: normal-traffic-policy
-        type: probabilistic
-        probabilistic:
-          sampling_percentage: 10
+  # 当前为全量采集，未启用采样，故不挂 tail_sampling：
+  # 尾采样会引入 decision_wait(10s) 缓冲，使链路延迟可见并占用额外内存，全量场景下无收益
+  # 如需恢复降采样，取消下方注释并把 tail_sampling 加回 service.pipelines.traces.processors
+  # tail_sampling:
+  #   decision_wait: 10s
+  #   num_traces: 50000
+  #   expected_new_traces_per_sec: 1000
+  #   policies:
+  #     - name: errors-policy
+  #       type: status_code
+  #       status_code:
+  #         status_codes: [ERROR]
+  #     - name: normal-traffic-policy
+  #       type: probabilistic
+  #       probabilistic:
+  #         sampling_percentage: 10
   batch:
     timeout: 5s
     send_batch_size: 1024
@@ -46,7 +49,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter, attributes/redact, tail_sampling, batch]
+      processors: [memory_limiter, attributes/redact, batch]
       exporters: [otlp/tempo]
   telemetry:
     logs:
