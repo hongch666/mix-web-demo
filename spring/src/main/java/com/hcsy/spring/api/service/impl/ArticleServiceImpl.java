@@ -24,7 +24,6 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
@@ -62,13 +61,11 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @ArticleSync(action = "add", description = "创建了1篇文章")
     public Mono<Boolean> saveArticle(Article article) {
         return transactionalOperator.transactional(articleRepository.save(article)).thenReturn(true);
     }
 
     @Override
-    @ArticleSync(action = "edit", description = "编辑了1篇文章")
     public Mono<Boolean> updateArticle(Article article) {
         return transactionalOperator.transactional(
             articleRepository.updateArticle(
@@ -84,7 +81,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @ArticleSync(action = "delete", description = "删除了1篇文章")
     public Mono<Boolean> deleteArticle(Long id) {
         Mono<Void> operation = articleRepository.findById(id)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE_ID + id)))
@@ -93,7 +89,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @ArticleSync(action = "delete", description = "批量删除文章")
     public Mono<Boolean> deleteArticles(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
         if (distinctIds.isEmpty()) {
@@ -127,7 +122,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @ArticleSync(action = "publish", description = "发布了1篇文章")
     public Mono<Void> publishArticle(Long id) {
         Mono<Void> operation = articleRepository.findById(id)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE)))
@@ -139,7 +133,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    @ArticleSync(action = "view", description = "浏览了1篇文章")
     public Mono<Void> addViewArticle(Long id) {
         Mono<Void> operation = articleRepository.findById(id)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_ARTICLE)))

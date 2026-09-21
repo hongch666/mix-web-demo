@@ -30,7 +30,7 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.DataSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
@@ -98,6 +98,7 @@ public class UserController {
     @PostMapping
     @Operation(summary = "新增用户", description = "创建新用户，如果不传密码则使用配置中的默认密码")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "body", paramNames = { "id" })
+    @DataSync(description = "新增用户后同步图谱与数仓")
     @ApiLog(value = "新增用户", excludeFields = { "password" })
     public Mono<Result<Void>> addUser(@Valid @RequestBody UserCreateDTO userDto) {
         return userService.createUser(userDto).thenReturn(Result.<Void>success());
@@ -106,6 +107,7 @@ public class UserController {
     @DeleteMapping("/{id}")
     @Operation(summary = "删除用户", description = "根据id删除用户")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "id" })
+    @DataSync(description = "删除用户后同步图谱与数仓")
     @ApiLog("删除用户")
     public Mono<Result<Void>> deleteUser(@PathVariable Long id) {
         return userService.deleteUserAndStatusById(id).thenReturn(Result.<Void>success());
@@ -114,6 +116,7 @@ public class UserController {
     @DeleteMapping("/batch/{ids}")
     @Operation(summary = "批量删除用户", description = "根据id数组批量删除用户，多个id用英文逗号分隔")
     @RequirePermission(roles = { "admin" }, businessType = "user", paramSource = "path_single", paramNames = { "ids" })
+    @DataSync(description = "批量删除用户后同步图谱与数仓")
     @ApiLog("批量删除用户")
     public Mono<Result<Void>> deleteUsers(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -145,7 +148,7 @@ public class UserController {
     @Operation(summary = "修改用户", description = "通过请求体修改用户信息")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "user", paramSource = "body", paramNames = { "id" })
-    @Neo4jSync(description = "修改用户后同步 Neo4j")
+    @DataSync(description = "修改用户后同步图谱与数仓")
     @ApiLog("修改用户")
     public Mono<Result<Void>> updateUser(@Valid @RequestBody UserUpdateDTO userDto) {
         return userService.updateUserInfo(userDto).thenReturn(Result.<Void>success());
@@ -269,6 +272,7 @@ public class UserController {
 
     @PostMapping("/register")
     @Operation(summary = "用户注册", description = "注册新用户，需要提供邮箱验证码")
+    @DataSync(description = "用户注册后同步图谱与数仓")
     @ApiLog(value = "用户注册", excludeFields = { "password", "verificationCode" })
     public Mono<Result<Void>> registerUser(@Valid @RequestBody UserRegisterDTO registerDto) {
         return userService.registerUser(registerDto).thenReturn(Result.<Void>success());
@@ -374,6 +378,7 @@ public class UserController {
     @PostMapping("/github-user")
     @Operation(summary = "创建或更新GitHub用户（内部）", description = "GitHub OAuth登录后创建或更新用户，供内部服务远程调用")
     @RequireInternalToken
+    @DataSync(description = "创建或更新GitHub用户后同步图谱与数仓")
     @ApiLog("内部创建或更新GitHub用户")
     public Mono<Result<UserVO>> findOrCreateGithubUser(@Valid @RequestBody GithubUserInternalDTO dto) {
         return userService.findOrCreateGithubUser(dto)

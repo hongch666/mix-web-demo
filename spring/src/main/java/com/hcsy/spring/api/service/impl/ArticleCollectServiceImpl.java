@@ -17,7 +17,6 @@ import com.hcsy.spring.api.repository.ArticleCollectRepository;
 import com.hcsy.spring.api.service.ArticleCollectService;
 import com.hcsy.spring.api.service.ArticleService;
 import com.hcsy.spring.common.constants.Defaults;
-import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
@@ -39,7 +38,6 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     private final ArticleService articleService;
 
     @Override
-    @ArticleSync(action = "collect", description = "收藏了1篇文章")
     public Mono<Boolean> addCollect(Long articleId, Long userId) {
         Mono<Boolean> operation = articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)
             .flatMap(exists -> {
@@ -56,7 +54,6 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     }
 
     @Override
-    @ArticleSync(action = "uncollect", description = "取消收藏了1篇文章")
     public Mono<Boolean> removeCollect(Long articleId, Long userId) {
         return transactionalOperator.transactional(
             articleCollectRepository.existsByArticleIdAndUserId(articleId, userId)

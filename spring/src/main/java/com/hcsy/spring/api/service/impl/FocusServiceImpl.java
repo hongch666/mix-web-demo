@@ -23,7 +23,6 @@ import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.exceptions.BusinessException;
-import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
@@ -46,7 +45,6 @@ public class FocusServiceImpl implements FocusService {
     private final TransactionalOperator transactionalOperator;
 
     @Override
-    @ArticleSync(action = "focus", description = "关注了1个用户")
     public Mono<Boolean> addFocus(Long userId, Long focusId) {
         Mono<Boolean> operation = focusRepository.existsByUserIdAndFocusId(userId, focusId)
             .flatMap(exists -> {
@@ -63,7 +61,6 @@ public class FocusServiceImpl implements FocusService {
     }
 
     @Override
-    @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
     public Mono<Boolean> removeFocus(Long userId, Long focusId) {
         return transactionalOperator.transactional(
             focusRepository.existsByUserIdAndFocusId(userId, focusId)

@@ -17,7 +17,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
@@ -46,7 +46,7 @@ public class ArticleCollectController {
 
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
-    @Neo4jSync(description = "收藏文章后同步 Neo4j")
+    @ArticleSync(action = "collect", description = "收藏了1篇文章")
     @ApiLog("添加收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
         paramNames = { "userId" })
@@ -58,7 +58,7 @@ public class ArticleCollectController {
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
-    @Neo4jSync(description = "取消收藏文章后同步 Neo4j")
+    @ArticleSync(action = "uncollect", description = "取消收藏了1篇文章")
     @ApiLog("取消收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })

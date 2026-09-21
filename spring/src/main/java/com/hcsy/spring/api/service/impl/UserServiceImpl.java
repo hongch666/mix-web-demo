@@ -26,7 +26,6 @@ import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
-import com.hcsy.spring.core.annotation.Neo4jSync;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -106,7 +105,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = "删除用户后同步 Neo4j")
     public Mono<Void> deleteUserAndStatusById(Long id) {
         Mono<Void> databaseOperation = userRepository.findById(id)
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))
@@ -116,7 +114,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = "批量删除用户后同步 Neo4j")
     public Mono<Void> deleteUsersAndStatusByIds(List<Long> ids) {
         List<Long> distinctIds = normalizeIds(ids);
         if (distinctIds.isEmpty()) {
@@ -304,7 +301,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = "保存用户后同步 Neo4j")
     public Mono<User> saveUserAndStatus(User user) {
         if (!hasText(user.getAuthProvider())) {
             user.setAuthProvider("local");
@@ -335,7 +331,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = "保存用户后同步 Neo4j")
     public Mono<Void> createUser(UserCreateDTO dto) {
         User user = BeanUtil.copyProperties(dto, User.class);
         user.setRole("user");
@@ -351,7 +346,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Neo4jSync(description = "修改用户后同步 Neo4j")
     public Mono<Void> updateUserInfo(UserUpdateDTO dto) {
         return userRepository.findById(dto.getId().longValue())
             .switchIfEmpty(Mono.error(notFound(Messages.UNDEFINED_USER)))

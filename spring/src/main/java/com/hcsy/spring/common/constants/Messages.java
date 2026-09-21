@@ -60,12 +60,14 @@ public class Messages {
     public static final String ADD_VIEW_ARTICLE = "增加阅读量失败：文章不存在或更新失败";
 
     // ===== ES/Vector/数仓同步 =====
-    public static final String SYNC = "触发同步 ES、向量库和数仓...";
+    public static final String SYNC_TARGET_ES = "ES";
+    public static final String SYNC_TARGET_VECTOR = "向量库";
+    public static final String SYNC_TARGET_WAREHOUSE = "数仓";
+    public static final String SYNC_TARGETS = "触发同步：%s...";
     public static final String SYNC_ES_SUCCESS = "ES 同步完成";
     public static final String SYNC_VECTOR_SUCCESS = "Vector 同步完成";
-    public static final String SYNC_ALL_SUCCESS = "所有同步任务执行完毕";
-    public static final String SYNC_PARALLEL_SUCCESS = "%s 并行同步完成，总耗时: %dms";
-    public static final String SYNC_PARALLEL_FAIL = "%s 并行同步失败，耗时: %dms, 错误: %s";
+    public static final String SYNC_SUCCESS = "%s 同步完成，耗时: %dms";
+    public static final String SYNC_FAIL = "%s 同步失败，耗时: %dms, 错误: %s";
 
     // ===== ClickHouse 数仓同步 =====
     public static final String WAREHOUSE_SYNC_SUCCESS = "ClickHouse 数仓同步已触发";

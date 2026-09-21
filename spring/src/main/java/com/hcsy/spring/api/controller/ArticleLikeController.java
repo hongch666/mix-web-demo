@@ -17,7 +17,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
@@ -46,7 +46,7 @@ public class ArticleLikeController {
 
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
-    @Neo4jSync(description = "点赞文章后同步 Neo4j")
+    @ArticleSync(action = "like", description = "点赞了1篇文章")
     @ApiLog("添加点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
         paramNames = { "userId" })
@@ -58,7 +58,7 @@ public class ArticleLikeController {
 
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
-    @Neo4jSync(description = "取消点赞文章后同步 Neo4j")
+    @ArticleSync(action = "unlike", description = "取消点赞了1篇文章")
     @ApiLog("取消点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })

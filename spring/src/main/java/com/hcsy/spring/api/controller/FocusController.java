@@ -17,7 +17,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
-import com.hcsy.spring.core.annotation.Neo4jSync;
+import com.hcsy.spring.core.annotation.ArticleSync;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
@@ -46,7 +46,7 @@ public class FocusController {
 
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
-    @Neo4jSync(description = "关注用户后同步 Neo4j")
+    @ArticleSync(action = "focus", description = "关注了1个用户")
     @ApiLog("新增关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
         paramNames = { "userId" })
@@ -58,7 +58,7 @@ public class FocusController {
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
-    @Neo4jSync(description = "取消关注用户后同步 Neo4j")
+    @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
     @ApiLog("取消关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
