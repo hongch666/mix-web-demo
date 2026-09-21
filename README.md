@@ -1664,6 +1664,8 @@ LangChain 会自动创建，但需要先执行 `db/postgresql/extensions.sql` �
 
 需要先在 `db/clickhouse/` 下按数仓分层目录（`ods`、`dwd`、`dws`、`dim`、`ads`）依次执行单表建表脚本，脚本中不包含库前缀，执行前先切换到目标数据库（`CREATE DATABASE` 与 `USE` 由使用方按需自行执行）
 
+数仓事实表（`dwd_*`、`dws_*`、`ads_user_day`）按月分区（`PARTITION BY toYYYYMM(...)`），ODS 贴源表、维度表与其余 ADS 表不分区。
+
 ### Neo4j 初始化
 
 Neo4j 用于知识图谱，默认数据库无需额外指定
