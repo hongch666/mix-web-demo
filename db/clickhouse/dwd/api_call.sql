@@ -10,4 +10,6 @@ CREATE TABLE IF NOT EXISTS dwd_api_call (
     action_date Date,
     action_time DateTime
 ) ENGINE = ReplacingMergeTree (action_time)
+PARTITION BY
+    toYYYYMM (action_date)
 ORDER BY event_id;

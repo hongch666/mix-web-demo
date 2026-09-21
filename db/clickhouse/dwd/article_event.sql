@@ -12,4 +12,6 @@ CREATE TABLE IF NOT EXISTS dwd_article_event (
     create_at DateTime,
     update_at DateTime
 ) ENGINE = ReplacingMergeTree (update_at)
+PARTITION BY
+    toYYYYMM (create_date)
 ORDER BY id;

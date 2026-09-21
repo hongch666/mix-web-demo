@@ -9,4 +9,6 @@ CREATE TABLE IF NOT EXISTS dws_user_day (
     liked_articles UInt64,
     last_active_time DateTime
 ) ENGINE = MergeTree
+PARTITION BY
+    toYYYYMM (stat_date)
 ORDER BY (stat_date, user_id);

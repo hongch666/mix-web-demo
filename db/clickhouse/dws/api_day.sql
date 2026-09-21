@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS dws_api_day (
     total_response_time Float64,
     max_response_time Float64
 ) ENGINE = MergeTree
+PARTITION BY
+    toYYYYMM (action_date)
 ORDER BY (
         action_date, api_path, api_method, api_description
     );

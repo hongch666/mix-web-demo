@@ -10,4 +10,6 @@ CREATE TABLE IF NOT EXISTS ads_user_day (
     last_active_time DateTime,
     stat_time DateTime
 ) ENGINE = ReplacingMergeTree (stat_time)
+PARTITION BY
+    toYYYYMM (stat_date)
 ORDER BY (stat_date, user_id);

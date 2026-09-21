@@ -10,4 +10,6 @@ CREATE TABLE IF NOT EXISTS dws_article_day (
     comment_count Int64,
     view_count Int64
 ) ENGINE = MergeTree
+PARTITION BY
+    toYYYYMM (stat_date)
 ORDER BY (stat_date, article_id);
