@@ -740,6 +740,14 @@ class Messages:
         return f"添加文章到向量存储失败: {str(error)}"
 
     @staticmethod
+    def RAG_DELETE_ARTICLES_SUCCESS(deleted: int, article_count: int) -> str:
+        return f"向量存储删除完成：命中 {article_count} 篇文章，删除 {deleted} 条向量"
+
+    @staticmethod
+    def RAG_DELETE_ARTICLES_FAILED(error: Exception) -> str:
+        return f"从向量存储删除文章向量失败: {str(error)}"
+
+    @staticmethod
     def HYDE_GENERATION_SUCCESS(query_len: int, hyde_len: int) -> str:
         return (
             f"HyDE 假设性文档生成成功（原始查询: {query_len} 字 → HyDE: {hyde_len} 字）"
@@ -1215,14 +1223,30 @@ class Messages:
         return f"删除旧向量失败，将覆盖: {error}"
 
     @staticmethod
+    def VECTOR_STALE_VECTORS_FOUND(ids: str) -> str:
+        return f"向量库中存在已删除或已下架文章的残留向量 (IDs: {ids})"
+
+    @staticmethod
+    def VECTOR_NO_STALE_VECTORS() -> str:
+        return "向量库与已发布文章一致，无需清理残留向量"
+
+    @staticmethod
+    def VECTOR_STALE_CLEANUP_FAILED(error: Exception) -> str:
+        return f"清理残留向量失败: {error}"
+
+    @staticmethod
+    def VECTOR_STALE_VECTORS_CLEANED(deleted: int, article_count: int) -> str:
+        return f"残留向量清理完成：{article_count} 篇已删除或已下架文章，共删除 {deleted} 条向量"
+
+    @staticmethod
+    def VECTOR_SKIP_CLEANUP_INCOMPLETE(fetched: int, total: int) -> str:
+        return f"文章列表未完整获取（已取 {fetched} / 共 {total}），跳过残留向量清理以避免误删"
+
+    @staticmethod
     def VECTOR_BATCH_SYNC_RETRY(
         batch_num: int, retry_count: int, max_retries: int, result: str
     ) -> str:
         return f"批次 {batch_num} 同步返回失败信息，准备重试 ({retry_count}/{max_retries}): {result}"
-
-    @staticmethod
-    def VECTOR_BATCH_RETRY_EXHAUSTED(max_retries: int, result: str) -> str:
-        return f"重试 {max_retries} 次后仍然失败: {result}"
 
     @staticmethod
     def VECTOR_BATCH_SYNC_SUCCESS(batch_num: int, result: str) -> str:

@@ -26,10 +26,7 @@ from .services import (
     VectorSearchServiceDep,
     resolve_analyze_service,
 )
-from .tools import (
-    AgentToolFactoriesDep,
-    RAGToolsDep,
-)
+from .tools import AgentToolFactoriesDep
 
 __all__: list[str] = [
     "DbSession",
@@ -59,7 +56,6 @@ __all__: list[str] = [
     "GeminiServiceDep",
     "GlmServiceDep",
     "VectorSearchServiceDep",
-    "RAGToolsDep",
     "AgentToolFactoriesDep",
     "resolve_analyze_service",
 ]

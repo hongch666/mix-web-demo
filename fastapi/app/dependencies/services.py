@@ -46,9 +46,9 @@ from .mappers import (
     ApiLogMapperDep,
     ArticleMapperDep,
     UserMapperDep,
+    VectorMapperDep,
     resolve_article_mapper,
 )
-from .tools import RAGToolsDep
 
 
 def provide_algorithm_service() -> AlgorithmService:
@@ -135,8 +135,10 @@ def provide_user_service(
     return get_user_service(spring_client, nestjs_client, user_mapper)
 
 
-def provide_vector_search_service(rag_tools: RAGToolsDep) -> VectorSearchService:
-    return get_vector_search_service(rag_tools)
+def provide_vector_search_service(
+    vector_mapper: VectorMapperDep,
+) -> VectorSearchService:
+    return get_vector_search_service(vector_mapper)
 
 
 AlgorithmServiceDep = Annotated[AlgorithmService, Depends(provide_algorithm_service)]

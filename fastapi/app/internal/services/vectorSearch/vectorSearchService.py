@@ -1,24 +1,23 @@
 from __future__ import annotations
 
-import asyncio
 import time
 from functools import lru_cache
 from typing import Any, Optional
 
-from langchain_core.documents import Document
-
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
-from app.internal.agents import RAGTools, get_rag_tools
 from app.internal.agents.langsmith import get_langsmith_context
+from app.internal.crud import (
+    VectorMapper,
+    get_vector_embeddings,
+    get_vector_store_mapper,
+)
 from app.internal.schemas import (
     VectorMatchedChunkDTO,
     VectorSearchEnhanceItemDTO,
     VectorSearchEnhanceReq,
     VectorSearchEnhanceResp,
 )
-
-DocScore = tuple[Document, float]
 
 
 class VectorSearchService:
@@ -32,7 +31,7 @@ class VectorSearchService:
         max_matched_chunks: int = Defaults.VECTOR_SEARCH_MAX_MATCHED_CHUNKS,
         min_score: float = Defaults.VECTOR_SEARCH_MIN_SCORE,
         score_mode: str = Defaults.VECTOR_SEARCH_SCORE_MODE,
-        rag_tools: RAGTools | None = None,
+        vector_mapper: VectorMapper | None = None,
     ) -> None:
         self.enabled = enabled
         self.candidate_limit = max(candidate_limit, 1)
@@ -43,7 +42,7 @@ class VectorSearchService:
             score_mode if score_mode in {"similarity", "distance"} else "similarity"
         )
         # 由依赖图注入；缺省时回退到工厂单例，保持手工构造可用
-        self._rag_tools: RAGTools | None = rag_tools
+        self._vector_mapper: VectorMapper | None = vector_mapper
 
     async def enhance(self, req: VectorSearchEnhanceReq) -> VectorSearchEnhanceResp:
         """执行向量增强, 返回候选文章的语义分和命中片段"""
@@ -62,7 +61,9 @@ class VectorSearchService:
         fetch_k = self._resolve_fetch_k(req.topK, len(article_ids))
 
         search_start = time.time()
-        rag_tools = self._rag_tools or get_rag_tools()
+        vector_mapper = self._vector_mapper or get_vector_store_mapper(
+            get_vector_embeddings()
+        )
         with get_langsmith_context(
             name="vector.enhance",
             tags=["feature:vector_search"],
@@ -73,8 +74,7 @@ class VectorSearchService:
                 "min_score": self.min_score,
             },
         ):
-            docs_with_scores = await asyncio.to_thread(
-                rag_tools.vector_store.similarity_search_with_score,
+            docs_with_scores = await vector_mapper.similarity_search_with_score(
                 query,
                 fetch_k,
             )
@@ -198,7 +198,7 @@ class VectorSearchService:
 
 @lru_cache
 def get_vector_search_service(
-    rag_tools: Optional[RAGTools] = None,
+    vector_mapper: Optional[VectorMapper] = None,
 ) -> VectorSearchService:
     """获取 VectorSearchService 单例"""
     return VectorSearchService(
@@ -208,5 +208,5 @@ def get_vector_search_service(
         max_matched_chunks=Defaults.VECTOR_SEARCH_MAX_MATCHED_CHUNKS,
         min_score=Defaults.VECTOR_SEARCH_MIN_SCORE,
         score_mode=Defaults.VECTOR_SEARCH_SCORE_MODE,
-        rag_tools=rag_tools,
+        vector_mapper=vector_mapper,
     )

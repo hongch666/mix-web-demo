@@ -8,6 +8,7 @@ from .redisKeys import RedisKeys
 from .scripts import Scripts
 from .swaggerConfig import SwaggerConfig
 from .telemetry import TelemetryConstants
+from .vector import VectorConstants
 from .warehouse import WarehouseScripts
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "HttpCode",
     "TelemetryConstants",
     "WarehouseScripts",
+    "VectorConstants",
 ]

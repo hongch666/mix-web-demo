@@ -2,14 +2,21 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
+from app.internal.crud import get_vector_embeddings, get_vector_store_mapper
+
 from .tools.fastapiSqlTool import get_fastapi_sql_tool
 from .tools.gozeroSqlTool import get_gozero_sql_tool
 from .tools.mongoDBTools import get_mongodb_tools
 from .tools.neo4jTools import get_neo4j_tools
 from .tools.nestjsSqlTool import get_nestjs_sql_tool
-from .tools.ragTools import get_rag_tools
+from .tools.ragTools import RAGTools, get_rag_tools
 from .tools.springSqlTool import get_spring_sql_tool
 from .tools.warehouseTools import get_warehouse_tools
+
+
+def _default_rag_tools() -> RAGTools:
+    """RAG 工具默认装配，自行解析向量库 Mapper 单例"""
+    return get_rag_tools(get_vector_store_mapper(get_vector_embeddings()))
 
 
 @dataclass(frozen=True)
@@ -39,7 +46,7 @@ def default_agent_tool_factories() -> AgentToolFactories:
             ("GoZero", get_gozero_sql_tool),
             ("NestJS", get_nestjs_sql_tool),
         ),
-        rag=("RAG", get_rag_tools),
+        rag=("RAG", _default_rag_tools),
         neo4j=("Neo4j 知识图谱", get_neo4j_tools),
         mongodb=("MongoDB 日志", get_mongodb_tools),
         warehouse=("ClickHouse 数仓", get_warehouse_tools),

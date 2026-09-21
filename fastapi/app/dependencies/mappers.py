@@ -8,10 +8,13 @@ from app.internal.crud import (
     ApiLogMapper,
     ArticleMapper,
     UserMapper,
+    VectorMapper,
     get_ai_history_mapper,
     get_api_log_mapper,
     get_article_mapper,
     get_user_mapper,
+    get_vector_embeddings,
+    get_vector_store_mapper,
 )
 
 from .database import ClickHouseSessionFactoryDep
@@ -35,6 +38,10 @@ def provide_user_mapper(
     return get_user_mapper(session_factory)
 
 
+def provide_vector_store_mapper() -> VectorMapper:
+    return get_vector_store_mapper(get_vector_embeddings())
+
+
 def resolve_article_mapper() -> ArticleMapper:
     """在调度器等非请求链路中解析文章数仓 Mapper"""
     return get_article_mapper(get_clickhouse_session_factory())
@@ -44,3 +51,6 @@ AiHistoryMapperDep = Annotated[AiHistoryMapper, Depends(get_ai_history_mapper)]
 ApiLogMapperDep = Annotated[ApiLogMapper, Depends(provide_api_log_mapper)]
 ArticleMapperDep = Annotated[ArticleMapper, Depends(provide_article_mapper)]
 UserMapperDep = Annotated[UserMapper, Depends(provide_user_mapper)]
+VectorMapperDep = Annotated[
+    VectorMapper, Depends(provide_vector_store_mapper)
+]

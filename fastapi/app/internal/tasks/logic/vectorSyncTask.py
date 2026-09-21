@@ -4,12 +4,15 @@ from datetime import datetime
 from typing import Any, Optional
 
 from app.core.base import Logger
-from app.core.constants import HttpCode, Messages, RedisKeys
-from app.core.errors import BusinessException
-from app.internal.agents import get_rag_tools
+from app.core.constants import Messages, RedisKeys
 from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.cache import get_redis_client
 from app.internal.clients import SpringClient, get_spring_client
+from app.internal.crud import (
+    VectorMapper,
+    get_vector_embeddings,
+    get_vector_store_mapper,
+)
 
 
 def _get_redis_client() -> Optional[Any]:
@@ -181,6 +184,47 @@ async def _get_changed_articles(
     return changed_articles
 
 
+async def _remove_stale_vectors(vector_mapper: VectorMapper, articles: list[Any]) -> int:
+    """清理向量库中已删除或已下架文章残留的向量，并删除其内容 hash 缓存
+
+    增量同步只处理仍在发布列表中的文章，已删除或已下架的文章不会被比对到，
+    必须依靠本方法做差集清理，否则旧向量会一直残留并被检索召回
+
+    Args:
+        vector_mapper: 向量库 Mapper
+        articles: 本次拉取到的全部已发布文章
+
+    Returns:
+        删除的向量条数
+    """
+    published_ids: set[int] = set()
+    for article in articles:
+        article_id = _get_article_field(article, "id", 0)
+        if article_id:
+            published_ids.add(int(article_id))
+
+    existing_ids: set[int] = await vector_mapper.list_article_ids()
+    stale_ids: list[int] = sorted(existing_ids - published_ids)
+    if not stale_ids:
+        Logger.debug(Messages.VECTOR_NO_STALE_VECTORS())
+        return 0
+
+    Logger.info(Messages.VECTOR_STALE_VECTORS_FOUND(str(stale_ids)))
+    deleted: int = await vector_mapper.delete_by_article_ids(stale_ids)
+
+    redis_client: Optional[Any] = _get_redis_client()
+    if redis_client is not None:
+        await redis_client.delete(
+            *[
+                RedisKeys.article_content_hash(article_id)
+                for article_id in stale_ids
+            ]
+        )
+
+    Logger.info(Messages.VECTOR_STALE_VECTORS_CLEANED(deleted, len(stale_ids)))
+    return deleted
+
+
 async def _export_article_vectors_to_postgres(
     article_mapper: Optional[Any] = None,
     mysql_db_factory: Optional[Any] = None,
@@ -197,7 +241,7 @@ async def _export_article_vectors_to_postgres(
     """
     spring_client: SpringClient = get_spring_client()
 
-    rag_tools: Any = get_rag_tools()
+    vector_mapper: VectorMapper = get_vector_store_mapper(get_vector_embeddings())
 
     sync_start_time: datetime = datetime.now()
     sync_mode = "增量" if enable_incremental_sync else "全量"
@@ -206,6 +250,7 @@ async def _export_article_vectors_to_postgres(
         Logger.info(Messages.START_SYNC_TO_POSTGRES_MESSAGE)
 
         # 1. 通过SpringClient分页远程获取所有已发布文章
+        expected_total: int = 0
         try:
             articles: list[Any] = []
             page: int = 1
@@ -222,15 +267,28 @@ async def _export_article_vectors_to_postgres(
                 if not records:
                     break
                 articles.extend(records)
-                total: int = (
-                    page_result.get("total", 0) if isinstance(page_result, dict) else 0
+                expected_total = (
+                    int(page_result.get("total", 0))
+                    if isinstance(page_result, dict)
+                    else 0
                 )
-                if len(articles) >= total:
+                if len(articles) >= expected_total:
                     break
                 page += 1
         except Exception as e:
             Logger.error(Messages.VECTOR_SYNC_GET_ARTICLES_FAILED(e))
             return
+
+        # 1.5 清理已删除或已下架文章残留的向量，仅在文章列表完整获取时执行，避免请求不完整导致误删
+        if len(articles) >= expected_total:
+            try:
+                await _remove_stale_vectors(vector_mapper, articles)
+            except Exception as e:
+                Logger.warning(Messages.VECTOR_STALE_CLEANUP_FAILED(e))
+        else:
+            Logger.warning(
+                Messages.VECTOR_SKIP_CLEANUP_INCOMPLETE(len(articles), expected_total)
+            )
 
         if not articles:
             Logger.info(Messages.NO_ARTICLES_DATA_MESSAGE)
@@ -310,53 +368,27 @@ async def _export_article_vectors_to_postgres(
 
                 while retry_count < max_retries and not batch_success:
                     try:
-                        # 增量同步时，先删除旧向量再插入新向量
-                        if enable_incremental_sync and hasattr(
-                            rag_tools, "delete_articles_from_vector_store"
-                        ):
-                            try:
-                                rag_tools.delete_articles_from_vector_store(article_ids)
-                                Logger.debug(
-                                    Messages.VECTOR_DELETED_OLD_VECTORS(
-                                        str(article_ids)
-                                    )
-                                )
-                            except Exception as e:
-                                Logger.warning(Messages.VECTOR_DELETE_OLD_FAILED(e))
+                        # 先删除旧向量再插入新向量，避免同一篇文章的历史分块长期残留
+                        try:
+                            await vector_mapper.delete_by_article_ids(article_ids)
+                            Logger.debug(
+                                Messages.VECTOR_DELETED_OLD_VECTORS(str(article_ids))
+                            )
+                        except Exception as e:
+                            Logger.warning(Messages.VECTOR_DELETE_OLD_FAILED(e))
 
-                        # 使用RAG工具添加到向量存储
-                        result: Any = await rag_tools.add_articles_to_vector_store(
+                        # 写入向量，失败会抛出异常并由外层重试分支接管
+                        written: int = await vector_mapper.upsert_articles(
                             article_ids=article_ids,
                             titles=titles,
                             contents=contents,
                             metadata_list=metadata_list,
                         )
 
-                        # 检查结果是否成功（如果返回字符串包含"失败"则视为失败）
-                        result_str: str = str(result)
-                        if "失败" in result_str or "error" in result_str.lower():
-                            retry_count += 1
-                            if retry_count < max_retries:
-                                Logger.warning(
-                                    Messages.VECTOR_BATCH_SYNC_RETRY(
-                                        batch_num, retry_count, max_retries, str(result)
-                                    )
-                                )
-                                await asyncio.sleep(retry_delay)
-                                continue
-                            else:
-                                raise BusinessException(
-                                    Messages.VECTOR_BATCH_RETRY_EXHAUSTED(
-                                        max_retries, str(result)
-                                    ),
-                                    HttpCode.INTERNAL_SERVER_ERROR,
-                                    Messages.ERROR_FASTAPI_SERVER_ERROR,
-                                )
-
                         total_synced += len(batch)
                         batch_success = True
                         Logger.info(
-                            Messages.VECTOR_BATCH_SYNC_SUCCESS(batch_num, str(result))
+                            Messages.VECTOR_BATCH_SYNC_SUCCESS(batch_num, str(written))
                         )
 
                     except Exception as e:

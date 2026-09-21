@@ -2,6 +2,12 @@ from .aiHistory import AiHistoryMapper, get_ai_history_mapper
 from .apiLog import ApiLogMapper, get_api_log_mapper
 from .article import ArticleMapper, get_article_mapper
 from .user import UserMapper, get_user_mapper
+from .vector import (
+    DocScore,
+    VectorMapper,
+    get_vector_embeddings,
+    get_vector_store_mapper,
+)
 
 __all__: list[str] = [
     "get_article_mapper",
@@ -12,4 +18,8 @@ __all__: list[str] = [
     "AiHistoryMapper",
     "get_user_mapper",
     "UserMapper",
+    "get_vector_store_mapper",
+    "get_vector_embeddings",
+    "VectorMapper",
+    "DocScore",
 ]

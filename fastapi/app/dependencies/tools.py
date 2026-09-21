@@ -24,6 +24,7 @@ from app.internal.agents import (
 )
 
 from .clients import GozeroClientDep, NestjsClientDep, SpringClientDep
+from .mappers import VectorMapperDep
 
 
 def provide_fastapi_sql_tool() -> FastapiSqlTool:
@@ -46,8 +47,8 @@ def provide_mongodb_tools(nestjs_client: NestjsClientDep) -> MongoDBTools:
     return get_mongodb_tools(nestjs_client)
 
 
-def provide_rag_tools() -> RAGTools:
-    return get_rag_tools()
+def provide_rag_tools(vector_mapper: VectorMapperDep) -> RAGTools:
+    return get_rag_tools(vector_mapper)
 
 
 def provide_neo4j_tools() -> Neo4jQueryTools:
@@ -62,6 +63,7 @@ def provide_agent_tool_factories(
     spring_client: SpringClientDep,
     gozero_client: GozeroClientDep,
     nestjs_client: NestjsClientDep,
+    vector_mapper: VectorMapperDep,
 ) -> AgentToolFactories:
     """装配 agent 工具组工厂集合
 
@@ -75,14 +77,13 @@ def provide_agent_tool_factories(
             ("GoZero", partial(provide_gozero_sql_tool, gozero_client)),
             ("NestJS", partial(provide_nestjs_sql_tool, nestjs_client)),
         ),
-        rag=("RAG", provide_rag_tools),
+        rag=("RAG", partial(provide_rag_tools, vector_mapper)),
         neo4j=("Neo4j 知识图谱", provide_neo4j_tools),
         mongodb=("MongoDB 日志", partial(provide_mongodb_tools, nestjs_client)),
         warehouse=("ClickHouse 数仓", provide_warehouse_tools),
     )
 
 
-RAGToolsDep = Annotated[RAGTools, Depends(provide_rag_tools)]
 AgentToolFactoriesDep = Annotated[
     AgentToolFactories, Depends(provide_agent_tool_factories)
 ]
