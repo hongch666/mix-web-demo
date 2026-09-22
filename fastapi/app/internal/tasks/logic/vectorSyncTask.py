@@ -190,6 +190,9 @@ async def _remove_stale_vectors(vector_mapper: VectorMapper, articles: list[Any]
     增量同步只处理仍在发布列表中的文章，已删除或已下架的文章不会被比对到，
     必须依靠本方法做差集清理，否则旧向量会一直残留并被检索召回
 
+    差集口径为「向量库已有文章 ID - 本次拉到的发布文章 ID」，因此未发布状态
+    等同于应清理；调用方必须确保传入的是完整的发布列表，否则会误删
+
     Args:
         vector_mapper: 向量库 Mapper
         articles: 本次拉取到的全部已发布文章
@@ -279,7 +282,8 @@ async def _export_article_vectors_to_postgres(
             Logger.error(Messages.VECTOR_SYNC_GET_ARTICLES_FAILED(e))
             return
 
-        # 1.5 清理已删除或已下架文章残留的向量，仅在文章列表完整获取时执行，避免请求不完整导致误删
+        # 2. 清理已删除或已下架文章残留的向量
+        # 差集清理要求列表必须完整：分页中途失败时未拉到的文章会被误判为已删除，进而清空其向量，因此这里以 expected_total 作为完整性判据，不完整则跳过并告警
         if len(articles) >= expected_total:
             try:
                 await _remove_stale_vectors(vector_mapper, articles)
@@ -294,7 +298,7 @@ async def _export_article_vectors_to_postgres(
             Logger.info(Messages.NO_ARTICLES_DATA_MESSAGE)
             return
 
-        # 2. 增量同步：筛选出变更的文章
+        # 3. 增量同步：筛选出变更的文章
         if enable_incremental_sync:
             last_sync_time: Optional[datetime] = await _get_last_sync_time()
             changed_articles: list[Any] = await _get_changed_articles(
@@ -318,7 +322,7 @@ async def _export_article_vectors_to_postgres(
             Logger.info(Messages.VECTOR_FULL_SYNC_FOUND(len(published_articles)))
             sync_articles: list[Any] = published_articles
 
-        # 3. 批量处理文章
+        # 4. 批量处理文章
         batch_size: int = 10  # 每批处理 10 篇文章
         total_synced: int = 0
         total_errors: int = 0
@@ -410,7 +414,7 @@ async def _export_article_vectors_to_postgres(
                                 )
                             )
 
-        # 4. 只有当有成功的同步时才保存时间戳
+        # 5. 只有当有成功的同步时才保存时间戳
         if enable_incremental_sync and total_synced > 0:
             await _save_sync_time(sync_start_time)
 
