@@ -28,6 +28,12 @@ function toSnakeCase(key: string): string {
   return key.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`);
 }
 
+/**
+ * 动态 JSON 数据容器：这些字段的值是业务数据本身，内部键由写入方决定而非接口契约，
+ * 不参与对外命名转换，否则同一份数据在 MongoDB（驼峰）与数仓（下划线）会落成两套键名
+ */
+const RAW_VALUE_KEYS: ReadonlySet<string> = new Set(["content"]);
+
 function convertKeys(
   value: unknown,
   converter: (key: string) => string,
@@ -42,7 +48,9 @@ function convertKeys(
 
   const result: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
-    result[converter(key)] = convertKeys(item, converter);
+    result[converter(key)] = RAW_VALUE_KEYS.has(key)
+      ? item
+      : convertKeys(item, converter);
   }
   return result;
 }
