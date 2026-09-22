@@ -151,12 +151,12 @@ public class ArticleSyncAspect {
             case "focus":
             case "unfocus": {
                 Long targetUserId = resolveFocusTarget(joinPoint, primaryParam);
-                // articleId 沿用既有语义：关注行为存被关注用户 ID，数仓粉丝统计依赖该字段
-                // 同时在 content 内补充双方用户 ID，便于溯源
+                // 关注与文章无关，articleId 传 -1 占位，与 GoZero 搜索日志的约定保持一致
+                // 双方用户 ID 放在 content 内，由数仓从 content 解析目标用户
                 content.put("id", targetUserId);
                 content.put("sourceUserId", userId);
                 content.put("targetUserId", targetUserId);
-                msg.put("articleId", targetUserId);
+                msg.put("articleId", -1L);
                 msg.put("msg", description);
                 break;
             }

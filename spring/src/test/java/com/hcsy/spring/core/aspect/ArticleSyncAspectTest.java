@@ -121,7 +121,7 @@ class ArticleSyncAspectTest {
     }
 
     @Test
-    @DisplayName("关注把双方用户写入 content 并沿用 articleId 承载被关注者")
+    @DisplayName("关注把双方用户写入 content，articleId 用 -1 占位")
     void recordsBothUsersInContentForFocus() throws Throwable {
         subscribe("focusSuccess", "focus", new Class<?>[] { FocusDTO.class },
             new FocusDTO(7L, 200L));
@@ -129,8 +129,8 @@ class ArticleSyncAspectTest {
         Map<String, Object> message = captureSentMessage();
         // 发起者写在顶层 userId
         assert message.get("userId").equals(7L);
-        // articleId 沿用数仓既有契约：关注行存被关注用户 ID，不新增顶层字段
-        assert message.get("articleId").equals(200L);
+        // 关注与文章无关，articleId 传 -1 占位，与 GoZero 搜索日志的约定一致
+        assert message.get("articleId").equals(-1L);
         assert !message.containsKey("targetUserId");
 
         @SuppressWarnings("unchecked")
@@ -147,11 +147,10 @@ class ArticleSyncAspectTest {
         subscribe("focusSuccess", "focus", new Class<?>[] { FocusDTO.class },
             new FocusDTO(7L, 200L));
 
-        Map<String, Object> message = captureSentMessage();
         @SuppressWarnings("unchecked")
-        Map<String, Object> content = (Map<String, Object>) message.get("content");
+        Map<String, Object> content = (Map<String, Object>) captureSentMessage().get("content");
         assert !content.get("targetUserId").equals(content.get("sourceUserId"));
-        assert !message.get("articleId").equals(message.get("userId"));
+        assert content.get("targetUserId").equals(200L);
     }
 
     @Test
