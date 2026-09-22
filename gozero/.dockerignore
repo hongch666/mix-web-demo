@@ -1,3 +1,7 @@
+# 环境变量文件（含数据库口令等凭据，运行期由 --env-file / env_file 从宿主机传入）
+app/.env
+app/.env.docker
+
 # Go构建文件
 gozero-app
 gozero-app.exe

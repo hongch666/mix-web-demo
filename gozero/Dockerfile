@@ -29,8 +29,13 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY app .
 
 # 构建应用（禁用CGO以避免glibc依赖）
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
-    -a -installsuffix cgo \
+# 与 go mod download 复用同一份 cache mount：cache mount 内容不写入镜像层，
+# 不挂载时源码变更会退化为重新下载全部模块
+# 同时去掉 -a，让 go build 复用编译缓存而不是每次重编标准库
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -installsuffix cgo \
     -ldflags="-w -s" \
     -o gozero-app .
 

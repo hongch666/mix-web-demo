@@ -24,6 +24,7 @@ Thumbs.db
 
 # 环境
 .env
+.env.docker
 .env.local
 .env.*.local
 

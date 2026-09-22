@@ -17,6 +17,10 @@ Thumbs.db
 .git
 .gitignore
 
+# 环境变量（含数据库口令与令牌，运行期由 --env-file 从宿主机传入）
+.env
+.env.docker
+
 # Build
 *.class
 *.log
