@@ -73,7 +73,8 @@ def start_scheduler(
         neo4j_full_sync_job_func, "interval", days=7, id="sync_neo4j_full"
     )
 
-    # 任务5：增量同步 MySQL/MongoDB 到 ClickHouse 并刷新数仓，每分钟执行一次
+    # 任务5：增量同步 MySQL/MongoDB 到 ClickHouse 并刷新数仓，每10分钟执行一次
+    # 实时性由各服务的 HTTP 调用链路承担，数仓仅作低频兜底
     # 首次延迟 1 分钟，与服务启动后注册进 Nacos 的时间对齐
     warehouse_sync_job_func = partial(
         sync_warehouse_async,
@@ -83,7 +84,7 @@ def start_scheduler(
     scheduler.add_job(
         warehouse_sync_job_func,
         "interval",
-        minutes=1,
+        minutes=10,
         id="sync_clickhouse_warehouse",
         start_date=datetime.now() + timedelta(minutes=1),
     )

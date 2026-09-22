@@ -13,7 +13,6 @@ from app.internal.crud import (
     get_api_log_mapper,
     get_article_mapper,
     get_user_mapper,
-    get_vector_embeddings,
     get_vector_store_mapper,
 )
 
@@ -39,7 +38,7 @@ def provide_user_mapper(
 
 
 def provide_vector_store_mapper() -> VectorMapper:
-    return get_vector_store_mapper(get_vector_embeddings())
+    return get_vector_store_mapper()
 
 
 def resolve_article_mapper() -> ArticleMapper:

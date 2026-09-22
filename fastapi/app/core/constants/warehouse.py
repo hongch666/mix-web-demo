@@ -232,7 +232,7 @@ class WarehouseScripts:
 
     # 数仓增量刷新说明
     # 派生表分两类维护方式：
-    #   1) 分区表：按日期累积增长，仅重建本次有新数据涉及的月份分区，避免每分钟全量重建
+    #   1) 分区表：按日期累积增长，仅重建本次有新数据涉及的月份分区，避免每轮同步全量重建
     #   2) 快照表：维度表与全局聚合快照，数据量小且无日期分区，每次有新数据时全量重建
     # 两类表的执行顺序与 SQL 见文件末尾的 REFRESH_SEQUENCE
 
@@ -466,7 +466,15 @@ class WarehouseScripts:
             SELECT author_id, count() AS total_followers
             FROM
             (
-                SELECT toInt64OrZero(JSONExtractString(content, 'targetUserId')) AS author_id
+                -- content 内的键存在两种历史形态：写入侧为驼峰，早期经对外命名转换落库为下划线，
+                -- 读取时两种都试，否则存量关注事件解析不出作者导致粉丝数统计归零
+                SELECT toInt64OrZero(
+                    if(
+                        JSONExtractString(content, 'targetUserId') != '',
+                        JSONExtractString(content, 'targetUserId'),
+                        JSONExtractString(content, 'target_user_id')
+                    )
+                ) AS author_id
                 FROM warehouse.ods_article_log FINAL
                 WHERE action = 'focus'
                 UNION ALL

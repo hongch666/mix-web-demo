@@ -7,11 +7,7 @@ from typing import Any, Optional
 from app.core.base import Logger
 from app.core.constants import Defaults, Messages
 from app.internal.agents.langsmith import get_langsmith_context
-from app.internal.crud import (
-    VectorMapper,
-    get_vector_embeddings,
-    get_vector_store_mapper,
-)
+from app.internal.crud import VectorMapper, get_vector_store_mapper
 from app.internal.schemas import (
     VectorMatchedChunkDTO,
     VectorSearchEnhanceItemDTO,
@@ -61,9 +57,7 @@ class VectorSearchService:
         fetch_k = self._resolve_fetch_k(req.topK, len(article_ids))
 
         search_start = time.time()
-        vector_mapper = self._vector_mapper or get_vector_store_mapper(
-            get_vector_embeddings()
-        )
+        vector_mapper = self._vector_mapper or get_vector_store_mapper()
         with get_langsmith_context(
             name="vector.enhance",
             tags=["feature:vector_search"],

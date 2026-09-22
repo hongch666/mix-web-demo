@@ -8,11 +8,7 @@ from app.core.constants import Messages, RedisKeys
 from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.cache import get_redis_client
 from app.internal.clients import SpringClient, get_spring_client
-from app.internal.crud import (
-    VectorMapper,
-    get_vector_embeddings,
-    get_vector_store_mapper,
-)
+from app.internal.crud import VectorMapper, get_vector_store_mapper
 
 
 def _get_redis_client() -> Optional[Any]:
@@ -244,7 +240,7 @@ async def _export_article_vectors_to_postgres(
     """
     spring_client: SpringClient = get_spring_client()
 
-    vector_mapper: VectorMapper = get_vector_store_mapper(get_vector_embeddings())
+    vector_mapper: VectorMapper = get_vector_store_mapper()
 
     sync_start_time: datetime = datetime.now()
     sync_mode = "增量" if enable_incremental_sync else "全量"

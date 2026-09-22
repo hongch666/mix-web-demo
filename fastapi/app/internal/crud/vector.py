@@ -247,6 +247,11 @@ def get_vector_embeddings() -> Any:
         )
 
 
-@lru_cache()
-def get_vector_store_mapper(embedding_function: Any) -> VectorMapper:
-    return VectorMapper(embedding_function)
+@lru_cache
+def get_vector_store_mapper() -> VectorMapper:
+    """获取向量库 Mapper 单例
+
+    embedding 模型由 get_vector_embeddings 单独缓存，本工厂必须保持无参：
+    缓存装饰器会把入参当缓存键，而 DashScopeEmbeddings 实例不可哈希
+    """
+    return VectorMapper(get_vector_embeddings())

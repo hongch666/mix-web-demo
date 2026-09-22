@@ -2,7 +2,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app.internal.crud import get_vector_embeddings, get_vector_store_mapper
+from app.internal.crud import get_vector_store_mapper
 
 from .tools.fastapiSqlTool import get_fastapi_sql_tool
 from .tools.gozeroSqlTool import get_gozero_sql_tool
@@ -16,7 +16,7 @@ from .tools.warehouseTools import get_warehouse_tools
 
 def _default_rag_tools() -> RAGTools:
     """RAG 工具默认装配，自行解析向量库 Mapper 单例"""
-    return get_rag_tools(get_vector_store_mapper(get_vector_embeddings()))
+    return get_rag_tools(get_vector_store_mapper())
 
 
 @dataclass(frozen=True)
