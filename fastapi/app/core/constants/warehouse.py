@@ -280,12 +280,13 @@ class WarehouseScripts:
     REFRESH_DWD_ACTION: Final[str] = """
         INSERT INTO warehouse.dwd_user_action
         -- 主数据源：MongoDB 事件流（12 类行为，含 view 与 unlike 等负信号）
-        -- 关注行的 article_id 存被关注用户 ID，与 ods_focus 的 focus_id 语义一致
+        -- 关注行的 article_id 为 -1（与文章无关），被关注用户存在 content.targetUserId
         SELECT event_id, 'article_log', 0, action, user_id, article_id,
                toDate(created_at), created_at FROM warehouse.ods_article_log FINAL
         WHERE toString(toYYYYMM(created_at)) = %(partition)s
         UNION ALL
         -- 补充数据源：仅取事件流起点之前的关系表存量，避免与事件流重复计数
+        -- 存量关注同样以 article_id = -1 对齐事件流语义，目标用户由 ods_focus.focus_id 单独统计
         SELECT concat('like:', toString(id)), 'likes', id, 'like', user_id,
                article_id, toDate(created_time), created_time FROM warehouse.ods_likes FINAL
         WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
@@ -302,7 +303,7 @@ class WarehouseScripts:
           AND toString(toYYYYMM(create_time)) = %(partition)s
         UNION ALL
         SELECT concat('focus:', toString(id)), 'focus', id, 'focus', user_id,
-               focus_id, toDate(created_time), created_time FROM warehouse.ods_focus FINAL
+               -1, toDate(created_time), created_time FROM warehouse.ods_focus FINAL
         WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
           AND toString(toYYYYMM(created_time)) = %(partition)s
     """
@@ -460,10 +461,21 @@ class WarehouseScripts:
         ) AS p ON u.id = p.author_id
         LEFT JOIN
         (
-            SELECT article_id AS author_id, count() AS total_followers
-            FROM warehouse.dwd_user_action FINAL
-            WHERE action_type = 'focus' AND article_id > 0
-            GROUP BY article_id
+            -- 关注行的 article_id 固定为 -1，被关注用户不在该列，需要从来源分别解析
+            -- 事件流取 content.targetUserId；关系表存量只取事件流起点之前的数据，避免与事件流重复计数
+            SELECT author_id, count() AS total_followers
+            FROM
+            (
+                SELECT toInt64OrZero(JSONExtractString(content, 'targetUserId')) AS author_id
+                FROM warehouse.ods_article_log FINAL
+                WHERE action = 'focus'
+                UNION ALL
+                SELECT focus_id AS author_id
+                FROM warehouse.ods_focus FINAL
+                WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
+            )
+            WHERE author_id > 0
+            GROUP BY author_id
         ) AS f ON u.id = f.author_id
     """
 
