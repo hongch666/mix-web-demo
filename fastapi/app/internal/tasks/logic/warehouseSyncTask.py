@@ -117,6 +117,29 @@ async def _insert_rows(model: type[Any], rows: list[dict[str, Any]]) -> None:
         await connection.execute(insert(model), rows)
 
 
+def _collect_dirty_partitions(
+    table_name: str, items: list[dict[str, Any]]
+) -> set[str]:
+    """
+    从同步的原始行中推导受影响的月份分区
+
+    只对登记在 SOURCE_DIRTY_DATE_FIELD 的源表生效，返回形如 {"202609"} 的分区值集合
+    """
+    date_field = WarehouseScripts.SOURCE_DIRTY_DATE_FIELD.get(table_name)
+    if not date_field:
+        return set()
+    partitions: set[str] = set()
+    for item in items:
+        value = item.get(date_field)
+        if value is None:
+            continue
+        moment = _to_datetime(value)
+        if moment == WarehouseScripts.EPOCH_DATETIME:
+            continue
+        partitions.add(moment.strftime("%Y%m"))
+    return partitions
+
+
 def _normalize_row(item: dict[str, Any], columns: Sequence[str]) -> dict[str, Any]:
     row: dict[str, Any] = {}
     for column in columns:
@@ -138,11 +161,19 @@ async def _sync_remote_source(
     table_name: str,
     resource: str,
     columns: Sequence[str],
-) -> None:
+) -> tuple[bool, set[str]]:
+    """
+    增量同步一张远端源表到 ODS
+
+    返回 (本次是否有新数据, 受影响的分区值集合)
+    MySQL 源表只服务于全量快照表（dim_*、dwd_article_event），不产生脏分区，
+    因此需要单独返回是否有变更，避免快照表漏刷新
+    """
     total = 0
     watermark = await _read_watermark(table_name)
     page_number = 1
     upper_watermark = watermark
+    dirty_partitions: set[str] = set()
     model = REMOTE_MODELS[table_name]
     while True:
         page = await spring_client.sync_warehouse_data(
@@ -156,6 +187,7 @@ async def _sync_remote_source(
             break
         rows = [_normalize_row(item, columns) for item in items]
         await _insert_rows(model, rows)
+        dirty_partitions |= _collect_dirty_partitions(table_name, items)
         total += len(rows)
         upper_watermark = max(upper_watermark, _to_datetime(page.get("upperWatermark")))
         if not page.get("hasMore", False):
@@ -164,13 +196,15 @@ async def _sync_remote_source(
     if upper_watermark > watermark:
         await _write_watermark(table_name, upper_watermark)
     Logger.info(Messages.WAREHOUSE_ODS_SYNC_SUCCESS(table_name, total))
+    return total > 0, dirty_partitions
 
 
-async def _sync_api_logs(nestjs_client: NestjsClient) -> None:
-    """按 MongoDB ID 游标增量同步 NestJS API 日志到 ClickHouse ODS 层"""
+async def _sync_api_logs(nestjs_client: NestjsClient) -> set[str]:
+    """按 MongoDB ID 游标增量同步 NestJS API 日志到 ClickHouse ODS 层，返回脏分区集合"""
     stored_cursor = await _read_watermark_value(WarehouseScripts.ODS_API_LOG_TABLE)
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
     total = 0
+    dirty_partitions: set[str] = set()
     while True:
         page = await nestjs_client.sync_api_logs(
             cursor, WarehouseScripts.ARTICLE_LOG_BATCH_SIZE
@@ -200,6 +234,9 @@ async def _sync_api_logs(nestjs_client: NestjsClient) -> None:
             for item in items
         ]
         await _insert_rows(OdsApiLog, rows)
+        dirty_partitions |= _collect_dirty_partitions(
+            WarehouseScripts.ODS_API_LOG_TABLE, items
+        )
         total += len(rows)
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
@@ -215,11 +252,14 @@ async def _sync_api_logs(nestjs_client: NestjsClient) -> None:
                 WarehouseScripts.ODS_API_LOG_TABLE, total
             )
         )
+    return dirty_partitions
 
 
-async def _sync_article_logs(nestjs_client: NestjsClient) -> None:
+async def _sync_article_logs(nestjs_client: NestjsClient) -> set[str]:
+    """按 MongoDB ID 游标增量同步 NestJS 文章行为日志到 ODS 层，返回脏分区集合"""
     stored_cursor = await _read_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE)
     cursor = stored_cursor if _is_mongo_cursor(stored_cursor) else ""
+    dirty_partitions: set[str] = set()
     while True:
         page = await nestjs_client.sync_article_logs(
             cursor, WarehouseScripts.ARTICLE_LOG_BATCH_SIZE
@@ -245,6 +285,9 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> None:
             for item in items
         ]
         await _insert_rows(OdsArticleLog, rows)
+        dirty_partitions |= _collect_dirty_partitions(
+            WarehouseScripts.ODS_ARTICLE_LOG_TABLE, items
+        )
         next_cursor = page.get("nextCursor") or page.get("next_cursor")
         if next_cursor:
             cursor = next_cursor
@@ -253,45 +296,96 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> None:
             break
     if cursor:
         await _write_watermark_value(WarehouseScripts.ODS_ARTICLE_LOG_TABLE, cursor)
+    return dirty_partitions
 
 
-async def _refresh_warehouse() -> None:
-    for sql in WarehouseScripts.REFRESH_DERIVED_TABLES:
-        await execute_clickhouse_sql(sql)
-    for sql in (
-        WarehouseScripts.REFRESH_DIM_USER,
-        WarehouseScripts.REFRESH_DIM_CATEGORY,
-        WarehouseScripts.REFRESH_DWD_ARTICLE,
-        WarehouseScripts.REFRESH_DWD_ACTION,
-        WarehouseScripts.REFRESH_DWS_ARTICLE,
-        WarehouseScripts.REFRESH_DWS_USER,
-        *WarehouseScripts.REFRESH_ADS,
-        WarehouseScripts.REFRESH_ADS_USER_DAY,
-        WarehouseScripts.REFRESH_ADS_USER_VIEW_ARTICLES,
-        WarehouseScripts.REFRESH_ADS_USER_STATS,
-        WarehouseScripts.REFRESH_DWD_API_CALL,
-        WarehouseScripts.REFRESH_DWS_API_DAY,
-        *WarehouseScripts.REFRESH_ADS_API,
-        WarehouseScripts.REFRESH_ADS_SEARCH_KEYWORDS,
-    ):
-        await execute_clickhouse_sql(sql)
+async def _refresh_full_tables() -> None:
+    """全量重建快照类派生表：清空后按依赖顺序插入"""
+    for table_name, refresh_sql in WarehouseScripts.FULL_REFRESH_STEPS:
+        await execute_clickhouse_sql(
+            WarehouseScripts.TRUNCATE_TEMPLATE % table_name
+        )
+        await execute_clickhouse_sql(refresh_sql)
+
+
+async def _drop_partition_if_exists(table_name: str, partition: str) -> None:
+    """
+    删除分区，分区不存在时静默跳过
+
+    ClickHouse 的 DROP PARTITION 在分区不存在时会报错，
+    而脏分区来自全部源表的并集，某张表未必对所有脏分区都有数据（如首次运行或空表）
+    """
+    try:
+        await execute_clickhouse_sql(
+            WarehouseScripts.PARTITION_DROP_TEMPLATE % (table_name, partition)
+        )
+    except Exception as error:
+        Logger.debug(
+            Messages.WAREHOUSE_PARTITION_DROP_SKIPPED(table_name, partition, error)
+        )
+
+
+async def _refresh_partitions(dirty_partitions: set[str]) -> None:
+    """
+    按分区增量重建分区表
+
+    对每个脏分区执行 DROP PARTITION 后重新插入，分区表按依赖顺序处理，
+    上游分区（dwd）必须先于下游分区（dws/ads）重建
+    """
+    for table_name in WarehouseScripts.PARTITIONED_REFRESH_ORDER:
+        refresh_sql, _ = WarehouseScripts.PARTITIONED_REFRESH_STEPS[table_name]
+        for partition in sorted(dirty_partitions):
+            await _drop_partition_if_exists(table_name, partition)
+            await execute_clickhouse_sql(refresh_sql, {"partition": partition})
+
+
+async def _refresh_warehouse(
+    dirty_partitions: set[str], snapshot_changed: bool
+) -> None:
+    """
+    刷新派生层
+
+    分区表按脏分区增量重建，快照表在全量快照源（MySQL 业务表）有变更时全量重建；
+    分区表依赖 dim/dwd_article_event，因此先重建快照表再重建分区表
+    """
+    if snapshot_changed:
+        await _refresh_full_tables()
+    if dirty_partitions:
+        await _refresh_partitions(dirty_partitions)
 
 
 async def _sync_warehouse(
     spring_client: SpringClient, nestjs_client: Optional[NestjsClient] = None
 ) -> None:
     await create_warehouse_tables_async()
-    await asyncio.gather(
+    source_results = await asyncio.gather(
         *(
             _sync_remote_source(spring_client, *source)
             for source in WarehouseScripts.REMOTE_SOURCES
         )
     )
+    dirty_partitions: set[str] = set()
+    snapshot_changed = False
+    for changed, partitions in source_results:
+        snapshot_changed = snapshot_changed or changed
+        dirty_partitions |= partitions
     try:
         if nestjs_client:
-            await _sync_article_logs(nestjs_client)
-            await _sync_api_logs(nestjs_client)
-        await _refresh_warehouse()
+            event_partitions = await _sync_article_logs(nestjs_client)
+            api_partitions = await _sync_api_logs(nestjs_client)
+            dirty_partitions |= event_partitions
+            dirty_partitions |= api_partitions
+            snapshot_changed = snapshot_changed or bool(
+                event_partitions or api_partitions
+            )
+        if dirty_partitions or snapshot_changed:
+            if dirty_partitions:
+                Logger.info(
+                    Messages.WAREHOUSE_DIRTY_PARTITIONS(sorted(dirty_partitions))
+                )
+            await _refresh_warehouse(dirty_partitions, snapshot_changed)
+        else:
+            Logger.info(Messages.WAREHOUSE_REFRESH_SKIPPED)
         Logger.info(Messages.WAREHOUSE_REFRESH_SUCCESS)
     except Exception as error:
         Logger.error(Messages.WAREHOUSE_REFRESH_FAILED(error))

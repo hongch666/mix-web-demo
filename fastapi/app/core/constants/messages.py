@@ -1532,6 +1532,21 @@ class Messages:
     def WAREHOUSE_API_LOG_SYNC_SUCCESS(table_name: str, count: int) -> str:
         return f"ClickHouse API日志 ODS 同步完成: {table_name}, rows={count}"
 
+    WAREHOUSE_REFRESH_SKIPPED: str = "ClickHouse 数仓无新增数据，跳过派生层刷新"
+
+    @staticmethod
+    def WAREHOUSE_DIRTY_PARTITIONS(partitions: list[str]) -> str:
+        return f"ClickHouse 数仓本次受影响分区: {partitions}"
+
+    @staticmethod
+    def WAREHOUSE_PARTITION_DROP_SKIPPED(
+        table_name: str, partition: str, error: Exception
+    ) -> str:
+        return (
+            f"ClickHouse 分区删除跳过: {table_name}, partition={partition}, "
+            f"reason={error}"
+        )
+
     WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
 
     @staticmethod

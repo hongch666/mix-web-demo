@@ -230,26 +230,31 @@ class WarehouseScripts:
     )
     FLOAT_COLUMNS: Final[frozenset[str]] = frozenset({"star"})
 
-    REFRESH_DERIVED_TABLES: Final[tuple[str, ...]] = (
-        "TRUNCATE TABLE warehouse.dim_user",
-        "TRUNCATE TABLE warehouse.dim_category",
-        "TRUNCATE TABLE warehouse.dwd_article_event",
-        "TRUNCATE TABLE warehouse.dwd_user_action",
-        "TRUNCATE TABLE warehouse.dws_article_day",
-        "TRUNCATE TABLE warehouse.dws_user_day",
-        "TRUNCATE TABLE warehouse.ads_top10_articles",
-        "TRUNCATE TABLE warehouse.ads_category_stats",
-        "TRUNCATE TABLE warehouse.ads_monthly_publish",
-        "TRUNCATE TABLE warehouse.ads_platform_stats",
-        "TRUNCATE TABLE warehouse.ads_user_day",
-        "TRUNCATE TABLE warehouse.ads_user_view_articles",
-        "TRUNCATE TABLE warehouse.ads_user_stats",
-        "TRUNCATE TABLE warehouse.dwd_api_call",
-        "TRUNCATE TABLE warehouse.dws_api_day",
-        "TRUNCATE TABLE warehouse.ads_api_average_speed",
-        "TRUNCATE TABLE warehouse.ads_api_called_count",
-        "TRUNCATE TABLE warehouse.ads_search_keywords",
-    )
+    # 数仓增量刷新说明
+    # 派生表分两类维护方式：
+    #   1) 分区表：按日期累积增长，仅重建本次有新数据涉及的月份分区，避免每分钟全量重建
+    #   2) 快照表：维度表与全局聚合快照，数据量小且无日期分区，每次有新数据时全量重建
+    # 两类表的执行顺序与 SQL 见文件末尾的 REFRESH_SEQUENCE
+
+    # ODS 源表 -> 用于推导脏分区的日期字段
+    # 同步时按该字段取出行内日期，作为需要重建的月份分区
+    SOURCE_DIRTY_DATE_FIELD: Final[dict[str, str]] = {
+        "ods_article_log": "created_at",
+        "ods_api_log": "created_at",
+        "ods_likes": "created_time",
+        "ods_collects": "created_time",
+        "ods_comments": "create_time",
+        "ods_focus": "created_time",
+    }
+
+    # 分区值模板：分区键由 toYYYYMM 生成，形如 202609
+    PARTITION_VALUE_TEMPLATE: Final[str] = "toString(toYYYYMM(%s)) = %(partition)s"
+
+    # 分区清理模板：表名与分区值为内部生成的常量（分区值必为纯数字），
+    # ClickHouse 的 DROP PARTITION 不接受绑定参数，与项目内其他 DDL 模板同样采用受控拼接
+    PARTITION_DROP_TEMPLATE: Final[str] = "ALTER TABLE warehouse.%s DROP PARTITION %s"
+
+    TRUNCATE_TEMPLATE: Final[str] = "TRUNCATE TABLE warehouse.%s"
 
     REFRESH_DIM_USER: Final[str] = """
         INSERT INTO warehouse.dim_user
@@ -275,25 +280,31 @@ class WarehouseScripts:
     REFRESH_DWD_ACTION: Final[str] = """
         INSERT INTO warehouse.dwd_user_action
         -- 主数据源：MongoDB 事件流（12 类行为，含 view 与 unlike 等负信号）
+        -- 关注行的 article_id 存被关注用户 ID，与 ods_focus 的 focus_id 语义一致
         SELECT event_id, 'article_log', 0, action, user_id, article_id,
                toDate(created_at), created_at FROM warehouse.ods_article_log FINAL
+        WHERE toString(toYYYYMM(created_at)) = %(partition)s
         UNION ALL
         -- 补充数据源：仅取事件流起点之前的关系表存量，避免与事件流重复计数
         SELECT concat('like:', toString(id)), 'likes', id, 'like', user_id,
                article_id, toDate(created_time), created_time FROM warehouse.ods_likes FINAL
         WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
+          AND toString(toYYYYMM(created_time)) = %(partition)s
         UNION ALL
         SELECT concat('collect:', toString(id)), 'collects', id, 'collect', user_id,
                article_id, toDate(created_time), created_time FROM warehouse.ods_collects FINAL
         WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
+          AND toString(toYYYYMM(created_time)) = %(partition)s
         UNION ALL
         SELECT concat('comment:', toString(id)), 'comments', id, 'comment', user_id,
                article_id, toDate(create_time), create_time FROM warehouse.ods_comments FINAL
         WHERE create_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
+          AND toString(toYYYYMM(create_time)) = %(partition)s
         UNION ALL
         SELECT concat('focus:', toString(id)), 'focus', id, 'focus', user_id,
                focus_id, toDate(created_time), created_time FROM warehouse.ods_focus FINAL
         WHERE created_time < (SELECT ifNull(min(created_at), toDateTime('1970-01-01 00:00:00')) FROM warehouse.ods_article_log)
+          AND toString(toYYYYMM(created_time)) = %(partition)s
     """
     REFRESH_DWS_ARTICLE: Final[str] = """
         INSERT INTO warehouse.dws_article_day
@@ -318,6 +329,7 @@ class WarehouseScripts:
                    countIf(action_type = 'view') AS view_count
             FROM warehouse.dwd_user_action FINAL
             WHERE article_id > 0
+              AND toString(toYYYYMM(action_date)) = %(partition)s
             GROUP BY action_date, article_id
         ) AS x
         LEFT JOIN warehouse.dwd_article_event AS a FINAL ON x.article_id = a.id
@@ -329,6 +341,7 @@ class WarehouseScripts:
                countIf(action_type = 'comment'), countIf(action_type = 'focus'),
                uniqExactIf(article_id, action_type = 'like'), max(action_time)
         FROM warehouse.dwd_user_action FINAL
+        WHERE toString(toYYYYMM(action_date)) = %(partition)s
         GROUP BY action_date, user_id
     """
     REFRESH_ADS: Final[tuple[str, ...]] = (
@@ -373,6 +386,7 @@ class WarehouseScripts:
                countIf(action_type = 'comment'), countIf(action_type = 'focus'),
                countIf(action_type = 'view'), max(action_time), now()
         FROM warehouse.dwd_user_action FINAL
+        WHERE toString(toYYYYMM(action_date)) = %(partition)s
         GROUP BY action_date, user_id
     """
 
@@ -459,6 +473,7 @@ class WarehouseScripts:
         SELECT event_id, api_path, api_method, api_description, user_id, username,
                response_time, toDate(created_at), created_at
         FROM warehouse.ods_api_log FINAL
+        WHERE toString(toYYYYMM(created_at)) = %(partition)s
     """
 
     # API 日志 DWS 层：按日 + 接口维度轻度聚合
@@ -467,6 +482,7 @@ class WarehouseScripts:
         SELECT action_date, api_path, api_method, api_description,
                count(), sum(response_time), max(response_time)
         FROM warehouse.dwd_api_call FINAL
+        WHERE toString(toYYYYMM(action_date)) = %(partition)s
         GROUP BY action_date, api_path, api_method, api_description
     """
 
@@ -507,3 +523,42 @@ class WarehouseScripts:
         WHERE keyword != ''
         GROUP BY keyword
     """
+
+    # ========== 派生层刷新执行顺序 ==========
+    # 分区增量表：表名 -> (分区清理后需执行的 INSERT SQL, 分区日期列)
+    # 刷新流程对每个脏分区执行 DROP PARTITION + INSERT，只重建受影响月份
+    PARTITIONED_REFRESH_STEPS: Final[dict[str, tuple[str, str]]] = {
+        "dwd_user_action": (REFRESH_DWD_ACTION, "action_date"),
+        "dwd_api_call": (REFRESH_DWD_API_CALL, "action_date"),
+        "dws_article_day": (REFRESH_DWS_ARTICLE, "stat_date"),
+        "dws_user_day": (REFRESH_DWS_USER, "stat_date"),
+        "dws_api_day": (REFRESH_DWS_API_DAY, "action_date"),
+        "ads_user_day": (REFRESH_ADS_USER_DAY, "stat_date"),
+    }
+
+    # 分区表的依赖顺序：上游分区表必须先于下游重建
+    PARTITIONED_REFRESH_ORDER: Final[tuple[str, ...]] = (
+        "dwd_user_action",
+        "dwd_api_call",
+        "dws_article_day",
+        "dws_user_day",
+        "dws_api_day",
+        "ads_user_day",
+    )
+
+    # 全量重建表：表名 -> INSERT SQL，按依赖顺序排列
+    # 依赖关系：dim_* -> dwd_article_event -> ads_*（用户累计指标依赖前面全部表）
+    FULL_REFRESH_STEPS: Final[tuple[tuple[str, str], ...]] = (
+        ("dim_user", REFRESH_DIM_USER),
+        ("dim_category", REFRESH_DIM_CATEGORY),
+        ("dwd_article_event", REFRESH_DWD_ARTICLE),
+        ("ads_top10_articles", REFRESH_ADS[0]),
+        ("ads_category_stats", REFRESH_ADS[1]),
+        ("ads_monthly_publish", REFRESH_ADS[2]),
+        ("ads_platform_stats", REFRESH_ADS[3]),
+        ("ads_user_view_articles", REFRESH_ADS_USER_VIEW_ARTICLES),
+        ("ads_user_stats", REFRESH_ADS_USER_STATS),
+        ("ads_api_average_speed", REFRESH_ADS_API[0]),
+        ("ads_api_called_count", REFRESH_ADS_API[1]),
+        ("ads_search_keywords", REFRESH_ADS_SEARCH_KEYWORDS),
+    )

@@ -97,6 +97,54 @@ async def test_remote_source_advances_watermark_only_after_all_pages(
 
 
 @pytest.mark.anyio
+async def test_remote_source_reports_change_flag_for_snapshot_tables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # MySQL 源表不产生脏分区，但需要返回"有变更"以驱动快照表刷新
+    spring_client = AsyncMock()
+    spring_client.sync_warehouse_data.return_value = {
+        "list": [{"id": 1, "name": "alice"}],
+        "upperWatermark": "2026-01-02 00:00:00",
+        "hasMore": False,
+    }
+    monkeypatch.setattr(
+        task,
+        "_read_watermark",
+        AsyncMock(return_value=datetime(2026, 1, 1, 0, 0, 0)),
+    )
+    monkeypatch.setattr(task, "_insert_rows", AsyncMock())
+    monkeypatch.setattr(task, "_write_watermark", AsyncMock())
+    monkeypatch.setitem(task.REMOTE_MODELS, "ods_user", object)
+
+    changed, partitions = await task._sync_remote_source(
+        spring_client, "ods_user", "user", ("id", "name")
+    )
+
+    assert changed is True
+    assert partitions == set()
+
+
+@pytest.mark.anyio
+async def test_remote_source_reports_no_change_when_no_rows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spring_client = AsyncMock()
+    spring_client.sync_warehouse_data.return_value = {"list": [], "hasMore": False}
+    monkeypatch.setattr(
+        task, "_read_watermark", AsyncMock(return_value=datetime(2026, 1, 1))
+    )
+    monkeypatch.setattr(task, "_insert_rows", AsyncMock())
+    monkeypatch.setitem(task.REMOTE_MODELS, "ods_user", object)
+
+    changed, partitions = await task._sync_remote_source(
+        spring_client, "ods_user", "user", ("id", "name")
+    )
+
+    assert changed is False
+    assert partitions == set()
+
+
+@pytest.mark.anyio
 async def test_remote_source_does_not_advance_watermark_when_page_insert_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -127,3 +175,171 @@ async def test_remote_source_does_not_advance_watermark_when_page_insert_fails(
         )
 
     write_watermark.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_collect_dirty_partitions_groups_by_month() -> None:
+    items = [
+        {"created_at": "2026-09-01 10:00:00"},
+        {"created_at": "2026-09-30 23:59:59"},
+        {"created_at": "2026-10-01 00:00:00"},
+    ]
+    partitions = task._collect_dirty_partitions("ods_article_log", items)
+    assert partitions == {"202609", "202610"}
+
+
+@pytest.mark.anyio
+async def test_collect_dirty_partitions_ignores_unregistered_source() -> None:
+    # ods_articles 不在 SOURCE_DIRTY_DATE_FIELD 中，不产生脏分区
+    items = [{"update_at": "2026-09-01 10:00:00"}]
+    assert task._collect_dirty_partitions("ods_articles", items) == set()
+
+
+@pytest.mark.anyio
+async def test_collect_dirty_partitions_skips_invalid_dates() -> None:
+    items = [
+        {"created_at": None},
+        {"created_at": "not-a-date"},
+    ]
+    assert task._collect_dirty_partitions("ods_article_log", items) == set()
+
+
+@pytest.mark.anyio
+async def test_refresh_partitions_rebuilds_each_dirty_partition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executed = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        executed.append((sql, parameters))
+
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+
+    await task._refresh_partitions({"202609"})
+
+    # 6 张分区表，每张对 202609 分区执行一次 DROP + 一次 INSERT
+    drop_calls = [c for c in executed if "DROP PARTITION" in c[0]]
+    insert_calls = [c for c in executed if "INSERT" in c[0]]
+    assert len(drop_calls) == 6
+    assert len(insert_calls) == 6
+    assert all(call[0].endswith("202609") for call in drop_calls)
+    assert all(call[1] == {"partition": "202609"} for call in insert_calls)
+
+
+@pytest.mark.anyio
+async def test_refresh_partitions_preserves_dependency_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    table_order: list[str] = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        if "DROP PARTITION" in sql:
+            # 从 ALTER TABLE warehouse.<table> DROP PARTITION 中提取表名
+            table_order.append(sql.split(".")[1].split(" ")[0])
+
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+
+    await task._refresh_partitions({"202609"})
+
+    expected = ["dwd_user_action", "dwd_api_call", "dws_article_day",
+                "dws_user_day", "dws_api_day", "ads_user_day"]
+    assert table_order == expected
+
+
+@pytest.mark.anyio
+async def test_refresh_partitions_continues_when_partition_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # 某张表没有该分区时 DROP 会报错，不应中断后续表的刷新
+    inserted: list[tuple[str, dict | None]] = []
+
+    async def fake_execute(sql: str, parameters: dict | None = None) -> None:
+        if "DROP PARTITION" in sql:
+            raise RuntimeError("partition not found")
+        inserted.append((sql, parameters))
+
+    monkeypatch.setattr(task, "execute_clickhouse_sql", fake_execute)
+
+    await task._refresh_partitions({"202609"})
+
+    # 6 张分区表的 INSERT 仍全部执行
+    assert len(inserted) == 6
+    assert all(call[1] == {"partition": "202609"} for call in inserted)
+
+
+@pytest.mark.anyio
+async def test_sync_warehouse_skips_refresh_when_nothing_changed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spring_client = AsyncMock()
+    # 8 个远端源都无新增数据，既无脏分区也无快照变更
+    monkeypatch.setattr(
+        task, "_sync_remote_source", AsyncMock(return_value=(False, set()))
+    )
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(task, "_sync_article_logs", AsyncMock(return_value=set()))
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
+    refresh = AsyncMock()
+    monkeypatch.setattr(task, "_refresh_warehouse", refresh)
+
+    await task._sync_warehouse(spring_client, AsyncMock())
+
+    refresh.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_sync_warehouse_refreshes_when_dirty_partitions_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spring_client = AsyncMock()
+    monkeypatch.setattr(
+        task,
+        "_sync_remote_source",
+        AsyncMock(return_value=(False, {"202609"})),
+    )
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(
+        task, "_sync_article_logs", AsyncMock(return_value=set())
+    )
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
+    refresh = AsyncMock()
+    monkeypatch.setattr(task, "_refresh_warehouse", refresh)
+
+    await task._sync_warehouse(spring_client, AsyncMock())
+
+    refresh.assert_awaited_once_with({"202609"}, False)
+
+
+@pytest.mark.anyio
+async def test_sync_warehouse_refreshes_snapshots_when_mysql_source_changed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # MySQL 源表只影响快照表，没有脏分区也必须刷新
+    spring_client = AsyncMock()
+    monkeypatch.setattr(
+        task, "_sync_remote_source", AsyncMock(return_value=(True, set()))
+    )
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(task, "_sync_article_logs", AsyncMock(return_value=set()))
+    monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
+    refresh = AsyncMock()
+    monkeypatch.setattr(task, "_refresh_warehouse", refresh)
+
+    await task._sync_warehouse(spring_client, AsyncMock())
+
+    refresh.assert_awaited_once_with(set(), True)
+
+
+@pytest.mark.anyio
+async def test_refresh_warehouse_skips_snapshots_when_only_events_changed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    full = AsyncMock()
+    partitions = AsyncMock()
+    monkeypatch.setattr(task, "_refresh_full_tables", full)
+    monkeypatch.setattr(task, "_refresh_partitions", partitions)
+
+    await task._refresh_warehouse({"202609"}, False)
+
+    full.assert_not_awaited()
+    partitions.assert_awaited_once_with({"202609"})
