@@ -9,6 +9,7 @@ import java.util.Map;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,7 +83,7 @@ public class ArticleSyncAspect {
             Map<String, Object> content = new HashMap<>();
 
             // 根据注解类型构建消息
-            buildActionMessage(action, paramValues, content, msg, userId, description);
+            buildActionMessage(joinPoint, action, paramValues, content, msg, userId, description);
             msg.put("action", action);
 
             // 发送消息到 MQ + 触发 ES/向量库/数仓/图谱同步，并行执行
@@ -106,8 +107,8 @@ public class ArticleSyncAspect {
      * 根据操作类型构建消息内容
      * 注解作用在控制器上，入参可能是 DTO、路径变量或逗号分隔的 ID 字符串，统一按属性名解析
      */
-    private void buildActionMessage(String action, Object[] paramValues, Map<String, Object> content,
-        Map<String, Object> msg, Long userId, String description) {
+    private void buildActionMessage(ProceedingJoinPoint joinPoint, String action, Object[] paramValues,
+        Map<String, Object> content, Map<String, Object> msg, Long userId, String description) {
         Object primaryParam = paramValues.length > 0 ? paramValues[0] : null;
 
         switch (action) {
@@ -140,12 +141,22 @@ public class ArticleSyncAspect {
             case "like":
             case "unlike":
             case "collect":
-            case "uncollect":
+            case "uncollect": {
+                Long articleId = readArticleRelatedId(primaryParam);
+                content.put("id", articleId);
+                msg.put("articleId", articleId);
+                msg.put("msg", description);
+                break;
+            }
             case "focus":
             case "unfocus": {
-                Long id = readRelatedId(primaryParam);
-                content.put("id", id);
-                msg.put("articleId", id);
+                Long targetUserId = resolveFocusTarget(joinPoint, primaryParam);
+                // articleId 沿用既有语义：关注行为存被关注用户 ID，数仓粉丝统计依赖该字段
+                // 同时在 content 内补充双方用户 ID，便于溯源
+                content.put("id", targetUserId);
+                content.put("sourceUserId", userId);
+                content.put("targetUserId", targetUserId);
+                msg.put("articleId", targetUserId);
                 msg.put("msg", description);
                 break;
             }
@@ -214,13 +225,38 @@ public class ArticleSyncAspect {
     }
 
     /**
-     * 解析关联 ID：点赞、收藏取文章 ID，关注取发起用户 ID
+     * 解析文章关联 ID：点赞、收藏、浏览等行为取文章 ID
      */
-    private Long readRelatedId(Object target) {
+    private Long readArticleRelatedId(Object target) {
         if (target instanceof Number number) {
             return number.longValue();
         }
-        Long articleId = readLong(target, "articleId");
-        return articleId != null ? articleId : readLong(target, "userId");
+        return readLong(target, "articleId");
+    }
+
+    /**
+     * 解析关注行为的目标用户 ID
+     * 关注新增接口入参是 FocusDTO（userId + focusId），取消关注接口入参是两个 RequestParam（userId +
+     * focusId），
+     * 两者都需要取 focusId 作为目标用户，不能取 userId，否则会记录成关注自己
+     */
+    private Long resolveFocusTarget(ProceedingJoinPoint joinPoint, Object primaryParam) {
+        // 优先按 DTO 属性读取（POST /focus 传 FocusDTO）
+        Long focusId = readLong(primaryParam, "focusId");
+        if (focusId != null) {
+            return focusId;
+        }
+        // 退化为按方法参数名定位（DELETE /focus 传 userId 与 focusId 两个 Long）
+        String[] parameterNames = ((MethodSignature) joinPoint.getSignature()).getParameterNames();
+        Object[] parameterValues = joinPoint.getArgs();
+        if (parameterNames != null) {
+            for (int index = 0; index < parameterNames.length && index < parameterValues.length; index++) {
+                if ("focusId".equals(parameterNames[index])) {
+                    Object value = parameterValues[index];
+                    return value instanceof Number number ? number.longValue() : null;
+                }
+            }
+        }
+        return null;
     }
 }

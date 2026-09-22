@@ -6,6 +6,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.api.service.AsyncSyncService;
+import com.hcsy.spring.common.constants.HttpCode;
+import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.DataSync;
 
@@ -35,12 +37,23 @@ public class DataSyncAspect {
                 Long userId = UserContext.getUserId(ctx);
                 String username = UserContext.getUsername(ctx);
                 Context syncContext = UserContext.writeContext(Context.empty(), userId, username, null, null, null);
-                return monoResult.doOnSuccess(value -> triggerSync(joinPoint, description, userId, username)
-                    .contextWrite(syncContext)
-                    .subscribe());
+                return monoResult.doOnSuccess(value -> {
+                    if (isBusinessSuccess(value)) {
+                        triggerSync(joinPoint, description, userId, username)
+                            .contextWrite(syncContext)
+                            .subscribe();
+                    }
+                });
             });
         }
         return result;
+    }
+
+    private boolean isBusinessSuccess(Object result) {
+        if (result instanceof Result<?> businessResult) {
+            return businessResult.getCode() != null && businessResult.getCode() == HttpCode.OK;
+        }
+        return true;
     }
 
     /**
