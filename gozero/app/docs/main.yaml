@@ -1,0 +1,703 @@
+basePath: /
+consumes:
+- application/json
+info:
+  title: GoZero部分的Swagger文档
+  version: 1.0.0
+  description: 这是项目的GoZero部分的Swagger文档
+  x-author: hongch666
+paths:
+  /search:
+    get:
+      description: 根据关键词、用户ID、用户名、发布时间范围等条件搜索文章（支持分页）
+      operationId: searchSearchArticlesHandler
+      parameters:
+      - allowEmptyValue: true
+        in: query
+        name: keyword
+        type: string
+      - allowEmptyValue: true
+        in: query
+        name: user_id
+        type: integer
+      - allowEmptyValue: true
+        in: query
+        name: username
+        type: string
+      - allowEmptyValue: true
+        in: query
+        name: category_name
+        type: string
+      - allowEmptyValue: true
+        in: query
+        name: sub_category_name
+        type: string
+      - allowEmptyValue: true
+        in: query
+        name: start_date
+        type: string
+      - allowEmptyValue: true
+        in: query
+        name: end_date
+        type: string
+      - allowEmptyValue: true
+        default: 1
+        in: query
+        name: page
+        type: integer
+      - allowEmptyValue: true
+        default: 10
+        in: query
+        name: size
+        type: integer
+      - allowEmptyValue: true
+        in: query
+        name: mode
+        type: string
+      - allowEmptyValue: true
+        in: query
+        name: enable_vector
+        type: boolean
+      - allowEmptyValue: true
+        in: query
+        name: enable_graph
+        type: boolean
+      - allowEmptyValue: true
+        in: query
+        name: explain
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              list:
+                items:
+                  properties:
+                    ai_comment_count:
+                      type: integer
+                    ai_score:
+                      type: number
+                    author_follow_count:
+                      type: integer
+                    category_name:
+                      type: string
+                    collect_count:
+                      type: integer
+                    content:
+                      type: string
+                    create_at:
+                      type: string
+                    es_score:
+                      type: number
+                    final_score:
+                      type: number
+                    graph_score:
+                      type: number
+                    id:
+                      type: integer
+                    like_count:
+                      type: integer
+                    matched_chunks:
+                      items:
+                        properties:
+                          article_id:
+                            type: integer
+                          chunk_index:
+                            type: integer
+                          content:
+                            type: string
+                          score:
+                            type: number
+                          title:
+                            type: string
+                        required:
+                        - article_id
+                        - title
+                        - chunk_index
+                        - score
+                        - content
+                        type: object
+                      type: array
+                    reason:
+                      type: string
+                    relations:
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          reason:
+                            type: string
+                          score:
+                            type: number
+                          type:
+                            type: string
+                        required:
+                        - type
+                        - name
+                        - score
+                        - reason
+                        type: object
+                      type: array
+                    score_details:
+                      properties:
+                        business_score:
+                          type: number
+                        es_score:
+                          type: number
+                        graph_score:
+                          type: number
+                        recency_score:
+                          type: number
+                        vector_score:
+                          type: number
+                      required:
+                      - es_score
+                      - vector_score
+                      - graph_score
+                      - business_score
+                      - recency_score
+                      type: object
+                    semantic_reason:
+                      type: string
+                    status:
+                      type: integer
+                    sub_category_name:
+                      type: string
+                    tags:
+                      type: string
+                    title:
+                      type: string
+                    update_at:
+                      type: string
+                    user_comment_count:
+                      type: integer
+                    user_id:
+                      type: integer
+                    user_score:
+                      type: number
+                    username:
+                      type: string
+                    vector_score:
+                      type: number
+                    views:
+                      type: integer
+                  required:
+                  - id
+                  - title
+                  - content
+                  - user_id
+                  - username
+                  - tags
+                  - status
+                  - views
+                  - like_count
+                  - collect_count
+                  - author_follow_count
+                  - category_name
+                  - sub_category_name
+                  - create_at
+                  - update_at
+                  - ai_score
+                  - user_score
+                  - ai_comment_count
+                  - user_comment_count
+                  - es_score
+                  - vector_score
+                  - graph_score
+                  - final_score
+                  - reason
+                  - semantic_reason
+                  - relations
+                  - matched_chunks
+                  - score_details
+                  type: object
+                type: array
+              total:
+                type: integer
+            type: object
+      summary: 搜索文章
+      tags:
+      - 搜索模块
+  /search/history/{user_id}:
+    get:
+      description: 获取指定用户最近10条搜索关键词列表
+      operationId: searchGetSearchHistoryHandler
+      parameters:
+      - in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              keywords:
+                items:
+                  type: string
+                type: array
+            type: object
+      summary: 获取用户搜索历史
+      tags:
+      - 搜索模块
+  /sql-tools/query:
+    post:
+      consumes:
+      - application/json
+      description: 执行受限的只读参数化SQL查询，表名白名单控制，强制参数化占位符和LIMIT
+      operationId: sqlToolsSqlToolsQueryHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            params:
+              additionalProperties:
+                type: string
+              type: object
+            query:
+              type: string
+          required:
+          - query
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              data:
+                properties:
+                  columns:
+                    items:
+                      type: string
+                    type: array
+                  rowCount:
+                    type: integer
+                  rows:
+                    items:
+                      items:
+                        type: string
+                      type: array
+                    type: array
+                required:
+                - columns
+                - rows
+                - rowCount
+                type: object
+            type: object
+      summary: 执行只读参数化SQL查询
+      tags:
+      - SQL工具模块
+  /sql-tools/tables:
+    get:
+      description: 获取白名单内MySQL表的结构信息，可选指定表名
+      operationId: sqlToolsSqlToolsGetTablesHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            table:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              data:
+                items:
+                  properties:
+                    columns:
+                      items:
+                        properties:
+                          comment:
+                            type: string
+                          key:
+                            type: string
+                          name:
+                            type: string
+                          type:
+                            type: string
+                        required:
+                        - name
+                        - type
+                        - key
+                        - comment
+                        type: object
+                      type: array
+                    table:
+                      type: string
+                  required:
+                  - table
+                  type: object
+                type: array
+            type: object
+      summary: 获取表结构信息
+      tags:
+      - SQL工具模块
+  /sse/chat:
+    get:
+      description: 建立SSE连接。成功时以 text/event-stream 持续推送数据帧，帧结构见响应模型；参数非法时返回统一 JSON
+        错误体
+      operationId: chatChatSSEHandler
+      parameters:
+      - allowEmptyValue: true
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: 连接建立成功，随后持续推送数据帧，每帧对应 ChatSSEMessage
+          content: {}
+        '400':
+          description: 参数非法（如 user_id 非正整数）时返回统一 JSON 错误体
+          content:
+            application/json:
+              schema:
+                type: object
+      summary: SSE消息通知连接
+      tags:
+      - 聊天模块
+  /task/syncer:
+    post:
+      consumes:
+      - application/x-www-form-urlencoded
+      description: 手动触发同步MySQL文章数据到Elasticsearch
+      operationId: taskSyncESHandler
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: object
+      summary: 手动触发同步ES任务
+      tags:
+      - 定时任务模块
+  /test/gozero:
+    get:
+      description: 验证GoZero服务是否正常运行
+      operationId: testTestGoZeroHandler
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              data:
+                type: string
+            type: object
+      summary: 测试GoZero服务
+      tags:
+      - 测试模块
+  /user-chat/all-unread-counts:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定用户与所有其他用户的未读消息数统计
+      operationId: chatChatGetAllUnreadCountsHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            user_id:
+              type: integer
+          required:
+          - user_id
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              data:
+                additionalProperties:
+                  type: integer
+                type: object
+            type: object
+      summary: 获取用户的所有未读消息数
+      tags:
+      - 聊天模块
+  /user-chat/history:
+    post:
+      consumes:
+      - application/json
+      description: 分页获取指定两个用户之间的聊天记录
+      operationId: chatChatGetHistoryHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            other_id:
+              type: integer
+            page:
+              type: integer
+            size:
+              type: integer
+            user_id:
+              type: integer
+          required:
+          - user_id
+          - other_id
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              messages:
+                items:
+                  properties:
+                    content:
+                      type: string
+                    created_at:
+                      type: string
+                    id:
+                      type: integer
+                    is_read:
+                      type: integer
+                    receiver_id:
+                      type: integer
+                    sender_id:
+                      type: integer
+                  required:
+                  - id
+                  - sender_id
+                  - receiver_id
+                  - content
+                  - is_read
+                  - created_at
+                  type: object
+                type: array
+              total:
+                type: integer
+            type: object
+      summary: 获取聊天历史
+      tags:
+      - 聊天模块
+  /user-chat/join:
+    post:
+      consumes:
+      - application/json
+      description: 用户手动加入聊天队列，不需要建立WebSocket连接
+      operationId: chatChatJoinQueueHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            user_id:
+              type: integer
+          required:
+          - user_id
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              status:
+                type: string
+              user_id:
+                type: integer
+            type: object
+      summary: 手动加入聊天队列
+      tags:
+      - 聊天模块
+  /user-chat/leave:
+    post:
+      consumes:
+      - application/json
+      description: 用户手动离开聊天队列
+      operationId: chatChatLeaveQueueHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            user_id:
+              type: integer
+          required:
+          - user_id
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              status:
+                type: string
+              user_id:
+                type: integer
+            type: object
+      summary: 手动离开聊天队列
+      tags:
+      - 聊天模块
+  /user-chat/queue:
+    get:
+      description: 获取当前在队列中的所有用户
+      operationId: chatChatGetQueueStatusHandler
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              count:
+                type: integer
+              online_users:
+                items:
+                  type: integer
+                type: array
+            type: object
+      summary: 获取队列状态
+      tags:
+      - 聊天模块
+  /user-chat/send:
+    post:
+      consumes:
+      - application/json
+      description: 发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户
+      operationId: chatChatSendMessageHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            content:
+              type: string
+            receiver_id:
+              type: integer
+            sender_id:
+              type: integer
+          required:
+          - sender_id
+          - receiver_id
+          - content
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              message_id:
+                type: integer
+            type: object
+      summary: 发送聊天消息
+      tags:
+      - 聊天模块
+  /user-chat/unread-count:
+    post:
+      consumes:
+      - application/json
+      description: 获取指定用户与另一个用户间的未读消息数
+      operationId: chatChatGetUnreadCountHandler
+      parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            other_id:
+              type: integer
+            user_id:
+              type: integer
+          required:
+          - user_id
+          - other_id
+          type: object
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: ''
+          schema:
+            properties:
+              unread_count:
+                type: integer
+            type: object
+      summary: 获取两个用户间的未读消息数
+      tags:
+      - 聊天模块
+  /ws/chat:
+    get:
+      description: 建立WebSocket连接，自动加入聊天队列。握手成功返回 101 升级协议，之后通过文本帧双向通信，帧结构见响应模型
+      operationId: chatChatWebsocketHandler
+      parameters:
+      - allowEmptyValue: true
+        in: query
+        name: user_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        '101':
+          description: 协议升级成功（Switching Protocols），之后通过 WebSocket 文本帧双向通信，帧结构对应 ChatWsMessage
+        '400':
+          description: 参数非法（如 user_id 非正整数）时返回统一 JSON 错误体
+          content:
+            application/json:
+              schema:
+                type: object
+      summary: WebSocket聊天连接
+      tags:
+      - 聊天模块
+produces:
+- application/json
+schemes:
+- http
+swagger: '2.0'
+x-date: '2026-09-23 16:03:32'
+x-description: This is a goctl generated swagger file.
+x-github: https://github.com/zeromicro/go-zero
+x-go-zero-doc: https://go-zero.dev/
+x-goctl-version: 1.9.2
+tags:
+- name: 聊天模块
+  description: 聊天功能相关API，包括消息发送、历史查询、队列管理等
+  x-english-name: chat
+- name: 搜索模块
+  description: 文章搜索功能相关API，支持多条件搜索、历史记录等
+  x-english-name: search
+- name: 测试模块
+  description: 服务测试相关API，用于验证各个微服务是否正常运行
+  x-english-name: test
+- name: 定时任务模块
+  description: 定时任务相关API，包括手动触发同步ES等任务操作
+  x-english-name: task
+- name: SQL工具模块
+  description: SQL 执行工具相关API，包括表结构查询与只读参数化SQL查询
+  x-english-name: sqlTools
