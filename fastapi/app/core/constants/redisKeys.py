@@ -1,5 +1,4 @@
 class RedisKeys:
-
     """
     Redis key 常量类 — 集中定义项目内所有 Redis key / 前缀 / 模式，作为唯一来源。
 

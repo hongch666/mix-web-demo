@@ -49,9 +49,7 @@ class VersionedCache(BaseCache):
     async def get_cache_version(self) -> Optional[str]:
         """基于版本号校验模型对应表的内容生成稳定版本号"""
         if self.VERSION_MODEL is None:
-            Logger.warning(
-                Messages.CACHE_VERSION_MODEL_NOT_SET(type(self).__name__)
-            )
+            Logger.warning(Messages.CACHE_VERSION_MODEL_NOT_SET(type(self).__name__))
             return None
 
         try:

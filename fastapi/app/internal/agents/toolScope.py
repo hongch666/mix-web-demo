@@ -18,6 +18,7 @@ _current_tool_scope: ContextVar[Optional[ToolScope]] = ContextVar(
     "current_tool_scope", default=None
 )
 
+
 def set_tool_scope(user_id: int, is_admin: bool) -> None:
     """写入当前请求的工具作用域，请求内后续执行的工具都读取该作用域"""
     _current_tool_scope.set(ToolScope(user_id=user_id, is_admin=is_admin))
@@ -33,7 +34,9 @@ def clear_tool_scope() -> None:
     _current_tool_scope.set(None)
 
 
-def enforce_sql_row_scope(query: str, params: Optional[dict[str, Any]]) -> Optional[str]:
+def enforce_sql_row_scope(
+    query: str, params: Optional[dict[str, Any]]
+) -> Optional[str]:
     """SQL 工具的行级范围校验，返回拒绝消息或 None 表示放行
 
     管理员放行；未登录或作用域缺失一律拒绝（fail-closed）。

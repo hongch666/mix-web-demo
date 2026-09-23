@@ -82,7 +82,7 @@ class Neo4jClient:
             columns: Any
             records, columns = await adb.cypher_query(cypher, params or {})
             headers: list[str] = list(columns)
-            return [dict(zip(headers, row)) for row in records]
+            return [dict(zip(headers, row, strict=False)) for row in records]
         except Exception as e:
             self.logger.error(Messages.CYPHER_QUERY_FAILED(e, cypher, params))
             return []

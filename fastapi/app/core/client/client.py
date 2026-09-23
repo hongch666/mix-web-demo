@@ -366,7 +366,7 @@ async def _call_with_client(
     except Exception as e:
         if not isinstance(e, CircuitBreakerOpenError):
             breaker.record_failure()
-        raise _build_remote_service_error(service_name, e)
+        raise _build_remote_service_error(service_name, e) from e
 
     raise BusinessException(
         Messages.REMOTE_SERVICE_UNAVAILABLE(service_name),

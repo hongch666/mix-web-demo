@@ -112,6 +112,6 @@ class ArticleMapper:
         }
 
 
-@lru_cache()
+@lru_cache
 def get_article_mapper(session_factory: ClickHouseSessionFactory) -> ArticleMapper:
     return ArticleMapper(session_factory)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from typing import Any, Optional
 
 import jwt
@@ -19,7 +19,7 @@ class InternalTokenUtil:
 
     def __new__(cls) -> "InternalTokenUtil":
         if cls._instance is None:
-            cls._instance = super(InternalTokenUtil, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self) -> None:
@@ -50,8 +50,8 @@ class InternalTokenUtil:
             "userId": user_id,
             "serviceName": service_name,
             "tokenType": "internal",
-            "iat": datetime.now(timezone.utc),
-            "exp": datetime.now(timezone.utc)
+            "iat": datetime.now(UTC),
+            "exp": datetime.now(UTC)
             + timedelta(milliseconds=InternalTokenUtil._expiration),
         }
         return jwt.encode(payload, InternalTokenUtil._secret, algorithm="HS256")
@@ -66,18 +66,18 @@ class InternalTokenUtil:
         try:
             decoded = jwt.decode(token, InternalTokenUtil._secret, algorithms=["HS256"])
             return decoded
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError as error:
             raise BusinessException(
                 Messages.INTERNAL_TOKEN_EXPIRED,
                 HttpCode.UNAUTHORIZED,
                 Messages.ERROR_INTERNAL_TOKEN_EXPIRED,
-            )
-        except jwt.InvalidTokenError:
+            ) from error
+        except jwt.InvalidTokenError as error:
             raise BusinessException(
                 Messages.INTERNAL_TOKEN_INVALID,
                 HttpCode.UNAUTHORIZED,
                 Messages.ERROR_INTERNAL_TOKEN_INVALID,
-            )
+            ) from error
 
     def extract_user_id(self, token: str) -> Optional[int]:
         """

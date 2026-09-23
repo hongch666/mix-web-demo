@@ -1,6 +1,6 @@
 import os
 from collections.abc import Generator
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 
 import jwt
 import pytest
@@ -45,7 +45,7 @@ def test_rejects_token_signed_with_another_secret() -> None:
             "userId": 10001,
             "serviceName": "fastapi",
             "tokenType": "internal",
-            "exp": datetime.now(timezone.utc) + timedelta(minutes=1),
+            "exp": datetime.now(UTC) + timedelta(minutes=1),
         },
         "another-unit-test-secret-with-32-bytes",
         algorithm="HS256",
@@ -63,7 +63,7 @@ def test_rejects_expired_token() -> None:
             "userId": 10001,
             "serviceName": "fastapi",
             "tokenType": "internal",
-            "exp": datetime.now(timezone.utc) - timedelta(seconds=1),
+            "exp": datetime.now(UTC) - timedelta(seconds=1),
         },
         TEST_SECRET,
         algorithm="HS256",

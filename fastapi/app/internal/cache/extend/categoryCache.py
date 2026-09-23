@@ -75,7 +75,7 @@ class CategoryCache(VersionedCache):
         await self.update_version()
 
 
-@lru_cache()
+@lru_cache
 def get_category_cache() -> CategoryCache:
     """获取 CategoryCache 单例实例"""
     global _category_cache_instance

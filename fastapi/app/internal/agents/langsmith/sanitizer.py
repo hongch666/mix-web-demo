@@ -32,10 +32,7 @@ def sanitize_user_id(user_id: str) -> str:
 def _is_sensitive_key(key: str) -> bool:
     """判断键名是否为敏感字段"""
     key_lower = str(key).lower()
-    for pattern in Scripts.SENSITIVE_KEY_PATTERNS:
-        if pattern in key_lower:
-            return True
-    return False
+    return any(pattern in key_lower for pattern in Scripts.SENSITIVE_KEY_PATTERNS)
 
 
 def _sanitize_string(value: str) -> str:

@@ -1,7 +1,7 @@
 import inspect
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional
 
 from fastapi import Request
 
@@ -11,10 +11,8 @@ from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 
-T = TypeVar("T", bound=Callable[..., Any])
 
-
-def requireInternalToken(
+def requireInternalToken[T: Callable[..., Any]](
     func: Optional[T] = None, *, required_service_name: Optional[str] = None
 ) -> Callable[..., Any]:
     """
@@ -101,7 +99,7 @@ def requireInternalToken(
                     Messages.INTERNAL_TOKEN_INVALID,
                     HttpCode.UNAUTHORIZED,
                     Messages.ERROR_INTERNAL_TOKEN_INVALID,
-                )
+                ) from e
 
         if not inspect.iscoroutinefunction(f):
             raise TypeError(Messages.REQUIRE_INTERNAL_TOKEN_ASYNC_ERROR)

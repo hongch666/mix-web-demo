@@ -1,17 +1,15 @@
 from collections.abc import Callable
 from functools import wraps
 from inspect import iscoroutinefunction
-from typing import Any, Optional, TypeVar
+from typing import Any, Optional
 
 from app.common.middleware import get_current_user_id
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 
-T = TypeVar("T", bound=Callable[..., Any])
 
-
-def requireSelf(func: Optional[T] = None) -> Callable[..., Any]:
+def requireSelf[T: Callable[..., Any]](func: Optional[T] = None) -> Callable[..., Any]:
     """
     校验请求中的 user_id 与上下文登录用户一致的装饰器
     管理员可访问任意用户，其余用户仅能访问自身数据

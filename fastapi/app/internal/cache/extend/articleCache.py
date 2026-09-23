@@ -75,7 +75,7 @@ class ArticleCache(VersionedCache):
         await self.update_version()
 
 
-@lru_cache()
+@lru_cache
 def get_article_cache() -> ArticleCache:
     """获取 ArticleCache 单例实例"""
     global _article_cache_instance

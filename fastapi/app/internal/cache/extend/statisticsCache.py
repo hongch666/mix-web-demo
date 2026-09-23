@@ -76,7 +76,7 @@ class StatisticsCache(VersionedCache):
         await self.update_version()
 
 
-@lru_cache()
+@lru_cache
 def get_statistics_cache() -> StatisticsCache:
     """获取 StatisticsCache 单例实例"""
     global _statistics_cache_instance

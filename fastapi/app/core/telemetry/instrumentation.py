@@ -28,9 +28,7 @@ def _create_ratio_sampler(ratio_value: Any) -> TraceIdRatioBased:
     try:
         ratio: float = float(ratio_value)
     except (TypeError, ValueError) as error:
-        raise ValueError(
-            Messages.OTEL_INVALID_SAMPLER_RATIO(ratio_value)
-        ) from error
+        raise ValueError(Messages.OTEL_INVALID_SAMPLER_RATIO(ratio_value)) from error
     if ratio < 0 or ratio > 1:
         raise ValueError(Messages.OTEL_INVALID_SAMPLER_RATIO(ratio_value))
     return TraceIdRatioBased(ratio)
@@ -64,11 +62,7 @@ def setup_telemetry() -> Optional[TracerProvider]:
         return None
 
     resource = Resource.create(
-        {
-            TelemetryConstants.RESOURCE_SERVICE_NAME: telemetry_config[
-                "service_name"
-            ]
-        }
+        {TelemetryConstants.RESOURCE_SERVICE_NAME: telemetry_config["service_name"]}
     )
     provider = TracerProvider(
         resource=resource,

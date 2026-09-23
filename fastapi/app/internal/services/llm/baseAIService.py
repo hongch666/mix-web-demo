@@ -104,7 +104,7 @@ def initialize_ai_tools(
         futures["warehouse"] = executor.submit(_load_tool_group, *factories.warehouse)
 
         # 按完成顺序收集结果
-        for future in as_completed(futures.values()):
+        for _future in as_completed(futures.values()):
             pass  # 结果通过闭包变量收集，异常已在子函数内部处理
 
         # 按固定顺序合并结果，确保 tool 列表顺序一致
@@ -856,7 +856,10 @@ class BaseAiService:
 
                         if event_name == "on_chain_end":
                             chain_output = event_data.get("output")
-                            if isinstance(chain_output, dict) and "output" in chain_output:
+                            if (
+                                isinstance(chain_output, dict)
+                                and "output" in chain_output
+                            ):
                                 agent_result = (
                                     self._extract_message_content(
                                         chain_output.get("output")
@@ -864,7 +867,10 @@ class BaseAiService:
                                     or agent_result
                                 )
                                 collected_steps = chain_output.get("intermediate_steps")
-                                if isinstance(collected_steps, list) and collected_steps:
+                                if (
+                                    isinstance(collected_steps, list)
+                                    and collected_steps
+                                ):
                                     intermediate_steps = collected_steps
                 except Exception as agent_error:
                     error_msg = str(agent_error)

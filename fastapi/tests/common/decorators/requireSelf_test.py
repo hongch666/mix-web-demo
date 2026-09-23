@@ -53,9 +53,7 @@ def test_rejects_invalid_user_scope(
     monkeypatch.setattr(
         require_self_module, "get_current_user_id", lambda: current_user_id
     )
-    monkeypatch.setattr(
-        require_self_module, "_is_admin", AsyncMock(return_value=False)
-    )
+    monkeypatch.setattr(require_self_module, "_is_admin", AsyncMock(return_value=False))
 
     @requireSelf
     async def endpoint(*, user_id: int | None = None) -> int | None:
@@ -73,9 +71,7 @@ def test_admin_lookup_failure_is_fail_closed(
     spring_client = Mock()
     spring_client.get_users_by_ids = AsyncMock(side_effect=RuntimeError("unavailable"))
     monkeypatch.setattr(require_self_module, "get_current_user_id", lambda: 7)
-    monkeypatch.setattr(
-        "app.internal.clients.get_spring_client", lambda: spring_client
-    )
+    monkeypatch.setattr("app.internal.clients.get_spring_client", lambda: spring_client)
 
     @requireSelf
     async def endpoint(*, user_id: int) -> int:

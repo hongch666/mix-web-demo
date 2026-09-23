@@ -29,7 +29,7 @@ class GptService(BaseAiService):
         self._spring_client: SpringClient = spring_client or get_spring_client()
 
 
-@lru_cache()
+@lru_cache
 def get_gpt_service(
     ai_history_mapper: AiHistoryMapper,
     spring_client: SpringClient,

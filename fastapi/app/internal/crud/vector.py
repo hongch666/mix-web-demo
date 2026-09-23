@@ -156,7 +156,7 @@ class VectorMapper:
         """把文章原文拆成待入库的文档块"""
         documents: list[Document] = []
         for i, (article_id, title, content) in enumerate(
-            zip(article_ids, titles, contents)
+            zip(article_ids, titles, contents, strict=False)
         ):
             # 合并标题和内容，入库前过滤恶意注入文本
             full_text = self.sanitize_content(f"# {title}\n\n{content}")
@@ -182,8 +182,9 @@ class VectorMapper:
                 return 0
             statement: Any = sqlalchemy.delete(self._vector_store.EmbeddingStore).where(
                 self._vector_store.EmbeddingStore.collection_id == collection.uuid,
-                self._vector_store.EmbeddingStore.cmetadata["article_id"]
-                .astext.in_([str(article_id) for article_id in article_ids]),
+                self._vector_store.EmbeddingStore.cmetadata["article_id"].astext.in_(
+                    [str(article_id) for article_id in article_ids]
+                ),
             )
             deleted: int = int(session.execute(statement).rowcount or 0)
             session.commit()
@@ -244,7 +245,7 @@ def get_vector_embeddings() -> Any:
             Messages.EMBEDDING_INIT_FAILED(error),
             HttpCode.SERVICE_UNAVAILABLE,
             Messages.ERROR_INITIALIZATION_ERROR,
-        )
+        ) from error
 
 
 @lru_cache

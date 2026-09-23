@@ -51,7 +51,7 @@ class ApiLogService:
         )
 
 
-@lru_cache()
+@lru_cache
 def get_apilog_service(
     nestjs_client: NestjsClient,
     api_log_mapper: ApiLogMapper,

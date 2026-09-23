@@ -3,7 +3,7 @@ import json
 import time
 import uuid
 from collections.abc import AsyncGenerator
-from contextlib import aclosing
+from contextlib import aclosing, suppress
 from typing import Any, Optional
 
 from fastapi import APIRouter, Request
@@ -108,14 +108,13 @@ async def send_message(
         # 构建 RunnableConfig 用于传递给 LangChain
         runnable_config: Optional[dict] = None
         if root_run is not None:
-            try:
+            # 组装 LangChain 运行配置失败不影响主流程，仅降级为 None
+            with suppress(Exception):
                 runnable_config = {
                     "run_name": "chat.direct",
                     "tags": langsmith_tags,
                     "metadata": langsmith_metadata,
                 }
-            except Exception:
-                pass
 
         # 根据请求的服务类型选择对应的AI服务
         if request.service == AIServiceType.GPT:
@@ -242,7 +241,8 @@ async def stream_message(
         }
 
         # LangSmith 根 Trace 在生成器内持有，确保 SSE 完成/异常/断连均收尾
-        async with get_langsmith_context_async(
+        # 两层上下文职责不同（Trace 生命周期 / DB session 生命周期），保留分层写法
+        async with get_langsmith_context_async(  # noqa: SIM117
             name="chat.stream",
             tags=langsmith_tags,
             metadata=langsmith_metadata,

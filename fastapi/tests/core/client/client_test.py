@@ -92,7 +92,9 @@ async def test_call_with_client_retries_503_then_returns_success(
         attempts += 1
         if attempts < 3:
             return httpx.Response(503, request=request, json={"message": "busy"})
-        return httpx.Response(200, request=request, json={"code": 200, "data": {"id": 1}})
+        return httpx.Response(
+            200, request=request, json={"code": 200, "data": {"id": 1}}
+        )
 
     monkeypatch.setattr(
         client_module,
@@ -198,7 +200,9 @@ async def test_business_error_is_not_retried(
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal attempts
         attempts += 1
-        return httpx.Response(200, request=request, json={"code": 400, "msg": "invalid"})
+        return httpx.Response(
+            200, request=request, json={"code": 400, "msg": "invalid"}
+        )
 
     monkeypatch.setattr(
         client_module,

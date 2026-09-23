@@ -3,6 +3,7 @@ from collections.abc import Generator
 
 import pytest
 
+
 @pytest.fixture(autouse=True)
 def clear_service_caches() -> Generator[None, None, None]:
     """每个测试执行前后清空所有 lru_cache 服务工厂的单例缓存

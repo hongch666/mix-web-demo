@@ -50,6 +50,4 @@ AiHistoryMapperDep = Annotated[AiHistoryMapper, Depends(get_ai_history_mapper)]
 ApiLogMapperDep = Annotated[ApiLogMapper, Depends(provide_api_log_mapper)]
 ArticleMapperDep = Annotated[ArticleMapper, Depends(provide_article_mapper)]
 UserMapperDep = Annotated[UserMapper, Depends(provide_user_mapper)]
-VectorMapperDep = Annotated[
-    VectorMapper, Depends(provide_vector_store_mapper)
-]
+VectorMapperDep = Annotated[VectorMapper, Depends(provide_vector_store_mapper)]

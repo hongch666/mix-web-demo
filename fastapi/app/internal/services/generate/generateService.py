@@ -642,7 +642,7 @@ class GenerateService:
         await self.generate_ai_comments_with_reference(article_id)
 
 
-@lru_cache()
+@lru_cache
 def get_generate_service(
     glm_service: GlmService,
     gemini_service: GeminiService,

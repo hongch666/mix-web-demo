@@ -241,8 +241,14 @@ async def test_refresh_partitions_preserves_dependency_order(
 
     await task._refresh_partitions({"202609"})
 
-    expected = ["dwd_user_action", "dwd_api_call", "dws_article_day",
-                "dws_user_day", "dws_api_day", "ads_user_day"]
+    expected = [
+        "dwd_user_action",
+        "dwd_api_call",
+        "dws_article_day",
+        "dws_user_day",
+        "dws_api_day",
+        "ads_user_day",
+    ]
     assert table_order == expected
 
 
@@ -298,9 +304,7 @@ async def test_sync_warehouse_refreshes_when_dirty_partitions_exist(
         AsyncMock(return_value=(False, {"202609"})),
     )
     monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
-    monkeypatch.setattr(
-        task, "_sync_article_logs", AsyncMock(return_value=set())
-    )
+    monkeypatch.setattr(task, "_sync_article_logs", AsyncMock(return_value=set()))
     monkeypatch.setattr(task, "_sync_api_logs", AsyncMock(return_value=set()))
     refresh = AsyncMock()
     monkeypatch.setattr(task, "_refresh_warehouse", refresh)

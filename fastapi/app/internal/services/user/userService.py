@@ -343,7 +343,7 @@ class UserService:
         }
 
 
-@lru_cache()
+@lru_cache
 def get_user_service(
     spring_client: SpringClient,
     nestjs_client: NestjsClient,

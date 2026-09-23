@@ -57,11 +57,9 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
         @wraps(func)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             # 处理配置
-            log_config: ApiLogConfig
-            if isinstance(config, str):
-                log_config = ApiLogConfig(config)
-            else:
-                log_config = config
+            log_config: ApiLogConfig = (
+                ApiLogConfig(config) if isinstance(config, str) else config
+            )
 
             # 获取用户信息
             user_id: Optional[int] = get_current_user_id()
@@ -203,7 +201,7 @@ def apiLog(config: Union[str, ApiLogConfig]) -> Callable[[Callable], Callable]:
                     Messages.API_LOG_REQUEST_PROCESS_FAILED(e),
                     HttpCode.SERVICE_UNAVAILABLE,
                     Messages.API_LOG_REQUEST_ERROR_ID(e),
-                )
+                ) from e
 
         # 根据函数是否为协程选择包装器
         if inspect.iscoroutinefunction(func):

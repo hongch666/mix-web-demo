@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import uuid
 from datetime import date, datetime
@@ -102,13 +103,11 @@ class RedisClient:
 
     async def is_available(self) -> bool:
         """检查 Redis 是否可用"""
-        try:
+        with contextlib.suppress(Exception):
             client: Optional[Any] = await self._ensure_client()
             if client:
                 await client.ping()
                 return True
-        except Exception:
-            pass
         return False
 
     async def get(self, key: str) -> Optional[Any]:

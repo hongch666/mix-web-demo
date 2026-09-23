@@ -30,7 +30,7 @@ class GlmService(BaseAiService):
         self._spring_client: SpringClient = spring_client or get_spring_client()
 
 
-@lru_cache()
+@lru_cache
 def get_glm_service(
     ai_history_mapper: AiHistoryMapper,
     spring_client: SpringClient,

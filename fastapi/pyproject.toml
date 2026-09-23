@@ -1,5 +1,6 @@
 [project]
 dependencies = [
+  "anyio>=4.0.0",
   "fastapi==0.116.1",
   "uvicorn==0.35.0",
   "pydantic==2.11.9",
@@ -49,18 +50,48 @@ name = "fastapi-app"
 requires-python = ">=3.12"
 version = "1.0.0"
 
+[dependency-groups]
+# 开发期工具，仅本地/CI 安装，不进入运行镜像
+dev = [
+  "ruff>=0.9.0",
+  "pyright>=1.1.390",
+]
+
 [tool.ruff]
 target-version = "py312"
+line-length = 88
 extend-exclude = [".venv"]
 
 [tool.ruff.lint]
-# 仅保留基础错误检查（语法错误、未定义名、未使用导入等），不启用风格类规则
-select = ["E4", "E7", "E9", "F"]
+# E4/E7/E9：语法与导入错误；F：未定义名/未使用导入
+# B：常见缺陷；SIM：可简化写法；UP：语法升级；ASYNC：异步反模式；S：常见安全问题
+select = ["E4", "E7", "E9", "F", "B", "SIM", "UP", "ASYNC", "S"]
 ignore = [
-  "RUF022", # __all__ 未排序
-  "I001",   # 导入块未排序
-  "BLE001", # 捕获裸 Exception
+  "RUF022",    # __all__ 未排序
+  "I001",      # 导入块未排序（现有导入按业务分组，保留人工排序）
+  "BLE001",    # 捕获裸 Exception（全局异常处理需要兜底）
+  "S101",      # assert（测试与内部参数校验大量使用）
+  "S105",      # 字段名/配置键字符串被误判为硬编码密码
+  "S311",      # 验证码、抽样等非加密场景使用 random 模块
+  "S324",      # 内容指纹使用 md5/sha1 属于预期用法
+  "S104",      # 需要监听 0.0.0.0 以便容器访问
+  "S108",      # 临时文件路径为占位常量
+  "UP045",     # Optional[X] 迁移到 X | None 属于独立重构，先保持现状
+  "UP007",     # 同上，保留 Union[X, Y] 写法
+  "ASYNC109",  # 异步函数超时由调用方统一控制，不要求内置 timeout 参数
 ]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+# 换行符交由 .gitattributes 统一，避免 Windows 工作区误报
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 
 [tool.pyright]
 # 让 Pylance 把 fastapi 目录作为独立执行环境，固定版本与虚拟环境，

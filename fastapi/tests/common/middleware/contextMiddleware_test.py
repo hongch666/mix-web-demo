@@ -76,9 +76,7 @@ def test_get_current_trace_id_returns_active_span_trace_id() -> None:
         trace_flags=TraceFlags(TraceFlags.SAMPLED),
         trace_state=TraceState(),
     )
-    token = context.attach(
-        trace.set_span_in_context(NonRecordingSpan(span_context))
-    )
+    token = context.attach(trace.set_span_in_context(NonRecordingSpan(span_context)))
     try:
         assert get_current_trace_id() == format(trace_id, "032x")
     finally:

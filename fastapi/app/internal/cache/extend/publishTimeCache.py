@@ -75,7 +75,7 @@ class PublishTimeCache(VersionedCache):
         await self.update_version()
 
 
-@lru_cache()
+@lru_cache
 def get_publish_time_cache() -> PublishTimeCache:
     """获取 PublishTimeCache 单例实例"""
     global _publish_time_cache_instance

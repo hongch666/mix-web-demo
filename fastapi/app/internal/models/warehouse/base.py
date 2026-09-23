@@ -33,56 +33,153 @@ ClickHouse 的 ENGINE/ORDER BY/partition_by 不是标准 SQLAlchemy 表参数，
 维度表（dim_*）、贴源表（ods_*）与快照表（ads_* 中的全量快照）数据量小且需全量保留，不分区
 """
 WAREHOUSE_ENGINE_CONFIG: Mapping[str, tuple[type[Any], dict[str, Any]]] = {
-    "sync_watermark": (engines.ReplacingMergeTree, {"version": "updated_at", "order_by": "table_name"}),
-    "ods_articles": (engines.ReplacingMergeTree, {"version": "update_at", "order_by": "id"}),
-    "ods_user": (engines.ReplacingMergeTree, {"version": "update_at", "order_by": "id"}),
-    "ods_category": (engines.ReplacingMergeTree, {"version": "update_time", "order_by": "id"}),
-    "ods_sub_category": (engines.ReplacingMergeTree, {"version": "update_time", "order_by": "id"}),
-    "ods_likes": (engines.ReplacingMergeTree, {"version": "created_time", "order_by": "id"}),
-    "ods_collects": (engines.ReplacingMergeTree, {"version": "created_time", "order_by": "id"}),
-    "ods_comments": (engines.ReplacingMergeTree, {"version": "update_time", "order_by": "id"}),
-    "ods_focus": (engines.ReplacingMergeTree, {"version": "created_time", "order_by": "id"}),
-    "ods_article_log": (engines.ReplacingMergeTree, {"version": "created_at", "order_by": "event_id"}),
-    "ods_api_log": (engines.ReplacingMergeTree, {"version": "created_at", "order_by": "event_id"}),
-    "dim_user": (engines.ReplacingMergeTree, {"version": "update_at", "order_by": "id"}),
-    "dim_category": (engines.ReplacingMergeTree, {"version": "update_time", "order_by": "sub_category_id"}),
-    "dwd_article_event": (engines.ReplacingMergeTree, {
-        "version": "update_at", "order_by": "id",
-        "partition_by": _monthly_partition("create_date"),
-    }),
-    "dwd_user_action": (engines.ReplacingMergeTree, {
-        "version": "action_time", "order_by": "event_id",
-        "partition_by": _monthly_partition("action_date"),
-    }),
-    "dwd_api_call": (engines.ReplacingMergeTree, {
-        "version": "action_time", "order_by": "event_id",
-        "partition_by": _monthly_partition("action_date"),
-    }),
-    "dws_article_day": (engines.MergeTree, {
-        "order_by": ("stat_date", "article_id"),
-        "partition_by": _monthly_partition("stat_date"),
-    }),
-    "dws_user_day": (engines.MergeTree, {
-        "order_by": ("stat_date", "user_id"),
-        "partition_by": _monthly_partition("stat_date"),
-    }),
-    "dws_api_day": (engines.MergeTree, {
-        "order_by": ("action_date", "api_path", "api_method", "api_description"),
-        "partition_by": _monthly_partition("action_date"),
-    }),
-    "ads_user_day": (engines.ReplacingMergeTree, {
-        "version": "stat_time", "order_by": ("stat_date", "user_id"),
-        "partition_by": _monthly_partition("stat_date"),
-    }),
-    "ads_user_view_articles": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": ("user_id", "article_id")}),
-    "ads_user_stats": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": "user_id"}),
-    "ads_top10_articles": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": "id"}),
-    "ads_category_stats": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": "parent_category_id"}),
-    "ads_monthly_publish": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": "year_month"}),
-    "ads_platform_stats": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": "id"}),
-    "ads_api_average_speed": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": ("api_path", "api_method", "api_description")}),
-    "ads_api_called_count": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": ("api_path", "api_method", "api_description")}),
-    "ads_search_keywords": (engines.ReplacingMergeTree, {"version": "stat_time", "order_by": "keyword"}),
+    "sync_watermark": (
+        engines.ReplacingMergeTree,
+        {"version": "updated_at", "order_by": "table_name"},
+    ),
+    "ods_articles": (
+        engines.ReplacingMergeTree,
+        {"version": "update_at", "order_by": "id"},
+    ),
+    "ods_user": (
+        engines.ReplacingMergeTree,
+        {"version": "update_at", "order_by": "id"},
+    ),
+    "ods_category": (
+        engines.ReplacingMergeTree,
+        {"version": "update_time", "order_by": "id"},
+    ),
+    "ods_sub_category": (
+        engines.ReplacingMergeTree,
+        {"version": "update_time", "order_by": "id"},
+    ),
+    "ods_likes": (
+        engines.ReplacingMergeTree,
+        {"version": "created_time", "order_by": "id"},
+    ),
+    "ods_collects": (
+        engines.ReplacingMergeTree,
+        {"version": "created_time", "order_by": "id"},
+    ),
+    "ods_comments": (
+        engines.ReplacingMergeTree,
+        {"version": "update_time", "order_by": "id"},
+    ),
+    "ods_focus": (
+        engines.ReplacingMergeTree,
+        {"version": "created_time", "order_by": "id"},
+    ),
+    "ods_article_log": (
+        engines.ReplacingMergeTree,
+        {"version": "created_at", "order_by": "event_id"},
+    ),
+    "ods_api_log": (
+        engines.ReplacingMergeTree,
+        {"version": "created_at", "order_by": "event_id"},
+    ),
+    "dim_user": (
+        engines.ReplacingMergeTree,
+        {"version": "update_at", "order_by": "id"},
+    ),
+    "dim_category": (
+        engines.ReplacingMergeTree,
+        {"version": "update_time", "order_by": "sub_category_id"},
+    ),
+    "dwd_article_event": (
+        engines.ReplacingMergeTree,
+        {
+            "version": "update_at",
+            "order_by": "id",
+            "partition_by": _monthly_partition("create_date"),
+        },
+    ),
+    "dwd_user_action": (
+        engines.ReplacingMergeTree,
+        {
+            "version": "action_time",
+            "order_by": "event_id",
+            "partition_by": _monthly_partition("action_date"),
+        },
+    ),
+    "dwd_api_call": (
+        engines.ReplacingMergeTree,
+        {
+            "version": "action_time",
+            "order_by": "event_id",
+            "partition_by": _monthly_partition("action_date"),
+        },
+    ),
+    "dws_article_day": (
+        engines.MergeTree,
+        {
+            "order_by": ("stat_date", "article_id"),
+            "partition_by": _monthly_partition("stat_date"),
+        },
+    ),
+    "dws_user_day": (
+        engines.MergeTree,
+        {
+            "order_by": ("stat_date", "user_id"),
+            "partition_by": _monthly_partition("stat_date"),
+        },
+    ),
+    "dws_api_day": (
+        engines.MergeTree,
+        {
+            "order_by": ("action_date", "api_path", "api_method", "api_description"),
+            "partition_by": _monthly_partition("action_date"),
+        },
+    ),
+    "ads_user_day": (
+        engines.ReplacingMergeTree,
+        {
+            "version": "stat_time",
+            "order_by": ("stat_date", "user_id"),
+            "partition_by": _monthly_partition("stat_date"),
+        },
+    ),
+    "ads_user_view_articles": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": ("user_id", "article_id")},
+    ),
+    "ads_user_stats": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": "user_id"},
+    ),
+    "ads_top10_articles": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": "id"},
+    ),
+    "ads_category_stats": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": "parent_category_id"},
+    ),
+    "ads_monthly_publish": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": "year_month"},
+    ),
+    "ads_platform_stats": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": "id"},
+    ),
+    "ads_api_average_speed": (
+        engines.ReplacingMergeTree,
+        {
+            "version": "stat_time",
+            "order_by": ("api_path", "api_method", "api_description"),
+        },
+    ),
+    "ads_api_called_count": (
+        engines.ReplacingMergeTree,
+        {
+            "version": "stat_time",
+            "order_by": ("api_path", "api_method", "api_description"),
+        },
+    ),
+    "ads_search_keywords": (
+        engines.ReplacingMergeTree,
+        {"version": "stat_time", "order_by": "keyword"},
+    ),
 }
 
 

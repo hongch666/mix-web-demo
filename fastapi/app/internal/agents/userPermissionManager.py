@@ -13,7 +13,9 @@ class UserPermissionManager:
     """用户权限管理器"""
 
     def __init__(
-        self, user_mapper: Optional[Any] = None, spring_client: Optional[SpringClient] = None
+        self,
+        user_mapper: Optional[Any] = None,
+        spring_client: Optional[SpringClient] = None,
     ) -> None:
         """
         初始化权限管理器

@@ -31,7 +31,10 @@ class UserMapper:
         self, user_id: int, start_date: datetime, end_date: datetime
     ) -> list[dict[str, Any]]:
         statement = (
-            select(AdsUserDay.stat_date.label("date"), AdsUserDay.focus_count.label("count"))
+            select(
+                AdsUserDay.stat_date.label("date"),
+                AdsUserDay.focus_count.label("count"),
+            )
             .where(
                 AdsUserDay.user_id == user_id,
                 AdsUserDay.stat_date >= _date_value(start_date),
@@ -40,7 +43,10 @@ class UserMapper:
             .order_by(AdsUserDay.stat_date)
         )
         rows = await self._execute_mappings(statement)
-        return [{"date": row.get("date"), "count": int(row.get("count") or 0)} for row in rows]
+        return [
+            {"date": row.get("date"), "count": int(row.get("count") or 0)}
+            for row in rows
+        ]
 
     async def get_article_view_distribution(self, user_id: int) -> dict[str, Any]:
         statement = (
@@ -49,7 +55,9 @@ class UserMapper:
                 AdsUserViewArticle.article_title.label("title"),
                 AdsUserViewArticle.view_count.label("views"),
             )
-            .where(AdsUserViewArticle.user_id == user_id, AdsUserViewArticle.article_id > 0)
+            .where(
+                AdsUserViewArticle.user_id == user_id, AdsUserViewArticle.article_id > 0
+            )
             .order_by(desc(AdsUserViewArticle.view_count))
         )
         rows = await self._execute_mappings(statement)
@@ -61,16 +69,22 @@ class UserMapper:
             }
             for row in rows
         ]
-        return {"total_views": sum(item["views"] for item in articles), "articles": articles}
+        return {
+            "total_views": sum(item["views"] for item in articles),
+            "articles": articles,
+        }
 
     async def get_author_follow_statistics(
         self, user_id: int, start_date: datetime, end_date: datetime
     ) -> dict[str, Any]:
-        total_statement = select(AdsUserStats.total_followers.label("total_followers")).where(
-            AdsUserStats.user_id == user_id
-        )
+        total_statement = select(
+            AdsUserStats.total_followers.label("total_followers")
+        ).where(AdsUserStats.user_id == user_id)
         daily_statement = (
-            select(AdsUserDay.stat_date.label("date"), AdsUserDay.focus_count.label("count"))
+            select(
+                AdsUserDay.stat_date.label("date"),
+                AdsUserDay.focus_count.label("count"),
+            )
             .where(
                 AdsUserDay.user_id == user_id,
                 AdsUserDay.stat_date >= _date_value(start_date),
@@ -79,10 +93,13 @@ class UserMapper:
             .order_by(AdsUserDay.stat_date)
         )
         total_rows, daily_rows = await asyncio.gather(
-            self._execute_mappings(total_statement), self._execute_mappings(daily_statement)
+            self._execute_mappings(total_statement),
+            self._execute_mappings(daily_statement),
         )
         return {
-            "total_authors": int(total_rows[0].get("total_followers") or 0) if total_rows else 0,
+            "total_authors": int(total_rows[0].get("total_followers") or 0)
+            if total_rows
+            else 0,
             "daily_follows": [
                 {"date": row.get("date"), "count": int(row.get("count") or 0)}
                 for row in daily_rows
@@ -110,7 +127,10 @@ class UserMapper:
             .order_by(AdsUserDay.stat_date)
         )
         rows = await self._execute_mappings(statement)
-        trends = [{"date": row.get("date"), "count": int(row.get("count") or 0)} for row in rows]
+        trends = [
+            {"date": row.get("date"), "count": int(row.get("count") or 0)}
+            for row in rows
+        ]
         return {"total": sum(item["count"] for item in trends), "daily_trends": trends}
 
     async def get_user_profile(self, user_id: int) -> dict[str, Any]:
@@ -153,6 +173,6 @@ class UserMapper:
         }
 
 
-@lru_cache()
+@lru_cache
 def get_user_mapper(session_factory: ClickHouseSessionFactory) -> UserMapper:
     return UserMapper(session_factory)

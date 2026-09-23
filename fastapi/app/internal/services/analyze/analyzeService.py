@@ -22,8 +22,6 @@ from app.internal.cache import (
     PublishTimeCache,
     StatisticsCache,
     WordcloudCache,
-    get_statistics_cache,
-    get_wordcloud_cache,
 )
 from app.internal.clients import (
     NestjsClient,
@@ -337,8 +335,9 @@ class AnalyzeService:
         FILE_PATH: str = load_config("files")["pic_path"]
         # 使用 UUID 生成随机文件名
         random_filename = f"{uuid.uuid4()}.png"
+        # os.getcwd/os.path 仅做路径拼接，不产生磁盘 IO
         oss_url: str = await self.upload_file(
-            file_path=os.path.normpath(
+            file_path=os.path.normpath(  # noqa: ASYNC240
                 os.path.join(os.getcwd(), FILE_PATH, Messages.WORDCLOUD_FILENAME)
             ),
             oss_path=f"pic/{random_filename}",
@@ -389,7 +388,8 @@ class AnalyzeService:
 
     async def export_articles_to_excel(self, db: AsyncSession) -> str:
         FILE_PATH: str = load_config("files")["excel_path"]
-        file_path: str = os.path.normpath(
+        # os.getcwd/os.path 仅做路径拼接，不产生磁盘 IO
+        file_path: str = os.path.normpath(  # noqa: ASYNC240
             os.path.join(
                 os.getcwd(), FILE_PATH, Messages.EXPORT_ARTICLES_EXCEL_FILENAME
             )
@@ -772,7 +772,7 @@ class AnalyzeService:
         return result
 
 
-@lru_cache()
+@lru_cache
 def get_analyze_service(
     articleMapper: ArticleMapper,
     article_cache: ArticleCache,

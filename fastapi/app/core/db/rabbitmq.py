@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 from typing import Any, Optional
 
@@ -137,17 +138,13 @@ class RabbitMQClient:
                 return
         except RuntimeError:
             pass
-        try:
+        with contextlib.suppress(Exception):
             asyncio.run(self.close_async())
-        except Exception:
-            pass
 
     def __del__(self) -> None:
         """析构函数，确保连接关闭"""
-        try:
+        with contextlib.suppress(Exception):
             self.close()
-        except Exception:
-            pass
 
 
 # 全局 RabbitMQ 客户端实例

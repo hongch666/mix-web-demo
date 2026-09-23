@@ -7,4 +7,5 @@ def create_app(*args, **kwargs):
 
     return _create_app(*args, **kwargs)
 
+
 __all__: list[str] = ["create_app"]

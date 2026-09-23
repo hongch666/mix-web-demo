@@ -47,6 +47,6 @@ def requireAdmin(func: Callable[..., Any]) -> Callable[..., Any]:
                 Messages.PERMISSION_CHECK_FAILED_MESSAGE,
                 HttpCode.FORBIDDEN,
                 Messages.ERROR_PERMISSION_CHECK_FAILED,
-            )
+            ) from error
 
     return async_wrapper

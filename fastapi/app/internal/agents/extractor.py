@@ -1,10 +1,12 @@
 import asyncio
+import contextlib
 import os
 import re
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
 from typing import Optional
 
+import anyio
 import httpx
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
@@ -13,6 +15,12 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from app.core.base import Logger
 from app.core.client import get_shared_http_client
 from app.core.constants import Defaults, Messages
+
+
+def _cleanup_temp_file(path: str) -> None:
+    """删除临时文件（通过线程池调用，避免阻塞事件循环）"""
+    if path and os.path.exists(path):
+        os.remove(path)
 
 
 class ReferenceContentExtractor:
@@ -130,12 +138,15 @@ class ReferenceContentExtractor:
 
             # 异步下载PDF到临时文件（PDF较大，使用独立客户端避免阻塞共享连接池超时）
             temp_pdf_path = Defaults.TEMP_PDF_PATH_TEMPLATE.format(hash(pdf_url))
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                async with client.stream("GET", pdf_url) as response:
-                    response.raise_for_status()
-                    with open(temp_pdf_path, "wb") as f:
-                        async for chunk in response.aiter_bytes():
-                            f.write(chunk)
+            async with (
+                httpx.AsyncClient(timeout=30.0) as client,
+                client.stream("GET", pdf_url) as response,
+            ):
+                response.raise_for_status()
+                # 使用 anyio 异步写文件，避免同步 open/write 阻塞事件循环
+                async with await anyio.open_file(temp_pdf_path, "wb") as file:
+                    async for chunk in response.aiter_bytes():
+                        await file.write(chunk)
 
             # 使用PyPDFLoader加载PDF（解析为同步磁盘/CPU密集操作，放入线程池避免阻塞事件循环）
             loader: PyPDFLoader = PyPDFLoader(temp_pdf_path)
@@ -167,12 +178,9 @@ class ReferenceContentExtractor:
             )
             return ""
         finally:
-            # 清理临时文件
-            try:
-                if temp_pdf_path and os.path.exists(temp_pdf_path):
-                    os.remove(temp_pdf_path)
-            except Exception:
-                pass
+            # 清理临时文件：文件系统操作移入线程池，避免阻塞事件循环
+            with contextlib.suppress(Exception):
+                await asyncio.to_thread(_cleanup_temp_file, temp_pdf_path)
 
     @classmethod
     async def extract_link_content(cls, link_url: str, max_length: int = 2000) -> str:

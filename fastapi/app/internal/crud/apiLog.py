@@ -32,7 +32,9 @@ class ApiLogMapper:
         try:
             return await self._execute_mappings(statement)
         except Exception as error:
-            raise RuntimeError(Messages.APILOG_CLICKHOUSE_QUERY_FAILED(error)) from error
+            raise RuntimeError(
+                Messages.APILOG_CLICKHOUSE_QUERY_FAILED(error)
+            ) from error
 
     async def get_called_count_clickhouse_mapper_async(
         self,
@@ -47,9 +49,11 @@ class ApiLogMapper:
         try:
             return await self._execute_mappings(statement)
         except Exception as error:
-            raise RuntimeError(Messages.APILOG_CLICKHOUSE_QUERY_FAILED(error)) from error
+            raise RuntimeError(
+                Messages.APILOG_CLICKHOUSE_QUERY_FAILED(error)
+            ) from error
 
 
-@lru_cache()
+@lru_cache
 def get_api_log_mapper(session_factory: ClickHouseSessionFactory) -> ApiLogMapper:
     return ApiLogMapper(session_factory)

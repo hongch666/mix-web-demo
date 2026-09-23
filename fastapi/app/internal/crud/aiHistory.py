@@ -72,6 +72,6 @@ class AiHistoryMapper:
             await db.commit()
 
 
-@lru_cache()
+@lru_cache
 def get_ai_history_mapper() -> AiHistoryMapper:
     return AiHistoryMapper()

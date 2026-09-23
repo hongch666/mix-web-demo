@@ -117,9 +117,7 @@ async def _insert_rows(model: type[Any], rows: list[dict[str, Any]]) -> None:
         await connection.execute(insert(model), rows)
 
 
-def _collect_dirty_partitions(
-    table_name: str, items: list[dict[str, Any]]
-) -> set[str]:
+def _collect_dirty_partitions(table_name: str, items: list[dict[str, Any]]) -> set[str]:
     """
     从同步的原始行中推导受影响的月份分区
 
@@ -271,9 +269,7 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> set[str]:
             {
                 "event_id": str(item.get("_id") or item.get("id") or ""),
                 "user_id": int(item.get("userId") or item.get("user_id") or 0),
-                "article_id": int(
-                    item.get("articleId") or item.get("article_id") or 0
-                ),
+                "article_id": int(item.get("articleId") or item.get("article_id") or 0),
                 "action": str(item.get("action") or ""),
                 "content": json.dumps(
                     item.get("content") or {}, ensure_ascii=False, default=str
@@ -302,9 +298,7 @@ async def _sync_article_logs(nestjs_client: NestjsClient) -> set[str]:
 async def _refresh_full_tables() -> None:
     """全量重建快照类派生表：清空后按依赖顺序插入"""
     for table_name, refresh_sql in WarehouseScripts.FULL_REFRESH_STEPS:
-        await execute_clickhouse_sql(
-            WarehouseScripts.TRUNCATE_TEMPLATE % table_name
-        )
+        await execute_clickhouse_sql(WarehouseScripts.TRUNCATE_TEMPLATE % table_name)
         await execute_clickhouse_sql(refresh_sql)
 
 

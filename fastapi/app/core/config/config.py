@@ -51,7 +51,7 @@ def load_config(section: Optional[str] = None, key: Optional[str] = None) -> Any
         raise FileNotFoundError(Messages.CONFIG_FILE_NOT_FOUND(searched))
 
     # 读取原始文件
-    with open(config_path, "r", encoding="utf-8") as f:
+    with open(config_path, encoding="utf-8") as f:
         content: str = f.read()
 
     # 替换环境变量占位符

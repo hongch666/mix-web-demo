@@ -180,7 +180,9 @@ async def _get_changed_articles(
     return changed_articles
 
 
-async def _remove_stale_vectors(vector_mapper: VectorMapper, articles: list[Any]) -> int:
+async def _remove_stale_vectors(
+    vector_mapper: VectorMapper, articles: list[Any]
+) -> int:
     """清理向量库中已删除或已下架文章残留的向量，并删除其内容 hash 缓存
 
     增量同步只处理仍在发布列表中的文章，已删除或已下架的文章不会被比对到，
@@ -214,10 +216,7 @@ async def _remove_stale_vectors(vector_mapper: VectorMapper, articles: list[Any]
     redis_client: Optional[Any] = _get_redis_client()
     if redis_client is not None:
         await redis_client.delete(
-            *[
-                RedisKeys.article_content_hash(article_id)
-                for article_id in stale_ids
-            ]
+            *[RedisKeys.article_content_hash(article_id) for article_id in stale_ids]
         )
 
     Logger.info(Messages.VECTOR_STALE_VECTORS_CLEANED(deleted, len(stale_ids)))

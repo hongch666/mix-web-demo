@@ -14,7 +14,7 @@ class Scripts:
     def CACHE_VERSION_CLICKHOUSE_QUERY(table: str) -> str:
         """缓存版本号统计查询：基于表行数与最新统计时间生成版本信息"""
         return (
-            "SELECT "
+            "SELECT "  # noqa: S608 - 表名由内部常量传入，SQL 无法对标识符使用绑定参数
             "count() AS total_rows, "
             "ifNull(max(toUnixTimestamp(stat_time)), 0) AS max_stat_ts "
             f"FROM {table}"

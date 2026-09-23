@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 
 from app.core.constants import HttpCode
@@ -8,7 +8,7 @@ from pydantic_core import PydanticCustomError
 from .alias import Alias
 
 
-class AIServiceType(str, Enum):
+class AIServiceType(StrEnum):
     """AI服务类型枚举"""
 
     GPT = "GPT"
