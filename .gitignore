@@ -19,9 +19,6 @@ nestjs/lerna-debug.log*
 # OS
 nestjs/.DS_Store
 
-# 配置文件
-nestjs/.prettierrc
-
 # Tests
 nestjs/coverage
 nestjs/.nyc_output
@@ -226,8 +223,6 @@ CLAUDE.md
 /package.json
 /package-lock.json
 /node_modules/
-
-eclipse-formatter.xml
 
 .workbuddy/*
 

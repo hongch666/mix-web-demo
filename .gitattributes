@@ -1,0 +1,36 @@
+# 统一文本文件换行符为 LF
+#
+# 背景：Windows 默认 core.autocrlf=true 会把工作区文件转成 CRLF，
+# 而 gofmt 对换行符敏感，会导致 golangci-lint 的格式化校验出现大量误报；
+# .sh 脚本在 Linux 下带 CRLF 也会直接执行失败。
+# 显式声明 eol=lf 后，git 检出始终使用 LF，各语言的格式化工具结果保持一致。
+
+* text=auto eol=lf
+
+# 二进制文件不做换行符转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.bmp binary
+*.webp binary
+*.jar binary
+*.docx binary
+*.doc binary
+*.xlsx binary
+*.xls binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.7z binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.class binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pyc binary

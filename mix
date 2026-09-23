@@ -94,6 +94,10 @@ show_help() {
     echo "  goctl-api [args...]      - Generate GoZero API code"
     echo "  goctl-orm [args...]      - Generate GoZero ORM code"
     echo ""
+    echo "Code Style Commands (代码检查与格式化):"
+    echo "  lint [services...]       - Check code style (default: all services)"
+    echo "  format [services...]     - Format code (default: all services)"
+    echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
     echo ""
@@ -109,6 +113,10 @@ show_help() {
     echo "  ./mix swag                     # Generate Swagger API documentation"
     echo "  ./mix goctl-api                # Generate GoZero API code"
     echo "  ./mix goctl-orm                # Generate GoZero ORM code"
+    echo "  ./mix lint                     # Check code style of all services"
+    echo "  ./mix lint spring fastapi      # Check code style of specific services"
+    echo "  ./mix format                   # Format code of all services"
+    echo "  ./mix format nestjs            # Format code of a specific service"
     echo "  ./mix dev multi                # Multi-pane tmux layout (dev)"
     echo "  ./mix dev seq                  # Sequential window layout (dev, default config)"
     echo "  ./mix dev seq -i               # Sequential layout with interactive mode"
@@ -269,6 +277,14 @@ case $COMMAND in
     goctl-orm)
         echo "Generating GoZero ORM code..."
         bash "$SCRIPTS_DIR/goctl-orm-init.sh" "${@:2}"
+        ;;
+    lint)
+        echo "Checking code style..."
+        bash "$SCRIPTS_DIR/lint.sh" "${@:2}"
+        ;;
+    format)
+        echo "Formatting code..."
+        bash "$SCRIPTS_DIR/format.sh" "${@:2}"
         ;;
     dev)
         run_dev_command "${@:2}"
