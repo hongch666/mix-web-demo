@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project 
+<project
+    
     xmlns="http://maven.apache.org/POM/4.0.0"
-         
+
+    
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -231,18 +233,13 @@
                   格式化：mvn spotless:apply
                   校验：  mvn spotless:check
                   临时跳过：-Dspotless.check.skip=true
-
-                说明：完整格式化交由 Eclipse formatter 执行，配置文件为服务根目录的
-                eclipse-formatter.xml（VSCode、Maven、Gradle 共用同一份），参数与项目
-                现有风格一致（4 空格缩进、续行缩进 4 空格、120 列、保留人工换行、
-                中文注释不重排）。import 分组按「java/javax → org → com.hcsy → 其他」
-                四段排列，与 Maven、Gradle 两侧保持一致。
             -->
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
                 <version>2.44.0</version>
                 <configuration>
+                    <lineEndings>PRESERVE</lineEndings>
                     <java>
                         <eclipse>
                             <file>eclipse-formatter.xml</file>
