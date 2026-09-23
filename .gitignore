@@ -88,9 +88,6 @@ gozero/app/nacos/log/*.log
 gozero/app/nacos/log/**
 gozero/app/nacos/
 
-# Swagger
-gozero/app/docs/main.json
-gozero/app/docs/main.yaml
 
 # Test binaries
 gozero/app/*.test
