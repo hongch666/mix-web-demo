@@ -153,6 +153,9 @@ func initES(c config.Config, logger *utils.ZeroLogger) *elastic.Client {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(esURL),
 		elastic.SetSniff(esConf.Sniff),
+		// SetMaxRetries 在 olivere/elastic v7 中标记废弃，但当前仍依赖其重试语义，
+		// 替换为自定义 Retry 实现会影响 ES 寻址行为，这里显式保留并忽略废弃告警
+		//nolint:staticcheck // SA1019: 保留 olivere/elastic 内置重试策略
 		elastic.SetMaxRetries(constants.ESMaxRetries),
 		elastic.SetHealthcheckInterval(constants.ESHealthcheckInterval),
 		elastic.SetGzip(true),

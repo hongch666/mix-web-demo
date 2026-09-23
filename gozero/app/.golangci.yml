@@ -1,0 +1,75 @@
+# GoZero 服务静态检查与格式化配置（golangci-lint v2）
+# 使用方式见根目录 README 的「代码规范与格式化工具」章节
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  # 关闭默认全量规则，只启用下面显式声明的检查项，保证结果可预期
+  default: none
+  enable:
+    # 未处理的错误返回值
+    - errcheck
+    # Go 官方 vet 检查（printf 格式串、锁拷贝、循环变量等）
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # 未关闭的 HTTP 响应体
+    - bodyclose
+    # context 传递检查
+    - contextcheck
+    # errors.Is/As、%w 包装等错误处理规范
+    - errorlint
+    - gocritic
+    - misspell
+    - prealloc
+    - revive
+    - unconvert
+    - wastedassign
+  settings:
+    govet:
+      enable-all: true
+      disable:
+        # 结构体字段对齐属于内存优化项，对业务代码噪声过大
+        - fieldalignment
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
+        - name: exported
+          disabled: true
+          # 中文注释无法通过英文首单词校验，这里只保留结构性问题检查
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # 错误消息以 Redis/MySQL/ES 等服务名开头，中文消息不适用首字母小写规则
+      - linters:
+          - staticcheck
+        text: "ST1005"
+      # QF 系列是 IDE 快速修复建议（如省略嵌入字段选择器），显式写法更利于判空
+      - linters:
+          - staticcheck
+        text: "QF1008"
+      # 测试文件放宽错误检查与资源关闭要求
+      - path: _test\.go
+        linters:
+          - errcheck
+          - bodyclose
+          - contextcheck
+          - gocritic
+          - prealloc
+
+formatters:
+  enable:
+    # gofmt 只做缩进与对齐修正，不改动现有 import 分组风格
+    - gofmt
+  exclusions:
+    generated: lax

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -72,9 +73,9 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 	}
 	if !exists {
 		mapping := constants.ES_INDEX_MAPPING
-		_, err := svcCtx.ESClient.CreateIndex(esArticlesIndexName).BodyString(mapping).Do(ctx)
-		if err != nil {
-			return logAndWrapError(svcCtx, constants.INDEX_CREATION_ERROR_MESSAGE, err)
+		_, createErr := svcCtx.ESClient.CreateIndex(esArticlesIndexName).BodyString(mapping).Do(ctx)
+		if createErr != nil {
+			return logAndWrapError(svcCtx, constants.INDEX_CREATION_ERROR_MESSAGE, createErr)
 		}
 	}
 
@@ -393,7 +394,7 @@ func loadExistingESArticles(ctx context.Context, svcCtx *svc.ServiceContext) (ma
 	scroll := svcCtx.ESClient.Scroll(esArticlesIndexName).Size(esSyncBatchSize)
 	for {
 		result, err := scroll.Do(ctx)
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

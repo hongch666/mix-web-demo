@@ -26,8 +26,8 @@ func TestZeroLoggerFileContainsTraceID(t *testing.T) {
 	}
 	requestLogger := logger.WithContext(ctx)
 	t.Cleanup(func() {
-		if err := requestLogger.Close(); err != nil {
-			t.Errorf("关闭日志文件失败: %v", err)
+		if closeErr := requestLogger.Close(); closeErr != nil {
+			t.Errorf("关闭日志文件失败: %v", closeErr)
 		}
 	})
 

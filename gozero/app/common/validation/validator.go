@@ -206,7 +206,7 @@ func parseFieldTime(field reflect.Value) (time.Time, bool) {
 	if !field.IsValid() {
 		return time.Time{}, false
 	}
-	if field.Kind() == reflect.Ptr {
+	if field.Kind() == reflect.Pointer {
 		if field.IsNil() {
 			return time.Time{}, false
 		}

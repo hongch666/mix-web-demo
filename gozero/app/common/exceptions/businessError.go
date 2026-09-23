@@ -1,6 +1,10 @@
 package exceptions
 
-import "app/common/constants"
+import (
+	"errors"
+
+	"app/common/constants"
+)
 
 // BusinessError 业务异常结构体 - 用于返回可向客户端显示的错误信息
 // 其他未捕获的异常会统一返回 "服务器内部错误"
@@ -43,9 +47,10 @@ func (e *BusinessError) BusinessMessage() string {
 	return e.Message
 }
 
-// IsBusinessError 判断 error 是否为 BusinessError 类型
+// IsBusinessError 判断 error 是否为 BusinessError 类型，支持被包装的错误
 func IsBusinessError(err error) (*BusinessError, bool) {
-	if be, ok := err.(*BusinessError); ok {
+	var be *BusinessError
+	if errors.As(err, &be) {
 		return be, true
 	}
 	return nil, false

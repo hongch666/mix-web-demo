@@ -7,18 +7,6 @@ import (
 	"app/internal/types"
 )
 
-// 融合重排后的文章项
-type fusionItem struct {
-	esScore        float64
-	vectorScore    float64
-	graphScore     float64
-	finalScore     float64
-	reason         string
-	semanticReason string
-	relations      []fastapiClient.GraphRelation
-	matchedChunks  []fastapiClient.VectorMatchedChunk
-}
-
 type FusionConfig struct {
 	VectorScoreWeight float64
 	GraphScoreWeight  float64

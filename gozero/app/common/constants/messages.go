@@ -14,6 +14,7 @@ const (
 	SWAGGER_DOCS_MESSAGE = "Swagger 文档地址 http://%s:%d/swagger/index.html"
 	INIT_IP              = "127.0.0.1"
 	SERVER_START_SUCCESS = "服务启动成功"
+	SERVER_START_FAIL    = "服务启动失败: %v"
 	GET_SWAGGER_FAIL     = "获取 Swagger 文档失败"
 
 	// 基础设施降级

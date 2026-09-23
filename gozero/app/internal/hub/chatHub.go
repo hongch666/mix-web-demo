@@ -42,7 +42,6 @@ type ChatQueue struct {
 }
 
 type ChatHub struct {
-	ctx context.Context
 	*utils.ZeroLogger
 }
 

@@ -46,7 +46,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		IsRead:     0, // 初始为未读
 	}
 
-	if err := l.svcCtx.ChatMessagesModel.CreateChatMessage(l.ctx, message); err != nil {
+	if err = l.svcCtx.ChatMessagesModel.CreateChatMessage(l.ctx, message); err != nil {
 		l.Error(fmt.Sprintf(constants.CREATE_MESSAGE_ERROR+": %v", err))
 		return nil, exceptions.NewInternalServerError(constants.CREATE_MESSAGE_ERROR, err.Error())
 	}
@@ -59,7 +59,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		SenderId:   req.SenderId,
 		ReceiverId: req.ReceiverId,
 		Content:    content,
-		MessageId:  uint64(message.Id),
+		MessageId:  message.Id,
 		Timestamp:  time.Now().Format(constants.DateTimeFormat),
 	}
 
@@ -74,7 +74,7 @@ func (l *ChatSendMessageLogic) ChatSendMessage(req *types.ChatSendMessageReq) (r
 		UserId:       req.ReceiverId,
 		UnreadCounts: unreadCounts,
 		Message: &types.ChatMessageItem{
-			Id:         uint64(message.Id),
+			Id:         message.Id,
 			SenderId:   message.SenderId,
 			ReceiverId: message.ReceiverId,
 			Content:    message.Content,

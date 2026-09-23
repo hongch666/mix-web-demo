@@ -238,17 +238,15 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 		jsonBytes, err := json.Marshal(msg)
 		if err != nil {
 			l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
-		} else {
+		} else if l.svcCtx.RabbitMQPublisher != nil {
 			// 通过RabbitMQ发送消息
-			if l.svcCtx.RabbitMQPublisher != nil {
-				err = l.svcCtx.RabbitMQPublisher.Publish(
-					jsonBytes,
-					[]string{"article-log-queue"},
-					rabbitmq.WithPublishOptionsContentType("application/json"),
-				)
-				if err != nil {
-					l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
-				}
+			err = l.svcCtx.RabbitMQPublisher.Publish(
+				jsonBytes,
+				[]string{"article-log-queue"},
+				rabbitmq.WithPublishOptionsContentType("application/json"),
+			)
+			if err != nil {
+				l.Error(fmt.Sprintf(constants.SEARCH_ERR+": %v", err))
 			}
 		}
 	}
