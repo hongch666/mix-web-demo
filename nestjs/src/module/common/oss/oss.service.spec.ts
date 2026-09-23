@@ -53,9 +53,7 @@ describe("OssService", () => {
       .spyOn(service as never, "uploadFileWithBun" as never)
       .mockResolvedValue({} as never);
     jest.spyOn(fs.promises, "access").mockResolvedValue(undefined);
-    jest
-      .spyOn(fs.promises, "stat")
-      .mockResolvedValue({ size: 9 } as fs.Stats);
+    jest.spyOn(fs.promises, "stat").mockResolvedValue({ size: 9 } as fs.Stats);
     const localFile = "C:/unit-test/upload.txt";
 
     const url = await service.uploadFile(localFile, "test/upload.txt");

@@ -48,7 +48,9 @@ export class UploadService {
         typeof file?.pipe,
       ),
     );
-    this.logger.info(Messages.UPLOAD_FILE_KEYS(Object.keys(file || {}).join(", ")));
+    this.logger.info(
+      Messages.UPLOAD_FILE_KEYS(Object.keys(file || {}).join(", ")),
+    );
 
     const originalFilename: string = file.filename || "image";
     const fileExtension: string =

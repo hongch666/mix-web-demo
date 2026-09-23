@@ -2,7 +2,6 @@
  * Redis 标识常量 — 锁Key、客户端Token、OAuth状态Key、Lua脚本
  */
 export class RedisKeys {
-
   // ===== OAuth 状态 Key =====
   static readonly OAUTH_GITHUB_STATE = (state: string): string =>
     `oauth:github:state:${state}`;

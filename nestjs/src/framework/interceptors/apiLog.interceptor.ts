@@ -198,10 +198,12 @@ export class ApiLogInterceptor implements NestInterceptor {
         responseTime: responseTime,
       };
 
-      // 发送到消息队列
-      this.amqpConnection.publish("", "api-log-queue", apiLogMessage);
+      // 发送到消息队列，await 发布结果以便失败时进入下方 catch 记录日志
+      await this.amqpConnection.publish("", "api-log-queue", apiLogMessage);
 
-      this.logger.info(Messages.API_LOG_QUEUE_SENT(JSON.stringify(apiLogMessage)));
+      this.logger.info(
+        Messages.API_LOG_QUEUE_SENT(JSON.stringify(apiLogMessage)),
+      );
     } catch (error: unknown) {
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);

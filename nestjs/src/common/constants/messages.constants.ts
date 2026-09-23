@@ -71,8 +71,14 @@ export class Messages {
   static readonly API_LOG_INDEX_CREATED = (indexName: string): string =>
     `ApiLog 索引已创建: ${indexName}`;
 
+  static readonly API_LOG_INDEX_INIT_FAILED = (message: string): string =>
+    `ApiLog 索引初始化失败: ${message}`;
+
   static readonly ARTICLE_LOG_INDEX_CREATED = (indexName: string): string =>
     `索引已创建: ${indexName}`;
+
+  static readonly ARTICLE_LOG_INDEX_INIT_FAILED = (message: string): string =>
+    `文章日志索引初始化失败: ${message}`;
 
   static readonly EXCEPTION_LOG = (
     method: string,
@@ -504,6 +510,8 @@ export class Messages {
   static readonly TEST_WELCOME = "Hello,I am Nest.js!";
 
   static readonly START_WELCOME = "NestJS应用已启动";
+
+  static readonly SERVER_START_FAILED = "NestJS 服务启动失败";
 
   // ===== OSS =====
 

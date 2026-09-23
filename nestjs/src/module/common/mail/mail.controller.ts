@@ -19,8 +19,9 @@ export class MailController {
   async sendEmailCode(
     @Body() dto: InternalEmailCodeSendDto,
   ): Promise<ApiResponse<null>> {
-    // 不 await，邮件异步发送，避免 SMTP 耗时导致调用方超时
-    this.mailService.sendVerificationCode(dto);
+    // 不 await，邮件异步发送，避免 SMTP 耗时导致调用方超时，
+    // 使用 void 显式标记为有意忽略返回值（发送结果由 MailService 内部记录日志）
+    void this.mailService.sendVerificationCode(dto);
     return success(null);
   }
 }

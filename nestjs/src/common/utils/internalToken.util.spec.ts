@@ -41,7 +41,10 @@ describe("InternalTokenUtil", () => {
   });
 });
 
-function createTokenUtil(secret: string, expiration: number): InternalTokenUtil {
+function createTokenUtil(
+  secret: string,
+  expiration: number,
+): InternalTokenUtil {
   const configService = {
     get: jest.fn((key: string) => {
       if (key === "internal-token.secret") {
@@ -89,7 +92,7 @@ function resolveConfiguredSecret(): string {
 function stripQuotes(value: string): string {
   if (
     value.length >= 2 &&
-    ((value.startsWith("\"") && value.endsWith("\"")) ||
+    ((value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'")))
   ) {
     return value.slice(1, -1);

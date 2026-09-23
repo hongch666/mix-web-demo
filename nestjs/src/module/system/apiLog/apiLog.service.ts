@@ -59,7 +59,14 @@ export class ApiLogService {
     private readonly apiLogModel: Model<ApiLogDocument>,
     private readonly logger: LoggerService,
   ) {
-    this.ensureIndexes();
+    // 索引初始化属于启动期尽力而为的操作，失败只记录日志，不阻塞服务启动
+    void this.ensureIndexes().catch((error: unknown) => {
+      this.logger.error(
+        Messages.API_LOG_INDEX_INIT_FAILED(
+          error instanceof Error ? error.message : String(error),
+        ),
+      );
+    });
   }
 
   /**

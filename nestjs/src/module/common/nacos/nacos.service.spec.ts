@@ -162,7 +162,9 @@ const createdServices: NacosService[] = [];
 
 function createService(context: ContextValues = {}): {
   service: NacosService;
-  internalTokenUtil: jest.Mocked<Pick<InternalTokenUtil, "generateInternalToken">>;
+  internalTokenUtil: jest.Mocked<
+    Pick<InternalTokenUtil, "generateInternalToken">
+  >;
 } {
   const configValues: Record<string, unknown> = {
     "server.serviceName": "nestjs",

@@ -1,6 +1,8 @@
+import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { createApp } from "./app";
+import { Messages } from "./common/constants";
 
 async function bootstrap(): Promise<void> {
   // 初始化app
@@ -13,4 +15,8 @@ async function bootstrap(): Promise<void> {
   await app.listen(port, ip);
 }
 
-bootstrap();
+// 启动失败时以非零状态码退出，避免进程静默存活
+void bootstrap().catch((error: unknown) => {
+  Logger.error(Messages.SERVER_START_FAILED, error, "Bootstrap");
+  process.exit(1);
+});

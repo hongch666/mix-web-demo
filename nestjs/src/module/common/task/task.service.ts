@@ -33,7 +33,9 @@ export class TaskService {
       this.logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
       return;
     }
-    this.logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey));
+    this.logger.info(
+      Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey),
+    );
 
     try {
       this.logger.info(Messages.TASK_CLEAN);
@@ -54,9 +56,13 @@ export class TaskService {
     } finally {
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
-        this.logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey));
+        this.logger.info(
+          Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey),
+        );
       } else {
-        this.logger.info(Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey));
+        this.logger.info(
+          Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey),
+        );
       }
     }
   }
@@ -79,7 +85,9 @@ export class TaskService {
       this.logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL.replace("%s", lockKey));
       return;
     }
-    this.logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey));
+    this.logger.info(
+      Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey),
+    );
 
     try {
       this.logger.info(Messages.TASK_ARTICLE_CLEAN);
@@ -100,9 +108,13 @@ export class TaskService {
     } finally {
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
-        this.logger.info(Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey));
+        this.logger.info(
+          Messages.REDIS_LOCK_RELEASE_SUCCESS.replace("%s", lockKey),
+        );
       } else {
-        this.logger.info(Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey));
+        this.logger.info(
+          Messages.REDIS_LOCK_RELEASE_FAIL.replace("%s", lockKey),
+        );
       }
     }
   }

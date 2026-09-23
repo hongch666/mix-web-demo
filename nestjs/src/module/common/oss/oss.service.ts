@@ -119,7 +119,9 @@ export class OssService implements OnModuleInit {
       const message: string =
         error instanceof Error ? error.message : String(error);
       this.logger.error(Messages.OSS_UPLOAD_ERROR_LOG(message));
-      this.logger.error(Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile));
+      this.logger.error(
+        Messages.OSS_UPLOAD_ERROR_DETAIL_INFO(localFile, ossFile),
+      );
       this.logger.error(
         Messages.OSS_UPLOAD_ERROR_STACK_INFO(
           error instanceof Error ? error.stack || "" : "",

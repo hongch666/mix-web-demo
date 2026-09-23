@@ -28,7 +28,7 @@ export class WordService {
       content: htmlToText((data.content as string) || "", { wordwrap: false }),
     };
 
-    const buffer: Buffer | unknown = await createReport({
+    const buffer: unknown = await createReport({
       template,
       data: processedData,
       cmdDelimiter: ["${", "}"],

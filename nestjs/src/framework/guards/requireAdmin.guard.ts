@@ -34,7 +34,8 @@ export class RequireAdminGuard implements CanActivate {
       );
     }
 
-    const result: Record<string, unknown> = await this.springClient.isAdminUser(userId);
+    const result: Record<string, unknown> =
+      await this.springClient.isAdminUser(userId);
     const isAdmin: boolean = SpringClientService.extractData<boolean>(result);
 
     if (!isAdmin) {

@@ -85,9 +85,10 @@ export class LoggerService implements OnModuleInit {
     const seconds: string = String(now.getSeconds()).padStart(2, "0");
     const timestamp: string = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     const spanContext = trace.getSpan(context.active())?.spanContext();
-    const traceId: string = spanContext && isSpanContextValid(spanContext)
-      ? spanContext.traceId
-      : TelemetryConstants.EMPTY_TRACE_ID;
+    const traceId: string =
+      spanContext && isSpanContextValid(spanContext)
+        ? spanContext.traceId
+        : TelemetryConstants.EMPTY_TRACE_ID;
     const logEntry: string = `${timestamp} - ${level} - ${TelemetryConstants.TRACE_ID_FIELD}=${traceId} - ${message}\n`;
 
     try {
