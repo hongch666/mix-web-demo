@@ -773,8 +773,8 @@ default = true
 
 脚本执行完成后，还需要：
 
-1. **配置各服务的环境变量文件**（见下方"配置文件说明"章节，先参考 `.env.example` 生成本地 `.env`，Docker 则使用 `.env.docker`）
-2. **启动基础服务**（MySQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos）
+1. **配置各服务的环境变量文件**（见下方"环境变量配置文件"章节，先参考 `.env.example` 生成本地 `.env`，Docker 则使用 `.env.docker`）
+2. **启动基础服务**（MySQL、PostgreSQL、Redis、MongoDB、ElasticSearch、RabbitMQ、Nacos、ClickHouse、Neo4j），推荐直接执行 `./mix docker-services up`：会自动创建全部容器、读取根目录 `.env` 中的账号密码，并完成 ES IK 分词器的安装与验证
 3. **使用运行脚本启动服务**（见"运行脚本配置"章节）
 
 ## Docker 基础中间件容器部署
@@ -807,35 +807,90 @@ default = true
 
 ### 创建的容器服务
 
-脚本会自动创建以下 Docker 容器（密码均为默认值，可通过 `.env` 文件自定义）：
+脚本会自动创建以下 Docker 容器（账号密码可在项目根目录 `.env` 中自定义，参考根目录 `.env.example`）：
 
-| 服务              | 端口        | 用户名   | 默认密码 | 说明                     |
-| ----------------- | ----------- | -------- | -------- | ------------------------ |
-| **MySQL**         | 3306        | root     | 123456   | 关系型数据库             |
-| **PostgreSQL**    | 5432        | postgres | 123456   | 向量数据库(含 pgvector)  |
-| **Redis**         | 6379        | -        | 123456   | 缓存服务                 |
-| **MongoDB**       | 27017       | root     | 123456   | 非关系型数据库           |
-| **ClickHouse**    | 8123, 9002  | hcsy     | 123456   | 大数据分析数据库         |
-| **ElasticSearch** | 9200, 9300  | -        | -        | 搜索引擎(7.12.1)         |
-| **Nacos**         | 8848, 9848  | -        | -        | 服务发现与配置中心       |
-| **RabbitMQ**      | 5672, 15672 | hcsy     | 123456   | 消息队列(管理界面 15672) |
-| **Neo4j**         | 7474, 7687  | neo4j    | 12345678 | 知识图谱数据库           |
+| 服务              | 端口        | 用户名   | 默认密码 | 说明                                 |
+| ----------------- | ----------- | -------- | -------- | ------------------------------------ |
+| **MySQL**         | 3306        | root     | 123456   | 关系型数据库                         |
+| **PostgreSQL**    | 5432        | postgres | 123456   | 向量数据库(含 pgvector)              |
+| **Redis**         | 6379        | -        | 123456   | 缓存服务                             |
+| **MongoDB**       | 27017       | root     | 123456   | 非关系型数据库                       |
+| **ElasticSearch** | 9200, 9300  | elastic  | 123456   | 搜索引擎(7.12.1，自动安装 IK 分词器) |
+| **Nacos**         | 8848, 9848  | -        | -        | 服务发现与配置中心（未开启鉴权）     |
+| **ClickHouse**    | 8123, 9002  | hcsy     | 123456   | 大数据分析数据库                     |
+| **RabbitMQ**      | 5672, 15672 | hcsy     | 123456   | 消息队列(管理界面 15672)             |
+| **Neo4j**         | 7474, 7687  | neo4j    | 12345678 | 知识图谱数据库                       |
 
-### 自定义密码配置
+### 自定义账号密码配置
 
-所有容器密码均支持通过项目根目录 `.env` 文件自定义，脚本会优先读取 `.env` 中的变量，未设置时使用默认值：
+先复制示例文件，再按需修改；脚本会优先读取根目录 `.env` 中的变量，未设置时使用上表默认值：
 
 ```bash
-# .env 文件示例
-DB_PASSWORD=你的数据库密码          # MySQL 和 PostgreSQL 密码
-REDIS_PASSWORD=你的Redis密码        # Redis 密码
-MONGO_PASSWORD=你的MongoDB密码      # MongoDB 密码
-CLICKHOUSE_USER=hcsy               # ClickHouse 用户名
-CLICKHOUSE_PASSWORD=你的密码        # ClickHouse 密码
-RABBITMQ_USER=hcsy                 # RabbitMQ 用户名
-RABBITMQ_PASSWORD=你的密码          # RabbitMQ 密码
-NEO4J_PASSWORD=你的Neo4j密码        # Neo4j 密码
+cp .env.example .env
 ```
+
+```bash
+# ===== MySQL =====
+MYSQL_ROOT_PASSWORD=你的MySQL密码      # 用户名固定为 root
+
+# ===== PostgreSQL =====
+POSTGRES_USER=postgres                # 修改后需同步修改 fastapi/.env 中的 DB_POSTGRES_USER
+POSTGRES_PASSWORD=你的PostgreSQL密码
+
+# ===== Redis =====
+REDIS_PASSWORD=你的Redis密码
+
+# ===== ElasticSearch =====
+ES_VERSION=7.12.1                     # 同时决定镜像与 IK 分词器插件版本
+ES_IK_ENABLED=true                    # 是否在 up 时自动安装 IK 分词器
+ES_IK_OFFLINE=false                   # 是否强制使用离线插件包
+ES_IK_OFFLINE_ZIP=/opt/packages/elasticsearch-analysis-ik-7.12.1.zip   # 离线包绝对路径
+ES_SECURITY_ENABLED=true              # 开启 X-Pack 账号密码认证
+ES_PASSWORD=你的ES密码                 # 内置超级用户为 elastic
+# ES_HEAP_SIZE=256m                   # 可选，内存不足时调大
+
+# ===== MongoDB =====
+MONGO_USER=root
+MONGO_PASSWORD=你的MongoDB密码
+
+# ===== ClickHouse =====
+CLICKHOUSE_USER=hcsy
+CLICKHOUSE_PASSWORD=你的ClickHouse密码
+
+# ===== RabbitMQ =====
+RABBITMQ_USER=hcsy
+RABBITMQ_PASSWORD=你的RabbitMQ密码
+
+# ===== Neo4j =====
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=你的Neo4j密码
+
+# ===== 兼容变量（可选） =====
+# 旧配置中的公共密码，未单独设置 MYSQL_ROOT_PASSWORD / POSTGRES_PASSWORD 时作为其回退值
+# DB_PASSWORD=你的数据库密码
+```
+
+> 容器已存在时修改 `.env` 不会自动生效，需先执行 `./mix docker-services delete` 再 `up`。
+> 修改用户名（`POSTGRES_USER`、`MONGO_USER`、`CLICKHOUSE_USER`、`RABBITMQ_USER`、`NEO4J_USER`）后，
+> 还需同步修改各服务 `.env` 中的对应用户名，否则服务无法连接。
+
+### ElasticSearch IK 分词器
+
+GoZero 文章搜索的索引映射使用 `ik_smart` 分词器（见 `gozero/app/common/constants/scripts.go`），缺少插件时索引创建会失败，因此 `docker-services up` 会自动完成以下步骤：
+
+1. ES 启动前把 IK 插件装入 `es-plugins` 共享卷（已安装则跳过），首次启动即加载，无需重启
+2. 等待 ES 就绪（开启认证时自动携带 `elastic` 账号）
+3. 调用 `_analyze` 用 `ik_smart` 验证分词可用，未通过时打印手动安装命令
+
+服务器无外网时，在根目录 `.env` 中指定离线包路径即可离线安装：
+
+```bash
+ES_IK_OFFLINE=true
+ES_IK_OFFLINE_ZIP=/opt/packages/elasticsearch-analysis-ik-7.12.1.zip
+```
+
+`ES_IK_OFFLINE=false`（默认）时也会优先使用已配置的离线包，安装失败再回退在线下载地址；
+在线地址依次为 `release.infinilabs.com` 与 `get.infini.cloud`，离线包版本必须与 `ES_VERSION` 一致。
 
 ### 数据持久化目录
 
@@ -854,12 +909,13 @@ NEO4J_PASSWORD=你的Neo4j密码        # Neo4j 密码
 
 - **首次创建**: 首次执行 `docker-services up` 时会自动创建 Docker 网络 `hcsy` 和所有数据持久化目录
 - **数据持久化**: 所有容器的数据都会持久化到宿主机目录
-- **密码配置**: 建议在 `.env` 文件中统一配置密码，避免使用默认密码
-- **ElasticSearch**: 首次创建后会提示是否安装 IK 分词器（可选）
+- **账号密码**: 生产环境请先复制根目录 `.env.example` 为 `.env` 并修改默认值，`up` 时脚本会提示仍在使用默认值的变量
+- **ElasticSearch**: IK 分词器在容器启动前自动安装、启动后自动验证；无外网环境用 `ES_IK_OFFLINE_ZIP` 指定离线包
 - **ClickHouse**: 端口 9002 映射到容器内 9000（避免与其他服务冲突），需设置 `ulimit nofile=262144`
-- **Nacos**: 自动生成 `nacos/custom.env` 配置文件，MySQL 密码与 `DB_PASSWORD` 同步
+- **Nacos**: 自动生成 `nacos/custom.env` 配置文件，MySQL 密码与 `MYSQL_ROOT_PASSWORD` 同步；默认未开启鉴权
 - **权限问题**: 如果遇到权限错误，可能需要使用 `sudo` 或将用户加入 docker 组
 - **Neo4j**: 默认用户为 `neo4j`，默认密码为 `12345678`，Browser 地址为 `http://localhost:7474`，Bolt 地址为 `bolt://localhost:7687`
+- **应用侧配置**: 根目录 `.env` 只作用于基础容器，四个服务连接数据库的变量名不同，需在各服务目录的 `.env` / `.env.docker` 中单独配置（见"环境变量配置文件"章节）
 - 如果有额外创建的组件，按照个人的配置改动配置文件
 
 ## 编译和运行项目
@@ -1316,7 +1372,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `stop.sh`                   | scripts/        | 停止所有 tmux 服务                                                                  | Linux/macOS |
 | `build.sh`                  | scripts/        | 编译所有服务到 dist/ 目录                                                           | Linux/macOS |
 | `dist-control.sh`           | scripts/        | 管理打包后的分布式服务（支持服务指定）                                              | Linux/macOS |
-| `docker-services.sh`        | scripts/        | 创建、启动、停止和清理基础中间件容器                                                | Linux/macOS |
+| `docker-services.sh`        | scripts/        | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）    | Linux/macOS |
 | `docker-compose-up.sh`      | scripts/        | 使用 Docker Compose 启动应用服务                                                    | Linux/macOS |
 | `docker-compose-down.sh`    | scripts/        | 使用 Docker Compose 停止应用服务                                                    | Linux/macOS |
 | `build_and_run_services.sh` | scripts/        | 构建并运行服务容器                                                                  | Linux/macOS |
@@ -1588,7 +1644,7 @@ docker compose down -v
 - `docker-compose.yml`：应用、网关和 OTel Collector/Tempo/Loki/Promtail/Grafana 编排；数据库、缓存与消息队列由基础服务脚本管理
 - `scripts/docker-compose-up.sh`：快速启动脚本
 - `scripts/docker-compose-down.sh`：快速停止脚本
-- `scripts/docker-services.sh`：创建和管理基础中间件容器
+- `scripts/docker-services.sh`：创建和管理基础中间件容器，账号密码读取根目录 `.env`，并在 ES 启动前自动安装 IK 分词器
 - `scripts/build_and_run_services.sh`：构建并运行服务容器
 
 ### 访问服务
@@ -1676,6 +1732,8 @@ LangChain 会自动创建，但需要先执行 `db/postgresql/extensions.sql` �
 
 索引名为 `articles`，系统同步数据时会自动创建；如需手动初始化，可执行 `db/es/init.es`
 
+索引映射使用 `ik_smart` 分词器，必须先装好 IK 分词器插件，否则索引创建会失败（`docker-services up` 已自动安装并验证，详见"Docker 基础中间件容器部署 - ElasticSearch IK 分词器"）。
+
 ### ClickHouse 创建
 
 需要先在 `db/clickhouse/` 下按数仓分层目录（`ods`、`dwd`、`dws`、`dim`、`ads`）依次执行单表建表脚本，脚本中不包含库前缀，执行前先切换到目标数据库（`CREATE DATABASE` 与 `USE` 由使用方按需自行执行）
@@ -1697,6 +1755,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 - `.env.example`：示例文件，保留全部变量名，用于复制生成本地配置
 - `.env`：本地开发使用的真实配置文件，不建议提交敏感值
 - `.env.docker`：Docker 容器使用的环境变量文件，脚本会在容器启动时读取它
+- **根目录 `.env.example` / `.env`**：基础中间件账号密码配置，仅供 `./mix docker-services` 创建容器时读取（详见"Docker 基础中间件容器部署"章节）
 
 所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
 
@@ -1704,6 +1763,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 各服务的具体环境变量请直接参考对应的 `.env.example`，这里不再重复列出完整配置。
 
+- 基础中间件（容器账号密码）：根目录 `.env.example`、根目录 `.env`
 - Spring：`spring/.env.example`、`spring/.env.docker`
 - GoZero：`gozero/app/.env.example`、`gozero/app/.env.docker`
 - NestJS：`nestjs/.env.example`、`nestjs/.env.docker`
@@ -1728,7 +1788,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 ### 环境变量使用说明
 
 1. **密钥管理**: 所有密钥信息（数据库密码、API KEY、JWT Secret 等）不应该提交到版本控制系统，应该在本地 `.env` 文件中配置
-2. **示例文件**: 新克隆项目后，先复制对应服务的 `.env.example` 为 `.env`，再填写真实值
+2. **示例文件**: 新克隆项目后，先复制对应服务的 `.env.example` 为 `.env`，再填写真实值（基础中间件账号密码对应根目录的 `.env.example`）
 3. **Docker 文件**: Docker 运行时读取 `.env.docker`，如果需要修改容器环境变量，请单独维护该文件，不要复用本地 `.env`
 4. **YAML 中的引用格式**: 在各服务的 `application.yaml` 配置文件中，使用以下格式引用环境变量：
 
