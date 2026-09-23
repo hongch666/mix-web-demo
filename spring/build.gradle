@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.12'
     id 'io.spring.dependency-management' version '1.1.4'
+    // 备用构建的代码格式化插件，与 Maven 侧使用同一套格式化规则
+    id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'com.hcsy'
@@ -91,6 +93,20 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// 代码规范校验：gradle spotlessApply 格式化，gradle spotlessCheck 校验
+// 格式化配置与 import 分组均与 Maven 侧保持一致，避免两套构建产出不同结果：
+// Eclipse formatter 负责整体格式化，importOrder 再按四段分组收敛 import
+spotless {
+    java {
+        target 'src/**/*.java'
+        eclipse().configFile('eclipse-formatter.xml')
+        importOrder 'java', 'javax', 'org', 'com.hcsy', '\\#'
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }
 
 // 配置 Spring Boot 自动重启

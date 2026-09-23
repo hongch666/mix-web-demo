@@ -12,7 +12,6 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hcsy.spring.api.repository.UserRepository;
 import com.hcsy.spring.api.service.EmailVerificationService;
 import com.hcsy.spring.api.service.ImageCaptchaService;
@@ -43,6 +42,7 @@ import com.hcsy.spring.entity.vo.UserLoginVO;
 import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -214,7 +214,8 @@ public class UserServiceImpl implements UserService {
             .switchIfEmpty(Mono.error(unauthorized(Messages.GITHUB_TOKEN_TICKET_EXPIRED)))
             .flatMap(json -> redisUtil.delete(key)
                 .then(Mono.fromCallable(() -> objectMapper.readValue(json, UserLoginVO.class))))
-            .onErrorMap(error -> error instanceof BusinessException ? error
+            .onErrorMap(error -> error instanceof BusinessException
+                ? error
                 : BusinessException.builder()
                     .httpStatus(HttpCode.INTERNAL_SERVER_ERROR)
                     .errorMessage(Messages.GITHUB_TOKEN_TICKET_PARSE_FAILED)
@@ -335,7 +336,8 @@ public class UserServiceImpl implements UserService {
         User user = BeanUtil.copyProperties(dto, User.class);
         user.setRole("user");
         user.setAuthProvider("local");
-        String rawPassword = hasText(user.getPassword()) ? user.getPassword()
+        String rawPassword = hasText(user.getPassword())
+            ? user.getPassword()
             : userPasswordProperties.defaultPassword();
         return encryptPassword(rawPassword)
             .flatMap(password -> {

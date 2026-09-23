@@ -52,7 +52,8 @@ public class ArticleCollectController {
         paramNames = { "userId" })
     public Mono<Result<Void>> addCollect(@Valid @RequestBody ArticleCollectDTO dto) {
         return articleCollectService.addCollect(dto.getArticleId(), dto.getUserId())
-            .map(success -> success ? Result.<Void>success()
+            .map(success -> success
+                ? Result.<Void>success()
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.COLLECT_FAIL));
     }
 
@@ -63,10 +64,13 @@ public class ArticleCollectController {
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
     public Mono<Result<Void>> removeCollect(
-        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
-        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
+        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
+            required = true) Long articleId,
+        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
+            required = true) Long userId) {
         return articleCollectService.removeCollect(articleId, userId)
-            .map(success -> success ? Result.<Void>success()
+            .map(success -> success
+                ? Result.<Void>success()
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.UNCOLLECT_FAIL));
     }
 
@@ -89,8 +93,10 @@ public class ArticleCollectController {
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
     public Mono<Result<CollectCheckVO>> isCollected(
-        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
-        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
+        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
+            required = true) Long articleId,
+        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
+            required = true) Long userId) {
         return articleCollectService.isCollected(articleId, userId)
             .map(collected -> Result.success(new CollectCheckVO(collected)));
     }

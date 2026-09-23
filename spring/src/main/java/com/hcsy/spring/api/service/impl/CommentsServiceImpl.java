@@ -123,7 +123,8 @@ public class CommentsServiceImpl implements CommentsService {
 
     @Override
     public Mono<Void> deleteComments(List<Long> ids) {
-        List<Long> distinctIds = ids == null ? List.of()
+        List<Long> distinctIds = ids == null
+            ? List.of()
             : ids.stream()
                 .filter(id -> id != null).distinct().toList();
         if (distinctIds.isEmpty()) {

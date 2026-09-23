@@ -16,6 +16,6 @@ import jakarta.validation.constraints.NotBlank;
 @ConfigurationProperties(prefix = "user")
 @Validated
 public record UserPasswordProperties(
-        @NotBlank(message = Messages.USER_DEFAULT_PASSWORD_NOT_BLANK) String defaultPassword,
-        @NotBlank(message = Messages.USER_RESET_PASSWORD_NOT_BLANK) String resetPassword) {
+    @NotBlank(message = Messages.USER_DEFAULT_PASSWORD_NOT_BLANK) String defaultPassword,
+    @NotBlank(message = Messages.USER_RESET_PASSWORD_NOT_BLANK) String resetPassword) {
 }

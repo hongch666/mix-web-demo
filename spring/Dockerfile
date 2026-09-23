@@ -6,9 +6,11 @@ FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /app
 
-# 复制构建描述与源代码，dependency:go-offline 会额外下载大量插件依赖，
+# 复制构建描述、格式化配置与源代码，dependency:go-offline 会额外下载大量插件依赖，
 # 直接打包并复用 Maven 缓存可缩短首次镜像构建时间
+# eclipse-formatter.xml 为 pom.xml 中 Spotless 校验所需的格式化配置，validate 阶段会读取
 COPY pom.xml .
+COPY eclipse-formatter.xml .
 COPY src ./src
 RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -q
 

@@ -57,8 +57,8 @@ public class InternalTokenAspect {
             if (requiredServiceName != null && !requiredServiceName.isEmpty()) {
                 String tokenServiceName = internalTokenUtil.extractServiceName(internalToken);
                 if (!requiredServiceName.equals(tokenServiceName)) {
-                    String mismatchMessage =
-                        String.format(Messages.SERVICE_NAME_MISMATCH, requiredServiceName, tokenServiceName);
+                    String mismatchMessage = String.format(Messages.SERVICE_NAME_MISMATCH, requiredServiceName,
+                        tokenServiceName);
                     logger.error(Messages.SERVICE_NAME_MISMATCH, requiredServiceName, tokenServiceName);
                     return Mono.error(BusinessException.builder().httpStatus(HttpCode.FORBIDDEN)
                         .errorMessage(mismatchMessage).build());

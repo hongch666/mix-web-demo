@@ -52,7 +52,8 @@ public class FocusController {
         paramNames = { "userId" })
     public Mono<Result<Void>> addFocus(@Valid @RequestBody FocusDTO dto) {
         return focusService.addFocus(dto.getUserId(), dto.getFocusId())
-            .map(success -> success ? Result.<Void>success()
+            .map(success -> success
+                ? Result.<Void>success()
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.FOCUS_FAIL));
     }
 
@@ -64,9 +65,11 @@ public class FocusController {
         paramNames = { "user_id" })
     public Mono<Result<Void>> removeFocus(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
-        @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
+        @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id",
+            required = true) Long focusId) {
         return focusService.removeFocus(userId, focusId)
-            .map(success -> success ? Result.<Void>success()
+            .map(success -> success
+                ? Result.<Void>success()
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.UNFOCUS_FAIL));
     }
 
@@ -77,7 +80,8 @@ public class FocusController {
         paramNames = { "user_id" })
     public Mono<Result<FocusCheckVO>> isFocused(
         @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId,
-        @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id", required = true) Long focusId) {
+        @Parameter(description = "关注用户ID", required = true) @RequestParam(value = "focus_id",
+            required = true) Long focusId) {
         return focusService.isFocused(userId, focusId)
             .map(focused -> Result.success(new FocusCheckVO(focused)));
     }
@@ -137,8 +141,10 @@ public class FocusController {
     @ApiLog("内部获取时间段内粉丝数")
     public Mono<Result<Long>> getFollowersInPeriod(
         @PathVariable Long userId,
-        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
-        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(
+            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(
+            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
         return focusService.getFollowersInPeriod(userId, startDate, endDate).map(Result::success);
     }
 
@@ -148,8 +154,10 @@ public class FocusController {
     @ApiLog("内部获取每日关注数")
     public Mono<Result<MapDataVO>> getDailyFollows(
         @PathVariable Long userId,
-        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
-        @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(
+            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime startDate,
+        @RequestParam @org.springframework.format.annotation.DateTimeFormat(
+            iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime endDate) {
         return focusService.getDailyFollows(userId, startDate, endDate).map(Result::success);
     }
 

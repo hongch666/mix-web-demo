@@ -32,7 +32,8 @@ public class WarehouseSyncController {
     @Operation(summary = "分页获取数仓源数据", description = "供 FastAPI 数仓任务通过内部接口分页同步 Spring 业务数据")
     public Mono<Result<SyncPage>> sync(
         @PathVariable String resource,
-        @RequestParam(defaultValue = "1970-01-01 00:00:00") @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime updatedAfter,
+        @RequestParam(defaultValue = "1970-01-01 00:00:00") @DateTimeFormat(
+            pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime updatedAfter,
         @RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "1000") int size) {
         return warehouseSyncService.sync(resource, updatedAfter, page, size)

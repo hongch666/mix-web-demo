@@ -44,8 +44,11 @@ public class GlobalExceptionHandler {
      * ServerWebInputException，二者都不是 MVC 的 MethodArgumentNotValidException/BindException，
      * 必须在此显式声明，否则会被兜底分支吞成 500 并丢失字段级消息
      */
-    @ExceptionHandler({ WebExchangeBindException.class, ServerWebInputException.class,
-        MethodArgumentNotValidException.class, BindException.class,
+    @ExceptionHandler({
+        WebExchangeBindException.class,
+        ServerWebInputException.class,
+        MethodArgumentNotValidException.class,
+        BindException.class,
         ConstraintViolationException.class })
     public Mono<ResponseEntity<Result<?>>> handleValidationException(Exception ex) {
         String message = extractValidationMessage(ex);

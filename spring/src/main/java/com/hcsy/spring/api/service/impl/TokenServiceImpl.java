@@ -14,12 +14,12 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.JwtUtil;
-import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.RedisDistributedLock;
+import com.hcsy.spring.common.utils.RedisUtil;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.entity.dto.AuthIdentityDTO;
 import com.hcsy.spring.entity.vo.TokenRefreshVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
-import com.hcsy.spring.entity.dto.AuthIdentityDTO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -29,7 +29,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
     private static final String BEARER_PREFIX = "Bearer ";
-
 
     private final RedisUtil redisUtil;
     private final RedisDistributedLock distributedLock;

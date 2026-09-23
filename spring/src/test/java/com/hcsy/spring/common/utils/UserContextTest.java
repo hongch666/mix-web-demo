@@ -1,9 +1,9 @@
 package com.hcsy.spring.common.utils;
 
+import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-
-import org.junit.jupiter.api.Test;
 
 import reactor.util.context.Context;
 

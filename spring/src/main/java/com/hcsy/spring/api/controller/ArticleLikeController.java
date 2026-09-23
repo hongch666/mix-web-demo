@@ -52,7 +52,8 @@ public class ArticleLikeController {
         paramNames = { "userId" })
     public Mono<Result<Void>> addLike(@Valid @RequestBody ArticleLikeDTO dto) {
         return articleLikeService.addLike(dto.getArticleId(), dto.getUserId())
-            .map(success -> success ? Result.<Void>success()
+            .map(success -> success
+                ? Result.<Void>success()
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.LIKE_FAIL));
     }
 
@@ -63,10 +64,13 @@ public class ArticleLikeController {
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
     public Mono<Result<Void>> removeLike(
-        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
-        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
+        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
+            required = true) Long articleId,
+        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
+            required = true) Long userId) {
         return articleLikeService.removeLike(articleId, userId)
-            .map(success -> success ? Result.<Void>success()
+            .map(success -> success
+                ? Result.<Void>success()
                 : Result.<Void>error(HttpCode.CONFLICT, Messages.UNLIKE_FAIL));
     }
 
@@ -89,8 +93,10 @@ public class ArticleLikeController {
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
     public Mono<Result<LikeCheckVO>> isLiked(
-        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id", required = true) Long articleId,
-        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id", required = true) Long userId) {
+        @Parameter(description = "文章ID", required = true) @RequestParam(value = "article_id",
+            required = true) Long articleId,
+        @Parameter(description = "用户ID", required = true) @RequestParam(value = "user_id",
+            required = true) Long userId) {
         return articleLikeService.isLiked(articleId, userId)
             .map(liked -> Result.success(new LikeCheckVO(liked)));
     }
