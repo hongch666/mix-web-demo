@@ -36,6 +36,7 @@
 - [环境变量配置文件](#环境变量配置文件)
 - [Swagger 说明](#swagger-说明)
 - [项目规范说明](#项目规范说明)
+- [代码规范与格式化工具](#代码规范与格式化工具)
 - [项目可用工具说明](#项目可用工具说明)
 - [其他说明](#其他说明)
 - [许可证](#许可证)
@@ -1092,6 +1093,19 @@ pytest tests/core/auth/test_internal_token.py
 # 只生成指定 SQL 文件
 ./mix goctl-orm -s -pattern user.sql
 
+# ===== 代码检查与格式化 =====
+# 检查全部服务（spring、gozero、nestjs、fastapi）的代码规范
+./mix lint
+
+# 只检查指定服务
+./mix lint spring nestjs
+
+# 格式化全部服务
+./mix format
+
+# 只格式化指定服务
+./mix format gozero fastapi
+
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
 ./mix docker up
@@ -1316,6 +1330,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `swag-init.sh`              | scripts/        | 生成 GoZero Swagger 文档                                                            | Linux/macOS |
 | `goctl-api-init.sh`         | scripts/        | 生成 GoZero API 代码，参数透传给`genApi.sh`                                         | Linux/macOS |
 | `goctl-orm-init.sh`         | scripts/        | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                         | Linux/macOS |
+| `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）               | Linux/macOS |
+| `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                        | Linux/macOS |
 | `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                       | Windows     |
 
 ### 服务名称
@@ -1959,6 +1975,91 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 4. GoZero 部分的初始化在 `internal/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
 5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
 6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `core/config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/initializer` 下通过响应式 `DatabaseClient` 执行
+
+## 代码规范与格式化工具
+
+各服务使用统一的代码规范与格式化工具，配置文件随服务源码一起维护，本地开发与构建使用同一套规则。
+
+推荐通过根目录 `mix` 聚合调用，也可以进入各服务目录直接执行底层命令：
+
+```bash
+# 检查全部服务（spring、gozero、nestjs、fastapi）的代码规范
+./mix lint
+
+# 只检查指定服务
+./mix lint spring nestjs
+
+# 格式化全部服务
+./mix format
+
+# 只格式化指定服务
+./mix format gozero fastapi
+```
+
+> `gateway` 为 APISIX 配置，不参与代码检查与格式化；对应工具未安装时该服务会自动跳过并提示。
+
+| 服务    | 工具                         | 配置文件                                                                              | 说明                        |
+| ------- | ---------------------------- | ------------------------------------------------------------------------------------- | --------------------------- |
+| Spring  | Spotless + Eclipse formatter | `spring/eclipse-formatter.xml`、`spring/pom.xml`、`spring/build.gradle`                | Java 格式化与校验           |
+| GoZero  | golangci-lint v2             | `gozero/app/.golangci.yml`                                                            | Go 静态检查与格式化         |
+| NestJS  | ESLint + Prettier            | `nestjs/eslint.config.mjs`、`nestjs/.prettierrc`                                      | TypeScript 静态检查与格式化 |
+| FastAPI | Ruff + Pyright               | `fastapi/pyproject.toml`                                                              | Python 检查与格式化         |
+
+根目录 `.gitattributes` 统一声明文本文件换行符为 LF，避免不同操作系统下格式化结果不一致。
+
+### Spring
+
+Spotless 负责 Spring 的格式化与校验，格式化参数由服务根目录的 `spring/eclipse-formatter.xml` 提供，Maven、Gradle 与 VSCode 共用同一份配置（VSCode 侧由 `.vscode/settings.json` 的 `java.format.settings.url` 指向该文件）：
+
+```bash
+cd spring
+
+# Maven
+mvn spotless:apply   # 格式化
+mvn spotless:check   # 校验，已绑定在 validate 阶段，构建时会自动执行
+
+# Gradle
+gradle spotlessApply
+gradle spotlessCheck
+```
+
+规则要点：4 空格缩进、续行缩进 4 空格、行宽 120 列、保留人工换行、中文注释不自动重排；import 按 `java/javax → org → com.hcsy → 其他` 四段分组，同时移除未使用导入、行尾空格，并保证文件以换行结尾。
+
+### GoZero
+
+GoZero 使用 golangci-lint v2，配置文件为 `gozero/app/.golangci.yml`：
+
+```bash
+cd gozero/app
+
+golangci-lint run   # 静态检查
+golangci-lint fmt   # 格式化
+```
+
+### NestJS
+
+NestJS 使用 ESLint 做静态检查、Prettier 做格式化，命令定义在 `nestjs/package.json`：
+
+```bash
+cd nestjs
+
+npm run lint           # 静态检查
+npm run lint:fix       # 自动修复
+npm run format         # 格式化
+npm run format:check   # 格式校验
+```
+
+### FastAPI
+
+FastAPI 使用 Ruff 做检查与格式化，Python 版本与工具配置都在 `fastapi/pyproject.toml` 中声明，开发依赖通过 `[dependency-groups] dev` 安装：
+
+```bash
+cd fastapi
+
+ruff check .         # 静态检查
+ruff check --fix .   # 自动修复
+ruff format .        # 格式化
+```
 
 ## 项目可用工具说明
 
