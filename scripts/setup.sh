@@ -24,6 +24,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# GoZero 代码检查与格式化工具版本，需与 gozero/app/.golangci.yml 的 v2 配置匹配
+GOLANGCI_LINT_VERSION="v2.13.2"
+
 # 日志函数
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -211,6 +214,24 @@ setup_gozero() {
     if ! command_exists goctl; then
         log_info "安装 goctl 工具..."
         go install github.com/zeromicro/go-zero/tools/goctl@latest
+    fi
+
+    # 安装 golangci-lint 工具（代码检查与格式化，供 ./mix lint 与 ./mix format 调用）
+    if command_exists golangci-lint; then
+        log_info "golangci-lint 工具已安装"
+    else
+        log_info "安装 golangci-lint ${GOLANGCI_LINT_VERSION} 工具..."
+        if go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"; then
+            if command_exists golangci-lint; then
+                log_info "golangci-lint 安装成功!"
+            else
+                log_warn "golangci-lint 已安装到 $(go env GOPATH)/bin，但该目录不在 PATH 中"
+                log_warn "请将该目录加入 PATH 后重新打开终端"
+            fi
+        else
+            log_warn "golangci-lint 安装失败，可稍后手动执行:"
+            log_warn "  go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
+        fi
     fi
 
     # 安装 fresh 工具 (热重载)
