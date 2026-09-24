@@ -1,7 +1,8 @@
 from typing import Any, Optional
 
+from pydantic import BaseModel, Field
+
 from app.core.constants import HttpCode
-from pydantic import BaseModel
 
 
 class ApiResponse(BaseModel):
@@ -13,9 +14,9 @@ class ApiResponse(BaseModel):
         msg: 响应消息
     """
 
-    code: int
-    data: Optional[Any] = None
-    msg: str = "success"
+    code: int = Field(description="响应码")
+    data: Optional[Any] = Field(default=None, description="返回数据")
+    msg: str = Field(default="success", description="响应信息")
 
 
 def success(data: Optional[Any] = None, msg: str = "success") -> ApiResponse:

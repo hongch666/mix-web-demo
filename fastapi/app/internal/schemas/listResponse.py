@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ListResponse(BaseModel):
     """列表响应实体类"""
 
-    total: int
-    list: list[Any]
+    total: int = Field(description="总记录数")
+    list: list[Any] = Field(description="列表数据")
