@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 为生成的swagger.json和swagger.yaml添加中文标签名和描述
 """
@@ -44,9 +42,10 @@ def add_chinese_tags_to_dict(swagger_data):
         },
     }
 
-    # 添加info的描述字段和版本
+    # 覆盖 info 标题和描述，面向 Swagger 读者；.api 的 title/desc 只给开发者看，生成时会被这里替换
     if "info" not in swagger_data:
         swagger_data["info"] = {}
+    swagger_data["info"]["title"] = "GoZero部分的Swagger文档"
     swagger_data["info"]["description"] = "这是项目的GoZero部分的Swagger文档"
     swagger_data["info"]["version"] = "1.0.0"
     swagger_data["info"]["x-author"] = "hongch666"
@@ -72,12 +71,12 @@ def add_chinese_tags_to_dict(swagger_data):
 
     # 更新所有路径中的tags为中文名称，并移除swagger2openapi注入的per-operation schemes/servers
     if "paths" in swagger_data:
-        for path, methods in swagger_data["paths"].items():
+        for methods in swagger_data["paths"].values():
             # 移除 path 级别可能存在的 servers（OpenAPI 3.0 允许 path 级 server）
             if isinstance(methods, dict) and "servers" in methods:
                 del methods["servers"]
 
-            for method, details in methods.items():
+            for details in methods.values():
                 if isinstance(details, dict):
                     # 将英文标签转换为对应的中文标签
                     if "tags" in details:

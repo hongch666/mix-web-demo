@@ -42,11 +42,13 @@ paths:
         type: string
       - allowEmptyValue: true
         default: 1
+        example: 1
         in: query
         name: page
         type: integer
       - allowEmptyValue: true
         default: 10
+        example: 10
         in: query
         name: size
         type: integer
@@ -680,11 +682,11 @@ produces:
 schemes:
 - http
 swagger: '2.0'
-x-date: '2026-09-23 16:03:32'
+x-date: '2026-09-25 01:16:37'
 x-description: This is a goctl generated swagger file.
 x-github: https://github.com/zeromicro/go-zero
 x-go-zero-doc: https://go-zero.dev/
-x-goctl-version: 1.9.2
+x-goctl-version: 1.10.2
 tags:
 - name: 聊天模块
   description: 聊天功能相关API，包括消息发送、历史查询、队列管理等

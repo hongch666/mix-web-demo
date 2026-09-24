@@ -1,8 +1,8 @@
 syntax = "v2"
 
 info (
-	title:   "GoZero部分的Swagger文档"
-	desc:    "这是项目的GoZero部分的Swagger文档"
+	title:   "GoZero 服务接口"
+	desc:    "负责文章搜索与搜索历史、用户聊天及 WebSocket/SSE 实时通知、向 ElasticSearch 同步文章，并提供内部只读 SQL 查询"
 	author:  "hongch666"
 	version: "1.0.0"
 	schemes: http
@@ -16,4 +16,3 @@ import (
 	"./task/task.api"
 	"./test/test.api"
 )
-

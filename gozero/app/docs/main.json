@@ -1,15 +1,28 @@
 {
-  "openapi": "3.0.0",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http"
+  ],
+  "swagger": "2.0",
   "info": {
     "title": "GoZero部分的Swagger文档",
     "version": "1.0.0",
     "description": "这是项目的GoZero部分的Swagger文档",
     "x-author": "hongch666"
   },
+  "basePath": "/",
   "paths": {
     "/search": {
       "get": {
         "description": "根据关键词、用户ID、用户名、发布时间范围等条件搜索文章（支持分页）",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "搜索模块"
         ],
@@ -17,320 +30,292 @@
         "operationId": "searchSearchArticlesHandler",
         "parameters": [
           {
+            "type": "string",
             "name": "keyword",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "integer",
             "name": "user_id",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "integer"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "string",
             "name": "username",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "string",
             "name": "category_name",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "string",
             "name": "sub_category_name",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "string",
             "name": "start_date",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "string",
             "name": "end_date",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "integer",
+            "default": 1,
+            "example": 1,
             "name": "page",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "integer",
-              "default": 1
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "integer",
+            "default": 10,
+            "example": 10,
             "name": "size",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "integer",
-              "default": 10
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "string",
             "name": "mode",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "string"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "boolean",
             "name": "enable_vector",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "boolean"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "boolean",
             "name": "enable_graph",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "boolean"
-            }
+            "allowEmptyValue": true
           },
           {
+            "type": "boolean",
             "name": "explain",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "boolean"
-            }
+            "allowEmptyValue": true
           }
         ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "list": {
-                      "type": "array",
-                      "items": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "list": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "title",
+                      "content",
+                      "user_id",
+                      "username",
+                      "tags",
+                      "status",
+                      "views",
+                      "like_count",
+                      "collect_count",
+                      "author_follow_count",
+                      "category_name",
+                      "sub_category_name",
+                      "create_at",
+                      "update_at",
+                      "ai_score",
+                      "user_score",
+                      "ai_comment_count",
+                      "user_comment_count",
+                      "es_score",
+                      "vector_score",
+                      "graph_score",
+                      "final_score",
+                      "reason",
+                      "semantic_reason",
+                      "relations",
+                      "matched_chunks",
+                      "score_details"
+                    ],
+                    "properties": {
+                      "ai_comment_count": {
+                        "type": "integer"
+                      },
+                      "ai_score": {
+                        "type": "number"
+                      },
+                      "author_follow_count": {
+                        "type": "integer"
+                      },
+                      "category_name": {
+                        "type": "string"
+                      },
+                      "collect_count": {
+                        "type": "integer"
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "create_at": {
+                        "type": "string"
+                      },
+                      "es_score": {
+                        "type": "number"
+                      },
+                      "final_score": {
+                        "type": "number"
+                      },
+                      "graph_score": {
+                        "type": "number"
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "like_count": {
+                        "type": "integer"
+                      },
+                      "matched_chunks": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "article_id",
+                            "title",
+                            "chunk_index",
+                            "score",
+                            "content"
+                          ],
+                          "properties": {
+                            "article_id": {
+                              "type": "integer"
+                            },
+                            "chunk_index": {
+                              "type": "integer"
+                            },
+                            "content": {
+                              "type": "string"
+                            },
+                            "score": {
+                              "type": "number"
+                            },
+                            "title": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "relations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "type",
+                            "name",
+                            "score",
+                            "reason"
+                          ],
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "reason": {
+                              "type": "string"
+                            },
+                            "score": {
+                              "type": "number"
+                            },
+                            "type": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "score_details": {
                         "type": "object",
                         "required": [
-                          "id",
-                          "title",
-                          "content",
-                          "user_id",
-                          "username",
-                          "tags",
-                          "status",
-                          "views",
-                          "like_count",
-                          "collect_count",
-                          "author_follow_count",
-                          "category_name",
-                          "sub_category_name",
-                          "create_at",
-                          "update_at",
-                          "ai_score",
-                          "user_score",
-                          "ai_comment_count",
-                          "user_comment_count",
                           "es_score",
                           "vector_score",
                           "graph_score",
-                          "final_score",
-                          "reason",
-                          "semantic_reason",
-                          "relations",
-                          "matched_chunks",
-                          "score_details"
+                          "business_score",
+                          "recency_score"
                         ],
                         "properties": {
-                          "ai_comment_count": {
-                            "type": "integer"
-                          },
-                          "ai_score": {
+                          "business_score": {
                             "type": "number"
-                          },
-                          "author_follow_count": {
-                            "type": "integer"
-                          },
-                          "category_name": {
-                            "type": "string"
-                          },
-                          "collect_count": {
-                            "type": "integer"
-                          },
-                          "content": {
-                            "type": "string"
-                          },
-                          "create_at": {
-                            "type": "string"
                           },
                           "es_score": {
-                            "type": "number"
-                          },
-                          "final_score": {
                             "type": "number"
                           },
                           "graph_score": {
                             "type": "number"
                           },
-                          "id": {
-                            "type": "integer"
-                          },
-                          "like_count": {
-                            "type": "integer"
-                          },
-                          "matched_chunks": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "required": [
-                                "article_id",
-                                "title",
-                                "chunk_index",
-                                "score",
-                                "content"
-                              ],
-                              "properties": {
-                                "article_id": {
-                                  "type": "integer"
-                                },
-                                "chunk_index": {
-                                  "type": "integer"
-                                },
-                                "content": {
-                                  "type": "string"
-                                },
-                                "score": {
-                                  "type": "number"
-                                },
-                                "title": {
-                                  "type": "string"
-                                }
-                              }
-                            }
-                          },
-                          "reason": {
-                            "type": "string"
-                          },
-                          "relations": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "required": [
-                                "type",
-                                "name",
-                                "score",
-                                "reason"
-                              ],
-                              "properties": {
-                                "name": {
-                                  "type": "string"
-                                },
-                                "reason": {
-                                  "type": "string"
-                                },
-                                "score": {
-                                  "type": "number"
-                                },
-                                "type": {
-                                  "type": "string"
-                                }
-                              }
-                            }
-                          },
-                          "score_details": {
-                            "type": "object",
-                            "required": [
-                              "es_score",
-                              "vector_score",
-                              "graph_score",
-                              "business_score",
-                              "recency_score"
-                            ],
-                            "properties": {
-                              "business_score": {
-                                "type": "number"
-                              },
-                              "es_score": {
-                                "type": "number"
-                              },
-                              "graph_score": {
-                                "type": "number"
-                              },
-                              "recency_score": {
-                                "type": "number"
-                              },
-                              "vector_score": {
-                                "type": "number"
-                              }
-                            }
-                          },
-                          "semantic_reason": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "integer"
-                          },
-                          "sub_category_name": {
-                            "type": "string"
-                          },
-                          "tags": {
-                            "type": "string"
-                          },
-                          "title": {
-                            "type": "string"
-                          },
-                          "update_at": {
-                            "type": "string"
-                          },
-                          "user_comment_count": {
-                            "type": "integer"
-                          },
-                          "user_id": {
-                            "type": "integer"
-                          },
-                          "user_score": {
+                          "recency_score": {
                             "type": "number"
-                          },
-                          "username": {
-                            "type": "string"
                           },
                           "vector_score": {
                             "type": "number"
-                          },
-                          "views": {
-                            "type": "integer"
                           }
                         }
+                      },
+                      "semantic_reason": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "integer"
+                      },
+                      "sub_category_name": {
+                        "type": "string"
+                      },
+                      "tags": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "update_at": {
+                        "type": "string"
+                      },
+                      "user_comment_count": {
+                        "type": "integer"
+                      },
+                      "user_id": {
+                        "type": "integer"
+                      },
+                      "user_score": {
+                        "type": "number"
+                      },
+                      "username": {
+                        "type": "string"
+                      },
+                      "vector_score": {
+                        "type": "number"
+                      },
+                      "views": {
+                        "type": "integer"
                       }
-                    },
-                    "total": {
-                      "type": "integer"
                     }
                   }
+                },
+                "total": {
+                  "type": "integer"
                 }
               }
             }
@@ -341,6 +326,9 @@
     "/search/history/{user_id}": {
       "get": {
         "description": "获取指定用户最近10条搜索关键词列表",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "搜索模块"
         ],
@@ -348,28 +336,22 @@
         "operationId": "searchGetSearchHistoryHandler",
         "parameters": [
           {
+            "type": "string",
             "name": "user_id",
             "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "required": true
           }
         ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "keywords": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "keywords": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
                   }
                 }
               }
@@ -381,68 +363,70 @@
     "/sql-tools/query": {
       "post": {
         "description": "执行受限的只读参数化SQL查询，表名白名单控制，强制参数化占位符和LIMIT",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "SQL工具模块"
         ],
         "summary": "执行只读参数化SQL查询",
         "operationId": "sqlToolsSqlToolsQueryHandler",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "query"
-                ],
-                "properties": {
-                  "params": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  },
-                  "query": {
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "query"
+              ],
+              "properties": {
+                "params": {
+                  "type": "object",
+                  "additionalProperties": {
                     "type": "string"
                   }
+                },
+                "query": {
+                  "type": "string"
                 }
               }
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
                   "type": "object",
+                  "required": [
+                    "columns",
+                    "rows",
+                    "rowCount"
+                  ],
                   "properties": {
-                    "data": {
-                      "type": "object",
-                      "required": [
-                        "columns",
-                        "rows",
-                        "rowCount"
-                      ],
-                      "properties": {
-                        "columns": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
-                        },
-                        "rowCount": {
-                          "type": "integer"
-                        },
-                        "rows": {
-                          "type": "array",
-                          "items": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          }
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "rowCount": {
+                      "type": "integer"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
                         }
                       }
                     }
@@ -457,72 +441,71 @@
     "/sql-tools/tables": {
       "get": {
         "description": "获取白名单内MySQL表的结构信息，可选指定表名",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "SQL工具模块"
         ],
         "summary": "获取表结构信息",
         "operationId": "sqlToolsSqlToolsGetTablesHandler",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "table": {
-                    "type": "string"
-                  }
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "type": "string"
                 }
               }
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "table"
-                        ],
-                        "properties": {
-                          "columns": {
-                            "type": "array",
-                            "items": {
-                              "type": "object",
-                              "required": [
-                                "name",
-                                "type",
-                                "key",
-                                "comment"
-                              ],
-                              "properties": {
-                                "comment": {
-                                  "type": "string"
-                                },
-                                "key": {
-                                  "type": "string"
-                                },
-                                "name": {
-                                  "type": "string"
-                                },
-                                "type": {
-                                  "type": "string"
-                                }
-                              }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "table"
+                    ],
+                    "properties": {
+                      "columns": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "type",
+                            "key",
+                            "comment"
+                          ],
+                          "properties": {
+                            "comment": {
+                              "type": "string"
+                            },
+                            "key": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
                             }
-                          },
-                          "table": {
-                            "type": "string"
                           }
                         }
+                      },
+                      "table": {
+                        "type": "string"
                       }
                     }
                   }
@@ -536,6 +519,9 @@
     "/sse/chat": {
       "get": {
         "description": "建立SSE连接。成功时以 text/event-stream 持续推送数据帧，帧结构见响应模型；参数非法时返回统一 JSON 错误体",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
@@ -543,69 +529,16 @@
         "operationId": "chatChatSSEHandler",
         "parameters": [
           {
+            "type": "integer",
             "name": "user_id",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "integer"
-            }
+            "allowEmptyValue": true
           }
         ],
         "responses": {
           "200": {
             "description": "连接建立成功，随后持续推送数据帧，每帧对应 ChatSSEMessage",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "object",
-                      "required": [
-                        "id",
-                        "sender_id",
-                        "receiver_id",
-                        "content",
-                        "is_read",
-                        "created_at"
-                      ],
-                      "properties": {
-                        "content": {
-                          "type": "string"
-                        },
-                        "created_at": {
-                          "type": "string"
-                        },
-                        "id": {
-                          "type": "integer"
-                        },
-                        "is_read": {
-                          "type": "integer"
-                        },
-                        "receiver_id": {
-                          "type": "integer"
-                        },
-                        "sender_id": {
-                          "type": "integer"
-                        }
-                      }
-                    },
-                    "type": {
-                      "type": "string"
-                    },
-                    "unread_counts": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "integer"
-                      }
-                    },
-                    "user_id": {
-                      "type": "integer"
-                    }
-                  }
-                }
-              }
-            }
+            "content": {}
           },
           "400": {
             "description": "参数非法（如 user_id 非正整数）时返回统一 JSON 错误体",
@@ -623,6 +556,12 @@
     "/task/syncer": {
       "post": {
         "description": "手动触发同步MySQL文章数据到Elasticsearch",
+        "consumes": [
+          "application/x-www-form-urlencoded"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "定时任务模块"
         ],
@@ -631,12 +570,8 @@
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
+            "schema": {
+              "type": "object"
             }
           }
         }
@@ -645,6 +580,9 @@
     "/test/gozero": {
       "get": {
         "description": "验证GoZero服务是否正常运行",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "测试模块"
         ],
@@ -653,15 +591,11 @@
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "string"
-                    }
-                  }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "string"
                 }
               }
             }
@@ -672,28 +606,45 @@
     "/user-chat/all-unread-counts": {
       "post": {
         "description": "获取指定用户与所有其他用户的未读消息数统计",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
         "summary": "获取用户的所有未读消息数",
         "operationId": "chatChatGetAllUnreadCountsHandler",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/chatChatGetAllUnreadCountsHandlerBody"
-        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "user_id"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
                   "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "integer"
-                      }
-                    }
+                  "additionalProperties": {
+                    "type": "integer"
                   }
                 }
               }
@@ -705,85 +656,87 @@
     "/user-chat/history": {
       "post": {
         "description": "分页获取指定两个用户之间的聊天记录",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
         "summary": "获取聊天历史",
         "operationId": "chatChatGetHistoryHandler",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "user_id",
-                  "other_id"
-                ],
-                "properties": {
-                  "other_id": {
-                    "type": "integer"
-                  },
-                  "page": {
-                    "type": "integer"
-                  },
-                  "size": {
-                    "type": "integer"
-                  },
-                  "user_id": {
-                    "type": "integer"
-                  }
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "user_id",
+                "other_id"
+              ],
+              "properties": {
+                "other_id": {
+                  "type": "integer"
+                },
+                "page": {
+                  "type": "integer"
+                },
+                "size": {
+                  "type": "integer"
+                },
+                "user_id": {
+                  "type": "integer"
                 }
               }
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "messages": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "id",
-                          "sender_id",
-                          "receiver_id",
-                          "content",
-                          "is_read",
-                          "created_at"
-                        ],
-                        "properties": {
-                          "content": {
-                            "type": "string"
-                          },
-                          "created_at": {
-                            "type": "string"
-                          },
-                          "id": {
-                            "type": "integer"
-                          },
-                          "is_read": {
-                            "type": "integer"
-                          },
-                          "receiver_id": {
-                            "type": "integer"
-                          },
-                          "sender_id": {
-                            "type": "integer"
-                          }
-                        }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "messages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "sender_id",
+                      "receiver_id",
+                      "content",
+                      "is_read",
+                      "created_at"
+                    ],
+                    "properties": {
+                      "content": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "integer"
+                      },
+                      "is_read": {
+                        "type": "integer"
+                      },
+                      "receiver_id": {
+                        "type": "integer"
+                      },
+                      "sender_id": {
+                        "type": "integer"
                       }
-                    },
-                    "total": {
-                      "type": "integer"
                     }
                   }
+                },
+                "total": {
+                  "type": "integer"
                 }
               }
             }
@@ -794,29 +747,46 @@
     "/user-chat/join": {
       "post": {
         "description": "用户手动加入聊天队列，不需要建立WebSocket连接",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
         "summary": "手动加入聊天队列",
         "operationId": "chatChatJoinQueueHandler",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/chatChatGetAllUnreadCountsHandlerBody"
-        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "user_id"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "user_id": {
-                      "type": "integer"
-                    }
-                  }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "user_id": {
+                  "type": "integer"
                 }
               }
             }
@@ -827,29 +797,46 @@
     "/user-chat/leave": {
       "post": {
         "description": "用户手动离开聊天队列",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
         "summary": "手动离开聊天队列",
         "operationId": "chatChatLeaveQueueHandler",
-        "requestBody": {
-          "$ref": "#/components/requestBodies/chatChatGetAllUnreadCountsHandlerBody"
-        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "user_id"
+              ],
+              "properties": {
+                "user_id": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string"
-                    },
-                    "user_id": {
-                      "type": "integer"
-                    }
-                  }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                },
+                "user_id": {
+                  "type": "integer"
                 }
               }
             }
@@ -860,6 +847,9 @@
     "/user-chat/queue": {
       "get": {
         "description": "获取当前在队列中的所有用户",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
@@ -868,20 +858,16 @@
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "count": {
-                      "type": "integer"
-                    },
-                    "online_users": {
-                      "type": "array",
-                      "items": {
-                        "type": "integer"
-                      }
-                    }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "online_users": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
                   }
                 }
               }
@@ -893,49 +879,51 @@
     "/user-chat/send": {
       "post": {
         "description": "发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
         "summary": "发送聊天消息",
         "operationId": "chatChatSendMessageHandler",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "sender_id",
-                  "receiver_id",
-                  "content"
-                ],
-                "properties": {
-                  "content": {
-                    "type": "string"
-                  },
-                  "receiver_id": {
-                    "type": "integer"
-                  },
-                  "sender_id": {
-                    "type": "integer"
-                  }
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "sender_id",
+                "receiver_id",
+                "content"
+              ],
+              "properties": {
+                "content": {
+                  "type": "string"
+                },
+                "receiver_id": {
+                  "type": "integer"
+                },
+                "sender_id": {
+                  "type": "integer"
                 }
               }
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message_id": {
-                      "type": "integer"
-                    }
-                  }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message_id": {
+                  "type": "integer"
                 }
               }
             }
@@ -946,45 +934,47 @@
     "/user-chat/unread-count": {
       "post": {
         "description": "获取指定用户与另一个用户间的未读消息数",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
         "summary": "获取两个用户间的未读消息数",
         "operationId": "chatChatGetUnreadCountHandler",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "user_id",
-                  "other_id"
-                ],
-                "properties": {
-                  "other_id": {
-                    "type": "integer"
-                  },
-                  "user_id": {
-                    "type": "integer"
-                  }
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": [
+                "user_id",
+                "other_id"
+              ],
+              "properties": {
+                "other_id": {
+                  "type": "integer"
+                },
+                "user_id": {
+                  "type": "integer"
                 }
               }
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "unread_count": {
-                      "type": "integer"
-                    }
-                  }
+            "schema": {
+              "type": "object",
+              "properties": {
+                "unread_count": {
+                  "type": "integer"
                 }
               }
             }
@@ -995,6 +985,9 @@
     "/ws/chat": {
       "get": {
         "description": "建立WebSocket连接，自动加入聊天队列。握手成功返回 101 升级协议，之后通过文本帧双向通信，帧结构见响应模型",
+        "produces": [
+          "application/json"
+        ],
         "tags": [
           "聊天模块"
         ],
@@ -1002,12 +995,10 @@
         "operationId": "chatChatWebsocketHandler",
         "parameters": [
           {
+            "type": "integer",
             "name": "user_id",
             "in": "query",
-            "allowEmptyValue": true,
-            "schema": {
-              "type": "integer"
-            }
+            "allowEmptyValue": true
           }
         ],
         "responses": {
@@ -1028,33 +1019,11 @@
       }
     }
   },
-  "x-date": "2026-09-23 16:03:32",
+  "x-date": "2026-09-25 01:16:36",
   "x-description": "This is a goctl generated swagger file.",
   "x-github": "https://github.com/zeromicro/go-zero",
   "x-go-zero-doc": "https://go-zero.dev/",
-  "x-goctl-version": "1.9.2",
-  "components": {
-    "requestBodies": {
-      "chatChatGetAllUnreadCountsHandlerBody": {
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "required": [
-                "user_id"
-              ],
-              "properties": {
-                "user_id": {
-                  "type": "integer"
-                }
-              }
-            }
-          }
-        },
-        "required": true
-      }
-    }
-  },
+  "x-goctl-version": "1.10.2",
   "tags": [
     {
       "name": "聊天模块",
