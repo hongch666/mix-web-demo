@@ -13,58 +13,71 @@ paths:
       operationId: searchSearchArticlesHandler
       parameters:
       - allowEmptyValue: true
+        description: 搜索关键词，可选
         in: query
         name: keyword
         type: string
       - allowEmptyValue: true
+        description: 作者用户 ID，可选，传入时须为正整数
         in: query
         name: user_id
         type: integer
       - allowEmptyValue: true
+        description: 作者用户名，可选
         in: query
         name: username
         type: string
       - allowEmptyValue: true
+        description: 一级分类名，可选
         in: query
         name: category_name
         type: string
       - allowEmptyValue: true
+        description: 二级分类名，可选
         in: query
         name: sub_category_name
         type: string
       - allowEmptyValue: true
+        description: 发布时间起，可选
         in: query
         name: start_date
         type: string
       - allowEmptyValue: true
+        description: 发布时间止，可选，不得早于开始时间
         in: query
         name: end_date
         type: string
       - allowEmptyValue: true
         default: 1
+        description: 页码，默认 1，须为正整数
         example: 1
         in: query
         name: page
         type: integer
       - allowEmptyValue: true
         default: 10
+        description: 每页条数，默认 10，须为正整数
         example: 10
         in: query
         name: size
         type: integer
       - allowEmptyValue: true
+        description: 搜索模式，可选：keyword、hybrid、graph，缺省 hybrid
         in: query
         name: mode
         type: string
       - allowEmptyValue: true
+        description: 是否启用向量增强，可选，缺省开启
         in: query
         name: enable_vector
         type: boolean
       - allowEmptyValue: true
+        description: 是否启用图谱增强，可选，缺省开启
         in: query
         name: enable_graph
         type: boolean
       - allowEmptyValue: true
+        description: 是否返回评分与命中说明，可选
         in: query
         name: explain
         type: boolean
@@ -76,44 +89,63 @@ paths:
           schema:
             properties:
               list:
+                description: 当前页文章
                 items:
                   properties:
                     ai_comment_count:
+                      description: AI 评论数
                       type: integer
                     ai_score:
+                      description: AI 评分
                       type: number
                     author_follow_count:
+                      description: 作者被关注数
                       type: integer
                     category_name:
+                      description: 一级分类名
                       type: string
                     collect_count:
+                      description: 收藏数
                       type: integer
                     content:
+                      description: 正文
                       type: string
                     create_at:
+                      description: 创建时间
                       type: string
                     es_score:
+                      description: 关键词检索得分
                       type: number
                     final_score:
+                      description: 综合得分
                       type: number
                     graph_score:
+                      description: 图谱检索得分
                       type: number
                     id:
+                      description: 文章 ID
                       type: integer
                     like_count:
+                      description: 点赞数
                       type: integer
                     matched_chunks:
+                      description: 命中的向量分片
                       items:
                         properties:
                           article_id:
+                            description: 文章 ID
                             type: integer
                           chunk_index:
+                            description: 分片序号
                             type: integer
                           content:
+                            description: 分片文本
                             type: string
                           score:
+                            description: 该分片相似度
                             type: number
                           title:
+                            description: 文章标题
                             type: string
                         required:
                         - article_id
@@ -124,17 +156,23 @@ paths:
                         type: object
                       type: array
                     reason:
+                      description: 排序说明
                       type: string
                     relations:
+                      description: 命中的图谱关系
                       items:
                         properties:
                           name:
+                            description: 关联节点名称
                             type: string
                           reason:
+                            description: 命中原因
                             type: string
                           score:
+                            description: 关系得分
                             type: number
                           type:
+                            description: 关系类型
                             type: string
                         required:
                         - type
@@ -144,16 +182,22 @@ paths:
                         type: object
                       type: array
                     score_details:
+                      description: 分项得分
                       properties:
                         business_score:
+                          description: 业务特征分项
                           type: number
                         es_score:
+                          description: 关键词检索分项
                           type: number
                         graph_score:
+                          description: 图谱检索分项
                           type: number
                         recency_score:
+                          description: 时效分项
                           type: number
                         vector_score:
+                          description: 向量检索分项
                           type: number
                       required:
                       - es_score
@@ -163,28 +207,40 @@ paths:
                       - recency_score
                       type: object
                     semantic_reason:
+                      description: 语义命中说明
                       type: string
                     status:
+                      description: 文章状态，0 草稿，1 已发布
                       type: integer
                     sub_category_name:
+                      description: 二级分类名
                       type: string
                     tags:
+                      description: 标签
                       type: string
                     title:
+                      description: 标题
                       type: string
                     update_at:
+                      description: 更新时间
                       type: string
                     user_comment_count:
+                      description: 用户评论数
                       type: integer
                     user_id:
+                      description: 作者用户 ID
                       type: integer
                     user_score:
+                      description: 用户评分
                       type: number
                     username:
+                      description: 作者用户名
                       type: string
                     vector_score:
+                      description: 向量检索得分
                       type: number
                     views:
+                      description: 浏览量
                       type: integer
                   required:
                   - id
@@ -218,6 +274,7 @@ paths:
                   type: object
                 type: array
               total:
+                description: 命中总数
                 type: integer
             type: object
       summary: 搜索文章
@@ -228,7 +285,8 @@ paths:
       description: 获取指定用户最近10条搜索关键词列表
       operationId: searchGetSearchHistoryHandler
       parameters:
-      - in: path
+      - description: 用户 ID，路径参数，须为正整数
+        in: path
         name: user_id
         required: true
         type: string
@@ -240,6 +298,7 @@ paths:
           schema:
             properties:
               keywords:
+                description: 最近搜索关键词，最多 10 条
                 items:
                   type: string
                 type: array
@@ -262,8 +321,10 @@ paths:
             params:
               additionalProperties:
                 type: string
+              description: 占位符参数，key 为参数名
               type: object
             query:
+              description: 只读 SQL，须使用参数占位符
               type: string
           required:
           - query
@@ -276,14 +337,18 @@ paths:
           schema:
             properties:
               data:
+                description: 查询结果
                 properties:
                   columns:
+                    description: 结果列名
                     items:
                       type: string
                     type: array
                   rowCount:
+                    description: 返回行数
                     type: integer
                   rows:
+                    description: 结果行，每行按列顺序排列
                     items:
                       items:
                         type: string
@@ -309,6 +374,7 @@ paths:
         schema:
           properties:
             table:
+              description: 表名，可选；不传则返回白名单内全部表
               type: string
           type: object
       produces:
@@ -319,18 +385,24 @@ paths:
           schema:
             properties:
               data:
+                description: 表结构列表
                 items:
                   properties:
                     columns:
+                      description: 列信息
                       items:
                         properties:
                           comment:
+                            description: 列注释
                             type: string
                           key:
+                            description: 键类型，如 PRI
                             type: string
                           name:
+                            description: 列名
                             type: string
                           type:
+                            description: 列类型
                             type: string
                         required:
                         - name
@@ -340,6 +412,7 @@ paths:
                         type: object
                       type: array
                     table:
+                      description: 表名
                       type: string
                   required:
                   - table
@@ -356,6 +429,7 @@ paths:
       operationId: chatChatSSEHandler
       parameters:
       - allowEmptyValue: true
+        description: 当前用户 ID，可选；传入时须为正整数
         in: query
         name: user_id
         type: integer
@@ -402,6 +476,7 @@ paths:
           schema:
             properties:
               data:
+                description: 服务存活提示
                 type: string
             type: object
       summary: 测试GoZero服务
@@ -420,6 +495,7 @@ paths:
         schema:
           properties:
             user_id:
+              description: 当前用户 ID，须为正整数
               type: integer
           required:
           - user_id
@@ -434,6 +510,7 @@ paths:
               data:
                 additionalProperties:
                   type: integer
+                description: 各对端未读数，key 为对端用户 ID
                 type: object
             type: object
       summary: 获取用户的所有未读消息数
@@ -452,12 +529,16 @@ paths:
         schema:
           properties:
             other_id:
+              description: 对端用户 ID，须为正整数
               type: integer
             page:
+              description: 页码，可选，传入时须为正整数
               type: integer
             size:
+              description: 每页条数，可选，传入时须为正整数
               type: integer
             user_id:
+              description: 当前用户 ID，须为正整数
               type: integer
           required:
           - user_id
@@ -471,19 +552,26 @@ paths:
           schema:
             properties:
               messages:
+                description: 当前页聊天记录
                 items:
                   properties:
                     content:
+                      description: 消息内容
                       type: string
                     created_at:
+                      description: 发送时间
                       type: string
                     id:
+                      description: 消息 ID
                       type: integer
                     is_read:
+                      description: 是否已读，0 未读，1 已读
                       type: integer
                     receiver_id:
+                      description: 接收方用户 ID
                       type: integer
                     sender_id:
+                      description: 发送方用户 ID
                       type: integer
                   required:
                   - id
@@ -495,6 +583,7 @@ paths:
                   type: object
                 type: array
               total:
+                description: 两人之间的消息总数
                 type: integer
             type: object
       summary: 获取聊天历史
@@ -513,6 +602,7 @@ paths:
         schema:
           properties:
             user_id:
+              description: 要加入队列的用户 ID，须为正整数
               type: integer
           required:
           - user_id
@@ -525,8 +615,10 @@ paths:
           schema:
             properties:
               status:
+                description: 加入结果，已在队列中或刚加入
                 type: string
               user_id:
+                description: 用户 ID
                 type: integer
             type: object
       summary: 手动加入聊天队列
@@ -545,6 +637,7 @@ paths:
         schema:
           properties:
             user_id:
+              description: 要离开队列的用户 ID，须为正整数
               type: integer
           required:
           - user_id
@@ -557,8 +650,10 @@ paths:
           schema:
             properties:
               status:
+                description: 离开结果
                 type: string
               user_id:
+                description: 用户 ID
                 type: integer
             type: object
       summary: 手动离开聊天队列
@@ -576,8 +671,10 @@ paths:
           schema:
             properties:
               count:
+                description: 在线用户数
                 type: integer
               online_users:
+                description: 当前在聊天队列中的用户 ID
                 items:
                   type: integer
                 type: array
@@ -598,10 +695,13 @@ paths:
         schema:
           properties:
             content:
+              description: 消息内容，不能为空白
               type: string
             receiver_id:
+              description: 接收方用户 ID，须为正整数
               type: integer
             sender_id:
+              description: 发送方用户 ID，须为正整数
               type: integer
           required:
           - sender_id
@@ -616,6 +716,7 @@ paths:
           schema:
             properties:
               message_id:
+                description: 已保存的消息 ID
                 type: integer
             type: object
       summary: 发送聊天消息
@@ -634,8 +735,10 @@ paths:
         schema:
           properties:
             other_id:
+              description: 发送方用户 ID，须为正整数
               type: integer
             user_id:
+              description: 接收方用户 ID，须为正整数
               type: integer
           required:
           - user_id
@@ -649,6 +752,7 @@ paths:
           schema:
             properties:
               unread_count:
+                description: 该对端发给当前用户的未读数
                 type: integer
             type: object
       summary: 获取两个用户间的未读消息数
@@ -660,6 +764,7 @@ paths:
       operationId: chatChatWebsocketHandler
       parameters:
       - allowEmptyValue: true
+        description: 当前用户 ID，可选；传入时须为正整数
         in: query
         name: user_id
         type: integer
@@ -682,7 +787,7 @@ produces:
 schemes:
 - http
 swagger: '2.0'
-x-date: '2026-09-25 01:16:37'
+x-date: '2026-09-25 01:57:11'
 x-description: This is a goctl generated swagger file.
 x-github: https://github.com/zeromicro/go-zero
 x-go-zero-doc: https://go-zero.dev/

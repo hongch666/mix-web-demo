@@ -17,7 +17,7 @@ service App {
 
 type (
 	TestGoZeroResp {
-		Data string `json:"data"`
+		Data string `json:"data"` // 服务存活提示
 	}
 )
 

@@ -25,33 +25,33 @@ service App {
 type (
 	SqlToolsGetTablesReq {
 		// 长度上限与 constants.SqlToolsMaxTableNameLength 保持一致
-		Table string `json:"table,optional" validate:"maxrunes=64"`
+		Table string `json:"table,optional" validate:"maxrunes=64"` // 表名，可选；不传则返回白名单内全部表
 	}
 	SqlToolsTableInfo {
-		Table   string               `json:"table"`
-		Columns []SqlToolsColumnInfo `json:"columns,optional"`
+		Table   string               `json:"table"` // 表名
+		Columns []SqlToolsColumnInfo `json:"columns,optional"` // 列信息
 	}
 	SqlToolsColumnInfo {
-		Name    string `json:"name"`
-		Type    string `json:"type"`
-		Key     string `json:"key"`
-		Comment string `json:"comment"`
+		Name    string `json:"name"` // 列名
+		Type    string `json:"type"` // 列类型
+		Key     string `json:"key"` // 键类型，如 PRI
+		Comment string `json:"comment"` // 列注释
 	}
 	SqlToolsGetTablesResp {
-		Data []SqlToolsTableInfo `json:"data"`
+		Data []SqlToolsTableInfo `json:"data"` // 表结构列表
 	}
 	SqlToolsQueryReq {
 		// 长度上限与 constants.SqlToolsMaxQueryLength 保持一致
-		Query  string            `json:"query" validate:"notblank,maxrunes=8000"`
-		Params map[string]string `json:"params,optional"`
+		Query  string            `json:"query" validate:"notblank,maxrunes=8000"` // 只读 SQL，须使用参数占位符
+		Params map[string]string `json:"params,optional"` // 占位符参数，key 为参数名
 	}
 	SqlToolsQueryResult {
-		Columns  []string   `json:"columns"`
-		Rows     [][]string `json:"rows"`
-		RowCount int        `json:"rowCount"`
+		Columns  []string   `json:"columns"` // 结果列名
+		Rows     [][]string `json:"rows"` // 结果行，每行按列顺序排列
+		RowCount int        `json:"rowCount"` // 返回行数
 	}
 	SqlToolsQueryResp {
-		Data SqlToolsQueryResult `json:"data"`
+		Data SqlToolsQueryResult `json:"data"` // 查询结果
 	}
 )
 

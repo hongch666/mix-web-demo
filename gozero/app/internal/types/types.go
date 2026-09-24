@@ -4,208 +4,208 @@
 package types
 
 type ArticleEsItem struct {
-	Id                int64                `json:"id"`
-	Title             string               `json:"title"`
-	Content           string               `json:"content"`
-	UserId            int64                `json:"user_id"`
-	Username          string               `json:"username"`
-	Tags              string               `json:"tags"`
-	Status            int                  `json:"status"`
-	Views             int                  `json:"views"`
-	LikeCount         int                  `json:"like_count"`
-	CollectCount      int                  `json:"collect_count"`
-	AuthorFollowCount int                  `json:"author_follow_count"`
-	CategoryName      string               `json:"category_name"`
-	SubCategoryName   string               `json:"sub_category_name"`
-	CreateAt          string               `json:"create_at"`
-	UpdateAt          string               `json:"update_at"`
-	AiScore           float64              `json:"ai_score"`
-	UserScore         float64              `json:"user_score"`
-	AiCommentCount    int                  `json:"ai_comment_count"`
-	UserCommentCount  int                  `json:"user_comment_count"`
-	EsScore           float64              `json:"es_score"`
-	VectorScore       float64              `json:"vector_score"`
-	GraphScore        float64              `json:"graph_score"`
-	FinalScore        float64              `json:"final_score"`
-	Reason            string               `json:"reason"`
-	SemanticReason    string               `json:"semantic_reason"`
-	Relations         []GraphRelation      `json:"relations"`
-	MatchedChunks     []VectorMatchedChunk `json:"matched_chunks"`
-	ScoreDetails      ScoreDetails         `json:"score_details"`
+	Id                int64                `json:"id"`                  // 文章 ID
+	Title             string               `json:"title"`               // 标题
+	Content           string               `json:"content"`             // 正文
+	UserId            int64                `json:"user_id"`             // 作者用户 ID
+	Username          string               `json:"username"`            // 作者用户名
+	Tags              string               `json:"tags"`                // 标签
+	Status            int                  `json:"status"`              // 文章状态，0 草稿，1 已发布
+	Views             int                  `json:"views"`               // 浏览量
+	LikeCount         int                  `json:"like_count"`          // 点赞数
+	CollectCount      int                  `json:"collect_count"`       // 收藏数
+	AuthorFollowCount int                  `json:"author_follow_count"` // 作者被关注数
+	CategoryName      string               `json:"category_name"`       // 一级分类名
+	SubCategoryName   string               `json:"sub_category_name"`   // 二级分类名
+	CreateAt          string               `json:"create_at"`           // 创建时间
+	UpdateAt          string               `json:"update_at"`           // 更新时间
+	AiScore           float64              `json:"ai_score"`            // AI 评分
+	UserScore         float64              `json:"user_score"`          // 用户评分
+	AiCommentCount    int                  `json:"ai_comment_count"`    // AI 评论数
+	UserCommentCount  int                  `json:"user_comment_count"`  // 用户评论数
+	EsScore           float64              `json:"es_score"`            // 关键词检索得分
+	VectorScore       float64              `json:"vector_score"`        // 向量检索得分
+	GraphScore        float64              `json:"graph_score"`         // 图谱检索得分
+	FinalScore        float64              `json:"final_score"`         // 综合得分
+	Reason            string               `json:"reason"`              // 排序说明
+	SemanticReason    string               `json:"semantic_reason"`     // 语义命中说明
+	Relations         []GraphRelation      `json:"relations"`           // 命中的图谱关系
+	MatchedChunks     []VectorMatchedChunk `json:"matched_chunks"`      // 命中的向量分片
+	ScoreDetails      ScoreDetails         `json:"score_details"`       // 分项得分
 }
 
 type ChatGetAllUnreadCountsReq struct {
-	UserId int64 `json:"user_id" validate:"gt=0"`
+	UserId int64 `json:"user_id" validate:"gt=0"` // 当前用户 ID，须为正整数
 }
 
 type ChatGetAllUnreadCountsResp struct {
-	Data map[int64]int64 `json:"data"`
+	Data map[int64]int64 `json:"data"` // 各对端未读数，key 为对端用户 ID
 }
 
 type ChatGetHistoryReq struct {
-	UserId  int64 `json:"user_id" validate:"gt=0"`
-	OtherId int64 `json:"other_id" validate:"gt=0"`
-	Page    int   `json:"page,optional" validate:"gt=0"`
-	Size    int   `json:"size,optional" validate:"gt=0"`
+	UserId  int64 `json:"user_id" validate:"gt=0"`       // 当前用户 ID，须为正整数
+	OtherId int64 `json:"other_id" validate:"gt=0"`      // 对端用户 ID，须为正整数
+	Page    int   `json:"page,optional" validate:"gt=0"` // 页码，可选，传入时须为正整数
+	Size    int   `json:"size,optional" validate:"gt=0"` // 每页条数，可选，传入时须为正整数
 }
 
 type ChatGetHistoryResp struct {
-	Messages []ChatMessageItem `json:"messages"`
-	Total    int64             `json:"total"`
+	Messages []ChatMessageItem `json:"messages"` // 当前页聊天记录
+	Total    int64             `json:"total"`    // 两人之间的消息总数
 }
 
 type ChatGetQueueStatusResp struct {
-	OnlineUsers []int64 `json:"online_users"`
-	Count       int     `json:"count"`
+	OnlineUsers []int64 `json:"online_users"` // 当前在聊天队列中的用户 ID
+	Count       int     `json:"count"`        // 在线用户数
 }
 
 type ChatGetUnreadCountReq struct {
-	UserId  int64 `json:"user_id" validate:"gt=0"`
-	OtherId int64 `json:"other_id" validate:"gt=0"`
+	UserId  int64 `json:"user_id" validate:"gt=0"`  // 接收方用户 ID，须为正整数
+	OtherId int64 `json:"other_id" validate:"gt=0"` // 发送方用户 ID，须为正整数
 }
 
 type ChatGetUnreadCountResp struct {
-	UnreadCount int64 `json:"unread_count"`
+	UnreadCount int64 `json:"unread_count"` // 该对端发给当前用户的未读数
 }
 
 type ChatJoinQueueReq struct {
-	UserId int64 `json:"user_id" validate:"gt=0"`
+	UserId int64 `json:"user_id" validate:"gt=0"` // 要加入队列的用户 ID，须为正整数
 }
 
 type ChatJoinQueueResp struct {
-	UserId int64  `json:"user_id"`
-	Status string `json:"status"`
+	UserId int64  `json:"user_id"` // 用户 ID
+	Status string `json:"status"`  // 加入结果，已在队列中或刚加入
 }
 
 type ChatLeaveQueueReq struct {
-	UserId int64 `json:"user_id" validate:"gt=0"`
+	UserId int64 `json:"user_id" validate:"gt=0"` // 要离开队列的用户 ID，须为正整数
 }
 
 type ChatLeaveQueueResp struct {
-	UserId int64  `json:"user_id"`
-	Status string `json:"status"`
+	UserId int64  `json:"user_id"` // 用户 ID
+	Status string `json:"status"`  // 离开结果
 }
 
 type ChatMessageItem struct {
-	Id         uint64 `json:"id"`
-	SenderId   int64  `json:"sender_id"`
-	ReceiverId int64  `json:"receiver_id"`
-	Content    string `json:"content"`
-	IsRead     int8   `json:"is_read"`
-	CreatedAt  string `json:"created_at"`
+	Id         uint64 `json:"id"`          // 消息 ID
+	SenderId   int64  `json:"sender_id"`   // 发送方用户 ID
+	ReceiverId int64  `json:"receiver_id"` // 接收方用户 ID
+	Content    string `json:"content"`     // 消息内容
+	IsRead     int8   `json:"is_read"`     // 是否已读，0 未读，1 已读
+	CreatedAt  string `json:"created_at"`  // 发送时间
 }
 
 type ChatSSEConnectReq struct {
-	UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
+	UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"` // 当前用户 ID，可选；传入时须为正整数
 }
 
 type ChatSSEMessage struct {
-	Type         string           `json:"type"`
-	UserId       int64            `json:"user_id"`
-	UnreadCounts map[int64]int64  `json:"unread_counts"`
-	Message      *ChatMessageItem `json:"message,omitempty"`
+	Type         string           `json:"type"`              // 帧类型，消息通知为 message
+	UserId       int64            `json:"user_id"`           // 接收通知的用户 ID
+	UnreadCounts map[int64]int64  `json:"unread_counts"`     // 与各对端的未读数，key 为对端用户 ID
+	Message      *ChatMessageItem `json:"message,omitempty"` // 聊天消息体，无消息时省略
 }
 
 type ChatSendMessageReq struct {
-	SenderId   int64  `json:"sender_id" validate:"gt=0"`
-	ReceiverId int64  `json:"receiver_id" validate:"gt=0"`
-	Content    string `json:"content" validate:"notblank"`
+	SenderId   int64  `json:"sender_id" validate:"gt=0"`   // 发送方用户 ID，须为正整数
+	ReceiverId int64  `json:"receiver_id" validate:"gt=0"` // 接收方用户 ID，须为正整数
+	Content    string `json:"content" validate:"notblank"` // 消息内容，不能为空白
 }
 
 type ChatSendMessageResp struct {
-	MessageId uint64 `json:"message_id"`
+	MessageId uint64 `json:"message_id"` // 已保存的消息 ID
 }
 
 type ChatWsConnectReq struct {
-	UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
+	UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"` // 当前用户 ID，可选；传入时须为正整数
 }
 
 type ChatWsMessage struct {
-	Type       string `json:"type"`
-	SenderId   int64  `json:"sender_id,omitempty"`
-	ReceiverId int64  `json:"receiver_id,omitempty"`
-	Content    string `json:"content,omitempty"`
-	MessageId  uint64 `json:"message_id,omitempty"`
-	Timestamp  string `json:"timestamp,omitempty"`
+	Type       string `json:"type"`                  // 帧类型：message、ping、pong、read、read_ack
+	SenderId   int64  `json:"sender_id,omitempty"`   // 发送方用户 ID，非消息帧可省略
+	ReceiverId int64  `json:"receiver_id,omitempty"` // 接收方用户 ID，非消息帧可省略
+	Content    string `json:"content,omitempty"`     // 消息内容，非消息帧可省略
+	MessageId  uint64 `json:"message_id,omitempty"`  // 消息 ID，非消息帧可省略
+	Timestamp  string `json:"timestamp,omitempty"`   // 发送时间，非消息帧可省略
 }
 
 type GetSearchHistoryReq struct {
-	UserId string `path:"user_id" validate:"notblank,positiveint"`
+	UserId string `path:"user_id" validate:"notblank,positiveint"` // 用户 ID，路径参数，须为正整数
 }
 
 type GetSearchHistoryResp struct {
-	Keywords []string `json:"keywords"`
+	Keywords []string `json:"keywords"` // 最近搜索关键词，最多 10 条
 }
 
 type GraphRelation struct {
-	Type   string  `json:"type"`
-	Name   string  `json:"name"`
-	Score  float64 `json:"score"`
-	Reason string  `json:"reason"`
+	Type   string  `json:"type"`   // 关系类型
+	Name   string  `json:"name"`   // 关联节点名称
+	Score  float64 `json:"score"`  // 关系得分
+	Reason string  `json:"reason"` // 命中原因
 }
 
 type ScoreDetails struct {
-	EsScore       float64 `json:"es_score"`
-	VectorScore   float64 `json:"vector_score"`
-	GraphScore    float64 `json:"graph_score"`
-	BusinessScore float64 `json:"business_score"`
-	RecencyScore  float64 `json:"recency_score"`
+	EsScore       float64 `json:"es_score"`       // 关键词检索分项
+	VectorScore   float64 `json:"vector_score"`   // 向量检索分项
+	GraphScore    float64 `json:"graph_score"`    // 图谱检索分项
+	BusinessScore float64 `json:"business_score"` // 业务特征分项
+	RecencyScore  float64 `json:"recency_score"`  // 时效分项
 }
 
 type SearchArticlesReq struct {
-	Keyword         *string `form:"keyword,optional"`
-	UserId          *uint64 `form:"user_id,optional" validate:"omitempty,gt=0"`
-	Username        *string `form:"username,optional"`
-	CategoryName    *string `form:"category_name,optional"`
-	SubCategoryName *string `form:"sub_category_name,optional"`
-	StartDate       *string `form:"start_date,optional" validate:"omitempty,notblank,datetime"`
-	EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"`
-	Page            int     `form:"page,optional,default=1" validate:"gt=0"`
-	Size            int     `form:"size,optional,default=10" validate:"gt=0"`
-	Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"`
-	EnableVector    *bool   `form:"enable_vector,optional"`
-	EnableGraph     *bool   `form:"enable_graph,optional"`
-	Explain         *bool   `form:"explain,optional"`
+	Keyword         *string `form:"keyword,optional"`                                                             // 搜索关键词，可选
+	UserId          *uint64 `form:"user_id,optional" validate:"omitempty,gt=0"`                                   // 作者用户 ID，可选，传入时须为正整数
+	Username        *string `form:"username,optional"`                                                            // 作者用户名，可选
+	CategoryName    *string `form:"category_name,optional"`                                                       // 一级分类名，可选
+	SubCategoryName *string `form:"sub_category_name,optional"`                                                   // 二级分类名，可选
+	StartDate       *string `form:"start_date,optional" validate:"omitempty,notblank,datetime"`                   // 发布时间起，可选
+	EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"` // 发布时间止，可选，不得早于开始时间
+	Page            int     `form:"page,optional,default=1" validate:"gt=0"`                                      // 页码，默认 1，须为正整数
+	Size            int     `form:"size,optional,default=10" validate:"gt=0"`                                     // 每页条数，默认 10，须为正整数
+	Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"`                                // 搜索模式，可选：keyword、hybrid、graph，缺省 hybrid
+	EnableVector    *bool   `form:"enable_vector,optional"`                                                       // 是否启用向量增强，可选，缺省开启
+	EnableGraph     *bool   `form:"enable_graph,optional"`                                                        // 是否启用图谱增强，可选，缺省开启
+	Explain         *bool   `form:"explain,optional"`                                                             // 是否返回评分与命中说明，可选
 }
 
 type SearchArticlesResp struct {
-	Total int             `json:"total"`
-	List  []ArticleEsItem `json:"list"`
+	Total int             `json:"total"` // 命中总数
+	List  []ArticleEsItem `json:"list"`  // 当前页文章
 }
 
 type SqlToolsColumnInfo struct {
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Key     string `json:"key"`
-	Comment string `json:"comment"`
+	Name    string `json:"name"`    // 列名
+	Type    string `json:"type"`    // 列类型
+	Key     string `json:"key"`     // 键类型，如 PRI
+	Comment string `json:"comment"` // 列注释
 }
 
 type SqlToolsGetTablesReq struct {
-	Table string `json:"table,optional" validate:"maxrunes=64"`
+	Table string `json:"table,optional" validate:"maxrunes=64"` // 表名，可选；不传则返回白名单内全部表
 }
 
 type SqlToolsGetTablesResp struct {
-	Data []SqlToolsTableInfo `json:"data"`
+	Data []SqlToolsTableInfo `json:"data"` // 表结构列表
 }
 
 type SqlToolsQueryReq struct {
-	Query  string            `json:"query" validate:"notblank,maxrunes=8000"`
-	Params map[string]string `json:"params,optional"`
+	Query  string            `json:"query" validate:"notblank,maxrunes=8000"` // 只读 SQL，须使用参数占位符
+	Params map[string]string `json:"params,optional"`                         // 占位符参数，key 为参数名
 }
 
 type SqlToolsQueryResp struct {
-	Data SqlToolsQueryResult `json:"data"`
+	Data SqlToolsQueryResult `json:"data"` // 查询结果
 }
 
 type SqlToolsQueryResult struct {
-	Columns  []string   `json:"columns"`
-	Rows     [][]string `json:"rows"`
-	RowCount int        `json:"rowCount"`
+	Columns  []string   `json:"columns"`  // 结果列名
+	Rows     [][]string `json:"rows"`     // 结果行，每行按列顺序排列
+	RowCount int        `json:"rowCount"` // 返回行数
 }
 
 type SqlToolsTableInfo struct {
-	Table   string               `json:"table"`
-	Columns []SqlToolsColumnInfo `json:"columns,optional"`
+	Table   string               `json:"table"`            // 表名
+	Columns []SqlToolsColumnInfo `json:"columns,optional"` // 列信息
 }
 
 type SyncESReq struct {
@@ -215,13 +215,13 @@ type SyncESResp struct {
 }
 
 type TestGoZeroResp struct {
-	Data string `json:"data"`
+	Data string `json:"data"` // 服务存活提示
 }
 
 type VectorMatchedChunk struct {
-	ArticleId  int64   `json:"article_id"`
-	Title      string  `json:"title"`
-	ChunkIndex int     `json:"chunk_index"`
-	Score      float64 `json:"score"`
-	Content    string  `json:"content"`
+	ArticleId  int64   `json:"article_id"`  // 文章 ID
+	Title      string  `json:"title"`       // 文章标题
+	ChunkIndex int     `json:"chunk_index"` // 分片序号
+	Score      float64 `json:"score"`       // 该分片相似度
+	Content    string  `json:"content"`     // 分片文本
 }

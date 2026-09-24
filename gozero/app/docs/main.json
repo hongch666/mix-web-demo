@@ -31,42 +31,49 @@
         "parameters": [
           {
             "type": "string",
+            "description": "搜索关键词，可选",
             "name": "keyword",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "integer",
+            "description": "作者用户 ID，可选，传入时须为正整数",
             "name": "user_id",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "string",
+            "description": "作者用户名，可选",
             "name": "username",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "string",
+            "description": "一级分类名，可选",
             "name": "category_name",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "string",
+            "description": "二级分类名，可选",
             "name": "sub_category_name",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "string",
+            "description": "发布时间起，可选",
             "name": "start_date",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "string",
+            "description": "发布时间止，可选，不得早于开始时间",
             "name": "end_date",
             "in": "query",
             "allowEmptyValue": true
@@ -75,6 +82,7 @@
             "type": "integer",
             "default": 1,
             "example": 1,
+            "description": "页码，默认 1，须为正整数",
             "name": "page",
             "in": "query",
             "allowEmptyValue": true
@@ -83,30 +91,35 @@
             "type": "integer",
             "default": 10,
             "example": 10,
+            "description": "每页条数，默认 10，须为正整数",
             "name": "size",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "string",
+            "description": "搜索模式，可选：keyword、hybrid、graph，缺省 hybrid",
             "name": "mode",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "boolean",
+            "description": "是否启用向量增强，可选，缺省开启",
             "name": "enable_vector",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "boolean",
+            "description": "是否启用图谱增强，可选，缺省开启",
             "name": "enable_graph",
             "in": "query",
             "allowEmptyValue": true
           },
           {
             "type": "boolean",
+            "description": "是否返回评分与命中说明，可选",
             "name": "explain",
             "in": "query",
             "allowEmptyValue": true
@@ -119,6 +132,7 @@
               "type": "object",
               "properties": {
                 "list": {
+                  "description": "当前页文章",
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -154,42 +168,55 @@
                     ],
                     "properties": {
                       "ai_comment_count": {
+                        "description": "AI 评论数",
                         "type": "integer"
                       },
                       "ai_score": {
+                        "description": "AI 评分",
                         "type": "number"
                       },
                       "author_follow_count": {
+                        "description": "作者被关注数",
                         "type": "integer"
                       },
                       "category_name": {
+                        "description": "一级分类名",
                         "type": "string"
                       },
                       "collect_count": {
+                        "description": "收藏数",
                         "type": "integer"
                       },
                       "content": {
+                        "description": "正文",
                         "type": "string"
                       },
                       "create_at": {
+                        "description": "创建时间",
                         "type": "string"
                       },
                       "es_score": {
+                        "description": "关键词检索得分",
                         "type": "number"
                       },
                       "final_score": {
+                        "description": "综合得分",
                         "type": "number"
                       },
                       "graph_score": {
+                        "description": "图谱检索得分",
                         "type": "number"
                       },
                       "id": {
+                        "description": "文章 ID",
                         "type": "integer"
                       },
                       "like_count": {
+                        "description": "点赞数",
                         "type": "integer"
                       },
                       "matched_chunks": {
+                        "description": "命中的向量分片",
                         "type": "array",
                         "items": {
                           "type": "object",
@@ -202,27 +229,34 @@
                           ],
                           "properties": {
                             "article_id": {
+                              "description": "文章 ID",
                               "type": "integer"
                             },
                             "chunk_index": {
+                              "description": "分片序号",
                               "type": "integer"
                             },
                             "content": {
+                              "description": "分片文本",
                               "type": "string"
                             },
                             "score": {
+                              "description": "该分片相似度",
                               "type": "number"
                             },
                             "title": {
+                              "description": "文章标题",
                               "type": "string"
                             }
                           }
                         }
                       },
                       "reason": {
+                        "description": "排序说明",
                         "type": "string"
                       },
                       "relations": {
+                        "description": "命中的图谱关系",
                         "type": "array",
                         "items": {
                           "type": "object",
@@ -234,21 +268,26 @@
                           ],
                           "properties": {
                             "name": {
+                              "description": "关联节点名称",
                               "type": "string"
                             },
                             "reason": {
+                              "description": "命中原因",
                               "type": "string"
                             },
                             "score": {
+                              "description": "关系得分",
                               "type": "number"
                             },
                             "type": {
+                              "description": "关系类型",
                               "type": "string"
                             }
                           }
                         }
                       },
                       "score_details": {
+                        "description": "分项得分",
                         "type": "object",
                         "required": [
                           "es_score",
@@ -259,62 +298,80 @@
                         ],
                         "properties": {
                           "business_score": {
+                            "description": "业务特征分项",
                             "type": "number"
                           },
                           "es_score": {
+                            "description": "关键词检索分项",
                             "type": "number"
                           },
                           "graph_score": {
+                            "description": "图谱检索分项",
                             "type": "number"
                           },
                           "recency_score": {
+                            "description": "时效分项",
                             "type": "number"
                           },
                           "vector_score": {
+                            "description": "向量检索分项",
                             "type": "number"
                           }
                         }
                       },
                       "semantic_reason": {
+                        "description": "语义命中说明",
                         "type": "string"
                       },
                       "status": {
+                        "description": "文章状态，0 草稿，1 已发布",
                         "type": "integer"
                       },
                       "sub_category_name": {
+                        "description": "二级分类名",
                         "type": "string"
                       },
                       "tags": {
+                        "description": "标签",
                         "type": "string"
                       },
                       "title": {
+                        "description": "标题",
                         "type": "string"
                       },
                       "update_at": {
+                        "description": "更新时间",
                         "type": "string"
                       },
                       "user_comment_count": {
+                        "description": "用户评论数",
                         "type": "integer"
                       },
                       "user_id": {
+                        "description": "作者用户 ID",
                         "type": "integer"
                       },
                       "user_score": {
+                        "description": "用户评分",
                         "type": "number"
                       },
                       "username": {
+                        "description": "作者用户名",
                         "type": "string"
                       },
                       "vector_score": {
+                        "description": "向量检索得分",
                         "type": "number"
                       },
                       "views": {
+                        "description": "浏览量",
                         "type": "integer"
                       }
                     }
                   }
                 },
                 "total": {
+                  "description": "命中总数",
                   "type": "integer"
                 }
               }
@@ -337,6 +394,7 @@
         "parameters": [
           {
             "type": "string",
+            "description": "用户 ID，路径参数，须为正整数",
             "name": "user_id",
             "in": "path",
             "required": true
@@ -349,6 +407,7 @@
               "type": "object",
               "properties": {
                 "keywords": {
+                  "description": "最近搜索关键词，最多 10 条",
                   "type": "array",
                   "items": {
                     "type": "string"
@@ -386,12 +445,14 @@
               ],
               "properties": {
                 "params": {
+                  "description": "占位符参数，key 为参数名",
                   "type": "object",
                   "additionalProperties": {
                     "type": "string"
                   }
                 },
                 "query": {
+                  "description": "只读 SQL，须使用参数占位符",
                   "type": "string"
                 }
               }
@@ -405,6 +466,7 @@
               "type": "object",
               "properties": {
                 "data": {
+                  "description": "查询结果",
                   "type": "object",
                   "required": [
                     "columns",
@@ -413,15 +475,18 @@
                   ],
                   "properties": {
                     "columns": {
+                      "description": "结果列名",
                       "type": "array",
                       "items": {
                         "type": "string"
                       }
                     },
                     "rowCount": {
+                      "description": "返回行数",
                       "type": "integer"
                     },
                     "rows": {
+                      "description": "结果行，每行按列顺序排列",
                       "type": "array",
                       "items": {
                         "type": "array",
@@ -458,6 +523,7 @@
               "type": "object",
               "properties": {
                 "table": {
+                  "description": "表名，可选；不传则返回白名单内全部表",
                   "type": "string"
                 }
               }
@@ -471,6 +537,7 @@
               "type": "object",
               "properties": {
                 "data": {
+                  "description": "表结构列表",
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -479,6 +546,7 @@
                     ],
                     "properties": {
                       "columns": {
+                        "description": "列信息",
                         "type": "array",
                         "items": {
                           "type": "object",
@@ -490,21 +558,26 @@
                           ],
                           "properties": {
                             "comment": {
+                              "description": "列注释",
                               "type": "string"
                             },
                             "key": {
+                              "description": "键类型，如 PRI",
                               "type": "string"
                             },
                             "name": {
+                              "description": "列名",
                               "type": "string"
                             },
                             "type": {
+                              "description": "列类型",
                               "type": "string"
                             }
                           }
                         }
                       },
                       "table": {
+                        "description": "表名",
                         "type": "string"
                       }
                     }
@@ -530,6 +603,7 @@
         "parameters": [
           {
             "type": "integer",
+            "description": "当前用户 ID，可选；传入时须为正整数",
             "name": "user_id",
             "in": "query",
             "allowEmptyValue": true
@@ -595,6 +669,7 @@
               "type": "object",
               "properties": {
                 "data": {
+                  "description": "服务存活提示",
                   "type": "string"
                 }
               }
@@ -629,6 +704,7 @@
               ],
               "properties": {
                 "user_id": {
+                  "description": "当前用户 ID，须为正整数",
                   "type": "integer"
                 }
               }
@@ -642,6 +718,7 @@
               "type": "object",
               "properties": {
                 "data": {
+                  "description": "各对端未读数，key 为对端用户 ID",
                   "type": "object",
                   "additionalProperties": {
                     "type": "integer"
@@ -680,15 +757,19 @@
               ],
               "properties": {
                 "other_id": {
+                  "description": "对端用户 ID，须为正整数",
                   "type": "integer"
                 },
                 "page": {
+                  "description": "页码，可选，传入时须为正整数",
                   "type": "integer"
                 },
                 "size": {
+                  "description": "每页条数，可选，传入时须为正整数",
                   "type": "integer"
                 },
                 "user_id": {
+                  "description": "当前用户 ID，须为正整数",
                   "type": "integer"
                 }
               }
@@ -702,6 +783,7 @@
               "type": "object",
               "properties": {
                 "messages": {
+                  "description": "当前页聊天记录",
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -715,27 +797,34 @@
                     ],
                     "properties": {
                       "content": {
+                        "description": "消息内容",
                         "type": "string"
                       },
                       "created_at": {
+                        "description": "发送时间",
                         "type": "string"
                       },
                       "id": {
+                        "description": "消息 ID",
                         "type": "integer"
                       },
                       "is_read": {
+                        "description": "是否已读，0 未读，1 已读",
                         "type": "integer"
                       },
                       "receiver_id": {
+                        "description": "接收方用户 ID",
                         "type": "integer"
                       },
                       "sender_id": {
+                        "description": "发送方用户 ID",
                         "type": "integer"
                       }
                     }
                   }
                 },
                 "total": {
+                  "description": "两人之间的消息总数",
                   "type": "integer"
                 }
               }
@@ -770,6 +859,7 @@
               ],
               "properties": {
                 "user_id": {
+                  "description": "要加入队列的用户 ID，须为正整数",
                   "type": "integer"
                 }
               }
@@ -783,9 +873,11 @@
               "type": "object",
               "properties": {
                 "status": {
+                  "description": "加入结果，已在队列中或刚加入",
                   "type": "string"
                 },
                 "user_id": {
+                  "description": "用户 ID",
                   "type": "integer"
                 }
               }
@@ -820,6 +912,7 @@
               ],
               "properties": {
                 "user_id": {
+                  "description": "要离开队列的用户 ID，须为正整数",
                   "type": "integer"
                 }
               }
@@ -833,9 +926,11 @@
               "type": "object",
               "properties": {
                 "status": {
+                  "description": "离开结果",
                   "type": "string"
                 },
                 "user_id": {
+                  "description": "用户 ID",
                   "type": "integer"
                 }
               }
@@ -862,9 +957,11 @@
               "type": "object",
               "properties": {
                 "count": {
+                  "description": "在线用户数",
                   "type": "integer"
                 },
                 "online_users": {
+                  "description": "当前在聊天队列中的用户 ID",
                   "type": "array",
                   "items": {
                     "type": "integer"
@@ -904,12 +1001,15 @@
               ],
               "properties": {
                 "content": {
+                  "description": "消息内容，不能为空白",
                   "type": "string"
                 },
                 "receiver_id": {
+                  "description": "接收方用户 ID，须为正整数",
                   "type": "integer"
                 },
                 "sender_id": {
+                  "description": "发送方用户 ID，须为正整数",
                   "type": "integer"
                 }
               }
@@ -923,6 +1023,7 @@
               "type": "object",
               "properties": {
                 "message_id": {
+                  "description": "已保存的消息 ID",
                   "type": "integer"
                 }
               }
@@ -958,9 +1059,11 @@
               ],
               "properties": {
                 "other_id": {
+                  "description": "发送方用户 ID，须为正整数",
                   "type": "integer"
                 },
                 "user_id": {
+                  "description": "接收方用户 ID，须为正整数",
                   "type": "integer"
                 }
               }
@@ -974,6 +1077,7 @@
               "type": "object",
               "properties": {
                 "unread_count": {
+                  "description": "该对端发给当前用户的未读数",
                   "type": "integer"
                 }
               }
@@ -996,6 +1100,7 @@
         "parameters": [
           {
             "type": "integer",
+            "description": "当前用户 ID，可选；传入时须为正整数",
             "name": "user_id",
             "in": "query",
             "allowEmptyValue": true
@@ -1019,7 +1124,7 @@
       }
     }
   },
-  "x-date": "2026-09-25 01:16:36",
+  "x-date": "2026-09-25 01:57:11",
   "x-description": "This is a goctl generated swagger file.",
   "x-github": "https://github.com/zeromicro/go-zero",
   "x-go-zero-doc": "https://go-zero.dev/",

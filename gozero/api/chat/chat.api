@@ -59,61 +59,61 @@ service App {
 
 type (
 	ChatSendMessageReq {
-		SenderId   int64  `json:"sender_id" validate:"gt=0"`
-		ReceiverId int64  `json:"receiver_id" validate:"gt=0"`
-		Content    string `json:"content" validate:"notblank"`
+		SenderId   int64  `json:"sender_id" validate:"gt=0"` // 发送方用户 ID，须为正整数
+		ReceiverId int64  `json:"receiver_id" validate:"gt=0"` // 接收方用户 ID，须为正整数
+		Content    string `json:"content" validate:"notblank"` // 消息内容，不能为空白
 	}
 	ChatSendMessageResp {
-		MessageId uint64 `json:"message_id"`
+		MessageId uint64 `json:"message_id"` // 已保存的消息 ID
 	}
 	ChatGetHistoryReq {
-		UserId  int64 `json:"user_id" validate:"gt=0"`
-		OtherId int64 `json:"other_id" validate:"gt=0"`
-		Page    int   `json:"page,optional" validate:"gt=0"`
-		Size    int   `json:"size,optional" validate:"gt=0"`
+		UserId  int64 `json:"user_id" validate:"gt=0"` // 当前用户 ID，须为正整数
+		OtherId int64 `json:"other_id" validate:"gt=0"` // 对端用户 ID，须为正整数
+		Page    int   `json:"page,optional" validate:"gt=0"` // 页码，可选，传入时须为正整数
+		Size    int   `json:"size,optional" validate:"gt=0"` // 每页条数，可选，传入时须为正整数
 	}
 	ChatGetHistoryResp {
-		Messages []ChatMessageItem `json:"messages"`
-		Total    int64             `json:"total"`
+		Messages []ChatMessageItem `json:"messages"` // 当前页聊天记录
+		Total    int64             `json:"total"` // 两人之间的消息总数
 	}
 	ChatMessageItem {
-		Id         uint64 `json:"id"`
-		SenderId   int64  `json:"sender_id"`
-		ReceiverId int64  `json:"receiver_id"`
-		Content    string `json:"content"`
-		IsRead     int8   `json:"is_read"`
-		CreatedAt  string `json:"created_at"`
+		Id         uint64 `json:"id"` // 消息 ID
+		SenderId   int64  `json:"sender_id"` // 发送方用户 ID
+		ReceiverId int64  `json:"receiver_id"` // 接收方用户 ID
+		Content    string `json:"content"` // 消息内容
+		IsRead     int8   `json:"is_read"` // 是否已读，0 未读，1 已读
+		CreatedAt  string `json:"created_at"` // 发送时间
 	}
 	ChatGetQueueStatusResp {
-		OnlineUsers []int64 `json:"online_users"`
-		Count       int     `json:"count"`
+		OnlineUsers []int64 `json:"online_users"` // 当前在聊天队列中的用户 ID
+		Count       int     `json:"count"` // 在线用户数
 	}
 	ChatJoinQueueReq {
-		UserId int64 `json:"user_id" validate:"gt=0"`
+		UserId int64 `json:"user_id" validate:"gt=0"` // 要加入队列的用户 ID，须为正整数
 	}
 	ChatJoinQueueResp {
-		UserId int64  `json:"user_id"`
-		Status string `json:"status"`
+		UserId int64  `json:"user_id"` // 用户 ID
+		Status string `json:"status"` // 加入结果，已在队列中或刚加入
 	}
 	ChatLeaveQueueReq {
-		UserId int64 `json:"user_id" validate:"gt=0"`
+		UserId int64 `json:"user_id" validate:"gt=0"` // 要离开队列的用户 ID，须为正整数
 	}
 	ChatLeaveQueueResp {
-		UserId int64  `json:"user_id"`
-		Status string `json:"status"`
+		UserId int64  `json:"user_id"` // 用户 ID
+		Status string `json:"status"` // 离开结果
 	}
 	ChatGetUnreadCountReq {
-		UserId  int64 `json:"user_id" validate:"gt=0"`
-		OtherId int64 `json:"other_id" validate:"gt=0"`
+		UserId  int64 `json:"user_id" validate:"gt=0"` // 接收方用户 ID，须为正整数
+		OtherId int64 `json:"other_id" validate:"gt=0"` // 发送方用户 ID，须为正整数
 	}
 	ChatGetUnreadCountResp {
-		UnreadCount int64 `json:"unread_count"`
+		UnreadCount int64 `json:"unread_count"` // 该对端发给当前用户的未读数
 	}
 	ChatGetAllUnreadCountsReq {
-		UserId int64 `json:"user_id" validate:"gt=0"`
+		UserId int64 `json:"user_id" validate:"gt=0"` // 当前用户 ID，须为正整数
 	}
 	ChatGetAllUnreadCountsResp {
-		Data map[int64]int64 `json:"data"`
+		Data map[int64]int64 `json:"data"` // 各对端未读数，key 为对端用户 ID
 	}
 )
 

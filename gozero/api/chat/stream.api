@@ -24,27 +24,27 @@ service App {
 type (
 	// SSE连接请求
 	ChatSSEConnectReq {
-		UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
+		UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"` // 当前用户 ID，可选；传入时须为正整数
 	}
 	// SSE数据帧，客户端在连接建立后持续接收（与连接时下发的首帧同构）
 	ChatSSEMessage {
-		Type         string           `json:"type"`
-		UserId       int64            `json:"user_id"`
-		UnreadCounts map[int64]int64  `json:"unread_counts"`
-		Message      *ChatMessageItem `json:"message,omitempty"`
+		Type         string           `json:"type"` // 帧类型，消息通知为 message
+		UserId       int64            `json:"user_id"` // 接收通知的用户 ID
+		UnreadCounts map[int64]int64  `json:"unread_counts"` // 与各对端的未读数，key 为对端用户 ID
+		Message      *ChatMessageItem `json:"message,omitempty"` // 聊天消息体，无消息时省略
 	}
 	// WebSocket连接请求
 	ChatWsConnectReq {
-		UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"`
+		UserId *int64 `form:"user_id,optional" validate:"omitempty,gt=0"` // 当前用户 ID，可选；传入时须为正整数
 	}
 	// WebSocket数据帧，包含 message/ping/pong/read/read_ack 类型
 	ChatWsMessage {
-		Type       string `json:"type"`
-		SenderId   int64  `json:"sender_id,omitempty"`
-		ReceiverId int64  `json:"receiver_id,omitempty"`
-		Content    string `json:"content,omitempty"`
-		MessageId  uint64 `json:"message_id,omitempty"`
-		Timestamp  string `json:"timestamp,omitempty"`
+		Type       string `json:"type"` // 帧类型：message、ping、pong、read、read_ack
+		SenderId   int64  `json:"sender_id,omitempty"` // 发送方用户 ID，非消息帧可省略
+		ReceiverId int64  `json:"receiver_id,omitempty"` // 接收方用户 ID，非消息帧可省略
+		Content    string `json:"content,omitempty"` // 消息内容，非消息帧可省略
+		MessageId  uint64 `json:"message_id,omitempty"` // 消息 ID，非消息帧可省略
+		Timestamp  string `json:"timestamp,omitempty"` // 发送时间，非消息帧可省略
 	}
 )
 

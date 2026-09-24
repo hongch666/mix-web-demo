@@ -32,82 +32,82 @@ service App {
 
 type (
 	SearchArticlesReq {
-		Keyword         *string `form:"keyword,optional"`
-		UserId          *uint64 `form:"user_id,optional" validate:"omitempty,gt=0"`
-		Username        *string `form:"username,optional"`
-		CategoryName    *string `form:"category_name,optional"`
-		SubCategoryName *string `form:"sub_category_name,optional"`
-		StartDate       *string `form:"start_date,optional" validate:"omitempty,notblank,datetime"`
-		EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"`
-		Page            int     `form:"page,optional,default=1" validate:"gt=0"`
-		Size            int     `form:"size,optional,default=10" validate:"gt=0"`
-		Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"`
-		EnableVector    *bool   `form:"enable_vector,optional"`
-		EnableGraph     *bool   `form:"enable_graph,optional"`
-		Explain         *bool   `form:"explain,optional"`
+		Keyword         *string `form:"keyword,optional"` // 搜索关键词，可选
+		UserId          *uint64 `form:"user_id,optional" validate:"omitempty,gt=0"` // 作者用户 ID，可选，传入时须为正整数
+		Username        *string `form:"username,optional"` // 作者用户名，可选
+		CategoryName    *string `form:"category_name,optional"` // 一级分类名，可选
+		SubCategoryName *string `form:"sub_category_name,optional"` // 二级分类名，可选
+		StartDate       *string `form:"start_date,optional" validate:"omitempty,notblank,datetime"` // 发布时间起，可选
+		EndDate         *string `form:"end_date,optional" validate:"omitempty,notblank,datetime,notbefore=StartDate"` // 发布时间止，可选，不得早于开始时间
+		Page            int     `form:"page,optional,default=1" validate:"gt=0"` // 页码，默认 1，须为正整数
+		Size            int     `form:"size,optional,default=10" validate:"gt=0"` // 每页条数，默认 10，须为正整数
+		Mode            *string `form:"mode,optional" validate:"omitempty,searchmode"` // 搜索模式，可选：keyword、hybrid、graph，缺省 hybrid
+		EnableVector    *bool   `form:"enable_vector,optional"` // 是否启用向量增强，可选，缺省开启
+		EnableGraph     *bool   `form:"enable_graph,optional"` // 是否启用图谱增强，可选，缺省开启
+		Explain         *bool   `form:"explain,optional"` // 是否返回评分与命中说明，可选
 	}
 	SearchArticlesResp {
-		Total int             `json:"total"`
-		List  []ArticleEsItem `json:"list"`
+		Total int             `json:"total"` // 命中总数
+		List  []ArticleEsItem `json:"list"` // 当前页文章
 	}
 	ArticleEsItem {
-		Id                int64                `json:"id"`
-		Title             string               `json:"title"`
-		Content           string               `json:"content"`
-		UserId            int64                `json:"user_id"`
-		Username          string               `json:"username"`
-		Tags              string               `json:"tags"`
-		Status            int                  `json:"status"`
-		Views             int                  `json:"views"`
-		LikeCount         int                  `json:"like_count"`
-		CollectCount      int                  `json:"collect_count"`
-		AuthorFollowCount int                  `json:"author_follow_count"`
-		CategoryName      string               `json:"category_name"`
-		SubCategoryName   string               `json:"sub_category_name"`
-		CreateAt          string               `json:"create_at"`
-		UpdateAt          string               `json:"update_at"`
-		AiScore           float64              `json:"ai_score"`
-		UserScore         float64              `json:"user_score"`
-		AiCommentCount    int                  `json:"ai_comment_count"`
-		UserCommentCount  int                  `json:"user_comment_count"`
-		EsScore           float64              `json:"es_score"`
-		VectorScore       float64              `json:"vector_score"`
-		GraphScore        float64              `json:"graph_score"`
-		FinalScore        float64              `json:"final_score"`
-		Reason            string               `json:"reason"`
-		SemanticReason    string               `json:"semantic_reason"`
-		Relations         []GraphRelation      `json:"relations"`
-		MatchedChunks     []VectorMatchedChunk `json:"matched_chunks"`
-		ScoreDetails      ScoreDetails         `json:"score_details"`
+		Id                int64                `json:"id"` // 文章 ID
+		Title             string               `json:"title"` // 标题
+		Content           string               `json:"content"` // 正文
+		UserId            int64                `json:"user_id"` // 作者用户 ID
+		Username          string               `json:"username"` // 作者用户名
+		Tags              string               `json:"tags"` // 标签
+		Status            int                  `json:"status"` // 文章状态，0 草稿，1 已发布
+		Views             int                  `json:"views"` // 浏览量
+		LikeCount         int                  `json:"like_count"` // 点赞数
+		CollectCount      int                  `json:"collect_count"` // 收藏数
+		AuthorFollowCount int                  `json:"author_follow_count"` // 作者被关注数
+		CategoryName      string               `json:"category_name"` // 一级分类名
+		SubCategoryName   string               `json:"sub_category_name"` // 二级分类名
+		CreateAt          string               `json:"create_at"` // 创建时间
+		UpdateAt          string               `json:"update_at"` // 更新时间
+		AiScore           float64              `json:"ai_score"` // AI 评分
+		UserScore         float64              `json:"user_score"` // 用户评分
+		AiCommentCount    int                  `json:"ai_comment_count"` // AI 评论数
+		UserCommentCount  int                  `json:"user_comment_count"` // 用户评论数
+		EsScore           float64              `json:"es_score"` // 关键词检索得分
+		VectorScore       float64              `json:"vector_score"` // 向量检索得分
+		GraphScore        float64              `json:"graph_score"` // 图谱检索得分
+		FinalScore        float64              `json:"final_score"` // 综合得分
+		Reason            string               `json:"reason"` // 排序说明
+		SemanticReason    string               `json:"semantic_reason"` // 语义命中说明
+		Relations         []GraphRelation      `json:"relations"` // 命中的图谱关系
+		MatchedChunks     []VectorMatchedChunk `json:"matched_chunks"` // 命中的向量分片
+		ScoreDetails      ScoreDetails         `json:"score_details"` // 分项得分
 	}
 	VectorMatchedChunk {
-		ArticleId  int64   `json:"article_id"`
-		Title      string  `json:"title"`
-		ChunkIndex int     `json:"chunk_index"`
-		Score      float64 `json:"score"`
-		Content    string  `json:"content"`
+		ArticleId  int64   `json:"article_id"` // 文章 ID
+		Title      string  `json:"title"` // 文章标题
+		ChunkIndex int     `json:"chunk_index"` // 分片序号
+		Score      float64 `json:"score"` // 该分片相似度
+		Content    string  `json:"content"` // 分片文本
 	}
 	GraphRelation {
-		Type   string  `json:"type"`
-		Name   string  `json:"name"`
-		Score  float64 `json:"score"`
-		Reason string  `json:"reason"`
+		Type   string  `json:"type"` // 关系类型
+		Name   string  `json:"name"` // 关联节点名称
+		Score  float64 `json:"score"` // 关系得分
+		Reason string  `json:"reason"` // 命中原因
 	}
 	ScoreDetails {
-		EsScore       float64 `json:"es_score"`
-		VectorScore   float64 `json:"vector_score"`
-		GraphScore    float64 `json:"graph_score"`
-		BusinessScore float64 `json:"business_score"`
-		RecencyScore  float64 `json:"recency_score"`
+		EsScore       float64 `json:"es_score"` // 关键词检索分项
+		VectorScore   float64 `json:"vector_score"` // 向量检索分项
+		GraphScore    float64 `json:"graph_score"` // 图谱检索分项
+		BusinessScore float64 `json:"business_score"` // 业务特征分项
+		RecencyScore  float64 `json:"recency_score"` // 时效分项
 	}
 )
 
 type (
 	GetSearchHistoryReq {
-		UserId string `path:"user_id" validate:"notblank,positiveint"`
+		UserId string `path:"user_id" validate:"notblank,positiveint"` // 用户 ID，路径参数，须为正整数
 	}
 	GetSearchHistoryResp {
-		Keywords []string `json:"keywords"`
+		Keywords []string `json:"keywords"` // 最近搜索关键词，最多 10 条
 	}
 )
 
