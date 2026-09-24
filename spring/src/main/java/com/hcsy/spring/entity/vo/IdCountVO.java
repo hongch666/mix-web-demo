@@ -1,5 +1,6 @@
 package com.hcsy.spring.entity.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "ID 与数量")
 public class IdCountVO {
+    @Schema(description = "ID")
     private Long id;
+
+    @Schema(description = "数量")
     private Long count;
 }

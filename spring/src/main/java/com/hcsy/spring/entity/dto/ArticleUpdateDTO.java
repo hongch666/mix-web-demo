@@ -1,5 +1,6 @@
 package com.hcsy.spring.entity.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -11,7 +12,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "更新文章请求")
 public class ArticleUpdateDTO extends ArticleCreateDTO {
+    @Schema(description = "文章ID")
     @NotNull(message = "文章ID不能为空")
     @Min(value = 1, message = "文章ID必须大于0")
     private Long id;

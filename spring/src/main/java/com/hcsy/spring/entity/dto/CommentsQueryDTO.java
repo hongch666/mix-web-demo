@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
-@Schema(description = "用户查询参数")
+@Schema(description = "评论查询参数")
 public class CommentsQueryDTO {
     @Schema(description = "页码", example = "1")
     private int page = 1;

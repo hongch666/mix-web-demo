@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.hcsy.spring.entity.dto.CommentScoreDTO;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "文章评论评分")
 public class ArticleCommentScoresVO {
+    @Schema(description = "文章ID")
     private Long articleId;
+
+    @Schema(description = "按角色汇总的评分")
     private Map<String, CommentScoreDTO> roleScores;
 }

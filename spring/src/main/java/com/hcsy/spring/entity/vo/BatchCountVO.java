@@ -2,6 +2,7 @@ package com.hcsy.spring.entity.vo;
 
 import java.util.List;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "批量计数结果")
 public class BatchCountVO {
+    @Schema(description = "ID 与数量列表")
     private List<IdCountVO> counts;
 }

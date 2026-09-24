@@ -2,6 +2,7 @@ package com.hcsy.spring.entity.vo;
 
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Schema(description = "键值数据")
 public class MapDataVO {
+    @Schema(description = "动态键值对")
     private Map<String, Object> data;
 }
