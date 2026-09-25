@@ -340,91 +340,98 @@ Body 参数：
 
   ```mermaid
   flowchart TB
-      subgraph 浏览器层
-          direction TB
+      subgraph Browser["浏览器层"]
           React["React 前端页面"]
       end
 
-      subgraph API网关层
-          direction TB
-          APISIX["Apache APISIX 网关路由"]
-          Auth["Spring 内部认证接口"]
-          GatewayRedis["Redis 限流"]
+      subgraph GatewayLayer["API 网关层"]
+          APISIX["APISIX 网关路由"]
+          Auth["接口登录校验 (Spring 内部接口校验)"]
       end
 
-      subgraph 微服务通信层
-          direction TB
+      subgraph CommLayer["微服务通信层"]
           Nacos["Nacos 注册中心"]
-          RestfulAPI["Restful API 远程调用"]
+          Restful["Restful API 远程调用"]
           RabbitMQ["RabbitMQ 异步消息队列"]
       end
 
-      subgraph 服务层
-          direction TB
-          SpringSvc["Spring 服务<br/>(项目核心业务)"]
-          GoZeroSvc["GoZero 服务<br/>(搜索/聊天/同步)"]
-          NestJSSvc["NestJS 服务<br/>(日志和第三方自动化)"]
-          FastAPISvc["FastAPI 服务<br/>(AI 算法和数据分析)"]
+      subgraph SvcLayer["服务层"]
+          SpringSvc["Spring 服务 (项目核心骨架)<br/>用户模块 / 文章模块 / 分类模块<br/>评论模块 / 关注模块 / 互动模块"]
+          GoZeroSvc["GoZero 服务 (高并发支持)<br/>搜索模块 / 聊天模块 / 通知模块"]
+          NestJSSvc["NestJS 服务 (日志和第三方工具功能)<br/>文章日志模块 / API日志模块 / 上传下载模块<br/>用户设置模块 / 邮件模块 / GitHub 模块"]
+          FastAPISvc["FastAPI 服务 (AI 算法和数据分析)<br/>AI 模块 / 生成模块<br/>数据分析模块 / 算法模块"]
       end
 
-      subgraph 数据持久层
-          direction TB
-          Redis["Redis 缓存 (热点数据缓存)"]
-          ES["ElasticSearch 搜索引擎 (文章检索)"]
-          MongoDB["MongoDB 文档 (日志存储)"]
-          MySQL["MySQL 数据库 (核心数据存储)"]
-          ClickHouse["ClickHouse OLAP (数仓分析)"]
-          Postgres["PostgreSQL 向量库 (RAG 向量存储)"]
-          Neo4j["Neo4j 图数据库 (知识图谱)"]
-      end
-
-      subgraph 第三方服务层
-          direction TB
-          LLM["大模型 API 调用 (豆包/Qwen/Gemini)"]
+      subgraph ThirdParty["第三方服务层"]
+          LLM["大模型 API 调用 (GPT/Gemini/GLM)"]
           OSS["阿里云 OSS 对象存储"]
           GithubAPI["Github API 调用"]
           Email["邮件服务调用"]
       end
 
-      React <-->|请求/响应| APISIX
-      APISIX -->|服务发现| Nacos
-      APISIX -->|认证| Auth
-      APISIX -->|限流| GatewayRedis
-      Auth -->|校验 Token| SpringSvc
+      subgraph Monitor["监控层"]
+          Grafana["Grafana 统一查询"]
+          OTel["OpenTelemetry 链路追踪"]
+          Tempo["Tempo 链路存储"]
+          Promtail["Promtail 日志采集"]
+          Loki["Loki 日志存储"]
+          Prometheus["Prometheus 指标采集和存储"]
+      end
 
-      APISIX -->|请求/响应| SpringSvc
-      APISIX -->|请求/响应| GoZeroSvc
-      APISIX -->|请求/响应| NestJSSvc
-      APISIX -->|请求/响应| FastAPISvc
+      subgraph DataLayer["数据库持久层"]
+          Redis["Redis 缓存 (热点数据缓存)"]
+          ES["ElasticSearch 搜索引擎 (文章搜索)"]
+          MongoDB["MongoDB 文档 (日志存储)"]
+          ClickHouse["ClickHouse OLAP (数仓分析)"]
+          Postgres["PostgreSQL 向量库 (RAG 向量存储)"]
+          Neo4j["Neo4j 图数据库 (知识图谱)"]
+          MySQL["MySQL 数据库 (核心数据存储)"]
+      end
 
-      SpringSvc <-.->|RPC| GoZeroSvc
-      GoZeroSvc <-.->|RPC| NestJSSvc
-      NestJSSvc <-.->|RPC| FastAPISvc
+      React <-->|响应/请求| APISIX
+      APISIX <-->|响应/请求| Auth
+      Auth -->|检验 token| SpringSvc
 
-      SpringSvc <-->|缓存| Redis
-      Redis <-->|持久化| MySQL
-      GoZeroSvc <-->|检索| ES
-      NestJSSvc <-->|存储| MongoDB
-      FastAPISvc -->|分析| ClickHouse
-      FastAPISvc <-->|向量| Postgres
-      FastAPISvc <-->|图谱| Neo4j
+      GatewayLayer <-->|网关路由| CommLayer
+      CommLayer <-->|调度| SvcLayer
+      SvcLayer <-->|请求/响应| ThirdParty
 
-      FastAPISvc -->|AI| LLM
-      NestJSSvc -->|OSS| OSS
-      NestJSSvc -->|登录| GithubAPI
-      SpringSvc -->|邮件| Email
+      SpringSvc <-->|RPC 调用| GoZeroSvc
+      GoZeroSvc <-->|RPC 调用| NestJSSvc
+      NestJSSvc <-->|RPC 调用| FastAPISvc
+
+      SvcLayer -->|链路追踪| OTel
+      OTel -->|存储| Tempo
+      SvcLayer -->|日志采集| Promtail
+      Promtail -->|存储| Loki
+      SvcLayer -->|指标监控| Prometheus
+      Tempo -->|统一查询| Grafana
+      Loki -->|统一查询| Grafana
+      Prometheus -->|统一查询| Grafana
+
+      SpringSvc <-->|请求/响应| Redis
+      Redis <-->|请求/响应| MySQL
+      GoZeroSvc <-->|请求/响应| ES
+      NestJSSvc <-->|请求/响应| MongoDB
+      FastAPISvc <-->|请求/响应| ClickHouse
+      FastAPISvc <-->|请求/响应| Postgres
+      FastAPISvc <-->|请求/响应| Neo4j
+
+      MySQL -->|索引同步| ES
+      MySQL -->|数仓同步| ClickHouse
+      MySQL -->|向量同步| Postgres
+      MySQL -->|图谱同步| Neo4j
   ```
 
 - ER 图
 
   ```mermaid
   erDiagram
-      USER ||--o{ FOCUS : "关注"
-      USER ||--o{ FOCUS : "被关注"
+      USER }o--o{ FOCUS : "关注"
       USER ||--o{ APILOGS : "记录"
+      USER ||--o{ USER_TABLE_SETTING : "列设置"
       USER ||--o{ AI_HISTORY : "提问"
-      USER ||--o{ CHAT_MESSAGE : "发送"
-      USER ||--o{ CHAT_MESSAGE : "接收"
+      USER }o--o{ CHAT_MESSAGE : "聊天"
       USER ||--o{ ARTICLE : "创建"
       USER ||--o{ LIKES : "点赞"
       USER ||--o{ COLLECTS : "收藏"
@@ -463,9 +470,16 @@ Body 参数：
           bigint focus_id FK
           datetime created_time
       }
+      USER_TABLE_SETTING {
+          bigint id PK
+          bigint user_id FK
+          json columns
+          datetime create_at
+          datetime update_at
+      }
       APILOGS {
-          object_id id PK
-          number user_id FK
+          objectid _id PK
+          number userid FK
           string username
           string apiDescription
           string apiPath
@@ -549,7 +563,7 @@ Body 参数：
           varchar pdf
       }
       ARTICLELOG {
-          object_id id PK
+          objectid _id PK
           number userId FK
           number articleId FK
           string action
@@ -597,6 +611,209 @@ Body 参数：
     Spring -.-> MQ[RabbitMQ]
     Nest -.-> MQ
     FastAPI -.-> MQ
+  ```
+
+- 项目功能结构图
+
+  ```mermaid
+  flowchart TB
+      Root["基于 RAG 的 IT 智能文章推荐与知识问答系统"]
+      Root --> Nav["系统导航"]
+      Root --> UserMgr["用户管理"]
+      Root --> AdminMgr["后台管理"]
+      Root --> ApiTest["接口测试"]
+      Root --> Browse["内容浏览"]
+      Root --> Track["我的足迹"]
+      Root --> Create["创作中心"]
+      Root --> Audit["审核管理"]
+      Root --> LogMgr["日志管理"]
+      Root --> Analysis["分析工具"]
+      Root --> Other["其他"]
+      Nav --> Home["首页"]
+      Nav --> About["关于"]
+      Home --> SysMod["系统模块"]
+      Home --> SysTech["系统技术栈"]
+      About --> SysIntro["系统介绍"]
+      About --> TechArch["技术架构"]
+      About --> SysFeature["系统特色"]
+      About --> DevHistory["研发历程"]
+      About --> SysValue["系统价值"]
+      UserMgr --> UserShow["用户展示"]
+      UserMgr --> UserOp["用户操作"]
+      UserMgr --> PwdReset["密码重置"]
+      UserMgr --> ForceOffline["强制下线"]
+      AdminMgr --> ArticleMgr["文章管理"]
+      AdminMgr --> CategoryMgr["分类管理"]
+      AdminMgr --> CommentMgr["评论管理"]
+      ArticleMgr --> ArtShow["文章展示"]
+      ArticleMgr --> ArtDetail["文章详情查看"]
+      ArticleMgr --> ArtOp["文章操作"]
+      ArtDetail --> ArtContent["文章内容详情"]
+      ArtDetail --> ArtDownload["文章下载"]
+      ArtDetail --> LikeCollect["点赞收藏"]
+      ArtDetail --> AuthorFollow["作者关注"]
+      ArtDetail --> AIComment["AI 评论"]
+      ArtDetail --> UserComment["用户评论"]
+      CategoryMgr --> CatShow["分类展示"]
+      CategoryMgr --> CatOp["分类操作"]
+      CategoryMgr --> CatRefMgr["分类权威文章管理"]
+      CommentMgr --> UserCmt["用户评论"]
+      CommentMgr --> AICmt["AI 评论"]
+      UserCmt --> UserCmtShow["用户评论展示"]
+      UserCmt --> UserCmtOp["用户评论操作"]
+      AICmt --> AICmtShow["AI 评论展示"]
+      ApiTest --> ApiDoc["API 文档"]
+      ApiDoc --> SpringDoc["Spring Swagger 文档"]
+      ApiDoc --> GoZeroDoc["GoZero Swagger 文档"]
+      ApiDoc --> NestDoc["NestJS Swagger 文档"]
+      ApiDoc --> FastAPIDoc["FastAPI Swagger 文档"]
+      Browse --> ArticleBrowse["文章浏览"]
+      ArticleBrowse --> ArticleShow["文章展示"]
+      ArticleBrowse --> ArticleSearch["文章搜索筛选"]
+      ArticleBrowse --> ArticleSearchDetail["文章搜索详情"]
+      Track --> MyLikes["我的点赞"]
+      Track --> MyCollects["我的收藏"]
+      Track --> MyComments["我的评论"]
+      Track --> MyFollows["我的关注"]
+      MyLikes --> LikeList["点赞文章列表"]
+      MyLikes --> CancelLike["取消点赞"]
+      MyCollects --> CollectList["收藏文章列表"]
+      MyCollects --> CancelCollect["取消收藏"]
+      MyComments --> CommentList["评论列表"]
+      MyComments --> CommentEdit["评论修改删除"]
+      MyFollows --> FollowList["关注列表"]
+      MyFollows --> CancelFollow["取消关注"]
+      MyFollows --> FollowArticle["关注文章查看"]
+      Create --> MyArticles["我的文章"]
+      Create --> MyFans["我的粉丝"]
+      MyArticles --> MyArticleList["我的文章列表"]
+      MyArticles --> ArticleEdit["文章修改删除"]
+      MyArticles --> CreateArticle["创作文章"]
+      MyFans --> FansList["粉丝列表"]
+      MyFans --> FansDetail["粉丝详情查看"]
+      Audit --> ArticleAudit["文章审核"]
+      ArticleAudit --> PendingList["待审核的文章列表"]
+      ArticleAudit --> AuditPublish["审核发布文章"]
+      LogMgr --> ArticleLog["文章日志"]
+      LogMgr --> ApiLog["API 日志"]
+      ArticleLog --> ArtLogSearch["文章日志筛选查看"]
+      ArticleLog --> ArtLogDetail["文章日志详情查看"]
+      ArticleLog --> ArtLogDelete["文章日志删除"]
+      ApiLog --> ApiLogSearch["API 日志筛选查看"]
+      ApiLog --> ApiLogDetail["API 日志详情查看"]
+      ApiLog --> ApiLogDelete["API 日志删除"]
+      Analysis --> ArticleStats["文章统计"]
+      Analysis --> PersonalData["个人数据"]
+      ArticleStats --> ArtBaseData["文章基础数据"]
+      ArticleStats --> ArtReadRank["文章阅读排行"]
+      ArticleStats --> SearchWordCloud["搜索词云图"]
+      ArticleStats --> CategoryDist["分类文章分布"]
+      ArticleStats --> MonthlyTrend["月度发布文章趋势"]
+      PersonalData --> NewFans["新增粉丝"]
+      PersonalData --> ViewDist["浏览分布"]
+      PersonalData --> FollowStats["关注统计"]
+      PersonalData --> CommentTrend["评论趋势"]
+      PersonalData --> LikeTrend["点赞趋势"]
+      PersonalData --> CollectTrend["收藏趋势"]
+      Other --> UserChat["用户聊天"]
+      Other --> AIAssistant["AI 助手"]
+      Other --> Profile["个人简介"]
+      Other --> ApiAnalysis["API 分析"]
+      UserChat --> UserList["用户列表"]
+      UserChat --> OnlineCount["在线人数"]
+      UserChat --> ChatWith["用户聊天"]
+      AIAssistant --> AIChat["AI 聊天"]
+      AIAssistant --> AIHistory["AI 历史记录"]
+      AIAssistant --> ModelSelect["模型选择"]
+      AIAssistant --> AIThinkChat["AI 思考聊天"]
+      Profile --> PersonalInfo["个人信息"]
+      Profile --> UserAvatar["用户头像"]
+      Profile --> InfoEdit["信息修改"]
+      ApiAnalysis --> ApiAvgTime["API 平均耗时"]
+      ApiAnalysis --> ApiCallCount["API 调用次数"]
+  ```
+
+- 管理员用例图
+
+  ```mermaid
+  flowchart LR
+      Admin(["管理员"])
+      PwdLogin(["用户名密码"])
+      EmailLogin(["邮箱验证码"])
+      LoginUseCase(["登录"])
+      Admin --> PwdLogin
+      Admin --> EmailLogin
+      PwdLogin --> LoginUseCase
+      EmailLogin --> LoginUseCase
+      UC1(["用户管理"])
+      UC2(["文章管理"])
+      UC3(["分类管理"])
+      UC4(["评论管理"])
+      UC5(["API 文档"])
+      UC6(["我的点赞"])
+      UC7(["我的收藏"])
+      UC8(["我的评论"])
+      UC9(["我的关注"])
+      UC10(["我的文章"])
+      UC11(["我的粉丝"])
+      UC12(["文章审核"])
+      UC13(["文章日志"])
+      UC14(["API 日志"])
+      UC15(["文章统计"])
+      UC16(["个人数据"])
+      UC17(["API 分析"])
+      LoginUseCase --> UC1
+      LoginUseCase --> UC2
+      LoginUseCase --> UC3
+      LoginUseCase --> UC4
+      LoginUseCase --> UC5
+      LoginUseCase --> UC6
+      LoginUseCase --> UC7
+      LoginUseCase --> UC8
+      LoginUseCase --> UC9
+      LoginUseCase --> UC10
+      LoginUseCase --> UC11
+      LoginUseCase --> UC12
+      LoginUseCase --> UC13
+      LoginUseCase --> UC14
+      LoginUseCase --> UC15
+      LoginUseCase --> UC16
+      LoginUseCase --> UC17
+  ```
+
+- 用户用例图
+
+  ```mermaid
+  flowchart LR
+      User(["用户"])
+      Register(["注册"])
+      PwdLogin(["用户名密码"])
+      EmailLogin(["邮箱验证码"])
+      LoginUseCase(["登录"])
+      User --> Register
+      User --> PwdLogin
+      User --> EmailLogin
+      Register --> PwdLogin
+      PwdLogin --> LoginUseCase
+      EmailLogin --> LoginUseCase
+      UC1(["文章浏览"])
+      UC2(["我的点赞"])
+      UC3(["我的收藏"])
+      UC4(["我的评论"])
+      UC5(["我的关注"])
+      UC6(["我的文章"])
+      UC7(["我的粉丝"])
+      UC8(["文章统计"])
+      UC9(["个人数据"])
+      LoginUseCase --> UC1
+      LoginUseCase --> UC2
+      LoginUseCase --> UC3
+      LoginUseCase --> UC4
+      LoginUseCase --> UC5
+      LoginUseCase --> UC6
+      LoginUseCase --> UC7
+      LoginUseCase --> UC8
+      LoginUseCase --> UC9
   ```
 
 ## 技术栈
