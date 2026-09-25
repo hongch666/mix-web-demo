@@ -92,6 +92,7 @@ telemetry:
   traces_endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://127.0.0.1:4318/v1/traces}
   sampler: ${OTEL_TRACES_SAMPLER:always_on}
   sampler_arg: ${OTEL_TRACES_SAMPLER_ARG:1.0}
+  metrics_port: ${METRICS_PORT:9104}
 
 internal_token:
   secret: ${INTERNAL_TOKEN_SECRET:}
