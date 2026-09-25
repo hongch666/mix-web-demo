@@ -382,6 +382,28 @@ class BaseAiService:
             return Messages.REQUEST_TIMEOUT_ERROR
         return Messages.LLM_SERVICE_ERROR(self.service_name, error_message)
 
+    def _build_llm_client_options(self, service_cfg: dict[str, Any]) -> dict[str, Any]:
+        """构建模型客户端的模型级扩展参数
+
+        推理强度配置与模型键同前缀，如 gpt_model_name 对应 gpt_reasoning_effort
+        推理模型在 /v1/chat/completions 下绑定 function tools 时必须为 none
+        否则模型会返回 reasoning_effort 相关的 400 错误
+        未配置时不下发该参数，交由模型默认行为决定
+
+        Args:
+            service_cfg: 模型服务配置
+
+        Returns:
+            dict[str, Any]: 传入 ChatOpenAI 的扩展参数
+        """
+        model_key_prefix = self.model_config_key.removesuffix("_model_name")
+        reasoning_effort = str(
+            service_cfg.get(f"{model_key_prefix}_reasoning_effort") or ""
+        ).strip()
+        if not reasoning_effort:
+            return {}
+        return {"reasoning_effort": reasoning_effort}
+
     def _initialize_agent_stack(self, max_iterations: int = 5) -> None:
         """初始化工具、意图路由器和 Agent"""
         try:
@@ -437,6 +459,7 @@ class BaseAiService:
                     base_url=self._base_url,
                     temperature=self.temperature,
                     timeout=self._timeout,
+                    **self._build_llm_client_options(service_cfg),
                 )
                 self._initialize_agent_stack(max_iterations=agent_max_iterations)
                 Logger.info(self._build_initialization_success_message())

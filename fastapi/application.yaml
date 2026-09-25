@@ -112,6 +112,7 @@ agent:
     base_url: ${CLOSEAI_BASE_URL:https://api.openai-proxy.org/v1} # CloseAI 兼容接口地址
     api_key: ${CLOSEAI_API_KEY:} # CloseAI API Key
     gpt_model_name: ${CLOSEAI_GPT_MODEL:gpt-5-nano} # 输入 0.05 / 输出 0.4
+    gpt_reasoning_effort: none
     gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
     glm_model_name: ${CLOSEAI_GLM_MODEL:glm-5.3-flash} # GLM模型名称
     timeout: 30 # 请求超时时间（秒）
