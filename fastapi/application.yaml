@@ -116,7 +116,7 @@ agent:
     gemini_model_name: ${CLOSEAI_GEMINI_MODEL:gemini-2.5-flash-lite} # 输入 0.1 / 输出 0.4
     glm_model_name: ${CLOSEAI_GLM_MODEL:glm-5.3-flash} # GLM模型名称
     timeout: 30 # 请求超时时间（秒）
-    agent_max_iterations: 5 # Agent 最大迭代轮数
+    agent_max_iterations: 20 # Agent 最大迭代轮数
   embedding:
     api_key: ${EMBEDDING_API_KEY:} # 嵌入模型 API Key
     embedding_model: ${EMBEDDING_MODEL:text-embedding-v3} # 嵌入模型名称
