@@ -3,6 +3,10 @@ Host: ${SERVER_IP:127.0.0.1}
 Port: ${SERVER_PORT:8082}
 Timeout: ${SERVER_TIMEOUT:0}
 Mode: ${SERVER_MODE:dev}
+Prometheus:
+  Host: ${PROMETHEUS_HOST:0.0.0.0}
+  Port: ${PROMETHEUS_PORT:9102}
+  Path: ${PROMETHEUS_PATH:/metrics}
 Prefix: ${SERVER_PREFIX:/}
 
 Telemetry:
