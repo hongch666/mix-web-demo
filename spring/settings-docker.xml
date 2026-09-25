@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+    <mirror>
+      <id>aliyun-public-http</id>
+      <name>Aliyun Maven Public Mirror</name>
+      <url>http://maven.aliyun.com/repository/public</url>
+      <mirrorOf>*</mirrorOf>
+    </mirror>
+  </mirrors>
+  <proxies>
+    <proxy>
+      <id>docker-proxy</id>
+      <active>__MAVEN_PROXY_ACTIVE__</active>
+      <protocol>http</protocol>
+      <host>__MAVEN_PROXY_HOST__</host>
+      <port>__MAVEN_PROXY_PORT__</port>
+    </proxy>
+  </proxies>
+</settings>

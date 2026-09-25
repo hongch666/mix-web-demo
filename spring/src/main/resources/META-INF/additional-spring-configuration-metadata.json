@@ -44,6 +44,36 @@
       "name": "service-client.timeout",
       "type": "java.lang.String",
       "description": "A description for 'service-client.timeout'"
+    },
+    {
+      "name": "management.server.port",
+      "type": "java.lang.Integer",
+      "description": "Actuator 管理端口，与业务端口分离"
+    },
+    {
+      "name": "management.endpoint.prometheus.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用 Prometheus 指标端点"
+    },
+    {
+      "name": "management.endpoint.health.show-details",
+      "type": "java.lang.String",
+      "description": "健康检查端点详情显示级别"
+    },
+    {
+      "name": "management.endpoints.web.exposure.include",
+      "type": "java.lang.String",
+      "description": "通过 Web 暴露的 Actuator 端点"
+    },
+    {
+      "name": "management.prometheus.metrics.export.enabled",
+      "type": "java.lang.Boolean",
+      "description": "是否启用 Prometheus 指标导出"
+    },
+    {
+      "name": "management.metrics.tags.application",
+      "type": "java.lang.String",
+      "description": "应用指标统一标签"
     }
   ]
 }

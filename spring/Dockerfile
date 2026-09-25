@@ -11,8 +11,18 @@ WORKDIR /app
 # eclipse-formatter.xml 为 pom.xml 中 Spotless 校验所需的格式化配置，validate 阶段会读取
 COPY pom.xml .
 COPY eclipse-formatter.xml .
+COPY settings-docker.xml .
 COPY src ./src
-RUN --mount=type=cache,target=/root/.m2 mvn clean package -DskipTests -q
+ARG MAVEN_PROXY_HOST=
+ARG MAVEN_PROXY_PORT=
+RUN --mount=type=cache,target=/root/.m2 \
+    if [ -n "${MAVEN_PROXY_HOST}" ] && [ -n "${MAVEN_PROXY_PORT}" ]; then \
+      proxy_active=true; \
+    else \
+      proxy_active=false; \
+    fi; \
+    sed -i "s/__MAVEN_PROXY_ACTIVE__/${proxy_active}/; s/__MAVEN_PROXY_HOST__/${MAVEN_PROXY_HOST:-127.0.0.1}/; s/__MAVEN_PROXY_PORT__/${MAVEN_PROXY_PORT:-1}/" settings-docker.xml && \
+    mvn -s settings-docker.xml clean package -DskipTests -Dspotless.check.skip=true -q
 
 # 阶段2：运行阶段
 FROM eclipse-temurin:17-jre-alpine

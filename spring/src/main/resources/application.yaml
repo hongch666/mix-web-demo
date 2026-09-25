@@ -2,6 +2,26 @@ server:
   address: ${SERVER_ADDRESS:0.0.0.0}
   mode: ${SERVER_MODE:dev}
   port: ${SERVER_PORT:8081}
+
+management:
+  server:
+    port: ${METRICS_PORT:9101}
+  endpoint:
+    prometheus:
+      enabled: ${OTEL_ENABLED:false}
+    health:
+      show-details: never
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health
+  metrics:
+    tags:
+      application: spring
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 spring:
   application:
     name: spring
