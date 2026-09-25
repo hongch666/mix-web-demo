@@ -1,5 +1,6 @@
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   AlwaysOffSampler,
@@ -17,6 +18,8 @@ interface TelemetryConfig {
   tracesEndpoint: string;
   sampler: string;
   samplerArg: string;
+  metricsPort: number;
+  metricsEndpoint: string;
 }
 
 const telemetryConfig: TelemetryConfig = config.telemetry as TelemetryConfig;
@@ -54,6 +57,10 @@ const telemetrySdk: NodeSDK | undefined = telemetryConfig.enabled
   ? new NodeSDK({
       serviceName: telemetryConfig.serviceName,
       sampler: createSampler(telemetryConfig),
+      metricReader: new PrometheusExporter({
+        port: Number(telemetryConfig.metricsPort),
+        endpoint: telemetryConfig.metricsEndpoint,
+      }),
       traceExporter: new OTLPTraceExporter({
         url: telemetryConfig.tracesEndpoint,
       }),
