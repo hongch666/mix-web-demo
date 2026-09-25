@@ -132,7 +132,18 @@ build_image() {
     # 不接管道（如 | tail）：BuildKit 的构建进度需要实时输出，接了管道会被缓冲到构建结束才一次性打印，构建期间看起来像卡死
     # --progress=plain 会输出每一步的完整日志（apt/pip 等），便于排查构建问题
     local build_status=0
-    docker build --progress=plain -t "mix-${service}:latest" . || build_status=$?
+    local build_args=()
+    local maven_proxy="${HTTP_PROXY:-${http_proxy:-}}"
+    if [ "$service" = "spring" ] && [ -n "$maven_proxy" ]; then
+        local proxy_address="${maven_proxy#*://}"
+        local proxy_host="${proxy_address%%:*}"
+        local proxy_port="${proxy_address##*:}"
+        if [ -n "$proxy_host" ] && [ -n "$proxy_port" ]; then
+            build_args+=(--build-arg "MAVEN_PROXY_HOST=$proxy_host")
+            build_args+=(--build-arg "MAVEN_PROXY_PORT=$proxy_port")
+        fi
+    fi
+    docker build --progress=plain "${build_args[@]}" -t "mix-${service}:latest" . || build_status=$?
 
     if [ $build_status -eq 0 ]; then
         print_success "${service} 镜像构建完成"

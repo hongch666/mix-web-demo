@@ -1,0 +1,26 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: spring
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [host.docker.internal:9101]
+        labels:
+          service: spring
+  - job_name: gozero
+    static_configs:
+      - targets: [host.docker.internal:9102]
+        labels:
+          service: gozero
+  - job_name: nestjs
+    static_configs:
+      - targets: [host.docker.internal:9103]
+        labels:
+          service: nestjs
+  - job_name: fastapi
+    static_configs:
+      - targets: [host.docker.internal:9104]
+        labels:
+          service: fastapi

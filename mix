@@ -75,7 +75,7 @@ show_help() {
     echo "    help                   - 显示 docker-compose 帮助"
     echo ""
     echo "Observability Commands (可观测性组件):"
-    echo "  loki [command]           - Manage Loki/Promtail/Grafana/Tempo/Collector stack"
+    echo "  loki [command]           - Manage Loki/Promtail/Prometheus/Grafana/Tempo/Collector stack"
     echo "    start [--dist]         - 独立启动日志与链路观测组件 (默认采集 logs/)"
     echo "    stop                   - 停止容器，保留 Loki、Tempo 与 Grafana 数据卷"
     echo "    restart [--dist]       - 重启容器，或切换到 dist/logs 日志来源"

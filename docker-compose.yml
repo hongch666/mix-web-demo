@@ -6,8 +6,8 @@
 #   - Go/Node/Python 服务通过容器名访问 nacos/mysql/redis 等中间件同理
 # 注意 NO_PROXY 与 no_proxy 是两个独立变量，必须同时设置才能完全覆盖 Docker 注入值
 x-no-proxy: &no-proxy-env
-  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
-  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  NO_PROXY: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,prometheus,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+  no_proxy: "localhost,127.0.0.1,::1,nacos,mysql,redis,mq,es,mongodb,pgvector-db,clickhouse,loki,promtail,grafana,prometheus,otel-collector,tempo,spring,gozero,nestjs,fastapi,gateway,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 
 services:
   tempo:
@@ -44,6 +44,24 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: prometheus
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./prometheus-config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - hcsy
+    expose:
+      - "9090"
+    healthcheck:
+      test: ["CMD", "wget", "-Y", "off", "-q", "-O", "-", "http://127.0.0.1:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
 
   loki-data-init:
     image: grafana/loki:3.0.0
@@ -105,6 +123,8 @@ services:
     container_name: grafana
     depends_on:
       loki:
+        condition: service_healthy
+      prometheus:
         condition: service_healthy
     environment:
       <<: *no-proxy-env
@@ -210,6 +230,8 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    expose:
+      - "9101"
     deploy:
       resources:
         limits:
@@ -254,6 +276,8 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    expose:
+      - "9102"
     deploy:
       resources:
         limits:
@@ -300,6 +324,8 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    expose:
+      - "9103"
     deploy:
       resources:
         limits:
@@ -348,6 +374,8 @@ services:
       - ./static/upload:/app/static/upload
     networks:
       - hcsy
+    expose:
+      - "9104"
     deploy:
       resources:
         limits:
@@ -372,3 +400,4 @@ volumes:
   promtail-data:
   grafana-data:
   tempo-data:
+  prometheus-data:

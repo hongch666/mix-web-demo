@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 可观测性组件控制脚本 - 管理 Loki、Promtail、Grafana、Tempo 与 OpenTelemetry Collector
+# 可观测性组件控制脚本 - 管理 Loki、Promtail、Prometheus、Grafana、Tempo 与 OpenTelemetry Collector
 # 用于 ./mix dist start（宿主机进程模式）下独立启动日志观测栈并查看日志
 # 使用方式: ./scripts/loki-control.sh [start|stop|restart|status|logs|delete|help] [--dist]
 #   --dist  采集 dist/logs（dist 模式），缺省采集根目录 logs/（容器与 dev 模式）
@@ -16,7 +16,7 @@ OTEL_ENABLED_MARKER="$OTEL_STATE_DIR/enabled"
 
 # 固定容器名（与 loki-config/docker-compose.yml 的 container_name 保持一致），
 # 用于检测并清理其他编排栈（如根目录 docker-compose.yml）占用的同名容器
-NAMED_CONTAINERS=(loki promtail grafana mix-otel-collector mix-tempo)
+NAMED_CONTAINERS=(loki promtail grafana prometheus mix-otel-collector mix-tempo)
 
 # 颜色输出
 RED='\033[0;31m'
@@ -260,13 +260,13 @@ show_status() {
         log_info "dev/dist OpenTelemetry: 未启用（执行 ./mix loki start 后启用）"
     fi
 
-    log_info "访问地址: Loki http://localhost:3100，OTLP http://localhost:4318，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
+    log_info "访问地址: Loki http://localhost:3100，Prometheus 容器端口 9090，OTLP http://localhost:4318，Grafana http://localhost:3000（匿名 Admin，数据源已预置）"
     echo ""
 }
 
 # 启动观测栈
 start_all() {
-    log_info "启动观测组件 (Loki/Promtail/Grafana/Tempo/OpenTelemetry Collector)..."
+    log_info "启动观测组件 (Loki/Promtail/Prometheus/Grafana/Tempo/OpenTelemetry Collector)..."
     log_info "日志来源: $LOG_SOURCE_DESC"
     prepare_dirs
     ensure_shared_network
@@ -332,12 +332,12 @@ show_logs() {
     fi
 
     case $service in
-        loki|promtail|grafana|tempo|otel-collector)
+        loki|promtail|grafana|prometheus|tempo|otel-collector)
             compose logs -f --tail 100 "$service"
             ;;
         *)
             log_error "未知的服务: $service"
-            echo "可用服务: loki, promtail, grafana, tempo, otel-collector"
+            echo "可用服务: loki, promtail, grafana, prometheus, tempo, otel-collector"
             return 1
             ;;
     esac
