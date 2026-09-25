@@ -77,10 +77,11 @@
 17. 基于 FastAPI 和 LangSmith 实现 LLM 链路可观测性，对 AI 聊天、RAG 检索、Agent Tools 调用和向量同步任务进行全链路 Trace，支持采样率控制与敏感数据脱敏
 18. 基于 NestJS 和 Spring 实现 **GitHub OAuth 登录/注册**，NestJS 处理 GitHub 授权回调并创建/关联用户，Spring 生成站内登录票据，支持首次 GitHub 登录自动注册，前端通过一次性 ticket 换取 JWT
 19. 基于 OpenTelemetry 实现网关与四个服务的全链路追踪：APISIX、Spring、GoZero、NestJS、FastAPI 统一上报 OTLP，经 OpenTelemetry Collector 脱敏后写入 Grafana Tempo，日志由 Promtail 提取 `trace_id` 写入 Loki，Grafana 中可在日志与 Trace 之间互跳
+20. 基于 Prometheus 采集四个业务的运行指标：Spring 输出 `/actuator/prometheus`，GoZero、NestJS、FastAPI 输出 `/metrics`，由 Prometheus 定期抓取后统一在 Grafana 中查询，并支持从指标 Exemplar 跳转到 Tempo
 
 ## 服务说明
 
-> 四个业务服务与网关均已接入 OpenTelemetry 链路追踪，组件构成、接入方式与开关见[可观测性组件](#可观测性组件)章节。
+> 四个业务服务与网关均已接入 OpenTelemetry 链路追踪，四个业务服务同时暴露 Prometheus 指标端点；组件构成、接入方式与开关见[可观测性组件](#可观测性组件)章节。
 
 ### Spring 服务（端口 8081）
 
@@ -158,7 +159,7 @@ NestJS 模块按职责划分为两层：
 
 ## 可观测性组件
 
-系统通过 OpenTelemetry 打通网关与四个服务的链路，日志与 Trace 在 Grafana 中统一检索。
+系统通过 OpenTelemetry 打通网关与四个服务的链路，日志与 Trace 在 Grafana 中统一检索；四个服务的运行指标由 Prometheus 抓取，同样汇总到 Grafana 查询。
 
 ### 组件一览
 
@@ -168,7 +169,8 @@ NestJS 模块按职责划分为两层：
 | Grafana Tempo           | `grafana/tempo:2.6.0`                          | Trace 存储与查询，HTTP 接口 3200（仅容器网络内可达）                         |
 | Grafana Loki            | `grafana/loki:3.0.0`                           | 日志聚合存储，HTTP 接口 3100                                                 |
 | Promtail                | `grafana/promtail:2.9.7`                       | 采集 `logs/`（或 `dist/logs/`）日志，解析行首时间戳与 `trace_id` 后写入 Loki |
-| Grafana                 | `grafana/grafana:11.4.0`                       | 统一查询入口，预置 Loki/Tempo 数据源，支持日志与 Trace 互跳                  |
+| Grafana                 | `grafana/grafana:11.4.0`                       | 统一查询入口，预置 Loki/Tempo/Prometheus 数据源，支持日志与 Trace 互跳       |
+| Prometheus              | `prom/prometheus:v2.55.1`                      | 抓取四个服务的指标端点，HTTP 接口 9090（仅容器网络内可达）                   |
 | APISIX OpenTelemetry    | APISIX 3.11 内置插件                           | 网关侧生成 Trace，并把 `trace_id` 写入 access.log                            |
 
 配置文件位置：
@@ -176,6 +178,7 @@ NestJS 模块按职责划分为两层：
 - `otel-config/otel-collector.yaml`：Receiver、脱敏动作、导出到 Tempo
 - `otel-config/tempo.yaml`：Tempo 存储与保留策略（block 保留 168 小时）
 - `loki-config/`：Loki、Promtail（`promtail.yaml` / `promtail-dist.yaml`）与 Grafana 数据源
+- `prometheus-config/`：指标抓取配置，容器编排用 `prometheus.yml`，独立观测栈用 `prometheus-host.yml`
 - `gateway/apisix/config.yaml`：APISIX 开启 `opentelemetry` 插件并调整 access log 格式
 
 ### 链路与日志关联
@@ -195,14 +198,35 @@ NestJS 模块按职责划分为两层：
 | FastAPI | OpenTelemetry SDK + FastAPI/HTTPX/Redis/SQLAlchemy 埋点，由 `app/core/telemetry` 统一初始化       |
 | 网关    | APISIX `opentelemetry` 插件（`global_rules` 中声明）与 `plugin_attr.opentelemetry` 指向 Collector |
 
+### 指标采集
+
+Prometheus 通过静态配置抓取四个服务的指标端点，抓取间隔 15 秒，按 `service` 标签区分来源：
+
+| 服务    | 指标端点               | 端口 | 说明                                                         |
+| ------- | ---------------------- | ---- | ------------------------------------------------------------ |
+| Spring  | `/actuator/prometheus` | 9101 | Micrometer Prometheus 注册表，随 `OTEL_ENABLED` 开关启用     |
+| GoZero  | `/metrics`             | 9102 | go-zero 内置 Prometheus 服务                                 |
+| NestJS  | `/metrics`             | 9103 | `@opentelemetry/exporter-prometheus`，随 `OTEL_ENABLED` 启用 |
+| FastAPI | `/metrics`             | 9104 | `prometheus_client`，随 `OTEL_ENABLED` 启用                  |
+
+指标端口由各服务的 `METRICS_PORT` 控制（GoZero 为 `PROMETHEUS_PORT`），Compose 中只 `expose` 给容器网络，不映射宿主机端口。
+
+两份抓取配置对应两种运行方式，目标地址不同：
+
+- `prometheus-config/prometheus.yml`：根 `docker-compose.yml` 使用，目标为容器服务名（`spring:9101` 等）
+- `prometheus-config/prometheus-host.yml`：`loki-config/docker-compose.yml` 使用，配合 `host.docker.internal` 抓取宿主机上 `./mix dev` 启动的服务
+
+Grafana 的 Prometheus 数据源预置了 `exemplarTraceIdDestinations`，配置了 Exemplar 的指标可直接跳转到对应 Trace。
+
 ### 开关与访问地址
 
 - 观测栈与 OTel 由 `./mix loki start` / `./mix loki stop` 同步启停：脚本在 `.otel/` 下维护 `enabled` 标记，dev/dist 模式启动服务时由 `scripts/otel-env.sh`（Windows 为 `scripts/otel-env.ps1`）读取该标记决定是否注入 OTel 配置
 - `./mix compose up` 的容器编排固定启用 OTel，无需额外开关
-- Grafana：`http://localhost:3000`（匿名 Admin，Loki 与 Tempo 数据源已预置）
+- Grafana：`http://localhost:3000`（匿名 Admin，Loki、Tempo 与 Prometheus 数据源已预置）
 - Loki：`http://localhost:3100`
 - OTLP 接收端（独立观测栈映射到宿主机）：`http://localhost:4318`，gRPC 为 4317，仅绑定 `127.0.0.1`
 - Tempo 查询接口 3200 只在容器网络内暴露，统一通过 Grafana 查看
+- Prometheus 9090 只在容器网络内暴露，统一通过 Grafana 的 Prometheus 数据源查询
 
 ## 登录相关
 
@@ -601,7 +625,8 @@ Body 参数：
 - Grafana Tempo：分布式链路（Trace）存储与查询
 - Grafana Loki：日志聚合存储
 - Promtail：日志采集与 `trace_id` 提取
-- Grafana：日志与链路的统一查询面板，支持 Loki 与 Tempo 互跳
+- Prometheus：抓取四个服务的运行指标
+- Grafana：日志、链路与指标的统一查询面板，支持 Loki 与 Tempo 互跳
 
 ## 第三方服务
 
@@ -1193,7 +1218,7 @@ pytest tests/core/auth/test_internal_token.py
 # 删除所有容器
 ./mix docker delete
 
-# ===== 可观测性组件（Loki / Promtail / Grafana / Tempo / Collector）=====
+# ===== 可观测性组件（Loki / Promtail / Prometheus / Grafana / Tempo / Collector）=====
 # 独立启动观测栈并启用 OTel（默认采集根目录 logs/）
 ./mix loki start
 
@@ -1203,7 +1228,7 @@ pytest tests/core/auth/test_internal_token.py
 # 查看组件状态、采集配置与 OTel 开关
 ./mix loki status
 
-# 查看组件日志（loki | promtail | grafana | tempo | otel-collector）
+# 查看组件日志（loki | promtail | prometheus | grafana | tempo | otel-collector）
 ./mix loki logs grafana
 ./mix loki logs tempo
 
@@ -1364,31 +1389,31 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 
 ### 脚本说明
 
-| 脚本                        | 位置            | 功能                                                                                | 适用系统    |
-| --------------------------- | --------------- | ----------------------------------------------------------------------------------- | ----------- |
-| `mix`                       | 项目根目录      | 便捷启动器，用于快速调用 scripts/ 下的脚本                                          | Linux/macOS |
-| `run_multi.sh`              | scripts/        | 使用 tmux 多窗格布局启动所有服务（推荐）                                            | Linux/macOS |
-| `run.sh`                    | scripts/        | 使用 tmux 顺序窗口模式启动所有服务                                                  | Linux/macOS |
-| `stop.sh`                   | scripts/        | 停止所有 tmux 服务                                                                  | Linux/macOS |
-| `build.sh`                  | scripts/        | 编译所有服务到 dist/ 目录                                                           | Linux/macOS |
-| `dist-control.sh`           | scripts/        | 管理打包后的分布式服务（支持服务指定）                                              | Linux/macOS |
-| `docker-services.sh`        | scripts/        | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）    | Linux/macOS |
-| `docker-compose-up.sh`      | scripts/        | 使用 Docker Compose 启动应用服务                                                    | Linux/macOS |
-| `docker-compose-down.sh`    | scripts/        | 使用 Docker Compose 停止应用服务                                                    | Linux/macOS |
-| `build_and_run_services.sh` | scripts/        | 构建并运行服务容器                                                                  | Linux/macOS |
-| `docker-push-images.sh`     | scripts/        | 将已构建的 Docker 镜像推送到远程仓库                                                | Linux/macOS |
-| `loki-control.sh`           | scripts/        | 独立管理 Loki/Promtail/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关 | Linux/macOS |
-| `otel-env.sh`               | scripts/        | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）            | Linux/macOS |
-| `otel-env.ps1`              | scripts/        | otel-env.sh 的 PowerShell 版本                                                      | Windows     |
-| `render-config.sh`          | gateway/apisix/ | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                  | 容器内      |
-| `gateway-cleanup.sh`        | scripts/        | 清理其他编排栈占用的网关容器，避免启动冲突                                          | Linux/macOS |
-| `setup.sh`                  | scripts/        | 环境初始化和依赖安装                                                                | Linux/macOS |
-| `swag-init.sh`              | scripts/        | 生成 GoZero Swagger 文档                                                            | Linux/macOS |
-| `goctl-api-init.sh`         | scripts/        | 生成 GoZero API 代码，参数透传给`genApi.sh`                                         | Linux/macOS |
-| `goctl-orm-init.sh`         | scripts/        | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                         | Linux/macOS |
-| `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）               | Linux/macOS |
-| `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                        | Linux/macOS |
-| `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                       | Windows     |
+| 脚本                        | 位置            | 功能                                                                                           | 适用系统    |
+| --------------------------- | --------------- | ---------------------------------------------------------------------------------------------- | ----------- |
+| `mix`                       | 项目根目录      | 便捷启动器，用于快速调用 scripts/ 下的脚本                                                     | Linux/macOS |
+| `run_multi.sh`              | scripts/        | 使用 tmux 多窗格布局启动所有服务（推荐）                                                       | Linux/macOS |
+| `run.sh`                    | scripts/        | 使用 tmux 顺序窗口模式启动所有服务                                                             | Linux/macOS |
+| `stop.sh`                   | scripts/        | 停止所有 tmux 服务                                                                             | Linux/macOS |
+| `build.sh`                  | scripts/        | 编译所有服务到 dist/ 目录                                                                      | Linux/macOS |
+| `dist-control.sh`           | scripts/        | 管理打包后的分布式服务（支持服务指定）                                                         | Linux/macOS |
+| `docker-services.sh`        | scripts/        | 创建、启动、停止和清理基础中间件容器（读取根目录 `.env`，自动安装 ES IK 分词器）               | Linux/macOS |
+| `docker-compose-up.sh`      | scripts/        | 使用 Docker Compose 启动应用服务                                                               | Linux/macOS |
+| `docker-compose-down.sh`    | scripts/        | 使用 Docker Compose 停止应用服务                                                               | Linux/macOS |
+| `build_and_run_services.sh` | scripts/        | 构建并运行服务容器                                                                             | Linux/macOS |
+| `docker-push-images.sh`     | scripts/        | 将已构建的 Docker 镜像推送到远程仓库                                                           | Linux/macOS |
+| `loki-control.sh`           | scripts/        | 独立管理 Loki/Promtail/Prometheus/Grafana/Tempo/Collector 观测栈，并同步 dev/dist 的 OTel 开关 | Linux/macOS |
+| `otel-env.sh`               | scripts/        | 为 dev/dist 启动的服务注入 OTel 环境变量（Spring 侧自动下载 Java Agent）                       | Linux/macOS |
+| `otel-env.ps1`              | scripts/        | otel-env.sh 的 PowerShell 版本                                                                 | Windows     |
+| `render-config.sh`          | gateway/apisix/ | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                             | 容器内      |
+| `gateway-cleanup.sh`        | scripts/        | 清理其他编排栈占用的网关容器，避免启动冲突                                                     | Linux/macOS |
+| `setup.sh`                  | scripts/        | 环境初始化和依赖安装                                                                           | Linux/macOS |
+| `swag-init.sh`              | scripts/        | 生成 GoZero Swagger 文档                                                                       | Linux/macOS |
+| `goctl-api-init.sh`         | scripts/        | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS |
+| `goctl-orm-init.sh`         | scripts/        | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS |
+| `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS |
+| `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS |
+| `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                                  | Windows     |
 
 ### 服务名称
 
@@ -1458,7 +1483,7 @@ dist-control.sh 和 mix 支持以下服务名称：
 
 - **mix**（项目根目录）
   - 便捷启动器，用于快速调用 `scripts/` 下的脚本
-  - `loki` 子命令用于启停可观测性组件（Loki/Promtail/Grafana/Tempo/Collector），并同步 dev/dist 的 OTel 开关
+  - `loki` 子命令用于启停可观测性组件（Loki/Promtail/Prometheus/Grafana/Tempo/Collector），并同步 dev/dist 的 OTel 开关
   - 支持开发环境和生产环境命令
 
 - **scripts/build.sh**
@@ -1562,6 +1587,7 @@ docker restart mix-spring-container
 - tempo（Trace 存储）
 - loki
 - promtail
+- prometheus（抓取四个服务的指标端点）
 - grafana
 
 第三方依赖（MySQL/PostgreSQL/Redis/MongoDB/ES/Nacos/RabbitMQ/ClickHouse/Neo4j）请继续使用现有启动脚本（如 `./scripts/docker-services.sh`），并确保它们与同一 Docker 网络 `hcsy` 运行。
@@ -1590,9 +1616,10 @@ Spring、GoZero、NestJS 和 FastAPI 的应用镜像由 `mix` 脚本生成：
 - `logs/<service> -> /app/logs/<service>`
 - `otel-config/otel-collector.yaml -> /etc/otel/config.yaml`
 - `otel-config/tempo.yaml -> /etc/tempo/tempo.yaml`
+- `prometheus-config/prometheus.yml -> /etc/prometheus/prometheus.yml`
 - `static/pic`, `static/excel`, `static/upload`
 
-此外，`loki-config/` 提供 Loki、Promtail 与 Grafana（Loki/Tempo 数据源）配置，`otel-config/` 提供 Collector 与 Tempo 配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo。Grafana 数据保存在 Compose 命名卷中。
+此外，`loki-config/` 提供 Loki、Promtail 与 Grafana（Loki/Tempo/Prometheus 数据源）配置，`otel-config/` 提供 Collector 与 Tempo 配置，`prometheus-config/` 提供指标抓取配置；日志由 Promtail 读取并写入 Loki，Span 经 Collector 脱敏后写入 Tempo，指标由 Prometheus 抓取。Loki、Tempo、Prometheus 与 Grafana 的数据均保存在 Compose 命名卷中。
 
 `./scripts/docker-compose-up.sh` 会自动创建运行所需的日志与静态目录；网关日志权限由 Compose 初始化容器处理。
 
@@ -1641,7 +1668,7 @@ docker compose down -v
 
 ### 文件说明
 
-- `docker-compose.yml`：应用、网关和 OTel Collector/Tempo/Loki/Promtail/Grafana 编排；数据库、缓存与消息队列由基础服务脚本管理
+- `docker-compose.yml`：应用、网关和 OTel Collector/Tempo/Loki/Promtail/Prometheus/Grafana 编排；数据库、缓存与消息队列由基础服务脚本管理
 - `scripts/docker-compose-up.sh`：快速启动脚本
 - `scripts/docker-compose-down.sh`：快速停止脚本
 - `scripts/docker-services.sh`：创建和管理基础中间件容器，账号密码读取根目录 `.env`，并在 ES 启动前自动安装 IK 分词器
@@ -1649,7 +1676,7 @@ docker compose down -v
 
 ### 访问服务
 
-Compose 部署只把网关与观测组件映射到宿主机，业务服务不暴露端口：
+Compose 部署只把网关与部分观测组件映射到宿主机，业务服务不暴露端口：
 
 - APISIX Gateway: http://localhost:8080
 - APISIX 健康检查: http://localhost:8080/healthz
@@ -1659,8 +1686,9 @@ Compose 部署只把网关与观测组件映射到宿主机，业务服务不暴
 - NestJS: http://localhost:8083(本地开发模式)
 - FastAPI: http://localhost:8084(本地开发模式)
 - Loki: http://localhost:3100
-- Grafana: http://localhost:3000（已预置 Loki 与 Tempo 数据源，可在日志与链路间互跳）
+- Grafana: http://localhost:3000（已预置 Loki、Tempo 与 Prometheus 数据源，可在日志与链路间互跳）
 - OTLP 接收端（仅容器网络内）: http://otel-collector:4318
+- Prometheus: 容器内 http://prometheus:9090（仅容器网络内，未映射宿主机端口）
 
 Spring（8081）、GoZero（8082）、NestJS（8083）、FastAPI（8084）在 Compose 下只在 `hcsy` 容器网络内可达，容器之间通过服务名互访。下游服务无条件信任网关注入的 `X-User-Id`，收敛端口暴露是防止绕过网关伪造身份的前提，因此不要给业务服务补 `ports` 映射。
 
@@ -1776,6 +1804,11 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 - `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`：Collector 地址，本地开发默认 `http://127.0.0.1:4318`（HTTP 导出为 `/v1/traces`），容器内为 `otel-collector:4318`
 - `OTEL_TRACES_SAMPLER` 与 `OTEL_TRACES_SAMPLER_ARG`（NestJS、FastAPI）、`OTEL_TRACES_SAMPLER_RATIO`（GoZero）、`OTEL_DISABLED`（GoZero）：采样策略与比例
 - `APISIX_OTEL_ENABLED`：网关侧开关，由 `render-config.sh` 转换为 APISIX 的采样器配置
+
+Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关相互独立：
+
+- `METRICS_PORT`：指标端点端口，Spring 默认 9101、NestJS 默认 9103、FastAPI 默认 9104；Spring 的指标端点随 `OTEL_ENABLED` 开关启用
+- `PROMETHEUS_PORT` / `PROMETHEUS_PATH`（GoZero）：go-zero 内置指标服务的端口（默认 9102）与路径（默认 `/metrics`）
 
 > `.env.docker` 不会被脚本自动创建，需要从对应的 `.env.example` 复制后按容器环境填写（容器内主机名与本地不同，如 `mysql`、`redis`、`nacos`、`pgvector-db`）。
 
@@ -2058,12 +2091,12 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 > `gateway` 为 APISIX 配置，不参与代码检查与格式化；对应工具未安装时该服务会自动跳过并提示。
 
-| 服务    | 工具                         | 配置文件                                                                              | 说明                        |
-| ------- | ---------------------------- | ------------------------------------------------------------------------------------- | --------------------------- |
-| Spring  | Spotless + Eclipse formatter | `spring/eclipse-formatter.xml`、`spring/pom.xml`、`spring/build.gradle`                | Java 格式化与校验           |
-| GoZero  | golangci-lint v2             | `gozero/app/.golangci.yml`                                                            | Go 静态检查与格式化         |
-| NestJS  | ESLint + Prettier            | `nestjs/eslint.config.mjs`、`nestjs/.prettierrc`                                      | TypeScript 静态检查与格式化 |
-| FastAPI | Ruff + Pyright               | `fastapi/pyproject.toml`                                                              | Python 检查与格式化         |
+| 服务    | 工具                         | 配置文件                                                                | 说明                        |
+| ------- | ---------------------------- | ----------------------------------------------------------------------- | --------------------------- |
+| Spring  | Spotless + Eclipse formatter | `spring/eclipse-formatter.xml`、`spring/pom.xml`、`spring/build.gradle` | Java 格式化与校验           |
+| GoZero  | golangci-lint v2             | `gozero/app/.golangci.yml`                                              | Go 静态检查与格式化         |
+| NestJS  | ESLint + Prettier            | `nestjs/eslint.config.mjs`、`nestjs/.prettierrc`                        | TypeScript 静态检查与格式化 |
+| FastAPI | Ruff + Pyright               | `fastapi/pyproject.toml`                                                | Python 检查与格式化         |
 
 根目录 `.gitattributes` 统一声明文本文件换行符为 LF，避免不同操作系统下格式化结果不一致。
 
