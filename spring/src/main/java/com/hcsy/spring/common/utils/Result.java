@@ -1,8 +1,8 @@
 package com.hcsy.spring.common.utils;
 
 import com.hcsy.spring.common.constants.HttpCode;
-import io.swagger.v3.oas.annotations.media.Schema;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
