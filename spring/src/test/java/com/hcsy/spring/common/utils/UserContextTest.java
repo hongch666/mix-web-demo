@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import reactor.util.context.Context;
 
 class UserContextTest {
+    // 验证该场景的预期行为
     @Test
     void writeAndReadContextValues() {
         Context context = UserContext.writeContext(Context.empty(), 42L, "alice", "session-1", "token-1",
@@ -20,6 +21,8 @@ class UserContextTest {
         assertEquals("internal-1", UserContext.getInternalToken(context));
     }
 
+    // 验证该场景的预期行为
+
     @Test
     void nullValuesDoNotOverwriteExistingValues() {
         Context original = UserContext.writeContext(Context.empty(), 7L, "bob", "s", "t", "it");
@@ -28,6 +31,8 @@ class UserContextTest {
         assertEquals(7L, UserContext.getUserId(updated));
         assertEquals("bob", UserContext.getUsername(updated));
     }
+
+    // 验证该场景的预期行为
 
     @Test
     void missingValuesReturnNull() {

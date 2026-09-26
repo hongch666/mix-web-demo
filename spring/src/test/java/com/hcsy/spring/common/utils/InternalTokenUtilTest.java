@@ -27,6 +27,8 @@ class InternalTokenUtilTest {
         tokenUtil = createTokenUtil(SECRET);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("生成并解析内部令牌声明")
     void generatesAndExtractsInternalTokenClaims() {
@@ -41,6 +43,8 @@ class InternalTokenUtilTest {
         assertTrue(configuredTokenUtil.getRemainingTime(token) > 0);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("拒绝使用其他密钥签名的内部令牌")
     void rejectsTokenSignedWithAnotherSecret() {
@@ -49,6 +53,8 @@ class InternalTokenUtilTest {
 
         assertThrows(BusinessException.class, () -> verifier.validateInternalToken(token));
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("拒绝格式错误的内部令牌")

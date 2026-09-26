@@ -23,6 +23,8 @@ class JwtUtilTest {
         jwt.initKey();
     }
 
+    // 验证该场景的预期行为
+
     @Test
     void generatesAndExtractsAccessTokenClaims() {
         String token = jwt.generateAccessToken(9L, "alice", "session");
@@ -35,12 +37,16 @@ class JwtUtilTest {
         assertTrue(jwt.getAccessRemainingSeconds(token) > 0);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     void rejectsRefreshTokenAsAccessToken() {
         String token = jwt.generateRefreshToken(9L, "alice", "session");
         assertTrue(jwt.validateRefreshToken(token));
         assertThrows(BusinessException.class, () -> jwt.validateAccessToken(token));
     }
+
+    // 验证该场景的预期行为
 
     @Test
     void rejectsMalformedToken() {

@@ -21,6 +21,8 @@ class SimpleLoggerTest {
     @TempDir
     Path logDirectory;
 
+    // 验证该场景的预期行为
+
     @Test
     void shouldWriteCurrentTraceIdToFile() throws Exception {
         SimpleLogger logger = new SimpleLogger();

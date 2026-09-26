@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DotenvInitializerTest {
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("应该解析.env文件并去除注释与引号")
     void shouldParseEnvFile(@TempDir Path tempDir) throws Exception {

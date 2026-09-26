@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ResultTest {
+    // 验证该场景的预期行为
     @Test
     void successFactoriesPopulateExpectedFields() {
         Result<Void> empty = Result.success();
@@ -19,6 +20,8 @@ class ResultTest {
         assertEquals(HttpCode.OK, value.getCode());
         assertEquals("payload", value.getData());
     }
+
+    // 验证该场景的预期行为
 
     @Test
     void errorFactoriesKeepMessageAndClearData() {

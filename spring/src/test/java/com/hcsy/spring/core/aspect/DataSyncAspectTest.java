@@ -44,6 +44,8 @@ class DataSyncAspectTest {
             .thenReturn(Mono.empty());
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("业务成功时同时触发图谱与数仓同步")
     void triggersBothSyncsOnBusinessSuccess() throws Throwable {
@@ -54,6 +56,8 @@ class DataSyncAspectTest {
         verify(asyncSyncService).syncNeo4jAsync(anyString(), anyString());
         verify(asyncSyncService).syncWarehouseAsync(any(), any());
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("业务失败时不触发图谱与数仓同步")
@@ -66,6 +70,8 @@ class DataSyncAspectTest {
         verify(asyncSyncService, never()).syncWarehouseAsync(any(), any());
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("业务错误码为 404 时同样不触发同步")
     void skipsSyncsOnNotFound() throws Throwable {
@@ -76,6 +82,8 @@ class DataSyncAspectTest {
         verify(asyncSyncService, never()).syncNeo4jAsync(anyString(), anyString());
         verify(asyncSyncService, never()).syncWarehouseAsync(any(), any());
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("主流程异常时不触发同步")

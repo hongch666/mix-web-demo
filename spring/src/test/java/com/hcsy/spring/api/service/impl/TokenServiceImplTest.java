@@ -51,6 +51,8 @@ class TokenServiceImplTest {
         tokenService = new TokenServiceImpl(redisUtil, distributedLock, jwtUtil, logger);
     }
 
+    // 刷新成功：轮换双 Token、删除旧索引并释放刷新锁
+    // 验证该场景的预期行为
     @Test
     @DisplayName("刷新成功时轮换双 Token、删除旧索引并释放锁")
     void rotatesTokensAndReleasesLock() {
@@ -78,6 +80,8 @@ class TokenServiceImplTest {
         verify(distributedLock).unlock(RedisKeys.lockTokenRefresh(OLD_REFRESH_TOKEN), LOCK_VALUE);
     }
 
+    // 复用已被轮换的旧 Refresh Token 时拒绝访问并释放锁
+    // 验证该场景的预期行为
     @Test
     @DisplayName("旧 Refresh Token 已被轮换时拒绝复用并释放锁")
     void rejectsReusedRefreshTokenAndReleasesLock() {
@@ -97,6 +101,8 @@ class TokenServiceImplTest {
         verify(distributedLock).unlock(RedisKeys.lockTokenRefresh(OLD_REFRESH_TOKEN), LOCK_VALUE);
     }
 
+    // 刷新锁被占用时直接拒绝且不读取 Redis 会话
+    // 验证该场景的预期行为
     @Test
     @DisplayName("刷新锁未获取时拒绝请求且不执行会话读取")
     void rejectsRefreshWhenLockIsBusy() {
@@ -111,6 +117,8 @@ class TokenServiceImplTest {
         verify(distributedLock, never()).unlock(anyString(), anyString());
     }
 
+    // 轮换写入失败时仍释放刷新锁并原样抛出异常
+    // 验证该场景的预期行为
     @Test
     @DisplayName("轮换写入失败时仍释放刷新锁并保留原始异常")
     void releasesLockWhenRotationFails() {
@@ -136,6 +144,8 @@ class TokenServiceImplTest {
         verify(distributedLock).unlock(RedisKeys.lockTokenRefresh(OLD_REFRESH_TOKEN), LOCK_VALUE);
     }
 
+    // 注销最后一个会话：删除双 Token 索引并把用户标记为离线
+    // 验证该场景的预期行为
     @Test
     @DisplayName("注销最后一个会话时删除双 Token 索引并标记用户离线")
     void removesTokenIndexesAndMarksUserOfflineForLastSession() {
@@ -156,6 +166,8 @@ class TokenServiceImplTest {
         verify(redisUtil).delete(RedisKeys.userSessions(USER_ID));
     }
 
+    // 注销一个会话后仍有其他会话时保持用户在线状态
+    // 验证该场景的预期行为
     @Test
     @DisplayName("注销一个会话后仍有其他会话时保持用户在线")
     void keepsUserOnlineWhenOtherSessionsRemain() {

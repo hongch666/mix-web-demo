@@ -14,6 +14,8 @@ class PasswordEncryptorTest {
 
     private final PasswordEncryptor passwordEncryptor = new PasswordEncryptor();
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("应该先生成密文再使用同一明文校验通过")
     void shouldEncryptThenMatchPassword() {
@@ -26,6 +28,8 @@ class PasswordEncryptorTest {
         assertTrue(encodedPassword.length() > 0);
         assertTrue(passwordEncryptor.matchPassword(RAW_PASSWORD, encodedPassword));
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("错误明文密码应该校验失败")

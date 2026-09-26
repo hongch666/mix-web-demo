@@ -56,6 +56,8 @@ class PermissionValidationAspectTest {
         aspect = new PermissionValidationAspect(userService, articleService, commentsService, logger);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("缺少用户上下文时拒绝访问")
     void rejectsMissingUserContext() throws Throwable {
@@ -67,6 +69,8 @@ class PermissionValidationAspectTest {
         verify(userService, never()).getById(anyLong());
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("本人访问时无需管理员角色即可放行")
     void allowsSelfAccess() throws Throwable {
@@ -77,6 +81,8 @@ class PermissionValidationAspectTest {
 
         StepVerifier.create(result).expectNextMatches("ok"::equals).verifyComplete();
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("管理员可以访问其他用户")
@@ -91,6 +97,8 @@ class PermissionValidationAspectTest {
         verify(commentsService, never()).getById(anyLong());
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("普通用户不能访问其他用户")
     void rejectsOtherUserAccess() throws Throwable {
@@ -104,6 +112,8 @@ class PermissionValidationAspectTest {
             .verify();
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("文章所有者可以通过路径参数访问自己的文章")
     void allowsArticleOwner() throws Throwable {
@@ -115,6 +125,8 @@ class PermissionValidationAspectTest {
 
         StepVerifier.create(result).expectNextMatches("ok"::equals).verifyComplete();
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("批量文章属于不同用户时拒绝操作")

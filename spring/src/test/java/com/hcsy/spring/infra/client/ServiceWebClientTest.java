@@ -40,6 +40,8 @@ import reactor.util.context.Context;
 
 class ServiceWebClientTest {
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("远程调用透传用户上下文并生成内部 Token")
     void propagatesContextHeadersAndInternalToken() {
@@ -69,6 +71,8 @@ class ServiceWebClientTest {
         verify(tokenUtil).generateInternalToken(7L, "spring");
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("未登录系统调用使用 userId=-1 的内部 Token")
     void generatesSystemInternalTokenWithoutUserContext() {
@@ -86,6 +90,8 @@ class ServiceWebClientTest {
 
         verify(tokenUtil).generateInternalToken(-1L, "spring");
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("瞬时 IO 异常按配置重试并在耗尽后返回降级结果")

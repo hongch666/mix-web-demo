@@ -63,6 +63,8 @@ class ArticleSyncAspectTest {
             .thenReturn(Mono.empty());
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("业务成功时触发 MQ 与下游同步")
     void triggersSyncOnBusinessSuccess() throws Throwable {
@@ -75,6 +77,8 @@ class ArticleSyncAspectTest {
         verify(asyncSyncService).syncAllAsync(any(), any(), eq(false), eq(false));
         verify(asyncSyncService).syncNeo4jAsync(anyString(), anyString());
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("业务失败时不触发任何同步")
@@ -89,6 +93,8 @@ class ArticleSyncAspectTest {
         verify(asyncSyncService, never()).syncNeo4jAsync(anyString(), anyString());
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("文章新增开启 ES 与向量库同步开关")
     void passesSyncSwitchesFromAnnotation() throws Throwable {
@@ -100,6 +106,8 @@ class ArticleSyncAspectTest {
         verify(asyncSyncService).syncAllAsync(any(), any(), eq(true), eq(true));
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("点赞按 DTO 属性解析文章 ID 写入消息")
     void resolvesArticleIdFromLikeDto() throws Throwable {
@@ -110,6 +118,8 @@ class ArticleSyncAspectTest {
         assert message.get("articleId").equals(21L);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("收藏按 DTO 属性解析文章 ID 写入消息")
     void resolvesArticleIdFromCollectDto() throws Throwable {
@@ -119,6 +129,8 @@ class ArticleSyncAspectTest {
         Map<String, Object> message = captureSentMessage();
         assert message.get("articleId").equals(33L);
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("关注把双方用户写入 content，articleId 用 -1 占位")
@@ -140,6 +152,8 @@ class ArticleSyncAspectTest {
         assert content.get("targetUserId").equals(200L);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("关注不能把发起者当成被关注者")
     void focusDoesNotFallbackToSourceUser() throws Throwable {
@@ -153,6 +167,8 @@ class ArticleSyncAspectTest {
         assert content.get("targetUserId").equals(200L);
     }
 
+    // 验证该场景的预期行为
+
     @Test
     @DisplayName("批量删除按逗号分隔字符串解析出多个 ID")
     void resolvesBatchDeleteIds() throws Throwable {
@@ -162,6 +178,8 @@ class ArticleSyncAspectTest {
         assert message.get("articleIds") instanceof java.util.List<?> ids
             && ids.size() == 3;
     }
+
+    // 验证该场景的预期行为
 
     @Test
     @DisplayName("单个删除只写入单个文章 ID")
