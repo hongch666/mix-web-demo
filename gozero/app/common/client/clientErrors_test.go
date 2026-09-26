@@ -17,6 +17,8 @@ func (timeoutErr) Error() string { return "i/o timeout" }
 
 func (timeoutErr) Timeout() bool { return true }
 
+// 验证该测试场景的预期行为
+
 func TestShouldRetry(t *testing.T) {
 	dialRefused := &net.OpError{
 		Op:  opDial,
@@ -61,6 +63,8 @@ func TestShouldRetry(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestHTTPStatusErrorFields(t *testing.T) {
 	err := newHTTPStatusError(constants.HttpServiceUnavailable, "服务暂不可用")

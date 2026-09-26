@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// 验证该测试场景的预期行为
+
 func TestExpandEnvWithDefaultsPrefersEnvValue(t *testing.T) {
 	t.Setenv("CONFIG_TEST_HOST", "10.0.0.1")
 
@@ -17,6 +19,8 @@ func TestExpandEnvWithDefaultsPrefersEnvValue(t *testing.T) {
 		t.Fatalf("默认值未被应用: %s", expanded)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestExpandLineEnvQuotesNestedNumericValue(t *testing.T) {
 	// 嵌套结构中的非白名单数字字段需要保持字符串类型
@@ -32,6 +36,8 @@ func TestExpandLineEnvQuotesNestedNumericValue(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestNormalizeModeValueMapsProdAlias(t *testing.T) {
 	if got := normalizeModeValue("mode", "prod"); got != "pro" {
 		t.Fatalf("prod 未转换为 pro: %s", got)
@@ -43,6 +49,8 @@ func TestNormalizeModeValueMapsProdAlias(t *testing.T) {
 		t.Fatalf("非 mode 字段不应被修改: %s", got)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestIsNumericAndIsQuoted(t *testing.T) {
 	if !isNumeric("8082") || isNumeric("8082a") {

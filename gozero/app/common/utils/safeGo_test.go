@@ -10,6 +10,8 @@ type safeGoTestLogger struct{ message chan string }
 
 func (l *safeGoTestLogger) Error(message string) { l.message <- message }
 
+// 验证该测试场景的预期行为
+
 func TestSafeGoRecoversPanicAndLogsTaskName(t *testing.T) {
 	logger := &safeGoTestLogger{message: make(chan string, 1)}
 	SafeGo(logger, "sync-task", func() { panic("boom") })
@@ -22,6 +24,8 @@ func TestSafeGoRecoversPanicAndLogsTaskName(t *testing.T) {
 		t.Fatal("panic was not recovered and logged")
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSafeGoRunsNormalTask(t *testing.T) {
 	done := make(chan struct{})

@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+// 验证该测试场景的预期行为
+
 func TestApiLogMiddlewarePassesRequestBodyToHandler(t *testing.T) {
 	body := `{"name":"test"}`
 	request := httptest.NewRequest(http.MethodPost, "/items?page=1", strings.NewReader(body))
@@ -30,6 +32,8 @@ func TestApiLogMiddlewarePassesRequestBodyToHandler(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestExtractQueryParams(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/items?page=1&tag=a&tag=b", nil)
 	want := map[string]any{"page": "1", "tag": []string{"a", "b"}}
@@ -37,6 +41,8 @@ func TestExtractQueryParams(t *testing.T) {
 		t.Fatalf("查询参数 = %#v, want %#v", got, want)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestExtractRequestBody(t *testing.T) {
 	tests := []struct {
@@ -67,6 +73,8 @@ func TestExtractRequestBody(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestParseFormData(t *testing.T) {
 	got, err := parseFormData("name=test&tag=a&tag=b")

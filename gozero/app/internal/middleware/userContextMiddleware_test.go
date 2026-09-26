@@ -8,6 +8,8 @@ import (
 	"app/common/keys"
 )
 
+// 验证该测试场景的预期行为
+
 func TestUserContextMiddleware(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/test", nil)
 	request.Header.Set("X-User-Id", "42")
@@ -31,6 +33,8 @@ func TestUserContextMiddleware(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestUserContextMiddlewareInvalidUserID(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/test", nil)
 	request.Header.Set("X-User-Id", "invalid")
@@ -39,6 +43,8 @@ func TestUserContextMiddlewareInvalidUserID(t *testing.T) {
 		assertContextValue(t, r, keys.UserIDKey, int64(0))
 	})(httptest.NewRecorder(), request)
 }
+
+// 验证该测试场景的预期行为
 
 func TestExtractBearerToken(t *testing.T) {
 	tests := []struct {

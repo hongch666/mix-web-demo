@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// 验证该测试场景的预期行为
+
 func TestZeroLoggerFileContainsTraceID(t *testing.T) {
 	traceID := trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID := trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8}

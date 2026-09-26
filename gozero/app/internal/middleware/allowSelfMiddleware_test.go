@@ -25,6 +25,8 @@ func (s *adminCheckerStub) IsAdminUser(context.Context, int64) (bool, error) {
 	return s.isAdmin, s.err
 }
 
+// 验证该测试场景的预期行为
+
 func TestRequireSelfOrAdmin(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -54,6 +56,8 @@ func TestRequireSelfOrAdmin(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestAllowSelfMiddleware(t *testing.T) {
 	tests := []struct {
@@ -91,6 +95,8 @@ func TestAllowSelfMiddleware(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestResolveTargetUserID(t *testing.T) {
 	tests := []struct {
@@ -167,6 +173,8 @@ func TestResolveTargetUserID(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestResolveTargetUserIDRestoresBody(t *testing.T) {
 	body := `{"user_id":7,"other_id":8}`

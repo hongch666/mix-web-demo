@@ -19,6 +19,8 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
 )
 
+// 验证该测试场景的预期行为
+
 func TestCallWithRetryPropagatesContextHeadersAndInternalToken(t *testing.T) {
 	if err := utils.InitInternalTokenUtil("unit-test-secret-unit-test-secret", 60000); err != nil {
 		t.Fatalf("初始化内部令牌失败: %v", err)
@@ -58,6 +60,8 @@ func TestCallWithRetryPropagatesContextHeadersAndInternalToken(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestCallWithRetryUsesSystemIdentityWithoutUserContext(t *testing.T) {
 	if err := utils.InitInternalTokenUtil("unit-test-secret-unit-test-secret", 60000); err != nil {
 		t.Fatalf("初始化内部令牌失败: %v", err)
@@ -78,6 +82,8 @@ func TestCallWithRetryUsesSystemIdentityWithoutUserContext(t *testing.T) {
 		t.Fatalf("未登录系统调用 userId = %d, 期望 -1", claims.UserID)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestCallWithRetryRetriesServerErrorThenSucceeds(t *testing.T) {
 	var attempts atomic.Int32
@@ -100,6 +106,8 @@ func TestCallWithRetryRetriesServerErrorThenSucceeds(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestCallWithRetryDoesNotRetryClientError(t *testing.T) {
 	var attempts atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +126,8 @@ func TestCallWithRetryDoesNotRetryClientError(t *testing.T) {
 		t.Fatalf("4xx 调用次数 = %d, 期望 1", attempts.Load())
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestCallWithRetryStopsWhenContextIsCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

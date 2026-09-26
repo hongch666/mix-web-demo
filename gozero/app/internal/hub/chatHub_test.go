@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// 验证该测试场景的预期行为
+
 func TestHandleReadReceiptUsesConnectedUserAndAcknowledges(t *testing.T) {
 	var receiverID int64
 	var senderID int64
@@ -48,6 +50,8 @@ func TestHandleReadReceiptUsesConnectedUserAndAcknowledges(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestHandleReadReceiptRejectsMissingMessageID(t *testing.T) {
 	called := false
 	client := &Client{
@@ -71,6 +75,8 @@ func TestHandleReadReceiptRejectsMissingMessageID(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestHandleReadReceiptDoesNotAcknowledgeFailedPersistence(t *testing.T) {
 	client := &Client{
 		UserID: 7,
@@ -93,6 +99,8 @@ func TestHandleReadReceiptDoesNotAcknowledgeFailedPersistence(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestChatHubKeepsOtherConnectionsWhenOneConnectionLeaves(t *testing.T) {
 	resetChatQueueForTest(t)
 	hub := &ChatHub{}
@@ -112,6 +120,8 @@ func TestChatHubKeepsOtherConnectionsWhenOneConnectionLeaves(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestChatHubOldConnectionCannotRemoveReplacement(t *testing.T) {
 	resetChatQueueForTest(t)
 	hub := &ChatHub{}
@@ -127,6 +137,8 @@ func TestChatHubOldConnectionCannotRemoveReplacement(t *testing.T) {
 		t.Fatal("旧连接退出不应移除同标识的新连接")
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestRealtimeDispatcherPrefersWebSocketDelivery(t *testing.T) {
 	resetChatQueueForTest(t)
@@ -161,6 +173,8 @@ func TestRealtimeDispatcherPrefersWebSocketDelivery(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestRealtimeDispatcherFallsBackToSSEWithoutWebSocket(t *testing.T) {
 	resetChatQueueForTest(t)
 	sseHub := newSSEHubForTest()
@@ -189,6 +203,8 @@ func TestRealtimeDispatcherFallsBackToSSEWithoutWebSocket(t *testing.T) {
 		t.Fatal("WebSocket 不在线时应回退发送 SSE 通知")
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSSEHubTargetsAllConnectionsForUserOnly(t *testing.T) {
 	hub := newSSEHubForTest()

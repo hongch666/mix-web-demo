@@ -6,6 +6,8 @@ import (
 	"app/internal/types"
 )
 
+// 验证该测试场景的预期行为
+
 func TestSearchEnhancementOptions(t *testing.T) {
 	keywordMode := " keyword "
 	graphMode := "graph"

@@ -15,6 +15,7 @@ import (
 )
 
 // TestResolveRecallWindow 校验召回窗口解析与深分页降级边界
+// 验证该测试场景的预期行为
 func TestResolveRecallWindow(t *testing.T) {
 	cases := []struct {
 		name          string
@@ -51,6 +52,7 @@ func TestResolveRecallWindow(t *testing.T) {
 }
 
 // TestPageSlice 校验分页切片边界
+// 验证该测试场景的预期行为
 func TestPageSlice(t *testing.T) {
 	items := make([]types.ArticleEsItem, 25)
 	for i := range items {
@@ -84,6 +86,7 @@ func TestPageSlice(t *testing.T) {
 }
 
 // TestFusionMeanFillAndWeights 校验缺失信号均值填充与融合权重归一
+// 验证该测试场景的预期行为
 func TestFusionMeanFillAndWeights(t *testing.T) {
 	vectorItems := []fastapiClient.VectorEnhanceItem{
 		{ArticleID: 1, VectorScore: 0.8},
@@ -127,6 +130,8 @@ func TestFusionMeanFillAndWeights(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestSearchArticlesUsesAmplifiedRecallThenSlicesRequestedPage(t *testing.T) {
 	mode := "keyword"
 	articles := make([]searchmodel.ArticleES, 25)
@@ -160,6 +165,8 @@ func TestSearchArticlesUsesAmplifiedRecallThenSlicesRequestedPage(t *testing.T) 
 		t.Fatalf("总数 = %d, 期望 25", response.Total)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSearchArticlesDegradesToRequestedESPageWhenScriptFetchFails(t *testing.T) {
 	model := &searchModelStub{

@@ -25,6 +25,8 @@ func decodeResponse(t *testing.T, recorder *httptest.ResponseRecorder) map[strin
 	return body
 }
 
+// 验证该测试场景的预期行为
+
 func TestSuccessAndErrorResponses(t *testing.T) {
 	successRecorder := httptest.NewRecorder()
 	utils.Success(successRecorder, map[string]any{"id": 7})
@@ -47,6 +49,8 @@ func TestSuccessAndErrorResponses(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestHandleErrorUsesBusinessOrInternalStatus(t *testing.T) {
 	businessRecorder := httptest.NewRecorder()
 	utils.HandleError(businessRecorder, testBusinessError{})
@@ -60,6 +64,8 @@ func TestHandleErrorUsesBusinessOrInternalStatus(t *testing.T) {
 		t.Fatalf("internal status = %d", internalRecorder.Code)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestHandleErrorWithCodeUsesDefaultStatusForRegularErrors(t *testing.T) {
 	recorder := httptest.NewRecorder()

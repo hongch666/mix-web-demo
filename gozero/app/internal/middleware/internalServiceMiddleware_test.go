@@ -8,6 +8,8 @@ import (
 	"app/common/utils"
 )
 
+// 验证该测试场景的预期行为
+
 func TestInternalServiceMiddlewareRejectsMissingToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	called := false
@@ -19,6 +21,8 @@ func TestInternalServiceMiddlewareRejectsMissingToken(t *testing.T) {
 		t.Fatalf("状态码 = %d, called = %v", recorder.Code, called)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestInternalServiceMiddlewareAcceptsValidToken(t *testing.T) {
 	token := generateInternalToken(t, "gozero")
@@ -35,6 +39,8 @@ func TestInternalServiceMiddlewareAcceptsValidToken(t *testing.T) {
 		t.Fatalf("状态码 = %d, called = %v", recorder.Code, called)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestInternalServiceMiddlewareRejectsServiceMismatch(t *testing.T) {
 	token := generateInternalToken(t, "gozero")

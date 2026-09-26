@@ -10,6 +10,8 @@ import (
 	"app/common/exceptions"
 )
 
+// 验证该测试场景的预期行为
+
 func TestRecoveryMiddlewarePassesThrough(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := NewRecoveryMiddleware(newMiddlewareTestLogger(t)).Handle(func(w http.ResponseWriter, _ *http.Request) {
@@ -21,6 +23,8 @@ func TestRecoveryMiddlewarePassesThrough(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestRecoveryMiddlewareHandlesBusinessPanic(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := NewRecoveryMiddleware(newMiddlewareTestLogger(t)).Handle(func(http.ResponseWriter, *http.Request) {
@@ -31,6 +35,8 @@ func TestRecoveryMiddlewareHandlesBusinessPanic(t *testing.T) {
 		t.Fatalf("响应 = %d %s", recorder.Code, recorder.Body.String())
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestRecoveryMiddlewareHandlesUnknownPanic(t *testing.T) {
 	recorder := httptest.NewRecorder()

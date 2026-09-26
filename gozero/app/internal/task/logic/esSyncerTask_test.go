@@ -8,6 +8,8 @@ import (
 	"app/model/search"
 )
 
+// 验证该测试场景的预期行为
+
 func TestSyncArticlesToESRejectsMissingClient(t *testing.T) {
 	err := SyncArticlesToES(context.Background(), &svc.ServiceContext{
 		InfrastructureContext: &svc.InfrastructureContext{},
@@ -17,6 +19,8 @@ func TestSyncArticlesToESRejectsMissingClient(t *testing.T) {
 		t.Fatal("missing Elasticsearch client should return an error")
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestNormalizeESDateSupportsISOAndTargetFormats(t *testing.T) {
 	tests := []struct{ input, expected string }{
@@ -33,6 +37,8 @@ func TestNormalizeESDateSupportsISOAndTargetFormats(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestToESDatePtrUsesNilForEmptyDate(t *testing.T) {
 	if toESDatePtr("") != nil {
 		t.Fatal("empty date should map to nil")
@@ -42,6 +48,8 @@ func TestToESDatePtrUsesNilForEmptyDate(t *testing.T) {
 		t.Fatalf("unexpected normalized date pointer: %v", value)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestHashArticleESIsStableAndChangesWithDocument(t *testing.T) {
 	first := search.ArticleES{ID: 7, Title: "first"}

@@ -6,6 +6,8 @@ import (
 	"app/internal/types"
 )
 
+// 验证该测试场景的预期行为
+
 func TestSSEHubRegisterSendAndUnregister(t *testing.T) {
 	hub := newSSEHubForTest()
 	send := make(chan any, 1)
@@ -20,6 +22,8 @@ func TestSSEHubRegisterSendAndUnregister(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestSSEHubIgnoresEmptyConnectionIDAndNilNotification(t *testing.T) {
 	hub := newSSEHubForTest()
 	send := make(chan any, 1)
@@ -30,6 +34,8 @@ func TestSSEHubIgnoresEmptyConnectionIDAndNilNotification(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestFormatSSEMessage(t *testing.T) {
 	if FormatSSEMessage(nil) != "" {
 		t.Fatal("nil SSE payload should be empty")
@@ -39,6 +45,8 @@ func TestFormatSSEMessage(t *testing.T) {
 		t.Fatalf("unexpected SSE format: %q", message)
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSSEHubBroadcastsToAllUsers(t *testing.T) {
 	hub := newSSEHubForTest()

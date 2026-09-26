@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// 验证该测试场景的预期行为
+
 func TestRequestValidatorBuiltinRules(t *testing.T) {
 	requestValidator, err := NewRequestValidator()
 	if err != nil {
@@ -67,6 +69,8 @@ func TestRequestValidatorBuiltinRules(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestRequestValidatorCustomRules(t *testing.T) {
 	requestValidator, err := NewRequestValidator()
@@ -210,6 +214,8 @@ func TestRequestValidatorCustomRules(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestRequestValidatorNilData(t *testing.T) {
 	requestValidator, err := NewRequestValidator()

@@ -13,6 +13,8 @@ import (
 
 const testInternalTokenSecret = "unit-test-internal-token-secret-32-bytes"
 
+// 验证该测试场景的预期行为
+
 func TestInternalTokenRoundTrip(t *testing.T) {
 	_ = godotenv.Load(filepath.Join("..", "..", ".env"))
 	secret := os.Getenv("INTERNAL_TOKEN_SECRET")
@@ -47,6 +49,8 @@ func TestInternalTokenRoundTrip(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestInternalTokenRejectsDifferentSecret(t *testing.T) {
 	if err := utils.InitInternalTokenUtil(testInternalTokenSecret, 60000); err != nil {
 		t.Fatalf("初始化签发工具失败: %v", err)
@@ -65,6 +69,8 @@ func TestInternalTokenRejectsDifferentSecret(t *testing.T) {
 		t.Fatal("使用不同密钥签名的令牌应该验证失败")
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestInitInternalTokenUtilRejectsEmptySecret(t *testing.T) {
 	if err := utils.InitInternalTokenUtil("", 60000); err == nil {

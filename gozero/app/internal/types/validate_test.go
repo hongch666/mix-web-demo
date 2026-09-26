@@ -15,6 +15,7 @@ import (
 
 // TestHttpxParseRunsTagValidation 验证 httpx.Parse 会调用注册的校验器
 // 这是标签式校验生效的前提：请求类型不再实现 Validate() 后，才会走 SetValidator 分支
+// 验证该测试场景的预期行为
 func TestHttpxParseRunsTagValidation(t *testing.T) {
 	if err := validation.InitValidator(); err != nil {
 		t.Fatalf("注册校验器失败: %v", err)
@@ -70,6 +71,8 @@ func newTestValidator(t *testing.T) *validation.RequestValidator {
 	return requestValidator
 }
 
+// 验证该测试场景的预期行为
+
 func TestChatSendMessageReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
 
@@ -92,6 +95,8 @@ func TestChatSendMessageReqValidate(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestChatGetHistoryReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
 
@@ -111,6 +116,8 @@ func TestChatGetHistoryReqValidate(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestChatConnectReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
@@ -138,6 +145,8 @@ func TestChatConnectReqValidate(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSearchArticlesReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
@@ -201,6 +210,8 @@ func TestSearchArticlesReqValidate(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestGetSearchHistoryReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
 
@@ -222,6 +233,8 @@ func TestGetSearchHistoryReqValidate(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSqlToolsQueryReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
@@ -249,6 +262,8 @@ func TestSqlToolsQueryReqValidate(t *testing.T) {
 	}
 }
 
+// 验证该测试场景的预期行为
+
 func TestSqlToolsGetTablesReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
 
@@ -274,6 +289,8 @@ func TestSqlToolsGetTablesReqValidate(t *testing.T) {
 		})
 	}
 }
+
+// 验证该测试场景的预期行为
 
 func TestSyncESReqValidate(t *testing.T) {
 	requestValidator := newTestValidator(t)
