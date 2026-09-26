@@ -21,7 +21,8 @@ describe("NacosService", () => {
     jest.restoreAllMocks();
   });
 
-  it("无可用实例时返回 503 且不发起 HTTP 请求", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { service } = createService();
     jest.spyOn(service, "getServiceInstances").mockResolvedValue([]);
     const request = jest.spyOn(axios, "request");
@@ -37,10 +38,11 @@ describe("NacosService", () => {
     expect(request).not.toHaveBeenCalled();
   });
 
-  it("远程调用透传上下文、替换路径参数并生成内部 Token", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { service, internalTokenUtil } = createService({
       userId: 7,
-      username: "测试 alice",
+      username: "娴嬭瘯 alice",
       sessionId: "session-1",
       token: "access-token",
     });
@@ -85,7 +87,8 @@ describe("NacosService", () => {
     );
   });
 
-  it("未登录调用使用 userId=-1 生成内部 Token", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { service, internalTokenUtil } = createService();
     jest
       .spyOn(service, "getServiceInstances")
@@ -106,7 +109,8 @@ describe("NacosService", () => {
     );
   });
 
-  it("下游业务错误统一转换为 502", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { service } = createService();
     jest
       .spyOn(service, "getServiceInstances")
@@ -125,7 +129,8 @@ describe("NacosService", () => {
     );
   });
 
-  it("熔断器打开时返回约定降级结果且不发起 HTTP 请求", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { service } = createService();
     jest
       .spyOn(service, "getServiceInstances")
@@ -229,7 +234,7 @@ async function expectBusinessStatus(
 ): Promise<void> {
   try {
     await promise;
-    throw new Error("期望抛出 BusinessException");
+    throw new Error("鏈熸湜鎶涘嚭 BusinessException");
   } catch (error) {
     expect(error).toBeInstanceOf(BusinessException);
     expect((error as BusinessException).getStatus()).toBe(status);

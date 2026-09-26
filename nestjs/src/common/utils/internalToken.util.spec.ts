@@ -8,13 +8,12 @@ import { InternalTokenUtil } from "./internalToken.util";
 const SECRET = "unit-test-internal-token-secret-32-bytes";
 
 describe("InternalTokenUtil", () => {
-  it("生成并解析内部令牌声明", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const tokenUtil = createTokenUtil(resolveConfiguredSecret(), 60_000);
 
     const token = await tokenUtil.generateInternalToken(10001, "nestjs");
     const claims = await tokenUtil.validateInternalToken(token);
-
-    console.log(`生成的内部Token: ${token}`);
 
     expect(claims).toMatchObject({
       userId: 10001,
@@ -23,7 +22,8 @@ describe("InternalTokenUtil", () => {
     });
   });
 
-  it("拒绝使用其他密钥签名的令牌", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const issuer = createTokenUtil(SECRET, 60_000);
     const verifier = createTokenUtil(
       "another-unit-test-secret-with-32-bytes",
@@ -36,7 +36,8 @@ describe("InternalTokenUtil", () => {
     );
   });
 
-  it("缺少密钥时拒绝初始化", () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", () => {
     expect(() => createTokenUtil("", 60_000)).toThrow(BusinessException);
   });
 });

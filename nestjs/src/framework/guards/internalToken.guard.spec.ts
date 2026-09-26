@@ -16,14 +16,16 @@ describe("InternalTokenGuard", () => {
     getHandler: () => handler,
   } as unknown as ExecutionContext;
 
-  it("接口未声明内部令牌要求时直接放行", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, tokenUtil } = createGuard(false, "", undefined);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(tokenUtil.validateInternalToken).not.toHaveBeenCalled();
   });
 
-  it("缺少内部令牌时拒绝访问", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard } = createGuard(true, "", undefined);
 
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
@@ -31,7 +33,8 @@ describe("InternalTokenGuard", () => {
     );
   });
 
-  it("令牌服务名匹配时放行", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, tokenUtil } = createGuard(true, "token", "spring");
     tokenUtil.validateInternalToken.mockResolvedValue({
       userId: 9,
@@ -42,7 +45,8 @@ describe("InternalTokenGuard", () => {
     await expect(guard.canActivate(context)).resolves.toBe(true);
   });
 
-  it("令牌服务名不匹配时拒绝访问", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, tokenUtil } = createGuard(true, "token", "spring");
     tokenUtil.validateInternalToken.mockResolvedValue({
       userId: 9,
@@ -55,7 +59,8 @@ describe("InternalTokenGuard", () => {
     );
   });
 
-  it("令牌解析失败时转换为业务异常", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, tokenUtil } = createGuard(true, "token", undefined);
     tokenUtil.validateInternalToken.mockRejectedValue(new Error("invalid"));
 

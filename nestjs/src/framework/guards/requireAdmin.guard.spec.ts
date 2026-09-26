@@ -12,14 +12,16 @@ describe("RequireAdminGuard", () => {
     getHandler: () => handler,
   } as unknown as ExecutionContext;
 
-  it("接口未声明管理员权限时直接放行", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, springClient } = createGuard(false, undefined);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(springClient.isAdminUser).not.toHaveBeenCalled();
   });
 
-  it("缺少用户上下文时拒绝访问", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, springClient } = createGuard(true, undefined);
 
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
@@ -28,14 +30,16 @@ describe("RequireAdminGuard", () => {
     expect(springClient.isAdminUser).not.toHaveBeenCalled();
   });
 
-  it("管理员用户可以访问", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard, springClient } = createGuard(true, 7, { data: true });
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(springClient.isAdminUser).toHaveBeenCalledWith(7);
   });
 
-  it("普通用户不能访问", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const { guard } = createGuard(true, 7, { data: false });
 
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(

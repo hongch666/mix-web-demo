@@ -9,7 +9,8 @@ describe("config resolveEnvVars", () => {
     delete process.env[boolKey];
   });
 
-  it("优先使用环境变量并回退到默认值", (): void => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", (): void => {
     process.env[valueKey] = "from-env";
 
     expect(resolveEnvVars("${CONFIG_TEST_VALUE}")).toBe("from-env");
@@ -17,14 +18,16 @@ describe("config resolveEnvVars", () => {
     expect(resolveEnvVars("${CONFIG_TEST_MISSING}")).toBe("");
   });
 
-  it("替换后恢复布尔值与空值类型", (): void => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", (): void => {
     process.env[boolKey] = "true";
 
     expect(resolveEnvVars("${CONFIG_TEST_BOOL}")).toBe(true);
     expect(resolveEnvVars("${CONFIG_TEST_NULL:null}")).toBeNull();
   });
 
-  it("递归解析嵌套对象与数组中的占位符", (): void => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", (): void => {
     process.env[valueKey] = "42";
 
     expect(

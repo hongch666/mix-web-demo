@@ -8,7 +8,8 @@ describe("BatchBuffer", () => {
     debug: jest.fn(),
   });
 
-  it("flushes automatically when the batch size is reached", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const logger = createLogger();
     const flushed: number[][] = [];
     const buffer = new BatchBuffer<number>(
@@ -28,13 +29,14 @@ describe("BatchBuffer", () => {
     expect(buffer.size).toBe(0);
   });
 
-  it("continues operating after a flush failure and flushes on shutdown", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const logger = createLogger();
     const flushed: string[][] = [];
     let attempts = 0;
     const buffer = new BatchBuffer<string>(
       "events",
-      // maxRetries 显式设为 1：本用例验证的是"首次 flush 失败即达到重试上限、丢弃该批并记录 error"
+      // Verify the expected behavior of this unit test
       { batchSize: 10, maxBufferSize: 10, maxRetries: 1 },
       async (batch) => {
         attempts += 1;

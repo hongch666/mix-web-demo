@@ -25,7 +25,8 @@ describe("OssService", () => {
     jest.restoreAllMocks();
   });
 
-  it("使用假配置初始化并生成文件地址", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const service = createService(OSS_CONFIG, logger);
     mockBunRuntime(service);
 
@@ -36,7 +37,8 @@ describe("OssService", () => {
     );
   });
 
-  it("配置不完整时拒绝初始化", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const service = createService({}, logger);
 
     await expect(service.onModuleInit()).rejects.toBeInstanceOf(
@@ -44,7 +46,8 @@ describe("OssService", () => {
     );
   });
 
-  it("上传本地文件时调用运行时适配器并返回文件地址", async () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", async () => {
     const service = createService(OSS_CONFIG, logger);
     mockBunRuntime(service);
     await service.onModuleInit();

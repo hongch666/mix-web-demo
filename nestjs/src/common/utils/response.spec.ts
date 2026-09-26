@@ -2,7 +2,8 @@ import { HttpCode } from "../constants";
 import { error, success } from "./response";
 
 describe("response helpers", () => {
-  it("creates a success response with data and default message", () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", () => {
     expect(success({ id: 1 })).toEqual({
       code: HttpCode.OK,
       msg: "success",
@@ -10,7 +11,8 @@ describe("response helpers", () => {
     });
   });
 
-  it("preserves a custom success message and supports null-like data", () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", () => {
     expect(success(null, "created")).toEqual({
       code: HttpCode.OK,
       msg: "created",
@@ -18,7 +20,8 @@ describe("response helpers", () => {
     });
   });
 
-  it("creates an error response with null data and default message", () => {
+  // 验证该测试场景的预期行为
+  it("验证该测试场景的预期行为", () => {
     expect(error(404)).toEqual({ code: 404, msg: "failed", data: null });
     expect(error(422, "invalid input")).toEqual({
       code: 422,
