@@ -253,7 +253,7 @@
                             <file>eclipse-formatter.xml</file>
                         </eclipse>
                         <importOrder>
-                            <order>java,javax,org,com.hcsy,\#</order>
+                            <order>\#,java,javax,org,com.hcsy</order>
                         </importOrder>
                         <removeUnusedImports/>
                         <trimTrailingWhitespace/>

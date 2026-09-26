@@ -1,13 +1,13 @@
 package com.hcsy.spring.infra.task;
 
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.hcsy.spring.api.service.TokenService;
 import com.hcsy.spring.common.utils.RedisDistributedLock;
 import com.hcsy.spring.common.utils.SimpleLogger;
-
-import static org.mockito.Mockito.*;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

@@ -1,5 +1,12 @@
 package com.hcsy.spring.core.aspect;
 
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -24,13 +31,6 @@ import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.User;
-
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

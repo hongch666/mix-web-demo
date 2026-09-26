@@ -1,9 +1,9 @@
 package com.hcsy.spring.api.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 服务实现契约测试，确保每个服务实现都有对应的公开业务方法 */
 class ServiceImplementationsTest {

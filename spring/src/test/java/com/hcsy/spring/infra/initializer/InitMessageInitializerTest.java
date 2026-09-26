@@ -1,13 +1,13 @@
 package com.hcsy.spring.infra.initializer;
 
+import static org.mockito.Mockito.*;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
 
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.utils.SimpleLogger;
-
-import static org.mockito.Mockito.*;
 
 class InitMessageInitializerTest {
     // 验证该场景的预期行为

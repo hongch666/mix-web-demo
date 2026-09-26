@@ -1,5 +1,10 @@
 package com.hcsy.spring.common.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,11 +16,6 @@ import org.junit.jupiter.api.Test;
 
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.core.properties.InternalTokenProperties;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 
 class InternalTokenUtilTest {
 

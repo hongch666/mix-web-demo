@@ -1,11 +1,11 @@
 package com.hcsy.spring.common.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.junit.jupiter.api.Test;
 
 import com.hcsy.spring.common.constants.HttpCode;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ResultTest {
     // 验证该场景的预期行为

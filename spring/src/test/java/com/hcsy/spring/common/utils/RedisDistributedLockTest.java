@@ -1,11 +1,11 @@
 package com.hcsy.spring.common.utils;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
