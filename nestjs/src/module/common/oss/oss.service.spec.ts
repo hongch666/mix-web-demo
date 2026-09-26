@@ -1,4 +1,6 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 
 import { ConfigService } from "@nestjs/config";
 import { BusinessException } from "src/common/exceptions/business.exception";
@@ -27,10 +29,7 @@ describe("OssService", () => {
 
   // 验证该测试场景的预期行为
   it("验证该测试场景的预期行为", async () => {
-    const service = createService(OSS_CONFIG, logger);
-    mockBunRuntime(service);
-
-    await service.onModuleInit();
+    const service = createConfiguredService();
 
     expect(service.getFileUrl("articles/test.docx")).toBe(
       "https://unit-test-bucket.oss-cn-test.aliyuncs.com/articles/test.docx",
@@ -48,23 +47,46 @@ describe("OssService", () => {
 
   // 验证该测试场景的预期行为
   it("验证该测试场景的预期行为", async () => {
-    const service = createService(OSS_CONFIG, logger);
-    mockBunRuntime(service);
-    await service.onModuleInit();
-
-    const bunUpload = jest
-      .spyOn(service as never, "uploadFileWithBun" as never)
-      .mockResolvedValue({} as never);
-    jest.spyOn(fs.promises, "access").mockResolvedValue(undefined);
-    jest.spyOn(fs.promises, "stat").mockResolvedValue({ size: 9 } as fs.Stats);
-    const localFile = "C:/unit-test/upload.txt";
-
-    const url = await service.uploadFile(localFile, "test/upload.txt");
-
-    expect(url).toBe(
-      "https://unit-test-bucket.oss-cn-test.aliyuncs.com/test/upload.txt",
-    );
-    expect(bunUpload).toHaveBeenCalledWith(localFile, "test/upload.txt");
+    const service = createConfiguredService();
+    const uploadCalls: Array<[string, string]> = [];
+    (
+      service as unknown as {
+        uploadFileWithAliOss: (
+          localFile: string,
+          ossFile: string,
+        ) => Promise<unknown>;
+        uploadFileWithBun: (
+          localFile: string,
+          ossFile: string,
+        ) => Promise<unknown>;
+      }
+    ).uploadFileWithAliOss = async (localFile, ossFile) => {
+      uploadCalls.push([localFile, ossFile]);
+      return {};
+    };
+    (
+      service as unknown as {
+        uploadFileWithBun: (
+          localFile: string,
+          ossFile: string,
+        ) => Promise<unknown>;
+      }
+    ).uploadFileWithBun = async (localFile, ossFile) => {
+      uploadCalls.push([localFile, ossFile]);
+      return {};
+    };
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "oss-service-test-"));
+    const localFile = path.join(tempDir, "upload.txt");
+    fs.writeFileSync(localFile, "test file", "utf8");
+    try {
+      const url = await service.uploadFile(localFile, "test/upload.txt");
+      expect(url).toBe(
+        "https://unit-test-bucket.oss-cn-test.aliyuncs.com/test/upload.txt",
+      );
+      expect(uploadCalls).toEqual([[localFile, "test/upload.txt"]]);
+    } finally {
+      tCleanup(tempDir);
+    }
   });
 });
 
@@ -78,11 +100,27 @@ function createService(
   return new OssService(configService, logger);
 }
 
-function mockBunRuntime(service: OssService): void {
-  jest
-    .spyOn(
-      service as unknown as { isBunRuntime: () => boolean },
-      "isBunRuntime",
-    )
-    .mockReturnValue(true);
+function tCleanup(tempDir: string): void {
+  try {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  } catch {
+    // 测试进程会在退出时回收临时目录
+  }
+}
+
+function createConfiguredService(): OssService {
+  const service = createService(OSS_CONFIG, {
+    info: jest.fn(),
+    error: jest.fn(),
+    warning: jest.fn(),
+    debug: jest.fn(),
+  } as unknown as LoggerService);
+  Object.assign(service as unknown as Record<string, unknown>, {
+    bucketName: OSS_CONFIG.bucket_name,
+    endpoint: OSS_CONFIG.endpoint,
+    accessKeyId: OSS_CONFIG.access_key_id,
+    accessKeySecret: OSS_CONFIG.access_key_secret,
+    putTimeout: 10_000,
+  });
+  return service;
 }
