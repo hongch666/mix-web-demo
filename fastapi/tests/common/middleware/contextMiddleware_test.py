@@ -13,6 +13,7 @@ from app.common.middleware.contextMiddleware import (
 )
 
 
+# 仅 Bearer 前缀提取令牌，其他 scheme 与 None 返回 None
 def test_extract_bearer_token_accepts_only_bearer_scheme() -> None:
     assert _extract_bearer_token("Bearer abc") == "abc"
     assert _extract_bearer_token("Basic abc") is None
@@ -20,6 +21,7 @@ def test_extract_bearer_token_accepts_only_bearer_scheme() -> None:
     assert _extract_bearer_token(None) is None
 
 
+# 请求头写入上下文且请求结束后用户与令牌恢复为 None
 def test_context_middleware_populates_headers_and_resets_after_request() -> None:
     app = FastAPI()
     app.add_middleware(ContextMiddleware)
@@ -53,6 +55,7 @@ def test_context_middleware_populates_headers_and_resets_after_request() -> None
     assert get_current_internal_token() is None
 
 
+# 非法 X-User-Id 时上下文用户 id 为 None 且请求正常返回
 def test_context_middleware_handles_invalid_user_id() -> None:
     app = FastAPI()
     app.add_middleware(ContextMiddleware)
@@ -67,6 +70,7 @@ def test_context_middleware_handles_invalid_user_id() -> None:
     assert response.json() == {"user_id": None}
 
 
+# 存在活跃 span 时返回其 32 位十六进制 trace id
 def test_get_current_trace_id_returns_active_span_trace_id() -> None:
     trace_id = 0x0123456789ABCDEF0123456789ABCDEF
     span_context = SpanContext(

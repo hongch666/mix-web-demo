@@ -24,6 +24,7 @@ def reset_internal_token_util() -> Generator[None, None, None]:
     InternalTokenUtil._expiration = None
 
 
+# 生成的内部令牌校验通过并能提取用户 id 与服务名
 def test_generate_and_validate_internal_token_claims() -> None:
     InternalTokenUtil._secret = os.getenv("INTERNAL_TOKEN_SECRET") or TEST_SECRET
     token_util = InternalTokenUtil()
@@ -39,6 +40,7 @@ def test_generate_and_validate_internal_token_claims() -> None:
     assert token_util.extract_service_name(token) == "fastapi"
 
 
+# 使用其他密钥签名的令牌校验失败返回 401
 def test_rejects_token_signed_with_another_secret() -> None:
     token = jwt.encode(
         {
@@ -57,6 +59,7 @@ def test_rejects_token_signed_with_another_secret() -> None:
     assert error.value.status_code == 401
 
 
+# 已过期令牌校验失败返回 401
 def test_rejects_expired_token() -> None:
     token = jwt.encode(
         {

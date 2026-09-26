@@ -7,6 +7,7 @@ from app.internal.agents.toolScope import (
 )
 
 
+# 非管理员用嵌套 OR 绕过 SQL 行级范围时返回拒绝消息
 def test_non_admin_cannot_bypass_sql_scope_with_nested_query() -> None:
     set_tool_scope(user_id=7, is_admin=False)
 
@@ -21,6 +22,7 @@ def test_non_admin_cannot_bypass_sql_scope_with_nested_query() -> None:
     assert denial == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
 
 
+# 非管理员用 $or 过滤器绕过 MongoDB 行级范围时返回拒绝消息
 def test_non_admin_cannot_bypass_mongodb_scope_with_or_filter() -> None:
     set_tool_scope(user_id=7, is_admin=False)
 
@@ -34,6 +36,7 @@ def test_non_admin_cannot_bypass_mongodb_scope_with_or_filter() -> None:
     assert denial == Messages.NON_ADMIN_ARBITRARY_QUERY_FORBIDDEN
 
 
+# 管理员无需行级限制即可使用结构化 SQL 与 MongoDB 查询
 def test_admin_can_use_structured_query_tools() -> None:
     set_tool_scope(user_id=1, is_admin=True)
 

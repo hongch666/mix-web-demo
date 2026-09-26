@@ -22,6 +22,7 @@ def reset_client_state(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None,
     client_module._SERVICE_BREAKERS.clear()
 
 
+# 合并上下文头生成用户、会话、授权与内部令牌并允许显式覆盖
 def test_merge_headers_propagates_context_and_allows_explicit_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -58,6 +59,7 @@ def test_merge_headers_propagates_context_and_allows_explicit_override(
     }
 
 
+# 匿名调用生成内部令牌使用系统用户 id -1
 def test_internal_token_uses_system_user_for_anonymous_call(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -81,6 +83,7 @@ def test_internal_token_uses_system_user_for_anonymous_call(
     assert captured == {"user_id": -1, "service_name": "fastapi"}
 
 
+# 遇到 503 重试至第三次成功后返回数据且不计熔断失败
 @pytest.mark.anyio
 async def test_call_with_client_retries_503_then_returns_success(
     monkeypatch: pytest.MonkeyPatch,
@@ -122,6 +125,7 @@ async def test_call_with_client_retries_503_then_returns_success(
     assert breaker.failure_count == 0
 
 
+# 4xx 响应不重试只请求一次并返回 502、计入一次熔断失败
 @pytest.mark.anyio
 @pytest.mark.parametrize("status_code", [400, 401, 403, 404])
 async def test_call_with_client_does_not_retry_4xx(
@@ -162,6 +166,7 @@ async def test_call_with_client_does_not_retry_4xx(
     assert breaker.failure_count == 1
 
 
+# 熔断打开时快速失败返回 503 且不发起 HTTP 请求
 @pytest.mark.anyio
 async def test_open_circuit_fails_fast_without_http_request(
     monkeypatch: pytest.MonkeyPatch,
@@ -191,6 +196,7 @@ async def test_open_circuit_fails_fast_without_http_request(
     request_mock.assert_not_awaited()
 
 
+# 响应体业务错误码不重试只请求一次
 @pytest.mark.anyio
 async def test_business_error_is_not_retried(
     monkeypatch: pytest.MonkeyPatch,

@@ -13,6 +13,7 @@ class FakeRedisClient:
         self.unlock = AsyncMock(return_value=True)
 
 
+# Spring 客户端缺失时直接返回且不获取 Redis
 @pytest.mark.anyio
 async def test_sync_warehouse_returns_when_spring_client_is_missing(
     monkeypatch: pytest.MonkeyPatch,
@@ -25,6 +26,7 @@ async def test_sync_warehouse_returns_when_spring_client_is_missing(
     get_redis.assert_not_called()
 
 
+# 未获取到分布式锁时跳过数仓同步且不释放锁
 @pytest.mark.anyio
 async def test_sync_warehouse_skips_when_lock_is_not_acquired(
     monkeypatch: pytest.MonkeyPatch,
@@ -40,6 +42,7 @@ async def test_sync_warehouse_skips_when_lock_is_not_acquired(
     redis_client.unlock.assert_not_awaited()
 
 
+# 同步抛错时向上抛出并仍释放分布式锁
 @pytest.mark.anyio
 async def test_sync_warehouse_releases_lock_after_failure(
     monkeypatch: pytest.MonkeyPatch,
@@ -58,6 +61,7 @@ async def test_sync_warehouse_releases_lock_after_failure(
     )
 
 
+# 多页数据全部写入成功后才推进该源的数仓水位
 @pytest.mark.anyio
 async def test_remote_source_advances_watermark_only_after_all_pages(
     monkeypatch: pytest.MonkeyPatch,
@@ -96,6 +100,7 @@ async def test_remote_source_advances_watermark_only_after_all_pages(
     write_watermark.assert_awaited_once_with("ods_articles", upper)
 
 
+# MySQL 快照表即使无脏分区也返回有变更标记
 @pytest.mark.anyio
 async def test_remote_source_reports_change_flag_for_snapshot_tables(
     monkeypatch: pytest.MonkeyPatch,
@@ -124,6 +129,7 @@ async def test_remote_source_reports_change_flag_for_snapshot_tables(
     assert partitions == set()
 
 
+# 源表无增量数据时返回无变更且无脏分区
 @pytest.mark.anyio
 async def test_remote_source_reports_no_change_when_no_rows(
     monkeypatch: pytest.MonkeyPatch,
@@ -144,6 +150,7 @@ async def test_remote_source_reports_no_change_when_no_rows(
     assert partitions == set()
 
 
+# 单页写入失败时抛出异常且不推进水位
 @pytest.mark.anyio
 async def test_remote_source_does_not_advance_watermark_when_page_insert_fails(
     monkeypatch: pytest.MonkeyPatch,
@@ -177,6 +184,7 @@ async def test_remote_source_does_not_advance_watermark_when_page_insert_fails(
     write_watermark.assert_not_awaited()
 
 
+# 按日志月份把脏数据聚合为 202609 与 202610 两个分区
 @pytest.mark.anyio
 async def test_collect_dirty_partitions_groups_by_month() -> None:
     items = [
@@ -188,6 +196,7 @@ async def test_collect_dirty_partitions_groups_by_month() -> None:
     assert partitions == {"202609", "202610"}
 
 
+# 未登记日期字段的源表不产生脏分区
 @pytest.mark.anyio
 async def test_collect_dirty_partitions_ignores_unregistered_source() -> None:
     # ods_articles 不在 SOURCE_DIRTY_DATE_FIELD 中，不产生脏分区
@@ -195,6 +204,7 @@ async def test_collect_dirty_partitions_ignores_unregistered_source() -> None:
     assert task._collect_dirty_partitions("ods_articles", items) == set()
 
 
+# 空值与非法日期不产生脏分区
 @pytest.mark.anyio
 async def test_collect_dirty_partitions_skips_invalid_dates() -> None:
     items = [
@@ -204,6 +214,7 @@ async def test_collect_dirty_partitions_skips_invalid_dates() -> None:
     assert task._collect_dirty_partitions("ods_article_log", items) == set()
 
 
+# 脏分区对 6 张分区表各执行一次 DROP 与一次 INSERT
 @pytest.mark.anyio
 async def test_refresh_partitions_rebuilds_each_dirty_partition(
     monkeypatch: pytest.MonkeyPatch,
@@ -226,6 +237,7 @@ async def test_refresh_partitions_rebuilds_each_dirty_partition(
     assert all(call[1] == {"partition": "202609"} for call in insert_calls)
 
 
+# 分区刷新按 6 张表的依赖顺序依次执行
 @pytest.mark.anyio
 async def test_refresh_partitions_preserves_dependency_order(
     monkeypatch: pytest.MonkeyPatch,
@@ -252,6 +264,7 @@ async def test_refresh_partitions_preserves_dependency_order(
     assert table_order == expected
 
 
+# 某表分区缺失导致 DROP 报错时不中断其余 6 张表的 INSERT
 @pytest.mark.anyio
 async def test_refresh_partitions_continues_when_partition_missing(
     monkeypatch: pytest.MonkeyPatch,
@@ -273,6 +286,7 @@ async def test_refresh_partitions_continues_when_partition_missing(
     assert all(call[1] == {"partition": "202609"} for call in inserted)
 
 
+# 各源均无变更且无脏分区时不触发数仓刷新
 @pytest.mark.anyio
 async def test_sync_warehouse_skips_refresh_when_nothing_changed(
     monkeypatch: pytest.MonkeyPatch,
@@ -293,6 +307,7 @@ async def test_sync_warehouse_skips_refresh_when_nothing_changed(
     refresh.assert_not_awaited()
 
 
+# 存在脏分区时按分区刷新且不刷新快照表
 @pytest.mark.anyio
 async def test_sync_warehouse_refreshes_when_dirty_partitions_exist(
     monkeypatch: pytest.MonkeyPatch,
@@ -314,6 +329,7 @@ async def test_sync_warehouse_refreshes_when_dirty_partitions_exist(
     refresh.assert_awaited_once_with({"202609"}, False)
 
 
+# MySQL 源有变更时即使无脏分区也刷新快照表
 @pytest.mark.anyio
 async def test_sync_warehouse_refreshes_snapshots_when_mysql_source_changed(
     monkeypatch: pytest.MonkeyPatch,
@@ -334,6 +350,7 @@ async def test_sync_warehouse_refreshes_snapshots_when_mysql_source_changed(
     refresh.assert_awaited_once_with(set(), True)
 
 
+# 仅事件分区变更时只刷分区不刷全量快照表
 @pytest.mark.anyio
 async def test_refresh_warehouse_skips_snapshots_when_only_events_changed(
     monkeypatch: pytest.MonkeyPatch,
