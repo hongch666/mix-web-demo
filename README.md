@@ -1261,6 +1261,23 @@ uv run --python 3.12 python main.py
 
 本项目按服务拆分测试代码，各服务的测试入口和运行方式如下。
 
+### 使用 mix 快速运行
+
+根目录提供统一的单元测试命令。默认运行 Spring、GoZero、NestJS 和 FastAPI 的全部测试：
+
+```bash
+./mix test
+```
+
+也可以只运行指定服务：
+
+```bash
+./mix test nestjs
+./mix test gozero fastapi
+```
+
+NestJS 优先使用 Bun 测试运行器；FastAPI 优先使用 uv，未安装时回退到本地 pytest。FastAPI 测试命令会自动设置 `PYTHONPATH`，无需手动配置模块路径。
+
 ### 测试运行方式
 
 1. Spring
@@ -1273,7 +1290,6 @@ mvn test
 只运行某个测试：
 
 ```bash
-export INTERNAL_TOKEN_TEST_TOKEN=实际Token
 cd spring
 mvn -Dtest=InternalTokenUtilTest test
 ```
@@ -1288,7 +1304,6 @@ go test ./...
 只运行某个测试：
 
 ```bash
-export INTERNAL_TOKEN_TEST_TOKEN=实际Token
 cd gozero/app
 go test ./common/utils -run 'TestGenerateInternalToken|TestValidateInternalToken' -v
 ```
@@ -1303,7 +1318,6 @@ npm test
 只运行某个测试：
 
 ```bash
-export INTERNAL_TOKEN_TEST_TOKEN=实际Token
 cd nestjs
 npx jest src/common/utils/internalToken.util.spec.ts
 ```
@@ -1318,7 +1332,6 @@ pytest
 只运行某个测试：
 
 ```bash
-export INTERNAL_TOKEN_TEST_TOKEN=实际Token
 cd fastapi
 pytest tests/core/auth/test_internal_token.py
 ```
@@ -1403,6 +1416,12 @@ pytest tests/core/auth/test_internal_token.py
 
 # 只格式化指定服务
 ./mix format gozero fastapi
+
+# 运行全部服务的单元测试
+./mix test
+
+# 运行指定服务的单元测试
+./mix test spring gozero
 
 # ===== Docker 容器环境 =====
 # 构建并启动所有微服务容器
@@ -2304,6 +2323,12 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 
 # 只格式化指定服务
 ./mix format gozero fastapi
+
+# 运行全部服务的单元测试
+./mix test
+
+# 运行指定服务的单元测试
+./mix test nestjs fastapi
 ```
 
 > `gateway` 为 APISIX 配置，不参与代码检查与格式化；对应工具未安装时该服务会自动跳过并提示。
