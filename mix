@@ -97,6 +97,7 @@ show_help() {
     echo "Code Style Commands (代码检查与格式化):"
     echo "  lint [services...]       - Check code style (default: all services)"
     echo "  format [services...]     - Format code (default: all services)"
+    echo "  test [services...]       - Run unit tests (default: all services)"
     echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
@@ -117,6 +118,8 @@ show_help() {
     echo "  ./mix lint spring fastapi      # Check code style of specific services"
     echo "  ./mix format                   # Format code of all services"
     echo "  ./mix format nestjs            # Format code of a specific service"
+    echo "  ./mix test                     # Run unit tests for all services"
+    echo "  ./mix test nestjs gozero       # Run unit tests for specific services"
     echo "  ./mix dev multi                # Multi-pane tmux layout (dev)"
     echo "  ./mix dev seq                  # Sequential window layout (dev, default config)"
     echo "  ./mix dev seq -i               # Sequential layout with interactive mode"
@@ -285,6 +288,10 @@ case $COMMAND in
     format)
         echo "Formatting code..."
         bash "$SCRIPTS_DIR/format.sh" "${@:2}"
+        ;;
+    test)
+        echo "Running unit tests..."
+        bash "$SCRIPTS_DIR/test.sh" "${@:2}"
         ;;
     dev)
         run_dev_command "${@:2}"
