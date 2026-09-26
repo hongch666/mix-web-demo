@@ -60,3 +60,15 @@ func TestHandleErrorUsesBusinessOrInternalStatus(t *testing.T) {
 		t.Fatalf("internal status = %d", internalRecorder.Code)
 	}
 }
+
+func TestHandleErrorWithCodeUsesDefaultStatusForRegularErrors(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	utils.HandleErrorWithCode(recorder, errors.New("invalid payload"), 400)
+	if recorder.Code != 400 {
+		t.Fatalf("status = %d, want 400", recorder.Code)
+	}
+	body := decodeResponse(t, recorder)
+	if body["msg"] != "invalid payload" || body["data"] != nil {
+		t.Fatalf("unexpected response body: %#v", body)
+	}
+}
