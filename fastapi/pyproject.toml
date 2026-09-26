@@ -90,9 +90,13 @@ line-ending = "auto"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+filterwarnings = [
+  "ignore:Should not be used in the version 0.2.6 or later.*:DeprecationWarning:asynch.cursors",
+]
 
 [tool.pyright]
 # 让 Pylance 把 fastapi 目录作为独立执行环境，固定版本与虚拟环境，
