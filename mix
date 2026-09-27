@@ -90,7 +90,8 @@ show_help() {
     echo ""
     echo "Setup Commands (初始化):"
     echo "  setup                    - Initialize environment and install dependencies"
-    echo "  swag                     - Generate Swagger API documentation"
+    echo "  swag [services...]       - Generate static OpenAPI docs into each service docs/ (offline)"
+    echo "  apifox [services...]     - Sync those docs to Apifox (offline, needs .env)"
     echo "  goctl-api [args...]      - Generate GoZero API code"
     echo "  goctl-orm [args...]      - Generate GoZero ORM code"
     echo ""
@@ -111,7 +112,10 @@ show_help() {
     echo ""
     echo "Examples (示例):"
     echo "  ./mix setup                    # Initialize environment (first time)"
-    echo "  ./mix swag                     # Generate Swagger API documentation"
+    echo "  ./mix swag                     # Generate static OpenAPI docs for all services"
+    echo "  ./mix swag spring gozero       # Generate docs for specific services only"
+    echo "  ./mix apifox                   # Sync all api-docs/ to Apifox"
+    echo "  ./mix apifox spring --dry-run  # Check a single service without uploading"
     echo "  ./mix goctl-api                # Generate GoZero API code"
     echo "  ./mix goctl-orm                # Generate GoZero ORM code"
     echo "  ./mix lint                     # Check code style of all services"
@@ -271,7 +275,11 @@ case $COMMAND in
         ;;
     swag)
         echo "Generating Swagger API documentation..."
-        bash "$SCRIPTS_DIR/swag-init.sh"
+        bash "$SCRIPTS_DIR/swag-init.sh" "${@:2}"
+        ;;
+    apifox)
+        echo "Syncing OpenAPI documentation to Apifox..."
+        bash "$SCRIPTS_DIR/apifox-sync.sh" "${@:2}"
         ;;
     goctl-api)
         echo "Generating GoZero API code..."

@@ -410,7 +410,7 @@ build_gozero() {
     mkdir -p "$GOZERO_DIST/etc"
     cp etc/application.yaml "$GOZERO_DIST/etc/"
     
-    # 复制 Swagger 文档（运行时通过相对路径 docs/main.json 读取）
+    # 复制 Swagger 文档产物（openapi.json 已通过 go:embed 内嵌，YAML 便于查阅）
     cp -r docs "$GOZERO_DIST/"
     
     # 复制 .env 文件
