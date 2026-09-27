@@ -35,6 +35,7 @@
 - [基础服务组件初始化](#基础服务组件初始化)
 - [环境变量配置文件](#环境变量配置文件)
 - [Swagger 说明](#swagger-说明)
+- [Apifox 文档同步](#apifox-文档同步)
 - [项目规范说明](#项目规范说明)
 - [代码规范与格式化工具](#代码规范与格式化工具)
 - [项目可用工具说明](#项目可用工具说明)
@@ -1388,6 +1389,19 @@ pytest tests/core/auth/test_internal_token.py
 # 交互式模式：让用户选择构建工具
 ./mix dev seq -i
 
+# ===== 文档生成与同步 =====
+# 离线生成四个服务的静态 OpenAPI 文档（输出到各服务 docs/，不启动服务）
+./mix swag
+
+# 只生成指定服务
+./mix swag spring gozero
+
+# 将静态文档同步到 Apifox（需先在根目录 .env 配置令牌与项目 ID）
+./mix apifox
+
+# 只校验产物与配置，不发起导入请求
+./mix apifox --dry-run
+
 # ===== GoZero 代码生成 =====
 # 生成 GoZero API 代码（默认使用 gozero/template 模板）
 ./mix goctl-api
@@ -1568,6 +1582,12 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 ./scripts/dist-control.sh start              # 启动所有
 ./scripts/dist-control.sh start spring gozero   # 启动指定
 
+# 文档生成与同步
+./scripts/swag-init.sh                          # 生成四个服务的静态 OpenAPI 文档
+./scripts/swag-init.sh spring                   # 只生成指定服务
+./scripts/apifox-sync.sh                        # 同步全部服务到 Apifox
+./scripts/apifox-sync.sh spring --dry-run       # 只校验指定服务，不发起导入
+
 # GoZero 代码生成
 ./scripts/goctl-api-init.sh
 ./scripts/goctl-orm-init.sh
@@ -1644,7 +1664,8 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `render-config.sh`          | gateway/apisix/ | 按 `APISIX_OTEL_ENABLED` 渲染网关配置后启动 APISIX                                             | 容器内      |
 | `gateway-cleanup.sh`        | scripts/        | 清理其他编排栈占用的网关容器，避免启动冲突                                                     | Linux/macOS |
 | `setup.sh`                  | scripts/        | 环境初始化和依赖安装                                                                           | Linux/macOS |
-| `swag-init.sh`              | scripts/        | 生成 GoZero Swagger 文档                                                                       | Linux/macOS |
+| `swag-init.sh`              | scripts/        | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                | Linux/macOS |
+| `apifox-sync.sh`            | scripts/        | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                | Linux/macOS |
 | `goctl-api-init.sh`         | scripts/        | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS |
 | `goctl-orm-init.sh`         | scripts/        | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS |
 | `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS |
@@ -2019,7 +2040,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 - `.env.example`：示例文件，保留全部变量名，用于复制生成本地配置
 - `.env`：本地开发使用的真实配置文件，不建议提交敏感值
 - `.env.docker`：Docker 容器使用的环境变量文件，脚本会在容器启动时读取它
-- **根目录 `.env.example` / `.env`**：基础中间件账号密码配置，仅供 `./mix docker-services` 创建容器时读取（详见"Docker 基础中间件容器部署"章节）
+- **根目录 `.env.example` / `.env`**：基础中间件账号密码配置（供 `./mix docker-services` 创建容器时读取，详见"Docker 基础中间件容器部署"章节），以及 Apifox 文档同步参数（供 `./mix apifox` 读取，详见"Apifox 文档同步"章节）
 
 所有配置值通过 `${VAR_NAME:default_value}` 的格式在 YAML 文件中引用。
 
@@ -2027,7 +2048,7 @@ FastAPI 的同步任务会自动创建约束并将 MySQL 业务数据同步为�
 
 各服务的具体环境变量请直接参考对应的 `.env.example`，这里不再重复列出完整配置。
 
-- 基础中间件（容器账号密码）：根目录 `.env.example`、根目录 `.env`
+- 基础中间件（容器账号密码）与 Apifox 同步参数：根目录 `.env.example`、根目录 `.env`
 - Spring：`spring/.env.example`、`spring/.env.docker`
 - GoZero：`gozero/app/.env.example`、`gozero/app/.env.docker`
 - NestJS：`nestjs/.env.example`、`nestjs/.env.docker`
@@ -2076,6 +2097,10 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 
 ## Swagger 说明
 
+四个服务都对外提供 OpenAPI 文档，有两条获取途径：服务运行后经网关聚合访问，或离线生成静态产物。
+
+### 运行期访问（网关聚合）
+
 > 启动时会显示对应的 swagger 地址
 
 网关把四个服务的 OpenAPI 文档聚合到同一入口，统一通过 APISIX 访问：
@@ -2090,11 +2115,45 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 
 在 Swagger UI 的地址栏填入上表中的地址即可查看对应服务的接口文档。
 
+### 静态产物生成（./mix swag）
+
+不需要启动任何服务即可生成四个服务的 OpenAPI 文档，产物落在各自服务的 `docs/` 目录并随仓库提交，便于 diff 审阅：
+
+```bash
+# 生成全部四个服务
+./mix swag
+
+# 只生成指定服务
+./mix swag spring gozero
+
+# 直接调用脚本
+./scripts/swag-init.sh
+```
+
+| 服务    | 生成方式                                                       | 静态产物                       | 前置工具  |
+| ------- | -------------------------------------------------------------- | ------------------------------ | --------- |
+| Spring  | `OpenApiDocGenerator` 只装配 Web 层上下文，其余依赖自动 mock    | `spring/docs/openapi.json`     | Maven     |
+| GoZero  | `goctl api swagger` 解析 `.api`，再经 `fix.py` 归一化           | `gozero/app/docs/openapi.json` | goctl     |
+| NestJS  | `NestFactory.create(..., { preview: true })`，不实例化 provider | `nestjs/docs/openapi.json`     | Bun       |
+| FastAPI | 导入 `create_app()` 后直接取 `app.openapi()`，不执行 lifespan   | `fastapi/docs/openapi.json`    | uv/Python |
+
+每个服务同时输出 `openapi.json` 与 `openapi.yaml` 两份等价产物。
+
+几点约定：
+
+1. 全程不启动 HTTP 服务：Spring 走 `webEnvironment = MOCK`（不开端口），NestJS 走 preview 模式，FastAPI 只导入应用工厂，GoZero 纯静态扫描 `.api`
+2. 不依赖 Nacos、MySQL、Redis、RabbitMQ 等中间件，也不需要各服务的 `.env`；Spring 的 Nacos 配置拉取由 `spring/src/test/resources/bootstrap.yaml` 覆盖关闭
+3. GoZero 产物固定为 `openapi.json`，因为它被 `gozero/app/docs/embed.go` 嵌入二进制，改名会导致编译失败
+4. GoZero 产物已剔除 `x-date`、`x-goctl-version` 等易变字段，同一份 `.api` 在不同机器、不同 goctl 版本下生成结果一致
+5. 各服务产物都不带 `servers`（Spring 生成器与 GoZero 的 `fix.py` 都会移除），Base URL 统一交由 Apifox 环境面板维护
+6. 对应工具未安装时该服务会跳过并提示，其余服务继续生成；`gateway` 为 APISIX 配置，无 OpenAPI 产物，会被忽略
+
 ### Spring 部分
 
 1. 在 config 包下的 `SwaggerConfig.java`中修改对应 Swagger 信息
 2. 使用 `@Operation(summary = "spring自己的测试", description = "输出欢迎信息")`设置对应接口
 3. 在 `http://[ip和端口]/swagger-ui/index.html`访问 Swagger 接口
+4. 离线生成静态产物由 `spring/src/test/java/com/hcsy/spring/openapi/OpenApiDocGenerator.java` 负责，执行 `./mix swag spring` 后输出到 `spring/docs/`；该生成器只装配 Controller 与 springdoc 配置，其余依赖通过 `BeanFactoryPostProcessor` 自动注册为 Mockito 桩，因此不会连接 MySQL、Redis、RabbitMQ，也不读取 Nacos
 
 ### GoZero 部分
 
@@ -2118,21 +2177,22 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 3. 每次修改 `.api` 文件后，运行以下命令重新生成 Swagger 文档：
 
    ```bash
-   # 使用快捷方式
-   ./mix swag
+   # 使用快捷方式（只生成 GoZero）
+   ./mix swag gozero
 
    # 或直接调用脚本
    cd gozero && bash script/swagger/genSwagger.sh
    ```
 
-4. 生成的 Swagger 文件位于 `gozero/app/docs/` 目录
-5. 目前 Swagger 文档的描述、作者、版本信息和中文分组等相关 Swagger 内容存在问题，使用 `script/swagger/fix.py` 脚本进行修复，修复后会覆盖原来的 Swagger 文件，如有需要可修改 `fix.py` 脚本中的相关内容
+4. 生成的 Swagger 文件位于 `gozero/app/docs/`（`openapi.json` 与 `openapi.yaml`），其中 `openapi.json` 被 `gozero/app/docs/embed.go` 嵌入二进制，不要改名
+5. 生成链路为 `goctl api swagger` → `swagger2openapi` → `fix.py` 归一化：`fix.py` 负责补全描述、作者、版本信息和中文分组，并移除 `servers`、per-operation `schemes` 以及 `x-date`、`x-goctl-version` 等易变字段，使同一份 `.api` 的生成结果稳定可复现，如有需要可修改 `fix.py` 脚本中的相关内容
 
 ### NestJS
 
-1. 在 `main.ts`中修改对应 Swagger 信息
+1. Swagger 信息定义在 `nestjs/src/common/constants/swagger.constants.ts` 的 `SwaggerConfig`，文档构建抽到 `nestjs/src/app/swagger.ts` 的 `buildSwaggerDocument`，由 `createApp` 与离线脚本共用
 2. 使用 `@ApiOperation({ summary: '获取用户信息', description: '获取用户信息列表' })`设置对应接口
 3. 在 `http://[ip和端口]/api-docs`访问 Swagger 接口
+4. 离线生成静态产物由 `nestjs/src/script/generateOpenapi.ts` 负责，执行 `./mix swag nestjs` 后输出到 `nestjs/docs/`；它以上面的 `buildSwaggerDocument` 保证与运行时文档一致。该脚本必须以 Bun 运行（`npm run bun:openapi`），因为项目依赖的 `uuid@14` 为纯 ESM，Node 20 的 CJS 加载器无法加载
 
 ### FastAPI 部分
 
@@ -2162,6 +2222,81 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
    ```
 
 3. 启动 FastAPI 服务后，访问 `http://[ip和端口]/docs` 查看 Swagger UI，或访问 `http://[ip和端口]/redoc` 查看 ReDoc 文档。
+4. 离线生成静态产物由 `fastapi/script/genOpenapi.py` 负责，执行 `./mix swag fastapi` 后输出到 `fastapi/docs/`；脚本直接导入 `create_app()` 并读取 `app.openapi()`，不执行 lifespan，因此不会连接 MySQL、ClickHouse、PostgreSQL、Neo4j、Redis 等组件
+
+## Apifox 文档同步
+
+`./mix apifox` 把各服务 `docs/` 下的静态 OpenAPI 文档通过 [Apifox 开放 API](https://apifox-openapi.apifox.cn/) 导入到指定项目，同样不启动任何服务，也不访问本地中间件。
+
+### 前置配置
+
+先在根目录 `.env` 中填写两个必填项（从 `.env.example` 复制生成）：
+
+```bash
+# ===== Apifox 文档同步（./mix apifox）=====
+APIFOX_ACCESS_TOKEN=你的访问令牌
+APIFOX_PROJECT_ID=你的项目ID
+```
+
+| 变量                                                     | 必填 | 默认值                 | 说明                                                           |
+| -------------------------------------------------------- | ---- | ---------------------- | -------------------------------------------------------------- |
+| `APIFOX_ACCESS_TOKEN`                                    | 是   | -                      | 访问令牌，作为 `Authorization: Bearer <token>` 发送            |
+| `APIFOX_PROJECT_ID`                                      | 是   | -                      | 项目 ID（数字），拼进 `/v1/projects/{projectId}/import-openapi` |
+| `APIFOX_BASE_URL`                                        | 否   | `https://api.apifox.com` | 开放 API 地址，私有化部署时替换域名                          |
+| `APIFOX_API_VERSION`                                     | 否   | `2024-03-28`           | 请求头 `X-Apifox-Api-Version` 的取值                           |
+| `APIFOX_LOCALE`                                          | 否   | `zh-CN`                | 请求参数 `locale`                                              |
+| `APIFOX_FOLDER_SPRING`<br/>`APIFOX_FOLDER_GOZERO`<br/>`APIFOX_FOLDER_NESTJS`<br/>`APIFOX_FOLDER_FASTAPI` | 否   | 空                     | 各服务的目标接口目录 ID（数字），留空则导入到项目根目录         |
+| `APIFOX_SCHEMA_FOLDER_ID`                                | 否   | 空                     | 数据模型的目标目录 ID                                          |
+| `APIFOX_BRANCH_ID` / `APIFOX_MODULE_ID`                  | 否   | 空                     | 目标分支 ID / 目标模块 ID                                      |
+| `APIFOX_ENDPOINT_OVERWRITE_BEHAVIOR`                     | 否   | `AUTO_MERGE`           | 接口的覆盖策略，取值见下表                                     |
+| `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`                       | 否   | `AUTO_MERGE`           | 数据模型的覆盖策略，取值同上                                   |
+| `APIFOX_DELETE_UNMATCHED_RESOURCES`                      | 否   | `false`                | 是否删除 Apifox 中存在但文档中没有的接口与数据模型             |
+| `APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT`               | 否   | `true`                 | 是否用文档中的目录信息更新已有接口的所属目录                   |
+
+> 所有 ID 类变量必须是数字，填成目录名会直接报错；接口目录 ID 可用 `apifox-cli folder list --project <项目ID> --type endpoint` 查询（脚本报错提示中也会给出该命令）。
+
+令牌与项目 ID 的获取位置：
+
+- `APIFOX_ACCESS_TOKEN`：Apifox 右上角头像 → 账号设置 → API 访问令牌 → 新建令牌（令牌只显示一次，需立即复制）
+- `APIFOX_PROJECT_ID`：打开项目后浏览器地址形如 `https://app.apifox.com/project/<项目ID>/xxx`
+
+覆盖策略取值：
+
+| 取值                 | 说明                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| `AUTO_MERGE`         | 智能合并，保留 Apifox 侧手工维护的中文名、mock 规则、参数说明与返回示例，其余按文档更新（默认）  |
+| `OVERWRITE_EXISTING` | 文档直接覆盖 Apifox 侧内容，适合以仓库为唯一事实来源的场景                                       |
+| `KEEP_EXISTING`      | 已有接口一律不动，只新增文档里有而 Apifox 里没有的接口                                           |
+| `CREATE_NEW`         | 新旧接口同时保留                                                                                 |
+
+### 使用方式
+
+```bash
+# 先确认静态产物是最新的
+./mix swag
+
+# 同步全部四个服务
+./mix apifox
+
+# 只同步指定服务
+./mix apifox spring nestjs
+
+# dry-run：只校验产物与配置，不发起导入请求
+./mix apifox --dry-run
+
+# 直接调用脚本
+./scripts/apifox-sync.sh spring --dry-run
+```
+
+执行时按服务逐个串行导入，并打印各服务的「新增 / 更新 / 忽略 / 失败」计数；任一服务产物缺失或导入失败都会以非零状态码退出。
+
+### 注意事项
+
+1. 只读取仓库内的静态产物，产物缺失时提示先执行 `./mix swag <service>`
+2. 导入选项固定 `prependBasePath: false`，各服务产物也已移除 `servers`，BasePath 与 Base URL 统一由 Apifox 环境面板维护，避免导入后带上网关之外的 host
+3. 同一项目不允许并发导入，脚本按服务串行执行；对 `403`、`429`、`5xx` 会重试 3 次（间隔 3 秒）
+4. 依赖 `curl`、`sed`、`tr`、`grep`、`mktemp`，Git Bash / WSL / Linux 自带，不需要额外安装 Python 或 jq
+5. 令牌权限等同账号密码，脚本输出不会回显令牌；根目录 `.env` 已被 `.gitignore` 忽略，请勿提交
 
 ## 项目规范说明
 
@@ -2304,6 +2439,28 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 4. GoZero 部分的初始化在 `internal/boot` 文件夹创建，main 函数只进行调用，配置相关的初始化在 `svc` 文件夹下初始化执行
 5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
 6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `core/config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/initializer` 下通过响应式 `DatabaseClient` 执行
+
+### Agent 技能包（skills/）
+
+仓库根目录的 `skills/` 存放本项目的专属 Agent 技能包，供 AI 编码助手在本仓库内工作时加载，随仓库一起版本管理：
+
+```
+skills/
+  SKILL.md                     项目专属编码规范（技能主体）
+  references/
+    unit-testing.md            测试规范（按需加载的参考文件）
+```
+
+`SKILL.md` 通过 frontmatter 声明技能名 `mix-web-demo` 与适用场景，正文覆盖：
+
+- **通用规则**：格式化与 lint 门禁、常量抽取、参数校验、并行化、SQL 参数化、远程调用与连接池释放、日志脱敏、注释与行尾规范
+- **各服务专项约定**：Spring 响应式切面写法与 WebFlux 校验异常陷阱、GoZero 的 API-First 生成流程与 `httpc` 远程调用、NestJS 模块边界与 CLS 未登录语义、FastAPI 依赖注入三层结构与 Agent 工具权限
+- **接口文档收尾流程**：新增、修改或删除接口后重新生成静态 OpenAPI 文档并同步 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)与 [Swagger 说明](#swagger-说明)
+- **仓库工程约束与验证命令**：行尾约定、goctl 生成流程、`mix` 子命令清单、各服务的验证与格式检查命令
+
+`references/` 下放置供按需加载的参考文件，`SKILL.md` 会指明在哪些任务下必须完整读取（例如创建、修改或评审测试时必须读 `references/unit-testing.md`）。
+
+> **本目录是项目专属技能的备份，实际生效的是对应 Agent 工具自己维护的 skills**。各工具的技能目录不同（`.codebuddy`、`.claude`、`.codex`、`.trae` 等已被 `.gitignore` 忽略，不随仓库分发），这里只保留一份可版本管理的副本，便于审阅、比对与迁移；修改约定时改本目录的文件，再同步到实际使用的工具技能目录。
 
 ## 代码规范与格式化工具
 
