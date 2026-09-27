@@ -1,0 +1,10 @@
+spring:
+  cloud:
+    nacos:
+      # 测试环境不依赖 Nacos：关闭配置中心与注册中心，也不做 config import 校验
+      config:
+        enabled: false
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false

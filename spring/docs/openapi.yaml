@@ -1,0 +1,4722 @@
+openapi: "3.0.1"
+info:
+  title: "Spring部分的Swagger文档"
+  description: "这是项目的Spring部分的Swagger文档"
+  version: "1.0.0"
+tags:
+- name: "用户模块"
+  description: "用户管理功能相关API，包括用户注册、登录、信息管理、验证码等"
+- name: "权威参考文本模块"
+  description: "分类权威参考文本相关API，包括参考文本增删改查等"
+- name: "定时任务模块"
+  description: "手动触发定时任务相关API"
+- name: "评论模块"
+  description: "文章评论功能相关API，包括评论发布、回复、删除、评论列表查询等"
+- name: "SQL工具"
+  description: "供FastAPI Agent远程调用的SQL工具接口"
+- name: "用户关注模块"
+  description: "用户关注功能相关API，包括关注、取消关注、关注列表、粉丝列表、关注统计等"
+- name: "文章点赞模块"
+  description: "文章点赞功能相关API，包括文章点赞、取消点赞、点赞状态查询、点赞统计等"
+- name: "分类模块"
+  description: "文章分类管理相关API，包括分类增删改查、子分类管理、层级查询等"
+- name: "文章收藏模块"
+  description: "文章收藏功能相关API，包括收藏、取消收藏、收藏列表查询、收藏统计等"
+- name: "文章模块"
+  description: "文章管理功能相关API，包括文章增删改查、搜索排序等"
+- name: "测试模块"
+  description: "服务测试相关API，用于验证各个微服务是否正常运行"
+paths:
+  /users:
+    get:
+      tags:
+      - "用户模块"
+      summary: "获取用户信息"
+      description: "分页获取用户信息列表，并支持用户名模糊查询，实时返回用户登录状态和设备数"
+      operationId: "listUsers"
+      parameters:
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          minimum: 1
+          type: "string"
+          description: "页码"
+          example: 1
+        example: 1
+      - name: "size"
+        in: "query"
+        description: "每页条数"
+        required: false
+        schema:
+          maximum: 100
+          minimum: 1
+          type: "string"
+          description: "每页条数"
+          example: 10
+        example: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserListVO"
+    put:
+      tags:
+      - "用户模块"
+      summary: "修改用户"
+      description: "通过请求体修改用户信息"
+      operationId: "updateUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    post:
+      tags:
+      - "用户模块"
+      summary: "新增用户"
+      description: "创建新用户，如果不传密码则使用配置中的默认密码"
+      operationId: "addUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/status/{id}:
+    put:
+      tags:
+      - "用户模块"
+      summary: "修改用户状态"
+      description: "根据用户ID修改用户状态（存储在Redis中）"
+      operationId: "updateUserStatus"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "status"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /comments:
+    get:
+      tags:
+      - "评论模块"
+      summary: "获取普通评论信息"
+      description: "分页获取普通评论信息列表，并支持用户名和文章标题模糊查询"
+      operationId: "listComments"
+      parameters:
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          type: "string"
+          description: "页码"
+          example: 1
+        example: 1
+      - name: "size"
+        in: "query"
+        description: "每页条数"
+        required: false
+        schema:
+          type: "string"
+          description: "每页条数"
+          example: 10
+        example: 10
+      - name: "username"
+        in: "query"
+        description: "用户名（模糊匹配）"
+        required: false
+        schema:
+          type: "string"
+          description: "用户名（模糊匹配）"
+      - name: "article_title"
+        in: "query"
+        description: "文章标题（模糊匹配）"
+        required: false
+        schema:
+          type: "string"
+          description: "文章标题（模糊匹配）"
+      - name: "content"
+        in: "query"
+        description: "评论内容（模糊匹配）"
+        required: false
+        schema:
+          type: "string"
+          description: "评论内容（模糊匹配）"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOCommentsVO"
+    put:
+      tags:
+      - "评论模块"
+      summary: "修改评论"
+      description: "通过请求体修改评论信息"
+      operationId: "updateComment"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    post:
+      tags:
+      - "评论模块"
+      summary: "新增评论"
+      description: "通过请求体创建评论信息"
+      operationId: "createComment"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category:
+    put:
+      tags:
+      - "分类模块"
+      summary: "修改分类"
+      description: "管理员修改文章分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志"
+      operationId: "updateCategory"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    post:
+      tags:
+      - "分类模块"
+      summary: "新增分类"
+      description: "管理员新增文章分类，分类信息同步写入 Neo4j 图谱并记录操作日志"
+      operationId: "addCategory"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/sub:
+    put:
+      tags:
+      - "分类模块"
+      summary: "修改子分类"
+      description: "管理员修改指定子分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志"
+      operationId: "updateSubCategory"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubCategoryUpdateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    post:
+      tags:
+      - "分类模块"
+      summary: "新增子分类"
+      description: "管理员在指定分类下新增子分类，同步写入 Neo4j 图谱并记录操作日志"
+      operationId: "addSubCategory"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubCategoryCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/reference:
+    put:
+      tags:
+      - "权威参考文本模块"
+      summary: "修改权威参考文本"
+      description: "管理员修改指定子分类下的权威参考文本内容"
+      operationId: "updateCategoryReference"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryReferenceUpdateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    post:
+      tags:
+      - "权威参考文本模块"
+      summary: "创建权威参考文本"
+      description: "管理员在指定子分类下创建权威参考文本内容"
+      operationId: "addCategoryReference"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryReferenceCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /articles:
+    put:
+      tags:
+      - "文章模块"
+      summary: "更新文章"
+      description: "根据DTO更新文章信息"
+      operationId: "updateArticle"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleUpdateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    post:
+      tags:
+      - "文章模块"
+      summary: "创建文章"
+      description: "通过请求体创建一篇新文章"
+      operationId: "createArticle"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /articles/view/{id}:
+    put:
+      tags:
+      - "文章模块"
+      summary: "增加文章阅读量"
+      description: "增加文章阅读量"
+      operationId: "addViewArticle"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /articles/publish/{id}:
+    put:
+      tags:
+      - "文章模块"
+      summary: "发布文章"
+      description: "将文章状态修改为发布"
+      operationId: "publishArticle"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/token/refresh:
+    post:
+      tags:
+      - "用户模块"
+      summary: "刷新 Token"
+      description: "使用 refresh token 刷新 access token 和 refresh token，支持 token 轮换"
+      operationId: "refreshToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultTokenRefreshVO"
+  /users/reset-password:
+    post:
+      tags:
+      - "用户模块"
+      summary: "通过邮箱验证码重置密码"
+      description: "用户通过邮箱验证码验证身份后重置密码"
+      operationId: "resetPassword"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/register:
+    post:
+      tags:
+      - "用户模块"
+      summary: "用户注册"
+      description: "注册新用户，需要提供邮箱验证码"
+      operationId: "registerUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/logout:
+    post:
+      tags:
+      - "用户模块"
+      summary: "用户登出"
+      description: "用户登出，从当前 access token 解析 session 并清除"
+      operationId: "logout"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/login:
+    post:
+      tags:
+      - "用户模块"
+      summary: "用户登录"
+      description: "根据用户名和密码进行登录，成功后返回JWT令牌，Token保存到Redis"
+      operationId: "login"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserLoginVO"
+  /users/kick-other-devices:
+    post:
+      tags:
+      - "用户模块"
+      summary: "踢出其他设备"
+      description: "清除当前用户除本次请求携带的 access token 之外的所有 session（保留当前设备）"
+      operationId: "kickOtherDevices"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultKickOtherDevicesVO"
+  /users/github/token:
+    post:
+      tags:
+      - "用户模块"
+      summary: "获取 GitHub 登录 Token"
+      description: "前端使用一次性 ticket 换取本站登录 token，成功后立即删除 ticket"
+      operationId: "exchangeGithubToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubTokenExchangeDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserLoginVO"
+  /users/github/token-ticket:
+    post:
+      tags:
+      - "用户模块"
+      summary: "生成 GitHub 登录票据"
+      description: "在 GitHub 回调成功后生成本站登录票据"
+      operationId: "createGithubTokenTicket"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubTokenTicketCreateDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultGithubTokenTicketVO"
+  /users/github-user:
+    post:
+      tags:
+      - "用户模块"
+      summary: "创建或更新GitHub用户（内部）"
+      description: "GitHub OAuth登录后创建或更新用户，供内部服务远程调用"
+      operationId: "findOrCreateGithubUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GithubUserInternalDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserVO"
+  /users/force-logout/{user_id}:
+    post:
+      tags:
+      - "用户模块"
+      summary: "手动下线用户"
+      description: "管理员操作：将指定用户的所有登录会话强制下线"
+      operationId: "forceLogoutUser"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/email/send:
+    post:
+      tags:
+      - "用户模块"
+      summary: "发送邮箱验证码"
+      description: "向指定邮箱发送验证码，支持注册(register)和登录(login)两种场景"
+      operationId: "sendVerificationCode"
+      parameters:
+      - name: "email"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      - name: "type"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailCodeSendDTO"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/email-login:
+    post:
+      tags:
+      - "用户模块"
+      summary: "邮箱验证码登录"
+      description: "通过邮箱和验证码进行登录，成功后返回JWT令牌，Token保存到Redis"
+      operationId: "emailLogin"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailLoginDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserLoginVO"
+  /users/batch:
+    post:
+      tags:
+      - "用户模块"
+      summary: "批量查询用户（内部）"
+      description: "根据ID列表批量查询用户，供内部服务远程调用"
+      operationId: "getUserByIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListUserVO"
+  /users/admin/reset-password/{user_id}:
+    post:
+      tags:
+      - "用户模块"
+      summary: "管理员重置指定用户密码"
+      description: "管理员操作：将指定用户ID的密码重置为配置中的重置密码"
+      operationId: "resetUserPassword"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/admin/reset-all-passwords:
+    post:
+      tags:
+      - "用户模块"
+      summary: "管理员重置所有用户密码"
+      description: "管理员操作：将所有用户密码重置为配置中的重置密码"
+      operationId: "resetAllPasswords"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /task/clean:
+    post:
+      tags:
+      - "定时任务模块"
+      summary: "手动执行清理过期Token"
+      description: "手动触发清理过期Token任务"
+      operationId: "executeTokenCleanup"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /sql-tools/query:
+    post:
+      tags:
+      - "SQL工具"
+      summary: "执行只读SQL查询（内部）"
+      description: "执行受限的只读参数化SQL查询，供FastAPI Agent远程调用"
+      operationId: "executeQuery"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SqlQueryDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapStringObject"
+  /likes:
+    post:
+      tags:
+      - "文章点赞模块"
+      summary: "添加点赞"
+      description: "为文章添加点赞"
+      operationId: "addLike"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleLikeDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    delete:
+      tags:
+      - "文章点赞模块"
+      summary: "取消点赞"
+      description: "取消对文章的点赞"
+      operationId: "removeLike"
+      parameters:
+      - name: "article_id"
+        in: "query"
+        description: "文章ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "user_id"
+        in: "query"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /likes/counts/batch:
+    post:
+      tags:
+      - "文章点赞模块"
+      summary: "批量查询点赞数（内部）"
+      description: "根据文章ID列表批量查询点赞数，供内部服务远程调用"
+      operationId: "getLikeCountsByArticleIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultBatchCountVO"
+  /focus:
+    post:
+      tags:
+      - "用户关注模块"
+      summary: "新增关注"
+      description: "用户关注另一个用户"
+      operationId: "addFocus"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FocusDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    delete:
+      tags:
+      - "用户关注模块"
+      summary: "取消关注"
+      description: "用户取消关注另一个用户"
+      operationId: "removeFocus"
+      parameters:
+      - name: "user_id"
+        in: "query"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "focus_id"
+        in: "query"
+        description: "关注用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /focus/counts/batch:
+    post:
+      tags:
+      - "用户关注模块"
+      summary: "批量查询粉丝数（内部）"
+      description: "根据用户ID列表批量查询粉丝数，供内部服务远程调用"
+      operationId: "getFollowCountsByUserIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultBatchCountVO"
+  /comments/statistics/delete-ai/{articleId}:
+    post:
+      tags:
+      - "评论模块"
+      summary: "删除文章AI评论（内部）"
+      description: "删除文章的AI评论，供内部服务远程调用"
+      operationId: "deleteAiCommentsByArticleId"
+      parameters:
+      - name: "article_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /comments/scores/batch:
+    post:
+      tags:
+      - "评论模块"
+      summary: "批量查询评论评分（内部）"
+      description: "根据文章ID列表批量查询评论评分，按角色分组，供内部服务远程调用"
+      operationId: "getCommentScoresByArticleIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListArticleCommentScoresVO"
+  /comments/internal/create:
+    post:
+      tags:
+      - "评论模块"
+      summary: "创建评论（内部）"
+      description: "创建评论，供内部服务远程调用"
+      operationId: "createCommentInternal"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Comments"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /collects:
+    post:
+      tags:
+      - "文章收藏模块"
+      summary: "添加收藏"
+      description: "为文章添加收藏"
+      operationId: "addCollect"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleCollectDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+    delete:
+      tags:
+      - "文章收藏模块"
+      summary: "取消收藏"
+      description: "取消对文章的收藏"
+      operationId: "removeCollect"
+      parameters:
+      - name: "article_id"
+        in: "query"
+        description: "文章ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "user_id"
+        in: "query"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /collects/counts/batch:
+    post:
+      tags:
+      - "文章收藏模块"
+      summary: "批量查询收藏数（内部）"
+      description: "根据文章ID列表批量查询收藏数，供内部服务远程调用"
+      operationId: "getCollectCountsByArticleIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultBatchCountVO"
+  /category/sub/batch:
+    post:
+      tags:
+      - "分类模块"
+      summary: "批量查询子分类（内部）"
+      description: "根据ID列表批量查询子分类，供内部服务远程调用"
+      operationId: "getSubCategoryByIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListSubCategoryVO"
+  /category/batch:
+    post:
+      tags:
+      - "分类模块"
+      summary: "批量查询分类（内部）"
+      description: "根据ID列表批量查询分类，供内部服务远程调用"
+      operationId: "getCategoryByIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListCategoryVO"
+  /articles/views/batch:
+    post:
+      tags:
+      - "文章模块"
+      summary: "批量查询文章阅读量（内部）"
+      description: "根据ID列表批量查询文章阅读量，供内部服务远程调用"
+      operationId: "getArticleViewsByIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListIdCountVO"
+  /articles/batch:
+    post:
+      tags:
+      - "文章模块"
+      summary: "批量查询文章（内部）"
+      description: "根据ID列表批量查询文章，供内部服务远程调用"
+      operationId: "getArticleByIds"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchIdsDTO"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListArticleWithCategoryVO"
+  /warehouse/sync/{resource}:
+    get:
+      tags:
+      - "数仓同步模块"
+      summary: "分页获取数仓源数据"
+      description: "供 FastAPI 数仓任务通过内部接口分页同步 Spring 业务数据"
+      operationId: "sync"
+      parameters:
+      - name: "resource"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+          format: "date-time"
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1000
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultSyncPage"
+  /users/{id}:
+    get:
+      tags:
+      - "用户模块"
+      summary: "查询用户"
+      description: "根据id查询用户，返回用户信息及其登录状态和设备数"
+      operationId: "getUserById"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserVO"
+    delete:
+      tags:
+      - "用户模块"
+      summary: "删除用户"
+      description: "根据id删除用户"
+      operationId: "deleteUser"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /users/{id}/is-admin:
+    get:
+      tags:
+      - "用户模块"
+      summary: "判断用户是否为管理员（内部）"
+      description: "根据用户ID判断是否为管理员，供内部服务远程调用"
+      operationId: "isAdminUser"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultBoolean"
+  /users/neo4j-sync:
+    get:
+      tags:
+      - "用户模块"
+      summary: "获取用户表数据用于Neo4j同步（内部）"
+      description: "获取用户表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncUsers"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /users/internal/auth/validate:
+    get:
+      tags:
+      - "用户模块"
+      summary: "校验网关访问令牌"
+      description: "校验访问令牌并返回用户身份请求头"
+      operationId: "validateGatewayAccessToken"
+      parameters:
+      - name: "authorization"
+        in: "header"
+        required: false
+        schema:
+          type: "string"
+      - name: "x-access-token"
+        in: "header"
+        required: false
+        schema:
+          type: "string"
+      - name: "x-forwarded-uri"
+        in: "header"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+  /users/captcha:
+    get:
+      tags:
+      - "用户模块"
+      summary: "获取图形验证码"
+      description: "生成图形验证码，返回验证码ID和base64图片数据，验证码缓存到Redis并在5分钟后过期"
+      operationId: "getImageCaptcha"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultImageCaptchaVO"
+  /users/by-name:
+    get:
+      tags:
+      - "用户模块"
+      summary: "根据用户名模糊搜索用户（内部）"
+      description: "根据用户名或GitHub登录名模糊搜索，供内部服务远程调用"
+      operationId: "getUsersByName"
+      parameters:
+      - name: "name"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListUserVO"
+  /users/by-github-id/{githubId}:
+    get:
+      tags:
+      - "用户模块"
+      summary: "根据GitHub ID查询用户（内部）"
+      description: "根据GitHub ID查询用户，供内部服务远程调用"
+      operationId: "getUserByGithubId"
+      parameters:
+      - name: "github_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserVO"
+  /users/all:
+    get:
+      tags:
+      - "用户模块"
+      summary: "获取所有用户"
+      description: "获取所有用户列表（不分页）"
+      operationId: "getAllUsers"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserListVO"
+  /users/ai:
+    get:
+      tags:
+      - "用户模块"
+      summary: "获取所有AI用户"
+      description: "获取 role 为 ai 的用户列表，不分页"
+      operationId: "getAllAiUsers"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultUserListVO"
+  /test/spring:
+    get:
+      tags:
+      - "测试模块"
+      summary: "Spring自己的测试"
+      description: "输出欢迎信息"
+      operationId: "getHello"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultString"
+  /sql-tools/tables:
+    get:
+      tags:
+      - "SQL工具"
+      summary: "获取表结构信息（内部）"
+      description: "获取白名单内MySQL表的结构信息，供FastAPI Agent远程调用"
+      operationId: "getTables"
+      parameters:
+      - name: "table"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /likes/user/{user_id}:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "查询用户的所有点赞"
+      description: "分页查询某个用户的所有点赞记录（包含文章详情）"
+      operationId: "listUserLikes"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        description: "每页数量"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOArticleLikeVO"
+  /likes/statistics/total:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "获取总点赞数（内部）"
+      description: "获取所有文章的总点赞数，供内部服务远程调用"
+      operationId: "getTotalLikes"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /likes/statistics/monthly-trend/{userId}:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "获取用户月度点赞趋势（内部）"
+      description: "获取用户本月点赞的趋势，供内部服务远程调用"
+      operationId: "getMonthlyLikeTrend"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapDataVO"
+  /likes/statistics/average:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "获取平均点赞数（内部）"
+      description: "获取每篇文章的平均点赞数，供内部服务远程调用"
+      operationId: "getAverageLikes"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDouble"
+  /likes/neo4j-sync:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "获取点赞表数据用于Neo4j同步（内部）"
+      description: "获取点赞表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncLikes"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /likes/count/{article_id}:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "获取文章的点赞数"
+      description: "获取某篇文章的总点赞数"
+      operationId: "getLikeCount"
+      parameters:
+      - name: "article_id"
+        in: "path"
+        description: "文章ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLikeCountVO"
+  /likes/check:
+    get:
+      tags:
+      - "文章点赞模块"
+      summary: "检查用户是否点赞"
+      description: "查询用户是否点赞过某篇文章"
+      operationId: "isLiked"
+      parameters:
+      - name: "article_id"
+        in: "query"
+        description: "文章ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "user_id"
+        in: "query"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLikeCheckVO"
+  /focus/statistics/total-follows/{userId}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取总关注数（内部）"
+      description: "获取用户的总关注数，供内部服务远程调用"
+      operationId: "getTotalFollows"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /focus/statistics/monthly-trend/{userId}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取用户月度关注趋势（内部）"
+      description: "获取用户本月关注的趋势，供内部服务远程调用"
+      operationId: "getMonthlyFollowTrend"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapDataVO"
+  /focus/statistics/followers-in-period/{userId}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取时间段内粉丝数（内部）"
+      description: "获取指定时间段内的新增粉丝数，供内部服务远程调用"
+      operationId: "getFollowersInPeriod"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "start_date"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+          format: "date-time"
+      - name: "end_date"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+          format: "date-time"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /focus/statistics/daily-follows/{userId}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取每日关注数（内部）"
+      description: "获取指定时间段内每天的关注数，供内部服务远程调用"
+      operationId: "getDailyFollows"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "start_date"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+          format: "date-time"
+      - name: "end_date"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+          format: "date-time"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapDataVO"
+  /focus/neo4j-sync:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取关注表数据用于Neo4j同步（内部）"
+      description: "获取关注表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncFocus"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /focus/followers/{user_id}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "查询用户的所有粉丝"
+      description: "分页查询某个用户的所有粉丝信息"
+      operationId: "listUserFollowers"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        description: "每页数量"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOFocusUserVO"
+  /focus/count/follower/{user_id}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取用户的粉丝数"
+      description: "查询用户的粉丝数量"
+      operationId: "getFollowerCount"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCountVO"
+  /focus/count/focus/{user_id}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "获取用户的关注数"
+      description: "查询用户关注的人数"
+      operationId: "getFocusCount"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCountVO"
+  /focus/check:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "检查关注状态"
+      description: "查询用户是否关注了某个用户"
+      operationId: "isFocused"
+      parameters:
+      - name: "user_id"
+        in: "query"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "focus_id"
+        in: "query"
+        description: "关注用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultFocusCheckVO"
+  /focus/authors/{user_id}:
+    get:
+      tags:
+      - "用户关注模块"
+      summary: "查询用户的所有关注作者"
+      description: "分页查询某个用户关注的所有作者信息"
+      operationId: "listUserFocuses"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        description: "每页数量"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOFocusUserVO"
+  /comments/{id}:
+    get:
+      tags:
+      - "评论模块"
+      summary: "根据id查询评论"
+      description: "根据id查询评论"
+      operationId: "getCommentsById"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCommentsVO"
+    delete:
+      tags:
+      - "评论模块"
+      summary: "删除评论"
+      description: "根据id删除评论"
+      operationId: "deleteComment"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /comments/user/{id}:
+    get:
+      tags:
+      - "评论模块"
+      summary: "根据用户id分页获取评论"
+      description: "根据用户id分页获取评论"
+      operationId: "listCommentsByUserId"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOCommentsVO"
+  /comments/statistics/monthly-trend/{userId}:
+    get:
+      tags:
+      - "评论模块"
+      summary: "获取用户月度评论趋势（内部）"
+      description: "获取用户本月评论的趋势，供内部服务远程调用"
+      operationId: "getMonthlyCommentTrend"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapDataVO"
+  /comments/statistics/ai-count/{articleId}:
+    get:
+      tags:
+      - "评论模块"
+      summary: "获取文章AI评论数（内部）"
+      description: "获取文章的AI评论数，供内部服务远程调用"
+      operationId: "getAiCommentsNumByArticleId"
+      parameters:
+      - name: "article_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /comments/neo4j-sync:
+    get:
+      tags:
+      - "评论模块"
+      summary: "获取评论表数据用于Neo4j同步（内部）"
+      description: "获取评论表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncComments"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /comments/article/{id}:
+    get:
+      tags:
+      - "评论模块"
+      summary: "根据文章id分页获取评论"
+      description: "根据文章id分页获取评论"
+      operationId: "listCommentsByArticleId"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "sort_way"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+          default: "create_time"
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOCommentsVO"
+  /comments/article/ai/{id}:
+    get:
+      tags:
+      - "评论模块"
+      summary: "根据文章id获取AI评论"
+      description: "根据文章id获取AI评论"
+      operationId: "listAICommentsByArticleId"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListAICommentsVO"
+  /comments/ai:
+    get:
+      tags:
+      - "评论模块"
+      summary: "获取AI评论信息"
+      description: "分页获取AI评论信息列表，并支持AI类型和文章标题模糊查询"
+      operationId: "listAIComments"
+      parameters:
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          type: "string"
+          description: "页码"
+          example: 1
+        example: 1
+      - name: "size"
+        in: "query"
+        description: "每页条数"
+        required: false
+        schema:
+          type: "string"
+          description: "每页条数"
+          example: 10
+        example: 10
+      - name: "username"
+        in: "query"
+        description: "用户名（模糊匹配）"
+        required: false
+        schema:
+          type: "string"
+          description: "用户名（模糊匹配）"
+      - name: "article_title"
+        in: "query"
+        description: "文章标题（模糊匹配）"
+        required: false
+        schema:
+          type: "string"
+          description: "文章标题（模糊匹配）"
+      - name: "content"
+        in: "query"
+        description: "评论内容（模糊匹配）"
+        required: false
+        schema:
+          type: "string"
+          description: "评论内容（模糊匹配）"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOCommentsVO"
+  /collects/user/{user_id}:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "查询用户的所有收藏"
+      description: "分页查询某个用户的所有收藏记录（包含文章详情）"
+      operationId: "listUserCollects"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "page"
+        in: "query"
+        description: "页码"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        description: "每页数量"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOArticleCollectVO"
+  /collects/statistics/total:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "获取总收藏数（内部）"
+      description: "获取所有文章的总收藏数，供内部服务远程调用"
+      operationId: "getTotalCollects"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /collects/statistics/monthly-trend/{userId}:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "获取用户月度收藏趋势（内部）"
+      description: "获取用户本月收藏的趋势，供内部服务远程调用"
+      operationId: "getMonthlyCollectTrend"
+      parameters:
+      - name: "user_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapDataVO"
+  /collects/statistics/average:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "获取平均收藏数（内部）"
+      description: "获取每篇文章的平均收藏数，供内部服务远程调用"
+      operationId: "getAverageCollects"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDouble"
+  /collects/neo4j-sync:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "获取收藏表数据用于Neo4j同步（内部）"
+      description: "获取收藏表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncCollects"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /collects/count/{article_id}:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "获取文章的收藏数"
+      description: "获取某篇文章的总收藏数"
+      operationId: "getCollectCount"
+      parameters:
+      - name: "article_id"
+        in: "path"
+        description: "文章ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCollectCountVO"
+  /collects/check:
+    get:
+      tags:
+      - "文章收藏模块"
+      summary: "检查用户是否收藏"
+      description: "查询用户是否收藏过某篇文章"
+      operationId: "isCollected"
+      parameters:
+      - name: "article_id"
+        in: "query"
+        description: "文章ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "user_id"
+        in: "query"
+        description: "用户ID"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCollectCheckVO"
+  /category/{id}:
+    get:
+      tags:
+      - "分类模块"
+      summary: "根据ID查询分类（含子分类信息）"
+      description: "根据分类ID查询单个分类详情，返回分类及其子分类的层级结构信息，不存在时返回404"
+      operationId: "getCategoryById"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCategoryVO"
+    delete:
+      tags:
+      - "分类模块"
+      summary: "删除分类（级联删除子分类）"
+      description: "管理员删除指定分类，级联删除其下所有子分类，并同步删除 Neo4j 图谱中的对应节点"
+      operationId: "deleteCategory"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/reference/sub/{sub_category_id}:
+    get:
+      tags:
+      - "权威参考文本模块"
+      summary: "根据子分类ID获取权威参考文本"
+      description: "根据子分类ID查询其关联的权威参考文本，不存在时返回空数据"
+      operationId: "getCategoryReferenceBySubCategoryId"
+      parameters:
+      - name: "sub_category_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultCategoryReferenceVO"
+    delete:
+      tags:
+      - "权威参考文本模块"
+      summary: "删除权威参考文本"
+      description: "管理员删除指定子分类下的权威参考文本"
+      operationId: "deleteCategoryReference"
+      parameters:
+      - name: "sub_category_id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/list:
+    get:
+      tags:
+      - "分类模块"
+      summary: "分页查询分类（含子分类信息）"
+      description: "按页码与每页大小分页查询分类列表，返回分类及其子分类的层级结构信息"
+      operationId: "pageCategory"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultMapStringObject"
+  /category/internal/sub/with-parent:
+    get:
+      tags:
+      - "分类模块"
+      summary: "获取子分类及其父分类信息（内部）"
+      description: "获取所有子分类及对应的父分类名称，供内部服务远程调用"
+      operationId: "getSubcategoriesWithParent"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /category/internal/sub/neo4j-sync:
+    get:
+      tags:
+      - "分类模块"
+      summary: "获取子分类表数据用于Neo4j同步（内部）"
+      description: "获取子分类表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncSubCategories"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /category/internal/neo4j-sync:
+    get:
+      tags:
+      - "分类模块"
+      summary: "获取分类表数据用于Neo4j同步（内部）"
+      description: "获取分类表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncCategories"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /category/internal/all:
+    get:
+      tags:
+      - "分类模块"
+      summary: "获取所有分类（内部）"
+      description: "获取所有分类列表，供内部服务远程调用"
+      operationId: "getAllCategories"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListCategoryVO"
+  /articles/{id}:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取文章详情"
+      description: "根据ID获取文章详情"
+      operationId: "getArticleById"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultArticleWithCategoryVO"
+    delete:
+      tags:
+      - "文章模块"
+      summary: "删除文章"
+      description: "根据ID删除文章"
+      operationId: "deleteArticle"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /articles/user/{id}:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取用户文章"
+      description: "返回用户文章，可指定是否只查询已发布的文章"
+      operationId: "getArticlesByUserId"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      - name: "published"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 0
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOArticleWithCategoryVO"
+  /articles/unpublished/list:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取所有未发布文章"
+      description: "返回所有未发布的文章，支持分页"
+      operationId: "getUnpublishedArticles"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOArticleWithCategoryVO"
+  /articles/statistics/total:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取文章总数（内部）"
+      description: "获取文章总数，供内部服务远程调用"
+      operationId: "getTotalArticles"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /articles/statistics/total-views:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取文章总阅读量（内部）"
+      description: "获取所有文章的总阅读量，供内部服务远程调用"
+      operationId: "getTotalViews"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultInteger"
+  /articles/statistics/top10:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取Top10文章（内部）"
+      description: "获取Top10文章（按阅读量降序），供内部服务远程调用"
+      operationId: "getTop10Articles"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /articles/statistics/monthly-publish-count:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取最近24个月文章发布数量统计（内部）"
+      description: "获取最近24个月文章发布数量统计，供内部服务远程调用"
+      operationId: "getMonthlyPublishCount"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /articles/statistics/excel-export:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取导出Excel所需文章数据（内部）"
+      description: "获取导出Excel所需文章数据，供内部服务远程调用"
+      operationId: "getArticlesForExcelExport"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /articles/statistics/category-count:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取按子分类统计的文章数量（内部）"
+      description: "获取按子分类统计的文章数量，供内部服务远程调用"
+      operationId: "getCategoryArticleCount"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /articles/statistics/average-views:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取平均阅读量（内部）"
+      description: "获取平均阅读量，供内部服务远程调用"
+      operationId: "getAverageViews"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultDouble"
+  /articles/statistics/active-authors:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取活跃作者数（内部）"
+      description: "获取活跃作者数，供内部服务远程调用"
+      operationId: "getActiveAuthors"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultLong"
+  /articles/neo4j-sync:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取文章表数据用于Neo4j同步（内部）"
+      description: "获取文章表数据，支持增量同步，供FastAPI同步Neo4j使用"
+      operationId: "getNeo4jSyncArticles"
+      parameters:
+      - name: "updated_after"
+        in: "query"
+        required: false
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListMapStringObject"
+  /articles/list:
+    get:
+      tags:
+      - "文章模块"
+      summary: "获取文章列表"
+      description: "返回所有已发布的文章"
+      operationId: "getPublishedArticles"
+      parameters:
+      - name: "page"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 1
+      - name: "size"
+        in: "query"
+        required: false
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 10
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultPageVOArticle"
+  /articles/by-title:
+    get:
+      tags:
+      - "文章模块"
+      summary: "根据标题模糊搜索文章（内部）"
+      description: "根据标题模糊搜索，供内部服务远程调用"
+      operationId: "getArticlesByTitle"
+      parameters:
+      - name: "title"
+        in: "query"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultListArticleWithCategoryVO"
+  /users/batch/{ids}:
+    delete:
+      tags:
+      - "用户模块"
+      summary: "批量删除用户"
+      description: "根据id数组批量删除用户，多个id用英文逗号分隔"
+      operationId: "deleteUsers"
+      parameters:
+      - name: "ids"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /comments/batch/{ids}:
+    delete:
+      tags:
+      - "评论模块"
+      summary: "批量删除评论"
+      description: "根据id数组批量删除评论，多个id用英文逗号分隔"
+      operationId: "deleteComments"
+      parameters:
+      - name: "ids"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/sub/{id}:
+    delete:
+      tags:
+      - "分类模块"
+      summary: "删除子分类"
+      description: "管理员删除指定子分类，并同步删除 Neo4j 图谱中的对应节点"
+      operationId: "deleteSubCategory"
+      parameters:
+      - name: "id"
+        in: "path"
+        required: true
+        schema:
+          type: "integer"
+          format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/sub/batch/{ids}:
+    delete:
+      tags:
+      - "分类模块"
+      summary: "批量删除子分类"
+      description: "管理员按逗号分隔的ID列表批量删除子分类，并同步删除 Neo4j 图谱节点"
+      operationId: "deleteSubCategories"
+      parameters:
+      - name: "ids"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /category/batch/{ids}:
+    delete:
+      tags:
+      - "分类模块"
+      summary: "批量删除分类（级联删除子分类）"
+      description: "管理员按逗号分隔的ID列表批量删除分类，逐个级联删除子分类，并同步删除 Neo4j 图谱节点"
+      operationId: "deleteCategories"
+      parameters:
+      - name: "ids"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+  /articles/batch/{ids}:
+    delete:
+      tags:
+      - "文章模块"
+      summary: "批量删除文章"
+      description: "根据ID数组批量删除文章，多个ID用英文逗号分隔"
+      operationId: "deleteArticles"
+      parameters:
+      - name: "ids"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/ResultVoid"
+components:
+  schemas:
+    UserUpdateDTO:
+      required:
+      - "age"
+      - "email"
+      - "id"
+      - "name"
+      type: "object"
+      properties:
+        password:
+          pattern: "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+          type: "string"
+          description: "登录密码，留空表示不修改"
+        name:
+          type: "string"
+          description: "用户名"
+        age:
+          maximum: 150
+          minimum: 0
+          type: "integer"
+          description: "年龄"
+          format: "int32"
+        email:
+          type: "string"
+          description: "邮箱"
+        img:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "头像地址"
+        signature:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "个性签名"
+        id:
+          minimum: 0
+          type: "integer"
+          description: "用户ID"
+          format: "int32"
+        role:
+          pattern: "admin|user"
+          type: "string"
+          description: "角色，admin 或 user"
+      description: "更新用户请求"
+    ResultVoid:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "object"
+          description: "返回数据"
+      description: "统一响应"
+    CommentUpdateDTO:
+      required:
+      - "article_title"
+      - "content"
+      - "id"
+      - "star"
+      - "username"
+      type: "object"
+      properties:
+        content:
+          maxLength: 200
+          minLength: 1
+          type: "string"
+          description: "评论内容"
+        star:
+          maximum: 10
+          exclusiveMaximum: false
+          minimum: 1
+          exclusiveMinimum: false
+          type: "number"
+          description: "星级评分，1到10"
+          format: "double"
+        article_title:
+          maxLength: 2147483647
+          minLength: 1
+          type: "string"
+          description: "文章标题"
+        username:
+          maxLength: 2147483647
+          minLength: 1
+          type: "string"
+          description: "评论用户名"
+        id:
+          minimum: 0
+          type: "integer"
+          description: "评论ID"
+          format: "int32"
+      description: "更新评论请求"
+    CategoryUpdateDTO:
+      required:
+      - "id"
+      - "name"
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "分类ID"
+          format: "int64"
+        name:
+          type: "string"
+          description: "分类名称"
+      description: "更新分类请求"
+    SubCategoryUpdateDTO:
+      required:
+      - "category_id"
+      - "id"
+      - "name"
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int64"
+        name:
+          type: "string"
+          description: "子分类名称"
+        category_id:
+          type: "integer"
+          description: "父分类ID"
+          format: "int64"
+      description: "更新子分类请求"
+    CategoryReferenceUpdateDTO:
+      required:
+      - "sub_category_id"
+      - "type"
+      type: "object"
+      properties:
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int64"
+        type:
+          pattern: "^(link|pdf)$"
+          type: "string"
+          description: "类型，link 或 pdf"
+        link:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "官网链接，类型为 link 时必填"
+        pdf:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "PDF 链接，类型为 pdf 时必填"
+      description: "更新权威参考文本请求"
+    ArticleUpdateDTO:
+      required:
+      - "content"
+      - "id"
+      - "status"
+      - "sub_category_id"
+      - "title"
+      - "username"
+      type: "object"
+      properties:
+        title:
+          maxLength: 200
+          minLength: 1
+          type: "string"
+          description: "文章标题"
+        content:
+          type: "string"
+          description: "文章内容"
+        username:
+          maxLength: 50
+          minLength: 1
+          type: "string"
+          description: "作者用户名"
+        tags:
+          maxLength: 200
+          minLength: 0
+          type: "string"
+          description: "标签，多个用英文逗号分隔"
+        status:
+          maximum: 1
+          minimum: 0
+          type: "integer"
+          description: "状态，0草稿 1已发布"
+          format: "int32"
+        sub_category_id:
+          minimum: 1
+          type: "integer"
+          description: "子分类ID"
+          format: "int32"
+        id:
+          minimum: 1
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+      description: "更新文章请求"
+    UserCreateDTO:
+      required:
+      - "age"
+      - "email"
+      - "name"
+      type: "object"
+      properties:
+        password:
+          pattern: "^$|^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+          type: "string"
+          description: "登录密码，留空表示不修改"
+        name:
+          type: "string"
+          description: "用户名"
+        age:
+          maximum: 150
+          minimum: 0
+          type: "integer"
+          description: "年龄"
+          format: "int32"
+        email:
+          type: "string"
+          description: "邮箱"
+        img:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "头像地址"
+        signature:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "个性签名"
+      description: "创建用户请求"
+    RefreshTokenDTO:
+      required:
+      - "refresh_token"
+      type: "object"
+      properties:
+        refresh_token:
+          type: "string"
+          description: "刷新令牌"
+      description: "刷新访问令牌请求"
+    ResultTokenRefreshVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/TokenRefreshVO"
+      description: "统一响应"
+    TokenRefreshVO:
+      type: "object"
+      properties:
+        access_token:
+          type: "string"
+          description: "访问令牌"
+        refresh_token:
+          type: "string"
+          description: "刷新令牌"
+        token_type:
+          type: "string"
+          description: "令牌类型"
+        expires_in:
+          type: "integer"
+          description: "访问令牌有效期，单位秒"
+          format: "int64"
+        refresh_expires_in:
+          type: "integer"
+          description: "刷新令牌有效期，单位秒"
+          format: "int64"
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        username:
+          type: "string"
+          description: "用户名"
+        session_id:
+          type: "string"
+          description: "会话ID"
+      description: "刷新令牌结果"
+    ResetPasswordDTO:
+      required:
+      - "email"
+      - "new_password"
+      - "verification_code"
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          description: "邮箱"
+        verification_code:
+          maxLength: 6
+          minLength: 4
+          type: "string"
+          description: "邮箱验证码"
+        new_password:
+          pattern: "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+          type: "string"
+          description: "新密码"
+      description: "重置密码请求"
+    UserRegisterDTO:
+      required:
+      - "age"
+      - "email"
+      - "name"
+      - "password"
+      - "verification_code"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "用户名"
+        password:
+          pattern: "^(?=.*[A-Za-z])(?=.*\\d).{8,20}$"
+          type: "string"
+          description: "登录密码"
+        email:
+          type: "string"
+          description: "邮箱"
+        age:
+          maximum: 150
+          minimum: 0
+          type: "integer"
+          description: "年龄"
+          format: "int32"
+        img:
+          type: "string"
+          description: "头像地址"
+        signature:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "个性签名"
+        verification_code:
+          maxLength: 6
+          minLength: 6
+          type: "string"
+          description: "邮箱验证码"
+      description: "用户注册请求"
+    LoginDTO:
+      required:
+      - "captcha_id"
+      - "captcha_text"
+      - "name"
+      - "password"
+      type: "object"
+      properties:
+        password:
+          maxLength: 20
+          minLength: 3
+          type: "string"
+          description: "登录密码"
+        name:
+          maxLength: 20
+          minLength: 3
+          type: "string"
+          description: "用户名"
+        captcha_id:
+          type: "string"
+          description: "图形验证码ID"
+        captcha_text:
+          maxLength: 4
+          minLength: 4
+          type: "string"
+          description: "图形验证码文本"
+      description: "用户名密码登录请求"
+    ResultUserLoginVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/UserLoginVO"
+      description: "统一响应"
+    UserLoginVO:
+      type: "object"
+      properties:
+        access_token:
+          type: "string"
+          description: "访问令牌"
+        refresh_token:
+          type: "string"
+          description: "刷新令牌"
+        token_type:
+          type: "string"
+          description: "令牌类型"
+        expires_in:
+          type: "integer"
+          description: "访问令牌有效期，单位秒"
+          format: "int64"
+        refresh_expires_in:
+          type: "integer"
+          description: "刷新令牌有效期，单位秒"
+          format: "int64"
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        username:
+          type: "string"
+          description: "用户名"
+        session_id:
+          type: "string"
+          description: "会话ID"
+        online_device_count:
+          type: "integer"
+          description: "在线设备数"
+          format: "int64"
+      description: "登录结果"
+    KickOtherDevicesVO:
+      type: "object"
+      properties:
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        removed_session_count:
+          type: "integer"
+          description: "已移除会话数"
+          format: "int32"
+        online_device_count:
+          type: "integer"
+          description: "当前在线设备数"
+          format: "int64"
+      description: "踢出其他设备结果"
+    ResultKickOtherDevicesVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/KickOtherDevicesVO"
+      description: "统一响应"
+    GithubTokenExchangeDTO:
+      required:
+      - "ticket"
+      type: "object"
+      properties:
+        ticket:
+          type: "string"
+          description: "一次性登录票据"
+      description: "GitHub 登录票据换取令牌请求"
+    GithubTokenTicketCreateDTO:
+      required:
+      - "user_id"
+      - "username"
+      type: "object"
+      properties:
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        username:
+          type: "string"
+          description: "用户名"
+      description: "创建 GitHub 登录票据请求"
+    GithubTokenTicketVO:
+      type: "object"
+      properties:
+        ticket:
+          type: "string"
+          description: "一次性登录票据"
+        expires_in:
+          type: "integer"
+          description: "有效期，单位秒"
+          format: "int64"
+      description: "GitHub 登录票据"
+    ResultGithubTokenTicketVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/GithubTokenTicketVO"
+      description: "统一响应"
+    GithubUserInternalDTO:
+      required:
+      - "github_id"
+      - "github_login"
+      type: "object"
+      properties:
+        github_id:
+          type: "string"
+          description: "GitHub 用户ID"
+        github_login:
+          type: "string"
+          description: "GitHub 登录名"
+        github_name:
+          type: "string"
+          description: "GitHub 显示名"
+        github_url:
+          type: "string"
+          description: "GitHub 主页地址"
+        avatar_url:
+          type: "string"
+          description: "头像地址"
+        email:
+          type: "string"
+          description: "邮箱"
+      description: "GitHub 用户内部同步请求"
+    ResultUserVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/UserVO"
+      description: "统一响应"
+    UserVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        github_id:
+          type: "integer"
+          description: "GitHub 用户ID"
+          format: "int64"
+        github_login:
+          type: "string"
+          description: "GitHub 登录名"
+        github_url:
+          type: "string"
+          description: "GitHub 主页地址"
+        password:
+          type: "string"
+          description: "密码"
+          writeOnly: true
+        name:
+          type: "string"
+          description: "用户名"
+        age:
+          type: "integer"
+          description: "年龄"
+          format: "int32"
+        email:
+          type: "string"
+          description: "邮箱"
+        role:
+          type: "string"
+          description: "角色"
+        img:
+          type: "string"
+          description: "头像地址"
+        signature:
+          type: "string"
+          description: "个性签名"
+        auth_provider:
+          type: "string"
+          description: "认证来源"
+        last_login_at:
+          type: "string"
+          description: "最近登录时间"
+          format: "date-time"
+        login_status:
+          type: "integer"
+          description: "登录状态，1在线 0离线"
+          format: "int32"
+        online_device_count:
+          type: "integer"
+          description: "在线设备数"
+          format: "int64"
+      description: "用户视图"
+    EmailCodeSendDTO:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          description: "收件邮箱"
+        type:
+          type: "string"
+          description: "验证码场景，register、login 或 reset"
+      description: "发送邮箱验证码请求"
+    EmailLoginDTO:
+      required:
+      - "captcha_id"
+      - "captcha_text"
+      - "email"
+      - "verification_code"
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          description: "登录邮箱"
+        verification_code:
+          maxLength: 6
+          minLength: 4
+          type: "string"
+          description: "邮箱验证码"
+        captcha_id:
+          type: "string"
+          description: "图形验证码ID"
+        captcha_text:
+          maxLength: 4
+          minLength: 4
+          type: "string"
+          description: "图形验证码文本"
+      description: "邮箱验证码登录请求"
+    BatchIdsDTO:
+      required:
+      - "ids"
+      type: "object"
+      properties:
+        ids:
+          type: "array"
+          description: "ID列表"
+          items:
+            type: "integer"
+            description: "ID列表"
+            format: "int64"
+      description: "批量ID请求"
+    ResultListUserVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/UserVO"
+      description: "统一响应"
+    SqlQueryDTO:
+      required:
+      - "query"
+      type: "object"
+      properties:
+        query:
+          type: "string"
+          description: "只读 SELECT 语句，使用 :param 占位"
+        params:
+          type: "object"
+          additionalProperties:
+            type: "object"
+            description: "命名参数"
+          description: "命名参数"
+      description: "只读 SQL 查询请求"
+    ResultMapStringObject:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "object"
+          additionalProperties:
+            type: "object"
+            description: "返回数据"
+          description: "返回数据"
+      description: "统一响应"
+    ArticleLikeDTO:
+      required:
+      - "article_id"
+      - "user_id"
+      type: "object"
+      properties:
+        article_id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+      description: "文章点赞请求"
+    BatchCountVO:
+      type: "object"
+      properties:
+        counts:
+          type: "array"
+          description: "ID 与数量列表"
+          items:
+            $ref: "#/components/schemas/IdCountVO"
+      description: "批量计数结果"
+    IdCountVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "ID"
+          format: "int64"
+        count:
+          type: "integer"
+          description: "数量"
+          format: "int64"
+      description: "ID 与数量"
+    ResultBatchCountVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/BatchCountVO"
+      description: "统一响应"
+    FocusDTO:
+      required:
+      - "focus_id"
+      - "user_id"
+      type: "object"
+      properties:
+        user_id:
+          type: "integer"
+          description: "发起关注的用户ID"
+          format: "int64"
+        focus_id:
+          type: "integer"
+          description: "被关注用户ID"
+          format: "int64"
+      description: "用户关注请求"
+    CommentCreateDTO:
+      required:
+      - "article_title"
+      - "content"
+      - "star"
+      - "username"
+      type: "object"
+      properties:
+        content:
+          maxLength: 200
+          minLength: 1
+          type: "string"
+          description: "评论内容"
+        star:
+          maximum: 10
+          exclusiveMaximum: false
+          minimum: 1
+          exclusiveMinimum: false
+          type: "number"
+          description: "星级评分，1到10"
+          format: "double"
+        article_title:
+          maxLength: 2147483647
+          minLength: 1
+          type: "string"
+          description: "文章标题"
+        username:
+          maxLength: 2147483647
+          minLength: 1
+          type: "string"
+          description: "评论用户名"
+      description: "创建评论请求"
+    ArticleCommentScoresVO:
+      type: "object"
+      properties:
+        article_id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        role_scores:
+          type: "object"
+          additionalProperties:
+            $ref: "#/components/schemas/CommentScoreDTO"
+          description: "按角色汇总的评分"
+      description: "文章评论评分"
+    CommentScoreDTO:
+      type: "object"
+      properties:
+        average_score:
+          type: "number"
+          description: "平均评分"
+          format: "double"
+        count:
+          type: "integer"
+          description: "评论数量"
+          format: "int64"
+      description: "评论评分统计"
+    ResultListArticleCommentScoresVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/ArticleCommentScoresVO"
+      description: "统一响应"
+    Comments:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "评论ID"
+          format: "int64"
+        content:
+          type: "string"
+          description: "评论内容"
+        star:
+          type: "number"
+          description: "星级评分，1到10"
+          format: "double"
+        article_id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        create_time:
+          type: "string"
+          description: "创建时间"
+          format: "date-time"
+        update_time:
+          type: "string"
+          description: "更新时间"
+          format: "date-time"
+      description: "评论"
+    ArticleCollectDTO:
+      required:
+      - "article_id"
+      - "user_id"
+      type: "object"
+      properties:
+        article_id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        user_id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+      description: "文章收藏请求"
+    CategoryCreateDTO:
+      required:
+      - "name"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "分类名称"
+      description: "创建分类请求"
+    SubCategoryCreateDTO:
+      required:
+      - "category_id"
+      - "name"
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: "子分类名称"
+        category_id:
+          type: "integer"
+          description: "父分类ID"
+          format: "int64"
+      description: "创建子分类请求"
+    ResultListSubCategoryVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/SubCategoryVO"
+      description: "统一响应"
+    SubCategoryVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int64"
+        name:
+          type: "string"
+          description: "子分类名称"
+        category_id:
+          type: "integer"
+          description: "父分类ID"
+          format: "int64"
+        create_time:
+          type: "string"
+          description: "创建时间"
+          format: "date-time"
+        update_time:
+          type: "string"
+          description: "更新时间"
+          format: "date-time"
+      description: "子分类"
+    CategoryReferenceCreateDTO:
+      required:
+      - "sub_category_id"
+      - "type"
+      type: "object"
+      properties:
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int64"
+        type:
+          pattern: "^(link|pdf)$"
+          type: "string"
+          description: "类型，link 或 pdf"
+        link:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "官网链接，类型为 link 时必填"
+        pdf:
+          maxLength: 255
+          minLength: 0
+          type: "string"
+          description: "PDF 链接，类型为 pdf 时必填"
+      description: "创建权威参考文本请求"
+    CategoryVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "分类ID"
+          format: "int64"
+        name:
+          type: "string"
+          description: "分类名称"
+        create_time:
+          type: "string"
+          description: "创建时间"
+          format: "date-time"
+        update_time:
+          type: "string"
+          description: "更新时间"
+          format: "date-time"
+        sub_categories:
+          type: "array"
+          description: "子分类列表"
+          items:
+            $ref: "#/components/schemas/SubCategoryVO"
+      description: "分类"
+    ResultListCategoryVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/CategoryVO"
+      description: "统一响应"
+    ArticleCreateDTO:
+      required:
+      - "content"
+      - "status"
+      - "sub_category_id"
+      - "title"
+      - "username"
+      type: "object"
+      properties:
+        title:
+          maxLength: 200
+          minLength: 1
+          type: "string"
+          description: "文章标题"
+        content:
+          type: "string"
+          description: "文章内容"
+        username:
+          maxLength: 50
+          minLength: 1
+          type: "string"
+          description: "作者用户名"
+        tags:
+          maxLength: 200
+          minLength: 0
+          type: "string"
+          description: "标签，多个用英文逗号分隔"
+        status:
+          maximum: 1
+          minimum: 0
+          type: "integer"
+          description: "状态，0草稿 1已发布"
+          format: "int32"
+        sub_category_id:
+          minimum: 1
+          type: "integer"
+          description: "子分类ID"
+          format: "int32"
+      description: "创建文章请求"
+    ResultListIdCountVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/IdCountVO"
+      description: "统一响应"
+    ArticleWithCategoryVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        title:
+          type: "string"
+          description: "文章标题"
+        content:
+          type: "string"
+          description: "文章内容"
+        user_id:
+          type: "integer"
+          description: "作者用户ID"
+          format: "int64"
+        username:
+          type: "string"
+          description: "作者名称"
+        tags:
+          type: "string"
+          description: "标签，多个用英文逗号分隔"
+        status:
+          type: "integer"
+          description: "状态，0草稿 1已发布"
+          format: "int32"
+        views:
+          type: "integer"
+          description: "浏览量"
+          format: "int32"
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int32"
+        sub_category_name:
+          type: "string"
+          description: "子分类名称"
+        category_id:
+          type: "integer"
+          description: "父分类ID"
+          format: "int64"
+        category_name:
+          type: "string"
+          description: "父分类名称"
+        create_at:
+          type: "string"
+          description: "创建时间"
+          format: "date-time"
+        update_at:
+          type: "string"
+          description: "更新时间"
+          format: "date-time"
+      description: "带分类的文章"
+    ResultListArticleWithCategoryVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/ArticleWithCategoryVO"
+      description: "统一响应"
+    ResultSyncPage:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/SyncPage"
+      description: "统一响应"
+    SyncPage:
+      type: "object"
+      properties:
+        list:
+          type: "array"
+          items:
+            type: "object"
+            additionalProperties:
+              type: "object"
+        page:
+          type: "integer"
+          format: "int32"
+        size:
+          type: "integer"
+          format: "int32"
+        has_more:
+          type: "boolean"
+        upper_watermark:
+          type: "string"
+          format: "date-time"
+      description: "返回数据"
+    ResultUserListVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/UserListVO"
+      description: "统一响应"
+    UserListVO:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "用户列表"
+          items:
+            $ref: "#/components/schemas/UserVO"
+      description: "用户分页结果"
+    ResultBoolean:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "boolean"
+          description: "返回数据"
+      description: "统一响应"
+    ResultListMapStringObject:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            type: "object"
+            additionalProperties:
+              type: "object"
+              description: "返回数据"
+            description: "返回数据"
+      description: "统一响应"
+    ImageCaptchaVO:
+      type: "object"
+      properties:
+        captcha_id:
+          type: "string"
+          description: "图形验证码ID"
+        image_base64:
+          type: "string"
+          description: "图形验证码 Base64"
+      description: "图形验证码"
+    ResultImageCaptchaVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/ImageCaptchaVO"
+      description: "统一响应"
+    ResultString:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "string"
+          description: "返回数据"
+      description: "统一响应"
+    ArticleLikeVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "点赞ID"
+          format: "int64"
+        article_id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        title:
+          type: "string"
+          description: "文章标题"
+        content:
+          type: "string"
+          description: "文章内容"
+        user_id:
+          type: "integer"
+          description: "作者用户ID"
+          format: "int64"
+        author_name:
+          type: "string"
+          description: "作者名称"
+        tags:
+          type: "string"
+          description: "标签，多个用英文逗号分隔"
+        status:
+          type: "integer"
+          description: "状态，0草稿 1已发布"
+          format: "int32"
+        views:
+          type: "integer"
+          description: "浏览量"
+          format: "int32"
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int32"
+        category_name:
+          type: "string"
+          description: "父分类名称"
+        sub_category_name:
+          type: "string"
+          description: "子分类名称"
+        article_create_at:
+          type: "string"
+          description: "文章创建时间"
+          format: "date-time"
+        article_update_at:
+          type: "string"
+          description: "文章更新时间"
+          format: "date-time"
+        liked_time:
+          type: "string"
+          description: "点赞时间"
+          format: "date-time"
+      description: "文章点赞视图"
+    PageVOArticleLikeVO:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "当前页数据"
+          items:
+            $ref: "#/components/schemas/ArticleLikeVO"
+      description: "分页结果"
+    ResultPageVOArticleLikeVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/PageVOArticleLikeVO"
+      description: "统一响应"
+    ResultLong:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "integer"
+          description: "返回数据"
+          format: "int64"
+      description: "统一响应"
+    MapDataVO:
+      type: "object"
+      properties:
+        data:
+          type: "object"
+          additionalProperties:
+            type: "object"
+            description: "动态键值对"
+          description: "动态键值对"
+      description: "键值数据"
+    ResultMapDataVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/MapDataVO"
+      description: "统一响应"
+    ResultDouble:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "number"
+          description: "返回数据"
+          format: "double"
+      description: "统一响应"
+    LikeCountVO:
+      type: "object"
+      properties:
+        like_count:
+          type: "integer"
+          description: "点赞数"
+          format: "int64"
+      description: "点赞数量"
+    ResultLikeCountVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/LikeCountVO"
+      description: "统一响应"
+    LikeCheckVO:
+      type: "object"
+      properties:
+        liked:
+          type: "boolean"
+          description: "是否已点赞"
+      description: "点赞状态"
+    ResultLikeCheckVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/LikeCheckVO"
+      description: "统一响应"
+    FocusUserVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "用户ID"
+          format: "int64"
+        name:
+          type: "string"
+          description: "用户名"
+        age:
+          type: "integer"
+          description: "年龄"
+          format: "int32"
+        email:
+          type: "string"
+          description: "邮箱"
+        img:
+          type: "string"
+          description: "头像地址"
+        signature:
+          type: "string"
+          description: "个性签名"
+        role:
+          type: "string"
+          description: "角色"
+        focused_time:
+          type: "string"
+          description: "关注时间"
+          format: "date-time"
+      description: "关注用户"
+    PageVOFocusUserVO:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "当前页数据"
+          items:
+            $ref: "#/components/schemas/FocusUserVO"
+      description: "分页结果"
+    ResultPageVOFocusUserVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/PageVOFocusUserVO"
+      description: "统一响应"
+    CountVO:
+      type: "object"
+      properties:
+        count:
+          type: "integer"
+          description: "数量"
+          format: "int64"
+      description: "数量结果"
+    ResultCountVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/CountVO"
+      description: "统一响应"
+    FocusCheckVO:
+      type: "object"
+      properties:
+        focused:
+          type: "boolean"
+          description: "是否已关注"
+      description: "关注状态"
+    ResultFocusCheckVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/FocusCheckVO"
+      description: "统一响应"
+    CommentsVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "评论ID"
+          format: "int64"
+        content:
+          type: "string"
+          description: "评论内容"
+        star:
+          type: "number"
+          description: "星级评分"
+          format: "double"
+        username:
+          type: "string"
+          description: "用户名"
+        pic:
+          type: "string"
+          description: "头像地址"
+        article_title:
+          type: "string"
+          description: "文章标题"
+        create_time:
+          type: "string"
+          description: "创建时间"
+        update_time:
+          type: "string"
+          description: "更新时间"
+      description: "评论视图"
+    PageVOCommentsVO:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "当前页数据"
+          items:
+            $ref: "#/components/schemas/CommentsVO"
+      description: "分页结果"
+    ResultPageVOCommentsVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/PageVOCommentsVO"
+      description: "统一响应"
+    ResultCommentsVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/CommentsVO"
+      description: "统一响应"
+    AICommentsVO:
+      type: "object"
+      properties:
+        content:
+          type: "string"
+          description: "评论内容"
+        star:
+          type: "number"
+          description: "星级评分"
+          format: "double"
+        ai_type:
+          type: "string"
+          description: "AI 类型"
+        pic:
+          type: "string"
+          description: "头像地址"
+      description: "AI 评论"
+    ResultListAICommentsVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "array"
+          description: "返回数据"
+          items:
+            $ref: "#/components/schemas/AICommentsVO"
+      description: "统一响应"
+    ArticleCollectVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "收藏ID"
+          format: "int64"
+        article_id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        title:
+          type: "string"
+          description: "文章标题"
+        content:
+          type: "string"
+          description: "文章内容"
+        user_id:
+          type: "integer"
+          description: "作者用户ID"
+          format: "int64"
+        author_name:
+          type: "string"
+          description: "作者名称"
+        tags:
+          type: "string"
+          description: "标签，多个用英文逗号分隔"
+        status:
+          type: "integer"
+          description: "状态，0草稿 1已发布"
+          format: "int32"
+        views:
+          type: "integer"
+          description: "浏览量"
+          format: "int32"
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int32"
+        category_name:
+          type: "string"
+          description: "父分类名称"
+        sub_category_name:
+          type: "string"
+          description: "子分类名称"
+        article_create_at:
+          type: "string"
+          description: "文章创建时间"
+          format: "date-time"
+        article_update_at:
+          type: "string"
+          description: "文章更新时间"
+          format: "date-time"
+        collected_time:
+          type: "string"
+          description: "收藏时间"
+          format: "date-time"
+      description: "文章收藏视图"
+    PageVOArticleCollectVO:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "当前页数据"
+          items:
+            $ref: "#/components/schemas/ArticleCollectVO"
+      description: "分页结果"
+    ResultPageVOArticleCollectVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/PageVOArticleCollectVO"
+      description: "统一响应"
+    CollectCountVO:
+      type: "object"
+      properties:
+        collect_count:
+          type: "integer"
+          description: "收藏数"
+          format: "int64"
+      description: "收藏数量"
+    ResultCollectCountVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/CollectCountVO"
+      description: "统一响应"
+    CollectCheckVO:
+      type: "object"
+      properties:
+        collected:
+          type: "boolean"
+          description: "是否已收藏"
+      description: "收藏状态"
+    ResultCollectCheckVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/CollectCheckVO"
+      description: "统一响应"
+    ResultCategoryVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/CategoryVO"
+      description: "统一响应"
+    CategoryReferenceVO:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "参考ID"
+          format: "int64"
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int64"
+        type:
+          type: "string"
+          description: "类型，link 或 pdf"
+        link:
+          type: "string"
+          description: "官网链接"
+        pdf:
+          type: "string"
+          description: "PDF 链接"
+      description: "权威参考文本"
+    ResultCategoryReferenceVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/CategoryReferenceVO"
+      description: "统一响应"
+    ResultArticleWithCategoryVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/ArticleWithCategoryVO"
+      description: "统一响应"
+    PageVOArticleWithCategoryVO:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "当前页数据"
+          items:
+            $ref: "#/components/schemas/ArticleWithCategoryVO"
+      description: "分页结果"
+    ResultPageVOArticleWithCategoryVO:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/PageVOArticleWithCategoryVO"
+      description: "统一响应"
+    ResultInteger:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          type: "integer"
+          description: "返回数据"
+          format: "int32"
+      description: "统一响应"
+    Article:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          description: "文章ID"
+          format: "int64"
+        title:
+          type: "string"
+          description: "文章标题"
+        content:
+          type: "string"
+          description: "文章内容"
+        user_id:
+          type: "integer"
+          description: "作者用户ID"
+          format: "int64"
+        tags:
+          type: "string"
+          description: "标签，多个用英文逗号分隔"
+        status:
+          type: "integer"
+          description: "状态，0草稿 1已发布"
+          format: "int32"
+        views:
+          type: "integer"
+          description: "浏览量"
+          format: "int32"
+        sub_category_id:
+          type: "integer"
+          description: "子分类ID"
+          format: "int32"
+        create_at:
+          type: "string"
+          description: "创建时间"
+          format: "date-time"
+        update_at:
+          type: "string"
+          description: "更新时间"
+          format: "date-time"
+      description: "文章"
+    PageVOArticle:
+      type: "object"
+      properties:
+        total:
+          type: "integer"
+          description: "总记录数"
+          format: "int64"
+        list:
+          type: "array"
+          description: "当前页数据"
+          items:
+            $ref: "#/components/schemas/Article"
+      description: "分页结果"
+    ResultPageVOArticle:
+      type: "object"
+      properties:
+        code:
+          type: "integer"
+          description: "响应码"
+          format: "int32"
+        msg:
+          type: "string"
+          description: "响应信息"
+        data:
+          $ref: "#/components/schemas/PageVOArticle"
+      description: "统一响应"
