@@ -1,5 +1,7 @@
 """
-为生成的swagger.json和swagger.yaml添加中文标签名和描述
+goctl 产物后处理：补中文标签、剔除易变字段与 WebSocket 路径，并由 JSON 派生 YAML
+
+由 genSwagger.sh 在 swagger2openapi 转换为 OpenAPI 3 之后调用
 """
 
 import json
@@ -14,6 +16,12 @@ except ImportError:
 # WebSocket 路径：OpenAPI/Swagger 无法表达 WebSocket，Apifox 里它是独立资源类型，
 # 导入只会多出一条无法发起 WS 握手的 GET 接口，因此从产物中剔除，由 Apifox 侧手工维护
 WEBSOCKET_PATHS = ("/ws/chat",)
+
+# goctl 写入的易变元信息：
+#   x-date           生成时刻，同一份 .api 每次生成都不同
+#   x-goctl-version  goctl 版本，升级工具后就会变
+# 两者都会让提交的产物产生无意义 diff，因此从产物中剔除
+VOLATILE_FIELDS = ("x-date", "x-goctl-version")
 
 
 def add_chinese_tags_to_dict(swagger_data):
@@ -101,6 +109,9 @@ def add_chinese_tags_to_dict(swagger_data):
                     if "servers" in details:
                         del details["servers"]
 
+    # 剔除 goctl 写入的易变字段，避免每次生成都产生无意义 diff
+    drop_volatile_fields(swagger_data)
+
     # 修正 SSE 长连接接口的响应声明
     fix_streaming_endpoints(swagger_data)
 
@@ -108,6 +119,16 @@ def add_chinese_tags_to_dict(swagger_data):
     drop_websocket_paths(swagger_data)
 
     return swagger_data
+
+
+def drop_volatile_fields(swagger_data):
+    """剔除每次都变化的生成元信息
+
+    需要调整时改上面的 VOLATILE_FIELDS 常量
+    """
+    for field in VOLATILE_FIELDS:
+        if swagger_data.pop(field, None) is not None:
+            print(f"已从产物中剔除易变字段: {field}")
 
 
 def fix_streaming_endpoints(swagger_data):
@@ -196,28 +217,19 @@ def add_chinese_tags_json(swagger_file):
         return False
 
 
-def add_chinese_tags_yaml(swagger_file):
-    """处理YAML文件"""
-    if not os.path.exists(swagger_file):
-        print(f"错误: 文件 {swagger_file} 不存在")
-        return False
+def write_yaml(swagger_file, swagger_data):
+    """把处理好的数据写成 YAML 产物
 
+    不再读取 goctl 生成的 YAML：那份是 Swagger 2.0，而 JSON 已被 swagger2openapi
+    转成 OpenAPI 3，两边格式会分叉。这里直接由处理后的 JSON 派生 YAML，
+    保证两份产物内容完全等价
+    """
     if yaml is None:
-        print("警告: PyYAML库未安装，跳过YAML文件处理")
+        print("错误: PyYAML库未安装，无法生成 YAML 产物")
         print("请运行: pip install PyYAML")
         return False
 
     try:
-        with open(swagger_file, "r", encoding="utf-8") as f:
-            swagger_data = yaml.safe_load(f)
-
-        if swagger_data is None:
-            print(f"错误: YAML文件无法解析 - {swagger_file}")
-            return False
-
-        swagger_data = add_chinese_tags_to_dict(swagger_data)
-
-        # 写回文件
         with open(swagger_file, "w", encoding="utf-8", newline="\n") as f:
             yaml.dump(
                 swagger_data,
@@ -227,14 +239,11 @@ def add_chinese_tags_yaml(swagger_file):
                 sort_keys=False,
             )
 
-        print(f"已为 {swagger_file} 添加中文标签、信息描述和版本")
+        print(f"已由 JSON 派生 YAML 产物: {swagger_file}")
         return True
 
-    except yaml.YAMLError as e:
-        print(f"错误: YAML解析失败 - {e}")
-        return False
     except Exception as e:
-        print(f"错误: {e}")
+        print(f"错误: 写入YAML失败 - {e}")
         return False
 
 
@@ -242,13 +251,13 @@ if __name__ == "__main__":
     json_file = sys.argv[1] if len(sys.argv) > 1 else "docs/openapi.json"
     yaml_file = sys.argv[2] if len(sys.argv) > 2 else "docs/openapi.yaml"
 
-    json_success = add_chinese_tags_json(json_file)
-    yaml_success = add_chinese_tags_yaml(yaml_file)
-
-    if json_success and yaml_success:
-        sys.exit(0)
-    elif json_success:
-        print("JSON文件处理成功，YAML文件处理失败（可忽略，不影响主流程）")
-        sys.exit(0)  # YAML 失败不视为致命错误
-    else:
+    if not add_chinese_tags_json(json_file):
         sys.exit(1)
+
+    # 由已固定的 JSON 派生 YAML，避免两份产物在内容与格式上分叉
+    with open(json_file, encoding="utf-8") as f:
+        fixed_data = json.load(f)
+    if not write_yaml(yaml_file, fixed_data):
+        sys.exit(1)
+
+    sys.exit(0)

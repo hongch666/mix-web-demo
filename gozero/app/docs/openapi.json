@@ -1152,11 +1152,9 @@
       }
     }
   },
-  "x-date": "2026-09-27 17:02:27",
   "x-description": "This is a goctl generated swagger file.",
   "x-github": "https://github.com/zeromicro/go-zero",
   "x-go-zero-doc": "https://go-zero.dev/",
-  "x-goctl-version": "1.9.2",
   "tags": [
     {
       "name": "聊天模块",
