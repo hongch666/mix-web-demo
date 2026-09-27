@@ -1,0 +1,1844 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FastAPI部分的Swagger文档",
+    "description": "这是项目的FastAPI部分的Swagger文档",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/analyze/top10": {
+      "get": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "获取前10篇文章",
+        "description": "获取阅读量前10的文章",
+        "operationId": "get_top10_articles_analyze_top10_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/wordcloud": {
+      "post": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "生成词云图",
+        "description": "根据文章生成词云图（支持Redis缓存，24h过期）",
+        "operationId": "get_wordcloud_analyze_wordcloud_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/excel": {
+      "post": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "获取文章数据Excel",
+        "description": "导出文章数据到Excel并上传到OSS",
+        "operationId": "get_excel_analyze_excel_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/statistics": {
+      "get": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "获取文章统计信息",
+        "description": "获取文章统计信息",
+        "operationId": "get_article_statistics_analyze_statistics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/article-count-by-category": {
+      "get": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "按分类统计文章数量",
+        "description": "获取所有大分类的文章数量分布，包括没有文章的分类",
+        "operationId": "get_article_count_by_category_analyze_article_count_by_category_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/monthly-publish-count": {
+      "get": {
+        "tags": [
+          "文章分析模块"
+        ],
+        "summary": "获取月度文章发布统计",
+        "description": "获取最近6个月的文章发布数量统计（从当前月向前推6个月，缺失月份置为0）",
+        "operationId": "get_monthly_publish_count_analyze_monthly_publish_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/api/average-speed": {
+      "get": {
+        "tags": [
+          "API日志分析模块"
+        ],
+        "summary": "获取所有接口的平均响应速度",
+        "description": "获取所有接口的平均响应速度",
+        "operationId": "get_api_average_speed_analyze_api_average_speed_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/api/called-count": {
+      "get": {
+        "tags": [
+          "API日志分析模块"
+        ],
+        "summary": "获取接口调用次数",
+        "description": "获取接口调用次数",
+        "operationId": "get_called_count_apis_analyze_api_called_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/send": {
+      "post": {
+        "tags": [
+          "AI聊天模块"
+        ],
+        "summary": "普通聊天",
+        "description": "发送聊天消息并返回响应",
+        "operationId": "send_message_chat_send_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/stream": {
+      "post": {
+        "tags": [
+          "AI聊天模块"
+        ],
+        "summary": "流式聊天",
+        "description": "流式发送聊天消息并返回响应",
+        "operationId": "stream_message_chat_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate/tags": {
+      "post": {
+        "tags": [
+          "生成模块"
+        ],
+        "summary": "生成tags",
+        "description": "根据输入文本生成tags数组",
+        "operationId": "generate_tags_generate_tags_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate/ai_comment/{article_id}": {
+      "post": {
+        "tags": [
+          "生成模块"
+        ],
+        "summary": "文章创建AI评论",
+        "description": "为指定文章创建AI评论",
+        "operationId": "create_article_ai_comment_generate_ai_comment__article_id__post",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Article Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/generate/ai_comment_with_reference/{article_id}": {
+      "post": {
+        "tags": [
+          "生成模块"
+        ],
+        "summary": "文章创建基于权威参考文本的AI评论",
+        "description": "为指定文章创建基于权威参考文本的AI评论，使用权威参考文本进行评价打分",
+        "operationId": "create_article_ai_comment_with_reference_generate_ai_comment_with_reference__article_id__post",
+        "parameters": [
+          {
+            "name": "article_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Article Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test/fastapi": {
+      "get": {
+        "tags": [
+          "测试模块"
+        ],
+        "summary": "测试FastAPI服务",
+        "description": "测试FastAPI服务",
+        "operationId": "testFastapi_test_fastapi_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/update-analyze-caches": {
+      "post": {
+        "tags": [
+          "定时任务模块"
+        ],
+        "summary": "更新分析接口缓存",
+        "description": "手动触发更新分析接口缓存的定时任务",
+        "operationId": "task_update_analyze_caches_task_update_analyze_caches_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/vector": {
+      "post": {
+        "tags": [
+          "定时任务模块"
+        ],
+        "summary": "手动触发向量数据库同步任务",
+        "description": "手动触发同步文章数据PostgreSQL向量数据库的定时任务",
+        "operationId": "task_export_vector_task_vector_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/init-hash-cache": {
+      "post": {
+        "tags": [
+          "定时任务模块"
+        ],
+        "summary": "初始化文章内容 hash 缓存",
+        "description": "为所有已发布的文章初始化内容 hash 缓存，用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景，此操作只生成 hash，不进行向量同步",
+        "operationId": "task_init_hash_cache_task_init_hash_cache_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/clear-analyze-caches": {
+      "post": {
+        "tags": [
+          "定时任务模块"
+        ],
+        "summary": "清除分析相关缓存",
+        "description": "删除所有文章分析相关的缓存数据（包括 Top10、分类统计、月度统计、词云、统计信息等），用于远程触发缓存更新",
+        "operationId": "task_clear_analyze_caches_task_clear_analyze_caches_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/sync-neo4j": {
+      "post": {
+        "tags": [
+          "定时任务模块"
+        ],
+        "summary": "手动触发同步 MySQL 到 Neo4j 知识图谱任务",
+        "description": "手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务，force_full=true 时执行全量同步（含安全清理，用于兜底清理 MySQL 已删除数据）",
+        "operationId": "task_sync_neo4j_task_sync_neo4j_post",
+        "parameters": [
+          {
+            "name": "force_full",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "是否全量同步（含清理），默认增量同步",
+              "default": false,
+              "title": "Force Full"
+            },
+            "description": "是否全量同步（含清理），默认增量同步"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/task/sync-warehouse": {
+      "post": {
+        "tags": [
+          "定时任务模块"
+        ],
+        "summary": "手动触发 ClickHouse 数仓同步任务",
+        "description": "通过 Spring 和 NestJS 内部接口同步业务数据到 ClickHouse，并刷新数仓汇总表",
+        "operationId": "task_sync_warehouse_task_sync_warehouse_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai_history": {
+      "post": {
+        "tags": [
+          "AI历史模块"
+        ],
+        "summary": "创建AI历史记录",
+        "description": "创建一条AI历史记录",
+        "operationId": "create_ai_history_ai_history_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHistoryDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai_history/list": {
+      "get": {
+        "tags": [
+          "AI历史模块"
+        ],
+        "summary": "获取所有AI历史记录",
+        "description": "获取指定用户的所有AI历史记录",
+        "operationId": "get_all_ai_history_ai_history_list_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai_history/{user_id}": {
+      "delete": {
+        "tags": [
+          "AI历史模块"
+        ],
+        "summary": "删除用户所有AI历史记录",
+        "description": "删除指定用户的所有AI历史记录",
+        "operationId": "delete_ai_history_ai_history__user_id__delete",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai_history/internal/{id}": {
+      "get": {
+        "tags": [
+          "AI历史模块"
+        ],
+        "summary": "根据ID查询AI历史记录（内部）",
+        "description": "根据ID查询AI历史记录，供内部服务远程调用",
+        "operationId": "get_ai_history_by_id_internal_ai_history_internal__id__get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "AI历史记录ID",
+              "title": "Id"
+            },
+            "description": "AI历史记录ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "AI历史模块"
+        ],
+        "summary": "更新AI历史记录（内部）",
+        "description": "更新AI历史记录，供内部服务远程调用",
+        "operationId": "update_ai_history_internal_ai_history_internal__id__put",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "AI历史记录ID",
+              "title": "Id"
+            },
+            "description": "AI历史记录ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateHistoryDTO"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "AI历史模块"
+        ],
+        "summary": "删除AI历史记录（内部）",
+        "description": "根据ID删除AI历史记录，供内部服务远程调用",
+        "operationId": "delete_ai_history_internal_ai_history_internal__id__delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "AI历史记录ID",
+              "title": "Id"
+            },
+            "description": "AI历史记录ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/new-followers": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取新增粉丝数统计",
+        "description": "获取指定周期内的新增粉丝数（支持按日/月/年统计）",
+        "operationId": "get_new_followers_analyze_user_new_followers_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "day",
+              "title": "Period"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/article-view-distribution": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取文章浏览分布",
+        "description": "查询用户浏览过的文章及其浏览次数分布",
+        "operationId": "get_article_view_distribution_analyze_user_article_view_distribution_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/author-follow-statistics": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取关注作者统计",
+        "description": "获取用户的总关注数和前7天每天关注的作者数",
+        "operationId": "get_author_follow_statistics_analyze_user_author_follow_statistics_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/monthly-comment-trend": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取本月评论趋势",
+        "description": "按天统计用户本月的评论数量趋势",
+        "operationId": "get_monthly_comment_trend_analyze_user_monthly_comment_trend_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/monthly-like-trend": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取本月点赞趋势",
+        "description": "按天统计用户本月的点赞数量趋势",
+        "operationId": "get_monthly_like_trend_analyze_user_monthly_like_trend_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/monthly-collect-trend": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取本月收藏趋势",
+        "description": "按天统计用户本月的收藏数量趋势",
+        "operationId": "get_monthly_collect_trend_analyze_user_monthly_collect_trend_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze/user/profile": {
+      "get": {
+        "tags": [
+          "用户个人数据分析模块"
+        ],
+        "summary": "获取用户画像总览",
+        "description": "获取用户的发文数、获赞、获藏、粉丝数等累计指标总览",
+        "operationId": "get_user_profile_analyze_user_profile_get",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/graph-search/enhance": {
+      "post": {
+        "tags": [
+          "知识图谱模块"
+        ],
+        "summary": "知识图谱搜索增强",
+        "description": "根据文章ID列表和用户画像, 返回对应文章的图谱分、推荐原因和关系证据（仅限内部服务调用）",
+        "operationId": "graph_search_enhance_graph_search_enhance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphSearchEnhanceReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vector-search/enhance": {
+      "post": {
+        "tags": [
+          "向量搜索模块"
+        ],
+        "summary": "向量搜索增强",
+        "description": "根据 ES 候选文章和搜索词返回语义分、语义原因和匹配片段（仅限内部服务调用）",
+        "operationId": "vector_search_enhance_vector_search_enhance_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VectorSearchEnhanceReq"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/algorithm/search/weights": {
+      "get": {
+        "tags": [
+          "算法模块"
+        ],
+        "summary": "获取搜索排序权重配置",
+        "description": "返回 ES 复合打分和融合排序所需的全量权重参数",
+        "operationId": "get_search_weights_algorithm_search_weights_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/algorithm/search/script": {
+      "get": {
+        "tags": [
+          "算法模块"
+        ],
+        "summary": "获取 ES 搜索脚本",
+        "description": "返回已嵌入权重参数的 ES Painless 搜索脚本及融合排序权重",
+        "operationId": "get_search_script_algorithm_search_script_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/algorithm/search/script-params": {
+      "get": {
+        "tags": [
+          "算法模块"
+        ],
+        "summary": "获取脚本参数名映射",
+        "description": "返回每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名，GoZero 端根据此映射关系动态组装脚本参数，无需硬编码参数名常量",
+        "operationId": "get_search_script_params_algorithm_search_script_params_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AIServiceType": {
+        "type": "string",
+        "enum": [
+          "GPT",
+          "Gemini",
+          "GLM"
+        ],
+        "title": "AIServiceType",
+        "description": "AI服务类型枚举"
+      },
+      "ApiResponse": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "响应码"
+          },
+          "data": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "返回数据"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "响应信息",
+            "default": "success"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "ApiResponse",
+        "description": "统一响应模型\n\nAttributes:\n    code: 响应码, 与 HTTP 状态码一致\n    data: 返回数据, 默认为 None\n    msg: 响应消息"
+      },
+      "ChatRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "用户消息"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "用户ID",
+            "default": "default"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "会话ID"
+          },
+          "service": {
+            "$ref": "#/components/schemas/AIServiceType",
+            "description": "AI服务类型：gpt、gemini或glm",
+            "default": "GPT"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ChatRequest",
+        "description": "聊天请求模型"
+      },
+      "ChatResponse": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "响应码：3位HTTP状态码",
+            "default": 200
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatResponseData"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "响应数据"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Msg",
+            "description": "响应消息",
+            "default": "success"
+          }
+        },
+        "type": "object",
+        "title": "ChatResponse",
+        "description": "聊天响应模型 - 符合success()格式"
+      },
+      "ChatResponseData": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "回复消息"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id",
+            "description": "会话ID"
+          },
+          "chat_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chat Id",
+            "description": "聊天ID"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "用户ID"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "时间戳"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ChatResponseData",
+        "description": "聊天响应数据模型 - 内部数据结构"
+      },
+      "CreateHistoryDTO": {
+        "properties": {
+          "user_id": {
+            "type": "integer",
+            "title": "User Id",
+            "description": "用户ID"
+          },
+          "ask": {
+            "type": "string",
+            "title": "Ask",
+            "description": "用户提问内容"
+          },
+          "reply": {
+            "type": "string",
+            "title": "Reply",
+            "description": "AI回复内容"
+          },
+          "thinking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thinking",
+            "description": "AI思考过程，可选"
+          },
+          "ai_type": {
+            "type": "string",
+            "title": "Ai Type",
+            "description": "AI类型（例：gpt、gemini、glm等）"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id",
+          "ask",
+          "reply",
+          "ai_type"
+        ],
+        "title": "CreateHistoryDTO",
+        "description": "创建历史记录 DTO"
+      },
+      "GenerateDTO": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "需要生成标签的文本内容"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "GenerateDTO",
+        "description": "生成 DTO"
+      },
+      "GraphSearchEnhanceReq": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "用户ID"
+          },
+          "keyword": {
+            "type": "string",
+            "title": "Keyword",
+            "description": "搜索关键词",
+            "default": ""
+          },
+          "article_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Article Ids",
+            "description": "候选文章ID列表"
+          },
+          "category_name": {
+            "type": "string",
+            "title": "Category Name",
+            "description": "分类名称",
+            "default": ""
+          },
+          "sub_category_name": {
+            "type": "string",
+            "title": "Sub Category Name",
+            "description": "子分类名称",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "标签列表"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "返回条数上限",
+            "default": 50
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "搜索模式，keyword、hybrid、graph，默认 hybrid",
+            "default": "hybrid"
+          }
+        },
+        "type": "object",
+        "title": "GraphSearchEnhanceReq",
+        "description": "图谱搜索增强请求"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "UpdateHistoryDTO": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "用户ID"
+          },
+          "ask": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ask",
+            "description": "用户提问内容"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply",
+            "description": "AI回复内容"
+          },
+          "thinking": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thinking",
+            "description": "AI思考过程，可选"
+          },
+          "ai_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Type",
+            "description": "AI类型（例：gpt、gemini、glm等）"
+          }
+        },
+        "type": "object",
+        "title": "UpdateHistoryDTO",
+        "description": "更新历史记录 DTO"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VectorSearchEnhanceReq": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "用户ID"
+          },
+          "keyword": {
+            "type": "string",
+            "title": "Keyword",
+            "description": "搜索关键词",
+            "default": ""
+          },
+          "article_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Article Ids",
+            "description": "候选文章ID列表"
+          },
+          "category_name": {
+            "type": "string",
+            "title": "Category Name",
+            "description": "分类名称",
+            "default": ""
+          },
+          "sub_category_name": {
+            "type": "string",
+            "title": "Sub Category Name",
+            "description": "子分类名称",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "标签列表"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "description": "返回条数上限",
+            "default": 50
+          },
+          "top_k": {
+            "type": "integer",
+            "title": "Top K",
+            "description": "向量召回条数",
+            "default": 50
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "description": "搜索模式，keyword、hybrid、graph，默认 hybrid",
+            "default": "hybrid"
+          }
+        },
+        "type": "object",
+        "title": "VectorSearchEnhanceReq",
+        "description": "向量搜索增强请求"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "AI历史模块",
+      "description": "AI历史相关API，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等"
+    },
+    {
+      "name": "用户个人数据分析模块",
+      "description": "用户个人数据分析相关API，包括获取新增粉丝数统计、获取文章浏览分布、获取关注作者统计、获取本月评论/点赞/收藏趋势等"
+    },
+    {
+      "name": "文章分析模块",
+      "description": "文章分析相关API，包括获取前10篇文章、生成词云图、获取文章统计信息等"
+    },
+    {
+      "name": "API日志分析模块",
+      "description": "API日志分析相关API，包括获取所有接口的平均响应速度、获取接口调用次数等"
+    },
+    {
+      "name": "测试模块",
+      "description": "服务测试相关API，包括测试FastAPI服务、测试Spring服务、测试GoZero服务、测试NestJS服务等"
+    },
+    {
+      "name": "AI聊天模块",
+      "description": "AI聊天相关API，包括普通聊天和流式聊天"
+    },
+    {
+      "name": "生成模块",
+      "description": "生成相关API，包括生成tags、为文章创建AI评论、为文章创建基于权威参考文本的AI评论等"
+    },
+    {
+      "name": "知识图谱模块",
+      "description": "知识图谱相关API，包括图谱搜索、图谱增强等功能"
+    },
+    {
+      "name": "向量搜索模块",
+      "description": "向量搜索相关API，包括根据 ES 候选文章进行语义分、语义原因和匹配片段增强"
+    },
+    {
+      "name": "算法模块",
+      "description": "算法相关API，包括提供ES复合打分和融合排序所需的全量权重参数"
+    },
+    {
+      "name": "定时任务模块",
+      "description": "定时任务相关API，包括手动触发同步ES等任务操作"
+    }
+  ]
+}
