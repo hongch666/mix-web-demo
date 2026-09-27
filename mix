@@ -114,7 +114,7 @@ show_help() {
     echo "  ./mix setup                    # Initialize environment (first time)"
     echo "  ./mix swag                     # Generate static OpenAPI docs for all services"
     echo "  ./mix swag spring gozero       # Generate docs for specific services only"
-    echo "  ./mix apifox                   # Sync all api-docs/ to Apifox"
+    echo "  ./mix apifox                   # Sync all service docs/ to Apifox"
     echo "  ./mix apifox spring --dry-run  # Check a single service without uploading"
     echo "  ./mix goctl-api                # Generate GoZero API code"
     echo "  ./mix goctl-orm                # Generate GoZero ORM code"
