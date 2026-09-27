@@ -364,7 +364,8 @@ Body 参数：
       end
 
       subgraph ThirdParty["第三方服务层"]
-          LLM["大模型 API 调用 (GPT/Gemini/GLM)"]
+          LLM["LangChain 大模型 API 调用 (GPT/Gemini/GLM)"]
+          LangSmith["LangSmith 日志监控"]
           OSS["阿里云 OSS 对象存储"]
           GithubAPI["Github API 调用"]
           Email["邮件服务调用"]
@@ -396,6 +397,7 @@ Body 参数：
       GatewayLayer <-->|网关路由| CommLayer
       CommLayer <-->|调度| SvcLayer
       SvcLayer <-->|请求/响应| ThirdParty
+      LLM -->|采集| LangSmith
 
       SpringSvc <-->|RPC 调用| GoZeroSvc
       GoZeroSvc <-->|RPC 调用| NestJSSvc
