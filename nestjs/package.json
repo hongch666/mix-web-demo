@@ -19,6 +19,7 @@
     "lint:fix": "eslint \"{src,test}/**/*.ts\" --fix",
     "format": "prettier --write \"{src,test}/**/*.ts\"",
     "format:check": "prettier --check \"{src,test}/**/*.ts\"",
+    "bun:openapi": "bun src/script/generateOpenapi.ts",
     "test": "jest"
   },
   "dependencies": {

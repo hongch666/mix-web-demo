@@ -8,7 +8,7 @@ import { NestFactory } from "@nestjs/core";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import type { OpenAPIObject } from "@nestjs/swagger";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { SwaggerModule } from "@nestjs/swagger";
 import {
   Defaults,
   ErrorIds,
@@ -17,12 +17,12 @@ import {
   SwaggerConfig,
 } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
-import { applySwaggerSnakeCase } from "src/common/utils/swaggerSnakeCase";
 import { AllExceptionsFilter } from "src/framework/filters/allException.filter";
 import { FieldNamingInterceptor } from "src/framework/interceptors/fieldNaming.interceptor";
 import { LoggerService } from "src/module/common/logger/logger.service";
 
 import { AppModule } from "./app.module";
+import { buildSwaggerDocument } from "./swagger";
 
 type FastifyRegisterPlugin = Parameters<NestFastifyApplication["register"]>[0];
 
@@ -75,20 +75,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
   );
 
   // Swagger 配置
-  const swaggerBuilder = new DocumentBuilder()
-    .setTitle(SwaggerConfig.SWAGGER_TITLE)
-    .setDescription(SwaggerConfig.SWAGGER_DESCRIPTION)
-    .setVersion(SwaggerConfig.SWAGGER_VERSION);
-
-  // 注册 Swagger 标签描述
-  SwaggerConfig.SWAGGER_TAGS.forEach(([name, description]) => {
-    swaggerBuilder.addTag(name, description);
-  });
-
-  const config: Omit<OpenAPIObject, "paths"> = swaggerBuilder.build();
-  const document: OpenAPIObject = applySwaggerSnakeCase(
-    SwaggerModule.createDocument(app, config),
-  );
+  const document: OpenAPIObject = buildSwaggerDocument(app);
   SwaggerModule.setup(SwaggerConfig.SWAGGER_PATH, app, document);
 
   // 注册全局异常过滤器（从容器获取以支持依赖注入）

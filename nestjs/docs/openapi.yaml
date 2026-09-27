@@ -1,0 +1,978 @@
+openapi: 3.0.0
+paths:
+  /github/authorize:
+    get:
+      description: 返回 GitHub OAuth 授权地址，前端拿到后直接跳转
+      operationId: GithubController_authorize
+      parameters:
+        - name: redirect
+          required: false
+          in: query
+          description: 登录成功后回跳路径
+          schema:
+            example: /profile
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 获取 GitHub 授权地址
+      tags:
+        - GitHub 登录模块
+  /github/callback:
+    get:
+      description: 处理 GitHub OAuth 回调，成功后重定向到前端成功页
+      operationId: GithubController_callback
+      parameters:
+        - name: code
+          required: false
+          in: query
+          description: GitHub 授权码
+          schema:
+            example: abc123
+            type: string
+        - name: state
+          required: false
+          in: query
+          description: GitHub 授权状态
+          schema:
+            example: state123
+            type: string
+        - name: error
+          required: false
+          in: query
+          description: GitHub 错误码
+          schema:
+            example: access_denied
+            type: string
+        - name: error_description
+          required: false
+          in: query
+          description: GitHub 错误描述
+          schema:
+            example: The user denied the request
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: GitHub 回调处理
+      tags:
+        - GitHub 登录模块
+  /email/send-code:
+    post:
+      description: 通过 SMTP 发送验证码邮件
+      operationId: MailController_sendEmailCode
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalEmailCodeSendDto'
+      responses:
+        '201':
+          description: ''
+      summary: 发送邮箱验证码
+      tags:
+        - 邮件模块
+  /task/apilog:
+    post:
+      description: 手动触发清理超过1个月的API日志任务
+      operationId: TaskController_executeCleanupOldApiLogsTask
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      summary: 手动执行清理API日志任务
+      tags:
+        - 定时任务模块
+  /task/articlelog:
+    post:
+      description: 手动触发清理超过1个月的文章日志任务
+      operationId: TaskController_executeCleanupOldArticleLogsTask
+      parameters: []
+      responses:
+        '201':
+          description: ''
+      summary: 手动执行清理文章日志任务
+      tags:
+        - 定时任务模块
+  /article-logs:
+    post:
+      description: 通过请求体创建文章日志
+      operationId: ArticleLogController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateArticleLogDto'
+      responses:
+        '200':
+          description: ''
+      summary: 新增文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/list:
+    get:
+      description: 可根据用户ID、文章ID、操作类型查询，支持分页
+      operationId: ArticleLogController_findByFilter
+      parameters:
+        - name: user_id
+          required: false
+          in: query
+          description: 用户ID
+          schema:
+            type: string
+        - name: article_id
+          required: false
+          in: query
+          description: 文章ID
+          schema:
+            type: string
+        - name: username
+          required: false
+          in: query
+          description: 用户名（模糊搜索）
+          schema:
+            type: string
+        - name: article_title
+          required: false
+          in: query
+          description: 文章标题（模糊搜索）
+          schema:
+            type: string
+        - name: action
+          required: false
+          in: query
+          description: 操作类型
+          schema:
+            type: string
+            enum:
+              - add
+              - search
+              - edit
+              - delete
+              - publish
+              - view
+              - like
+              - unlike
+              - collect
+              - uncollect
+              - focus
+              - unfocus
+        - name: start_time
+          required: false
+          in: query
+          description: 开始时间（格式：yyyy-MM-dd HH:mm:ss）
+          schema:
+            type: string
+        - name: end_time
+          required: false
+          in: query
+          description: 结束时间（格式：yyyy-MM-dd HH:mm:ss）
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: 页码
+          schema:
+            example: '1'
+            type: string
+        - name: size
+          required: false
+          in: query
+          description: 每页条数
+          schema:
+            example: '10'
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 查询文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/sync:
+    get:
+      description: 供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志
+      operationId: ArticleLogController_sync
+      parameters:
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 游标同步文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/{id}:
+    delete:
+      description: 通过文章日志 ID 删除日志
+      operationId: ArticleLogController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 删除文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/batch/{ids}:
+    delete:
+      description: 通过日志ID路径参数批量删除，多个ID用英文逗号分隔
+      operationId: ArticleLogController_removeByIds
+      parameters:
+        - name: ids
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 批量删除文章日志
+      tags:
+        - 文章日志模块
+  /article-logs/search-history/{userId}:
+    get:
+      description: 根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用
+      operationId: ArticleLogController_getSearchHistory
+      parameters:
+        - name: user_id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 获取搜索历史
+      tags:
+        - 文章日志模块
+  /article-logs/view-distribution/{userId}:
+    get:
+      description: 根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用
+      operationId: ArticleLogController_getViewDistribution
+      parameters:
+        - name: user_id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 获取文章浏览分布
+      tags:
+        - 文章日志模块
+  /article-logs/search-keywords:
+    get:
+      description: 获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用
+      operationId: ArticleLogController_getSearchKeywords
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: 获取搜索关键词
+      tags:
+        - 文章日志模块
+  /api-logs/list:
+    get:
+      description: 可根据用户ID、用户名、API路径等条件查询，支持分页
+      operationId: ApiLogController_findByFilter
+      parameters:
+        - name: user_id
+          required: false
+          in: query
+          description: 用户ID
+          schema:
+            type: string
+        - name: username
+          required: false
+          in: query
+          description: 用户名（模糊搜索）
+          schema:
+            type: string
+        - name: api_description
+          required: false
+          in: query
+          description: API描述（模糊搜索）
+          schema:
+            type: string
+        - name: api_path
+          required: false
+          in: query
+          description: API路径（模糊搜索）
+          schema:
+            type: string
+        - name: api_method
+          required: false
+          in: query
+          description: API方法
+          schema:
+            type: string
+            enum:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+              - HEAD
+        - name: start_time
+          required: false
+          in: query
+          description: 开始时间（格式：yyyy-MM-dd HH:mm:ss）
+          schema:
+            type: string
+        - name: end_time
+          required: false
+          in: query
+          description: 结束时间（格式：yyyy-MM-dd HH:mm:ss）
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: 页码
+          schema:
+            example: '1'
+            type: string
+        - name: size
+          required: false
+          in: query
+          description: 每页条数
+          schema:
+            example: '10'
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 查询API日志
+      tags:
+        - API日志模块
+  /api-logs:
+    post:
+      description: 创建一条API日志记录
+      operationId: ApiLogController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApiLogDto'
+      responses:
+        '201':
+          description: ''
+      summary: 创建API日志
+      tags:
+        - API日志模块
+  /api-logs/{id}:
+    delete:
+      description: 通过日志ID删除单条日志
+      operationId: ApiLogController_remove
+      parameters:
+        - name: id
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 删除API日志
+      tags:
+        - API日志模块
+  /api-logs/batch/{ids}:
+    delete:
+      description: 通过日志ID路径参数批量删除，多个ID用英文逗号分隔
+      operationId: ApiLogController_removeByIds
+      parameters:
+        - name: ids
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 批量删除API日志
+      tags:
+        - API日志模块
+  /api-logs/sync:
+    get:
+      description: 供 FastAPI 数仓按 MongoDB ID 游标增量同步API日志
+      operationId: ApiLogController_sync
+      parameters:
+        - name: cursor
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 游标同步API日志
+      tags:
+        - API日志模块
+  /api-logs/average-speed:
+    get:
+      description: 获取所有接口的平均响应速度，供 FastAPI 内部远程调用
+      operationId: ApiLogController_getApiAverageSpeed
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: 获取所有接口的平均响应速度
+      tags:
+        - API日志模块
+  /api-logs/called-count:
+    get:
+      description: 获取接口调用次数，供 FastAPI 内部远程调用
+      operationId: ApiLogController_getCalledCount
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: 获取接口调用次数
+      tags:
+        - API日志模块
+  /test/nestjs:
+    get:
+      description: 输出欢迎信息
+      operationId: TestController_getNestjs
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: NestJS自己的测试
+      tags:
+        - 测试模块
+  /download/word/{id}:
+    get:
+      description: 通过id下载对应文章Word
+      operationId: DownloadController_downloadWord
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: 文章ID
+          schema:
+            type: number
+      responses:
+        '200':
+          description: ''
+      summary: 下载文章Word
+      tags:
+        - 下载模块
+  /download/markdown/{id}:
+    get:
+      description: 通过id下载对应文章的Markdown并返回OSS链接
+      operationId: DownloadController_downloadMarkdown
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: 文章ID
+          schema:
+            type: number
+      responses:
+        '200':
+          description: ''
+      summary: 下载文章Markdown
+      tags:
+        - 下载模块
+  /download/pdf/{id}:
+    get:
+      description: 通过id下载对应文章的PDF并返回OSS链接
+      operationId: DownloadController_downloadPdf
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: 文章ID
+          schema:
+            type: number
+      responses:
+        '200':
+          description: ''
+      summary: 下载文章PDF
+      tags:
+        - 下载模块
+  /mongo-tools/collections:
+    get:
+      description: 列出白名单内日志集合及其基本信息，供 FastAPI 内部远程调用
+      operationId: MongoToolsController_listCollections
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: 列出日志集合
+      tags:
+        - MongoDB工具模块
+  /mongo-tools/query:
+    post:
+      description: 对白名单内的日志集合执行只读查询，供 FastAPI 内部远程调用
+      operationId: MongoToolsController_query
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryMongoDto'
+      responses:
+        '201':
+          description: ''
+      summary: 查询日志文档
+      tags:
+        - MongoDB工具模块
+  /upload:
+    post:
+      description: 通过本地文件路径上传文件到 OSS
+      operationId: UploadController_uploadFile
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadDto'
+      responses:
+        '201':
+          description: ''
+      summary: 上传本地文件到 OSS
+      tags:
+        - 文件上传
+  /upload/image:
+    post:
+      description: 通过 multipart/form-data 上传图片到 OSS
+      operationId: UploadController_uploadImage
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '201':
+          description: ''
+      summary: 上传图片到 OSS
+      tags:
+        - 文件上传
+  /upload/pdf:
+    post:
+      description: 通过 multipart/form-data 上传 PDF 到 OSS
+      operationId: UploadController_uploadPdf
+      parameters:
+        - name: custom_filename
+          required: true
+          in: query
+          schema:
+            type: string
+        - name: custom_filename
+          required: false
+          in: query
+          description: 自定义文件名（不包含扩展名）
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required:
+                - file
+      responses:
+        '201':
+          description: ''
+      summary: 上传 PDF 到 OSS
+      tags:
+        - 文件上传
+  /table-settings:
+    get:
+      description: 返回当前登录用户所有已保存的表格列设置
+      operationId: TableSettingsController_getAllSettings
+      parameters: []
+      responses:
+        '200':
+          description: ''
+      summary: 获取当前用户所有页面的列配置
+      tags:
+        - 表格列设置
+  /table-settings/{tableKey}:
+    get:
+      description: 获取当前登录用户在指定页面的表格列设置
+      operationId: TableSettingsController_getSettings
+      parameters:
+        - name: table_key
+          required: true
+          in: path
+          description: 页面标识
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 获取指定页面的列配置
+      tags:
+        - 表格列设置
+    put:
+      description: 保存（新增或更新）当前登录用户在指定页面的表格列设置
+      operationId: TableSettingsController_saveSettings
+      parameters:
+        - name: table_key
+          required: true
+          in: path
+          description: 页面标识
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTableSettingsDto'
+      responses:
+        '200':
+          description: ''
+      summary: 保存指定页面的列配置
+      tags:
+        - 表格列设置
+    delete:
+      description: 删除当前登录用户在指定页面的表格列设置，恢复为默认配置
+      operationId: TableSettingsController_deleteSettings
+      parameters:
+        - name: table_key
+          required: true
+          in: path
+          description: 页面标识
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 删除指定页面的列配置
+      tags:
+        - 表格列设置
+  /sql-tools/tables:
+    get:
+      description: 查询白名单内 MySQL 表的结构信息，不传表名时返回所有白名单表列表，供内部服务远程调用
+      operationId: SqlToolsController_getTables
+      parameters:
+        - name: table
+          required: false
+          in: query
+          description: 表名，为空则返回所有白名单表
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ''
+      summary: 获取表结构信息
+      tags:
+        - SQL工具
+  /sql-tools/query:
+    post:
+      description: 在白名单表范围内执行参数化只读 SQL 查询并返回结果，供内部服务远程调用
+      operationId: SqlToolsController_executeQuery
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SqlQueryDto'
+      responses:
+        '201':
+          description: ''
+      summary: 执行只读参数化SQL
+      tags:
+        - SQL工具
+info:
+  title: NestJS部分的Swagger文档
+  description: 这是项目的NestJS部分的Swagger文档
+  version: 1.0.0
+  contact: {}
+tags:
+  - name: API日志模块
+    description: API日志相关API，包括日志查询、统计等功能
+  - name: 文章日志模块
+    description: 文章操作日志相关API，包括日志记录、查询、清理等
+  - name: 测试模块
+    description: 服务测试相关API，用于验证各个微服务是否正常运行
+  - name: 文件上传
+    description: 文件上传相关API，包括本地文件上传、图片上传、PDF上传等
+  - name: 下载模块
+    description: 文件下载相关API，包括Word下载、PDF下载等
+  - name: GitHub 登录模块
+    description: GitHub 授权与操作相关API，包括授权登录、用户信息获取等
+  - name: 邮件模块
+    description: 邮件发送相关API，包括验证码邮件、通知邮件等
+  - name: MongoDB工具模块
+    description: MongoDB 日志查询工具相关API，仅限白名单内集合的只读查询
+  - name: 定时任务模块
+    description: 定时任务相关API，包括任务的查询、手动触发、启停等操作
+  - name: 表格列设置
+    description: 用户表格列配置相关API，包括列配置的查询、保存与删除
+  - name: SQL工具
+    description: SQL 执行工具相关API，用于安全的数据库查询与操作
+servers: []
+components:
+  schemas:
+    InternalEmailCodeSendDto:
+      type: object
+      properties:
+        email:
+          type: string
+          description: 收件邮箱
+          example: user@example.com
+        code:
+          type: string
+          description: 验证码
+          example: '123456'
+        type:
+          type: string
+          description: 验证码场景
+          example: register
+          enum:
+            - register
+            - login
+            - reset
+        expire_minutes:
+          type: number
+          description: 过期时间（分钟）
+          example: 10
+      required:
+        - email
+        - code
+        - type
+    CreateArticleLogDto:
+      type: object
+      properties:
+        user_id:
+          type: number
+          description: 用户ID
+          example: '1'
+        article_id:
+          type: number
+          description: 文章ID
+          example: '1'
+        action:
+          type: string
+          description: 操作类型
+          enum:
+            - add
+            - search
+            - edit
+            - delete
+            - publish
+            - view
+            - like
+            - unlike
+            - collect
+            - uncollect
+            - focus
+            - unfocus
+          example: edit
+        content:
+          type: object
+          description: 任意结构的操作内容（JSON）
+          example:
+            field: title
+            old_value: 旧标题
+            new_value: 新标题
+        msg:
+          type: string
+          description: 操作说明
+          example: 修改了文章标题
+      required:
+        - user_id
+        - article_id
+        - action
+        - content
+    CreateApiLogDto:
+      type: object
+      properties:
+        user_id:
+          type: number
+          description: 用户ID
+          example: 1
+        username:
+          type: string
+          description: 用户名
+          example: admin
+        api_description:
+          type: string
+          description: API描述
+          example: 获取用户信息
+        api_path:
+          type: string
+          description: API路径
+          example: /api/users/1
+        api_method:
+          type: string
+          description: API方法
+          enum:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
+            - OPTIONS
+            - HEAD
+          example: GET
+        query_params:
+          type: object
+          description: 查询参数
+          example:
+            page: 1
+            size: 10
+        path_params:
+          type: object
+          description: 路径参数
+          example:
+            id: '1'
+        request_body:
+          type: object
+          description: 请求体
+          example:
+            name: test
+        response_time:
+          type: number
+          description: 响应时间（毫秒）
+          example: 100
+      required:
+        - user_id
+        - username
+        - api_description
+        - api_path
+        - api_method
+        - response_time
+    QueryMongoDto:
+      type: object
+      properties:
+        collection_name:
+          type: string
+          description: 集合名称（仅限白名单内的日志集合）
+          example: articlelogs
+        filter:
+          type: object
+          description: 查询过滤条件（MongoDB 查询对象）
+          example:
+            action: view
+        limit:
+          type: number
+          description: 返回条数上限
+          example: 10
+          default: 10
+      required:
+        - collection_name
+    UploadDto:
+      type: object
+      properties:
+        local_file:
+          type: string
+          description: 本地文件路径（必须是服务本地存在的文件）
+          example: /tmp/test.docx
+        oss_file:
+          type: string
+          description: 上传到 OSS 的目标路径（如 articles/test.docx）
+          example: articles/test.docx
+      required:
+        - local_file
+        - oss_file
+    ColumnConfigDto:
+      type: object
+      properties:
+        key:
+          type: string
+          description: 列标识
+          example: title
+        visible:
+          type: boolean
+          description: 是否可见
+          example: true
+        order:
+          type: number
+          description: 排序序号
+          example: 0
+        width:
+          type: number
+          description: 列宽度（像素）
+          example: 200
+      required:
+        - key
+        - visible
+        - order
+    SaveTableSettingsDto:
+      type: object
+      properties:
+        columns:
+          description: 列配置列表
+          example:
+            - key: title
+              visible: true
+              order: 0
+              width: 200
+            - key: author
+              visible: true
+              order: 1
+              width: 120
+            - key: category
+              visible: false
+              order: 2
+              width: 100
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnConfigDto'
+      required:
+        - columns
+    SqlQueryDto:
+      type: object
+      properties:
+        query:
+          type: string
+          description: 参数化SQL（使用 :paramName 占位符）
+          example: >-
+            SELECT * FROM user_table_settings WHERE user_id = :userId LIMIT
+            :limit
+        params:
+          type: object
+          description: 参数键值对
+          example:
+            user_id: 1
+            limit: 10
+      required:
+        - query
