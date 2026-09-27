@@ -38,12 +38,12 @@ func registerSwaggerRoute(server *rest.Server) {
 		},
 	})
 
-	// /swagger/doc.json — 通过 go:embed 编译期内嵌，不再 os.ReadFile("docs/main.json")
+	// /swagger/doc.json — 通过 go:embed 编译期内嵌，不再 os.ReadFile("docs/openapi.json")
 	server.AddRoute(rest.Route{
 		Method: http.MethodGet,
 		Path:   "/swagger/doc.json",
 		Handler: func(w http.ResponseWriter, r *http.Request) {
-			content, err := docs.StaticFiles.ReadFile("main.json")
+			content, err := docs.StaticFiles.ReadFile("openapi.json")
 			if err != nil {
 				http.Error(w, constants.GET_SWAGGER_FAIL, http.StatusInternalServerError)
 				return

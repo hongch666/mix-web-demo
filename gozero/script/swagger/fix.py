@@ -11,6 +11,10 @@ try:
 except ImportError:
     yaml = None
 
+# WebSocket 路径：OpenAPI/Swagger 无法表达 WebSocket，Apifox 里它是独立资源类型，
+# 导入只会多出一条无法发起 WS 握手的 GET 接口，因此从产物中剔除，由 Apifox 侧手工维护
+WEBSOCKET_PATHS = ("/ws/chat",)
+
 
 def add_chinese_tags_to_dict(swagger_data):
     """
@@ -97,18 +101,23 @@ def add_chinese_tags_to_dict(swagger_data):
                     if "servers" in details:
                         del details["servers"]
 
-    # 修正长连接接口（SSE / WebSocket）的响应声明
+    # 修正 SSE 长连接接口的响应声明
     fix_streaming_endpoints(swagger_data)
+
+    # 剔除 WebSocket 路径（Apifox 侧以独立类型手工维护）
+    drop_websocket_paths(swagger_data)
 
     return swagger_data
 
 
 def fix_streaming_endpoints(swagger_data):
-    """修正长连接接口的响应声明
+    """修正 SSE 长连接接口的响应声明
 
     /sse/chat 成功响应是 text/event-stream 持续数据帧，不是单次 JSON 响应
-    /ws/chat 成功响应是 101 协议升级，之后通过 WebSocket 文本帧双向通信
-    两者参数非法时返回统一 JSON 错误体，goctl 未生成该响应，此处补齐
+    参数非法时返回统一 JSON 错误体，goctl 未生成该响应，此处补齐
+
+    WebSocket 路径不在此处理：它随后会被 drop_websocket_paths 整体剔除，
+    若将来要改回保留，记得同时恢复 101 响应声明
     """
     paths = swagger_data.get("paths")
     if not isinstance(paths, dict):
@@ -133,28 +142,31 @@ def fix_streaming_endpoints(swagger_data):
             ),
         }
 
-    ws_operation = paths.get("/ws/chat") or {}
-    ws_get = ws_operation.get("get") if isinstance(ws_operation, dict) else None
-    if isinstance(ws_get, dict):
-        responses = ws_get.setdefault("responses", {})
-        # 101 是协议升级响应，本身不带响应体，因此只写描述
-        responses.pop("200", None)
-        responses["101"] = {
-            "description": "协议升级成功（Switching Protocols），之后通过 WebSocket 文本帧双向通信，帧结构对应 ChatWsMessage",
-        }
+    if isinstance(sse_get, dict):
+        sse_get.setdefault("responses", {}).setdefault(
+            "400",
+            {
+                "description": "参数非法（如 user_id 非正整数）时返回统一 JSON 错误体",
+                "content": {"application/json": {"schema": {"type": "object"}}},
+            },
+        )
 
-    for endpoint in ("/sse/chat", "/ws/chat"):
-        operation = paths.get(endpoint) or {}
-        get_operation = operation.get("get") if isinstance(operation, dict) else None
-        if isinstance(get_operation, dict):
-            responses = get_operation.setdefault("responses", {})
-            responses.setdefault(
-                "400",
-                {
-                    "description": "参数非法（如 user_id 非正整数）时返回统一 JSON 错误体",
-                    "content": {"application/json": {"schema": {"type": "object"}}},
-                },
-            )
+
+def drop_websocket_paths(swagger_data):
+    """从产物中剔除 WebSocket 路径
+
+    Apifox 的 WebSocket 接口是独立于 HTTP 的资源类型，OpenAPI/Swagger 无法表达，
+    也没有对应的 x-apifox-* 扩展；导入时只会按 URL + method 建出一条 GET 接口，
+    与 Apifox 里手工维护的 WebSocket 接口重复且无法发起 WS 握手，因此直接剔除
+    需要调整时改上面的 WEBSOCKET_PATHS 常量
+    """
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+
+    for path in WEBSOCKET_PATHS:
+        if paths.pop(path, None) is not None:
+            print(f"已从产物中剔除 WebSocket 路径: {path}")
 
 
 def add_chinese_tags_json(swagger_file):
@@ -169,8 +181,8 @@ def add_chinese_tags_json(swagger_file):
 
         swagger_data = add_chinese_tags_to_dict(swagger_data)
 
-        # 写回文件
-        with open(swagger_file, "w", encoding="utf-8") as f:
+        # 写回文件；newline="\n" 必须显式指定，否则 Windows 下会写成 CRLF
+        with open(swagger_file, "w", encoding="utf-8", newline="\n") as f:
             json.dump(swagger_data, f, ensure_ascii=False, indent=2)
 
         print(f"已为 {swagger_file} 添加中文标签、信息描述和版本")
@@ -206,7 +218,7 @@ def add_chinese_tags_yaml(swagger_file):
         swagger_data = add_chinese_tags_to_dict(swagger_data)
 
         # 写回文件
-        with open(swagger_file, "w", encoding="utf-8") as f:
+        with open(swagger_file, "w", encoding="utf-8", newline="\n") as f:
             yaml.dump(
                 swagger_data,
                 f,
@@ -227,8 +239,8 @@ def add_chinese_tags_yaml(swagger_file):
 
 
 if __name__ == "__main__":
-    json_file = sys.argv[1] if len(sys.argv) > 1 else "docs/main.json"
-    yaml_file = sys.argv[2] if len(sys.argv) > 2 else "docs/main.yaml"
+    json_file = sys.argv[1] if len(sys.argv) > 1 else "docs/openapi.json"
+    yaml_file = sys.argv[2] if len(sys.argv) > 2 else "docs/openapi.yaml"
 
     json_success = add_chinese_tags_json(json_file)
     yaml_success = add_chinese_tags_yaml(yaml_file)

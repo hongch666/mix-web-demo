@@ -50,14 +50,12 @@ paths:
       - allowEmptyValue: true
         default: 1
         description: 页码，默认 1，须为正整数
-        example: 1
         in: query
         name: page
         type: integer
       - allowEmptyValue: true
         default: 10
         description: 每页条数，默认 10，须为正整数
-        example: 10
         in: query
         name: size
         type: integer
@@ -758,40 +756,16 @@ paths:
       summary: 获取两个用户间的未读消息数
       tags:
       - 聊天模块
-  /ws/chat:
-    get:
-      description: 建立WebSocket连接，自动加入聊天队列。握手成功返回 101 升级协议，之后通过文本帧双向通信，帧结构见响应模型
-      operationId: chatChatWebsocketHandler
-      parameters:
-      - allowEmptyValue: true
-        description: 当前用户 ID，可选；传入时须为正整数
-        in: query
-        name: user_id
-        type: integer
-      produces:
-      - application/json
-      responses:
-        '101':
-          description: 协议升级成功（Switching Protocols），之后通过 WebSocket 文本帧双向通信，帧结构对应 ChatWsMessage
-        '400':
-          description: 参数非法（如 user_id 非正整数）时返回统一 JSON 错误体
-          content:
-            application/json:
-              schema:
-                type: object
-      summary: WebSocket聊天连接
-      tags:
-      - 聊天模块
 produces:
 - application/json
 schemes:
 - http
 swagger: '2.0'
-x-date: '2026-09-25 01:57:11'
+x-date: '2026-09-27 17:02:27'
 x-description: This is a goctl generated swagger file.
 x-github: https://github.com/zeromicro/go-zero
 x-go-zero-doc: https://go-zero.dev/
-x-goctl-version: 1.10.2
+x-goctl-version: 1.9.2
 tags:
 - name: 聊天模块
   description: 聊天功能相关API，包括消息发送、历史查询、队列管理等
