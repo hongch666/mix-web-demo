@@ -94,6 +94,7 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 10. 服务发现基于 Nacos；新服务接入需注册实例并在 metadata 声明能力
 11. 生成代码时参考目标服务同类文件的命名与组织方式；已有成熟风格优先
 12. 注释说明：注释的结束不能包含中文句号，直接留空，如果注释过长，使用多行注释形式，而不是多条单行注释，短注释使用1行的单行注释即可
+   - 新增或修改的代码注释、装饰器说明和文档说明均不得以中文句号 `。` 结尾，统一以无句号文本或其他必要标点结束
 13. **日志采集必须排除敏感字段**：请求体进入日志后会被投递到 `api-log-queue`，最终落在 MongoDB `apilogs` 与 ClickHouse `ods_api_log`，因此凡是携带密码、验证码、令牌、授权码的接口都要显式排除。各服务能力：Spring `@ApiLog(excludeFields = {...})`、NestJS `@ApiLog({ excludeFields: [...] })`、FastAPI `@logWithConfig(exclude_fields = [...])`（`@log` 不支持）；**GoZero 的 `ApplyApiLog` 没有任何排除能力**，涉及凭据的接口不要挂它，或先给中间件补过滤参数
 14. **新增接口必须带参数校验**，任何接收请求参数的接口都要声明校验规则，不得只靠业务层兜底。各服务写法见对应章节；**GoZero 的校验标签写在 `.api` 文件里**（随 goctl 生成进 `types.go`），漏写标签等于该参数没有校验，不会报错也不会告警
 15. **新增、修改或删除对外接口后，必须重新生成静态 OpenAPI 文档并同步 Apifox**：先 `./mix swag <service>`，产物（`openapi.json` + `openapi.yaml`）与服务代码同一次提交；再 `./mix apifox <service>` 同步到 Apifox，未配置令牌时跳过并说明。完整流程见「接口文档收尾流程」章节
@@ -169,6 +170,9 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - 遵循项目 `eslint.config.mjs`，提交前通过 lint
 - Swagger 用 `@nestjs/swagger`：`@ApiOperation({ summary, description })`、`@ApiTags`，注解参数直接写字面量，不抽常量
 - **响应模型必须显式声明**：TypeScript 泛型会在运行时擦除，不能只依赖 `Promise<ApiResponse<T>>` 生成 Swagger schema。对统一响应使用 `common/utils/swaggerResponse.ts` 的 `ApiResponseModel`，为 `data` 传入具体的 `SchemaObject`；空响应使用 `SwaggerNullData`，字符串、数组和对象响应分别声明对应结构。OAuth 重定向等非 JSON 响应使用 `ApiRedirectResponse`，不要套统一响应包装体
+- **响应 Schema 必须统一抽离**：业务响应的 `SchemaObject`（包括分页、同步、统计、上传和查询结果）统一定义在 `common/utils/swaggerResponse.ts`，控制器中的 `@ApiResponseModel` 只引用命名常量，禁止在控制器内重复编写内联 `data: { ... }`。除 `data: null` 外，必须为实际字段、数组项和嵌套对象补充 `description`；不能用无字段的 `SwaggerObjectData` 代替已知结构。
+- **路径和查询参数命名必须与实际 URL 一致**：本项目 OpenAPI 会将字段转换为 snake_case。路径参数统一使用 snake_case，并让路由、`@Param`、`@ApiParam` 三处名称完全一致，例如 `:user_id` + `@Param("user_id")`、`:table_key` + `@Param("table_key")`。查询参数也必须统一，例如 `custom_filename` + `@Query("custom_filename")`，禁止同时出现 camelCase 与 snake_case。
+- **Swagger 参数重复检查**：修改接口后重新生成 OpenAPI，检查每个 operation 的 `parameters` 是否存在重复语义或同时存在大小写不同的参数；重点排查 `userId/user_id`、`tableKey/table_key`、`customFilename/custom_filename` 等组合。
 - 日志：注入 `LoggerService`（`module/common/logger`）
 
 ## FastAPI 服务（fastapi/）
@@ -204,6 +208,7 @@ app/internal/agents     LangChain Agent 与工具
 - 类型标注全覆盖；`import` 全部在文件顶部，禁止逻辑中导入；生成后检查并删除未使用的 import
 - **入参校验用 Pydantic 模型**（放 `internal/schemas/`，文件名 `xxxDTO.py`）：字段用 `Field(...)` 声明，单字段规则用 `@field_validator` + `PydanticCustomError`（中文消息，参考 `createHistoryDTO.py`），请求体禁止用裸 `dict` / `Any` 接收；新增接口必须带校验（通用规则 13）
 - **统一响应模型使用泛型**：`core/base/response.py` 的 `ApiResponse[T]` 负责声明 `code`、`msg` 和 `data`，路由必须通过 `response_model=ApiResponse[具体类型]` 暴露返回结构。已知结构使用领域 DTO、列表或字典泛型；只有运行时结构确实不固定时才使用 `ApiResponse[object]`，禁止退回不带类型参数的 `ApiResponse`
+- **FastAPI 响应结构必须可展开**：已知返回字段必须定义 Pydantic 响应 DTO，并在路由使用 `response_model=ApiResponse[具体 DTO]`；禁止用 `ApiResponse[object]` 隐藏可确定的 `data` 结构。DTO 的每个字段、嵌套对象和列表项都要用 `Field(description=...)` 写明含义。
 - SQL：ClickHouse 查询用 `%(name)s` 参数化；SQL 模板集中在 `core/constants/scripts.py` 与 `warehouse.py`，业务代码不内联 SQL 字符串
 - 缓存：使用 `internal/cache` 的两级缓存体系（L1 内存 5 分钟 + L2 Redis 1 天 + ClickHouse 版本号失效），新统计接口优先接入而非自造缓存
 - 定时任务：APScheduler 注册在 `internal/tasks/scheduler.py`，任务逻辑放 `tasks/logic/`；多实例互斥用 Redis `try_lock`/`unlock`（key 进 `RedisKeys` 常量）
