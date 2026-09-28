@@ -168,6 +168,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - 尽可能使用 TypeScript 类型标注（接口、泛型、联合类型），即使编译通过也补全类型
 - 遵循项目 `eslint.config.mjs`，提交前通过 lint
 - Swagger 用 `@nestjs/swagger`：`@ApiOperation({ summary, description })`、`@ApiTags`，注解参数直接写字面量，不抽常量
+- **响应模型必须显式声明**：TypeScript 泛型会在运行时擦除，不能只依赖 `Promise<ApiResponse<T>>` 生成 Swagger schema。对统一响应使用 `common/utils/swaggerResponse.ts` 的 `ApiResponseModel`，为 `data` 传入具体的 `SchemaObject`；空响应使用 `SwaggerNullData`，字符串、数组和对象响应分别声明对应结构。OAuth 重定向等非 JSON 响应使用 `ApiRedirectResponse`，不要套统一响应包装体
 - 日志：注入 `LoggerService`（`module/common/logger`）
 
 ## FastAPI 服务（fastapi/）
@@ -202,6 +203,7 @@ app/internal/agents     LangChain Agent 与工具
 - `__init__.py` 导出：包内有 `__init__.py` 导出的功能，导入一律走包路径（`from app.internal.crud import UserAnalysisMapper`），禁止深入到文件路径；新增模块必须同步更新 `__init__.py` 导出
 - 类型标注全覆盖；`import` 全部在文件顶部，禁止逻辑中导入；生成后检查并删除未使用的 import
 - **入参校验用 Pydantic 模型**（放 `internal/schemas/`，文件名 `xxxDTO.py`）：字段用 `Field(...)` 声明，单字段规则用 `@field_validator` + `PydanticCustomError`（中文消息，参考 `createHistoryDTO.py`），请求体禁止用裸 `dict` / `Any` 接收；新增接口必须带校验（通用规则 13）
+- **统一响应模型使用泛型**：`core/base/response.py` 的 `ApiResponse[T]` 负责声明 `code`、`msg` 和 `data`，路由必须通过 `response_model=ApiResponse[具体类型]` 暴露返回结构。已知结构使用领域 DTO、列表或字典泛型；只有运行时结构确实不固定时才使用 `ApiResponse[object]`，禁止退回不带类型参数的 `ApiResponse`
 - SQL：ClickHouse 查询用 `%(name)s` 参数化；SQL 模板集中在 `core/constants/scripts.py` 与 `warehouse.py`，业务代码不内联 SQL 字符串
 - 缓存：使用 `internal/cache` 的两级缓存体系（L1 内存 5 分钟 + L2 Redis 1 天 + ClickHouse 版本号失效），新统计接口优先接入而非自造缓存
 - 定时任务：APScheduler 注册在 `internal/tasks/scheduler.py`，任务逻辑放 `tasks/logic/`；多实例互斥用 Redis `try_lock`/`unlock`（key 进 `RedisKeys` 常量）
@@ -266,15 +268,15 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 - **机制：go-playground/validator 标签式校验**。标签写在 `.api` 字段上，随 goctl 生成进 `internal/types/types.go`；**不再有手写的 `<domain>Validate.go`**，新增请求类型不需要补任何 Go 代码
 - 生效链路：`boot.CreateServer` 调 `validation.InitValidator()` → `httpx.SetValidator` 注册 → `httpx.Parse` 在解析完 path/form/header/json 后触发校验。**请求类型绝不能实现 `Validate() error`**：`httpx.Parse` 是 `if 实现接口 { ... } else if 注册的校验器 != nil { ... }`，一旦实现了方法就会走前一个分支，让 `SetValidator` 静默失效（本项目早期踩过这个坑并回退过一次）
-- | 自定义标签（实现在 `common/validation/validator.go`）： | 标签                                                                                                                                              | 语义 |
-  | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
-  | `gt=0` / `required` 等                                  | validator 内置规则，直接用                                                                                                                        |
-  | `notblank`                                              | 去首尾空白后非空；`required` 拦不住纯空白字符串                                                                                                   |
-  | `positiveint`                                           | 字符串形式的正整数，用于 path 变量；`gt=0` 作用在 string 上比的是长度                                                                             |
-  | `datetime`                                              | 符合`constants.DateTimeFormat`                                                                                                                    |
-  | `searchmode`                                            | `keyword` / `hybrid` / `graph`，大小写与首尾空白不敏感                                                                                            |
-  | `maxrunes=N`                                            | 按字符数限制长度；不用内置`max`，避免中文被按字节误判                                                                                             |
-  | `notbefore=StartDate`                                   | 不早于同级指定时间字段；**跨字段校验必须用带参标签**，不要注册 struct-level validation（那需要 `common` 包导入 `internal/types`，会造成反向依赖） |
+- | 自定义标签（实现在`common/validation/validator.go`）： | 标签                                                                                                                                              | 语义 |
+  | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+  | `gt=0` / `required` 等                                 | validator 内置规则，直接用                                                                                                                        |      |
+  | `notblank`                                             | 去首尾空白后非空；`required` 拦不住纯空白字符串                                                                                                   |      |
+  | `positiveint`                                          | 字符串形式的正整数，用于 path 变量；`gt=0` 作用在 string 上比的是长度                                                                             |      |
+  | `datetime`                                             | 符合`constants.DateTimeFormat`                                                                                                                    |      |
+  | `searchmode`                                           | `keyword` / `hybrid` / `graph`，大小写与首尾空白不敏感                                                                                            |      |
+  | `maxrunes=N`                                           | 按字符数限制长度；不用内置`max`，避免中文被按字节误判                                                                                             |      |
+  | `notbefore=StartDate`                                  | 不早于同级指定时间字段；**跨字段校验必须用带参标签**，不要注册 struct-level validation（那需要 `common` 包导入 `internal/types`，会造成反向依赖） |      |
 - 错误消息：官方 zh 翻译 + 自定义标签中文文案（常量在 `constants/validations.go` 的 `VALIDATOR_*`），字段名取 `json` / `form` / `path` 标签名，**只返回第一条错误**
 - **handler 里用 `utils.HandleErrorWithCode(w, err, constants.HttpBadRequest)` 输出解析错误**，不要写成 `utils.Error(w, constants.HttpBadRequest, err.Error())`：后者会把 `*exceptions.BusinessError` 的状态码降级成硬编码的 400；`utils.HandleError` 那条分支则永远不会因校验失败而触发
 - `template/api/handler.tpl` **不再生成 `req.Validate()`**，校验完全由 `httpx.Parse` 承担
@@ -355,7 +357,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 格式化统一走各服务的工具（`./mix format`）：Spring Spotless、GoZero golangci-lint、NestJS Prettier、FastAPI Ruff；不要再手工执行 `gofmt -w` 或 `prettier --write` 做全量重排
 - Go 的格式问题用 `./mix lint gozero` 判断（golangci-lint 的 gofmt formatter），不要用裸 `gofmt -l`：它对行尾差异会报大量假阳性
 - `goctl`（`api format` / `api go`）生成后跑 `./mix format gozero` 收敛格式即可，不需要再手工处理行尾
-- **goctl 版本不一致（待收口）**：仓库已生成的 34 个文件头部标记 `goctl 1.9.2`，本机安装的却是 1.10.2，重新生成会把版本注释刷成 1.10.2（`types.go`、`routes.go` 一并刷新）。提交前把这两处注释改回 1.9.2 以减少噪声；彻底解决要么装 1.9.2，要么统一升到 1.10.2 并接受一次全量注释刷新
+- **goctl 版本**：仓库已生成的 34 个文件头部标记 `goctl 1.9.2`，本机安装的如果是其他版本，重新生成会把版本注释刷成 对应版本（`types.go`、`routes.go` 一并刷新）。
 - git 用于精确核对与回退：`git status --porcelain`、`git diff --ignore-cr-at-eol`（判断是否仅行尾差异）、`git checkout -- <文件>`
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
 - bash 环境的 `dirname` / `head` 等不稳定（PATH 时有时无），批量格式与行尾校验优先走 `./mix format` / `./mix lint`，需要脚本兜底时用 Python `subprocess` 调绝对路径
@@ -386,12 +388,12 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 产物落在各服务自己的 `docs/` 目录，每个服务输出 `openapi.json` 与 `openapi.yaml` 两份等价文档：
 
-| 服务    | 产物                           | 生成方式                                                 | 前置工具  |
-| ------- | ------------------------------ | -------------------------------------------------------- | --------- |
-| Spring  | `spring/docs/openapi.json`     | `OpenApiDocGenerator` 隔离 Web 层上下文 + 依赖自动 Mock  | Maven     |
-| GoZero  | `gozero/app/docs/openapi.json` | `goctl api swagger` → `swagger2openapi` → `fix.py`       | goctl     |
-| NestJS  | `nestjs/docs/openapi.json`     | `NestFactory.create(..., { preview: true })`             | Bun       |
-| FastAPI | `fastapi/docs/openapi.json`    | 导入 `create_app()` 后取 `app.openapi()`                 | uv/Python |
+| 服务    | 产物                           | 生成方式                                                | 前置工具  |
+| ------- | ------------------------------ | ------------------------------------------------------- | --------- |
+| Spring  | `spring/docs/openapi.json`     | `OpenApiDocGenerator` 隔离 Web 层上下文 + 依赖自动 Mock | Maven     |
+| GoZero  | `gozero/app/docs/openapi.json` | `goctl api swagger` → `swagger2openapi` → `fix.py`      | goctl     |
+| NestJS  | `nestjs/docs/openapi.json`     | `NestFactory.create(..., { preview: true })`            | Bun       |
+| FastAPI | `fastapi/docs/openapi.json`    | 导入`create_app()` 后取 `app.openapi()`                 | uv/Python |
 
 四个服务都是**离线生成**：不启动 HTTP 服务，不连 Nacos / MySQL / Redis / RabbitMQ，也不需要各服务的 `.env`（Spring 的 Nacos 配置拉取由 `spring/src/test/resources/bootstrap.yaml` 覆盖关闭）。对应工具未安装时该服务跳过并提示，其余服务继续生成；`gateway` 为配置驱动，无 OpenAPI 产物。
 
@@ -424,6 +426,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 产物内容由代码里的注解 / 装饰器决定，新增接口时同步补上，否则文档里只有路径没有说明（注解字符串一律写字面量，按通用规则 5 不抽常量）：
 
+- 响应结构也必须在代码声明中保持可发现：NestJS 控制器为统一响应补充 `ApiResponseModel` 或重定向响应装饰器，FastAPI 路由为统一响应补充 `ApiResponse[T]` 泛型参数。修改后重新生成对应服务的 `docs/openapi.json` 与 `docs/openapi.yaml`，检查响应的 `data` schema 与实际返回值一致。
 - Spring：`@Operation(summary, description)`、`@Tag`
 - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
 - FastAPI：`@router.get/post(..., summary=, description=)`
