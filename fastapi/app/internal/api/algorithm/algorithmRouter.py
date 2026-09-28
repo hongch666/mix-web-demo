@@ -5,6 +5,11 @@ from fastapi import APIRouter, Request
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
 from app.dependencies import AlgorithmServiceDep
+from app.internal.schemas import (
+    ScriptParamsResponse,
+    SearchScriptResponseData,
+    SearchWeightsResponse,
+)
 
 router = APIRouter(prefix="/algorithm", tags=["算法模块"])
 
@@ -13,7 +18,7 @@ router = APIRouter(prefix="/algorithm", tags=["算法模块"])
     "/search/weights",
     summary="获取搜索排序权重配置",
     description="返回 ES 复合打分和融合排序所需的全量权重参数",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[SearchWeightsResponse],
 )
 @log("获取搜索权重")
 @requireInternalToken
@@ -29,7 +34,7 @@ async def get_search_weights(
     "/search/script",
     summary="获取 ES 搜索脚本",
     description="返回已嵌入权重参数的 ES Painless 搜索脚本及融合排序权重",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[SearchScriptResponseData],
 )
 @log("获取ES搜索脚本")
 @requireInternalToken
@@ -45,7 +50,7 @@ async def get_search_script(
     "/search/script-params",
     summary="获取脚本参数名映射",
     description="返回每个权重 key 在 Painless 脚本中对应的 params.xxx 参数名，GoZero 端根据此映射关系动态组装脚本参数，无需硬编码参数名常量",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[ScriptParamsResponse],
 )
 @log("获取脚本参数名映射")
 @requireInternalToken

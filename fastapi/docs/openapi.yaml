@@ -17,7 +17,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ListResponse_dict_str__Any___'
   /analyze/wordcloud:
     post:
       tags:
@@ -31,7 +31,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_str_'
   /analyze/excel:
     post:
       tags:
@@ -45,7 +45,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_str_'
   /analyze/statistics:
     get:
       tags:
@@ -59,7 +59,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ArticleStatisticsResponse_'
   /analyze/article-count-by-category:
     get:
       tags:
@@ -73,7 +73,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ListResponse_CategoryArticleCountResponse__'
   /analyze/monthly-publish-count:
     get:
       tags:
@@ -87,7 +87,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ListResponse_MonthlyPublishCountResponse__'
   /analyze/api/average-speed:
     get:
       tags:
@@ -101,7 +101,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_list_ApiLogAverageResponse__'
   /analyze/api/called-count:
     get:
       tags:
@@ -115,7 +115,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_list_ApiLogCalledCountResponse__'
   /chat/send:
     post:
       tags:
@@ -214,7 +214,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_dict_str__object__'
+                $ref: '#/components/schemas/ApiResponse_GenerateCommentTaskResponse_'
         '422':
           description: Validation Error
           content:
@@ -241,7 +241,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_dict_str__object__'
+                $ref: '#/components/schemas/ApiResponse_GenerateCommentTaskResponse_'
         '422':
           description: Validation Error
           content:
@@ -261,7 +261,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_str_'
   /task/update-analyze-caches:
     post:
       tags:
@@ -275,7 +275,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
   /task/vector:
     post:
       tags:
@@ -289,7 +289,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
   /task/init-hash-cache:
     post:
       tags:
@@ -304,7 +304,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
   /task/clear-analyze-caches:
     post:
       tags:
@@ -318,7 +318,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
   /task/sync-neo4j:
     post:
       tags:
@@ -343,7 +343,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
         '422':
           description: Validation Error
           content:
@@ -363,7 +363,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
   /ai_history:
     post:
       tags:
@@ -383,7 +383,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
         '422':
           description: Validation Error
           content:
@@ -410,7 +410,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_list_AiHistoryResponse__'
         '422':
           description: Validation Error
           content:
@@ -437,7 +437,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_NoneType_'
         '422':
           description: Validation Error
           content:
@@ -466,7 +466,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_Union_AiHistoryResponse__NoneType__'
         '422':
           description: Validation Error
           content:
@@ -500,7 +500,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_Union_AiHistoryResponse__NoneType__'
         '422':
           description: Validation Error
           content:
@@ -528,7 +528,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_DeletedResponse_'
         '422':
           description: Validation Error
           content:
@@ -562,7 +562,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_UserFollowerResponse_'
         '422':
           description: Validation Error
           content:
@@ -589,7 +589,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ArticleViewDistributionResponse_'
         '422':
           description: Validation Error
           content:
@@ -616,7 +616,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_AuthorFollowStatisticsResponse_'
         '422':
           description: Validation Error
           content:
@@ -643,7 +643,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ActionTrendResponse_'
         '422':
           description: Validation Error
           content:
@@ -670,7 +670,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ActionTrendResponse_'
         '422':
           description: Validation Error
           content:
@@ -697,7 +697,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ActionTrendResponse_'
         '422':
           description: Validation Error
           content:
@@ -724,7 +724,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_UserProfileResponse_'
         '422':
           description: Validation Error
           content:
@@ -796,7 +796,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_SearchWeightsResponse_'
   /algorithm/search/script:
     get:
       tags:
@@ -810,7 +810,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_SearchScriptResponseData_'
   /algorithm/search/script-params:
     get:
       tags:
@@ -824,7 +824,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse_object_'
+                $ref: '#/components/schemas/ApiResponse_ScriptParamsResponse_'
 components:
   schemas:
     AIServiceType:
@@ -835,6 +835,252 @@ components:
       - GLM
       title: AIServiceType
       description: AI服务类型枚举
+    ActionTrendResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+          description: 总数量
+        daily_trends:
+          items:
+            $ref: '#/components/schemas/UserTimelineItem'
+          type: array
+          title: Daily Trends
+          description: 每日趋势
+      type: object
+      required:
+      - total
+      - daily_trends
+      title: ActionTrendResponse
+    AiHistoryResponse:
+      properties:
+        id:
+          type: integer
+          title: Id
+          description: 记录 ID
+        user_id:
+          type: integer
+          title: User Id
+          description: 用户 ID
+        ask:
+          type: string
+          title: Ask
+          description: 用户提问
+        reply:
+          type: string
+          title: Reply
+          description: 模型回复
+        thinking:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Thinking
+          description: 模型思考过程
+        ai_type:
+          type: string
+          title: Ai Type
+          description: AI 服务类型
+        created_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created At
+          description: 创建时间
+        updated_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Updated At
+          description: 更新时间
+      type: object
+      required:
+      - id
+      - user_id
+      - ask
+      - reply
+      - ai_type
+      title: AiHistoryResponse
+      description: AI 历史记录
+    ApiLogAverageResponse:
+      properties:
+        api_path:
+          type: string
+          title: Api Path
+          description: API 路径
+        api_method:
+          type: string
+          title: Api Method
+          description: 请求方法
+        api_description:
+          type: string
+          title: Api Description
+          description: API 描述
+        avg_response_time:
+          type: number
+          title: Avg Response Time
+          description: 平均响应时间
+        call_count:
+          type: integer
+          title: Call Count
+          description: 调用次数
+      type: object
+      required:
+      - api_path
+      - api_method
+      - api_description
+      - avg_response_time
+      - call_count
+      title: ApiLogAverageResponse
+    ApiLogCalledCountResponse:
+      properties:
+        api_path:
+          type: string
+          title: Api Path
+          description: API 路径
+        api_method:
+          type: string
+          title: Api Method
+          description: 请求方法
+        api_description:
+          type: string
+          title: Api Description
+          description: API 描述
+        call_count:
+          type: integer
+          title: Call Count
+          description: 调用次数
+        avg_response_time:
+          type: number
+          title: Avg Response Time
+          description: 平均响应时间
+      type: object
+      required:
+      - api_path
+      - api_method
+      - api_description
+      - call_count
+      - avg_response_time
+      title: ApiLogCalledCountResponse
+    ApiResponse_ActionTrendResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ActionTrendResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ActionTrendResponse]
+    ApiResponse_ArticleStatisticsResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ArticleStatisticsResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ArticleStatisticsResponse]
+    ApiResponse_ArticleViewDistributionResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ArticleViewDistributionResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ArticleViewDistributionResponse]
+    ApiResponse_AuthorFollowStatisticsResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/AuthorFollowStatisticsResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[AuthorFollowStatisticsResponse]
+    ApiResponse_DeletedResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/DeletedResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[DeletedResponse]
+    ApiResponse_GenerateCommentTaskResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/GenerateCommentTaskResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[GenerateCommentTaskResponse]
     ApiResponse_GraphSearchEnhanceResp_:
       properties:
         code:
@@ -855,6 +1101,205 @@ components:
       required:
       - code
       title: ApiResponse[GraphSearchEnhanceResp]
+    ApiResponse_ListResponse_CategoryArticleCountResponse__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ListResponse_CategoryArticleCountResponse_'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ListResponse[CategoryArticleCountResponse]]
+    ApiResponse_ListResponse_MonthlyPublishCountResponse__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ListResponse_MonthlyPublishCountResponse_'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ListResponse[MonthlyPublishCountResponse]]
+    ApiResponse_ListResponse_dict_str__Any___:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ListResponse_dict_str__Any__'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ListResponse[dict[str, Any]]]
+    ApiResponse_NoneType_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          type: 'null'
+          title: Data
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[NoneType]
+    ApiResponse_ScriptParamsResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/ScriptParamsResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[ScriptParamsResponse]
+    ApiResponse_SearchScriptResponseData_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/SearchScriptResponseData'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[SearchScriptResponseData]
+    ApiResponse_SearchWeightsResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/SearchWeightsResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[SearchWeightsResponse]
+    ApiResponse_Union_AiHistoryResponse__NoneType__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/AiHistoryResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[Union[AiHistoryResponse, NoneType]]
+    ApiResponse_UserFollowerResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/UserFollowerResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[UserFollowerResponse]
+    ApiResponse_UserProfileResponse_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/UserProfileResponse'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[UserProfileResponse]
     ApiResponse_VectorSearchEnhanceResp_:
       properties:
         code:
@@ -875,7 +1320,7 @@ components:
       required:
       - code
       title: ApiResponse[VectorSearchEnhanceResp]
-    ApiResponse_dict_str__object__:
+    ApiResponse_list_AiHistoryResponse__:
       properties:
         code:
           type: integer
@@ -883,8 +1328,9 @@ components:
           description: 响应码
         data:
           anyOf:
-          - additionalProperties: true
-            type: object
+          - items:
+              $ref: '#/components/schemas/AiHistoryResponse'
+            type: array
           - type: 'null'
           title: Data
           description: 返回数据
@@ -896,7 +1342,53 @@ components:
       type: object
       required:
       - code
-      title: ApiResponse[dict[str, object]]
+      title: ApiResponse[list[AiHistoryResponse]]
+    ApiResponse_list_ApiLogAverageResponse__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ApiLogAverageResponse'
+            type: array
+          - type: 'null'
+          title: Data
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[list[ApiLogAverageResponse]]
+    ApiResponse_list_ApiLogCalledCountResponse__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ApiLogCalledCountResponse'
+            type: array
+          - type: 'null'
+          title: Data
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[list[ApiLogCalledCountResponse]]
     ApiResponse_list_str__:
       properties:
         code:
@@ -920,7 +1412,7 @@ components:
       required:
       - code
       title: ApiResponse[list[str]]
-    ApiResponse_object_:
+    ApiResponse_str_:
       properties:
         code:
           type: integer
@@ -928,7 +1420,7 @@ components:
           description: 响应码
         data:
           anyOf:
-          - {}
+          - type: string
           - type: 'null'
           title: Data
           description: 返回数据
@@ -940,7 +1432,107 @@ components:
       type: object
       required:
       - code
-      title: ApiResponse[object]
+      title: ApiResponse[str]
+    ArticleStatisticsResponse:
+      properties:
+        total_views:
+          type: integer
+          title: Total Views
+          description: 总阅读量
+        total_articles:
+          type: integer
+          title: Total Articles
+          description: 文章总数
+        active_authors:
+          type: integer
+          title: Active Authors
+          description: 活跃作者数
+        average_views:
+          type: number
+          title: Average Views
+          description: 文章平均阅读量
+        total_likes:
+          type: integer
+          title: Total Likes
+          description: 总点赞数
+        average_likes:
+          type: number
+          title: Average Likes
+          description: 文章平均点赞数
+        total_collects:
+          type: integer
+          title: Total Collects
+          description: 总收藏数
+        average_collects:
+          type: number
+          title: Average Collects
+          description: 文章平均收藏数
+      type: object
+      required:
+      - total_views
+      - total_articles
+      - active_authors
+      - average_views
+      - total_likes
+      - average_likes
+      - total_collects
+      - average_collects
+      title: ArticleStatisticsResponse
+    ArticleViewDistributionResponse:
+      properties:
+        total_views:
+          type: integer
+          title: Total Views
+          description: 总阅读量
+        articles:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Articles
+          description: 文章阅读分布
+      type: object
+      required:
+      - total_views
+      - articles
+      title: ArticleViewDistributionResponse
+    AuthorFollowStatisticsResponse:
+      properties:
+        total_authors:
+          type: integer
+          title: Total Authors
+          description: 关注作者总数
+        daily_follows:
+          items:
+            $ref: '#/components/schemas/UserTimelineItem'
+          type: array
+          title: Daily Follows
+          description: 每日关注统计
+      type: object
+      required:
+      - total_authors
+      - daily_follows
+      title: AuthorFollowStatisticsResponse
+    CategoryArticleCountResponse:
+      properties:
+        category_id:
+          type: integer
+          title: Category Id
+          description: 分类 ID
+        category_name:
+          type: string
+          title: Category Name
+          description: 分类名称
+        article_count:
+          type: integer
+          title: Article Count
+          description: 文章数量
+      type: object
+      required:
+      - category_id
+      - category_name
+      - article_count
+      title: CategoryArticleCountResponse
     ChatRequest:
       properties:
         message:
@@ -1056,6 +1648,31 @@ components:
       - ai_type
       title: CreateHistoryDTO
       description: 创建历史记录 DTO
+    DeletedResponse:
+      properties:
+        deleted:
+          type: boolean
+          title: Deleted
+          description: 是否删除成功
+      type: object
+      required:
+      - deleted
+      title: DeletedResponse
+    GenerateCommentTaskResponse:
+      properties:
+        message:
+          type: string
+          title: Message
+          description: 任务提交消息
+        article_id:
+          type: integer
+          title: Article Id
+          description: 文章 ID
+      type: object
+      required:
+      - message
+      - article_id
+      title: GenerateCommentTaskResponse
     GenerateDTO:
       properties:
         text:
@@ -1200,6 +1817,109 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ListResponse_CategoryArticleCountResponse_:
+      properties:
+        total:
+          type: integer
+          title: Total
+          description: 总记录数
+        list:
+          items:
+            $ref: '#/components/schemas/CategoryArticleCountResponse'
+          type: array
+          title: List
+          description: 列表数据
+      type: object
+      required:
+      - total
+      - list
+      title: ListResponse[CategoryArticleCountResponse]
+    ListResponse_MonthlyPublishCountResponse_:
+      properties:
+        total:
+          type: integer
+          title: Total
+          description: 总记录数
+        list:
+          items:
+            $ref: '#/components/schemas/MonthlyPublishCountResponse'
+          type: array
+          title: List
+          description: 列表数据
+      type: object
+      required:
+      - total
+      - list
+      title: ListResponse[MonthlyPublishCountResponse]
+    ListResponse_dict_str__Any__:
+      properties:
+        total:
+          type: integer
+          title: Total
+          description: 总记录数
+        list:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: List
+          description: 列表数据
+      type: object
+      required:
+      - total
+      - list
+      title: ListResponse[dict[str, Any]]
+    MonthlyPublishCountResponse:
+      properties:
+        year_month:
+          type: string
+          title: Year Month
+          description: 月份，格式为 YYYY-MM
+        count:
+          type: integer
+          title: Count
+          description: 发布数量
+      type: object
+      required:
+      - year_month
+      - count
+      title: MonthlyPublishCountResponse
+    ScriptParamsResponse:
+      properties:
+        script_params:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Script Params
+          description: 脚本参数映射
+      type: object
+      required:
+      - script_params
+      title: ScriptParamsResponse
+    SearchScriptResponseData:
+      properties:
+        es_script:
+          type: string
+          title: Es Script
+          description: ES 搜索脚本
+      type: object
+      required:
+      - es_script
+      title: SearchScriptResponseData
+    SearchWeightsResponse:
+      properties:
+        weights:
+          items:
+            additionalProperties: true
+            type: object
+          type: array
+          title: Weights
+          description: 搜索权重列表
+      type: object
+      required:
+      - weights
+      title: SearchWeightsResponse
     UpdateHistoryDTO:
       properties:
         user_id:
@@ -1235,6 +1955,117 @@ components:
       type: object
       title: UpdateHistoryDTO
       description: 更新历史记录 DTO
+    UserFollowerResponse:
+      properties:
+        period:
+          type: string
+          title: Period
+          description: 统计周期
+        timeline:
+          items:
+            $ref: '#/components/schemas/UserTimelineItem'
+          type: array
+          title: Timeline
+          description: 周期统计
+      type: object
+      required:
+      - period
+      - timeline
+      title: UserFollowerResponse
+    UserProfileResponse:
+      properties:
+        user_id:
+          type: integer
+          title: User Id
+          description: 用户 ID
+        user_name:
+          type: string
+          title: User Name
+          description: 用户名
+        total_articles:
+          type: integer
+          title: Total Articles
+          description: 发布文章数
+        total_views_received:
+          type: integer
+          title: Total Views Received
+          description: 文章获阅读数
+        total_likes_received:
+          type: integer
+          title: Total Likes Received
+          description: 文章获点赞数
+        total_collects_received:
+          type: integer
+          title: Total Collects Received
+          description: 文章获收藏数
+        total_followers:
+          type: integer
+          title: Total Followers
+          description: 粉丝数
+        total_likes_given:
+          type: integer
+          title: Total Likes Given
+          description: 点赞数
+        total_collects_given:
+          type: integer
+          title: Total Collects Given
+          description: 收藏数
+        total_comments:
+          type: integer
+          title: Total Comments
+          description: 评论数
+        total_focus:
+          type: integer
+          title: Total Focus
+          description: 关注数
+        last_active_time:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Active Time
+          description: 最后活跃时间
+      type: object
+      required:
+      - user_id
+      - user_name
+      - total_articles
+      - total_views_received
+      - total_likes_received
+      - total_collects_received
+      - total_followers
+      - total_likes_given
+      - total_collects_given
+      - total_comments
+      - total_focus
+      title: UserProfileResponse
+    UserTimelineItem:
+      properties:
+        date:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Date
+          description: 日期
+        month:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Month
+          description: 月份
+        year:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Year
+          description: 年份
+        count:
+          type: integer
+          title: Count
+          description: 统计数量
+      type: object
+      required:
+      - count
+      title: UserTimelineItem
     ValidationError:
       properties:
         loc:

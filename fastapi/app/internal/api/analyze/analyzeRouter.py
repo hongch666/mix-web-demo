@@ -5,7 +5,12 @@ from fastapi import APIRouter, Request
 from app.common.decorators import log, requireAdmin
 from app.core.base import ApiResponse, success
 from app.dependencies import AnalyzeServiceDep, DbSession
-from app.internal.schemas import ListResponse
+from app.internal.schemas import (
+    ArticleStatisticsResponse,
+    CategoryArticleCountResponse,
+    ListResponse,
+    MonthlyPublishCountResponse,
+)
 
 router: APIRouter = APIRouter(
     prefix="/analyze",
@@ -17,7 +22,7 @@ router: APIRouter = APIRouter(
     "/top10",
     summary="获取前10篇文章",
     description="获取阅读量前10的文章",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[ListResponse[dict[str, Any]]],
 )
 @log("获取前10篇文章")
 async def get_top10_articles(
@@ -37,7 +42,7 @@ async def get_top10_articles(
     "/wordcloud",
     summary="生成词云图",
     description="根据文章生成词云图（支持Redis缓存，24h过期）",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[str],
 )
 @log("生成词云图")
 async def get_wordcloud(
@@ -53,7 +58,7 @@ async def get_wordcloud(
     "/excel",
     summary="获取文章数据Excel",
     description="导出文章数据到Excel并上传到OSS",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[str],
 )
 @requireAdmin
 @log("获取文章数据Excel")
@@ -73,7 +78,7 @@ async def get_excel(
     "/statistics",
     summary="获取文章统计信息",
     description="获取文章统计信息",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[ArticleStatisticsResponse],
 )
 @log("获取文章统计信息")
 async def get_article_statistics(
@@ -91,7 +96,7 @@ async def get_article_statistics(
     "/article-count-by-category",
     summary="按分类统计文章数量",
     description="获取所有大分类的文章数量分布，包括没有文章的分类",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[ListResponse[CategoryArticleCountResponse]],
 )
 @log("按分类统计文章数量")
 async def get_article_count_by_category(
@@ -111,7 +116,7 @@ async def get_article_count_by_category(
     "/monthly-publish-count",
     summary="获取月度文章发布统计",
     description="获取最近6个月的文章发布数量统计（从当前月向前推6个月，缺失月份置为0）",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[ListResponse[MonthlyPublishCountResponse]],
 )
 @log("获取月度文章发布统计")
 async def get_monthly_publish_count(

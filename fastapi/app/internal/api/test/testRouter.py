@@ -15,7 +15,7 @@ router: APIRouter = APIRouter(
     "/fastapi",
     summary="测试FastAPI服务",
     description="测试FastAPI服务",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[str],
 )
 @log("测试FastAPI服务")
 async def testFastapi(request: Request) -> ApiResponse:

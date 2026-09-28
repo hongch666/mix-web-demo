@@ -4,7 +4,7 @@ from app.common.decorators import log
 from app.core.base import ApiResponse, success
 from app.core.constants import Messages
 from app.dependencies import GenerateServiceDep
-from app.internal.schemas import GenerateDTO
+from app.internal.schemas import GenerateCommentTaskResponse, GenerateDTO
 
 router: APIRouter = APIRouter(
     prefix="/generate",
@@ -34,7 +34,7 @@ async def generate_tags(
     "/ai_comment/{article_id}",
     summary="文章创建AI评论",
     description="为指定文章创建AI评论",
-    response_model=ApiResponse[dict[str, object]],
+    response_model=ApiResponse[GenerateCommentTaskResponse],
 )
 @log("文章创建AI评论")
 async def create_article_ai_comment(
@@ -59,7 +59,7 @@ async def create_article_ai_comment(
     "/ai_comment_with_reference/{article_id}",
     summary="文章创建基于权威参考文本的AI评论",
     description="为指定文章创建基于权威参考文本的AI评论，使用权威参考文本进行评价打分",
-    response_model=ApiResponse[dict[str, object]],
+    response_model=ApiResponse[GenerateCommentTaskResponse],
 )
 @log("文章创建基于权威参考文本的AI评论")
 async def create_article_ai_comment_with_reference(

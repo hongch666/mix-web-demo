@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request
 from app.common.decorators import log, requireAdmin
 from app.core.base import ApiResponse, success
 from app.dependencies import ApiLogServiceDep
+from app.internal.schemas import ApiLogAverageResponse, ApiLogCalledCountResponse
 
 router: APIRouter = APIRouter(
     prefix="/analyze/api",
@@ -16,7 +17,7 @@ router: APIRouter = APIRouter(
     "/average-speed",
     summary="获取所有接口的平均响应速度",
     description="获取所有接口的平均响应速度",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[list[ApiLogAverageResponse]],
 )
 @log("获取所有接口的平均响应速度")
 @requireAdmin
@@ -35,7 +36,7 @@ async def get_api_average_speed(
     "/called-count",
     summary="获取接口调用次数",
     description="获取接口调用次数",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[list[ApiLogCalledCountResponse]],
 )
 @log("获取接口调用次数")
 @requireAdmin

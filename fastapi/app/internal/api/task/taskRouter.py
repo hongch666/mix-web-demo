@@ -31,7 +31,7 @@ router: APIRouter = APIRouter(
     "/update-analyze-caches",
     summary="更新分析接口缓存",
     description="手动触发更新分析接口缓存的定时任务",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("手动触发更新分析接口缓存任务")
@@ -49,7 +49,7 @@ async def task_update_analyze_caches(
     "/vector",
     summary="手动触发向量数据库同步任务",
     description="手动触发同步文章数据PostgreSQL向量数据库的定时任务",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("手动触发向量数据库同步任务")
@@ -67,7 +67,7 @@ async def task_export_vector(
     "/init-hash-cache",
     summary="初始化文章内容 hash 缓存",
     description="为所有已发布的文章初始化内容 hash 缓存，用于生产环境已有大量文章和向量库数据，但缺少 hash 缓存的场景，此操作只生成 hash，不进行向量同步",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("初始化文章内容 hash 缓存")
@@ -85,7 +85,7 @@ async def task_init_hash_cache(
     "/clear-analyze-caches",
     summary="清除分析相关缓存",
     description="删除所有文章分析相关的缓存数据（包括 Top10、分类统计、月度统计、词云、统计信息等），用于远程触发缓存更新",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("清除分析相关缓存")
@@ -113,7 +113,7 @@ async def task_clear_analyze_caches(
     "/sync-neo4j",
     summary="手动触发同步 MySQL 到 Neo4j 知识图谱任务",
     description="手动触发同步 MySQL 数据到 Neo4j 知识图谱的定时任务，force_full=true 时执行全量同步（含安全清理，用于兜底清理 MySQL 已删除数据）",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("手动触发同步 MySQL 到 Neo4j 知识图谱任务")
@@ -135,7 +135,7 @@ async def task_sync_neo4j(
     "/sync-warehouse",
     summary="手动触发 ClickHouse 数仓同步任务",
     description="通过 Spring 和 NestJS 内部接口同步业务数据到 ClickHouse，并刷新数仓汇总表",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("手动触发 ClickHouse 数仓同步任务")

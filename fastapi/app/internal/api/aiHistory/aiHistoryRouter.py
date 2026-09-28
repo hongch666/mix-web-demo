@@ -5,7 +5,12 @@ from fastapi import APIRouter, Path, Query, Request
 from app.common.decorators import log, requireInternalToken, requireSelf
 from app.core.base import ApiResponse, success
 from app.dependencies import AiHistoryServiceDep, DbSession
-from app.internal.schemas import CreateHistoryDTO, UpdateHistoryDTO
+from app.internal.schemas import (
+    AiHistoryResponse,
+    CreateHistoryDTO,
+    DeletedResponse,
+    UpdateHistoryDTO,
+)
 
 router: APIRouter = APIRouter(
     prefix="/ai_history",
@@ -17,7 +22,7 @@ router: APIRouter = APIRouter(
     "",
     summary="创建AI历史记录",
     description="创建一条AI历史记录",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireInternalToken
 @log("创建AI历史记录")
@@ -37,7 +42,7 @@ async def create_ai_history(
     "/list",
     summary="获取所有AI历史记录",
     description="获取指定用户的所有AI历史记录",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[list[AiHistoryResponse]],
 )
 @requireSelf
 @log("获取所有AI历史记录")
@@ -59,7 +64,7 @@ async def get_all_ai_history(
     "/{user_id}",
     summary="删除用户所有AI历史记录",
     description="删除指定用户的所有AI历史记录",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[None],
 )
 @requireSelf
 @log("删除用户所有AI历史记录")
@@ -79,7 +84,7 @@ async def delete_ai_history(
     "/internal/{id}",
     summary="根据ID查询AI历史记录（内部）",
     description="根据ID查询AI历史记录，供内部服务远程调用",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[AiHistoryResponse | None],
 )
 @requireInternalToken
 @log("内部查询AI历史记录")
@@ -101,7 +106,7 @@ async def get_ai_history_by_id_internal(
     "/internal/{id}",
     summary="更新AI历史记录（内部）",
     description="更新AI历史记录，供内部服务远程调用",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[AiHistoryResponse | None],
 )
 @requireInternalToken
 @log("内部更新AI历史记录")
@@ -124,7 +129,7 @@ async def update_ai_history_internal(
     "/internal/{id}",
     summary="删除AI历史记录（内部）",
     description="根据ID删除AI历史记录，供内部服务远程调用",
-    response_model=ApiResponse[object],
+    response_model=ApiResponse[DeletedResponse],
 )
 @requireInternalToken
 @log("内部删除AI历史记录")
