@@ -6,6 +6,11 @@ import {
   ApiQuery,
   ApiTags,
 } from "@nestjs/swagger";
+import {
+  ApiResponseModel,
+  SwaggerObjectData,
+  SwaggerStringData,
+} from "src/common/utils/swaggerResponse";
 import type { FastifyRequest } from "fastify";
 import { Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
@@ -27,6 +32,7 @@ export class UploadController {
   })
   @RequireInternalToken()
   @ApiLog("上传文件到 OSS")
+  @ApiResponseModel({ data: SwaggerStringData })
   async uploadFile(@Body() dto: UploadDto): Promise<ApiResponse<string>> {
     const url: string = await this.uploadService.uploadFile(
       dto.localFile,
@@ -54,6 +60,7 @@ export class UploadController {
     description: "通过 multipart/form-data 上传图片到 OSS",
   })
   @ApiLog("上传图片到 OSS")
+  @ApiResponseModel({ data: SwaggerObjectData })
   async uploadImage(
     @Req() req: FastifyRequest,
   ): Promise<ApiResponse<UploadResult>> {
@@ -94,6 +101,7 @@ export class UploadController {
     description: "通过 multipart/form-data 上传 PDF 到 OSS",
   })
   @ApiLog("上传 PDF 到 OSS")
+  @ApiResponseModel({ data: SwaggerObjectData })
   async uploadPdf(
     @Req() req: FastifyRequest,
     @Query("customFilename") customFilename?: string,

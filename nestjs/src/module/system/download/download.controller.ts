@@ -1,5 +1,9 @@
 import { Controller, Get, Param } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
+import {
+  ApiResponseModel,
+  SwaggerStringData,
+} from "src/common/utils/swaggerResponse";
 import { ApiResponse, success } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { DownloadService } from "./download.service";
@@ -16,6 +20,7 @@ export class DownloadController {
   })
   @ApiParam({ name: "id", type: "number", description: "文章ID" })
   @ApiLog("下载文章Word")
+  @ApiResponseModel({ data: SwaggerStringData })
   async downloadWord(@Param("id") id: number): Promise<ApiResponse<string>> {
     const url: string = await this.downloadService.exportToWordAndSave(id);
     return success(url);
@@ -28,6 +33,7 @@ export class DownloadController {
   })
   @ApiParam({ name: "id", type: "number", description: "文章ID" })
   @ApiLog("下载文章Markdown")
+  @ApiResponseModel({ data: SwaggerStringData })
   async downloadMarkdown(
     @Param("id") id: number,
   ): Promise<ApiResponse<string>> {
@@ -44,6 +50,7 @@ export class DownloadController {
   })
   @ApiParam({ name: "id", type: "number", description: "文章ID" })
   @ApiLog("下载文章PDF")
+  @ApiResponseModel({ data: SwaggerStringData })
   async downloadPdf(@Param("id") id: number): Promise<ApiResponse<string>> {
     const url: string = await this.downloadService.exportToPdfAndSave(id);
     return success(url);

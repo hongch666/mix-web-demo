@@ -1,6 +1,10 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
+import {
+  ApiResponseModel,
+  SwaggerNullData,
+} from "src/common/utils/swaggerResponse";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { InternalEmailCodeSendDto } from "./dto/mail.dto";
 import { MailService } from "./mail.service";
@@ -16,6 +20,7 @@ export class MailController {
     summary: "发送邮箱验证码",
     description: "通过 SMTP 发送验证码邮件",
   })
+  @ApiResponseModel({ data: SwaggerNullData })
   async sendEmailCode(
     @Body() dto: InternalEmailCodeSendDto,
   ): Promise<ApiResponse<null>> {

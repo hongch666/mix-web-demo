@@ -9,6 +9,11 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
+import {
+  ApiResponseModel,
+  SwaggerNullData,
+  SwaggerObjectData,
+} from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
@@ -30,6 +35,7 @@ export class ApiLogController {
   })
   @ApiLog("查询API日志")
   @RequireAdmin()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async findByFilter(
     @Query() query: QueryApiLogDto,
   ): Promise<ApiResponse<unknown>> {
@@ -48,6 +54,7 @@ export class ApiLogController {
   @ApiLog("创建API日志")
   @RequireAdmin()
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerNullData })
   async create(@Body() dto: CreateApiLogDto): Promise<ApiResponse<null>> {
     await this.apiLogService.create(dto);
     return success(null);
@@ -63,6 +70,7 @@ export class ApiLogController {
   })
   @ApiLog("删除API日志")
   @RequireAdmin()
+  @ApiResponseModel({ data: SwaggerNullData })
   async remove(@Param("id") id: string): Promise<ApiResponse<null>> {
     await this.apiLogService.removeById(id);
     return success(null);
@@ -78,6 +86,7 @@ export class ApiLogController {
   })
   @ApiLog("批量删除API日志")
   @RequireAdmin()
+  @ApiResponseModel({ data: SwaggerNullData })
   async removeByIds(@Param("ids") ids: string): Promise<ApiResponse<null>> {
     const idArr: string[] = ids
       .split(",")
@@ -96,6 +105,7 @@ export class ApiLogController {
     description: "供 FastAPI 数仓按 MongoDB ID 游标增量同步API日志",
   })
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async sync(
     @Query("cursor") cursor: string | undefined,
     @Query("limit") limit: string | undefined,
@@ -116,6 +126,7 @@ export class ApiLogController {
     description: "获取所有接口的平均响应速度，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async getApiAverageSpeed(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.apiLogService.getApiAverageResponseTime();
     return success(data);
@@ -130,6 +141,7 @@ export class ApiLogController {
     description: "获取接口调用次数，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async getCalledCount(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.apiLogService.getCalledCount();
     return success(data);

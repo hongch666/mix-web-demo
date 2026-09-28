@@ -19,7 +19,41 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "authorize_url": {
+                          "type": "string"
+                        },
+                        "state": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取 GitHub 授权地址",
@@ -75,8 +109,16 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": ""
+          "302": {
+            "description": "重定向到前端回调地址",
+            "headers": {
+              "Location": {
+                "description": "重定向地址",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "summary": "GitHub 回调处理",
@@ -101,8 +143,35 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "发送邮箱验证码",
@@ -117,8 +186,35 @@
         "operationId": "TaskController_executeCleanupOldApiLogsTask",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "手动执行清理API日志任务",
@@ -133,8 +229,35 @@
         "operationId": "TaskController_executeCleanupOldArticleLogsTask",
         "parameters": [],
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "手动执行清理文章日志任务",
@@ -160,7 +283,34 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "新增文章日志",
@@ -274,7 +424,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "查询文章日志",
@@ -307,7 +483,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "游标同步文章日志",
@@ -332,7 +534,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "删除文章日志",
@@ -357,7 +586,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "批量删除文章日志",
@@ -382,7 +638,41 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "keywords": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取搜索历史",
@@ -407,7 +697,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取文章浏览分布",
@@ -423,7 +739,36 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取搜索关键词",
@@ -532,7 +877,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "查询API日志",
@@ -557,8 +928,35 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "创建API日志",
@@ -583,7 +981,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "删除API日志",
@@ -608,7 +1033,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "批量删除API日志",
@@ -641,7 +1093,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "游标同步API日志",
@@ -657,7 +1135,33 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取所有接口的平均响应速度",
@@ -673,7 +1177,33 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取接口调用次数",
@@ -689,7 +1219,33 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "NestJS自己的测试",
@@ -715,7 +1271,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "下载文章Word",
@@ -741,7 +1323,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "下载文章Markdown",
@@ -767,7 +1375,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "下载文章PDF",
@@ -783,7 +1417,33 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "列出日志集合",
@@ -808,8 +1468,34 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "查询日志文档",
@@ -834,8 +1520,34 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "上传本地文件到 OSS",
@@ -869,8 +1581,34 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "上传图片到 OSS",
@@ -922,8 +1660,34 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "上传 PDF 到 OSS",
@@ -939,7 +1703,36 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TableSettings"
+                      }
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取当前用户所有页面的列配置",
@@ -965,7 +1758,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取指定页面的列配置",
@@ -999,7 +1818,34 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "保存指定页面的列配置",
@@ -1023,7 +1869,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "null",
+                      "nullable": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "删除指定页面的列配置",
@@ -1049,7 +1922,33 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "获取表结构信息",
@@ -1074,8 +1973,34 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "format": "int32",
+                      "example": 200
+                    },
+                    "msg": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "msg",
+                    "data"
+                  ]
+                }
+              }
+            }
           }
         },
         "summary": "执行只读参数化SQL",

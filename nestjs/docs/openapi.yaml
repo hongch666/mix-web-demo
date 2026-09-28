@@ -14,7 +14,30 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      authorize_url:
+                        type: string
+                      state:
+                        type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取 GitHub 授权地址
       tags:
         - GitHub 登录模块
@@ -52,8 +75,13 @@ paths:
             example: The user denied the request
             type: string
       responses:
-        '200':
-          description: ''
+        '302':
+          description: 重定向到前端回调地址
+          headers:
+            Location:
+              description: 重定向地址
+              schema:
+                type: string
       summary: GitHub 回调处理
       tags:
         - GitHub 登录模块
@@ -69,8 +97,27 @@ paths:
             schema:
               $ref: '#/components/schemas/InternalEmailCodeSendDto'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 发送邮箱验证码
       tags:
         - 邮件模块
@@ -80,8 +127,27 @@ paths:
       operationId: TaskController_executeCleanupOldApiLogsTask
       parameters: []
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 手动执行清理API日志任务
       tags:
         - 定时任务模块
@@ -91,8 +157,27 @@ paths:
       operationId: TaskController_executeCleanupOldArticleLogsTask
       parameters: []
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 手动执行清理文章日志任务
       tags:
         - 定时任务模块
@@ -109,7 +194,26 @@ paths:
               $ref: '#/components/schemas/CreateArticleLogDto'
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 新增文章日志
       tags:
         - 文章日志模块
@@ -189,7 +293,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 查询文章日志
       tags:
         - 文章日志模块
@@ -210,7 +332,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 游标同步文章日志
       tags:
         - 文章日志模块
@@ -226,7 +366,26 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 删除文章日志
       tags:
         - 文章日志模块
@@ -242,7 +401,26 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 批量删除文章日志
       tags:
         - 文章日志模块
@@ -258,7 +436,30 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      keywords:
+                        type: array
+                        items:
+                          type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取搜索历史
       tags:
         - 文章日志模块
@@ -274,7 +475,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取文章浏览分布
       tags:
         - 文章日志模块
@@ -285,7 +504,27 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取搜索关键词
       tags:
         - 文章日志模块
@@ -360,7 +599,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 查询API日志
       tags:
         - API日志模块
@@ -376,8 +633,27 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateApiLogDto'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 创建API日志
       tags:
         - API日志模块
@@ -393,7 +669,26 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 删除API日志
       tags:
         - API日志模块
@@ -409,7 +704,26 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 批量删除API日志
       tags:
         - API日志模块
@@ -430,7 +744,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 游标同步API日志
       tags:
         - API日志模块
@@ -441,7 +773,25 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取所有接口的平均响应速度
       tags:
         - API日志模块
@@ -452,7 +802,25 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取接口调用次数
       tags:
         - API日志模块
@@ -463,7 +831,25 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: NestJS自己的测试
       tags:
         - 测试模块
@@ -480,7 +866,25 @@ paths:
             type: number
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 下载文章Word
       tags:
         - 下载模块
@@ -497,7 +901,25 @@ paths:
             type: number
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 下载文章Markdown
       tags:
         - 下载模块
@@ -514,7 +936,25 @@ paths:
             type: number
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 下载文章PDF
       tags:
         - 下载模块
@@ -525,7 +965,25 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 列出日志集合
       tags:
         - MongoDB工具模块
@@ -541,8 +999,26 @@ paths:
             schema:
               $ref: '#/components/schemas/QueryMongoDto'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 查询日志文档
       tags:
         - MongoDB工具模块
@@ -558,8 +1034,26 @@ paths:
             schema:
               $ref: '#/components/schemas/UploadDto'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: string
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 上传本地文件到 OSS
       tags:
         - 文件上传
@@ -581,8 +1075,26 @@ paths:
               required:
                 - file
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 上传图片到 OSS
       tags:
         - 文件上传
@@ -615,8 +1127,26 @@ paths:
               required:
                 - file
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 上传 PDF 到 OSS
       tags:
         - 文件上传
@@ -627,7 +1157,27 @@ paths:
       parameters: []
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TableSettings'
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取当前用户所有页面的列配置
       tags:
         - 表格列设置
@@ -644,7 +1194,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取指定页面的列配置
       tags:
         - 表格列设置
@@ -666,7 +1234,26 @@ paths:
               $ref: '#/components/schemas/SaveTableSettingsDto'
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 保存指定页面的列配置
       tags:
         - 表格列设置
@@ -682,7 +1269,26 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: 'null'
+                    nullable: true
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 删除指定页面的列配置
       tags:
         - 表格列设置
@@ -699,7 +1305,25 @@ paths:
             type: string
       responses:
         '200':
-          description: ''
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 获取表结构信息
       tags:
         - SQL工具
@@ -715,8 +1339,26 @@ paths:
             schema:
               $ref: '#/components/schemas/SqlQueryDto'
       responses:
-        '201':
-          description: ''
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    example: 200
+                  msg:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                required:
+                  - code
+                  - msg
+                  - data
       summary: 执行只读参数化SQL
       tags:
         - SQL工具

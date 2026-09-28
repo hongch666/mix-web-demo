@@ -1,5 +1,9 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import {
+  ApiResponseModel,
+  SwaggerStringData,
+} from "src/common/utils/swaggerResponse";
 import { ApiResponse } from "src/common/utils/response";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { TestService } from "./test.service";
@@ -15,6 +19,7 @@ export class TestController {
     description: "输出欢迎信息",
   })
   @ApiLog("测试NestJS服务")
+  @ApiResponseModel({ data: SwaggerStringData })
   async getNestjs(): Promise<ApiResponse<string>> {
     return this.testService.getWelcomeMessage();
   }

@@ -1,6 +1,10 @@
 import { Controller, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
+import {
+  ApiResponseModel,
+  SwaggerNullData,
+} from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { TaskService } from "./task.service";
@@ -17,6 +21,7 @@ export class TaskController {
   })
   @RequireInternalToken()
   @ApiLog("手动执行清理API日志任务")
+  @ApiResponseModel({ data: SwaggerNullData })
   async executeCleanupOldApiLogsTask(): Promise<ApiResponse<null>> {
     // 后台异步执行，不阻塞接口响应
     void this.taskService.cleanupOldApiLogs();
@@ -30,6 +35,7 @@ export class TaskController {
   })
   @RequireInternalToken()
   @ApiLog("手动执行清理文章日志任务")
+  @ApiResponseModel({ data: SwaggerNullData })
   async executeCleanupOldArticleLogsTask(): Promise<ApiResponse<null>> {
     // 后台异步执行，不阻塞接口响应
     void this.taskService.cleanupOldArticleLogs();

@@ -3,6 +3,10 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { FastifyReply } from "fastify";
 import { HttpCode } from "src/common/constants";
 import { ApiResponse, success } from "src/common/utils/response";
+import {
+  ApiRedirectResponse,
+  ApiResponseModel,
+} from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import {
   GithubAuthorizeQueryDto,
@@ -21,6 +25,15 @@ export class GithubController {
     description: "返回 GitHub OAuth 授权地址，前端拿到后直接跳转",
   })
   @ApiLog("获取 GitHub 授权地址")
+  @ApiResponseModel({
+    data: {
+      type: "object",
+      properties: {
+        authorizeUrl: { type: "string" },
+        state: { type: "string" },
+      },
+    },
+  })
   async authorize(
     @Query() query: GithubAuthorizeQueryDto,
   ): Promise<ApiResponse<{ authorizeUrl: string; state: string }>> {
@@ -35,6 +48,7 @@ export class GithubController {
     description: "处理 GitHub OAuth 回调，成功后重定向到前端成功页",
   })
   @ApiLog({ message: "GitHub 回调处理", excludeFields: ["code"] })
+  @ApiRedirectResponse("重定向到前端回调地址")
   async callback(
     @Query() query: GithubCallbackQueryDto,
     @Res() reply: FastifyReply,

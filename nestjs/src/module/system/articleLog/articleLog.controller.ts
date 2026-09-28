@@ -10,6 +10,11 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
+import {
+  ApiResponseModel,
+  SwaggerNullData,
+  SwaggerObjectData,
+} from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
@@ -30,6 +35,7 @@ export class ArticleLogController {
   @ApiLog("新增文章日志")
   @RequireAdmin()
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerNullData })
   async create(@Body() dto: CreateArticleLogDto): Promise<ApiResponse<null>> {
     await this.logService.create(dto);
     return success(null);
@@ -42,6 +48,7 @@ export class ArticleLogController {
   })
   @ApiLog("查询文章日志")
   @RequireAdmin()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async findByFilter(
     @Query() query: QueryArticleLogDto,
   ): Promise<ApiResponse<unknown>> {
@@ -55,6 +62,7 @@ export class ArticleLogController {
     description: "供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志",
   })
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async sync(
     @Query("cursor") cursor: string | undefined,
     @Query("limit") limit: string | undefined,
@@ -73,6 +81,7 @@ export class ArticleLogController {
   })
   @ApiLog("删除文章日志")
   @RequireAdmin()
+  @ApiResponseModel({ data: SwaggerNullData })
   async remove(@Param("id") id: string): Promise<ApiResponse<null>> {
     await this.logService.removeById(id);
     return success(null);
@@ -85,6 +94,7 @@ export class ArticleLogController {
   })
   @ApiLog("批量删除文章日志")
   @RequireAdmin()
+  @ApiResponseModel({ data: SwaggerNullData })
   async removeByIds(@Param("ids") ids: string): Promise<ApiResponse<null>> {
     const idArr: string[] = ids
       .split(",")
@@ -100,6 +110,12 @@ export class ArticleLogController {
     description: "根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用",
   })
   @RequireInternalToken()
+  @ApiResponseModel({
+    data: {
+      type: "object",
+      properties: { keywords: { type: "array", items: { type: "string" } } },
+    },
+  })
   async getSearchHistory(
     @Param("userId") userId: string,
   ): Promise<ApiResponse<{ keywords: string[] }>> {
@@ -116,6 +132,7 @@ export class ArticleLogController {
       "根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
+  @ApiResponseModel({ data: SwaggerObjectData })
   async getViewDistribution(
     @Param("userId") userId: string,
   ): Promise<ApiResponse<unknown>> {
@@ -131,6 +148,7 @@ export class ArticleLogController {
     description: "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
   })
   @RequireInternalToken()
+  @ApiResponseModel({ data: { type: "array", items: { type: "string" } } })
   async getSearchKeywords(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.logService.getSearchKeywords();
     return success(data);
