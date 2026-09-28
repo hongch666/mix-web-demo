@@ -3,7 +3,8 @@ import { ApiBody, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
 import {
   ApiResponseModel,
   SwaggerNullData,
-  SwaggerObjectData,
+  SwaggerTableSettingsData,
+  SwaggerTableSettingsListData,
 } from "src/common/utils/swaggerResponse";
 import { ClsService } from "nestjs-cls";
 import { ErrorIds, Messages } from "src/common/constants";
@@ -28,12 +29,7 @@ export class TableSettingsController {
     description: "返回当前登录用户所有已保存的表格列设置",
   })
   @ApiLog("获取所有列配置")
-  @ApiResponseModel({
-    data: {
-      type: "array",
-      items: { $ref: "#/components/schemas/TableSettings" },
-    },
-  })
+  @ApiResponseModel({ data: SwaggerTableSettingsListData })
   async getAllSettings(): Promise<ApiResponse<TableSettings[]>> {
     const userId: number = this.cls.get<number>("userId");
     if (!userId) {
@@ -47,16 +43,16 @@ export class TableSettingsController {
     return success(settings);
   }
 
-  @Get(":tableKey")
+  @Get(":table_key")
   @ApiOperation({
     summary: "获取指定页面的列配置",
     description: "获取当前登录用户在指定页面的表格列设置",
   })
-  @ApiParam({ name: "tableKey", type: "string", description: "页面标识" })
+  @ApiParam({ name: "table_key", type: "string", description: "页面标识" })
   @ApiLog("获取列配置")
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerTableSettingsData })
   async getSettings(
-    @Param("tableKey") tableKey: string,
+    @Param("table_key") tableKey: string,
   ): Promise<ApiResponse<TableSettings | null>> {
     const userId: number = this.cls.get<number>("userId");
     if (!userId) {
@@ -70,17 +66,17 @@ export class TableSettingsController {
     return success(settings);
   }
 
-  @Put(":tableKey")
+  @Put(":table_key")
   @ApiOperation({
     summary: "保存指定页面的列配置",
     description: "保存（新增或更新）当前登录用户在指定页面的表格列设置",
   })
-  @ApiParam({ name: "tableKey", type: "string", description: "页面标识" })
+  @ApiParam({ name: "table_key", type: "string", description: "页面标识" })
   @ApiBody({ type: SaveTableSettingsDto })
   @ApiLog("保存列配置")
   @ApiResponseModel({ data: SwaggerNullData })
   async saveSettings(
-    @Param("tableKey") tableKey: string,
+    @Param("table_key") tableKey: string,
     @Body() dto: SaveTableSettingsDto,
   ): Promise<ApiResponse<null>> {
     const userId: number = this.cls.get<number>("userId");
@@ -94,16 +90,16 @@ export class TableSettingsController {
     return success(null);
   }
 
-  @Delete(":tableKey")
+  @Delete(":table_key")
   @ApiOperation({
     summary: "删除指定页面的列配置",
     description: "删除当前登录用户在指定页面的表格列设置，恢复为默认配置",
   })
-  @ApiParam({ name: "tableKey", type: "string", description: "页面标识" })
+  @ApiParam({ name: "table_key", type: "string", description: "页面标识" })
   @ApiLog("删除列配置")
   @ApiResponseModel({ data: SwaggerNullData })
   async deleteSettings(
-    @Param("tableKey") tableKey: string,
+    @Param("table_key") tableKey: string,
   ): Promise<ApiResponse<null>> {
     const userId: number = this.cls.get<number>("userId");
     if (!userId) {

@@ -8,8 +8,8 @@ import {
 } from "@nestjs/swagger";
 import {
   ApiResponseModel,
-  SwaggerObjectData,
   SwaggerStringData,
+  SwaggerUploadResultData,
 } from "src/common/utils/swaggerResponse";
 import type { FastifyRequest } from "fastify";
 import { Messages } from "src/common/constants";
@@ -60,7 +60,7 @@ export class UploadController {
     description: "通过 multipart/form-data 上传图片到 OSS",
   })
   @ApiLog("上传图片到 OSS")
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerUploadResultData })
   async uploadImage(
     @Req() req: FastifyRequest,
   ): Promise<ApiResponse<UploadResult>> {
@@ -101,10 +101,10 @@ export class UploadController {
     description: "通过 multipart/form-data 上传 PDF 到 OSS",
   })
   @ApiLog("上传 PDF 到 OSS")
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerUploadResultData })
   async uploadPdf(
     @Req() req: FastifyRequest,
-    @Query("customFilename") customFilename?: string,
+    @Query("custom_filename") customFilename?: string,
   ): Promise<ApiResponse<UploadResult>> {
     const parts = req.parts();
     for await (const part of parts) {

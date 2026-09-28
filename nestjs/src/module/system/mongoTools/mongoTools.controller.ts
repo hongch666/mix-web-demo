@@ -2,8 +2,9 @@ import { Body, Controller, Get, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
+  SwaggerMongoCollectionsData,
+  SwaggerMongoQueryData,
   ApiResponseModel,
-  SwaggerObjectData,
 } from "src/common/utils/swaggerResponse";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
 import { QueryMongoDto } from "./dto/mongoTools.dto";
@@ -20,7 +21,7 @@ export class MongoToolsController {
     description: "列出白名单内日志集合及其基本信息，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerMongoCollectionsData })
   async listCollections(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.mongoToolsService.listCollections();
     return success(data);
@@ -32,7 +33,7 @@ export class MongoToolsController {
     description: "对白名单内的日志集合执行只读查询，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerMongoQueryData })
   async query(@Body() dto: QueryMongoDto): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.mongoToolsService.query(
       dto.collectionName,

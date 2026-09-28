@@ -10,9 +10,12 @@ import {
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
+  SwaggerApiLogAverageData,
+  SwaggerApiLogCalledCountData,
+  SwaggerApiLogPageData,
+  SwaggerApiLogSyncData,
   ApiResponseModel,
   SwaggerNullData,
-  SwaggerObjectData,
 } from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
@@ -35,7 +38,7 @@ export class ApiLogController {
   })
   @ApiLog("查询API日志")
   @RequireAdmin()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerApiLogPageData })
   async findByFilter(
     @Query() query: QueryApiLogDto,
   ): Promise<ApiResponse<unknown>> {
@@ -105,7 +108,7 @@ export class ApiLogController {
     description: "供 FastAPI 数仓按 MongoDB ID 游标增量同步API日志",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerApiLogSyncData })
   async sync(
     @Query("cursor") cursor: string | undefined,
     @Query("limit") limit: string | undefined,
@@ -126,7 +129,7 @@ export class ApiLogController {
     description: "获取所有接口的平均响应速度，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerApiLogAverageData })
   async getApiAverageSpeed(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.apiLogService.getApiAverageResponseTime();
     return success(data);
@@ -141,7 +144,7 @@ export class ApiLogController {
     description: "获取接口调用次数，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerApiLogCalledCountData })
   async getCalledCount(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.apiLogService.getCalledCount();
     return success(data);

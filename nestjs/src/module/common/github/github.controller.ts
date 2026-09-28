@@ -6,6 +6,7 @@ import { ApiResponse, success } from "src/common/utils/response";
 import {
   ApiRedirectResponse,
   ApiResponseModel,
+  SwaggerGithubAuthorizeData,
 } from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import {
@@ -25,15 +26,7 @@ export class GithubController {
     description: "返回 GitHub OAuth 授权地址，前端拿到后直接跳转",
   })
   @ApiLog("获取 GitHub 授权地址")
-  @ApiResponseModel({
-    data: {
-      type: "object",
-      properties: {
-        authorizeUrl: { type: "string" },
-        state: { type: "string" },
-      },
-    },
-  })
+  @ApiResponseModel({ data: SwaggerGithubAuthorizeData })
   async authorize(
     @Query() query: GithubAuthorizeQueryDto,
   ): Promise<ApiResponse<{ authorizeUrl: string; state: string }>> {

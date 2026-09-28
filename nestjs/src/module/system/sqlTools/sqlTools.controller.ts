@@ -2,8 +2,9 @@ import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { success } from "src/common/utils/response";
 import {
+  SwaggerSqlQueryData,
+  SwaggerSqlTablesData,
   ApiResponseModel,
-  SwaggerObjectData,
 } from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireInternalToken } from "src/framework/decorators/requireInternalToken.decorator";
@@ -28,7 +29,7 @@ export class SqlToolsController {
   })
   @RequireInternalToken()
   @ApiLog("获取SQL工具表结构信息")
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerSqlTablesData })
   async getTables(@Query("table") table?: string) {
     const data = await this.sqlToolsService.getTables(table);
     return success(data);
@@ -42,7 +43,7 @@ export class SqlToolsController {
   })
   @RequireInternalToken()
   @ApiLog("执行SQL工具只读查询")
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerSqlQueryData })
   async executeQuery(@Body() dto: SqlQueryDto) {
     const data = await this.sqlToolsService.executeQuery(
       dto.query,

@@ -11,9 +11,13 @@ import {
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ApiResponse, success } from "src/common/utils/response";
 import {
+  SwaggerArticleSearchHistoryData,
+  SwaggerSearchKeywordsData,
+  SwaggerArticleLogPageData,
+  SwaggerArticleLogSyncData,
+  SwaggerArticleViewDistributionData,
   ApiResponseModel,
   SwaggerNullData,
-  SwaggerObjectData,
 } from "src/common/utils/swaggerResponse";
 import { ApiLog } from "src/framework/decorators/apiLog.decorator";
 import { RequireAdmin } from "src/framework/decorators/requireAdmin.decorator";
@@ -48,7 +52,7 @@ export class ArticleLogController {
   })
   @ApiLog("查询文章日志")
   @RequireAdmin()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerArticleLogPageData })
   async findByFilter(
     @Query() query: QueryArticleLogDto,
   ): Promise<ApiResponse<unknown>> {
@@ -62,7 +66,7 @@ export class ArticleLogController {
     description: "供 FastAPI 数仓按 MongoDB ID 游标增量同步文章日志",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerArticleLogSyncData })
   async sync(
     @Query("cursor") cursor: string | undefined,
     @Query("limit") limit: string | undefined,
@@ -104,20 +108,15 @@ export class ArticleLogController {
     return success(null);
   }
 
-  @Get("search-history/:userId")
+  @Get("search-history/:user_id")
   @ApiOperation({
     summary: "获取搜索历史",
     description: "根据用户ID获取最近去重的搜索关键词，供 GoZero 内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({
-    data: {
-      type: "object",
-      properties: { keywords: { type: "array", items: { type: "string" } } },
-    },
-  })
+  @ApiResponseModel({ data: SwaggerArticleSearchHistoryData })
   async getSearchHistory(
-    @Param("userId") userId: string,
+    @Param("user_id") userId: string,
   ): Promise<ApiResponse<{ keywords: string[] }>> {
     const keywords: string[] = await this.logService.getSearchHistory(
       Number(userId),
@@ -125,16 +124,16 @@ export class ArticleLogController {
     return success({ keywords });
   }
 
-  @Get("view-distribution/:userId")
+  @Get("view-distribution/:user_id")
   @ApiOperation({
     summary: "获取文章浏览分布",
     description:
       "根据用户ID获取浏览过的文章及浏览次数分布，供 FastAPI 内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: SwaggerObjectData })
+  @ApiResponseModel({ data: SwaggerArticleViewDistributionData })
   async getViewDistribution(
-    @Param("userId") userId: string,
+    @Param("user_id") userId: string,
   ): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.logService.getViewDistribution(
       Number(userId),
@@ -148,7 +147,7 @@ export class ArticleLogController {
     description: "获取所有去重的搜索关键词，供 FastAPI 词云功能内部远程调用",
   })
   @RequireInternalToken()
-  @ApiResponseModel({ data: { type: "array", items: { type: "string" } } })
+  @ApiResponseModel({ data: SwaggerSearchKeywordsData })
   async getSearchKeywords(): Promise<ApiResponse<unknown>> {
     const data: unknown = await this.logService.getSearchKeywords();
     return success(data);
