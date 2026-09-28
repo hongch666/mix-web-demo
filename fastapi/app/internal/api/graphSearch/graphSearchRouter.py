@@ -15,7 +15,7 @@ router: APIRouter = APIRouter(
     "/enhance",
     summary="知识图谱搜索增强",
     description="根据文章ID列表和用户画像, 返回对应文章的图谱分、推荐原因和关系证据（仅限内部服务调用）",
-    response_model=ApiResponse,
+    response_model=ApiResponse[GraphSearchEnhanceResp],
 )
 @log("知识图谱搜索增强")
 @requireInternalToken
@@ -23,7 +23,7 @@ async def graph_search_enhance(
     request: Request,
     req: GraphSearchEnhanceReq,
     graphSearchService: GraphSearchServiceDep,
-) -> ApiResponse:
+) -> ApiResponse[GraphSearchEnhanceResp]:
     """知识图谱搜索增强接口"""
 
     result: GraphSearchEnhanceResp = await graphSearchService.enhance(req)

@@ -15,7 +15,7 @@ router: APIRouter = APIRouter(
     "/enhance",
     summary="向量搜索增强",
     description="根据 ES 候选文章和搜索词返回语义分、语义原因和匹配片段（仅限内部服务调用）",
-    response_model=ApiResponse,
+    response_model=ApiResponse[VectorSearchEnhanceResp],
 )
 @log("向量搜索增强")
 @requireInternalToken
@@ -23,7 +23,7 @@ async def vector_search_enhance(
     request: Request,
     req: VectorSearchEnhanceReq,
     vectorSearchService: VectorSearchServiceDep,
-) -> ApiResponse:
+) -> ApiResponse[VectorSearchEnhanceResp]:
     """向量搜索增强接口"""
 
     result: VectorSearchEnhanceResp = await vectorSearchService.enhance(req)

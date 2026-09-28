@@ -17,7 +17,7 @@ router: APIRouter = APIRouter(
     "",
     summary="创建AI历史记录",
     description="创建一条AI历史记录",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireInternalToken
 @log("创建AI历史记录")
@@ -37,7 +37,7 @@ async def create_ai_history(
     "/list",
     summary="获取所有AI历史记录",
     description="获取指定用户的所有AI历史记录",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取所有AI历史记录")
@@ -59,7 +59,7 @@ async def get_all_ai_history(
     "/{user_id}",
     summary="删除用户所有AI历史记录",
     description="删除指定用户的所有AI历史记录",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("删除用户所有AI历史记录")
@@ -79,7 +79,7 @@ async def delete_ai_history(
     "/internal/{id}",
     summary="根据ID查询AI历史记录（内部）",
     description="根据ID查询AI历史记录，供内部服务远程调用",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireInternalToken
 @log("内部查询AI历史记录")
@@ -101,7 +101,7 @@ async def get_ai_history_by_id_internal(
     "/internal/{id}",
     summary="更新AI历史记录（内部）",
     description="更新AI历史记录，供内部服务远程调用",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireInternalToken
 @log("内部更新AI历史记录")
@@ -124,7 +124,7 @@ async def update_ai_history_internal(
     "/internal/{id}",
     summary="删除AI历史记录（内部）",
     description="根据ID删除AI历史记录，供内部服务远程调用",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireInternalToken
 @log("内部删除AI历史记录")

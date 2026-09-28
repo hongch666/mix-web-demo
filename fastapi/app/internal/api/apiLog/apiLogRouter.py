@@ -16,7 +16,7 @@ router: APIRouter = APIRouter(
     "/average-speed",
     summary="获取所有接口的平均响应速度",
     description="获取所有接口的平均响应速度",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @log("获取所有接口的平均响应速度")
 @requireAdmin
@@ -35,7 +35,7 @@ async def get_api_average_speed(
     "/called-count",
     summary="获取接口调用次数",
     description="获取接口调用次数",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @log("获取接口调用次数")
 @requireAdmin

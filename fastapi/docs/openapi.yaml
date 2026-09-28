@@ -17,7 +17,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/wordcloud:
     post:
       tags:
@@ -31,7 +31,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/excel:
     post:
       tags:
@@ -45,7 +45,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/statistics:
     get:
       tags:
@@ -59,7 +59,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/article-count-by-category:
     get:
       tags:
@@ -73,7 +73,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/monthly-publish-count:
     get:
       tags:
@@ -87,7 +87,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/api/average-speed:
     get:
       tags:
@@ -101,7 +101,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /analyze/api/called-count:
     get:
       tags:
@@ -115,7 +115,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /chat/send:
     post:
       tags:
@@ -187,7 +187,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_list_str__'
         '422':
           description: Validation Error
           content:
@@ -214,7 +214,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_dict_str__object__'
         '422':
           description: Validation Error
           content:
@@ -241,7 +241,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_dict_str__object__'
         '422':
           description: Validation Error
           content:
@@ -261,7 +261,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /task/update-analyze-caches:
     post:
       tags:
@@ -275,7 +275,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /task/vector:
     post:
       tags:
@@ -289,7 +289,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /task/init-hash-cache:
     post:
       tags:
@@ -304,7 +304,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /task/clear-analyze-caches:
     post:
       tags:
@@ -318,7 +318,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /task/sync-neo4j:
     post:
       tags:
@@ -343,7 +343,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -363,7 +363,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /ai_history:
     post:
       tags:
@@ -383,7 +383,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -410,7 +410,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -437,7 +437,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -466,7 +466,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -500,7 +500,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -528,7 +528,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -562,7 +562,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -589,7 +589,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -616,7 +616,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -643,7 +643,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -670,7 +670,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -697,7 +697,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -724,7 +724,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
         '422':
           description: Validation Error
           content:
@@ -750,7 +750,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_GraphSearchEnhanceResp_'
         '422':
           description: Validation Error
           content:
@@ -776,7 +776,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_VectorSearchEnhanceResp_'
         '422':
           description: Validation Error
           content:
@@ -796,7 +796,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /algorithm/search/script:
     get:
       tags:
@@ -810,7 +810,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
   /algorithm/search/script-params:
     get:
       tags:
@@ -824,7 +824,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ApiResponse_object_'
 components:
   schemas:
     AIServiceType:
@@ -835,7 +835,92 @@ components:
       - GLM
       title: AIServiceType
       description: AI服务类型枚举
-    ApiResponse:
+    ApiResponse_GraphSearchEnhanceResp_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/GraphSearchEnhanceResp'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[GraphSearchEnhanceResp]
+    ApiResponse_VectorSearchEnhanceResp_:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - $ref: '#/components/schemas/VectorSearchEnhanceResp'
+          - type: 'null'
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[VectorSearchEnhanceResp]
+    ApiResponse_dict_str__object__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Data
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[dict[str, object]]
+    ApiResponse_list_str__:
+      properties:
+        code:
+          type: integer
+          title: Code
+          description: 响应码
+        data:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Data
+          description: 返回数据
+        msg:
+          type: string
+          title: Msg
+          description: 响应消息
+          default: success
+      type: object
+      required:
+      - code
+      title: ApiResponse[list[str]]
+    ApiResponse_object_:
       properties:
         code:
           type: integer
@@ -850,14 +935,12 @@ components:
         msg:
           type: string
           title: Msg
-          description: 响应信息
+          description: 响应消息
           default: success
       type: object
       required:
       - code
-      title: ApiResponse
-      description: "统一响应模型\n\nAttributes:\n    code: 响应码, 与 HTTP 状态码一致\n    data:\
-        \ 返回数据, 默认为 None\n    msg: 响应消息"
+      title: ApiResponse[object]
     ChatRequest:
       properties:
         message:
@@ -984,6 +1067,71 @@ components:
       - text
       title: GenerateDTO
       description: 生成 DTO
+    GraphRelationDTO:
+      properties:
+        type:
+          type: string
+          title: Type
+          description: 关系类型
+        name:
+          type: string
+          title: Name
+          description: 关系名称
+        score:
+          type: number
+          title: Score
+          description: 关系得分
+        reason:
+          type: string
+          title: Reason
+          description: 推荐原因
+      type: object
+      required:
+      - type
+      - name
+      - score
+      - reason
+      title: GraphRelationDTO
+      description: 图谱关系
+    GraphSearchEnhanceItemDTO:
+      properties:
+        article_id:
+          type: integer
+          title: Article Id
+          description: 文章ID
+        graph_score:
+          type: number
+          title: Graph Score
+          description: 图谱得分
+        reason:
+          type: string
+          title: Reason
+          description: 推荐原因
+        relations:
+          items:
+            $ref: '#/components/schemas/GraphRelationDTO'
+          type: array
+          title: Relations
+          description: 关系证据
+        matched_tags:
+          items:
+            type: string
+          type: array
+          title: Matched Tags
+          description: 命中标签
+        matched_paths:
+          items:
+            type: string
+          type: array
+          title: Matched Paths
+          description: 命中路径
+      type: object
+      required:
+      - article_id
+      - graph_score
+      - reason
+      title: GraphSearchEnhanceItemDTO
+      description: 图谱增强单项结果
     GraphSearchEnhanceReq:
       properties:
         user_id:
@@ -1032,6 +1180,17 @@ components:
       type: object
       title: GraphSearchEnhanceReq
       description: 图谱搜索增强请求
+    GraphSearchEnhanceResp:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/GraphSearchEnhanceItemDTO'
+          type: array
+          title: Items
+          description: 增强结果列表
+      type: object
+      title: GraphSearchEnhanceResp
+      description: 图谱搜索增强响应
     HTTPValidationError:
       properties:
         detail:
@@ -1097,6 +1256,64 @@ components:
       - msg
       - type
       title: ValidationError
+    VectorMatchedChunkDTO:
+      properties:
+        article_id:
+          type: integer
+          title: Article Id
+          description: 文章ID
+        title:
+          type: string
+          title: Title
+          description: 文章标题
+          default: ''
+        chunk_index:
+          type: integer
+          title: Chunk Index
+          description: 片段序号
+          default: 0
+        score:
+          type: number
+          title: Score
+          description: 相似度
+        content:
+          type: string
+          title: Content
+          description: 片段内容
+          default: ''
+      type: object
+      required:
+      - article_id
+      - score
+      title: VectorMatchedChunkDTO
+      description: 向量匹配片段
+    VectorSearchEnhanceItemDTO:
+      properties:
+        article_id:
+          type: integer
+          title: Article Id
+          description: 文章ID
+        vector_score:
+          type: number
+          title: Vector Score
+          description: 语义得分
+        reason:
+          type: string
+          title: Reason
+          description: 推荐原因
+          default: ''
+        matched_chunks:
+          items:
+            $ref: '#/components/schemas/VectorMatchedChunkDTO'
+          type: array
+          title: Matched Chunks
+          description: 匹配片段
+      type: object
+      required:
+      - article_id
+      - vector_score
+      title: VectorSearchEnhanceItemDTO
+      description: 向量增强单项结果
     VectorSearchEnhanceReq:
       properties:
         user_id:
@@ -1150,6 +1367,17 @@ components:
       type: object
       title: VectorSearchEnhanceReq
       description: 向量搜索增强请求
+    VectorSearchEnhanceResp:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/VectorSearchEnhanceItemDTO'
+          type: array
+          title: Items
+          description: 增强结果列表
+      type: object
+      title: VectorSearchEnhanceResp
+      description: 向量搜索增强响应
 tags:
 - name: AI历史模块
   description: AI历史相关API，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等

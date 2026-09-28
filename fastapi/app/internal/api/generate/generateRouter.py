@@ -16,14 +16,14 @@ router: APIRouter = APIRouter(
     "/tags",
     summary="生成tags",
     description="根据输入文本生成tags数组",
-    response_model=ApiResponse,
+    response_model=ApiResponse[list[str]],
 )
 @log("生成tags")
 async def generate_tags(
     request: Request,
     data: GenerateDTO,
     generateService: GenerateServiceDep,
-) -> ApiResponse:
+) -> ApiResponse[list[str]]:
     """生成tags接口"""
 
     tags: list[str] = await generateService.extract_tags(data.text)
@@ -34,7 +34,7 @@ async def generate_tags(
     "/ai_comment/{article_id}",
     summary="文章创建AI评论",
     description="为指定文章创建AI评论",
-    response_model=ApiResponse,
+    response_model=ApiResponse[dict[str, object]],
 )
 @log("文章创建AI评论")
 async def create_article_ai_comment(
@@ -42,7 +42,7 @@ async def create_article_ai_comment(
     background_tasks: BackgroundTasks,
     generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
-) -> ApiResponse:
+) -> ApiResponse[dict[str, object]]:
     """文章创建AI评论接口"""
 
     # 添加后台任务
@@ -59,7 +59,7 @@ async def create_article_ai_comment(
     "/ai_comment_with_reference/{article_id}",
     summary="文章创建基于权威参考文本的AI评论",
     description="为指定文章创建基于权威参考文本的AI评论，使用权威参考文本进行评价打分",
-    response_model=ApiResponse,
+    response_model=ApiResponse[dict[str, object]],
 )
 @log("文章创建基于权威参考文本的AI评论")
 async def create_article_ai_comment_with_reference(
@@ -67,7 +67,7 @@ async def create_article_ai_comment_with_reference(
     background_tasks: BackgroundTasks,
     generate_service: GenerateServiceDep,
     articleId: int = Path(alias="article_id"),
-) -> ApiResponse:
+) -> ApiResponse[dict[str, object]]:
     """文章创建基于权威参考文本的AI评论接口"""
 
     # 添加后台任务

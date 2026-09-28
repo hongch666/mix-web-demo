@@ -16,7 +16,7 @@ router: APIRouter = APIRouter(
     "/new-followers",
     summary="获取新增粉丝数统计",
     description="获取指定周期内的新增粉丝数（支持按日/月/年统计）",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取新增粉丝数统计")
@@ -38,7 +38,7 @@ async def get_new_followers(
     "/article-view-distribution",
     summary="获取文章浏览分布",
     description="查询用户浏览过的文章及其浏览次数分布",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取文章浏览分布")
@@ -59,7 +59,7 @@ async def get_article_view_distribution(
     "/author-follow-statistics",
     summary="获取关注作者统计",
     description="获取用户的总关注数和前7天每天关注的作者数",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取关注作者统计")
@@ -80,7 +80,7 @@ async def get_author_follow_statistics(
     "/monthly-comment-trend",
     summary="获取本月评论趋势",
     description="按天统计用户本月的评论数量趋势",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取本月评论趋势")
@@ -101,7 +101,7 @@ async def get_monthly_comment_trend(
     "/monthly-like-trend",
     summary="获取本月点赞趋势",
     description="按天统计用户本月的点赞数量趋势",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取本月点赞趋势")
@@ -120,7 +120,7 @@ async def get_monthly_like_trend(
     "/monthly-collect-trend",
     summary="获取本月收藏趋势",
     description="按天统计用户本月的收藏数量趋势",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取本月收藏趋势")
@@ -141,7 +141,7 @@ async def get_monthly_collect_trend(
     "/profile",
     summary="获取用户画像总览",
     description="获取用户的发文数、获赞、获藏、粉丝数等累计指标总览",
-    response_model=ApiResponse,
+    response_model=ApiResponse[object],
 )
 @requireSelf
 @log("获取用户画像总览")
