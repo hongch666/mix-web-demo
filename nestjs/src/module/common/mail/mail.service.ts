@@ -18,8 +18,7 @@ export class MailService {
       this.configService.get<string>("mail.host");
     const port: string | undefined =
       this.configService.get<string>("mail.port");
-    const secureVal: string | undefined =
-      this.configService.get<string>("mail.secure");
+    const secureVal: unknown = this.configService.get<string>("mail.secure");
     const username: string | undefined =
       this.configService.get<string>("mail.username");
     const password: string | undefined =
@@ -37,8 +36,7 @@ export class MailService {
     this.transporter = nodemailer.createTransport({
       host,
       port: Number(port),
-      secure: secureVal === "true" || secureVal === "1",
-      family: 4,
+      secure: secureVal === true || secureVal === "true" || secureVal === "1",
       connectionTimeout: timeout,
       greetingTimeout: timeout,
       socketTimeout: timeout,
@@ -65,7 +63,6 @@ export class MailService {
     const from: string | undefined =
       this.configService.get<string>("mail.from") ||
       this.configService.get<string>("mail.username");
-
     // 异步发送邮件，不阻塞调用方，发送结果通过日志记录，不影响主流程
     this.transporter
       .sendMail({
