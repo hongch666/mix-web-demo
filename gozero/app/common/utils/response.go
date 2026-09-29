@@ -2,6 +2,7 @@ package utils
 
 import (
 	"net/http"
+	"reflect"
 
 	"app/common/constants"
 
@@ -13,8 +14,31 @@ func Success(w http.ResponseWriter, data any) {
 	httpx.WriteJson(w, http.StatusOK, map[string]any{
 		"code": constants.HttpOK,
 		"msg":  "success",
-		"data": data,
+		"data": unwrapData(data),
 	})
+}
+
+// unwrapData keeps the response model's Data field as the unified response payload.
+// This allows .api response types to retain `json:"data"` without producing data.data.
+func unwrapData(data any) any {
+	value := reflect.ValueOf(data)
+	for value.IsValid() && (value.Kind() == reflect.Ptr || value.Kind() == reflect.Interface) {
+		if value.IsNil() {
+			return nil
+		}
+		value = value.Elem()
+	}
+
+	if !value.IsValid() || value.Kind() != reflect.Struct {
+		return data
+	}
+
+	field := value.FieldByName("Data")
+	if !field.IsValid() || !field.CanInterface() {
+		return data
+	}
+
+	return field.Interface()
 }
 
 // Error 返回错误响应，code 为 3 位 HTTP 状态码

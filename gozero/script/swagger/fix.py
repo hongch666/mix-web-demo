@@ -115,10 +115,82 @@ def add_chinese_tags_to_dict(swagger_data):
     # 修正 SSE 长连接接口的响应声明
     fix_streaming_endpoints(swagger_data)
 
+    # goctl 只根据 returns 生成 data 的 schema，实际 handler 模板会通过
+    # utils.Success/Error 统一包装为 {code, msg, data}，这里补齐文档外壳。
+    wrap_unified_responses(swagger_data)
+
     # 剔除 WebSocket 路径（Apifox 侧以独立类型手工维护）
     drop_websocket_paths(swagger_data)
 
     return swagger_data
+
+
+def wrap_unified_responses(swagger_data):
+    """为 JSON 响应补齐 GoZero handler 模板实际输出的统一响应外壳。
+
+    SSE 使用 text/event-stream，不属于统一 JSON 响应，不能改写。
+    函数可重复执行：已经包含 code/msg/data 的 schema 不会再次嵌套。
+    """
+    paths = swagger_data.get("paths")
+    if not isinstance(paths, dict):
+        return
+
+    for path_item in paths.values():
+        if not isinstance(path_item, dict):
+            continue
+        for operation in path_item.values():
+            if not isinstance(operation, dict):
+                continue
+            responses = operation.get("responses")
+            if not isinstance(responses, dict):
+                continue
+            for response in responses.values():
+                if not isinstance(response, dict):
+                    continue
+                content = response.get("content")
+                if not isinstance(content, dict):
+                    continue
+                json_media = content.get("application/json")
+                if not isinstance(json_media, dict):
+                    continue
+                schema = json_media.get("schema")
+                if not isinstance(schema, dict):
+                    schema = {}
+                properties = schema.get("properties")
+                if isinstance(properties, dict) and {
+                    "code",
+                    "msg",
+                    "data",
+                }.issubset(properties):
+                    continue
+                # Response models in .api may retain a Data field for frontend compatibility.
+                # Success unwraps that field at runtime, so document its value directly.
+                payload_schema = schema
+                if isinstance(properties, dict) and "data" in properties:
+                    payload_schema = properties["data"]
+
+                json_media["schema"] = {
+                    "type": "object",
+                    "description": "GoZero 统一响应",
+                    "properties": {
+                        "code": {
+                            "type": "integer",
+                            "format": "int32",
+                            "description": "响应码，与 HTTP 状态码一致",
+                        },
+                        "msg": {
+                            "type": "string",
+                            "description": "响应消息",
+                        },
+                        "data": payload_schema
+                        if payload_schema
+                        else {
+                            "nullable": True,
+                            "description": "响应数据",
+                        },
+                    },
+                    "required": ["code", "msg", "data"],
+                }
 
 
 def drop_volatile_fields(swagger_data):

@@ -100,195 +100,210 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  list:
-                    description: 当前页文章
-                    type: array
-                    items:
-                      type: object
-                      required:
-                      - id
-                      - title
-                      - content
-                      - user_id
-                      - username
-                      - tags
-                      - status
-                      - views
-                      - like_count
-                      - collect_count
-                      - author_follow_count
-                      - category_name
-                      - sub_category_name
-                      - create_at
-                      - update_at
-                      - ai_score
-                      - user_score
-                      - ai_comment_count
-                      - user_comment_count
-                      - es_score
-                      - vector_score
-                      - graph_score
-                      - final_score
-                      - reason
-                      - semantic_reason
-                      - relations
-                      - matched_chunks
-                      - score_details
-                      properties:
-                        ai_comment_count:
-                          description: AI 评论数
-                          type: integer
-                        ai_score:
-                          description: AI 评分
-                          type: number
-                        author_follow_count:
-                          description: 作者被关注数
-                          type: integer
-                        category_name:
-                          description: 一级分类名
-                          type: string
-                        collect_count:
-                          description: 收藏数
-                          type: integer
-                        content:
-                          description: 正文
-                          type: string
-                        create_at:
-                          description: 创建时间
-                          type: string
-                        es_score:
-                          description: 关键词检索得分
-                          type: number
-                        final_score:
-                          description: 综合得分
-                          type: number
-                        graph_score:
-                          description: 图谱检索得分
-                          type: number
-                        id:
-                          description: 文章 ID
-                          type: integer
-                        like_count:
-                          description: 点赞数
-                          type: integer
-                        matched_chunks:
-                          description: 命中的向量分片
-                          type: array
-                          items:
-                            type: object
-                            required:
-                            - article_id
-                            - title
-                            - chunk_index
-                            - score
-                            - content
-                            properties:
-                              article_id:
-                                description: 文章 ID
-                                type: integer
-                              chunk_index:
-                                description: 分片序号
-                                type: integer
-                              content:
-                                description: 分片文本
-                                type: string
-                              score:
-                                description: 该分片相似度
-                                type: number
-                              title:
-                                description: 文章标题
-                                type: string
-                        reason:
-                          description: 排序说明
-                          type: string
-                        relations:
-                          description: 命中的图谱关系
-                          type: array
-                          items:
-                            type: object
-                            required:
-                            - type
-                            - name
-                            - score
-                            - reason
-                            properties:
-                              name:
-                                description: 关联节点名称
-                                type: string
-                              reason:
-                                description: 命中原因
-                                type: string
-                              score:
-                                description: 关系得分
-                                type: number
-                              type:
-                                description: 关系类型
-                                type: string
-                        score_details:
-                          description: 分项得分
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      list:
+                        description: 当前页文章
+                        type: array
+                        items:
                           type: object
                           required:
+                          - id
+                          - title
+                          - content
+                          - user_id
+                          - username
+                          - tags
+                          - status
+                          - views
+                          - like_count
+                          - collect_count
+                          - author_follow_count
+                          - category_name
+                          - sub_category_name
+                          - create_at
+                          - update_at
+                          - ai_score
+                          - user_score
+                          - ai_comment_count
+                          - user_comment_count
                           - es_score
                           - vector_score
                           - graph_score
-                          - business_score
-                          - recency_score
+                          - final_score
+                          - reason
+                          - semantic_reason
+                          - relations
+                          - matched_chunks
+                          - score_details
                           properties:
-                            business_score:
-                              description: 业务特征分项
+                            ai_comment_count:
+                              description: AI 评论数
+                              type: integer
+                            ai_score:
+                              description: AI 评分
                               type: number
+                            author_follow_count:
+                              description: 作者被关注数
+                              type: integer
+                            category_name:
+                              description: 一级分类名
+                              type: string
+                            collect_count:
+                              description: 收藏数
+                              type: integer
+                            content:
+                              description: 正文
+                              type: string
+                            create_at:
+                              description: 创建时间
+                              type: string
                             es_score:
-                              description: 关键词检索分项
+                              description: 关键词检索得分
+                              type: number
+                            final_score:
+                              description: 综合得分
                               type: number
                             graph_score:
-                              description: 图谱检索分项
+                              description: 图谱检索得分
                               type: number
-                            recency_score:
-                              description: 时效分项
+                            id:
+                              description: 文章 ID
+                              type: integer
+                            like_count:
+                              description: 点赞数
+                              type: integer
+                            matched_chunks:
+                              description: 命中的向量分片
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - article_id
+                                - title
+                                - chunk_index
+                                - score
+                                - content
+                                properties:
+                                  article_id:
+                                    description: 文章 ID
+                                    type: integer
+                                  chunk_index:
+                                    description: 分片序号
+                                    type: integer
+                                  content:
+                                    description: 分片文本
+                                    type: string
+                                  score:
+                                    description: 该分片相似度
+                                    type: number
+                                  title:
+                                    description: 文章标题
+                                    type: string
+                            reason:
+                              description: 排序说明
+                              type: string
+                            relations:
+                              description: 命中的图谱关系
+                              type: array
+                              items:
+                                type: object
+                                required:
+                                - type
+                                - name
+                                - score
+                                - reason
+                                properties:
+                                  name:
+                                    description: 关联节点名称
+                                    type: string
+                                  reason:
+                                    description: 命中原因
+                                    type: string
+                                  score:
+                                    description: 关系得分
+                                    type: number
+                                  type:
+                                    description: 关系类型
+                                    type: string
+                            score_details:
+                              description: 分项得分
+                              type: object
+                              required:
+                              - es_score
+                              - vector_score
+                              - graph_score
+                              - business_score
+                              - recency_score
+                              properties:
+                                business_score:
+                                  description: 业务特征分项
+                                  type: number
+                                es_score:
+                                  description: 关键词检索分项
+                                  type: number
+                                graph_score:
+                                  description: 图谱检索分项
+                                  type: number
+                                recency_score:
+                                  description: 时效分项
+                                  type: number
+                                vector_score:
+                                  description: 向量检索分项
+                                  type: number
+                            semantic_reason:
+                              description: 语义命中说明
+                              type: string
+                            status:
+                              description: 文章状态，0 草稿，1 已发布
+                              type: integer
+                            sub_category_name:
+                              description: 二级分类名
+                              type: string
+                            tags:
+                              description: 标签
+                              type: string
+                            title:
+                              description: 标题
+                              type: string
+                            update_at:
+                              description: 更新时间
+                              type: string
+                            user_comment_count:
+                              description: 用户评论数
+                              type: integer
+                            user_id:
+                              description: 作者用户 ID
+                              type: integer
+                            user_score:
+                              description: 用户评分
                               type: number
+                            username:
+                              description: 作者用户名
+                              type: string
                             vector_score:
-                              description: 向量检索分项
+                              description: 向量检索得分
                               type: number
-                        semantic_reason:
-                          description: 语义命中说明
-                          type: string
-                        status:
-                          description: 文章状态，0 草稿，1 已发布
-                          type: integer
-                        sub_category_name:
-                          description: 二级分类名
-                          type: string
-                        tags:
-                          description: 标签
-                          type: string
-                        title:
-                          description: 标题
-                          type: string
-                        update_at:
-                          description: 更新时间
-                          type: string
-                        user_comment_count:
-                          description: 用户评论数
-                          type: integer
-                        user_id:
-                          description: 作者用户 ID
-                          type: integer
-                        user_score:
-                          description: 用户评分
-                          type: number
-                        username:
-                          description: 作者用户名
-                          type: string
-                        vector_score:
-                          description: 向量检索得分
-                          type: number
-                        views:
-                          description: 浏览量
-                          type: integer
-                  total:
-                    description: 命中总数
-                    type: integer
+                            views:
+                              description: 浏览量
+                              type: integer
+                      total:
+                        description: 命中总数
+                        type: integer
+                required:
+                - code
+                - msg
+                - data
   /search/history/{user_id}:
     get:
       description: 获取指定用户最近10条搜索关键词列表
@@ -310,12 +325,27 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  keywords:
-                    description: 最近搜索关键词，最多 10 条
-                    type: array
-                    items:
-                      type: string
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      keywords:
+                        description: 最近搜索关键词，最多 10 条
+                        type: array
+                        items:
+                          type: string
+                required:
+                - code
+                - msg
+                - data
   /sql-tools/query:
     post:
       description: 执行受限的只读参数化SQL查询，表名白名单控制，强制参数化占位符和LIMIT
@@ -347,7 +377,15 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
                   data:
                     description: 查询结果
                     type: object
@@ -371,6 +409,10 @@ paths:
                           type: array
                           items:
                             type: string
+                required:
+                - code
+                - msg
+                - data
   /sql-tools/tables:
     get:
       description: 获取白名单内MySQL表的结构信息，可选指定表名
@@ -395,7 +437,15 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
                   data:
                     description: 表结构列表
                     type: array
@@ -430,6 +480,10 @@ paths:
                         table:
                           description: 表名
                           type: string
+                required:
+                - code
+                - msg
+                - data
   /sse/chat:
     get:
       description: 建立SSE连接。成功时以 text/event-stream 持续推送数据帧，帧结构见响应模型；参数非法时返回统一 JSON
@@ -499,6 +553,21 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                required:
+                - code
+                - msg
+                - data
   /task/syncer:
     post:
       description: 手动触发同步MySQL文章数据到Elasticsearch
@@ -513,6 +582,21 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
+                properties:
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                required:
+                - code
+                - msg
+                - data
   /test/gozero:
     get:
       description: 验证GoZero服务是否正常运行
@@ -527,10 +611,22 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
                   data:
                     description: 服务存活提示
                     type: string
+                required:
+                - code
+                - msg
+                - data
   /user-chat/all-unread-counts:
     post:
       description: 获取指定用户与所有其他用户的未读消息数统计
@@ -557,12 +653,24 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
+                  code:
+                    type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
                   data:
                     description: 各对端未读数，key 为对端用户 ID
                     type: object
                     additionalProperties:
                       type: integer
+                required:
+                - code
+                - msg
+                - data
   /user-chat/history:
     post:
       description: 分页获取指定两个用户之间的聊天记录
@@ -599,41 +707,56 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  messages:
-                    description: 当前页聊天记录
-                    type: array
-                    items:
-                      type: object
-                      required:
-                      - id
-                      - sender_id
-                      - receiver_id
-                      - content
-                      - is_read
-                      - created_at
-                      properties:
-                        content:
-                          description: 消息内容
-                          type: string
-                        created_at:
-                          description: 发送时间
-                          type: string
-                        id:
-                          description: 消息 ID
-                          type: integer
-                        is_read:
-                          description: 是否已读，0 未读，1 已读
-                          type: integer
-                        receiver_id:
-                          description: 接收方用户 ID
-                          type: integer
-                        sender_id:
-                          description: 发送方用户 ID
-                          type: integer
-                  total:
-                    description: 两人之间的消息总数
+                  code:
                     type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      messages:
+                        description: 当前页聊天记录
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - id
+                          - sender_id
+                          - receiver_id
+                          - content
+                          - is_read
+                          - created_at
+                          properties:
+                            content:
+                              description: 消息内容
+                              type: string
+                            created_at:
+                              description: 发送时间
+                              type: string
+                            id:
+                              description: 消息 ID
+                              type: integer
+                            is_read:
+                              description: 是否已读，0 未读，1 已读
+                              type: integer
+                            receiver_id:
+                              description: 接收方用户 ID
+                              type: integer
+                            sender_id:
+                              description: 发送方用户 ID
+                              type: integer
+                      total:
+                        description: 两人之间的消息总数
+                        type: integer
+                required:
+                - code
+                - msg
+                - data
   /user-chat/join:
     post:
       description: 用户手动加入聊天队列，不需要建立WebSocket连接
@@ -660,13 +783,28 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  status:
-                    description: 加入结果，已在队列中或刚加入
-                    type: string
-                  user_id:
-                    description: 用户 ID
+                  code:
                     type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        description: 加入结果，已在队列中或刚加入
+                        type: string
+                      user_id:
+                        description: 用户 ID
+                        type: integer
+                required:
+                - code
+                - msg
+                - data
   /user-chat/leave:
     post:
       description: 用户手动离开聊天队列
@@ -693,13 +831,28 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  status:
-                    description: 离开结果
-                    type: string
-                  user_id:
-                    description: 用户 ID
+                  code:
                     type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        description: 离开结果
+                        type: string
+                      user_id:
+                        description: 用户 ID
+                        type: integer
+                required:
+                - code
+                - msg
+                - data
   /user-chat/queue:
     get:
       description: 获取当前在队列中的所有用户
@@ -714,15 +867,30 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  count:
-                    description: 在线用户数
+                  code:
                     type: integer
-                  online_users:
-                    description: 当前在聊天队列中的用户 ID
-                    type: array
-                    items:
-                      type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        description: 在线用户数
+                        type: integer
+                      online_users:
+                        description: 当前在聊天队列中的用户 ID
+                        type: array
+                        items:
+                          type: integer
+                required:
+                - code
+                - msg
+                - data
   /user-chat/send:
     post:
       description: 发送聊天消息，先保存到数据库，再通过WebSocket发送给在线用户
@@ -757,10 +925,25 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  message_id:
-                    description: 已保存的消息 ID
+                  code:
                     type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      message_id:
+                        description: 已保存的消息 ID
+                        type: integer
+                required:
+                - code
+                - msg
+                - data
   /user-chat/unread-count:
     post:
       description: 获取指定用户与另一个用户间的未读消息数
@@ -791,10 +974,25 @@ paths:
             application/json:
               schema:
                 type: object
+                description: GoZero 统一响应
                 properties:
-                  unread_count:
-                    description: 该对端发给当前用户的未读数
+                  code:
                     type: integer
+                    format: int32
+                    description: 响应码，与 HTTP 状态码一致
+                  msg:
+                    type: string
+                    description: 响应消息
+                  data:
+                    type: object
+                    properties:
+                      unread_count:
+                        description: 该对端发给当前用户的未读数
+                        type: integer
+                required:
+                - code
+                - msg
+                - data
 x-description: This is a goctl generated swagger file.
 x-github: https://github.com/zeromicro/go-zero
 x-go-zero-doc: https://go-zero.dev/

@@ -21,7 +21,7 @@ func TestGoZeroHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		if err != nil {
 			utils.HandleError(w, err)
 		} else {
-			utils.Success(w, resp.Data)
+			utils.Success(w, resp)
 		}
 	}
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_TEST_GOZERO_SERVICE)

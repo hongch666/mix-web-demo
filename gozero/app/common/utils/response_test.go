@@ -12,6 +12,10 @@ import (
 
 type testBusinessError struct{}
 
+type testDataResponse struct {
+	Data string `json:"data"`
+}
+
 func (testBusinessError) Error() string           { return "business failure" }
 func (testBusinessError) BusinessCode() int       { return 422 }
 func (testBusinessError) BusinessMessage() string { return "invalid input" }
@@ -36,6 +40,16 @@ func TestSuccessAndErrorResponses(t *testing.T) {
 	successBody := decodeResponse(t, successRecorder)
 	if successBody["code"] != float64(constants.HttpOK) || successBody["msg"] != "success" {
 		t.Fatalf("unexpected success body: %#v", successBody)
+	}
+	if payload, ok := successBody["data"].(map[string]any); !ok || payload["id"] != float64(7) {
+		t.Fatalf("unexpected success data: %#v", successBody["data"])
+	}
+
+	modelRecorder := httptest.NewRecorder()
+	utils.Success(modelRecorder, &testDataResponse{Data: "hello"})
+	modelBody := decodeResponse(t, modelRecorder)
+	if modelBody["data"] != "hello" {
+		t.Fatalf("expected Data field to be unwrapped: %#v", modelBody)
 	}
 
 	errorRecorder := httptest.NewRecorder()
