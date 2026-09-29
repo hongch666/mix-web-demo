@@ -9,7 +9,7 @@ class GozeroClient:
 
     SERVICE_NAME: str = "gozero"
 
-    async def get_tables(self, table: Optional[str] = None) -> Any:
+    async def get_tables(self, table: Optional[str] = None) -> list[dict[str, Any]]:
         """获取 MySQL 表结构信息"""
         params = {"table": table} if table else None
         result: dict[str, Any] = await call_remote_service(
