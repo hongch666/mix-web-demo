@@ -1398,11 +1398,23 @@ pytest tests/core/auth/test_internal_token.py
 # 只生成指定服务
 ./mix swag spring gozero
 
-# 将静态文档同步到 Apifox（需先在根目录 .env 配置令牌与项目 ID）
+# 将接口文档与 README 一并同步到 Apifox（需先在根目录 .env 配置令牌与项目 ID）
 ./mix apifox
+
+# 只同步接口文档，跳过 README
+./mix apifox --no-readme
 
 # 只校验产物与配置，不发起导入请求
 ./mix apifox --dry-run
+
+# 将 README 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI，需先安装 apifox-cli）
+./mix apifox-readme
+
+# 首次没有目标文档时创建，脚本会打印新文档 ID 供回填 .env
+./mix apifox-readme --create
+
+# 只生成并校验文档内容，不写入 Apifox
+./mix apifox-readme --dry-run
 
 # ===== GoZero 代码生成 =====
 # 生成 GoZero API 代码（默认使用 gozero/template 模板）
@@ -1668,10 +1680,12 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `setup.sh`                  | scripts/        | 环境初始化和依赖安装                                                                           | Linux/macOS |
 | `swag-init.sh`              | scripts/        | 离线生成四个服务的静态 OpenAPI 文档（不启动服务、不依赖中间件）                                | Linux/macOS |
 | `apifox-sync.sh`            | scripts/        | 将各服务 docs/ 下的静态 OpenAPI 文档同步到 Apifox（读取根目录 `.env` 中的令牌）                | Linux/macOS |
+| `apifox-readme-sync.sh`     | scripts/        | 将根目录 README.md 同步到 Apifox 指定 Markdown 文档（走 Apifox CLI 的 doc create/update）       | Linux/macOS |
 | `goctl-api-init.sh`         | scripts/        | 生成 GoZero API 代码，参数透传给`genApi.sh`                                                    | Linux/macOS |
 | `goctl-orm-init.sh`         | scripts/        | 生成 GoZero ORM 代码，参数透传给`genOrm.sh`                                                    | Linux/macOS |
 | `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS |
 | `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS |
+| `test.sh`                   | scripts/        | 运行四个服务的单元测试（支持指定服务）                                                         | Linux/macOS |
 | `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                                  | Windows     |
 
 ### 服务名称
@@ -2228,11 +2242,11 @@ Prometheus 指标端口同样通过环境变量覆盖，与上面的追踪开关
 
 ## Apifox 文档同步
 
-`./mix apifox` 把各服务 `docs/` 下的静态 OpenAPI 文档通过 [Apifox 开放 API](https://apifox-openapi.apifox.cn/) 导入到指定项目，同样不启动任何服务，也不访问本地中间件。
+`./mix apifox` 把各服务 `docs/` 下的静态 OpenAPI 文档通过 [Apifox 开放 API](https://apifox-openapi.apifox.cn/) 导入到指定项目，并在最后把根目录 `README.md` 同步到指定 Markdown 文档（这一步走 Apifox CLI），同样不启动任何服务，也不访问本地中间件。
 
 ### 前置配置
 
-先在根目录 `.env` 中填写两个必填项（从 `.env.example` 复制生成）：
+先在根目录 `.env` 中填写两个必填项（从 `.env.example` 复制生成）。README 同步这一步还会用到 Apifox CLI 与目标文档 ID，前置说明见本节末尾「README 同步到指定文档」：
 
 ```bash
 # ===== Apifox 文档同步（./mix apifox）=====
@@ -2254,6 +2268,13 @@ APIFOX_PROJECT_ID=你的项目ID
 | `APIFOX_SCHEMA_OVERWRITE_BEHAVIOR`                       | 否   | `AUTO_MERGE`           | 数据模型的覆盖策略，取值同上                                   |
 | `APIFOX_DELETE_UNMATCHED_RESOURCES`                      | 否   | `false`                | 是否删除 Apifox 中存在但文档中没有的接口与数据模型             |
 | `APIFOX_UPDATE_FOLDER_OF_CHANGED_ENDPOINT`               | 否   | `true`                 | 是否用文档中的目录信息更新已有接口的所属目录                   |
+| `APIFOX_README_DOC_ID`                                   | 否   | 空                     | `./mix apifox-readme` 的目标 Markdown 文档 ID，配置后为原地更新 |
+| `APIFOX_README_DOC_NAME`                                 | 否   | README 一级标题        | 创建文档时的名称；更新时只有显式配置才会改名                   |
+| `APIFOX_README_DOC_FOLDER_ID`                            | 否   | `0`                    | 文档归属的接口目录 ID，`0` 表示与接口目录同级                  |
+| `APIFOX_README_DOC_MODULE_ID`                            | 否   | 空（默认模块）         | 文档归属模块 ID，留空即默认模块，与接口同项目同模块            |
+| `APIFOX_README_BRANCH` / `APIFOX_README_FILE`            | 否   | 空 / `README.md`       | 目标分支名 / 待同步的 Markdown 文件（相对仓库根目录）          |
+| `APIFOX_CLI_REGISTRY`                                    | 否   | `https://registry.npmmirror.com/` | Apifox CLI 自动安装使用的 npm 源                    |
+| `APIFOX_CLI_AUTO_INSTALL`                                | 否   | `true`                 | 缺少 apifox 命令时是否自动安装 CLI                            |
 
 > 所有 ID 类变量必须是数字，填成目录名会直接报错；接口目录 ID 可用 `apifox-cli folder list --project <项目ID> --type endpoint` 查询（脚本报错提示中也会给出该命令）。
 
@@ -2277,11 +2298,17 @@ APIFOX_PROJECT_ID=你的项目ID
 # 先确认静态产物是最新的
 ./mix swag
 
-# 同步全部四个服务
+# 同步全部四个服务，并在最后同步 README
 ./mix apifox
 
-# 只同步指定服务
+# 只同步指定服务（README 仍会同步）
 ./mix apifox spring nestjs
+
+# 只同步接口，不处理 README
+./mix apifox --no-readme
+
+# README 目标文档还没建时，先创建再同步
+./mix apifox --create-readme
 
 # dry-run：只校验产物与配置，不发起导入请求
 ./mix apifox --dry-run
@@ -2299,6 +2326,74 @@ APIFOX_PROJECT_ID=你的项目ID
 3. 同一项目不允许并发导入，脚本按服务串行执行；对 `403`、`429`、`5xx` 会重试 3 次（间隔 3 秒）
 4. 依赖 `curl`、`sed`、`tr`、`grep`、`mktemp`，Git Bash / WSL / Linux 自带，不需要额外安装 Python 或 jq
 5. 令牌权限等同账号密码，脚本输出不会回显令牌；根目录 `.env` 已被 `.gitignore` 忽略，请勿提交
+6. README 这一步额外依赖 Apifox CLI 与 `APIFOX_README_DOC_ID`：CLI 缺失时脚本会自动 `npm i -g apifox-cli` 安装，文档 ID 未配置时该步骤跳过并提示，两种情况都不影响接口导入；`--no-readme` 可显式关掉，安装与权限的完整说明见本节末尾「README 同步到指定文档」
+7. 若报 `403075 Automation caller branch required`：这是 Apifox 对自动化调用者的写保护（接口导入走开放 API 不受影响，只有 README 这一步会撞上）。两种放行方式：
+   - 直接编辑：Apifox 客户端 2.8.31+ 打开「项目设置 → 功能设置 → AI 功能设置 → 外部 AI 编辑权限」，开启「主分支直接编辑权限」后重试
+   - AI 分支：`apifox branch create --project <项目ID> --type ai --name "ai/年月日-from-main-readme" --from main`（命名需符合 `ai/年月日-from-来源分支-模块名`），再 `apifox branch pick-to --project <项目ID> --type ai --from main --to <AI分支名> --doc-ids <文档ID>` 把已有文档带进去（AI 分支初始为空），然后 `APIFOX_README_BRANCH=<AI分支名> ./mix apifox` 写入，确认无误后再 `apifox branch merge` 合并
+
+### README 同步到指定文档
+
+`./mix apifox` 的接口导入走 Apifox 开放 API，该通道只公开了导入 OpenAPI / Postman 与导出 OpenAPI 三类能力，写不了 Markdown 文档。因此 README 这一步由 `./mix apifox` 在接口同步结束后自动调用 `./mix apifox-readme` 完成，底层是 Apifox CLI 的 `doc create` / `doc update`，写入的是 API 管理树里的项目 Markdown 文档（不是 `shared-doc` 共享发布文档）。也可以用 `--no-readme` 关掉这一步，或单独执行 `./mix apifox-readme`。
+
+前置准备：
+
+**Apifox CLI**：令牌沿用 `.env` 里的 `APIFOX_ACCESS_TOKEN`，CLI 缺失时脚本会自动安装，不需要手工准备。
+
+```bash
+# 脚本自动安装时内部执行的命令（Node 不低于 16，默认走 npmmirror 源）
+npm i -g apifox-cli@latest --registry=https://registry.npmmirror.com/
+
+# 手工安装、换源或关闭自动安装
+npm i -g apifox-cli@latest --registry=https://registry.npmjs.org/
+./mix apifox-readme --no-install                  # 本次不自动安装
+APIFOX_CLI_AUTO_INSTALL=false                     # 在 .env 里关闭自动安装
+APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去掉末尾斜杠
+```
+
+**AI 编辑权限**：Apifox 把 CLI 发起的写入一律视为 AI 发起，默认只允许写 AI 分支，因此直接改主分支必须先放行。客户端 2.8.31 及以上版本，进入「项目设置 → 功能设置 → AI 功能设置 → 外部 AI 编辑权限」：
+
+| 开关 | 是否需要开启 |
+| --- | --- |
+| 主分支直接编辑权限 | 需要（目标文档在主分支时） |
+| 标准迭代分支直接编辑权限 | 按需，没有迭代分支可不开 |
+| 通用分支直接编辑权限 | 按需，没有通用分支可不开 |
+| AI 分支直接编辑权限 | 通常默认开启，不用动 |
+
+不开这个开关就会返回 `403075 Automation caller branch required`，此时也可以改走 AI 分支（命令见上面的注意事项 7）。
+
+常用命令：
+
+```bash
+# 首次：还没有目标文档时创建，脚本会打印新文档 ID
+./mix apifox-readme --create
+
+# 把打印出的 ID 写进 .env 的 APIFOX_README_DOC_ID 后，后续即为原地更新
+./mix apifox-readme
+
+# 只生成并校验文档内容，不写入 Apifox
+./mix apifox-readme --dry-run
+
+# 直接调用脚本
+./scripts/apifox-readme-sync.sh --dry-run
+```
+
+同步行为：
+
+1. 目标文档由 `APIFOX_README_DOC_ID` 指定，未配置时用 `--create` 创建，名称取 `APIFOX_README_DOC_NAME` 或 README 第一个一级标题
+2. 默认剔除 README 的「## 目录」锚点章节（Apifox 侧跳转不了），可用 `--keep-toc` 保留
+3. 默认在正文顶部插入一行自动同步提示，可用 `--no-banner` 关闭
+4. 写入前用 `apifox cli-schema validate` 校验 payload 结构，写入后回读文档校验正文标记，失败以非零状态码退出
+5. 更新已有文档时不会改名（除非显式配置 `APIFOX_README_DOC_NAME`），也不会动 Apifox 侧手工整理的目录结构
+6. 文档与接口同属 `APIFOX_PROJECT_ID` 指定的项目：未配置 `APIFOX_README_DOC_MODULE_ID` 时落在默认模块，`APIFOX_README_DOC_FOLDER_ID` 填 `0` 即落在 API 目录树根，与接口目录同级；填接口目录 ID 则直接挂在那个目录里
+
+注意事项：
+
+1. `doc` 系列命令需要 Apifox 账号权限，直接写主分支的放行方式见上面的「AI 编辑权限」，未放行时返回 `403075`
+2. README 体积较大时 Apifox 侧渲染与版本对比会偏慢；正文超过 200000 字节脚本会告警，必要时拆成多篇文档分别同步
+3. README 里的相对路径（`scripts/xxx.sh`、`static/`）与锚点链接在 Apifox 侧无法跳转，需要跳转请改成绝对 URL
+4. 脚本依赖 `apifox`（缺失时自动安装）、`sed`、`tr`、`grep`、`awk`、`mktemp`，传给 CLI 的路径先经 `cygpath` 转成 Windows 原生路径
+5. README 的「## 目录」章节只在 Apifox 文档内被剔除，仓库里的 `README.md` 不做任何改写
+6. Apifox CLI 会在仓库根目录生成 `.apifox/` 本地状态目录（记录分支与守卫错误等），已加入 `.gitignore`，不要提交
 
 ## 项目规范说明
 
