@@ -368,7 +368,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - git 用于精确核对与回退：`git status --porcelain`、`git diff --ignore-cr-at-eol`（判断是否仅行尾差异）、`git checkout -- <文件>`
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
 - bash 环境的 `dirname` / `head` 等不稳定（PATH 时有时无），批量格式与行尾校验优先走 `./mix format` / `./mix lint`，需要脚本兜底时用 Python `subprocess` 调绝对路径
-- `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`goctl-api`、`goctl-orm`、`lint`、`format`、`dev`、`dist`、`docker`、`docker-services`、`loki`、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
+- `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`apifox-readme`、`goctl-api`、`goctl-orm`、`lint`、`format`、`test`、`dev`、`dist`、`docker`、`docker-services`、`loki`、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
 - `scripts/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
 - 两套容器编排的容器名不同：`./mix docker` 用 `mix-<service>-container`，`./mix compose` 用 `mix-<service>`（compose 的 `container_name`）
 - `README.md` 行尾由 `.gitattributes` 统一为 LF，批量改文档按「归一化 LF → 断言唯一性后替换」处理，不要逐处手工编辑
@@ -428,6 +428,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 按服务串行导入，输出「新增 / 更新 / 忽略 / 失败」计数；出现失败计数或非零退出码必须排查后重试，不要当成噪声放过
 - 覆盖策略默认 `AUTO_MERGE`，保留 Apifox 侧手工维护的中文名、mock 与返回示例，只按文档更新结构化内容
 - 令牌等同账号密码，脚本输出不回显令牌，根目录 `.env` 已被 `.gitignore` 忽略
+- `./mix apifox` 现在一次做完两件事：接口走开放 API 导入，README 走 Apifox CLI（`doc create` / `doc update`）写入 `APIFOX_README_DOC_ID` 指定的项目 Markdown 文档；README 目标未配置或未装 CLI 时该步骤跳过并提示，不影响接口导入。`--no-readme` 只同步接口，`--create-readme` 首次创建 README 文档，单独同步用 `./mix apifox-readme`
 
 ### 接口描述写在代码声明处
 

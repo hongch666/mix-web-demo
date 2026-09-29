@@ -1,15 +1,18 @@
 #!/bin/bash
 
 # 脚本说明：
-# 将各服务 docs/ 目录下的静态 OpenAPI 文档同步到 Apifox
+# 将各服务 docs/ 目录下的静态 OpenAPI 文档同步到 Apifox，并在最后同步 README 到 Apifox 指定 Markdown 文档
 #   spring  -> spring/docs/openapi.json
 #   gozero  -> gozero/app/docs/openapi.json
 #   nestjs  -> nestjs/docs/openapi.json
 #   fastapi -> fastapi/docs/openapi.json
+#   README  -> apifox-readme-sync.sh（Apifox CLI 的 doc create / doc update，未配置文档 ID 时跳过）
 # 只读取仓库内的静态产物，不启动任何服务，也不访问本地中间件
 # 依赖：curl、sed、tr、grep、mktemp，均为 Git Bash / WSL / Linux 自带，不需要 Python 或 jq
-# 用法：./scripts/apifox-sync.sh [service...] [--dry-run]
+# 用法：./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--create-readme]
 #   service 可选值：gozero、spring、nestjs、fastapi，不指定时同步全部
+#   --no-readme 只同步接口，不处理 README
+#   --create-readme README 目标文档不存在时先创建（其余场景跳过并提示）
 #   令牌与项目 ID 从根目录 .env 读取，变量说明见 .env.example
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -44,9 +47,11 @@ print_error() {
 }
 
 show_usage() {
-    echo "用法: ./scripts/apifox-sync.sh [service...] [--dry-run]"
+    echo "用法: ./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--create-readme]"
     echo "  service 可选值：gozero、spring、nestjs、fastapi，不指定时同步全部"
     echo "  --dry-run 只校验产物与配置，不发起导入请求"
+    echo "  --no-readme 只同步接口文档，不处理 README"
+    echo "  --create-readme 未配置 README 目标文档时先创建"
 }
 
 # ==================== 环境变量读取 ====================
@@ -297,12 +302,20 @@ post_import_openapi() {
 
 main() {
     local dry_run="false"
+    local readme_enabled="true"
+    local create_readme="false"
     local service_args=""
     local arg
     for arg in "$@"; do
         case "$arg" in
             --dry-run)
                 dry_run="true"
+                ;;
+            --no-readme)
+                readme_enabled="false"
+                ;;
+            --create-readme)
+                create_readme="true"
                 ;;
             -h|--help)
                 show_usage
@@ -443,9 +456,24 @@ main() {
         fi
     done
 
+    if [ "$readme_enabled" = "true" ]; then
+        echo ""
+        print_info "开始同步 README 到 Apifox 项目 Markdown 文档"
+        local readme_args=("--skip-if-unset")
+        if [ "$dry_run" = "true" ]; then
+            readme_args+=("--dry-run")
+        fi
+        if [ "$create_readme" = "true" ]; then
+            readme_args+=("--create")
+        fi
+        if ! bash "$WORKDIR/scripts/apifox-readme-sync.sh" "${readme_args[@]}"; then
+            failed_services="$failed_services README"
+        fi
+    fi
+
     echo ""
     if [ -n "$failed_services" ]; then
-        print_error "以下服务同步未全部成功:$failed_services"
+        print_error "以下资源同步未全部成功:$failed_services"
         return 1
     fi
 

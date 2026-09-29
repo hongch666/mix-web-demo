@@ -228,3 +228,6 @@ _*.txt
 ### 根目录基础中间件账号密码配置（由 .env.example 复制生成，不入库）
 /.env
 /nacos/
+
+### Apifox CLI 本地状态（执行 ./mix apifox-readme 时生成，不入库）
+/.apifox/
