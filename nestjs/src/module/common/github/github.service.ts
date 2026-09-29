@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import axios, { AxiosResponse } from "axios";
 import { randomUUID } from "crypto";
-import { ErrorIds, Messages, RedisKeys } from "src/common/constants";
+import { Defaults, ErrorIds, Messages, RedisKeys } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
 import { SpringClientService } from "src/module/common/client/springClient.service";
@@ -265,71 +265,152 @@ export class GithubService {
   }
 
   private async exchangeCodeForAccessToken(code: string): Promise<string> {
-    const response: AxiosResponse<GithubAccessTokenResponse> =
-      await axios.post<GithubAccessTokenResponse>(
-        this.githubConfig.accessTokenUrl,
-        {
-          client_id: this.githubConfig.clientId,
-          client_secret: this.githubConfig.clientSecret,
-          code,
-          redirect_uri: this.githubConfig.redirectUri,
-        },
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
+    try {
+      const response: AxiosResponse<GithubAccessTokenResponse | string> =
+        await axios.post<GithubAccessTokenResponse>(
+          this.githubConfig.accessTokenUrl,
+          {
+            client_id: this.githubConfig.clientId,
+            client_secret: this.githubConfig.clientSecret,
+            code,
+            redirect_uri: this.githubConfig.redirectUri,
           },
-          validateStatus: () => true,
-        },
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            timeout: Defaults.GITHUB_HTTP_TIMEOUT_MS,
+            // 保留 4xx 作为业务响应，5xx 交给 axios-retry 自动重试
+            validateStatus: (status: number) => status < 500,
+          },
+        );
+
+      const responseData: unknown = response.data;
+      let data: GithubAccessTokenResponse = {};
+      if (responseData !== null && typeof responseData === "object") {
+        data = responseData as GithubAccessTokenResponse;
+      } else if (typeof responseData === "string") {
+        try {
+          data = JSON.parse(responseData) as GithubAccessTokenResponse;
+        } catch {
+          const formData: URLSearchParams = new URLSearchParams(responseData);
+          data = {
+            access_token: formData.get("access_token") || undefined,
+            error: formData.get("error") || undefined,
+            error_description: formData.get("error_description") || undefined,
+          };
+        }
+      }
+      const errorCode: string = data.error || "";
+      const errorDescription: string =
+        data.errorDescription || data.error_description || "";
+      const contentType: string = String(
+        response.headers["content-type"] || "",
       );
 
-    const data: GithubAccessTokenResponse = response.data;
-    if (
-      response.status < 200 ||
-      response.status >= 300 ||
-      data.error ||
-      !data.access_token
-    ) {
-      throw BusinessException.badGateway(
-        data.errorDescription ||
-          data.error_description ||
-          Messages.GITHUB_ACCESS_TOKEN_FAILED,
-        ErrorIds.GITHUB_ACCESS_TOKEN_FAILED,
-      );
+      if (
+        response.status < 200 ||
+        response.status >= 300 ||
+        errorCode ||
+        !data.access_token
+      ) {
+        this.logger.error(
+          Messages.GITHUB_ACCESS_TOKEN_RESPONSE(
+            response.status,
+            errorCode,
+            errorDescription,
+            contentType,
+          ),
+        );
+        throw BusinessException.badGateway(
+          errorDescription || Messages.GITHUB_ACCESS_TOKEN_FAILED,
+          ErrorIds.GITHUB_ACCESS_TOKEN_FAILED,
+        );
+      }
+
+      return data.access_token;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        this.logger.error(
+          Messages.GITHUB_ACCESS_TOKEN_REQUEST_FAILED(
+            error.code || "",
+            error.message,
+            error.response?.status,
+          ),
+        );
+      }
+      throw error;
     }
-
-    return data.access_token;
   }
 
   private async fetchGithubProfile(
     accessToken: string,
   ): Promise<GithubUserResponse> {
-    const response: AxiosResponse<GithubUserResponse> =
-      await axios.get<GithubUserResponse>(this.githubConfig.userApiUrl, {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${accessToken}`,
-          "X-GitHub-Api-Version": this.githubConfig.apiVersion,
-        },
-        validateStatus: () => true,
-      });
+    try {
+      const response: AxiosResponse<GithubUserResponse> =
+        await axios.get<GithubUserResponse>(this.githubConfig.userApiUrl, {
+          headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: `Bearer ${accessToken}`,
+            "X-GitHub-Api-Version": this.githubConfig.apiVersion,
+          },
+          timeout: Defaults.GITHUB_HTTP_TIMEOUT_MS,
+          // 保留 4xx 作为业务响应，5xx 交给 axios-retry 自动重试
+          validateStatus: (status: number) => status < 500,
+        });
 
-    if (response.status < 200 || response.status >= 300) {
-      throw BusinessException.badGateway(
-        Messages.GITHUB_USER_PROFILE_FAILED,
-        ErrorIds.GITHUB_USER_PROFILE_FAILED,
-      );
+      if (response.status < 200 || response.status >= 300) {
+        const responseData: unknown = response.data;
+        const responseMessageValue: unknown =
+          responseData !== null && typeof responseData === "object"
+            ? (responseData as { message?: unknown }).message
+            : undefined;
+        const responseMessage: string =
+          typeof responseMessageValue === "string" ? responseMessageValue : "";
+        this.logger.error(
+          Messages.GITHUB_USER_PROFILE_RESPONSE(
+            response.status,
+            responseMessage,
+            String(response.headers["content-type"] || ""),
+            String(response.headers["x-github-request-id"] || ""),
+          ),
+        );
+        throw BusinessException.badGateway(
+          Messages.GITHUB_USER_PROFILE_FAILED,
+          ErrorIds.GITHUB_USER_PROFILE_FAILED,
+        );
+      }
+
+      const data: GithubUserResponse = response.data;
+      if (!data.id || !data.login) {
+        this.logger.error(
+          Messages.GITHUB_USER_PROFILE_RESPONSE(
+            response.status,
+            "响应缺少 id 或 login",
+            String(response.headers["content-type"] || ""),
+            String(response.headers["x-github-request-id"] || ""),
+          ),
+        );
+        throw BusinessException.badGateway(
+          Messages.GITHUB_USER_PROFILE_INVALID,
+          ErrorIds.GITHUB_USER_PROFILE_INVALID,
+        );
+      }
+
+      return data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        this.logger.error(
+          Messages.GITHUB_USER_PROFILE_REQUEST_FAILED(
+            error.code || "",
+            error.message,
+            error.response?.status,
+          ),
+        );
+      }
+      throw error;
     }
-
-    const data: GithubUserResponse = response.data;
-    if (!data.id || !data.login) {
-      throw BusinessException.badGateway(
-        Messages.GITHUB_USER_PROFILE_INVALID,
-        ErrorIds.GITHUB_USER_PROFILE_INVALID,
-      );
-    }
-
-    return data;
   }
 
   private async fetchPrimaryEmail(accessToken: string): Promise<string | null> {
@@ -341,7 +422,9 @@ export class GithubService {
         Authorization: `Bearer ${accessToken}`,
         "X-GitHub-Api-Version": this.githubConfig.apiVersion,
       },
-      validateStatus: () => true,
+      timeout: Defaults.GITHUB_HTTP_TIMEOUT_MS,
+      // 保留 4xx 作为业务响应，5xx 交给 axios-retry 自动重试
+      validateStatus: (status: number) => status < 500,
     });
 
     if (response.status < 200 || response.status >= 300) {

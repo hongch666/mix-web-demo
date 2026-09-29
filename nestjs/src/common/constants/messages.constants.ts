@@ -469,7 +469,37 @@ export class Messages {
 
   static readonly GITHUB_ACCESS_TOKEN_FAILED = "GitHub 访问令牌获取失败";
 
+  static readonly GITHUB_ACCESS_TOKEN_RESPONSE = (
+    status: number,
+    errorCode: string,
+    errorDescription: string,
+    contentType: string,
+  ): string =>
+    `GitHub 访问令牌响应异常 - HTTP ${status}, error=${errorCode || "unknown"}, description=${errorDescription || "unknown"}, contentType=${contentType || "unknown"}`;
+
+  static readonly GITHUB_ACCESS_TOKEN_REQUEST_FAILED = (
+    errorCode: string,
+    errorMessage: string,
+    status?: number,
+  ): string =>
+    `GitHub 访问令牌请求失败 - status=${status || "unknown"}, code=${errorCode || "unknown"}, message=${errorMessage}`;
+
   static readonly GITHUB_USER_PROFILE_FAILED = "GitHub 用户资料获取失败";
+
+  static readonly GITHUB_USER_PROFILE_RESPONSE = (
+    status: number,
+    message: string,
+    contentType: string,
+    requestId: string,
+  ): string =>
+    `GitHub 用户资料响应异常 - HTTP ${status}, message=${message || "unknown"}, contentType=${contentType || "unknown"}, requestId=${requestId || "unknown"}`;
+
+  static readonly GITHUB_USER_PROFILE_REQUEST_FAILED = (
+    errorCode: string,
+    errorMessage: string,
+    status?: number,
+  ): string =>
+    `GitHub 用户资料请求失败 - status=${status || "unknown"}, code=${errorCode || "unknown"}, message=${errorMessage}`;
 
   static readonly GITHUB_USER_PROFILE_INVALID = "GitHub 用户资料不完整";
 

@@ -24,6 +24,10 @@ export class MailService {
       this.configService.get<string>("mail.username");
     const password: string | undefined =
       this.configService.get<string>("mail.password");
+    const timeout: number = Math.max(
+      15000,
+      Number(this.configService.get<string>("mail.timeout")) || 10000,
+    );
 
     if (!username || !password) {
       this.logger.warning(Messages.MAIL_SERVICE_CONFIG_INCOMPLETE);
@@ -34,6 +38,10 @@ export class MailService {
       host,
       port: Number(port),
       secure: secureVal === "true" || secureVal === "1",
+      family: 4,
+      connectionTimeout: timeout,
+      greetingTimeout: timeout,
+      socketTimeout: timeout,
       auth: {
         user: username,
         pass: password,
@@ -72,8 +80,17 @@ export class MailService {
       .catch((error: unknown) => {
         const errorMessage: string =
           error instanceof Error ? error.message : String(error);
+        const errorCode: unknown =
+          error && typeof error === "object"
+            ? (error as { code?: unknown }).code
+            : undefined;
+        const errorCommand: unknown =
+          error && typeof error === "object"
+            ? (error as { command?: unknown }).command
+            : undefined;
+        const errorDetails: string = ` code=${typeof errorCode === "string" ? errorCode : "unknown"}, command=${typeof errorCommand === "string" ? errorCommand : "unknown"}`;
         this.logger.error(
-          `${Messages.VERIFICATION_CODE_EMAIL_FAILED(maskedEmail)}: ${errorMessage}`,
+          `${Messages.VERIFICATION_CODE_EMAIL_FAILED(maskedEmail)}: ${errorMessage}${errorDetails}`,
         );
       });
   }

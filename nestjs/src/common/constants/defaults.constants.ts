@@ -24,4 +24,7 @@ export class Defaults {
   // ===== 远程调用连接池 =====
   /** 内网服务调用的最大并发连接数 */
   static readonly REMOTE_CALL_MAX_SOCKETS = 50;
+
+  /** GitHub 外部接口单次请求超时时间（毫秒） */
+  static readonly GITHUB_HTTP_TIMEOUT_MS = 10000;
 }
