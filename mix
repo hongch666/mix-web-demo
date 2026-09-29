@@ -101,6 +101,14 @@ show_help() {
     echo "  format [services...]     - Format code (default: all services)"
     echo "  test [services...]       - Run unit tests (default: all services)"
     echo ""
+    echo "Agent Skills Commands (项目技能包同步):"
+    echo "  skills [options]         - 把 skills/ 同步到本机各 Agent 工具的用户级技能目录"
+    echo "    --dry-run              - 只打印将要执行的动作，不写文件"
+    echo "    --list                 - 只列出目标清单与检测结果，不同步"
+    echo ""
+    echo "  说明: 只同步技能根目录已存在的目标，不存在的目录不创建也不迁移"
+    echo "  目标清单: scripts/skills-targets.conf（可自行追加其他 Agent 工具）"
+    echo ""
     echo "Other:"
     echo "  help                     - Show this help message"
     echo ""
@@ -130,6 +138,9 @@ show_help() {
     echo "  ./mix format nestjs            # Format code of a specific service"
     echo "  ./mix test                     # Run unit tests for all services"
     echo "  ./mix test nestjs gozero       # Run unit tests for specific services"
+    echo "  ./mix skills                   # 同步 skills/ 到本机已存在的用户级 Agent 技能目录"
+    echo "  ./mix skills --list            # 只查看各 Agent 技能目录的检测结果"
+    echo "  ./mix skills --dry-run         # 预览将要执行的动作"
     echo "  ./mix dev multi                # Multi-pane tmux layout (dev)"
     echo "  ./mix dev seq                  # Sequential window layout (dev, default config)"
     echo "  ./mix dev seq -i               # Sequential layout with interactive mode"
@@ -310,6 +321,9 @@ case $COMMAND in
     test)
         echo "Running unit tests..."
         bash "$SCRIPTS_DIR/test.sh" "${@:2}"
+        ;;
+    skills)
+        bash "$SCRIPTS_DIR/skills-sync.sh" "${@:2}"
         ;;
     dev)
         run_dev_command "${@:2}"
