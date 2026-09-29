@@ -342,6 +342,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
   - 移除 `swagger2openapi` 注入的全局 / path 级 / operation 级 `servers` 与 per-operation `schemes`（Swagger 2.0 文档没有 host，转换工具会默认补 `https://`，导致前端用错协议）
   - 剔除易变字段 `x-date`、`x-goctl-version`（`VOLATILE_FIELDS`），保证同一份 `.api` 在不同机器、不同 goctl 版本下生成结果可复现，不产生无意义 diff
   - 剔除 WebSocket 路径 `/ws/chat`（`WEBSOCKET_PATHS`）：Apifox 的 WebSocket 是独立于 HTTP 的资源类型，OpenAPI 无法表达、也没有对应扩展，导入只会多出一条无法发起握手的 GET 接口，该接口在 Apifox 侧手工维护；同时把 `/sse/chat` 的 200 响应改为 `text/event-stream`（复用 goctl 生成的 inline schema）并补 `400`
+- GoZero 的 handler 模板会在运行时通过 `utils.Success/Error` 输出统一外壳 `{code,msg,data}`，而 `goctl api swagger` 只生成 `returns` 对应的 `data` schema；因此 `fix.py` 必须对 `application/json` 响应补齐该外壳，跳过 `text/event-stream`，并保持重复执行幂等。修改 `.api` 或响应模型后必须重新生成 JSON/YAML，检查响应 schema 的 `data` 是否仍为原始业务结构
+- GoZero 的 `xxxResp` 按前端兼容规范保留业务 `Data` 字段并声明 `json:"data"`；handler 必须使用 `utils.Success(w, resp)`，由 `utils.Success` 识别并展开响应对象的 `Data` 字段，最终统一输出单层 `{code, msg, data}`，禁止产生 `data.data`。Swagger 后处理也必须同步展开该字段，保证文档与运行时响应一致。
 - **该文档的 schema 全部是 inline（`components` 下没有 `schemas`），不要改成 `$ref`**
 - 改完 `.api` 后按「接口文档收尾流程」重新生成并提交产物
 
