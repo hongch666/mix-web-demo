@@ -387,7 +387,7 @@ export class GithubService {
         this.logger.error(
           Messages.GITHUB_USER_PROFILE_RESPONSE(
             response.status,
-            "响应缺少 id 或 login",
+            Messages.GITHUB_USER_PROFILE_MISSING_FIELDS,
             String(response.headers["content-type"] || ""),
             String(response.headers["x-github-request-id"] || ""),
           ),

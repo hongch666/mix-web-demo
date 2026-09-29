@@ -360,6 +360,91 @@ export class Messages {
   static readonly BATCH_SHUTDOWN_COMPLETED = (name: string): string =>
     `[攒批] ${name} 已关闭`;
 
+  static readonly NACOS_DEREGISTER_FAILED = (errorMessage: string): string =>
+    `从 nacos 注销实例失败: ${errorMessage}`;
+
+  static readonly GITHUB_ACCESS_TOKEN_RESPONSE = (
+    status: number,
+    errorCode: string,
+    errorDescription: string,
+    contentType: string,
+  ): string =>
+    `GitHub 访问令牌响应异常 - HTTP ${status}, error=${errorCode || "unknown"}, description=${errorDescription || "unknown"}, contentType=${contentType || "unknown"}`;
+
+  static readonly GITHUB_ACCESS_TOKEN_REQUEST_FAILED = (
+    errorCode: string,
+    errorMessage: string,
+    status?: number,
+  ): string =>
+    `GitHub 访问令牌请求失败 - status=${status || "unknown"}, code=${errorCode || "unknown"}, message=${errorMessage}`;
+
+  static readonly GITHUB_USER_PROFILE_RESPONSE = (
+    status: number,
+    message: string,
+    contentType: string,
+    requestId: string,
+  ): string =>
+    `GitHub 用户资料响应异常 - HTTP ${status}, message=${message || "unknown"}, contentType=${contentType || "unknown"}, requestId=${requestId || "unknown"}`;
+
+  static readonly GITHUB_USER_PROFILE_REQUEST_FAILED = (
+    errorCode: string,
+    errorMessage: string,
+    status?: number,
+  ): string =>
+    `GitHub 用户资料请求失败 - status=${status || "unknown"}, code=${errorCode || "unknown"}, message=${errorMessage}`;
+
+  // ===== 熔断器 =====
+
+  static readonly SERVICE_CIRCUIT_BREAKER_OPEN = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 的熔断器已打开`;
+
+  static readonly SERVICE_CIRCUIT_BREAKER_HALF_OPEN = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 的熔断器进入半开状态`;
+
+  static readonly SERVICE_CIRCUIT_BREAKER_CLOSE = (
+    serviceName: string,
+  ): string => `服务 ${serviceName} 的熔断器已关闭`;
+
+  static readonly SERVICE_CIRCUIT_BREAKER_FALLBACK = (
+    serviceName: string,
+    result: unknown,
+  ): string =>
+    `服务 ${serviceName} 触发熔断降级，返回结果: ${JSON.stringify(result)}`;
+
+  static readonly SERVICE_RETRY = (
+    url: string,
+    retryCount: number,
+    message: string,
+  ): string => `请求 ${url} 第 ${retryCount} 次重试，原因: ${message}`;
+
+  // ===== OpenTelemetry =====
+
+  static readonly OTEL_INVALID_SAMPLER_RATIO = (ratio: string): string =>
+    `无效的 OpenTelemetry 采样比例: ${ratio}`;
+
+  static readonly OTEL_UNSUPPORTED_SAMPLER = (sampler: string): string =>
+    `不支持的 OpenTelemetry 采样器: ${sampler}`;
+
+  // ===== MongoDB 工具消息 =====
+
+  static readonly MONGO_COLLECTION_NOT_ALLOWED_MSG = (
+    collectionName: string,
+  ): string => `不允许查询集合: ${collectionName}`;
+
+  static readonly MONGO_FORBIDDEN_OPERATOR_MSG = (key: string): string =>
+    `不允许使用操作符: ${key}`;
+
+  static readonly SQL_PROXY_TABLE_NOT_ALLOWED = (tableName: string): string =>
+    `安全限制：表 '${tableName}' 不在白名单内`;
+
+  static readonly SQL_PROXY_QUERY_FAILED = (message: string): string =>
+    `执行SQL查询失败: ${message}`;
+
+  static readonly SQL_PROXY_TABLE_SCHEMA_FAILED = (message: string): string =>
+    `获取表结构信息失败: ${message}`;
+
   static readonly INTERNAL_TOKEN_SECRET_NOT_CONFIGURED = "内部令牌密钥未配置";
 
   static readonly INTERNAL_TOKEN_MISSING = "请求头中缺少内部令牌";
@@ -440,9 +525,6 @@ export class Messages {
 
   static readonly NACOS_DEREGISTER = "从 nacos 注销实例成功";
 
-  static readonly NACOS_DEREGISTER_FAILED = (errorMessage: string): string =>
-    `从 nacos 注销实例失败: ${errorMessage}`;
-
   static readonly REMOTE_CALL_AGENT_DESTROYED = "远程调用连接池已释放";
 
   // ===== GitHub 登录 =====
@@ -469,71 +551,17 @@ export class Messages {
 
   static readonly GITHUB_ACCESS_TOKEN_FAILED = "GitHub 访问令牌获取失败";
 
-  static readonly GITHUB_ACCESS_TOKEN_RESPONSE = (
-    status: number,
-    errorCode: string,
-    errorDescription: string,
-    contentType: string,
-  ): string =>
-    `GitHub 访问令牌响应异常 - HTTP ${status}, error=${errorCode || "unknown"}, description=${errorDescription || "unknown"}, contentType=${contentType || "unknown"}`;
-
-  static readonly GITHUB_ACCESS_TOKEN_REQUEST_FAILED = (
-    errorCode: string,
-    errorMessage: string,
-    status?: number,
-  ): string =>
-    `GitHub 访问令牌请求失败 - status=${status || "unknown"}, code=${errorCode || "unknown"}, message=${errorMessage}`;
-
   static readonly GITHUB_USER_PROFILE_FAILED = "GitHub 用户资料获取失败";
 
-  static readonly GITHUB_USER_PROFILE_RESPONSE = (
-    status: number,
-    message: string,
-    contentType: string,
-    requestId: string,
-  ): string =>
-    `GitHub 用户资料响应异常 - HTTP ${status}, message=${message || "unknown"}, contentType=${contentType || "unknown"}, requestId=${requestId || "unknown"}`;
-
-  static readonly GITHUB_USER_PROFILE_REQUEST_FAILED = (
-    errorCode: string,
-    errorMessage: string,
-    status?: number,
-  ): string =>
-    `GitHub 用户资料请求失败 - status=${status || "unknown"}, code=${errorCode || "unknown"}, message=${errorMessage}`;
-
   static readonly GITHUB_USER_PROFILE_INVALID = "GitHub 用户资料不完整";
+
+  static readonly GITHUB_USER_PROFILE_MISSING_FIELDS = "响应缺少 id 或 login";
 
   static readonly GITHUB_SPRING_TOKEN_TICKET_FAILED =
     "Spring 未正确返回 GitHub 登录票据";
 
   static readonly GITHUB_SPRING_TOKEN_TICKET_MISSING =
     "Spring 未返回 GitHub 登录票据";
-
-  // ===== 熔断器 =====
-
-  static readonly SERVICE_CIRCUIT_BREAKER_OPEN = (
-    serviceName: string,
-  ): string => `服务 ${serviceName} 的熔断器已打开`;
-
-  static readonly SERVICE_CIRCUIT_BREAKER_HALF_OPEN = (
-    serviceName: string,
-  ): string => `服务 ${serviceName} 的熔断器进入半开状态`;
-
-  static readonly SERVICE_CIRCUIT_BREAKER_CLOSE = (
-    serviceName: string,
-  ): string => `服务 ${serviceName} 的熔断器已关闭`;
-
-  static readonly SERVICE_CIRCUIT_BREAKER_FALLBACK = (
-    serviceName: string,
-    result: unknown,
-  ): string =>
-    `服务 ${serviceName} 触发熔断降级，返回结果: ${JSON.stringify(result)}`;
-
-  static readonly SERVICE_RETRY = (
-    url: string,
-    retryCount: number,
-    message: string,
-  ): string => `请求 ${url} 第 ${retryCount} 次重试，原因: ${message}`;
 
   // ===== 启动/测试 =====
 
@@ -615,23 +643,6 @@ export class Messages {
 
   static readonly REDIS_LOCK_RELEASE_FAIL = "释放分布式锁失败，key: %s";
 
-  // ===== OpenTelemetry =====
-
-  static readonly OTEL_INVALID_SAMPLER_RATIO = (ratio: string): string =>
-    `无效的 OpenTelemetry 采样比例: ${ratio}`;
-
-  static readonly OTEL_UNSUPPORTED_SAMPLER = (sampler: string): string =>
-    `不支持的 OpenTelemetry 采样器: ${sampler}`;
-
-  // ===== MongoDB 工具消息 =====
-
-  static readonly MONGO_COLLECTION_NOT_ALLOWED_MSG = (
-    collectionName: string,
-  ): string => `不允许查询集合: ${collectionName}`;
-
-  static readonly MONGO_FORBIDDEN_OPERATOR_MSG = (key: string): string =>
-    `不允许使用操作符: ${key}`;
-
   // ===== SQL 代理工具消息 =====
 
   static readonly SQL_PROXY_QUERY_MUST_BE_STRING = "SQL查询语句必须是字符串";
@@ -643,9 +654,6 @@ export class Messages {
   static readonly SQL_PROXY_FORBIDDEN_STATEMENT =
     "安全限制：只允许执行只读查询（SELECT/WITH/SHOW/DESC/DESCRIBE/EXPLAIN）";
 
-  static readonly SQL_PROXY_TABLE_NOT_ALLOWED = (tableName: string): string =>
-    `安全限制：表 '${tableName}' 不在白名单内`;
-
   static readonly SQL_PROXY_LIMIT_REQUIRED =
     "安全限制：SQL查询必须包含LIMIT子句";
 
@@ -653,10 +661,4 @@ export class Messages {
 
   static readonly SQL_PROXY_MULTIPLE_STATEMENTS =
     "安全限制：禁止执行多条SQL语句";
-
-  static readonly SQL_PROXY_QUERY_FAILED = (message: string): string =>
-    `执行SQL查询失败: ${message}`;
-
-  static readonly SQL_PROXY_TABLE_SCHEMA_FAILED = (message: string): string =>
-    `获取表结构信息失败: ${message}`;
 }
