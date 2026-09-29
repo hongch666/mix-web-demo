@@ -368,10 +368,11 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - git 用于精确核对与回退：`git status --porcelain`、`git diff --ignore-cr-at-eol`（判断是否仅行尾差异）、`git checkout -- <文件>`
 - 本机环境参考：Go / gofmt 在 `C:\Program Files\Go\bin\`，goctl 在 `C:\Users\30708\go\bin\goctl.EXE`，git 在 `C:\Program Files\Git\cmd\git.EXE`（`usr\bin\` 下有 grep / tr / sed / basename 等，用完整路径调用），maven 在 `C:\apache-maven-3.9.11\bin\mvn.CMD`，javap 在 `C:\Program Files\Java\jdk-17\bin\javap.exe`
 - bash 环境的 `dirname` / `head` 等不稳定（PATH 时有时无），批量格式与行尾校验优先走 `./mix format` / `./mix lint`，需要脚本兜底时用 Python `subprocess` 调绝对路径
-- `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`apifox-readme`、`goctl-api`、`goctl-orm`、`lint`、`format`、`test`、`dev`、`dist`、`docker`、`docker-services`、`loki`、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
+- `mix` 脚本顶层子命令有 `setup`、`swag`、`apifox`、`apifox-readme`、`goctl-api`、`goctl-orm`、`lint`、`format`、`test`、`skills`、`dev`、`dist`、`docker`、`docker-services`、`loki`、`compose`、`help`；开发模式必须写全 `./mix dev multi|seq|stop`（**没有** `./mix seq` / `./mix multi` / `./mix stop`，README 历史版本里这三处写错）
 - `scripts/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
 - 两套容器编排的容器名不同：`./mix docker` 用 `mix-<service>-container`，`./mix compose` 用 `mix-<service>`（compose 的 `container_name`）
 - `README.md` 行尾由 `.gitattributes` 统一为 LF，批量改文档按「归一化 LF → 断言唯一性后替换」处理，不要逐处手工编辑
+- 本技能包改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/skills-sync.sh`（Windows 在 Git Bash 下执行）
 
 ## 接口文档收尾流程
 
