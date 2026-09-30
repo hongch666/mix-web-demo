@@ -25,6 +25,20 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 常量类成员顺序整理（nestjs 与 fastapi 共用），python 缺失时跳过
+format_constants_order() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/constants-order.py" --fix "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/constants-order.py" --fix "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过常量类成员顺序整理"
+    return 0
+}
+
 # 未指定服务时格式化全部服务
 if [ $# -gt 0 ]; then
     SERVICES="$*"
@@ -51,14 +65,18 @@ format_nestjs() {
     command -v npm >/dev/null 2>&1 || return 2
     print_info "格式化 NestJS 代码（Prettier + ESLint --fix）..."
     # 先由 Prettier 统一排版，再用 ESLint --fix 修复可自动处理的问题
-    (cd "$WORKDIR/nestjs" && npm run format && npm run lint:fix)
+    (cd "$WORKDIR/nestjs" && npm run format && npm run lint:fix) || return 1
+    print_info "整理 NestJS 常量类成员顺序..."
+    format_constants_order "$WORKDIR/nestjs/src/common/constants"
 }
 
 format_fastapi() {
     command -v ruff >/dev/null 2>&1 || return 2
     print_info "格式化 FastAPI 代码（Ruff）..."
     # 先统一排版，再修复可自动处理的检查项
-    (cd "$WORKDIR/fastapi" && ruff format . && ruff check --fix .)
+    (cd "$WORKDIR/fastapi" && ruff format . && ruff check --fix .) || return 1
+    print_info "整理 FastAPI 常量类成员顺序..."
+    format_constants_order "$WORKDIR/fastapi/app/core/constants"
 }
 
 # ==================== 执行格式化 ====================

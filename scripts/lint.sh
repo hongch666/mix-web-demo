@@ -25,6 +25,20 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# 常量类成员顺序检查（nestjs 与 fastapi 共用），python 缺失时跳过
+lint_constants_order() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/constants-order.py" --check "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/constants-order.py" --check "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过常量类成员顺序检查"
+    return 0
+}
+
 # 未指定服务时检查全部服务
 if [ $# -gt 0 ]; then
     SERVICES="$*"
@@ -50,13 +64,17 @@ lint_gozero() {
 lint_nestjs() {
     command -v npm >/dev/null 2>&1 || return 2
     print_info "检查 NestJS 代码（ESLint + Prettier）..."
-    (cd "$WORKDIR/nestjs" && npm run lint && npm run format:check)
+    (cd "$WORKDIR/nestjs" && npm run lint && npm run format:check) || return 1
+    print_info "检查 NestJS 常量类成员顺序..."
+    lint_constants_order "$WORKDIR/nestjs/src/common/constants"
 }
 
 lint_fastapi() {
     command -v ruff >/dev/null 2>&1 || return 2
     print_info "检查 FastAPI 代码（Ruff）..."
-    (cd "$WORKDIR/fastapi" && ruff check .)
+    (cd "$WORKDIR/fastapi" && ruff check .) || return 1
+    print_info "检查 FastAPI 常量类成员顺序..."
+    lint_constants_order "$WORKDIR/fastapi/app/core/constants"
 }
 
 # ==================== 执行检查 ====================
