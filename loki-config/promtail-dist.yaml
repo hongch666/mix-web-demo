@@ -17,6 +17,9 @@ scrape_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/spring/app_*.log, service: spring}
     pipeline_stages:
+      - multiline:
+          firstline: '^(?:\d{4}-\d{2}-\d{2}T|\d{4}-\d{2}-\d{2} )'
+          max_wait_time: 1s
       # 2026-09-10T20:29:20.540+08:00
       - regex:
           expression: '^(?P<ts>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))'
@@ -40,6 +43,9 @@ scrape_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/gozero/app_*.log, service: gozero}
     pipeline_stages:
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+          max_wait_time: 1s
       # 2026-09-12 00:03:11
       - regex:
           expression: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
@@ -57,6 +63,9 @@ scrape_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/nestjs/app_*.log, service: nestjs}
     pipeline_stages:
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+          max_wait_time: 1s
       # 2026-09-11 00:20:12
       - regex:
           expression: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
@@ -74,6 +83,9 @@ scrape_configs:
       - targets: [localhost]
         labels: {job: service-logs, mode: dist, __path__: /app/dist-logs/fastapi/app_*.log, service: fastapi}
     pipeline_stages:
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
+          max_wait_time: 1s
       # 2026-09-11 00:20:17
       - regex:
           expression: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
