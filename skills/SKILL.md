@@ -74,6 +74,7 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
    - FastAPI：`core/constants/`（`Messages`、`HttpCode`、`RedisKeys`、`Scripts`、`WarehouseScripts`）
    - GoZero：`app/common/constants/`（`messages.go`、`defaults.go`）
    - 语言支持字符串模板时（Python f-string、TS 模板串、Go fmt），动态部分用模板拼接常量，不把整句抽离
+   - **常量类内部成员顺序：函数型成员必须全部排在普通常量之前**（NestJS 为 `static readonly NAME = (...) => ...` 形式的静态属性，FastAPI 为 `@staticmethod` 方法），新增常量时先写函数成员再写普通常量；该约定由 `./mix lint` 与 `./mix format` 里的 `scripts/constants-order.py` 检查与自动整理
    - 注解 / 装饰器的字符串参数**不抽常量**，直接写字面量：这类字符串只在声明处使用一次，抽到常量类后需跳转查看，反而降低可读性
      - Spring：`@Operation(summary, description)`、`@Tag`
      - NestJS：`@ApiOperation({ summary, description })`、`@ApiTags`
