@@ -1452,7 +1452,7 @@ pytest tests/core/auth/test_internal_token.py
 ./mix test spring gozero
 
 # ===== Agent 技能包同步 =====
-# 把 skills/ 同步到本机已存在的用户级 Agent 技能目录
+# 把 skills/mix-web-demo 同步到本机已存在的用户级 Agent 技能目录
 ./mix skills
 
 # 只列出目标清单与检测结果，不同步
@@ -1696,7 +1696,7 @@ PowerShell -ExecutionPolicy Bypass -File .\scripts\run.ps1
 | `lint.sh`                   | scripts/        | 检查四个服务的代码规范（Spotless/golangci-lint/ESLint/Prettier/Ruff）                          | Linux/macOS |
 | `format.sh`                 | scripts/        | 格式化四个服务的代码（Spotless/golangci-lint/Prettier/Ruff）                                   | Linux/macOS |
 | `test.sh`                   | scripts/        | 运行四个服务的单元测试（支持指定服务）                                                         | Linux/macOS |
-| `skills-sync.sh`            | scripts/        | 把 skills/ 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）                 | Linux/macOS/Windows |
+| `skills-sync.sh`            | scripts/        | 把 skills/mix-web-demo 镜像同步到本机已存在的 Agent 技能目录（读取 `skills-targets.conf`）            | Linux/macOS/Windows |
 | `run.ps1`                   | scripts/        | PowerShell 脚本，启动所有服务                                                                  | Windows     |
 
 ### 服务名称
@@ -2548,15 +2548,16 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 5. NestJS 项目的 app 创建在 `app`目录下的 `createApp`函数实现，main 函数只进行调用，`app`目录下包含 `app.module.ts`的 NestJS 的包初始化
 6. Spring 项目的 Main 类只进行服务启动，WebClient 等配置在 `core/config` 下使用 `@Configuration` 注解实现，R2DBC 数据库初始化在 `infra/initializer` 下通过响应式 `DatabaseClient` 执行
 
-### Agent 技能包（skills/）
+### Agent 技能包（skills/mix-web-demo/）
 
-仓库根目录的 `skills/` 存放本项目的专属 Agent 技能包，供 AI 编码助手在本仓库内工作时加载，随仓库一起版本管理：
+仓库根目录的 `skills/mix-web-demo/` 存放本项目的专属 Agent 技能包，供 AI 编码助手在本仓库内工作时加载，随仓库一起版本管理；技能包目录名与 `SKILL.md` frontmatter 的 `name` 保持一致：
 
 ```
 skills/
-  SKILL.md                     项目专属编码规范（技能主体）
-  references/
-    unit-testing.md            测试规范（按需加载的参考文件）
+  mix-web-demo/
+    SKILL.md                   项目专属编码规范（技能主体）
+    references/
+      unit-testing.md          测试规范（按需加载的参考文件）
 ```
 
 `SKILL.md` 通过 frontmatter 声明技能名 `mix-web-demo` 与适用场景，正文覆盖：
@@ -2570,7 +2571,7 @@ skills/
 
 ### 同步到本机 Agent 工具（./mix skills）
 
-`./mix skills` 把仓库 `skills/` 镜像同步到本机各 Agent 工具的用户级技能目录，目标清单集中在 `scripts/skills-targets.conf`：
+`./mix skills` 把仓库 `skills/mix-web-demo/` 镜像同步到本机各 Agent 工具的用户级技能目录，目标清单集中在 `scripts/skills-targets.conf`：
 
 ```bash
 # 同步到全部已存在的用户级技能目录
@@ -2588,7 +2589,7 @@ skills/
 1. 清单每行一个用户级技能根目录，`<home>` 表示用户主目录（Linux/macOS 为 `HOME`，Windows 为 `USERPROFILE`），已覆盖 `.codebuddy`、`.workbuddy`、`.claude`、`.codex`、`.agents`、`agents`、`.gemini`、`.qwen`、`.cursor`、`.trae`、`.opencode`、`.github` 等工具的技能目录；需要同步到清单外的工具时，在清单里追加一行即可；仓库内的项目级技能目录不在同步范围内
 2. **只同步技能根目录已存在的目标**，不存在的目录不创建也不迁移，未安装或未使用的工具不会被凭空写入
 3. 同步为镜像覆盖：先删除目标下的同名技能目录再整体复制，源目录删除或改名过的文件不会在目标里残留；内容完全一致时跳过复制，只打印状态
-4. 技能目录名取 `skills/SKILL.md` frontmatter 的 `name` 字段（当前为 `mix-web-demo`）
+4. 技能源目录为 `skills/mix-web-demo`，目录名需与 `SKILL.md` frontmatter 的 `name` 字段一致（当前为 `mix-web-demo`）
 5. 脚本为 `scripts/skills-sync.sh`，只使用 bash 内建与 `cp`、`diff`，Linux/macOS 与 Windows（Git Bash）行为一致，可直接调用：`bash scripts/skills-sync.sh --list`
 
 > **本目录是项目专属技能的备份，实际生效的是对应 Agent 工具自己维护的 skills**。各工具的技能目录不同（`.codebuddy`、`.claude`、`.codex`、`.trae` 等已被 `.gitignore` 忽略，不随仓库分发），这里只保留一份可版本管理的副本，便于审阅、比对与迁移；修改约定时改本目录的文件，再执行 `./mix skills` 同步到实际使用的工具技能目录。
