@@ -23,6 +23,12 @@ WEBSOCKET_PATHS = ("/ws/chat",)
 # 两者都会让提交的产物产生无意义 diff，因此从产物中剔除
 VOLATILE_FIELDS = ("x-date", "x-goctl-version")
 
+# 没有数据的响应统一声明为空数据类型：
+# goctl 对 SyncESResp 这类空结构体只会生成裸 {"type": "object"}，
+# 实空壳用 utils.Success 包装后 data 实际是 null，留成 object 会让 Apifox 展示一个空对象示例
+# 声明与 NestJS 的 SwaggerNullData 保持一致
+EMPTY_DATA_SCHEMA = {"type": "null", "nullable": True, "description": "响应数据"}
+
 
 def add_chinese_tags_to_dict(swagger_data):
     """
@@ -168,6 +174,9 @@ def wrap_unified_responses(swagger_data):
                 payload_schema = schema
                 if isinstance(properties, dict) and "data" in properties:
                     payload_schema = properties["data"]
+                # 无字段的响应体（SyncESResp、SSE 的 400 兜底体等）只有裸 object，实际 data 为 null
+                if not isinstance(payload_schema, dict) or is_empty_object_schema(payload_schema):
+                    payload_schema = dict(EMPTY_DATA_SCHEMA)
 
                 json_media["schema"] = {
                     "type": "object",
@@ -182,15 +191,24 @@ def wrap_unified_responses(swagger_data):
                             "type": "string",
                             "description": "响应消息",
                         },
-                        "data": payload_schema
-                        if payload_schema
-                        else {
-                            "nullable": True,
-                            "description": "响应数据",
-                        },
+                        "data": payload_schema,
                     },
                     "required": ["code", "msg", "data"],
                 }
+
+
+def is_empty_object_schema(schema):
+    """判断是否为没有任何结构信息的裸 object
+
+    只有 type 为 object，且没有 properties/additionalProperties/items/组合或引用时才成立，
+    避免把 SqlToolsQueryResp 这类真正的 map 或结构体误判成空数据
+    """
+    if not isinstance(schema, dict) or schema.get("type") != "object":
+        return False
+    for key in ("properties", "additionalProperties", "items", "allOf", "anyOf", "oneOf", "$ref"):
+        if key in schema:
+            return False
+    return True
 
 
 def drop_volatile_fields(swagger_data):

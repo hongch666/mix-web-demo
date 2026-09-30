@@ -779,7 +779,9 @@
                       "description": "响应消息"
                     },
                     "data": {
-                      "type": "object"
+                      "type": "null",
+                      "nullable": true,
+                      "description": "响应数据"
                     }
                   },
                   "required": [
@@ -821,7 +823,9 @@
                       "description": "响应消息"
                     },
                     "data": {
-                      "type": "object"
+                      "type": "null",
+                      "nullable": true,
+                      "description": "响应数据"
                     }
                   },
                   "required": [

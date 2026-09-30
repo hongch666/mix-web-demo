@@ -563,7 +563,9 @@ paths:
                     type: string
                     description: 响应消息
                   data:
-                    type: object
+                    type: 'null'
+                    nullable: true
+                    description: 响应数据
                 required:
                 - code
                 - msg
@@ -592,7 +594,9 @@ paths:
                     type: string
                     description: 响应消息
                   data:
-                    type: object
+                    type: 'null'
+                    nullable: true
+                    description: 响应数据
                 required:
                 - code
                 - msg
