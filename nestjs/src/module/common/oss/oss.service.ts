@@ -74,6 +74,7 @@ export class OssService implements OnModuleInit {
       bucket: this.bucketName,
       endpoint: this.endpoint,
       secure: true,
+      enableProxy: true,
     });
   }
 

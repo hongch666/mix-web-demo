@@ -5,6 +5,7 @@ declare module "ali-oss" {
     bucket: string;
     endpoint: string;
     secure?: boolean;
+    enableProxy?: boolean;
     [key: string]: unknown;
   }
 
