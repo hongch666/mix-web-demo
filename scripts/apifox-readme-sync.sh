@@ -11,7 +11,6 @@
 #   --skip-if-unset 未配置 APIFOX_README_DOC_ID 时打印提示并跳过，供 ./mix apifox 调用
 #   --no-install   未安装 Apifox CLI 时不自动安装（默认自动安装）
 #   --keep-toc     保留 README 的「## 目录」章节（默认剔除）
-#   --no-banner    不在正文顶部插入自动同步提示
 #   --no-verify    写入后不回头校验文档内容
 #   -h, --help     显示帮助
 # 配置：令牌与项目 ID 从根目录 .env 读取，变量说明见 .env.example
@@ -22,7 +21,6 @@ DEFAULT_README_FILE="README.md"
 DEFAULT_FOLDER_ID="0"
 DEFAULT_CLI_REGISTRY="https://registry.npmmirror.com/"
 DEFAULT_AUTO_INSTALL="true"
-BANNER_TEXT="> 本文档由仓库 README.md 自动同步，请勿在 Apifox 侧直接编辑；改动请提交 README.md 后重新执行 ./mix apifox-readme"
 MAX_NAME_LENGTH=255
 LARGE_CONTENT_BYTES=200000
 
@@ -47,13 +45,12 @@ print_error() {
 }
 
 show_usage() {
-    echo "用法: ./scripts/apifox-readme-sync.sh [--dry-run] [--create] [--skip-if-unset] [--no-install] [--keep-toc] [--no-banner] [--no-verify]"
+    echo "用法: ./scripts/apifox-readme-sync.sh [--dry-run] [--create] [--skip-if-unset] [--no-install] [--keep-toc] [--no-verify]"
     echo "  目标文档由 APIFOX_README_DOC_ID 指定，未配置时可加 --create 创建"
     echo "  --dry-run   只生成并校验导入内容，不写入 Apifox"
     echo "  --skip-if-unset 未配置文档 ID 时跳过而不报错"
     echo "  --no-install 未安装 Apifox CLI 时不自动安装"
     echo "  --keep-toc  保留 README 的「## 目录」章节"
-    echo "  --no-banner 不在正文顶部插入自动同步提示"
 }
 
 # ==================== 环境变量读取 ====================
@@ -164,19 +161,14 @@ json_escape_multiline() {
 
 # ==================== 正文准备 ====================
 
-# 生成待同步正文：可选自动同步提示 + 剔除「## 目录」锚点章节
+# 生成待同步正文：原样同步 README，可选剔除「## 目录」锚点章节
 # 锚点目录在 Apifox 侧跳转不了，留着只会误导阅读
 prepare_content() {
     local source_file="$1"
     local target_file="$2"
     local strip_toc="$3"
-    local with_banner="$4"
 
     : > "$target_file"
-
-    if [ "$with_banner" = "true" ]; then
-        printf '%s\n\n' "$BANNER_TEXT" >> "$target_file"
-    fi
 
     if [ "$strip_toc" = "true" ]; then
         awk '
@@ -322,7 +314,6 @@ main() {
     local dry_run="false"
     local allow_create="false"
     local strip_toc="true"
-    local with_banner="true"
     local verify="true"
     local skip_if_unset="false"
     local no_install="false"
@@ -338,9 +329,6 @@ main() {
                 ;;
             --keep-toc)
                 strip_toc="false"
-                ;;
-            --no-banner)
-                with_banner="false"
                 ;;
             --no-verify)
                 verify="false"
@@ -424,7 +412,7 @@ main() {
     local payload_file="$TMP_DIR/doc-payload.json"
     local schema_key="doc-update"
 
-    prepare_content "$readme_file" "$content_file" "$strip_toc" "$with_banner"
+    prepare_content "$readme_file" "$content_file" "$strip_toc"
 
     if [ -z "$doc_id" ]; then
         if [ "$allow_create" = "true" ]; then
