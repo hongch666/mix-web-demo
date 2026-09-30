@@ -2852,8 +2852,9 @@ components:
           type: "string"
           description: "响应信息"
         data:
-          type: "object"
+          type: "null"
           description: "返回数据"
+          nullable: true
       description: "统一响应"
     CommentUpdateDTO:
       required:
