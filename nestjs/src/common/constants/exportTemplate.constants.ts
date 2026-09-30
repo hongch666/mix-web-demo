@@ -6,10 +6,6 @@
  * - Markdown 对换行与缩进敏感，模板体顶格书写
  */
 export class ExportTemplate {
-  // ===== 页面设置 =====
-  static readonly PAGE_SIZE = "A4";
-  static readonly PAGE_MARGIN = "15mm";
-
   /**
    * 渲染文章 PDF 的完整 HTML
    * @param title 文章标题
@@ -240,4 +236,8 @@ export class ExportTemplate {
 
         ${content}
     `;
+
+  // ===== 页面设置 =====
+  static readonly PAGE_SIZE = "A4";
+  static readonly PAGE_MARGIN = "15mm";
 }

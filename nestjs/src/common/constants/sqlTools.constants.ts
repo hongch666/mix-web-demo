@@ -2,6 +2,13 @@
  * SQL 工具常量 — 表名白名单、只读前缀白名单、正则、SQL模板、查询限制等
  */
 export class SqlTools {
+  // ===== SQL 模板函数 =====
+  static readonly SHOW_COLUMNS_SQL = (tableName: string): string =>
+    `SHOW COLUMNS FROM \`${tableName}\``;
+
+  static readonly COUNT_ROWS_SQL = (tableName: string): string =>
+    `SELECT COUNT(*) AS cnt FROM \`${tableName}\` WHERE 1 LIMIT 1`;
+
   // ===== 表名白名单（仅开放 NestJS 自管的表） =====
   static readonly TABLE_WHITELIST = new Set<string>(["user_table_settings"]);
 
@@ -28,11 +35,4 @@ export class SqlTools {
 
   // ===== SQL 查询最大返回行数（LIMIT 上限） =====
   static readonly MAX_LIMIT = 100;
-
-  // ===== SQL 模板函数 =====
-  static readonly SHOW_COLUMNS_SQL = (tableName: string): string =>
-    `SHOW COLUMNS FROM \`${tableName}\``;
-
-  static readonly COUNT_ROWS_SQL = (tableName: string): string =>
-    `SELECT COUNT(*) AS cnt FROM \`${tableName}\` WHERE 1 LIMIT 1`;
 }
