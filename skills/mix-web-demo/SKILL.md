@@ -373,7 +373,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - `scripts/run.sh` 的运行工具默认值：`--java-build` 默认 `maven`、`--node-runtime` 默认 `bun`、`--python-runtime` 默认 `uv`
 - 两套容器编排的容器名不同：`./mix docker` 用 `mix-<service>-container`，`./mix compose` 用 `mix-<service>`（compose 的 `container_name`）
 - `README.md` 行尾由 `.gitattributes` 统一为 LF，批量改文档按「归一化 LF → 断言唯一性后替换」处理，不要逐处手工编辑
-- 本技能包改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/skills-sync.sh`（Windows 在 Git Bash 下执行）
+- 本技能包（`skills/mix-web-demo/`，目录名与 SKILL.md 的 `name` 一致）改完后用 `./mix skills` 同步到本机 Agent 技能目录：目标清单在 `scripts/skills-targets.conf`（只列用户级 `<home>` 技能目录，可自行追加工具，仓库内项目级目录不参与），只同步技能根目录已存在的目标，同步为镜像覆盖且内容一致时跳过；`--list` 看检测结果、`--dry-run` 预演，脚本为 `scripts/skills-sync.sh`（Windows 在 Git Bash 下执行）
 
 ## 接口文档收尾流程
 

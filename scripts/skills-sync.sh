@@ -1,17 +1,20 @@
 #!/bin/bash
 
 # 脚本说明：
-# 把仓库根目录 skills/ 下的项目技能包同步到本机各 Agent 工具的用户级技能目录
+# 把仓库 skills/mix-web-demo/ 下的项目技能包同步到本机各 Agent 工具的用户级技能目录
+#   - 技能包目录名即技能名，需与 SKILL.md frontmatter 的 name 字段一致
 #   - 目标清单见 scripts/skills-targets.conf，<home> 为用户主目录
 #   - 只同步「技能根目录已存在」的目标，不存在的目录不创建也不迁移
-#   - 同步为镜像覆盖：先删除目标下的同名技能目录再从 skills/ 复制，源目录删掉的文件不会残留
+#   - 同步为镜像覆盖：先删除目标下的同名技能目录再从源目录复制，源目录删掉的文件不会残留
 #   - 脚本只使用 bash 内建与 cp、diff，Linux、macOS、Windows（Git Bash）行为一致
 # 用法：./scripts/skills-sync.sh [--dry-run] [--list]
 #   --dry-run  只打印将要执行的动作，不写任何文件
 #   --list     只列出目标清单与检测结果，不同步
 
 WORKDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SOURCE_DIR="$WORKDIR/skills"
+SKILLS_DIR="$WORKDIR/skills"
+SKILL_NAME="mix-web-demo"
+SOURCE_DIR="$SKILLS_DIR/$SKILL_NAME"
 TARGETS_FILE="$WORKDIR/scripts/skills-targets.conf"
 
 # 颜色输出
@@ -39,7 +42,7 @@ show_help() {
     echo ""
     echo "用法: ./scripts/skills-sync.sh [--dry-run] [--list]"
     echo ""
-    echo "  不带参数    把 skills/ 同步到本机已存在的用户级 Agent 技能目录"
+    echo "  不带参数    把 skills/mix-web-demo 同步到本机已存在的用户级 Agent 技能目录"
     echo "  --dry-run   只打印将要执行的动作，不写任何文件"
     echo "  --list      只列出目标清单与检测结果，不同步"
     echo ""
@@ -98,8 +101,8 @@ if [ -z "$HOME_DIR" ]; then
 fi
 HOME_DIR="${HOME_DIR//\\//}"
 
-# 技能目录名取 skills/SKILL.md frontmatter 的 name，缺失时退回 mix-web-demo
-SKILL_NAME="mix-web-demo"
+# 技能包目录名必须与 SKILL.md frontmatter 的 name 一致，Agent 工具按目录名识别技能
+FRONTMATTER_NAME=""
 IN_FRONTMATTER=0
 while IFS= read -r LINE || [ -n "$LINE" ]; do
     LINE="${LINE%$'\r'}"
@@ -118,7 +121,7 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
                 VALUE="${VALUE#"${VALUE%%[![:space:]]*}"}"
                 VALUE="${VALUE%"${VALUE##*[![:space:]]}"}"
                 if [ -n "$VALUE" ]; then
-                    SKILL_NAME="$VALUE"
+                    FRONTMATTER_NAME="$VALUE"
                 fi
                 break
                 ;;
@@ -126,12 +129,10 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
     fi
 done < "$SOURCE_DIR/SKILL.md"
 
-case "$SKILL_NAME" in
-    ""|*/*|*\\*|*..*)
-        print_error "技能名非法: $SKILL_NAME"
-        exit 1
-        ;;
-esac
+if [ -n "$FRONTMATTER_NAME" ] && [ "$FRONTMATTER_NAME" != "$SKILL_NAME" ]; then
+    print_error "技能目录名与 SKILL.md 的 name 不一致: $SKILL_NAME != $FRONTMATTER_NAME"
+    exit 1
+fi
 
 # ==================== 工具函数 ====================
 
