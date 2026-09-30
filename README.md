@@ -2391,8 +2391,8 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 同步行为：
 
 1. 目标文档由 `APIFOX_README_DOC_ID` 指定，未配置时用 `--create` 创建，名称取 `APIFOX_README_DOC_NAME` 或 README 第一个一级标题
-2. 默认剔除 README 的「## 目录」锚点章节（Apifox 侧跳转不了），可用 `--keep-toc` 保留
-3. 默认在正文顶部插入一行自动同步提示，可用 `--no-banner` 关闭
+2. 正文原样同步 README，不额外插入任何提示行
+3. 默认剔除 README 的「## 目录」锚点章节（Apifox 侧跳转不了），可用 `--keep-toc` 保留
 4. 写入前用 `apifox cli-schema validate` 校验 payload 结构，写入后回读文档校验正文标记，失败以非零状态码退出
 5. 更新已有文档时不会改名（除非显式配置 `APIFOX_README_DOC_NAME`），也不会动 Apifox 侧手工整理的目录结构
 6. 文档与接口同属 `APIFOX_PROJECT_ID` 指定的项目：未配置 `APIFOX_README_DOC_MODULE_ID` 时落在默认模块，`APIFOX_README_DOC_FOLDER_ID` 填 `0` 即落在 API 目录树根，与接口目录同级；填接口目录 ID 则直接挂在那个目录里
