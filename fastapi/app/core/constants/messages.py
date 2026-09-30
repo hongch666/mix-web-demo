@@ -1416,12 +1416,6 @@ class Messages:
     def WORDCLOUD_CACHE_URL_FAILED(error: Exception) -> str:
         return f"缓存词云图URL失败: {error}"
 
-    WORDCLOUD_ADS_SOURCE: str = "词云关键词使用 ClickHouse ADS 数据源"
-
-    WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS: str = (
-        "ClickHouse 词云关键词 ADS 层暂无数据，降级为 NestJS 查询"
-    )
-
     @staticmethod
     def WORDCLOUD_ADS_QUERY_FAILED(error: Exception) -> str:
         return f"ClickHouse 词云关键词 ADS 查询失败，降级为 NestJS: {error}"
@@ -1532,8 +1526,6 @@ class Messages:
     def WAREHOUSE_API_LOG_SYNC_SUCCESS(table_name: str, count: int) -> str:
         return f"ClickHouse API日志 ODS 同步完成: {table_name}, rows={count}"
 
-    WAREHOUSE_REFRESH_SKIPPED: str = "ClickHouse 数仓无新增数据，跳过派生层刷新"
-
     @staticmethod
     def WAREHOUSE_DIRTY_PARTITIONS(partitions: list[str]) -> str:
         return f"ClickHouse 数仓本次受影响分区: {partitions}"
@@ -1547,8 +1539,6 @@ class Messages:
             f"reason={error}"
         )
 
-    WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
-
     @staticmethod
     def WAREHOUSE_SCHEMA_CREATION_FAILED(error: Any) -> str:
         return f"ClickHouse 数仓 ORM 表初始化失败: {error}"
@@ -1557,12 +1547,6 @@ class Messages:
     def APILOG_CLICKHOUSE_QUERY_FAILED(error: Exception) -> str:
         return f"ClickHouse API日志 ADS 查询失败: {error}"
 
-    APILOG_ADS_SOURCE: str = "API日志分析使用 ClickHouse ADS 数据源"
-
-    APILOG_ADS_EMPTY_FALLBACK_REMOTE: str = (
-        "ClickHouse API日志 ADS 层暂无数据，降级为远程查询"
-    )
-
     @staticmethod
     def WAREHOUSE_REFRESH_FAILED(error: Exception) -> str:
         return f"ClickHouse 数仓同步失败: {error}"
@@ -1570,6 +1554,22 @@ class Messages:
     @staticmethod
     def USER_ANALYSIS_METRIC_UNSUPPORTED(metric: str) -> str:
         return f"不支持的用户分析指标: {metric}"
+
+    WORDCLOUD_ADS_SOURCE: str = "词云关键词使用 ClickHouse ADS 数据源"
+
+    WORDCLOUD_ADS_EMPTY_FALLBACK_NESTJS: str = (
+        "ClickHouse 词云关键词 ADS 层暂无数据，降级为 NestJS 查询"
+    )
+
+    WAREHOUSE_REFRESH_SKIPPED: str = "ClickHouse 数仓无新增数据，跳过派生层刷新"
+
+    WAREHOUSE_SCHEMA_READY: str = "ClickHouse 数仓库表检查通过（全部存在）"
+
+    APILOG_ADS_SOURCE: str = "API日志分析使用 ClickHouse ADS 数据源"
+
+    APILOG_ADS_EMPTY_FALLBACK_REMOTE: str = (
+        "ClickHouse API日志 ADS 层暂无数据，降级为远程查询"
+    )
 
     WAREHOUSE_LOCK_NOT_ACQUIRED: str = (
         "ClickHouse 数仓任务未获取到分布式锁，跳过本次执行"
