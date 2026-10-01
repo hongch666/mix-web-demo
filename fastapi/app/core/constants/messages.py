@@ -1634,10 +1634,6 @@ class Messages:
     # ===== Nacos =====
     NACOS_REGISTER_SUCCESS: str = "注册到 nacos 成功"
 
-    NACOS_REGISTER_DEV_MODE_MESSAGE: str = (
-        "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
-    )
-
     # ===== 异常处理 =====
     EXCEPTION_HANDLER_MESSAGE: str = "FastAPI服务器错误"
 

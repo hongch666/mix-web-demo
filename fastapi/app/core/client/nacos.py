@@ -28,7 +28,6 @@ RETRY_INTERVAL: int = int(nacos_config["retry_interval"])
 
 server_config: dict[str, Any] = load_config("server")
 IP: str = server_config["ip"]
-SERVER_MODE: str = str(server_config["mode"]).strip().lower()
 PORT: int = server_config["port"]
 
 
@@ -74,14 +73,10 @@ client: nacos.NacosClient = _build_client()
 def _get_registration_ip(ip: str) -> str:
     """
     获取用于 Nacos 注册的 IP 地址
-    - 如果 SERVER_MODE=dev，统一使用 127.0.0.1
-    - 其他模式下，ip 为空、127.0.0.1 或 0.0.0.0 时获取真实 IP 地址
+    - 网关以容器运行，注册地址必须是容器能回连的地址，不能固定为 127.0.0.1
+    - ip 为空、127.0.0.1 或 0.0.0.0 时获取真实 IP 地址
     - 否则直接使用传入的 IP
     """
-
-    if SERVER_MODE == "dev":
-        Logger.info(Messages.NACOS_REGISTER_DEV_MODE_MESSAGE)
-        return "127.0.0.1"
 
     if not ip or ip == "127.0.0.1" or ip == "0.0.0.0":
         # 自动解析真实 IP
