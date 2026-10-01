@@ -434,6 +434,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 需要根目录 `.env` 中的 `APIFOX_ACCESS_TOKEN` 与 `APIFOX_PROJECT_ID`；未配置时脚本会直接报错退出，这种情况先提交文档产物，把同步留到配好令牌的环境执行
 - 按服务串行导入，输出「新增 / 更新 / 忽略 / 失败」计数；出现失败计数或非零退出码必须排查后重试，不要当成噪声放过
 - 覆盖策略默认 `AUTO_MERGE`，保留 Apifox 侧手工维护的中文名、mock 与返回示例，只按文档更新结构化内容
+- 导入前会为每个接口补写 Apifox 责任人扩展 `x-apifox-maintainer`（值取团队内昵称或用户账户名），默认取 `APIFOX_ACCESS_TOKEN` 对应账号的用户名；可用 `APIFOX_MAINTAINER` 显式指定，或用 `--no-maintainer` 关闭填充
+- 该扩展会被 Apifox 保留在接口 `oasExtensions` 里并在文档页多渲染一行 `x-apifox-maintainer`，脚本导入后会再导入一次不带扩展的原文档把它清掉（`APIFOX_MAINTAINER_CLEAN_EXTENSION=false` 可保留），责任人字段不受影响
 - 令牌等同账号密码，脚本输出不回显令牌，根目录 `.env` 已被 `.gitignore` 忽略
 - `./mix apifox` 现在一次做完两件事：接口走开放 API 导入，README 走 Apifox CLI（`doc create` / `doc update`）写入 `APIFOX_README_DOC_ID` 指定的项目 Markdown 文档；README 目标未配置或未装 CLI 时该步骤跳过并提示，不影响接口导入。`--no-readme` 只同步接口，`--create-readme` 首次创建 README 文档，单独同步用 `./mix apifox-readme`
 

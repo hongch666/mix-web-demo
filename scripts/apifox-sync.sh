@@ -8,10 +8,13 @@
 #   fastapi -> fastapi/docs/openapi.json
 #   README  -> apifox-readme-sync.sh（Apifox CLI 的 doc create / doc update，未配置文档 ID 时跳过）
 # 只读取仓库内的静态产物，不启动任何服务，也不访问本地中间件
-# 依赖：curl、sed、tr、grep、mktemp，均为 Git Bash / WSL / Linux 自带，不需要 Python 或 jq
-# 用法：./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--create-readme]
+# 导入前会为每个接口补写 Apifox 责任人扩展 x-apifox-maintainer，默认取令牌账号的用户名
+# 该扩展会被 Apifox 保留在接口的 oasExtensions 里并在文档页多渲染一行，导入后会再导入一次原文档把它清掉
+# 依赖：curl、sed、tr、grep、awk、mktemp，均为 Git Bash / WSL / Linux 自带，不需要 Python 或 jq
+# 用法：./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--no-maintainer] [--create-readme]
 #   service 可选值：gozero、spring、nestjs、fastapi，不指定时同步全部
 #   --no-readme 只同步接口，不处理 README
+#   --no-maintainer 只导入接口，不填充责任人
 #   --create-readme README 目标文档不存在时先创建（其余场景跳过并提示）
 #   令牌与项目 ID 从根目录 .env 读取，变量说明见 .env.example
 
@@ -22,6 +25,8 @@ DEFAULT_BASE_URL="https://api.apifox.com"
 DEFAULT_API_VERSION="2024-03-28"
 DEFAULT_LOCALE="zh-CN"
 DEFAULT_OVERWRITE_BEHAVIOR="AUTO_MERGE"
+DEFAULT_MAINTAINER_AUTO="true"
+DEFAULT_MAINTAINER_CLEAN_EXTENSION="true"
 RETRY_TIMES=3
 RETRY_INTERVAL_SECONDS=3
 REQUEST_TIMEOUT_SECONDS=180
@@ -47,10 +52,11 @@ print_error() {
 }
 
 show_usage() {
-    echo "用法: ./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--create-readme]"
+    echo "用法: ./scripts/apifox-sync.sh [service...] [--dry-run] [--no-readme] [--no-maintainer] [--create-readme]"
     echo "  service 可选值：gozero、spring、nestjs、fastapi，不指定时同步全部"
     echo "  --dry-run 只校验产物与配置，不发起导入请求"
     echo "  --no-readme 只同步接口文档，不处理 README"
+    echo "  --no-maintainer 不填充接口责任人"
     echo "  --create-readme 未配置 README 目标文档时先创建"
 }
 
@@ -244,6 +250,78 @@ extract_error_messages() {
     return 0
 }
 
+extract_json_string() {
+    local json="$1"
+    local key="$2"
+    printf '%s' "$json" \
+        | grep -o "\"$key\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" \
+        | head -n 1 \
+        | sed -e 's/^"[^"]*"[[:space:]]*:[[:space:]]*"//' -e 's/"$//'
+    return 0
+}
+
+# ==================== 责任人填充 ====================
+
+# 用令牌反查当前账号信息，取责任人标识
+# 优先「用户账户名」（团队内唯一），缺失时回退「昵称」，两者都是 x-apifox-maintainer 的合法取值
+# 这里读的是 Apifox CLI auth whoami 同一个账号接口，只是额外拿到了用户名与昵称
+resolve_maintainer() {
+    local user_json value
+    user_json=$(curl -sS -X GET "$base_url/api/v1/user" \
+        -H "Authorization: Bearer $token" \
+        -H "X-Apifox-Api-Version: $api_version" \
+        --max-time "$REQUEST_TIMEOUT_SECONDS" 2>/dev/null)
+    if [ -z "$user_json" ]; then
+        return 1
+    fi
+
+    value=$(extract_json_string "$user_json" username)
+    if [ -z "$value" ]; then
+        value=$(extract_json_string "$user_json" name)
+    fi
+    if [ -z "$value" ]; then
+        return 1
+    fi
+
+    printf '%s' "$value"
+    return 0
+}
+
+# 给每个 operation 补写 x-apifox-maintainer，导入后接口责任人即被填充
+# 扩展字段挂在 operationId 之后，缩进沿用该行，因此四份产物的排版差异都能正确落地
+inject_maintainer() {
+    local spec_file="$1"
+    local name="$2"
+    local out_file="$3"
+    local escaped
+    escaped=$(printf '%s' "$name" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+
+    awk -v maintainer="$escaped" '
+        {
+            if ($0 ~ /^[[:space:]]*"operationId"[[:space:]]*:[[:space:]]*"[^"]*"[[:space:]]*,?[[:space:]]*$/) {
+                indent = $0
+                sub(/[^[:space:]].*$/, "", indent)
+                line = $0
+                sub(/[[:space:]]*$/, "", line)
+                if (line ~ /,$/) {
+                    print line
+                    print indent "\"x-apifox-maintainer\": \"" maintainer "\","
+                } else {
+                    print line ","
+                    print indent "\"x-apifox-maintainer\": \"" maintainer "\""
+                }
+            } else {
+                print
+            }
+        }
+    ' "$spec_file" > "$out_file"
+    return 0
+}
+
+count_operations() {
+    grep -c '"operationId"[[:space:]]*:' "$1" 2>/dev/null || true
+}
+
 # ==================== 请求发送 ====================
 
 post_import_openapi() {
@@ -303,6 +381,7 @@ post_import_openapi() {
 main() {
     local dry_run="false"
     local readme_enabled="true"
+    local maintainer_enabled="true"
     local create_readme="false"
     local service_args=""
     local arg
@@ -313,6 +392,9 @@ main() {
                 ;;
             --no-readme)
                 readme_enabled="false"
+                ;;
+            --no-maintainer)
+                maintainer_enabled="false"
                 ;;
             --create-readme)
                 create_readme="true"
@@ -394,6 +476,24 @@ main() {
         print_info "dry-run 模式：只校验产物与配置，不发起导入请求"
     fi
 
+    # 责任人：显式配置优先，未配置且开启自动解析时取令牌账号的用户名
+    local maintainer=""
+    if [ "$maintainer_enabled" = "true" ]; then
+        maintainer=$(env_value APIFOX_MAINTAINER "")
+        if [ -n "$maintainer" ]; then
+            print_info "责任人：$maintainer（来自 APIFOX_MAINTAINER）"
+        elif [ "$(env_flag APIFOX_MAINTAINER_AUTO "$DEFAULT_MAINTAINER_AUTO")" = "true" ]; then
+            maintainer=$(resolve_maintainer || true)
+            if [ -n "$maintainer" ]; then
+                print_info "责任人：$maintainer（取自令牌账号）"
+            else
+                print_warn "未能从令牌账号解析出责任人，接口将不带责任人；可用 APIFOX_MAINTAINER 显式指定"
+            fi
+        fi
+    fi
+
+    clean_extension=$(env_flag APIFOX_MAINTAINER_CLEAN_EXTENSION "$DEFAULT_MAINTAINER_CLEAN_EXTENSION")
+
     TMP_DIR=$(mktemp -d 2>/dev/null)
     if [ -z "$TMP_DIR" ] || [ ! -d "$TMP_DIR" ]; then
         print_error "无法创建临时目录，请检查系统 mktemp 是否可用"
@@ -416,15 +516,29 @@ main() {
 
         options_json=$(build_options_json "$service")
 
+        # 有责任人时先生成一份带 x-apifox-maintainer 的副本，导入用它，仓库产物保持不动
+        local import_spec="$spec_file"
+        local injected_spec="false"
+        if [ -n "$maintainer" ]; then
+            import_spec="$TMP_DIR/$service-spec.json"
+            inject_maintainer "$spec_file" "$maintainer" "$import_spec"
+            injected_spec="true"
+            local injected
+            injected=$(count_operations "$import_spec")
+            if [ "$injected" != "$(count_operations "$spec_file")" ]; then
+                print_warn "[$service] 责任人注入数（$injected）与接口数不一致，部分接口可能未带上责任人"
+            fi
+        fi
+
         if [ "$dry_run" = "true" ]; then
-            print_info "[$service] 文档 $(wc -c < "$spec_file" | tr -d ' ') 字节，导入选项 $options_json"
+            print_info "[$service] 文档 $(wc -c < "$spec_file" | tr -d ' ') 字节，导入选项 $options_json${maintainer:+，责任人 $maintainer}"
             continue
         fi
 
         payload_file="$TMP_DIR/$service-payload.json"
         response_file="$TMP_DIR/$service-response.json"
         curl_err_file="$TMP_DIR/$service-curl.err"
-        build_payload_file "$spec_file" "$options_json" "$payload_file"
+        build_payload_file "$import_spec" "$options_json" "$payload_file"
 
         url="$base_url/v1/projects/$project_id/import-openapi?locale=$locale"
         if ! post_import_openapi "$url" "$payload_file" "$response_file" "$curl_err_file"; then
@@ -453,6 +567,19 @@ main() {
                 done
             fi
             failed_services="$failed_services $service"
+            continue
+        fi
+
+        # Apifox 解析责任人后仍会把扩展原样留在接口的 oasExtensions 里，文档页会多渲染一行
+        # 用不带扩展的原文档再导入一次即可清掉，责任人字段已经落库不受影响
+        if [ "$injected_spec" = "true" ] && [ "$clean_extension" = "true" ]; then
+            payload_file="$TMP_DIR/$service-payload-clean.json"
+            build_payload_file "$spec_file" "$options_json" "$payload_file"
+            if post_import_openapi "$url" "$payload_file" "$response_file" "$curl_err_file"; then
+                print_info "[$service] 已清理接口文档残留的 x-apifox-maintainer 扩展行"
+            else
+                print_warn "[$service] 扩展残留清理失败，接口文档可能多出一行 x-apifox-maintainer"
+            fi
         fi
     done
 

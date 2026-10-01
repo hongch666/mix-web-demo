@@ -126,6 +126,7 @@ show_help() {
     echo "  ./mix apifox                   # Sync all service docs/ and README to Apifox"
     echo "  ./mix apifox spring --dry-run  # Check a single service without uploading"
     echo "  ./mix apifox --no-readme       # Sync service docs only, skip README"
+    echo "  ./mix apifox --no-maintainer   # Sync endpoint docs without filling the responsible person"
     echo "  ./mix apifox --create-readme   # Create the README doc when no doc ID is configured"
     echo "  ./mix apifox-readme            # Sync README.md into the configured Apifox doc"
     echo "  ./mix apifox-readme --dry-run  # Build and validate the doc payload without writing"
