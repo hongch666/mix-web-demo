@@ -10,11 +10,14 @@ import (
 	"app/internal/svc"
 	"app/internal/task/logic"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
 )
 
+type RedisLockFactory func(*redis.Client) *utils.RedisDistributedLock
+
 // NewTaskScheduler 创建并启动定时任务调度器，由调用方挂到 ServiceContext 上
-func NewTaskScheduler(svcCtx *svc.ServiceContext) *cron.Cron {
+func NewTaskScheduler(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory) *cron.Cron {
 	scheduler := cron.New()
 
 	// 每小时同步一次 ES
@@ -31,7 +34,7 @@ func NewTaskScheduler(svcCtx *svc.ServiceContext) *cron.Cron {
 			return
 		}
 
-		lock := utils.NewRedisDistributedLock(svcCtx.RedisClient)
+		lock := lockFactory(svcCtx.RedisClient)
 		lockValue, err := lock.TryLock(ctx, lockKey, constants.LOCK_TASK_ES_SYNC_EXPIRE)
 		if err != nil {
 			logger.Error(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_ERROR, err))

@@ -22,11 +22,10 @@ import (
 
 // 创建 HubContext 实例，初始化各业务 Hub 依赖
 func newHubContext(zLogger *utils.ZeroLogger) *HubContext {
-	sseHub := hub.GetSSEHub()
-	sseHub.ZeroLogger = zLogger
+	sseHub := hub.NewSSEHub(zLogger)
 
 	return &HubContext{
-		ChatHub: &hub.ChatHub{ZeroLogger: zLogger},
+		ChatHub: hub.NewChatHub(zLogger),
 		SSEHub:  sseHub,
 	}
 }

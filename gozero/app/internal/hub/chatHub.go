@@ -20,6 +20,7 @@ import (
 type Client struct {
 	UserID       int64
 	ConnectionID string
+	hub          *ChatHub
 	Conn         *websocket.Conn
 	Send         chan []byte
 	MarkRead     func(context.Context, int64, int64, uint64) error
@@ -27,14 +28,7 @@ type Client struct {
 	*utils.ZeroLogger
 }
 
-// 全局聊天队列管理
-var (
-	chatQueue = &ChatQueue{
-		clients: make(map[int64]map[string]*Client),
-		mu:      sync.RWMutex{},
-	}
-	chatConnectionSeq atomic.Uint64
-)
+var chatConnectionSeq atomic.Uint64
 
 type ChatQueue struct {
 	clients map[int64]map[string]*Client // userID -> connectionID -> client
@@ -42,7 +36,16 @@ type ChatQueue struct {
 }
 
 type ChatHub struct {
+	queue *ChatQueue
 	*utils.ZeroLogger
+}
+
+func NewChatQueue() *ChatQueue {
+	return &ChatQueue{clients: make(map[int64]map[string]*Client)}
+}
+
+func NewChatHub(logger *utils.ZeroLogger) *ChatHub {
+	return &ChatHub{queue: NewChatQueue(), ZeroLogger: logger}
 }
 
 // NewConnectionID 生成连接标识
@@ -59,12 +62,18 @@ func (s *ChatHub) JoinQueue(userID int64, client *Client) {
 		client.ConnectionID = NewConnectionID("ws")
 	}
 
-	chatQueue.mu.Lock()
-	if _, ok := chatQueue.clients[userID]; !ok {
-		chatQueue.clients[userID] = make(map[string]*Client)
+	queue := s.queue
+	if queue == nil {
+		queue = NewChatQueue()
+		s.queue = queue
 	}
-	chatQueue.clients[userID][client.ConnectionID] = client
-	chatQueue.mu.Unlock()
+	queue.mu.Lock()
+	if _, ok := queue.clients[userID]; !ok {
+		queue.clients[userID] = make(map[string]*Client)
+	}
+	queue.clients[userID][client.ConnectionID] = client
+	client.hub = s
+	queue.mu.Unlock()
 	if s.ZeroLogger != nil {
 		client.ZeroLogger = s.ZeroLogger
 	}
@@ -75,14 +84,18 @@ func (s *ChatHub) JoinQueue(userID int64, client *Client) {
 
 // 离开队列
 func (s *ChatHub) LeaveQueue(userID int64) {
-	chatQueue.mu.Lock()
-	if clients, ok := chatQueue.clients[userID]; ok {
-		delete(chatQueue.clients, userID)
+	queue := s.queue
+	if queue == nil {
+		return
+	}
+	queue.mu.Lock()
+	if clients, ok := queue.clients[userID]; ok {
+		delete(queue.clients, userID)
 		for _, client := range clients {
 			client.Shutdown()
 		}
 	}
-	chatQueue.mu.Unlock()
+	queue.mu.Unlock()
 	if s.ZeroLogger != nil {
 		s.Info(constants.USER_LEFT_QUEUE_MESSAGE)
 	}
@@ -94,17 +107,21 @@ func (s *ChatHub) LeaveQueueIfMatch(userID int64, connectionID string, client *C
 		return
 	}
 
-	chatQueue.mu.Lock()
-	currentClients, ok := chatQueue.clients[userID]
+	queue := s.queue
+	if queue == nil {
+		return
+	}
+	queue.mu.Lock()
+	currentClients, ok := queue.clients[userID]
 	currentClient, exists := currentClients[connectionID]
 	if ok && exists && currentClient == client {
 		client.Shutdown()
 		delete(currentClients, connectionID)
 		if len(currentClients) == 0 {
-			delete(chatQueue.clients, userID)
+			delete(queue.clients, userID)
 		}
 	}
-	chatQueue.mu.Unlock()
+	queue.mu.Unlock()
 	if ok && exists && currentClient == client && s.ZeroLogger != nil {
 		s.Info(constants.USER_LEFT_QUEUE_MESSAGE)
 	}
@@ -112,17 +129,25 @@ func (s *ChatHub) LeaveQueueIfMatch(userID int64, connectionID string, client *C
 
 // 检查用户是否在队列中
 func (s *ChatHub) IsUserInQueue(userID int64) bool {
-	chatQueue.mu.RLock()
-	clients, exists := chatQueue.clients[userID]
+	queue := s.queue
+	if queue == nil {
+		return false
+	}
+	queue.mu.RLock()
+	clients, exists := queue.clients[userID]
 	userExists := exists && len(clients) > 0
-	chatQueue.mu.RUnlock()
+	queue.mu.RUnlock()
 	return userExists
 }
 
 // 获取队列中的用户
 func (s *ChatHub) GetUserFromQueue(userID int64) (*Client, bool) {
-	chatQueue.mu.RLock()
-	clients, exists := chatQueue.clients[userID]
+	queue := s.queue
+	if queue == nil {
+		return nil, false
+	}
+	queue.mu.RLock()
+	clients, exists := queue.clients[userID]
 	var client *Client
 	if exists {
 		for _, item := range clients {
@@ -130,16 +155,20 @@ func (s *ChatHub) GetUserFromQueue(userID int64) (*Client, bool) {
 			break
 		}
 	}
-	chatQueue.mu.RUnlock()
+	queue.mu.RUnlock()
 	return client, client != nil
 }
 
 // GetUserClients 获取指定用户的全部连接副本
 func (s *ChatHub) GetUserClients(userID int64) []*Client {
-	chatQueue.mu.RLock()
-	defer chatQueue.mu.RUnlock()
+	queue := s.queue
+	if queue == nil {
+		return nil
+	}
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
-	clients, exists := chatQueue.clients[userID]
+	clients, exists := queue.clients[userID]
 	if !exists || len(clients) == 0 {
 		return nil
 	}
@@ -188,11 +217,15 @@ func (s *ChatHub) SendMessageToQueue(userID int64, message []byte) bool {
 
 // 获取队列中所有用户
 func (s *ChatHub) GetAllUsersInQueue() []int64 {
-	chatQueue.mu.RLock()
-	defer chatQueue.mu.RUnlock()
+	queue := s.queue
+	if queue == nil {
+		return nil
+	}
+	queue.mu.RLock()
+	defer queue.mu.RUnlock()
 
-	users := make([]int64, 0, len(chatQueue.clients))
-	for userID := range chatQueue.clients {
+	users := make([]int64, 0, len(queue.clients))
+	for userID := range queue.clients {
 		users = append(users, userID)
 	}
 	return users
@@ -232,7 +265,10 @@ func (c *Client) SafeSend(message []byte) (ok bool) {
 
 func (c *Client) ReadPump() {
 	defer func() {
-		chatHub := &ChatHub{ZeroLogger: c.ZeroLogger}
+		chatHub := c.hub
+		if chatHub == nil {
+			chatHub = NewChatHub(c.ZeroLogger)
+		}
 		chatHub.LeaveQueueIfMatch(c.UserID, c.ConnectionID, c)
 	}()
 

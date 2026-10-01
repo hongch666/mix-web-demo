@@ -22,7 +22,7 @@ func Success(w http.ResponseWriter, data any) {
 // This allows .api response types to retain `json:"data"` without producing data.data.
 func unwrapData(data any) any {
 	value := reflect.ValueOf(data)
-	for value.IsValid() && (value.Kind() == reflect.Ptr || value.Kind() == reflect.Interface) {
+	for value.IsValid() && (value.Kind() == reflect.Pointer || value.Kind() == reflect.Interface) {
 		if value.IsNil() {
 			return nil
 		}

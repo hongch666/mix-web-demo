@@ -28,19 +28,11 @@ type SSEHubManager struct {
 	*utils.ZeroLogger
 }
 
-var (
-	sseHubInstance *SSEHubManager
-	once           sync.Once
-)
-
-// GetSSEHub 获取SSE中心实例
-func GetSSEHub() *SSEHubManager {
-	once.Do(func() {
-		sseHubInstance = &SSEHubManager{
-			clients: make(map[int64]map[string]*SSEClient),
-		}
-	})
-	return sseHubInstance
+func NewSSEHub(logger *utils.ZeroLogger) *SSEHubManager {
+	return &SSEHubManager{
+		clients:    make(map[int64]map[string]*SSEClient),
+		ZeroLogger: logger,
+	}
 }
 
 // RegisterClient 注册SSE客户端
@@ -243,25 +235,16 @@ func (hub *SSEHubManager) HandleConnection(w http.ResponseWriter, r *http.Reques
 // FormatSSEMessage 格式化SSE消息
 func FormatSSEMessage(data any) string {
 	if data == nil {
-		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
-			sseHubInstance.Warning(constants.SSE_SEND_EMPTY_MESSAGE_WARNING_MESSAGE)
-		}
 		return ""
 	}
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
-			sseHubInstance.Error(constants.SSE_SERIALIZE_MESSAGE_ERROR_MESSAGE)
-		}
 		return ""
 	}
 
 	// 检查是否为null
 	if string(jsonData) == "null" {
-		if sseHubInstance != nil && sseHubInstance.ZeroLogger != nil {
-			sseHubInstance.Warning(constants.SSE_SERIALIZE_MESSAGE_EMPTY)
-		}
 		return ""
 	}
 

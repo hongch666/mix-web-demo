@@ -231,14 +231,6 @@ func TestSSEHubTargetsAllConnectionsForUserOnly(t *testing.T) {
 
 func resetChatQueueForTest(t *testing.T) {
 	t.Helper()
-	chatQueue.mu.Lock()
-	chatQueue.clients = make(map[int64]map[string]*Client)
-	chatQueue.mu.Unlock()
-	t.Cleanup(func() {
-		chatQueue.mu.Lock()
-		chatQueue.clients = make(map[int64]map[string]*Client)
-		chatQueue.mu.Unlock()
-	})
 }
 
 func newSSEHubForTest() *SSEHubManager {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"app/common/constants"
+	"app/common/utils"
 	"app/common/validation"
 	"app/internal/config"
 	"app/internal/handler"
@@ -35,7 +36,7 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	handler.RegisterHandlers(server, ctx)
 
 	// 初始化任务调度器并挂到运行时上下文，生命周期随 ServiceContext 管理
-	ctx.TaskScheduler = task.NewTaskScheduler(ctx)
+	ctx.TaskScheduler = task.NewTaskScheduler(ctx, utils.NewRedisDistributedLock)
 
 	// 输出启动信息
 	PrintStartupInfo(c)
