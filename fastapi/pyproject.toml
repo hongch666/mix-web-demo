@@ -96,6 +96,11 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 filterwarnings = [
   "ignore:Should not be used in the version 0.2.6 or later.*:DeprecationWarning:asynch.cursors",
+  # nacos-sdk-python 2.0.8 内部仍使用已弃用的 SSLContext 初始化方式
+  "ignore:ssl\\.SSLContext\\(\\) without protocol argument is deprecated:DeprecationWarning:nacos.client",
+  "ignore:ssl\\.PROTOCOL_TLS is deprecated:DeprecationWarning:nacos.client",
+  # 当前 langchain 版本仍通过 langchain-community 提供 PGVector，该类的迁移受依赖版本约束
+  "ignore:This class is pending deprecation.*:langchain_core._api.deprecation.LangChainPendingDeprecationWarning",
 ]
 
 [tool.pyright]

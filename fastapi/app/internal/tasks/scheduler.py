@@ -13,7 +13,10 @@ from app.internal.clients import NestjsClient, SpringClient
 
 from .logic.analyzeCacheTask import update_analyze_caches_async
 from .logic.neo4jSyncTask import sync_mysql_to_neo4j_async
-from .logic.vectorSyncTask import export_article_vectors_to_postgres_async
+from .logic.vectorSyncTask import (
+    build_vector_sync_dependencies,
+    export_article_vectors_to_postgres_async,
+)
 from .logic.warehouseSyncTask import sync_warehouse_async
 
 
@@ -43,6 +46,7 @@ def start_scheduler(
         export_article_vectors_to_postgres_async,
         article_mapper=article_mapper,
         mysql_db_factory=mysql_db_factory,
+        dependencies=build_vector_sync_dependencies(),
         enable_incremental_sync=True,  # 启用增量同步
     )
     # 每24小时执行一次

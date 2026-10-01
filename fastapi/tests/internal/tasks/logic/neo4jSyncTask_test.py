@@ -32,9 +32,7 @@ def silence_logger(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, Non
 def _build_service(
     monkeypatch: pytest.MonkeyPatch, neo4j_client: Mock
 ) -> task.KnowledgeGraphSyncService:
-    monkeypatch.setattr(task, "get_neo4j_client", lambda: neo4j_client)
-    monkeypatch.setattr(task, "get_spring_client", lambda: Mock())
-    return task.KnowledgeGraphSyncService()
+    return task.KnowledgeGraphSyncService(neo4j_client, Mock())
 
 
 # 时间格式化对 datetime 取 ISO 串、字符串直通、None 用当前时间

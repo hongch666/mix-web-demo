@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional
 
@@ -9,6 +10,25 @@ from app.internal.agents.langsmith import get_langsmith_context
 from app.internal.cache import get_redis_client
 from app.internal.clients import SpringClient, get_spring_client
 from app.internal.crud import VectorMapper, get_vector_store_mapper
+
+
+@dataclass(frozen=True)
+class VectorSyncDependencies:
+    """向量同步任务所需的外部依赖"""
+
+    spring_client: SpringClient
+    vector_mapper: VectorMapper
+    redis_client: Any
+
+
+def build_vector_sync_dependencies() -> VectorSyncDependencies:
+    """在组合根创建向量同步任务依赖"""
+
+    return VectorSyncDependencies(
+        spring_client=get_spring_client(),
+        vector_mapper=get_vector_store_mapper(),
+        redis_client=get_redis_client(),
+    )
 
 
 def _get_redis_client() -> Optional[Any]:
@@ -41,10 +61,11 @@ def _compute_article_hash(article: Any) -> str:
         return ""
 
 
-async def _get_article_content_hash(article_id: int) -> Optional[str]:
+async def _get_article_content_hash(
+    article_id: int, redis_client: Any = None
+) -> Optional[str]:
     """从 Redis 获取文章内容 hash"""
     try:
-        redis_client: Optional[Any] = _get_redis_client()
         if redis_client is None:
             return None
 
@@ -57,10 +78,11 @@ async def _get_article_content_hash(article_id: int) -> Optional[str]:
         return None
 
 
-async def _save_article_content_hash(article_id: int, hash_value: str) -> None:
+async def _save_article_content_hash(
+    article_id: int, hash_value: str, redis_client: Any = None
+) -> None:
     """将文章内容 hash 永久保存到 Redis（不设置TTL）"""
     try:
-        redis_client: Optional[Any] = _get_redis_client()
         if redis_client is None:
             Logger.warning(Messages.VECTOR_REDIS_SAVE_HASH_UNAVAILABLE(article_id))
             return
@@ -72,10 +94,11 @@ async def _save_article_content_hash(article_id: int, hash_value: str) -> None:
         Logger.error(Messages.VECTOR_ARTICLE_HASH_SAVE_FAILED(article_id, e))
 
 
-async def _get_last_sync_time() -> Optional[datetime]:
+async def _get_last_sync_time(redis_client: Any = None) -> Optional[datetime]:
     """从 Redis 获取上次同步时间"""
     try:
-        redis_client: Optional[Any] = _get_redis_client()
+        if redis_client is None:
+            redis_client = _get_redis_client()
         if redis_client is None:
             Logger.warning(Messages.REDIS_CONNECTION_FAILED_MESSAGE)
             return None
@@ -91,10 +114,11 @@ async def _get_last_sync_time() -> Optional[datetime]:
     return None
 
 
-async def _save_sync_time(sync_time: datetime) -> None:
+async def _save_sync_time(sync_time: datetime, redis_client: Any = None) -> None:
     """将同步时间永久保存到 Redis（不设置TTL）"""
     try:
-        redis_client: Optional[Any] = _get_redis_client()
+        if redis_client is None:
+            redis_client = _get_redis_client()
         if redis_client is None:
             Logger.error(Messages.REDIS_CONNECTION_SAVE_FAILED_MESSAGE)
             return
@@ -107,7 +131,9 @@ async def _save_sync_time(sync_time: datetime) -> None:
 
 
 async def _get_changed_articles(
-    articles: list[Any], last_sync_time: Optional[datetime]
+    articles: list[Any],
+    last_sync_time: Optional[datetime],
+    redis_client: Any = None,
 ) -> list[Any]:
     """
     筛选出内容实际变化的已发布文章（基于hash对比）
@@ -119,6 +145,10 @@ async def _get_changed_articles(
     Returns:
         内容有变化的已发布文章列表
     """
+    legacy_mode = redis_client is None
+    if redis_client is None:
+        redis_client = _get_redis_client()
+
     # 先筛选已发布的文章
     published_articles: list[Any] = [
         a for a in articles if _get_article_field(a, "status", 0) == 1
@@ -133,7 +163,12 @@ async def _get_changed_articles(
             if article_id:
                 current_hash: str = _compute_article_hash(article)
                 if current_hash:
-                    await _save_article_content_hash(article_id, current_hash)
+                    if legacy_mode:
+                        await _save_article_content_hash(article_id, current_hash)
+                    else:
+                        await _save_article_content_hash(
+                            article_id, current_hash, redis_client
+                        )
         return published_articles
 
     changed_articles: list[Any] = []
@@ -149,7 +184,10 @@ async def _get_changed_articles(
             continue
 
         # 从 Redis 获取上次保存的 hash
-        cached_hash: Optional[str] = await _get_article_content_hash(article_id)
+        if legacy_mode:
+            cached_hash = await _get_article_content_hash(article_id)
+        else:
+            cached_hash = await _get_article_content_hash(article_id, redis_client)
         Logger.info(
             Messages.VECTOR_ARTICLE_HASH_COMPARE(article_id, cached_hash, current_hash)
         )
@@ -161,7 +199,12 @@ async def _get_changed_articles(
             changed_articles.append(article)
             # 保存当前 hash
             if current_hash:
-                await _save_article_content_hash(article_id, current_hash)
+                if legacy_mode:
+                    await _save_article_content_hash(article_id, current_hash)
+                else:
+                    await _save_article_content_hash(
+                        article_id, current_hash, redis_client
+                    )
         elif cached_hash != current_hash:
             # hash 不相同，说明内容有变化
             Logger.info(
@@ -172,7 +215,12 @@ async def _get_changed_articles(
             changed_articles.append(article)
             # 更新 hash 值
             if current_hash:
-                await _save_article_content_hash(article_id, current_hash)
+                if legacy_mode:
+                    await _save_article_content_hash(article_id, current_hash)
+                else:
+                    await _save_article_content_hash(
+                        article_id, current_hash, redis_client
+                    )
         else:
             # hash 相同，内容未变化
             Logger.debug(Messages.VECTOR_ARTICLE_UNCHANGED(article_id))
@@ -181,7 +229,9 @@ async def _get_changed_articles(
 
 
 async def _remove_stale_vectors(
-    vector_mapper: VectorMapper, articles: list[Any]
+    vector_mapper: VectorMapper,
+    articles: list[Any],
+    redis_client: Any = None,
 ) -> int:
     """清理向量库中已删除或已下架文章残留的向量，并删除其内容 hash 缓存
 
@@ -198,6 +248,9 @@ async def _remove_stale_vectors(
     Returns:
         删除的向量条数
     """
+    if redis_client is None:
+        redis_client = _get_redis_client()
+
     published_ids: set[int] = set()
     for article in articles:
         article_id = _get_article_field(article, "id", 0)
@@ -213,7 +266,6 @@ async def _remove_stale_vectors(
     Logger.info(Messages.VECTOR_STALE_VECTORS_FOUND(str(stale_ids)))
     deleted: int = await vector_mapper.delete_by_article_ids(stale_ids)
 
-    redis_client: Optional[Any] = _get_redis_client()
     if redis_client is not None:
         await redis_client.delete(
             *[RedisKeys.article_content_hash(article_id) for article_id in stale_ids]
@@ -224,7 +276,7 @@ async def _remove_stale_vectors(
 
 
 async def _export_article_vectors_to_postgres(
-    article_mapper: Optional[Any] = None,
+    dependencies: Optional[VectorSyncDependencies] = None,
     mysql_db_factory: Optional[Any] = None,
     enable_incremental_sync: bool = True,
 ) -> None:
@@ -237,9 +289,14 @@ async def _export_article_vectors_to_postgres(
         mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
         enable_incremental_sync: 是否启用增量同步（仅同步有变更的文章）
     """
-    spring_client: SpringClient = get_spring_client()
-
-    vector_mapper: VectorMapper = get_vector_store_mapper()
+    dependencies = (
+        dependencies
+        if isinstance(dependencies, VectorSyncDependencies)
+        else build_vector_sync_dependencies()
+    )
+    spring_client: SpringClient = dependencies.spring_client
+    vector_mapper: VectorMapper = dependencies.vector_mapper
+    redis_client: Any = dependencies.redis_client
 
     sync_start_time: datetime = datetime.now()
     sync_mode = "增量" if enable_incremental_sync else "全量"
@@ -281,7 +338,7 @@ async def _export_article_vectors_to_postgres(
         # 差集清理要求列表必须完整：分页中途失败时未拉到的文章会被误判为已删除，进而清空其向量，因此这里以 expected_total 作为完整性判据，不完整则跳过并告警
         if len(articles) >= expected_total:
             try:
-                await _remove_stale_vectors(vector_mapper, articles)
+                await _remove_stale_vectors(vector_mapper, articles, redis_client)
             except Exception as e:
                 Logger.warning(Messages.VECTOR_STALE_CLEANUP_FAILED(e))
         else:
@@ -295,9 +352,9 @@ async def _export_article_vectors_to_postgres(
 
         # 3. 增量同步：筛选出变更的文章
         if enable_incremental_sync:
-            last_sync_time: Optional[datetime] = await _get_last_sync_time()
+            last_sync_time: Optional[datetime] = await _get_last_sync_time(redis_client)
             changed_articles: list[Any] = await _get_changed_articles(
-                articles, last_sync_time
+                articles, last_sync_time, redis_client
             )
 
             if not changed_articles:
@@ -411,7 +468,7 @@ async def _export_article_vectors_to_postgres(
 
         # 5. 只有当有成功的同步时才保存时间戳
         if enable_incremental_sync and total_synced > 0:
-            await _save_sync_time(sync_start_time)
+            await _save_sync_time(sync_start_time, redis_client)
 
         sync_mode = "增量" if enable_incremental_sync else "全量"
         Logger.info(
@@ -426,8 +483,7 @@ async def _export_article_vectors_to_postgres(
 
 
 async def _initialize_article_content_hash_cache(
-    article_mapper: Optional[Any] = None,
-    mysql_db_factory: Optional[Any] = None,
+    dependencies: Optional[VectorSyncDependencies] = None,
 ) -> None:
     """
     为所有已发布的文章初始化内容 hash 缓存
@@ -438,7 +494,9 @@ async def _initialize_article_content_hash_cache(
         article_mapper: ArticleMapper 实例（已废弃，保留参数以兼容旧调用）
         mysql_db_factory: MySQL 数据库会话工厂（已废弃，保留参数以兼容旧调用）
     """
-    spring_client: SpringClient = get_spring_client()
+    dependencies = dependencies or build_vector_sync_dependencies()
+    spring_client: SpringClient = dependencies.spring_client
+    redis_client: Any = dependencies.redis_client
 
     try:
         Logger.info(Messages.START_INITIALIZING_ARTICLE_HASH_CACHE_MESSAGE)
@@ -495,7 +553,9 @@ async def _initialize_article_content_hash_cache(
                 continue
 
             # 检查是否已存在 hash 缓存
-            existing_hash: Optional[str] = await _get_article_content_hash(article_id)
+            existing_hash: Optional[str] = await _get_article_content_hash(
+                article_id, redis_client
+            )
             if existing_hash is not None:
                 # hash 已存在，跳过
                 total_skipped += 1
@@ -508,7 +568,7 @@ async def _initialize_article_content_hash_cache(
                 continue
 
             # 保存 hash 到 Redis
-            await _save_article_content_hash(article_id, current_hash)
+            await _save_article_content_hash(article_id, current_hash, redis_client)
             total_initialized += 1
 
             # 每 100 篇输出一次进度
@@ -520,7 +580,7 @@ async def _initialize_article_content_hash_cache(
         )
 
         # 4. 初始化完成后，也要保存同步时间戳，以便下次增量同步时能识别这是有历史数据的
-        await _save_sync_time(datetime.now())
+        await _save_sync_time(datetime.now(), redis_client)
         Logger.info(Messages.SYNC_TIME_SET_MESSAGE)
 
     except Exception as e:
@@ -530,6 +590,7 @@ async def _initialize_article_content_hash_cache(
 async def export_article_vectors_to_postgres_async(
     article_mapper: Optional[Any] = None,
     mysql_db_factory: Optional[Any] = None,
+    dependencies: Optional[VectorSyncDependencies] = None,
     enable_incremental_sync: bool = True,
 ) -> None:
     """同步文章向量到 PostgreSQL，使用 Redis 分布式锁保证多实例部署时只有一个实例执行"""
@@ -537,7 +598,10 @@ async def export_article_vectors_to_postgres_async(
     lock_expire: int = RedisKeys.LOCK_TASK_VECTOR_SYNC_EXPIRE
 
     # 尝试获取分布式锁
-    redis_client: Any = get_redis_client()
+    resolved_dependencies: VectorSyncDependencies = (
+        dependencies or build_vector_sync_dependencies()
+    )
+    redis_client: Any = resolved_dependencies.redis_client
     lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
     if lock_value is None:
         Logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE(lock_key))
@@ -545,11 +609,17 @@ async def export_article_vectors_to_postgres_async(
     Logger.info(Messages.REDIS_LOCK_ACQUIRE_SUCCESS_MESSAGE(lock_key))
 
     try:
-        await _export_article_vectors_to_postgres(
-            article_mapper,
-            mysql_db_factory,
-            enable_incremental_sync,
-        )
+        if dependencies is None:
+            await _export_article_vectors_to_postgres(
+                article_mapper,
+                mysql_db_factory,
+                enable_incremental_sync,
+            )
+        else:
+            await _export_article_vectors_to_postgres(
+                resolved_dependencies,
+                enable_incremental_sync=enable_incremental_sync,
+            )
     finally:
         released: bool = await redis_client.unlock(lock_key, lock_value)
         if released:
@@ -561,8 +631,8 @@ async def export_article_vectors_to_postgres_async(
 async def initialize_article_content_hash_cache_async(
     article_mapper: Optional[Any] = None,
     mysql_db_factory: Optional[Any] = None,
+    dependencies: Optional[VectorSyncDependencies] = None,
 ) -> None:
     await _initialize_article_content_hash_cache(
-        article_mapper,
-        mysql_db_factory,
+        dependencies or build_vector_sync_dependencies(),
     )

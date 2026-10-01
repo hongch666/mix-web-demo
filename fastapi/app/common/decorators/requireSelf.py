@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from functools import wraps
 from inspect import iscoroutinefunction
 from typing import Any, Optional
@@ -7,9 +7,37 @@ from app.common.middleware import get_current_user_id
 from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.internal.clients import SpringClient, get_spring_client
+
+AdminChecker = Callable[[int], Awaitable[bool]]
 
 
-def requireSelf[T: Callable[..., Any]](func: Optional[T] = None) -> Callable[..., Any]:
+def build_admin_checker(spring_client: SpringClient) -> AdminChecker:
+    """基于已注入的 Spring 客户端创建管理员检查器"""
+
+    async def checker(user_id: int) -> bool:
+        try:
+            users: list[dict[str, Any]] = await spring_client.get_users_by_ids(
+                [int(user_id)]
+            )
+            role: str = (
+                users[0].get("role") or Messages.ROLE_USER
+                if users
+                else Messages.ROLE_USER
+            )
+            return role == Messages.ROLE_ADMIN
+        except Exception as error:
+            Logger.error(Messages.ADMIN_PERMISSION_CHECK_FAILED(error))
+            return False
+
+    return checker
+
+
+def requireSelf[T: Callable[..., Any]](
+    func: Optional[T] = None,
+    *,
+    admin_checker: Optional[AdminChecker] = None,
+) -> Callable[..., Any]:
     """
     校验请求中的 user_id 与上下文登录用户一致的装饰器
     管理员可访问任意用户，其余用户仅能访问自身数据
@@ -49,7 +77,12 @@ def requireSelf[T: Callable[..., Any]](func: Optional[T] = None) -> Callable[...
 
             # 访问自身数据无需远程查询角色，避免给常规路径引入额外调用
             if int(target_user_id) != int(current_user_id):
-                if not await _is_admin(current_user_id):
+                is_admin = (
+                    await admin_checker(current_user_id)
+                    if admin_checker is not None
+                    else await _is_admin(current_user_id)
+                )
+                if not is_admin:
                     Logger.warning(
                         Messages.USER_SCOPE_DENIED(current_user_id, int(target_user_id))
                     )
@@ -75,16 +108,7 @@ def requireSelf[T: Callable[..., Any]](func: Optional[T] = None) -> Callable[...
 
 async def _is_admin(user_id: int) -> bool:
     """经 Spring 查询用户角色，查询失败按非管理员处理"""
-    from app.internal.clients import get_spring_client
-
     try:
-        users: list[dict[str, Any]] = await get_spring_client().get_users_by_ids(
-            [int(user_id)]
-        )
-        role: str = (
-            users[0].get("role") or Messages.ROLE_USER if users else Messages.ROLE_USER
-        )
-        return role == Messages.ROLE_ADMIN
-    except Exception as error:
-        Logger.error(Messages.ADMIN_PERMISSION_CHECK_FAILED(error))
+        return await build_admin_checker(get_spring_client())(user_id)
+    except Exception:
         return False

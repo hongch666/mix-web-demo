@@ -13,6 +13,7 @@ from app.internal.cache import (
     get_wordcloud_cache,
 )
 from app.internal.tasks import (
+    build_vector_sync_dependencies,
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
     sync_mysql_to_neo4j_async,
@@ -58,7 +59,10 @@ async def task_export_vector(
 ) -> ApiResponse:
     """手动触发向量数据库同步任务接口"""
 
-    background_tasks.add_task(export_article_vectors_to_postgres_async)
+    background_tasks.add_task(
+        export_article_vectors_to_postgres_async,
+        dependencies=build_vector_sync_dependencies(),
+    )
     return success()
 
 
@@ -76,7 +80,10 @@ async def task_init_hash_cache(
 ) -> ApiResponse:
     """初始化文章内容 hash 缓存接口"""
 
-    background_tasks.add_task(initialize_article_content_hash_cache_async)
+    background_tasks.add_task(
+        initialize_article_content_hash_cache_async,
+        dependencies=build_vector_sync_dependencies(),
+    )
     return success()
 
 

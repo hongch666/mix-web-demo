@@ -8,6 +8,9 @@ from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
 from app.core.db import get_neo4j_client, get_redis_client
 from app.internal.clients import get_spring_client
+from app.internal.clients import SpringClient
+
+from app.core.db import Neo4jClient
 
 
 class KnowledgeGraphSyncService:
@@ -21,10 +24,14 @@ class KnowledgeGraphSyncService:
     # Neo4j 事务内存上限（dbms.memory.transaction.total.max）
     CLEANUP_BATCH_SIZE: int = 1000
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        neo4j_client: Neo4jClient,
+        spring_client: SpringClient,
+    ) -> None:
         self.logger = Logger
-        self.client = get_neo4j_client()
-        self.spring_client = get_spring_client()
+        self.client = neo4j_client
+        self.spring_client = spring_client
 
     @staticmethod
     def _format_datetime(value: Any) -> str:
@@ -727,7 +734,7 @@ class KnowledgeGraphSyncService:
 @lru_cache
 def get_knowledge_graph_sync_service() -> KnowledgeGraphSyncService:
     """获取知识图谱同步服务单例"""
-    return KnowledgeGraphSyncService()
+    return KnowledgeGraphSyncService(get_neo4j_client(), get_spring_client())
 
 
 async def _save_sync_time(sync_time: datetime) -> None:
