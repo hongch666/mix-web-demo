@@ -6,13 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 class PasswordEncryptorTest {
 
     private static final String RAW_PASSWORD = "123456";
     private static final String WRONG_PASSWORD = "654321";
 
-    private final PasswordEncryptor passwordEncryptor = new PasswordEncryptor();
+    private final PasswordEncryptor passwordEncryptor = new PasswordEncryptor(new BCryptPasswordEncoder());
 
     // 验证该场景的预期行为
 

@@ -5,13 +5,16 @@ import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.constants.Defaults;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * 密码加密工具类
  */
 @Component
+@RequiredArgsConstructor
 public class PasswordEncryptor {
 
-    private final BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     /**
      * 加密密码
