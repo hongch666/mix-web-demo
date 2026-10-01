@@ -130,6 +130,7 @@ const (
 	ENSURE_CHAT_MESSAGES_TABLE_SUCCESS       = "已确保 chat_messages 表存在"
 
 	// 日志文件
+	LOGGER_PATH_EMPTY_ERROR  = "日志目录路径不能为空，请检查 LOGS_PATH 环境变量配置"
 	LOGGER_GET_WORKDIR_ERROR = "获取工作目录失败: %w"
 	LOGGER_CREATE_DIR_ERROR  = "创建日志目录失败: %w"
 	LOGGER_OPEN_FILE_ERROR   = "打开日志文件失败: %v"

@@ -3,9 +3,11 @@ package utils
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,8 +27,13 @@ type ZeroLogger struct {
 }
 
 // NewZeroLogger 创建新的日志实例
-// logPath: 日志文件存放目录，例如 "./logs/gozero"
+// logPath: 日志文件存放目录，必须由配置显式提供，例如 "../../logs/gozero"
 func NewZeroLogger(logPath string) (*ZeroLogger, error) {
+	// 路径缺失时直接报错，不再回退到进程工作目录，避免日志写到意外的位置
+	if strings.TrimSpace(logPath) == "" {
+		return nil, errors.New(constants.LOGGER_PATH_EMPTY_ERROR)
+	}
+
 	// 如果日志路径不是绝对路径，则转换为绝对路径
 	if !filepath.IsAbs(logPath) {
 		wd, err := os.Getwd()

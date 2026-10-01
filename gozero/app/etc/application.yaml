@@ -59,7 +59,7 @@ mq:
   vhost: ${RABBITMQ_VHOST:/}
 
 logs:
-  path: ${LOGS_PATH:./logs/gozero}
+  path: ${LOGS_PATH}
 
 internal-token:
   secret: ${INTERNAL_TOKEN_SECRET:}

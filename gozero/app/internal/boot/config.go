@@ -8,12 +8,10 @@ import (
 	"strings"
 
 	"app/common/constants"
-	"app/common/utils"
 	"app/internal/config"
 
 	"github.com/joho/godotenv"
 	"github.com/zeromicro/go-zero/core/conf"
-	"github.com/zeromicro/go-zero/core/logx"
 )
 
 // expandEnvWithDefaults 展开配置文件中的环境变量，支持 ${VAR:default} 格式
@@ -131,25 +129,15 @@ func isQuoted(value string) bool {
 
 // LoadConfig 加载配置，包括环境变量和应用配置
 func LoadConfig(configFile string) config.Config {
-	// 加载 .env 文件中的环境变量
-	if err := godotenv.Load(); err != nil {
+	// 用 .env 抢占进程中已存在的同名环境变量，保证 .env 是配置的唯一权威来源
+	if err := godotenv.Overload(); err != nil {
 		fmt.Printf(constants.GODOTENV_LOAD_FAIL+"\n", err)
-	}
-
-	// 获取日志路径
-	logPath := os.Getenv("LOGS_PATH")
-
-	// 初始化日志系统
-	logger, err := utils.NewZeroLogger(logPath)
-	if err != nil {
-		logx.Errorf(constants.ZERO_LOGGER_INIT_FAIL, err)
-		panic(err)
 	}
 
 	// 读取配置文件内容
 	content, err := os.ReadFile(configFile)
 	if err != nil {
-		logger.Errorf(constants.READ_CONFIG_FILE_ERROR, configFile, err)
+		fmt.Printf(constants.READ_CONFIG_FILE_ERROR+"\n", configFile, err)
 		os.Exit(1)
 	}
 
@@ -159,7 +147,7 @@ func LoadConfig(configFile string) config.Config {
 	// 解析展开后的配置
 	var c config.Config
 	if err := conf.LoadFromYamlBytes([]byte(expandedContent), &c); err != nil {
-		logger.Errorf(constants.PARSE_CONFIG_FILE_ERROR, configFile, err)
+		fmt.Printf(constants.PARSE_CONFIG_FILE_ERROR+"\n", configFile, err)
 		os.Exit(1)
 	}
 
