@@ -514,9 +514,6 @@ export class Messages {
 
   static readonly REGISTER_NACOS = "注册到 nacos 成功";
 
-  static readonly REGISTER_NACOS_DEV_MODE =
-    "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1";
-
   static readonly NACOS_HOST_NOT_CONFIGURED = "Nacos 服务地址未配置";
 
   static readonly NACOS_PORT_NOT_CONFIGURED = "Nacos 服务端口未配置";
