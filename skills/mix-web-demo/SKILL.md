@@ -93,6 +93,8 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
    - GoZero 已收口为单条链路：`ServiceDiscovery.Close()` → 三个业务 Client 的 `Close()` → `ClientContext.Close()` → `ServiceContext.Close()`，新增客户端必须接进来
    - NestJS 已收口：`NacosService` 实现 `OnModuleDestroy`，注销 Nacos 实例 + `shutdown()` 熔断器 + `destroy()` 专用 agent；新增持有的连接资源挂同一处，不要另建包级 stop 函数
 10. 服务发现基于 Nacos；新服务接入需注册实例并在 metadata 声明能力
+    - **注册地址必须是网关容器能回连的本机 IP**：显式配置 `SERVER_IP`（Spring 为 `SERVER_ADDRESS`）时以它为准，未指定（空、`127.0.0.1`、`0.0.0.0`）则自动探测本机 IP；**禁止在 dev 模式下固定注册 `127.0.0.1`**。`./mix dev` 的网关跑在 Docker 里，容器内的 `127.0.0.1` 是容器自身，会让网关 `connect() failed (111: Connection refused)` 返回 502，且下游服务一条日志都没有（请求根本没到）
+    - 同理，服务监听地址也不能只绑 `127.0.0.1`，dev 下的 `SERVER_IP` 应为 `0.0.0.0`，否则容器无论如何都连不上
 11. 生成代码时参考目标服务同类文件的命名与组织方式；已有成熟风格优先
 12. 注释说明：注释的结束不能包含中文句号，直接留空，如果注释过长，使用多行注释形式，而不是多条单行注释，短注释使用1行的单行注释即可
    - 新增或修改的代码注释、装饰器说明和文档说明均不得以中文句号 `。` 结尾，统一以无句号文本或其他必要标点结束
