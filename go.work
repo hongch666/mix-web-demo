@@ -1,0 +1,16 @@
+go 1.24.0
+
+use ./gozero/app
+
+// 使用工作区的原因：VSCode Go 扩展（gopls）以“打开的工作区文件夹”作为 Go 模块根，
+// 本仓库是 Java/Python/TypeScript/Go 多语言仓库，根目录没有 go.mod，
+// 若以根目录为唯一模块根，gopls 会报 “cannot find main module”。
+// 在根目录放置本文件后，根目录即成为合法的 Go 工作区，编辑器不再报错。
+//
+// 注意：工作区模式会加载完整模块图（不执行 module graph pruning），
+// 因而会把 google.golang.org/genproto 的旧整体模块
+// （v0.0.0-20190819201941-24fa4b261c55）纳入构建列表，
+// 与拆分后的子模块 google.golang.org/genproto/googleapis/{api,rpc}
+// 提供同名包，触发 ambiguous import。
+// 下面把整体模块钉到与子模块同一代的版本，消除重复包。
+replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20240814211410-ddb44dafa142
