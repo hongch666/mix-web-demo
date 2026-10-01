@@ -135,6 +135,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 - 横切能力由 AOP 实现：`ApiLogAspect`（接口日志）、`PermissionValidationAspect`（`@RequirePermission` 声明式权限）、`InternalTokenAspect`（`@RequireInternalToken` 内部令牌）、`ArticleSyncAspect`（文章变更同步 MQ / ES / 向量）、`Neo4jSyncAspect`（图谱同步）。新增写接口时确认是否需要权限注解与同步触发，同步失败只记日志、没有补偿机制
 - **响应式切面的固定写法**：`pjp.proceed()` 返回的是**未订阅的冷流**（业务代码此时尚未执行），且 Reactor Context 只在订阅时可见。所以切面必须把校验 / 日志 / 同步挂到 Mono 链上（`Mono.deferContextual(ctx -> ...)`）：校验类用 `validate(ctx).then(businessMono)` 保证「校验先于业务」，副作用类用 `monoResult.doOnSuccess(...)` 发后即忘；副作用里若需要用户身份，必须用 `UserContext.writeContext(Context.empty(), ...)` 重建 Context 再 `contextWrite`，否则异步链上读不到。**禁止用同步代码在 `proceed()` 之前读上下文**，那时 ctx 不可见，只会拿到 null
 - 注入风格：`@Service` + `@RequiredArgsConstructor` + `private final` 字段（构造器注入），禁止字段 `@Autowired`
+- 外部基础设施统一由 Spring Bean 提供：`PasswordEncryptor` 注入 `BCryptPasswordEncoder`，禁止在工具或 Service 内部直接 `new` 加密器、客户端或连接资源；新增同类依赖放入 `core/config` 的 `@Configuration` Bean
 - Swagger 用 springdoc：`@Operation(summary, description)`、`@Tag`，注解参数直接写字面量，不抽常量
 - 日志：`common/utils/SimpleLogger` 实例注入使用
 
@@ -160,6 +161,7 @@ module/system/    系统业务模块（apiLog、articleLog、sqlTools 等）
 - 请求上下文用 nestjs-cls：`ClsMiddleware` 写入（userId/username/sessionId/token/internalToken），业务注入 `ClsService` 读取；gRPC 或脱离 HTTP 异步链的场景必须用 `ClsService.run` 手动开启上下文
   - **未登录语义注意**：`parseUserId` 要求 `Number.isInteger(userId) && userId > 0`，所以 ≤0 的值（含约定的系统调用 `-1`）在 CLS 里是 `undefined`；出站头由 `NacosService.call` 生成（`X-User-Id: String(userId || 0)`，内部令牌按 `userId > 0 ? userId : -1`）。需要区分"未登录 / 系统调用"时不要直接依赖 CLS 的值
 - 公共层入口是 `module/common/common.module.ts`：`imports` 只保留需要根级加载的子模块（Logger、Client、Github、Mail、Task），`exports` **只导出 ClientModule**（根模块的 `RequireAdminGuard` 需要它）。业务模块用到的其他公共能力（oss、word、nacos、redis）由消费方**自行 import 对应模块**，禁止把 CommonModule 做成"全量中转池"（那会让模块边界形同虚设）
+- 外部客户端必须通过模块 Provider 注入：Mail 的 Nodemailer Transporter 使用 `MAIL_TRANSPORTER` Provider，OSS 的 ali-oss 客户端使用 `OSS_CLIENT` Provider；Service 构造函数只接收抽象依赖，禁止直接调用 `nodemailer.createTransport()` 或 `new ali-oss(...)`
 - `LoggerModule` 是 `@Global`，日志能力全模块可直接注入，无需 import
 - 用户可控字符串在拼接存储 key 前必须清洗（长度 + 字符白名单）：`upload` 模块的 `customFilename` 走 `@Query` 原样拼 OSS key，属需要加固的写法
 - 远程调用统一走 `module/common/nacos/nacos.service.ts` 的 `call(opts: CallOptions)`（Nacos 发现 + 轮询 + opossum 熔断 + axios-retry + 自动上下文头/内部令牌），按目标服务在调用方封装 Client 类。**`NacosService` 自持专用 `http`/`https` Agent（keepAlive）并传给每次 `axios.request`**，不再依赖 `http.globalAgent`；`onModuleDestroy` 负责注销 Nacos 实例、`shutdown()` 全部熔断器、`destroy()` 两个 agent。新增远程调用必须复用同一个 agent，不要在模块里另建 axios 实例。两个坑：**`NacosNamingClient._close()` 不可用**（私有方法且内部调用的是不存在的 `this._beatReactor.close()`，beat_reactor 只定义了 `_close`，调用会抛错），所以只做 `deregisterInstance`；**`src/types/nacos.d.ts` 是项目自建的类型声明**，用到新的 SDK 方法要在这里补声明，否则编译不过
@@ -213,6 +215,8 @@ app/internal/agents     LangChain Agent 与工具
 - SQL：ClickHouse 查询用 `%(name)s` 参数化；SQL 模板集中在 `core/constants/scripts.py` 与 `warehouse.py`，业务代码不内联 SQL 字符串
 - 缓存：使用 `internal/cache` 的两级缓存体系（L1 内存 5 分钟 + L2 Redis 1 天 + ClickHouse 版本号失效），新统计接口优先接入而非自造缓存
 - 定时任务：APScheduler 注册在 `internal/tasks/scheduler.py`，任务逻辑放 `tasks/logic/`；多实例互斥用 Redis `try_lock`/`unlock`（key 进 `RedisKeys` 常量）
+- 非请求任务也必须显式传递依赖：向量同步使用 `VectorSyncDependencies` 传入 Spring、VectorMapper 和 Redis；Neo4j 同步 Service 构造函数接收 Neo4j/Spring Client，由工厂负责装配；禁止在任务逻辑内部临时获取或创建基础设施
+- 权限装饰器保留 `@requireAdmin` / `@requireSelf` 语法，同时支持传入 `admin_checker` 检查器；检查器通过 `build_admin_checker(client)` 从外部 Client 创建，禁止让装饰器绕过依赖装配直接固定 Client
 - 远程调用：统一 `core/client/call_remote_service`（httpx 共享连接池 + SimpleCircuitBreaker 熔断 + tenacity 重试 + 上下文头自动注入），按服务在 `internal/clients/` 封装 Client 类。两个共享 `AsyncClient`（内网 `trust_env=False`、外部抓取走系统代理）在 `lifespan.py` 创建、`yield` 之后 `aclose()` 释放，**新增客户端必须走同一处创建与释放**，不要另建模块级客户端
 - ClickHouse ORM 会话的唯一入口是 `core/db/clickhouse.py` 的 `clickhouse_session()`（`get_clickhouse_db` 复用它）。**粒度保持"每查询一个会话"**：`crud/user.py` 有 `asyncio.gather` 并发跑两条 CH 查询，而 `AsyncSession` 不支持并发复用；非请求链路用引擎级 `execute_clickhouse_query` / `execute_clickhouse_sql`
 - Agent 工具经 `internal/agents/toolFactories.py` 的 `AgentToolFactories` 注入 `BaseAiService`（**传工厂而非实例**，以保留线程池并行加载与单组失败隔离）
@@ -260,7 +264,8 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - **分层方向单向**：`internal/*` 可依赖 `common/*`，`common/*` **不得**依赖 `internal/*`。实时帧类型定义在 `.api` → `internal/types`，hub 因此放在 `internal/hub`；若放 `common/hub` 就会产生反向依赖
 - logic 中禁止 SQL：数据访问全部封装在 `app/model/`，logic 通过 `l.svcCtx.XxxModel.Method(l.ctx, ...)` 调用；model 方法第一个参数是 `ctx`
 - svc 分域：`ServiceContext` 匿名嵌入 `RuntimeContext`、`InfrastructureContext`、`ModelContext`、`HubContext`、`ClientContext`、`LoggerContext`、`MiddlewareContext`；新增依赖加入对应分域，在 `serviceComponentsContext.go` 组装，禁止往 ServiceContext 平铺字段
-- **定时任务调度器挂在 `RuntimeContext.TaskScheduler`**（从包级变量收口）：`internal/task` 只提供 `NewTaskScheduler(svcCtx) *cron.Cron` 负责构造并启动，返回值由 `boot/server.go` 赋给 `ctx.TaskScheduler`；停止统一由 `ServiceContext.Close()` 承担（先 `TaskScheduler.Stop()` 再 `Cancel()`），`boot/init.go` 的关闭入口调 `ctx.Close()` 而非直接操作调度器。**不要再引入包级调度器变量**（测试无法替换、生命周期不受 Close 管理）。cron 表达式用标准 5 字段（分 时 日 月 周），"每小时"是 `0 * * * *`，写成 `* * */1 * *` 会变成每分钟执行
+- **定时任务调度器挂在 `RuntimeContext.TaskScheduler`**（从包级变量收口）：`internal/task` 提供 `NewTaskScheduler(svcCtx, lockFactory) *cron.Cron`，Redis 锁工厂由 `boot/server.go` 传入，任务每次运行通过工厂创建锁对象；返回值由 boot 赋给 `ctx.TaskScheduler`。停止统一由 `ServiceContext.Close()` 承担（先 `TaskScheduler.Stop()` 再 `Cancel()`），`boot/init.go` 的关闭入口调 `ctx.Close()` 而非直接操作调度器。**不要再引入包级调度器变量**（测试无法替换、生命周期不受 Close 管理）。cron 表达式用标准 5 字段（分 时 日 月 周），"每小时"是 `0 * * * *`，写成 `* * */1 * *` 会变成每分钟执行
+- 实时 Hub 由组合根创建：`newHubContext` 创建 `SSEHub` 和 `ChatHub`，`ChatHub` 持有自己的 `ChatQueue`；禁止恢复包级 Hub、队列或其他运行态单例。需要在连接生命周期中清理状态时，Client 必须持有所属 Hub 引用
 - `ServiceContext.Close()` 是唯一的关闭入口；新增需要释放的资源时把释放逻辑加进 `Close()`，不要另建包级 stop 函数
 - 日志：logic 结构体嵌入 `*utils.ZeroLogger`（构造时 `ZeroLogger: svcCtx.Logger.WithContext(ctx)`），调用 `l.Info/l.Errorf/l.Error`；logx 全局方法仅限启动阶段（logx 无 Warn/Warnf）；项目 ZeroLogger 提供 `Warningf`，警告级日志用它，异常一律 `l.Errorf`
 - 并行：`mr.Finish`，每个任务为 `func() error`，结果写入闭包局部变量，任务内部吞错返回 nil（错误在任务外统一处理）
