@@ -3,8 +3,7 @@ import { Module, Provider } from "@nestjs/common";
 import * as nodemailer from "nodemailer";
 import { MailController } from "./mail.controller";
 import { MailService } from "./mail.service";
-
-export const MAIL_TRANSPORTER = Symbol("MAIL_TRANSPORTER");
+import { MAIL_TRANSPORTER } from "./mail.tokens";
 
 const mailTransporterProvider: Provider = {
   provide: MAIL_TRANSPORTER,

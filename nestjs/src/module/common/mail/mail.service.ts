@@ -4,7 +4,7 @@ import type * as nodemailer from "nodemailer";
 import { Messages } from "src/common/constants";
 import { LoggerService } from "../logger/logger.service";
 import { InternalEmailCodeSendDto } from "./dto/mail.dto";
-import { MAIL_TRANSPORTER } from "./mail.module";
+import { MAIL_TRANSPORTER } from "./mail.tokens";
 import { buildEmailContent } from "./templates/mail.template";
 
 @Injectable()
