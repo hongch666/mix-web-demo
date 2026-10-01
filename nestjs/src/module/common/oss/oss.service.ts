@@ -1,10 +1,11 @@
-import { Injectable, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import { Defaults, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { LoggerService } from "src/module/common/logger/logger.service";
+import { OSS_CLIENT } from "./oss.tokens";
 
 import type OSS from "ali-oss";
 
@@ -13,6 +14,10 @@ export interface OssConfig {
   access_key_secret: string;
   bucket_name: string;
   endpoint: string;
+}
+
+export interface OssClient {
+  put(name: string, file: string): Promise<unknown>;
 }
 
 @Injectable()
@@ -27,6 +32,9 @@ export class OssService implements OnModuleInit {
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    @Optional()
+    @Inject(OSS_CLIENT)
+    private readonly ossClient: OssClient | null = null,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -62,20 +70,10 @@ export class OssService implements OnModuleInit {
     );
     this.putTimeout = Math.max(putTimeoutSec, 10) * 1000; // 最少 10 秒
 
+    this.client = this.ossClient as OSS | null;
     if (this.isBunRuntime()) {
       this.logger.info(Messages.OSS_BUN_RUNTIME_COMPAT_MESSAGE);
-      return;
     }
-
-    const { default: OSS } = await import("ali-oss");
-    this.client = new OSS({
-      accessKeyId,
-      accessKeySecret,
-      bucket: this.bucketName,
-      endpoint: this.endpoint,
-      secure: true,
-      enableProxy: true,
-    });
   }
 
   /**

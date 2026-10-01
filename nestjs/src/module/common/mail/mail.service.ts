@@ -1,50 +1,27 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import * as nodemailer from "nodemailer";
+import type * as nodemailer from "nodemailer";
 import { Messages } from "src/common/constants";
 import { LoggerService } from "../logger/logger.service";
 import { InternalEmailCodeSendDto } from "./dto/mail.dto";
+import { MAIL_TRANSPORTER } from "./mail.module";
 import { buildEmailContent } from "./templates/mail.template";
 
 @Injectable()
 export class MailService {
-  private transporter!: nodemailer.Transporter;
+  private readonly transporter: nodemailer.Transporter | null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    @Optional()
+    @Inject(MAIL_TRANSPORTER)
+    transporter: nodemailer.Transporter | null = null,
   ) {
-    const host: string | undefined =
-      this.configService.get<string>("mail.host");
-    const port: string | undefined =
-      this.configService.get<string>("mail.port");
-    const secureVal: unknown = this.configService.get<string>("mail.secure");
-    const username: string | undefined =
-      this.configService.get<string>("mail.username");
-    const password: string | undefined =
-      this.configService.get<string>("mail.password");
-    const timeout: number = Math.max(
-      15000,
-      Number(this.configService.get<string>("mail.timeout")) || 10000,
-    );
-
-    if (!username || !password) {
+    this.transporter = transporter;
+    if (!this.transporter) {
       this.logger.warning(Messages.MAIL_SERVICE_CONFIG_INCOMPLETE);
-      return;
     }
-
-    this.transporter = nodemailer.createTransport({
-      host,
-      port: Number(port),
-      secure: secureVal === true || secureVal === "true" || secureVal === "1",
-      connectionTimeout: timeout,
-      greetingTimeout: timeout,
-      socketTimeout: timeout,
-      auth: {
-        user: username,
-        pass: password,
-      },
-    });
   }
 
   async sendVerificationCode(dto: InternalEmailCodeSendDto): Promise<void> {
