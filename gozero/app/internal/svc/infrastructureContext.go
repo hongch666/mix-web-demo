@@ -252,11 +252,9 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 		panic(err)
 	}
 
+	// 网关以容器运行，注册地址必须是容器能回连的地址，固定 127.0.0.1 会让网关连到容器自身
+	// 显式配置 SERVER_IP 时以它为准，未指定（空、0.0.0.0）则自动探测本机 IP
 	registerIP := resolveNacosRegisterIP(c.Host)
-	if strings.EqualFold(strings.TrimSpace(c.Mode), "dev") {
-		registerIP = "127.0.0.1"
-		logger.Info(constants.REGISTER_NACOS_DEV_MODE_MESSAGE)
-	}
 
 	if registerIP != "" && c.Port > 0 && nacosConf.ServiceName != "" {
 		_, err = namingClient.RegisterInstance(vo.RegisterInstanceParam{
@@ -275,6 +273,7 @@ func initNacos(c config.Config, logger *utils.ZeroLogger) naming_client.INamingC
 				nacosConf.ServiceName, registerIP, c.Port, nacosConf.GroupName, err)
 			panic(err)
 		}
+		logger.Infof(constants.NACOS_REGISTERED_MESSAGE, registerIP, c.Port)
 	}
 
 	return namingClient

@@ -26,10 +26,10 @@ const (
 	NACOS_CONFIG_MISSING_DEGRADE     = "Nacos 地址未配置，服务发现、注册与服务间调用将不可用"
 
 	// Nacos
-	REGISTER_NACOS_DEV_MODE_MESSAGE = "SERVER_MODE=dev，Nacos 注册统一使用 127.0.0.1"
-	NACOS_CACHE_DIR_CREATE_FAIL     = "创建Nacos缓存目录失败: %v, 路径: %s"
-	NACOS_LOG_DIR_CREATE_FAIL       = "创建Nacos日志目录失败: %v, 路径: %s"
-	GODOTENV_LOAD_FAIL              = "加载.env文件失败: %v"
+	NACOS_REGISTERED_MESSAGE    = "注册到 Nacos 成功: %s:%d"
+	NACOS_CACHE_DIR_CREATE_FAIL = "创建Nacos缓存目录失败: %v, 路径: %s"
+	NACOS_LOG_DIR_CREATE_FAIL   = "创建Nacos日志目录失败: %v, 路径: %s"
+	GODOTENV_LOAD_FAIL          = "加载.env文件失败: %v"
 
 	// 错误
 	INTERNAL_TOKEN_SECRET_NOT_NULL = "内部服务令牌密钥不能为空"
