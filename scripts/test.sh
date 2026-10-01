@@ -20,7 +20,7 @@ run_gozero_tests() {
 
 run_nestjs_tests() {
     if command -v bun >/dev/null 2>&1; then
-        (cd "$WORKDIR/nestjs" && bun test)
+        (cd "$WORKDIR/nestjs" && bun run test -- --runInBand)
         return
     fi
     command -v npm >/dev/null 2>&1 || return 2
