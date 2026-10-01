@@ -2412,10 +2412,10 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 ### 项目架构说明
 
-1. Spring 项目采用通用的三层架构，`/controller`为对应接口，`/service`为对应实际逻辑（使用接口+实现形式），`/repository`为响应式数据库操作，并且使用依赖注入进行调用
-2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用 `svc`依赖注入进行调用
-3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts` 文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用，其中系统业务模块放在 `module/system`，通用能力和基础设施模块放在 `module/common`
-4. FastAPI 项目采用官方推荐的目录结构，在app下实现代码，`api`路由接口，`services`服务逻辑，`crud`为对应数据库操作，`core`放置核心功能模块，并且基于 `Depend`函数和获取实例函数进行依赖注入调用
+1. Spring 项目采用通用的三层架构，`/controller`为对应接口，`/service`为对应实际逻辑（使用接口+实现形式），`/repository`为响应式数据库操作，并且使用构造器依赖注入；加密器、客户端等基础设施由 `core/config` 的 `@Bean` 提供，业务类禁止内部 `new` 基础设施对象
+2. GoZero 项目采用通用的三层架构，`/handler`为对应接口，`/logic`为对应实际逻辑，`/model`为对应数据库操作，并且使用 `svc` 组合根依赖注入；SSE/聊天 Hub 由组合根创建，队列属于 `ChatHub`，定时任务通过锁工厂注入 Redis 锁，禁止包级运行态单例
+3. NestJS 项目采用默认的 module 划分格式，每个 module 有对应的 `xxx.controller.ts`、`xxx.service.ts`、`xxx.module.ts` 文件，`/dto`、`/entities`、`/schema` 放置对应的 DTO 类、数据库实体类、Mongoose 实体类，并且使用依赖注入进行调用，其中系统业务模块放在 `module/system`，通用能力和基础设施模块放在 `module/common`；Nodemailer Transporter 和 ali-oss 客户端必须由 Module Provider 创建并注入，Service 内禁止直接创建
+4. FastAPI 项目采用官方推荐的目录结构，在 app 下实现代码，`api` 路由接口，`services` 服务逻辑，`crud` 为对应数据库操作，`core` 放置核心功能模块，并且基于 `Depends` 函数和获取实例函数进行依赖注入调用；非请求任务必须显式传入依赖，权限装饰器通过可传入的 checker 使用 Client，不在装饰器内部固定获取 Client
 
 ### 项目文件夹结构说明
 
