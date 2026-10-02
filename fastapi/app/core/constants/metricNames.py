@@ -1,0 +1,11 @@
+class MetricNames:
+    HTTP_REQUESTS = "mix_http_requests_total"
+    HTTP_DURATION = "mix_http_request_duration_seconds"
+    CLIENT_REQUESTS = "mix_client_requests_total"
+    CLIENT_DURATION = "mix_client_request_duration_seconds"
+    TASK_RUNS = "mix_task_runs_total"
+    TASK_DURATION = "mix_task_duration_seconds"
+    DB_POOL_CONNECTIONS = "mix_db_pool_connections"
+    AI_CHAT = "mix_ai_chat_total"
+    AI_TOKENS = "mix_ai_tokens_total"
+    RAG_RETRIEVAL = "mix_rag_retrieval_total"

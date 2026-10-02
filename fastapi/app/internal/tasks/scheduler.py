@@ -1,4 +1,5 @@
-from collections.abc import Callable
+import asyncio
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, Optional
@@ -9,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.base import Logger
 from app.core.constants import Messages
+from app.core.telemetry.metrics import task_duration, task_runs
 from app.internal.clients import NestjsClient, SpringClient
 
 from .logic.analyzeCacheTask import update_analyze_caches_async
@@ -18,6 +20,23 @@ from .logic.vectorSyncTask import (
     export_article_vectors_to_postgres_async,
 )
 from .logic.warehouseSyncTask import sync_warehouse_async
+
+
+async def _run_measured_task(
+    task_name: str, task_func: Callable[[], Awaitable[Any]]
+) -> Any:
+    started_at: float = asyncio.get_running_loop().time()
+    result: str = "success"
+    try:
+        return await task_func()
+    except Exception:
+        result = "failure"
+        raise
+    finally:
+        task_runs.labels(task_name, result).inc()
+        task_duration.labels(task_name).observe(
+            asyncio.get_running_loop().time() - started_at
+        )
 
 
 def start_scheduler(
@@ -50,7 +69,12 @@ def start_scheduler(
         enable_incremental_sync=True,  # 启用增量同步
     )
     # 每24小时执行一次
-    scheduler.add_job(sync_vector_job_func, "interval", hours=24, id="sync_vectors")
+    scheduler.add_job(
+        partial(_run_measured_task, "vector-sync", sync_vector_job_func),
+        "interval",
+        hours=24,
+        id="sync_vectors",
+    )
 
     # 任务2：更新分析接口缓存
     analyze_cache_job_func = partial(
@@ -60,7 +84,7 @@ def start_scheduler(
     )
     # 每10分钟执行一次，启动时立即执行一次
     scheduler.add_job(
-        analyze_cache_job_func,
+        partial(_run_measured_task, "analyze-cache-refresh", analyze_cache_job_func),
         "interval",
         minutes=10,
         id="update_analyze_caches",
@@ -69,12 +93,20 @@ def start_scheduler(
 
     # 任务3：同步 MySQL 到 Neo4j 知识图谱（增量同步，每24小时）
     neo4j_sync_job_func = partial(sync_mysql_to_neo4j_async, force_full=False)
-    scheduler.add_job(neo4j_sync_job_func, "interval", hours=24, id="sync_neo4j")
+    scheduler.add_job(
+        partial(_run_measured_task, "neo4j-sync", neo4j_sync_job_func),
+        "interval",
+        hours=24,
+        id="sync_neo4j",
+    )
 
     # 任务4：Neo4j 知识图谱全量同步（每周一次，兜底清理 MySQL 已删除数据），增量同步为避免用增量快照误删全图，不执行清理；已删除记录需靠全量同步清理
     neo4j_full_sync_job_func = partial(sync_mysql_to_neo4j_async, force_full=True)
     scheduler.add_job(
-        neo4j_full_sync_job_func, "interval", days=7, id="sync_neo4j_full"
+        partial(_run_measured_task, "neo4j-full-sync", neo4j_full_sync_job_func),
+        "interval",
+        days=7,
+        id="sync_neo4j_full",
     )
 
     # 任务5：增量同步 MySQL/MongoDB 到 ClickHouse 并刷新数仓，每10分钟执行一次
@@ -86,7 +118,7 @@ def start_scheduler(
         nestjs_client=nestjs_client,
     )
     scheduler.add_job(
-        warehouse_sync_job_func,
+        partial(_run_measured_task, "warehouse-sync", warehouse_sync_job_func),
         "interval",
         minutes=10,
         id="sync_clickhouse_warehouse",

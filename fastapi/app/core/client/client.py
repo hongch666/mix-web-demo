@@ -22,6 +22,7 @@ from app.core.base import Logger
 from app.core.config import load_config
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
+from app.core.telemetry.metrics import client_duration, client_requests
 
 from .nacos import get_service_instance
 
@@ -322,6 +323,7 @@ async def _call_with_client(
     timeout: int,
 ) -> Any:
     """使用指定客户端执行远程调用（含熔断和重试）"""
+    started_at: float = time.perf_counter()
     try:
         breaker.allow_request()
         async for attempt in AsyncRetrying(
@@ -362,8 +364,16 @@ async def _call_with_client(
                         Messages.ERROR_SERVICE_CALL_FAILED,
                     )
                 breaker.record_success()
+                client_requests.labels(service_name, method.upper(), "success").inc()
+                client_duration.labels(service_name, method.upper()).observe(
+                    time.perf_counter() - started_at
+                )
                 return result
     except Exception as e:
+        client_requests.labels(service_name, method.upper(), "failure").inc()
+        client_duration.labels(service_name, method.upper()).observe(
+            time.perf_counter() - started_at
+        )
         if not isinstance(e, CircuitBreakerOpenError):
             breaker.record_failure()
         raise _build_remote_service_error(service_name, e) from e

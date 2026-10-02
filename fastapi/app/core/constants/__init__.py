@@ -3,6 +3,7 @@ from .defaults import Defaults
 from .errorCodes import ErrorCodes
 from .httpCode import HttpCode
 from .messages import Messages
+from .metricNames import MetricNames
 from .prompts import Prompts
 from .redisKeys import RedisKeys
 from .scripts import Scripts
@@ -14,6 +15,7 @@ from .warehouse import WarehouseScripts
 __all__ = [
     "AlgorithmConstants",
     "Messages",
+    "MetricNames",
     "ErrorCodes",
     "Scripts",
     "Prompts",

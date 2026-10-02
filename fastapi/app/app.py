@@ -4,8 +4,10 @@ from app.common.middleware import middlewares
 from app.core.constants import SwaggerConfig
 from app.core.errors import exception_handlers
 from app.core.telemetry import instrument_fastapi
+from app.core.telemetry.metrics import http_duration, http_requests
 from app.internal.api import routers
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from time import perf_counter
 
 from .lifespan import lifespan
 
@@ -23,6 +25,16 @@ def create_app() -> FastAPI:
         openapi_tags=SwaggerConfig.OPENAPI_TAGS,
         lifespan=lifespan,
     )
+
+    @app.middleware("http")
+    async def record_http_metrics(request: Request, call_next):
+        started_at: float = perf_counter()
+        response = await call_next(request)
+        route: str = getattr(request.scope.get("route"), "path", "UNKNOWN")
+        http_requests.labels(request.method, route, str(response.status_code)).inc()
+        http_duration.labels(request.method, route).observe(perf_counter() - started_at)
+        return response
+
     instrument_fastapi(app)
 
     # 覆写 openapi 方法以设置 OpenAPI 版本
