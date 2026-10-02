@@ -51,6 +51,7 @@ services:
     command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
     volumes:
       - ./prometheus-config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-config/rules:/etc/prometheus/rules:ro
       - prometheus-data:/prometheus
     networks:
       - hcsy
@@ -176,6 +177,8 @@ services:
         condition: service_started
     ports:
       - "8080:9080"
+    expose:
+      - "9091"
     volumes:
       - ./gateway/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./gateway/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml.template:ro

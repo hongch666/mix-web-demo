@@ -1,0 +1,44 @@
+groups:
+  - name: mix-service-alerts
+    rules:
+      - alert: MixServiceDown
+        expr: up{service=~"spring|gozero|nestjs|fastapi|gateway"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} 指标端点不可用"
+      - alert: MixHighHttpErrorRate
+        expr: |
+          sum by (service) (rate(mix_http_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(sum by (service) (rate(mix_http_requests_total[5m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} HTTP 5xx 比例超过 5%"
+      - alert: MixDownstreamFailures
+        expr: sum by (service, target_service) (rate(mix_client_requests_total{outcome="failure"}[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} 下游调用持续失败"
+      - alert: MixGatewayErrorRate
+        expr: |
+          sum(rate(apisix_http_status{service="gateway",code=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(apisix_http_status{service="gateway"}[5m])), 0.001) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "APISIX 网关 5xx 比例超过 5%"
+      - alert: MixGatewayRateLimited
+        expr: sum(rate(apisix_http_status{service="gateway",code="429"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "APISIX 网关限流拒绝速率超过每秒 1 次"

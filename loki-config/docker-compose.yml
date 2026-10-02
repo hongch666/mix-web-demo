@@ -72,6 +72,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ../prometheus-config/prometheus-host.yml:/etc/prometheus/prometheus.yml:ro
+      - ../prometheus-config/rules:/etc/prometheus/rules:ro
       - prometheus-data:/prometheus
     networks:
       default:

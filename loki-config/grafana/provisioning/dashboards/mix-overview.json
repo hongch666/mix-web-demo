@@ -1,0 +1,59 @@
+{
+  "uid": "mix-overview",
+  "title": "Mix Web Demo RED 总览",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(up, service)",
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "HTTP 请求速率",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "sum by (service) (rate(mix_http_requests_total{service=~\"$service\"}[5m])) or sum by (service) (rate(http_server_requests_seconds_count{service=~\"$service\"}[5m])) or sum by (service) (rate(http_server_requests_code_total{service=~\"$service\"}[5m])) or sum by (service) (rate(apisix_http_status{service=~\"$service\"}[5m]))", "legendFormat": "{{service}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "HTTP 5xx 比例",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "100 * (sum by (service) (rate(mix_http_requests_total{service=~\"$service\",status=~\"5..\"}[5m])) or sum by (service) (rate(http_server_requests_seconds_count{service=~\"$service\",status=~\"5..\"}[5m])) or sum by (service) (rate(http_server_requests_code_total{service=~\"$service\",code=~\"5..\"}[5m])) or sum by (service) (rate(apisix_http_status{service=~\"$service\",code=~\"5..\"}[5m]))) / clamp_min((sum by (service) (rate(mix_http_requests_total{service=~\"$service\"}[5m])) or sum by (service) (rate(http_server_requests_seconds_count{service=~\"$service\"}[5m])) or sum by (service) (rate(http_server_requests_code_total{service=~\"$service\"}[5m])) or sum by (service) (rate(apisix_http_status{service=~\"$service\"}[5m]))), 0.001)", "legendFormat": "{{service}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "HTTP P99 延迟（Spring、NestJS、FastAPI）",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "expr": "histogram_quantile(0.99, sum by (service, le) (rate(mix_http_request_duration_seconds_bucket{service=~\"$service\"}[5m])))", "legendFormat": "{{service}}", "refId": "A" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    }
+  ]
+}

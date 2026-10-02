@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: mix-web-demo
+    orgId: 1
+    folder: Mix Web Demo
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
