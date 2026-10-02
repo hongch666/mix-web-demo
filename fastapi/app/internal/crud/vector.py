@@ -1,5 +1,4 @@
 import asyncio
-import os
 import re
 from functools import lru_cache
 from typing import Any, Optional
@@ -75,17 +74,8 @@ class VectorMapper:
 
     @staticmethod
     def _resolve_embedding_api_key(embedding_cfg: dict[str, Any]) -> str:
-        """优先从配置读取 embedding key，再回退到常见环境变量"""
-        candidates = [
-            embedding_cfg.get("api_key"),
-            os.getenv("EMBEDDING_API_KEY"),
-            os.getenv("DASHSCOPE_API_KEY"),
-            os.getenv("DASHSCOPE_API_KEY_FOR_LLM"),
-        ]
-        for candidate in candidates:
-            if candidate and str(candidate).strip():
-                return str(candidate).strip()
-        return ""
+        """从 YAML 配置读取 embedding API Key"""
+        return str(embedding_cfg.get("api_key") or "").strip()
 
     async def upsert_articles(
         self,

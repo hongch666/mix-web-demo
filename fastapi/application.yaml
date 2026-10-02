@@ -128,6 +128,7 @@ agent:
 langsmith:
   enabled: ${LANGSMITH_TRACING:false} # 是否启用 LangSmith 追踪
   api_key: ${LANGSMITH_API_KEY:} # LangSmith API Key
+  user_hash_key: ${LANGSMITH_USER_HASH_KEY:} # 用户 ID 脱敏哈希密钥
   project: ${LANGSMITH_PROJECT:mix-web-demo-dev} # LangSmith 项目名
   endpoint: ${LANGSMITH_ENDPOINT:https://api.smith.langchain.com} # LangSmith API 端点
   workspace_id: ${LANGSMITH_WORKSPACE_ID:} # 工作区 ID（可选）

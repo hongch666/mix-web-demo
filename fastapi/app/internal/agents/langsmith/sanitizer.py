@@ -1,10 +1,10 @@
 import hashlib
 import hmac
-import os
 import re
 from typing import Any, Optional
 from uuid import uuid4
 
+from app.core.config import load_config
 from app.core.constants import Messages, Scripts
 
 # 通过 HMAC 对用户 ID 进行不可逆哈希
@@ -15,7 +15,8 @@ def _get_hmac_key() -> bytes:
     """获取或生成用户 ID 哈希密钥"""
     global _user_hash_hmac_key
     if _user_hash_hmac_key is None:
-        raw = os.getenv("LANGSMITH_USER_HASH_KEY") or str(uuid4())
+        langsmith_cfg = load_config("langsmith") or {}
+        raw = str(langsmith_cfg.get("user_hash_key") or "").strip() or str(uuid4())
         _user_hash_hmac_key = raw.encode("utf-8")
     return _user_hash_hmac_key
 
