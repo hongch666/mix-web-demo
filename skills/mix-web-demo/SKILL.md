@@ -309,7 +309,7 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 - 上下文头与内部令牌在 httpc 的 `Option`（`injectContextHeaders`）里注入，从 `r.Context()` 读用户身份；请求头常量统一放 `common/constants/remoteCall.go`
 - 熔断打开时 httpc 抢先返回 `breaker.ErrServiceUnavailable`：`CallService` 负责转成降级文案，`shouldRetry` 对该错误返回 false（重试无意义且会持续冲击熔断器）
 - 熔断判定比早期更准：只有 **5xx / 超时 / 网络错误**计失败，4xx 与业务错误码不计
-- **释放链路（2026-09-19 补齐）**：`httpc.Service` 不暴露底层 `http.Client`，所以在 `ServiceDiscovery` 上加了 `Close()`（内部 `httpClient.CloseIdleConnections()`）；三个业务 Client 各转发一个 `Close()`，由 `ClientContext.Close()` 汇总，最终挂在 `ServiceContext.Close()` 里。注意 `ClientContext.FastapiClient` 字段是业务契约接口（测试用 mock 实现），生命周期方法**不并入**该接口，用包内 `resourceCloser` 断言处理，新增客户端时保持这条链路
+- **释放链路（2026-09-19 补齐）**：`httpc.Service` 不暴露底层 `http.Client`，所以在 `ServiceDiscovery` 上加了 `Close()`（内部 `httpClient.CloseIdleConnections()`）；三个业务 Client 各转发一个 `Close()`，由 `ClientContext.Close()` 汇总，最终挂在 `ServiceContext.Close()` 里。注意 `ClientContext` 的 FastapiClient / NestjsClient / SpringClient 三个字段统一为业务契约接口（`fastapiClient.Client` / `nestjsClient.Client` / `springClient.Client`，测试用 mock 实现），生命周期方法**不并入**接口，用包内 `resourceCloser` 断言处理，新增客户端时保持这条链路
 - 链路追踪：`core/trace` 在包 `init()` 里已设置 `TraceContext` propagator，`rest.MustNewServer` → `ServiceConf.SetUp()` 也会调 `trace.StartAgent`，所以**不配 `Telemetry` 也会注入 traceparent**，只是 span 不上报；接入采集端只需在 `etc/application.yaml` 加 `Telemetry: {Endpoint, Batcher}`
 - 客户端可观测性：httpc 每次调用都会打一条 logx 日志（4xx/5xx 为 error 级），日志量会上升，这是换取链路可视化的代价
 
