@@ -20,6 +20,7 @@ import com.hcsy.spring.common.utils.InternalTokenUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
+import com.hcsy.spring.core.metrics.MetricsRecorder;
 import com.hcsy.spring.core.properties.ServiceClientProperties;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
@@ -47,6 +48,7 @@ public class ServiceWebClient {
     private final CircuitBreakerRegistry circuitBreakerRegistry;
     private final RetryRegistry retryRegistry;
     private final ServiceClientProperties serviceClientProperties;
+    private final MetricsRecorder metricsRecorder;
 
     /**
      * 使用配置中的统一超时时间发起请求
@@ -75,6 +77,7 @@ public class ServiceWebClient {
         var retry = retryRegistry.retry(serviceName);
 
         return Mono.deferContextual(context -> {
+            long startedAt = System.nanoTime();
             Long userId = UserContext.getUserId(context);
             String username = UserContext.getUsername(context);
             String token = internalTokenUtil.generateInternalToken(userId == null ? -1L : userId, SERVICE_NAME);
@@ -99,7 +102,14 @@ public class ServiceWebClient {
                 .transformDeferred(RetryOperator.of(retry))
                 // 应用熔断机制
                 .transformDeferred(CircuitBreakerOperator.of(circuitBreaker))
+                .doOnNext(result -> metricsRecorder.recordClientCall(
+                    serviceName,
+                    method.name(),
+                    result.getCode() == HttpCode.OK ? "success" : "failure",
+                    System.nanoTime() - startedAt))
                 .onErrorResume(error -> {
+                    metricsRecorder.recordClientCall(
+                        serviceName, method.name(), "failure", System.nanoTime() - startedAt);
                     logger.error(fallbackMessage + error.getMessage(), error);
                     return Mono.just(Result.error(HttpCode.SERVICE_UNAVAILABLE, fallbackMessage));
                 });

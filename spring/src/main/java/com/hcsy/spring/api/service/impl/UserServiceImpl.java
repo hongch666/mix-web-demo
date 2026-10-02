@@ -20,11 +20,13 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.MetricNames;
 import com.hcsy.spring.common.constants.RedisKeys;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.CacheUtil;
 import com.hcsy.spring.common.utils.PasswordEncryptor;
 import com.hcsy.spring.common.utils.RedisUtil;
+import com.hcsy.spring.core.metrics.MetricsRecorder;
 import com.hcsy.spring.core.properties.UserPasswordProperties;
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -64,6 +66,7 @@ public class UserServiceImpl implements UserService {
     private final ObjectMapper objectMapper;
     private final TransactionalOperator transactionalOperator;
     private final CacheUtil cacheUtil;
+    private final MetricsRecorder metricsRecorder;
 
     @Override
     public Mono<UserListVO> listUsersWithFilter(long page, long size, String username) {
@@ -152,7 +155,9 @@ public class UserServiceImpl implements UserService {
             .then(findByUsername(loginDTO.getName())
                 .switchIfEmpty(Mono.error(unauthorized(Messages.LOGIN))))
             .flatMap(user -> validatePassword(loginDTO.getPassword(), user).then(loginUser(user)))
-            .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login));
+            .flatMap(login -> imageCaptchaService.deleteCaptcha(loginDTO.getCaptchaId()).thenReturn(login))
+            .doOnSuccess(ignored -> metricsRecorder.increment(MetricNames.USER_LOGIN, "result", "success"))
+            .doOnError(ignored -> metricsRecorder.increment(MetricNames.USER_LOGIN, "result", "failure"));
     }
 
     @Override
@@ -243,7 +248,9 @@ public class UserServiceImpl implements UserService {
                 });
             })
             .then(emailVerificationService.markEmailAsVerified(dto.getEmail()))
-            .then();
+            .then()
+            .doOnSuccess(ignored -> metricsRecorder.increment(MetricNames.USER_REGISTER, "result", "success"))
+            .doOnError(ignored -> metricsRecorder.increment(MetricNames.USER_REGISTER, "result", "failure"));
     }
 
     @Override
