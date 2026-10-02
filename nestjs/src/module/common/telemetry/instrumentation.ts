@@ -1,7 +1,7 @@
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { NodeSDK } from "@opentelemetry/sdk-node";
+import type { Server } from "node:http";
 import {
   AlwaysOffSampler,
   AlwaysOnSampler,
@@ -11,6 +11,7 @@ import {
 } from "@opentelemetry/sdk-trace-base";
 import { Messages, TelemetryConstants } from "src/common/constants";
 import config from "src/config";
+import { startMetricsServer } from "./metrics.server";
 
 interface TelemetryConfig {
   enabled: boolean;
@@ -23,6 +24,7 @@ interface TelemetryConfig {
 }
 
 const telemetryConfig: TelemetryConfig = config.telemetry as TelemetryConfig;
+let metricsServer: Server | undefined;
 
 function createRatioSampler(ratioValue: string): TraceIdRatioBasedSampler {
   const ratio: number = Number(ratioValue);
@@ -57,10 +59,6 @@ const telemetrySdk: NodeSDK | undefined = telemetryConfig.enabled
   ? new NodeSDK({
       serviceName: telemetryConfig.serviceName,
       sampler: createSampler(telemetryConfig),
-      metricReader: new PrometheusExporter({
-        port: Number(telemetryConfig.metricsPort),
-        endpoint: telemetryConfig.metricsEndpoint,
-      }),
       traceExporter: new OTLPTraceExporter({
         url: telemetryConfig.tracesEndpoint,
       }),
@@ -73,7 +71,24 @@ const telemetrySdk: NodeSDK | undefined = telemetryConfig.enabled
   : undefined;
 
 telemetrySdk?.start();
+if (telemetryConfig.enabled) {
+  metricsServer = startMetricsServer(
+    Number(telemetryConfig.metricsPort),
+    telemetryConfig.metricsEndpoint,
+  );
+}
 
 export async function shutdownTelemetry(): Promise<void> {
   await telemetrySdk?.shutdown();
+  if (metricsServer) {
+    await new Promise<void>((resolve, reject) => {
+      metricsServer?.close((error?: Error) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    });
+  }
 }

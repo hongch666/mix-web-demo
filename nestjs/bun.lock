@@ -18,7 +18,6 @@
         "@nestjs/typeorm": "^11.0.0",
         "@opentelemetry/api": "1.9.1",
         "@opentelemetry/auto-instrumentations-node": "0.80.0",
-        "@opentelemetry/exporter-prometheus": "0.222.0",
         "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
         "@opentelemetry/sdk-metrics": "2.11.0",
         "@opentelemetry/sdk-node": "0.222.0",
@@ -44,6 +43,7 @@
         "nestjs-cls": "^6.0.1",
         "nodemailer": "^8.0.7",
         "opossum": "^8.4.0",
+        "prom-client": "^15.1.3",
         "puppeteer": "^24.28.0",
         "reflect-metadata": "^0.2.2",
         "rxjs": "^7.8.1",
@@ -901,6 +901,8 @@
     "bin-version": ["bin-version@6.0.0", "https://registry.npmmirror.com/bin-version/-/bin-version-6.0.0.tgz", { "dependencies": { "execa": "^5.0.0", "find-versions": "^5.0.0" } }, "sha512-nk5wEsP4RiKjG+vF+uG8lFsEn4d7Y6FVDamzzftSunXOoOcOOkzcWdKVlGgFFwlUQCj63SgnUkLLGF8v7lufhw=="],
 
     "bin-version-check": ["bin-version-check@5.1.0", "https://registry.npmmirror.com/bin-version-check/-/bin-version-check-5.1.0.tgz", { "dependencies": { "bin-version": "^6.0.0", "semver": "^7.5.3", "semver-truncate": "^3.0.0" } }, "sha512-bYsvMqJ8yNGILLz1KP9zKLzQ6YpljV3ln1gqhuLkUtyfGi3qXKGuK2p+U4NAvjVFzDFiBBtOpCOSFNuYYEGZ5g=="],
+
+    "bintrees": ["bintrees@1.0.2", "https://registry.npmmirror.com/bintrees/-/bintrees-1.0.2.tgz", {}, "sha512-VOMgTMwjAaUG580SXn3LacVgjurrbMme7ZZNYGSSV7mmtY6QQRh0Eg3pwIcntQ77DErK1L0NxkbetjcoXzVwKw=="],
 
     "bl": ["bl@4.1.0", "https://registry.npmmirror.com/bl/-/bl-4.1.0.tgz", { "dependencies": { "buffer": "^5.5.0", "inherits": "^2.0.4", "readable-stream": "^3.4.0" } }, "sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w=="],
 
@@ -1854,6 +1856,8 @@
 
     "progress": ["progress@2.0.3", "https://repo.huaweicloud.com/repository/npm/progress/-/progress-2.0.3.tgz", {}, "sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA=="],
 
+    "prom-client": ["prom-client@15.1.3", "https://registry.npmmirror.com/prom-client/-/prom-client-15.1.3.tgz", { "dependencies": { "@opentelemetry/api": "^1.4.0", "tdigest": "^0.1.1" } }, "sha512-6ZiOBfCywsD4k1BN9IX0uZhF+tJkV8q8llP64G5Hajs4JOeVLPCwpPVcpXy3BwYiUGgyJzsJJQeOIv7+hDSq8g=="],
+
     "promise-breaker": ["promise-breaker@6.0.0", "https://repo.huaweicloud.com/repository/npm/promise-breaker/-/promise-breaker-6.0.0.tgz", {}, "sha512-BthzO9yTPswGf7etOBiHCVuugs2N01/Q/94dIPls48z2zCmrnDptUUZzfIb+41xq0MnYZ/BzmOd6ikDR4ibNZA=="],
 
     "prompts": ["prompts@2.4.2", "https://registry.npmmirror.com/prompts/-/prompts-2.4.2.tgz", { "dependencies": { "kleur": "^3.0.3", "sisteransi": "^1.0.5" } }, "sha512-NxNv/kLguCA7p3jE8oL2aEBsrJWgAakBpgmgK6lpPWV+WuOmY6r2/zbAVnP+T8bQlA0nzHXSJSJW0Hq7ylaD2Q=="],
@@ -2091,6 +2095,8 @@
     "tar-stream": ["tar-stream@3.1.7", "https://registry.npmmirror.com/tar-stream/-/tar-stream-3.1.7.tgz", { "dependencies": { "b4a": "^1.6.4", "fast-fifo": "^1.2.0", "streamx": "^2.15.0" } }, "sha512-qJj60CXt7IU1Ffyc3NJMjh6EkuCFej46zUqJ4J7pqYlThyd9bO0XBTmcOIhSzZJVWfsLks0+nle/j538YAW9RQ=="],
 
     "tcp-base": ["tcp-base@3.2.0", "https://registry.npmmirror.com/tcp-base/-/tcp-base-3.2.0.tgz", { "dependencies": { "is-type-of": "^1.0.0", "sdk-base": "^3.1.1" } }, "sha512-fFAqH8QTbheuEbXLdbxTSe31Gkw6Lg3nq4loyrxIXM6+ILGdbYXEblgyuu7UltOkOHbP/q2iqaC+gIXXu0C5bg=="],
+
+    "tdigest": ["tdigest@0.1.3", "https://registry.npmmirror.com/tdigest/-/tdigest-0.1.3.tgz", { "dependencies": { "bintrees": "1.0.2" } }, "sha512-zbRt+lT+/H4fRItHshczHErVCQnitJk8MfMT24MqFJf3YL7SJJPqGIGeuOdvxXxM/AHFzKBl7WoyaYwqO9s3Kw=="],
 
     "terser": ["terser@5.43.1", "https://registry.npmmirror.com/terser/-/terser-5.43.1.tgz", { "dependencies": { "@jridgewell/source-map": "^0.3.3", "acorn": "^8.14.0", "commander": "^2.20.0", "source-map-support": "~0.5.20" }, "bin": "bin/terser" }, "sha512-+6erLbBm0+LROX2sPXlUYx/ux5PyE9K/a92Wrt6oA+WDAoFTdpHE5tCYCI5PNzq2y8df4rA+QgHLJuR4jNymsg=="],
 

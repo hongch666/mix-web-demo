@@ -4,6 +4,7 @@ export { ErrorIds } from "./errorIds.constants";
 export { ExportTemplate } from "./exportTemplate.constants";
 export { HttpCode } from "./httpCode.constants";
 export { Messages } from "./messages.constants";
+export { MetricNames } from "./metricNames.constants";
 export { MongoTools } from "./mongoTools.constants";
 export { RedisKeys } from "./redisKey.constants";
 export { SqlTools } from "./sqlTools.constants";

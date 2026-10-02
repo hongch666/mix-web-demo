@@ -14,6 +14,7 @@ import { Defaults, ErrorIds, HttpCode, Messages } from "src/common/constants";
 import { BusinessException } from "src/common/exceptions/business.exception";
 import { InternalTokenUtil } from "src/common/utils/internalToken.util";
 import { LoggerService } from "src/module/common/logger/logger.service";
+import { clientDuration, clientRequests } from "../telemetry/metrics";
 
 interface CallOptions {
   serviceName: string;
@@ -313,6 +314,7 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
   }
 
   async call(opts: CallOptions): Promise<Record<string, unknown>> {
+    const startedAt: bigint = process.hrtime.bigint();
     const breaker = this.getBreaker(opts.serviceName);
 
     const instances: NacosInstance[] = await this.getServiceInstances(
@@ -418,8 +420,23 @@ export class NacosService implements OnModuleInit, OnModuleDestroy {
         return responseData;
       });
 
-      return response as Record<string, unknown>;
+      const responseData: Record<string, unknown> = response as Record<
+        string,
+        unknown
+      >;
+      const outcome: string =
+        responseData.code === HttpCode.OK ? "success" : "failure";
+      clientRequests.labels(opts.serviceName, opts.method, outcome).inc();
+      clientDuration
+        .labels(opts.serviceName, opts.method)
+        .observe(Number(process.hrtime.bigint() - startedAt) / 1_000_000_000);
+
+      return responseData;
     } catch (err) {
+      clientRequests.labels(opts.serviceName, opts.method, "failure").inc();
+      clientDuration
+        .labels(opts.serviceName, opts.method)
+        .observe(Number(process.hrtime.bigint() - startedAt) / 1_000_000_000);
       // 熔断器降级处理
       if (err instanceof Error && err.message === "Breaker is open") {
         this.logger.warning(

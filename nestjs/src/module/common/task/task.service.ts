@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { Defaults, Messages, RedisKeys } from "src/common/constants";
 import { LoggerService } from "src/module/common/logger/logger.service";
+import { taskDuration, taskRuns } from "../telemetry/metrics";
 import { ApiLogService } from "src/module/system/apiLog/apiLog.service";
 import { ArticleLogService } from "src/module/system/articleLog/articleLog.service";
 import { RedisService } from "../redis/redis.service";
@@ -36,6 +37,8 @@ export class TaskService {
     this.logger.info(
       Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey),
     );
+    const startedAt: bigint = process.hrtime.bigint();
+    let result: string = "success";
 
     try {
       this.logger.info(Messages.TASK_CLEAN);
@@ -50,10 +53,15 @@ export class TaskService {
 
       this.logger.info(Messages.API_LOG_CLEANUP_COMPLETED(deletedCount));
     } catch (error: unknown) {
+      result = "failure";
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
       this.logger.error(Messages.API_LOG_CLEANUP_FAILED(errorMessage));
     } finally {
+      taskRuns.labels("api-log-cleanup", result).inc();
+      taskDuration
+        .labels("api-log-cleanup")
+        .observe(Number(process.hrtime.bigint() - startedAt) / 1_000_000_000);
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
         this.logger.info(
@@ -88,6 +96,8 @@ export class TaskService {
     this.logger.info(
       Messages.REDIS_LOCK_ACQUIRE_SUCCESS.replace("%s", lockKey),
     );
+    const startedAt: bigint = process.hrtime.bigint();
+    let result: string = "success";
 
     try {
       this.logger.info(Messages.TASK_ARTICLE_CLEAN);
@@ -102,10 +112,15 @@ export class TaskService {
 
       this.logger.info(Messages.ARTICLE_LOG_CLEANUP_COMPLETED(deletedCount));
     } catch (error: unknown) {
+      result = "failure";
       const errorMessage: string =
         error instanceof Error ? error.message : String(error);
       this.logger.error(Messages.ARTICLE_LOG_CLEANUP_FAILED(errorMessage));
     } finally {
+      taskRuns.labels("article-log-cleanup", result).inc();
+      taskDuration
+        .labels("article-log-cleanup")
+        .observe(Number(process.hrtime.bigint() - startedAt) / 1_000_000_000);
       const released = await this.redisService.unlock(lockKey, lockValue);
       if (released) {
         this.logger.info(
