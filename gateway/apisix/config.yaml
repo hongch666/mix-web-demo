@@ -31,6 +31,7 @@ plugins:
   - proxy-rewrite
   - response-rewrite
   - opentelemetry
+  - prometheus
 
 nginx_config:
   http:
@@ -48,6 +49,20 @@ nginx_config:
   error_log_level: warn
 
 plugin_attr:
+  prometheus:
+    export_uri: /apisix/prometheus/metrics
+    metric_prefix: apisix_
+    enable_export_server: true
+    export_addr:
+      ip: 0.0.0.0
+      port: 9091
+    metrics:
+      http_status:
+        enabled: true
+        extra_labels: [route_name, matched_uri]
+      http_latency:
+        enabled: true
+        extra_labels: [route_name, matched_uri]
   opentelemetry:
     resource:
       service.name: apisix-gateway

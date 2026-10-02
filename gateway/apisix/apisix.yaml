@@ -42,6 +42,9 @@ global_rules:
       opentelemetry:
         sampler:
           name: __APISIX_OTEL_SAMPLER__
+  - id: global-prometheus
+    plugins:
+      prometheus: {}
 
 routes:
   - id: health
