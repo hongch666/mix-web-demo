@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"app/common/constants"
 	"app/common/exceptions"
 	"app/common/keys"
+	"app/common/metrics"
 	"app/common/utils"
 	"app/internal/client/fastapiClient"
 	"app/internal/svc"
@@ -39,6 +41,16 @@ func NewSearchArticlesLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Se
 }
 
 func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp *types.SearchArticlesResp, err error) {
+	startedAt := time.Now()
+	mode := "hybrid"
+	defer func() {
+		result := "success"
+		if err != nil {
+			result = "failure"
+		}
+		metrics.SearchRequests.WithLabelValues(mode, result).Inc()
+		metrics.SearchDuration.WithLabelValues(mode).Observe(time.Since(startedAt).Seconds())
+	}()
 	// 设置默认分页
 	page := max(req.Page, 1)
 	size := req.Size
@@ -70,6 +82,7 @@ func (l *SearchArticlesLogic) SearchArticles(req *types.SearchArticlesReq) (resp
 	// 权重缺失后无法计算融合权重，故降级路径同时放弃召回放大与向量、图谱增强
 	degraded := scriptErr != nil || weightsErr != nil || paramErr != nil
 	if degraded {
+		mode = "keyword"
 		l.Warningf(constants.SEARCH_SCRIPTS_FETCH_DEGRADE_LOG, scriptErr, weightsErr, paramErr)
 	}
 

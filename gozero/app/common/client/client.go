@@ -16,6 +16,7 @@ import (
 
 	"app/common/constants"
 	"app/common/keys"
+	"app/common/metrics"
 	"app/common/utils"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/naming_client"
@@ -171,7 +172,15 @@ type Result struct {
 
 // CallService 调用下游服务，熔断、链路追踪与耗时日志由 httpc 承担，服务发现与重试仍由本方法控制
 func (sd *ServiceDiscovery) CallService(ctx context.Context, serviceName string, path string, opts RequestOptions) (Result, error) {
+	startedAt := time.Now()
+	method := strings.ToUpper(opts.Method)
 	result, err := sd.callWithRetry(ctx, serviceName, path, opts)
+	outcome := "success"
+	if err != nil {
+		outcome = "failure"
+	}
+	metrics.ClientRequests.WithLabelValues(serviceName, method, outcome).Inc()
+	metrics.ClientDuration.WithLabelValues(serviceName, method).Observe(time.Since(startedAt).Seconds())
 	if err != nil {
 		// httpc 在熔断打开时抢先返回该错误，统一转换为降级提示
 		if errors.Is(err, breaker.ErrServiceUnavailable) {

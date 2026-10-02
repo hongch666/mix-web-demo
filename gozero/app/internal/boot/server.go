@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"app/common/constants"
+	"app/common/metrics"
 	"app/common/utils"
 	"app/common/validation"
 	"app/internal/config"
@@ -28,6 +29,7 @@ func CreateServer(c config.Config, ctx *svc.ServiceContext) *rest.Server {
 	}
 
 	server := rest.MustNewServer(c.RestConf)
+	metrics.Init()
 
 	// 优先注册 Swagger 路由（在业务处理器之前）
 	registerSwaggerRoute(server)

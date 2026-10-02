@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"app/common/constants"
+	"app/common/metrics"
 	"app/common/utils"
 	"app/internal/svc"
 	"app/internal/task/logic"
@@ -45,6 +46,12 @@ func NewTaskScheduler(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory) 
 			return
 		}
 		logger.Info(fmt.Sprintf(constants.REDIS_LOCK_ACQUIRE_SUCCESS, lockKey))
+		taskStartedAt := time.Now()
+		taskResult := "success"
+		defer func() {
+			metrics.TaskRuns.WithLabelValues("es-sync", taskResult).Inc()
+			metrics.TaskDuration.WithLabelValues("es-sync").Observe(time.Since(taskStartedAt).Seconds())
+		}()
 
 		// 确保任务执行完毕后释放锁
 		defer func() {
@@ -60,7 +67,9 @@ func NewTaskScheduler(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory) 
 			}
 		}()
 
-		executeESSync(ctx, logger, svcCtx)
+		if syncErr := executeESSync(ctx, logger, svcCtx); syncErr != nil {
+			taskResult = "failure"
+		}
 	})
 	if err != nil {
 		if svcCtx.Logger != nil {
@@ -76,11 +85,12 @@ func NewTaskScheduler(svcCtx *svc.ServiceContext, lockFactory RedisLockFactory) 
 }
 
 // executeESSync 执行 ES 同步任务
-func executeESSync(ctx context.Context, logger *utils.ZeroLogger, svcCtx *svc.ServiceContext) {
+func executeESSync(ctx context.Context, logger *utils.ZeroLogger, svcCtx *svc.ServiceContext) error {
 	logger.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 	if err := logic.SyncArticlesToES(ctx, svcCtx); err != nil {
 		logger.Error(fmt.Sprintf(constants.TASK_SYNC_ES_FAILED_MESSAGE, err))
-		return
+		return err
 	}
 	logger.Info(constants.TASK_SYNC_ES_COMPLETED_MESSAGE)
+	return nil
 }
