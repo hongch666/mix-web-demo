@@ -72,22 +72,23 @@ type resourceCloser interface {
 	Close()
 }
 
+// closeIfNeeded 对实现了 resourceCloser 的契约接口执行释放，mock 未实现时跳过
+func closeIfNeeded(c any) {
+	if closer, ok := c.(resourceCloser); ok {
+		closer.Close()
+	}
+}
+
 // Close 释放三个远程客户端持有的连接池
-// FastapiClient 字段是业务契约接口（测试用 mock 实现），生命周期方法不并入该接口，故此处按需断言
+// 三个字段均为业务契约接口（测试用 mock 实现），生命周期方法不并入接口，故统一按需断言
 func (cc *ClientContext) Close() {
 	if cc == nil {
 		return
 	}
 
-	if closer, ok := cc.FastapiClient.(resourceCloser); ok {
-		closer.Close()
-	}
-	if cc.NestjsClient != nil {
-		cc.NestjsClient.Close()
-	}
-	if cc.SpringClient != nil {
-		cc.SpringClient.Close()
-	}
+	closeIfNeeded(cc.FastapiClient)
+	closeIfNeeded(cc.NestjsClient)
+	closeIfNeeded(cc.SpringClient)
 }
 
 // Close 关闭日志文件句柄

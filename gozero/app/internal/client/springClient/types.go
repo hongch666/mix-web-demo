@@ -1,12 +1,29 @@
 package springClient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
 	"app/common/client"
 	"app/common/constants"
 )
+
+// Client 定义 GoZero 使用的 Spring 调用契约，便于业务层隔离远程依赖
+type Client interface {
+	GetPublishedArticles(context.Context, int, int) (client.Result, error)
+	GetArticleViewsByIDs(context.Context, []int64) (client.Result, error)
+	GetArticlesByIDs(context.Context, []int64) (client.Result, error)
+	GetUserByID(context.Context, int64) (client.Result, error)
+	IsAdminUser(context.Context, int64) (bool, error)
+	GetUsersByIDs(context.Context, []int64) (client.Result, error)
+	GetCommentScoresByArticleIDs(context.Context, []int64) (client.Result, error)
+	GetLikeCountsByArticleIDs(context.Context, []int64) (client.Result, error)
+	GetCollectCountsByArticleIDs(context.Context, []int64) (client.Result, error)
+	GetFollowCountsByUserIDs(context.Context, []int64) (client.Result, error)
+	GetCategoriesByIDs(context.Context, []int64) (client.Result, error)
+	GetSubCategoriesByIDs(context.Context, []int64) (client.Result, error)
+}
 
 // parseData 从 client.Result 中解析 Data 字段到目标类型
 func parseData[T any](result client.Result) (T, error) {

@@ -80,7 +80,7 @@ type ScriptParamMapping map[string]string
 // SearchModelDeps SearchModel 依赖项
 type SearchModelDeps struct {
 	ESClient     *elastic.Client
-	SpringClient *springClient.SpringClient
+	SpringClient springClient.Client
 }
 
 type SearchModel interface {
@@ -89,7 +89,7 @@ type SearchModel interface {
 
 type searchModel struct {
 	esClient     *elastic.Client
-	springClient *springClient.SpringClient
+	springClient springClient.Client
 }
 
 func NewSearchModel(deps SearchModelDeps) SearchModel {

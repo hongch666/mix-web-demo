@@ -60,8 +60,8 @@ type HubContext struct {
 // ClientContext 保存内部服务客户端
 type ClientContext struct {
 	FastapiClient fastapiClient.Client
-	NestjsClient  *nestjsClient.NestjsClient
-	SpringClient  *springClient.SpringClient
+	NestjsClient  nestjsClient.Client
+	SpringClient  springClient.Client
 }
 
 // LoggerContext 保存服务级日志依赖
