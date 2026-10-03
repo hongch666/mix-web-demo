@@ -33,7 +33,9 @@ original_location=$(pwd)
 cd "$(dirname "$(readlink -f "$0")")/../.." || exit 1
 
 # Setup variables
-app_dir="$PWD/app"
+gozero_root="$PWD"
+repo_root="$(cd "$gozero_root/.." && pwd)"
+app_dir="$gozero_root/app"
 main_go_file="$app_dir/main.go"
 etc_dir="$app_dir/etc"
 backup_dir="$(mktemp -d)"
@@ -47,6 +49,45 @@ cleanup() {
 	rm -rf "$backup_dir"
 }
 trap cleanup EXIT
+
+# ==================== 清理 goctl 生成的小写中间件骨架 ====================
+# goctl 会把 .api 里声明的 XxxMiddleware 统一转成小写开头的文件名（如 userContextMiddleware 变成
+# usercontextMiddleware.go），与仓库手写的 camelCase 文件重名，导致中间件构造函数重复声明、编译失败。
+# 这里只删除同时满足三个条件的文件，三个条件缺一不可，避免误删真实实现：
+#   1. 位于 app/internal/middleware 目录下
+#   2. 同目录存在忽略大小写后同名的另一个文件
+#   3. 文件内容含 goctl 空骨架的占位注释，说明它确实是 goctl 生成的而非手写的
+# 大小写转换全部用 shell 内建展开，不依赖 basename、tr 等外部命令
+remove_lowercase_middleware_skeletons() {
+	local middleware_dir="$app_dir/internal/middleware"
+	[ -d "$middleware_dir" ] || return 0
+
+	local file sibling base lower sibling_base sibling_lower kept
+	for file in "$middleware_dir"/*.go; do
+		[ -e "$file" ] || continue
+		grep -q "TODO generate middleware implement function" "$file" || continue
+
+		base="${file##*/}"
+		lower="${base,,}"
+		kept=""
+		for sibling in "$middleware_dir"/*.go; do
+			[ -e "$sibling" ] || continue
+			[ "$sibling" = "$file" ] && continue
+			sibling_base="${sibling##*/}"
+			[ "$sibling_base" = "$base" ] && continue
+			sibling_lower="${sibling_base,,}"
+			if [ "$sibling_lower" = "$lower" ]; then
+				kept="$sibling_base"
+				break
+			fi
+		done
+
+		if [ -n "$kept" ]; then
+			rm -f "$file"
+			echo "Removed goctl middleware skeleton: $base (kept $kept)"
+		fi
+	done
+}
 
 # Backup main.go
 if [ -f "$main_go_file" ]; then
@@ -93,6 +134,21 @@ if [ -d "$backup_dir/etc" ]; then
 	rm -rf "$etc_dir"
 	cp -r "$backup_dir/etc" "$etc_dir"
 	echo "Restored etc directory"
+fi
+
+# Remove the lowercase middleware skeletons goctl generated for camelCase implementations
+remove_lowercase_middleware_skeletons
+
+# Format generated code so routes.go, types.go and new handlers keep the project format
+format_script="$repo_root/scripts/format.sh"
+if [ -f "$format_script" ]; then
+	echo "Formatting generated code..."
+	if ! bash "$format_script" gozero; then
+		echo "Formatting failed, please run ./mix format gozero manually" >&2
+		exit 1
+	fi
+else
+	echo "scripts/format.sh not found, skip formatting, please run ./mix format gozero manually" >&2
 fi
 
 # generate swagger and convert to openapi3 only when -s is provided
