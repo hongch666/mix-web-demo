@@ -258,6 +258,8 @@ const (
 	API_LOG_JOIN_QUEUE               = "加入队列"
 	API_LOG_SQL_TOOLS_GET_TABLES     = "获取SQL工具表结构信息"
 	API_LOG_SQL_TOOLS_EXECUTE_QUERY  = "执行SQL工具只读查询"
+	// API_LOG_PENDING_DESCRIPTION 是 handler.tpl 的占位描述，生成后必须替换为具体文案
+	API_LOG_PENDING_DESCRIPTION = "待补充接口描述"
 
 	// Swagger
 	SWAGGER_PAGE_FETCH_FAIL = "获取 Swagger 页面失败"

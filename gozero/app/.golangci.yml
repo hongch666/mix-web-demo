@@ -1,5 +1,4 @@
 # GoZero 服务静态检查与格式化配置（golangci-lint v2）
-# 使用方式见根目录 README 的「代码规范与格式化工具」章节
 version: "2"
 
 run:

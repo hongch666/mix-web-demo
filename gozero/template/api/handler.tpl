@@ -9,7 +9,6 @@ import (
 	"app/common/constants"
 	"app/common/utils"
 	"app/internal/middleware"
-	"app/internal/svc"
 	{{if .HasRequest}}"app/internal/types"{{end}}
 	{{.ImportPackages}}
 
@@ -33,5 +32,5 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 		{{if .HasResp}}utils.Success(w, resp){{else}}utils.Success(w, nil){{end}}
 	}
-	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, "TODO: 添加接口描述")
+	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, handler, constants.API_LOG_PENDING_DESCRIPTION)
 }

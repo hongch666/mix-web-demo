@@ -1,6 +1,12 @@
 // Code scaffolded by goctl. Safe to edit.
 // goctl {{.version}}
 
+{{/*
+本模板只在 .api 路由被标记为 SSE 时才会被 goctl 加载，当前项目的 SSE 与 WebSocket 路由都是普通 get 路由，实际走 handler.tpl
+警告：本模板是「每请求建 chan + handler 内 select flush」的单机模式，多副本部署会丢消息
+本项目实时链路必须改为委托 svcCtx.SSEHub.HandleConnection(w, r, userID)，由 internal/hub 与 common/pubsub 的 Redis Pub/Sub 跨 Pod 分发
+*/}}
+
 package {{.PkgName}}
 
 import (
@@ -25,7 +31,7 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return middleware.ApplyApiLog(svcCtx.RabbitMQPublisher, svcCtx.Logger, func(w http.ResponseWriter, r *http.Request) {
 		{{if .HasRequest}}var req types.{{.RequestType}}
 		if err := httpx.Parse(r, &req); err != nil {
-			utils.Error(w, constants.HttpBadRequest, err.Error())
+			utils.HandleErrorWithCode(w, err, constants.HttpBadRequest)
 			return
 		}
 
@@ -70,5 +76,5 @@ func {{.HandlerName}}(svcCtx *svc.ServiceContext) http.HandlerFunc {
 				return
 			}
 		}
-	}, "TODO: 添加接口描述")
+	}, constants.API_LOG_PENDING_DESCRIPTION)
 }
