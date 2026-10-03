@@ -28,6 +28,8 @@ DB_PASSWORD=${DB_PASSWORD:-123456}
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-$DB_PASSWORD}
 POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-$DB_PASSWORD}
+# PostgreSQL 初始库名，需与 fastapi/.env 的 DB_POSTGRES_DATABASE 保持一致
+POSTGRES_DB=${POSTGRES_DB:-demo}
 REDIS_PASSWORD=${REDIS_PASSWORD:-123456}
 # ES 版本：镜像与 IK 分词器插件版本必须一致
 ES_VERSION=${ES_VERSION:-7.12.1}
@@ -244,7 +246,7 @@ create_postgresql() {
         --name pgvector-db \
         -e POSTGRES_USER="$POSTGRES_USER" \
         -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-        -e POSTGRES_DB=testdb \
+        -e POSTGRES_DB="$POSTGRES_DB" \
         -p 5432:5432 \
         -v ~/pgdata:/var/lib/postgresql/data \
         --network hcsy \
@@ -791,7 +793,8 @@ Docker 容器管理脚本
 账号密码:
   在项目根目录 .env 中配置（复制 .env.example 后修改），支持以下变量:
     MYSQL_ROOT_PASSWORD  MySQL 密码（用户名固定为 root）
-    POSTGRES_USER / POSTGRES_PASSWORD
+    POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+                         PostgreSQL 用户、密码与初始库名（库名需与 fastapi/.env 的 DB_POSTGRES_DATABASE 一致）
     REDIS_PASSWORD       Redis 密码
     ES_SECURITY_ENABLED / ES_PASSWORD / ES_HEAP_SIZE
                          ElasticSearch 是否开启安全认证、密码（用户 elastic）与堆内存
@@ -898,7 +901,7 @@ main() {
             echo ""
             log_info "数据库访问信息:"
             echo "  MySQL:         localhost:3306 (root/$MYSQL_ROOT_PASSWORD)"
-            echo "  PostgreSQL:    localhost:5432 ($POSTGRES_USER/$POSTGRES_PASSWORD)"
+            echo "  PostgreSQL:    localhost:5432 ($POSTGRES_USER/$POSTGRES_PASSWORD, 库: $POSTGRES_DB)"
             echo "  Redis:         localhost:6379 (密码: $REDIS_PASSWORD)"
             echo "  MongoDB:       localhost:27017 ($MONGO_USER/$MONGO_PASSWORD)"
             echo "  ClickHouse:    localhost:8123 ($CLICKHOUSE_USER/$CLICKHOUSE_PASSWORD)"
