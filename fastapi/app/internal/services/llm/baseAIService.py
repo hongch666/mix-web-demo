@@ -578,7 +578,7 @@ class BaseAiService:
                     permission_msg,
                     intent_resolution,
                 ) = await self.intent_router.route_with_permission_check_async(
-                    message, normalized_user_id, db
+                    message, normalized_user_id, db, runnable_config
                 )
                 Logger.info(Messages.INTENT_WITH_PERMISSION(intent, has_permission))
 
@@ -726,7 +726,7 @@ class BaseAiService:
                     permission_msg,
                     intent_resolution,
                 ) = await self.intent_router.route_with_permission_check_async(
-                    message, normalized_user_id, db
+                    message, normalized_user_id, db, runnable_config
                 )
                 Logger.info(Messages.INTENT_WITH_PERMISSION(intent, has_permission))
 

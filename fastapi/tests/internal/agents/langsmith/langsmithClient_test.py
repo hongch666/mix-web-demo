@@ -5,6 +5,8 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from langsmith.run_helpers import get_current_run_tree
+from langsmith.utils import tracing_is_enabled
 
 from app.internal.agents.langsmith import client as client_module
 from app.internal.agents.langsmith.client import (
@@ -284,3 +286,32 @@ async def test_async_context_yields_none_when_run_creation_fails(
 
     async with get_langsmith_context_async("chat.stream") as run:
         assert run is None
+
+
+# 同步根 Trace 会把自身注册为当前父 Run，内部 LangChain 子链路据此挂载
+# 该用例使用真实 RunTree（_client 为普通对象，end 时 post 失败被吞掉）
+def test_sync_context_registers_parent_run_for_children(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _enable_tracing(monkeypatch)
+
+    with get_langsmith_context("chat.send") as run:
+        assert run is not None
+        assert get_current_run_tree() is run
+        assert tracing_is_enabled() is True
+
+    assert get_current_run_tree() is None
+
+
+# 异步根 Trace 同样注册父 Run，退出后恢复上下文
+@pytest.mark.anyio
+async def test_async_context_registers_parent_run_for_children(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _enable_tracing(monkeypatch)
+
+    async with get_langsmith_context_async("chat.stream") as run:
+        assert run is not None
+        assert get_current_run_tree() is run
+
+    assert get_current_run_tree() is None

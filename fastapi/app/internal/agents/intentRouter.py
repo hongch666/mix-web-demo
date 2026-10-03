@@ -115,8 +115,9 @@ class IntentRouter:
         Returns:
             (意图类型, 识别路径)
         """
+        # 复用主链路的 tags/metadata，但意图链自身的 Run 名称固定为 intent.route
         config = dict(runnable_config) if runnable_config else {}
-        config.setdefault("run_name", "intent.route")
+        config["run_name"] = "intent.route"
         try:
             if self._use_structured_output:
                 intent, resolution = await self._route_structured(question, config)

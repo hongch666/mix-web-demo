@@ -133,6 +133,34 @@ async def test_route_async_returns_default_fallback_when_text_match_fails() -> N
     )
 
 
+# 传入主链路 runnable_config 时继承 tags/metadata，但 Run 名称固定为 intent.route
+@pytest.mark.anyio
+async def test_route_async_keeps_intent_route_name_with_parent_config() -> None:
+    router = IntentRouter(llm=_FakeLLM(), use_structured_output=False)
+    captured: dict[str, Any] = {}
+
+    class _CapturingRunnable(Runnable):
+        def invoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+            captured.update(config or {})
+            return "article_search"
+
+        async def ainvoke(self, input: Any, config: Any = None, **kwargs: Any) -> Any:
+            captured.update(config or {})
+            return "article_search"
+
+    router.chain = _CapturingRunnable()
+
+    intent, _resolution = await router.route_async(
+        "查数据库",
+        {"run_name": "chat.direct", "tags": ["env:prod"], "metadata": {"intent": "x"}},
+    )
+
+    assert intent == "article_search"
+    assert captured["run_name"] == "intent.route"
+    assert captured["tags"] == ["env:prod"]
+    assert captured["metadata"] == {"intent": "x"}
+
+
 # 关闭结构化输出时不绑定结构化链
 def test_structured_output_disabled_skips_structured_binding() -> None:
     llm = _FakeLLM()

@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Optional
 
 from langsmith import Client as LangSmithClient
+from langsmith.run_helpers import tracing_context
 from langsmith.run_trees import RunTree
 
 from app.core.base import Logger
@@ -98,6 +99,29 @@ def get_langsmith_config() -> Optional[LangSmithConfig]:
     return _config
 
 
+def _build_parent_tracing_context(
+    run: Any,
+    client: Any,
+    tags: Optional[list],
+    metadata: Optional[dict[str, Any]],
+) -> Any:
+    """构建父 Run 追踪上下文，让内部 LangChain 子链路挂到该根 Trace 下
+
+    langsmith 的 tracing_context 会把 run 注册为当前上下文的父节点，
+    子 Run 通过 get_current_run_tree 解析父级，从而形成 chat -> intent.route -> agent -> tool 完整链路
+    """
+    config = get_langsmith_config()
+    project_name = config.project if config is not None else None
+    return tracing_context(
+        parent=run,
+        enabled=True,
+        project_name=project_name,
+        tags=list(tags) if tags else None,
+        metadata=dict(metadata) if metadata else None,
+        client=client,
+    )
+
+
 @contextmanager
 def get_langsmith_context(
     name: str,
@@ -108,6 +132,7 @@ def get_langsmith_context(
     """创建 LangSmith 根 Run 上下文管理器（同步版本）
 
     用于非 Runnable 边界的手工追踪，如 HTTP 根节点、同步任务
+    进入期间会把该 Run 注册为当前追踪父节点，内部 LangChain 链路因此挂到该根 Trace 下
 
     Args:
         name: Run 名称 (如 chat.send, chat.stream)
@@ -118,13 +143,13 @@ def get_langsmith_context(
     Yields:
         RunTree 实例，追踪关闭时返回 None
     """
-    run: Optional[Any] = None
     client = get_langsmith_client()
 
     if client is None or RunTree is None:
         yield None
         return
 
+    run: Optional[Any] = None
     try:
         run = RunTree(
             name=name,
@@ -135,13 +160,15 @@ def get_langsmith_context(
         )
         if parent_run and hasattr(run, "parent_run"):
             run.parent_run = parent_run
-
-        yield run
     except Exception as error:
         Logger.warning(Messages.LANGSMITH_RUN_CREATE_FAILED(error))
         yield None
-    finally:
-        if run is not None:
+        return
+
+    with _build_parent_tracing_context(run, client, tags, metadata):
+        try:
+            yield run
+        finally:
             try:
                 run.end()
             except Exception as end_error:
@@ -158,6 +185,7 @@ async def get_langsmith_context_async(
     """创建 LangSmith 根 Run 上下文管理器（异步版本）
 
     用于流式生成器的根 Trace，支持 SSE 完成、异常和断连收尾
+    进入期间会把该 Run 注册为当前追踪父节点，内部 LangChain 链路因此挂到该根 Trace 下
 
     Args:
         name: Run 名称 (如 chat.send, chat.stream)
@@ -168,13 +196,13 @@ async def get_langsmith_context_async(
     Yields:
         RunTree 实例，追踪关闭时返回 None
     """
-    run: Optional[Any] = None
     client = get_langsmith_client()
 
     if client is None or RunTree is None:
         yield None
         return
 
+    run: Optional[Any] = None
     try:
         run = RunTree(
             name=name,
@@ -185,13 +213,15 @@ async def get_langsmith_context_async(
         )
         if parent_run and hasattr(run, "parent_run"):
             run.parent_run = parent_run
-
-        yield run
     except Exception as error:
         Logger.warning(Messages.LANGSMITH_RUN_CREATE_FAILED(error))
         yield None
-    finally:
-        if run is not None:
+        return
+
+    with _build_parent_tracing_context(run, client, tags, metadata):
+        try:
+            yield run
+        finally:
             try:
                 run.end()
             except Exception as end_error:
