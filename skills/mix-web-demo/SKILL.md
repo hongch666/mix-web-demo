@@ -102,6 +102,7 @@ description: mix-web-demo 多语言微服务仓库专属编码规范，覆盖 Sp
 14. **新增接口必须带参数校验**，任何接收请求参数的接口都要声明校验规则，不得只靠业务层兜底。各服务写法见对应章节；**GoZero 的校验标签写在 `.api` 文件里**（随 goctl 生成进 `types.go`），漏写标签等于该参数没有校验，不会报错也不会告警
 15. **新增、修改或删除对外接口后，必须重新生成静态 OpenAPI 文档并同步 Apifox**：先 `./mix swag <service>`，产物（`openapi.json` + `openapi.yaml`）与服务代码同一次提交；再 `./mix apifox <service>` 同步到 Apifox，未配置令牌时跳过并说明。完整流程见「接口文档收尾流程」章节
 16. **业务配置统一经 YAML 导入环境变量**：服务配置值在对应 `application.yaml` 中声明 `${ENV_NAME:default}`，业务代码通过项目配置加载器或框架配置服务读取；禁止在业务模块直接调用 `os.getenv`、`process.env`、`System.getenv`、`os.LookupEnv` 等绕过 YAML。环境变量直接读取仅保留在配置加载器/启动引导，以及第三方库必须从标准进程环境读取且 YAML 无法替代的场景（如 HTTP 代理变量），新增例外需说明原因。可选变量当前不启用时，在 `.env`、`.env.example`、`.env.docker` 中注释变量行，并注明未配置时的默认行为；不要用空值赋值伪装成已配置
+17. **接口响应必须使用具名结构，禁止匿名 Map**：控制器/路由的返回类型要有明确的结构定义并携带字段说明，便于 Swagger 呈现与下游解析。各服务落地：Spring 用 `entity/vo/` 下的 VO（字段加 `@Schema`）、NestJS 用 `common/utils/swaggerResponse.ts` 的 `SchemaObject` 加响应 DTO、FastAPI 用 `internal/schemas/` 的 Pydantic 模型、GoZero 用 `.api` 里的具名 `type`。**Spring 额外硬性要求**：禁止 `Map<String, Object>`（含 `java.util.Map`）作为控制器返回类型，`./mix lint spring` 会检测；用于替换匿名 Map 的 VO 必须保持原有下划线字段名（类上加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)`），否则下游 FastAPI/GoZero 会解析不到字段；确实只能使用 Map 的场景（如列由运行时决定的动态查询结果）必须显式豁免：方法或其注解上方写 `// vo-exempt: 原因`，整个控制器写 `// vo-exempt-class: 原因`
 
 ## Spring 服务（spring/，WebFlux 响应式栈）
 
@@ -112,7 +113,7 @@ api/controller   接口层（返回 Mono/Flux）
 api/service      业务接口
 api/service/impl 业务实现
 api/repository   R2DBC Repository
-entity/po|vo|dto|projection  实体与视图对象
+entity/po|vo|dto|event|projection  实体、视图对象、领域事件与投影（跨服务变更事件放 entity/event）
 entity/assembler 实体到 VO 的装配器（依赖 api/repository，供 service/impl 复用，跨包调用需 public）
 infra/client     远程调用客户端（ServiceWebClient）
 infra/filter     WebFilter（UserContextWebFilter）
@@ -123,6 +124,7 @@ common/constants|utils  常量与工具（RedisUtil、JwtUtil、UserContext）
 
 ### 硬性约定
 
+- **控制器返回类型禁止匿名 Map**：一律用 `entity/vo/` 下的 VO 并给字段加 `@Schema`，`./mix lint spring` 会检查（`scripts/controller-vo.py`）。把原先的 `Map<String, Object>` 换成 VO 时，类上必须加 `@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)` 保持 `user_id`、`create_time` 这类下划线字段名，否则 FastAPI/GoZero 按原字段名解析会取不到值；只有运行时结构不固定（动态列、动态键）时才允许 Map，并在方法或其注解上方写 `// vo-exempt: 原因`，整类场景写 `// vo-exempt-class: 原因`
 - **依赖方向**：`api` 是最上层，`infra` / `core` / `common` / `entity` 都不依赖它；目前唯一例外是 `entity/assembler`（装配器需要 `api/repository` 才能加载关联数据）。新增跨层组件前先确认会不会引入新的反向依赖
 - ORM 是 Spring Data R2DBC，不是 MyBatisPlus：Repository 继承 `ReactiveCrudRepository<T, ID>`；自定义 SQL 用 `@Query` + `:param`，更新加 `@Modifying`；事务用 `TransactionalOperator.transactional()` 包裹，禁止 `@Transactional`
 - Controller 返回 `Mono<Result<T>>` / `Flux<Result<T>>`，Service 返回 `Mono<T>` / `Flux<T>`；禁止返回裸类型、禁止调用 `.block()`
@@ -468,8 +470,9 @@ app/model/<table>        数据模型（goctl 生成 _gen.go + custom 扩展文�
 
 ```bash
 # Spring：Eclipse formatter + import 四段分组，配置在 spring/eclipse-formatter.xml
+# lint 额外执行 scripts/controller-vo.py，检查控制器是否返回匿名 Map
 ./mix format spring      # mvn spotless:apply
-./mix lint spring        # mvn spotless:check
+./mix lint spring        # mvn spotless:check + 控制器返回类型检查
 
 # GoZero：配置在 gozero/app/.golangci.yml
 ./mix format gozero      # golangci-lint fmt
