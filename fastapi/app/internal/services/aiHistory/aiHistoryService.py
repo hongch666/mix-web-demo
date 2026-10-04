@@ -4,9 +4,7 @@ from typing import Any, Optional
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 from app.internal.clients import SpringClient, get_spring_client
-from app.internal.crud import (
-    AiHistoryMapper,
-)
+from app.internal.crud import AiHistoryMapper
 from app.internal.models import AiHistory
 
 

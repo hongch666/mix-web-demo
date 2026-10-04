@@ -5,9 +5,11 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from app.core.constants import Scripts
-from app.internal.cache import baseCache as base_cache
-from app.internal.cache import versionedCache as versioned_cache
-from app.internal.cache.versionedCache import VersionedCache
+from app.internal.cache import (
+    VersionedCache,
+    baseCache as base_cache,
+    versionedCache as versioned_cache,
+)
 
 
 class _FakeRedis:

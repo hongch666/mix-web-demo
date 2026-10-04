@@ -8,7 +8,7 @@ import pytest
 from langsmith.run_helpers import get_current_run_tree
 from langsmith.utils import tracing_is_enabled
 
-from app.internal.agents.langsmith import client as client_module
+from app.internal.agents.langsmith import LangSmithConfig, client as client_module
 from app.internal.agents.langsmith.client import (
     get_langsmith_client,
     get_langsmith_config,
@@ -17,7 +17,6 @@ from app.internal.agents.langsmith.client import (
     init_langsmith,
     shutdown_langsmith,
 )
-from app.internal.agents.langsmith.config import LangSmithConfig
 
 
 @pytest.fixture(autouse=True)

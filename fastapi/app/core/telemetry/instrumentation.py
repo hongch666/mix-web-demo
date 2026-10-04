@@ -1,8 +1,7 @@
 from typing import Any, Optional
 
 from fastapi import FastAPI
-from opentelemetry import trace
-from opentelemetry import metrics
+from opentelemetry import metrics, trace
 from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor

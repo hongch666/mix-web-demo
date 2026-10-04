@@ -5,15 +5,13 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from app.core.constants import Messages
-from app.internal.agents import userPermissionManager as upm_module
-from app.internal.agents.toolScope import (
+from app.internal.agents import (
+    UserPermissionManager,
     clear_tool_scope,
     get_tool_scope,
-    set_tool_scope,
-)
-from app.internal.agents.userPermissionManager import (
-    UserPermissionManager,
     get_user_permission_manager,
+    set_tool_scope,
+    userPermissionManager as upm_module,
 )
 
 

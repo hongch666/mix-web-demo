@@ -6,11 +6,11 @@ from .analyze.analyzeRouter import router as analyzeRouter
 from .apiLog.apiLogRouter import router as apiLogRouter
 from .chat.chatRouter import router as chatRouter
 from .generate.generateRouter import router as generateRouter
-from .graphSearch.graphSearchRouter import router as graphSearchRouter
-from .task.taskRouter import router as taskRouter
+from .graphSearch import router as graphSearchRouter
+from .task import router as taskRouter
 from .test.testRouter import router as testRouter
 from .user.userRouter import router as userRouter
-from .vectorSearch.vectorSearchRouter import router as vectorSearchRouter
+from .vectorSearch import router as vectorSearchRouter
 
 # 所有路由列表
 routers: list[APIRouter] = [

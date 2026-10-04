@@ -3,7 +3,7 @@ from .algorithm.algorithmService import AlgorithmService, get_algorithm_service
 from .analyze.analyzeService import AnalyzeService, get_analyze_service
 from .apiLog.apiLogService import ApiLogService, get_apilog_service
 from .generate.generateService import GenerateService, get_generate_service
-from .graphSearch.graphSearchService import GraphSearchService, get_graph_search_service
+from .graphSearch import GraphSearchService, get_graph_search_service
 from .llm.baseAIService import BaseAiService, get_agent_prompt, initialize_ai_tools
 from .llm.extend.geminiService import GeminiService, get_gemini_service
 from .llm.extend.glmService import GlmService, get_glm_service

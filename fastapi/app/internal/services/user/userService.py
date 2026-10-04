@@ -7,10 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 from app.core.base import Logger
 from app.core.constants import Messages
-from app.internal.clients import (
-    NestjsClient,
-    SpringClient,
-)
+from app.internal.clients import NestjsClient, SpringClient
 from app.internal.crud import UserMapper
 
 

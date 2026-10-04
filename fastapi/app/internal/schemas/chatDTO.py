@@ -16,6 +16,15 @@ class AIServiceType(StrEnum):
     GLM = "GLM"
 
 
+class StreamFormat(StrEnum):
+    """流式响应帧格式枚举"""
+
+    # 项目自定义帧，包含累计 message、chunk 与 message_type，前端契约
+    NATIVE = "native"
+    # OpenAI Chat Completions 兼容分片，思考走 delta.reasoning_content，正文走 delta.content
+    OPENAI = "openai"
+
+
 class ChatRequest(BaseModel):
     """聊天请求模型"""
 
@@ -53,6 +62,22 @@ class ChatRequest(BaseModel):
                 "AI服务类型必须是gpt、gemini或glm",
             )
         return value
+
+
+class ChatStreamRequest(ChatRequest):
+    """流式聊天请求模型
+
+    streamFormat 可选，缺省为 native，保持前端既有契约不变
+    """
+
+    streamFormat: StreamFormat = Field(
+        default=StreamFormat.NATIVE,
+        description=(
+            "流式响应帧格式：native 为项目自定义帧（message/chunk/message_type，前端使用），"
+            "openai 为 OpenAI Chat Completions 兼容分片（思考走 delta.reasoning_content，"
+            "正文走 delta.content，末尾返回 [DONE]），便于 Apifox 等标准客户端自动合并"
+        ),
+    )
 
 
 class ChatResponseData(BaseModel):

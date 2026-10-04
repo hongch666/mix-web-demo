@@ -1,5 +1,4 @@
 import datetime
-import json
 import time
 import uuid
 from collections.abc import AsyncGenerator
@@ -11,7 +10,17 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.common.decorators import log, requireInternalToken
 from app.common.middleware import get_current_user_id
-from app.core.base import Logger, success
+from app.core.base import (
+    Logger,
+    StreamFrameContext,
+    build_native_frame,
+    build_openai_chunk_frame,
+    build_openai_done_frame,
+    build_openai_error_frame,
+    build_openai_finish_frame,
+    build_openai_start_frame,
+    success,
+)
 from app.core.config import load_config
 from app.core.constants import Defaults, HttpCode, Messages
 from app.core.db import get_db
@@ -34,6 +43,8 @@ from app.internal.schemas import (
     ChatRequest,
     ChatResponse,
     ChatResponseData,
+    ChatStreamRequest,
+    StreamFormat,
 )
 
 router: APIRouter = APIRouter(
@@ -180,12 +191,17 @@ async def send_message(
     "/stream",
     response_model=ChatResponse,
     summary="流式聊天",
-    description="流式发送聊天消息并返回响应",
+    description=(
+        "流式发送聊天消息并返回逐帧响应。streamFormat 可选：native（默认，项目自定义帧，"
+        "含累计 message、chunk 与 message_type，供前端按思考/正文分别渲染）；"
+        "openai（OpenAI Chat Completions 兼容分片，思考走 delta.reasoning_content，"
+        "正文走 delta.content，末尾返回 [DONE]，便于 Apifox 等标准客户端实时自动合并）"
+    ),
 )
 @log("流式聊天")
 async def stream_message(
     http_request: Request,
-    request: ChatRequest,
+    request: ChatStreamRequest,
     gptService: GptServiceDep,
     geminiService: GeminiServiceDep,
     glmService: GlmServiceDep,
@@ -228,6 +244,20 @@ async def stream_message(
         rag_enabled=getattr(request, "rag_enabled", False),
         deployment_env=model_info["deployment_env"],
     )
+
+    # 流式帧上下文，两种帧格式共用；openai 格式额外需要 completion_id/created/model
+    frame_context: StreamFrameContext = StreamFrameContext(
+        conversation_id=conversation_id,
+        chat_id=chat_id,
+        user_id=actual_user_id,
+        service=request.service.value,
+        model=model_info["model_name"],
+        completion_id=(
+            f"{Defaults.STREAM_OPENAI_COMPLETION_ID_PREFIX}{uuid.uuid4().hex[:12]}"
+        ),
+        created=int(time.time()),
+    )
+    use_openai_format: bool = request.streamFormat == StreamFormat.OPENAI
 
     async def event_generator() -> AsyncGenerator[str, None]:
         message_acc: str = ""
@@ -284,15 +314,19 @@ async def stream_message(
                         runnable_config=runnable_config,
                     )
 
+                if use_openai_format:
+                    # 先声明 assistant 角色，标准客户端据此初始化消息
+                    yield build_openai_start_frame(frame_context)
+
                 async for chunk in stream_generator:
                     # 解析流式数据块中的消息类型
                     # 格式: {"type": "thinking|content|error", "content": "..."}
                     if isinstance(chunk, dict):
-                        chunk_type = chunk.get("type", "content")
+                        chunk_type = chunk.get("type", Defaults.STREAM_TYPE_CONTENT)
                         chunk_content = chunk.get("content", "")
                     else:
                         # 如果是字符串，默认为 content 类型
-                        chunk_type = "content"
+                        chunk_type = Defaults.STREAM_TYPE_CONTENT
                         chunk_content = str(chunk)
 
                     # 记录chunk长度（用于调试）
@@ -300,31 +334,35 @@ async def stream_message(
                         Messages.STREAM_CHUNK_RECEIVED(chunk_type, len(chunk_content))
                     )
 
-                    # 分别累积思考过程和最终内容
-                    if chunk_type == "thinking":
+                    # 分别累积思考过程和最终内容，落库与输出格式无关
+                    if chunk_type == Defaults.STREAM_TYPE_THINKING:
                         thinking_acc += chunk_content
-                    elif chunk_type == "content":
+                    elif chunk_type == Defaults.STREAM_TYPE_CONTENT:
                         message_acc += chunk_content
 
-                    # 构建响应数据 - 确保chunk_content完整输出
-                    data: dict[str, Any] = success(
-                        {
-                            "message": message_acc,
-                            "conversation_id": conversation_id,
-                            "chat_id": chat_id,
-                            "user_id": actual_user_id,
-                            "timestamp": int(time.time()),
-                            "service": request.service.value,
-                            "message_type": chunk_type,
-                            "chunk": chunk_content,
-                        }
+                    if use_openai_format:
+                        # openai 格式只发内容分片，空分片跳过，错误单独成帧
+                        if not chunk_content:
+                            continue
+                        if chunk_type == Defaults.STREAM_TYPE_ERROR:
+                            yield build_openai_error_frame(message=chunk_content)
+                        else:
+                            yield build_openai_chunk_frame(
+                                context=frame_context,
+                                chunk_type=chunk_type,
+                                chunk=chunk_content,
+                            )
+                        continue
+
+                    # 前端契约格式 - 确保chunk_content完整输出
+                    frame: str = build_native_frame(
+                        accumulated_message=message_acc,
+                        message_type=chunk_type,
+                        chunk=chunk_content,
+                        context=frame_context,
                     )
-                    # 使用 ensure_ascii=False 保证 UTF-8 编码，avoid_json_tricks 保证完整性
-                    json_str: str = json.dumps(
-                        data.model_dump(), ensure_ascii=False, separators=(",", ":")
-                    )
-                    Logger.debug(Messages.SSE_PACKET_SIZE(len(json_str)))
-                    yield f"data: {json_str}\n\n"
+                    Logger.debug(Messages.SSE_PACKET_SIZE(len(frame)))
+                    yield frame
 
                 # 流式聊天完成后保存AI历史记录（在完成流式传输后）
                 if message_acc:
@@ -342,25 +380,16 @@ async def stream_message(
                         )
                     )
 
-                if not message_acc:
-                    data = success(
-                        {
-                            "message": "",
-                            "conversation_id": conversation_id,
-                            "chat_id": chat_id,
-                            "user_id": actual_user_id,
-                            "timestamp": int(time.time()),
-                            "service": request.service.value,
-                            "message_type": "done",
-                            "chunk": "",
-                        }
-                    )
-                    yield (
-                        "data: "
-                        + json.dumps(
-                            data.model_dump(), ensure_ascii=False, separators=(",", ":")
-                        )
-                        + "\n\n"
+                if use_openai_format:
+                    yield build_openai_finish_frame(frame_context)
+                    yield build_openai_done_frame()
+                elif not message_acc:
+                    # 前端契约：正文为空时补一帧结束标记
+                    yield build_native_frame(
+                        accumulated_message="",
+                        message_type=Defaults.STREAM_TYPE_DONE,
+                        chunk="",
+                        context=frame_context,
                     )
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

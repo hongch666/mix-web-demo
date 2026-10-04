@@ -6,8 +6,7 @@ from fastapi.responses import JSONResponse, Response
 
 from app.core.constants import HttpCode, Messages
 
-from ..base import Logger
-from ..base.response import error
+from ..base import Logger, error
 from .exceptions import BusinessException
 
 

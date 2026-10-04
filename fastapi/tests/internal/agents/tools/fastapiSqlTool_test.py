@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from app.core.constants import Messages
-from app.internal.agents.toolScope import clear_tool_scope, set_tool_scope
+from app.internal.agents import clear_tool_scope, set_tool_scope
 from app.internal.agents.tools import fastapiSqlTool as sql_module
 from app.internal.agents.tools.fastapiSqlTool import FastapiSqlTool
 

@@ -8,10 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.base import Logger
 from app.core.constants import Messages, Prompts
 
-from .userPermissionManager import (
-    UserPermissionManager,
-    get_user_permission_manager,
-)
+from .userPermissionManager import UserPermissionManager, get_user_permission_manager
 
 IntentType = Literal[
     "database_query",

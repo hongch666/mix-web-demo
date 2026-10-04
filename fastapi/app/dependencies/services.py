@@ -9,10 +9,7 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
-from app.internal.clients import (
-    get_nestjs_client,
-    get_spring_client,
-)
+from app.internal.clients import get_nestjs_client, get_spring_client
 from app.internal.services import (
     AiHistoryService,
     AlgorithmService,

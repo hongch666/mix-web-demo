@@ -3,8 +3,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from app.internal.cache import baseCache as base_cache
-from app.internal.cache.baseCache import BaseCache
+from app.internal.cache import BaseCache, baseCache as base_cache
 
 
 class _FakeRedis:

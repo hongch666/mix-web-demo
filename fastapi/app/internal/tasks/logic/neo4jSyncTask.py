@@ -6,11 +6,8 @@ from typing import Any, Optional
 
 from app.core.base import Logger
 from app.core.constants import Messages, RedisKeys, Scripts
-from app.core.db import get_neo4j_client, get_redis_client
-from app.internal.clients import get_spring_client
-from app.internal.clients import SpringClient
-
-from app.core.db import Neo4jClient
+from app.core.db import Neo4jClient, get_neo4j_client, get_redis_client
+from app.internal.clients import SpringClient, get_spring_client
 
 
 class KnowledgeGraphSyncService:

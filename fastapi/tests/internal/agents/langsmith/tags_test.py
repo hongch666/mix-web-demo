@@ -1,6 +1,6 @@
 """LangSmith tags 与 metadata 构造的单元测试"""
 
-from app.internal.agents.langsmith.tags import build_chat_metadata, build_chat_tags
+from app.internal.agents.langsmith import build_chat_metadata, build_chat_tags
 
 
 # 基础 tag 包含环境、路由、模型、模式与服务维度

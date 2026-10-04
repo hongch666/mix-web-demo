@@ -11,7 +11,7 @@ from app.core.base import Logger
 from app.core.constants import HttpCode, Messages
 from app.core.errors import BusinessException
 
-from ..config.config import load_config
+from ..config import load_config
 
 # Nacos 配置
 nacos_config: dict[str, Any] = load_config("nacos")

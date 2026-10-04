@@ -2,8 +2,7 @@
 
 import pytest
 
-from app.internal.agents.langsmith import config as config_module
-from app.internal.agents.langsmith.config import load_langsmith_config
+from app.internal.agents.langsmith import config as config_module, load_langsmith_config
 
 
 def _raw_config(**overrides: str) -> dict:

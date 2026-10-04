@@ -41,8 +41,8 @@ from .warehouse.ods.subCategory import OdsSubCategory
 from .warehouse.ods.syncWatermark import SyncWatermark
 from .warehouse.ods.user import OdsUser
 from .warehouse.base import (
-    WarehouseModel,
     WAREHOUSE_ENGINE_CONFIG,
+    WarehouseModel,
     configure_warehouse_engines,
 )
 

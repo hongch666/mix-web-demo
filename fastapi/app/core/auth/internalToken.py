@@ -1,12 +1,12 @@
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
 
 import jwt
 
 from app.core.constants import HttpCode, Messages
 
-from ..config.config import load_config
-from ..errors.exceptions import BusinessException
+from ..config import load_config
+from ..errors import BusinessException
 
 
 class InternalTokenUtil:

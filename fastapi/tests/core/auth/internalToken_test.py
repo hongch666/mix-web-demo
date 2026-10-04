@@ -1,6 +1,6 @@
 import os
 from collections.abc import Generator
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest

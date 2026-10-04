@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.core.constants import Messages
-from app.internal.agents.toolScope import clear_tool_scope, set_tool_scope
+from app.internal.agents import clear_tool_scope, set_tool_scope
 from app.internal.agents.tools.springSqlTool import SpringSqlTool
 
 

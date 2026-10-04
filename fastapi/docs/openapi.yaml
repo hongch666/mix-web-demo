@@ -147,13 +147,15 @@ paths:
       tags:
       - AI聊天模块
       summary: 流式聊天
-      description: 流式发送聊天消息并返回响应
+      description: 流式发送聊天消息并返回逐帧响应。streamFormat 可选：native（默认，项目自定义帧，含累计 message、chunk
+        与 message_type，供前端按思考/正文分别渲染）；openai（OpenAI Chat Completions 兼容分片，思考走 delta.reasoning_content，正文走
+        delta.content，末尾返回 [DONE]，便于 Apifox 等标准客户端实时自动合并）
       operationId: stream_message_chat_stream_post
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChatRequest'
+              $ref: '#/components/schemas/ChatStreamRequest'
         required: true
       responses:
         '200':
@@ -1616,6 +1618,43 @@ components:
       - message
       title: ChatResponseData
       description: 聊天响应数据模型 - 内部数据结构
+    ChatStreamRequest:
+      properties:
+        message:
+          type: string
+          title: Message
+          description: 用户消息
+        user_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: User Id
+          description: 用户ID
+          default: default
+        conversation_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Conversation Id
+          description: 会话ID
+        service:
+          $ref: '#/components/schemas/AIServiceType'
+          description: AI服务类型：gpt、gemini或glm
+          default: GPT
+        streamFormat:
+          $ref: '#/components/schemas/StreamFormat'
+          description: 流式响应帧格式：native 为项目自定义帧（message/chunk/message_type，前端使用），openai
+            为 OpenAI Chat Completions 兼容分片（思考走 delta.reasoning_content，正文走 delta.content，末尾返回
+            [DONE]），便于 Apifox 等标准客户端自动合并
+          default: native
+      type: object
+      required:
+      - message
+      title: ChatStreamRequest
+      description: '流式聊天请求模型
+
+
+        streamFormat 可选，缺省为 native，保持前端既有契约不变'
     CreateHistoryDTO:
       properties:
         user_id:
@@ -1920,6 +1959,13 @@ components:
       required:
       - weights
       title: SearchWeightsResponse
+    StreamFormat:
+      type: string
+      enum:
+      - native
+      - openai
+      title: StreamFormat
+      description: 流式响应帧格式枚举
     UpdateHistoryDTO:
       properties:
         user_id:

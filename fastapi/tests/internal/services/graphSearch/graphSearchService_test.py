@@ -4,10 +4,10 @@ import pytest
 
 from app.core.constants import Messages
 from app.internal.schemas import GraphRelationDTO, GraphSearchEnhanceReq
-from app.internal.services.graphSearch import graphSearchService as service_module
-from app.internal.services.graphSearch.graphSearchService import (
+from app.internal.services.graphSearch import (
     GraphSearchService,
     get_graph_search_service,
+    graphSearchService as service_module,
 )
 
 

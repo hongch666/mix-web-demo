@@ -3,9 +3,7 @@ from typing import Optional
 
 from app.internal.agents import AgentToolFactories
 from app.internal.clients import SpringClient, get_spring_client
-from app.internal.crud import (
-    AiHistoryMapper,
-)
+from app.internal.crud import AiHistoryMapper
 
 from ..baseAIService import BaseAiService
 

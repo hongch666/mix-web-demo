@@ -1,5 +1,12 @@
 from .algorithmDTO import ScoreWeightItem, ScriptParamItem, SearchScriptResponse
-from .chatDTO import AIServiceType, ChatRequest, ChatResponse, ChatResponseData
+from .chatDTO import (
+    AIServiceType,
+    ChatRequest,
+    ChatResponse,
+    ChatResponseData,
+    ChatStreamRequest,
+    StreamFormat,
+)
 from .createHistoryDTO import CreateHistoryDTO
 from .generateDTO import GenerateDTO
 from .graphSearchDTO import (
@@ -21,11 +28,11 @@ from .responseDTO import (
     DeletedResponse,
     GenerateCommentTaskResponse,
     MonthlyPublishCountResponse,
+    ScriptParamsResponse,
+    SearchScriptResponseData,
+    SearchWeightsResponse,
     UserFollowerResponse,
     UserProfileResponse,
-    SearchWeightsResponse,
-    SearchScriptResponseData,
-    ScriptParamsResponse,
 )
 from .updateHistoryDTO import UpdateHistoryDTO
 from .vectorSearchDTO import (
@@ -37,9 +44,11 @@ from .vectorSearchDTO import (
 
 __all__: list[str] = [
     "ChatRequest",
+    "ChatStreamRequest",
     "ChatResponse",
     "ChatResponseData",
     "AIServiceType",
+    "StreamFormat",
     "GenerateDTO",
     "CreateHistoryDTO",
     "UpdateHistoryDTO",

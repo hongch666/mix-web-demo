@@ -8,9 +8,9 @@ import pytest
 from langchain_core.documents import Document
 
 from app.core.constants import Defaults
-from app.internal.agents import extractor as extractor_module
-from app.internal.agents.extractor import (
+from app.internal.agents import (
     ReferenceContentExtractor,
+    extractor as extractor_module,
     get_reference_content_extractor,
 )
 

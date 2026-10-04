@@ -83,3 +83,16 @@ class Defaults:
         r"(?:Advertisement|广告|赞助|推广):?",
         r"(?:Copyright|©|®|™)",
     ]
+
+    # ===== 流式对话协议 =====
+    # 内部流式生成器使用的消息类型
+    STREAM_TYPE_THINKING: str = "thinking"
+    STREAM_TYPE_CONTENT: str = "content"
+    STREAM_TYPE_ERROR: str = "error"
+    STREAM_TYPE_DONE: str = "done"
+    # OpenAI 兼容分片的协议字面量
+    STREAM_DONE_SENTINEL: str = "[DONE]"
+    STREAM_OPENAI_CHUNK_OBJECT: str = "chat.completion.chunk"
+    STREAM_OPENAI_COMPLETION_ID_PREFIX: str = "chatcmpl-"
+    STREAM_OPENAI_ASSISTANT_ROLE: str = "assistant"
+    STREAM_OPENAI_FINISH_REASON_STOP: str = "stop"

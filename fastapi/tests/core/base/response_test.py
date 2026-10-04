@@ -1,4 +1,4 @@
-from app.core.base.response import ApiResponse, error, success
+from app.core.base import ApiResponse, error, success
 from app.core.constants import HttpCode
 
 
