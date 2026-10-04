@@ -85,7 +85,7 @@ export function ApiRedirectResponse(
   );
 }
 
-export const SwaggerNullData: SchemaObject = { type: "null", nullable: true };
+export const SwaggerNullData: SchemaObject = { type: "null" };
 export const SwaggerStringData: SchemaObject = { type: "string" };
 export const SwaggerObjectData: SchemaObject = { type: "object" };
 
@@ -137,9 +137,8 @@ export const SwaggerTableSettingsListData: SchemaObject = {
 };
 
 export const SwaggerTableSettingsData: SchemaObject = {
-  nullable: true,
   description: "当前用户在指定页面保存的列配置",
-  oneOf: [{ $ref: "#/components/schemas/TableSettings" }],
+  oneOf: [{ $ref: "#/components/schemas/TableSettings" }, { type: "null" }],
 };
 
 const stringField = (description: string): SchemaObject => ({

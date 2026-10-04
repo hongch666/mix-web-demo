@@ -5,6 +5,7 @@ export class SwaggerConfig {
   static readonly SWAGGER_TITLE = "NestJS部分的Swagger文档";
   static readonly SWAGGER_DESCRIPTION = "这是项目的NestJS部分的Swagger文档";
   static readonly SWAGGER_VERSION = "1.0.0";
+  static readonly OPENAPI_VERSION = "3.1.0";
   static readonly SWAGGER_PATH = "api-docs";
   static readonly SWAGGER_TAGS: [string, string][] = [
     ["API日志模块", "API日志相关API，包括日志查询、统计等功能"],

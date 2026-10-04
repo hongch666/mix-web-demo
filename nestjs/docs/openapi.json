@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.1.0",
   "paths": {
     "/github/authorize": {
       "get": {
@@ -170,7 +170,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -217,7 +216,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -264,7 +262,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -321,7 +318,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -696,7 +692,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -752,7 +747,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -1210,7 +1204,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -1266,7 +1259,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -1322,7 +1314,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -2275,11 +2266,13 @@
                       "description": "响应消息"
                     },
                     "data": {
-                      "nullable": true,
                       "description": "当前用户在指定页面保存的列配置",
                       "oneOf": [
                         {
                           "$ref": "#/components/schemas/TableSettings"
+                        },
+                        {
+                          "type": "null"
                         }
                       ]
                     }
@@ -2345,7 +2338,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },
@@ -2400,7 +2392,6 @@
                     },
                     "data": {
                       "type": "null",
-                      "nullable": true,
                       "description": "返回数据"
                     }
                   },

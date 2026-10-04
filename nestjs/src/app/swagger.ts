@@ -14,7 +14,8 @@ export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
   const swaggerBuilder = new DocumentBuilder()
     .setTitle(SwaggerConfig.SWAGGER_TITLE)
     .setDescription(SwaggerConfig.SWAGGER_DESCRIPTION)
-    .setVersion(SwaggerConfig.SWAGGER_VERSION);
+    .setVersion(SwaggerConfig.SWAGGER_VERSION)
+    .setOpenAPIVersion(SwaggerConfig.OPENAPI_VERSION);
 
   SwaggerConfig.SWAGGER_TAGS.forEach(([name, description]) => {
     swaggerBuilder.addTag(name, description);
