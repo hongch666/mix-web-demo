@@ -572,7 +572,7 @@ paths:
                 - data
   /task/syncer:
     post:
-      description: 手动触发同步MySQL文章数据到Elasticsearch
+      description: 手动触发同步MySQL文章数据到ElasticSearch
       tags:
       - 定时任务模块
       summary: 手动触发同步ES任务
