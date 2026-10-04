@@ -39,6 +39,20 @@ format_constants_order() {
     return 0
 }
 
+# 包导入整理（fastapi）：合并同目标的重复导入、按字典序排列，python 缺失时跳过
+format_package_imports() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/package-imports.py" --fix "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/package-imports.py" --fix "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过包导入整理"
+    return 0
+}
+
 # 未指定服务时格式化全部服务
 if [ $# -gt 0 ]; then
     SERVICES="$*"
@@ -75,6 +89,8 @@ format_fastapi() {
     print_info "格式化 FastAPI 代码（Ruff）..."
     # 先统一排版，再修复可自动处理的检查项
     (cd "$WORKDIR/fastapi" && ruff format . && ruff check --fix .) || return 1
+    print_info "整理 FastAPI 包导入（合并重复导入、按字典序排列）..."
+    format_package_imports "$WORKDIR/fastapi" || return 1
     print_info "整理 FastAPI 常量类成员顺序..."
     format_constants_order "$WORKDIR/fastapi/app/core/constants"
 }

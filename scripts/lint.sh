@@ -39,6 +39,20 @@ lint_constants_order() {
     return 0
 }
 
+# 包导入规范检查（fastapi）：目标目录有 __init__.py 导出时须从包导入，python 缺失时跳过
+lint_package_imports() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/package-imports.py" --check "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/package-imports.py" --check "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过包导入规范检查"
+    return 0
+}
+
 # 未指定服务时检查全部服务
 if [ $# -gt 0 ]; then
     SERVICES="$*"
@@ -74,7 +88,9 @@ lint_fastapi() {
     print_info "检查 FastAPI 代码（Ruff）..."
     (cd "$WORKDIR/fastapi" && ruff check .) || return 1
     print_info "检查 FastAPI 常量类成员顺序..."
-    lint_constants_order "$WORKDIR/fastapi/app/core/constants"
+    lint_constants_order "$WORKDIR/fastapi/app/core/constants" || return 1
+    print_info "检查 FastAPI 包导入规范..."
+    lint_package_imports "$WORKDIR/fastapi"
 }
 
 # ==================== 执行检查 ====================
