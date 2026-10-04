@@ -154,7 +154,7 @@ NestJS 模块按职责划分为两层：
 网关的几条关键约束：
 
 1. **认证外置**：业务路由统一挂 `forward-auth`，回调 Spring 的 `/users/internal/auth/validate`，由网关注入 `X-User-Id`、`X-Username`、`X-Session-Id`，下游服务不自行解析 JWT。
-2. **内部接口黑名单**：`block-internal` 路由用 `mocking` 插件对内部接口直接返回 403，覆盖 `/articles/list`、`/task/*`、`/logs`、`/ai_history`、`/upload`、`/users/github/token-ticket`、`/email/send-code`。该路由的 `uri` 按精确匹配处理（只有以 `*` 结尾才是前缀匹配），新增内部接口时要确认黑名单条目能覆盖实际访问路径。
+2. **内部接口黑名单**：`block-internal` 路由用 `mocking` 插件对内部接口直接返回 403，覆盖 `/articles/list`、`/comments/batch`、`/task/*`、`/logs`、`/ai_history`、`/upload`、`/users/github/token-ticket`、`/email/send-code`。该路由的 `uri` 按精确匹配处理（只有以 `*` 结尾才是前缀匹配），新增内部接口时要确认黑名单条目能覆盖实际访问路径。
 3. **长连接**：`/ws/*`、`/sse/*` 与 `/chat/stream` 使用独立 upstream，读超时放宽到 3600 秒。
 4. **业务服务端口收敛**：根 `docker-compose.yml` 只给网关映射宿主机端口，四个业务服务只在容器网络内可达。
 
@@ -2421,7 +2421,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 
 ### 项目文件夹结构说明
 
-1. Spring 项目将三层架构代码放置在 `/api`文件夹下（`/api/controller`、`/api/service`、`/api/repository`），通用模块放置在 `/common`文件夹下（`/constants`、`/utils`、`/exceptions`），注解和配置相关放置在 `/core`文件夹下（`/annotation`、`/aspect`、`/config`、`/properties`），基础设施相关放置在 `/infra`文件夹下（`/client`、`/filter`、`/handler`、`/initializer`、`/task`），和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`、`/projection`
+1. Spring 项目将三层架构代码放置在 `/api`文件夹下（`/api/controller`、`/api/service`、`/api/repository`），通用模块放置在 `/common`文件夹下（`/constants`、`/utils`、`/exceptions`），注解和配置相关放置在 `/core`文件夹下（`/annotation`、`/aspect`、`/config`、`/properties`），基础设施相关放置在 `/infra`文件夹下（`/client`、`/filter`、`/handler`、`/initializer`、`/task`），和实体相关的模块放在 `/entity`下，如 `/dto`、`/vo`、`/po`、`/event`、`/projection`
 2. GoZero 项目将 `.api`设计文件放置在 `/api`文件夹下，生成脚本放置在 `/script`文件夹下（项目级脚本另有根目录 `scripts/`），goctl 代码模板放置在 `/template`文件夹下，生成的代码放置在 `/app`文件夹下；`/app/model`下放置数据库实体和操作，`/app/common`下放置通用代码模块（`/constants`、`/client`、`/utils`、`/exceptions`、`/realtime`、`/keys`），`/app/internal`下放置业务相关的代码模块，按 `/handler`、`/logic`、`/middleware`、`/svc`、`/client`、`/hub`、`/boot`、`/task`、`/config`、`/types` 划分，`/app/etc`下放配置文件，`/app/docs`下放生成的 Swagger 产物
 3. NestJS 项目的非 module 通用工具放置在 `/common` 下，和系统相关的框架能力放置在 `/framework` 下，如 `filters`、`guards`、`interceptors` 等，业务 module 放置在 `/module` 下，其中 `module/system` 放置系统业务模块，`module/common` 放置通用能力模块
 4. FastAPI 项目的核心代码放置在 `/app`下，业务代码统一在 `/app/internal`下：`api`下放置路由接口，`services`下放置服务逻辑，`crud`下放置数据库操作，`clients`下放置按目标服务拆分的远程客户端，`cache`下放置两级缓存，`tasks`下放置 APScheduler 定时任务，`agents`下放置 LangChain Agent 与工具；`/app/core`下放置核心功能模块，`/app/common`下放置中间件与装饰器，`/app/dependencies`下集中定义依赖别名与装配函数，`/models`下放置实体相关的模块，`/schemas`下放置 Pydantic 模型
@@ -2491,6 +2491,8 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
    - `SqlTools.java`：SQL 工具常量（表名白名单、只读前缀白名单、查询限制）
    - `HeaderNames.java`：网关与微服务间透传的自定义请求头名称
    - `WarehouseResources.java`：数仓同步的资源与字段映射
+   - `SyncResource.java`：精确同步的资源名常量（与数仓源表 key、Neo4j 主体保持一致）
+   - `SyncChangeType.java`：精确同步的变更类型枚举（insert/update/delete），并提供由操作类型推导变更类型的方法
 
 2. GoZero 项目：`gozero/app/common/constants/`
    - `defaults.go`：配置默认值（ES 权重名称、归一化参数名）
@@ -2540,6 +2542,7 @@ APIFOX_CLI_REGISTRY=https://registry.npmjs.org/   # 换安装源，脚本会去�
 2. 遵循当前项目的定时任务设置方式
 3. 部分定时任务使用 `logic`封装定时任务的实际逻辑，在定时任务主文件调用 `logic`
 4. 定时任务建议使用分布式锁时，锁 Key 的命名规范为 `lock:task:<业务>:<动作>`
+5. 同步类任务采用「AOP 精确触发 + 定时全量兜底」两条路径：Spring 在 `@ArticleSync` / `@DataSync` 标注的接口成功后，由切面采集变更事件（资源名 + 主键 + 变更类型）通过 HTTP 下发给下游，下游按主键精确处理；定时任务保持原有的全量或全局增量行为，负责兜底修正遗漏数据与清理已删除数据。两条路径共用同一套下游接口，由入参是否携带变更事件分流（携带则精确处理，缺省则退化为全量/增量）
 
 ### 其他说明
 
@@ -2564,7 +2567,7 @@ skills/
 
 `SKILL.md` 通过 frontmatter 声明技能名 `mix-web-demo` 与适用场景，正文覆盖：
 
-- **通用规则**：格式化与 lint 门禁、常量抽取、参数校验、并行化、SQL 参数化、远程调用与连接池释放、日志脱敏、注释与行尾规范
+- **通用规则**：格式化与 lint 门禁、常量抽取、接口响应具名结构（禁止匿名 Map）、参数校验、并行化、SQL 参数化、远程调用与连接池释放、日志脱敏、注释与行尾规范
 - **各服务专项约定**：Spring 响应式切面写法与 WebFlux 校验异常陷阱、GoZero 的 API-First 生成流程与 `httpc` 远程调用、NestJS 模块边界与 CLS 未登录语义、FastAPI 依赖注入三层结构与 Agent 工具权限
 - **接口文档收尾流程**：新增、修改或删除接口后重新生成静态 OpenAPI 文档并同步 Apifox，详见 [Apifox 文档同步](#apifox-文档同步)与 [Swagger 说明](#swagger-说明)
 - **仓库工程约束与验证命令**：行尾约定、goctl 生成流程、`mix` 子命令清单、各服务的验证与格式检查命令
@@ -2650,6 +2653,8 @@ gradle spotlessCheck
 ```
 
 规则要点：4 空格缩进、续行缩进 4 空格、行宽 120 列、保留人工换行、中文注释不自动重排；import 按 `java/javax → org → com.hcsy → 其他` 四段分组，同时移除未使用导入、行尾空格，并保证文件以换行结尾。
+
+`./mix lint spring` 除 Spotless 外还会执行 `scripts/controller-vo.py`，检查控制器是否直接返回匿名 `Map<String, Object>`：接口响应统一用具名 VO（字段加 `@Schema`）承载，便于 Swagger 展示字段说明；确实只能使用 Map 的动态结构（如列由运行时决定的查询结果）需在方法或其注解上方写 `// vo-exempt: 原因` 显式豁免，整个控制器可用 `// vo-exempt-class: 原因`。
 
 ### GoZero
 
@@ -2976,7 +2981,7 @@ SQL 工具按服务做了完全隔离：FastAPI Agent 会为每个服务加载�
 对应数据同步任务：
 
 - 定时任务文件：`fastapi/app/internal/tasks/logic/neo4jSyncTask.py`
-- 手动触发接口：`POST /task/sync-neo4j`
+- 手动触发接口：`POST /task/sync-neo4j`（携带 `events` 时按主键精确同步，缺省则按 `force_full` 执行全量或全局增量）
 - Neo4j 客户端：`fastapi/app/core/db/neo4j.py`
 - OGM 图谱模型：`fastapi/app/internal/models/graph/`
 
