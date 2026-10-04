@@ -535,3 +535,80 @@ async def test_article_hash_access_is_noop_without_redis(
 
     assert await task._get_article_content_hash(1) is None
     await task._save_article_content_hash(1, "hash-value")
+
+
+# 精确删除按主键删除向量并清理内容哈希，不查询 Spring
+@pytest.mark.anyio
+async def test_exact_vector_delete_removes_vectors_and_hashes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    vector_mapper = Mock()
+    vector_mapper.delete_by_article_ids = AsyncMock(return_value=2)
+    redis_client = FakeRedisClient()
+    spring_client = Mock()
+    spring_client.get_articles_by_ids = AsyncMock(return_value=[])
+
+    monkeypatch.setattr(task, "get_spring_client", lambda: spring_client)
+    monkeypatch.setattr(task, "get_vector_store_mapper", lambda: vector_mapper)
+    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
+
+    await task.export_article_vectors_by_changes_async("delete", [11, 12])
+
+    vector_mapper.delete_by_article_ids.assert_awaited_once_with([11, 12])
+    redis_client.delete.assert_awaited_once()
+    spring_client.get_articles_by_ids.assert_not_awaited()
+
+
+# 精确写入只处理已发布且内容变化的文章
+@pytest.mark.anyio
+async def test_exact_vector_upsert_only_writes_changed_published_articles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    vector_mapper = Mock()
+    vector_mapper.delete_by_article_ids = AsyncMock(return_value=1)
+    vector_mapper.upsert_articles = AsyncMock(return_value=1)
+    redis_client = FakeRedisClient()
+    redis_client.get = AsyncMock(return_value=None)
+    spring_client = Mock()
+    spring_client.get_articles_by_ids = AsyncMock(
+        return_value=[
+            {"id": 11, "title": "标题", "content": "内容", "tags": "go", "status": 1},
+            {"id": 12, "title": "草稿", "content": "内容", "tags": "", "status": 0},
+        ]
+    )
+
+    monkeypatch.setattr(task, "get_spring_client", lambda: spring_client)
+    monkeypatch.setattr(task, "get_vector_store_mapper", lambda: vector_mapper)
+    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
+
+    await task.export_article_vectors_by_changes_async("update", [11, 12])
+
+    spring_client.get_articles_by_ids.assert_awaited_once_with([11, 12])
+    vector_mapper.upsert_articles.assert_awaited_once()
+    written_ids = vector_mapper.upsert_articles.await_args.kwargs["article_ids"]
+    assert written_ids == [11]
+
+
+# 内容哈希一致时跳过向量写入，避免无意义写放大
+@pytest.mark.anyio
+async def test_exact_vector_upsert_skips_unchanged_content(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    article = {"id": 11, "title": "标题", "content": "内容", "tags": "go", "status": 1}
+    current_hash = task._compute_article_hash(article)
+
+    vector_mapper = Mock()
+    vector_mapper.delete_by_article_ids = AsyncMock(return_value=0)
+    vector_mapper.upsert_articles = AsyncMock(return_value=0)
+    redis_client = FakeRedisClient()
+    redis_client.get = AsyncMock(return_value=current_hash)
+    spring_client = Mock()
+    spring_client.get_articles_by_ids = AsyncMock(return_value=[article])
+
+    monkeypatch.setattr(task, "get_spring_client", lambda: spring_client)
+    monkeypatch.setattr(task, "get_vector_store_mapper", lambda: vector_mapper)
+    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
+
+    await task.export_article_vectors_by_changes_async("update", [11])
+
+    vector_mapper.upsert_articles.assert_not_awaited()

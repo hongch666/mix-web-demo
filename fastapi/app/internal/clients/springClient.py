@@ -461,6 +461,18 @@ class SpringClient:
         )
         return result.get("data", {})
 
+    async def get_comments_by_ids(self, ids: list[int]) -> list[dict[str, Any]]:
+        """批量查询评论关联关系，供精确同步使用"""
+        if not ids:
+            return []
+        result: dict[str, Any] = await call_remote_service(
+            service_name=self.SERVICE_NAME,
+            path="/comments/batch",
+            method="POST",
+            json={"ids": ids},
+        )
+        return result.get("data", [])
+
     async def get_neo4j_sync_users(
         self, updated_after: Optional[str] = None, timeout: Optional[int] = None
     ) -> list[dict[str, Any]]:

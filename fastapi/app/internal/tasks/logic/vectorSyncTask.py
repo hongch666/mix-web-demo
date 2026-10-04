@@ -636,3 +636,103 @@ async def initialize_article_content_hash_cache_async(
     await _initialize_article_content_hash_cache(
         dependencies or build_vector_sync_dependencies(),
     )
+
+
+async def _sync_changed_articles(
+    dependencies: VectorSyncDependencies,
+    change_type: str,
+    ids: list[int],
+) -> None:
+    """
+    按变更事件精确同步向量
+
+    delete 直接删除向量与内容 hash，insert、update 拉取文章后按 hash 判断内容是否变化
+    """
+    if not ids:
+        return
+
+    vector_mapper: VectorMapper = dependencies.vector_mapper
+    redis_client: Any = dependencies.redis_client
+
+    if change_type == "delete":
+        deleted: int = await vector_mapper.delete_by_article_ids(ids)
+        await redis_client.delete(
+            *[RedisKeys.article_content_hash(article_id) for article_id in ids]
+        )
+        Logger.info(f"{Messages.SYNC_VECTOR_EXACT_DELETED}: {deleted}")
+        return
+
+    articles: list[Any] = await dependencies.spring_client.get_articles_by_ids(ids)
+    if not articles:
+        return
+
+    published: list[Any] = [
+        article for article in articles if _get_article_field(article, "status", 0) == 1
+    ]
+    if not published:
+        return
+
+    changed: list[Any] = []
+    for article in published:
+        article_id = _get_article_field(article, "id", 0)
+        if not article_id:
+            continue
+        current_hash: str = _compute_article_hash(article)
+        if not current_hash:
+            continue
+        cached_hash = await _get_article_content_hash(article_id, redis_client)
+        if cached_hash == current_hash:
+            continue
+        changed.append(article)
+        await _save_article_content_hash(article_id, current_hash, redis_client)
+
+    if not changed:
+        return
+
+    article_ids: list[int] = [_get_article_field(a, "id", 0) for a in changed]
+    titles: list[str] = [_get_article_field(a, "title", "") for a in changed]
+    contents: list[str] = [_get_article_field(a, "content", "") for a in changed]
+    metadata_list: list[dict[str, Any]] = [
+        {
+            "user_id": _get_article_field(a, "user_id", None),
+            "tags": _get_article_field(a, "tags", ""),
+            "status": _get_article_field(a, "status", 0),
+            "views": _get_article_field(a, "views", 0),
+            "create_at": str(_get_article_field(a, "create_at", "")),
+            "update_at": str(_get_article_field(a, "update_at", "")),
+        }
+        for a in changed
+    ]
+
+    await vector_mapper.delete_by_article_ids(article_ids)
+    written: int = await vector_mapper.upsert_articles(
+        article_ids=article_ids,
+        titles=titles,
+        contents=contents,
+        metadata_list=metadata_list,
+    )
+    Logger.info(f"{Messages.SYNC_VECTOR_EXACT_COMPLETED}: {written}")
+
+
+async def export_article_vectors_by_changes_async(
+    change_type: str,
+    ids: list[int],
+    dependencies: Optional[VectorSyncDependencies] = None,
+) -> None:
+    """按变更事件精确同步文章向量，使用 Redis 分布式锁保证多实例互斥"""
+    resolved_dependencies: VectorSyncDependencies = (
+        dependencies or build_vector_sync_dependencies()
+    )
+    redis_client: Any = resolved_dependencies.redis_client
+    lock_key: str = RedisKeys.LOCK_TASK_VECTOR_SYNC
+    lock_expire: int = RedisKeys.LOCK_TASK_VECTOR_SYNC_EXPIRE
+
+    lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
+    if lock_value is None:
+        Logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE(lock_key))
+        return
+    Logger.info(f"{Messages.SYNC_VECTOR_EXACT_STARTED}: {change_type} {ids}")
+    try:
+        await _sync_changed_articles(resolved_dependencies, change_type, ids)
+    finally:
+        await redis_client.unlock(lock_key, lock_value)

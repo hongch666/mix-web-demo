@@ -16,6 +16,12 @@ from .graphSearchDTO import (
     GraphSearchEnhanceResp,
 )
 from .listResponse import ListResponse
+from .syncEventDTO import (
+    ChangeEventDTO,
+    Neo4jSyncDTO,
+    VectorSyncDTO,
+    WarehouseSyncDTO,
+)
 from .responseDTO import (
     ActionTrendResponse,
     AiHistoryResponse,
@@ -80,4 +86,8 @@ __all__: list[str] = [
     "SearchWeightsResponse",
     "SearchScriptResponseData",
     "ScriptParamsResponse",
+    "ChangeEventDTO",
+    "VectorSyncDTO",
+    "Neo4jSyncDTO",
+    "WarehouseSyncDTO",
 ]

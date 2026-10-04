@@ -364,3 +364,47 @@ async def test_refresh_warehouse_skips_snapshots_when_only_events_changed(
 
     full.assert_not_awaited()
     partitions.assert_awaited_once_with({"202609"})
+
+
+# 指定资源时只同步该源表，实现表粒度精确同步
+@pytest.mark.anyio
+async def test_sync_warehouse_filters_sources_by_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    synced: list[str] = []
+
+    async def fake_remote_source(
+        spring_client: object, table_name: str, resource: str, columns: tuple[str, ...]
+    ) -> tuple[bool, set[str]]:
+        synced.append(resource)
+        return (False, set())
+
+    monkeypatch.setattr(task, "create_warehouse_tables_async", AsyncMock())
+    monkeypatch.setattr(task, "_sync_remote_source", fake_remote_source)
+
+    await task._sync_warehouse(AsyncMock(), None, {"articles"})
+
+    assert synced == ["articles"]
+
+
+# 仅文章行为相关资源变更时才刷新日志表
+def test_should_sync_log_sources() -> None:
+    assert task._should_sync_log_sources(None) is True
+    assert task._should_sync_log_sources({"articles"}) is True
+    assert task._should_sync_log_sources({"category"}) is False
+
+
+# 数仓同步按资源名透传到同步函数
+@pytest.mark.anyio
+async def test_sync_warehouse_async_forwards_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    redis_client = FakeRedisClient()
+    sync = AsyncMock()
+    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
+    monkeypatch.setattr(task, "_sync_warehouse", sync)
+
+    await task.sync_warehouse_async(AsyncMock(), None, ["comments"])
+
+    sync.assert_awaited_once()
+    assert sync.await_args.args[2] == {"comments"}

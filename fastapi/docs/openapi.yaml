@@ -285,6 +285,14 @@ paths:
       summary: 手动触发向量数据库同步任务
       description: 手动触发同步文章数据PostgreSQL向量数据库的定时任务
       operationId: task_export_vector_task_vector_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/VectorSyncDTO'
+              - type: 'null'
+              title: Payload
       responses:
         '200':
           description: Successful Response
@@ -292,6 +300,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /task/init-hash-cache:
     post:
       tags:
@@ -339,6 +353,14 @@ paths:
           default: false
           title: Force Full
         description: 是否全量同步（含清理），默认增量同步
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/Neo4jSyncDTO'
+              - type: 'null'
+              title: Payload
       responses:
         '200':
           description: Successful Response
@@ -359,6 +381,14 @@ paths:
       summary: 手动触发 ClickHouse 数仓同步任务
       description: 通过 Spring 和 NestJS 内部接口同步业务数据到 ClickHouse，并刷新数仓汇总表
       operationId: task_sync_warehouse_task_sync_warehouse_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              anyOf:
+              - $ref: '#/components/schemas/WarehouseSyncDTO'
+              - type: 'null'
+              title: Payload
       responses:
         '200':
           description: Successful Response
@@ -366,6 +396,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse_NoneType_'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /ai_history:
     post:
       tags:
@@ -1535,6 +1571,50 @@ components:
       - category_name
       - article_count
       title: CategoryArticleCountResponse
+    ChangeEventDTO:
+      properties:
+        resource:
+          type: string
+          title: Resource
+          description: 资源名，如 articles、comments
+          default: ''
+        change_type:
+          type: string
+          title: Change Type
+          description: 变更类型：insert、update、delete
+          default: ''
+        ids:
+          items:
+            type: integer
+          type: array
+          title: Ids
+          description: 受影响的主键集合
+        action:
+          type: string
+          title: Action
+          description: 原始操作类型
+          default: ''
+        trigger_user_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Trigger User Id
+          description: 触发变更的用户ID
+        trigger_username:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trigger Username
+          description: 触发变更的用户名
+        occurred_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Occurred At
+          description: 事件产生时间
+      type: object
+      title: ChangeEventDTO
+      description: 数据变更事件，与 Spring 下发的精确同步事件结构对应
     ChatRequest:
       properties:
         message:
@@ -1923,6 +2003,22 @@ components:
       - year_month
       - count
       title: MonthlyPublishCountResponse
+    Neo4jSyncDTO:
+      properties:
+        events:
+          items:
+            $ref: '#/components/schemas/ChangeEventDTO'
+          type: array
+          title: Events
+          description: 变更事件列表
+        force_full:
+          type: boolean
+          title: Force Full
+          description: 是否全量同步（含清理）
+          default: false
+      type: object
+      title: Neo4jSyncDTO
+      description: Neo4j 精确同步请求，携带一批变更事件
     ScriptParamsResponse:
       properties:
         script_params:
@@ -2255,6 +2351,50 @@ components:
       type: object
       title: VectorSearchEnhanceResp
       description: 向量搜索增强响应
+    VectorSyncDTO:
+      properties:
+        resource:
+          type: string
+          title: Resource
+          description: 资源名，固定 articles
+          default: articles
+        change_type:
+          type: string
+          title: Change Type
+          description: 变更类型：insert、update、delete
+          default: ''
+        ids:
+          items:
+            type: integer
+          type: array
+          title: Ids
+          description: 受影响文章ID
+        trigger_user_id:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Trigger User Id
+          description: 触发变更的用户ID
+        occurred_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Occurred At
+          description: 事件产生时间
+      type: object
+      title: VectorSyncDTO
+      description: 向量同步请求，携带变更类型与文章主键
+    WarehouseSyncDTO:
+      properties:
+        resources:
+          items:
+            type: string
+          type: array
+          title: Resources
+          description: 本次变更涉及的源表资源名，为空时全表同步
+      type: object
+      title: WarehouseSyncDTO
+      description: 数仓同步请求，按资源名精确定位需要刷新的源表
 tags:
 - name: AI历史模块
   description: AI历史相关API，包括创建AI历史记录、获取所有AI历史记录、删除用户所有AI历史记录等

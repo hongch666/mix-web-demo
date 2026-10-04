@@ -547,3 +547,173 @@ async def test_save_sync_time_swallows_redis_error(
     redis_client.set.assert_awaited_once_with(
         RedisKeys.NEO4J_SYNC_TIME, "2026-09-01T08:00:00"
     )
+
+
+def _build_sync_service() -> tuple[task.KnowledgeGraphSyncService, Mock, Mock]:
+    """构造带 mock 客户端的图谱同步服务"""
+    neo4j_client = Mock()
+    neo4j_client.run_write_query = AsyncMock(return_value=None)
+    spring_client = Mock()
+    service = task.KnowledgeGraphSyncService(neo4j_client, spring_client)
+    return service, neo4j_client, spring_client
+
+
+# 精确同步按主键删除文章节点
+@pytest.mark.anyio
+async def test_sync_changes_deletes_articles_by_ids() -> None:
+    service, neo4j_client, _ = _build_sync_service()
+
+    await service.sync_changes(
+        [{"resource": "articles", "change_type": "delete", "ids": [7, 8]}]
+    )
+
+    executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
+    assert task.Scripts.NEO4J_DELETE_ARTICLES_BY_IDS_CYPHER in executed
+
+
+# 精确同步按主键拉取文章快照并写入节点与关系
+@pytest.mark.anyio
+async def test_sync_changes_upserts_articles_by_ids() -> None:
+    service, neo4j_client, spring_client = _build_sync_service()
+    spring_client.get_articles_by_ids = AsyncMock(
+        return_value=[
+            {
+                "id": 7,
+                "title": "标题",
+                "tags": "go,redis",
+                "status": 1,
+                "views": 3,
+                "user_id": 1,
+                "sub_category_id": 2,
+                "create_at": "2026-01-01T00:00:00",
+                "update_at": "2026-01-02T00:00:00",
+            }
+        ]
+    )
+
+    await service.sync_changes(
+        [{"resource": "articles", "change_type": "update", "ids": [7]}]
+    )
+
+    spring_client.get_articles_by_ids.assert_awaited_once_with([7])
+    executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
+    assert task.Scripts.NEO4J_MERGE_ARTICLES_CYPHER in executed
+    assert task.Scripts.NEO4J_MERGE_TAGGED_AS_CYPHER in executed
+
+
+# 点赞关系按触发用户与目标文章精确写入
+@pytest.mark.anyio
+async def test_sync_changes_upserts_like_relation() -> None:
+    service, neo4j_client, _ = _build_sync_service()
+
+    await service.sync_changes(
+        [
+            {
+                "resource": "likes",
+                "change_type": "insert",
+                "ids": [7],
+                "trigger_user_id": 1,
+                "occurred_at": "2026-01-01T00:00:00",
+            }
+        ]
+    )
+
+    executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
+    assert task.Scripts.NEO4J_MERGE_LIKES_CYPHER in executed
+
+
+# 取消点赞按两端主键精确删除关系
+@pytest.mark.anyio
+async def test_sync_changes_deletes_like_relation() -> None:
+    service, neo4j_client, _ = _build_sync_service()
+
+    await service.sync_changes(
+        [
+            {
+                "resource": "likes",
+                "change_type": "delete",
+                "ids": [7],
+                "trigger_user_id": 1,
+            }
+        ]
+    )
+
+    delete_calls = [
+        call
+        for call in neo4j_client.run_write_query.await_args_list
+        if call.args
+        and call.args[0] == task.Scripts.NEO4J_DELETE_LIKES_RELATIONS_CYPHER
+    ]
+    assert delete_calls
+    assert delete_calls[0].args[1]["rows"][0]["userId"] == 1
+    assert delete_calls[0].args[1]["rows"][0]["articleId"] == 7
+
+
+# 评论删除按评论主键精确删除关系
+@pytest.mark.anyio
+async def test_sync_changes_deletes_comment_relation_by_id() -> None:
+    service, neo4j_client, _ = _build_sync_service()
+
+    await service.sync_changes(
+        [{"resource": "comments", "change_type": "delete", "ids": [99]}]
+    )
+
+    delete_calls = [
+        call
+        for call in neo4j_client.run_write_query.await_args_list
+        if call.args
+        and call.args[0] == task.Scripts.NEO4J_DELETE_COMMENTED_ON_BY_IDS_CYPHER
+    ]
+    assert delete_calls
+    assert delete_calls[0].args[1]["commentIds"] == [99]
+
+
+# 未知资源被跳过且不抛异常
+@pytest.mark.anyio
+async def test_sync_changes_skips_unknown_resource() -> None:
+    service, neo4j_client, _ = _build_sync_service()
+
+    result = await service.sync_changes(
+        [{"resource": "unknown", "change_type": "insert", "ids": [1]}]
+    )
+
+    assert result == {}
+    executed = [call.args[0] for call in neo4j_client.run_write_query.await_args_list]
+    assert task.Scripts.NEO4J_DELETE_ARTICLES_BY_IDS_CYPHER not in executed
+
+
+# 未获取到分布式锁时精确同步跳过
+@pytest.mark.anyio
+async def test_sync_neo4j_changes_skips_when_lock_not_acquired(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    redis_client = FakeRedisClient(None)
+    service = Mock(sync_changes=AsyncMock())
+    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
+    monkeypatch.setattr(task, "get_knowledge_graph_sync_service", lambda: service)
+
+    await task.sync_neo4j_changes_async(
+        [{"resource": "articles", "change_type": "delete", "ids": [1]}]
+    )
+
+    service.sync_changes.assert_not_awaited()
+    redis_client.unlock.assert_not_awaited()
+
+
+# 获取锁后执行精确同步并释放锁
+@pytest.mark.anyio
+async def test_sync_neo4j_changes_runs_and_releases_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    redis_client = FakeRedisClient()
+    service = Mock(sync_changes=AsyncMock(return_value={"articles": 1}))
+    monkeypatch.setattr(task, "get_redis_client", lambda: redis_client)
+    monkeypatch.setattr(task, "get_knowledge_graph_sync_service", lambda: service)
+
+    events = [{"resource": "articles", "change_type": "delete", "ids": [1]}]
+    await task.sync_neo4j_changes_async(events)
+
+    service.sync_changes.assert_awaited_once_with(events)
+    redis_client.unlock.assert_awaited_once_with(
+        RedisKeys.LOCK_TASK_NEO4J_SYNC, "lock-value"
+    )

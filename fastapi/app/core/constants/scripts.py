@@ -239,6 +239,50 @@ class Scripts:
         SET r.createdAt = row.createdAt
     """
 
+    # ===== Neo4j 精确同步删除 Cypher（按主键） =====
+
+    NEO4J_DELETE_ARTICLES_BY_IDS_CYPHER: str = """
+        UNWIND $ids AS id
+        MATCH (n:Article {id: id})
+        DETACH DELETE n
+    """
+    NEO4J_DELETE_USERS_BY_IDS_CYPHER: str = """
+        UNWIND $ids AS id
+        MATCH (n:User {id: id})
+        DETACH DELETE n
+    """
+    NEO4J_DELETE_CATEGORIES_BY_IDS_CYPHER: str = """
+        UNWIND $ids AS id
+        MATCH (n:Category {id: id})
+        DETACH DELETE n
+    """
+    NEO4J_DELETE_SUB_CATEGORIES_BY_IDS_CYPHER: str = """
+        UNWIND $ids AS id
+        MATCH (n:SubCategory {id: id})
+        DETACH DELETE n
+    """
+    NEO4J_DELETE_LIKES_RELATIONS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})-[r:LIKES]->(a:Article {id: row.articleId})
+        DELETE r
+    """
+    NEO4J_DELETE_COLLECTS_RELATIONS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (u:User {id: row.userId})-[r:COLLECTS]->(a:Article {id: row.articleId})
+        DELETE r
+    """
+    NEO4J_DELETE_COMMENTED_ON_BY_IDS_CYPHER: str = """
+        UNWIND $commentIds AS commentId
+        MATCH (:User)-[r:COMMENTED_ON]->(:Article)
+        WHERE r.commentId = commentId
+        DELETE r
+    """
+    NEO4J_DELETE_FOLLOWS_RELATIONS_CYPHER: str = """
+        UNWIND $rows AS row
+        MATCH (follower:User {id: row.followerId})-[r:FOLLOWS]->(followed:User {id: row.followedId})
+        DELETE r
+    """
+
     # ===== Neo4j 清理 Cypher（同步任务 _cleanup_write 调用） =====
     # 关系清理用 keys 参数（"id1:id2" 格式的字符串列表）
     # 节点清理用 ids（整数ID列表）或 names（标签名列表）

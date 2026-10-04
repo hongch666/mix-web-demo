@@ -727,11 +727,301 @@ class KnowledgeGraphSyncService:
 
         return result
 
+    @staticmethod
+    def _split_change_items(
+        items: list[dict[str, Any]],
+    ) -> tuple[list[int], list[int], Optional[int], str]:
+        """拆分变更事件为写入主键、删除主键、触发用户与事件时间"""
+        upsert_ids: list[int] = []
+        delete_ids: list[int] = []
+        trigger_user_id: Optional[int] = None
+        occurred_at = ""
+        for event in items:
+            change_type = str(event.get("change_type") or "")
+            ids = [int(item) for item in (event.get("ids") or []) if item is not None]
+            if change_type == "delete":
+                delete_ids.extend(ids)
+            else:
+                upsert_ids.extend(ids)
+            trigger = event.get("trigger_user_id")
+            if trigger is not None:
+                trigger_user_id = int(trigger)
+            if event.get("occurred_at"):
+                occurred_at = str(event["occurred_at"])
+        return upsert_ids, delete_ids, trigger_user_id, occurred_at
+
+    async def sync_changes(self, events: list[dict[str, Any]]) -> dict[str, int]:
+        """按变更事件精确同步图谱：节点按主键写入或删除，关系按主键两端写入或删除"""
+        await self._ensure_schema()
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for event in events:
+            resource = str(event.get("resource") or "")
+            if not resource:
+                continue
+            grouped.setdefault(resource, []).append(event)
+
+        handlers = {
+            "articles": self._sync_article_changes,
+            "user": self._sync_user_changes,
+            "category": self._sync_category_changes,
+            "sub_category": self._sync_sub_category_changes,
+            "likes": self._sync_like_changes,
+            "collects": self._sync_collect_changes,
+            "comments": self._sync_comment_changes,
+            "focus": self._sync_focus_changes,
+        }
+
+        result: dict[str, int] = {}
+        for resource, items in grouped.items():
+            handler = handlers.get(resource)
+            if handler is None:
+                self.logger.warning(f"{Messages.SYNC_NEO4J_EXACT_SKIPPED}: {resource}")
+                continue
+            result.update(await handler(items))
+        return result
+
+    async def _sync_article_changes(
+        self, items: list[dict[str, Any]]
+    ) -> dict[str, int]:
+        upsert_ids, delete_ids, _, _ = self._split_change_items(items)
+        result: dict[str, int] = {}
+        if upsert_ids:
+            rows = await self.spring_client.get_articles_by_ids(upsert_ids)
+            articles = self._normalize_articles(rows)
+            result["articles"] = await self._batch_write(
+                articles,
+                Scripts.NEO4J_MERGE_ARTICLES_CYPHER,
+                Messages.NEO4J_LABEL_ARTICLE,
+            )
+            sub_relations = [
+                {"articleId": item["id"], "subCategoryId": item["subCategoryId"]}
+                for item in articles
+                if item.get("subCategoryId") is not None
+            ]
+            author_relations = [
+                {"articleId": item["id"], "userId": item["userId"]}
+                for item in articles
+                if item.get("userId") is not None
+            ]
+            tag_relations = self._build_article_tag_relations(articles)
+            result["belongs_to"] = await self._batch_write(
+                sub_relations,
+                Scripts.NEO4J_MERGE_ARTICLE_TO_SUB_CATEGORY_CYPHER,
+                Messages.NEO4J_LABEL_ARTICLE_SUB_CATEGORY_RELATION,
+            )
+            result["published_by"] = await self._batch_write(
+                author_relations,
+                Scripts.NEO4J_MERGE_PUBLISHED_BY_CYPHER,
+                Messages.NEO4J_LABEL_ARTICLE_AUTHOR_RELATION,
+            )
+            result["tagged_as"] = await self._batch_write(
+                tag_relations,
+                Scripts.NEO4J_MERGE_TAGGED_AS_CYPHER,
+                Messages.NEO4J_LABEL_ARTICLE_TAG_RELATION,
+            )
+        if delete_ids:
+            await self.client.run_write_query(
+                Scripts.NEO4J_DELETE_ARTICLES_BY_IDS_CYPHER, {"ids": delete_ids}
+            )
+            result["articles_deleted"] = len(delete_ids)
+        return result
+
+    async def _sync_user_changes(self, items: list[dict[str, Any]]) -> dict[str, int]:
+        upsert_ids, delete_ids, _, _ = self._split_change_items(items)
+        result: dict[str, int] = {}
+        if upsert_ids:
+            rows = await self.spring_client.get_users_by_ids(upsert_ids)
+            users = self._normalize_users(rows)
+            result["users"] = await self._batch_write(
+                users, Scripts.NEO4J_MERGE_USERS_CYPHER, Messages.NEO4J_LABEL_USER
+            )
+        if delete_ids:
+            await self.client.run_write_query(
+                Scripts.NEO4J_DELETE_USERS_BY_IDS_CYPHER, {"ids": delete_ids}
+            )
+            result["users_deleted"] = len(delete_ids)
+        return result
+
+    async def _sync_category_changes(
+        self, items: list[dict[str, Any]]
+    ) -> dict[str, int]:
+        upsert_ids, delete_ids, _, _ = self._split_change_items(items)
+        result: dict[str, int] = {}
+        if upsert_ids:
+            rows = await self.spring_client.get_categories_by_ids(upsert_ids)
+            categories = self._normalize_categories(rows)
+            result["categories"] = await self._batch_write(
+                categories,
+                Scripts.NEO4J_MERGE_CATEGORIES_CYPHER,
+                Messages.NEO4J_LABEL_CATEGORY,
+            )
+        if delete_ids:
+            await self.client.run_write_query(
+                Scripts.NEO4J_DELETE_CATEGORIES_BY_IDS_CYPHER, {"ids": delete_ids}
+            )
+            result["categories_deleted"] = len(delete_ids)
+        return result
+
+    async def _sync_sub_category_changes(
+        self, items: list[dict[str, Any]]
+    ) -> dict[str, int]:
+        upsert_ids, delete_ids, _, _ = self._split_change_items(items)
+        result: dict[str, int] = {}
+        if upsert_ids:
+            rows = await self.spring_client.get_sub_categories_by_ids(upsert_ids)
+            sub_categories = self._normalize_sub_categories(rows)
+            result["sub_categories"] = await self._batch_write(
+                sub_categories,
+                Scripts.NEO4J_MERGE_SUB_CATEGORIES_CYPHER,
+                Messages.NEO4J_LABEL_SUB_CATEGORY,
+            )
+            relations = [
+                {"subCategoryId": item["id"], "categoryId": item["categoryId"]}
+                for item in sub_categories
+                if item.get("categoryId") is not None
+            ]
+            result["sub_category_belongs_to_category"] = await self._batch_write(
+                relations,
+                Scripts.NEO4J_MERGE_SUB_CATEGORY_TO_CATEGORY_CYPHER,
+                Messages.NEO4J_LABEL_SUB_CATEGORY_RELATION,
+            )
+        if delete_ids:
+            await self.client.run_write_query(
+                Scripts.NEO4J_DELETE_SUB_CATEGORIES_BY_IDS_CYPHER, {"ids": delete_ids}
+            )
+            result["sub_categories_deleted"] = len(delete_ids)
+        return result
+
+    async def _sync_like_changes(self, items: list[dict[str, Any]]) -> dict[str, int]:
+        return await self._sync_article_relation_changes(
+            items,
+            Scripts.NEO4J_MERGE_LIKES_CYPHER,
+            Scripts.NEO4J_DELETE_LIKES_RELATIONS_CYPHER,
+            Messages.NEO4J_LABEL_LIKE_RELATION,
+        )
+
+    async def _sync_collect_changes(
+        self, items: list[dict[str, Any]]
+    ) -> dict[str, int]:
+        return await self._sync_article_relation_changes(
+            items,
+            Scripts.NEO4J_MERGE_COLLECTS_CYPHER,
+            Scripts.NEO4J_DELETE_COLLECTS_RELATIONS_CYPHER,
+            Messages.NEO4J_LABEL_COLLECT_RELATION,
+        )
+
+    async def _sync_article_relation_changes(
+        self,
+        items: list[dict[str, Any]],
+        merge_cypher: str,
+        delete_cypher: str,
+        label: str,
+    ) -> dict[str, int]:
+        """点赞、收藏等以触发用户与目标文章为两端的关系同步"""
+        upsert_rows: list[dict[str, Any]] = []
+        delete_rows: list[dict[str, Any]] = []
+        for event in items:
+            trigger = event.get("trigger_user_id")
+            if trigger is None:
+                continue
+            is_delete = str(event.get("change_type") or "") == "delete"
+            for article_id in event.get("ids") or []:
+                row = {
+                    "userId": int(trigger),
+                    "articleId": int(article_id),
+                    "createdAt": str(event.get("occurred_at") or ""),
+                }
+                if is_delete:
+                    delete_rows.append(row)
+                else:
+                    upsert_rows.append(row)
+        result: dict[str, int] = {}
+        if upsert_rows:
+            result[label] = await self._batch_write(upsert_rows, merge_cypher, label)
+        if delete_rows:
+            await self.client.run_write_query(delete_cypher, {"rows": delete_rows})
+            result[f"{label}_deleted"] = len(delete_rows)
+        return result
+
+    async def _sync_focus_changes(self, items: list[dict[str, Any]]) -> dict[str, int]:
+        upsert_rows: list[dict[str, Any]] = []
+        delete_rows: list[dict[str, Any]] = []
+        for event in items:
+            trigger = event.get("trigger_user_id")
+            if trigger is None:
+                continue
+            is_delete = str(event.get("change_type") or "") == "delete"
+            for followed_id in event.get("ids") or []:
+                row = {
+                    "followerId": int(trigger),
+                    "followedId": int(followed_id),
+                    "createdAt": str(event.get("occurred_at") or ""),
+                }
+                if is_delete:
+                    delete_rows.append(row)
+                else:
+                    upsert_rows.append(row)
+        result: dict[str, int] = {}
+        if upsert_rows:
+            result["follows"] = await self._batch_write(
+                upsert_rows,
+                Scripts.NEO4J_MERGE_FOLLOWS_CYPHER,
+                Messages.NEO4J_LABEL_FOLLOW_RELATION,
+            )
+        if delete_rows:
+            await self.client.run_write_query(
+                Scripts.NEO4J_DELETE_FOLLOWS_RELATIONS_CYPHER, {"rows": delete_rows}
+            )
+            result["follows_deleted"] = len(delete_rows)
+        return result
+
+    async def _sync_comment_changes(
+        self, items: list[dict[str, Any]]
+    ) -> dict[str, int]:
+        upsert_ids, delete_ids, _, _ = self._split_change_items(items)
+        result: dict[str, int] = {}
+        if upsert_ids:
+            rows = await self.spring_client.get_comments_by_ids(upsert_ids)
+            comments = self._normalize_comments(rows)
+            result["commented_on"] = await self._batch_write(
+                comments,
+                Scripts.NEO4J_MERGE_COMMENTED_ON_CYPHER,
+                Messages.NEO4J_LABEL_COMMENT_RELATION,
+            )
+        if delete_ids:
+            await self.client.run_write_query(
+                Scripts.NEO4J_DELETE_COMMENTED_ON_BY_IDS_CYPHER,
+                {"commentIds": delete_ids},
+            )
+            result["commented_on_deleted"] = len(delete_ids)
+        return result
+
 
 @lru_cache
 def get_knowledge_graph_sync_service() -> KnowledgeGraphSyncService:
     """获取知识图谱同步服务单例"""
     return KnowledgeGraphSyncService(get_neo4j_client(), get_spring_client())
+
+
+async def sync_neo4j_changes_async(events: list[dict[str, Any]]) -> None:
+    """按变更事件精确同步 Neo4j，使用 Redis 分布式锁避免多实例重复执行"""
+    if not events:
+        return
+    lock_key: str = RedisKeys.LOCK_TASK_NEO4J_SYNC
+    lock_expire: int = RedisKeys.LOCK_TASK_NEO4J_SYNC_EXPIRE
+    redis_client = get_redis_client()
+    lock_value: Optional[str] = await redis_client.try_lock(lock_key, lock_expire)
+    if lock_value is None:
+        Logger.info(Messages.REDIS_LOCK_ACQUIRE_FAIL_MESSAGE(lock_key))
+        return
+    try:
+        service = get_knowledge_graph_sync_service()
+        result = await service.sync_changes(events)
+        Logger.info(f"{Messages.SYNC_NEO4J_EXACT_COMPLETED}: {result}")
+    except Exception as e:
+        Logger.error(Messages.NEO4J_MYSQL_SYNC_FAILED(e))
+    finally:
+        await redis_client.unlock(lock_key, lock_value)
 
 
 async def _save_sync_time(sync_time: datetime) -> None:

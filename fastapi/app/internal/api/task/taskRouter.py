@@ -1,6 +1,8 @@
 import asyncio
 
-from fastapi import APIRouter, BackgroundTasks, Query, Request
+from typing import Annotated, Optional
+
+from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
 
 from app.common.decorators import log, requireInternalToken
 from app.core.base import ApiResponse, success
@@ -12,11 +14,18 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
+from app.internal.schemas import (
+    Neo4jSyncDTO,
+    VectorSyncDTO,
+    WarehouseSyncDTO,
+)
 from app.internal.tasks import (
     build_vector_sync_dependencies,
+    export_article_vectors_by_changes_async,
     export_article_vectors_to_postgres_async,
     initialize_article_content_hash_cache_async,
     sync_mysql_to_neo4j_async,
+    sync_neo4j_changes_async,
     sync_warehouse_async,
     update_analyze_caches_async,
 )
@@ -55,9 +64,23 @@ async def task_update_analyze_caches(
 @requireInternalToken
 @log("手动触发向量数据库同步任务")
 async def task_export_vector(
-    request: Request, background_tasks: BackgroundTasks
+    request: Request,
+    background_tasks: BackgroundTasks,
+    payload: Annotated[Optional[VectorSyncDTO], Body()] = None,
 ) -> ApiResponse:
-    """手动触发向量数据库同步任务接口"""
+    """手动触发向量数据库同步任务接口
+
+    携带文章主键时按主键精确同步，否则执行全量增量同步
+    """
+
+    if payload is not None and payload.ids:
+        background_tasks.add_task(
+            export_article_vectors_by_changes_async,
+            payload.change_type,
+            payload.ids,
+            build_vector_sync_dependencies(),
+        )
+        return success()
 
     background_tasks.add_task(
         export_article_vectors_to_postgres_async,
@@ -130,10 +153,20 @@ async def task_sync_neo4j(
     force_full: bool = Query(
         default=False, description="是否全量同步（含清理），默认增量同步"
     ),
+    payload: Annotated[Optional[Neo4jSyncDTO], Body()] = None,
 ) -> ApiResponse:
-    """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口"""
+    """手动触发同步 MySQL 到 Neo4j 知识图谱任务接口
 
-    background_tasks.add_task(sync_mysql_to_neo4j_async, force_full=force_full)
+    携带变更事件时按主键精确同步，否则执行全量或增量同步
+    """
+
+    events = [event.model_dump() for event in (payload.events if payload else [])]
+    full_sync = force_full or bool(payload and payload.force_full)
+    if events and not full_sync:
+        background_tasks.add_task(sync_neo4j_changes_async, events)
+        return success()
+
+    background_tasks.add_task(sync_mysql_to_neo4j_async, force_full=full_sync)
     return success()
 
 
@@ -151,12 +184,17 @@ async def task_sync_warehouse(
     background_tasks: BackgroundTasks,
     spring_client: SpringClientDep,
     nestjs_client: NestjsClientDep,
+    payload: Annotated[Optional[WarehouseSyncDTO], Body()] = None,
 ) -> ApiResponse:
-    """手动触发 ClickHouse 数仓同步任务接口"""
+    """手动触发 ClickHouse 数仓同步任务接口
+
+    携带资源名时只同步对应源表，否则全表同步
+    """
 
     background_tasks.add_task(
         sync_warehouse_async,
         spring_client=spring_client,
         nestjs_client=nestjs_client,
+        resources=payload.resources if payload else None,
     )
     return success()

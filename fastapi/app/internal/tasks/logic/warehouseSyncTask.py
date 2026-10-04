@@ -41,6 +41,18 @@ REMOTE_MODELS: dict[str, type[Any]] = {
     "ods_focus": OdsFocus,
 }
 
+# 影响文章行为日志（ods_article_log、ods_api_log）的源表资源
+ARTICLE_LOG_RESOURCES: frozenset[str] = frozenset(
+    {"articles", "likes", "collects", "comments", "focus"}
+)
+
+
+def _should_sync_log_sources(resources: Optional[set[str]]) -> bool:
+    """日志表仅在文章行为相关资源变更或全量同步时刷新"""
+    if not resources:
+        return True
+    return bool(resources & ARTICLE_LOG_RESOURCES)
+
 
 def _parse_watermark(value: Optional[str]) -> datetime:
     if not value:
@@ -349,14 +361,19 @@ async def _refresh_warehouse(
 
 
 async def _sync_warehouse(
-    spring_client: SpringClient, nestjs_client: Optional[NestjsClient] = None
+    spring_client: SpringClient,
+    nestjs_client: Optional[NestjsClient] = None,
+    resources: Optional[set[str]] = None,
 ) -> None:
     await create_warehouse_tables_async()
+    # 按资源名收窄源表范围，实现表粒度精确同步
+    sources = [
+        source
+        for source in WarehouseScripts.REMOTE_SOURCES
+        if not resources or source[1] in resources
+    ]
     source_results = await asyncio.gather(
-        *(
-            _sync_remote_source(spring_client, *source)
-            for source in WarehouseScripts.REMOTE_SOURCES
-        )
+        *(_sync_remote_source(spring_client, *source) for source in sources)
     )
     dirty_partitions: set[str] = set()
     snapshot_changed = False
@@ -364,7 +381,7 @@ async def _sync_warehouse(
         snapshot_changed = snapshot_changed or changed
         dirty_partitions |= partitions
     try:
-        if nestjs_client:
+        if nestjs_client and _should_sync_log_sources(resources):
             event_partitions = await _sync_article_logs(nestjs_client)
             api_partitions = await _sync_api_logs(nestjs_client)
             dirty_partitions |= event_partitions
@@ -389,10 +406,12 @@ async def _sync_warehouse(
 async def sync_warehouse_async(
     spring_client: Optional[SpringClient] = None,
     nestjs_client: Optional[NestjsClient] = None,
+    resources: Optional[list[str]] = None,
 ) -> None:
-    """通过 Spring/Nest 内部接口同步 ODS 并刷新数仓"""
+    """通过 Spring/Nest 内部接口同步 ODS 并刷新数仓，可按资源名精确到表"""
     if spring_client is None:
         return
+    resource_set: Optional[set[str]] = set(resources) if resources else None
     redis_client = get_redis_client()
     lock_value = await redis_client.try_lock(
         RedisKeys.LOCK_TASK_WAREHOUSE, RedisKeys.LOCK_TASK_WAREHOUSE_EXPIRE
@@ -401,6 +420,6 @@ async def sync_warehouse_async(
         Logger.info(Messages.WAREHOUSE_LOCK_NOT_ACQUIRED)
         return
     try:
-        await _sync_warehouse(spring_client, nestjs_client)
+        await _sync_warehouse(spring_client, nestjs_client, resource_set)
     finally:
         await redis_client.unlock(RedisKeys.LOCK_TASK_WAREHOUSE, lock_value)

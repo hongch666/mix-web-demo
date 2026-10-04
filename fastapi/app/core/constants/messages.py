@@ -1990,6 +1990,13 @@ class Messages:
 
     GRAPH_SEARCH_PATH_INTEREST: str = "User-LIKES-Article-TAGGED_AS-Tag"
 
+    # ===== 精确同步（变更事件驱动） =====
+    SYNC_VECTOR_EXACT_STARTED: str = "向量精确同步开始"
+    SYNC_VECTOR_EXACT_COMPLETED: str = "向量精确同步完成"
+    SYNC_VECTOR_EXACT_DELETED: str = "向量精确同步删除完成"
+    SYNC_NEO4J_EXACT_COMPLETED: str = "Neo4j 精确同步完成"
+    SYNC_NEO4J_EXACT_SKIPPED: str = "Neo4j 精确同步跳过未知资源"
+
     GRAPH_SEARCH_PATH_KEYWORD: str = "Article-TAGGED_AS-Tag"
 
     GRAPH_SEARCH_PATH_SUB_CATEGORY: str = (
