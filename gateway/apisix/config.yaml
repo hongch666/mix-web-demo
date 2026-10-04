@@ -56,13 +56,17 @@ plugin_attr:
     export_addr:
       ip: 0.0.0.0
       port: 9091
+    # extra_labels 每项必须是单键映射（标签名: $变量名），写成字符串列表会让插件 init_worker 抛错
+    # matched_uri 已是 http_status 的内置标签，重复添加会导致标签重名
     metrics:
       http_status:
         enabled: true
-        extra_labels: [route_name, matched_uri]
+        extra_labels:
+          - route_name: $route_name
       http_latency:
         enabled: true
-        extra_labels: [route_name, matched_uri]
+        extra_labels:
+          - route_name: $route_name
   opentelemetry:
     resource:
       service.name: apisix-gateway
