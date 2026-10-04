@@ -1,7 +1,6 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcsy.spring.api.service.ArticleLikeService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.ArticleSync;
@@ -23,6 +23,7 @@ import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleLikeDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.LikeCheckVO;
 import com.hcsy.spring.entity.vo.LikeCountVO;
@@ -46,7 +47,7 @@ public class ArticleLikeController {
 
     @PostMapping
     @Operation(summary = "添加点赞", description = "为文章添加点赞")
-    @ArticleSync(action = "like", description = "点赞了1篇文章")
+    @ArticleSync(action = "like", resource = SyncResource.LIKES, description = "点赞了1篇文章")
     @ApiLog("添加点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
         paramNames = { "userId" })
@@ -59,7 +60,7 @@ public class ArticleLikeController {
 
     @DeleteMapping
     @Operation(summary = "取消点赞", description = "取消对文章的点赞")
-    @ArticleSync(action = "unlike", description = "取消点赞了1篇文章")
+    @ArticleSync(action = "unlike", resource = SyncResource.LIKES, description = "取消点赞了1篇文章")
     @ApiLog("取消点赞")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
@@ -147,7 +148,7 @@ public class ArticleLikeController {
     @Operation(summary = "获取点赞表数据用于Neo4j同步（内部）", description = "获取点赞表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步点赞数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncLikes(
+    public Mono<Result<List<ArticleRelationSyncVO>>> getNeo4jSyncLikes(
         @RequestParam(required = false) String updatedAfter) {
         return articleLikeService.getNeo4jSyncLikes(updatedAfter).map(Result::success);
     }

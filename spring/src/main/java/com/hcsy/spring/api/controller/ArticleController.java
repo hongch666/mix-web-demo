@@ -2,7 +2,6 @@ package com.hcsy.spring.api.controller;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,8 +28,12 @@ import com.hcsy.spring.entity.dto.ArticleCreateDTO;
 import com.hcsy.spring.entity.dto.ArticleUpdateDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.vo.ArticleExportVO;
+import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
+import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
 import com.hcsy.spring.entity.vo.PageVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -53,15 +56,16 @@ public class ArticleController {
     @Operation(summary = "创建文章", description = "通过请求体创建一篇新文章")
     @ArticleSync(action = "add", esSync = true, vectorSync = true, description = "创建了1篇文章")
     @ApiLog("创建文章")
-    public Mono<Result<Void>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
+    public Mono<Result<Long>> createArticle(@Valid @RequestBody ArticleCreateDTO dto) {
         return userService.findByUsername(dto.getUsername())
             .flatMap(user -> {
                 Article article = BeanUtil.copyProperties(dto, Article.class);
                 article.setUserId(user.getId());
                 article.setViews(0);
-                return articleService.saveArticle(article).thenReturn(Result.<Void>success());
+                // 返回新增文章主键，供同步切面精确下发变更事件
+                return articleService.saveArticle(article).map(saved -> Result.success(saved.getId()));
             })
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
+            .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_USER));
     }
 
     @GetMapping("/list")
@@ -255,7 +259,7 @@ public class ArticleController {
     @Operation(summary = "获取导出Excel所需文章数据（内部）", description = "获取导出Excel所需文章数据，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取导出Excel数据")
-    public Mono<Result<List<Map<String, Object>>>> getArticlesForExcelExport() {
+    public Mono<Result<List<ArticleExportVO>>> getArticlesForExcelExport() {
         return articleService.getArticlesForExcelExport().map(Result::success);
     }
 
@@ -263,7 +267,7 @@ public class ArticleController {
     @Operation(summary = "获取Top10文章（内部）", description = "获取Top10文章（按阅读量降序），供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取Top10文章")
-    public Mono<Result<List<Map<String, Object>>>> getTop10Articles() {
+    public Mono<Result<List<ArticleSyncVO>>> getTop10Articles() {
         return articleService.getTop10Articles().map(Result::success);
     }
 
@@ -271,7 +275,7 @@ public class ArticleController {
     @Operation(summary = "获取按子分类统计的文章数量（内部）", description = "获取按子分类统计的文章数量，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取分类文章数量统计")
-    public Mono<Result<List<Map<String, Object>>>> getCategoryArticleCount() {
+    public Mono<Result<List<CategoryArticleCountVO>>> getCategoryArticleCount() {
         return articleService.getCategoryArticleCount().map(Result::success);
     }
 
@@ -279,7 +283,7 @@ public class ArticleController {
     @Operation(summary = "获取最近24个月文章发布数量统计（内部）", description = "获取最近24个月文章发布数量统计，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取月度发布数量统计")
-    public Mono<Result<List<Map<String, Object>>>> getMonthlyPublishCount() {
+    public Mono<Result<List<MonthlyPublishCountVO>>> getMonthlyPublishCount() {
         return articleService.getMonthlyPublishCount().map(Result::success);
     }
 
@@ -287,7 +291,7 @@ public class ArticleController {
     @Operation(summary = "获取文章表数据用于Neo4j同步（内部）", description = "获取文章表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步文章数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncArticles(
+    public Mono<Result<List<ArticleSyncVO>>> getNeo4jSyncArticles(
         @RequestParam(required = false) String updatedAfter) {
         return articleService.getNeo4jSyncArticles(updatedAfter).map(Result::success);
     }

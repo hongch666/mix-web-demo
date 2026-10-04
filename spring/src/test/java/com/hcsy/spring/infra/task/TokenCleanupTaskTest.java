@@ -22,7 +22,8 @@ class TokenCleanupTaskTest {
         when(lock.tryLock(anyString(), anyLong())).thenReturn(Mono.just("lock"));
         when(service.cleanupExpiredTokens()).thenReturn(Mono.empty());
         when(lock.unlock(anyString(), eq("lock"))).thenReturn(Mono.just(true));
-        StepVerifier.create(new TokenCleanupTask(service, mock(SimpleLogger.class), lock).cleanupExpiredTokens())
+        StepVerifier.create(new TokenCleanupTask(service, mock(SimpleLogger.class), lock,
+            mock(com.hcsy.spring.core.metrics.MetricsRecorder.class)).cleanupExpiredTokens())
             .verifyComplete();
         verify(service).cleanupExpiredTokens();
         verify(lock).unlock(anyString(), eq("lock"));

@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,8 +28,12 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
 import com.hcsy.spring.entity.po.User;
+import com.hcsy.spring.entity.vo.ArticleExportVO;
+import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
+import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
 
 import cn.hutool.core.bean.BeanUtil;
 import lombok.RequiredArgsConstructor;
@@ -61,8 +64,9 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public Mono<Boolean> saveArticle(Article article) {
-        return transactionalOperator.transactional(articleRepository.save(article)).thenReturn(true);
+    public Mono<Article> saveArticle(Article article) {
+        // 返回保存后的实体，便于上层把新增文章主键用于精确同步
+        return transactionalOperator.transactional(articleRepository.save(article));
     }
 
     @Override
@@ -311,95 +315,69 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getArticlesForExcelExport() {
+    public Mono<List<ArticleExportVO>> getArticlesForExcelExport() {
         return articleRepository.findArticlesForExcelExport()
-            .map(row -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("id", row.getId());
-                map.put("title", row.getTitle());
-                map.put("content", row.getContent());
-                map.put("user_id", row.getUser_id());
-                map.put("username", row.getUsername());
-                map.put("tags", row.getTags());
-                map.put("status", row.getStatus());
-                map.put("create_at", row.getCreate_at());
-                map.put("update_at", row.getUpdate_at());
-                map.put("views", row.getViews());
-                map.put("sub_category_id", row.getSub_category_id());
-                map.put("sub_category_name", row.getSub_category_name());
-                map.put("category_id", row.getCategory_id());
-                map.put("category_name", row.getCategory_name());
-                map.put("like_count", row.getLike_count());
-                map.put("collect_count", row.getCollect_count());
-                return map;
-            })
+            .map(row -> new ArticleExportVO(
+                row.getId(), row.getTitle(), row.getContent(), row.getUser_id(), row.getUsername(),
+                row.getTags(), row.getStatus(), row.getCreate_at(), row.getUpdate_at(), row.getViews(),
+                row.getSub_category_id(), row.getSub_category_name(), row.getCategory_id(),
+                row.getCategory_name(), row.getLike_count(), row.getCollect_count()))
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getTop10Articles() {
+    public Mono<List<ArticleSyncVO>> getTop10Articles() {
         return articleRepository.findTop10ByStatusOrderByViewsDesc(1)
-            .map(this::articleToMap)
+            .map(this::articleToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     /**
-     * 文章实体转 Map，用于内部接口返回通用数据
+     * 文章实体转同步视图对象，用于内部接口返回通用数据
      */
-    private Map<String, Object> articleToMap(Article article) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", article.getId());
-        map.put("title", article.getTitle());
-        map.put("content", article.getContent());
-        map.put("user_id", article.getUserId());
-        map.put("tags", article.getTags());
-        map.put("status", article.getStatus());
-        map.put("views", article.getViews());
-        map.put("sub_category_id", article.getSubCategoryId());
-        map.put("create_at", article.getCreateAt());
-        map.put("update_at", article.getUpdateAt());
-        return map;
+    private ArticleSyncVO articleToVO(Article article) {
+        return new ArticleSyncVO(
+            article.getId(),
+            article.getTitle(),
+            article.getContent(),
+            article.getUserId(),
+            article.getTags(),
+            article.getStatus(),
+            article.getViews(),
+            article.getSubCategoryId(),
+            article.getCreateAt(),
+            article.getUpdateAt());
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getCategoryArticleCount() {
+    public Mono<List<CategoryArticleCountVO>> getCategoryArticleCount() {
         return articleRepository.countBySubCategoryIdGroupBy()
-            .map(row -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("sub_category_id", row.getSubCategoryId());
-                map.put("count", row.getCount());
-                return map;
-            })
+            .map(row -> new CategoryArticleCountVO(row.getSubCategoryId(), row.getCount()))
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getMonthlyPublishCount() {
+    public Mono<List<MonthlyPublishCountVO>> getMonthlyPublishCount() {
         return articleRepository.countMonthlyPublished()
-            .map(row -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("year_month", row.getYearMonth());
-                map.put("count", row.getCount());
-                return map;
-            })
+            .map(row -> new MonthlyPublishCountVO(row.getYearMonth(), row.getCount()))
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getNeo4jSyncArticles(String updatedAfter) {
+    public Mono<List<ArticleSyncVO>> getNeo4jSyncArticles(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return articleRepository.findAll()
-                .map(this::articleToMap)
+                .map(this::articleToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return articleRepository.findByUpdateAtAfter(after)
-            .map(this::articleToMap)
+            .map(this::articleToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }

@@ -1,12 +1,12 @@
 package com.hcsy.spring.api.service;
 
 import java.util.List;
-import java.util.Map;
 
 import com.hcsy.spring.entity.dto.CommentsQueryDTO;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
+import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
 import reactor.core.publisher.Flux;
@@ -28,6 +28,11 @@ public interface CommentsService {
     Mono<Comments> update(Comments comments);
 
     Mono<Comments> getById(Long id);
+
+    /**
+     * 批量查询评论，供内部服务按主键精确同步
+     */
+    Flux<Comments> listByIds(java.util.Collection<Long> ids);
 
     Mono<Void> deleteComment(Long id);
 
@@ -60,5 +65,5 @@ public interface CommentsService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<Map<String, Object>>> getNeo4jSyncComments(String updatedAfter);
+    Mono<List<CommentSyncVO>> getNeo4jSyncComments(String updatedAfter);
 }

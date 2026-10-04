@@ -1,7 +1,6 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcsy.spring.api.service.ArticleCollectService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.ArticleSync;
@@ -23,6 +23,7 @@ import com.hcsy.spring.core.annotation.RequirePermission;
 import com.hcsy.spring.entity.dto.ArticleCollectDTO;
 import com.hcsy.spring.entity.dto.BatchIdsDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.CollectCheckVO;
 import com.hcsy.spring.entity.vo.CollectCountVO;
@@ -46,7 +47,7 @@ public class ArticleCollectController {
 
     @PostMapping
     @Operation(summary = "添加收藏", description = "为文章添加收藏")
-    @ArticleSync(action = "collect", description = "收藏了1篇文章")
+    @ArticleSync(action = "collect", resource = SyncResource.COLLECTS, description = "收藏了1篇文章")
     @ApiLog("添加收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
         paramNames = { "userId" })
@@ -59,7 +60,7 @@ public class ArticleCollectController {
 
     @DeleteMapping
     @Operation(summary = "取消收藏", description = "取消对文章的收藏")
-    @ArticleSync(action = "uncollect", description = "取消收藏了1篇文章")
+    @ArticleSync(action = "uncollect", resource = SyncResource.COLLECTS, description = "取消收藏了1篇文章")
     @ApiLog("取消收藏")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
@@ -147,7 +148,7 @@ public class ArticleCollectController {
     @Operation(summary = "获取收藏表数据用于Neo4j同步（内部）", description = "获取收藏表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步收藏数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncCollects(
+    public Mono<Result<List<ArticleRelationSyncVO>>> getNeo4jSyncCollects(
         @RequestParam(required = false) String updatedAfter) {
         return articleCollectService.getNeo4jSyncCollects(updatedAfter).map(Result::success);
     }

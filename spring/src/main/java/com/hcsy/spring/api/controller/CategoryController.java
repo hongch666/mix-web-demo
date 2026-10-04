@@ -2,7 +2,6 @@ package com.hcsy.spring.api.controller;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcsy.spring.api.service.CategoryService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncChangeType;
+import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.DataSync;
@@ -28,8 +29,12 @@ import com.hcsy.spring.entity.dto.CategoryCreateDTO;
 import com.hcsy.spring.entity.dto.CategoryUpdateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
+import com.hcsy.spring.entity.vo.CategorySyncVO;
 import com.hcsy.spring.entity.vo.CategoryVO;
+import com.hcsy.spring.entity.vo.PageVO;
+import com.hcsy.spring.entity.vo.SubCategorySyncVO;
 import com.hcsy.spring.entity.vo.SubCategoryVO;
+import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,16 +53,16 @@ public class CategoryController {
     @Operation(summary = "新增分类", description = "管理员新增文章分类，分类信息同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping()
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
-    @DataSync(description = "新增分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.INSERT, description = "新增分类后同步图谱与数仓")
     @ApiLog("新增分类")
-    public Mono<Result<Void>> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
-        return categoryService.addCategory(dto).thenReturn(Result.<Void>success());
+    public Mono<Result<Long>> addCategory(@Validated @RequestBody CategoryCreateDTO dto) {
+        return categoryService.addCategory(dto).map(Result::success);
     }
 
     @Operation(summary = "修改分类", description = "管理员修改文章分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping()
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "body", paramNames = { "id" })
-    @DataSync(description = "修改分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.UPDATE, description = "修改分类后同步图谱与数仓")
     @ApiLog("修改分类")
     public Mono<Result<Void>> updateCategory(@Validated @RequestBody CategoryUpdateDTO dto) {
         return categoryService.updateCategory(dto).thenReturn(Result.<Void>success());
@@ -67,7 +72,7 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
         "id" })
-    @DataSync(description = "删除分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.DELETE, description = "删除分类后同步图谱与数仓")
     @ApiLog("删除分类")
     public Mono<Result<Void>> deleteCategory(@PathVariable Long id) {
         return categoryService.deleteCategory(id).thenReturn(Result.<Void>success());
@@ -77,7 +82,7 @@ public class CategoryController {
     @DeleteMapping("/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "category", paramSource = "path_single", paramNames = {
         "ids" })
-    @DataSync(description = "批量删除分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.CATEGORY, changeType = SyncChangeType.DELETE, description = "批量删除分类后同步图谱与数仓")
     @ApiLog("批量删除分类")
     public Mono<Result<Void>> deleteCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -91,16 +96,16 @@ public class CategoryController {
     @Operation(summary = "新增子分类", description = "管理员在指定分类下新增子分类，同步写入 Neo4j 图谱并记录操作日志")
     @PostMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
-    @DataSync(description = "新增子分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.INSERT, description = "新增子分类后同步图谱与数仓")
     @ApiLog("新增子分类")
-    public Mono<Result<Void>> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
-        return categoryService.addSubCategory(dto).thenReturn(Result.<Void>success());
+    public Mono<Result<Long>> addSubCategory(@Validated @RequestBody SubCategoryCreateDTO dto) {
+        return categoryService.addSubCategory(dto).map(Result::success);
     }
 
     @Operation(summary = "修改子分类", description = "管理员修改指定子分类信息，修改结果同步更新 Neo4j 图谱并记录操作日志")
     @PutMapping("/sub")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "body", paramNames = { "id" })
-    @DataSync(description = "修改子分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.UPDATE, description = "修改子分类后同步图谱与数仓")
     @ApiLog("修改子分类")
     public Mono<Result<Void>> updateSubCategory(@Validated @RequestBody SubCategoryUpdateDTO dto) {
         return categoryService.updateSubCategory(dto).thenReturn(Result.<Void>success());
@@ -110,7 +115,7 @@ public class CategoryController {
     @DeleteMapping("/sub/{id}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
         "id" })
-    @DataSync(description = "删除子分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.DELETE, description = "删除子分类后同步图谱与数仓")
     @ApiLog("删除子分类")
     public Mono<Result<Void>> deleteSubCategory(@PathVariable Long id) {
         return categoryService.deleteSubCategory(id).thenReturn(Result.<Void>success());
@@ -120,7 +125,7 @@ public class CategoryController {
     @DeleteMapping("/sub/batch/{ids}")
     @RequirePermission(roles = { "admin" }, businessType = "subcategory", paramSource = "path_single", paramNames = {
         "ids" })
-    @DataSync(description = "批量删除子分类后同步图谱与数仓")
+    @DataSync(resource = SyncResource.SUB_CATEGORY, changeType = SyncChangeType.DELETE, description = "批量删除子分类后同步图谱与数仓")
     @ApiLog("批量删除子分类")
     public Mono<Result<Void>> deleteSubCategories(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -134,12 +139,10 @@ public class CategoryController {
     @Operation(summary = "分页查询分类（含子分类信息）", description = "按页码与每页大小分页查询分类列表，返回分类及其子分类的层级结构信息")
     @GetMapping("/list")
     @ApiLog("分页查询分类")
-    public Mono<Result<Map<String, Object>>> pageCategory(@RequestParam(defaultValue = "1") int page,
+    public Mono<Result<PageVO<CategoryVO>>> pageCategory(@RequestParam(defaultValue = "1") int page,
         @RequestParam(defaultValue = "10") int size) {
         return categoryService.pageCategory(page, size)
-            .map(result -> Result.success(Map.of(
-                "list", result.getRecords(),
-                "total", result.getTotal())));
+            .map(result -> Result.success(new PageVO<>(result.getTotal(), result.getRecords())));
     }
 
     @Operation(summary = "根据ID查询分类（含子分类信息）", description = "根据分类ID查询单个分类详情，返回分类及其子分类的层级结构信息，不存在时返回404")
@@ -200,7 +203,7 @@ public class CategoryController {
     @Operation(summary = "获取子分类及其父分类信息（内部）", description = "获取所有子分类及对应的父分类名称，供内部服务远程调用")
     @RequireInternalToken
     @ApiLog("内部获取子分类及父分类信息")
-    public Mono<Result<List<Map<String, Object>>>> getSubcategoriesWithParent() {
+    public Mono<Result<List<SubCategoryWithParentVO>>> getSubcategoriesWithParent() {
         return categoryService.listAllSubCategoriesWithParent()
             .collectList()
             .map(Result::success);
@@ -210,7 +213,7 @@ public class CategoryController {
     @Operation(summary = "获取分类表数据用于Neo4j同步（内部）", description = "获取分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步分类数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncCategories(
+    public Mono<Result<List<CategorySyncVO>>> getNeo4jSyncCategories(
         @RequestParam(required = false) String updatedAfter) {
         return categoryService.getNeo4jSyncCategories(updatedAfter).map(Result::success);
     }
@@ -219,7 +222,7 @@ public class CategoryController {
     @Operation(summary = "获取子分类表数据用于Neo4j同步（内部）", description = "获取子分类表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步子分类数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncSubCategories(
+    public Mono<Result<List<SubCategorySyncVO>>> getNeo4jSyncSubCategories(
         @RequestParam(required = false) String updatedAfter) {
         return categoryService.getNeo4jSyncSubCategories(updatedAfter).map(Result::success);
     }

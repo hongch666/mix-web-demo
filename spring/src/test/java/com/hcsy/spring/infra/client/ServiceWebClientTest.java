@@ -142,7 +142,8 @@ class ServiceWebClientTest {
             logger,
             CircuitBreakerRegistry.ofDefaults(),
             retryRegistry,
-            new ServiceClientProperties(Duration.ofSeconds(1)));
+            new ServiceClientProperties(Duration.ofSeconds(1)),
+            mock(com.hcsy.spring.core.metrics.MetricsRecorder.class));
     }
 
     private ClientResponse jsonResponse(String body) {

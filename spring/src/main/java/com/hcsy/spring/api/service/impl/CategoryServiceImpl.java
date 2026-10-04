@@ -3,9 +3,7 @@ package com.hcsy.spring.api.service.impl;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.PageRequest;
@@ -27,8 +25,11 @@ import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
+import com.hcsy.spring.entity.vo.CategorySyncVO;
 import com.hcsy.spring.entity.vo.CategoryVO;
+import com.hcsy.spring.entity.vo.SubCategorySyncVO;
 import com.hcsy.spring.entity.vo.SubCategoryVO;
+import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
@@ -234,7 +235,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Flux<java.util.Map<String, Object>> listAllSubCategoriesWithParent() {
+    public Flux<SubCategoryWithParentVO> listAllSubCategoriesWithParent() {
         return subCategoryRepository.findAll()
             .collectList()
             .flatMapMany(subCategories -> {
@@ -246,69 +247,63 @@ public class CategoryServiceImpl implements CategoryService {
                     .collectMap(Category::getId, java.util.function.Function.identity())
                     .flatMapMany(categoryMap -> Flux.fromIterable(subCategories)
                         .map(subCategory -> {
-                            java.util.Map<String, Object> map = new java.util.HashMap<>();
                             Category category = categoryMap.get(subCategory.getCategoryId());
-                            map.put("id", subCategory.getId());
-                            map.put("name", subCategory.getName());
-                            map.put("category_id", subCategory.getCategoryId());
-                            map.put("category_name", category != null ? category.getName() : Messages.UNCATEGORIZED);
-                            map.put("create_time", subCategory.getCreateTime());
-                            map.put("update_time", subCategory.getUpdateTime());
-                            return map;
+                            return new SubCategoryWithParentVO(
+                                subCategory.getId(),
+                                subCategory.getName(),
+                                subCategory.getCategoryId(),
+                                category != null ? category.getName() : Messages.UNCATEGORIZED,
+                                subCategory.getCreateTime(),
+                                subCategory.getUpdateTime());
                         }));
             });
     }
 
     @Override
-    public Mono<List<java.util.Map<String, Object>>> getNeo4jSyncCategories(String updatedAfter) {
+    public Mono<List<CategorySyncVO>> getNeo4jSyncCategories(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return categoryRepository.findAll()
-                .map(this::categoryToMap)
+                .map(this::categoryToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return categoryRepository.findByUpdateTimeAfter(after)
-            .map(this::categoryToMap)
+            .map(this::categoryToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     @Override
-    public Mono<List<java.util.Map<String, Object>>> getNeo4jSyncSubCategories(String updatedAfter) {
+    public Mono<List<SubCategorySyncVO>> getNeo4jSyncSubCategories(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return subCategoryRepository.findAll()
-                .map(this::subCategoryToMap)
+                .map(this::subCategoryToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return subCategoryRepository.findByUpdateTimeAfter(after)
-            .map(this::subCategoryToMap)
+            .map(this::subCategoryToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     /**
-     * 分类实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     * 分类实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> categoryToMap(Category category) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", category.getId());
-        map.put("name", category.getName());
-        map.put("update_time", category.getUpdateTime());
-        return map;
+    private CategorySyncVO categoryToVO(Category category) {
+        return new CategorySyncVO(category.getId(), category.getName(), category.getUpdateTime());
     }
 
     /**
-     * 子分类实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     * 子分类实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> subCategoryToMap(SubCategory subCategory) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", subCategory.getId());
-        map.put("name", subCategory.getName());
-        map.put("category_id", subCategory.getCategoryId());
-        map.put("update_time", subCategory.getUpdateTime());
-        return map;
+    private SubCategorySyncVO subCategoryToVO(SubCategory subCategory) {
+        return new SubCategorySyncVO(
+            subCategory.getId(),
+            subCategory.getName(),
+            subCategory.getCategoryId(),
+            subCategory.getUpdateTime());
     }
 }

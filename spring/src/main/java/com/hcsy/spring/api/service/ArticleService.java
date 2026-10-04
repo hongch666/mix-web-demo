@@ -5,8 +5,12 @@ import java.util.List;
 
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Article;
+import com.hcsy.spring.entity.vo.ArticleExportVO;
+import com.hcsy.spring.entity.vo.ArticleSyncVO;
 import com.hcsy.spring.entity.vo.ArticleWithCategoryVO;
+import com.hcsy.spring.entity.vo.CategoryArticleCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
+import com.hcsy.spring.entity.vo.MonthlyPublishCountVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -16,7 +20,7 @@ public interface ArticleService {
 
     Mono<PageDTO<Article>> listPublishedArticles(long page, long size);
 
-    Mono<Boolean> saveArticle(Article article);
+    Mono<Article> saveArticle(Article article);
 
     Mono<Boolean> updateArticle(Article article);
 
@@ -72,22 +76,22 @@ public interface ArticleService {
     /**
      * 获取导出Excel所需文章数据
      */
-    Mono<List<java.util.Map<String, Object>>> getArticlesForExcelExport();
+    Mono<List<ArticleExportVO>> getArticlesForExcelExport();
 
     /**
      * 获取Top10文章（按阅读量降序）
      */
-    Mono<List<java.util.Map<String, Object>>> getTop10Articles();
+    Mono<List<ArticleSyncVO>> getTop10Articles();
 
     /**
      * 获取按子分类统计的文章数量
      */
-    Mono<List<java.util.Map<String, Object>>> getCategoryArticleCount();
+    Mono<List<CategoryArticleCountVO>> getCategoryArticleCount();
 
     /**
      * 获取最近24个月文章发布数量统计
      */
-    Mono<List<java.util.Map<String, Object>>> getMonthlyPublishCount();
+    Mono<List<MonthlyPublishCountVO>> getMonthlyPublishCount();
 
     /**
      * 获取文章数据，用于Neo4j同步
@@ -95,5 +99,5 @@ public interface ArticleService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<java.util.Map<String, Object>>> getNeo4jSyncArticles(String updatedAfter);
+    Mono<List<ArticleSyncVO>> getNeo4jSyncArticles(String updatedAfter);
 }

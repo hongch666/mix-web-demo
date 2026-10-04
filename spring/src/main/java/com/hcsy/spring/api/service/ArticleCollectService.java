@@ -1,10 +1,10 @@
 package com.hcsy.spring.api.service;
 
 import java.util.List;
-import java.util.Map;
 
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
@@ -44,5 +44,5 @@ public interface ArticleCollectService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<Map<String, Object>>> getNeo4jSyncCollects(String updatedAfter);
+    Mono<List<ArticleRelationSyncVO>> getNeo4jSyncCollects(String updatedAfter);
 }

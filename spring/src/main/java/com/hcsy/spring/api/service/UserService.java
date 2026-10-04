@@ -2,7 +2,6 @@ package com.hcsy.spring.api.service;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import com.hcsy.spring.entity.dto.EmailLoginDTO;
 import com.hcsy.spring.entity.dto.GithubTokenExchangeDTO;
@@ -17,6 +16,7 @@ import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
+import com.hcsy.spring.entity.vo.UserSyncVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -54,9 +54,9 @@ public interface UserService {
 
     Mono<UserLoginVO> exchangeGithubTokenTicket(GithubTokenExchangeDTO dto);
 
-    Mono<Void> registerUser(UserRegisterDTO registerDTO);
+    Mono<User> registerUser(UserRegisterDTO registerDTO);
 
-    Mono<Void> createUser(UserCreateDTO userDto);
+    Mono<User> createUser(UserCreateDTO userDto);
 
     Mono<Void> updateUserInfo(UserUpdateDTO userDto);
 
@@ -88,5 +88,5 @@ public interface UserService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<Map<String, Object>>> getNeo4jSyncUsers(String updatedAfter);
+    Mono<List<UserSyncVO>> getNeo4jSyncUsers(String updatedAfter);
 }

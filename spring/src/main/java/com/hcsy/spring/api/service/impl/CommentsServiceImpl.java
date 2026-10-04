@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +30,7 @@ import com.hcsy.spring.entity.po.Article;
 import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
+import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
 import lombok.RequiredArgsConstructor;
@@ -106,6 +106,14 @@ public class CommentsServiceImpl implements CommentsService {
                     existing.setStar(comments.getStar());
                     return commentsRepository.save(existing);
                 }));
+    }
+
+    @Override
+    public Flux<Comments> listByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Flux.empty();
+        }
+        return commentsRepository.findAllById(ids);
     }
 
     @Override
@@ -314,31 +322,31 @@ public class CommentsServiceImpl implements CommentsService {
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getNeo4jSyncComments(String updatedAfter) {
+    public Mono<List<CommentSyncVO>> getNeo4jSyncComments(String updatedAfter) {
         // 评论表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return commentsRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
-                .map(this::commentToMap)
+                .map(this::commentToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return commentsRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
-            .map(this::commentToMap)
+            .map(this::commentToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     /**
-     * 评论实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     * 评论实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> commentToMap(Comments comment) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", comment.getId());
-        map.put("user_id", comment.getUserId());
-        map.put("article_id", comment.getArticleId());
-        map.put("create_time", comment.getCreateTime());
-        map.put("update_time", comment.getUpdateTime());
-        return map;
+    private CommentSyncVO commentToVO(Comments comment) {
+        return new CommentSyncVO(
+            comment.getId(),
+            comment.getUserId(),
+            comment.getArticleId(),
+            comment.getStar(),
+            comment.getCreateTime(),
+            comment.getUpdateTime());
     }
 }

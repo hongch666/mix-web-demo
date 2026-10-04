@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +20,7 @@ import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleCollect;
 import com.hcsy.spring.entity.vo.ArticleCollectVO;
+import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -158,29 +158,25 @@ public class ArticleCollectServiceImpl implements ArticleCollectService {
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getNeo4jSyncCollects(String updatedAfter) {
+    public Mono<List<ArticleRelationSyncVO>> getNeo4jSyncCollects(String updatedAfter) {
         // 收藏表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return articleCollectRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
-                .map(this::collectToMap)
+                .map(this::collectToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return articleCollectRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
-            .map(this::collectToMap)
+            .map(this::collectToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     /**
-     * 收藏实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     * 收藏实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> collectToMap(ArticleCollect collect) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("user_id", collect.getUserId());
-        map.put("article_id", collect.getArticleId());
-        map.put("created_time", collect.getCreatedTime());
-        return map;
+    private ArticleRelationSyncVO collectToVO(ArticleCollect collect) {
+        return new ArticleRelationSyncVO(collect.getUserId(), collect.getArticleId(), collect.getCreatedTime());
     }
 }

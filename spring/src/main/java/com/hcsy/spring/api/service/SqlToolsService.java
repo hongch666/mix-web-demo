@@ -3,6 +3,9 @@ package com.hcsy.spring.api.service;
 import java.util.List;
 import java.util.Map;
 
+import com.hcsy.spring.entity.vo.SqlQueryResultVO;
+import com.hcsy.spring.entity.vo.SqlTableSchemaVO;
+
 import reactor.core.publisher.Mono;
 
 /**
@@ -17,7 +20,7 @@ public interface SqlToolsService {
      * @param table
      *                  表名，为空则返回所有白名单表
      */
-    Mono<List<Map<String, Object>>> getTables(String table);
+    Mono<List<SqlTableSchemaVO>> getTables(String table);
 
     /**
      * 执行只读参数化SQL查询
@@ -27,5 +30,5 @@ public interface SqlToolsService {
      * @param params
      *                   参数键值对
      */
-    Mono<Map<String, Object>> executeQuery(String query, Map<String, Object> params);
+    Mono<SqlQueryResultVO> executeQuery(String query, Map<String, Object> params);
 }

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
+import com.hcsy.spring.entity.event.ChangeEvent;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -15,8 +16,8 @@ public class GoZeroClient {
 
     private final ServiceWebClient serviceWebClient;
 
-    public Mono<Result<?>> syncES() {
-        return serviceWebClient.request(HttpMethod.POST, "gozero", "/task/syncer", ServiceRequestOptions.empty(),
-            Messages.ES_SERVICE_UNAVAILABLE);
+    public Mono<Result<?>> syncES(ChangeEvent event) {
+        return serviceWebClient.request(HttpMethod.POST, "gozero", "/task/syncer",
+            ServiceRequestOptions.builder().body(event).build(), Messages.ES_SERVICE_UNAVAILABLE);
     }
 }

@@ -1,7 +1,5 @@
 package com.hcsy.spring.core.aspect;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +13,14 @@ import org.springframework.stereotype.Component;
 import com.hcsy.spring.api.service.AsyncSyncService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncChangeType;
+import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.RabbitMQUtil;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
 import com.hcsy.spring.common.utils.UserContext;
 import com.hcsy.spring.core.annotation.ArticleSync;
+import com.hcsy.spring.entity.event.ChangeEvent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,7 @@ public class ArticleSyncAspect {
                 Context syncContext = UserContext.writeContext(Context.empty(), userId, username, null, null, null);
                 return monoResult.doOnSuccess(res -> {
                     if (isBusinessSuccess(res)) {
-                        executeSync(joinPoint, articleSync, userId, username)
+                        executeSync(joinPoint, articleSync, userId, username, res)
                             .contextWrite(syncContext)
                             .subscribe();
                     }
@@ -70,14 +71,18 @@ public class ArticleSyncAspect {
     }
 
     /**
-     * 执行同步逻辑：发送 MQ 消息 + 触发 ES/向量库/数仓/Neo4j 同步
+     * 执行同步逻辑：发送 MQ 消息 + 触发 ES/向量库/数仓/Neo4j 精确同步
      */
     private Mono<Void> executeSync(ProceedingJoinPoint joinPoint, ArticleSync articleSync,
-        Long userId, String username) {
+        Long userId, String username, Object result) {
         try {
             String action = articleSync.action();
             String description = articleSync.description();
+            String resource = articleSync.resource() == null ? SyncResource.ARTICLES : articleSync.resource();
             Object[] paramValues = joinPoint.getArgs();
+            if (paramValues == null) {
+                paramValues = new Object[0];
+            }
 
             Map<String, Object> msg = new HashMap<>();
             Map<String, Object> content = new HashMap<>();
@@ -85,14 +90,23 @@ public class ArticleSyncAspect {
             // 根据注解类型构建消息
             buildActionMessage(joinPoint, action, paramValues, content, msg, userId, description);
             msg.put("action", action);
+            msg.put("resource", resource);
+            msg.put("changeType", SyncChangeType.fromAction(action).value());
+
+            // 采集精确变更事件，下发给下游实现按主键同步
+            ChangeEvent event = ChangeEvent.of(resource, SyncChangeType.fromAction(action),
+                resolveIds(joinPoint, action, paramValues, result), action);
+            event.setTriggerUserId(userId);
+            event.setTriggerUsername(username);
 
             // 发送消息到 MQ + 触发 ES/向量库/数仓/图谱同步，并行执行
             String json = objectMapper.writeValueAsString(msg);
             return Mono.whenDelayError(
                 rabbitMQUtil.sendMessage("article-log-queue", msg)
                     .doOnSuccess(ignored -> logger.info(Messages.MQ_SEND + json)),
-                asyncSyncService.syncAllAsync(userId, username, articleSync.esSync(), articleSync.vectorSync()),
-                asyncSyncService.syncNeo4jAsync(joinPoint.getSignature().toShortString(), description))
+                asyncSyncService.syncArticleAsync(userId, username, articleSync.esSync(), articleSync.vectorSync(),
+                    event),
+                asyncSyncService.syncNeo4jAsync(joinPoint.getSignature().toShortString(), description, event))
                 .onErrorResume(error -> {
                     logger.error(Messages.TRANSACTION_ROLLBACK + error.getMessage(), error);
                     return Mono.empty();
@@ -104,26 +118,54 @@ public class ArticleSyncAspect {
     }
 
     /**
+     * 根据操作类型解析受影响主键
+     * 新增取业务返回值中的新主键，编辑、发布、浏览取入参文章 ID，删除支持单个与批量
+     */
+    private List<Long> resolveIds(ProceedingJoinPoint joinPoint, String action, Object[] paramValues, Object result) {
+        Object primaryParam = paramValues != null && paramValues.length > 0 ? paramValues[0] : null;
+        return switch (action) {
+            case "add" -> SyncEventCollector.readIdsFromResult(result);
+            case "delete" -> SyncEventCollector.readIds(primaryParam);
+            case "like", "unlike", "collect", "uncollect" -> {
+                Long articleId = readArticleRelatedId(primaryParam);
+                yield articleId == null ? List.of() : List.of(articleId);
+            }
+            case "focus", "unfocus" -> {
+                Long targetUserId = resolveFocusTarget(joinPoint, primaryParam);
+                yield targetUserId == null ? List.of() : List.of(targetUserId);
+            }
+            default -> {
+                List<Long> directIds = SyncEventCollector.readIds(primaryParam);
+                if (!directIds.isEmpty()) {
+                    yield directIds;
+                }
+                Long id = SyncEventCollector.readByName(joinPoint, "id");
+                yield id == null ? List.of() : List.of(id);
+            }
+        };
+    }
+
+    /**
      * 根据操作类型构建消息内容
      * 注解作用在控制器上，入参可能是 DTO、路径变量或逗号分隔的 ID 字符串，统一按属性名解析
      */
     private void buildActionMessage(ProceedingJoinPoint joinPoint, String action, Object[] paramValues,
         Map<String, Object> content, Map<String, Object> msg, Long userId, String description) {
-        Object primaryParam = paramValues.length > 0 ? paramValues[0] : null;
+        Object primaryParam = paramValues != null && paramValues.length > 0 ? paramValues[0] : null;
 
         switch (action) {
             case "add":
             case "edit": {
-                Long articleId = readLong(primaryParam, "id");
+                Long articleId = SyncEventCollector.readLong(primaryParam, "id");
                 content.put("id", articleId);
-                content.put("title", readString(primaryParam, "title"));
-                content.put("tags", readString(primaryParam, "tags"));
+                content.put("title", SyncEventCollector.readString(primaryParam, "title"));
+                content.put("tags", SyncEventCollector.readString(primaryParam, "tags"));
                 msg.put("articleId", articleId);
                 msg.put("msg", description);
                 break;
             }
             case "delete": {
-                List<Long> ids = readIds(primaryParam);
+                List<Long> ids = SyncEventCollector.readIds(primaryParam);
                 if (ids.size() > 1) {
                     content.put("ids", ids);
                     msg.put("articleIds", ids);
@@ -170,68 +212,13 @@ public class ArticleSyncAspect {
     }
 
     /**
-     * 按属性名读取对象值，兼容控制器入参的 DTO 与实体
-     */
-    private Object readProperty(Object target, String property) {
-        if (target == null) {
-            return null;
-        }
-        try {
-            String getterName = "get" + Character.toUpperCase(property.charAt(0)) + property.substring(1);
-            return target.getClass().getMethod(getterName).invoke(target);
-        } catch (ReflectiveOperationException e) {
-            return null;
-        }
-    }
-
-    /**
-     * 读取 Long 类型属性，属性不存在时返回 null
-     */
-    private Long readLong(Object target, String property) {
-        Object value = readProperty(target, property);
-        return value instanceof Number number ? number.longValue() : null;
-    }
-
-    /**
-     * 读取 String 类型属性，属性不存在时返回 null
-     */
-    private String readString(Object target, String property) {
-        Object value = readProperty(target, property);
-        return value instanceof String text ? text : null;
-    }
-
-    /**
-     * 解析删除接口的文章 ID 集合，兼容单个 ID、ID 集合和逗号分隔的 ID 字符串
-     */
-    private List<Long> readIds(Object target) {
-        if (target instanceof Number number) {
-            return List.of(number.longValue());
-        }
-        if (target instanceof Collection<?> collection) {
-            return collection.stream()
-                .filter(Number.class::isInstance)
-                .map(item -> ((Number) item).longValue())
-                .toList();
-        }
-        if (target instanceof String text) {
-            return Arrays.stream(text.split(","))
-                .map(String::trim)
-                .filter(item -> !item.isEmpty())
-                .map(Long::valueOf)
-                .toList();
-        }
-        Long id = readLong(target, "id");
-        return id == null ? List.of() : List.of(id);
-    }
-
-    /**
      * 解析文章关联 ID：点赞、收藏、浏览等行为取文章 ID
      */
     private Long readArticleRelatedId(Object target) {
         if (target instanceof Number number) {
             return number.longValue();
         }
-        return readLong(target, "articleId");
+        return SyncEventCollector.readLong(target, "articleId");
     }
 
     /**
@@ -242,7 +229,7 @@ public class ArticleSyncAspect {
      */
     private Long resolveFocusTarget(ProceedingJoinPoint joinPoint, Object primaryParam) {
         // 优先按 DTO 属性读取（POST /focus 传 FocusDTO）
-        Long focusId = readLong(primaryParam, "focusId");
+        Long focusId = SyncEventCollector.readLong(primaryParam, "focusId");
         if (focusId != null) {
             return focusId;
         }

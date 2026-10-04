@@ -1,7 +1,6 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +14,8 @@ import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.RequireInternalToken;
 import com.hcsy.spring.entity.dto.SqlQueryDTO;
+import com.hcsy.spring.entity.vo.SqlQueryResultVO;
+import com.hcsy.spring.entity.vo.SqlTableSchemaVO;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,7 +39,7 @@ public class SqlToolsController {
     @Operation(summary = "获取表结构信息（内部）", description = "获取白名单内MySQL表的结构信息，供FastAPI Agent远程调用")
     @RequireInternalToken
     @ApiLog("内部获取表结构信息")
-    public Mono<Result<List<Map<String, Object>>>> getTables(
+    public Mono<Result<List<SqlTableSchemaVO>>> getTables(
         @RequestParam(required = false) String table) {
         return sqlToolsService.getTables(table).map(Result::success);
     }
@@ -47,7 +48,7 @@ public class SqlToolsController {
     @Operation(summary = "执行只读SQL查询（内部）", description = "执行受限的只读参数化SQL查询，供FastAPI Agent远程调用")
     @RequireInternalToken
     @ApiLog("内部执行SQL查询")
-    public Mono<Result<Map<String, Object>>> executeQuery(
+    public Mono<Result<SqlQueryResultVO>> executeQuery(
         @Valid @RequestBody SqlQueryDTO dto) {
         return sqlToolsService.executeQuery(dto.getQuery(), dto.getParams())
             .map(Result::success);

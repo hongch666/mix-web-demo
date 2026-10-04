@@ -4,9 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -41,6 +39,7 @@ import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.GithubTokenTicketVO;
 import com.hcsy.spring.entity.vo.UserListVO;
 import com.hcsy.spring.entity.vo.UserLoginVO;
+import com.hcsy.spring.entity.vo.UserSyncVO;
 import com.hcsy.spring.entity.vo.UserVO;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -228,7 +227,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Mono<Void> registerUser(UserRegisterDTO dto) {
+    public Mono<User> registerUser(UserRegisterDTO dto) {
         Mono<Boolean> emailAvailable = findByEmail(dto.getEmail()).hasElement().map(exists -> !exists);
         Mono<Boolean> codeValid = emailVerificationService.verifyCode(dto.getEmail(), dto.getVerificationCode());
         return Mono.zip(emailAvailable, codeValid)
@@ -247,8 +246,8 @@ public class UserServiceImpl implements UserService {
                     return saveUserAndStatus(user);
                 });
             })
-            .then(emailVerificationService.markEmailAsVerified(dto.getEmail()))
-            .then()
+            // 返回注册用户，便于上层把新增主键用于精确同步
+            .flatMap(user -> emailVerificationService.markEmailAsVerified(dto.getEmail()).thenReturn(user))
             .doOnSuccess(ignored -> metricsRecorder.increment(MetricNames.USER_REGISTER, "result", "success"))
             .doOnError(ignored -> metricsRecorder.increment(MetricNames.USER_REGISTER, "result", "failure"));
     }
@@ -339,19 +338,19 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Mono<Void> createUser(UserCreateDTO dto) {
+    public Mono<User> createUser(UserCreateDTO dto) {
         User user = BeanUtil.copyProperties(dto, User.class);
         user.setRole("user");
         user.setAuthProvider("local");
         String rawPassword = hasText(user.getPassword())
             ? user.getPassword()
             : userPasswordProperties.defaultPassword();
+        // 返回保存后的用户，便于上层把新增主键用于精确同步
         return encryptPassword(rawPassword)
             .flatMap(password -> {
                 user.setPassword(password);
                 return saveUserAndStatus(user);
-            })
-            .then();
+            });
     }
 
     @Override
@@ -480,16 +479,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getNeo4jSyncUsers(String updatedAfter) {
+    public Mono<List<UserSyncVO>> getNeo4jSyncUsers(String updatedAfter) {
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return userRepository.findAll()
-                .map(this::userToMap)
+                .map(this::userToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return userRepository.findByUpdateAtAfter(after)
-            .map(this::userToMap)
+            .map(this::userToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
@@ -559,16 +558,15 @@ public class UserServiceImpl implements UserService {
     /**
      * 用户实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> userToMap(User user) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("id", user.getId());
-        map.put("name", user.getName());
-        map.put("email", user.getEmail());
-        map.put("role", user.getRole());
-        map.put("img", user.getImg());
-        map.put("signature", user.getSignature());
-        map.put("created_at", user.getCreateAt());
-        map.put("updated_at", user.getUpdateAt());
-        return map;
+    private UserSyncVO userToVO(User user) {
+        return new UserSyncVO(
+            user.getId(),
+            user.getName(),
+            user.getEmail(),
+            user.getRole(),
+            user.getImg(),
+            user.getSignature(),
+            user.getCreateAt(),
+            user.getUpdateAt());
     }
 }

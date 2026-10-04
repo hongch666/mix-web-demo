@@ -1,7 +1,6 @@
 package com.hcsy.spring.api.controller;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hcsy.spring.api.service.FocusService;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.ArticleSync;
@@ -25,6 +25,7 @@ import com.hcsy.spring.entity.dto.FocusDTO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.CountVO;
 import com.hcsy.spring.entity.vo.FocusCheckVO;
+import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
@@ -46,7 +47,7 @@ public class FocusController {
 
     @PostMapping
     @Operation(summary = "新增关注", description = "用户关注另一个用户")
-    @ArticleSync(action = "focus", description = "关注了1个用户")
+    @ArticleSync(action = "focus", resource = SyncResource.FOCUS, description = "关注了1个用户")
     @ApiLog("新增关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "body",
         paramNames = { "userId" })
@@ -59,7 +60,7 @@ public class FocusController {
 
     @DeleteMapping
     @Operation(summary = "取消关注", description = "用户取消关注另一个用户")
-    @ArticleSync(action = "unfocus", description = "取消关注了1个用户")
+    @ArticleSync(action = "unfocus", resource = SyncResource.FOCUS, description = "取消关注了1个用户")
     @ApiLog("取消关注")
     @RequirePermission(roles = { "admin" }, allowSelf = true, businessType = "user", paramSource = "query",
         paramNames = { "user_id" })
@@ -181,7 +182,7 @@ public class FocusController {
     @Operation(summary = "获取关注表数据用于Neo4j同步（内部）", description = "获取关注表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步关注数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncFocus(
+    public Mono<Result<List<FocusSyncVO>>> getNeo4jSyncFocus(
         @RequestParam(required = false) String updatedAfter) {
         return focusService.getNeo4jSyncFocus(updatedAfter).map(Result::success);
     }

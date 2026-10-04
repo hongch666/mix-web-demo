@@ -25,6 +25,8 @@ import com.hcsy.spring.api.service.UserService;
 import com.hcsy.spring.common.constants.Defaults;
 import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
+import com.hcsy.spring.common.constants.SyncChangeType;
+import com.hcsy.spring.common.constants.SyncResource;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.core.annotation.ApiLog;
 import com.hcsy.spring.core.annotation.DataSync;
@@ -40,6 +42,7 @@ import com.hcsy.spring.entity.po.Comments;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.AICommentsVO;
 import com.hcsy.spring.entity.vo.ArticleCommentScoresVO;
+import com.hcsy.spring.entity.vo.CommentSyncVO;
 import com.hcsy.spring.entity.vo.CommentsVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 import com.hcsy.spring.entity.vo.PageVO;
@@ -62,21 +65,21 @@ public class CommentsController {
 
     @PostMapping
     @Operation(summary = "新增评论", description = "通过请求体创建评论信息")
-    @DataSync(description = "新增评论后同步图谱与数仓")
+    @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.INSERT, description = "新增评论后同步图谱与数仓")
     @ApiLog("新增评论")
-    public Mono<Result<Void>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
+    public Mono<Result<Long>> createComment(@Valid @RequestBody CommentCreateDTO dto) {
         return Mono.zip(
             articleService.findByArticleTitle(dto.getArticleTitle()),
             userService.findByUsername(dto.getUsername()))
             .flatMap(result -> saveComment(dto, result.getT1(), result.getT2()))
-            .defaultIfEmpty(Result.<Void>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
+            .defaultIfEmpty(Result.<Long>error(HttpCode.NOT_FOUND, Messages.UNDEFINED_ARTICLE_COMMENT));
     }
 
     @PutMapping
     @Operation(summary = "修改评论", description = "通过请求体修改评论信息")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "comment", paramSource = "body", paramNames = { "id" })
-    @DataSync(description = "修改评论后同步图谱与数仓")
+    @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.UPDATE, description = "修改评论后同步图谱与数仓")
     @ApiLog("修改评论")
     public Mono<Result<Void>> updateComment(@Valid @RequestBody CommentUpdateDTO dto) {
         return Mono.zip(
@@ -95,7 +98,7 @@ public class CommentsController {
     @Operation(summary = "删除评论", description = "根据id删除评论")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "id" })
-    @DataSync(description = "删除评论后同步图谱与数仓")
+    @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.DELETE, description = "删除评论后同步图谱与数仓")
     @ApiLog("删除评论")
     public Mono<Result<Void>> deleteComment(@PathVariable Long id) {
         return commentsService.deleteComment(id).thenReturn(Result.<Void>success());
@@ -105,7 +108,7 @@ public class CommentsController {
     @Operation(summary = "批量删除评论", description = "根据id数组批量删除评论，多个id用英文逗号分隔")
     @RequirePermission(roles = {
         "admin" }, allowSelf = true, businessType = "comment", paramSource = "path_single", paramNames = { "ids" })
-    @DataSync(description = "批量删除评论后同步图谱与数仓")
+    @DataSync(resource = SyncResource.COMMENTS, changeType = SyncChangeType.DELETE, description = "批量删除评论后同步图谱与数仓")
     @ApiLog("批量删除评论")
     public Mono<Result<Void>> deleteComments(@PathVariable String ids) {
         List<Long> idList = Arrays.stream(ids.split(","))
@@ -209,11 +212,28 @@ public class CommentsController {
             .map(Result::success);
     }
 
+    @PostMapping("/batch")
+    @Operation(summary = "批量查询评论（内部）", description = "根据ID列表批量查询评论关联关系，供内部服务精确同步 Neo4j 使用")
+    @RequireInternalToken
+    @ApiLog("内部批量查询评论")
+    public Mono<Result<List<CommentSyncVO>>> getCommentsByIds(@Valid @RequestBody BatchIdsDTO dto) {
+        return commentsService.listByIds(dto.getIds())
+            .map(comment -> new CommentSyncVO(
+                comment.getId(),
+                comment.getUserId(),
+                comment.getArticleId(),
+                comment.getStar(),
+                comment.getCreateTime(),
+                comment.getUpdateTime()))
+            .collectList()
+            .map(Result::success);
+    }
+
     @GetMapping("/neo4j-sync")
     @Operation(summary = "获取评论表数据用于Neo4j同步（内部）", description = "获取评论表数据，支持增量同步，供FastAPI同步Neo4j使用")
     @RequireInternalToken
     @ApiLog("内部获取Neo4j同步评论数据")
-    public Mono<Result<List<Map<String, Object>>>> getNeo4jSyncComments(
+    public Mono<Result<List<CommentSyncVO>>> getNeo4jSyncComments(
         @RequestParam(required = false) String updatedAfter) {
         return commentsService.getNeo4jSyncComments(updatedAfter).map(Result::success);
     }
@@ -250,11 +270,12 @@ public class CommentsController {
         return commentsService.getMonthlyCommentTrend(userId).map(Result::success);
     }
 
-    private Mono<Result<Void>> saveComment(CommentCreateDTO dto, Article article, User user) {
+    private Mono<Result<Long>> saveComment(CommentCreateDTO dto, Article article, User user) {
         Comments comment = BeanUtil.toBean(dto, Comments.class);
         comment.setArticleId(article.getId());
         comment.setUserId(user.getId());
-        return commentsService.save(comment).thenReturn(Result.<Void>success());
+        // 返回新增评论主键，供同步切面精确下发变更事件
+        return commentsService.save(comment).map(saved -> Result.success(saved.getId()));
     }
 
     private Mono<CommentsVO> toCommentsVO(Comments comment) {

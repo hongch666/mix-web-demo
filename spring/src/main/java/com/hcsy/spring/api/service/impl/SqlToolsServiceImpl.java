@@ -1,7 +1,6 @@
 package com.hcsy.spring.api.service.impl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -15,6 +14,9 @@ import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.constants.SqlTools;
 import com.hcsy.spring.common.exceptions.BusinessException;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.entity.vo.SqlColumnInfoVO;
+import com.hcsy.spring.entity.vo.SqlQueryResultVO;
+import com.hcsy.spring.entity.vo.SqlTableSchemaVO;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -32,7 +34,7 @@ public class SqlToolsServiceImpl implements SqlToolsService {
     private final SimpleLogger logger;
 
     @Override
-    public Mono<List<Map<String, Object>>> getTables(String table) {
+    public Mono<List<SqlTableSchemaVO>> getTables(String table) {
         if (table != null && !table.isBlank()) {
             return getSingleTableSchema(table.trim());
         }
@@ -40,7 +42,7 @@ public class SqlToolsServiceImpl implements SqlToolsService {
     }
 
     @Override
-    public Mono<Map<String, Object>> executeQuery(String query, Map<String, Object> params) {
+    public Mono<SqlQueryResultVO> executeQuery(String query, Map<String, Object> params) {
         return Mono.just(query)
             .map(this::validateQuery)
             .flatMap(validatedQuery -> executeParameterizedQuery(validatedQuery, params));
@@ -102,7 +104,7 @@ public class SqlToolsServiceImpl implements SqlToolsService {
         return normalized;
     }
 
-    private Mono<Map<String, Object>> executeParameterizedQuery(String query, Map<String, Object> params) {
+    private Mono<SqlQueryResultVO> executeParameterizedQuery(String query, Map<String, Object> params) {
         DatabaseClient.GenericExecuteSpec spec = databaseClient.sql(query);
         if (params != null) {
             for (Map.Entry<String, Object> entry : params.entrySet()) {
@@ -114,16 +116,11 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             .collectList()
             .timeout(SqlTools.QUERY_TIMEOUT)
             .map(rows -> {
-                Map<String, Object> result = new HashMap<>();
                 if (rows.isEmpty()) {
-                    result.put("columns", List.of());
-                    result.put("rows", List.of());
-                    result.put("rowCount", 0);
-                    return result;
+                    return new SqlQueryResultVO(List.of(), List.of(), 0);
                 }
                 // 提取列名（第一行数据的key集合）
                 List<String> columns = new ArrayList<>(rows.get(0).keySet());
-                result.put("columns", columns);
 
                 // 转换为值列表
                 List<List<Object>> rowValues = new ArrayList<>();
@@ -134,9 +131,7 @@ public class SqlToolsServiceImpl implements SqlToolsService {
                     }
                     rowValues.add(values);
                 }
-                result.put("rows", rowValues);
-                result.put("rowCount", rows.size());
-                return result;
+                return new SqlQueryResultVO(columns, rowValues, rows.size());
             })
             .onErrorMap(e -> {
                 if (e instanceof BusinessException) {
@@ -148,33 +143,19 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             });
     }
 
-    private Mono<List<Map<String, Object>>> getAllTableSchemas() {
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (String tableName : SqlTools.TABLE_WHITELIST) {
-            Map<String, Object> info = new HashMap<>();
-            info.put("table", tableName);
-            result.add(info);
-        }
+    private Mono<List<SqlTableSchemaVO>> getAllTableSchemas() {
+        List<String> tableNames = new ArrayList<>(SqlTools.TABLE_WHITELIST);
         // 异步获取每个表的行数（表名来自白名单，使用反引号包裹避免保留字冲突）
-        return Flux.fromIterable(result)
-            .flatMap(info -> {
-                String tableName = (String) info.get("table");
-                return databaseClient.sql(SqlTools.countRowsSql(tableName))
-                    .fetch()
-                    .one()
-                    .map(row -> {
-                        info.put("rowCount", row.get("cnt"));
-                        return info;
-                    })
-                    .onErrorResume(e -> {
-                        info.put("rowCount", -1);
-                        return Mono.just(info);
-                    });
-            })
+        return Flux.fromIterable(tableNames)
+            .flatMap(tableName -> databaseClient.sql(SqlTools.countRowsSql(tableName))
+                .fetch()
+                .one()
+                .map(row -> new SqlTableSchemaVO(tableName, ((Number) row.get("cnt")).intValue(), null))
+                .onErrorResume(e -> Mono.just(new SqlTableSchemaVO(tableName, -1, null))))
             .collectList();
     }
 
-    private Mono<List<Map<String, Object>>> getSingleTableSchema(String tableName) {
+    private Mono<List<SqlTableSchemaVO>> getSingleTableSchema(String tableName) {
         if (!SqlTools.TABLE_WHITELIST.contains(tableName)) {
             throw new BusinessException(
                 String.format(Messages.SQL_PROXY_TABLE_NOT_IN_WHITELIST, tableName));
@@ -185,21 +166,15 @@ public class SqlToolsServiceImpl implements SqlToolsService {
             .all()
             .collectList()
             .map(columns -> {
-                List<Map<String, Object>> result = new ArrayList<>();
-                Map<String, Object> tableInfo = new HashMap<>();
-                tableInfo.put("table", tableName);
-                List<Map<String, Object>> columnList = new ArrayList<>();
+                List<SqlColumnInfoVO> columnList = new ArrayList<>();
                 for (Map<String, Object> col : columns) {
-                    Map<String, Object> colInfo = new HashMap<>();
-                    colInfo.put("name", col.get("Field"));
-                    colInfo.put("type", col.get("Type"));
-                    colInfo.put("key", col.get("Key"));
-                    colInfo.put("comment", col.getOrDefault("Comment", ""));
-                    columnList.add(colInfo);
+                    columnList.add(new SqlColumnInfoVO(
+                        String.valueOf(col.get("Field")),
+                        String.valueOf(col.get("Type")),
+                        String.valueOf(col.get("Key")),
+                        String.valueOf(col.getOrDefault("Comment", ""))));
                 }
-                tableInfo.put("columns", columnList);
-                result.add(tableInfo);
-                return result;
+                return List.of(new SqlTableSchemaVO(tableName, null, columnList));
             })
             .onErrorMap(e -> new BusinessException(
                 String.format(Messages.SQL_PROXY_TABLE_SCHEMA_ERROR, e.getMessage())));

@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +26,7 @@ import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.Focus;
 import com.hcsy.spring.entity.po.User;
 import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -209,29 +209,25 @@ public class FocusServiceImpl implements FocusService {
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getNeo4jSyncFocus(String updatedAfter) {
+    public Mono<List<FocusSyncVO>> getNeo4jSyncFocus(String updatedAfter) {
         // 关注表数据量较大，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return focusRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
-                .map(this::focusToMap)
+                .map(this::focusToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return focusRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
-            .map(this::focusToMap)
+            .map(this::focusToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     /**
-     * 关注实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     * 关注实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> focusToMap(Focus focus) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("user_id", focus.getUserId());
-        map.put("focus_id", focus.getFocusId());
-        map.put("created_time", focus.getCreatedTime());
-        return map;
+    private FocusSyncVO focusToVO(Focus focus) {
+        return new FocusSyncVO(focus.getUserId(), focus.getFocusId(), focus.getCreatedTime());
     }
 }

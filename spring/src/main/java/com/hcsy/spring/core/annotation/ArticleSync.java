@@ -6,6 +6,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.hcsy.spring.common.constants.SyncResource;
+
 /**
  * 文章同步注解，用于标记需要同步到 MQ、ES、Neo4j、Hive 和 Vector 的接口方法
  * 只加在控制器方法上，切面在业务成功后统一触发同步
@@ -20,6 +22,11 @@ public @interface ArticleSync {
      * collect(收藏)、uncollect(取消收藏)、focus(关注)、unfocus(取消关注)
      */
     String action();
+
+    /**
+     * 资源名，精确同步时下发给下游用于定位源表，默认为文章
+     */
+    String resource() default SyncResource.ARTICLES;
 
     /**
      * 操作描述信息

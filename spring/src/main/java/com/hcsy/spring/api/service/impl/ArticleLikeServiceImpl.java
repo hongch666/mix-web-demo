@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +20,7 @@ import com.hcsy.spring.entity.assembler.ArticleInteractionAssembler;
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.po.ArticleLike;
 import com.hcsy.spring.entity.vo.ArticleLikeVO;
+import com.hcsy.spring.entity.vo.ArticleRelationSyncVO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
 import com.hcsy.spring.entity.vo.IdCountVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
@@ -157,29 +157,25 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
     }
 
     @Override
-    public Mono<List<Map<String, Object>>> getNeo4jSyncLikes(String updatedAfter) {
+    public Mono<List<ArticleRelationSyncVO>> getNeo4jSyncLikes(String updatedAfter) {
         // 点赞表数据量可达百万级，全量同步仅取最近 NEO4J_SYNC_LIMIT 条，避免一次性加载全部导致耗时过长、连接/令牌超时
         if (updatedAfter == null || updatedAfter.isBlank()) {
             return articleLikeRepository.findLatestForSync(Defaults.NEO4J_SYNC_LIMIT)
-                .map(this::likeToMap)
+                .map(this::likeToVO)
                 .collectList()
                 .map(list -> list.isEmpty() ? new ArrayList<>() : list);
         }
         LocalDateTime after = LocalDateTime.parse(updatedAfter);
         return articleLikeRepository.findLatestAfterForSync(after, Defaults.NEO4J_SYNC_LIMIT)
-            .map(this::likeToMap)
+            .map(this::likeToVO)
             .collectList()
             .map(list -> list.isEmpty() ? new ArrayList<>() : list);
     }
 
     /**
-     * 点赞实体转 Map，字段名与数据库列名保持一致，用于 Neo4j 同步
+     * 点赞实体转同步视图对象，字段名与数据库列名保持一致，用于 Neo4j 同步
      */
-    private Map<String, Object> likeToMap(ArticleLike like) {
-        Map<String, Object> map = new LinkedHashMap<>();
-        map.put("user_id", like.getUserId());
-        map.put("article_id", like.getArticleId());
-        map.put("created_time", like.getCreatedTime());
-        return map;
+    private ArticleRelationSyncVO likeToVO(ArticleLike like) {
+        return new ArticleRelationSyncVO(like.getUserId(), like.getArticleId(), like.getCreatedTime());
     }
 }

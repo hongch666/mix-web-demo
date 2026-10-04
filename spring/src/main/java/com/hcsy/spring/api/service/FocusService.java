@@ -2,10 +2,10 @@ package com.hcsy.spring.api.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 import com.hcsy.spring.entity.dto.PageDTO;
 import com.hcsy.spring.entity.vo.BatchCountVO;
+import com.hcsy.spring.entity.vo.FocusSyncVO;
 import com.hcsy.spring.entity.vo.FocusUserVO;
 import com.hcsy.spring.entity.vo.MapDataVO;
 
@@ -54,5 +54,5 @@ public interface FocusService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<Map<String, Object>>> getNeo4jSyncFocus(String updatedAfter);
+    Mono<List<FocusSyncVO>> getNeo4jSyncFocus(String updatedAfter);
 }

@@ -10,7 +10,10 @@ import com.hcsy.spring.entity.dto.SubCategoryCreateDTO;
 import com.hcsy.spring.entity.dto.SubCategoryUpdateDTO;
 import com.hcsy.spring.entity.po.Category;
 import com.hcsy.spring.entity.po.SubCategory;
+import com.hcsy.spring.entity.vo.CategorySyncVO;
 import com.hcsy.spring.entity.vo.CategoryVO;
+import com.hcsy.spring.entity.vo.SubCategorySyncVO;
+import com.hcsy.spring.entity.vo.SubCategoryWithParentVO;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -43,7 +46,7 @@ public interface CategoryService {
     // 新增：供内部接口使用的方法
     Flux<Category> listAllCategories();
 
-    Flux<java.util.Map<String, Object>> listAllSubCategoriesWithParent();
+    Flux<SubCategoryWithParentVO> listAllSubCategoriesWithParent();
 
     /**
      * 获取分类数据，用于Neo4j同步
@@ -51,7 +54,7 @@ public interface CategoryService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<java.util.Map<String, Object>>> getNeo4jSyncCategories(String updatedAfter);
+    Mono<List<CategorySyncVO>> getNeo4jSyncCategories(String updatedAfter);
 
     /**
      * 获取子分类数据，用于Neo4j同步
@@ -59,5 +62,5 @@ public interface CategoryService {
      * @param updatedAfter
      *                         增量同步时间（ISO格式），为空则全量
      */
-    Mono<List<java.util.Map<String, Object>>> getNeo4jSyncSubCategories(String updatedAfter);
+    Mono<List<SubCategorySyncVO>> getNeo4jSyncSubCategories(String updatedAfter);
 }

@@ -2,6 +2,7 @@ package com.hcsy.spring.api.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import com.hcsy.spring.common.constants.HttpCode;
 import com.hcsy.spring.common.constants.Messages;
 import com.hcsy.spring.common.utils.Result;
 import com.hcsy.spring.common.utils.SimpleLogger;
+import com.hcsy.spring.entity.event.ChangeEvent;
 import com.hcsy.spring.infra.client.FastAPIClient;
 import com.hcsy.spring.infra.client.GoZeroClient;
 
@@ -27,33 +29,34 @@ public class AsyncSyncServiceImpl implements AsyncSyncService {
     private final SimpleLogger logger;
 
     @Override
-    public Mono<Void> syncAllAsync(Long userId, String username, boolean syncES, boolean syncVector) {
+    public Mono<Void> syncArticleAsync(Long userId, String username, boolean syncES, boolean syncVector,
+        ChangeEvent event) {
         // 重试与熔断统一由底层 ServiceWebClient 的 resilience4j 处理，此处不再叠加重试，避免重复重试放大调用次数与耗时
-        // 数仓同步承载浏览、点赞、收藏、关注等统计口径，任一变更都要执行
+        // 数仓同步承载浏览、点赞、收藏、关注等统计口径，任一变更都要执行，但只需刷新本次变更涉及的源表
         List<Mono<Void>> tasks = new ArrayList<>();
         if (syncES) {
-            tasks.add(reactiveCall(goZeroClient::syncES, Messages.SYNC_ES_SUCCESS));
+            tasks.add(reactiveCall(() -> goZeroClient.syncES(event), Messages.SYNC_ES_SUCCESS));
         }
         if (syncVector) {
-            tasks.add(reactiveCall(fastAPIClient::syncVector, Messages.SYNC_VECTOR_SUCCESS));
+            tasks.add(reactiveCall(() -> fastAPIClient.syncVector(event), Messages.SYNC_VECTOR_SUCCESS));
         }
-        tasks.add(warehouseTask());
+        tasks.add(warehouseTask(Set.of(event.getResource())));
 
         return execute(userId, username, buildSyncTargets(syncES, syncVector), Mono.when(tasks));
     }
 
     @Override
-    public Mono<Void> syncWarehouseAsync(Long userId, String username) {
-        return execute(userId, username, Messages.SYNC_TARGET_WAREHOUSE, warehouseTask());
+    public Mono<Void> syncWarehouseAsync(Long userId, String username, Set<String> resources) {
+        return execute(userId, username, Messages.SYNC_TARGET_WAREHOUSE, warehouseTask(resources));
     }
 
-    private Mono<Void> warehouseTask() {
-        return reactiveCall(fastAPIClient::syncWarehouse, Messages.WAREHOUSE_SYNC_SUCCESS);
+    private Mono<Void> warehouseTask(Set<String> resources) {
+        return reactiveCall(() -> fastAPIClient.syncWarehouse(resources), Messages.WAREHOUSE_SYNC_SUCCESS);
     }
 
     @Override
-    public Mono<Void> syncNeo4jAsync(String methodName, String description) {
-        return fastAPIClient.syncNeo4j()
+    public Mono<Void> syncNeo4jAsync(String methodName, String description, ChangeEvent event) {
+        return fastAPIClient.syncNeo4j(List.of(event))
             .doOnSubscribe(ignored -> logger.info(Messages.NEO4J_SYNC_TASK_START_MESSAGE, methodName, description))
             .doOnNext(response -> logNeo4jResponse(response, methodName, description))
             .doOnError(error -> logger.error(Messages.NEO4J_SYNC_TASK_SUBMIT_FAIL_MESSAGE,
