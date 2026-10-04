@@ -2239,8 +2239,6 @@ class Messages:
         },
     ]
 
-    OPENAPI_VERSION: str = "3.0.0"
-
     PERMISSION_CHECK_FAILED_MESSAGE: str = "权限检查失败"
 
     RABBITMQ_CONFIG_NOT_FOUND_MESSAGE: str = "RabbitMQ 配置不存在，跳过连接"

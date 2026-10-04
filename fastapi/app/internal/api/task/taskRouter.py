@@ -1,5 +1,4 @@
 import asyncio
-
 from typing import Annotated, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Query, Request
@@ -14,11 +13,7 @@ from app.internal.cache import (
     get_statistics_cache,
     get_wordcloud_cache,
 )
-from app.internal.schemas import (
-    Neo4jSyncDTO,
-    VectorSyncDTO,
-    WarehouseSyncDTO,
-)
+from app.internal.schemas import Neo4jSyncDTO, VectorSyncDTO, WarehouseSyncDTO
 from app.internal.tasks import (
     build_vector_sync_dependencies,
     export_article_vectors_by_changes_async,
