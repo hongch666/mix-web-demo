@@ -1,4 +1,5 @@
 from datetime import datetime
+from functools import partial
 from typing import Any
 from unittest.mock import Mock
 
@@ -41,6 +42,18 @@ def _start_scheduler(
 
 def _jobs_by_id(fake: FakeScheduler) -> dict[str, dict[str, Any]]:
     return {job["id"]: job for job in fake.jobs}
+
+
+def _job_task_func(job: dict[str, Any]) -> Any:
+    """取出被 _run_measured_task 指标包装的真实任务函数
+
+    调度器以 partial(_run_measured_task, 任务名, 任务函数) 注册任务，
+    任务函数位于位置参数中，因此依赖注入的 keywords 需要从内层 partial 读取
+    """
+    func = job["func"]
+    if isinstance(func, partial) and func.func is scheduler_module._run_measured_task:
+        return func.args[1]
+    return func
 
 
 # 启动调度器后注册全部 5 个定时任务并应用 coalesce 与单实例默认配置
@@ -110,15 +123,15 @@ def test_injects_dependencies_into_job_functions(
     )
     jobs = _jobs_by_id(fake)
 
-    vector_keywords = jobs["sync_vectors"]["func"].keywords
+    vector_keywords = _job_task_func(jobs["sync_vectors"]).keywords
     assert vector_keywords["article_mapper"] is article_mapper
     assert vector_keywords["enable_incremental_sync"] is True
     assert (
-        jobs["update_analyze_caches"]["func"].keywords["analyze_service"]
+        _job_task_func(jobs["update_analyze_caches"]).keywords["analyze_service"]
         is analyze_service
     )
-    assert jobs["sync_neo4j"]["func"].keywords == {"force_full": False}
-    assert jobs["sync_neo4j_full"]["func"].keywords == {"force_full": True}
-    warehouse_keywords = jobs["sync_clickhouse_warehouse"]["func"].keywords
+    assert _job_task_func(jobs["sync_neo4j"]).keywords == {"force_full": False}
+    assert _job_task_func(jobs["sync_neo4j_full"]).keywords == {"force_full": True}
+    warehouse_keywords = _job_task_func(jobs["sync_clickhouse_warehouse"]).keywords
     assert warehouse_keywords["spring_client"] is spring_client
     assert warehouse_keywords["nestjs_client"] is nestjs_client

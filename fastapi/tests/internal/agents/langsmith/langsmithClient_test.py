@@ -53,9 +53,27 @@ class _FakeRun:
         self.kwargs = kwargs
         self.parent_run: Any = None
         self.ended = False
+        self.posted = False
+        self.patched = False
+
+    def post(self) -> None:
+        self.posted = True
 
     def end(self) -> None:
         self.ended = True
+
+    def patch(self) -> None:
+        self.patched = True
+
+
+class _StubLangSmithClient:
+    """真实 RunTree 只用到 create_run / update_run，桩实现避免测试真的上报"""
+
+    def create_run(self, **kwargs: Any) -> None:
+        return None
+
+    def update_run(self, **kwargs: Any) -> None:
+        return None
 
 
 # 配置关闭时初始化不创建客户端且不记录错误
@@ -289,11 +307,12 @@ async def test_async_context_yields_none_when_run_creation_fails(
 
 
 # 同步根 Trace 会把自身注册为当前父 Run，内部 LangChain 子链路据此挂载
-# 该用例使用真实 RunTree（_client 为普通对象，end 时 post 失败被吞掉）
+# 用真实 RunTree 验证，桩客户端吞掉 post/patch 的上报
 def test_sync_context_registers_parent_run_for_children(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _enable_tracing(monkeypatch)
+    monkeypatch.setattr(client_module, "_client", _StubLangSmithClient())
 
     with get_langsmith_context("chat.send") as run:
         assert run is not None
@@ -309,6 +328,7 @@ async def test_async_context_registers_parent_run_for_children(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _enable_tracing(monkeypatch)
+    monkeypatch.setattr(client_module, "_client", _StubLangSmithClient())
 
     async with get_langsmith_context_async("chat.stream") as run:
         assert run is not None

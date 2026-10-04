@@ -160,6 +160,8 @@ def get_langsmith_context(
         )
         if parent_run and hasattr(run, "parent_run"):
             run.parent_run = parent_run
+        # end 只写结束状态不会上报，根 Run 必须先显式 post 才能在 LangSmith 建树
+        run.post()
     except Exception as error:
         Logger.warning(Messages.LANGSMITH_RUN_CREATE_FAILED(error))
         yield None
@@ -171,6 +173,7 @@ def get_langsmith_context(
         finally:
             try:
                 run.end()
+                run.patch()
             except Exception as end_error:
                 Logger.warning(Messages.LANGSMITH_RUN_END_FAILED(end_error))
 
@@ -213,6 +216,8 @@ async def get_langsmith_context_async(
         )
         if parent_run and hasattr(run, "parent_run"):
             run.parent_run = parent_run
+        # end 只写结束状态不会上报，根 Run 必须先显式 post 才能在 LangSmith 建树
+        run.post()
     except Exception as error:
         Logger.warning(Messages.LANGSMITH_RUN_CREATE_FAILED(error))
         yield None
@@ -224,5 +229,6 @@ async def get_langsmith_context_async(
         finally:
             try:
                 run.end()
+                run.patch()
             except Exception as end_error:
                 Logger.warning(Messages.LANGSMITH_RUN_END_FAILED(end_error))
