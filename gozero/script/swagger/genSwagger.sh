@@ -4,7 +4,7 @@
 # 流程：
 #   1. goctl 从 main.api 生成 main.json（goctl 的输出名取自 --api 的文件名）
 #   2. 按仓库约定改名为 openapi.json
-#   3. swagger2openapi 转换为 OpenAPI 3.0（fix.py 的处理都按 3.0 结构编写，必需；未安装则自动安装）
+#   3. swagger2openapi 转换为 OpenAPI 3，再由 fix.py 后处理并统一声明 3.1.0
 #   4. fix.py 补中文标签、剔除易变字段与 WebSocket 路径，并由处理后的 JSON 派生 openapi.yaml
 #
 # YAML 不由 goctl 单独生成：那样会停留在 Swagger 2.0，与已是 OpenAPI 3 的 JSON 格式分叉
@@ -47,7 +47,7 @@ if [ ! -f "$JSON_FILE" ]; then
 fi
 echo "goctl 生成完成：$JSON_FILE"
 
-# 转换为 OpenAPI 3.0 JSON 格式，直接覆盖 openapi.json
+# 转换为 OpenAPI 3 JSON 格式，直接覆盖 openapi.json，再于后处理中将规范标记设为 3.1
 # 未安装时自动安装；装完仍不在当前 PATH 时退化为 npx 调用
 s2o=()
 if command -v swagger2openapi &> /dev/null; then
@@ -70,16 +70,16 @@ else
     fi
 fi
 
-echo "正在转换为 OpenAPI 3.0 格式..."
+echo "正在转换为 OpenAPI 3 格式..."
 if ! "${s2o[@]}" -o "$JSON_FILE" -p "$JSON_FILE"; then
-    echo "错误: 转换为 OpenAPI 3.0 失败，产物仍是 Swagger 2.0，fix.py 的处理将不生效"
+    echo "错误: 转换为 OpenAPI 3 失败，产物仍是 Swagger 2.0，fix.py 的处理将不生效"
     exit 1
 fi
 if ! grep -q '"openapi"[[:space:]]*:' "$JSON_FILE"; then
     echo "错误: 转换后未检测到 openapi 字段，请检查 swagger2openapi 的输出"
     exit 1
 fi
-echo "已转换为 OpenAPI 3.0 格式：$JSON_FILE"
+echo "已转换为 OpenAPI 3 格式：$JSON_FILE"
 
 # 使用 Python 脚本补中文标签、剔除易变字段与 WebSocket 路径，并派生 YAML
 python_script="$SCRIPT_DIR/fix.py"
@@ -118,7 +118,29 @@ if ! "$python_cmd" "$python_script" "$JSON_FILE" "$YAML_FILE"; then
     exit 1
 fi
 
-# 校验两份产物都是 OpenAPI 3
+"$python_cmd" - "$JSON_FILE" "$YAML_FILE" <<'PY'
+import json
+import sys
+
+json_path, yaml_path = sys.argv[1:]
+with open(json_path, encoding="utf-8") as source:
+    document = json.load(source)
+document["openapi"] = "3.1.0"
+with open(json_path, "w", encoding="utf-8", newline="\n") as target:
+    json.dump(document, target, ensure_ascii=False, indent=2)
+    target.write("\n")
+
+with open(yaml_path, encoding="utf-8") as source:
+    lines = source.readlines()
+if lines and lines[0].startswith("openapi:"):
+    lines[0] = "openapi: 3.1.0\n"
+else:
+    lines.insert(0, "openapi: 3.1.0\n")
+with open(yaml_path, "w", encoding="utf-8", newline="\n") as target:
+    target.writelines(lines)
+PY
+
+# 校验两份产物都是 OpenAPI 3.1
 if ! grep -q '"openapi"[[:space:]]*:' "$JSON_FILE"; then
     echo "错误: $JSON_FILE 不是 OpenAPI 3 格式"
     exit 1

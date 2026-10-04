@@ -27,7 +27,7 @@ VOLATILE_FIELDS = ("x-date", "x-goctl-version")
 # goctl 对 SyncESResp 这类空结构体只会生成裸 {"type": "object"}，
 # 实空壳用 utils.Success 包装后 data 实际是 null，留成 object 会让 Apifox 展示一个空对象示例
 # 声明与 NestJS 的 SwaggerNullData 保持一致
-EMPTY_DATA_SCHEMA = {"type": "null", "nullable": True, "description": "响应数据"}
+EMPTY_DATA_SCHEMA = {"type": "null", "description": "响应数据"}
 
 
 def add_chinese_tags_to_dict(swagger_data):
@@ -175,7 +175,9 @@ def wrap_unified_responses(swagger_data):
                 if isinstance(properties, dict) and "data" in properties:
                     payload_schema = properties["data"]
                 # 无字段的响应体（SyncESResp、SSE 的 400 兜底体等）只有裸 object，实际 data 为 null
-                if not isinstance(payload_schema, dict) or is_empty_object_schema(payload_schema):
+                if not isinstance(payload_schema, dict) or is_empty_object_schema(
+                    payload_schema
+                ):
                     payload_schema = dict(EMPTY_DATA_SCHEMA)
 
                 json_media["schema"] = {
@@ -205,7 +207,15 @@ def is_empty_object_schema(schema):
     """
     if not isinstance(schema, dict) or schema.get("type") != "object":
         return False
-    for key in ("properties", "additionalProperties", "items", "allOf", "anyOf", "oneOf", "$ref"):
+    for key in (
+        "properties",
+        "additionalProperties",
+        "items",
+        "allOf",
+        "anyOf",
+        "oneOf",
+        "$ref",
+    ):
         if key in schema:
             return False
     return True
@@ -302,7 +312,7 @@ def add_chinese_tags_json(swagger_file):
     except json.JSONDecodeError as e:
         print(f"错误: JSON解析失败 - {e}")
         return False
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"错误: {e}")
         return False
 
@@ -332,7 +342,7 @@ def write_yaml(swagger_file, swagger_data):
         print(f"已由 JSON 派生 YAML 产物: {swagger_file}")
         return True
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"错误: 写入YAML失败 - {e}")
         return False
 
