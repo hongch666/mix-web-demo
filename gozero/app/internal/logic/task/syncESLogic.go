@@ -32,9 +32,14 @@ func NewSyncESLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SyncESLogi
 func (l *SyncESLogic) SyncES(req *types.SyncESReq) (resp *types.SyncESResp, err error) {
 	l.Info(constants.TASK_SYNC_ES_STARTED_MESSAGE)
 
+	// 拷贝请求字段，避免后台 goroutine 引用请求对象
+	changeType := req.ChangeType
+	ids := append([]int64(nil), req.Ids...)
+
 	// 在后台 goroutine 中异步执行 ES 同步，立刻返回成功
+	// 携带主键时按主键精确同步，主键为空时退化为全量同步
 	utils.SafeGo(l.ZeroLogger, constants.SAFE_GO_SYNC_ES_DATA, func() {
-		if syncErr := logic.SyncArticlesToES(l.svcCtx.Context, l.svcCtx); syncErr != nil {
+		if syncErr := logic.SyncArticleESChanges(l.svcCtx.Context, l.svcCtx, changeType, ids); syncErr != nil {
 			l.Error(fmt.Sprintf("%s: %v", constants.TASK_SYNC_ES_FAILED_MESSAGE, syncErr))
 			return
 		}

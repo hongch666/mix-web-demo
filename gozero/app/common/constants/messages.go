@@ -198,6 +198,8 @@ const (
 	ES_SYNC_FAILURE_DETAILS_MESSAGE       = "ES同步失败: %+v"
 	ES_SYNC_BATCH_COMPLETED_MESSAGE       = "第 %d 批同步完成，新增 %d 条，更新 %d 条"
 	ES_INCREMENTAL_SYNC_COMPLETED_MESSAGE = "ES 增量同步完成，新增 %d 条，更新 %d 条，删除 %d 条"
+	ES_EXACT_SYNC_STARTED_MESSAGE         = "ES 精确同步开始，变更类型 %s，主键 %v"
+	ES_EXACT_SYNC_COMPLETED_MESSAGE       = "ES 精确同步完成，变更类型 %s，处理 %d 条"
 	TASK_SYNC_ES_STARTED_MESSAGE          = "[定时任务] 开始同步文章到 ElasticSearch"
 	TASK_SYNC_ES_COMPLETED_MESSAGE        = "[定时任务] 同步成功"
 	TASK_SYNC_ES_FAILED_MESSAGE           = "[定时任务] 注册同步任务失败：%v"

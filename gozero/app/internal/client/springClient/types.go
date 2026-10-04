@@ -94,6 +94,11 @@ type PageVO[T any] struct {
 	Records []T   `json:"list"`
 }
 
+// ParseArticleVOs 解析文章列表
+func ParseArticleVOs(result client.Result) ([]ArticleVO, error) {
+	return parseData[[]ArticleVO](result)
+}
+
 // ParseArticlePage 解析分页文章列表
 func ParseArticlePage(result client.Result) ([]ArticleVO, int64, error) {
 	page, err := parseData[PageVO[ArticleVO]](result)

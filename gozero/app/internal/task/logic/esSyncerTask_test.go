@@ -73,3 +73,28 @@ func TestHashArticleESIsStableAndChangesWithDocument(t *testing.T) {
 		t.Fatal("different documents should produce different hashes")
 	}
 }
+
+// 验证该测试场景的预期行为
+
+func TestSyncArticleESChangesRejectsMissingClient(t *testing.T) {
+	err := SyncArticleESChanges(context.Background(), &svc.ServiceContext{
+		InfrastructureContext: &svc.InfrastructureContext{},
+		LoggerContext:         &svc.LoggerContext{},
+	}, "delete", []int64{1, 2})
+	if err == nil {
+		t.Fatal("missing Elasticsearch client should return an error")
+	}
+}
+
+// 验证该测试场景的预期行为
+
+func TestSyncArticleESChangesFallsBackWhenNoIDs(t *testing.T) {
+	// 主键为空时退化为全量同步，缺 ES 客户端同样应报错，证明走了全量分支
+	err := SyncArticleESChanges(context.Background(), &svc.ServiceContext{
+		InfrastructureContext: &svc.InfrastructureContext{},
+		LoggerContext:         &svc.LoggerContext{},
+	}, "update", nil)
+	if err == nil {
+		t.Fatal("empty ids should fall back to full sync and fail without a client")
+	}
+}

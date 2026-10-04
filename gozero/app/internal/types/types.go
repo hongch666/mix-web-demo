@@ -209,6 +209,9 @@ type SqlToolsTableInfo struct {
 }
 
 type SyncESReq struct {
+	Resource   string  `json:"resource,optional"`    // 资源名，固定 articles
+	ChangeType string  `json:"change_type,optional"` // 变更类型：insert、update、delete
+	Ids        []int64 `json:"ids,optional"`         // 受影响文章 ID，为空时退化为全量同步
 }
 
 type SyncESResp struct {

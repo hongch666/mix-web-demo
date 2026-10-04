@@ -577,6 +577,24 @@ paths:
       - 定时任务模块
       summary: 手动触发同步ES任务
       operationId: taskSyncESHandler
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                change_type:
+                  description: 变更类型：insert、update、delete
+                  type: string
+                ids:
+                  description: 受影响文章 ID，为空时退化为全量同步
+                  type: array
+                  items:
+                    type: integer
+                resource:
+                  description: 资源名，固定 articles
+                  type: string
+        required: true
       responses:
         '200':
           description: ''

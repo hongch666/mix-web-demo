@@ -23,6 +23,8 @@ import (
 const (
 	esArticlesIndexName = "articles"
 	esSyncBatchSize     = 500
+	// esChangeTypeDelete 表示删除变更，其余类型统一按写入处理
+	esChangeTypeDelete = "delete"
 )
 
 type esSyncStats struct {
@@ -67,16 +69,8 @@ func SyncArticlesToES(ctx context.Context, svcCtx *svc.ServiceContext) error {
 		return fmt.Errorf("%s", constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
 	}
 
-	exists, err := svcCtx.ESClient.IndexExists(esArticlesIndexName).Do(ctx)
-	if err != nil {
-		return logAndWrapError(svcCtx, constants.INDEX_CHECK_ERROR_MESSAGE, err)
-	}
-	if !exists {
-		mapping := constants.ES_INDEX_MAPPING
-		_, createErr := svcCtx.ESClient.CreateIndex(esArticlesIndexName).BodyString(mapping).Do(ctx)
-		if createErr != nil {
-			return logAndWrapError(svcCtx, constants.INDEX_CREATION_ERROR_MESSAGE, createErr)
-		}
+	if err := ensureArticlesIndex(ctx, svcCtx); err != nil {
+		return err
 	}
 
 	// 第一步：先把 ES 中当前已有的文章全部扫出来，构造成 id -> hash 的映射
@@ -475,6 +469,145 @@ func executeESBulk(ctx context.Context, svcCtx *svc.ServiceContext, bulkRequest 
 		svcCtx.Logger.Error(constants.ES_SYNC_HAS_FAILURES_MESSAGE)
 	}
 	return fmt.Errorf("%s", constants.ES_SYNC_HAS_FAILURES_MESSAGE)
+}
+
+// SyncArticleESChanges 按主键精确同步文章到 ElasticSearch
+// delete 直接删除文档，insert、update 拉取快照后按内容 hash 决定是否写入
+func SyncArticleESChanges(ctx context.Context, svcCtx *svc.ServiceContext, changeType string, ids []int64) error {
+	if svcCtx.ESClient == nil {
+		if svcCtx.Logger != nil {
+			svcCtx.Logger.Error(constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
+		}
+		return fmt.Errorf("%s", constants.ES_CLIENT_NOT_INITIALIZED_MESSAGE)
+	}
+	if len(ids) == 0 {
+		return SyncArticlesToES(ctx, svcCtx)
+	}
+	if err := ensureArticlesIndex(ctx, svcCtx); err != nil {
+		return err
+	}
+	if svcCtx.Logger != nil {
+		svcCtx.Logger.Info(fmt.Sprintf(constants.ES_EXACT_SYNC_STARTED_MESSAGE, changeType, ids))
+	}
+	if changeType == esChangeTypeDelete {
+		if err := deleteESArticlesByIDs(ctx, svcCtx, ids); err != nil {
+			return err
+		}
+	} else {
+		if err := upsertESArticlesByIDs(ctx, svcCtx, ids); err != nil {
+			return err
+		}
+	}
+	if svcCtx.Logger != nil {
+		svcCtx.Logger.Info(fmt.Sprintf(constants.ES_EXACT_SYNC_COMPLETED_MESSAGE, changeType, len(ids)))
+	}
+	return nil
+}
+
+// upsertESArticlesByIDs 按主键拉取文章快照并写入 ES
+func upsertESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids []int64) error {
+	result, err := svcCtx.SpringClient.GetArticlesByIDs(ctx, ids)
+	if err != nil {
+		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+	}
+	articles, err := springClient.ParseArticleVOs(result)
+	if err != nil {
+		return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+	}
+	if len(articles) == 0 {
+		return nil
+	}
+
+	userMap := make(map[int64]string)
+	categoryMap := make(map[int64]string)
+	subCategoryMap := make(map[int64]string)
+	docs, err := buildArticleESBatchFromRemote(ctx, svcCtx, articles, userMap, categoryMap, subCategoryMap)
+	if err != nil {
+		return err
+	}
+
+	// 只写入内容真正变化的文档，避免浏览量等字段更新导致无意义写放大
+	existingDocs, err := loadESArticlesByIDs(ctx, svcCtx, ids)
+	if err != nil {
+		return err
+	}
+	bulkRequest := svcCtx.ESClient.Bulk()
+	for _, doc := range docs {
+		docHash, err := hashArticleES(doc)
+		if err != nil {
+			return logAndWrapError(svcCtx, constants.ES_BULK_SYNC_ERROR_MESSAGE, err)
+		}
+		if existingHash, ok := existingDocs[doc.ID]; ok && existingHash == docHash {
+			continue
+		}
+		bulkRequest = bulkRequest.Add(
+			elastic.NewBulkIndexRequest().
+				Index(esArticlesIndexName).
+				Id(fmt.Sprintf("%d", doc.ID)).
+				Doc(doc),
+		)
+	}
+	return executeESBulk(ctx, svcCtx, bulkRequest)
+}
+
+// loadESArticlesByIDs 读取指定文章在 ES 中的文档 hash，索引或文档缺失时退化为全部写入
+func loadESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids []int64) (map[int64]string, error) {
+	hashes := make(map[int64]string)
+	if len(ids) == 0 {
+		return hashes, nil
+	}
+	indexIDs := make([]string, 0, len(ids))
+	for _, id := range ids {
+		indexIDs = append(indexIDs, fmt.Sprintf("%d", id))
+	}
+	response, err := svcCtx.ESClient.Search().
+		Index(esArticlesIndexName).
+		Query(elastic.NewIdsQuery().Ids(indexIDs...)).
+		Size(len(indexIDs)).
+		Do(ctx)
+	if err != nil {
+		return hashes, nil
+	}
+	for _, hit := range response.Hits.Hits {
+		var article search.ArticleES
+		if err := json.Unmarshal(hit.Source, &article); err != nil {
+			continue
+		}
+		hashValue, err := hashArticleES(article)
+		if err != nil {
+			continue
+		}
+		hashes[article.ID] = hashValue
+	}
+	return hashes, nil
+}
+
+// deleteESArticlesByIDs 按主键批量删除 ES 文档
+func deleteESArticlesByIDs(ctx context.Context, svcCtx *svc.ServiceContext, ids []int64) error {
+	bulkRequest := svcCtx.ESClient.Bulk()
+	for _, id := range ids {
+		bulkRequest = bulkRequest.Add(
+			elastic.NewBulkDeleteRequest().
+				Index(esArticlesIndexName).
+				Id(fmt.Sprintf("%d", id)),
+		)
+	}
+	return executeESBulk(ctx, svcCtx, bulkRequest)
+}
+
+// ensureArticlesIndex 确保文章索引存在
+func ensureArticlesIndex(ctx context.Context, svcCtx *svc.ServiceContext) error {
+	exists, err := svcCtx.ESClient.IndexExists(esArticlesIndexName).Do(ctx)
+	if err != nil {
+		return logAndWrapError(svcCtx, constants.INDEX_CHECK_ERROR_MESSAGE, err)
+	}
+	if !exists {
+		mapping := constants.ES_INDEX_MAPPING
+		if _, createErr := svcCtx.ESClient.CreateIndex(esArticlesIndexName).BodyString(mapping).Do(ctx); createErr != nil {
+			return logAndWrapError(svcCtx, constants.INDEX_CREATION_ERROR_MESSAGE, createErr)
+		}
+	}
+	return nil
 }
 
 func hashArticleES(doc search.ArticleES) (string, error) {
