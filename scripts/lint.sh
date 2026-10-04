@@ -39,6 +39,20 @@ lint_constants_order() {
     return 0
 }
 
+# 控制器返回类型检查（spring）：禁止匿名 Map，确需动态结构时须显式豁免，python 缺失时跳过
+lint_controller_vo() {
+    if command -v python >/dev/null 2>&1; then
+        python "$WORKDIR/scripts/controller-vo.py" --check "$1"
+        return
+    fi
+    if command -v python3 >/dev/null 2>&1; then
+        python3 "$WORKDIR/scripts/controller-vo.py" --check "$1"
+        return
+    fi
+    print_warn "未检测到 python，跳过控制器返回类型检查"
+    return 0
+}
+
 # 包导入规范检查（fastapi）：目标目录有 __init__.py 导出时须从包导入，python 缺失时跳过
 lint_package_imports() {
     if command -v python >/dev/null 2>&1; then
@@ -64,6 +78,8 @@ fi
 # 返回码约定：0 表示通过，2 表示跳过（工具未安装），其它表示检查未通过
 
 lint_spring() {
+    print_info "检查 Spring 控制器返回类型（禁止匿名 Map）..."
+    lint_controller_vo "$WORKDIR/spring/src/main/java/com/hcsy/spring/api/controller" || return 1
     command -v mvn >/dev/null 2>&1 || return 2
     print_info "检查 Spring 代码格式（Spotless）..."
     (cd "$WORKDIR/spring" && mvn -q spotless:check)
